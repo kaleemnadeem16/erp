@@ -1,0 +1,141 @@
+[← Architecture](README.md)
+
+# API Conventions
+
+The API is the only interface to the backend — web, mobile and integrations all use it
+([ADR 0002](../decisions/0002-api-first-react-spa.md)). Consistency matters more than usual
+because the TypeScript client is generated from it
+([ADR 0006](../decisions/0006-generated-api-client.md)).
+
+**Read before adding an endpoint.**
+
+---
+
+## Routes
+
+```
+/api/v1/{resource}
+```
+
+Plural, kebab-case. Nested only one level deep.
+
+```
+GET    /api/v1/quotations
+POST   /api/v1/quotations
+GET    /api/v1/quotations/{quotation}
+PATCH  /api/v1/quotations/{quotation}
+DELETE /api/v1/quotations/{quotation}
+
+GET    /api/v1/quotations/{quotation}/lines
+POST   /api/v1/quotations/{quotation}/confirm      ← action, not CRUD
+```
+
+**State transitions are named sub-resources, not PATCH on a status field.** `POST
+…/confirm` expresses intent and can enforce its own rules; `PATCH {status: "confirmed"}`
+cannot.
+
+Versioning is in the path. `v1` stays stable; breaking changes create `v2`.
+
+## Responses
+
+Single resource:
+
+```json
+{ "data": { "id": 1, "number": "QUO-0001" } }
+```
+
+Collection:
+
+```json
+{
+  "data": [ … ],
+  "meta": { "current_page": 1, "per_page": 25, "total": 132 },
+  "links": { "next": "…", "prev": null }
+}
+```
+
+Always wrapped in `data` — including single resources — so response shape never changes when a
+field is added at the envelope level.
+
+## Errors
+
+Laravel's default validation shape, used consistently:
+
+```json
+{
+  "message": "The given data was invalid.",
+  "errors": { "customer_id": ["The customer field is required."] }
+}
+```
+
+| Status | Meaning |
+|---|---|
+| 400 | Malformed request |
+| 401 | Not authenticated |
+| 403 | Authenticated, not permitted |
+| 404 | Not found — **or** not visible to this company |
+| 409 | Conflict with current state (e.g. confirming an already-confirmed quotation) |
+| 422 | Validation failed |
+| 429 | Rate limited |
+
+**404, not 403, for another company's records.** A 403 confirms the record exists.
+
+Business rule violations return **422** with the same error shape as validation, so the frontend
+handles both identically.
+
+## Pagination
+
+Cursor pagination for large or frequently-appended lists (stock moves, ledger entries, activity
+log). Page-based elsewhere — ERP users expect page numbers.
+
+Default 25, maximum 100.
+
+## Filtering and sorting
+
+```
+GET /api/v1/items?filter[type]=RAW&filter[search]=pigment&sort=-created_at&include=uom
+```
+
+Consistent across all collection endpoints. `include` for relations — never load relations
+unconditionally.
+
+## Money
+
+```json
+{ "amount": "1250.0000", "currency": "PKR", "base_amount": "1250.0000" }
+```
+
+**Money is a string in JSON, never a number.** JavaScript's `number` cannot represent
+`decimal(19,4)` reliably, and silent precision loss in financial data is unacceptable.
+
+Both transaction and base amounts are always present
+([invariants.md](invariants.md#5-both-currency-amounts-always)).
+
+## Dates
+
+ISO 8601 UTC — `2026-07-29T11:54:00Z`. Timezone conversion is a presentation concern.
+
+## Idempotency
+
+Endpoints that create financial documents accept an `Idempotency-Key` header. Required for
+integration and webhook consumers, where retries are routine.
+
+## Rate limiting
+
+| Scope | Limit |
+|---|---|
+| Authenticated | 120/min |
+| Login | 5/min per IP |
+| Integrations | Per-token, configurable |
+
+## Generated client
+
+Every endpoint must produce a correct OpenAPI entry. Where Scramble cannot infer a response
+shape, add explicit types — do not leave it to guess. CI regenerates and fails on diff, so a
+missing type surfaces as a build failure rather than an `any` in the frontend.
+
+## Related
+
+- [code-structure.md](code-structure.md)
+- [ADR 0006](../decisions/0006-generated-api-client.md)
+- [ADR 0005](../decisions/0005-sanctum-authentication.md)

@@ -1,0 +1,95 @@
+[← Docs index](../README.md)
+
+# Domain Model
+
+**What** the system models. For **how** it's built see [architecture/](../architecture/); for
+**why** see [decisions/](../decisions/).
+
+The domain is **process manufacturing + field service + job costing** — the pattern used by
+chemicals, food, agriculture, print, cleaning, flooring and construction contracting. Nothing in
+the model is specific to any one industry
+([ADR 0008](../decisions/0008-assembly-abstraction.md)).
+
+---
+
+## The costing chain
+
+The core of the system. Each layer feeds the one above.
+
+```
+                    ┌─────────────────────────────────┐
+   ASSEMBLY  ───────│ "Paint exterior wall, 2 coats"  │  sold per sqm
+   (sellable)       │  cost/unit → + margin → rate    │
+                    └────────────────┬────────────────┘
+                                     │ components, by kind
+             ┌───────────────┬───────┴───────┬──────────────┐
+         MATERIAL         LABOUR           PLANT       SUBCONTRACT
+             │
+             ▼
+   ┌─────────────────────┐
+   │  APPLICATION RATE   │  "1 L covers 12 sqm on smooth plaster"
+   │  keyed by company-  │  dimensions are company-defined
+   │  defined dimensions │
+   └──────────┬──────────┘
+              ▼
+   ┌─────────────────────┐
+   │    FORMULATION      │  "1 L of Shade #4471 = 0.12 kg pigment + …"
+   │  versioned, immutable│
+   └──────────┬──────────┘
+              ▼
+   ┌─────────────────────┐
+   │  STOCK VALUATION    │  AVCO from goods receipts
+   └─────────────────────┘
+```
+
+**Every layer below the assembly is optional.** A company selling stocked products uses one
+material component and no formulation. A consultancy uses labour components only.
+
+---
+
+## Documents
+
+```
+Lead → Opportunity → Quotation (revisions) → Job → Work Order → Invoices → Receipts
+                                               ↓
+                                    Timesheets, material issues
+                                               ↓
+                                    Actual cost vs estimate
+```
+
+---
+
+## Files
+
+### Estimating & costing
+
+| Doc | Covers |
+|---|---|
+| [units-of-measure.md](units-of-measure.md) | UoM, dimensions, conversion rules |
+| [items.md](items.md) | Items, types, what is stock-tracked |
+| [formulations.md](formulations.md) | Recipes, versioning, customer overrides |
+| [application-rates.md](application-rates.md) | Consumption per work unit, rate dimensions |
+| [assemblies.md](assemblies.md) | The sellable unit, cost roll-up, margin |
+
+### Operations
+
+| Doc | Covers |
+|---|---|
+| [stock.md](stock.md) | Warehouses, moves, AVCO valuation |
+| [sales-pipeline.md](sales-pipeline.md) | Leads, opportunities, quotations, revisions |
+| [job-costing.md](job-costing.md) | Jobs, work orders, timesheets, variance |
+
+### Finance
+
+| Doc | Covers |
+|---|---|
+| [general-ledger.md](general-ledger.md) | Chart of accounts, journals, what posts when |
+| [receivables.md](receivables.md) | Invoices, receipts, allocation, customer ledger |
+| [multi-currency.md](multi-currency.md) | Rates, dual amounts, realised FX |
+
+Unfamiliar term? → [GLOSSARY.md](../GLOSSARY.md)
+
+## Related
+
+- [architecture/invariants.md](../architecture/invariants.md) — rules that govern all of this
+- [phases/README.md](../phases/README.md) — build order
