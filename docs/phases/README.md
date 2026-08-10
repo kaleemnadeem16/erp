@@ -26,7 +26,7 @@ fiction that has to be rewritten anyway.
 
 ### Phase 0 — Foundation
 Environment and cross-cutting scaffolding, no business logic. Docker Compose, production
-Dockerfile, Laravel + React skeletons, dual-database CI, Sanctum auth, companies, users, roles,
+Dockerfile, Laravel + React skeletons, PostgreSQL-only CI, Sanctum auth, companies, users, roles,
 audit log, UoM system, custom fields, numbering sequences, Scramble → Orval pipeline.
 
 **No dependency on any open question — can start immediately.**
@@ -36,7 +36,8 @@ audit log, UoM system, custom fields, numbering sequences, Scramble → Orval pi
 Items and categories, customers, suppliers, currencies and exchange rates, chart of accounts.
 The GL account mapping on items is defined here even though posting comes later.
 
-*Blocked by [Q2 — base currency](../OPEN-QUESTIONS.md#q2--base-currency).*
+*Formerly blocked by Q2 — base currency now decided
+([ADR 0024](../decisions/0024-onboarding-base-currency-and-fiscal-year.md)).*
 → [items.md](../domain/items.md) · [multi-currency.md](../domain/multi-currency.md)
 
 ### Phase 2 — Purchasing & stock
@@ -51,10 +52,11 @@ application rates, assemblies, cost roll-up.
 
 ### Phase 4 — Sales pipeline
 Leads, opportunities, quotations with revisions, cost snapshotting, PDF output. First
-substantial UI work — mobile layout patterns and RTL ([Q5](../OPEN-QUESTIONS.md#q5--localisation-and-rtl))
-should be settled before this.
+substantial UI work — mobile layout patterns should be settled before this. RTL is not
+needed — English only ([ADR 0026](../decisions/0026-english-only-no-rtl.md)).
 
-*Partially blocked by [Q3 — tax model](../OPEN-QUESTIONS.md#q3--tax-model).*
+*Formerly blocked by Q3 — tax model now decided
+([ADR 0025](../decisions/0025-configurable-tax-engine.md)).*
 → [sales-pipeline.md](../domain/sales-pipeline.md)
 
 ### Phase 5 — Job execution
@@ -66,8 +68,9 @@ variance reporting. This is where the system starts paying for itself.
 Double-entry GL, progress invoicing, receipts, allocation, customer ledger and statements,
 aging, realised FX. The largest phase.
 
-*Blocked by [Q1 — retention](../OPEN-QUESTIONS.md#q1--retention--retainage) and
-[Q3 — tax model](../OPEN-QUESTIONS.md#q3--tax-model).*
+*Formerly blocked by Q1 and Q3 — retention and tax model now decided
+([ADR 0023](../decisions/0023-retention-retainage-enabled.md),
+[ADR 0025](../decisions/0025-configurable-tax-engine.md)).*
 → [general-ledger.md](../domain/general-ledger.md) · [receivables.md](../domain/receivables.md)
 
 ### Phase 7 — Mobile & integrations

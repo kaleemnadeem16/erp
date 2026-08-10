@@ -24,7 +24,7 @@ feature.
 
 - Docker development environment and production image
 - Laravel + React skeletons, wired together
-- Dual-database CI
+- CI on PostgreSQL 16 (single engine)
 - Authentication, companies, users, roles, audit log
 - UoM system
 - Custom field mechanism
@@ -35,7 +35,7 @@ feature.
 
 - Items, customers, suppliers → Phase 1
 - Any domain model beyond UoM → Phase 3+
-- Real permission definitions beyond a basic set → Phase 4 ([Q7](../OPEN-QUESTIONS.md#q7--user-roles-and-permissions))
+- Real permission definitions beyond a basic set → Phase 4 ([ADR 0028](../decisions/0028-dynamic-namespaced-permissions.md))
 - Plugin packages → not until a second customer exists
 - Frontend design system beyond shadcn defaults → Phase 4
 

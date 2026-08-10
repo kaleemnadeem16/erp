@@ -67,4 +67,4 @@ identically by both database engines ([0003](0003-postgres-with-mysql-compatibil
 
 - [domain/multi-currency.md](../domain/multi-currency.md)
 - [0011 — Double-entry GL](0011-double-entry-open-item-ar.md)
-- [Q2 — Base currency](../OPEN-QUESTIONS.md#q2--base-currency)
+- [0024 — Base currency and fiscal year set at onboarding](0024-onboarding-base-currency-and-fiscal-year.md) *(resolved Q2)*
