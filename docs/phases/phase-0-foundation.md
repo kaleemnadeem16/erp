@@ -54,7 +54,7 @@ feature.
 
 ### Infrastructure prerequisites
 
-- [ ] Register an **org-level or second self-hosted ARM runner** — the existing one is scoped to `invoiceflow`
+- [ ] Register a **second self-hosted ARM runner** — the existing one is scoped to `invoiceflow`; steps → [ci-runner-setup.md](../architecture/ci-runner-setup.md)
 - [ ] Create the ERP database on dbvm's PostgreSQL (do not provision a new instance)
 - [ ] Enable the `btree_gist` extension — needed for version-period exclusion constraints
 - [ ] Confirm the Redis key prefix does not collide with invoiceflow or crm

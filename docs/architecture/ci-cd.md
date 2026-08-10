@@ -25,8 +25,12 @@ Cross-building either one under QEMU makes `composer install` and `npm ci` sever
 mainvm already runs a self-hosted runner (`github-runner`, `~/actions-runner`), currently
 **scoped to the `invoiceflow` repository**.
 
-**Action required:** register an **organisation-level** runner, or a second repo-scoped runner
-for this project. A repo-scoped runner cannot serve another repository.
+**Decision:** invoiceflow, the CRM and this ERP repo all sit under a **personal GitHub account**,
+not an organisation — GitHub does not offer org-level runners for personal accounts. So this
+project registers a **second, independent repo-scoped runner** on mainvm, alongside the existing
+one rather than sharing it.
+
+Not yet done. Step-by-step setup → [ci-runner-setup.md](ci-runner-setup.md).
 
 ### Runner constraints
 
