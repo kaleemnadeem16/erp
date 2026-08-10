@@ -113,7 +113,13 @@ completion.
 
 **Retention / retainage**
 A percentage withheld by the customer until a defect liability period ends. Invoiced but not
-yet due. *Applicability still open — see [Q1](OPEN-QUESTIONS.md#q1--retention--retainage).*
+yet due. Set per contract, defaults to 0%.
+→ [decisions/0023-retention-retainage-enabled.md](decisions/0023-retention-retainage-enabled.md)
+
+**Tax code**
+A company-defined, effective-dated rate + jurisdiction + goods/services applicability. No tax
+regime is hardcoded — a finance-director-level role configures tax codes as data.
+→ [domain/tax.md](domain/tax.md)
 
 **Realised FX gain/loss**
 The difference arising when an invoice raised at one exchange rate is settled at another. Posts

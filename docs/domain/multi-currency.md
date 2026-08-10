@@ -117,4 +117,4 @@ may use another. Never infer from the customer record alone.
 - [receivables.md](receivables.md) — where FX gain/loss is realised
 - [general-ledger.md](general-ledger.md)
 - [ADR 0012](../decisions/0012-multi-currency-dual-amounts.md)
-- [Q2 — Base currency](../OPEN-QUESTIONS.md#q2--base-currency)
+- [ADR 0024](../decisions/0024-onboarding-base-currency-and-fiscal-year.md) — base currency set at onboarding, USD default

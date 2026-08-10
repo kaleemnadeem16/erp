@@ -1,6 +1,6 @@
 # Project Status
 
-**Updated:** 2026-07-29
+**Updated:** 2026-08-10
 **Current phase:** Phase 0 — Foundation (not started)
 **Application code:** none yet
 
@@ -31,6 +31,12 @@ environment before any application logic.
 | Multi-architecture images (amd64 + arm64) → [ADR 0021](decisions/0021-multi-architecture-images.md) | 2026-07-29 |
 | Code-documentation strategy decided → [ADR 0022](decisions/0022-code-documentation-strategy.md) | 2026-07-29 |
 | mainvm image cleanup — ~20 GB reclaimed, no rollback tags in active use lost | 2026-07-29 |
+| Retention/retainage support decided (per-contract %, default off) → [ADR 0023](decisions/0023-retention-retainage-enabled.md) | 2026-08-10 |
+| Base currency (USD default) and fiscal year (July default) set at onboarding, locked after first use → [ADR 0024](decisions/0024-onboarding-base-currency-and-fiscal-year.md) | 2026-08-10 |
+| Tax model: fully configurable tax-code engine, no hardcoded rates → [ADR 0025](decisions/0025-configurable-tax-engine.md) | 2026-08-10 |
+| No RTL/localisation needed — English only → [ADR 0026](decisions/0026-english-only-no-rtl.md) | 2026-08-10 |
+| Data import: generic column-mapping engine, not per-client scripts → [ADR 0027](decisions/0027-generic-column-mapping-import.md) | 2026-08-10 |
+| Roles/permissions: dynamic, namespaced, per-user overrides, Teams-ready → [ADR 0028](decisions/0028-dynamic-namespaced-permissions.md) | 2026-08-10 |
 
 ## In progress
 
@@ -63,13 +69,10 @@ Two infrastructure prerequisites, neither blocking design work:
 
 ## Blocked / awaiting input
 
-| Blocks | Question |
-|---|---|
-| Phase 6 (Finance) | [Retention/retainage applicable?](OPEN-QUESTIONS.md#q1--retention--retainage) |
-| Phase 1 (Master data) | [Base currency confirmation](OPEN-QUESTIONS.md#q2--base-currency) |
-| Phase 6 (Finance) | [Tax model](OPEN-QUESTIONS.md#q3--tax-model) — not yet discussed at all |
+None currently blocking. Q1–Q7 resolved 2026-08-10 (see ADRs 0023–0028 above).
 
-Full list: [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) — 3 blocking, 5 non-blocking.
+Full list: [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) — 0 blocking, 1 non-blocking (second customer
+profile). Q7's actual role/permission list is still deferred to Phase 4, per ADR 0028.
 
 ## Roadmap at a glance
 

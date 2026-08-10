@@ -82,7 +82,8 @@ feature.
 
 - [ ] Sanctum — cookie mode for SPA, token mode for mobile
 - [ ] Users, login, logout, password reset
-- [ ] `spatie/laravel-permission` with a minimal role set
+- [ ] `spatie/laravel-permission` — namespaced permissions (`module.action`), **Teams enabled**
+      from the first migration, minimal role set → [authorization.md](../architecture/authorization.md)
 - [ ] `spatie/laravel-activitylog` wired to a base model
 
 ### Cross-cutting mechanisms
@@ -150,4 +151,5 @@ feature.
 - [architecture/invariants.md](../architecture/invariants.md)
 - [architecture/tech-stack.md](../architecture/tech-stack.md)
 - [architecture/deployment.md](../architecture/deployment.md)
+- [architecture/authorization.md](../architecture/authorization.md) — permission naming, Teams
 - [ADR 0006](../decisions/0006-generated-api-client.md) — why the type pipeline is Phase 0

@@ -72,6 +72,13 @@ The running-balance statement is a **presentation** over this data, not the stor
 distinction is what makes aging and dispute resolution possible — balance-forward cannot tell
 you *which* invoice is overdue.
 
+**A company is not limited to one billing style.** Allocation is a property of the customer or
+contract, not the company: a project customer can be invoiced and matched invoice-by-invoice
+(with or without retention), while a dealer/shop customer on the same company buys repeatedly and
+pays lump or partial amounts against a running account — both read as a normal statement of
+account, because the statement is just this same open-item data presented as a running balance.
+No separate "ledger mode" is needed.
+
 ### Derived views
 
 | View | Derivation |
@@ -104,9 +111,10 @@ The customer withholds a percentage until a defect liability period ends. Invoic
 due — so it needs its own control account, a release schedule, and **must be excluded from
 normal aging**.
 
-⚠️ **Applicability not yet confirmed** — see
-[Q1](../OPEN-QUESTIONS.md#q1--retention--retainage). Columns are present and cost nothing if
-unused; the posting and reporting logic is a painful retrofit.
+**Confirmed in scope** ([ADR 0023](../decisions/0023-retention-retainage-enabled.md)).
+`retention_pct` is set per contract/invoice line and **defaults to 0%** — customers/contracts
+that don't use retention see no behaviour change. It coexists freely with running-account
+customers (see above): retention and payment-allocation style are independent settings.
 
 ### Numbering
 
