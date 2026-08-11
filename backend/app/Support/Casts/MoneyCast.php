@@ -41,13 +41,19 @@ final class MoneyCast implements CastsAttributes
         return Money::of($value, $currency, roundingMode: RoundingMode::UNNECESSARY);
     }
 
+    /**
+     * @return array<string, string|null>
+     */
     public function set(Model $model, string $key, mixed $value, array $attributes): array
     {
         if ($value === null) {
             return [$key => null];
         }
 
-        if (! $value instanceof Money) {
+        // @implements CastsAttributes<Money, Money> above tells PHPStan $value is already
+        // Money here, but that's a static-analysis convenience — Eloquent calls set() with
+        // mixed at runtime, so this guards against a caller actually passing something else.
+        if (! $value instanceof Money) { // @phpstan-ignore instanceof.alwaysTrue
             throw new InvalidArgumentException(
                 "MoneyCast on [{$key}] expects a Brick\\Money\\Money instance, got ".get_debug_type($value)
             );

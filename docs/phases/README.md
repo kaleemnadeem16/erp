@@ -7,7 +7,7 @@ Eight phases, each independently shippable. Current state is in
 
 | Phase | Name | Status | Detail |
 |---|---|---|---|
-| 0 | Foundation | Not started | [phase-0-foundation.md](phase-0-foundation.md) |
+| 0 | Foundation | In progress | [phase-0-foundation.md](phase-0-foundation.md) |
 | 1 | Master data | Not started | *expanded when reached* |
 | 2 | Purchasing & stock | Not started | *expanded when reached* |
 | 3 | Estimating core | Not started | *expanded when reached* |

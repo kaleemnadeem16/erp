@@ -1,8 +1,8 @@
 # Project Status
 
 **Updated:** 2026-08-11
-**Current phase:** Phase 0 — Foundation (in progress — infrastructure prerequisites done)
-**Application code:** none yet
+**Current phase:** Phase 0 — Foundation (in progress — dev environment verified, backend skeleton next)
+**Application code:** Laravel 12 skeleton only, running in dev; no domain code yet
 
 ---
 
@@ -39,48 +39,32 @@ environment before any application logic.
 | Roles/permissions: dynamic, namespaced, per-user overrides, Teams-ready → [ADR 0028](decisions/0028-dynamic-namespaced-permissions.md) | 2026-08-10 |
 | Second self-hosted ARM runner registered (`mainvm-erp-arm64`) → [ci-runner-setup.md](architecture/ci-runner-setup.md) | 2026-08-11 |
 | ERP database created on dbvm (`erp` owned by `erp_app`) | 2026-08-11 |
+| Docker Compose + Laravel 12 skeleton scaffolded (commit `1ee9293`) | 2026-08-11 |
+| **Dev environment verified working end-to-end** — `app`/`nginx`/`postgres`/`redis`/`worker`/`scheduler` build and run healthy, migrations run clean against Postgres, Pest/Larastan/Pint all pass | 2026-08-11 |
 
 ## In progress
 
-Phase 0 environment scaffolding is underway (not committed yet — check `git status`, this is
-all untracked). State as of 2026-08-11 evening:
-
-**Written, present on disk:**
-- `docker-compose.yml` (dev: app, nginx, postgres, redis, worker, scheduler, node — `node` is a
-  placeholder, non-functional until the frontend skeleton exists) and `docker-compose.prod.yml`
-  (no db/redis, connects to dbvm; Traefik host rules use `erp.x1techs.com` /
-  `api-erp.x1techs.com` — DNS A records for both already point at mainvm, confirmed)
-- `docker/backend/Dockerfile` — multi-stage (`base`/`dev`/`vendor`/`production`), pinned to
-  `php:8.4.21-fpm-alpine3.23@sha256:2e8d5b74437b02cbc3c632903d20a10fdcc956ba56d25bff951cc2b610767c9a`
-  — verified byte-for-byte match to the digest `invoiceflow-backend`/`crm_backend` currently run
-  on mainvm (Alpine 3.23.4, PHP 8.4.21), so base layers should share. Uses
-  `mlocati/docker-php-extension-installer` instead of raw `docker-php-ext-install` + PECL for the
-  `redis` extension — `pecl.php.net`'s channel service returned 504s mid-build, this sidesteps it.
-- `backend/` — Laravel 12 scaffolded via a one-off `composer:2` container run (ownership fixed
-  back to the host user afterward — the container writes as root). `.env` points at the dev
-  Postgres/Redis compose services. `phpstan.neon` (Larastan, level 6) and `pint.json` written.
-  `app/Support/Casts/MoneyCast.php` written (brick/money, decimal(19,4), paired currency column).
-  `app/Modules/`, `app/Support/`, `app/Contracts/` created per code-structure.md.
-- Root `README.md`, `.gitignore`, `.env.example` (production)
+The scaffold from `1ee9293` had never actually run — getting it up this session (2026-08-11
+evening) surfaced three real, now-fixed bugs (uncommitted): (1) `pecl.php.net` is still down, and
+both its usual workarounds failed too (Alpine's prebuilt `php84-pecl-redis` targets a different
+PHP install and silently never loads; `install-php-extensions`' GitHub fallback misses phpredis'
+`liblzf` submodule) — fixed by building phpredis by hand from a `--recurse-submodules` clone; (2)
+`app`/`worker`/`scheduler` share one bind-mounted repo and one vendor volume but started
+concurrently, so `composer install` and `storage:link --force` raced each other and corrupted
+things — fixed with `flock` around the whole entrypoint setup block; (3) php-fpm's `www-data`
+(82:82) couldn't write through the bind mount owned by the host user (1000:1000 under WSL2),
+turning every request into a 500 — fixed by rewriting `www-data`'s uid/gid in the entrypoint. Also
+added the `testing` DB connection `config/database.php` was missing, and installed `brick/money` /
+Pest / Larastan for real (`pest --init`, not `pest:install` — that command doesn't exist in Pest
+3). Full detail in the commit that lands this.
 
 **Not done yet — pick up here:**
-1. **The `app` dev image has never successfully built.** Last attempt was rebuilding after the
-   PECL fix; the build process was still running when the session/VS Code window changed and got
-   killed before finishing — unknown whether that build would have succeeded. Re-run
-   `docker compose build app` first, from a plain foreground command (not piped through `tail`,
-   which buffers all output until the command exits and made the previous build look silent/hung).
-2. Once it builds: `docker compose up -d`, confirm `app`/`nginx`/`postgres`/`redis`/`worker`/
-   `scheduler` come up healthy, `docker compose exec app php artisan migrate` runs clean against
-   Postgres (not the sqlite that `composer create-project` set up by default — already removed).
-3. Still needs installing (none of these are in `composer.json` yet): Pest (+ `pest-plugin-laravel`,
-   then `php artisan pest:install` to convert the default PHPUnit `tests/`), `larastan/larastan`,
-   `brick/money`. Install through the built `app` container, not the host, so the lockfile matches
-   the actual PHP 8.4.21 + extensions that run in prod.
-4. Tick the Environment/Backend-skeleton boxes in
-   [phase-0-foundation.md](phases/phase-0-foundation.md) once each is actually verified working —
-   none are ticked yet on purpose, only "move repo into WSL2" is genuinely done.
-5. Commit this batch (currently untracked) once steps 1–3 are verified, or sooner as an explicit
-   WIP checkpoint — ask if unsure, nothing has been pushed.
+1. `docker-compose.prod.yml` is written but never deployed/verified against dbvm; the Dockerfile's
+   only been built for `amd64` this session, `arm64` untested.
+2. Commit this batch (Dockerfile/entrypoint/config fixes, composer.json/lock, phase doc updates).
+3. Next real work: Phase 0's remaining backend-skeleton tasks — company scoping, auth (Sanctum,
+   `spatie/laravel-permission`), then the cross-cutting mechanisms (UoM, custom fields, sequences,
+   currencies) — see [phase-0-foundation.md](phases/phase-0-foundation.md).
 
 Session note: work moved from a Windows-side VS Code window (browsing the repo over
 `\\wsl.localhost\...`) to a proper **Remote-WSL** VS Code window on 2026-08-11 — do Docker/git
@@ -88,30 +72,16 @@ commands natively from the WSL shell now, no `wsl.exe`/`MSYS_NO_PATHCONV` wrappi
 
 ## Next
 
-**[Phase 0 — Foundation](phases/phase-0-foundation.md).** Environment and cross-cutting
-scaffolding, no business logic:
+**[Phase 0 — Foundation](phases/phase-0-foundation.md).** Dev environment is up and verified;
+remaining scope is company scoping, auth (Sanctum, roles, activity log), the cross-cutting
+mechanisms (UoM, custom fields, sequences, currencies), the Scramble → Orval type pipeline, the
+frontend skeleton, and CI — see the phase doc for the full task list.
 
-- Docker Compose (app, nginx, postgres 16, redis 7, worker, scheduler, vite)
-- Multi-arch Dockerfile (amd64 + arm64) on the shared PHP 8.4 Alpine base
-- Laravel skeleton + React skeleton
-- CI on two native runners; PostgreSQL 16 service container
-- Auth (Sanctum), companies, users, roles
-- UoM system, custom fields (JSONB + GIN), numbering sequences
-- Scramble → Orval typed API pipeline
-- `docs/reference/` generators with drift check
+Phase 0 has no dependency on the open questions below and **can proceed.**
 
-Phase 0 has no dependency on the open questions below and **can start immediately.**
-
-Infrastructure prerequisites — all done as of 2026-08-11:
-
-- ~~Register an org-level or second self-hosted ARM runner~~ — done, `mainvm-erp-arm64`
-- ~~Create ERP databases on dbvm's existing PostgreSQL~~ — done, `erp` owned by `erp_app`
-- ~~Prune stale images on mainvm~~ — done 2026-07-29, ~20 GB reclaimed. See
-  [ci-cd.md](architecture/ci-cd.md#image-retention) for the retention policy going forward.
-
-Remaining before code starts: `btree_gist` extension (via first Laravel migration, no manual
-step) and confirming the Redis key prefix (`REDIS_PREFIX=erp_`) once `.env` exists. Next actual
-work is Docker Compose + the Laravel/React skeletons.
+Remaining before code beyond the skeleton starts: enable `btree_gist` (via a migration) and
+confirm the `REDIS_PREFIX=erp_` doesn't collide with invoiceflow/crm on mainvm (unverified from
+this dev environment — needs a look at their actual runtime config).
 
 ## Blocked / awaiting input
 
@@ -124,7 +94,7 @@ profile). Q7's actual role/permission list is still deferred to Phase 4, per ADR
 
 | Phase | Name | Status |
 |---|---|---|
-| 0 | [Foundation](phases/phase-0-foundation.md) | Not started |
+| 0 | [Foundation](phases/phase-0-foundation.md) | In progress |
 | 1 | Master data | Not started |
 | 2 | Purchasing & stock | Not started |
 | 3 | Estimating core | Not started |

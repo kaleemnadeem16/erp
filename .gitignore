@@ -16,6 +16,8 @@ backend/storage/framework/sessions/*
 !backend/storage/framework/sessions/.gitkeep
 backend/storage/framework/views/*
 !backend/storage/framework/views/.gitkeep
+backend/storage/framework/phpstan/
+backend/storage/framework/entrypoint.lock
 backend/storage/logs/*
 !backend/storage/logs/.gitkeep
 backend/bootstrap/cache/*.php

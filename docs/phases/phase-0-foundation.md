@@ -2,9 +2,9 @@
 
 # Phase 0 — Foundation
 
-- **Status:** not started
+- **Status:** in progress — dev environment verified, backend skeleton next
 - **Depends on:** nothing
-- **Blocked by:** nothing — **can start immediately**
+- **Blocked by:** nothing
 
 ## Goal
 
@@ -44,13 +44,21 @@ feature.
 ### Environment
 
 - [x] ~~**Move the repo into the WSL2 filesystem**~~ (`~/projects/erp`) — done, see [deployment.md](../architecture/deployment.md#-windows-development)
-- [ ] `docker-compose.yml` (dev): app, nginx, postgres 16, redis 7, worker, scheduler, node
-- [ ] `docker-compose.prod.yml`: **no** database or redis services — connects to dbvm
+- [x] ~~`docker-compose.yml` (dev): app, nginx, postgres 16, redis 7, worker, scheduler, node~~ — done
+      2026-08-11; `app`/`nginx`/`postgres`/`redis`/`worker`/`scheduler` verified healthy, migrations
+      run clean, HTTP 200 from the app. `node` stays failing until the frontend skeleton exists
+      (documented placeholder, not a bug)
+- [ ] `docker-compose.prod.yml`: **no** database or redis services — connects to dbvm (written, not
+      yet deployed/verified against dbvm)
 - [ ] Multi-stage `Dockerfile`, **`linux/amd64` + `linux/arm64`**, `FROM php:8.4-fpm-alpine` pinned by **index** digest
-- [ ] Verify the Dockerfile hardcodes no architecture — use `TARGETARCH` where needed
-- [ ] Add the `intl` extension (absent from the existing images)
-- [ ] `.env.example`
-- [ ] `README.md` at repo root with setup steps
+      (amd64 build verified this session; arm64 not yet built/tested)
+- [x] ~~Verify the Dockerfile hardcodes no architecture~~ — confirmed by inspection, uses the
+      index-digest base and no arch-specific `RUN`/`COPY --platform` lines
+- [x] ~~Add the `intl` extension~~ (absent from the existing images) — builds and loads, confirmed
+      via `php -m`
+- [x] ~~`.env.example`~~
+- [x] ~~`README.md` at repo root with setup steps~~ (exists; not yet re-verified from a clean clone —
+      that's tracked separately under "Docs to update on completion" below)
 
 ### Infrastructure prerequisites
 
@@ -69,10 +77,14 @@ feature.
 
 ### Backend skeleton
 
-- [ ] Laravel 12 install, PHP 8.4
-- [ ] Module directory structure per [code-structure.md](../architecture/code-structure.md)
-- [ ] Pest, Larastan (level 6+), Pint configured
-- [ ] `Money` cast using `brick/money`, `decimal(19,4)`
+- [x] ~~Laravel 12 install, PHP 8.4~~ — running, confirmed `php -v` reports 8.4.21 inside the container
+- [x] ~~Module directory structure per [code-structure.md](../architecture/code-structure.md)~~
+- [x] ~~Pest, Larastan (level 6+), Pint configured~~ — done 2026-08-11: `pestphp/pest` +
+      `pest-plugin-laravel` + `larastan/larastan` installed, `pest --init` run (Pest 3 has no
+      `pest:install` artisan command, `--init` is the current equivalent), example suite passes,
+      `phpstan analyse` clean at level 6, `pint --test` clean
+- [x] ~~`Money` cast using `brick/money`, `decimal(19,4)`~~ — `brick/money` installed as a real
+      dependency (it was only referenced in code before); `MoneyCast` now passes Larastan level 6
 
 ### Company scoping
 

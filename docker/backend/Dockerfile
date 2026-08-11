@@ -17,8 +17,28 @@ RUN install-php-extensions \
         bcmath \
         opcache \
         pcntl \
-        intl \
-        redis
+        intl
+
+# redis is built by hand from its GitHub source (pinned to 6.3.0, the current stable tag)
+# instead of via install-php-extensions or PECL — pecl.php.net's channel service is still
+# down, so the PECL-metadata lookup 404s; and install-php-extensions' own GitHub-source
+# fallback (`phpredis/phpredis@6.3.0`) fails too, because it fetches a plain tarball that
+# doesn't include the `liblzf` git submodule the extension's build expects. A shallow
+# --recurse-submodules clone avoids that. (Alpine's prebuilt `php84-pecl-redis` apk package
+# was tried first and looked like it worked, but it targets Alpine's own separate php84
+# install at a different extension_dir — it silently never loads against this image's PHP.)
+RUN apk add --no-cache --virtual .build-deps-redis $PHPIZE_DEPS git \
+    && git clone --quiet --depth 1 --branch 6.3.0 --recurse-submodules \
+        https://github.com/phpredis/phpredis.git /tmp/phpredis \
+    && cd /tmp/phpredis \
+    && phpize \
+    && ./configure \
+    && make -j"$(nproc)" \
+    && make install \
+    && docker-php-ext-enable redis \
+    && cd / \
+    && rm -rf /tmp/phpredis \
+    && apk del .build-deps-redis
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
