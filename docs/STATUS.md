@@ -42,8 +42,49 @@ environment before any application logic.
 
 ## In progress
 
-Phase 0 infrastructure prerequisites are done (see Done table above). Environment scaffolding
-(Docker Compose, Laravel/React skeletons) has not started yet.
+Phase 0 environment scaffolding is underway (not committed yet — check `git status`, this is
+all untracked). State as of 2026-08-11 evening:
+
+**Written, present on disk:**
+- `docker-compose.yml` (dev: app, nginx, postgres, redis, worker, scheduler, node — `node` is a
+  placeholder, non-functional until the frontend skeleton exists) and `docker-compose.prod.yml`
+  (no db/redis, connects to dbvm; Traefik host rules use `erp.x1techs.com` /
+  `api-erp.x1techs.com` — DNS A records for both already point at mainvm, confirmed)
+- `docker/backend/Dockerfile` — multi-stage (`base`/`dev`/`vendor`/`production`), pinned to
+  `php:8.4.21-fpm-alpine3.23@sha256:2e8d5b74437b02cbc3c632903d20a10fdcc956ba56d25bff951cc2b610767c9a`
+  — verified byte-for-byte match to the digest `invoiceflow-backend`/`crm_backend` currently run
+  on mainvm (Alpine 3.23.4, PHP 8.4.21), so base layers should share. Uses
+  `mlocati/docker-php-extension-installer` instead of raw `docker-php-ext-install` + PECL for the
+  `redis` extension — `pecl.php.net`'s channel service returned 504s mid-build, this sidesteps it.
+- `backend/` — Laravel 12 scaffolded via a one-off `composer:2` container run (ownership fixed
+  back to the host user afterward — the container writes as root). `.env` points at the dev
+  Postgres/Redis compose services. `phpstan.neon` (Larastan, level 6) and `pint.json` written.
+  `app/Support/Casts/MoneyCast.php` written (brick/money, decimal(19,4), paired currency column).
+  `app/Modules/`, `app/Support/`, `app/Contracts/` created per code-structure.md.
+- Root `README.md`, `.gitignore`, `.env.example` (production)
+
+**Not done yet — pick up here:**
+1. **The `app` dev image has never successfully built.** Last attempt was rebuilding after the
+   PECL fix; the build process was still running when the session/VS Code window changed and got
+   killed before finishing — unknown whether that build would have succeeded. Re-run
+   `docker compose build app` first, from a plain foreground command (not piped through `tail`,
+   which buffers all output until the command exits and made the previous build look silent/hung).
+2. Once it builds: `docker compose up -d`, confirm `app`/`nginx`/`postgres`/`redis`/`worker`/
+   `scheduler` come up healthy, `docker compose exec app php artisan migrate` runs clean against
+   Postgres (not the sqlite that `composer create-project` set up by default — already removed).
+3. Still needs installing (none of these are in `composer.json` yet): Pest (+ `pest-plugin-laravel`,
+   then `php artisan pest:install` to convert the default PHPUnit `tests/`), `larastan/larastan`,
+   `brick/money`. Install through the built `app` container, not the host, so the lockfile matches
+   the actual PHP 8.4.21 + extensions that run in prod.
+4. Tick the Environment/Backend-skeleton boxes in
+   [phase-0-foundation.md](phases/phase-0-foundation.md) once each is actually verified working —
+   none are ticked yet on purpose, only "move repo into WSL2" is genuinely done.
+5. Commit this batch (currently untracked) once steps 1–3 are verified, or sooner as an explicit
+   WIP checkpoint — ask if unsure, nothing has been pushed.
+
+Session note: work moved from a Windows-side VS Code window (browsing the repo over
+`\\wsl.localhost\...`) to a proper **Remote-WSL** VS Code window on 2026-08-11 — do Docker/git
+commands natively from the WSL shell now, no `wsl.exe`/`MSYS_NO_PATHCONV` wrapping needed.
 
 ## Next
 

@@ -43,7 +43,7 @@ feature.
 
 ### Environment
 
-- [ ] **Move the repo into the WSL2 filesystem** (`~/code/erp`) — see [deployment.md](../architecture/deployment.md#-windows-development)
+- [x] ~~**Move the repo into the WSL2 filesystem**~~ (`~/projects/erp`) — done, see [deployment.md](../architecture/deployment.md#-windows-development)
 - [ ] `docker-compose.yml` (dev): app, nginx, postgres 16, redis 7, worker, scheduler, node
 - [ ] `docker-compose.prod.yml`: **no** database or redis services — connects to dbvm
 - [ ] Multi-stage `Dockerfile`, **`linux/amd64` + `linux/arm64`**, `FROM php:8.4-fpm-alpine` pinned by **index** digest

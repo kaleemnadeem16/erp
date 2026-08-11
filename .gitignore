@@ -1,0 +1,39 @@
+# Environment
+.env
+.env.*
+!.env.example
+!backend/.env.example
+
+# Backend (Laravel)
+backend/vendor/
+backend/node_modules/
+backend/storage/*.key
+backend/storage/app/*
+!backend/storage/app/.gitkeep
+backend/storage/framework/cache/*
+!backend/storage/framework/cache/.gitkeep
+backend/storage/framework/sessions/*
+!backend/storage/framework/sessions/.gitkeep
+backend/storage/framework/views/*
+!backend/storage/framework/views/.gitkeep
+backend/storage/logs/*
+!backend/storage/logs/.gitkeep
+backend/bootstrap/cache/*.php
+backend/public/storage
+backend/public/hot
+backend/.phpunit.cache/
+
+# Frontend
+frontend/node_modules/
+frontend/**/dist/
+frontend/**/.vite/
+
+# Docker
+logs/
+
+# Editor / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db

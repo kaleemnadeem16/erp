@@ -1,0 +1,96 @@
+# Production. No postgres or redis service — connects to dbvm's existing instances
+# (docs/architecture/environments.md). Deployed as its own Compose project on mainvm,
+# matching the invoiceflow/crm pattern. Set the real hostnames below before first deploy.
+networks:
+  proxy-net:
+    external: true
+  erp-internal:
+    driver: bridge
+
+services:
+  app:
+    image: ghcr.io/kaleemnadeem16/erp-backend:latest
+    container_name: erp-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./logs/nginx:/var/log/nginx
+      - ./logs/laravel:/var/www/html/storage/logs
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+    networks:
+      - proxy-net
+      - erp-internal
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy-net
+      # HTTPS router
+      - traefik.http.routers.erp-api.rule=Host(`api-erp.x1techs.com`)
+      - traefik.http.routers.erp-api.entrypoints=websecure
+      - traefik.http.routers.erp-api.tls=true
+      # HTTP router -> redirect to HTTPS
+      - traefik.http.routers.erp-api-http.rule=Host(`api-erp.x1techs.com`)
+      - traefik.http.routers.erp-api-http.entrypoints=web
+      - traefik.http.routers.erp-api-http.middlewares=erp-redirect-https
+      # Redirect middleware
+      - traefik.http.middlewares.erp-redirect-https.redirectscheme.scheme=https
+      - traefik.http.middlewares.erp-redirect-https.redirectscheme.permanent=true
+      # Service port
+      - traefik.http.services.erp-api.loadbalancer.server.port=80
+
+  # Image does not exist until the frontend skeleton is built — see
+  # phase-0-foundation.md "Frontend skeleton".
+  frontend:
+    image: ghcr.io/kaleemnadeem16/erp-frontend:latest
+    container_name: erp-frontend
+    restart: unless-stopped
+    networks:
+      - proxy-net
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy-net
+      - traefik.http.routers.erp-frontend.rule=Host(`erp.x1techs.com`)
+      - traefik.http.routers.erp-frontend.entrypoints=websecure
+      - traefik.http.routers.erp-frontend.tls=true
+      - traefik.http.routers.erp-frontend-http.rule=Host(`erp.x1techs.com`)
+      - traefik.http.routers.erp-frontend-http.entrypoints=web
+      - traefik.http.routers.erp-frontend-http.middlewares=erp-redirect-https
+      - traefik.http.services.erp-frontend.loadbalancer.server.port=80
+
+  worker:
+    image: ghcr.io/kaleemnadeem16/erp-backend:latest
+    container_name: erp-queue-worker
+    restart: unless-stopped
+    command: php artisan queue:work redis --sleep=3 --tries=3 --max-time=3600
+    env_file:
+      - .env
+    volumes:
+      - ./logs/laravel:/var/www/html/storage/logs
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - erp-internal
+
+  scheduler:
+    image: ghcr.io/kaleemnadeem16/erp-backend:latest
+    container_name: erp-scheduler
+    restart: unless-stopped
+    command: ["sh", "-c", "while true; do php artisan schedule:run; sleep 60; done"]
+    env_file:
+      - .env
+    volumes:
+      - ./logs/laravel:/var/www/html/storage/logs
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - erp-internal

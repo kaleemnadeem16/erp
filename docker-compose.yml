@@ -1,0 +1,127 @@
+name: erp
+
+networks:
+  erp-dev:
+    driver: bridge
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+      target: dev
+    volumes:
+      - ./backend:/var/www/html
+      - backend_vendor:/var/www/html/vendor
+    env_file:
+      - ./backend/.env
+    networks:
+      - erp-dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  nginx:
+    image: nginx:1.27-alpine
+    volumes:
+      - ./backend:/var/www/html
+      - ./docker/backend/nginx-dev.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "8080:80"
+    networks:
+      - erp-dev
+    depends_on:
+      - app
+
+  worker:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+      target: dev
+    command: php artisan queue:work redis --sleep=3 --tries=3 --max-time=3600
+    volumes:
+      - ./backend:/var/www/html
+      - backend_vendor:/var/www/html/vendor
+    env_file:
+      - ./backend/.env
+    networks:
+      - erp-dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+      target: dev
+    command: ["sh", "-c", "while true; do php artisan schedule:run; sleep 60; done"]
+    volumes:
+      - ./backend:/var/www/html
+      - backend_vendor:/var/www/html/vendor
+    env_file:
+      - ./backend/.env
+    networks:
+      - erp-dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Not functional until the frontend skeleton exists (packages/, apps/main) — see
+  # phase-0-foundation.md "Frontend skeleton". Left wired up now so the full stack
+  # is one `docker compose up` once that lands.
+  node:
+    image: node:22-alpine
+    working_dir: /app
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    ports:
+      - "5173:5173"
+    networks:
+      - erp-dev
+
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: erp
+      POSTGRES_USER: erp
+      POSTGRES_PASSWORD: secret
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      # Init script runs ONLY on a fresh volume (first start with empty data dir).
+      # Creates erp_testing alongside erp so tests never touch dev data.
+      - ./docker/backend/postgres-init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    networks:
+      - erp-dev
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U erp"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis:
+    image: redis:7-bookworm
+    ports:
+      - "6379:6379"
+    networks:
+      - erp-dev
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  postgres_dev_data:
+  backend_vendor:
+  frontend_node_modules:
