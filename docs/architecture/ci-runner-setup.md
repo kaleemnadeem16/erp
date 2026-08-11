@@ -2,9 +2,10 @@
 
 # CI runner setup — second self-hosted runner
 
-**Status: not started.** This is a runbook to execute once, tracked as a prerequisite in
-[phase-0-foundation.md](../phases/phase-0-foundation.md#infrastructure-prerequisites). Written in
-advance so setup isn't tied to one machine — anyone with SSH access to mainvm can follow it.
+**Status: done (2026-08-11).** `mainvm-erp-arm64` is registered and running as a systemd service.
+This runbook is kept as a reference for anyone who needs to reproduce or troubleshoot the setup —
+tracked as a prerequisite in
+[phase-0-foundation.md](../phases/phase-0-foundation.md#infrastructure-prerequisites).
 
 ## Why a second runner, not an org-level one
 

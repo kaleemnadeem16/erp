@@ -1,7 +1,7 @@
 # Project Status
 
-**Updated:** 2026-08-10
-**Current phase:** Phase 0 — Foundation (not started)
+**Updated:** 2026-08-11
+**Current phase:** Phase 0 — Foundation (in progress — infrastructure prerequisites done)
 **Application code:** none yet
 
 ---
@@ -37,10 +37,13 @@ environment before any application logic.
 | No RTL/localisation needed — English only → [ADR 0026](decisions/0026-english-only-no-rtl.md) | 2026-08-10 |
 | Data import: generic column-mapping engine, not per-client scripts → [ADR 0027](decisions/0027-generic-column-mapping-import.md) | 2026-08-10 |
 | Roles/permissions: dynamic, namespaced, per-user overrides, Teams-ready → [ADR 0028](decisions/0028-dynamic-namespaced-permissions.md) | 2026-08-10 |
+| Second self-hosted ARM runner registered (`mainvm-erp-arm64`) → [ci-runner-setup.md](architecture/ci-runner-setup.md) | 2026-08-11 |
+| ERP database created on dbvm (`erp` owned by `erp_app`) | 2026-08-11 |
 
 ## In progress
 
-Nothing. Awaiting decision to begin Phase 0.
+Phase 0 infrastructure prerequisites are done (see Done table above). Environment scaffolding
+(Docker Compose, Laravel/React skeletons) has not started yet.
 
 ## Next
 
@@ -58,14 +61,16 @@ scaffolding, no business logic:
 
 Phase 0 has no dependency on the open questions below and **can start immediately.**
 
-Two infrastructure prerequisites, neither blocking design work:
+Infrastructure prerequisites — all done as of 2026-08-11:
 
-- Register an org-level or second self-hosted ARM runner (the existing one is scoped to
-  `invoiceflow`)
-- Create ERP databases on dbvm's existing PostgreSQL
+- ~~Register an org-level or second self-hosted ARM runner~~ — done, `mainvm-erp-arm64`
+- ~~Create ERP databases on dbvm's existing PostgreSQL~~ — done, `erp` owned by `erp_app`
+- ~~Prune stale images on mainvm~~ — done 2026-07-29, ~20 GB reclaimed. See
+  [ci-cd.md](architecture/ci-cd.md#image-retention) for the retention policy going forward.
 
-~~Prune stale images on mainvm~~ — done 2026-07-29, ~20 GB reclaimed. See
-[ci-cd.md](architecture/ci-cd.md#image-retention) for the retention policy going forward.
+Remaining before code starts: `btree_gist` extension (via first Laravel migration, no manual
+step) and confirming the Redis key prefix (`REDIS_PREFIX=erp_`) once `.env` exists. Next actual
+work is Docker Compose + the Laravel/React skeletons.
 
 ## Blocked / awaiting input
 

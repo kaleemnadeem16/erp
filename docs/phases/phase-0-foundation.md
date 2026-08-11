@@ -54,8 +54,12 @@ feature.
 
 ### Infrastructure prerequisites
 
-- [ ] Register a **second self-hosted ARM runner** — the existing one is scoped to `invoiceflow`; steps → [ci-runner-setup.md](../architecture/ci-runner-setup.md)
-- [ ] Create the ERP database on dbvm's PostgreSQL (do not provision a new instance)
+- [x] ~~Register a **second self-hosted ARM runner**~~ — done 2026-08-11, `mainvm-erp-arm64`
+      (labels `self-hosted, arm64, erp`), registered under the existing `github-runner` OS user in
+      a separate `~/actions-runner-erp` directory, running as its own systemd service. See
+      [ci-runner-setup.md](../architecture/ci-runner-setup.md)
+- [x] ~~Create the ERP database on dbvm's PostgreSQL~~ — done 2026-08-11, `erp` database owned by
+      new role `erp_app` on the existing shared `postgres` container (no new instance provisioned)
 - [ ] Enable the `btree_gist` extension — needed for version-period exclusion constraints
 - [ ] Confirm the Redis key prefix does not collide with invoiceflow or crm
 - [ ] Traefik labels + `proxy-net` attachment, matching the invoiceflow pattern
