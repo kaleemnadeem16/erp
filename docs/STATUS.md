@@ -1,8 +1,8 @@
 # Project Status
 
 **Updated:** 2026-08-12
-**Current phase:** Phase 0 — Foundation (in progress — dev environment and company scoping done, auth & access next)
-**Application code:** Laravel 12 skeleton + company scoping; no domain code yet
+**Current phase:** Phase 0 — Foundation (in progress — dev environment, company scoping and auth & access done; cross-cutting mechanisms next)
+**Application code:** Laravel 12 skeleton + company scoping + auth (Sanctum, roles/permissions, activity log); no domain code yet
 
 ---
 
@@ -45,17 +45,20 @@ environment before any application logic.
 | Dev nginx host port moved `8080`→`8090` (XAMPP conflict) | 2026-08-12 |
 | **Company scoping** — `companies` table (seeded with company `1`), `CompanyContext` singleton (id + namespaced cache key/storage path helpers), `BelongsToCompany` trait (global scope + auto-fill), architecture test proving no company-scoped table can get a single-column unique index → [phase-0-foundation.md](phases/phase-0-foundation.md#company-scoping) | 2026-08-12 |
 | Fixed `phpunit.xml`: was silently running the whole suite against an in-memory sqlite connection (Laravel default, never adjusted) instead of the `testing` Postgres connection — violated the Postgres-only invariant and meant DB-dependent tests weren't exercising real Postgres behaviour | 2026-08-12 |
+| Dev Postgres host port moved `5432`→`5434` (native Windows Postgres + invoiceflow's dev stack both already used 5432/5433) | 2026-08-12 |
+| **Auth & access** — Sanctum (cookie mode for the SPA, bearer tokens for mobile), `/api/v1/{login,logout,user,forgot-password,reset-password}`, `spatie/laravel-permission` with Teams (role-based + direct-to-user permissions, no roles seeded — list deferred to Phase 4), `spatie/laravel-activitylog` wired to a new base `App\Models\Model` → [phase-0-foundation.md](phases/phase-0-foundation.md#auth--access) | 2026-08-12 |
 
 ## In progress
 
-Company scoping is done (see table above). Auth & access (Sanctum, `spatie/laravel-permission`,
-`spatie/laravel-activitylog`) is next — see [phase-0-foundation.md](phases/phase-0-foundation.md).
+Auth & access is done (see table above). The remaining cross-cutting mechanisms — UoM, custom
+fields, sequences, currencies — are next, see [phase-0-foundation.md](phases/phase-0-foundation.md).
 
 **Not done yet — pick up here:**
 1. `docker-compose.prod.yml` is written but never deployed/verified against dbvm; the Dockerfile's
    only been built for `amd64` this session, `arm64` untested.
-2. Next real work: Auth & access, then the remaining cross-cutting mechanisms (UoM, custom fields,
-   sequences, currencies) — see [phase-0-foundation.md](phases/phase-0-foundation.md).
+2. Next real work: the cross-cutting mechanisms (UoM, custom fields, sequences, currencies), then
+   the Scramble → Orval type pipeline and frontend skeleton — see
+   [phase-0-foundation.md](phases/phase-0-foundation.md).
 
 Session note: work moved from a Windows-side VS Code window (browsing the repo over
 `\\wsl.localhost\...`) to a proper **Remote-WSL** VS Code window on 2026-08-11 — do Docker/git
@@ -63,10 +66,10 @@ commands natively from the WSL shell now, no `wsl.exe`/`MSYS_NO_PATHCONV` wrappi
 
 ## Next
 
-**[Phase 0 — Foundation](phases/phase-0-foundation.md).** Dev environment and company scoping are
-done; remaining scope is auth (Sanctum, roles, activity log), the cross-cutting mechanisms (UoM,
-custom fields, sequences, currencies), the Scramble → Orval type pipeline, the frontend skeleton,
-and CI — see the phase doc for the full task list.
+**[Phase 0 — Foundation](phases/phase-0-foundation.md).** Dev environment, company scoping and
+auth & access are done; remaining scope is the cross-cutting mechanisms (UoM, custom fields,
+sequences, currencies), the Scramble → Orval type pipeline, the frontend skeleton, and CI — see
+the phase doc for the full task list.
 
 Phase 0 has no dependency on the open questions below and **can proceed.**
 

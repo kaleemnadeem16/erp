@@ -13,7 +13,6 @@ use Illuminate\Database\Eloquent\Model;
  * See docs/architecture/multi-tenancy.md rule 3 — the resolver behind
  * CompanyContext is the only thing that changes when multi-tenancy is enabled.
  */
-// @phpstan-ignore trait.unused (no company-scoped model exists yet)
 trait BelongsToCompany
 {
     protected static function bootBelongsToCompany(): void
@@ -23,6 +22,9 @@ trait BelongsToCompany
         });
 
         static::creating(function (Model $model): void {
+            // company_id isn't declared on the base Model — it's an Eloquent dynamic
+            // attribute provided by whichever migration backs the model using this trait.
+            // @phpstan-ignore property.notFound
             $model->company_id ??= app(CompanyContext::class)->id();
         });
     }

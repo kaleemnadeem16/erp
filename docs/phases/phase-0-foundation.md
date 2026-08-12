@@ -2,7 +2,8 @@
 
 # Phase 0 — Foundation
 
-- **Status:** in progress — dev environment and company scoping done, auth & access next
+- **Status:** in progress — dev environment, company scoping and auth & access done;
+  cross-cutting mechanisms (UoM, custom fields, sequences, currencies) next
 - **Depends on:** nothing
 - **Blocked by:** nothing
 
@@ -107,11 +108,30 @@ feature.
 
 ### Auth & access
 
-- [ ] Sanctum — cookie mode for SPA, token mode for mobile
-- [ ] Users, login, logout, password reset
-- [ ] `spatie/laravel-permission` — namespaced permissions (`module.action`), **Teams enabled**
-      from the first migration, minimal role set → [authorization.md](../architecture/authorization.md)
-- [ ] `spatie/laravel-activitylog` wired to a base model
+- [x] ~~Sanctum — cookie mode for SPA, token mode for mobile~~ — done 2026-08-12.
+      `statefulApi()` + CORS (`supports_credentials`, explicit origins — never `*` with
+      credentials) for the SPA; a `device_name` field on `/login` switches to issuing a
+      bearer token for mobile instead. `SANCTUM_STATEFUL_DOMAINS`/`CORS_ALLOWED_ORIGINS`
+      added to dev and prod env files
+- [x] ~~Users, login, logout, password reset~~ — done 2026-08-12,
+      `App\Http\Controllers\Api\V1\AuthController` +
+      `/api/v1/{login,logout,user,forgot-password,reset-password}`. `users` got
+      `company_id` (composite-unique with `email`, replacing the anti-pattern bare
+      `unique('email')`) and the email-lowercasing rule from
+      [database.md](../architecture/database.md) — including in `Auth::attempt()`
+      itself, which bypasses the model's mutator by querying raw
+- [x] ~~`spatie/laravel-permission` — namespaced permissions (`module.action`), **Teams
+      enabled** from the first migration, minimal role set~~ — done 2026-08-12. No roles
+      seeded yet (deliberately — the real list is Phase 4, per
+      [authorization.md](../architecture/authorization.md)); mechanism verified by tests
+      covering both role-based and direct-to-user permissions. `team_id` is resolved
+      per-request from `CompanyContext` (`App\Http\Middleware\SetPermissionsTeam`) rather
+      than a second hardcoded value — team and company coincide today but are not the
+      same dimension
+- [x] ~~`spatie/laravel-activitylog` wired to a base model~~ — done 2026-08-12,
+      `App\Models\Model` + `App\Models\Concerns\LogsActivityWithDefaults` (dirty-only,
+      never logs `password`/`remember_token`). `User` uses the trait directly since it
+      must extend `Authenticatable`, not the new base model
 
 ### Cross-cutting mechanisms
 
