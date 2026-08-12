@@ -29,7 +29,7 @@ services:
       - ./backend:/var/www/html
       - ./docker/backend/nginx-dev.conf:/etc/nginx/nginx.conf:ro
     ports:
-      - "8080:80"
+      - "8090:80"
     networks:
       - erp-dev
     depends_on:

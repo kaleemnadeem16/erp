@@ -22,7 +22,7 @@ docker compose exec app php artisan key:generate
 docker compose exec app php artisan migrate
 ```
 
-- API: http://localhost:8080
+- API: http://localhost:8090
 - Frontend dev server: http://localhost:5173 (once the frontend skeleton exists — see
   [phase-0-foundation.md](docs/phases/phase-0-foundation.md))
 
