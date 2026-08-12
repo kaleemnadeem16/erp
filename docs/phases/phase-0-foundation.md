@@ -2,7 +2,7 @@
 
 # Phase 0 — Foundation
 
-- **Status:** in progress — dev environment verified, backend skeleton next
+- **Status:** in progress — dev environment and company scoping done, auth & access next
 - **Depends on:** nothing
 - **Blocked by:** nothing
 
@@ -88,11 +88,22 @@ feature.
 
 ### Company scoping
 
-- [ ] `companies` table, seeded with company `1`
-- [ ] `CompanyContext` singleton (returns `1` for now)
-- [ ] `BelongsToCompany` trait with global scope + auto-fill on create
-- [ ] Company-namespaced cache key helper and storage path helper
-- [ ] **Architecture test:** no single-column unique index on a company-scoped table
+- [x] ~~`companies` table, seeded with company `1`~~ — done 2026-08-12
+- [x] ~~`CompanyContext` singleton (returns `1` for now)~~ — done 2026-08-12, bound in
+      `AppServiceProvider`
+- [x] ~~`BelongsToCompany` trait with global scope + auto-fill on create~~ — done
+      2026-08-12, `App\Support\Concerns\BelongsToCompany`; no model uses it yet, so
+      Larastan's `trait.unused` is silenced with a note pointing at this task
+- [x] ~~Company-namespaced cache key helper and storage path helper~~ — done 2026-08-12,
+      folded into `CompanyContext::cacheKey()`/`storagePath()` rather than a separate
+      helper — one place resolves the company id
+- [x] ~~**Architecture test:** no single-column unique index on a company-scoped table~~ —
+      done 2026-08-12, `tests/Architecture/CompanyScopedUniqueIndexTest.php`, verified
+      against `information_schema` on real Postgres, including a deliberately-added
+      violation to prove the check actually catches something. This required fixing
+      `phpunit.xml`, which had been left on the Laravel-default in-memory sqlite
+      connection — tests now run against the `testing` Postgres connection
+      (`erp_testing`), per [database.md](../architecture/database.md)
 
 ### Auth & access
 
@@ -152,7 +163,7 @@ feature.
 - [ ] A custom field defined via `custom_field_definitions` appears in the API response with no
       code change
 - [ ] Two concurrent requests for a sequence number return different, gapless values
-- [ ] The architecture test catches a deliberately added single-column unique index
+- [x] The architecture test catches a deliberately added single-column unique index
 - [ ] The production image builds and runs
 
 ## Docs to update on completion

@@ -1,8 +1,8 @@
 # Project Status
 
-**Updated:** 2026-08-11
-**Current phase:** Phase 0 — Foundation (in progress — dev environment verified, backend skeleton next)
-**Application code:** Laravel 12 skeleton only, running in dev; no domain code yet
+**Updated:** 2026-08-12
+**Current phase:** Phase 0 — Foundation (in progress — dev environment and company scoping done, auth & access next)
+**Application code:** Laravel 12 skeleton + company scoping; no domain code yet
 
 ---
 
@@ -41,30 +41,21 @@ environment before any application logic.
 | ERP database created on dbvm (`erp` owned by `erp_app`) | 2026-08-11 |
 | Docker Compose + Laravel 12 skeleton scaffolded (commit `1ee9293`) | 2026-08-11 |
 | **Dev environment verified working end-to-end** — `app`/`nginx`/`postgres`/`redis`/`worker`/`scheduler` build and run healthy, migrations run clean against Postgres, Pest/Larastan/Pint all pass | 2026-08-11 |
+| Dev-environment fixes (phpredis build, entrypoint `flock`, `www-data` UID rewrite) committed (`707eea5`) | 2026-08-11 |
+| Dev nginx host port moved `8080`→`8090` (XAMPP conflict) | 2026-08-12 |
+| **Company scoping** — `companies` table (seeded with company `1`), `CompanyContext` singleton (id + namespaced cache key/storage path helpers), `BelongsToCompany` trait (global scope + auto-fill), architecture test proving no company-scoped table can get a single-column unique index → [phase-0-foundation.md](phases/phase-0-foundation.md#company-scoping) | 2026-08-12 |
+| Fixed `phpunit.xml`: was silently running the whole suite against an in-memory sqlite connection (Laravel default, never adjusted) instead of the `testing` Postgres connection — violated the Postgres-only invariant and meant DB-dependent tests weren't exercising real Postgres behaviour | 2026-08-12 |
 
 ## In progress
 
-The scaffold from `1ee9293` had never actually run — getting it up this session (2026-08-11
-evening) surfaced three real, now-fixed bugs (uncommitted): (1) `pecl.php.net` is still down, and
-both its usual workarounds failed too (Alpine's prebuilt `php84-pecl-redis` targets a different
-PHP install and silently never loads; `install-php-extensions`' GitHub fallback misses phpredis'
-`liblzf` submodule) — fixed by building phpredis by hand from a `--recurse-submodules` clone; (2)
-`app`/`worker`/`scheduler` share one bind-mounted repo and one vendor volume but started
-concurrently, so `composer install` and `storage:link --force` raced each other and corrupted
-things — fixed with `flock` around the whole entrypoint setup block; (3) php-fpm's `www-data`
-(82:82) couldn't write through the bind mount owned by the host user (1000:1000 under WSL2),
-turning every request into a 500 — fixed by rewriting `www-data`'s uid/gid in the entrypoint. Also
-added the `testing` DB connection `config/database.php` was missing, and installed `brick/money` /
-Pest / Larastan for real (`pest --init`, not `pest:install` — that command doesn't exist in Pest
-3). Full detail in the commit that lands this.
+Company scoping is done (see table above). Auth & access (Sanctum, `spatie/laravel-permission`,
+`spatie/laravel-activitylog`) is next — see [phase-0-foundation.md](phases/phase-0-foundation.md).
 
 **Not done yet — pick up here:**
 1. `docker-compose.prod.yml` is written but never deployed/verified against dbvm; the Dockerfile's
    only been built for `amd64` this session, `arm64` untested.
-2. Commit this batch (Dockerfile/entrypoint/config fixes, composer.json/lock, phase doc updates).
-3. Next real work: Phase 0's remaining backend-skeleton tasks — company scoping, auth (Sanctum,
-   `spatie/laravel-permission`), then the cross-cutting mechanisms (UoM, custom fields, sequences,
-   currencies) — see [phase-0-foundation.md](phases/phase-0-foundation.md).
+2. Next real work: Auth & access, then the remaining cross-cutting mechanisms (UoM, custom fields,
+   sequences, currencies) — see [phase-0-foundation.md](phases/phase-0-foundation.md).
 
 Session note: work moved from a Windows-side VS Code window (browsing the repo over
 `\\wsl.localhost\...`) to a proper **Remote-WSL** VS Code window on 2026-08-11 — do Docker/git
@@ -72,10 +63,10 @@ commands natively from the WSL shell now, no `wsl.exe`/`MSYS_NO_PATHCONV` wrappi
 
 ## Next
 
-**[Phase 0 — Foundation](phases/phase-0-foundation.md).** Dev environment is up and verified;
-remaining scope is company scoping, auth (Sanctum, roles, activity log), the cross-cutting
-mechanisms (UoM, custom fields, sequences, currencies), the Scramble → Orval type pipeline, the
-frontend skeleton, and CI — see the phase doc for the full task list.
+**[Phase 0 — Foundation](phases/phase-0-foundation.md).** Dev environment and company scoping are
+done; remaining scope is auth (Sanctum, roles, activity log), the cross-cutting mechanisms (UoM,
+custom fields, sequences, currencies), the Scramble → Orval type pipeline, the frontend skeleton,
+and CI — see the phase doc for the full task list.
 
 Phase 0 has no dependency on the open questions below and **can proceed.**
 
