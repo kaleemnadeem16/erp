@@ -95,7 +95,7 @@ services:
       POSTGRES_USER: erp
       POSTGRES_PASSWORD: secret
     ports:
-      - "5432:5432"
+      - "5434:5432"
     volumes:
       - postgres_dev_data:/var/lib/postgresql/data
       # Init script runs ONLY on a fresh volume (first start with empty data dir).
