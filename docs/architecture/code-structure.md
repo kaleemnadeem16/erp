@@ -23,15 +23,46 @@ app/
       Events/          StockReceived, StockIssued
       Listeners/
       Policies/
+      routes.php       registered by InventoryServiceProvider, not routes/api.php
     Sales/
     Purchasing/
     Production/
     Projects/
     Accounting/
     HR/
+  Providers/           AppServiceProvider + one per module/concern (AuthServiceProvider, …)
   Support/             cross-cutting: CompanyContext, Money casts, Sequences, UoM conversion
   Contracts/           interfaces plugins may rebind
 ```
+
+### Routes
+
+Each module — and each plugin, [extensibility.md](extensibility.md#rung-4--plugin-packages) —
+owns a `routes.php` and registers it itself, from its own service provider's `boot()`, rather
+than a central `routes/api.php` growing one section per module:
+
+```php
+// app/Modules/Inventory/InventoryServiceProvider.php
+public function boot(): void
+{
+    Route::middleware('api')->prefix('api/v1')->group(__DIR__.'/routes.php');
+}
+```
+
+Register the provider in `bootstrap/providers.php`. `routes/api.php` itself stays deliberately
+near-empty — `withRouting()` in `bootstrap/app.php` needs the file to exist, but nothing is
+registered in it directly.
+
+**Why not `routes/api.php` requiring each module's file instead?** That still means every new
+module edits a shared file to register itself — cheap with two modules, a recurring
+merge-conflict hotspot with several, and a hard blocker for plugins, which by definition can't
+edit core at all. One pattern for both from the start avoids core quietly taking a shortcut a
+plugin structurally can't.
+
+**Gotcha:** only the file passed to `withRouting(api: …)` gets Laravel's `api` middleware group
+and `/api` prefix applied automatically. A route file registered from a provider's own `boot()`
+doesn't inherit that — add `Route::middleware('api')->prefix('api/v1')` explicitly, as above, or
+the routes silently lose CORS, Sanctum's stateful handling and rate limiting.
 
 ## The layers
 

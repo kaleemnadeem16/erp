@@ -1,18 +1,8 @@
 <?php
 
-use App\Http\Controllers\Api\V1\AuthController;
-use Illuminate\Support\Facades\Route;
-
-Route::prefix('v1')->group(function () {
-    // docs/architecture/api-conventions.md: 5/min per IP on login.
-    Route::middleware('throttle:5,1')->group(function () {
-        Route::post('/login', [AuthController::class, 'login'])->name('login');
-        Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->name('password.email');
-        Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.reset');
-    });
-
-    Route::middleware('auth:sanctum')->group(function () {
-        Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
-        Route::get('/user', [AuthController::class, 'user'])->name('user');
-    });
-});
+// Deliberately near-empty. Laravel's withRouting() in bootstrap/app.php needs this
+// file to exist, but individual route groups register themselves from their own
+// service provider instead of being centralised here — the same "no touching core"
+// mechanism docs/architecture/extensibility.md requires plugins to use, so core
+// modules and plugins share one pattern from the start. See
+// App\Providers\AuthServiceProvider and docs/architecture/code-structure.md.
