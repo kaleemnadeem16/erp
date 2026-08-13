@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Contracts\NumberingScheme;
 use App\Support\CompanyContext;
+use App\Support\DefaultNumberingScheme;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -16,6 +18,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(CompanyContext::class);
+        $this->app->bind(NumberingScheme::class, DefaultNumberingScheme::class);
     }
 
     /**

@@ -2,8 +2,8 @@
 
 # Phase 0 — Foundation
 
-- **Status:** in progress — dev environment, company scoping, auth & access, UoM and custom
-  fields done; remaining cross-cutting mechanisms (sequences, currencies) next
+- **Status:** in progress — dev environment, company scoping, auth & access, UoM, custom
+  fields and sequences done; currencies next
 - **Depends on:** nothing
 - **Blocked by:** nothing
 
@@ -152,7 +152,16 @@ feature.
       model uses the trait yet — items/quotations arrive in Phase 1 — so
       `HasCustomFields`'s `trait.unused` Larastan error is suppressed with a note to
       remove it once one does → [extensibility.md](../architecture/extensibility.md#runtime-custom-fields)
-- [ ] `sequences` table + `NumberingScheme` contract, using `lockForUpdate()`
+- [x] ~~`sequences` table + `NumberingScheme` contract, using `lockForUpdate()`~~ — done
+      2026-08-13, `sequences` (company-scoped, `unique(company_id, doc_type)`,
+      `prefix`/`padding` columns so a company's number format is configuration —
+      rung 1 of the variation ladder — not a deploy), `App\Contracts\NumberingScheme`
+      interface, `App\Support\DefaultNumberingScheme` (bound in `AppServiceProvider`)
+      advances the row under `lockForUpdate()` inside a transaction. Row
+      auto-vivifies on first use; a concurrent first-use race is resolved by
+      catching the unique-constraint violation and re-fetching the now-locked row
+      the winner created. A raw-PDO test proves the row lock actually blocks a
+      second session, not just that sequential calls happen to come out gapless
 - [ ] `currencies` + `exchange_rates` tables (data comes in Phase 1)
 - [ ] Container bindings for the [contracts](../architecture/extensibility.md#container-bound-contracts) that exist so far
 
@@ -197,7 +206,7 @@ feature.
 - [x] `sqft → sqm` converts correctly; `L → sqm` throws
 - [ ] A custom field defined via `custom_field_definitions` appears in the API response with no
       code change
-- [ ] Two concurrent requests for a sequence number return different, gapless values
+- [x] Two concurrent requests for a sequence number return different, gapless values
 - [x] The architecture test catches a deliberately added single-column unique index
 - [ ] The production image builds and runs
 
