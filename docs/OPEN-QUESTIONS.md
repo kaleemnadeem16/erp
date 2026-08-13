@@ -31,6 +31,17 @@ over-abstracting before a real second customer exists. Knowing who that is — a
 process actually differs — would let us validate the rate-dimension model against a real case
 instead of a hypothetical one.
 
+### Q9 — Exchange rate source: manual entry, an API, or both
+**Blocks:** Nothing in Phase 0 — the `exchange_rates` schema already has a `source` column that
+accommodates either. Blocks the actual rate-population mechanism in Phase 1+.
+
+[multi-currency.md](domain/multi-currency.md) documents `source` as "manual, or an API name" but
+no ADR picks one. Manual entry needs no third-party dependency but is an ongoing operational
+burden; an API (e.g. a free-tier FX rate provider) needs an API key, a rate limit to respect, and
+a scheduled job, but removes the manual step. A hybrid — API-fetched with manual override — is
+also plausible. Whichever is chosen shapes whether Phase 1+ needs a `FetchExchangeRates` job/
+console command at all.
+
 ---
 
 ## Answered

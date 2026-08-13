@@ -2,8 +2,9 @@
 
 # Phase 0 — Foundation
 
-- **Status:** in progress — dev environment, company scoping, auth & access, UoM, custom
-  fields and sequences done; currencies next
+- **Status:** in progress — dev environment, company scoping, auth & access and all
+  cross-cutting mechanisms (UoM, custom fields, sequences, currencies) done; the
+  Scramble → Orval type pipeline and frontend skeleton are next
 - **Depends on:** nothing
 - **Blocked by:** nothing
 
@@ -162,8 +163,23 @@ feature.
       catching the unique-constraint violation and re-fetching the now-locked row
       the winner created. A raw-PDO test proves the row lock actually blocks a
       second session, not just that sequential calls happen to come out gapless
-- [ ] `currencies` + `exchange_rates` tables (data comes in Phase 1)
-- [ ] Container bindings for the [contracts](../architecture/extensibility.md#container-bound-contracts) that exist so far
+- [x] ~~`currencies` + `exchange_rates` tables~~ — done 2026-08-13. `currencies` is
+      **global, not company-scoped**, per multi-tenancy.md rule 1 (alongside
+      countries/system settings) — no `BelongsToCompany`, `unique(code)` is a plain
+      single-column index (correctly, since it isn't a company-scoped table).
+      `exchange_rates` is company-scoped with the exact composite unique from
+      [multi-currency.md](../domain/multi-currency.md) (`company_id`,
+      `from_currency_id`, `to_currency_id`, `rate_date`, `rate_type`),
+      `App\Support\RateType` enum (Spot/Average/Closing). No conversion service —
+      Phase 0 scope is the schema only; rate *data* and how it's populated (manual
+      vs. an API) is Phase 1+, logged as
+      [Q9](../OPEN-QUESTIONS.md#q9--exchange-rate-source-manual-entry-an-api-or-both)
+- [x] ~~Container bindings for the [contracts](../architecture/extensibility.md#container-bound-contracts) that exist so far~~ —
+      `NumberingScheme` → `DefaultNumberingScheme`, bound in `AppServiceProvider`
+      alongside `CompanyContext`, as part of the sequences work. The other listed
+      contracts (`PricingEngine`, `CostingStrategy`, `ApprovalPolicy`,
+      `TaxResolver`) have no implementation yet — those arrive with the phases
+      that need them (3, 4, 6)
 
 ### API & type pipeline
 
