@@ -2,8 +2,8 @@
 
 # Phase 0 — Foundation
 
-- **Status:** in progress — dev environment, company scoping and auth & access done;
-  cross-cutting mechanisms (UoM, custom fields, sequences, currencies) next
+- **Status:** in progress — dev environment, company scoping, auth & access and UoM done;
+  remaining cross-cutting mechanisms (custom fields, sequences, currencies) next
 - **Depends on:** nothing
 - **Blocked by:** nothing
 
@@ -135,7 +135,12 @@ feature.
 
 ### Cross-cutting mechanisms
 
-- [ ] `uoms` table + conversion service, dimension-guarded → [units-of-measure.md](../domain/units-of-measure.md)
+- [x] ~~`uoms` table + conversion service, dimension-guarded~~ — done 2026-08-13,
+      `uoms` (company-scoped, `unique(company_id, code)`), `App\Support\UomDimension`
+      backed enum, `App\Support\UomConversionService` (arithmetic within a dimension,
+      throws `InvalidArgumentException` across dimensions). Postgres partial unique
+      index (`where is_base`) enforces exactly one base unit per dimension per
+      company at the DB level rather than in application code → [units-of-measure.md](../domain/units-of-measure.md)
 - [ ] `custom_field_definitions` + `custom_fields` JSON column pattern → [extensibility.md](../architecture/extensibility.md#runtime-custom-fields)
 - [ ] `sequences` table + `NumberingScheme` contract, using `lockForUpdate()`
 - [ ] `currencies` + `exchange_rates` tables (data comes in Phase 1)
@@ -179,7 +184,7 @@ feature.
       error** in the frontend
 - [ ] A model using `BelongsToCompany` cannot return another company's rows, including from a
       queued job
-- [ ] `sqft → sqm` converts correctly; `L → sqm` throws
+- [x] `sqft → sqm` converts correctly; `L → sqm` throws
 - [ ] A custom field defined via `custom_field_definitions` appears in the API response with no
       code change
 - [ ] Two concurrent requests for a sequence number return different, gapless values
