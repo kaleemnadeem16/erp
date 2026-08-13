@@ -2,8 +2,8 @@
 
 # Phase 0 — Foundation
 
-- **Status:** in progress — dev environment, company scoping, auth & access and UoM done;
-  remaining cross-cutting mechanisms (custom fields, sequences, currencies) next
+- **Status:** in progress — dev environment, company scoping, auth & access, UoM and custom
+  fields done; remaining cross-cutting mechanisms (sequences, currencies) next
 - **Depends on:** nothing
 - **Blocked by:** nothing
 
@@ -141,7 +141,17 @@ feature.
       throws `InvalidArgumentException` across dimensions). Postgres partial unique
       index (`where is_base`) enforces exactly one base unit per dimension per
       company at the DB level rather than in application code → [units-of-measure.md](../domain/units-of-measure.md)
-- [ ] `custom_field_definitions` + `custom_fields` JSON column pattern → [extensibility.md](../architecture/extensibility.md#runtime-custom-fields)
+- [x] ~~`custom_field_definitions` + `custom_fields` JSON column pattern~~ — done
+      2026-08-13, `custom_field_definitions` (company-scoped, `unique(company_id,
+      entity_type, code)`), `App\Support\CustomFieldDataType` enum (string, number,
+      date, bool, select, reference), `App\Support\Concerns\HasCustomFields` trait for
+      entity models (adds the `custom_fields` array cast + a `whereCustomField` scope;
+      requires the host table to already have a `custom_fields` jsonb column),
+      `App\Rules\Support\ValidCustomFields` validation rule (rejects values with no
+      matching definition, missing required fields, and type mismatches). No entity
+      model uses the trait yet — items/quotations arrive in Phase 1 — so
+      `HasCustomFields`'s `trait.unused` Larastan error is suppressed with a note to
+      remove it once one does → [extensibility.md](../architecture/extensibility.md#runtime-custom-fields)
 - [ ] `sequences` table + `NumberingScheme` contract, using `lockForUpdate()`
 - [ ] `currencies` + `exchange_rates` tables (data comes in Phase 1)
 - [ ] Container bindings for the [contracts](../architecture/extensibility.md#container-bound-contracts) that exist so far
