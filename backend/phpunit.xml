@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
-         bootstrap="vendor/autoload.php"
+         bootstrap="tests/bootstrap.php"
          colors="true"
 >
     <testsuites>
@@ -20,22 +20,8 @@
             <directory>app</directory>
         </include>
     </source>
-    <php>
-        <env name="APP_ENV" value="testing"/>
-        <env name="APP_MAINTENANCE_DRIVER" value="file"/>
-        <env name="BCRYPT_ROUNDS" value="4"/>
-        <env name="BROADCAST_CONNECTION" value="null"/>
-        <env name="CACHE_STORE" value="array"/>
-        <!-- Postgres only (docs/architecture/database.md) — the 'testing' connection in
-             config/database.php hardcodes the erp_testing database regardless of DB_DATABASE,
-             so this can never accidentally point at the dev or a production database. -->
-        <env name="DB_CONNECTION" value="testing"/>
-        <env name="DB_URL" value=""/>
-        <env name="MAIL_MAILER" value="array"/>
-        <env name="QUEUE_CONNECTION" value="sync"/>
-        <env name="SESSION_DRIVER" value="array"/>
-        <env name="PULSE_ENABLED" value="false"/>
-        <env name="TELESCOPE_ENABLED" value="false"/>
-        <env name="NIGHTWATCH_ENABLED" value="false"/>
-    </php>
+    <!-- Test environment overrides (DB_CONNECTION=testing etc.) live in tests/bootstrap.php,
+         not here — PHPUnit's <env force="true"> only reaches putenv()/$_ENV, and this
+         container sets these as real process environment variables that Laravel's env()
+         resolution reads from $_SERVER first. See tests/bootstrap.php for the full story. -->
 </phpunit>
