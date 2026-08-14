@@ -1,0 +1,200 @@
+name: Pipeline
+
+# ADR 0029: `develop` never deploys, `main` is the only deploy-triggering branch.
+# lint/codegen/test run on every push and PR, on GitHub-hosted runners — cheap, and gives
+# full feedback on a WIP push to a feature branch without touching mainvm at all. Only the
+# arm64 image build runs on the self-hosted mainvm runner, and only on `main` — see
+# docs/architecture/ci-cd.md#runner-constraints.
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PHP_VERSION: '8.4'
+  NODE_VERSION: '22'
+
+jobs:
+  lint-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: pdo_pgsql, redis, bcmath, intl
+          coverage: none
+      - uses: ramsey/composer-install@v3
+        with:
+          working-directory: backend
+      - name: Pint
+        working-directory: backend
+        run: vendor/bin/pint --test
+      - name: Larastan
+        working-directory: backend
+        run: vendor/bin/phpstan analyse --no-progress
+
+  lint-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - working-directory: frontend
+        run: npm ci
+      # One tsc invocation per workspace package — there's only core-api today.
+      # Add a line here (or a root "typecheck" script that loops workspaces) as
+      # packages/core-ui and apps/main are scaffolded.
+      - name: Typecheck core-api
+        working-directory: frontend/packages/core-api
+        run: npx tsc --noEmit
+
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: erp
+          POSTGRES_PASSWORD: secret
+          POSTGRES_DB: erp
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U erp"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_USERNAME: erp
+      DB_PASSWORD: secret
+      REDIS_HOST: 127.0.0.1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: pdo_pgsql, redis, bcmath, intl
+          coverage: none
+      - uses: ramsey/composer-install@v3
+        with:
+          working-directory: backend
+      - name: Create erp_testing database
+        # config/database.php hardcodes 'erp_testing' for the testing connection
+        # regardless of DB_DATABASE — see docs/architecture/database.md.
+        run: PGPASSWORD=secret psql -h 127.0.0.1 -U erp -d erp -c "CREATE DATABASE erp_testing;"
+      - name: Copy .env
+        working-directory: backend
+        run: cp .env.example .env && php artisan key:generate
+      - name: Pest
+        working-directory: backend
+        run: vendor/bin/pest
+
+  codegen-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: pdo_pgsql, redis, bcmath, intl
+          coverage: none
+      - uses: ramsey/composer-install@v3
+        with:
+          working-directory: backend
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - working-directory: frontend
+        run: npm ci
+      - name: Copy .env
+        working-directory: backend
+        run: cp .env.example .env && php artisan key:generate
+      - name: Export OpenAPI spec
+        working-directory: backend
+        run: php artisan scramble:export --path=storage/api-docs/openapi.json
+      - name: Generate TS client
+        working-directory: frontend/packages/core-api
+        run: npx orval --config orval.config.ts
+      # ADR 0006 / api-conventions.md: a backend field change that wasn't regenerated
+      # fails here, not as `undefined` in the browser.
+      - name: Fail on drift
+        run: git diff --exit-code -- frontend/packages/core-api
+
+  build:
+    name: build (${{ matrix.arch }})
+    if: github.ref == 'refs/heads/main'
+    needs: [lint-backend, lint-frontend, test, codegen-check]
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+            platform: linux/amd64
+          - arch: arm64
+            runner: [self-hosted, arm64, erp]
+            platform: linux/arm64
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      # TODO: frontend image build joins here once the frontend skeleton exists
+      # (docker/frontend/Dockerfile doesn't exist yet — see phase-0-foundation.md).
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/backend/Dockerfile
+          target: production
+          platforms: ${{ matrix.platform }}
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/erp-backend:${{ github.sha }}-${{ matrix.arch }}
+          cache-from: type=gha,scope=backend-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=backend-${{ matrix.arch }}
+
+  merge-manifest:
+    needs: build
+    runs-on: [self-hosted, arm64, erp]
+    permissions:
+      packages: write
+    steps:
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Merge manifest and tag latest
+        run: |
+          docker buildx imagetools create \
+            -t ghcr.io/${{ github.repository_owner }}/erp-backend:${{ github.sha }} \
+            -t ghcr.io/${{ github.repository_owner }}/erp-backend:latest \
+            ghcr.io/${{ github.repository_owner }}/erp-backend:${{ github.sha }}-amd64 \
+            ghcr.io/${{ github.repository_owner }}/erp-backend:${{ github.sha }}-arm64
+      - name: Prune old images and build cache
+        run: |
+          docker image prune -af --filter "until=168h" --filter "label=app=erp"
+          docker builder prune -af --keep-storage 2GB
+
+  # deploy: not implemented yet. docker-compose.prod.yml is written but deliberately
+  # unverified against dbvm until there's a real feature worth deploying — see
+  # docs/STATUS.md "In progress". Add this job (SSH or a self-hosted deploy step
+  # running `docker compose pull && up -d` + the one-shot migration container) once
+  # that verification is done. Merging to `main` builds and pushes the image; it does
+  # not yet put it on mainvm.

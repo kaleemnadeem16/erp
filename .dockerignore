@@ -1,0 +1,29 @@
+# Not needed in any image; keeps build context small and cache-friendly.
+# The Dockerfiles only ever COPY from backend/ or frontend/ explicitly, so nothing
+# here would end up in an image regardless — this is about build-context speed.
+.git
+.claude
+docs/
+*.md
+!backend/**/*.md
+
+backend/vendor/
+backend/node_modules/
+backend/storage/app/*
+!backend/storage/app/.gitkeep
+backend/storage/framework/cache/*
+backend/storage/framework/sessions/*
+backend/storage/framework/views/*
+backend/storage/logs/*
+backend/bootstrap/cache/*.php
+backend/.phpunit.cache/
+backend/.env
+backend/.env.*
+
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+.env
+.env.*
+!.env.example

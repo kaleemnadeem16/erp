@@ -24,6 +24,9 @@ backend/bootstrap/cache/*.php
 backend/public/storage
 backend/public/hot
 backend/.phpunit.cache/
+# Intermediate codegen artifact — orval consumes it directly in the same CI step;
+# only orval's output (frontend/packages/core-api) is committed.
+backend/storage/api-docs/
 
 # Frontend
 frontend/node_modules/

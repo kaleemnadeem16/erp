@@ -42,18 +42,36 @@ mainvm has 3 vCPU and runs production workloads. Builds compete with them.
 
 ---
 
+## Branching and deploy gating
+
+Two long-lived branches ([ADR 0029](../decisions/0029-develop-main-branching-model.md)):
+
+- **`develop`** — default working branch. `feature/*` branches PR into it. Push freely; this is
+  the sync mechanism. **Never deploys.**
+- **`main`** — deploy-triggering only. A `develop → main` merge is the deliberate act that starts
+  a deploy. `hotfix/*` branches off `main` for urgent production fixes, then back-merge into
+  `develop`.
+
+A commit landing on GitHub is not the same act as a commit going live — only a merge to `main`
+deploys.
+
 ## Pipeline
 
 ```
-push / PR
+push / PR (any branch)
    ├─ lint        Pint, Larastan L6, ESLint, tsc
    ├─ codegen     Scramble → OpenAPI → Orval; FAIL ON DIFF
-   ├─ test        PostgreSQL 16 service container
-   └─ build       amd64 (hosted) ┐
-                  arm64 (self-hosted) ┴→ merge manifest → GHCR, tagged by commit SHA
-                                    │
-main branch ────────────────────────┴─→ deploy to mainvm → prune old images
+   └─ test        PostgreSQL 16 service container
+
+main branch only ──→ build   amd64 (hosted) ┐
+                                arm64 (self-hosted) ┴→ merge manifest → GHCR, tagged by commit SHA
+                                                  │
+                      ──────────────────────────┴─→ deploy to mainvm → prune old images
 ```
+
+Image build and deploy are scoped to `main` only — a WIP push to a feature branch or `develop`
+gets full lint/codegen/test feedback without tying up the single-concurrency ARM runner
+building an image nobody's going to deploy (see [runner constraints](#runner-constraints) above).
 
 ### Tests
 

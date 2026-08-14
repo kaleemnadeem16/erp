@@ -183,10 +183,10 @@ feature.
 
 ### API & type pipeline
 
-- [ ] `/api/v1` route group, conventions per [api-conventions.md](../architecture/api-conventions.md)
-- [ ] Scramble generating OpenAPI
-- [ ] Orval generating typed TanStack Query hooks into `packages/core-api`
-- [ ] Generated output committed; **CI fails on diff**
+- [x] ~~`/api/v1` route group, conventions per [api-conventions.md](../architecture/api-conventions.md)~~ — auth routes already follow it
+- [x] ~~Scramble generating OpenAPI~~ — `dedoc/scramble` installed, `php artisan scramble:export` verified against the auth routes
+- [x] ~~Orval generating typed TanStack Query hooks into `packages/core-api`~~ — `frontend/packages/core-api`, fetch-based custom mutator (Sanctum cookie + bearer), verified deterministic across re-runs and type-checks clean
+- [ ] Generated output committed; **CI fails on diff** — drift check wired into `.github/workflows/pipeline.yml` (`codegen-check` job); not yet exercised on real GitHub Actions, and `frontend/` isn't committed yet
 
 ### Frontend skeleton
 
@@ -199,11 +199,15 @@ feature.
 
 ### CI
 
-- [ ] PostgreSQL 16 service container — single engine
-- [ ] Pint, Larastan, Pest, TypeScript build, orval drift check
-- [ ] `docs/reference/` generators (actions, events, routes, schema) + **fail on diff** — [ADR 0022](../decisions/0022-code-documentation-strategy.md)
-- [ ] Build `linux/amd64` (hosted) + `linux/arm64` (self-hosted) → merge manifest → GHCR by commit SHA
-- [ ] **Image retention: keep the 3 most recent tags**, prune build cache
+`.github/workflows/pipeline.yml` written per [ADR 0029](../decisions/0029-develop-main-branching-model.md)
+(lint/test/codegen on every branch, build gated to `main`) — **not yet exercised on real GitHub
+Actions**, same caveat as the items below it.
+
+- [x] ~~PostgreSQL 16 service container — single engine~~ — used by the `test` and `codegen-check` jobs
+- [x] ~~Pint, Larastan, Pest, TypeScript typecheck, orval drift check~~ — `lint-backend`, `test`, `lint-frontend`, `codegen-check` jobs
+- [ ] `docs/reference/` generators (actions, events, routes, schema) + **fail on diff** — [ADR 0022](../decisions/0022-code-documentation-strategy.md) — not started
+- [x] ~~Build `linux/amd64` (hosted) + `linux/arm64` (self-hosted) → merge manifest → GHCR by commit SHA~~ — `build` + `merge-manifest` jobs, backend image only (no frontend Dockerfile yet); **unverified**, the self-hosted `[self-hosted, arm64, erp]` runner has never run this workflow
+- [ ] **Image retention: keep the 3 most recent tags**, prune build cache — local `docker image prune`/`builder prune` added to `merge-manifest`; GHCR-level retention (weekly sweep, delete untagged versions per [ci-cd.md](../architecture/ci-cd.md#image-retention)) not built
 
 ## Acceptance criteria
 

@@ -1,0 +1,14 @@
+{
+  "name": "erp-frontend",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "codegen": "npm run generate --workspace packages/core-api"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  }
+}
