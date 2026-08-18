@@ -42,7 +42,10 @@ export async function fetchClient<T>(url: string, options: RequestInit = {}): Pr
     });
   }
 
-  if (response.status === 204) return undefined as T;
+  const data = response.status === 204 ? undefined : await response.json();
 
-  return response.json() as Promise<T>;
+  // Orval's generated types for multi-response endpoints (e.g. `loginResponse` in
+  // generated/auth/auth.ts) discriminate on `.status` and read the body off `.data` —
+  // this envelope is what the fetch client contract expects the mutator to return.
+  return { data, status: response.status, headers: response.headers } as T;
 }
