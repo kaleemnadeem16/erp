@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* Tailwind's auto content detection stops at package boundaries, so classes used
+   inside the @erp/core-ui workspace package (a sibling package, not a subdirectory
+   of this app) are invisible unless scanned explicitly. */
+@source "../../../packages/core-ui/src";
+
 /* shadcn/ui default (light-only) theme tokens — dark mode isn't wired up yet,
    customising beyond these defaults is a Phase 4 task (see phase-0-foundation.md). */
 
