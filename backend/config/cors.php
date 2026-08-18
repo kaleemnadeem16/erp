@@ -24,7 +24,7 @@ return [
     // wildcard. See docs/decisions/0005-sanctum-authentication.md.
     'allowed_origins' => array_filter(explode(',', env(
         'CORS_ALLOWED_ORIGINS',
-        'http://localhost:5173,http://127.0.0.1:5173'
+        'http://localhost:5176,http://127.0.0.1:5176'
     ))),
 
     'allowed_origins_patterns' => [],
