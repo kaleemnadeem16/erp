@@ -36,6 +36,14 @@ LOCK_FILE=/var/www/html/storage/framework/entrypoint.lock
         echo ">>> [entrypoint] Done."
     fi
 
+    # This entrypoint runs as root (php-fpm itself drops its pool workers to
+    # www-data, but the composer install above runs before that happens), so a
+    # fresh 'backend_vendor' volume ends up root-owned — silently breaking
+    # `docker exec --user www-data ... composer ...` for anything afterwards
+    # (require, update). Cheap and idempotent, so it runs every start rather
+    # than only when vendor/ was just installed.
+    chown -R www-data:www-data /var/www/html/vendor
+
     # -------------------------------------------------------------------
     # Ensure the test database exists and has the latest schema.
     # postgres-init.sql creates erp_testing on first volume start, but if the
