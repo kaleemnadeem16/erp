@@ -23,7 +23,7 @@ docker compose exec app php artisan migrate
 ```
 
 - API: http://localhost:8090
-- Frontend dev server: http://localhost:5173 (once the frontend skeleton exists — see
+- Frontend dev server: http://localhost:5176 (once the frontend skeleton exists — see
   [phase-0-foundation.md](docs/phases/phase-0-foundation.md))
 
 `vendor/` and `node_modules/` live in named Docker volumes, not the bind mount — first boot
