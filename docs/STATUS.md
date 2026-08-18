@@ -1,7 +1,7 @@
 # Project Status
 
 **Updated:** 2026-08-18
-**Current phase:** Phase 0 — Foundation (in progress — dev environment, company scoping, auth & access, all cross-cutting mechanisms, the branching/deploy model, the Scramble → Orval pipeline, and the frontend skeleton done; production frontend Dockerfile next)
+**Current phase:** Phase 0 — Foundation (in progress — dev environment, company scoping, auth & access, all cross-cutting mechanisms, the branching/deploy model, the Scramble → Orval pipeline, the frontend skeleton, and its production Dockerfile done; a real browser click-through of the login flow next)
 **Application code:** Laravel 12 skeleton + company scoping + auth (Sanctum, roles/permissions, activity log) + UoM conversion + custom fields mechanism + gapless numbering sequences + currencies/exchange rates schema + Scramble→Orval type pipeline; React 19 + Vite frontend skeleton (login, one authenticated page, mobile-first shell); no domain code yet
 
 ---
@@ -58,6 +58,7 @@ environment before any application logic.
 | **Dev port moved 5173→5176** (collision with another local app) — `docker-compose.yml`, `.env`/`.env.example`, `SANCTUM_STATEFUL_DOMAINS`, `CORS_ALLOWED_ORIGINS`, and its fallback default in `config/cors.php` all updated; recurring dev `nginx` "bad gateway" (stale upstream IP cached at container startup, fixed with `docker compose restart nginx` each time) documented as a known dev-environment quirk, not structurally fixed | 2026-08-18 |
 | **Branching model operationalized** — `develop` branch cut from `main` and set as the GitHub default; `main` is now deploy-triggering only, per ADR 0029. Branch protection on `main` (required CI checks, no direct pushes) is **not enforced by GitHub** — private repos need GitHub Pro for branch protection on the Free plan — so it's followed by convention (merge via PR only) until that's revisited | 2026-08-18 |
 | **Frontend skeleton** — `packages/core-ui` (shadcn `Button`/`Input`/`Label` primitives, `AppShell` with a responsive bottom-tabs/sidebar layout, `LoginScreen`, `DashboardScreen`, a Zustand `useAuthStore` mirroring the session TanStack Query resolves) and `apps/main` (Vite + React 19, Tailwind v4, `react-router` v7, `vite-plugin-pwa`) wired to the generated `core-api` client. Found and fixed a real bug in the process: `fetchClient` was returning the raw response body instead of the `{data, status, headers}` envelope Orval's generated hook types expect — nothing caught it earlier since no frontend code had consumed the hooks until now. Full login→session-check→logout HTTP cycle verified against the dev backend with curl (no browser tool available to click through the actual UI) → [phase-0-foundation.md](phases/phase-0-foundation.md#frontend-skeleton) | 2026-08-18 |
+| **Frontend production Dockerfile** (`docker/frontend/Dockerfile`) — multi-stage: `node:22-alpine` runs `vite build`, discarded; `nginx:1.27-alpine` serves the static output, with SPA fallback (`try_files … /index.html`, so a direct hit on `/login` doesn't 404) and immutable long-cache headers on Vite's content-hashed `/assets/`. Built and smoke-tested locally (`/`, `/login`, and the asset `Cache-Control` header all verified). CI's `build`/`merge-manifest` jobs now push `erp-frontend` alongside `erp-backend`, so `docker-compose.prod.yml` is fully runnable once deployment itself is picked up | 2026-08-18 |
 
 ## In progress
 
@@ -71,9 +72,7 @@ table above), built on `feature/frontend-skeleton` off `develop` per ADR 0029. S
    deferred until there's a real feature worth deploying, rather than verifying against an empty
    skeleton — no deploy job exists in `pipeline.yml` yet either (by design, see its trailing
    comment); the `build`/`merge-manifest` jobs only build and push images to GHCR.
-2. `docker/frontend/Dockerfile` doesn't exist yet, so CI's `build` job only builds the backend
-   image — needs to join now that the frontend skeleton exists.
-3. The frontend skeleton's login screen has only been verified via curl (the SPA's exact
+2. The frontend skeleton's login screen has only been verified via curl (the SPA's exact
    cookie/CSRF flow, but not through an actual browser) — no browser tool was available this
    session. Worth a real click-through before this is called fully done.
 
@@ -85,9 +84,9 @@ commands natively from the WSL shell now, no `wsl.exe`/`MSYS_NO_PATHCONV` wrappi
 
 **[Phase 0 — Foundation](phases/phase-0-foundation.md).** Dev environment, company scoping, auth
 & access, all four cross-cutting mechanisms, the Scramble → Orval type pipeline (CI-verified
-green), the `develop`/`main` branching model, and the frontend skeleton are done; remaining scope
-is a production frontend Dockerfile and a real browser click-through of the login flow — see the
-phase doc for the full task list.
+green), the `develop`/`main` branching model, the frontend skeleton, and its production Dockerfile
+are done; remaining scope is a real browser click-through of the login flow — see the phase doc
+for the full task list.
 
 Phase 0 has no dependency on the open questions below and **can proceed.**
 
