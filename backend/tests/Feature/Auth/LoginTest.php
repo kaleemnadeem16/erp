@@ -37,7 +37,7 @@ class LoginTest extends TestCase
      */
     private function postAsFrontend(string $uri, array $data = []): TestResponse
     {
-        return $this->withHeader('Referer', 'http://localhost:5173')->postJson($uri, $data);
+        return $this->withHeader('Referer', 'http://localhost:5176')->postJson($uri, $data);
     }
 
     public function test_a_user_can_log_in_with_valid_credentials_via_session_cookie(): void

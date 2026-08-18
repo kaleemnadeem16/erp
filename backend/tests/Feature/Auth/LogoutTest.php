@@ -23,7 +23,7 @@ class LogoutTest extends TestCase
         // wouldn't test anything of ours.
         $response = $this->withoutMiddleware(ValidateCsrfToken::class)
             ->actingAs($user)
-            ->withHeader('Referer', 'http://localhost:5173')
+            ->withHeader('Referer', 'http://localhost:5176')
             ->postJson('/api/v1/logout');
 
         $response->assertNoContent();

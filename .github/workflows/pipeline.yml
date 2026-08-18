@@ -124,6 +124,14 @@ jobs:
       DB_PORT: 5432
       DB_USERNAME: erp
       DB_PASSWORD: secret
+      # migrate --force is a plain artisan command, not a Pest run, so it doesn't
+      # go through tests/bootstrap.php's overrides — .env.example's CACHE_STORE=redis
+      # would otherwise make the permission_tables migration's cache-clear step try
+      # to resolve a "redis" host that doesn't exist here. This job never needs real
+      # Redis behaviour, just for migrate not to fail.
+      CACHE_STORE: array
+      SESSION_DRIVER: array
+      QUEUE_CONNECTION: sync
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
