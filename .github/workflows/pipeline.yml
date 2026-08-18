@@ -49,12 +49,20 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - working-directory: frontend
         run: npm ci
-      # One tsc invocation per workspace package — there's only core-api today.
-      # Add a line here (or a root "typecheck" script that loops workspaces) as
-      # packages/core-ui and apps/main are scaffolded.
+      # One tsc invocation per workspace package — add a line here as new
+      # packages/apps are scaffolded.
       - name: Typecheck core-api
         working-directory: frontend/packages/core-api
         run: npx tsc --noEmit
+      - name: Typecheck core-ui
+        working-directory: frontend/packages/core-ui
+        run: npx tsc --noEmit
+      - name: Typecheck apps/main
+        working-directory: frontend/apps/main
+        run: npx tsc --noEmit
+      - name: Build apps/main
+        working-directory: frontend/apps/main
+        run: npx vite build
 
   test:
     runs-on: ubuntu-latest

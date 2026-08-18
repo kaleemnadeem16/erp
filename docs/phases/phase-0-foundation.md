@@ -2,9 +2,10 @@
 
 # Phase 0 — Foundation
 
-- **Status:** in progress — dev environment, company scoping, auth & access and all
-  cross-cutting mechanisms (UoM, custom fields, sequences, currencies) done; the
-  Scramble → Orval type pipeline and frontend skeleton are next
+- **Status:** in progress — dev environment, company scoping, auth & access, all
+  cross-cutting mechanisms (UoM, custom fields, sequences, currencies), the
+  Scramble → Orval type pipeline, the `develop`/`main` branching model, and the
+  frontend skeleton are done; a production frontend Dockerfile is next
 - **Depends on:** nothing
 - **Blocked by:** nothing
 
@@ -190,23 +191,44 @@ feature.
 
 ### Frontend skeleton
 
-- [ ] Vite + React 19 + TypeScript monorepo (`packages/core-ui`, `packages/core-api`, `apps/main`)
-- [ ] Tailwind v4 + shadcn/ui initialised
-- [ ] TanStack Query + Zustand
-- [ ] Router, app shell, login screen, one authenticated page
-- [ ] Mobile-first layout: bottom tabs below `md`, sidebar above
-- [ ] `vite-plugin-pwa`
+- [x] ~~Vite + React 19 + TypeScript monorepo~~ (`packages/core-ui`, `packages/core-api`, `apps/main`) —
+      done 2026-08-18, npm workspaces, TS project references via a shared `tsconfig.base.json`
+- [x] ~~Tailwind v4 + shadcn/ui initialised~~ — Tailwind v4's CSS-first config (`@theme inline` in
+      `apps/main/src/index.css`), shadcn's default light-only token set, `Button`/`Input`/`Label`
+      primitives copied into `core-ui` per "copied in, not a dependency" (tech-stack.md) — no
+      `components.json`/CLI yet since the CLI assumes a single-app layout, not this shared-package
+      structure; adding more components means hand-copying until that's worth revisiting
+- [x] ~~TanStack Query + Zustand~~ — TanStack Query owns server state (`useLogin`/`useLogout`/`useUser`
+      from the generated client); Zustand (`useAuthStore`) mirrors the resolved identity so it's
+      readable outside the query's subscriber tree, per tech-stack.md's "most ERP state is server
+      state" rationale
+- [x] ~~Router, app shell, login screen, one authenticated page~~ — `react-router` v7 (declarative
+      mode, not the data-router/loader API — TanStack Query already owns data fetching), `AppShell`,
+      `LoginScreen`, `DashboardScreen`. Verified with a real login → session-check → logout cycle
+      against the dev backend (curl, replicating the SPA's exact CSRF/cookie flow) — no browser
+      tool was available to click through it, so this is the verification that was done
+- [x] ~~Mobile-first layout: bottom tabs below `md`, sidebar above~~ — pure Tailwind responsive
+      classes (`hidden md:flex` / `md:hidden`), no JS state needed at this skeleton stage
+- [x] ~~`vite-plugin-pwa`~~ — configured, manifest generates on build; real icons/branding deferred
+      to Phase 4 alongside the rest of the design system
+
+Found and fixed a real bug while building this: the `fetchClient` mutator
+(`packages/core-api/src/mutator/fetch-client.ts`) returned the raw response body, but Orval's
+generated hook types (`loginResponse`, `userResponse`, …) expect a `{data, status, headers}`
+envelope for status discrimination — nothing caught this earlier because no frontend code
+consumed the generated hooks until now.
 
 ### CI
 
 `.github/workflows/pipeline.yml` written per [ADR 0029](../decisions/0029-develop-main-branching-model.md)
-(lint/test/codegen on every branch, build gated to `main`) — **not yet exercised on real GitHub
-Actions**, same caveat as the items below it.
+(lint/test/codegen on every branch, build gated to `main`) — **verified green on real GitHub
+Actions** 2026-08-18, including the self-hosted `[self-hosted, arm64, erp]` runner (`build`
+arm64 + `merge-manifest`); 4 CI-only bugs found and fixed in the process, see STATUS.md.
 
 - [x] ~~PostgreSQL 16 service container — single engine~~ — used by the `test` and `codegen-check` jobs
 - [x] ~~Pint, Larastan, Pest, TypeScript typecheck, orval drift check~~ — `lint-backend`, `test`, `lint-frontend`, `codegen-check` jobs
 - [ ] `docs/reference/` generators (actions, events, routes, schema) + **fail on diff** — [ADR 0022](../decisions/0022-code-documentation-strategy.md) — not started
-- [x] ~~Build `linux/amd64` (hosted) + `linux/arm64` (self-hosted) → merge manifest → GHCR by commit SHA~~ — `build` + `merge-manifest` jobs, backend image only (no frontend Dockerfile yet); **unverified**, the self-hosted `[self-hosted, arm64, erp]` runner has never run this workflow
+- [x] ~~Build `linux/amd64` (hosted) + `linux/arm64` (self-hosted) → merge manifest → GHCR by commit SHA~~ — `build` + `merge-manifest` jobs, backend image only (no frontend Dockerfile yet)
 - [ ] **Image retention: keep the 3 most recent tags**, prune build cache — local `docker image prune`/`builder prune` added to `merge-manifest`; GHCR-level retention (weekly sweep, delete untagged versions per [ci-cd.md](../architecture/ci-cd.md#image-retention)) not built
 
 ## Acceptance criteria
@@ -218,7 +240,10 @@ Actions**, same caveat as the items below it.
 - [ ] The arm64 variant shares base layers with `invoiceflow-backend` (verify with
       `docker history` — the Alpine and PHP layers should be identical)
 - [ ] `docs/reference/` regenerates identically on a clean run (no diff)
-- [ ] A user can log in from the SPA; an unauthenticated request to a protected route returns 401
+- [ ] A user can log in from the SPA; an unauthenticated request to a protected route returns 401 —
+      the HTTP contract is verified (curl, replicating the SPA's cookie/CSRF flow exactly: login
+      200, session check 200, logout 204, 401 after), but no browser tool was available to click
+      through the actual rendered UI, so this isn't checked off yet
 - [ ] Changing a Laravel API resource field and regenerating produces a **TypeScript compile
       error** in the frontend
 - [ ] A model using `BelongsToCompany` cannot return another company's rows, including from a

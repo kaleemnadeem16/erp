@@ -1,8 +1,8 @@
 # Project Status
 
 **Updated:** 2026-08-18
-**Current phase:** Phase 0 — Foundation (in progress — dev environment, company scoping, auth & access, all cross-cutting mechanisms, the branching/deploy model (now operationalized) and the Scramble → Orval pipeline done; frontend skeleton next)
-**Application code:** Laravel 12 skeleton + company scoping + auth (Sanctum, roles/permissions, activity log) + UoM conversion + custom fields mechanism + gapless numbering sequences + currencies/exchange rates schema + Scramble→Orval type pipeline; no domain code yet
+**Current phase:** Phase 0 — Foundation (in progress — dev environment, company scoping, auth & access, all cross-cutting mechanisms, the branching/deploy model, the Scramble → Orval pipeline, and the frontend skeleton done; production frontend Dockerfile next)
+**Application code:** Laravel 12 skeleton + company scoping + auth (Sanctum, roles/permissions, activity log) + UoM conversion + custom fields mechanism + gapless numbering sequences + currencies/exchange rates schema + Scramble→Orval type pipeline; React 19 + Vite frontend skeleton (login, one authenticated page, mobile-first shell); no domain code yet
 
 ---
 
@@ -57,11 +57,13 @@ environment before any application logic.
 | **CI pipeline verified green end-to-end on real GitHub Actions** — fixed 4 CI-only bugs found on the first real run: `codegen-check` had no postgres service at all (Scramble's type inference queries real table schema), `migrate --force` tried to reach a nonexistent `redis` host (added `CACHE_STORE=array`/`SESSION_DRIVER=array`/`QUEUE_CONNECTION=sync` to that job only), `LoginTest`/`LogoutTest` had a hardcoded `Referer: localhost:5173` that broke Sanctum's stateful-session detection after the port move to 5176, and `storage/api-docs/` (gitignored) didn't exist in a fresh checkout. All jobs (`lint-backend`, `lint-frontend`, `test`, `codegen-check`, `build` amd64+arm64, `merge-manifest`) now pass | 2026-08-18 |
 | **Dev port moved 5173→5176** (collision with another local app) — `docker-compose.yml`, `.env`/`.env.example`, `SANCTUM_STATEFUL_DOMAINS`, `CORS_ALLOWED_ORIGINS`, and its fallback default in `config/cors.php` all updated; recurring dev `nginx` "bad gateway" (stale upstream IP cached at container startup, fixed with `docker compose restart nginx` each time) documented as a known dev-environment quirk, not structurally fixed | 2026-08-18 |
 | **Branching model operationalized** — `develop` branch cut from `main` and set as the GitHub default; `main` is now deploy-triggering only, per ADR 0029. Branch protection on `main` (required CI checks, no direct pushes) is **not enforced by GitHub** — private repos need GitHub Pro for branch protection on the Free plan — so it's followed by convention (merge via PR only) until that's revisited | 2026-08-18 |
+| **Frontend skeleton** — `packages/core-ui` (shadcn `Button`/`Input`/`Label` primitives, `AppShell` with a responsive bottom-tabs/sidebar layout, `LoginScreen`, `DashboardScreen`, a Zustand `useAuthStore` mirroring the session TanStack Query resolves) and `apps/main` (Vite + React 19, Tailwind v4, `react-router` v7, `vite-plugin-pwa`) wired to the generated `core-api` client. Found and fixed a real bug in the process: `fetchClient` was returning the raw response body instead of the `{data, status, headers}` envelope Orval's generated hook types expect — nothing caught it earlier since no frontend code had consumed the hooks until now. Full login→session-check→logout HTTP cycle verified against the dev backend with curl (no browser tool available to click through the actual UI) → [phase-0-foundation.md](phases/phase-0-foundation.md#frontend-skeleton) | 2026-08-18 |
 
 ## In progress
 
-Auth & access and all four cross-cutting mechanisms (UoM, custom fields, sequences, currencies),
-the branching/deploy model, and the Scramble → Orval pipeline are done (see table above). See
+Auth & access, all four cross-cutting mechanisms (UoM, custom fields, sequences, currencies), the
+branching/deploy model, the Scramble → Orval pipeline, and the frontend skeleton are done (see
+table above), built on `feature/frontend-skeleton` off `develop` per ADR 0029. See
 [phase-0-foundation.md](phases/phase-0-foundation.md) for what's left in the phase.
 
 **Not done yet — pick up here:**
@@ -70,10 +72,10 @@ the branching/deploy model, and the Scramble → Orval pipeline are done (see ta
    skeleton — no deploy job exists in `pipeline.yml` yet either (by design, see its trailing
    comment); the `build`/`merge-manifest` jobs only build and push images to GHCR.
 2. `docker/frontend/Dockerfile` doesn't exist yet, so CI's `build` job only builds the backend
-   image — the frontend image needs to join once the frontend skeleton exists.
-3. Next real work: the frontend skeleton (`packages/core-ui`, `apps/main`, Tailwind/shadcn, router,
-   login screen), built on a `feature/*` branch off `develop` per ADR 0029 — see
-   [phase-0-foundation.md](phases/phase-0-foundation.md).
+   image — needs to join now that the frontend skeleton exists.
+3. The frontend skeleton's login screen has only been verified via curl (the SPA's exact
+   cookie/CSRF flow, but not through an actual browser) — no browser tool was available this
+   session. Worth a real click-through before this is called fully done.
 
 Session note: work moved from a Windows-side VS Code window (browsing the repo over
 `\\wsl.localhost\...`) to a proper **Remote-WSL** VS Code window on 2026-08-11 — do Docker/git
@@ -83,8 +85,9 @@ commands natively from the WSL shell now, no `wsl.exe`/`MSYS_NO_PATHCONV` wrappi
 
 **[Phase 0 — Foundation](phases/phase-0-foundation.md).** Dev environment, company scoping, auth
 & access, all four cross-cutting mechanisms, the Scramble → Orval type pipeline (CI-verified
-green), and the `develop`/`main` branching model are done; remaining scope is the frontend
-skeleton — see the phase doc for the full task list.
+green), the `develop`/`main` branching model, and the frontend skeleton are done; remaining scope
+is a production frontend Dockerfile and a real browser click-through of the login flow — see the
+phase doc for the full task list.
 
 Phase 0 has no dependency on the open questions below and **can proceed.**
 

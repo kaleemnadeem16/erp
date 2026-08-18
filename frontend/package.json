@@ -6,7 +6,9 @@
     "apps/*"
   ],
   "scripts": {
-    "codegen": "npm run generate --workspace packages/core-api"
+    "codegen": "npm run generate --workspace packages/core-api",
+    "dev": "npm run dev --workspace apps/main",
+    "build": "npm run build --workspace apps/main"
   },
   "devDependencies": {
     "typescript": "^5.7.3"

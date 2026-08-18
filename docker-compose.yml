@@ -74,13 +74,14 @@ services:
         condition: service_healthy
 
   # Not functional until the frontend skeleton exists (packages/, apps/main) — see
-  # phase-0-foundation.md "Frontend skeleton". Left wired up now so the full stack
-  # is one `docker compose up` once that lands.
+  # phase-0-foundation.md "Frontend skeleton".
   node:
     image: node:22-alpine
     working_dir: /app
-    # Port 5173 (Vite's default) is already taken by another app on this machine.
-    command: sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 5176"
+    # host/port are set in apps/main/vite.config.ts (not passed as CLI flags here) —
+    # `npm run dev` forwards through a nested workspace call and mangles `-- --flag`
+    # args passed that way, which silently fell back to Vite's default port 5173.
+    command: sh -c "npm install && npm run dev"
     volumes:
       - ./frontend:/app
       - frontend_node_modules:/app/node_modules
