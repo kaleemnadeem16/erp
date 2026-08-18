@@ -240,10 +240,10 @@ arm64 + `merge-manifest`); 4 CI-only bugs found and fixed in the process, see ST
 - [ ] The arm64 variant shares base layers with `invoiceflow-backend` (verify with
       `docker history` — the Alpine and PHP layers should be identical)
 - [ ] `docs/reference/` regenerates identically on a clean run (no diff)
-- [ ] A user can log in from the SPA; an unauthenticated request to a protected route returns 401 —
-      the HTTP contract is verified (curl, replicating the SPA's cookie/CSRF flow exactly: login
-      200, session check 200, logout 204, 401 after), but no browser tool was available to click
-      through the actual rendered UI, so this isn't checked off yet
+- [x] ~~A user can log in from the SPA; an unauthenticated request to a protected route returns
+      401~~ — HTTP contract verified via curl (login 200, session check 200, logout 204, 401
+      after) and confirmed by an actual browser click-through 2026-08-18 (login screen, dashboard,
+      logout all rendering correctly)
 - [ ] Changing a Laravel API resource field and regenerating produces a **TypeScript compile
       error** in the frontend
 - [ ] A model using `BelongsToCompany` cannot return another company's rows, including from a
