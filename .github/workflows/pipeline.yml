@@ -201,8 +201,6 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      # TODO: frontend image build joins here once the frontend skeleton exists
-      # (docker/frontend/Dockerfile doesn't exist yet — see phase-0-foundation.md).
       - uses: docker/build-push-action@v6
         with:
           context: .
@@ -213,6 +211,16 @@ jobs:
           tags: ghcr.io/${{ github.repository_owner }}/erp-backend:${{ github.sha }}-${{ matrix.arch }}
           cache-from: type=gha,scope=backend-${{ matrix.arch }}
           cache-to: type=gha,mode=max,scope=backend-${{ matrix.arch }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/frontend/Dockerfile
+          target: production
+          platforms: ${{ matrix.platform }}
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/erp-frontend:${{ github.sha }}-${{ matrix.arch }}
+          cache-from: type=gha,scope=frontend-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=frontend-${{ matrix.arch }}
 
   merge-manifest:
     needs: build
@@ -232,6 +240,11 @@ jobs:
             -t ghcr.io/${{ github.repository_owner }}/erp-backend:latest \
             ghcr.io/${{ github.repository_owner }}/erp-backend:${{ github.sha }}-amd64 \
             ghcr.io/${{ github.repository_owner }}/erp-backend:${{ github.sha }}-arm64
+          docker buildx imagetools create \
+            -t ghcr.io/${{ github.repository_owner }}/erp-frontend:${{ github.sha }} \
+            -t ghcr.io/${{ github.repository_owner }}/erp-frontend:latest \
+            ghcr.io/${{ github.repository_owner }}/erp-frontend:${{ github.sha }}-amd64 \
+            ghcr.io/${{ github.repository_owner }}/erp-frontend:${{ github.sha }}-arm64
       - name: Prune old images and build cache
         run: |
           docker image prune -af --filter "until=168h" --filter "label=app=erp"

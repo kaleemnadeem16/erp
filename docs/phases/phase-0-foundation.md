@@ -228,7 +228,7 @@ arm64 + `merge-manifest`); 4 CI-only bugs found and fixed in the process, see ST
 - [x] ~~PostgreSQL 16 service container — single engine~~ — used by the `test` and `codegen-check` jobs
 - [x] ~~Pint, Larastan, Pest, TypeScript typecheck, orval drift check~~ — `lint-backend`, `test`, `lint-frontend`, `codegen-check` jobs
 - [ ] `docs/reference/` generators (actions, events, routes, schema) + **fail on diff** — [ADR 0022](../decisions/0022-code-documentation-strategy.md) — not started
-- [x] ~~Build `linux/amd64` (hosted) + `linux/arm64` (self-hosted) → merge manifest → GHCR by commit SHA~~ — `build` + `merge-manifest` jobs, backend image only (no frontend Dockerfile yet)
+- [x] ~~Build `linux/amd64` (hosted) + `linux/arm64` (self-hosted) → merge manifest → GHCR by commit SHA~~ — `build` + `merge-manifest` jobs, now build and push both `erp-backend` and `erp-frontend` (`docker/frontend/Dockerfile`, `nginx:1.27-alpine` serving the Vite build output, SPA fallback + immutable caching for hashed assets)
 - [ ] **Image retention: keep the 3 most recent tags**, prune build cache — local `docker image prune`/`builder prune` added to `merge-manifest`; GHCR-level retention (weekly sweep, delete untagged versions per [ci-cd.md](../architecture/ci-cd.md#image-retention)) not built
 
 ## Acceptance criteria
