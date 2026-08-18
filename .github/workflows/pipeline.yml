@@ -100,6 +100,30 @@ jobs:
 
   codegen-check:
     runs-on: ubuntu-latest
+    # Scramble's inference touches the database directly (e.g. resolving a
+    # property fetch on the User model queries the users table's real schema),
+    # so this needs the same postgres service + migrated schema as the test job
+    # — not just a reachable database, this is the failure Scramble hit before
+    # this was added: 08006 "could not translate host name 'postgres'", because
+    # there was no service container at all.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: erp
+          POSTGRES_PASSWORD: secret
+          POSTGRES_DB: erp
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U erp"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_USERNAME: erp
+      DB_PASSWORD: secret
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
@@ -120,6 +144,9 @@ jobs:
       - name: Copy .env
         working-directory: backend
         run: cp .env.example .env && php artisan key:generate
+      - name: Migrate
+        working-directory: backend
+        run: php artisan migrate --force
       - name: Export OpenAPI spec
         working-directory: backend
         run: php artisan scramble:export --path=storage/api-docs/openapi.json
