@@ -157,7 +157,9 @@ jobs:
         run: php artisan migrate --force
       - name: Export OpenAPI spec
         working-directory: backend
-        run: php artisan scramble:export --path=storage/api-docs/openapi.json
+        # storage/api-docs/ is gitignored (intermediate artifact, not committed —
+        # see .gitignore), so it doesn't exist in a fresh checkout.
+        run: mkdir -p storage/api-docs && php artisan scramble:export --path=storage/api-docs/openapi.json
       - name: Generate TS client
         working-directory: frontend/packages/core-api
         run: npx orval --config orval.config.ts
