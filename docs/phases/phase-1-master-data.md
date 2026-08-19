@@ -49,8 +49,14 @@ transactions yet. This is backend-only; the first substantial frontend work is
 
 - [ ] `categories` table + hierarchical GL-default resolution (`items.md`)
 - [ ] `items` table — migration, model, `BelongsToCompany`, `HasCustomFields` wired in
-- [ ] `parties`, `party_contacts`, `party_sites` — migrations, models, `BelongsToCompany`,
-      `HasCustomFields` on `parties`
+- [x] ~~`parties`, `party_contacts`, `party_sites` — migrations, models, `BelongsToCompany`,
+      `HasCustomFields` on `parties`~~ — done 2026-08-19. Also required building
+      `App\Support\Concerns\BelongsToCompanyThroughParent` — no mechanism existed for scoping a
+      table with no `company_id` of its own, even though every domain doc already designed child
+      tables that way (`invoice_lines`, `journal_lines`, `job_lines`, `assembly_components`,
+      `locations`). Proven with 4 tests (read-side, write-side, and a 2-hop chain), plus
+      model-specific coverage for `Party`/`PartyContact`/`PartySite` themselves. See
+      [multi-tenancy.md](../architecture/multi-tenancy.md#child-tables-scope-through-their-parent)
 - [ ] `customer_accounts`, `customer_sites` — migrations, models, `BelongsToCompany`
 - [ ] `supplier_accounts`, `supplier_sites` — migrations, models, `BelongsToCompany`
 - [ ] `chart_of_accounts`, `accounting_periods` — migrations, models
