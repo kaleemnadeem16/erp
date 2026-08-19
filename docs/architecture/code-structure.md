@@ -24,12 +24,19 @@ app/
       Listeners/
       Policies/
       routes.php       registered by InventoryServiceProvider, not routes/api.php
+    Parties/           Party, CustomerAccount, SupplierAccount — see ADR 0030
     Sales/
     Purchasing/
     Production/
     Projects/
     Accounting/
     HR/
+
+Master data consumed by several modules (`Item`, `Party` and its accounts) gets its own module
+rather than living inside whichever transactional module happens to consume it — splitting a
+shared record by consumer (e.g. `CustomerAccount` inside `Sales`, `SupplierAccount` inside
+`Purchasing`) just relocates the coupling every other consumer (Receivables, Payables, Production)
+would still need, onto two modules instead of one.
   Providers/           AppServiceProvider + one per module/concern (AuthServiceProvider, …)
   Support/             cross-cutting: CompanyContext, Money casts, Sequences, UoM conversion
   Contracts/           interfaces plugins may rebind
@@ -114,6 +121,22 @@ rather than being untested plugin-only scaffolding.
 **Constraint:** listeners that must be transactional with the emitting action run synchronously —
 reserving stock for a confirmed job cannot happen "eventually". Queue only what genuinely
 tolerates delay: emails, exports, report generation.
+
+### Reads versus writes across modules
+
+"Modules do not call each other directly" governs **triggering behaviour** — the state-transition
+fan-out above. It does not mean every cross-module reference needs an indirection layer:
+
+- **Reads are direct Eloquent**, the same as any foreign key within one module.
+  `formulations.customer_id → customer_accounts`, `items.default_supplier_id → supplier_accounts`
+  — every `→ table` reference in the domain docs resolves this way. No repository or
+  query-service layer exists in this codebase; introducing one for cross-module reads only would
+  be new, unused indirection.
+- **Writes stay behind the owning module's Actions.** Never mutate another module's tables
+  directly. Call the owning module's Action class directly when the write is a synchronous
+  requirement of the current request (e.g. Sales creating a customer inline mid-quotation calls
+  `Parties\Actions\CreateCustomerAccount`); use an event when the write should happen as a
+  decoupled *reaction* to a state transition instead — the `JobConfirmed` shape above.
 
 ---
 
