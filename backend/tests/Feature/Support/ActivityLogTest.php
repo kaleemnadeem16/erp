@@ -77,6 +77,16 @@ class ActivityLogTest extends TestCase
         $this->assertSame($countAfterCreate, Activity::query()->where('subject_id', $user->id)->count());
     }
 
+    public function test_activity_log_entries_are_stamped_with_the_current_company(): void
+    {
+        $user = User::factory()->create();
+
+        $activity = $this->latestActivityFor($user, 'created');
+
+        $this->assertNotNull($activity);
+        $this->assertSame(1, $activity->getAttribute('company_id'));
+    }
+
     private function latestActivityFor(User $user, string $event): ?Activity
     {
         return Activity::query()

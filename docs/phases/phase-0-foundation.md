@@ -139,7 +139,10 @@ feature.
 - [x] ~~`spatie/laravel-activitylog` wired to a base model~~ — done 2026-08-12,
       `App\Models\Model` + `App\Models\Concerns\LogsActivityWithDefaults` (dirty-only,
       never logs `password`/`remember_token`). `User` uses the trait directly since it
-      must extend `Authenticatable`, not the new base model
+      must extend `Authenticatable`, not the new base model. `activity_log` got a
+      `company_id` column 2026-08-19, once `Party` became the first real company-scoped
+      logger — stamped via Spatie's `tapActivity()` hook from `CompanyContext`, not a
+      read-side scope → [multi-tenancy.md](../architecture/multi-tenancy.md#polymorphic-logs-tag-via-tapactivity-not-belongstocompany)
 
 ### Cross-cutting mechanisms
 

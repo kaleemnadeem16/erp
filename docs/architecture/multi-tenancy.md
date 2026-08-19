@@ -75,6 +75,21 @@ Two guarantees, not one:
   a convention an Action has to remember to check — the exact risk direct scoping was designed to
   avoid in the first place.
 
+#### Polymorphic logs tag via `tapActivity`, not `BelongsToCompany`
+
+`activity_log` (`spatie/laravel-activitylog`) doesn't fit either pattern above: its `subject` is
+polymorphic, so there's no single parent relation to scope through, and it's a vendor model —
+extending it just to add `BelongsToCompany` isn't worth it. `company_id` was added by a
+follow-up migration (the original deferred it until a real company-scoped model started
+logging — Party crossed that line), and
+`App\Models\Concerns\LogsActivityWithDefaults::tapActivity()` implements Spatie's `tapActivity()`
+hook to stamp it from `CompanyContext` on every entry, regardless of what triggered it — the same
+seam every other write path uses.
+
+This tags rows for filtering; it does **not** add a read-side global scope. Querying `Activity`
+directly still returns every company today. Scoping reads — and deciding who gets to see this
+data and at what level — is deferred until the audit-log API is designed.
+
 ### 2. Composite unique constraints — always
 
 ```php
