@@ -44,7 +44,8 @@ party_sites
   id, party_id
   code, name
   address_line1, address_line2
-  city, state, postal_code, country_id
+  city, state, postal_code
+  country_code      char(2), NULLABLE   -- ISO 3166-1 alpha-2, uppercase
   status            ACTIVE | ARCHIVED
 
   unique(['party_id', 'code'])
@@ -115,6 +116,16 @@ rejected.
 a `customer_sites` row and a `supplier_sites` row — e.g. goods are both delivered to and shipped
 from the same factory address. Role-specific meaning (is this a bill-to, a ship-from) lives on
 the join row, not on the site itself.
+
+### Country as a code, not a reference
+
+`party_sites.country_code` is a plain ISO 3166-1 alpha-2 string (normalised to uppercase in the
+application, same discipline as [items.md](items.md#landmines) uses for item codes), not a
+foreign key — no `countries` table exists in this codebase, and nothing yet needs more than a
+code (tax rules, address formatting, subdivisions). `multi-tenancy.md` lists `countries` as an
+example of a genuinely global table *if* one is ever built; until then, validate the code at the
+application layer. Migrating to a real FK later is a backfill-by-code plus a column swap, not a
+redesign.
 
 ### Codes
 

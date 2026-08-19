@@ -12,7 +12,7 @@ multi-tenant so that enabling it later is days of work, not months
 
 ## The five rules
 
-### 1. `company_id` on every business table
+### 1. `company_id` on every independently-queried business table
 
 From the first migration. Defaults to `1`. Not nullable.
 
@@ -20,7 +20,60 @@ Named `company_id` rather than `tenant_id` deliberately — multi-entity and mul
 structures are useful within a single organisation, so the column has value immediately rather
 than sitting unused.
 
-Excluded: genuinely global tables (`currencies`, `countries`, system settings).
+Excluded:
+
+- **Genuinely global tables** (`currencies`, `countries`, system settings) — shared across every
+  company, not scoped at all.
+- **Child tables that only ever make sense attached to a parent** — line items, join rows,
+  version records: `invoice_lines`, `journal_lines`, `job_lines`, `assembly_components`,
+  `assembly_versions`, `locations` (bins inside a `warehouse`), `party_contacts`/`party_sites`
+  ([parties.md](../domain/parties.md)). Nobody queries "all invoice lines across the company"
+  without going through an invoice first — these inherit tenant scope through their parent's
+  `company_id` rather than carrying their own. See below.
+
+The dividing line: would a screen ever list rows from this table without first picking a parent?
+If yes, it's independently queried — give it `company_id` directly. If no, it's a child — scope
+it through the parent. A few tables that are technically derived from a parent document still
+get `company_id` directly because they *are* queried independently and heavily —
+`customer_ledger_entries`, `stock_moves`, `stock_layers` (statements, valuation, aging) — the
+test is query pattern, not data lineage.
+
+#### Child tables scope through their parent
+
+`BelongsToCompany` can't help these — its global scope filters on the model's own `company_id`
+column, which a child table doesn't have. Use `App\Support\Concerns\BelongsToCompanyThroughParent`
+instead:
+
+```php
+class PartyContact extends Model
+{
+    use BelongsToCompanyThroughParent;
+
+    public function party(): BelongsTo
+    {
+        return $this->belongsTo(Party::class);
+    }
+
+    protected static function companyScopeRelation(): string
+    {
+        return 'party';
+    }
+}
+```
+
+Two guarantees, not one:
+
+- **Read side** — a global scope constrains through the named relation (`whereHas('party')`).
+  No explicit `company_id` comparison appears here; it's inherited for free because `Party`
+  already carries its own `BelongsToCompany` scope. This composes through multiple hops
+  automatically — a table two levels removed from `company_id` just names its immediate parent,
+  and that parent's own scope (direct, or itself through a further `BelongsToCompanyThroughParent`
+  hop) does the rest.
+- **Write side** — a `creating` hook re-resolves the parent through its own scoped query before
+  allowing the insert. `PartyContact::create(['party_id' => <another company's party>, ...])`
+  throws immediately, at the model layer. This is what makes the guarantee structural rather than
+  a convention an Action has to remember to check — the exact risk direct scoping was designed to
+  avoid in the first place.
 
 ### 2. Composite unique constraints — always
 
