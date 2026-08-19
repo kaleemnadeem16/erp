@@ -8,7 +8,7 @@ Eight phases, each independently shippable. Current state is in
 | Phase | Name | Status | Detail |
 |---|---|---|---|
 | 0 | Foundation | In progress | [phase-0-foundation.md](phase-0-foundation.md) |
-| 1 | Master data | Not started | *expanded when reached* |
+| 1 | Master data | In progress | [phase-1-master-data.md](phase-1-master-data.md) |
 | 2 | Purchasing & stock | Not started | *expanded when reached* |
 | 3 | Estimating core | Not started | *expanded when reached* |
 | 4 | Sales pipeline | Not started | *expanded when reached* |
@@ -33,12 +33,17 @@ audit log, UoM system, custom fields, numbering sequences, Scramble → Orval pi
 → [phase-0-foundation.md](phase-0-foundation.md)
 
 ### Phase 1 — Master data
-Items and categories, customers, suppliers, currencies and exchange rates, chart of accounts.
-The GL account mapping on items is defined here even though posting comes later.
+Items and categories, customers and suppliers (unified party model,
+[ADR 0030](../decisions/0030-unified-party-model.md)), currencies and exchange rates (manual
+entry, [ADR 0031](../decisions/0031-manual-exchange-rate-entry.md)), chart of accounts. The GL
+account mapping on items is defined here even though posting comes later. Backend-only — no new
+frontend screens.
 
-*Formerly blocked by Q2 — base currency now decided
-([ADR 0024](../decisions/0024-onboarding-base-currency-and-fiscal-year.md)).*
-→ [items.md](../domain/items.md) · [multi-currency.md](../domain/multi-currency.md)
+*Formerly blocked by Q2 and Q9 — base currency and exchange-rate source now decided
+([ADR 0024](../decisions/0024-onboarding-base-currency-and-fiscal-year.md),
+[ADR 0031](../decisions/0031-manual-exchange-rate-entry.md)).*
+→ [phase-1-master-data.md](phase-1-master-data.md) · [items.md](../domain/items.md) ·
+[parties.md](../domain/parties.md) · [multi-currency.md](../domain/multi-currency.md)
 
 ### Phase 2 — Purchasing & stock
 Purchase orders, goods receipt, warehouses and locations, stock moves, AVCO valuation, physical

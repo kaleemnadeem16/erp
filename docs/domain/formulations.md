@@ -31,7 +31,7 @@ formulations
   code, name
   output_qty         decimal(19,6)     -- usually 1
   output_uom_id      → uoms            -- e.g. litre
-  customer_id        NULLABLE → customers   ← the override mechanism
+  customer_id        NULLABLE → customer_accounts   ← the override mechanism
   status             DRAFT | ACTIVE | ARCHIVED
 
   unique(['company_id', 'code'])
@@ -116,4 +116,5 @@ debugging hard. Cap depth and surface the limit clearly.
 - [application-rates.md](application-rates.md) — the layer above
 - [stock.md](stock.md) — where ingredient cost comes from
 - [assemblies.md](assemblies.md) — how formulations enter a sellable price
+- [parties.md](parties.md) — `customer_id` references a `customer_accounts` row
 - [ADR 0008](../decisions/0008-assembly-abstraction.md)

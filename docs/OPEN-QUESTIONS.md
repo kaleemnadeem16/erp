@@ -21,7 +21,8 @@ None currently. Q1, Q2 and Q3 were resolved on 2026-08-10 — see
 Q6 (data import mechanism) and Q7 (permissions mechanism) resolved 2026-08-10 — see
 [ADR 0027](decisions/0027-generic-column-mapping-import.md) and
 [ADR 0028](decisions/0028-dynamic-namespaced-permissions.md). Q7's actual role/permission
-*list* is still deferred to Phase 4, per those docs.
+*list* is still deferred to Phase 4, per those docs. Q9 (exchange rate source) resolved
+2026-08-19 — see [ADR 0031](decisions/0031-manual-exchange-rate-entry.md).
 
 ### Q8 — Second customer profile
 **Blocks:** Nothing yet — but shapes Phase 3 and the plugin design
@@ -31,16 +32,25 @@ over-abstracting before a real second customer exists. Knowing who that is — a
 process actually differs — would let us validate the rate-dimension model against a real case
 instead of a hypothetical one.
 
-### Q9 — Exchange rate source: manual entry, an API, or both
-**Blocks:** Nothing in Phase 0 — the `exchange_rates` schema already has a `source` column that
-accommodates either. Blocks the actual rate-population mechanism in Phase 1+.
+### Q10 — Sharing master data across a customer's own legal entities
+**Blocks:** Nothing in Phase 1. Relevant once a customer wants more than one legal
+entity/branch under one login.
 
-[multi-currency.md](domain/multi-currency.md) documents `source` as "manual, or an API name" but
-no ADR picks one. Manual entry needs no third-party dependency but is an ongoing operational
-burden; an API (e.g. a free-tier FX rate provider) needs an API key, a rate limit to respect, and
-a scheduled job, but removes the manual step. A hybrid — API-fetched with manual override — is
-also plausible. Whichever is chosen shapes whether Phase 1+ needs a `FetchExchangeRates` job/
-console command at all.
+`company_id` is the full tenant-isolation boundary
+([GLOSSARY.md](GLOSSARY.md#company), [ADR 0004](decisions/0004-multi-tenancy-ready-schema.md)),
+not a legal-entity subdivision within one customer. Today, "multi-entity support" means another
+row in `companies`, isolated from its sibling exactly as strictly as from an unrelated tenant —
+the only planned bridge is user membership across `company_id`s
+([multi-tenancy.md](architecture/multi-tenancy.md)'s planned tenant-switching UI), not shared
+data. There is no construct for sharing a specific record — e.g. a trading partner in
+[parties.md](domain/parties.md) — between two legal entities of the same real customer without
+also exposing it to unrelated tenants.
+
+Surfaced while deciding [ADR 0030](decisions/0030-unified-party-model.md) (a global, unscoped
+`parties` table was considered and rejected as the wrong fix for this). Options when it becomes
+real: a parent "account" grouping above `company_id`; per-record cross-company sharing grants; or
+accept duplication and reconcile via an external key. Not decided — no second legal entity
+exists yet to design against.
 
 ---
 

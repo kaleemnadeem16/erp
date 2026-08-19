@@ -1,7 +1,10 @@
 # Project Status
 
 **Updated:** 2026-08-19
-**Current phase:** Phase 0 — Foundation (in progress — dev environment, company scoping, auth & access, all cross-cutting mechanisms, the branching/deploy model, the Scramble → Orval pipeline, and the frontend skeleton (browser-verified) done; remaining scope is deploying to mainvm, deferred until there's a real feature worth shipping)
+**Current phase:** Phase 0 — Foundation (in progress — everything except deploying to mainvm is
+done, deliberately deferred until there's a real feature worth shipping) and Phase 1 — Master
+data (in progress — design decided, build not started; see
+[phase-1-master-data.md](phases/phase-1-master-data.md))
 **Application code:** Laravel 12 skeleton + company scoping + auth (Sanctum, roles/permissions, activity log) + UoM conversion + custom fields mechanism + gapless numbering sequences + currencies/exchange rates schema + Scramble→Orval type pipeline; React 19 + Vite frontend skeleton (login, one authenticated page, mobile-first shell); no domain code yet
 
 ---
@@ -51,7 +54,7 @@ environment before any application logic.
 | **Custom fields** — `custom_field_definitions` table (company-scoped), `App\Support\CustomFieldDataType` enum, `App\Support\Concerns\HasCustomFields` trait for entity models, `App\Rules\Support\ValidCustomFields` validation rule. No entity model uses the trait yet — that starts in Phase 1 → [phase-0-foundation.md](phases/phase-0-foundation.md#cross-cutting-mechanisms) | 2026-08-13 |
 | **Sequences** — `sequences` table (company-scoped, prefix/padding are configuration), `App\Contracts\NumberingScheme` + `App\Support\DefaultNumberingScheme` (`lockForUpdate()`, bound in `AppServiceProvider`). A raw-PDO test proves the row lock genuinely blocks a second session → [phase-0-foundation.md](phases/phase-0-foundation.md#cross-cutting-mechanisms) | 2026-08-13 |
 | **Fixed the test suite silently running against the dev database** — `phpunit.xml`'s `<env>` overrides were no-ops (PHPUnit only forces `putenv()`/`$_ENV`, but this container sets `DB_CONNECTION`/`APP_ENV`/`CACHE_STORE`/etc. as real process env vars that Laravel's `env()` reads from `$_SERVER` first, which PHPUnit never touched) — every `php artisan test` run this whole session, and likely before, had actually been hitting the dev `erp` database and dev Redis, not the isolated `erp_testing`/array/sync test config. Fixed with a `tests/bootstrap.php` that sets `$_SERVER` directly before Laravel loads → [phase-0-foundation.md](phases/phase-0-foundation.md#cross-cutting-mechanisms) | 2026-08-13 |
-| **Currencies** — `currencies` table (**global, not company-scoped**, per multi-tenancy.md rule 1), `exchange_rates` (company-scoped, composite unique on company/pair/date/type), `App\Support\RateType` enum. Schema only — rate data and its source (manual vs. an API) is Phase 1+, logged as [Q9](OPEN-QUESTIONS.md#q9--exchange-rate-source-manual-entry-an-api-or-both). **All four Phase 0 cross-cutting mechanisms (UoM, custom fields, sequences, currencies) are now done** → [phase-0-foundation.md](phases/phase-0-foundation.md#cross-cutting-mechanisms) | 2026-08-13 |
+| **Currencies** — `currencies` table (**global, not company-scoped**, per multi-tenancy.md rule 1), `exchange_rates` (company-scoped, composite unique on company/pair/date/type), `App\Support\RateType` enum. Schema only — rate data and its source (manual vs. an API) deferred to Phase 1+ as Q9, later resolved to manual entry only, see [ADR 0031](decisions/0031-manual-exchange-rate-entry.md). **All four Phase 0 cross-cutting mechanisms (UoM, custom fields, sequences, currencies) are now done** → [phase-0-foundation.md](phases/phase-0-foundation.md#cross-cutting-mechanisms) | 2026-08-13 |
 | **Branching/deploy model decided**: `develop` (default, never deploys) + `main` (deploy-triggering only), `hotfix/*` off `main` → [ADR 0029](decisions/0029-develop-main-branching-model.md); [ci-cd.md](architecture/ci-cd.md) pipeline updated to scope image build/deploy to `main` only. Root `.dockerignore` added. | 2026-08-14 |
 | **Scramble → Orval type pipeline** — `dedoc/scramble` installed and exporting the OpenAPI spec from the existing auth routes; `frontend/packages/core-api` (Orval, `client: react-query`, `httpClient: fetch`, a Sanctum-aware custom mutator) generates typed TanStack Query hooks from it — verified deterministic across re-runs and type-checks clean. `.github/workflows/pipeline.yml` wires lint/test/codegen-drift-check on every branch and gates the amd64+arm64 image build to `main`, per ADR 0029, and `frontend/` is committed → [phase-0-foundation.md](phases/phase-0-foundation.md#api--type-pipeline) | 2026-08-14 |
 | **CI pipeline verified green end-to-end on real GitHub Actions** — fixed 4 CI-only bugs found on the first real run: `codegen-check` had no postgres service at all (Scramble's type inference queries real table schema), `migrate --force` tried to reach a nonexistent `redis` host (added `CACHE_STORE=array`/`SESSION_DRIVER=array`/`QUEUE_CONNECTION=sync` to that job only), `LoginTest`/`LogoutTest` had a hardcoded `Referer: localhost:5173` that broke Sanctum's stateful-session detection after the port move to 5176, and `storage/api-docs/` (gitignored) didn't exist in a fresh checkout. All jobs (`lint-backend`, `lint-frontend`, `test`, `codegen-check`, `build` amd64+arm64, `merge-manifest`) now pass | 2026-08-18 |
@@ -59,6 +62,7 @@ environment before any application logic.
 | **Branching model operationalized** — `develop` branch cut from `main` and set as the GitHub default; `main` is now deploy-triggering only, per ADR 0029. Branch protection on `main` (required CI checks, no direct pushes) is **not enforced by GitHub** — private repos need GitHub Pro for branch protection on the Free plan — so it's followed by convention (merge via PR only) until that's revisited | 2026-08-18 |
 | **Frontend skeleton** — `packages/core-ui` (shadcn `Button`/`Input`/`Label` primitives, `AppShell` with a responsive bottom-tabs/sidebar layout, `LoginScreen`, `DashboardScreen`, a Zustand `useAuthStore` mirroring the session TanStack Query resolves) and `apps/main` (Vite + React 19, Tailwind v4, `react-router` v7, `vite-plugin-pwa`) wired to the generated `core-api` client. Found and fixed a real bug in the process: `fetchClient` was returning the raw response body instead of the `{data, status, headers}` envelope Orval's generated hook types expect — nothing caught it earlier since no frontend code had consumed the hooks until now. Full login→session-check→logout HTTP cycle verified against the dev backend with curl, and confirmed with a real browser login (screenshots: sign-in form, dashboard, sidebar with logout) → [phase-0-foundation.md](phases/phase-0-foundation.md#frontend-skeleton) | 2026-08-18 |
 | **Frontend production Dockerfile** (`docker/frontend/Dockerfile`) — multi-stage: `node:22-alpine` runs `vite build`, discarded; `nginx:1.27-alpine` serves the static output, with SPA fallback (`try_files … /index.html`, so a direct hit on `/login` doesn't 404) and immutable long-cache headers on Vite's content-hashed `/assets/`. Built and smoke-tested locally (`/`, `/login`, and the asset `Cache-Control` header all verified). CI's `build`/`merge-manifest` jobs now push `erp-frontend` alongside `erp-backend`, so `docker-compose.prod.yml` is fully runnable once deployment itself is picked up | 2026-08-18 |
+| **Phase 1 master-data design decided**: customers/suppliers modelled as a unified party (identity + role-specific `customer_accounts`/`supplier_accounts` + shared `party_sites`), company-scoped with no exception to the tenant-isolation invariant, organisations-only for now → [ADR 0030](decisions/0030-unified-party-model.md), [parties.md](domain/parties.md); item categories made hierarchical with GL-default inheritance walking up the tree → [items.md](domain/items.md); exchange rates resolved to manual entry only, closing Q9 → [ADR 0031](decisions/0031-manual-exchange-rate-entry.md). Surfaced a real architecture gap in the process — `company_id` is the full tenant-isolation boundary with no construct for sharing data across one customer's own multiple legal entities — logged as [Q10](OPEN-QUESTIONS.md#q10--sharing-master-data-across-a-customers-own-legal-entities), not blocking. Phase 1 scoped backend-only; frontend CRUD stays deferred to Phase 4 → [phase-1-master-data.md](phases/phase-1-master-data.md) | 2026-08-19 |
 | **Verified the two pre-Phase-1 infra checks directly against dbvm/mainvm** (no app deployment needed — both are checks against infra that already runs independently of our app, per [environments.md](architecture/environments.md#do-not-run-our-own-postgres-or-redis-in-production)): `btree_gist` is available on dbvm's Postgres (`default_version 1.7`) but not yet installed on the `erp` database — it's a trusted extension since PG13, so `erp_app` shouldn't need superuser to `CREATE EXTENSION IF NOT EXISTS btree_gist;` in whichever migration first needs an exclusion constraint; actual install deferred to that migration. `REDIS_PREFIX=erp_` (explicit in our `.env.example`) confirmed distinct from both existing apps on mainvm, neither of which sets `REDIS_PREFIX` explicitly: invoiceflow defaults to `invoiceflow_database_` (from `APP_NAME=InvoiceFlow`), CRM defaults to `x1techs_crm_database_` (from `APP_NAME="X1Techs CRM"`) — checked via `docker inspect` on the running `invoiceflow-backend`/`crm_backend_prod` containers | 2026-08-19 |
 
 ## In progress
@@ -78,35 +82,41 @@ Session note: work moved from a Windows-side VS Code window (browsing the repo o
 `\\wsl.localhost\...`) to a proper **Remote-WSL** VS Code window on 2026-08-11 — do Docker/git
 commands natively from the WSL shell now, no `wsl.exe`/`MSYS_NO_PATHCONV` wrapping needed.
 
+Phase 1's master-data design is decided (see Done table above) but no build work has started —
+see [phase-1-master-data.md](phases/phase-1-master-data.md) for the task list.
+
 ## Next
 
-**[Phase 0 — Foundation](phases/phase-0-foundation.md).** Dev environment, company scoping, auth
-& access, all four cross-cutting mechanisms, the Scramble → Orval type pipeline (CI-verified
-green), the `develop`/`main` branching model, the frontend skeleton (browser-verified), and its
-production Dockerfile are all done — see the phase doc for the remaining acceptance criteria
-(mostly production-deployment items, deliberately deferred).
+**[Phase 1 — Master data](phases/phase-1-master-data.md).** Design is decided (see Done table
+above); build has not started. Pick up with the task list in the phase doc: `categories` +
+hierarchical GL-default resolution, `items`, the five `parties.md` tables
+(`parties`/`party_contacts`/`party_sites`/`customer_accounts`/`supplier_accounts`/
+`customer_sites`/`supplier_sites`), `chart_of_accounts`/`accounting_periods`, manual
+exchange-rate entry, and wiring `HasCustomFields` onto `items`/`parties` — its first real use
+since Phase 0 built it unused. Backend-only; no new frontend screens this phase.
 
-Phase 0 has no dependency on the open questions below and **can proceed.**
+[Phase 0 — Foundation](phases/phase-0-foundation.md) remains in progress in parallel — the two
+former blockers are resolved (`btree_gist` confirmed available on dbvm, `REDIS_PREFIX=erp_`
+collision check came back clean) and nothing else is outstanding except the deliberately-deferred
+production deployment.
 
-The two remaining pre-Phase-1 infra checks are resolved (see Done table above): `btree_gist` is
-confirmed available on dbvm and will be installed by whichever migration first needs it; the
-`REDIS_PREFIX=erp_` collision check came back clean. Nothing is blocking the move into **Phase 1
-— Master data**.
+Neither phase has a dependency on the open questions below and **both can proceed.**
 
 ## Blocked / awaiting input
 
 None currently blocking. Q1–Q7 resolved 2026-08-10 (see ADRs 0023–0028 above).
 
 Full list: [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) — 0 blocking, 2 non-blocking (second customer
-profile; exchange rate source). Q7's actual role/permission list is still deferred to Phase 4,
-per ADR 0028.
+profile; sharing master data across a customer's own legal entities). Q7's actual
+role/permission list is still deferred to Phase 4, per ADR 0028. Q9 (exchange rate source)
+resolved 2026-08-19 — see ADR 0031.
 
 ## Roadmap at a glance
 
 | Phase | Name | Status |
 |---|---|---|
 | 0 | [Foundation](phases/phase-0-foundation.md) | In progress |
-| 1 | Master data | Not started |
+| 1 | [Master data](phases/phase-1-master-data.md) | In progress |
 | 2 | Purchasing & stock | Not started |
 | 3 | Estimating core | Not started |
 | 4 | Sales pipeline | Not started |

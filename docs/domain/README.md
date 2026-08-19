@@ -75,6 +75,7 @@ Lead → Opportunity → Quotation (revisions) → Job → Work Order → Invoic
 
 | Doc | Covers |
 |---|---|
+| [parties.md](parties.md) | Customers and suppliers — unified party model, role accounts, sites |
 | [stock.md](stock.md) | Warehouses, moves, AVCO valuation |
 | [sales-pipeline.md](sales-pipeline.md) | Leads, opportunities, quotations, revisions |
 | [job-costing.md](job-costing.md) | Jobs, work orders, timesheets, variance |
