@@ -1,6 +1,6 @@
 # Project Status
 
-**Updated:** 2026-08-18
+**Updated:** 2026-08-19
 **Current phase:** Phase 0 — Foundation (in progress — dev environment, company scoping, auth & access, all cross-cutting mechanisms, the branching/deploy model, the Scramble → Orval pipeline, and the frontend skeleton (browser-verified) done; remaining scope is deploying to mainvm, deferred until there's a real feature worth shipping)
 **Application code:** Laravel 12 skeleton + company scoping + auth (Sanctum, roles/permissions, activity log) + UoM conversion + custom fields mechanism + gapless numbering sequences + currencies/exchange rates schema + Scramble→Orval type pipeline; React 19 + Vite frontend skeleton (login, one authenticated page, mobile-first shell); no domain code yet
 
@@ -59,6 +59,7 @@ environment before any application logic.
 | **Branching model operationalized** — `develop` branch cut from `main` and set as the GitHub default; `main` is now deploy-triggering only, per ADR 0029. Branch protection on `main` (required CI checks, no direct pushes) is **not enforced by GitHub** — private repos need GitHub Pro for branch protection on the Free plan — so it's followed by convention (merge via PR only) until that's revisited | 2026-08-18 |
 | **Frontend skeleton** — `packages/core-ui` (shadcn `Button`/`Input`/`Label` primitives, `AppShell` with a responsive bottom-tabs/sidebar layout, `LoginScreen`, `DashboardScreen`, a Zustand `useAuthStore` mirroring the session TanStack Query resolves) and `apps/main` (Vite + React 19, Tailwind v4, `react-router` v7, `vite-plugin-pwa`) wired to the generated `core-api` client. Found and fixed a real bug in the process: `fetchClient` was returning the raw response body instead of the `{data, status, headers}` envelope Orval's generated hook types expect — nothing caught it earlier since no frontend code had consumed the hooks until now. Full login→session-check→logout HTTP cycle verified against the dev backend with curl, and confirmed with a real browser login (screenshots: sign-in form, dashboard, sidebar with logout) → [phase-0-foundation.md](phases/phase-0-foundation.md#frontend-skeleton) | 2026-08-18 |
 | **Frontend production Dockerfile** (`docker/frontend/Dockerfile`) — multi-stage: `node:22-alpine` runs `vite build`, discarded; `nginx:1.27-alpine` serves the static output, with SPA fallback (`try_files … /index.html`, so a direct hit on `/login` doesn't 404) and immutable long-cache headers on Vite's content-hashed `/assets/`. Built and smoke-tested locally (`/`, `/login`, and the asset `Cache-Control` header all verified). CI's `build`/`merge-manifest` jobs now push `erp-frontend` alongside `erp-backend`, so `docker-compose.prod.yml` is fully runnable once deployment itself is picked up | 2026-08-18 |
+| **Verified the two pre-Phase-1 infra checks directly against dbvm/mainvm** (no app deployment needed — both are checks against infra that already runs independently of our app, per [environments.md](architecture/environments.md#do-not-run-our-own-postgres-or-redis-in-production)): `btree_gist` is available on dbvm's Postgres (`default_version 1.7`) but not yet installed on the `erp` database — it's a trusted extension since PG13, so `erp_app` shouldn't need superuser to `CREATE EXTENSION IF NOT EXISTS btree_gist;` in whichever migration first needs an exclusion constraint; actual install deferred to that migration. `REDIS_PREFIX=erp_` (explicit in our `.env.example`) confirmed distinct from both existing apps on mainvm, neither of which sets `REDIS_PREFIX` explicitly: invoiceflow defaults to `invoiceflow_database_` (from `APP_NAME=InvoiceFlow`), CRM defaults to `x1techs_crm_database_` (from `APP_NAME="X1Techs CRM"`) — checked via `docker inspect` on the running `invoiceflow-backend`/`crm_backend_prod` containers | 2026-08-19 |
 
 ## In progress
 
@@ -87,9 +88,10 @@ production Dockerfile are all done — see the phase doc for the remaining accep
 
 Phase 0 has no dependency on the open questions below and **can proceed.**
 
-Remaining before code beyond the skeleton starts: enable `btree_gist` (via a migration) and
-confirm the `REDIS_PREFIX=erp_` doesn't collide with invoiceflow/crm on mainvm (unverified from
-this dev environment — needs a look at their actual runtime config).
+The two remaining pre-Phase-1 infra checks are resolved (see Done table above): `btree_gist` is
+confirmed available on dbvm and will be installed by whichever migration first needs it; the
+`REDIS_PREFIX=erp_` collision check came back clean. Nothing is blocking the move into **Phase 1
+— Master data**.
 
 ## Blocked / awaiting input
 

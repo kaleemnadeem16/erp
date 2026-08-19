@@ -72,7 +72,13 @@ feature.
 - [x] ~~Create the ERP database on dbvm's PostgreSQL~~ — done 2026-08-11, `erp` database owned by
       new role `erp_app` on the existing shared `postgres` container (no new instance provisioned)
 - [ ] Enable the `btree_gist` extension — needed for version-period exclusion constraints
-- [ ] Confirm the Redis key prefix does not collide with invoiceflow or crm
+      (confirmed available on dbvm's Postgres 2026-08-19, `default_version 1.7`, not yet
+      installed on `erp` — deferred to whichever migration first adds an exclusion constraint)
+- [x] ~~Confirm the Redis key prefix does not collide with invoiceflow or crm~~ — done
+      2026-08-19, checked via `docker inspect` on the running `invoiceflow-backend`/
+      `crm_backend_prod` containers on mainvm: neither sets `REDIS_PREFIX` explicitly, so both
+      fall back to Laravel's `APP_NAME`-derived default (`invoiceflow_database_`,
+      `x1techs_crm_database_`), distinct from our explicit `REDIS_PREFIX=erp_`
 - [ ] Traefik labels + `proxy-net` attachment, matching the invoiceflow pattern
 - [x] ~~Prune stale images on mainvm~~ — done 2026-07-29, ~20 GB reclaimed (2 GB build cache/orphaned
       images + 18 GB stale rollback and version tags). See [ci-cd.md](../architecture/ci-cd.md#image-retention)
