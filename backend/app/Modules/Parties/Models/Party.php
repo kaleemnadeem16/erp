@@ -4,6 +4,7 @@ namespace App\Modules\Parties\Models;
 
 use App\Models\Model;
 use App\Support\Concerns\BelongsToCompany;
+use App\Support\Concerns\HasCustomFields;
 use App\Support\Status;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -26,6 +27,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Party extends Model
 {
     use BelongsToCompany;
+    use HasCustomFields;
     use SoftDeletes;
 
     protected $guarded = ['id'];
@@ -36,7 +38,6 @@ class Party extends Model
     protected function casts(): array
     {
         return [
-            'custom_fields' => 'array',
             'status' => Status::class,
         ];
     }

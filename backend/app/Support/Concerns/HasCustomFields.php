@@ -14,10 +14,8 @@ use Illuminate\Support\Collection;
  * have a `custom_fields` jsonb column (nullable, defaulting to '{}'); this trait does
  * not add one, since it applies to whichever entity tables opt in.
  *
- * No model uses this yet — entity tables arrive in Phase 1 (see docs/STATUS.md).
- * Remove the ignore below once the first one does.
+ * First used by App\Modules\Parties\Models\Party.
  */
-// @phpstan-ignore trait.unused
 trait HasCustomFields
 {
     /**
@@ -37,6 +35,10 @@ trait HasCustomFields
      */
     public static function customFieldEntityType(): string
     {
+        // Safe here even though PHPStan can't prove it generally: this trait is
+        // only ever mixed into Eloquent models, whose constructor always accepts
+        // zero arguments.
+        // @phpstan-ignore new.static
         return (new static)->getTable();
     }
 
