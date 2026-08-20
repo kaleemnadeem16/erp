@@ -40,8 +40,15 @@ plain foreign key can't stop on its own: pointing at another company's row, and 
 category under its own descendant (which would turn GL-account resolution into an infinite
 loop). See the `guardParent()` docblock on the model.
 
+`Item.valuation_method` resolves differently from the GL account columns: it's set once, at
+creation (an explicit override, or `Category::resolveDefaultValuationMethod()`), and stored
+directly rather than re-resolved on every read — a later change to the category default must not
+silently move an already-created item's official cost basis. See
+[ADR 0032](../../../../docs/decisions/0032-per-item-valuation-method.md).
+
 ## Related
 
 - [domain/items.md](../../../../docs/domain/items.md)
 - [domain/stock.md](../../../../docs/domain/stock.md)
+- [decisions/0032-per-item-valuation-method.md](../../../../docs/decisions/0032-per-item-valuation-method.md)
 - [architecture/multi-tenancy.md](../../../../docs/architecture/multi-tenancy.md)

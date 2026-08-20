@@ -8,18 +8,30 @@ use App\Models\Model;
 use App\Models\Uom;
 use App\Modules\Inventory\Support\ItemTracking;
 use App\Modules\Inventory\Support\ItemType;
+use App\Modules\Inventory\Support\ValuationMethod;
 use App\Support\Concerns\BelongsToCompany;
 use App\Support\Concerns\HasCustomFields;
 use App\Support\Status;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use RuntimeException;
 
 /**
  * Everything the company buys, holds, makes, consumes or sells — see
  * docs/domain/items.md. resolve*AccountId() prefers the item's own account
  * column and falls through to its category's resolution
  * (Category::resolve*AccountId()) when unset, per "GL mapping" in that doc.
+ *
+ * valuation_method works differently: it's resolved once, in booted()'s
+ * creating hook, from an explicit override or Category::
+ * resolveDefaultValuationMethod(), and stored directly — not re-resolved on
+ * every read the way the GL columns are, since a later change to the
+ * category default must not silently move an already-created item. See
+ * docs/domain/items.md "Valuation method" and
+ * docs/decisions/0032-per-item-valuation-method.md. Locking it once the item
+ * has inventory transactions is a Phase 2 concern (no stock_moves table
+ * exists yet to check against) — deliberately not implemented here.
  *
  * @property string $code
  * @property string $name
@@ -29,7 +41,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property bool $is_stocked
  * @property bool $is_purchasable
  * @property bool $is_sellable
- * @property string $valuation_method
+ * @property ValuationMethod $valuation_method
  * @property ItemTracking $tracking
  * @property int $category_id
  * @property int|null $default_supplier_id
@@ -47,6 +59,20 @@ class Item extends Model
 
     protected $guarded = ['id'];
 
+    protected static function booted(): void
+    {
+        static::creating(function (Item $item): void {
+            $item->valuation_method ??= $item->category?->resolveDefaultValuationMethod();
+
+            if ($item->valuation_method === null) {
+                throw new RuntimeException(sprintf(
+                    'Item cannot be created: no valuation_method given, and category %d sets no default_valuation_method anywhere in its ancestry.',
+                    $item->category_id,
+                ));
+            }
+        });
+    }
+
     /**
      * @return array<string, string>
      */
@@ -57,6 +83,7 @@ class Item extends Model
             'is_stocked' => 'bool',
             'is_purchasable' => 'bool',
             'is_sellable' => 'bool',
+            'valuation_method' => ValuationMethod::class,
             'tracking' => ItemTracking::class,
             'status' => Status::class,
         ];

@@ -7,10 +7,12 @@ use App\Modules\Inventory\Models\Category;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Support\ItemTracking;
 use App\Modules\Inventory\Support\ItemType;
+use App\Modules\Inventory\Support\ValuationMethod;
 use App\Support\Status;
 use App\Support\UomDimension;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use RuntimeException;
 use Tests\TestCase;
 
 class ItemTest extends TestCase
@@ -28,7 +30,9 @@ class ItemTest extends TestCase
 
     private function defaultCategory(): Category
     {
-        return $this->defaultCategory ??= Category::create(['code' => 'RAW', 'name' => 'Raw materials']);
+        return $this->defaultCategory ??= Category::create([
+            'code' => 'RAW', 'name' => 'Raw materials', 'default_valuation_method' => ValuationMethod::Avco,
+        ]);
     }
 
     /**
@@ -43,10 +47,14 @@ class ItemTest extends TestCase
     /**
      * A distinct category from defaultCategory(), for tests that need their own — e.g. one
      * carrying different GL accounts, without colliding on the ['company_id', 'code'] unique.
+     * Carries a default_valuation_method so item creation resolves unless a test overrides it.
      */
     private function makeCategory(array $attributes = []): Category
     {
-        return Category::create(array_merge(['code' => 'OTHER', 'name' => 'Other'], $attributes));
+        return Category::create(array_merge(
+            ['code' => 'OTHER', 'name' => 'Other', 'default_valuation_method' => ValuationMethod::Avco],
+            $attributes,
+        ));
     }
 
     /**
@@ -150,5 +158,41 @@ class ItemTest extends TestCase
         $item = Item::create($this->baseAttributes());
 
         $this->assertNull($item->resolveIncomeAccountId());
+    }
+
+    public function test_valuation_method_defaults_from_the_categorys_resolved_default(): void
+    {
+        $category = $this->makeCategory(['default_valuation_method' => ValuationMethod::Fifo]);
+        $item = Item::create($this->baseAttributes(['category_id' => $category->id]));
+
+        $this->assertSame(ValuationMethod::Fifo, $item->fresh()->valuation_method);
+    }
+
+    public function test_valuation_method_can_be_overridden_per_item(): void
+    {
+        $category = $this->makeCategory(['default_valuation_method' => ValuationMethod::Avco]);
+        $item = Item::create($this->baseAttributes(['category_id' => $category->id, 'valuation_method' => ValuationMethod::Specific]));
+
+        $this->assertSame(ValuationMethod::Specific, $item->fresh()->valuation_method);
+    }
+
+    public function test_valuation_method_is_stored_once_and_does_not_track_a_later_category_change(): void
+    {
+        $category = $this->makeCategory(['default_valuation_method' => ValuationMethod::Avco]);
+        $item = Item::create($this->baseAttributes(['category_id' => $category->id]));
+
+        $category->update(['default_valuation_method' => ValuationMethod::Fifo]);
+
+        $this->assertSame(ValuationMethod::Avco, $item->fresh()->valuation_method);
+    }
+
+    public function test_creating_an_item_throws_when_neither_it_nor_its_category_chain_sets_a_valuation_method(): void
+    {
+        $category = Category::create(['code' => 'UNRESOLVED', 'name' => 'Unresolved']);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('no valuation_method given');
+
+        Item::create($this->baseAttributes(['category_id' => $category->id]));
     }
 }

@@ -3,6 +3,7 @@
 namespace Tests\Feature\Modules\Inventory;
 
 use App\Modules\Inventory\Models\Category;
+use App\Modules\Inventory\Support\ValuationMethod;
 use App\Support\CompanyContext;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -98,6 +99,42 @@ class CategoryTest extends TestCase
         $child = Category::create(['code' => 'PIGMENTS', 'name' => 'Pigments', 'parent_id' => $parent->id]);
 
         $this->assertNull($child->resolveIncomeAccountId());
+    }
+
+    public function test_default_valuation_method_casts_to_the_enum(): void
+    {
+        $category = Category::create(['code' => 'RAW', 'name' => 'Raw materials', 'default_valuation_method' => ValuationMethod::Avco]);
+
+        $this->assertSame(ValuationMethod::Avco, $category->fresh()->default_valuation_method);
+    }
+
+    public function test_default_valuation_method_walks_up_to_the_nearest_ancestor_with_a_value_set(): void
+    {
+        $grandparent = Category::create(['code' => 'RAW', 'name' => 'Raw materials', 'default_valuation_method' => ValuationMethod::Avco]);
+        $parent = Category::create(['code' => 'PIGMENTS', 'name' => 'Pigments', 'parent_id' => $grandparent->id]);
+        $child = Category::create(['code' => 'REDS', 'name' => 'Reds', 'parent_id' => $parent->id]);
+
+        $this->assertSame(ValuationMethod::Avco, $child->resolveDefaultValuationMethod());
+    }
+
+    public function test_default_valuation_method_prefers_the_nearer_ancestor(): void
+    {
+        $grandparent = Category::create(['code' => 'RAW', 'name' => 'Raw materials', 'default_valuation_method' => ValuationMethod::Avco]);
+        $parent = Category::create([
+            'code' => 'RESALE', 'name' => 'Resale goods',
+            'parent_id' => $grandparent->id, 'default_valuation_method' => ValuationMethod::Fifo,
+        ]);
+        $child = Category::create(['code' => 'IMPORTED', 'name' => 'Imported paint', 'parent_id' => $parent->id]);
+
+        $this->assertSame(ValuationMethod::Fifo, $child->resolveDefaultValuationMethod());
+    }
+
+    public function test_default_valuation_method_returns_null_when_nothing_in_the_chain_sets_it(): void
+    {
+        $parent = Category::create(['code' => 'RAW', 'name' => 'Raw materials']);
+        $child = Category::create(['code' => 'PIGMENTS', 'name' => 'Pigments', 'parent_id' => $parent->id]);
+
+        $this->assertNull($child->resolveDefaultValuationMethod());
     }
 
     public function test_a_category_cannot_be_set_as_its_own_parent(): void

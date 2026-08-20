@@ -5,21 +5,26 @@ declare(strict_types=1);
 namespace App\Modules\Inventory\Models;
 
 use App\Models\Model;
+use App\Modules\Inventory\Support\ValuationMethod;
 use App\Support\Concerns\BelongsToCompany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use RuntimeException;
 
 /**
- * A hierarchical grouping for items, carrying GL-account defaults that an item
- * inherits when it leaves its own account columns unset — see
- * docs/domain/items.md "GL mapping". resolve*AccountId() walks up parent() to
- * the nearest ancestor with that column set; a chain that resolves to nothing
- * returns null rather than falling back to any default, per that doc.
+ * A hierarchical grouping for items, carrying GL-account and valuation-method
+ * defaults that an item inherits when it leaves its own columns unset — see
+ * docs/domain/items.md "GL mapping" and "Valuation method". resolve*() walks
+ * up parent() to the nearest ancestor with that column set; a chain that
+ * resolves to nothing returns null rather than falling back to any default,
+ * per that doc — the account resolvers stay that way, but
+ * resolveDefaultValuationMethod() is only ever consulted by Item at creation
+ * time, which does enforce a final answer (see Item::booted()).
  *
  * @property string $code
  * @property string $name
  * @property int|null $parent_id
+ * @property ValuationMethod|null $default_valuation_method
  * @property int|null $income_account_id
  * @property int|null $expense_account_id
  * @property int|null $inventory_account_id
@@ -35,6 +40,16 @@ class Category extends Model
         static::saving(function (Category $category): void {
             $category->guardParent();
         });
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'default_valuation_method' => ValuationMethod::class,
+        ];
     }
 
     /**
@@ -66,6 +81,17 @@ class Category extends Model
     public function resolveInventoryAccountId(): ?int
     {
         return $this->resolveAccountId('inventory_account_id');
+    }
+
+    public function resolveDefaultValuationMethod(): ?ValuationMethod
+    {
+        for ($category = $this; $category !== null; $category = $category->parent) {
+            if ($category->default_valuation_method !== null) {
+                return $category->default_valuation_method;
+            }
+        }
+
+        return null;
     }
 
     private function resolveAccountId(string $column): ?int
