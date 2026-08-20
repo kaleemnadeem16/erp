@@ -47,7 +47,20 @@ transactions yet. This is backend-only; the first substantial frontend work is
 
 ## Tasks
 
-- [ ] `categories` table + hierarchical GL-default resolution (`items.md`)
+- [x] ~~`categories` table + hierarchical GL-default resolution (`items.md`)~~ — done
+      2026-08-20. `App\Modules\Inventory\Models\Category` (`BelongsToCompany`, self-referencing
+      `parent_id`), `resolveIncomeAccountId()`/`resolveExpenseAccountId()`/
+      `resolveInventoryAccountId()` walk `parent()` to the nearest ancestor with that column
+      set, returning null rather than a fallback default when nothing in the chain sets it, per
+      the doc. `income_account_id`/`expense_account_id`/`inventory_account_id` are plain
+      nullable columns with no FK yet — `chart_of_accounts` doesn't exist until later in this
+      phase's task order; add the constraint in that migration. Also closed the cycle-guard
+      landmine flagged in items.md: a `saving` hook rejects both a reparent that would create a
+      cycle and a `parent_id` that doesn't resolve to a category in the current company (the
+      same class of gap `BelongsToCompanyThroughParent` closes for child tables, but `Category`
+      carries its own `company_id` so a lighter existence+scope check was enough — no new trait
+      needed). First feature in the previously-empty `Inventory` module, so it got its
+      `README.md` scaffold too. Full toolchain green (Pest 101/101, Larastan, Pint)
 - [ ] `items` table — migration, model, `BelongsToCompany`, `HasCustomFields` wired in
 - [x] ~~`parties`, `party_contacts`, `party_sites` — migrations, models, `BelongsToCompany`,
       `HasCustomFields` on `parties`~~ — done 2026-08-19. Also required building
@@ -61,7 +74,10 @@ transactions yet. This is backend-only; the first substantial frontend work is
 - [ ] `supplier_accounts`, `supplier_sites` — migrations, models, `BelongsToCompany`
 - [ ] `chart_of_accounts`, `accounting_periods` — migrations, models
 - [ ] Manual exchange-rate entry endpoint(s) for `exchange_rates`
-- [ ] Architecture test: `categories.parent_id` has no cycle
+- [x] ~~Architecture test: `categories.parent_id` has no cycle~~ — done 2026-08-20, folded into
+      `CategoryTest` rather than `tests/Architecture/` since it's data-dependent (a
+      `Category`-specific `saving` guard, not a schema-level property `information_schema` can
+      prove on an empty table the way `CompanyScopedUniqueIndexTest` does)
 - [ ] API endpoints (`/api/v1/items`, `/categories`, `/parties`, `/customer-accounts`,
       `/supplier-accounts`, `/exchange-rates`, `/chart-of-accounts`) per api-conventions.md
 - [ ] Orval regeneration verified, `codegen-check` green on real CI

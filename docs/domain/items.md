@@ -90,7 +90,9 @@ grams. Purchase UoM is a property of the purchase line, not the item.
 
 **Category cycles.** `parent_id` is a plain self-reference with no schema-level cycle guard — a
 category accidentally set as its own ancestor would infinite-loop the GL-mapping walk above.
-Needs an application-level check (and a test) before this ships, not just a data-entry warning.
+Closed at the application level: `App\Modules\Inventory\Models\Category`'s `saving` hook walks
+the new parent chain and rejects any reparent that would revisit the category's own id, tested
+in `CategoryTest`.
 
 ## Related
 
