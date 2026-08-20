@@ -15,7 +15,9 @@ use RuntimeException;
  * Created explicitly, not auto-generated from companies.fiscal_year_start_month
  * — see docs/domain/general-ledger.md "Fiscal years and periods". Overlap and
  * starts_on <= ends_on are enforced at the database level (see the creating
- * migration), not here — nothing to guard in the model beyond company scoping.
+ * migration). The saving guard prevents later date changes from excluding a
+ * period already assigned to this fiscal year; containment must hold in both
+ * directions over the lifetime of the records.
  *
  * @property string $name
  * @property Carbon $starts_on

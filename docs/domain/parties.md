@@ -136,7 +136,10 @@ misassignment, however, is guarded now: both columns reject an id that doesn't r
 `party_sites` represents a real physical location once. The same site can be referenced by both
 a `customer_sites` row and a `supplier_sites` row — e.g. goods are both delivered to and shipped
 from the same factory address. Role-specific meaning (is this a bill-to, a ship-from) lives on
-the join row, not on the site itself.
+the join row, not on the site itself. Each join must reference a site owned by the same `party`
+as its customer or supplier account; both create and update reject a site from another party or
+company. This preserves shared sites across the two roles without allowing one trading partner's
+role configuration to attach another trading partner's address.
 
 ### Country as a code, not a reference
 

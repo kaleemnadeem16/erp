@@ -123,7 +123,10 @@ exclusion constraint, [database.md](../architecture/database.md)'s pattern for e
 `starts_on <= ends_on` `CHECK`. A period additionally can't be expressed as a same-table `CHECK`
 against its fiscal year's dates — that containment (`fiscal_year_id` resolves in-company, and the
 period's range falls entirely inside its fiscal year's) is an application-level guard on save,
-the same shape as `categories.parent_id`'s guard.
+the same shape as `categories.parent_id`'s guard. The inverse update is guarded too: once periods
+exist, changing a fiscal year's dates is rejected if the new range would exclude any of them.
+Fiscal-year edits therefore cannot silently strand previously valid periods outside their
+parent range.
 
 ### Immutability
 
