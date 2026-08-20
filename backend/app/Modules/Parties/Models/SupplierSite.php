@@ -9,6 +9,7 @@ use App\Modules\Parties\Support\SupplierSiteRole;
 use App\Support\Concerns\BelongsToCompanyThroughParent;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use RuntimeException;
 
 /**
  * Attaches a role (order-from/ship-from) to a shared PartySite for the supplier
@@ -27,6 +28,24 @@ class SupplierSite extends Model
     use SoftDeletes;
 
     protected $guarded = ['id'];
+
+    protected static function booted(): void
+    {
+        static::saving(function (SupplierSite $site): void {
+            if ($site->exists && ! $site->isDirty(['supplier_account_id', 'party_site_id'])) {
+                return;
+            }
+
+            $supplierAccount = SupplierAccount::query()->whereKey($site->supplier_account_id)->first();
+            $partySite = PartySite::query()->whereKey($site->party_site_id)->first();
+
+            if ($supplierAccount === null || $partySite === null || $supplierAccount->party_id !== $partySite->party_id) {
+                throw new RuntimeException(
+                    'SupplierSite must reference a supplier account and party site belonging to the same party in the current company.'
+                );
+            }
+        });
+    }
 
     /**
      * @return array<string, string>

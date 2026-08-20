@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use RuntimeException;
 use Tests\TestCase;
 
 class BelongsToCompanyTest extends TestCase
@@ -54,11 +55,20 @@ class BelongsToCompanyTest extends TestCase
         $this->assertSame(1, $widget->company_id);
     }
 
-    public function test_creating_does_not_override_an_explicit_company_id(): void
+    public function test_creating_rejects_an_explicit_company_id_outside_the_context(): void
     {
-        $widget = $this->widgetModel()->newQuery()->create(['name' => 'Widget A', 'company_id' => 7]);
+        $this->expectException(RuntimeException::class);
 
-        $this->assertSame(7, $widget->company_id);
+        $this->widgetModel()->newQuery()->create(['name' => 'Widget A', 'company_id' => 7]);
+    }
+
+    public function test_company_id_cannot_be_changed_after_creation(): void
+    {
+        $widget = $this->widgetModel()->newQuery()->create(['name' => 'Widget A']);
+
+        $this->expectException(RuntimeException::class);
+
+        $widget->update(['company_id' => 7]);
     }
 
     public function test_global_scope_excludes_rows_belonging_to_another_company(): void

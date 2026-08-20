@@ -139,7 +139,9 @@ partial entry that balances in one currency but not the other must be rejected.
 ### Periods
 
 Posting into a `CLOSED` period is rejected. Backdated entries need the period reopened, which
-should be permissioned and logged.
+should be permissioned and logged. The persisted `CLOSED` value already locks
+`companies.fiscal_year_start_month` per ADR 0024; the authorised close/reopen workflow itself
+remains Phase 6 work and is not implied by that setting guard.
 
 ### What posts when
 

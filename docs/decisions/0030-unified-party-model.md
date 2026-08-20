@@ -2,7 +2,7 @@
 
 # 0030 — Unified party model for customers and suppliers
 
-- **Status:** accepted
+- **Status:** superseded by [0034](0034-party-child-tables-inherit-company-scope.md)
 - **Date:** 2026-08-19
 - **Affects:** Phase 1, [domain/parties.md](../domain/parties.md)
 

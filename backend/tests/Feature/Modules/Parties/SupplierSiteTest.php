@@ -92,4 +92,33 @@ class SupplierSiteTest extends TestCase
             'role' => SupplierSiteRole::OrderFrom,
         ]);
     }
+
+    public function test_party_site_must_belong_to_the_supplier_accounts_party(): void
+    {
+        $supplierAccount = $this->supplierAccount();
+        $otherParty = Party::create(['code' => 'OTHER', 'name' => 'Other Party']);
+        $otherSite = $otherParty->sites()->create(['code' => 'HQ', 'name' => 'Other HQ']);
+
+        $this->expectException(RuntimeException::class);
+
+        $supplierAccount->sites()->create([
+            'party_site_id' => $otherSite->id,
+            'role' => SupplierSiteRole::OrderFrom,
+        ]);
+    }
+
+    public function test_relationship_ownership_is_rechecked_on_update(): void
+    {
+        $supplierAccount = $this->supplierAccount();
+        $ownSite = $supplierAccount->party->sites()->create(['code' => 'HQ', 'name' => 'HQ']);
+        $link = $supplierAccount->sites()->create([
+            'party_site_id' => $ownSite->id, 'role' => SupplierSiteRole::OrderFrom,
+        ]);
+        $otherParty = Party::create(['code' => 'OTHER', 'name' => 'Other Party']);
+        $otherSite = $otherParty->sites()->create(['code' => 'HQ', 'name' => 'Other HQ']);
+
+        $this->expectException(RuntimeException::class);
+
+        $link->update(['party_site_id' => $otherSite->id]);
+    }
 }

@@ -104,4 +104,33 @@ class CustomerSiteTest extends TestCase
             'role' => CustomerSiteRole::BillTo,
         ]);
     }
+
+    public function test_party_site_must_belong_to_the_customer_accounts_party(): void
+    {
+        $customerAccount = $this->customerAccount();
+        $otherParty = Party::create(['code' => 'OTHER', 'name' => 'Other Party']);
+        $otherSite = $otherParty->sites()->create(['code' => 'HQ', 'name' => 'Other HQ']);
+
+        $this->expectException(RuntimeException::class);
+
+        $customerAccount->sites()->create([
+            'party_site_id' => $otherSite->id,
+            'role' => CustomerSiteRole::BillTo,
+        ]);
+    }
+
+    public function test_relationship_ownership_is_rechecked_on_update(): void
+    {
+        $customerAccount = $this->customerAccount();
+        $ownSite = $customerAccount->party->sites()->create(['code' => 'HQ', 'name' => 'HQ']);
+        $link = $customerAccount->sites()->create([
+            'party_site_id' => $ownSite->id, 'role' => CustomerSiteRole::BillTo,
+        ]);
+        $otherParty = Party::create(['code' => 'OTHER', 'name' => 'Other Party']);
+        $otherSite = $otherParty->sites()->create(['code' => 'HQ', 'name' => 'Other HQ']);
+
+        $this->expectException(RuntimeException::class);
+
+        $link->update(['party_site_id' => $otherSite->id]);
+    }
 }

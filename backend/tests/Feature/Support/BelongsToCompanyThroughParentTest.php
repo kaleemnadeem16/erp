@@ -115,6 +115,20 @@ class BelongsToCompanyThroughParentTest extends TestCase
         ]);
     }
 
+    public function test_updating_a_child_to_another_companys_parent_throws(): void
+    {
+        $this->actingAsCompany(1);
+        $ownChild = $this->createChainForCurrentCompany('Company 1')['child'];
+
+        $this->actingAsCompany(2);
+        $otherCompanyParent = $this->createChainForCurrentCompany('Company 2')['parent'];
+
+        $this->actingAsCompany(1);
+        $this->expectException(RuntimeException::class);
+
+        $ownChild->update(['parent_id' => $otherCompanyParent->id]);
+    }
+
     public function test_scoping_composes_through_multiple_hops(): void
     {
         $this->actingAsCompany(2);

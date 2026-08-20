@@ -19,8 +19,8 @@ return new class extends Migration
             $table->decimal('rate', 19, 9);
             $table->date('rate_date');
             $table->string('rate_type');
-            // 'manual', or the name of whatever API supplied it — which provider (if
-            // any) is still open, see docs/OPEN-QUESTIONS.md Q9.
+            // ADR 0031 currently permits manual entry only. The nullable source remains so a
+            // future provider can be recorded without changing historical rows or this schema.
             $table->string('source')->nullable();
             $table->timestamps();
 

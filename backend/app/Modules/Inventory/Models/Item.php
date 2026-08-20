@@ -10,6 +10,7 @@ use App\Modules\Accounting\Models\ChartOfAccount;
 use App\Modules\Inventory\Support\ItemTracking;
 use App\Modules\Inventory\Support\ItemType;
 use App\Modules\Inventory\Support\ValuationMethod;
+use App\Modules\Parties\Models\SupplierAccount;
 use App\Support\Concerns\BelongsToCompany;
 use App\Support\Concerns\GuardsRelatedCompanyScope;
 use App\Support\Concerns\HasCustomFields;
@@ -84,6 +85,9 @@ class Item extends Model
     protected static function companyScopedForeignKeys(): array
     {
         return [
+            'category_id' => Category::class,
+            'stock_uom_id' => Uom::class,
+            'default_supplier_id' => SupplierAccount::class,
             'income_account_id' => ChartOfAccount::class,
             'expense_account_id' => ChartOfAccount::class,
             'inventory_account_id' => ChartOfAccount::class,

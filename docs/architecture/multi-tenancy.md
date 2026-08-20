@@ -69,9 +69,10 @@ Two guarantees, not one:
   automatically — a table two levels removed from `company_id` just names its immediate parent,
   and that parent's own scope (direct, or itself through a further `BelongsToCompanyThroughParent`
   hop) does the rest.
-- **Write side** — a `creating` hook re-resolves the parent through its own scoped query before
-  allowing the insert. `PartyContact::create(['party_id' => <another company's party>, ...])`
-  throws immediately, at the model layer. This is what makes the guarantee structural rather than
+- **Write side** — a `saving` hook re-resolves a new or changed parent through its own scoped
+  query before allowing an insert or update.
+  `PartyContact::create(['party_id' => <another company's party>, ...])` throws immediately at
+  the model layer. This is what makes the guarantee structural rather than
   a convention an Action has to remember to check — the exact risk direct scoping was designed to
   avoid in the first place.
 

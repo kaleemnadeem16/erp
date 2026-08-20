@@ -2,8 +2,7 @@
 
 # Phase 1 — Master data
 
-- **Status:** in progress — design decided 2026-08-19 (unified party model, hierarchical
-  categories, manual FX entry); build not started
+- **Status:** in progress — schema and models built; manual FX and remaining APIs are next
 - **Depends on:** [Phase 0 — Foundation](phase-0-foundation.md) (company scoping, custom fields,
   UoM, sequences, currencies schema)
 - **Blocked by:** nothing
@@ -52,9 +51,8 @@ transactions yet. This is backend-only; the first substantial frontend work is
       `parent_id`), `resolveIncomeAccountId()`/`resolveExpenseAccountId()`/
       `resolveInventoryAccountId()` walk `parent()` to the nearest ancestor with that column
       set, returning null rather than a fallback default when nothing in the chain sets it, per
-      the doc. `income_account_id`/`expense_account_id`/`inventory_account_id` are plain
-      nullable columns with no FK yet — `chart_of_accounts` doesn't exist until later in this
-      phase's task order; add the constraint in that migration. Also closed the cycle-guard
+      the doc. The account columns began as forward references and now have company-aware
+      foreign keys to `chart_of_accounts`. Also closed the cycle-guard
       landmine flagged in items.md: a `saving` hook rejects both a reparent that would create a
       cycle and a `parent_id` that doesn't resolve to a category in the current company (the
       same class of gap `BelongsToCompanyThroughParent` closes for child tables, but `Category`
@@ -67,9 +65,9 @@ transactions yet. This is backend-only; the first substantial frontend work is
       lowercase on write (`items.md` "Codes and case sensitivity"). `type`/`tracking` got their
       own enums (`App\Modules\Inventory\Support\ItemType`/`ItemTracking`) rather than living in
       `App\Support`, since they're Inventory-only vocabulary, not cross-cutting like
-      `Status`/`RateType`/`UomDimension`. `default_supplier_id` and the three account columns are
-      unconstrained nullable bigints for the same forward-reference reason as `categories`' —
-      `supplier_accounts`/`chart_of_accounts` don't exist yet. `resolveIncomeAccountId()`/etc.
+      `Status`/`RateType`/`UomDimension`. `default_supplier_id` and the three account columns
+      began as forward references; all now have company-aware foreign keys because their target
+      tables exist. `resolveIncomeAccountId()`/etc.
       prefer the item's own column and fall through to `category`'s resolution otherwise — the
       acceptance criterion below is proven in `ItemTest`. Full toolchain green (Pest 112/112,
       Larastan, Pint). **Revised same day:** `valuation_method` initially shipped as a plain
@@ -138,9 +136,10 @@ Tick these in the same commit as the work.
 
 - [x] An item's resolved GL accounts correctly walk up the category tree when the item itself
       has none set — proven in `ItemTest` (2026-08-20)
-- [ ] A party can hold a `customer_account`, a `supplier_account`, or both simultaneously, and
-      each account's fields are independent
-- [ ] A `party_site` can be referenced by both a `customer_sites` row and a `supplier_sites` row
+- [x] A party can hold a `customer_account`, a `supplier_account`, or both simultaneously, and
+      each account's fields are independent — proven in `PartyTest` (2026-08-21)
+- [x] A `party_site` can be referenced by both a `customer_sites` row and a `supplier_sites` row
+      — proven in `PartyTest` (2026-08-21)
 - [x] Cross-company scoping holds for every new table — `CompanyScopedUniqueIndexTest` covers
       every `company_id` column via `information_schema`, automatically extended to
       `chart_of_accounts`/`fiscal_years`/`accounting_periods`/`customer_accounts`/
@@ -148,7 +147,9 @@ Tick these in the same commit as the work.
       cross-table *account reference* (`categories`/`items`' three GL columns,
       `customer_accounts.receivable_account_id`, `supplier_accounts.payable_account_id`) is now
       guarded against pointing at another company's `chart_of_accounts` row via
-      `GuardsRelatedCompanyScope` — closing a gap those columns shipped with (2026-08-20)
+      `GuardsRelatedCompanyScope`; composite PostgreSQL foreign keys also protect raw writes.
+      `company_id` is context-controlled and immutable, child-parent reassignment is guarded on
+      update, and item/site/fiscal-period ownership is covered (2026-08-21)
 - [ ] A custom field defined for `items`/`parties` appears on create/read with no code change —
       the first real exercise of `HasCustomFields`
 - [ ] `docker compose up` + migrate gives all Phase 1 tables with no errors; full test suite

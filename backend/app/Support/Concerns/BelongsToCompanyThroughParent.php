@@ -29,15 +29,19 @@ trait BelongsToCompanyThroughParent
             $query->whereHas(static::companyScopeRelation());
         });
 
-        static::creating(function (Model $model): void {
+        static::saving(function (Model $model): void {
             /** @var BelongsTo<Model, Model> $relation */
             $relation = $model->{static::companyScopeRelation()}();
             $foreignKey = $relation->getForeignKeyName();
             $parentKey = $model->getAttribute($foreignKey);
 
+            if ($model->exists && ! $model->isDirty($foreignKey)) {
+                return;
+            }
+
             if ($parentKey === null || ! $relation->getRelated()->newQuery()->whereKey($parentKey)->exists()) {
                 throw new RuntimeException(sprintf(
-                    '%s cannot be created: %s does not resolve to a %s in the current company.',
+                    '%s cannot be saved: %s does not resolve to a %s in the current company.',
                     static::class,
                     $foreignKey,
                     $relation->getRelated()::class,

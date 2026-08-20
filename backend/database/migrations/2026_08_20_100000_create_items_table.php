@@ -27,8 +27,8 @@ return new class extends Migration
             $table->string('valuation_method')->default('AVCO');
             $table->string('tracking')->default('NONE');
             $table->foreignId('category_id')->constrained();
-            // Nullable, no FK yet: supplier_accounts doesn't exist until later in Phase 1
-            // (see docs/phases/phase-1-master-data.md task order); add the constraint then.
+            // Nullable Phase 1 convenience; company-aware FK added once supplier_accounts
+            // exists. ADR 0033 replaces this with item_suppliers in Phase 2.
             $table->unsignedBigInteger('default_supplier_id')->nullable();
             // Nullable, see docs/domain/items.md "GL mapping" — falls through to the item's
             // category when unset, same as categories.*_account_id. No FK yet:

@@ -9,6 +9,7 @@ use App\Modules\Accounting\Support\PeriodStatus;
 use App\Support\Concerns\BelongsToCompany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use RuntimeException;
 
 /**
  * Created explicitly, not auto-generated from companies.fiscal_year_start_month
@@ -26,6 +27,29 @@ class FiscalYear extends Model
     use BelongsToCompany;
 
     protected $guarded = ['id'];
+
+    protected static function booted(): void
+    {
+        static::saving(function (FiscalYear $fiscalYear): void {
+            if (! $fiscalYear->exists || ! $fiscalYear->isDirty(['starts_on', 'ends_on'])) {
+                return;
+            }
+
+            $startsOn = Carbon::parse($fiscalYear->starts_on);
+            $endsOn = Carbon::parse($fiscalYear->ends_on);
+
+            $hasExcludedPeriod = $fiscalYear->periods()
+                ->where(function ($query) use ($startsOn, $endsOn): void {
+                    $query->where('starts_on', '<', $startsOn->toDateString())
+                        ->orWhere('ends_on', '>', $endsOn->toDateString());
+                })
+                ->exists();
+
+            if ($hasExcludedPeriod) {
+                throw new RuntimeException('FiscalYear dates cannot exclude an existing accounting period.');
+            }
+        });
+    }
 
     /**
      * @return array<string, string>

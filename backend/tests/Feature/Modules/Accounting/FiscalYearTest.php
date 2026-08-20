@@ -8,6 +8,7 @@ use App\Support\CompanyContext;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 use Tests\TestCase;
 
 class FiscalYearTest extends TestCase
@@ -92,5 +93,22 @@ class FiscalYearTest extends TestCase
         $otherCompanyFiscalYear = FiscalYear::create(['name' => 'FY2026-27', 'starts_on' => '2026-07-01', 'ends_on' => '2027-06-30']);
 
         $this->assertNotNull($otherCompanyFiscalYear->id);
+    }
+
+    public function test_dates_cannot_be_changed_to_exclude_an_existing_period(): void
+    {
+        $fiscalYear = FiscalYear::create([
+            'name' => 'FY2026-27', 'starts_on' => '2026-07-01', 'ends_on' => '2027-06-30',
+        ]);
+        $fiscalYear->periods()->create([
+            'period_no' => 1,
+            'name' => 'Jul 2026',
+            'starts_on' => '2026-07-01',
+            'ends_on' => '2026-07-31',
+        ]);
+
+        $this->expectException(RuntimeException::class);
+
+        $fiscalYear->update(['starts_on' => '2026-08-01']);
     }
 }
