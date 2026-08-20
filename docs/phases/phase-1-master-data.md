@@ -61,7 +61,20 @@ transactions yet. This is backend-only; the first substantial frontend work is
       carries its own `company_id` so a lighter existence+scope check was enough — no new trait
       needed). First feature in the previously-empty `Inventory` module, so it got its
       `README.md` scaffold too. Full toolchain green (Pest 101/101, Larastan, Pint)
-- [ ] `items` table — migration, model, `BelongsToCompany`, `HasCustomFields` wired in
+- [x] ~~`items` table — migration, model, `BelongsToCompany`, `HasCustomFields` wired in~~ —
+      done 2026-08-20. `App\Modules\Inventory\Models\Item`, following `Category`/`Party`
+      conventions: `BelongsToCompany`, `HasCustomFields`, `SoftDeletes`, `code` normalised to
+      lowercase on write (`items.md` "Codes and case sensitivity"). `type`/`tracking` got their
+      own enums (`App\Modules\Inventory\Support\ItemType`/`ItemTracking`) rather than living in
+      `App\Support`, since they're Inventory-only vocabulary, not cross-cutting like
+      `Status`/`RateType`/`UomDimension`. `valuation_method` stayed a plain string default
+      `'AVCO'` rather than an enum — the doc names no second value and ADR 0007 pins AVCO as the
+      only method today, so a one-case enum would be speculative. `default_supplier_id` and the
+      three account columns are unconstrained nullable bigints for the same forward-reference
+      reason as `categories`' — `supplier_accounts`/`chart_of_accounts` don't exist yet.
+      `resolveIncomeAccountId()`/etc. prefer the item's own column and fall through to
+      `category`'s resolution otherwise — the acceptance criterion below is proven in
+      `ItemTest`. Full toolchain green (Pest 112/112, Larastan, Pint)
 - [x] ~~`parties`, `party_contacts`, `party_sites` — migrations, models, `BelongsToCompany`,
       `HasCustomFields` on `parties`~~ — done 2026-08-19. Also required building
       `App\Support\Concerns\BelongsToCompanyThroughParent` — no mechanism existed for scoping a
@@ -88,8 +101,8 @@ Tick these in the same commit as the work.
 
 ## Acceptance criteria
 
-- [ ] An item's resolved GL accounts correctly walk up the category tree when the item itself
-      has none set
+- [x] An item's resolved GL accounts correctly walk up the category tree when the item itself
+      has none set — proven in `ItemTest` (2026-08-20)
 - [ ] A party can hold a `customer_account`, a `supplier_account`, or both simultaneously, and
       each account's fields are independent
 - [ ] A `party_site` can be referenced by both a `customer_sites` row and a `supplier_sites` row
