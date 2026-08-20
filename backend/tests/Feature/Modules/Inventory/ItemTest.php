@@ -1,0 +1,154 @@
+<?php
+
+namespace Tests\Feature\Modules\Inventory;
+
+use App\Models\Uom;
+use App\Modules\Inventory\Models\Category;
+use App\Modules\Inventory\Models\Item;
+use App\Modules\Inventory\Support\ItemTracking;
+use App\Modules\Inventory\Support\ItemType;
+use App\Support\Status;
+use App\Support\UomDimension;
+use Illuminate\Database\QueryException;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class ItemTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private ?Uom $defaultUom = null;
+
+    private ?Category $defaultCategory = null;
+
+    private function defaultUom(): Uom
+    {
+        return $this->defaultUom ??= Uom::create(['code' => 'kg', 'name' => 'Kilogram', 'dimension' => UomDimension::Mass, 'factor_to_base' => '1']);
+    }
+
+    private function defaultCategory(): Category
+    {
+        return $this->defaultCategory ??= Category::create(['code' => 'RAW', 'name' => 'Raw materials']);
+    }
+
+    /**
+     * A distinct uom, for tests asserting the relation resolves to the right row rather
+     * than just any row.
+     */
+    private function makeUom(array $attributes = []): Uom
+    {
+        return Uom::create(array_merge(['code' => 'each', 'name' => 'Each', 'dimension' => UomDimension::Count, 'factor_to_base' => '1'], $attributes));
+    }
+
+    /**
+     * A distinct category from defaultCategory(), for tests that need their own — e.g. one
+     * carrying different GL accounts, without colliding on the ['company_id', 'code'] unique.
+     */
+    private function makeCategory(array $attributes = []): Category
+    {
+        return Category::create(array_merge(['code' => 'OTHER', 'name' => 'Other'], $attributes));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function baseAttributes(array $overrides = []): array
+    {
+        return array_merge([
+            'code' => 'PIG-001',
+            'name' => 'Red Pigment',
+            'type' => ItemType::Raw,
+            'stock_uom_id' => $this->defaultUom()->id,
+            'category_id' => $this->defaultCategory()->id,
+        ], $overrides);
+    }
+
+    public function test_code_is_unique_per_company(): void
+    {
+        Item::create($this->baseAttributes());
+
+        $this->expectException(QueryException::class);
+
+        Item::create($this->baseAttributes(['code' => 'PIG-001']));
+    }
+
+    public function test_code_is_normalised_to_lowercase(): void
+    {
+        $item = Item::create($this->baseAttributes(['code' => 'PIG-001']));
+
+        $this->assertSame('pig-001', $item->fresh()->code);
+    }
+
+    public function test_it_is_company_scoped(): void
+    {
+        Item::create($this->baseAttributes());
+
+        $this->assertSame(1, Item::query()->first()->company_id);
+    }
+
+    public function test_status_defaults_to_active_and_casts_to_the_enum(): void
+    {
+        $item = Item::create($this->baseAttributes());
+
+        $this->assertSame(Status::Active, $item->fresh()->status);
+    }
+
+    public function test_type_and_tracking_cast_to_their_enums_with_tracking_defaulting_to_none(): void
+    {
+        $item = Item::create($this->baseAttributes(['type' => ItemType::Labour]));
+
+        $this->assertSame(ItemType::Labour, $item->fresh()->type);
+        $this->assertSame(ItemTracking::None, $item->fresh()->tracking);
+    }
+
+    public function test_the_stocked_purchasable_and_sellable_flags_default_to_false(): void
+    {
+        $item = Item::create($this->baseAttributes());
+
+        $this->assertFalse($item->fresh()->is_stocked);
+        $this->assertFalse($item->fresh()->is_purchasable);
+        $this->assertFalse($item->fresh()->is_sellable);
+    }
+
+    public function test_custom_fields_cast_to_an_array_via_has_custom_fields(): void
+    {
+        $item = Item::create($this->baseAttributes(['custom_fields' => ['shade_code' => 'RAL 3020']]));
+
+        $this->assertSame(['shade_code' => 'RAL 3020'], $item->fresh()->custom_fields);
+    }
+
+    public function test_category_and_stock_uom_relations_resolve(): void
+    {
+        $uom = $this->makeUom();
+        $category = $this->makeCategory();
+        $item = Item::create($this->baseAttributes(['stock_uom_id' => $uom->id, 'category_id' => $category->id]));
+
+        $this->assertSame($uom->id, $item->stockUom->id);
+        $this->assertSame($category->id, $item->category->id);
+    }
+
+    public function test_gl_resolution_prefers_the_items_own_account_over_its_category(): void
+    {
+        $category = $this->makeCategory(['income_account_id' => 100]);
+        $item = Item::create($this->baseAttributes(['category_id' => $category->id, 'income_account_id' => 999]));
+
+        $this->assertSame(999, $item->resolveIncomeAccountId());
+    }
+
+    public function test_gl_resolution_falls_through_to_the_category_when_the_item_leaves_it_unset(): void
+    {
+        $category = $this->makeCategory(['income_account_id' => 100, 'expense_account_id' => 200, 'inventory_account_id' => 300]);
+        $item = Item::create($this->baseAttributes(['category_id' => $category->id]));
+
+        $this->assertSame(100, $item->resolveIncomeAccountId());
+        $this->assertSame(200, $item->resolveExpenseAccountId());
+        $this->assertSame(300, $item->resolveInventoryAccountId());
+    }
+
+    public function test_gl_resolution_returns_null_when_neither_the_item_nor_its_category_chain_sets_it(): void
+    {
+        $item = Item::create($this->baseAttributes());
+
+        $this->assertNull($item->resolveIncomeAccountId());
+    }
+}

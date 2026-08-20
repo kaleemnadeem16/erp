@@ -11,7 +11,9 @@ movement and valuation, built in Phase 2.
 
 - `Category` — hierarchical grouping with GL-account defaults items inherit
   ([Phase 1](../../../../docs/phases/phase-1-master-data.md))
-- `Item` — not yet built; next in Phase 1's task list
+- `Item` — everything bought, held, made, consumed or sold; one table with a `type`
+  discriminator (`RAW`/`SEMI_FINISHED`/`FINISHED`/`SERVICE`/`LABOUR`/`PLANT`) rather than
+  separate product/service/resource tables ([Phase 1](../../../../docs/phases/phase-1-master-data.md))
 - `Warehouse`, `StockMove`, `StockLayer` — Phase 2, per
   [docs/domain/stock.md](../../../../docs/domain/stock.md)
 
