@@ -99,4 +99,10 @@ in `CategoryTest`.
 - [units-of-measure.md](units-of-measure.md)
 - [stock.md](stock.md) — valuation of stocked items
 - [formulations.md](formulations.md) — items as recipe inputs and outputs
-- [parties.md](parties.md) — `default_supplier_id` references a supplier account
+- [parties.md](parties.md) — `default_supplier_id` references a supplier account. It's a
+  data-entry default only, not a restriction to one supplier — whether items need a fuller
+  multi-supplier catalog is open, see
+  [Q12](../OPEN-QUESTIONS.md#q12--multiple-suppliers-per-item-approved-vendor-list--sourcing)
+- [stock.md](stock.md) — `valuation_method`; whether this stays a single AVCO-wide decision or
+  becomes configurable is open, see
+  [Q11](../OPEN-QUESTIONS.md#q11--stock-valuation-method-avco-only-or-configurable-per-itemcompany)

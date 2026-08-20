@@ -110,8 +110,9 @@ Neither phase has a dependency on the open questions below and **both can procee
 
 None currently blocking. Q1–Q7 resolved 2026-08-10 (see ADRs 0023–0028 above).
 
-Full list: [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) — 0 blocking, 2 non-blocking (second customer
-profile; sharing master data across a customer's own legal entities). Q7's actual
+Full list: [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) — 0 blocking, 4 non-blocking (second customer
+profile; sharing master data across a customer's own legal entities; AVCO-only vs. configurable
+stock valuation; multi-supplier catalog for items). Q7's actual
 role/permission list is still deferred to Phase 4, per ADR 0028. Q9 (exchange rate source)
 resolved 2026-08-19 — see ADR 0031.
 
