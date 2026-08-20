@@ -7,6 +7,7 @@ use App\Support\Concerns\BelongsToCompany;
 use App\Support\Concerns\HasCustomFields;
 use App\Support\Status;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -56,5 +57,21 @@ class Party extends Model
     public function sites(): HasMany
     {
         return $this->hasMany(PartySite::class);
+    }
+
+    /**
+     * @return HasOne<CustomerAccount, $this>
+     */
+    public function customerAccount(): HasOne
+    {
+        return $this->hasOne(CustomerAccount::class);
+    }
+
+    /**
+     * @return HasOne<SupplierAccount, $this>
+     */
+    public function supplierAccount(): HasOne
+    {
+        return $this->hasOne(SupplierAccount::class);
     }
 }

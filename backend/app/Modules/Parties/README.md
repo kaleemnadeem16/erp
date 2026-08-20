@@ -19,7 +19,7 @@ customers and suppliers are one module rather than split across Sales/Purchasing
   `customer_accounts`/`supplier_accounts` by id, they don't live here
 - Credit control, collections, or any transactional workflow around a customer — Receivables
   (Phase 6); this module owns the `credit_limit` field, not what happens when it's exceeded
-- GL posting — `income_account_id`/`payable_account_id` are references only, Accounting owns
+- GL posting — `receivable_account_id`/`payable_account_id` are references only, Accounting owns
   what posts against them
 
 ## Key actions
