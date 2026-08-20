@@ -92,9 +92,35 @@ transactions yet. This is backend-only; the first substantial frontend work is
       `locations`). Proven with 4 tests (read-side, write-side, and a 2-hop chain), plus
       model-specific coverage for `Party`/`PartyContact`/`PartySite` themselves. See
       [multi-tenancy.md](../architecture/multi-tenancy.md#child-tables-scope-through-their-parent)
-- [ ] `customer_accounts`, `customer_sites` — migrations, models, `BelongsToCompany`
-- [ ] `supplier_accounts`, `supplier_sites` — migrations, models, `BelongsToCompany`
-- [ ] `chart_of_accounts`, `accounting_periods` — migrations, models
+- [x] ~~`chart_of_accounts`, `accounting_periods` — migrations, models~~ — done 2026-08-20, with
+      `fiscal_years` added ahead of a plan review (created explicitly, not auto-generated —
+      same manual-entry philosophy as exchange rates). `App\Modules\Accounting` is a new module.
+      `ChartOfAccount`'s hierarchy guard is `Category`'s, extracted into
+      `App\Support\Concerns\GuardsCompanyScopedHierarchy` rather than duplicated — identical
+      rules (no self-parent, no cycles, same company), reused on both create and update.
+      `fiscal_years`/`accounting_periods` overlap is a Postgres exclusion constraint
+      (`EXCLUDE USING gist`, needing `btree_gist` — installed here, the first migration that
+      needed it); a period falling entirely inside its fiscal year's dates is an
+      application-level guard (`AccountingPeriod::booted()`) since that cross-table containment
+      can't be a same-table `CHECK`. Also closed a real gap surfaced during review: ADR 0024
+      (accepted 2026-08-10) required `companies.base_currency_id`/`fiscal_year_start_month`,
+      which were never actually added — added now, `base_currency_id` nullable (no currency is
+      seeded by default) and `fiscal_year_start_month` defaulting to July per the ADR. Also fixed
+      a naming bug caught before `customer_accounts` was built: `income_account_id` renamed to
+      `receivable_account_id` (a control account, not income — see
+      [parties.md](../domain/parties.md)). `categories`/`items`' `*_account_id` columns got their
+      real FK constraints in follow-up migrations, now that `chart_of_accounts` exists. Full
+      toolchain green (Pest 172/172, Larastan, Pint)
+- [x] ~~`customer_accounts`, `customer_sites` — migrations, models, `BelongsToCompany`~~ — done
+      2026-08-20. `party_id` is guarded against pointing at another company's `Party` via a new
+      `App\Support\Concerns\GuardsRelatedCompanyScope` trait (re-resolves through the related
+      model's own `BelongsToCompany` scope, same spirit as `Category`'s parent guard, reused by
+      `SupplierAccount` too). `customer_sites` scoped through `customerAccount` via
+      `BelongsToCompanyThroughParent`, same as `PartySite`. `tax_code_id` is an unconstrained
+      forward reference — `tax_codes` doesn't exist yet, same treatment as `default_supplier_id`
+- [x] ~~`supplier_accounts`, `supplier_sites` — migrations, models, `BelongsToCompany`~~ — done
+      2026-08-20, mirroring `customer_accounts`/`customer_sites` above; `payable_account_id`
+      needed no rename (already correctly named)
 - [ ] Manual exchange-rate entry endpoint(s) for `exchange_rates`
 - [x] ~~Architecture test: `categories.parent_id` has no cycle~~ — done 2026-08-20, folded into
       `CategoryTest` rather than `tests/Architecture/` since it's data-dependent (a
@@ -115,7 +141,10 @@ Tick these in the same commit as the work.
 - [ ] A party can hold a `customer_account`, a `supplier_account`, or both simultaneously, and
       each account's fields are independent
 - [ ] A `party_site` can be referenced by both a `customer_sites` row and a `supplier_sites` row
-- [ ] Cross-company scoping holds for every new table (architecture test extended beyond items)
+- [x] Cross-company scoping holds for every new table — `CompanyScopedUniqueIndexTest` covers
+      every `company_id` column via `information_schema`, automatically extended to
+      `chart_of_accounts`/`fiscal_years`/`accounting_periods`/`customer_accounts`/
+      `supplier_accounts` with no test changes needed (2026-08-20)
 - [ ] A custom field defined for `items`/`parties` appears on create/read with no code change —
       the first real exercise of `HasCustomFields`
 - [ ] `docker compose up` + migrate gives all Phase 1 tables with no errors; full test suite
