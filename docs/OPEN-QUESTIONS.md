@@ -23,7 +23,9 @@ Q6 (data import mechanism) and Q7 (permissions mechanism) resolved 2026-08-10 �
 [ADR 0028](decisions/0028-dynamic-namespaced-permissions.md). Q7's actual role/permission
 *list* is still deferred to Phase 4, per those docs. Q9 (exchange rate source) resolved
 2026-08-19 — see [ADR 0031](decisions/0031-manual-exchange-rate-entry.md). Q11 (stock valuation
-method) resolved 2026-08-20 — see [ADR 0032](decisions/0032-per-item-valuation-method.md).
+method) resolved 2026-08-20 — see [ADR 0032](decisions/0032-per-item-valuation-method.md). Q12
+(multi-supplier catalog) resolved 2026-08-20 — see
+[ADR 0033](decisions/0033-item-suppliers-relationship.md).
 
 ### Q8 — Second customer profile
 **Blocks:** Nothing yet — but shapes Phase 3 and the plugin design
@@ -52,18 +54,6 @@ Surfaced while deciding [ADR 0030](decisions/0030-unified-party-model.md) (a glo
 real: a parent "account" grouping above `company_id`; per-record cross-company sharing grants; or
 accept duplication and reconcile via an external key. Not decided — no second legal entity
 exists yet to design against.
-
-### Q12 — Multiple suppliers per item (approved vendor list / sourcing)
-**Blocks:** Nothing in Phase 1 — `items.default_supplier_id` covers today's need, a data-entry
-default rather than a restriction. Relevant once Phase 2 Purchasing is designed.
-
-`items` stores exactly one `default_supplier_id`; nothing stops purchasing the same item from a
-different supplier once Purchasing exists — that history will live on individual purchase
-orders/receipts, not on the item. Not decided: whether the app also needs a proper catalog of an
-item's multiple suppliers (their own item code, price, lead time, a preferred flag) — the
-"approved vendor list" pattern mature ERPs use — or whether querying purchase history is
-sufficient on its own. No `purchasing.md` domain doc exists yet to resolve this against; raised
-early so it isn't designed as an afterthought once Phase 2 starts.
 
 ---
 

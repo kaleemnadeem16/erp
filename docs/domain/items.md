@@ -125,10 +125,11 @@ in `CategoryTest`.
 - [units-of-measure.md](units-of-measure.md)
 - [stock.md](stock.md) — valuation of stocked items
 - [formulations.md](formulations.md) — items as recipe inputs and outputs
-- [parties.md](parties.md) — `default_supplier_id` references a supplier account. It's a
-  data-entry default only, not a restriction to one supplier — whether items need a fuller
-  multi-supplier catalog is open, see
-  [Q12](../OPEN-QUESTIONS.md#q12--multiple-suppliers-per-item-approved-vendor-list--sourcing)
+- [parties.md](parties.md) — `default_supplier_id` references a supplier account. It's a Phase 1
+  data-entry default only, not a restriction to one supplier; Phase 2 adds a real `item_suppliers`
+  catalog (supplier-specific code, priority, lead time, MOQ, purchase UoM) and
+  `default_supplier_id` is deprecated once it exists, see
+  [ADR 0033](../decisions/0033-item-suppliers-relationship.md)
 - [stock.md](stock.md) — where `valuation_method` actually posts
 - [ADR 0032](../decisions/0032-per-item-valuation-method.md) — why valuation method is per-item,
   not company-wide

@@ -75,7 +75,8 @@ supplier_accounts
   id, company_id, party_id
   code
   payment_terms_days
-  lead_time_days           NULLABLE
+  lead_time_days           NULLABLE   -- general default; Phase 2's item_suppliers.lead_time_days
+                                       -- overrides this per item, see ADR 0033
   payable_account_id       → chart_of_accounts
   default_currency_id      NULLABLE → currencies
   custom_fields            json
@@ -167,3 +168,5 @@ the alternatives section of [ADR 0030](../decisions/0030-unified-party-model.md#
 - [tax.md](tax.md) — `tax_code_id`
 - [general-ledger.md](general-ledger.md) — `income_account_id` / `payable_account_id`
 - [ADR 0030](../decisions/0030-unified-party-model.md) — the decision this doc implements
+- [ADR 0033](../decisions/0033-item-suppliers-relationship.md) — Phase 2's `item_suppliers`,
+  overriding `lead_time_days` per item

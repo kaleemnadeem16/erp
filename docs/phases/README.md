@@ -46,8 +46,11 @@ frontend screens.
 [parties.md](../domain/parties.md) · [multi-currency.md](../domain/multi-currency.md)
 
 ### Phase 2 — Purchasing & stock
-Purchase orders, goods receipt, warehouses and locations, stock moves, AVCO valuation, physical
-counts. The negative-stock and backdated-receipt policies must be decided here.
+Purchase orders, supplier sourcing (`item_suppliers`,
+[ADR 0033](../decisions/0033-item-suppliers-relationship.md)), goods receipt, warehouses and
+locations, stock moves, per-item valuation (AVCO/FIFO/SPECIFIC,
+[ADR 0032](../decisions/0032-per-item-valuation-method.md)), physical counts. The negative-stock
+and backdated-receipt policies must be decided here.
 → [stock.md](../domain/stock.md)
 
 ### Phase 3 — Estimating core
