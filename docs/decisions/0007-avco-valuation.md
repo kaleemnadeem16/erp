@@ -2,7 +2,7 @@
 
 # 0007 — AVCO stock valuation, not FIFO
 
-- **Status:** accepted
+- **Status:** superseded by [0032](0032-per-item-valuation-method.md)
 - **Date:** 2026-07-29
 - **Affects:** Phase 2 (stock), Phase 3 (costing), GL postings
 

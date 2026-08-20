@@ -22,7 +22,7 @@ items
   is_stocked        bool
   is_purchasable    bool
   is_sellable       bool
-  valuation_method  AVCO                 -- see stock.md
+  valuation_method  AVCO | FIFO | SPECIFIC   -- see "Valuation method" below
   tracking          NONE | BATCH | SERIAL
   category_id
   default_supplier_id
@@ -34,8 +34,9 @@ items
 
 categories
   id, company_id
-  parent_id         NULLABLE → categories                          -- null = top-level
+  parent_id                  NULLABLE → categories                  -- null = top-level
   code, name
+  default_valuation_method   NULLABLE  AVCO | FIFO | SPECIFIC        -- see "Valuation method" below
   income_account_id, expense_account_id, inventory_account_id      -- NULLABLE, see GL mapping
 
   unique(['company_id', 'code'])
@@ -71,6 +72,31 @@ ancestor with that column set. Any level can leave a column null to fall through
 there is no forced default at the root, so a chain that resolves to nothing is a data problem to
 catch — e.g. at posting time — not something the schema silently papers over.
 
+### Valuation method
+
+Not one method for the whole company — [ADR 0032](../decisions/0032-per-item-valuation-method.md).
+Chosen per item, defaulted from category: `categories.default_valuation_method` resolves the same
+way as the GL account columns above — the item's category, or the nearest ancestor with that
+column set, walking `parent_id`, no forced root default. Typical defaults: Raw Materials → AVCO,
+Resale Goods → FIFO, Unique/Serialized Equipment → SPECIFIC.
+
+Unlike the GL columns, `items.valuation_method` is **not** re-resolved on every read. It's
+resolved once, at creation — an explicit value overrides the category default; otherwise the
+category chain's resolution is stored directly on the item — and stays fixed from then on. A
+later change to the category's default must not silently change an already-created item's
+method. Every item ends up with exactly one method; unlike GL accounts, a chain that resolves to
+nothing is not tolerated here — item creation fails rather than leaving `valuation_method` unset.
+
+**Locked once the item has any inventory transaction** (Phase 2, once `stock_moves` exists — not
+enforceable yet, nothing to check against today). Changing an item's method after that point is a
+controlled conversion/revaluation, not a field edit.
+
+**Three independent concepts — do not conflate them:** `valuation_method` (accounting cost basis),
+`tracking` (whether units/lots are traceable at all), and a warehouse's physical removal strategy
+(not built — future `FIFO`/`FEFO`/`MANUAL`, picking order on the floor). `BATCH` tracking does not
+imply FIFO costing. `SERIAL` tracking does not imply `SPECIFIC` valuation. Physical picking order
+has no obligation to match the accounting cost basis. See ADR 0032 for the full reasoning.
+
 ### Archiving, not deleting
 
 Items are archived, never deleted. Historical documents reference them and must remain
@@ -103,6 +129,6 @@ in `CategoryTest`.
   data-entry default only, not a restriction to one supplier — whether items need a fuller
   multi-supplier catalog is open, see
   [Q12](../OPEN-QUESTIONS.md#q12--multiple-suppliers-per-item-approved-vendor-list--sourcing)
-- [stock.md](stock.md) — `valuation_method`; whether this stays a single AVCO-wide decision or
-  becomes configurable is open, see
-  [Q11](../OPEN-QUESTIONS.md#q11--stock-valuation-method-avco-only-or-configurable-per-itemcompany)
+- [stock.md](stock.md) — where `valuation_method` actually posts
+- [ADR 0032](../decisions/0032-per-item-valuation-method.md) — why valuation method is per-item,
+  not company-wide

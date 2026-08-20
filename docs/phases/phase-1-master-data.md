@@ -67,14 +67,23 @@ transactions yet. This is backend-only; the first substantial frontend work is
       lowercase on write (`items.md` "Codes and case sensitivity"). `type`/`tracking` got their
       own enums (`App\Modules\Inventory\Support\ItemType`/`ItemTracking`) rather than living in
       `App\Support`, since they're Inventory-only vocabulary, not cross-cutting like
-      `Status`/`RateType`/`UomDimension`. `valuation_method` stayed a plain string default
-      `'AVCO'` rather than an enum — the doc names no second value and ADR 0007 pins AVCO as the
-      only method today, so a one-case enum would be speculative. `default_supplier_id` and the
-      three account columns are unconstrained nullable bigints for the same forward-reference
-      reason as `categories`' — `supplier_accounts`/`chart_of_accounts` don't exist yet.
-      `resolveIncomeAccountId()`/etc. prefer the item's own column and fall through to
-      `category`'s resolution otherwise — the acceptance criterion below is proven in
-      `ItemTest`. Full toolchain green (Pest 112/112, Larastan, Pint)
+      `Status`/`RateType`/`UomDimension`. `default_supplier_id` and the three account columns are
+      unconstrained nullable bigints for the same forward-reference reason as `categories`' —
+      `supplier_accounts`/`chart_of_accounts` don't exist yet. `resolveIncomeAccountId()`/etc.
+      prefer the item's own column and fall through to `category`'s resolution otherwise — the
+      acceptance criterion below is proven in `ItemTest`. Full toolchain green (Pest 112/112,
+      Larastan, Pint). **Revised same day:** `valuation_method` initially shipped as a plain
+      `'AVCO'`-default string, on the reasoning that ADR 0007 named no second method — superseded
+      hours later by [ADR 0032](../decisions/0032-per-item-valuation-method.md) once a real
+      second business shape (formulation *and* resale within one company) showed that reasoning
+      didn't hold. Now `App\Modules\Inventory\Support\ValuationMethod` (`AVCO`/`FIFO`/`SPECIFIC`),
+      defaulted per `categories.default_valuation_method` (same walk-up-parent resolution as the
+      GL columns) and overridable per item, resolved once at creation and stored — not
+      re-resolved on read, unlike GL accounts, since a later category change must not silently
+      move an already-created item's cost basis. Locking the method after an item's first
+      inventory transaction is documented but deliberately not implemented — no `stock_moves`
+      table exists yet to check against; that's Phase 2. Full toolchain re-verified green
+      (Pest 120/120, Larastan, Pint)
 - [x] ~~`parties`, `party_contacts`, `party_sites` — migrations, models, `BelongsToCompany`,
       `HasCustomFields` on `parties`~~ — done 2026-08-19. Also required building
       `App\Support\Concerns\BelongsToCompanyThroughParent` — no mechanism existed for scoping a
