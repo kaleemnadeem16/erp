@@ -163,6 +163,14 @@ jobs:
       - name: Migrate
         working-directory: backend
         run: php artisan migrate --force
+      - name: Verify migrations roll back and re-apply cleanly
+        working-directory: backend
+        # RefreshDatabase (the Pest job) never calls down() — it migrates once and wraps
+        # each test in a transaction. This is the only place any down() actually runs, so
+        # it's the only thing that would have caught e.g. a migration silently missing a
+        # down() method (found and fixed 2026-08-20: create_activity_log_table had none —
+        # rollback silently no-opped instead of dropping the table).
+        run: php artisan migrate:rollback --force && php artisan migrate --force
       - name: Export OpenAPI spec
         working-directory: backend
         # storage/api-docs/ is gitignored (intermediate artifact, not committed —

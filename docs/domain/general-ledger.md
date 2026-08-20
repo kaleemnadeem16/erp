@@ -98,6 +98,16 @@ should come from Phase 6's actual financial-statement design, not be guessed now
 composite unique constraint or a scoping mechanism, an unused nullable column is cheap to add
 later — there's no structural reason to reserve it speculatively.
 
+**Account-type compatibility is not validated anywhere yet — intentionally.** Nothing today
+checks that an account assigned to a given role carries the type that role implies:
+`inventory_account_id`/`receivable_account_id` → `ASSET`, `payable_account_id` → `LIABILITY`,
+`income_account_id` → `INCOME`, `expense_account_id` → `EXPENSE`. An `EXPENSE`-typed account can
+currently be saved as `inventory_account_id` and nothing will object. This is deliberately
+deferred to Phase 6's posting/configuration layer alongside the rest of this section's
+finer-subtype reasoning, not an oversight — see [items.md](items.md#gl-mapping) and
+[parties.md](parties.md#receivable-and-payable-are-control-accounts-not-income) for where each
+role account is assigned.
+
 ### Fiscal years and periods
 
 `fiscal_years` and `accounting_periods` are **created explicitly**, not auto-generated from a

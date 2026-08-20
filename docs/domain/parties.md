@@ -124,6 +124,13 @@ invoice debits, what a purchase invoice credits, per [general-ledger.md](general
 `customer_accounts` (as an earlier draft of this schema did) conflated the two — fixed before
 either table was built.
 
+Neither column is type-checked against its expected type (`receivable_account_id` → `ASSET`,
+`payable_account_id` → `LIABILITY`) — same deliberate Phase-6 deferral as
+[items.md](items.md#gl-mapping)'s account columns, per
+[general-ledger.md](general-ledger.md#account-type-and-normal-balance). Cross-company
+misassignment, however, is guarded now: both columns reject an id that doesn't resolve to a
+`chart_of_accounts` row in the current company (`GuardsRelatedCompanyScope`).
+
 ### Shared sites
 
 `party_sites` represents a real physical location once. The same site can be referenced by both

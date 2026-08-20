@@ -144,7 +144,11 @@ Tick these in the same commit as the work.
 - [x] Cross-company scoping holds for every new table — `CompanyScopedUniqueIndexTest` covers
       every `company_id` column via `information_schema`, automatically extended to
       `chart_of_accounts`/`fiscal_years`/`accounting_periods`/`customer_accounts`/
-      `supplier_accounts` with no test changes needed (2026-08-20)
+      `supplier_accounts` with no test changes needed (2026-08-20). Separately, every
+      cross-table *account reference* (`categories`/`items`' three GL columns,
+      `customer_accounts.receivable_account_id`, `supplier_accounts.payable_account_id`) is now
+      guarded against pointing at another company's `chart_of_accounts` row via
+      `GuardsRelatedCompanyScope` — closing a gap those columns shipped with (2026-08-20)
 - [ ] A custom field defined for `items`/`parties` appears on create/read with no code change —
       the first real exercise of `HasCustomFields`
 - [ ] `docker compose up` + migrate gives all Phase 1 tables with no errors; full test suite

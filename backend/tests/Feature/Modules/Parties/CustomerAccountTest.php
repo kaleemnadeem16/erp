@@ -149,4 +149,31 @@ class CustomerAccountTest extends TestCase
 
         CustomerAccount::create($this->baseAttributes(['party_id' => $otherCompanyParty->id]));
     }
+
+    public function test_receivable_account_id_cannot_point_at_another_companys_account(): void
+    {
+        $this->actingAsCompany($this->createSecondCompany());
+        $otherCompanyAccount = ChartOfAccount::create(['code' => '1300', 'name' => 'Other AR', 'type' => AccountType::Asset]);
+
+        $this->actingAsCompany(1);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('does not resolve to a ChartOfAccount');
+
+        CustomerAccount::create($this->baseAttributes(['receivable_account_id' => $otherCompanyAccount->id]));
+    }
+
+    public function test_receivable_account_id_cannot_be_updated_to_another_companys_account(): void
+    {
+        $account = CustomerAccount::create($this->baseAttributes());
+
+        $this->actingAsCompany($this->createSecondCompany());
+        $otherCompanyAccount = ChartOfAccount::create(['code' => '1300', 'name' => 'Other AR', 'type' => AccountType::Asset]);
+        $this->actingAsCompany(1);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('does not resolve to a ChartOfAccount');
+
+        $account->update(['receivable_account_id' => $otherCompanyAccount->id]);
+    }
 }

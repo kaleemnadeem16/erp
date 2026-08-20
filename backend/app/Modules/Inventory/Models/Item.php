@@ -6,10 +6,12 @@ namespace App\Modules\Inventory\Models;
 
 use App\Models\Model;
 use App\Models\Uom;
+use App\Modules\Accounting\Models\ChartOfAccount;
 use App\Modules\Inventory\Support\ItemTracking;
 use App\Modules\Inventory\Support\ItemType;
 use App\Modules\Inventory\Support\ValuationMethod;
 use App\Support\Concerns\BelongsToCompany;
+use App\Support\Concerns\GuardsRelatedCompanyScope;
 use App\Support\Concerns\HasCustomFields;
 use App\Support\Status;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -22,6 +24,8 @@ use RuntimeException;
  * docs/domain/items.md. resolve*AccountId() prefers the item's own account
  * column and falls through to its category's resolution
  * (Category::resolve*AccountId()) when unset, per "GL mapping" in that doc.
+ * The three account columns are guarded against cross-company assignment —
+ * see GuardsRelatedCompanyScope.
  *
  * valuation_method works differently: it's resolved once, in booted()'s
  * creating hook, from an explicit override or Category::
@@ -54,6 +58,7 @@ use RuntimeException;
 class Item extends Model
 {
     use BelongsToCompany;
+    use GuardsRelatedCompanyScope;
     use HasCustomFields;
     use SoftDeletes;
 
@@ -71,6 +76,18 @@ class Item extends Model
                 ));
             }
         });
+    }
+
+    /**
+     * @return array<string, class-string<\Illuminate\Database\Eloquent\Model>>
+     */
+    protected static function companyScopedForeignKeys(): array
+    {
+        return [
+            'income_account_id' => ChartOfAccount::class,
+            'expense_account_id' => ChartOfAccount::class,
+            'inventory_account_id' => ChartOfAccount::class,
+        ];
     }
 
     /**

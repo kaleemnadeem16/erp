@@ -54,7 +54,10 @@ class SupplierAccount extends Model
      */
     protected static function companyScopedForeignKeys(): array
     {
-        return ['party_id' => Party::class];
+        return [
+            'party_id' => Party::class,
+            'payable_account_id' => ChartOfAccount::class,
+        ];
     }
 
     /**

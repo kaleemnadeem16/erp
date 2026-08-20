@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Modules\Inventory\Models;
 
 use App\Models\Model;
+use App\Modules\Accounting\Models\ChartOfAccount;
 use App\Modules\Inventory\Support\ValuationMethod;
 use App\Support\Concerns\BelongsToCompany;
 use App\Support\Concerns\GuardsCompanyScopedHierarchy;
+use App\Support\Concerns\GuardsRelatedCompanyScope;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -19,7 +21,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * resolves to nothing returns null rather than falling back to any default,
  * per that doc — the account resolvers stay that way, but
  * resolveDefaultValuationMethod() is only ever consulted by Item at creation
- * time, which does enforce a final answer (see Item::booted()).
+ * time, which does enforce a final answer (see Item::booted()). The three
+ * account columns are guarded against cross-company assignment the same way
+ * parent_id is — see GuardsRelatedCompanyScope.
  *
  * @property string $code
  * @property string $name
@@ -33,8 +37,21 @@ class Category extends Model
 {
     use BelongsToCompany;
     use GuardsCompanyScopedHierarchy;
+    use GuardsRelatedCompanyScope;
 
     protected $guarded = ['id'];
+
+    /**
+     * @return array<string, class-string<\Illuminate\Database\Eloquent\Model>>
+     */
+    protected static function companyScopedForeignKeys(): array
+    {
+        return [
+            'income_account_id' => ChartOfAccount::class,
+            'expense_account_id' => ChartOfAccount::class,
+            'inventory_account_id' => ChartOfAccount::class,
+        ];
+    }
 
     /**
      * @return array<string, string>

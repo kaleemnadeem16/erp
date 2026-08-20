@@ -57,7 +57,10 @@ class CustomerAccount extends Model
      */
     protected static function companyScopedForeignKeys(): array
     {
-        return ['party_id' => Party::class];
+        return [
+            'party_id' => Party::class,
+            'receivable_account_id' => ChartOfAccount::class,
+        ];
     }
 
     /**

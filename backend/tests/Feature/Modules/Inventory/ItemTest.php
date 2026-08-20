@@ -10,16 +10,40 @@ use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Support\ItemTracking;
 use App\Modules\Inventory\Support\ItemType;
 use App\Modules\Inventory\Support\ValuationMethod;
+use App\Support\CompanyContext;
 use App\Support\Status;
 use App\Support\UomDimension;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use RuntimeException;
 use Tests\TestCase;
 
 class ItemTest extends TestCase
 {
     use RefreshDatabase;
+
+    private function actingAsCompany(int $companyId): void
+    {
+        $this->app->instance(CompanyContext::class, new class($companyId) extends CompanyContext
+        {
+            public function __construct(private readonly int $companyId) {}
+
+            public function id(): int
+            {
+                return $this->companyId;
+            }
+        });
+    }
+
+    private function createSecondCompany(): int
+    {
+        return DB::table('companies')->insertGetId([
+            'name' => 'Other Company',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
 
     private ?Uom $defaultUom = null;
 
@@ -205,5 +229,68 @@ class ItemTest extends TestCase
         $this->expectExceptionMessage('no valuation_method given');
 
         Item::create($this->baseAttributes(['category_id' => $category->id]));
+    }
+
+    public function test_income_expense_and_inventory_account_ids_can_be_set_to_a_same_company_account(): void
+    {
+        $income = ChartOfAccount::create(['code' => '4000', 'name' => 'Sales', 'type' => AccountType::Income]);
+        $expense = ChartOfAccount::create(['code' => '5000', 'name' => 'COGS', 'type' => AccountType::Expense]);
+        $inventory = ChartOfAccount::create(['code' => '1200', 'name' => 'Inventory', 'type' => AccountType::Asset]);
+
+        $item = Item::create($this->baseAttributes([
+            'income_account_id' => $income->id, 'expense_account_id' => $expense->id, 'inventory_account_id' => $inventory->id,
+        ]));
+
+        $this->assertSame($income->id, $item->fresh()->income_account_id);
+        $this->assertSame($expense->id, $item->fresh()->expense_account_id);
+        $this->assertSame($inventory->id, $item->fresh()->inventory_account_id);
+    }
+
+    public function test_income_expense_and_inventory_account_ids_can_remain_null(): void
+    {
+        $item = Item::create($this->baseAttributes());
+
+        $this->assertNull($item->fresh()->income_account_id);
+        $this->assertNull($item->fresh()->expense_account_id);
+        $this->assertNull($item->fresh()->inventory_account_id);
+    }
+
+    /**
+     * Item::create() assigns the column straight from an attribute array — the same shape
+     * a raw FK write would take. There is no separate, more-guarded "picker" path, so this
+     * also proves direct attribute assignment can't bypass the guard.
+     */
+    public function test_income_expense_and_inventory_account_ids_cannot_point_at_another_companys_account(): void
+    {
+        $this->actingAsCompany($this->createSecondCompany());
+        $otherCompanyAccount = ChartOfAccount::create(['code' => '4000', 'name' => 'Sales', 'type' => AccountType::Income]);
+        $this->actingAsCompany(1);
+
+        foreach (['income_account_id', 'expense_account_id', 'inventory_account_id'] as $column) {
+            try {
+                Item::create($this->baseAttributes(['code' => 'PIG-'.$column, $column => $otherCompanyAccount->id]));
+                $this->fail("{$column} accepted another company's account.");
+            } catch (RuntimeException $e) {
+                $this->assertStringContainsString('does not resolve to a ChartOfAccount', $e->getMessage());
+            }
+        }
+    }
+
+    public function test_income_expense_and_inventory_account_ids_cannot_be_updated_to_another_companys_account(): void
+    {
+        $item = Item::create($this->baseAttributes());
+
+        $this->actingAsCompany($this->createSecondCompany());
+        $otherCompanyAccount = ChartOfAccount::create(['code' => '4000', 'name' => 'Sales', 'type' => AccountType::Income]);
+        $this->actingAsCompany(1);
+
+        foreach (['income_account_id', 'expense_account_id', 'inventory_account_id'] as $column) {
+            try {
+                $item->fresh()->update([$column => $otherCompanyAccount->id]);
+                $this->fail("{$column} accepted another company's account on update.");
+            } catch (RuntimeException $e) {
+                $this->assertStringContainsString('does not resolve to a ChartOfAccount', $e->getMessage());
+            }
+        }
     }
 }

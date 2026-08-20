@@ -198,4 +198,68 @@ class CategoryTest extends TestCase
 
         Category::create(['code' => 'RAW', 'name' => 'Raw materials', 'parent_id' => $otherCompanyCategory->id]);
     }
+
+    public function test_income_expense_and_inventory_account_ids_can_be_set_to_a_same_company_account(): void
+    {
+        $income = ChartOfAccount::create(['code' => '4000', 'name' => 'Sales', 'type' => AccountType::Income]);
+        $expense = ChartOfAccount::create(['code' => '5000', 'name' => 'COGS', 'type' => AccountType::Expense]);
+        $inventory = ChartOfAccount::create(['code' => '1200', 'name' => 'Inventory', 'type' => AccountType::Asset]);
+
+        $category = Category::create([
+            'code' => 'RAW', 'name' => 'Raw materials',
+            'income_account_id' => $income->id, 'expense_account_id' => $expense->id, 'inventory_account_id' => $inventory->id,
+        ]);
+
+        $this->assertSame($income->id, $category->fresh()->income_account_id);
+        $this->assertSame($expense->id, $category->fresh()->expense_account_id);
+        $this->assertSame($inventory->id, $category->fresh()->inventory_account_id);
+    }
+
+    public function test_income_expense_and_inventory_account_ids_can_remain_null(): void
+    {
+        $category = Category::create(['code' => 'RAW', 'name' => 'Raw materials']);
+
+        $this->assertNull($category->fresh()->income_account_id);
+        $this->assertNull($category->fresh()->expense_account_id);
+        $this->assertNull($category->fresh()->inventory_account_id);
+    }
+
+    /**
+     * Category::create() assigns the column straight from an attribute array — the same
+     * shape a raw FK write would take. There is no separate, more-guarded "picker" path,
+     * so this also proves direct attribute assignment can't bypass the guard.
+     */
+    public function test_income_expense_and_inventory_account_ids_cannot_point_at_another_companys_account(): void
+    {
+        $this->actingAsCompany($this->createSecondCompany());
+        $otherCompanyAccount = ChartOfAccount::create(['code' => '4000', 'name' => 'Sales', 'type' => AccountType::Income]);
+        $this->actingAsCompany(1);
+
+        foreach (['income_account_id', 'expense_account_id', 'inventory_account_id'] as $column) {
+            try {
+                Category::create(['code' => 'RAW-'.$column, 'name' => 'Raw materials', $column => $otherCompanyAccount->id]);
+                $this->fail("{$column} accepted another company's account.");
+            } catch (RuntimeException $e) {
+                $this->assertStringContainsString('does not resolve to a ChartOfAccount', $e->getMessage());
+            }
+        }
+    }
+
+    public function test_income_expense_and_inventory_account_ids_cannot_be_updated_to_another_companys_account(): void
+    {
+        $category = Category::create(['code' => 'RAW', 'name' => 'Raw materials']);
+
+        $this->actingAsCompany($this->createSecondCompany());
+        $otherCompanyAccount = ChartOfAccount::create(['code' => '4000', 'name' => 'Sales', 'type' => AccountType::Income]);
+        $this->actingAsCompany(1);
+
+        foreach (['income_account_id', 'expense_account_id', 'inventory_account_id'] as $column) {
+            try {
+                $category->fresh()->update([$column => $otherCompanyAccount->id]);
+                $this->fail("{$column} accepted another company's account on update.");
+            } catch (RuntimeException $e) {
+                $this->assertStringContainsString('does not resolve to a ChartOfAccount', $e->getMessage());
+            }
+        }
+    }
 }

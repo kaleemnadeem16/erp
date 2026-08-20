@@ -139,4 +139,31 @@ class SupplierAccountTest extends TestCase
 
         SupplierAccount::create($this->baseAttributes(['party_id' => $otherCompanyParty->id]));
     }
+
+    public function test_payable_account_id_cannot_point_at_another_companys_account(): void
+    {
+        $this->actingAsCompany($this->createSecondCompany());
+        $otherCompanyAccount = ChartOfAccount::create(['code' => '2200', 'name' => 'Other AP', 'type' => AccountType::Liability]);
+
+        $this->actingAsCompany(1);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('does not resolve to a ChartOfAccount');
+
+        SupplierAccount::create($this->baseAttributes(['payable_account_id' => $otherCompanyAccount->id]));
+    }
+
+    public function test_payable_account_id_cannot_be_updated_to_another_companys_account(): void
+    {
+        $account = SupplierAccount::create($this->baseAttributes());
+
+        $this->actingAsCompany($this->createSecondCompany());
+        $otherCompanyAccount = ChartOfAccount::create(['code' => '2200', 'name' => 'Other AP', 'type' => AccountType::Liability]);
+        $this->actingAsCompany(1);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('does not resolve to a ChartOfAccount');
+
+        $account->update(['payable_account_id' => $otherCompanyAccount->id]);
+    }
 }

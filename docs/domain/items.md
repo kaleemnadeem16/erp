@@ -72,6 +72,15 @@ ancestor with that column set. Any level can leave a column null to fall through
 there is no forced default at the root, so a chain that resolves to nothing is a data problem to
 catch — e.g. at posting time — not something the schema silently papers over.
 
+Two things a plain FK doesn't catch, both deliberately deferred to Phase 6 rather than
+implemented here: whether the assigned account actually belongs to the account's expected type
+(`income_account_id` → `INCOME`, `expense_account_id` → `EXPENSE`, `inventory_account_id` →
+`ASSET` — see [general-ledger.md](general-ledger.md#account-type-and-normal-balance)); and
+whether an `ARCHIVED` or non-`is_postable` account should still be selectable here at all.
+Cross-*company* misassignment, by contrast, is guarded now — `Category` and `Item` both reject
+saving an account id that doesn't resolve to a `chart_of_accounts` row in the current company
+(`GuardsRelatedCompanyScope`).
+
 ### Valuation method
 
 Not one method for the whole company — [ADR 0032](../decisions/0032-per-item-valuation-method.md).
