@@ -3,6 +3,8 @@
 namespace Tests\Feature\Modules\Inventory;
 
 use App\Models\Uom;
+use App\Modules\Accounting\Models\ChartOfAccount;
+use App\Modules\Accounting\Support\AccountType;
 use App\Modules\Inventory\Models\Category;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Support\ItemTracking;
@@ -137,20 +139,29 @@ class ItemTest extends TestCase
 
     public function test_gl_resolution_prefers_the_items_own_account_over_its_category(): void
     {
-        $category = $this->makeCategory(['income_account_id' => 100]);
-        $item = Item::create($this->baseAttributes(['category_id' => $category->id, 'income_account_id' => 999]));
+        $categoryIncome = ChartOfAccount::create(['code' => '4000', 'name' => 'Sales', 'type' => AccountType::Income]);
+        $itemIncome = ChartOfAccount::create(['code' => '4010', 'name' => 'Paint Sales', 'type' => AccountType::Income]);
 
-        $this->assertSame(999, $item->resolveIncomeAccountId());
+        $category = $this->makeCategory(['income_account_id' => $categoryIncome->id]);
+        $item = Item::create($this->baseAttributes(['category_id' => $category->id, 'income_account_id' => $itemIncome->id]));
+
+        $this->assertSame($itemIncome->id, $item->resolveIncomeAccountId());
     }
 
     public function test_gl_resolution_falls_through_to_the_category_when_the_item_leaves_it_unset(): void
     {
-        $category = $this->makeCategory(['income_account_id' => 100, 'expense_account_id' => 200, 'inventory_account_id' => 300]);
+        $income = ChartOfAccount::create(['code' => '4000', 'name' => 'Sales', 'type' => AccountType::Income]);
+        $expense = ChartOfAccount::create(['code' => '5000', 'name' => 'COGS', 'type' => AccountType::Expense]);
+        $inventory = ChartOfAccount::create(['code' => '1200', 'name' => 'Inventory', 'type' => AccountType::Asset]);
+
+        $category = $this->makeCategory([
+            'income_account_id' => $income->id, 'expense_account_id' => $expense->id, 'inventory_account_id' => $inventory->id,
+        ]);
         $item = Item::create($this->baseAttributes(['category_id' => $category->id]));
 
-        $this->assertSame(100, $item->resolveIncomeAccountId());
-        $this->assertSame(200, $item->resolveExpenseAccountId());
-        $this->assertSame(300, $item->resolveInventoryAccountId());
+        $this->assertSame($income->id, $item->resolveIncomeAccountId());
+        $this->assertSame($expense->id, $item->resolveExpenseAccountId());
+        $this->assertSame($inventory->id, $item->resolveInventoryAccountId());
     }
 
     public function test_gl_resolution_returns_null_when_neither_the_item_nor_its_category_chain_sets_it(): void

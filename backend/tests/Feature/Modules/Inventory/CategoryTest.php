@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Modules\Inventory;
 
+use App\Modules\Accounting\Models\ChartOfAccount;
+use App\Modules\Accounting\Support\AccountType;
 use App\Modules\Inventory\Models\Category;
 use App\Modules\Inventory\Support\ValuationMethod;
 use App\Support\CompanyContext;
@@ -69,28 +71,35 @@ class CategoryTest extends TestCase
 
     public function test_gl_resolution_walks_up_to_the_nearest_ancestor_with_a_value_set(): void
     {
+        $income = ChartOfAccount::create(['code' => '4000', 'name' => 'Sales', 'type' => AccountType::Income]);
+        $expense = ChartOfAccount::create(['code' => '5000', 'name' => 'COGS', 'type' => AccountType::Expense]);
+        $inventory = ChartOfAccount::create(['code' => '1200', 'name' => 'Inventory', 'type' => AccountType::Asset]);
+
         $grandparent = Category::create([
             'code' => 'RAW', 'name' => 'Raw materials',
-            'income_account_id' => 100, 'expense_account_id' => 200, 'inventory_account_id' => 300,
+            'income_account_id' => $income->id, 'expense_account_id' => $expense->id, 'inventory_account_id' => $inventory->id,
         ]);
         $parent = Category::create(['code' => 'PIGMENTS', 'name' => 'Pigments', 'parent_id' => $grandparent->id]);
         $child = Category::create(['code' => 'REDS', 'name' => 'Reds', 'parent_id' => $parent->id]);
 
-        $this->assertSame(100, $child->resolveIncomeAccountId());
-        $this->assertSame(200, $child->resolveExpenseAccountId());
-        $this->assertSame(300, $child->resolveInventoryAccountId());
+        $this->assertSame($income->id, $child->resolveIncomeAccountId());
+        $this->assertSame($expense->id, $child->resolveExpenseAccountId());
+        $this->assertSame($inventory->id, $child->resolveInventoryAccountId());
     }
 
     public function test_gl_resolution_prefers_the_nearer_ancestor(): void
     {
-        $grandparent = Category::create(['code' => 'RAW', 'name' => 'Raw materials', 'income_account_id' => 100]);
+        $farIncome = ChartOfAccount::create(['code' => '4000', 'name' => 'Sales', 'type' => AccountType::Income]);
+        $nearIncome = ChartOfAccount::create(['code' => '4010', 'name' => 'Paint Sales', 'type' => AccountType::Income]);
+
+        $grandparent = Category::create(['code' => 'RAW', 'name' => 'Raw materials', 'income_account_id' => $farIncome->id]);
         $parent = Category::create([
             'code' => 'PIGMENTS', 'name' => 'Pigments',
-            'parent_id' => $grandparent->id, 'income_account_id' => 150,
+            'parent_id' => $grandparent->id, 'income_account_id' => $nearIncome->id,
         ]);
         $child = Category::create(['code' => 'REDS', 'name' => 'Reds', 'parent_id' => $parent->id]);
 
-        $this->assertSame(150, $child->resolveIncomeAccountId());
+        $this->assertSame($nearIncome->id, $child->resolveIncomeAccountId());
     }
 
     public function test_gl_resolution_returns_null_when_nothing_in_the_chain_sets_it(): void
@@ -172,7 +181,7 @@ class CategoryTest extends TestCase
     public function test_parent_id_must_resolve_to_a_category_that_exists(): void
     {
         $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('does not resolve to a category');
+        $this->expectExceptionMessage('does not resolve to a Category');
 
         Category::create(['code' => 'A', 'name' => 'A', 'parent_id' => 999999]);
     }
@@ -185,7 +194,7 @@ class CategoryTest extends TestCase
         $this->actingAsCompany(1);
 
         $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('does not resolve to a category');
+        $this->expectExceptionMessage('does not resolve to a Category');
 
         Category::create(['code' => 'RAW', 'name' => 'Raw materials', 'parent_id' => $otherCompanyCategory->id]);
     }
