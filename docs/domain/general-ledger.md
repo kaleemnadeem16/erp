@@ -11,8 +11,11 @@ a migration. This is the classic ERP mistake and it is cheap to avoid now.
 ## Where it sits
 
 Everything financial posts here: [stock.md](stock.md), [job-costing.md](job-costing.md),
-[receivables.md](receivables.md), purchasing. Built in [Phase 6](../phases/README.md), though
-account mapping is defined in Phase 1.
+[receivables.md](receivables.md), purchasing. Posting itself — `journal_entries`/`journal_lines`
+— is built in [Phase 6](../phases/README.md). `chart_of_accounts`, `fiscal_years` and
+`accounting_periods` are built in Phase 1, since item/category GL mapping ([items.md](items.md))
+and the role accounts ([parties.md](parties.md)) need real accounts to reference — they carry no
+posting logic yet, just the structure later phases post into.
 
 ## Schema
 
@@ -21,16 +24,36 @@ chart_of_accounts
   id, company_id
   code, name
   type            ASSET | LIABILITY | EQUITY | INCOME | EXPENSE
-  parent_id       NULLABLE          -- hierarchy
+  parent_id       NULLABLE → chart_of_accounts    -- hierarchy; guarded like categories.parent_id
+                                                      (no self-parent, no cycles, same company)
   is_postable     bool              -- false for summary/header accounts
-  currency_id     NULLABLE          -- for currency-specific accounts (e.g. USD bank)
+  currency_id     NULLABLE          -- account restricted to one currency (e.g. a USD bank
+                                        account in a PKR-base company); null = follows the
+                                        company's base currency. Still translated to base
+                                        currency for reporting, same as any transaction currency
+                                        — see multi-currency.md
+  status          ACTIVE | ARCHIVED   -- archived, never deleted, once anything posts against it
 
   unique(['company_id', 'code'])
 
-accounting_periods
+fiscal_years
   id, company_id
   name, starts_on, ends_on
   status          OPEN | CLOSED
+
+  unique(['company_id', 'name'])
+  starts_on <= ends_on
+  no overlapping fiscal years for the same company
+
+accounting_periods
+  id, company_id, fiscal_year_id   -- must resolve to a fiscal_year in the same company
+  period_no, name, starts_on, ends_on
+  status          OPEN | CLOSED
+
+  unique(['fiscal_year_id', 'period_no'])
+  starts_on <= ends_on
+  no overlapping periods for the same company
+  must fall entirely within its fiscal_year's [starts_on, ends_on]
 
 journal_entries
   id, company_id
@@ -54,6 +77,43 @@ journal_lines
 ```
 
 ## Behaviour
+
+### Account type and normal balance
+
+`chart_of_accounts.type` is a backed `AccountType` enum, not a bare string — `ASSET | LIABILITY |
+EQUITY | INCOME | EXPENSE`. Which side of an entry is "normal" for an account follows directly
+from its type and is centralised on the enum, not scattered as `if` conditionals wherever an
+account is used:
+
+| Type | Normal balance |
+|---|---|
+| `ASSET`, `EXPENSE` | Debit |
+| `LIABILITY`, `EQUITY`, `INCOME` | Credit |
+
+**Deliberately no finer subtype yet** (`RECEIVABLE`, `PAYABLE`, `CASH_BANK`, `INVENTORY`,
+`FIXED_ASSET`, `COGS`, …). The five types above are the fixed, universal double-entry
+categories and aren't going away; a *reporting* classification finer than that (e.g. "which
+accounts count as cash for a cash-flow statement") is a real future need, but its vocabulary
+should come from Phase 6's actual financial-statement design, not be guessed now. Unlike a
+composite unique constraint or a scoping mechanism, an unused nullable column is cheap to add
+later — there's no structural reason to reserve it speculatively.
+
+### Fiscal years and periods
+
+`fiscal_years` and `accounting_periods` are **created explicitly**, not auto-generated from a
+recurring rule — same manual-entry philosophy as [ADR 0031](../decisions/0031-manual-exchange-rate-entry.md)
+(exchange rates) and gapless numbering ([sequences](../phases/phase-0-foundation.md)): a company
+enters "FY2026–27, 2026-07-01 to 2027-06-30" once, then its periods within it. `companies.fiscal_year_start_month`
+([ADR 0024](../decisions/0024-onboarding-base-currency-and-fiscal-year.md)) is only a UI-default
+suggestion for that entry form, never consumed by a generator — there is no generator.
+
+Both tables reject overlapping ranges for the same company at the database level (a Postgres
+exclusion constraint, [database.md](../architecture/database.md)'s pattern for exactly this —
+`EXCLUDE USING gist`, requiring `btree_gist`) rather than an application-level check, plus a
+`starts_on <= ends_on` `CHECK`. A period additionally can't be expressed as a same-table `CHECK`
+against its fiscal year's dates — that containment (`fiscal_year_id` resolves in-company, and the
+period's range falls entirely inside its fiscal year's) is an application-level guard on save,
+the same shape as `categories.parent_id`'s guard.
 
 ### Immutability
 
@@ -113,4 +173,7 @@ balance.
 
 - [receivables.md](receivables.md) · [multi-currency.md](multi-currency.md)
 - [stock.md](stock.md) · [job-costing.md](job-costing.md)
+- [items.md](items.md) — item/category GL mapping, the same account-resolution discipline
+- [parties.md](parties.md) — `receivable_account_id` / `payable_account_id`
 - [ADR 0011](../decisions/0011-double-entry-open-item-ar.md)
+- [ADR 0024](../decisions/0024-onboarding-base-currency-and-fiscal-year.md) — `companies.fiscal_year_start_month`

@@ -55,8 +55,11 @@ customer_accounts
   code                     -- role-specific; may differ from parties.code
   credit_limit             decimal(19,4)   NULLABLE   -- null = no limit enforced
   payment_terms_days
-  tax_code_id              NULLABLE → tax codes (tax.md)
-  income_account_id        → chart_of_accounts
+  tax_code_id              NULLABLE → tax_codes (tax.md, not built yet — see items.md's
+                                      forward-reference precedent for default_supplier_id etc.)
+  receivable_account_id    → chart_of_accounts   -- the customer's control account (an ASSET);
+                                                     revenue itself comes from item/category
+                                                     income_account_id, not from here
   default_currency_id      NULLABLE → currencies
   custom_fields            json
   status                   ACTIVE | ARCHIVED
@@ -110,6 +113,16 @@ not on `parties`. `parties` only carries what's true of the entity regardless of
 name, registration, tax id, contacts. This is the same discipline `items.md` applies to GL
 mapping, applied here to keep this table from regrowing into the single wide table ADR 0030
 rejected.
+
+### Receivable and payable are control accounts, not income
+
+`customer_accounts.receivable_account_id` and `supplier_accounts.payable_account_id` are the
+customer's/supplier's **balance-owed** account (ASSET / LIABILITY respectively) — what a sales
+invoice debits, what a purchase invoice credits, per [general-ledger.md](general-ledger.md)'s
+"What posts when" table. A customer doesn't have "income"; the item/category being sold does
+(`income_account_id`, [items.md](items.md#gl-mapping)). Naming this field `income_account_id` on
+`customer_accounts` (as an earlier draft of this schema did) conflated the two — fixed before
+either table was built.
 
 ### Shared sites
 
@@ -166,7 +179,7 @@ the alternatives section of [ADR 0030](../decisions/0030-unified-party-model.md#
   `default_supplier_id` references a `supplier_accounts` row
 - [multi-currency.md](multi-currency.md) — `default_currency_id`
 - [tax.md](tax.md) — `tax_code_id`
-- [general-ledger.md](general-ledger.md) — `income_account_id` / `payable_account_id`
+- [general-ledger.md](general-ledger.md) — `receivable_account_id` / `payable_account_id`
 - [ADR 0030](../decisions/0030-unified-party-model.md) — the decision this doc implements
 - [ADR 0033](../decisions/0033-item-suppliers-relationship.md) — Phase 2's `item_suppliers`,
   overriding `lead_time_days` per item

@@ -126,8 +126,13 @@ Rules, per [ADR 0032](../decisions/0032-per-item-valuation-method.md):
 
 ### GL posting
 
-See [general-ledger.md](general-ledger.md). Receipt debits Inventory; issue to a job debits WIP.
-Whichever method is official for the item drives what the debit/credit amounts actually are.
+Phase 2 does not post to the GL. A `stock_move` writes a `stock_valuation_entries` row (this
+schema, above) recording which account the move conceptually affects and the costed amount —
+"this receipt is an Inventory-side movement of X" — using whichever method (AVCO/FIFO/SPECIFIC)
+is official for the item. That row is a **feed**, not a journal entry: it has no debit/credit
+pair, isn't balanced, and isn't immutable in the [invariant 3](../architecture/invariants.md#3-financial-documents-are-immutable)
+sense. Turning the feed into an actual balanced, immutable `journal_entries`/`journal_lines` pair
+— the real GL posting — is [general-ledger.md](general-ledger.md)'s job, in Phase 6.
 
 ## Landmines
 
