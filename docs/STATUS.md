@@ -1,6 +1,6 @@
 # Project Status
 
-**Updated:** 2026-08-20
+**Updated:** 2026-08-21
 **Current phase:** Phase 0 — Foundation (in progress — everything except deploying to mainvm is
 done, deliberately deferred until there's a real feature worth shipping) and Phase 1 — Master
 data (in progress — design decided, build under way: `parties`/`party_contacts`/`party_sites`,
@@ -74,6 +74,7 @@ tech stack, extensibility strategy and deployment approach are recorded as [ADRs
 | **`customer_accounts`/`customer_sites`/`supplier_accounts`/`supplier_sites` built** — completes the `Parties` module's ADR 0030 scope. `party_id` on both role accounts is guarded against pointing at another company's `Party` via a new `App\Support\Concerns\GuardsRelatedCompanyScope` trait — re-resolves through the related model's own `BelongsToCompany` scope rather than trusting a raw foreign key, the same discipline as `Category`'s parent guard, generalised since two models needed it identically. `customer_sites`/`supplier_sites` scope through their role account via `BelongsToCompanyThroughParent`, same as `PartySite`. `tax_code_id` on `customer_accounts` is an unconstrained forward reference — `tax_codes` doesn't exist yet, same treatment as `items.default_supplier_id`. `Party` gained `customerAccount()`/`supplierAccount()` inverse relations. Full toolchain green (Pest 172/172, Larastan, Pint) → [phase-1-master-data.md](phases/phase-1-master-data.md) | 2026-08-20 |
 | **Closed a real cross-company gap in the account-reference columns just built**: `categories`/`items`' `income_account_id`/`expense_account_id`/`inventory_account_id` and `customer_accounts.receivable_account_id`/`supplier_accounts.payable_account_id` were plain FKs to `chart_of_accounts` with no company guard at all — unlike `parent_id`/`party_id`, already covered by `GuardsCompanyScopedHierarchy`/`GuardsRelatedCompanyScope`. All eight columns now route through `GuardsRelatedCompanyScope` (newly wired onto `Category`/`Item`; extended on `CustomerAccount`/`SupplierAccount`), rejecting a same-company-but-wrong-account id on both create and update — proven with new tests covering same-company success, cross-company rejection, raw attribute assignment, update rejection, and null staying null. Also made explicit rather than accidental: account-*type* compatibility (`inventory_account_id`/`receivable_account_id` → `ASSET`, `payable_account_id` → `LIABILITY`, `income_account_id` → `INCOME`, `expense_account_id` → `EXPENSE`) and archived/non-postable account selection are both unenforced today by deliberate Phase 6 deferral, not oversight → [general-ledger.md](domain/general-ledger.md#account-type-and-normal-balance), [items.md](domain/items.md#gl-mapping), [parties.md](domain/parties.md#receivable-and-payable-are-control-accounts-not-income). Verifying migration rollback (never actually exercised anywhere — `RefreshDatabase` migrates once and never calls `down()`) against an isolated database surfaced a real bug: `create_activity_log_table` had no `down()` method at all, so `migrate:rollback` silently no-opped instead of dropping the table, breaking re-migration; fixed, and `codegen-check` in `pipeline.yml` now runs a full rollback-then-re-migrate cycle on every push so a repeat fails CI instead of going unnoticed. Full toolchain green (Pest, Larastan, Pint) → [phase-1-master-data.md](phases/phase-1-master-data.md) | 2026-08-20 |
 | **Independent Phase 1 integrity audit gaps closed** — `company_id` is now context-controlled on create and immutable thereafter; child-table parent guards cover updates; customer/supplier site roles require the site and role account to share the same party; item category/UoM/default-supplier references are tenant-guarded; company-bearing relationships also have composite PostgreSQL tenant FKs; fiscal-year edits cannot strand periods; and ADR 0024's fiscal-start-month lock activates after the first closed period. ADR 0034 supersedes ADR 0030's imprecise child-scoping/control-account wording. → [phase-1-master-data.md](phases/phase-1-master-data.md) | 2026-08-21 |
+| **Manual exchange-rate entry endpoint(s) built** — `App\Http\Controllers\Api\V1\ExchangeRateController` (index/store/show/update/destroy), registered from a new `App\Providers\CurrencyServiceProvider` since `Currency`/`ExchangeRate` are Phase 0 cross-cutting mechanisms, not owned by an `app/Modules` module — same self-registering-routes pattern as `AuthServiceProvider`. `source` is always stamped `'manual'` server-side per ADR 0031, never trusted from client input. List filters and pagination are validated before reaching PostgreSQL, rate input is bounded to `decimal(19,9)`, and concurrent duplicate inserts return 422 via named-constraint handling. Found and fixed a real Scramble/OpenAPI inference gap: `whenLoaded()` must wrap the nested resource, not the reverse, or a conditionally-loaded relation gets typed as always-present in the generated schema. Orval client regenerated; full toolchain green (Pest 212/212, Larastan, Pint) → [phase-1-master-data.md](phases/phase-1-master-data.md) | 2026-08-21 |
 
 ## In progress
 
@@ -92,18 +93,16 @@ Session note: work moved from a Windows-side VS Code window (browsing the repo o
 `\\wsl.localhost\...`) to a proper **Remote-WSL** VS Code window on 2026-08-11 — do Docker/git
 commands natively from the WSL shell now, no `wsl.exe`/`MSYS_NO_PATHCONV` wrapping needed.
 
-Phase 1's schema and models are built; manual exchange-rate entry and the remaining APIs are
-next. See [phase-1-master-data.md](phases/phase-1-master-data.md) for the task list.
+Phase 1's schema, models, and exchange-rate entry endpoints are built; the remaining CRUD APIs
+are next. See [phase-1-master-data.md](phases/phase-1-master-data.md) for the task list.
 
 ## Next
 
-**[Phase 1 — Master data](phases/phase-1-master-data.md).** All the schema/model work is now
-done — `parties`/`party_contacts`/`party_sites`, `categories`/`items`, `chart_of_accounts`/
-`fiscal_years`/`accounting_periods`, `customer_accounts`/`customer_sites`/`supplier_accounts`/
-`supplier_sites` (see Done table above). Remaining, per the phase doc's task list: manual
-exchange-rate entry endpoint(s); then API endpoints + Orval regeneration for everything built
-this phase — the one layer nothing built so far has touched. Backend-only; no new
-frontend screens this phase.
+**[Phase 1 — Master data](phases/phase-1-master-data.md).** All the schema/model work and manual
+exchange-rate entry (see Done table above) are done. Remaining, per the phase doc's task list:
+API endpoints for everything else built this phase — `items`, `categories`, `parties`,
+`customer-accounts`, `supplier-accounts`, `chart-of-accounts` — then Orval regeneration,
+`codegen-check` green in CI. Backend-only; no new frontend screens this phase.
 
 [Phase 0 — Foundation](phases/phase-0-foundation.md) remains in progress in parallel — the two
 former blockers are resolved (`btree_gist` confirmed available on dbvm, `REDIS_PREFIX=erp_`

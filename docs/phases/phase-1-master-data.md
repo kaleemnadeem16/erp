@@ -119,13 +119,32 @@ transactions yet. This is backend-only; the first substantial frontend work is
 - [x] ~~`supplier_accounts`, `supplier_sites` — migrations, models, `BelongsToCompany`~~ — done
       2026-08-20, mirroring `customer_accounts`/`customer_sites` above; `payable_account_id`
       needed no rename (already correctly named)
-- [ ] Manual exchange-rate entry endpoint(s) for `exchange_rates`
+- [x] ~~Manual exchange-rate entry endpoint(s) for `exchange_rates`~~ — done 2026-08-21.
+      `App\Http\Controllers\Api\V1\ExchangeRateController` (index/store/show/update/destroy),
+      registered from a new `App\Providers\CurrencyServiceProvider` — `Currency`/`ExchangeRate`
+      are cross-cutting (Phase 0), not owned by an `app/Modules` module, so they get their own
+      provider the same way `AuthServiceProvider` does, per code-structure.md's self-registering
+      routes pattern. The controller always stamps `source = 'manual'` rather than trusting
+      client input, per ADR 0031's consistency requirement, and the store request rejects a
+      from/to-currency pair that's already recorded for that date and rate_type with a 422 (the
+      DB's composite unique constraint would already reject it, but as a raw `QueryException`).
+      `UpdateExchangeRateRequest` deliberately only accepts `rate` — the pair/date/type identify
+      *which* rate this is, so changing any of them is a new rate, not a correction of this one.
+      Found and fixed a real Scramble inference gap in the process: `whenLoaded()` must wrap the
+      nested resource (`$this->whenLoaded('fromCurrency', fn () => new CurrencyResource(...))`),
+      not the reverse (`CurrencyResource::make($this->whenLoaded(...))`) — only the first form
+      lets Scramble see the field is conditional and mark it optional in the generated OpenAPI
+      schema instead of always-present; confirmed by inspecting the exported schema directly.
+      List filters and pagination are validated before reaching PostgreSQL; rate input is bounded
+      to the schema's `decimal(19,9)` precision; and the named unique-constraint violation is
+      translated to a 422 to close the concurrent-insert race left by validation alone. Orval was
+      regenerated in the same change. Full toolchain green (Pest 212/212, Larastan, Pint)
 - [x] ~~Architecture test: `categories.parent_id` has no cycle~~ — done 2026-08-20, folded into
       `CategoryTest` rather than `tests/Architecture/` since it's data-dependent (a
       `Category`-specific `saving` guard, not a schema-level property `information_schema` can
       prove on an empty table the way `CompanyScopedUniqueIndexTest` does)
 - [ ] API endpoints (`/api/v1/items`, `/categories`, `/parties`, `/customer-accounts`,
-      `/supplier-accounts`, `/exchange-rates`, `/chart-of-accounts`) per api-conventions.md
+      `/supplier-accounts`, `/chart-of-accounts`) per api-conventions.md
 - [ ] Orval regeneration verified, `codegen-check` green on real CI
 - [ ] Pest coverage: company scoping on every new table, composite uniqueness, the GL-mapping
       inheritance walk, the category cycle guard
@@ -154,8 +173,10 @@ Tick these in the same commit as the work.
       the first real exercise of `HasCustomFields`
 - [ ] `docker compose up` + migrate gives all Phase 1 tables with no errors; full test suite
       green on Postgres
-- [ ] Manually entering an exchange rate through the API is reflected correctly — no rate is
-      fabricated or silently defaulted
+- [x] Manually entering an exchange rate through the API is reflected correctly — no rate is
+      fabricated or silently defaulted — proven in `ExchangeRateApiTest` (2026-08-21): `source` is
+      always `'manual'` regardless of client input, and no filter/pagination/rate value is
+      silently clamped or coerced — each rejects with a 422 instead
 
 ## Docs to update on completion
 
