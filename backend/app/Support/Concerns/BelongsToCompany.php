@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Support\Concerns;
 
+use App\Exceptions\DomainInvariantException;
 use App\Support\CompanyContext;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use RuntimeException;
 
 /**
  * Scopes a model to the current company, owns company_id from CompanyContext on
@@ -33,12 +33,12 @@ trait BelongsToCompany
             $givenCompanyId = $model->getAttribute('company_id');
 
             if ($givenCompanyId !== null && (int) $givenCompanyId !== $companyId) {
-                throw new RuntimeException(sprintf(
+                throw new DomainInvariantException(sprintf(
                     '%s cannot be created for company %s while company %s is active.',
                     class_basename($model),
                     $givenCompanyId,
                     $companyId,
-                ));
+                ), field: 'company_id');
             }
 
             $model->setAttribute('company_id', $companyId);
@@ -46,10 +46,10 @@ trait BelongsToCompany
 
         static::updating(function (Model $model): void {
             if ($model->isDirty('company_id')) {
-                throw new RuntimeException(sprintf(
+                throw new DomainInvariantException(sprintf(
                     '%s company_id is immutable.',
                     class_basename($model),
-                ));
+                ), field: 'company_id');
             }
         });
     }

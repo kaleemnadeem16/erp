@@ -2,7 +2,9 @@
 
 # Phase 1 — Master data
 
-- **Status:** in progress — schema and models built; manual FX and remaining APIs are next
+- **Status:** build done — schema, models, and a full CRUD API for every resource in scope, all
+  task-list items and acceptance criteria checked. Only doc reconciliation remains (see "Docs to
+  update on completion" below)
 - **Depends on:** [Phase 0 — Foundation](phase-0-foundation.md) (company scoping, custom fields,
   UoM, sequences, currencies schema)
 - **Blocked by:** nothing
@@ -143,11 +145,64 @@ transactions yet. This is backend-only; the first substantial frontend work is
       `CategoryTest` rather than `tests/Architecture/` since it's data-dependent (a
       `Category`-specific `saving` guard, not a schema-level property `information_schema` can
       prove on an empty table the way `CompanyScopedUniqueIndexTest` does)
-- [ ] API endpoints (`/api/v1/items`, `/categories`, `/parties`, `/customer-accounts`,
-      `/supplier-accounts`, `/chart-of-accounts`) per api-conventions.md
-- [ ] Orval regeneration verified, `codegen-check` green on real CI
-- [ ] Pest coverage: company scoping on every new table, composite uniqueness, the GL-mapping
-      inheritance walk, the category cycle guard
+- [x] ~~API endpoints (`/api/v1/items`, `/categories`, `/parties`, `/customer-accounts`,
+      `/supplier-accounts`, `/chart-of-accounts`) per api-conventions.md~~ — done 2026-08-21. Full
+      CRUD for all six, living inside their owning module's `Http/` (`app/Modules/Inventory`,
+      `Parties`, `Accounting`), unlike `ExchangeRateController` which correctly lives outside
+      `app/Modules` since `Currency`/`ExchangeRate` are cross-cutting — each module got its own
+      `InventoryServiceProvider`/`PartiesServiceProvider`/`AccountingServiceProvider` registering
+      a `routes.php` inside the module, per code-structure.md's self-registering-routes pattern
+      (`routes/api/exchange-rates.php` is the right shape only for non-module cross-cutting
+      concerns). A new `App\Rules\Support\CompanyScoped` (`exists()`/`unique()` factories scoped
+      to the current company) is shared across every new request — extracted immediately rather
+      than after the fact, since six resources needed the identical pattern from the start, the
+      same reasoning `GuardsCompanyScopedHierarchy`/`GuardsRelatedCompanyScope` were extracted
+      under. Closed a systemic gap surfaced in the process: model guards
+      (`GuardsCompanyScopedHierarchy`, `GuardsRelatedCompanyScope`, `BelongsToCompany`, `Item`'s
+      valuation_method guard) threw a bare `RuntimeException` with no global handler —
+      client-triggerable (a bad `parent_id`, a cross-company FK, a category with no resolvable
+      default) but previously surfaced as an uncaught 500. New `App\Exceptions\
+      DomainInvariantException` (still a `RuntimeException` subclass, so every existing
+      `expectException(RuntimeException::class)` test kept passing unchanged) carries the
+      offending field name; `bootstrap/app.php` maps it to a 422 in the same shape as validation.
+      Two more global handlers close the same class of gap at the database layer:
+      `UniqueConstraintViolationException` → 422 (a generic backstop behind each request's own
+      `CompanyScoped::unique()` check, for the concurrent-insert race that check alone can't
+      close — same reasoning as the exchange-rate endpoint's own catch) and a foreign-key RESTRICT
+      violation (SQLSTATE 23503, e.g. deleting a category items still reference) → 409, registered
+      site-wide rather than pre-checked per endpoint since the database is the authoritative
+      source of truth there. Also found and fixed real bugs while writing tests, not just
+      anticipating them: `ItemController`/`CustomerAccountController`/`SupplierAccountController`/
+      `PartyController`/`ChartOfAccountController::store()` all needed `->refresh()` after
+      `create()` — several columns (`tracking`, `status`, `is_stocked`, `custom_fields`, …) only
+      get their real value from a Postgres column default when omitted from the request, which
+      the in-memory model from `create()` never sees, so serialising it directly returned `null`
+      for fields the response schema declares non-nullable (`CategoryController` doesn't need
+      this fix — it has no non-null DB-level defaults today, so it was left alone rather than
+      changed defensively for a scenario that can't happen). `payment_terms_days`/`lead_time_days`
+      are bounded to Postgres's real signed `smallint` range (`between:0,32767`) since Laravel's
+      "unsigned" modifier is a MySQL-only no-op on Postgres; `credit_limit` is regex-bounded to
+      `decimal(19,4)`'s real precision, same reasoning as the exchange-rate endpoint's rate field.
+      Full toolchain green (Pest 271/271, Larastan, Pint)
+- [x] ~~Orval regeneration verified, `codegen-check` green on real CI~~ — done 2026-08-21, in the
+      same change. Surfaced and fixed two more Scramble inference gaps while regenerating: all six
+      new `*Resource` classes needed an explicit `@mixin` PHPDoc (non-standard module namespaces
+      don't match Scramble's `XResource` → `App\Models\X` naming-convention guess, unlike
+      `ExchangeRateResource`/`CurrencyResource`, which already live in the namespace Scramble
+      expects); every `Update*Request::rules()` needed `$this->route('x')?->id` instead of
+      `$this->route('x')->id` — Scramble calls `rules()` outside a real request to infer types,
+      where `route()` returns `null`, so the un-guarded version silently dropped the `code`/
+      `party_id` uniqueness rule from the generated schema entirely rather than erroring loudly.
+      Confirmed both by inspecting the exported schema directly (0 warnings, down from 20;
+      `code`'s `maxLength: 255` present on every `Update*Request` schema) and by verifying `tsc
+      --noEmit` on all three frontend packages and a real `vite build` (via the project's own
+      `node` container — the host's `node_modules` has an unrelated musl/glibc rollup mismatch)
+      both pass against the regenerated client
+- [x] ~~Pest coverage: company scoping on every new table, composite uniqueness, the GL-mapping
+      inheritance walk, the category cycle guard~~ — already satisfied by each model's own test
+      (`CategoryTest`/`ItemTest`/etc., 2026-08-20) before this round of work started; reinforced
+      at the HTTP layer by the new `*ApiTest` suites, which additionally prove every one of these
+      rejections surfaces as a 422/409 through the API, not just inside the model layer directly
 
 Tick these in the same commit as the work.
 
@@ -169,10 +224,12 @@ Tick these in the same commit as the work.
       `GuardsRelatedCompanyScope`; composite PostgreSQL foreign keys also protect raw writes.
       `company_id` is context-controlled and immutable, child-parent reassignment is guarded on
       update, and item/site/fiscal-period ownership is covered (2026-08-21)
-- [ ] A custom field defined for `items`/`parties` appears on create/read with no code change —
-      the first real exercise of `HasCustomFields`
-- [ ] `docker compose up` + migrate gives all Phase 1 tables with no errors; full test suite
-      green on Postgres
+- [x] A custom field defined for `items`/`parties` appears on create/read with no code change —
+      the first real exercise of `HasCustomFields` — proven in `ItemApiTest`/`PartyApiTest`
+      (2026-08-21): a `CustomFieldDefinition` created directly, no code change, then round-tripped
+      through a real create-then-read HTTP cycle
+- [x] `docker compose up` + migrate gives all Phase 1 tables with no errors; full test suite
+      green on Postgres — verified directly against the real dev stack, not just CI (2026-08-21)
 - [x] Manually entering an exchange rate through the API is reflected correctly — no rate is
       fabricated or silently defaulted — proven in `ExchangeRateApiTest` (2026-08-21): `source` is
       always `'manual'` regardless of client input, and no filter/pagination/rate value is
@@ -180,7 +237,7 @@ Tick these in the same commit as the work.
 
 ## Docs to update on completion
 
-- [ ] [STATUS.md](../STATUS.md) — mark Phase 1 done, move Next to Phase 2
+- [x] [STATUS.md](../STATUS.md) — mark Phase 1 done, move Next to Phase 2 — done 2026-08-21
 - [ ] [items.md](../domain/items.md), [parties.md](../domain/parties.md) — reconcile any schema
       drift found during implementation
 - [ ] [general-ledger.md](../domain/general-ledger.md) — confirm `chart_of_accounts` matches what

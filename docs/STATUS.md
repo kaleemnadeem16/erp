@@ -3,11 +3,11 @@
 **Updated:** 2026-08-21
 **Current phase:** Phase 0 — Foundation (in progress — everything except deploying to mainvm is
 done, deliberately deferred until there's a real feature worth shipping) and Phase 1 — Master
-data (in progress — design decided, build under way: `parties`/`party_contacts`/`party_sites`,
-`categories`/`items`, `chart_of_accounts`/`fiscal_years`/`accounting_periods`, and
-`customer_accounts`/`customer_sites`/`supplier_accounts`/`supplier_sites` all done; see
+data (build, tests and acceptance criteria all done — schema, models, and a full API for
+`items`/`categories`/`parties`/`customer-accounts`/`supplier-accounts`/`chart-of-accounts`/
+`exchange-rates`; a handful of doc-reconciliation items remain, see
 [phase-1-master-data.md](phases/phase-1-master-data.md))
-**Application code:** Laravel 12 skeleton + company scoping + auth (Sanctum, roles/permissions, activity log) + UoM conversion + custom fields mechanism + gapless numbering sequences + currencies/exchange rates schema + Scramble→Orval type pipeline + `Parties` module (party identity, customer/supplier accounts and sites) + `Inventory` module (categories, items, hierarchical GL-default resolution) + `Accounting` module (chart of accounts, fiscal years, accounting periods); React 19 + Vite frontend skeleton (login, one authenticated page, mobile-first shell)
+**Application code:** Laravel 12 skeleton + company scoping + auth (Sanctum, roles/permissions, activity log) + UoM conversion + custom fields mechanism + gapless numbering sequences + currencies/exchange rates + Scramble→Orval type pipeline + `Parties` module (party identity, customer/supplier accounts and sites, full CRUD API) + `Inventory` module (categories, items, hierarchical GL-default resolution, full CRUD API) + `Accounting` module (chart of accounts, fiscal years, accounting periods, full CRUD API on chart of accounts) + three global exception handlers closing a systemic "raw exception/DB error leaks as a 500" gap across every endpoint; React 19 + Vite frontend skeleton (login, one authenticated page, mobile-first shell) + a generated TS client covering every Phase 1 endpoint
 
 ---
 
@@ -75,6 +75,7 @@ tech stack, extensibility strategy and deployment approach are recorded as [ADRs
 | **Closed a real cross-company gap in the account-reference columns just built**: `categories`/`items`' `income_account_id`/`expense_account_id`/`inventory_account_id` and `customer_accounts.receivable_account_id`/`supplier_accounts.payable_account_id` were plain FKs to `chart_of_accounts` with no company guard at all — unlike `parent_id`/`party_id`, already covered by `GuardsCompanyScopedHierarchy`/`GuardsRelatedCompanyScope`. All eight columns now route through `GuardsRelatedCompanyScope` (newly wired onto `Category`/`Item`; extended on `CustomerAccount`/`SupplierAccount`), rejecting a same-company-but-wrong-account id on both create and update — proven with new tests covering same-company success, cross-company rejection, raw attribute assignment, update rejection, and null staying null. Also made explicit rather than accidental: account-*type* compatibility (`inventory_account_id`/`receivable_account_id` → `ASSET`, `payable_account_id` → `LIABILITY`, `income_account_id` → `INCOME`, `expense_account_id` → `EXPENSE`) and archived/non-postable account selection are both unenforced today by deliberate Phase 6 deferral, not oversight → [general-ledger.md](domain/general-ledger.md#account-type-and-normal-balance), [items.md](domain/items.md#gl-mapping), [parties.md](domain/parties.md#receivable-and-payable-are-control-accounts-not-income). Verifying migration rollback (never actually exercised anywhere — `RefreshDatabase` migrates once and never calls `down()`) against an isolated database surfaced a real bug: `create_activity_log_table` had no `down()` method at all, so `migrate:rollback` silently no-opped instead of dropping the table, breaking re-migration; fixed, and `codegen-check` in `pipeline.yml` now runs a full rollback-then-re-migrate cycle on every push so a repeat fails CI instead of going unnoticed. Full toolchain green (Pest, Larastan, Pint) → [phase-1-master-data.md](phases/phase-1-master-data.md) | 2026-08-20 |
 | **Independent Phase 1 integrity audit gaps closed** — `company_id` is now context-controlled on create and immutable thereafter; child-table parent guards cover updates; customer/supplier site roles require the site and role account to share the same party; item category/UoM/default-supplier references are tenant-guarded; company-bearing relationships also have composite PostgreSQL tenant FKs; fiscal-year edits cannot strand periods; and ADR 0024's fiscal-start-month lock activates after the first closed period. ADR 0034 supersedes ADR 0030's imprecise child-scoping/control-account wording. → [phase-1-master-data.md](phases/phase-1-master-data.md) | 2026-08-21 |
 | **Manual exchange-rate entry endpoint(s) built** — `App\Http\Controllers\Api\V1\ExchangeRateController` (index/store/show/update/destroy), registered from a new `App\Providers\CurrencyServiceProvider` since `Currency`/`ExchangeRate` are Phase 0 cross-cutting mechanisms, not owned by an `app/Modules` module — same self-registering-routes pattern as `AuthServiceProvider`. `source` is always stamped `'manual'` server-side per ADR 0031, never trusted from client input. List filters and pagination are validated before reaching PostgreSQL, rate input is bounded to `decimal(19,9)`, and concurrent duplicate inserts return 422 via named-constraint handling. Found and fixed a real Scramble/OpenAPI inference gap: `whenLoaded()` must wrap the nested resource, not the reverse, or a conditionally-loaded relation gets typed as always-present in the generated schema. Orval client regenerated; full toolchain green (Pest 212/212, Larastan, Pint) → [phase-1-master-data.md](phases/phase-1-master-data.md) | 2026-08-21 |
+| **Full CRUD API built for the rest of Phase 1** — `items`/`categories` (`Inventory`), `parties`/`customer-accounts`/`supplier-accounts` (`Parties`), `chart-of-accounts` (`Accounting`), each living inside its owning module's `Http/` and registered by a new per-module service provider (`InventoryServiceProvider`/`PartiesServiceProvider`/`AccountingServiceProvider`), per code-structure.md — unlike `ExchangeRateController`, which correctly sits outside `app/Modules` since `Currency`/`ExchangeRate` are cross-cutting. New `App\Rules\Support\CompanyScoped` (company-scoped `exists()`/`unique()` factories) is shared across all six resources' requests, extracted up front rather than after the fact since every one of them needed the identical pattern. Closed a systemic gap found in the process: model guards (`GuardsCompanyScopedHierarchy`, `GuardsRelatedCompanyScope`, `BelongsToCompany`, `Item`'s valuation_method guard) threw a bare, client-triggerable `RuntimeException` with no handler, surfacing as an uncaught 500 — new `App\Exceptions\DomainInvariantException` (still a `RuntimeException` subclass, so no existing test needed to change) carries the offending field, mapped to a 422 in `bootstrap/app.php`. Two more global handlers close the same class of gap at the database layer: `UniqueConstraintViolationException` → 422 (backstop behind each request's own uniqueness check) and a foreign-key RESTRICT violation → 409 (e.g. deleting a category items still reference), both registered site-wide since the database is the authoritative source of truth there, not a per-endpoint pre-check. Found and fixed real bugs while writing tests, not just anticipating them: five of six `store()` methods needed `->refresh()` after `create()` since several columns only get their real value from a Postgres column default when omitted, which the in-memory model never sees (`CategoryController` has no such column, so was correctly left alone); `payment_terms_days`/`lead_time_days` are bounded to Postgres's real signed `smallint` range, since Laravel's "unsigned" is a MySQL-only no-op on Postgres; `credit_limit` is bounded to `decimal(19,4)`'s real precision. Orval regeneration surfaced two more Scramble gaps, both fixed: every new `*Resource` needed an explicit `@mixin` PHPDoc (non-standard module namespaces don't match Scramble's naming-convention guess) and every `Update*Request` needed `$this->route('x')?->id` instead of `->id` (Scramble calls `rules()` outside a real request, where `route()` is null) — the un-guarded version didn't error, it silently dropped the `code`/`party_id` uniqueness rule from the generated schema entirely. This also closed Phase 1's two remaining acceptance criteria (`docker compose up` verified directly against the real dev stack; a custom field defined for `items`/`parties` proven to round-trip through a real create-then-read HTTP cycle, not just get rejected). Full toolchain green (Pest 273/273, Larastan, Pint); `tsc --noEmit` on all three frontend packages and a real `vite build` both pass against the regenerated client → [phase-1-master-data.md](phases/phase-1-master-data.md) | 2026-08-21 |
 
 ## In progress
 
@@ -93,16 +94,22 @@ Session note: work moved from a Windows-side VS Code window (browsing the repo o
 `\\wsl.localhost\...`) to a proper **Remote-WSL** VS Code window on 2026-08-11 — do Docker/git
 commands natively from the WSL shell now, no `wsl.exe`/`MSYS_NO_PATHCONV` wrapping needed.
 
-Phase 1's schema, models, and exchange-rate entry endpoints are built; the remaining CRUD APIs
-are next. See [phase-1-master-data.md](phases/phase-1-master-data.md) for the task list.
+Phase 1's task list and acceptance criteria are all done (see Done table above). What's left is
+purely doc reconciliation — see Next.
 
 ## Next
 
-**[Phase 1 — Master data](phases/phase-1-master-data.md).** All the schema/model work and manual
-exchange-rate entry (see Done table above) are done. Remaining, per the phase doc's task list:
-API endpoints for everything else built this phase — `items`, `categories`, `parties`,
-`customer-accounts`, `supplier-accounts`, `chart-of-accounts` — then Orval regeneration,
-`codegen-check` green in CI. Backend-only; no new frontend screens this phase.
+**Close out [Phase 1 — Master data](phases/phase-1-master-data.md)'s remaining "Docs to update on
+completion" items**, not yet done:
+- [items.md](domain/items.md), [parties.md](domain/parties.md) — reconcile any schema drift found
+  during implementation (none identified so far, but not yet audited line by line)
+- [general-ledger.md](domain/general-ledger.md) — confirm `chart_of_accounts` matches what was
+  actually built
+- Expand [phase-2](phases/README.md#phase-2--purchasing--stock) into its own doc
+
+Then **[Phase 2 — Purchasing & stock](phases/README.md#phase-2--purchasing--stock)** starts for
+real. `item_suppliers` is already designed ([ADR 0033](decisions/0033-item-suppliers-relationship.md))
+but not built.
 
 [Phase 0 — Foundation](phases/phase-0-foundation.md) remains in progress in parallel — the two
 former blockers are resolved (`btree_gist` confirmed available on dbvm, `REDIS_PREFIX=erp_`
@@ -128,7 +135,7 @@ resolved 2026-08-19 — see ADR 0031.
 | Phase | Name | Status |
 |---|---|---|
 | 0 | [Foundation](phases/phase-0-foundation.md) | In progress |
-| 1 | [Master data](phases/phase-1-master-data.md) | In progress |
+| 1 | [Master data](phases/phase-1-master-data.md) | Build done, doc reconciliation left |
 | 2 | Purchasing & stock | Not started |
 | 3 | Estimating core | Not started |
 | 4 | Sales pipeline | Not started |

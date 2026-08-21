@@ -1,9 +1,13 @@
 <?php
 
+use App\Exceptions\DomainInvariantException;
 use App\Http\Middleware\SetPermissionsTeam;
+use Illuminate\Database\QueryException;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -24,5 +28,54 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        // Order matters here: renderers run in registration order and the first to
+        // return a non-null response wins (Handler::renderViaCallbacks()), and
+        // UniqueConstraintViolationException extends QueryException — so the more
+        // specific handler must be registered first, or every unique-violation would
+        // be caught by the generic 23503 handler below instead.
+
+        // A model guard (tenant scoping, hierarchy cycle, a required default nothing
+        // resolved) rejected client-supplied input — see App\Exceptions\
+        // DomainInvariantException. Without this, these are uncaught 500s instead of
+        // api-conventions.md's 422 shape for a business-rule violation.
+        $exceptions->render(function (DomainInvariantException $e, Request $request) {
+            if (! $request->is('api/*')) {
+                return null;
+            }
+
+            return response()->json([
+                'message' => $e->getMessage(),
+                'errors' => [($e->field ?? 'id') => [$e->getMessage()]],
+            ], 422);
+        });
+
+        // Generic backstop for a concurrent-insert race on a unique constraint that a
+        // controller's own Rule::unique() check can't close by itself (validated at
+        // request time, violated by another request before the insert). A specific
+        // field-level check like the exchange-rate endpoint's own catch, where one
+        // exists, still wins — this only fires when nothing more specific caught it.
+        $exceptions->render(function (UniqueConstraintViolationException $e, Request $request) {
+            if (! $request->is('api/*')) {
+                return null;
+            }
+
+            return response()->json([
+                'message' => 'This record conflicts with one that already exists.',
+                'errors' => ['conflict' => ['This record conflicts with one that already exists.']],
+            ], 422);
+        });
+
+        // A foreign-key RESTRICT violation (e.g. deleting a category that items still
+        // reference) is always a 409-shaped situation from the API's perspective,
+        // regardless of which code path triggered it — no per-endpoint pre-check
+        // needed, the database is the authoritative source of truth here.
+        $exceptions->render(function (QueryException $e, Request $request) {
+            if ((string) $e->getCode() !== '23503' || ! $request->is('api/*')) {
+                return null;
+            }
+
+            return response()->json([
+                'message' => 'This record is still referenced by other records and cannot be changed this way.',
+            ], 409);
+        });
     })->create();

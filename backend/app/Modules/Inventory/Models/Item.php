@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Inventory\Models;
 
+use App\Exceptions\DomainInvariantException;
 use App\Models\Model;
 use App\Models\Uom;
 use App\Modules\Accounting\Models\ChartOfAccount;
@@ -18,7 +19,6 @@ use App\Support\Status;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use RuntimeException;
 
 /**
  * Everything the company buys, holds, makes, consumes or sells — see
@@ -71,10 +71,10 @@ class Item extends Model
             $item->valuation_method ??= $item->category?->resolveDefaultValuationMethod();
 
             if ($item->valuation_method === null) {
-                throw new RuntimeException(sprintf(
+                throw new DomainInvariantException(sprintf(
                     'Item cannot be created: no valuation_method given, and category %d sets no default_valuation_method anywhere in its ancestry.',
                     $item->category_id,
-                ));
+                ), field: 'valuation_method');
             }
         });
     }

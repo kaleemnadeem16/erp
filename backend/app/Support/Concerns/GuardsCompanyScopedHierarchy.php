@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Support\Concerns;
 
+use App\Exceptions\DomainInvariantException;
 use Illuminate\Database\Eloquent\Model;
-use RuntimeException;
 
 /**
  * Guards a self-referencing parent_id hierarchy on a model that carries its own
@@ -51,25 +51,25 @@ trait GuardsCompanyScopedHierarchy
         $label = class_basename(static::class);
 
         if (! static::query()->whereKey($this->{$column})->exists()) {
-            throw new RuntimeException(sprintf(
+            throw new DomainInvariantException(sprintf(
                 '%s cannot be saved: %s %s does not resolve to a %s in the current company.',
                 $label,
                 $column,
                 $this->{$column},
                 $label,
-            ));
+            ), field: $column);
         }
 
         $ancestorId = $this->{$column};
 
         while ($ancestorId !== null) {
             if ($ancestorId === $this->id) {
-                throw new RuntimeException(sprintf(
+                throw new DomainInvariantException(sprintf(
                     '%s %s cannot be reparented under %s: that would create a cycle.',
                     $label,
                     $this->id,
                     $this->{$column},
-                ));
+                ), field: $column);
             }
 
             $ancestorId = static::query()->whereKey($ancestorId)->value($column);

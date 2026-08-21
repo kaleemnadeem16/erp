@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Support\Concerns;
 
+use App\Exceptions\DomainInvariantException;
 use Illuminate\Database\Eloquent\Model;
-use RuntimeException;
 
 /**
  * Guards a plain foreign key on a model that carries its own company_id
@@ -44,13 +44,13 @@ trait GuardsRelatedCompanyScope
             }
 
             if (! $relatedClass::query()->whereKey($this->{$column})->exists()) {
-                throw new RuntimeException(sprintf(
+                throw new DomainInvariantException(sprintf(
                     '%s cannot be saved: %s %s does not resolve to a %s in the current company.',
                     class_basename(static::class),
                     $column,
                     $this->{$column},
                     class_basename($relatedClass),
-                ));
+                ), field: $column);
             }
         }
     }
