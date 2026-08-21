@@ -4,7 +4,7 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { UserResource } from './userResource';
+import type { UserResource } from "./userResource";
 
 export type User200 = {
   data: UserResource;

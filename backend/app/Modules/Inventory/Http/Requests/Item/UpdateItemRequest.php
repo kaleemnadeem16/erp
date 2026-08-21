@@ -47,7 +47,7 @@ class UpdateItemRequest extends FormRequest
             'is_stocked' => ['sometimes', 'boolean'],
             'is_purchasable' => ['sometimes', 'boolean'],
             'is_sellable' => ['sometimes', 'boolean'],
-            'valuation_method' => ['sometimes', 'nullable', Rule::enum(ValuationMethod::class)],
+            'valuation_method' => ['sometimes', Rule::enum(ValuationMethod::class)],
             'tracking' => ['sometimes', Rule::enum(ItemTracking::class)],
             'category_id' => ['sometimes', 'integer', CompanyScoped::exists('categories')],
             'default_supplier_id' => ['sometimes', 'nullable', 'integer', CompanyScoped::exists('supplier_accounts')],

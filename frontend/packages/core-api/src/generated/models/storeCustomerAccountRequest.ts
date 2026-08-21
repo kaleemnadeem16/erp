@@ -4,10 +4,10 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { StoreCustomerAccountRequestCreditLimit } from './storeCustomerAccountRequestCreditLimit';
-import type { StoreCustomerAccountRequestTaxCodeId } from './storeCustomerAccountRequestTaxCodeId';
-import type { StoreCustomerAccountRequestDefaultCurrencyId } from './storeCustomerAccountRequestDefaultCurrencyId';
-import type { Status } from './status';
+import type { StoreCustomerAccountRequestCreditLimit } from "./storeCustomerAccountRequestCreditLimit";
+import type { StoreCustomerAccountRequestTaxCodeId } from "./storeCustomerAccountRequestTaxCodeId";
+import type { StoreCustomerAccountRequestDefaultCurrencyId } from "./storeCustomerAccountRequestDefaultCurrencyId";
+import type { Status } from "./status";
 
 export interface StoreCustomerAccountRequest {
   /** A party can hold at most one customer_account (unique(company_id, party_id))
@@ -33,8 +33,8 @@ directly as a raw "smallint out of range" error.
    * @maximum 32767
    */
   payment_terms_days: number;
-  /** No exists() check possible: tax_codes doesn't exist yet, same
-forward-reference reason as the column itself — see the migration. */
+  /** The column is reserved for Phase 6, but accepting arbitrary ids now
+would create dangling references that cannot be constrained later. */
   tax_code_id?: StoreCustomerAccountRequestTaxCodeId;
   receivable_account_id: number;
   /** Currency is global, not company-scoped (docs/architecture/multi-tenancy.md

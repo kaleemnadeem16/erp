@@ -9,12 +9,11 @@
  * How individual units of a stocked item are traced — see docs/domain/items.md. NONE is the default; BATCH/SERIAL matter once lot- or serial-level traceability is needed, from Phase 2 onward.
 
  */
-export type ItemTracking = typeof ItemTracking[keyof typeof ItemTracking];
-
+export type ItemTracking = (typeof ItemTracking)[keyof typeof ItemTracking];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const ItemTracking = {
-  NONE: 'NONE',
-  BATCH: 'BATCH',
-  SERIAL: 'SERIAL',
+  NONE: "NONE",
+  BATCH: "BATCH",
+  SERIAL: "SERIAL",
 } as const;

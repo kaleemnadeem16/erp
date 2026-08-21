@@ -4,15 +4,15 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { ItemResourceDescription } from './itemResourceDescription';
-import type { ItemResourceDefaultSupplierId } from './itemResourceDefaultSupplierId';
-import type { ItemResourceIncomeAccountId } from './itemResourceIncomeAccountId';
-import type { ItemResourceExpenseAccountId } from './itemResourceExpenseAccountId';
-import type { ItemResourceInventoryAccountId } from './itemResourceInventoryAccountId';
-import type { ItemResourceCustomFields } from './itemResourceCustomFields';
-import type { CategoryResource } from './categoryResource';
-import type { ItemResourceCreatedAt } from './itemResourceCreatedAt';
-import type { ItemResourceUpdatedAt } from './itemResourceUpdatedAt';
+import type { ItemResourceDescription } from "./itemResourceDescription";
+import type { ItemResourceDefaultSupplierId } from "./itemResourceDefaultSupplierId";
+import type { ItemResourceIncomeAccountId } from "./itemResourceIncomeAccountId";
+import type { ItemResourceExpenseAccountId } from "./itemResourceExpenseAccountId";
+import type { ItemResourceInventoryAccountId } from "./itemResourceInventoryAccountId";
+import type { ItemResourceCustomFields } from "./itemResourceCustomFields";
+import type { CategoryResource } from "./categoryResource";
+import type { ItemResourceCreatedAt } from "./itemResourceCreatedAt";
+import type { ItemResourceUpdatedAt } from "./itemResourceUpdatedAt";
 
 export interface ItemResource {
   id: number;

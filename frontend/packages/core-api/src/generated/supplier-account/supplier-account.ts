@@ -4,10 +4,7 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import {
-  useMutation,
-  useQuery
-} from '@tanstack/react-query';
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
   DataTag,
   DefinedInitialDataOptions,
@@ -20,8 +17,8 @@ import type {
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
-  UseQueryResult
-} from '@tanstack/react-query';
+  UseQueryResult,
+} from "@tanstack/react-query";
 
 import type {
   AuthenticationExceptionResponse,
@@ -30,532 +27,837 @@ import type {
   SupplierAccountsIndex200,
   SupplierAccountsIndexParams,
   SupplierAccountsShow200,
+  SupplierAccountsShowParams,
   SupplierAccountsStore201,
   SupplierAccountsUpdate200,
   UpdateSupplierAccountRequest,
-  ValidationExceptionResponse
-} from '.././models';
+  ValidationExceptionResponse,
+} from ".././models";
 
-import { fetchClient } from '../../mutator/fetch-client';
-
+import { fetchClient } from "../../mutator/fetch-client";
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
-
-
 export type supplierAccountsIndexResponse200 = {
-  data: SupplierAccountsIndex200
-  status: 200
-}
+  data: SupplierAccountsIndex200;
+  status: 200;
+};
 
 export type supplierAccountsIndexResponse401 = {
-  data: AuthenticationExceptionResponse
-  status: 401
-}
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
 
 export type supplierAccountsIndexResponse422 = {
-  data: ValidationExceptionResponse
-  status: 422
-}
-    
-export type supplierAccountsIndexResponseSuccess = (supplierAccountsIndexResponse200) & {
-  headers: Headers;
+  data: ValidationExceptionResponse;
+  status: 422;
 };
-export type supplierAccountsIndexResponseError = (supplierAccountsIndexResponse401 | supplierAccountsIndexResponse422) & {
+
+export type supplierAccountsIndexResponseSuccess =
+  supplierAccountsIndexResponse200 & {
+    headers: Headers;
+  };
+export type supplierAccountsIndexResponseError = (
+  supplierAccountsIndexResponse401 | supplierAccountsIndexResponse422
+) & {
   headers: Headers;
 };
 
-export type supplierAccountsIndexResponse = (supplierAccountsIndexResponseSuccess | supplierAccountsIndexResponseError)
+export type supplierAccountsIndexResponse =
+  supplierAccountsIndexResponseSuccess | supplierAccountsIndexResponseError;
 
-export const getSupplierAccountsIndexUrl = (params?: SupplierAccountsIndexParams,) => {
+export const getSupplierAccountsIndexUrl = (
+  params?: SupplierAccountsIndexParams,
+) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
-    
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString())
+      normalizedParams.append(key, value === null ? "null" : value.toString());
     }
   });
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0 ? `/v1/supplier-accounts?${stringifiedParams}` : `/v1/supplier-accounts`
-}
+  return stringifiedParams.length > 0
+    ? `/v1/supplier-accounts?${stringifiedParams}`
+    : `/v1/supplier-accounts`;
+};
 
-export const supplierAccountsIndex = async (params?: SupplierAccountsIndexParams, options?: RequestInit): Promise<supplierAccountsIndexResponse> => {
-  
-  return fetchClient<supplierAccountsIndexResponse>(getSupplierAccountsIndexUrl(params),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
+export const supplierAccountsIndex = async (
+  params?: SupplierAccountsIndexParams,
+  options?: RequestInit,
+): Promise<supplierAccountsIndexResponse> => {
+  return fetchClient<supplierAccountsIndexResponse>(
+    getSupplierAccountsIndexUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
-
-
-
-
-export const getSupplierAccountsIndexQueryKey = (params?: SupplierAccountsIndexParams,) => {
-    return [
-    `/v1/supplier-accounts`, ...(params ? [params]: [])
-    ] as const;
-    }
-
-    
-export const getSupplierAccountsIndexQueryOptions = <TData = Awaited<ReturnType<typeof supplierAccountsIndex>>, TError = AuthenticationExceptionResponse | ValidationExceptionResponse>(params?: SupplierAccountsIndexParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierAccountsIndex>>, TError, TData>>, request?: SecondParameter<typeof fetchClient>}
+export const getSupplierAccountsIndexQueryKey = (
+  params?: SupplierAccountsIndexParams,
 ) => {
+  return [`/v1/supplier-accounts`, ...(params ? [params] : [])] as const;
+};
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+export const getSupplierAccountsIndexQueryOptions = <
+  TData = Awaited<ReturnType<typeof supplierAccountsIndex>>,
+  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+>(
+  params?: SupplierAccountsIndexParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof supplierAccountsIndex>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getSupplierAccountsIndexQueryKey(params);
+  const queryKey =
+    queryOptions?.queryKey ?? getSupplierAccountsIndexQueryKey(params);
 
-  
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof supplierAccountsIndex>>
+  > = () => supplierAccountsIndex(params, requestOptions);
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierAccountsIndex>>> = () => supplierAccountsIndex(params, requestOptions);
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof supplierAccountsIndex>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
 
-      
+export type SupplierAccountsIndexQueryResult = NonNullable<
+  Awaited<ReturnType<typeof supplierAccountsIndex>>
+>;
+export type SupplierAccountsIndexQueryError =
+  AuthenticationExceptionResponse | ValidationExceptionResponse;
 
-      
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierAccountsIndex>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type SupplierAccountsIndexQueryResult = NonNullable<Awaited<ReturnType<typeof supplierAccountsIndex>>>
-export type SupplierAccountsIndexQueryError = AuthenticationExceptionResponse | ValidationExceptionResponse
-
-
-export function useSupplierAccountsIndex<TData = Awaited<ReturnType<typeof supplierAccountsIndex>>, TError = AuthenticationExceptionResponse | ValidationExceptionResponse>(
- params: undefined |  SupplierAccountsIndexParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierAccountsIndex>>, TError, TData>> & Pick<
+export function useSupplierAccountsIndex<
+  TData = Awaited<ReturnType<typeof supplierAccountsIndex>>,
+  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+>(
+  params: undefined | SupplierAccountsIndexParams,
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof supplierAccountsIndex>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof supplierAccountsIndex>>,
           TError,
           Awaited<ReturnType<typeof supplierAccountsIndex>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof fetchClient>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useSupplierAccountsIndex<TData = Awaited<ReturnType<typeof supplierAccountsIndex>>, TError = AuthenticationExceptionResponse | ValidationExceptionResponse>(
- params?: SupplierAccountsIndexParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierAccountsIndex>>, TError, TData>> & Pick<
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useSupplierAccountsIndex<
+  TData = Awaited<ReturnType<typeof supplierAccountsIndex>>,
+  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+>(
+  params?: SupplierAccountsIndexParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof supplierAccountsIndex>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof supplierAccountsIndex>>,
           TError,
           Awaited<ReturnType<typeof supplierAccountsIndex>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof fetchClient>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useSupplierAccountsIndex<TData = Awaited<ReturnType<typeof supplierAccountsIndex>>, TError = AuthenticationExceptionResponse | ValidationExceptionResponse>(
- params?: SupplierAccountsIndexParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierAccountsIndex>>, TError, TData>>, request?: SecondParameter<typeof fetchClient>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useSupplierAccountsIndex<
+  TData = Awaited<ReturnType<typeof supplierAccountsIndex>>,
+  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+>(
+  params?: SupplierAccountsIndexParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof supplierAccountsIndex>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
 
-export function useSupplierAccountsIndex<TData = Awaited<ReturnType<typeof supplierAccountsIndex>>, TError = AuthenticationExceptionResponse | ValidationExceptionResponse>(
- params?: SupplierAccountsIndexParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierAccountsIndex>>, TError, TData>>, request?: SecondParameter<typeof fetchClient>}
- , queryClient?: QueryClient 
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+export function useSupplierAccountsIndex<
+  TData = Awaited<ReturnType<typeof supplierAccountsIndex>>,
+  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+>(
+  params?: SupplierAccountsIndexParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof supplierAccountsIndex>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getSupplierAccountsIndexQueryOptions(params, options);
 
-  const queryOptions = getSupplierAccountsIndexQueryOptions(params,options)
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
 
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = queryOptions.queryKey ;
+  query.queryKey = queryOptions.queryKey;
 
   return query;
 }
-
-
-
 
 export type supplierAccountsStoreResponse201 = {
-  data: SupplierAccountsStore201
-  status: 201
-}
+  data: SupplierAccountsStore201;
+  status: 201;
+};
 
 export type supplierAccountsStoreResponse401 = {
-  data: AuthenticationExceptionResponse
-  status: 401
-}
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
 
 export type supplierAccountsStoreResponse422 = {
-  data: ValidationExceptionResponse
-  status: 422
-}
-    
-export type supplierAccountsStoreResponseSuccess = (supplierAccountsStoreResponse201) & {
-  headers: Headers;
+  data: ValidationExceptionResponse;
+  status: 422;
 };
-export type supplierAccountsStoreResponseError = (supplierAccountsStoreResponse401 | supplierAccountsStoreResponse422) & {
+
+export type supplierAccountsStoreResponseSuccess =
+  supplierAccountsStoreResponse201 & {
+    headers: Headers;
+  };
+export type supplierAccountsStoreResponseError = (
+  supplierAccountsStoreResponse401 | supplierAccountsStoreResponse422
+) & {
   headers: Headers;
 };
 
-export type supplierAccountsStoreResponse = (supplierAccountsStoreResponseSuccess | supplierAccountsStoreResponseError)
+export type supplierAccountsStoreResponse =
+  supplierAccountsStoreResponseSuccess | supplierAccountsStoreResponseError;
 
 export const getSupplierAccountsStoreUrl = () => {
+  return `/v1/supplier-accounts`;
+};
 
+export const supplierAccountsStore = async (
+  storeSupplierAccountRequest: StoreSupplierAccountRequest,
+  options?: RequestInit,
+): Promise<supplierAccountsStoreResponse> => {
+  return fetchClient<supplierAccountsStoreResponse>(
+    getSupplierAccountsStoreUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(storeSupplierAccountRequest),
+    },
+  );
+};
 
-  
+export const getSupplierAccountsStoreMutationOptions = <
+  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof supplierAccountsStore>>,
+    TError,
+    { data: StoreSupplierAccountRequest },
+    TContext
+  >;
+  request?: SecondParameter<typeof fetchClient>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof supplierAccountsStore>>,
+  TError,
+  { data: StoreSupplierAccountRequest },
+  TContext
+> => {
+  const mutationKey = ["supplierAccountsStore"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
 
-  return `/v1/supplier-accounts`
-}
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof supplierAccountsStore>>,
+    { data: StoreSupplierAccountRequest }
+  > = (props) => {
+    const { data } = props ?? {};
 
-export const supplierAccountsStore = async (storeSupplierAccountRequest: StoreSupplierAccountRequest, options?: RequestInit): Promise<supplierAccountsStoreResponse> => {
-  
-  return fetchClient<supplierAccountsStoreResponse>(getSupplierAccountsStoreUrl(),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      storeSupplierAccountRequest,)
-  }
-);}
+    return supplierAccountsStore(data, requestOptions);
+  };
 
+  return { mutationFn, ...mutationOptions };
+};
 
+export type SupplierAccountsStoreMutationResult = NonNullable<
+  Awaited<ReturnType<typeof supplierAccountsStore>>
+>;
+export type SupplierAccountsStoreMutationBody = StoreSupplierAccountRequest;
+export type SupplierAccountsStoreMutationError =
+  AuthenticationExceptionResponse | ValidationExceptionResponse;
 
+export const useSupplierAccountsStore = <
+  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof supplierAccountsStore>>,
+      TError,
+      { data: StoreSupplierAccountRequest },
+      TContext
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof supplierAccountsStore>>,
+  TError,
+  { data: StoreSupplierAccountRequest },
+  TContext
+> => {
+  const mutationOptions = getSupplierAccountsStoreMutationOptions(options);
 
-export const getSupplierAccountsStoreMutationOptions = <TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierAccountsStore>>, TError,{data: StoreSupplierAccountRequest}, TContext>, request?: SecondParameter<typeof fetchClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof supplierAccountsStore>>, TError,{data: StoreSupplierAccountRequest}, TContext> => {
-
-const mutationKey = ['supplierAccountsStore'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-      
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierAccountsStore>>, {data: StoreSupplierAccountRequest}> = (props) => {
-          const {data} = props ?? {};
-
-          return  supplierAccountsStore(data,requestOptions)
-        }
-
-        
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type SupplierAccountsStoreMutationResult = NonNullable<Awaited<ReturnType<typeof supplierAccountsStore>>>
-    export type SupplierAccountsStoreMutationBody = StoreSupplierAccountRequest
-    export type SupplierAccountsStoreMutationError = AuthenticationExceptionResponse | ValidationExceptionResponse
-
-    export const useSupplierAccountsStore = <TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierAccountsStore>>, TError,{data: StoreSupplierAccountRequest}, TContext>, request?: SecondParameter<typeof fetchClient>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof supplierAccountsStore>>,
-        TError,
-        {data: StoreSupplierAccountRequest},
-        TContext
-      > => {
-
-      const mutationOptions = getSupplierAccountsStoreMutationOptions(options);
-
-      return useMutation(mutationOptions, queryClient);
-    }
-    export type supplierAccountsShowResponse200 = {
-  data: SupplierAccountsShow200
-  status: 200
-}
+  return useMutation(mutationOptions, queryClient);
+};
+export type supplierAccountsShowResponse200 = {
+  data: SupplierAccountsShow200;
+  status: 200;
+};
 
 export type supplierAccountsShowResponse401 = {
-  data: AuthenticationExceptionResponse
-  status: 401
-}
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
 
 export type supplierAccountsShowResponse404 = {
-  data: ModelNotFoundExceptionResponse
-  status: 404
-}
-    
-export type supplierAccountsShowResponseSuccess = (supplierAccountsShowResponse200) & {
-  headers: Headers;
-};
-export type supplierAccountsShowResponseError = (supplierAccountsShowResponse401 | supplierAccountsShowResponse404) & {
-  headers: Headers;
+  data: ModelNotFoundExceptionResponse;
+  status: 404;
 };
 
-export type supplierAccountsShowResponse = (supplierAccountsShowResponseSuccess | supplierAccountsShowResponseError)
+export type supplierAccountsShowResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
+};
 
-export const getSupplierAccountsShowUrl = (supplierAccount: number,) => {
+export type supplierAccountsShowResponseSuccess =
+  supplierAccountsShowResponse200 & {
+    headers: Headers;
+  };
+export type supplierAccountsShowResponseError = (
+  | supplierAccountsShowResponse401
+  | supplierAccountsShowResponse404
+  | supplierAccountsShowResponse422
+) & {
+  headers: Headers;
+};
 
+export type supplierAccountsShowResponse =
+  supplierAccountsShowResponseSuccess | supplierAccountsShowResponseError;
 
-  
-
-  return `/v1/supplier-accounts/${supplierAccount}`
-}
-
-export const supplierAccountsShow = async (supplierAccount: number, options?: RequestInit): Promise<supplierAccountsShowResponse> => {
-  
-  return fetchClient<supplierAccountsShowResponse>(getSupplierAccountsShowUrl(supplierAccount),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
-
-
-
-export const getSupplierAccountsShowQueryKey = (supplierAccount?: number,) => {
-    return [
-    `/v1/supplier-accounts/${supplierAccount}`
-    ] as const;
-    }
-
-    
-export const getSupplierAccountsShowQueryOptions = <TData = Awaited<ReturnType<typeof supplierAccountsShow>>, TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse>(supplierAccount: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierAccountsShow>>, TError, TData>>, request?: SecondParameter<typeof fetchClient>}
+export const getSupplierAccountsShowUrl = (
+  supplierAccount: number,
+  params?: SupplierAccountsShowParams,
 ) => {
+  const normalizedParams = new URLSearchParams();
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
 
-  const queryKey =  queryOptions?.queryKey ?? getSupplierAccountsShowQueryKey(supplierAccount);
+  const stringifiedParams = normalizedParams.toString();
 
-  
+  return stringifiedParams.length > 0
+    ? `/v1/supplier-accounts/${supplierAccount}?${stringifiedParams}`
+    : `/v1/supplier-accounts/${supplierAccount}`;
+};
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierAccountsShow>>> = () => supplierAccountsShow(supplierAccount, requestOptions);
+export const supplierAccountsShow = async (
+  supplierAccount: number,
+  params?: SupplierAccountsShowParams,
+  options?: RequestInit,
+): Promise<supplierAccountsShowResponse> => {
+  return fetchClient<supplierAccountsShowResponse>(
+    getSupplierAccountsShowUrl(supplierAccount, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
-      
+export const getSupplierAccountsShowQueryKey = (
+  supplierAccount?: number,
+  params?: SupplierAccountsShowParams,
+) => {
+  return [
+    `/v1/supplier-accounts/${supplierAccount}`,
+    ...(params ? [params] : []),
+  ] as const;
+};
 
-      
+export const getSupplierAccountsShowQueryOptions = <
+  TData = Awaited<ReturnType<typeof supplierAccountsShow>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  supplierAccount: number,
+  params?: SupplierAccountsShowParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof supplierAccountsShow>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
 
-   return  { queryKey, queryFn, enabled: !!(supplierAccount), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierAccountsShow>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
+  const queryKey =
+    queryOptions?.queryKey ??
+    getSupplierAccountsShowQueryKey(supplierAccount, params);
 
-export type SupplierAccountsShowQueryResult = NonNullable<Awaited<ReturnType<typeof supplierAccountsShow>>>
-export type SupplierAccountsShowQueryError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof supplierAccountsShow>>
+  > = () => supplierAccountsShow(supplierAccount, params, requestOptions);
 
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!supplierAccount,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof supplierAccountsShow>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
 
-export function useSupplierAccountsShow<TData = Awaited<ReturnType<typeof supplierAccountsShow>>, TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse>(
- supplierAccount: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierAccountsShow>>, TError, TData>> & Pick<
+export type SupplierAccountsShowQueryResult = NonNullable<
+  Awaited<ReturnType<typeof supplierAccountsShow>>
+>;
+export type SupplierAccountsShowQueryError =
+  | AuthenticationExceptionResponse
+  | ModelNotFoundExceptionResponse
+  | ValidationExceptionResponse;
+
+export function useSupplierAccountsShow<
+  TData = Awaited<ReturnType<typeof supplierAccountsShow>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  supplierAccount: number,
+  params: undefined | SupplierAccountsShowParams,
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof supplierAccountsShow>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof supplierAccountsShow>>,
           TError,
           Awaited<ReturnType<typeof supplierAccountsShow>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof fetchClient>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useSupplierAccountsShow<TData = Awaited<ReturnType<typeof supplierAccountsShow>>, TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse>(
- supplierAccount: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierAccountsShow>>, TError, TData>> & Pick<
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useSupplierAccountsShow<
+  TData = Awaited<ReturnType<typeof supplierAccountsShow>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  supplierAccount: number,
+  params?: SupplierAccountsShowParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof supplierAccountsShow>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof supplierAccountsShow>>,
           TError,
           Awaited<ReturnType<typeof supplierAccountsShow>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof fetchClient>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useSupplierAccountsShow<TData = Awaited<ReturnType<typeof supplierAccountsShow>>, TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse>(
- supplierAccount: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierAccountsShow>>, TError, TData>>, request?: SecondParameter<typeof fetchClient>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useSupplierAccountsShow<
+  TData = Awaited<ReturnType<typeof supplierAccountsShow>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  supplierAccount: number,
+  params?: SupplierAccountsShowParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof supplierAccountsShow>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
 
-export function useSupplierAccountsShow<TData = Awaited<ReturnType<typeof supplierAccountsShow>>, TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse>(
- supplierAccount: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierAccountsShow>>, TError, TData>>, request?: SecondParameter<typeof fetchClient>}
- , queryClient?: QueryClient 
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+export function useSupplierAccountsShow<
+  TData = Awaited<ReturnType<typeof supplierAccountsShow>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  supplierAccount: number,
+  params?: SupplierAccountsShowParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof supplierAccountsShow>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getSupplierAccountsShowQueryOptions(
+    supplierAccount,
+    params,
+    options,
+  );
 
-  const queryOptions = getSupplierAccountsShowQueryOptions(supplierAccount,options)
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
 
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = queryOptions.queryKey ;
+  query.queryKey = queryOptions.queryKey;
 
   return query;
 }
 
-
-
-
-export type supplierAccountsUpdateResponse200 = {
-  data: SupplierAccountsUpdate200
-  status: 200
-}
-
-export type supplierAccountsUpdateResponse401 = {
-  data: AuthenticationExceptionResponse
-  status: 401
-}
-
-export type supplierAccountsUpdateResponse404 = {
-  data: ModelNotFoundExceptionResponse
-  status: 404
-}
-
-export type supplierAccountsUpdateResponse422 = {
-  data: ValidationExceptionResponse
-  status: 422
-}
-    
-export type supplierAccountsUpdateResponseSuccess = (supplierAccountsUpdateResponse200) & {
-  headers: Headers;
+export type supplierAccountsDestroyResponse204 = {
+  data: void;
+  status: 204;
 };
-export type supplierAccountsUpdateResponseError = (supplierAccountsUpdateResponse401 | supplierAccountsUpdateResponse404 | supplierAccountsUpdateResponse422) & {
-  headers: Headers;
-};
-
-export type supplierAccountsUpdateResponse = (supplierAccountsUpdateResponseSuccess | supplierAccountsUpdateResponseError)
-
-export const getSupplierAccountsUpdateUrl = (supplierAccount: number,) => {
-
-
-  
-
-  return `/v1/supplier-accounts/${supplierAccount}`
-}
-
-export const supplierAccountsUpdate = async (supplierAccount: number,
-    updateSupplierAccountRequest: UpdateSupplierAccountRequest, options?: RequestInit): Promise<supplierAccountsUpdateResponse> => {
-  
-  return fetchClient<supplierAccountsUpdateResponse>(getSupplierAccountsUpdateUrl(supplierAccount),
-  {      
-    ...options,
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      updateSupplierAccountRequest,)
-  }
-);}
-
-
-
-
-export const getSupplierAccountsUpdateMutationOptions = <TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse | ValidationExceptionResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierAccountsUpdate>>, TError,{supplierAccount: number;data: UpdateSupplierAccountRequest}, TContext>, request?: SecondParameter<typeof fetchClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof supplierAccountsUpdate>>, TError,{supplierAccount: number;data: UpdateSupplierAccountRequest}, TContext> => {
-
-const mutationKey = ['supplierAccountsUpdate'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-      
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierAccountsUpdate>>, {supplierAccount: number;data: UpdateSupplierAccountRequest}> = (props) => {
-          const {supplierAccount,data} = props ?? {};
-
-          return  supplierAccountsUpdate(supplierAccount,data,requestOptions)
-        }
-
-        
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type SupplierAccountsUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof supplierAccountsUpdate>>>
-    export type SupplierAccountsUpdateMutationBody = UpdateSupplierAccountRequest
-    export type SupplierAccountsUpdateMutationError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse | ValidationExceptionResponse
-
-    export const useSupplierAccountsUpdate = <TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse | ValidationExceptionResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierAccountsUpdate>>, TError,{supplierAccount: number;data: UpdateSupplierAccountRequest}, TContext>, request?: SecondParameter<typeof fetchClient>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof supplierAccountsUpdate>>,
-        TError,
-        {supplierAccount: number;data: UpdateSupplierAccountRequest},
-        TContext
-      > => {
-
-      const mutationOptions = getSupplierAccountsUpdateMutationOptions(options);
-
-      return useMutation(mutationOptions, queryClient);
-    }
-    export type supplierAccountsDestroyResponse204 = {
-  data: unknown[]
-  status: 204
-}
 
 export type supplierAccountsDestroyResponse401 = {
-  data: AuthenticationExceptionResponse
-  status: 401
-}
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
 
 export type supplierAccountsDestroyResponse404 = {
-  data: ModelNotFoundExceptionResponse
-  status: 404
-}
-    
-export type supplierAccountsDestroyResponseSuccess = (supplierAccountsDestroyResponse204) & {
-  headers: Headers;
-};
-export type supplierAccountsDestroyResponseError = (supplierAccountsDestroyResponse401 | supplierAccountsDestroyResponse404) & {
-  headers: Headers;
+  data: ModelNotFoundExceptionResponse;
+  status: 404;
 };
 
-export type supplierAccountsDestroyResponse = (supplierAccountsDestroyResponseSuccess | supplierAccountsDestroyResponseError)
+export type supplierAccountsDestroyResponseSuccess =
+  supplierAccountsDestroyResponse204 & {
+    headers: Headers;
+  };
+export type supplierAccountsDestroyResponseError = (
+  supplierAccountsDestroyResponse401 | supplierAccountsDestroyResponse404
+) & {
+  headers: Headers;
+};
 
-export const getSupplierAccountsDestroyUrl = (supplierAccount: number,) => {
+export type supplierAccountsDestroyResponse =
+  supplierAccountsDestroyResponseSuccess | supplierAccountsDestroyResponseError;
 
+export const getSupplierAccountsDestroyUrl = (supplierAccount: number) => {
+  return `/v1/supplier-accounts/${supplierAccount}`;
+};
 
-  
+export const supplierAccountsDestroy = async (
+  supplierAccount: number,
+  options?: RequestInit,
+): Promise<supplierAccountsDestroyResponse> => {
+  return fetchClient<supplierAccountsDestroyResponse>(
+    getSupplierAccountsDestroyUrl(supplierAccount),
+    {
+      ...options,
+      method: "DELETE",
+    },
+  );
+};
 
-  return `/v1/supplier-accounts/${supplierAccount}`
-}
+export const getSupplierAccountsDestroyMutationOptions = <
+  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof supplierAccountsDestroy>>,
+    TError,
+    { supplierAccount: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof fetchClient>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof supplierAccountsDestroy>>,
+  TError,
+  { supplierAccount: number },
+  TContext
+> => {
+  const mutationKey = ["supplierAccountsDestroy"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
 
-export const supplierAccountsDestroy = async (supplierAccount: number, options?: RequestInit): Promise<supplierAccountsDestroyResponse> => {
-  
-  return fetchClient<supplierAccountsDestroyResponse>(getSupplierAccountsDestroyUrl(supplierAccount),
-  {      
-    ...options,
-    method: 'DELETE'
-    
-    
-  }
-);}
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof supplierAccountsDestroy>>,
+    { supplierAccount: number }
+  > = (props) => {
+    const { supplierAccount } = props ?? {};
 
+    return supplierAccountsDestroy(supplierAccount, requestOptions);
+  };
 
+  return { mutationFn, ...mutationOptions };
+};
 
+export type SupplierAccountsDestroyMutationResult = NonNullable<
+  Awaited<ReturnType<typeof supplierAccountsDestroy>>
+>;
 
-export const getSupplierAccountsDestroyMutationOptions = <TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierAccountsDestroy>>, TError,{supplierAccount: number}, TContext>, request?: SecondParameter<typeof fetchClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof supplierAccountsDestroy>>, TError,{supplierAccount: number}, TContext> => {
+export type SupplierAccountsDestroyMutationError =
+  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
 
-const mutationKey = ['supplierAccountsDestroy'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
+export const useSupplierAccountsDestroy = <
+  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof supplierAccountsDestroy>>,
+      TError,
+      { supplierAccount: number },
+      TContext
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof supplierAccountsDestroy>>,
+  TError,
+  { supplierAccount: number },
+  TContext
+> => {
+  const mutationOptions = getSupplierAccountsDestroyMutationOptions(options);
 
-      
+  return useMutation(mutationOptions, queryClient);
+};
+export type supplierAccountsUpdateResponse200 = {
+  data: SupplierAccountsUpdate200;
+  status: 200;
+};
 
+export type supplierAccountsUpdateResponse401 = {
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierAccountsDestroy>>, {supplierAccount: number}> = (props) => {
-          const {supplierAccount} = props ?? {};
+export type supplierAccountsUpdateResponse404 = {
+  data: ModelNotFoundExceptionResponse;
+  status: 404;
+};
 
-          return  supplierAccountsDestroy(supplierAccount,requestOptions)
-        }
+export type supplierAccountsUpdateResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
+};
 
-        
+export type supplierAccountsUpdateResponseSuccess =
+  supplierAccountsUpdateResponse200 & {
+    headers: Headers;
+  };
+export type supplierAccountsUpdateResponseError = (
+  | supplierAccountsUpdateResponse401
+  | supplierAccountsUpdateResponse404
+  | supplierAccountsUpdateResponse422
+) & {
+  headers: Headers;
+};
 
+export type supplierAccountsUpdateResponse =
+  supplierAccountsUpdateResponseSuccess | supplierAccountsUpdateResponseError;
 
-  return  { mutationFn, ...mutationOptions }}
+export const getSupplierAccountsUpdateUrl = (supplierAccount: number) => {
+  return `/v1/supplier-accounts/${supplierAccount}`;
+};
 
-    export type SupplierAccountsDestroyMutationResult = NonNullable<Awaited<ReturnType<typeof supplierAccountsDestroy>>>
-    
-    export type SupplierAccountsDestroyMutationError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse
+export const supplierAccountsUpdate = async (
+  supplierAccount: number,
+  updateSupplierAccountRequest: UpdateSupplierAccountRequest,
+  options?: RequestInit,
+): Promise<supplierAccountsUpdateResponse> => {
+  return fetchClient<supplierAccountsUpdateResponse>(
+    getSupplierAccountsUpdateUrl(supplierAccount),
+    {
+      ...options,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(updateSupplierAccountRequest),
+    },
+  );
+};
 
-    export const useSupplierAccountsDestroy = <TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierAccountsDestroy>>, TError,{supplierAccount: number}, TContext>, request?: SecondParameter<typeof fetchClient>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof supplierAccountsDestroy>>,
-        TError,
-        {supplierAccount: number},
-        TContext
-      > => {
+export const getSupplierAccountsUpdateMutationOptions = <
+  TError =
+    | AuthenticationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof supplierAccountsUpdate>>,
+    TError,
+    { supplierAccount: number; data: UpdateSupplierAccountRequest },
+    TContext
+  >;
+  request?: SecondParameter<typeof fetchClient>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof supplierAccountsUpdate>>,
+  TError,
+  { supplierAccount: number; data: UpdateSupplierAccountRequest },
+  TContext
+> => {
+  const mutationKey = ["supplierAccountsUpdate"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
 
-      const mutationOptions = getSupplierAccountsDestroyMutationOptions(options);
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof supplierAccountsUpdate>>,
+    { supplierAccount: number; data: UpdateSupplierAccountRequest }
+  > = (props) => {
+    const { supplierAccount, data } = props ?? {};
 
-      return useMutation(mutationOptions, queryClient);
-    }
-    
+    return supplierAccountsUpdate(supplierAccount, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SupplierAccountsUpdateMutationResult = NonNullable<
+  Awaited<ReturnType<typeof supplierAccountsUpdate>>
+>;
+export type SupplierAccountsUpdateMutationBody = UpdateSupplierAccountRequest;
+export type SupplierAccountsUpdateMutationError =
+  | AuthenticationExceptionResponse
+  | ModelNotFoundExceptionResponse
+  | ValidationExceptionResponse;
+
+export const useSupplierAccountsUpdate = <
+  TError =
+    | AuthenticationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof supplierAccountsUpdate>>,
+      TError,
+      { supplierAccount: number; data: UpdateSupplierAccountRequest },
+      TContext
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof supplierAccountsUpdate>>,
+  TError,
+  { supplierAccount: number; data: UpdateSupplierAccountRequest },
+  TContext
+> => {
+  const mutationOptions = getSupplierAccountsUpdateMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};

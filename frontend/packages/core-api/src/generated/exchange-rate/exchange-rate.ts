@@ -4,10 +4,7 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import {
-  useMutation,
-  useQuery
-} from '@tanstack/react-query';
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
   DataTag,
   DefinedInitialDataOptions,
@@ -20,8 +17,8 @@ import type {
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
-  UseQueryResult
-} from '@tanstack/react-query';
+  UseQueryResult,
+} from "@tanstack/react-query";
 
 import type {
   AuthenticationExceptionResponse,
@@ -33,529 +30,771 @@ import type {
   ModelNotFoundExceptionResponse,
   StoreExchangeRateRequest,
   UpdateExchangeRateRequest,
-  ValidationExceptionResponse
-} from '.././models';
+  ValidationExceptionResponse,
+} from ".././models";
 
-import { fetchClient } from '../../mutator/fetch-client';
-
+import { fetchClient } from "../../mutator/fetch-client";
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
-
-
 export type exchangeRatesIndexResponse200 = {
-  data: ExchangeRatesIndex200
-  status: 200
-}
+  data: ExchangeRatesIndex200;
+  status: 200;
+};
 
 export type exchangeRatesIndexResponse401 = {
-  data: AuthenticationExceptionResponse
-  status: 401
-}
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
 
 export type exchangeRatesIndexResponse422 = {
-  data: ValidationExceptionResponse
-  status: 422
-}
-    
-export type exchangeRatesIndexResponseSuccess = (exchangeRatesIndexResponse200) & {
-  headers: Headers;
+  data: ValidationExceptionResponse;
+  status: 422;
 };
-export type exchangeRatesIndexResponseError = (exchangeRatesIndexResponse401 | exchangeRatesIndexResponse422) & {
+
+export type exchangeRatesIndexResponseSuccess =
+  exchangeRatesIndexResponse200 & {
+    headers: Headers;
+  };
+export type exchangeRatesIndexResponseError = (
+  exchangeRatesIndexResponse401 | exchangeRatesIndexResponse422
+) & {
   headers: Headers;
 };
 
-export type exchangeRatesIndexResponse = (exchangeRatesIndexResponseSuccess | exchangeRatesIndexResponseError)
+export type exchangeRatesIndexResponse =
+  exchangeRatesIndexResponseSuccess | exchangeRatesIndexResponseError;
 
-export const getExchangeRatesIndexUrl = (params?: ExchangeRatesIndexParams,) => {
+export const getExchangeRatesIndexUrl = (params?: ExchangeRatesIndexParams) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
-    
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString())
+      normalizedParams.append(key, value === null ? "null" : value.toString());
     }
   });
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0 ? `/v1/exchange-rates?${stringifiedParams}` : `/v1/exchange-rates`
-}
+  return stringifiedParams.length > 0
+    ? `/v1/exchange-rates?${stringifiedParams}`
+    : `/v1/exchange-rates`;
+};
 
-export const exchangeRatesIndex = async (params?: ExchangeRatesIndexParams, options?: RequestInit): Promise<exchangeRatesIndexResponse> => {
-  
-  return fetchClient<exchangeRatesIndexResponse>(getExchangeRatesIndexUrl(params),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
+export const exchangeRatesIndex = async (
+  params?: ExchangeRatesIndexParams,
+  options?: RequestInit,
+): Promise<exchangeRatesIndexResponse> => {
+  return fetchClient<exchangeRatesIndexResponse>(
+    getExchangeRatesIndexUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
-
-
-
-
-export const getExchangeRatesIndexQueryKey = (params?: ExchangeRatesIndexParams,) => {
-    return [
-    `/v1/exchange-rates`, ...(params ? [params]: [])
-    ] as const;
-    }
-
-    
-export const getExchangeRatesIndexQueryOptions = <TData = Awaited<ReturnType<typeof exchangeRatesIndex>>, TError = AuthenticationExceptionResponse | ValidationExceptionResponse>(params?: ExchangeRatesIndexParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof exchangeRatesIndex>>, TError, TData>>, request?: SecondParameter<typeof fetchClient>}
+export const getExchangeRatesIndexQueryKey = (
+  params?: ExchangeRatesIndexParams,
 ) => {
+  return [`/v1/exchange-rates`, ...(params ? [params] : [])] as const;
+};
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+export const getExchangeRatesIndexQueryOptions = <
+  TData = Awaited<ReturnType<typeof exchangeRatesIndex>>,
+  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+>(
+  params?: ExchangeRatesIndexParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof exchangeRatesIndex>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getExchangeRatesIndexQueryKey(params);
+  const queryKey =
+    queryOptions?.queryKey ?? getExchangeRatesIndexQueryKey(params);
 
-  
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof exchangeRatesIndex>>
+  > = () => exchangeRatesIndex(params, requestOptions);
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof exchangeRatesIndex>>> = () => exchangeRatesIndex(params, requestOptions);
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof exchangeRatesIndex>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
 
-      
+export type ExchangeRatesIndexQueryResult = NonNullable<
+  Awaited<ReturnType<typeof exchangeRatesIndex>>
+>;
+export type ExchangeRatesIndexQueryError =
+  AuthenticationExceptionResponse | ValidationExceptionResponse;
 
-      
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof exchangeRatesIndex>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type ExchangeRatesIndexQueryResult = NonNullable<Awaited<ReturnType<typeof exchangeRatesIndex>>>
-export type ExchangeRatesIndexQueryError = AuthenticationExceptionResponse | ValidationExceptionResponse
-
-
-export function useExchangeRatesIndex<TData = Awaited<ReturnType<typeof exchangeRatesIndex>>, TError = AuthenticationExceptionResponse | ValidationExceptionResponse>(
- params: undefined |  ExchangeRatesIndexParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof exchangeRatesIndex>>, TError, TData>> & Pick<
+export function useExchangeRatesIndex<
+  TData = Awaited<ReturnType<typeof exchangeRatesIndex>>,
+  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+>(
+  params: undefined | ExchangeRatesIndexParams,
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof exchangeRatesIndex>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof exchangeRatesIndex>>,
           TError,
           Awaited<ReturnType<typeof exchangeRatesIndex>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof fetchClient>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useExchangeRatesIndex<TData = Awaited<ReturnType<typeof exchangeRatesIndex>>, TError = AuthenticationExceptionResponse | ValidationExceptionResponse>(
- params?: ExchangeRatesIndexParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof exchangeRatesIndex>>, TError, TData>> & Pick<
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useExchangeRatesIndex<
+  TData = Awaited<ReturnType<typeof exchangeRatesIndex>>,
+  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+>(
+  params?: ExchangeRatesIndexParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof exchangeRatesIndex>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof exchangeRatesIndex>>,
           TError,
           Awaited<ReturnType<typeof exchangeRatesIndex>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof fetchClient>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useExchangeRatesIndex<TData = Awaited<ReturnType<typeof exchangeRatesIndex>>, TError = AuthenticationExceptionResponse | ValidationExceptionResponse>(
- params?: ExchangeRatesIndexParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof exchangeRatesIndex>>, TError, TData>>, request?: SecondParameter<typeof fetchClient>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useExchangeRatesIndex<
+  TData = Awaited<ReturnType<typeof exchangeRatesIndex>>,
+  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+>(
+  params?: ExchangeRatesIndexParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof exchangeRatesIndex>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
 
-export function useExchangeRatesIndex<TData = Awaited<ReturnType<typeof exchangeRatesIndex>>, TError = AuthenticationExceptionResponse | ValidationExceptionResponse>(
- params?: ExchangeRatesIndexParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof exchangeRatesIndex>>, TError, TData>>, request?: SecondParameter<typeof fetchClient>}
- , queryClient?: QueryClient 
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+export function useExchangeRatesIndex<
+  TData = Awaited<ReturnType<typeof exchangeRatesIndex>>,
+  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+>(
+  params?: ExchangeRatesIndexParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof exchangeRatesIndex>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getExchangeRatesIndexQueryOptions(params, options);
 
-  const queryOptions = getExchangeRatesIndexQueryOptions(params,options)
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
 
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = queryOptions.queryKey ;
+  query.queryKey = queryOptions.queryKey;
 
   return query;
 }
-
-
-
 
 export type exchangeRatesStoreResponse201 = {
-  data: ExchangeRatesStore201
-  status: 201
-}
+  data: ExchangeRatesStore201;
+  status: 201;
+};
 
 export type exchangeRatesStoreResponse401 = {
-  data: AuthenticationExceptionResponse
-  status: 401
-}
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
 
 export type exchangeRatesStoreResponse422 = {
-  data: ValidationExceptionResponse
-  status: 422
-}
-    
-export type exchangeRatesStoreResponseSuccess = (exchangeRatesStoreResponse201) & {
-  headers: Headers;
+  data: ValidationExceptionResponse;
+  status: 422;
 };
-export type exchangeRatesStoreResponseError = (exchangeRatesStoreResponse401 | exchangeRatesStoreResponse422) & {
+
+export type exchangeRatesStoreResponseSuccess =
+  exchangeRatesStoreResponse201 & {
+    headers: Headers;
+  };
+export type exchangeRatesStoreResponseError = (
+  exchangeRatesStoreResponse401 | exchangeRatesStoreResponse422
+) & {
   headers: Headers;
 };
 
-export type exchangeRatesStoreResponse = (exchangeRatesStoreResponseSuccess | exchangeRatesStoreResponseError)
+export type exchangeRatesStoreResponse =
+  exchangeRatesStoreResponseSuccess | exchangeRatesStoreResponseError;
 
 export const getExchangeRatesStoreUrl = () => {
+  return `/v1/exchange-rates`;
+};
 
-
-  
-
-  return `/v1/exchange-rates`
-}
-
-export const exchangeRatesStore = async (storeExchangeRateRequest: StoreExchangeRateRequest, options?: RequestInit): Promise<exchangeRatesStoreResponse> => {
-  
-  return fetchClient<exchangeRatesStoreResponse>(getExchangeRatesStoreUrl(),
-  {      
+export const exchangeRatesStore = async (
+  storeExchangeRateRequest: StoreExchangeRateRequest,
+  options?: RequestInit,
+): Promise<exchangeRatesStoreResponse> => {
+  return fetchClient<exchangeRatesStoreResponse>(getExchangeRatesStoreUrl(), {
     ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      storeExchangeRateRequest,)
-  }
-);}
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(storeExchangeRateRequest),
+  });
+};
 
+export const getExchangeRatesStoreMutationOptions = <
+  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof exchangeRatesStore>>,
+    TError,
+    { data: StoreExchangeRateRequest },
+    TContext
+  >;
+  request?: SecondParameter<typeof fetchClient>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof exchangeRatesStore>>,
+  TError,
+  { data: StoreExchangeRateRequest },
+  TContext
+> => {
+  const mutationKey = ["exchangeRatesStore"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
 
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof exchangeRatesStore>>,
+    { data: StoreExchangeRateRequest }
+  > = (props) => {
+    const { data } = props ?? {};
 
+    return exchangeRatesStore(data, requestOptions);
+  };
 
-export const getExchangeRatesStoreMutationOptions = <TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof exchangeRatesStore>>, TError,{data: StoreExchangeRateRequest}, TContext>, request?: SecondParameter<typeof fetchClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof exchangeRatesStore>>, TError,{data: StoreExchangeRateRequest}, TContext> => {
+  return { mutationFn, ...mutationOptions };
+};
 
-const mutationKey = ['exchangeRatesStore'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
+export type ExchangeRatesStoreMutationResult = NonNullable<
+  Awaited<ReturnType<typeof exchangeRatesStore>>
+>;
+export type ExchangeRatesStoreMutationBody = StoreExchangeRateRequest;
+export type ExchangeRatesStoreMutationError =
+  AuthenticationExceptionResponse | ValidationExceptionResponse;
 
-      
+export const useExchangeRatesStore = <
+  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof exchangeRatesStore>>,
+      TError,
+      { data: StoreExchangeRateRequest },
+      TContext
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof exchangeRatesStore>>,
+  TError,
+  { data: StoreExchangeRateRequest },
+  TContext
+> => {
+  const mutationOptions = getExchangeRatesStoreMutationOptions(options);
 
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof exchangeRatesStore>>, {data: StoreExchangeRateRequest}> = (props) => {
-          const {data} = props ?? {};
-
-          return  exchangeRatesStore(data,requestOptions)
-        }
-
-        
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type ExchangeRatesStoreMutationResult = NonNullable<Awaited<ReturnType<typeof exchangeRatesStore>>>
-    export type ExchangeRatesStoreMutationBody = StoreExchangeRateRequest
-    export type ExchangeRatesStoreMutationError = AuthenticationExceptionResponse | ValidationExceptionResponse
-
-    export const useExchangeRatesStore = <TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof exchangeRatesStore>>, TError,{data: StoreExchangeRateRequest}, TContext>, request?: SecondParameter<typeof fetchClient>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof exchangeRatesStore>>,
-        TError,
-        {data: StoreExchangeRateRequest},
-        TContext
-      > => {
-
-      const mutationOptions = getExchangeRatesStoreMutationOptions(options);
-
-      return useMutation(mutationOptions, queryClient);
-    }
-    export type exchangeRatesShowResponse200 = {
-  data: ExchangeRatesShow200
-  status: 200
-}
+  return useMutation(mutationOptions, queryClient);
+};
+export type exchangeRatesShowResponse200 = {
+  data: ExchangeRatesShow200;
+  status: 200;
+};
 
 export type exchangeRatesShowResponse401 = {
-  data: AuthenticationExceptionResponse
-  status: 401
-}
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
 
 export type exchangeRatesShowResponse404 = {
-  data: ModelNotFoundExceptionResponse
-  status: 404
-}
-    
-export type exchangeRatesShowResponseSuccess = (exchangeRatesShowResponse200) & {
-  headers: Headers;
-};
-export type exchangeRatesShowResponseError = (exchangeRatesShowResponse401 | exchangeRatesShowResponse404) & {
-  headers: Headers;
+  data: ModelNotFoundExceptionResponse;
+  status: 404;
 };
 
-export type exchangeRatesShowResponse = (exchangeRatesShowResponseSuccess | exchangeRatesShowResponseError)
+export type exchangeRatesShowResponseSuccess = exchangeRatesShowResponse200 & {
+  headers: Headers;
+};
+export type exchangeRatesShowResponseError = (
+  exchangeRatesShowResponse401 | exchangeRatesShowResponse404
+) & {
+  headers: Headers;
+};
 
-export const getExchangeRatesShowUrl = (exchangeRate: number,) => {
+export type exchangeRatesShowResponse =
+  exchangeRatesShowResponseSuccess | exchangeRatesShowResponseError;
 
+export const getExchangeRatesShowUrl = (exchangeRate: number) => {
+  return `/v1/exchange-rates/${exchangeRate}`;
+};
 
-  
+export const exchangeRatesShow = async (
+  exchangeRate: number,
+  options?: RequestInit,
+): Promise<exchangeRatesShowResponse> => {
+  return fetchClient<exchangeRatesShowResponse>(
+    getExchangeRatesShowUrl(exchangeRate),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
-  return `/v1/exchange-rates/${exchangeRate}`
-}
+export const getExchangeRatesShowQueryKey = (exchangeRate?: number) => {
+  return [`/v1/exchange-rates/${exchangeRate}`] as const;
+};
 
-export const exchangeRatesShow = async (exchangeRate: number, options?: RequestInit): Promise<exchangeRatesShowResponse> => {
-  
-  return fetchClient<exchangeRatesShowResponse>(getExchangeRatesShowUrl(exchangeRate),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
-
-
-
-export const getExchangeRatesShowQueryKey = (exchangeRate?: number,) => {
-    return [
-    `/v1/exchange-rates/${exchangeRate}`
-    ] as const;
-    }
-
-    
-export const getExchangeRatesShowQueryOptions = <TData = Awaited<ReturnType<typeof exchangeRatesShow>>, TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse>(exchangeRate: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof exchangeRatesShow>>, TError, TData>>, request?: SecondParameter<typeof fetchClient>}
+export const getExchangeRatesShowQueryOptions = <
+  TData = Awaited<ReturnType<typeof exchangeRatesShow>>,
+  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+>(
+  exchangeRate: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof exchangeRatesShow>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
 ) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+  const queryKey =
+    queryOptions?.queryKey ?? getExchangeRatesShowQueryKey(exchangeRate);
 
-  const queryKey =  queryOptions?.queryKey ?? getExchangeRatesShowQueryKey(exchangeRate);
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof exchangeRatesShow>>
+  > = () => exchangeRatesShow(exchangeRate, requestOptions);
 
-  
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!exchangeRate,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof exchangeRatesShow>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof exchangeRatesShow>>> = () => exchangeRatesShow(exchangeRate, requestOptions);
+export type ExchangeRatesShowQueryResult = NonNullable<
+  Awaited<ReturnType<typeof exchangeRatesShow>>
+>;
+export type ExchangeRatesShowQueryError =
+  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
 
-      
-
-      
-
-   return  { queryKey, queryFn, enabled: !!(exchangeRate), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof exchangeRatesShow>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type ExchangeRatesShowQueryResult = NonNullable<Awaited<ReturnType<typeof exchangeRatesShow>>>
-export type ExchangeRatesShowQueryError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse
-
-
-export function useExchangeRatesShow<TData = Awaited<ReturnType<typeof exchangeRatesShow>>, TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse>(
- exchangeRate: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof exchangeRatesShow>>, TError, TData>> & Pick<
+export function useExchangeRatesShow<
+  TData = Awaited<ReturnType<typeof exchangeRatesShow>>,
+  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+>(
+  exchangeRate: number,
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof exchangeRatesShow>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof exchangeRatesShow>>,
           TError,
           Awaited<ReturnType<typeof exchangeRatesShow>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof fetchClient>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useExchangeRatesShow<TData = Awaited<ReturnType<typeof exchangeRatesShow>>, TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse>(
- exchangeRate: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof exchangeRatesShow>>, TError, TData>> & Pick<
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useExchangeRatesShow<
+  TData = Awaited<ReturnType<typeof exchangeRatesShow>>,
+  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+>(
+  exchangeRate: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof exchangeRatesShow>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof exchangeRatesShow>>,
           TError,
           Awaited<ReturnType<typeof exchangeRatesShow>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof fetchClient>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useExchangeRatesShow<TData = Awaited<ReturnType<typeof exchangeRatesShow>>, TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse>(
- exchangeRate: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof exchangeRatesShow>>, TError, TData>>, request?: SecondParameter<typeof fetchClient>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useExchangeRatesShow<
+  TData = Awaited<ReturnType<typeof exchangeRatesShow>>,
+  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+>(
+  exchangeRate: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof exchangeRatesShow>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
 
-export function useExchangeRatesShow<TData = Awaited<ReturnType<typeof exchangeRatesShow>>, TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse>(
- exchangeRate: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof exchangeRatesShow>>, TError, TData>>, request?: SecondParameter<typeof fetchClient>}
- , queryClient?: QueryClient 
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+export function useExchangeRatesShow<
+  TData = Awaited<ReturnType<typeof exchangeRatesShow>>,
+  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+>(
+  exchangeRate: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof exchangeRatesShow>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getExchangeRatesShowQueryOptions(exchangeRate, options);
 
-  const queryOptions = getExchangeRatesShowQueryOptions(exchangeRate,options)
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
 
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = queryOptions.queryKey ;
+  query.queryKey = queryOptions.queryKey;
 
   return query;
 }
 
-
-
-
 export type exchangeRatesUpdateResponse200 = {
-  data: ExchangeRatesUpdate200
-  status: 200
-}
+  data: ExchangeRatesUpdate200;
+  status: 200;
+};
 
 export type exchangeRatesUpdateResponse401 = {
-  data: AuthenticationExceptionResponse
-  status: 401
-}
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
 
 export type exchangeRatesUpdateResponse404 = {
-  data: ModelNotFoundExceptionResponse
-  status: 404
-}
+  data: ModelNotFoundExceptionResponse;
+  status: 404;
+};
 
 export type exchangeRatesUpdateResponse422 = {
-  data: ValidationExceptionResponse
-  status: 422
-}
-    
-export type exchangeRatesUpdateResponseSuccess = (exchangeRatesUpdateResponse200) & {
-  headers: Headers;
-};
-export type exchangeRatesUpdateResponseError = (exchangeRatesUpdateResponse401 | exchangeRatesUpdateResponse404 | exchangeRatesUpdateResponse422) & {
-  headers: Headers;
+  data: ValidationExceptionResponse;
+  status: 422;
 };
 
-export type exchangeRatesUpdateResponse = (exchangeRatesUpdateResponseSuccess | exchangeRatesUpdateResponseError)
+export type exchangeRatesUpdateResponseSuccess =
+  exchangeRatesUpdateResponse200 & {
+    headers: Headers;
+  };
+export type exchangeRatesUpdateResponseError = (
+  | exchangeRatesUpdateResponse401
+  | exchangeRatesUpdateResponse404
+  | exchangeRatesUpdateResponse422
+) & {
+  headers: Headers;
+};
 
-export const getExchangeRatesUpdateUrl = (exchangeRate: number,) => {
+export type exchangeRatesUpdateResponse =
+  exchangeRatesUpdateResponseSuccess | exchangeRatesUpdateResponseError;
 
+export const getExchangeRatesUpdateUrl = (exchangeRate: number) => {
+  return `/v1/exchange-rates/${exchangeRate}`;
+};
 
-  
+export const exchangeRatesUpdate = async (
+  exchangeRate: number,
+  updateExchangeRateRequest: UpdateExchangeRateRequest,
+  options?: RequestInit,
+): Promise<exchangeRatesUpdateResponse> => {
+  return fetchClient<exchangeRatesUpdateResponse>(
+    getExchangeRatesUpdateUrl(exchangeRate),
+    {
+      ...options,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(updateExchangeRateRequest),
+    },
+  );
+};
 
-  return `/v1/exchange-rates/${exchangeRate}`
-}
+export const getExchangeRatesUpdateMutationOptions = <
+  TError =
+    | AuthenticationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof exchangeRatesUpdate>>,
+    TError,
+    { exchangeRate: number; data: UpdateExchangeRateRequest },
+    TContext
+  >;
+  request?: SecondParameter<typeof fetchClient>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof exchangeRatesUpdate>>,
+  TError,
+  { exchangeRate: number; data: UpdateExchangeRateRequest },
+  TContext
+> => {
+  const mutationKey = ["exchangeRatesUpdate"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
 
-export const exchangeRatesUpdate = async (exchangeRate: number,
-    updateExchangeRateRequest: UpdateExchangeRateRequest, options?: RequestInit): Promise<exchangeRatesUpdateResponse> => {
-  
-  return fetchClient<exchangeRatesUpdateResponse>(getExchangeRatesUpdateUrl(exchangeRate),
-  {      
-    ...options,
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      updateExchangeRateRequest,)
-  }
-);}
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof exchangeRatesUpdate>>,
+    { exchangeRate: number; data: UpdateExchangeRateRequest }
+  > = (props) => {
+    const { exchangeRate, data } = props ?? {};
 
+    return exchangeRatesUpdate(exchangeRate, data, requestOptions);
+  };
 
+  return { mutationFn, ...mutationOptions };
+};
 
+export type ExchangeRatesUpdateMutationResult = NonNullable<
+  Awaited<ReturnType<typeof exchangeRatesUpdate>>
+>;
+export type ExchangeRatesUpdateMutationBody = UpdateExchangeRateRequest;
+export type ExchangeRatesUpdateMutationError =
+  | AuthenticationExceptionResponse
+  | ModelNotFoundExceptionResponse
+  | ValidationExceptionResponse;
 
-export const getExchangeRatesUpdateMutationOptions = <TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse | ValidationExceptionResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof exchangeRatesUpdate>>, TError,{exchangeRate: number;data: UpdateExchangeRateRequest}, TContext>, request?: SecondParameter<typeof fetchClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof exchangeRatesUpdate>>, TError,{exchangeRate: number;data: UpdateExchangeRateRequest}, TContext> => {
+export const useExchangeRatesUpdate = <
+  TError =
+    | AuthenticationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof exchangeRatesUpdate>>,
+      TError,
+      { exchangeRate: number; data: UpdateExchangeRateRequest },
+      TContext
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof exchangeRatesUpdate>>,
+  TError,
+  { exchangeRate: number; data: UpdateExchangeRateRequest },
+  TContext
+> => {
+  const mutationOptions = getExchangeRatesUpdateMutationOptions(options);
 
-const mutationKey = ['exchangeRatesUpdate'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-      
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof exchangeRatesUpdate>>, {exchangeRate: number;data: UpdateExchangeRateRequest}> = (props) => {
-          const {exchangeRate,data} = props ?? {};
-
-          return  exchangeRatesUpdate(exchangeRate,data,requestOptions)
-        }
-
-        
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type ExchangeRatesUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof exchangeRatesUpdate>>>
-    export type ExchangeRatesUpdateMutationBody = UpdateExchangeRateRequest
-    export type ExchangeRatesUpdateMutationError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse | ValidationExceptionResponse
-
-    export const useExchangeRatesUpdate = <TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse | ValidationExceptionResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof exchangeRatesUpdate>>, TError,{exchangeRate: number;data: UpdateExchangeRateRequest}, TContext>, request?: SecondParameter<typeof fetchClient>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof exchangeRatesUpdate>>,
-        TError,
-        {exchangeRate: number;data: UpdateExchangeRateRequest},
-        TContext
-      > => {
-
-      const mutationOptions = getExchangeRatesUpdateMutationOptions(options);
-
-      return useMutation(mutationOptions, queryClient);
-    }
-    export type exchangeRatesDestroyResponse204 = {
-  data: unknown[]
-  status: 204
-}
+  return useMutation(mutationOptions, queryClient);
+};
+export type exchangeRatesDestroyResponse204 = {
+  data: unknown[];
+  status: 204;
+};
 
 export type exchangeRatesDestroyResponse401 = {
-  data: AuthenticationExceptionResponse
-  status: 401
-}
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
 
 export type exchangeRatesDestroyResponse404 = {
-  data: ModelNotFoundExceptionResponse
-  status: 404
-}
-    
-export type exchangeRatesDestroyResponseSuccess = (exchangeRatesDestroyResponse204) & {
-  headers: Headers;
-};
-export type exchangeRatesDestroyResponseError = (exchangeRatesDestroyResponse401 | exchangeRatesDestroyResponse404) & {
-  headers: Headers;
+  data: ModelNotFoundExceptionResponse;
+  status: 404;
 };
 
-export type exchangeRatesDestroyResponse = (exchangeRatesDestroyResponseSuccess | exchangeRatesDestroyResponseError)
+export type exchangeRatesDestroyResponseSuccess =
+  exchangeRatesDestroyResponse204 & {
+    headers: Headers;
+  };
+export type exchangeRatesDestroyResponseError = (
+  exchangeRatesDestroyResponse401 | exchangeRatesDestroyResponse404
+) & {
+  headers: Headers;
+};
 
-export const getExchangeRatesDestroyUrl = (exchangeRate: number,) => {
+export type exchangeRatesDestroyResponse =
+  exchangeRatesDestroyResponseSuccess | exchangeRatesDestroyResponseError;
 
+export const getExchangeRatesDestroyUrl = (exchangeRate: number) => {
+  return `/v1/exchange-rates/${exchangeRate}`;
+};
 
-  
+export const exchangeRatesDestroy = async (
+  exchangeRate: number,
+  options?: RequestInit,
+): Promise<exchangeRatesDestroyResponse> => {
+  return fetchClient<exchangeRatesDestroyResponse>(
+    getExchangeRatesDestroyUrl(exchangeRate),
+    {
+      ...options,
+      method: "DELETE",
+    },
+  );
+};
 
-  return `/v1/exchange-rates/${exchangeRate}`
-}
+export const getExchangeRatesDestroyMutationOptions = <
+  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof exchangeRatesDestroy>>,
+    TError,
+    { exchangeRate: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof fetchClient>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof exchangeRatesDestroy>>,
+  TError,
+  { exchangeRate: number },
+  TContext
+> => {
+  const mutationKey = ["exchangeRatesDestroy"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
 
-export const exchangeRatesDestroy = async (exchangeRate: number, options?: RequestInit): Promise<exchangeRatesDestroyResponse> => {
-  
-  return fetchClient<exchangeRatesDestroyResponse>(getExchangeRatesDestroyUrl(exchangeRate),
-  {      
-    ...options,
-    method: 'DELETE'
-    
-    
-  }
-);}
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof exchangeRatesDestroy>>,
+    { exchangeRate: number }
+  > = (props) => {
+    const { exchangeRate } = props ?? {};
 
+    return exchangeRatesDestroy(exchangeRate, requestOptions);
+  };
 
+  return { mutationFn, ...mutationOptions };
+};
 
+export type ExchangeRatesDestroyMutationResult = NonNullable<
+  Awaited<ReturnType<typeof exchangeRatesDestroy>>
+>;
 
-export const getExchangeRatesDestroyMutationOptions = <TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof exchangeRatesDestroy>>, TError,{exchangeRate: number}, TContext>, request?: SecondParameter<typeof fetchClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof exchangeRatesDestroy>>, TError,{exchangeRate: number}, TContext> => {
+export type ExchangeRatesDestroyMutationError =
+  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
 
-const mutationKey = ['exchangeRatesDestroy'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
+export const useExchangeRatesDestroy = <
+  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof exchangeRatesDestroy>>,
+      TError,
+      { exchangeRate: number },
+      TContext
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof exchangeRatesDestroy>>,
+  TError,
+  { exchangeRate: number },
+  TContext
+> => {
+  const mutationOptions = getExchangeRatesDestroyMutationOptions(options);
 
-      
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof exchangeRatesDestroy>>, {exchangeRate: number}> = (props) => {
-          const {exchangeRate} = props ?? {};
-
-          return  exchangeRatesDestroy(exchangeRate,requestOptions)
-        }
-
-        
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type ExchangeRatesDestroyMutationResult = NonNullable<Awaited<ReturnType<typeof exchangeRatesDestroy>>>
-    
-    export type ExchangeRatesDestroyMutationError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse
-
-    export const useExchangeRatesDestroy = <TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof exchangeRatesDestroy>>, TError,{exchangeRate: number}, TContext>, request?: SecondParameter<typeof fetchClient>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof exchangeRatesDestroy>>,
-        TError,
-        {exchangeRate: number},
-        TContext
-      > => {
-
-      const mutationOptions = getExchangeRatesDestroyMutationOptions(options);
-
-      return useMutation(mutationOptions, queryClient);
-    }
-    
+  return useMutation(mutationOptions, queryClient);
+};

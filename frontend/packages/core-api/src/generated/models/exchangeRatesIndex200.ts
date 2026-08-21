@@ -4,9 +4,9 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { ExchangeRateResource } from './exchangeRateResource';
-import type { ExchangeRatesIndex200Links } from './exchangeRatesIndex200Links';
-import type { ExchangeRatesIndex200Meta } from './exchangeRatesIndex200Meta';
+import type { ExchangeRateResource } from "./exchangeRateResource";
+import type { ExchangeRatesIndex200Links } from "./exchangeRatesIndex200Links";
+import type { ExchangeRatesIndex200Meta } from "./exchangeRatesIndex200Meta";
 
 export type ExchangeRatesIndex200 = {
   data: ExchangeRateResource[];

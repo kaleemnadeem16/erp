@@ -91,6 +91,20 @@ class CustomerAccountApiTest extends TestCase
         ]))->assertUnprocessable()->assertJsonValidationErrors('payment_terms_days');
     }
 
+    public function test_tax_code_is_rejected_until_the_tax_codes_table_exists(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->postJson('/api/v1/customer-accounts', $this->payload([
+            'tax_code_id' => 123,
+        ]))->assertUnprocessable()->assertJsonValidationErrors('tax_code_id');
+
+        $account = CustomerAccount::create($this->payload());
+        $this->patchJson("/api/v1/customer-accounts/{$account->id}", ['tax_code_id' => 123])
+            ->assertUnprocessable()->assertJsonValidationErrors('tax_code_id');
+        $this->assertNull($account->refresh()->tax_code_id);
+    }
+
     public function test_a_party_can_only_hold_one_customer_account_duplicate_is_rejected_with_a_422(): void
     {
         $user = User::factory()->create();

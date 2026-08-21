@@ -5,15 +5,20 @@ declare(strict_types=1);
 namespace App\Modules\Inventory\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Modules\Inventory\Actions\ArchiveItem;
+use App\Modules\Inventory\Actions\CreateItem;
+use App\Modules\Inventory\Actions\UpdateItem;
 use App\Modules\Inventory\Http\Requests\Item\IndexItemRequest;
+use App\Modules\Inventory\Http\Requests\Item\ShowItemRequest;
 use App\Modules\Inventory\Http\Requests\Item\StoreItemRequest;
 use App\Modules\Inventory\Http\Requests\Item\UpdateItemRequest;
 use App\Modules\Inventory\Http\Resources\ItemResource;
 use App\Modules\Inventory\Models\Item;
+use App\Support\Concerns\AppliesApiQuery;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * destroy() soft-deletes (Item uses SoftDeletes) — see docs/domain/items.md
@@ -24,16 +29,25 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
  */
 class ItemController extends Controller
 {
+    use AppliesApiQuery;
+
     /** @var array<string, string> */
     private const INCLUDABLE = [
         'category' => 'category',
+    ];
+
+    /** @var array<string, string> */
+    private const SORTABLE = [
+        'code' => 'code',
+        'name' => 'name',
+        'created_at' => 'created_at',
     ];
 
     public function index(IndexItemRequest $request): AnonymousResourceCollection
     {
         $query = Item::query();
 
-        $this->applyIncludes($query, $request);
+        $this->applyIncludes($query, $request, self::INCLUDABLE);
 
         if ($request->filled('filter.category_id')) {
             $query->where('category_id', $request->input('filter.category_id'));
@@ -53,62 +67,34 @@ class ItemController extends Controller
                 ->orWhere('code', 'ilike', "%{$search}%"));
         }
 
-        $query->orderBy('name');
+        $this->applySort($query, $request, self::SORTABLE, 'name');
 
         $perPage = $request->integer('per_page', 25);
 
         return ItemResource::collection($query->paginate($perPage));
     }
 
-    public function store(StoreItemRequest $request): JsonResponse
+    public function store(StoreItemRequest $request, CreateItem $create): JsonResponse
     {
-        $item = Item::create($request->validated());
-
-        // is_stocked/is_purchasable/is_sellable/tracking/status all fall back to a
-        // Postgres column default when omitted — the in-memory model from create()
-        // never sees that value, only the DB row does, so serialising it directly
-        // would return null for a field the response schema declares non-nullable.
-        $item->refresh();
+        $item = $create($request->validated());
 
         return (new ItemResource($item))->response()->setStatusCode(201);
     }
 
-    public function show(Request $request, Item $item): ItemResource
+    public function show(ShowItemRequest $request, Item $item): ItemResource
     {
-        return new ItemResource($item->load($this->requestedIncludes($request)));
+        return new ItemResource($item->load($this->requestedIncludes($request, self::INCLUDABLE)));
     }
 
-    public function update(UpdateItemRequest $request, Item $item): ItemResource
+    public function update(UpdateItemRequest $request, Item $item, UpdateItem $update): ItemResource
     {
-        $item->update($request->validated());
-
-        return new ItemResource($item);
+        return new ItemResource($update($item, $request->validated()));
     }
 
-    public function destroy(Item $item): JsonResponse
+    public function destroy(Item $item, ArchiveItem $archive): Response
     {
-        $item->delete();
+        $archive($item);
 
-        return response()->json(status: 204);
-    }
-
-    /**
-     * @param  Builder<Item>  $query
-     */
-    private function applyIncludes(Builder $query, Request $request): void
-    {
-        foreach ($this->requestedIncludes($request) as $relation) {
-            $query->with($relation);
-        }
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function requestedIncludes(Request $request): array
-    {
-        $requested = array_filter(explode(',', (string) $request->query('include', '')));
-
-        return array_values(array_intersect_key(self::INCLUDABLE, array_flip($requested)));
+        return response()->noContent();
     }
 }

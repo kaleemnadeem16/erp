@@ -4,21 +4,24 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { Status } from './status';
+import type { Status } from "./status";
+import type { SupplierAccountsIndexSort } from "./supplierAccountsIndexSort";
 
 export type SupplierAccountsIndexParams = {
-/**
- * @minimum 1
- */
-'filter[party_id]'?: number;
-'filter[status]'?: Status;
-/**
- * @maxLength 255
- */
-'filter[search]'?: string;
-/**
- * @minimum 1
- * @maximum 100
- */
-per_page?: number;
+  /**
+   * @minimum 1
+   */
+  "filter[party_id]"?: number;
+  "filter[status]"?: Status;
+  /**
+   * @maxLength 255
+   */
+  "filter[search]"?: string;
+  sort?: SupplierAccountsIndexSort;
+  include?: string;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  per_page?: number;
 };

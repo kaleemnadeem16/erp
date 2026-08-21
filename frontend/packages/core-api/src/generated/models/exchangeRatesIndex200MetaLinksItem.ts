@@ -4,7 +4,7 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { ExchangeRatesIndex200MetaLinksItemUrl } from './exchangeRatesIndex200MetaLinksItemUrl';
+import type { ExchangeRatesIndex200MetaLinksItemUrl } from "./exchangeRatesIndex200MetaLinksItemUrl";
 
 export type ExchangeRatesIndex200MetaLinksItem = {
   url: ExchangeRatesIndex200MetaLinksItemUrl;

@@ -4,10 +4,10 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { UpdatePartyRequestRegistrationNo } from './updatePartyRequestRegistrationNo';
-import type { UpdatePartyRequestTaxId } from './updatePartyRequestTaxId';
-import type { UpdatePartyRequestWebsite } from './updatePartyRequestWebsite';
-import type { Status } from './status';
+import type { UpdatePartyRequestRegistrationNo } from "./updatePartyRequestRegistrationNo";
+import type { UpdatePartyRequestTaxId } from "./updatePartyRequestTaxId";
+import type { UpdatePartyRequestWebsite } from "./updatePartyRequestWebsite";
+import type { Status } from "./status";
 
 export interface UpdatePartyRequest {
   /** @maxLength 255 */

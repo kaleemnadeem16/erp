@@ -4,10 +4,10 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { CustomerAccountsIndex200LinksFirst } from './customerAccountsIndex200LinksFirst';
-import type { CustomerAccountsIndex200LinksLast } from './customerAccountsIndex200LinksLast';
-import type { CustomerAccountsIndex200LinksPrev } from './customerAccountsIndex200LinksPrev';
-import type { CustomerAccountsIndex200LinksNext } from './customerAccountsIndex200LinksNext';
+import type { CustomerAccountsIndex200LinksFirst } from "./customerAccountsIndex200LinksFirst";
+import type { CustomerAccountsIndex200LinksLast } from "./customerAccountsIndex200LinksLast";
+import type { CustomerAccountsIndex200LinksPrev } from "./customerAccountsIndex200LinksPrev";
+import type { CustomerAccountsIndex200LinksNext } from "./customerAccountsIndex200LinksNext";
 
 export type CustomerAccountsIndex200Links = {
   first: CustomerAccountsIndex200LinksFirst;

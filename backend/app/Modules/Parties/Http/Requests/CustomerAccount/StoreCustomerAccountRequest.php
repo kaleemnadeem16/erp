@@ -39,9 +39,14 @@ class StoreCustomerAccountRequest extends FormRequest
             // constraint, so an out-of-range value would otherwise reach Postgres
             // directly as a raw "smallint out of range" error.
             'payment_terms_days' => ['required', 'integer', 'between:0,32767'],
-            // No exists() check possible: tax_codes doesn't exist yet, same
-            // forward-reference reason as the column itself — see the migration.
-            'tax_code_id' => ['sometimes', 'nullable', 'integer'],
+            // The column is reserved for Phase 6, but accepting arbitrary ids now
+            // would create dangling references that cannot be constrained later.
+            'tax_code_id' => [
+                'sometimes',
+                'nullable',
+                'integer',
+                Rule::prohibitedIf(fn (): bool => $this->input('tax_code_id') !== null),
+            ],
             'receivable_account_id' => ['required', 'integer', CompanyScoped::exists('chart_of_accounts')],
             // Currency is global, not company-scoped (docs/architecture/multi-tenancy.md
             // rule 1) — a plain exists() is correct here, unlike the company-scoped FKs above.

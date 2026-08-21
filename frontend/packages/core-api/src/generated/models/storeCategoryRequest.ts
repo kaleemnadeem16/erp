@@ -4,11 +4,11 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { StoreCategoryRequestParentId } from './storeCategoryRequestParentId';
-import type { StoreCategoryRequestIncomeAccountId } from './storeCategoryRequestIncomeAccountId';
-import type { StoreCategoryRequestExpenseAccountId } from './storeCategoryRequestExpenseAccountId';
-import type { StoreCategoryRequestInventoryAccountId } from './storeCategoryRequestInventoryAccountId';
-import type { StoreCategoryRequestDefaultValuationMethod } from './storeCategoryRequestDefaultValuationMethod';
+import type { StoreCategoryRequestParentId } from "./storeCategoryRequestParentId";
+import type { StoreCategoryRequestIncomeAccountId } from "./storeCategoryRequestIncomeAccountId";
+import type { StoreCategoryRequestExpenseAccountId } from "./storeCategoryRequestExpenseAccountId";
+import type { StoreCategoryRequestInventoryAccountId } from "./storeCategoryRequestInventoryAccountId";
+import type { StoreCategoryRequestDefaultValuationMethod } from "./storeCategoryRequestDefaultValuationMethod";
 
 export interface StoreCategoryRequest {
   parent_id?: StoreCategoryRequestParentId;

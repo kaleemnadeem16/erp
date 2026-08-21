@@ -4,11 +4,11 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { ChartOfAccountResourceParentId } from './chartOfAccountResourceParentId';
-import type { ChartOfAccountResourceCurrencyId } from './chartOfAccountResourceCurrencyId';
-import type { ChartOfAccountResourceParent } from './chartOfAccountResourceParent';
-import type { ChartOfAccountResourceCreatedAt } from './chartOfAccountResourceCreatedAt';
-import type { ChartOfAccountResourceUpdatedAt } from './chartOfAccountResourceUpdatedAt';
+import type { ChartOfAccountResourceParentId } from "./chartOfAccountResourceParentId";
+import type { ChartOfAccountResourceCurrencyId } from "./chartOfAccountResourceCurrencyId";
+import type { ChartOfAccountResourceParent } from "./chartOfAccountResourceParent";
+import type { ChartOfAccountResourceCreatedAt } from "./chartOfAccountResourceCreatedAt";
+import type { ChartOfAccountResourceUpdatedAt } from "./chartOfAccountResourceUpdatedAt";
 
 export interface ChartOfAccountResource {
   id: number;

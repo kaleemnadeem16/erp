@@ -127,6 +127,47 @@ class ItemApiTest extends TestCase
         $response->assertJsonPath('data.0.code', 'pig-001');
     }
 
+    public function test_index_validates_includes_and_sorts_descending(): void
+    {
+        $user = User::factory()->create();
+        Item::create($this->payload(['code' => 'a', 'name' => 'Alpha']));
+        Item::create($this->payload(['code' => 'z', 'name' => 'Zulu']));
+
+        $this->actingAs($user)->getJson('/api/v1/items?include=unknown')
+            ->assertUnprocessable()->assertJsonValidationErrors('include');
+        $this->getJson('/api/v1/items?sort=unknown')
+            ->assertUnprocessable()->assertJsonValidationErrors('sort');
+
+        $this->getJson('/api/v1/items?sort=-name&include=category')
+            ->assertOk()
+            ->assertJsonPath('data.0.name', 'Zulu')
+            ->assertJsonPath('data.0.category.code', 'RAW');
+    }
+
+    public function test_patch_updates_an_item_but_put_is_not_advertised(): void
+    {
+        $user = User::factory()->create();
+        $item = Item::create($this->payload());
+
+        $this->actingAs($user)->patchJson("/api/v1/items/{$item->id}", ['name' => 'Updated'])
+            ->assertOk()->assertJsonPath('data.name', 'Updated');
+
+        $this->putJson("/api/v1/items/{$item->id}", ['name' => 'Replacement'])
+            ->assertMethodNotAllowed();
+    }
+
+    public function test_valuation_method_cannot_be_cleared_on_update(): void
+    {
+        $user = User::factory()->create();
+        $item = Item::create($this->payload());
+
+        $this->actingAs($user)->patchJson("/api/v1/items/{$item->id}", ['valuation_method' => null])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('valuation_method');
+
+        $this->assertSame('AVCO', $item->refresh()->valuation_method->value);
+    }
+
     public function test_show_can_include_category(): void
     {
         $user = User::factory()->create();

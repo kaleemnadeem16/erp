@@ -4,10 +4,10 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { AccountType } from './accountType';
-import type { UpdateChartOfAccountRequestParentId } from './updateChartOfAccountRequestParentId';
-import type { UpdateChartOfAccountRequestCurrencyId } from './updateChartOfAccountRequestCurrencyId';
-import type { Status } from './status';
+import type { AccountType } from "./accountType";
+import type { UpdateChartOfAccountRequestParentId } from "./updateChartOfAccountRequestParentId";
+import type { UpdateChartOfAccountRequestCurrencyId } from "./updateChartOfAccountRequestCurrencyId";
+import type { Status } from "./status";
 
 export interface UpdateChartOfAccountRequest {
   /** @maxLength 255 */

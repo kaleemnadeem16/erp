@@ -4,10 +4,10 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { UpdateCustomerAccountRequestCreditLimit } from './updateCustomerAccountRequestCreditLimit';
-import type { UpdateCustomerAccountRequestTaxCodeId } from './updateCustomerAccountRequestTaxCodeId';
-import type { UpdateCustomerAccountRequestDefaultCurrencyId } from './updateCustomerAccountRequestDefaultCurrencyId';
-import type { Status } from './status';
+import type { UpdateCustomerAccountRequestCreditLimit } from "./updateCustomerAccountRequestCreditLimit";
+import type { UpdateCustomerAccountRequestTaxCodeId } from "./updateCustomerAccountRequestTaxCodeId";
+import type { UpdateCustomerAccountRequestDefaultCurrencyId } from "./updateCustomerAccountRequestDefaultCurrencyId";
+import type { Status } from "./status";
 
 export interface UpdateCustomerAccountRequest {
   party_id?: number;

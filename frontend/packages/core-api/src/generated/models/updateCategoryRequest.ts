@@ -4,11 +4,11 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { UpdateCategoryRequestParentId } from './updateCategoryRequestParentId';
-import type { UpdateCategoryRequestIncomeAccountId } from './updateCategoryRequestIncomeAccountId';
-import type { UpdateCategoryRequestExpenseAccountId } from './updateCategoryRequestExpenseAccountId';
-import type { UpdateCategoryRequestInventoryAccountId } from './updateCategoryRequestInventoryAccountId';
-import type { UpdateCategoryRequestDefaultValuationMethod } from './updateCategoryRequestDefaultValuationMethod';
+import type { UpdateCategoryRequestParentId } from "./updateCategoryRequestParentId";
+import type { UpdateCategoryRequestIncomeAccountId } from "./updateCategoryRequestIncomeAccountId";
+import type { UpdateCategoryRequestExpenseAccountId } from "./updateCategoryRequestExpenseAccountId";
+import type { UpdateCategoryRequestInventoryAccountId } from "./updateCategoryRequestInventoryAccountId";
+import type { UpdateCategoryRequestDefaultValuationMethod } from "./updateCategoryRequestDefaultValuationMethod";
 
 export interface UpdateCategoryRequest {
   parent_id?: UpdateCategoryRequestParentId;

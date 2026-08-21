@@ -4,6 +4,6 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { CategoryResource } from './categoryResource';
+import type { CategoryResource } from "./categoryResource";
 
 export type CategoryResourceParent = CategoryResource | null;

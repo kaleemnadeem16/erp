@@ -11,6 +11,7 @@
     "build": "npm run build --workspace apps/main"
   },
   "devDependencies": {
+    "prettier": "^3.9.6",
     "typescript": "^5.7.3"
   }
 }

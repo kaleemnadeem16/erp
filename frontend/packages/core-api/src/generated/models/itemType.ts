@@ -9,15 +9,14 @@
  * Everything the system buys, holds, makes, consumes or sells shares one items table with this type discriminator, rather than being split into separate product/service/resource tables — see docs/domain/items.md "Types". LABOUR and PLANT are items so assembly components can reference one thing uniformly.
 
  */
-export type ItemType = typeof ItemType[keyof typeof ItemType];
-
+export type ItemType = (typeof ItemType)[keyof typeof ItemType];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const ItemType = {
-  RAW: 'RAW',
-  SEMI_FINISHED: 'SEMI_FINISHED',
-  FINISHED: 'FINISHED',
-  SERVICE: 'SERVICE',
-  LABOUR: 'LABOUR',
-  PLANT: 'PLANT',
+  RAW: "RAW",
+  SEMI_FINISHED: "SEMI_FINISHED",
+  FINISHED: "FINISHED",
+  SERVICE: "SERVICE",
+  LABOUR: "LABOUR",
+  PLANT: "PLANT",
 } as const;

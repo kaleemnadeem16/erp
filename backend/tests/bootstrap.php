@@ -22,6 +22,9 @@ $testEnvironment = [
     'DB_URL' => '',
     'MAIL_MAILER' => 'array',
     'QUEUE_CONNECTION' => 'sync',
+    // Session-auth tests must not inherit a developer's possibly stale ignored
+    // .env value (the dev SPA moved from 5173 to 5176 on 2026-08-18).
+    'SANCTUM_STATEFUL_DOMAINS' => 'localhost:5176,localhost:8090,127.0.0.1:5176,127.0.0.1:8090',
     'SESSION_DRIVER' => 'array',
     'PULSE_ENABLED' => 'false',
     'TELESCOPE_ENABLED' => 'false',

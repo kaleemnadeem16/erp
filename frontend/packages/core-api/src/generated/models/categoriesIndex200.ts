@@ -4,9 +4,9 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { CategoryResource } from './categoryResource';
-import type { CategoriesIndex200Links } from './categoriesIndex200Links';
-import type { CategoriesIndex200Meta } from './categoriesIndex200Meta';
+import type { CategoryResource } from "./categoryResource";
+import type { CategoriesIndex200Links } from "./categoriesIndex200Links";
+import type { CategoriesIndex200Meta } from "./categoriesIndex200Meta";
 
 export type CategoriesIndex200 = {
   data: CategoryResource[];

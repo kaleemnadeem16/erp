@@ -9,12 +9,11 @@
  * Which rate applies to which document is an explicit rule, not an accident — see docs/domain/multi-currency.md#rate-selection: Spot for invoices/receipts/ purchases at document date, Closing for period-end reporting, Average for comparative reporting over a period.
 
  */
-export type RateType = typeof RateType[keyof typeof RateType];
-
+export type RateType = (typeof RateType)[keyof typeof RateType];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const RateType = {
-  SPOT: 'SPOT',
-  AVERAGE: 'AVERAGE',
-  CLOSING: 'CLOSING',
+  SPOT: "SPOT",
+  AVERAGE: "AVERAGE",
+  CLOSING: "CLOSING",
 } as const;

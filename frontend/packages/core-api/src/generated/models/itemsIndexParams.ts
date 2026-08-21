@@ -4,23 +4,26 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { ItemType } from './itemType';
-import type { Status } from './status';
+import type { ItemType } from "./itemType";
+import type { Status } from "./status";
+import type { ItemsIndexSort } from "./itemsIndexSort";
 
 export type ItemsIndexParams = {
-/**
- * @minimum 1
- */
-'filter[category_id]'?: number;
-'filter[type]'?: ItemType;
-'filter[status]'?: Status;
-/**
- * @maxLength 255
- */
-'filter[search]'?: string;
-/**
- * @minimum 1
- * @maximum 100
- */
-per_page?: number;
+  /**
+   * @minimum 1
+   */
+  "filter[category_id]"?: number;
+  "filter[type]"?: ItemType;
+  "filter[status]"?: Status;
+  /**
+   * @maxLength 255
+   */
+  "filter[search]"?: string;
+  sort?: ItemsIndexSort;
+  include?: string;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  per_page?: number;
 };

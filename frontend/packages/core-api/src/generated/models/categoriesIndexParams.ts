@@ -4,21 +4,24 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
+import type { CategoriesIndexSort } from "./categoriesIndexSort";
 
 export type CategoriesIndexParams = {
-/**
+  /**
  * 0 is a legitimate request: "top-level categories only" (parent_id is null).
 A plain integer|min:1 filter couldn't express that, so it's its own case.
  * @minimum 0
  */
-'filter[parent_id]'?: number;
-/**
- * @maxLength 255
- */
-'filter[search]'?: string;
-/**
- * @minimum 1
- * @maximum 100
- */
-per_page?: number;
+  "filter[parent_id]"?: number;
+  /**
+   * @maxLength 255
+   */
+  "filter[search]"?: string;
+  sort?: CategoriesIndexSort;
+  include?: string;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  per_page?: number;
 };

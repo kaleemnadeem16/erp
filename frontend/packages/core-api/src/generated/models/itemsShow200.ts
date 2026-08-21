@@ -4,7 +4,7 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { ItemResource } from './itemResource';
+import type { ItemResource } from "./itemResource";
 
 export type ItemsShow200 = {
   data: ItemResource;

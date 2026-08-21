@@ -4,7 +4,7 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { RateType } from './rateType';
+import type { RateType } from "./rateType";
 
 export interface StoreExchangeRateRequest {
   from_currency_id: number;

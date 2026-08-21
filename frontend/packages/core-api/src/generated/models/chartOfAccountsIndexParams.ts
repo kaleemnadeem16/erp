@@ -4,24 +4,27 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { AccountType } from './accountType';
-import type { Status } from './status';
+import type { AccountType } from "./accountType";
+import type { Status } from "./status";
+import type { ChartOfAccountsIndexSort } from "./chartOfAccountsIndexSort";
 
 export type ChartOfAccountsIndexParams = {
-/**
- * 0 is a legitimate request: "top-level accounts only" (parent_id is null).
- * @minimum 0
- */
-'filter[parent_id]'?: number;
-'filter[type]'?: AccountType;
-'filter[status]'?: Status;
-/**
- * @maxLength 255
- */
-'filter[search]'?: string;
-/**
- * @minimum 1
- * @maximum 100
- */
-per_page?: number;
+  /**
+   * 0 is a legitimate request: "top-level accounts only" (parent_id is null).
+   * @minimum 0
+   */
+  "filter[parent_id]"?: number;
+  "filter[type]"?: AccountType;
+  "filter[status]"?: Status;
+  /**
+   * @maxLength 255
+   */
+  "filter[search]"?: string;
+  sort?: ChartOfAccountsIndexSort;
+  include?: string;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  per_page?: number;
 };

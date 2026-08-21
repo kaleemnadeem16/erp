@@ -4,7 +4,7 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { CategoriesIndex200MetaLinksItemUrl } from './categoriesIndex200MetaLinksItemUrl';
+import type { CategoriesIndex200MetaLinksItemUrl } from "./categoriesIndex200MetaLinksItemUrl";
 
 export type CategoriesIndex200MetaLinksItem = {
   url: CategoriesIndex200MetaLinksItemUrl;

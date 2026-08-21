@@ -4,14 +4,14 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { PartyResourceRegistrationNo } from './partyResourceRegistrationNo';
-import type { PartyResourceTaxId } from './partyResourceTaxId';
-import type { PartyResourceWebsite } from './partyResourceWebsite';
-import type { PartyResourceCustomFields } from './partyResourceCustomFields';
-import type { CustomerAccountResource } from './customerAccountResource';
-import type { SupplierAccountResource } from './supplierAccountResource';
-import type { PartyResourceCreatedAt } from './partyResourceCreatedAt';
-import type { PartyResourceUpdatedAt } from './partyResourceUpdatedAt';
+import type { PartyResourceRegistrationNo } from "./partyResourceRegistrationNo";
+import type { PartyResourceTaxId } from "./partyResourceTaxId";
+import type { PartyResourceWebsite } from "./partyResourceWebsite";
+import type { PartyResourceCustomFields } from "./partyResourceCustomFields";
+import type { CustomerAccountResource } from "./customerAccountResource";
+import type { SupplierAccountResource } from "./supplierAccountResource";
+import type { PartyResourceCreatedAt } from "./partyResourceCreatedAt";
+import type { PartyResourceUpdatedAt } from "./partyResourceUpdatedAt";
 
 export interface PartyResource {
   id: number;

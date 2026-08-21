@@ -4,7 +4,7 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { CustomerAccountResource } from './customerAccountResource';
+import type { CustomerAccountResource } from "./customerAccountResource";
 
 export type CustomerAccountsStore201 = {
   data: CustomerAccountResource;

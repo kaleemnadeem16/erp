@@ -4,10 +4,7 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import {
-  useMutation,
-  useQuery
-} from '@tanstack/react-query';
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
   DataTag,
   DefinedInitialDataOptions,
@@ -20,542 +17,847 @@ import type {
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
-  UseQueryResult
-} from '@tanstack/react-query';
+  UseQueryResult,
+} from "@tanstack/react-query";
 
 import type {
   AuthenticationExceptionResponse,
   ChartOfAccountsIndex200,
   ChartOfAccountsIndexParams,
   ChartOfAccountsShow200,
+  ChartOfAccountsShowParams,
   ChartOfAccountsStore201,
   ChartOfAccountsUpdate200,
   ModelNotFoundExceptionResponse,
   StoreChartOfAccountRequest,
   UpdateChartOfAccountRequest,
-  ValidationExceptionResponse
-} from '.././models';
+  ValidationExceptionResponse,
+} from ".././models";
 
-import { fetchClient } from '../../mutator/fetch-client';
-
+import { fetchClient } from "../../mutator/fetch-client";
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
-
-
 export type chartOfAccountsIndexResponse200 = {
-  data: ChartOfAccountsIndex200
-  status: 200
-}
+  data: ChartOfAccountsIndex200;
+  status: 200;
+};
 
 export type chartOfAccountsIndexResponse401 = {
-  data: AuthenticationExceptionResponse
-  status: 401
-}
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
 
 export type chartOfAccountsIndexResponse422 = {
-  data: ValidationExceptionResponse
-  status: 422
-}
-    
-export type chartOfAccountsIndexResponseSuccess = (chartOfAccountsIndexResponse200) & {
-  headers: Headers;
+  data: ValidationExceptionResponse;
+  status: 422;
 };
-export type chartOfAccountsIndexResponseError = (chartOfAccountsIndexResponse401 | chartOfAccountsIndexResponse422) & {
+
+export type chartOfAccountsIndexResponseSuccess =
+  chartOfAccountsIndexResponse200 & {
+    headers: Headers;
+  };
+export type chartOfAccountsIndexResponseError = (
+  chartOfAccountsIndexResponse401 | chartOfAccountsIndexResponse422
+) & {
   headers: Headers;
 };
 
-export type chartOfAccountsIndexResponse = (chartOfAccountsIndexResponseSuccess | chartOfAccountsIndexResponseError)
+export type chartOfAccountsIndexResponse =
+  chartOfAccountsIndexResponseSuccess | chartOfAccountsIndexResponseError;
 
-export const getChartOfAccountsIndexUrl = (params?: ChartOfAccountsIndexParams,) => {
+export const getChartOfAccountsIndexUrl = (
+  params?: ChartOfAccountsIndexParams,
+) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
-    
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString())
+      normalizedParams.append(key, value === null ? "null" : value.toString());
     }
   });
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0 ? `/v1/chart-of-accounts?${stringifiedParams}` : `/v1/chart-of-accounts`
-}
+  return stringifiedParams.length > 0
+    ? `/v1/chart-of-accounts?${stringifiedParams}`
+    : `/v1/chart-of-accounts`;
+};
 
-export const chartOfAccountsIndex = async (params?: ChartOfAccountsIndexParams, options?: RequestInit): Promise<chartOfAccountsIndexResponse> => {
-  
-  return fetchClient<chartOfAccountsIndexResponse>(getChartOfAccountsIndexUrl(params),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
+export const chartOfAccountsIndex = async (
+  params?: ChartOfAccountsIndexParams,
+  options?: RequestInit,
+): Promise<chartOfAccountsIndexResponse> => {
+  return fetchClient<chartOfAccountsIndexResponse>(
+    getChartOfAccountsIndexUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
-
-
-
-
-export const getChartOfAccountsIndexQueryKey = (params?: ChartOfAccountsIndexParams,) => {
-    return [
-    `/v1/chart-of-accounts`, ...(params ? [params]: [])
-    ] as const;
-    }
-
-    
-export const getChartOfAccountsIndexQueryOptions = <TData = Awaited<ReturnType<typeof chartOfAccountsIndex>>, TError = AuthenticationExceptionResponse | ValidationExceptionResponse>(params?: ChartOfAccountsIndexParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof chartOfAccountsIndex>>, TError, TData>>, request?: SecondParameter<typeof fetchClient>}
+export const getChartOfAccountsIndexQueryKey = (
+  params?: ChartOfAccountsIndexParams,
 ) => {
+  return [`/v1/chart-of-accounts`, ...(params ? [params] : [])] as const;
+};
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+export const getChartOfAccountsIndexQueryOptions = <
+  TData = Awaited<ReturnType<typeof chartOfAccountsIndex>>,
+  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+>(
+  params?: ChartOfAccountsIndexParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof chartOfAccountsIndex>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getChartOfAccountsIndexQueryKey(params);
+  const queryKey =
+    queryOptions?.queryKey ?? getChartOfAccountsIndexQueryKey(params);
 
-  
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof chartOfAccountsIndex>>
+  > = () => chartOfAccountsIndex(params, requestOptions);
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof chartOfAccountsIndex>>> = () => chartOfAccountsIndex(params, requestOptions);
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof chartOfAccountsIndex>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
 
-      
+export type ChartOfAccountsIndexQueryResult = NonNullable<
+  Awaited<ReturnType<typeof chartOfAccountsIndex>>
+>;
+export type ChartOfAccountsIndexQueryError =
+  AuthenticationExceptionResponse | ValidationExceptionResponse;
 
-      
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof chartOfAccountsIndex>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type ChartOfAccountsIndexQueryResult = NonNullable<Awaited<ReturnType<typeof chartOfAccountsIndex>>>
-export type ChartOfAccountsIndexQueryError = AuthenticationExceptionResponse | ValidationExceptionResponse
-
-
-export function useChartOfAccountsIndex<TData = Awaited<ReturnType<typeof chartOfAccountsIndex>>, TError = AuthenticationExceptionResponse | ValidationExceptionResponse>(
- params: undefined |  ChartOfAccountsIndexParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof chartOfAccountsIndex>>, TError, TData>> & Pick<
+export function useChartOfAccountsIndex<
+  TData = Awaited<ReturnType<typeof chartOfAccountsIndex>>,
+  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+>(
+  params: undefined | ChartOfAccountsIndexParams,
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof chartOfAccountsIndex>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof chartOfAccountsIndex>>,
           TError,
           Awaited<ReturnType<typeof chartOfAccountsIndex>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof fetchClient>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useChartOfAccountsIndex<TData = Awaited<ReturnType<typeof chartOfAccountsIndex>>, TError = AuthenticationExceptionResponse | ValidationExceptionResponse>(
- params?: ChartOfAccountsIndexParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof chartOfAccountsIndex>>, TError, TData>> & Pick<
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useChartOfAccountsIndex<
+  TData = Awaited<ReturnType<typeof chartOfAccountsIndex>>,
+  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+>(
+  params?: ChartOfAccountsIndexParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof chartOfAccountsIndex>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof chartOfAccountsIndex>>,
           TError,
           Awaited<ReturnType<typeof chartOfAccountsIndex>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof fetchClient>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useChartOfAccountsIndex<TData = Awaited<ReturnType<typeof chartOfAccountsIndex>>, TError = AuthenticationExceptionResponse | ValidationExceptionResponse>(
- params?: ChartOfAccountsIndexParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof chartOfAccountsIndex>>, TError, TData>>, request?: SecondParameter<typeof fetchClient>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useChartOfAccountsIndex<
+  TData = Awaited<ReturnType<typeof chartOfAccountsIndex>>,
+  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+>(
+  params?: ChartOfAccountsIndexParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof chartOfAccountsIndex>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
 
-export function useChartOfAccountsIndex<TData = Awaited<ReturnType<typeof chartOfAccountsIndex>>, TError = AuthenticationExceptionResponse | ValidationExceptionResponse>(
- params?: ChartOfAccountsIndexParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof chartOfAccountsIndex>>, TError, TData>>, request?: SecondParameter<typeof fetchClient>}
- , queryClient?: QueryClient 
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+export function useChartOfAccountsIndex<
+  TData = Awaited<ReturnType<typeof chartOfAccountsIndex>>,
+  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+>(
+  params?: ChartOfAccountsIndexParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof chartOfAccountsIndex>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getChartOfAccountsIndexQueryOptions(params, options);
 
-  const queryOptions = getChartOfAccountsIndexQueryOptions(params,options)
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
 
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = queryOptions.queryKey ;
+  query.queryKey = queryOptions.queryKey;
 
   return query;
 }
-
-
-
 
 export type chartOfAccountsStoreResponse201 = {
-  data: ChartOfAccountsStore201
-  status: 201
-}
+  data: ChartOfAccountsStore201;
+  status: 201;
+};
 
 export type chartOfAccountsStoreResponse401 = {
-  data: AuthenticationExceptionResponse
-  status: 401
-}
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
 
 export type chartOfAccountsStoreResponse422 = {
-  data: ValidationExceptionResponse
-  status: 422
-}
-    
-export type chartOfAccountsStoreResponseSuccess = (chartOfAccountsStoreResponse201) & {
-  headers: Headers;
+  data: ValidationExceptionResponse;
+  status: 422;
 };
-export type chartOfAccountsStoreResponseError = (chartOfAccountsStoreResponse401 | chartOfAccountsStoreResponse422) & {
+
+export type chartOfAccountsStoreResponseSuccess =
+  chartOfAccountsStoreResponse201 & {
+    headers: Headers;
+  };
+export type chartOfAccountsStoreResponseError = (
+  chartOfAccountsStoreResponse401 | chartOfAccountsStoreResponse422
+) & {
   headers: Headers;
 };
 
-export type chartOfAccountsStoreResponse = (chartOfAccountsStoreResponseSuccess | chartOfAccountsStoreResponseError)
+export type chartOfAccountsStoreResponse =
+  chartOfAccountsStoreResponseSuccess | chartOfAccountsStoreResponseError;
 
 export const getChartOfAccountsStoreUrl = () => {
+  return `/v1/chart-of-accounts`;
+};
 
+export const chartOfAccountsStore = async (
+  storeChartOfAccountRequest: StoreChartOfAccountRequest,
+  options?: RequestInit,
+): Promise<chartOfAccountsStoreResponse> => {
+  return fetchClient<chartOfAccountsStoreResponse>(
+    getChartOfAccountsStoreUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(storeChartOfAccountRequest),
+    },
+  );
+};
 
-  
+export const getChartOfAccountsStoreMutationOptions = <
+  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof chartOfAccountsStore>>,
+    TError,
+    { data: StoreChartOfAccountRequest },
+    TContext
+  >;
+  request?: SecondParameter<typeof fetchClient>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof chartOfAccountsStore>>,
+  TError,
+  { data: StoreChartOfAccountRequest },
+  TContext
+> => {
+  const mutationKey = ["chartOfAccountsStore"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
 
-  return `/v1/chart-of-accounts`
-}
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof chartOfAccountsStore>>,
+    { data: StoreChartOfAccountRequest }
+  > = (props) => {
+    const { data } = props ?? {};
 
-export const chartOfAccountsStore = async (storeChartOfAccountRequest: StoreChartOfAccountRequest, options?: RequestInit): Promise<chartOfAccountsStoreResponse> => {
-  
-  return fetchClient<chartOfAccountsStoreResponse>(getChartOfAccountsStoreUrl(),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      storeChartOfAccountRequest,)
-  }
-);}
+    return chartOfAccountsStore(data, requestOptions);
+  };
 
+  return { mutationFn, ...mutationOptions };
+};
 
+export type ChartOfAccountsStoreMutationResult = NonNullable<
+  Awaited<ReturnType<typeof chartOfAccountsStore>>
+>;
+export type ChartOfAccountsStoreMutationBody = StoreChartOfAccountRequest;
+export type ChartOfAccountsStoreMutationError =
+  AuthenticationExceptionResponse | ValidationExceptionResponse;
 
+export const useChartOfAccountsStore = <
+  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof chartOfAccountsStore>>,
+      TError,
+      { data: StoreChartOfAccountRequest },
+      TContext
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof chartOfAccountsStore>>,
+  TError,
+  { data: StoreChartOfAccountRequest },
+  TContext
+> => {
+  const mutationOptions = getChartOfAccountsStoreMutationOptions(options);
 
-export const getChartOfAccountsStoreMutationOptions = <TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof chartOfAccountsStore>>, TError,{data: StoreChartOfAccountRequest}, TContext>, request?: SecondParameter<typeof fetchClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof chartOfAccountsStore>>, TError,{data: StoreChartOfAccountRequest}, TContext> => {
-
-const mutationKey = ['chartOfAccountsStore'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-      
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof chartOfAccountsStore>>, {data: StoreChartOfAccountRequest}> = (props) => {
-          const {data} = props ?? {};
-
-          return  chartOfAccountsStore(data,requestOptions)
-        }
-
-        
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type ChartOfAccountsStoreMutationResult = NonNullable<Awaited<ReturnType<typeof chartOfAccountsStore>>>
-    export type ChartOfAccountsStoreMutationBody = StoreChartOfAccountRequest
-    export type ChartOfAccountsStoreMutationError = AuthenticationExceptionResponse | ValidationExceptionResponse
-
-    export const useChartOfAccountsStore = <TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof chartOfAccountsStore>>, TError,{data: StoreChartOfAccountRequest}, TContext>, request?: SecondParameter<typeof fetchClient>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof chartOfAccountsStore>>,
-        TError,
-        {data: StoreChartOfAccountRequest},
-        TContext
-      > => {
-
-      const mutationOptions = getChartOfAccountsStoreMutationOptions(options);
-
-      return useMutation(mutationOptions, queryClient);
-    }
-    export type chartOfAccountsShowResponse200 = {
-  data: ChartOfAccountsShow200
-  status: 200
-}
+  return useMutation(mutationOptions, queryClient);
+};
+export type chartOfAccountsShowResponse200 = {
+  data: ChartOfAccountsShow200;
+  status: 200;
+};
 
 export type chartOfAccountsShowResponse401 = {
-  data: AuthenticationExceptionResponse
-  status: 401
-}
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
 
 export type chartOfAccountsShowResponse404 = {
-  data: ModelNotFoundExceptionResponse
-  status: 404
-}
-    
-export type chartOfAccountsShowResponseSuccess = (chartOfAccountsShowResponse200) & {
-  headers: Headers;
-};
-export type chartOfAccountsShowResponseError = (chartOfAccountsShowResponse401 | chartOfAccountsShowResponse404) & {
-  headers: Headers;
+  data: ModelNotFoundExceptionResponse;
+  status: 404;
 };
 
-export type chartOfAccountsShowResponse = (chartOfAccountsShowResponseSuccess | chartOfAccountsShowResponseError)
+export type chartOfAccountsShowResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
+};
 
-export const getChartOfAccountsShowUrl = (chartOfAccount: number,) => {
+export type chartOfAccountsShowResponseSuccess =
+  chartOfAccountsShowResponse200 & {
+    headers: Headers;
+  };
+export type chartOfAccountsShowResponseError = (
+  | chartOfAccountsShowResponse401
+  | chartOfAccountsShowResponse404
+  | chartOfAccountsShowResponse422
+) & {
+  headers: Headers;
+};
 
+export type chartOfAccountsShowResponse =
+  chartOfAccountsShowResponseSuccess | chartOfAccountsShowResponseError;
 
-  
-
-  return `/v1/chart-of-accounts/${chartOfAccount}`
-}
-
-export const chartOfAccountsShow = async (chartOfAccount: number, options?: RequestInit): Promise<chartOfAccountsShowResponse> => {
-  
-  return fetchClient<chartOfAccountsShowResponse>(getChartOfAccountsShowUrl(chartOfAccount),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
-
-
-
-export const getChartOfAccountsShowQueryKey = (chartOfAccount?: number,) => {
-    return [
-    `/v1/chart-of-accounts/${chartOfAccount}`
-    ] as const;
-    }
-
-    
-export const getChartOfAccountsShowQueryOptions = <TData = Awaited<ReturnType<typeof chartOfAccountsShow>>, TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse>(chartOfAccount: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof chartOfAccountsShow>>, TError, TData>>, request?: SecondParameter<typeof fetchClient>}
+export const getChartOfAccountsShowUrl = (
+  chartOfAccount: number,
+  params?: ChartOfAccountsShowParams,
 ) => {
+  const normalizedParams = new URLSearchParams();
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
 
-  const queryKey =  queryOptions?.queryKey ?? getChartOfAccountsShowQueryKey(chartOfAccount);
+  const stringifiedParams = normalizedParams.toString();
 
-  
+  return stringifiedParams.length > 0
+    ? `/v1/chart-of-accounts/${chartOfAccount}?${stringifiedParams}`
+    : `/v1/chart-of-accounts/${chartOfAccount}`;
+};
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof chartOfAccountsShow>>> = () => chartOfAccountsShow(chartOfAccount, requestOptions);
+export const chartOfAccountsShow = async (
+  chartOfAccount: number,
+  params?: ChartOfAccountsShowParams,
+  options?: RequestInit,
+): Promise<chartOfAccountsShowResponse> => {
+  return fetchClient<chartOfAccountsShowResponse>(
+    getChartOfAccountsShowUrl(chartOfAccount, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
-      
+export const getChartOfAccountsShowQueryKey = (
+  chartOfAccount?: number,
+  params?: ChartOfAccountsShowParams,
+) => {
+  return [
+    `/v1/chart-of-accounts/${chartOfAccount}`,
+    ...(params ? [params] : []),
+  ] as const;
+};
 
-      
+export const getChartOfAccountsShowQueryOptions = <
+  TData = Awaited<ReturnType<typeof chartOfAccountsShow>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  chartOfAccount: number,
+  params?: ChartOfAccountsShowParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof chartOfAccountsShow>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
 
-   return  { queryKey, queryFn, enabled: !!(chartOfAccount), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof chartOfAccountsShow>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
+  const queryKey =
+    queryOptions?.queryKey ??
+    getChartOfAccountsShowQueryKey(chartOfAccount, params);
 
-export type ChartOfAccountsShowQueryResult = NonNullable<Awaited<ReturnType<typeof chartOfAccountsShow>>>
-export type ChartOfAccountsShowQueryError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof chartOfAccountsShow>>
+  > = () => chartOfAccountsShow(chartOfAccount, params, requestOptions);
 
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!chartOfAccount,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof chartOfAccountsShow>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
 
-export function useChartOfAccountsShow<TData = Awaited<ReturnType<typeof chartOfAccountsShow>>, TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse>(
- chartOfAccount: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof chartOfAccountsShow>>, TError, TData>> & Pick<
+export type ChartOfAccountsShowQueryResult = NonNullable<
+  Awaited<ReturnType<typeof chartOfAccountsShow>>
+>;
+export type ChartOfAccountsShowQueryError =
+  | AuthenticationExceptionResponse
+  | ModelNotFoundExceptionResponse
+  | ValidationExceptionResponse;
+
+export function useChartOfAccountsShow<
+  TData = Awaited<ReturnType<typeof chartOfAccountsShow>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  chartOfAccount: number,
+  params: undefined | ChartOfAccountsShowParams,
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof chartOfAccountsShow>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof chartOfAccountsShow>>,
           TError,
           Awaited<ReturnType<typeof chartOfAccountsShow>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof fetchClient>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useChartOfAccountsShow<TData = Awaited<ReturnType<typeof chartOfAccountsShow>>, TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse>(
- chartOfAccount: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof chartOfAccountsShow>>, TError, TData>> & Pick<
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useChartOfAccountsShow<
+  TData = Awaited<ReturnType<typeof chartOfAccountsShow>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  chartOfAccount: number,
+  params?: ChartOfAccountsShowParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof chartOfAccountsShow>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof chartOfAccountsShow>>,
           TError,
           Awaited<ReturnType<typeof chartOfAccountsShow>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof fetchClient>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useChartOfAccountsShow<TData = Awaited<ReturnType<typeof chartOfAccountsShow>>, TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse>(
- chartOfAccount: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof chartOfAccountsShow>>, TError, TData>>, request?: SecondParameter<typeof fetchClient>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useChartOfAccountsShow<
+  TData = Awaited<ReturnType<typeof chartOfAccountsShow>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  chartOfAccount: number,
+  params?: ChartOfAccountsShowParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof chartOfAccountsShow>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
 
-export function useChartOfAccountsShow<TData = Awaited<ReturnType<typeof chartOfAccountsShow>>, TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse>(
- chartOfAccount: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof chartOfAccountsShow>>, TError, TData>>, request?: SecondParameter<typeof fetchClient>}
- , queryClient?: QueryClient 
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+export function useChartOfAccountsShow<
+  TData = Awaited<ReturnType<typeof chartOfAccountsShow>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  chartOfAccount: number,
+  params?: ChartOfAccountsShowParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof chartOfAccountsShow>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getChartOfAccountsShowQueryOptions(
+    chartOfAccount,
+    params,
+    options,
+  );
 
-  const queryOptions = getChartOfAccountsShowQueryOptions(chartOfAccount,options)
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
 
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = queryOptions.queryKey ;
+  query.queryKey = queryOptions.queryKey;
 
   return query;
 }
 
-
-
-
-export type chartOfAccountsUpdateResponse200 = {
-  data: ChartOfAccountsUpdate200
-  status: 200
-}
-
-export type chartOfAccountsUpdateResponse401 = {
-  data: AuthenticationExceptionResponse
-  status: 401
-}
-
-export type chartOfAccountsUpdateResponse404 = {
-  data: ModelNotFoundExceptionResponse
-  status: 404
-}
-
-export type chartOfAccountsUpdateResponse422 = {
-  data: ValidationExceptionResponse
-  status: 422
-}
-    
-export type chartOfAccountsUpdateResponseSuccess = (chartOfAccountsUpdateResponse200) & {
-  headers: Headers;
+export type chartOfAccountsDestroyResponse204 = {
+  data: void;
+  status: 204;
 };
-export type chartOfAccountsUpdateResponseError = (chartOfAccountsUpdateResponse401 | chartOfAccountsUpdateResponse404 | chartOfAccountsUpdateResponse422) & {
-  headers: Headers;
-};
-
-export type chartOfAccountsUpdateResponse = (chartOfAccountsUpdateResponseSuccess | chartOfAccountsUpdateResponseError)
-
-export const getChartOfAccountsUpdateUrl = (chartOfAccount: number,) => {
-
-
-  
-
-  return `/v1/chart-of-accounts/${chartOfAccount}`
-}
-
-export const chartOfAccountsUpdate = async (chartOfAccount: number,
-    updateChartOfAccountRequest: UpdateChartOfAccountRequest, options?: RequestInit): Promise<chartOfAccountsUpdateResponse> => {
-  
-  return fetchClient<chartOfAccountsUpdateResponse>(getChartOfAccountsUpdateUrl(chartOfAccount),
-  {      
-    ...options,
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      updateChartOfAccountRequest,)
-  }
-);}
-
-
-
-
-export const getChartOfAccountsUpdateMutationOptions = <TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse | ValidationExceptionResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof chartOfAccountsUpdate>>, TError,{chartOfAccount: number;data: UpdateChartOfAccountRequest}, TContext>, request?: SecondParameter<typeof fetchClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof chartOfAccountsUpdate>>, TError,{chartOfAccount: number;data: UpdateChartOfAccountRequest}, TContext> => {
-
-const mutationKey = ['chartOfAccountsUpdate'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-      
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof chartOfAccountsUpdate>>, {chartOfAccount: number;data: UpdateChartOfAccountRequest}> = (props) => {
-          const {chartOfAccount,data} = props ?? {};
-
-          return  chartOfAccountsUpdate(chartOfAccount,data,requestOptions)
-        }
-
-        
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type ChartOfAccountsUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof chartOfAccountsUpdate>>>
-    export type ChartOfAccountsUpdateMutationBody = UpdateChartOfAccountRequest
-    export type ChartOfAccountsUpdateMutationError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse | ValidationExceptionResponse
-
-    export const useChartOfAccountsUpdate = <TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse | ValidationExceptionResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof chartOfAccountsUpdate>>, TError,{chartOfAccount: number;data: UpdateChartOfAccountRequest}, TContext>, request?: SecondParameter<typeof fetchClient>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof chartOfAccountsUpdate>>,
-        TError,
-        {chartOfAccount: number;data: UpdateChartOfAccountRequest},
-        TContext
-      > => {
-
-      const mutationOptions = getChartOfAccountsUpdateMutationOptions(options);
-
-      return useMutation(mutationOptions, queryClient);
-    }
-    export type chartOfAccountsDestroyResponse204 = {
-  data: unknown[]
-  status: 204
-}
 
 export type chartOfAccountsDestroyResponse401 = {
-  data: AuthenticationExceptionResponse
-  status: 401
-}
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
 
 export type chartOfAccountsDestroyResponse404 = {
-  data: ModelNotFoundExceptionResponse
-  status: 404
-}
-    
-export type chartOfAccountsDestroyResponseSuccess = (chartOfAccountsDestroyResponse204) & {
-  headers: Headers;
-};
-export type chartOfAccountsDestroyResponseError = (chartOfAccountsDestroyResponse401 | chartOfAccountsDestroyResponse404) & {
-  headers: Headers;
+  data: ModelNotFoundExceptionResponse;
+  status: 404;
 };
 
-export type chartOfAccountsDestroyResponse = (chartOfAccountsDestroyResponseSuccess | chartOfAccountsDestroyResponseError)
+export type chartOfAccountsDestroyResponseSuccess =
+  chartOfAccountsDestroyResponse204 & {
+    headers: Headers;
+  };
+export type chartOfAccountsDestroyResponseError = (
+  chartOfAccountsDestroyResponse401 | chartOfAccountsDestroyResponse404
+) & {
+  headers: Headers;
+};
 
-export const getChartOfAccountsDestroyUrl = (chartOfAccount: number,) => {
+export type chartOfAccountsDestroyResponse =
+  chartOfAccountsDestroyResponseSuccess | chartOfAccountsDestroyResponseError;
 
+export const getChartOfAccountsDestroyUrl = (chartOfAccount: number) => {
+  return `/v1/chart-of-accounts/${chartOfAccount}`;
+};
 
-  
+export const chartOfAccountsDestroy = async (
+  chartOfAccount: number,
+  options?: RequestInit,
+): Promise<chartOfAccountsDestroyResponse> => {
+  return fetchClient<chartOfAccountsDestroyResponse>(
+    getChartOfAccountsDestroyUrl(chartOfAccount),
+    {
+      ...options,
+      method: "DELETE",
+    },
+  );
+};
 
-  return `/v1/chart-of-accounts/${chartOfAccount}`
-}
+export const getChartOfAccountsDestroyMutationOptions = <
+  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof chartOfAccountsDestroy>>,
+    TError,
+    { chartOfAccount: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof fetchClient>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof chartOfAccountsDestroy>>,
+  TError,
+  { chartOfAccount: number },
+  TContext
+> => {
+  const mutationKey = ["chartOfAccountsDestroy"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
 
-export const chartOfAccountsDestroy = async (chartOfAccount: number, options?: RequestInit): Promise<chartOfAccountsDestroyResponse> => {
-  
-  return fetchClient<chartOfAccountsDestroyResponse>(getChartOfAccountsDestroyUrl(chartOfAccount),
-  {      
-    ...options,
-    method: 'DELETE'
-    
-    
-  }
-);}
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof chartOfAccountsDestroy>>,
+    { chartOfAccount: number }
+  > = (props) => {
+    const { chartOfAccount } = props ?? {};
 
+    return chartOfAccountsDestroy(chartOfAccount, requestOptions);
+  };
 
+  return { mutationFn, ...mutationOptions };
+};
 
+export type ChartOfAccountsDestroyMutationResult = NonNullable<
+  Awaited<ReturnType<typeof chartOfAccountsDestroy>>
+>;
 
-export const getChartOfAccountsDestroyMutationOptions = <TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof chartOfAccountsDestroy>>, TError,{chartOfAccount: number}, TContext>, request?: SecondParameter<typeof fetchClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof chartOfAccountsDestroy>>, TError,{chartOfAccount: number}, TContext> => {
+export type ChartOfAccountsDestroyMutationError =
+  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
 
-const mutationKey = ['chartOfAccountsDestroy'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
+export const useChartOfAccountsDestroy = <
+  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof chartOfAccountsDestroy>>,
+      TError,
+      { chartOfAccount: number },
+      TContext
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof chartOfAccountsDestroy>>,
+  TError,
+  { chartOfAccount: number },
+  TContext
+> => {
+  const mutationOptions = getChartOfAccountsDestroyMutationOptions(options);
 
-      
+  return useMutation(mutationOptions, queryClient);
+};
+export type chartOfAccountsUpdateResponse200 = {
+  data: ChartOfAccountsUpdate200;
+  status: 200;
+};
 
+export type chartOfAccountsUpdateResponse401 = {
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof chartOfAccountsDestroy>>, {chartOfAccount: number}> = (props) => {
-          const {chartOfAccount} = props ?? {};
+export type chartOfAccountsUpdateResponse404 = {
+  data: ModelNotFoundExceptionResponse;
+  status: 404;
+};
 
-          return  chartOfAccountsDestroy(chartOfAccount,requestOptions)
-        }
+export type chartOfAccountsUpdateResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
+};
 
-        
+export type chartOfAccountsUpdateResponseSuccess =
+  chartOfAccountsUpdateResponse200 & {
+    headers: Headers;
+  };
+export type chartOfAccountsUpdateResponseError = (
+  | chartOfAccountsUpdateResponse401
+  | chartOfAccountsUpdateResponse404
+  | chartOfAccountsUpdateResponse422
+) & {
+  headers: Headers;
+};
 
+export type chartOfAccountsUpdateResponse =
+  chartOfAccountsUpdateResponseSuccess | chartOfAccountsUpdateResponseError;
 
-  return  { mutationFn, ...mutationOptions }}
+export const getChartOfAccountsUpdateUrl = (chartOfAccount: number) => {
+  return `/v1/chart-of-accounts/${chartOfAccount}`;
+};
 
-    export type ChartOfAccountsDestroyMutationResult = NonNullable<Awaited<ReturnType<typeof chartOfAccountsDestroy>>>
-    
-    export type ChartOfAccountsDestroyMutationError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse
+export const chartOfAccountsUpdate = async (
+  chartOfAccount: number,
+  updateChartOfAccountRequest: UpdateChartOfAccountRequest,
+  options?: RequestInit,
+): Promise<chartOfAccountsUpdateResponse> => {
+  return fetchClient<chartOfAccountsUpdateResponse>(
+    getChartOfAccountsUpdateUrl(chartOfAccount),
+    {
+      ...options,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(updateChartOfAccountRequest),
+    },
+  );
+};
 
-    export const useChartOfAccountsDestroy = <TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof chartOfAccountsDestroy>>, TError,{chartOfAccount: number}, TContext>, request?: SecondParameter<typeof fetchClient>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof chartOfAccountsDestroy>>,
-        TError,
-        {chartOfAccount: number},
-        TContext
-      > => {
+export const getChartOfAccountsUpdateMutationOptions = <
+  TError =
+    | AuthenticationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof chartOfAccountsUpdate>>,
+    TError,
+    { chartOfAccount: number; data: UpdateChartOfAccountRequest },
+    TContext
+  >;
+  request?: SecondParameter<typeof fetchClient>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof chartOfAccountsUpdate>>,
+  TError,
+  { chartOfAccount: number; data: UpdateChartOfAccountRequest },
+  TContext
+> => {
+  const mutationKey = ["chartOfAccountsUpdate"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
 
-      const mutationOptions = getChartOfAccountsDestroyMutationOptions(options);
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof chartOfAccountsUpdate>>,
+    { chartOfAccount: number; data: UpdateChartOfAccountRequest }
+  > = (props) => {
+    const { chartOfAccount, data } = props ?? {};
 
-      return useMutation(mutationOptions, queryClient);
-    }
-    
+    return chartOfAccountsUpdate(chartOfAccount, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ChartOfAccountsUpdateMutationResult = NonNullable<
+  Awaited<ReturnType<typeof chartOfAccountsUpdate>>
+>;
+export type ChartOfAccountsUpdateMutationBody = UpdateChartOfAccountRequest;
+export type ChartOfAccountsUpdateMutationError =
+  | AuthenticationExceptionResponse
+  | ModelNotFoundExceptionResponse
+  | ValidationExceptionResponse;
+
+export const useChartOfAccountsUpdate = <
+  TError =
+    | AuthenticationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof chartOfAccountsUpdate>>,
+      TError,
+      { chartOfAccount: number; data: UpdateChartOfAccountRequest },
+      TContext
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof chartOfAccountsUpdate>>,
+  TError,
+  { chartOfAccount: number; data: UpdateChartOfAccountRequest },
+  TContext
+> => {
+  const mutationOptions = getChartOfAccountsUpdateMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};

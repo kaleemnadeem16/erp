@@ -97,7 +97,10 @@ GET /api/v1/items?filter[type]=RAW&filter[search]=pigment&sort=-created_at&inclu
 ```
 
 Consistent across all collection endpoints. `include` for relations — never load relations
-unconditionally.
+unconditionally. Collection endpoints validate both parameters: `sort=field` is ascending,
+`sort=-field` is descending, and unsupported sort fields or includes return `422` rather than
+being silently ignored. Resource updates use `PATCH`; `PUT` is reserved for a future endpoint
+that genuinely accepts a complete replacement representation.
 
 ## Money
 

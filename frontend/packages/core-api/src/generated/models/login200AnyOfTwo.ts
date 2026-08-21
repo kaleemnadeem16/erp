@@ -4,8 +4,8 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { UserResource } from './userResource';
-import type { Login200AnyOfTwoMeta } from './login200AnyOfTwoMeta';
+import type { UserResource } from "./userResource";
+import type { Login200AnyOfTwoMeta } from "./login200AnyOfTwoMeta";
 
 export type Login200AnyOfTwo = {
   data: UserResource;

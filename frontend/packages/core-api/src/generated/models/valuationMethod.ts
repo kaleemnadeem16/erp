@@ -9,12 +9,12 @@
  * Accounting cost basis — chosen per item, not one method for the whole company. Independent of App\Modules\Inventory\Support\ItemTracking: BATCH tracking does not imply FIFO, SERIAL tracking does not imply SPECIFIC — see docs/domain/items.md "Valuation method" and docs/decisions/0032-per-item-valuation-method.md.
 
  */
-export type ValuationMethod = typeof ValuationMethod[keyof typeof ValuationMethod];
-
+export type ValuationMethod =
+  (typeof ValuationMethod)[keyof typeof ValuationMethod];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const ValuationMethod = {
-  AVCO: 'AVCO',
-  FIFO: 'FIFO',
-  SPECIFIC: 'SPECIFIC',
+  AVCO: "AVCO",
+  FIFO: "FIFO",
+  SPECIFIC: "SPECIFIC",
 } as const;

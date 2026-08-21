@@ -4,15 +4,15 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { UpdateItemRequestDescription } from './updateItemRequestDescription';
-import type { ItemType } from './itemType';
-import type { UpdateItemRequestValuationMethod } from './updateItemRequestValuationMethod';
-import type { ItemTracking } from './itemTracking';
-import type { UpdateItemRequestDefaultSupplierId } from './updateItemRequestDefaultSupplierId';
-import type { UpdateItemRequestIncomeAccountId } from './updateItemRequestIncomeAccountId';
-import type { UpdateItemRequestExpenseAccountId } from './updateItemRequestExpenseAccountId';
-import type { UpdateItemRequestInventoryAccountId } from './updateItemRequestInventoryAccountId';
-import type { Status } from './status';
+import type { UpdateItemRequestDescription } from "./updateItemRequestDescription";
+import type { ItemType } from "./itemType";
+import type { ValuationMethod } from "./valuationMethod";
+import type { ItemTracking } from "./itemTracking";
+import type { UpdateItemRequestDefaultSupplierId } from "./updateItemRequestDefaultSupplierId";
+import type { UpdateItemRequestIncomeAccountId } from "./updateItemRequestIncomeAccountId";
+import type { UpdateItemRequestExpenseAccountId } from "./updateItemRequestExpenseAccountId";
+import type { UpdateItemRequestInventoryAccountId } from "./updateItemRequestInventoryAccountId";
+import type { Status } from "./status";
 
 export interface UpdateItemRequest {
   /** @maxLength 255 */
@@ -25,7 +25,7 @@ export interface UpdateItemRequest {
   is_stocked?: boolean;
   is_purchasable?: boolean;
   is_sellable?: boolean;
-  valuation_method?: UpdateItemRequestValuationMethod;
+  valuation_method?: ValuationMethod;
   tracking?: ItemTracking;
   category_id?: number;
   default_supplier_id?: UpdateItemRequestDefaultSupplierId;

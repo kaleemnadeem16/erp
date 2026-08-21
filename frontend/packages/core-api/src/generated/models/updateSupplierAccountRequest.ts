@@ -4,9 +4,9 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { UpdateSupplierAccountRequestLeadTimeDays } from './updateSupplierAccountRequestLeadTimeDays';
-import type { UpdateSupplierAccountRequestDefaultCurrencyId } from './updateSupplierAccountRequestDefaultCurrencyId';
-import type { Status } from './status';
+import type { UpdateSupplierAccountRequestLeadTimeDays } from "./updateSupplierAccountRequestLeadTimeDays";
+import type { UpdateSupplierAccountRequestDefaultCurrencyId } from "./updateSupplierAccountRequestDefaultCurrencyId";
+import type { Status } from "./status";
 
 export interface UpdateSupplierAccountRequest {
   party_id?: number;

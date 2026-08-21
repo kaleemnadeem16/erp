@@ -4,10 +4,10 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { ExchangeRatesIndex200LinksFirst } from './exchangeRatesIndex200LinksFirst';
-import type { ExchangeRatesIndex200LinksLast } from './exchangeRatesIndex200LinksLast';
-import type { ExchangeRatesIndex200LinksPrev } from './exchangeRatesIndex200LinksPrev';
-import type { ExchangeRatesIndex200LinksNext } from './exchangeRatesIndex200LinksNext';
+import type { ExchangeRatesIndex200LinksFirst } from "./exchangeRatesIndex200LinksFirst";
+import type { ExchangeRatesIndex200LinksLast } from "./exchangeRatesIndex200LinksLast";
+import type { ExchangeRatesIndex200LinksPrev } from "./exchangeRatesIndex200LinksPrev";
+import type { ExchangeRatesIndex200LinksNext } from "./exchangeRatesIndex200LinksNext";
 
 export type ExchangeRatesIndex200Links = {
   first: ExchangeRatesIndex200LinksFirst;

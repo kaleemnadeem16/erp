@@ -4,10 +4,7 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import {
-  useMutation,
-  useQuery
-} from '@tanstack/react-query';
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
   DataTag,
   DefinedInitialDataOptions,
@@ -20,8 +17,8 @@ import type {
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
-  UseQueryResult
-} from '@tanstack/react-query';
+  UseQueryResult,
+} from "@tanstack/react-query";
 
 import type {
   AuthenticationExceptionResponse,
@@ -29,533 +26,759 @@ import type {
   PartiesIndex200,
   PartiesIndexParams,
   PartiesShow200,
+  PartiesShowParams,
   PartiesStore201,
   PartiesUpdate200,
   StorePartyRequest,
   UpdatePartyRequest,
-  ValidationExceptionResponse
-} from '.././models';
+  ValidationExceptionResponse,
+} from ".././models";
 
-import { fetchClient } from '../../mutator/fetch-client';
-
+import { fetchClient } from "../../mutator/fetch-client";
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
-
-
 export type partiesIndexResponse200 = {
-  data: PartiesIndex200
-  status: 200
-}
+  data: PartiesIndex200;
+  status: 200;
+};
 
 export type partiesIndexResponse401 = {
-  data: AuthenticationExceptionResponse
-  status: 401
-}
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
 
 export type partiesIndexResponse422 = {
-  data: ValidationExceptionResponse
-  status: 422
-}
-    
-export type partiesIndexResponseSuccess = (partiesIndexResponse200) & {
+  data: ValidationExceptionResponse;
+  status: 422;
+};
+
+export type partiesIndexResponseSuccess = partiesIndexResponse200 & {
   headers: Headers;
 };
-export type partiesIndexResponseError = (partiesIndexResponse401 | partiesIndexResponse422) & {
+export type partiesIndexResponseError = (
+  partiesIndexResponse401 | partiesIndexResponse422
+) & {
   headers: Headers;
 };
 
-export type partiesIndexResponse = (partiesIndexResponseSuccess | partiesIndexResponseError)
+export type partiesIndexResponse =
+  partiesIndexResponseSuccess | partiesIndexResponseError;
 
-export const getPartiesIndexUrl = (params?: PartiesIndexParams,) => {
+export const getPartiesIndexUrl = (params?: PartiesIndexParams) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
-    
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString())
+      normalizedParams.append(key, value === null ? "null" : value.toString());
     }
   });
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0 ? `/v1/parties?${stringifiedParams}` : `/v1/parties`
-}
+  return stringifiedParams.length > 0
+    ? `/v1/parties?${stringifiedParams}`
+    : `/v1/parties`;
+};
 
-export const partiesIndex = async (params?: PartiesIndexParams, options?: RequestInit): Promise<partiesIndexResponse> => {
-  
-  return fetchClient<partiesIndexResponse>(getPartiesIndexUrl(params),
-  {      
+export const partiesIndex = async (
+  params?: PartiesIndexParams,
+  options?: RequestInit,
+): Promise<partiesIndexResponse> => {
+  return fetchClient<partiesIndexResponse>(getPartiesIndexUrl(params), {
     ...options,
-    method: 'GET'
-    
-    
-  }
-);}
+    method: "GET",
+  });
+};
 
+export const getPartiesIndexQueryKey = (params?: PartiesIndexParams) => {
+  return [`/v1/parties`, ...(params ? [params] : [])] as const;
+};
 
-
-
-
-export const getPartiesIndexQueryKey = (params?: PartiesIndexParams,) => {
-    return [
-    `/v1/parties`, ...(params ? [params]: [])
-    ] as const;
-    }
-
-    
-export const getPartiesIndexQueryOptions = <TData = Awaited<ReturnType<typeof partiesIndex>>, TError = AuthenticationExceptionResponse | ValidationExceptionResponse>(params?: PartiesIndexParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partiesIndex>>, TError, TData>>, request?: SecondParameter<typeof fetchClient>}
+export const getPartiesIndexQueryOptions = <
+  TData = Awaited<ReturnType<typeof partiesIndex>>,
+  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+>(
+  params?: PartiesIndexParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof partiesIndex>>, TError, TData>
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
 ) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getPartiesIndexQueryKey(params);
 
-  const queryKey =  queryOptions?.queryKey ?? getPartiesIndexQueryKey(params);
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof partiesIndex>>> = () =>
+    partiesIndex(params, requestOptions);
 
-  
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof partiesIndex>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof partiesIndex>>> = () => partiesIndex(params, requestOptions);
+export type PartiesIndexQueryResult = NonNullable<
+  Awaited<ReturnType<typeof partiesIndex>>
+>;
+export type PartiesIndexQueryError =
+  AuthenticationExceptionResponse | ValidationExceptionResponse;
 
-      
-
-      
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof partiesIndex>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type PartiesIndexQueryResult = NonNullable<Awaited<ReturnType<typeof partiesIndex>>>
-export type PartiesIndexQueryError = AuthenticationExceptionResponse | ValidationExceptionResponse
-
-
-export function usePartiesIndex<TData = Awaited<ReturnType<typeof partiesIndex>>, TError = AuthenticationExceptionResponse | ValidationExceptionResponse>(
- params: undefined |  PartiesIndexParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof partiesIndex>>, TError, TData>> & Pick<
+export function usePartiesIndex<
+  TData = Awaited<ReturnType<typeof partiesIndex>>,
+  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+>(
+  params: undefined | PartiesIndexParams,
+  options: {
+    query: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof partiesIndex>>, TError, TData>
+    > &
+      Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof partiesIndex>>,
           TError,
           Awaited<ReturnType<typeof partiesIndex>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof fetchClient>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePartiesIndex<TData = Awaited<ReturnType<typeof partiesIndex>>, TError = AuthenticationExceptionResponse | ValidationExceptionResponse>(
- params?: PartiesIndexParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partiesIndex>>, TError, TData>> & Pick<
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function usePartiesIndex<
+  TData = Awaited<ReturnType<typeof partiesIndex>>,
+  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+>(
+  params?: PartiesIndexParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof partiesIndex>>, TError, TData>
+    > &
+      Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof partiesIndex>>,
           TError,
           Awaited<ReturnType<typeof partiesIndex>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof fetchClient>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePartiesIndex<TData = Awaited<ReturnType<typeof partiesIndex>>, TError = AuthenticationExceptionResponse | ValidationExceptionResponse>(
- params?: PartiesIndexParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partiesIndex>>, TError, TData>>, request?: SecondParameter<typeof fetchClient>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function usePartiesIndex<
+  TData = Awaited<ReturnType<typeof partiesIndex>>,
+  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+>(
+  params?: PartiesIndexParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof partiesIndex>>, TError, TData>
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
 
-export function usePartiesIndex<TData = Awaited<ReturnType<typeof partiesIndex>>, TError = AuthenticationExceptionResponse | ValidationExceptionResponse>(
- params?: PartiesIndexParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partiesIndex>>, TError, TData>>, request?: SecondParameter<typeof fetchClient>}
- , queryClient?: QueryClient 
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+export function usePartiesIndex<
+  TData = Awaited<ReturnType<typeof partiesIndex>>,
+  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+>(
+  params?: PartiesIndexParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof partiesIndex>>, TError, TData>
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getPartiesIndexQueryOptions(params, options);
 
-  const queryOptions = getPartiesIndexQueryOptions(params,options)
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
 
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = queryOptions.queryKey ;
+  query.queryKey = queryOptions.queryKey;
 
   return query;
 }
-
-
-
 
 export type partiesStoreResponse201 = {
-  data: PartiesStore201
-  status: 201
-}
+  data: PartiesStore201;
+  status: 201;
+};
 
 export type partiesStoreResponse401 = {
-  data: AuthenticationExceptionResponse
-  status: 401
-}
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
 
 export type partiesStoreResponse422 = {
-  data: ValidationExceptionResponse
-  status: 422
-}
-    
-export type partiesStoreResponseSuccess = (partiesStoreResponse201) & {
+  data: ValidationExceptionResponse;
+  status: 422;
+};
+
+export type partiesStoreResponseSuccess = partiesStoreResponse201 & {
   headers: Headers;
 };
-export type partiesStoreResponseError = (partiesStoreResponse401 | partiesStoreResponse422) & {
+export type partiesStoreResponseError = (
+  partiesStoreResponse401 | partiesStoreResponse422
+) & {
   headers: Headers;
 };
 
-export type partiesStoreResponse = (partiesStoreResponseSuccess | partiesStoreResponseError)
+export type partiesStoreResponse =
+  partiesStoreResponseSuccess | partiesStoreResponseError;
 
 export const getPartiesStoreUrl = () => {
+  return `/v1/parties`;
+};
 
-
-  
-
-  return `/v1/parties`
-}
-
-export const partiesStore = async (storePartyRequest: StorePartyRequest, options?: RequestInit): Promise<partiesStoreResponse> => {
-  
-  return fetchClient<partiesStoreResponse>(getPartiesStoreUrl(),
-  {      
+export const partiesStore = async (
+  storePartyRequest: StorePartyRequest,
+  options?: RequestInit,
+): Promise<partiesStoreResponse> => {
+  return fetchClient<partiesStoreResponse>(getPartiesStoreUrl(), {
     ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      storePartyRequest,)
-  }
-);}
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(storePartyRequest),
+  });
+};
 
+export const getPartiesStoreMutationOptions = <
+  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof partiesStore>>,
+    TError,
+    { data: StorePartyRequest },
+    TContext
+  >;
+  request?: SecondParameter<typeof fetchClient>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof partiesStore>>,
+  TError,
+  { data: StorePartyRequest },
+  TContext
+> => {
+  const mutationKey = ["partiesStore"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
 
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof partiesStore>>,
+    { data: StorePartyRequest }
+  > = (props) => {
+    const { data } = props ?? {};
 
+    return partiesStore(data, requestOptions);
+  };
 
-export const getPartiesStoreMutationOptions = <TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof partiesStore>>, TError,{data: StorePartyRequest}, TContext>, request?: SecondParameter<typeof fetchClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof partiesStore>>, TError,{data: StorePartyRequest}, TContext> => {
+  return { mutationFn, ...mutationOptions };
+};
 
-const mutationKey = ['partiesStore'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
+export type PartiesStoreMutationResult = NonNullable<
+  Awaited<ReturnType<typeof partiesStore>>
+>;
+export type PartiesStoreMutationBody = StorePartyRequest;
+export type PartiesStoreMutationError =
+  AuthenticationExceptionResponse | ValidationExceptionResponse;
 
-      
+export const usePartiesStore = <
+  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof partiesStore>>,
+      TError,
+      { data: StorePartyRequest },
+      TContext
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof partiesStore>>,
+  TError,
+  { data: StorePartyRequest },
+  TContext
+> => {
+  const mutationOptions = getPartiesStoreMutationOptions(options);
 
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof partiesStore>>, {data: StorePartyRequest}> = (props) => {
-          const {data} = props ?? {};
-
-          return  partiesStore(data,requestOptions)
-        }
-
-        
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type PartiesStoreMutationResult = NonNullable<Awaited<ReturnType<typeof partiesStore>>>
-    export type PartiesStoreMutationBody = StorePartyRequest
-    export type PartiesStoreMutationError = AuthenticationExceptionResponse | ValidationExceptionResponse
-
-    export const usePartiesStore = <TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof partiesStore>>, TError,{data: StorePartyRequest}, TContext>, request?: SecondParameter<typeof fetchClient>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof partiesStore>>,
-        TError,
-        {data: StorePartyRequest},
-        TContext
-      > => {
-
-      const mutationOptions = getPartiesStoreMutationOptions(options);
-
-      return useMutation(mutationOptions, queryClient);
-    }
-    export type partiesShowResponse200 = {
-  data: PartiesShow200
-  status: 200
-}
+  return useMutation(mutationOptions, queryClient);
+};
+export type partiesShowResponse200 = {
+  data: PartiesShow200;
+  status: 200;
+};
 
 export type partiesShowResponse401 = {
-  data: AuthenticationExceptionResponse
-  status: 401
-}
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
 
 export type partiesShowResponse404 = {
-  data: ModelNotFoundExceptionResponse
-  status: 404
-}
-    
-export type partiesShowResponseSuccess = (partiesShowResponse200) & {
-  headers: Headers;
-};
-export type partiesShowResponseError = (partiesShowResponse401 | partiesShowResponse404) & {
-  headers: Headers;
+  data: ModelNotFoundExceptionResponse;
+  status: 404;
 };
 
-export type partiesShowResponse = (partiesShowResponseSuccess | partiesShowResponseError)
+export type partiesShowResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
+};
 
-export const getPartiesShowUrl = (party: number,) => {
+export type partiesShowResponseSuccess = partiesShowResponse200 & {
+  headers: Headers;
+};
+export type partiesShowResponseError = (
+  partiesShowResponse401 | partiesShowResponse404 | partiesShowResponse422
+) & {
+  headers: Headers;
+};
 
+export type partiesShowResponse =
+  partiesShowResponseSuccess | partiesShowResponseError;
 
-  
-
-  return `/v1/parties/${party}`
-}
-
-export const partiesShow = async (party: number, options?: RequestInit): Promise<partiesShowResponse> => {
-  
-  return fetchClient<partiesShowResponse>(getPartiesShowUrl(party),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
-
-
-
-export const getPartiesShowQueryKey = (party?: number,) => {
-    return [
-    `/v1/parties/${party}`
-    ] as const;
-    }
-
-    
-export const getPartiesShowQueryOptions = <TData = Awaited<ReturnType<typeof partiesShow>>, TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse>(party: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partiesShow>>, TError, TData>>, request?: SecondParameter<typeof fetchClient>}
+export const getPartiesShowUrl = (
+  party: number,
+  params?: PartiesShowParams,
 ) => {
+  const normalizedParams = new URLSearchParams();
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
 
-  const queryKey =  queryOptions?.queryKey ?? getPartiesShowQueryKey(party);
+  const stringifiedParams = normalizedParams.toString();
 
-  
+  return stringifiedParams.length > 0
+    ? `/v1/parties/${party}?${stringifiedParams}`
+    : `/v1/parties/${party}`;
+};
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof partiesShow>>> = () => partiesShow(party, requestOptions);
+export const partiesShow = async (
+  party: number,
+  params?: PartiesShowParams,
+  options?: RequestInit,
+): Promise<partiesShowResponse> => {
+  return fetchClient<partiesShowResponse>(getPartiesShowUrl(party, params), {
+    ...options,
+    method: "GET",
+  });
+};
 
-      
+export const getPartiesShowQueryKey = (
+  party?: number,
+  params?: PartiesShowParams,
+) => {
+  return [`/v1/parties/${party}`, ...(params ? [params] : [])] as const;
+};
 
-      
+export const getPartiesShowQueryOptions = <
+  TData = Awaited<ReturnType<typeof partiesShow>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  party: number,
+  params?: PartiesShowParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof partiesShow>>, TError, TData>
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
 
-   return  { queryKey, queryFn, enabled: !!(party), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof partiesShow>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
+  const queryKey =
+    queryOptions?.queryKey ?? getPartiesShowQueryKey(party, params);
 
-export type PartiesShowQueryResult = NonNullable<Awaited<ReturnType<typeof partiesShow>>>
-export type PartiesShowQueryError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof partiesShow>>> = () =>
+    partiesShow(party, params, requestOptions);
 
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!party,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof partiesShow>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
 
-export function usePartiesShow<TData = Awaited<ReturnType<typeof partiesShow>>, TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse>(
- party: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof partiesShow>>, TError, TData>> & Pick<
+export type PartiesShowQueryResult = NonNullable<
+  Awaited<ReturnType<typeof partiesShow>>
+>;
+export type PartiesShowQueryError =
+  | AuthenticationExceptionResponse
+  | ModelNotFoundExceptionResponse
+  | ValidationExceptionResponse;
+
+export function usePartiesShow<
+  TData = Awaited<ReturnType<typeof partiesShow>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  party: number,
+  params: undefined | PartiesShowParams,
+  options: {
+    query: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof partiesShow>>, TError, TData>
+    > &
+      Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof partiesShow>>,
           TError,
           Awaited<ReturnType<typeof partiesShow>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof fetchClient>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePartiesShow<TData = Awaited<ReturnType<typeof partiesShow>>, TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse>(
- party: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partiesShow>>, TError, TData>> & Pick<
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function usePartiesShow<
+  TData = Awaited<ReturnType<typeof partiesShow>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  party: number,
+  params?: PartiesShowParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof partiesShow>>, TError, TData>
+    > &
+      Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof partiesShow>>,
           TError,
           Awaited<ReturnType<typeof partiesShow>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof fetchClient>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePartiesShow<TData = Awaited<ReturnType<typeof partiesShow>>, TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse>(
- party: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partiesShow>>, TError, TData>>, request?: SecondParameter<typeof fetchClient>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function usePartiesShow<
+  TData = Awaited<ReturnType<typeof partiesShow>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  party: number,
+  params?: PartiesShowParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof partiesShow>>, TError, TData>
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
 
-export function usePartiesShow<TData = Awaited<ReturnType<typeof partiesShow>>, TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse>(
- party: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partiesShow>>, TError, TData>>, request?: SecondParameter<typeof fetchClient>}
- , queryClient?: QueryClient 
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+export function usePartiesShow<
+  TData = Awaited<ReturnType<typeof partiesShow>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  party: number,
+  params?: PartiesShowParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof partiesShow>>, TError, TData>
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getPartiesShowQueryOptions(party, params, options);
 
-  const queryOptions = getPartiesShowQueryOptions(party,options)
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
 
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = queryOptions.queryKey ;
+  query.queryKey = queryOptions.queryKey;
 
   return query;
 }
 
-
-
-
-export type partiesUpdateResponse200 = {
-  data: PartiesUpdate200
-  status: 200
-}
-
-export type partiesUpdateResponse401 = {
-  data: AuthenticationExceptionResponse
-  status: 401
-}
-
-export type partiesUpdateResponse404 = {
-  data: ModelNotFoundExceptionResponse
-  status: 404
-}
-
-export type partiesUpdateResponse422 = {
-  data: ValidationExceptionResponse
-  status: 422
-}
-    
-export type partiesUpdateResponseSuccess = (partiesUpdateResponse200) & {
-  headers: Headers;
+export type partiesDestroyResponse204 = {
+  data: void;
+  status: 204;
 };
-export type partiesUpdateResponseError = (partiesUpdateResponse401 | partiesUpdateResponse404 | partiesUpdateResponse422) & {
-  headers: Headers;
-};
-
-export type partiesUpdateResponse = (partiesUpdateResponseSuccess | partiesUpdateResponseError)
-
-export const getPartiesUpdateUrl = (party: number,) => {
-
-
-  
-
-  return `/v1/parties/${party}`
-}
-
-export const partiesUpdate = async (party: number,
-    updatePartyRequest: UpdatePartyRequest, options?: RequestInit): Promise<partiesUpdateResponse> => {
-  
-  return fetchClient<partiesUpdateResponse>(getPartiesUpdateUrl(party),
-  {      
-    ...options,
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      updatePartyRequest,)
-  }
-);}
-
-
-
-
-export const getPartiesUpdateMutationOptions = <TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse | ValidationExceptionResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof partiesUpdate>>, TError,{party: number;data: UpdatePartyRequest}, TContext>, request?: SecondParameter<typeof fetchClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof partiesUpdate>>, TError,{party: number;data: UpdatePartyRequest}, TContext> => {
-
-const mutationKey = ['partiesUpdate'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-      
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof partiesUpdate>>, {party: number;data: UpdatePartyRequest}> = (props) => {
-          const {party,data} = props ?? {};
-
-          return  partiesUpdate(party,data,requestOptions)
-        }
-
-        
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type PartiesUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof partiesUpdate>>>
-    export type PartiesUpdateMutationBody = UpdatePartyRequest
-    export type PartiesUpdateMutationError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse | ValidationExceptionResponse
-
-    export const usePartiesUpdate = <TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse | ValidationExceptionResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof partiesUpdate>>, TError,{party: number;data: UpdatePartyRequest}, TContext>, request?: SecondParameter<typeof fetchClient>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof partiesUpdate>>,
-        TError,
-        {party: number;data: UpdatePartyRequest},
-        TContext
-      > => {
-
-      const mutationOptions = getPartiesUpdateMutationOptions(options);
-
-      return useMutation(mutationOptions, queryClient);
-    }
-    export type partiesDestroyResponse204 = {
-  data: unknown[]
-  status: 204
-}
 
 export type partiesDestroyResponse401 = {
-  data: AuthenticationExceptionResponse
-  status: 401
-}
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
 
 export type partiesDestroyResponse404 = {
-  data: ModelNotFoundExceptionResponse
-  status: 404
-}
-    
-export type partiesDestroyResponseSuccess = (partiesDestroyResponse204) & {
-  headers: Headers;
-};
-export type partiesDestroyResponseError = (partiesDestroyResponse401 | partiesDestroyResponse404) & {
-  headers: Headers;
+  data: ModelNotFoundExceptionResponse;
+  status: 404;
 };
 
-export type partiesDestroyResponse = (partiesDestroyResponseSuccess | partiesDestroyResponseError)
+export type partiesDestroyResponseSuccess = partiesDestroyResponse204 & {
+  headers: Headers;
+};
+export type partiesDestroyResponseError = (
+  partiesDestroyResponse401 | partiesDestroyResponse404
+) & {
+  headers: Headers;
+};
 
-export const getPartiesDestroyUrl = (party: number,) => {
+export type partiesDestroyResponse =
+  partiesDestroyResponseSuccess | partiesDestroyResponseError;
 
+export const getPartiesDestroyUrl = (party: number) => {
+  return `/v1/parties/${party}`;
+};
 
-  
-
-  return `/v1/parties/${party}`
-}
-
-export const partiesDestroy = async (party: number, options?: RequestInit): Promise<partiesDestroyResponse> => {
-  
-  return fetchClient<partiesDestroyResponse>(getPartiesDestroyUrl(party),
-  {      
+export const partiesDestroy = async (
+  party: number,
+  options?: RequestInit,
+): Promise<partiesDestroyResponse> => {
+  return fetchClient<partiesDestroyResponse>(getPartiesDestroyUrl(party), {
     ...options,
-    method: 'DELETE'
-    
-    
-  }
-);}
+    method: "DELETE",
+  });
+};
 
+export const getPartiesDestroyMutationOptions = <
+  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof partiesDestroy>>,
+    TError,
+    { party: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof fetchClient>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof partiesDestroy>>,
+  TError,
+  { party: number },
+  TContext
+> => {
+  const mutationKey = ["partiesDestroy"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
 
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof partiesDestroy>>,
+    { party: number }
+  > = (props) => {
+    const { party } = props ?? {};
 
+    return partiesDestroy(party, requestOptions);
+  };
 
-export const getPartiesDestroyMutationOptions = <TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof partiesDestroy>>, TError,{party: number}, TContext>, request?: SecondParameter<typeof fetchClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof partiesDestroy>>, TError,{party: number}, TContext> => {
+  return { mutationFn, ...mutationOptions };
+};
 
-const mutationKey = ['partiesDestroy'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
+export type PartiesDestroyMutationResult = NonNullable<
+  Awaited<ReturnType<typeof partiesDestroy>>
+>;
 
-      
+export type PartiesDestroyMutationError =
+  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
 
+export const usePartiesDestroy = <
+  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof partiesDestroy>>,
+      TError,
+      { party: number },
+      TContext
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof partiesDestroy>>,
+  TError,
+  { party: number },
+  TContext
+> => {
+  const mutationOptions = getPartiesDestroyMutationOptions(options);
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof partiesDestroy>>, {party: number}> = (props) => {
-          const {party} = props ?? {};
+  return useMutation(mutationOptions, queryClient);
+};
+export type partiesUpdateResponse200 = {
+  data: PartiesUpdate200;
+  status: 200;
+};
 
-          return  partiesDestroy(party,requestOptions)
-        }
+export type partiesUpdateResponse401 = {
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
 
-        
+export type partiesUpdateResponse404 = {
+  data: ModelNotFoundExceptionResponse;
+  status: 404;
+};
 
+export type partiesUpdateResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
+};
 
-  return  { mutationFn, ...mutationOptions }}
+export type partiesUpdateResponseSuccess = partiesUpdateResponse200 & {
+  headers: Headers;
+};
+export type partiesUpdateResponseError = (
+  partiesUpdateResponse401 | partiesUpdateResponse404 | partiesUpdateResponse422
+) & {
+  headers: Headers;
+};
 
-    export type PartiesDestroyMutationResult = NonNullable<Awaited<ReturnType<typeof partiesDestroy>>>
-    
-    export type PartiesDestroyMutationError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse
+export type partiesUpdateResponse =
+  partiesUpdateResponseSuccess | partiesUpdateResponseError;
 
-    export const usePartiesDestroy = <TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof partiesDestroy>>, TError,{party: number}, TContext>, request?: SecondParameter<typeof fetchClient>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof partiesDestroy>>,
-        TError,
-        {party: number},
-        TContext
-      > => {
+export const getPartiesUpdateUrl = (party: number) => {
+  return `/v1/parties/${party}`;
+};
 
-      const mutationOptions = getPartiesDestroyMutationOptions(options);
+export const partiesUpdate = async (
+  party: number,
+  updatePartyRequest: UpdatePartyRequest,
+  options?: RequestInit,
+): Promise<partiesUpdateResponse> => {
+  return fetchClient<partiesUpdateResponse>(getPartiesUpdateUrl(party), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updatePartyRequest),
+  });
+};
 
-      return useMutation(mutationOptions, queryClient);
-    }
-    
+export const getPartiesUpdateMutationOptions = <
+  TError =
+    | AuthenticationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof partiesUpdate>>,
+    TError,
+    { party: number; data: UpdatePartyRequest },
+    TContext
+  >;
+  request?: SecondParameter<typeof fetchClient>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof partiesUpdate>>,
+  TError,
+  { party: number; data: UpdatePartyRequest },
+  TContext
+> => {
+  const mutationKey = ["partiesUpdate"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof partiesUpdate>>,
+    { party: number; data: UpdatePartyRequest }
+  > = (props) => {
+    const { party, data } = props ?? {};
+
+    return partiesUpdate(party, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PartiesUpdateMutationResult = NonNullable<
+  Awaited<ReturnType<typeof partiesUpdate>>
+>;
+export type PartiesUpdateMutationBody = UpdatePartyRequest;
+export type PartiesUpdateMutationError =
+  | AuthenticationExceptionResponse
+  | ModelNotFoundExceptionResponse
+  | ValidationExceptionResponse;
+
+export const usePartiesUpdate = <
+  TError =
+    | AuthenticationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof partiesUpdate>>,
+      TError,
+      { party: number; data: UpdatePartyRequest },
+      TContext
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof partiesUpdate>>,
+  TError,
+  { party: number; data: UpdatePartyRequest },
+  TContext
+> => {
+  const mutationOptions = getPartiesUpdateMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};

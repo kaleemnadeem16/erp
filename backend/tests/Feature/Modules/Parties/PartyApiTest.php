@@ -4,7 +4,11 @@ namespace Tests\Feature\Modules\Parties;
 
 use App\Models\CustomFieldDefinition;
 use App\Models\User;
+use App\Modules\Accounting\Models\ChartOfAccount;
+use App\Modules\Accounting\Support\AccountType;
+use App\Modules\Parties\Models\CustomerAccount;
 use App\Modules\Parties\Models\Party;
+use App\Modules\Parties\Models\SupplierAccount;
 use App\Support\CompanyContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -124,6 +128,33 @@ class PartyApiTest extends TestCase
 
         $this->assertSoftDeleted('parties', ['id' => $party->id]);
         $this->getJson("/api/v1/parties/{$party->id}")->assertNotFound();
+    }
+
+    public function test_a_party_cannot_be_archived_until_both_roles_are_archived(): void
+    {
+        $user = User::factory()->create();
+        $party = Party::create(['code' => 'ACME', 'name' => 'Acme Corp']);
+        $receivable = ChartOfAccount::create(['code' => '1100', 'name' => 'AR', 'type' => AccountType::Asset]);
+        $payable = ChartOfAccount::create(['code' => '2100', 'name' => 'AP', 'type' => AccountType::Liability]);
+        $customer = CustomerAccount::create([
+            'party_id' => $party->id, 'code' => 'C-ACME', 'payment_terms_days' => 30,
+            'receivable_account_id' => $receivable->id,
+        ]);
+        $supplier = SupplierAccount::create([
+            'party_id' => $party->id, 'code' => 'S-ACME', 'payment_terms_days' => 30,
+            'lead_time_days' => 5,
+            'payable_account_id' => $payable->id,
+        ]);
+
+        $this->actingAs($user)->deleteJson("/api/v1/parties/{$party->id}")
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('party');
+        $this->assertNull($party->fresh()->deleted_at);
+
+        $this->deleteJson("/api/v1/customer-accounts/{$customer->id}")->assertNoContent();
+        $this->deleteJson("/api/v1/supplier-accounts/{$supplier->id}")->assertNoContent();
+        $this->deleteJson("/api/v1/parties/{$party->id}")->assertNoContent();
+        $this->assertSoftDeleted('parties', ['id' => $party->id]);
     }
 
     public function test_another_companys_party_is_not_visible(): void

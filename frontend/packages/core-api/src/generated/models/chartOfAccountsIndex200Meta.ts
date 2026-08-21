@@ -4,10 +4,10 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { ChartOfAccountsIndex200MetaFrom } from './chartOfAccountsIndex200MetaFrom';
-import type { ChartOfAccountsIndex200MetaLinksItem } from './chartOfAccountsIndex200MetaLinksItem';
-import type { ChartOfAccountsIndex200MetaPath } from './chartOfAccountsIndex200MetaPath';
-import type { ChartOfAccountsIndex200MetaTo } from './chartOfAccountsIndex200MetaTo';
+import type { ChartOfAccountsIndex200MetaFrom } from "./chartOfAccountsIndex200MetaFrom";
+import type { ChartOfAccountsIndex200MetaLinksItem } from "./chartOfAccountsIndex200MetaLinksItem";
+import type { ChartOfAccountsIndex200MetaPath } from "./chartOfAccountsIndex200MetaPath";
+import type { ChartOfAccountsIndex200MetaTo } from "./chartOfAccountsIndex200MetaTo";
 
 export type ChartOfAccountsIndex200Meta = {
   /** @minimum 1 */

@@ -6,7 +6,7 @@
  */
 
 /**
- * No exists() check possible: tax_codes doesn't exist yet, same
-forward-reference reason as the column itself — see the migration.
+ * The column is reserved for Phase 6, but accepting arbitrary ids now
+would create dangling references that cannot be constrained later.
  */
 export type StoreCustomerAccountRequestTaxCodeId = number | null;

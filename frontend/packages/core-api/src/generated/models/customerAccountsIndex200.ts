@@ -4,9 +4,9 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { CustomerAccountResource } from './customerAccountResource';
-import type { CustomerAccountsIndex200Links } from './customerAccountsIndex200Links';
-import type { CustomerAccountsIndex200Meta } from './customerAccountsIndex200Meta';
+import type { CustomerAccountResource } from "./customerAccountResource";
+import type { CustomerAccountsIndex200Links } from "./customerAccountsIndex200Links";
+import type { CustomerAccountsIndex200Meta } from "./customerAccountsIndex200Meta";
 
 export type CustomerAccountsIndex200 = {
   data: CustomerAccountResource[];

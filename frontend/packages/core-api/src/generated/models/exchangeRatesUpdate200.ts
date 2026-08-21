@@ -4,7 +4,7 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { ExchangeRateResource } from './exchangeRateResource';
+import type { ExchangeRateResource } from "./exchangeRateResource";
 
 export type ExchangeRatesUpdate200 = {
   data: ExchangeRateResource;

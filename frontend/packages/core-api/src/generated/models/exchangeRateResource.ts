@@ -4,10 +4,10 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { ExchangeRateResourceSource } from './exchangeRateResourceSource';
-import type { CurrencyResource } from './currencyResource';
-import type { ExchangeRateResourceCreatedAt } from './exchangeRateResourceCreatedAt';
-import type { ExchangeRateResourceUpdatedAt } from './exchangeRateResourceUpdatedAt';
+import type { ExchangeRateResourceSource } from "./exchangeRateResourceSource";
+import type { CurrencyResource } from "./currencyResource";
+import type { ExchangeRateResourceCreatedAt } from "./exchangeRateResourceCreatedAt";
+import type { ExchangeRateResourceUpdatedAt } from "./exchangeRateResourceUpdatedAt";
 
 export interface ExchangeRateResource {
   id: number;

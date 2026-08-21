@@ -4,9 +4,9 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { PartyResource } from './partyResource';
-import type { PartiesIndex200Links } from './partiesIndex200Links';
-import type { PartiesIndex200Meta } from './partiesIndex200Meta';
+import type { PartyResource } from "./partyResource";
+import type { PartiesIndex200Links } from "./partiesIndex200Links";
+import type { PartiesIndex200Meta } from "./partiesIndex200Meta";
 
 export type PartiesIndex200 = {
   data: PartyResource[];

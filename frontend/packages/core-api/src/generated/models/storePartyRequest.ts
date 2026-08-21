@@ -4,10 +4,10 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { StorePartyRequestRegistrationNo } from './storePartyRequestRegistrationNo';
-import type { StorePartyRequestTaxId } from './storePartyRequestTaxId';
-import type { StorePartyRequestWebsite } from './storePartyRequestWebsite';
-import type { Status } from './status';
+import type { StorePartyRequestRegistrationNo } from "./storePartyRequestRegistrationNo";
+import type { StorePartyRequestTaxId } from "./storePartyRequestTaxId";
+import type { StorePartyRequestWebsite } from "./storePartyRequestWebsite";
+import type { Status } from "./status";
 
 export interface StorePartyRequest {
   /** @maxLength 255 */

@@ -4,13 +4,13 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { CustomerAccountResourceCreditLimit } from './customerAccountResourceCreditLimit';
-import type { CustomerAccountResourceTaxCodeId } from './customerAccountResourceTaxCodeId';
-import type { CustomerAccountResourceDefaultCurrencyId } from './customerAccountResourceDefaultCurrencyId';
-import type { CustomerAccountResourceCustomFields } from './customerAccountResourceCustomFields';
-import type { PartyResource } from './partyResource';
-import type { CustomerAccountResourceCreatedAt } from './customerAccountResourceCreatedAt';
-import type { CustomerAccountResourceUpdatedAt } from './customerAccountResourceUpdatedAt';
+import type { CustomerAccountResourceCreditLimit } from "./customerAccountResourceCreditLimit";
+import type { CustomerAccountResourceTaxCodeId } from "./customerAccountResourceTaxCodeId";
+import type { CustomerAccountResourceDefaultCurrencyId } from "./customerAccountResourceDefaultCurrencyId";
+import type { CustomerAccountResourceCustomFields } from "./customerAccountResourceCustomFields";
+import type { PartyResource } from "./partyResource";
+import type { CustomerAccountResourceCreatedAt } from "./customerAccountResourceCreatedAt";
+import type { CustomerAccountResourceUpdatedAt } from "./customerAccountResourceUpdatedAt";
 
 export interface CustomerAccountResource {
   id: number;

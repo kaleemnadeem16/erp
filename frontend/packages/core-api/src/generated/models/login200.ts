@@ -4,7 +4,7 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { Login200AnyOf } from './login200AnyOf';
-import type { Login200AnyOfTwo } from './login200AnyOfTwo';
+import type { Login200AnyOf } from "./login200AnyOf";
+import type { Login200AnyOfTwo } from "./login200AnyOfTwo";
 
 export type Login200 = Login200AnyOf | Login200AnyOfTwo;

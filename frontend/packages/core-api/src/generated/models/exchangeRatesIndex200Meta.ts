@@ -4,10 +4,10 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { ExchangeRatesIndex200MetaFrom } from './exchangeRatesIndex200MetaFrom';
-import type { ExchangeRatesIndex200MetaLinksItem } from './exchangeRatesIndex200MetaLinksItem';
-import type { ExchangeRatesIndex200MetaPath } from './exchangeRatesIndex200MetaPath';
-import type { ExchangeRatesIndex200MetaTo } from './exchangeRatesIndex200MetaTo';
+import type { ExchangeRatesIndex200MetaFrom } from "./exchangeRatesIndex200MetaFrom";
+import type { ExchangeRatesIndex200MetaLinksItem } from "./exchangeRatesIndex200MetaLinksItem";
+import type { ExchangeRatesIndex200MetaPath } from "./exchangeRatesIndex200MetaPath";
+import type { ExchangeRatesIndex200MetaTo } from "./exchangeRatesIndex200MetaTo";
 
 export type ExchangeRatesIndex200Meta = {
   /** @minimum 1 */

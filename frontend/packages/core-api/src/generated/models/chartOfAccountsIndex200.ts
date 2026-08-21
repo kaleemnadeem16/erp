@@ -4,9 +4,9 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { ChartOfAccountResource } from './chartOfAccountResource';
-import type { ChartOfAccountsIndex200Links } from './chartOfAccountsIndex200Links';
-import type { ChartOfAccountsIndex200Meta } from './chartOfAccountsIndex200Meta';
+import type { ChartOfAccountResource } from "./chartOfAccountResource";
+import type { ChartOfAccountsIndex200Links } from "./chartOfAccountsIndex200Links";
+import type { ChartOfAccountsIndex200Meta } from "./chartOfAccountsIndex200Meta";
 
 export type ChartOfAccountsIndex200 = {
   data: ChartOfAccountResource[];

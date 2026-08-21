@@ -55,8 +55,8 @@ customer_accounts
   code                     -- role-specific; may differ from parties.code
   credit_limit             decimal(19,4)   NULLABLE   -- null = no limit enforced
   payment_terms_days
-  tax_code_id              NULLABLE → tax_codes (tax.md, not built yet — see items.md's
-                                      forward-reference precedent for default_supplier_id etc.)
+  tax_code_id              NULLABLE → tax_codes (tax.md, not built yet; the API rejects non-null
+                                      values until that table and its company-scoped FK exist)
   receivable_account_id    → chart_of_accounts   -- the customer's control account (an ASSET);
                                                      revenue itself comes from item/category
                                                      income_account_id, not from here
@@ -160,7 +160,10 @@ as a supplier — forcing them to be one value would mean picking a side.
 ### Archiving, not deleting
 
 Same as [items.md](items.md): soft status throughout, never hard-deleted, since documents from
-Phase 4 onward will reference these and must remain readable.
+Phase 4 onward will reference these and must remain readable. Customer and supplier roles have
+independent lifecycles, but the shared party is their aggregate root: archive both role accounts
+before archiving the party. This prevents an active role remaining queryable while its required
+`party` relation has disappeared through the soft-delete scope.
 
 ## Landmines
 

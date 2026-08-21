@@ -4,9 +4,9 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { SupplierAccountResource } from './supplierAccountResource';
-import type { SupplierAccountsIndex200Links } from './supplierAccountsIndex200Links';
-import type { SupplierAccountsIndex200Meta } from './supplierAccountsIndex200Meta';
+import type { SupplierAccountResource } from "./supplierAccountResource";
+import type { SupplierAccountsIndex200Links } from "./supplierAccountsIndex200Links";
+import type { SupplierAccountsIndex200Meta } from "./supplierAccountsIndex200Meta";
 
 export type SupplierAccountsIndex200 = {
   data: SupplierAccountResource[];

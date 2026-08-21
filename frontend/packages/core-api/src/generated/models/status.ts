@@ -9,11 +9,10 @@
  * Archived, not deleted — see docs/domain/items.md#archiving-not-deleting and docs/domain/parties.md. Shared across entities that use this exact two-state lifecycle; a table needing more states (e.g. assembly_versions' DRAFT | ACTIVE | SUPERSEDED) defines its own enum instead of stretching this one.
 
  */
-export type Status = typeof Status[keyof typeof Status];
-
+export type Status = (typeof Status)[keyof typeof Status];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const Status = {
-  ACTIVE: 'ACTIVE',
-  ARCHIVED: 'ARCHIVED',
+  ACTIVE: "ACTIVE",
+  ARCHIVED: "ARCHIVED",
 } as const;

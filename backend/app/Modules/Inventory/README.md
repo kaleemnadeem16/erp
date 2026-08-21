@@ -26,8 +26,10 @@ movement and valuation, built in Phase 2.
 
 ## Key actions
 
-None yet — `Category` so far has no Action beyond direct create/update; add here once a real
-one exists.
+`CreateCategory`/`UpdateCategory`/`ArchiveCategory` and
+`CreateItem`/`UpdateItem`/`ArchiveItem` own the transactional write boundary used by HTTP and
+future non-HTTP entry points. Model guards still enforce tenant, hierarchy and valuation
+invariants regardless of which Action invokes them.
 
 ## Events
 

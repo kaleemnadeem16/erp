@@ -6,7 +6,10 @@ use App\Modules\Parties\Http\Controllers\Api\V1\SupplierAccountController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth:sanctum')->group(function () {
-    Route::apiResource('parties', PartyController::class);
-    Route::apiResource('customer-accounts', CustomerAccountController::class);
-    Route::apiResource('supplier-accounts', SupplierAccountController::class);
+    Route::apiResource('parties', PartyController::class)->except('update');
+    Route::patch('parties/{party}', [PartyController::class, 'update'])->name('parties.update');
+    Route::apiResource('customer-accounts', CustomerAccountController::class)->except('update');
+    Route::patch('customer-accounts/{customer_account}', [CustomerAccountController::class, 'update'])->name('customer-accounts.update');
+    Route::apiResource('supplier-accounts', SupplierAccountController::class)->except('update');
+    Route::patch('supplier-accounts/{supplier_account}', [SupplierAccountController::class, 'update'])->name('supplier-accounts.update');
 });

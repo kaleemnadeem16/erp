@@ -4,10 +4,10 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { ItemsIndex200LinksFirst } from './itemsIndex200LinksFirst';
-import type { ItemsIndex200LinksLast } from './itemsIndex200LinksLast';
-import type { ItemsIndex200LinksPrev } from './itemsIndex200LinksPrev';
-import type { ItemsIndex200LinksNext } from './itemsIndex200LinksNext';
+import type { ItemsIndex200LinksFirst } from "./itemsIndex200LinksFirst";
+import type { ItemsIndex200LinksLast } from "./itemsIndex200LinksLast";
+import type { ItemsIndex200LinksPrev } from "./itemsIndex200LinksPrev";
+import type { ItemsIndex200LinksNext } from "./itemsIndex200LinksNext";
 
 export type ItemsIndex200Links = {
   first: ItemsIndex200LinksFirst;

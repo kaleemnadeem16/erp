@@ -4,10 +4,10 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { CategoriesIndex200MetaFrom } from './categoriesIndex200MetaFrom';
-import type { CategoriesIndex200MetaLinksItem } from './categoriesIndex200MetaLinksItem';
-import type { CategoriesIndex200MetaPath } from './categoriesIndex200MetaPath';
-import type { CategoriesIndex200MetaTo } from './categoriesIndex200MetaTo';
+import type { CategoriesIndex200MetaFrom } from "./categoriesIndex200MetaFrom";
+import type { CategoriesIndex200MetaLinksItem } from "./categoriesIndex200MetaLinksItem";
+import type { CategoriesIndex200MetaPath } from "./categoriesIndex200MetaPath";
+import type { CategoriesIndex200MetaTo } from "./categoriesIndex200MetaTo";
 
 export type CategoriesIndex200Meta = {
   /** @minimum 1 */

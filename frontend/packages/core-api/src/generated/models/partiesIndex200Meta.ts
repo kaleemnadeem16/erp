@@ -4,10 +4,10 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { PartiesIndex200MetaFrom } from './partiesIndex200MetaFrom';
-import type { PartiesIndex200MetaLinksItem } from './partiesIndex200MetaLinksItem';
-import type { PartiesIndex200MetaPath } from './partiesIndex200MetaPath';
-import type { PartiesIndex200MetaTo } from './partiesIndex200MetaTo';
+import type { PartiesIndex200MetaFrom } from "./partiesIndex200MetaFrom";
+import type { PartiesIndex200MetaLinksItem } from "./partiesIndex200MetaLinksItem";
+import type { PartiesIndex200MetaPath } from "./partiesIndex200MetaPath";
+import type { PartiesIndex200MetaTo } from "./partiesIndex200MetaTo";
 
 export type PartiesIndex200Meta = {
   /** @minimum 1 */

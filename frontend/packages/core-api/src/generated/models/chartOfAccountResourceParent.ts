@@ -4,6 +4,6 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { ChartOfAccountResource } from './chartOfAccountResource';
+import type { ChartOfAccountResource } from "./chartOfAccountResource";
 
 export type ChartOfAccountResourceParent = ChartOfAccountResource | null;

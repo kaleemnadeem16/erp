@@ -4,6 +4,6 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { ValuationMethod } from './valuationMethod';
+import type { ValuationMethod } from "./valuationMethod";
 
 export type StoreCategoryRequestDefaultValuationMethod = ValuationMethod | null;

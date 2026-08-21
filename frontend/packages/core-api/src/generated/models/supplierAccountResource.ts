@@ -4,12 +4,12 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { SupplierAccountResourceLeadTimeDays } from './supplierAccountResourceLeadTimeDays';
-import type { SupplierAccountResourceDefaultCurrencyId } from './supplierAccountResourceDefaultCurrencyId';
-import type { SupplierAccountResourceCustomFields } from './supplierAccountResourceCustomFields';
-import type { PartyResource } from './partyResource';
-import type { SupplierAccountResourceCreatedAt } from './supplierAccountResourceCreatedAt';
-import type { SupplierAccountResourceUpdatedAt } from './supplierAccountResourceUpdatedAt';
+import type { SupplierAccountResourceLeadTimeDays } from "./supplierAccountResourceLeadTimeDays";
+import type { SupplierAccountResourceDefaultCurrencyId } from "./supplierAccountResourceDefaultCurrencyId";
+import type { SupplierAccountResourceCustomFields } from "./supplierAccountResourceCustomFields";
+import type { PartyResource } from "./partyResource";
+import type { SupplierAccountResourceCreatedAt } from "./supplierAccountResourceCreatedAt";
+import type { SupplierAccountResourceUpdatedAt } from "./supplierAccountResourceUpdatedAt";
 
 export interface SupplierAccountResource {
   id: number;

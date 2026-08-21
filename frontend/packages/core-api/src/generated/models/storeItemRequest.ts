@@ -4,15 +4,15 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { StoreItemRequestDescription } from './storeItemRequestDescription';
-import type { ItemType } from './itemType';
-import type { StoreItemRequestValuationMethod } from './storeItemRequestValuationMethod';
-import type { ItemTracking } from './itemTracking';
-import type { StoreItemRequestDefaultSupplierId } from './storeItemRequestDefaultSupplierId';
-import type { StoreItemRequestIncomeAccountId } from './storeItemRequestIncomeAccountId';
-import type { StoreItemRequestExpenseAccountId } from './storeItemRequestExpenseAccountId';
-import type { StoreItemRequestInventoryAccountId } from './storeItemRequestInventoryAccountId';
-import type { Status } from './status';
+import type { StoreItemRequestDescription } from "./storeItemRequestDescription";
+import type { ItemType } from "./itemType";
+import type { StoreItemRequestValuationMethod } from "./storeItemRequestValuationMethod";
+import type { ItemTracking } from "./itemTracking";
+import type { StoreItemRequestDefaultSupplierId } from "./storeItemRequestDefaultSupplierId";
+import type { StoreItemRequestIncomeAccountId } from "./storeItemRequestIncomeAccountId";
+import type { StoreItemRequestExpenseAccountId } from "./storeItemRequestExpenseAccountId";
+import type { StoreItemRequestInventoryAccountId } from "./storeItemRequestInventoryAccountId";
+import type { Status } from "./status";
 
 export interface StoreItemRequest {
   /** @maxLength 255 */

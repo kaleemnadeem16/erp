@@ -4,10 +4,10 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { CustomerAccountsIndex200MetaFrom } from './customerAccountsIndex200MetaFrom';
-import type { CustomerAccountsIndex200MetaLinksItem } from './customerAccountsIndex200MetaLinksItem';
-import type { CustomerAccountsIndex200MetaPath } from './customerAccountsIndex200MetaPath';
-import type { CustomerAccountsIndex200MetaTo } from './customerAccountsIndex200MetaTo';
+import type { CustomerAccountsIndex200MetaFrom } from "./customerAccountsIndex200MetaFrom";
+import type { CustomerAccountsIndex200MetaLinksItem } from "./customerAccountsIndex200MetaLinksItem";
+import type { CustomerAccountsIndex200MetaPath } from "./customerAccountsIndex200MetaPath";
+import type { CustomerAccountsIndex200MetaTo } from "./customerAccountsIndex200MetaTo";
 
 export type CustomerAccountsIndex200Meta = {
   /** @minimum 1 */

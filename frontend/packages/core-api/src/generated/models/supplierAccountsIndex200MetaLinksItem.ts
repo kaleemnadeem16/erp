@@ -4,7 +4,7 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { SupplierAccountsIndex200MetaLinksItemUrl } from './supplierAccountsIndex200MetaLinksItemUrl';
+import type { SupplierAccountsIndex200MetaLinksItemUrl } from "./supplierAccountsIndex200MetaLinksItemUrl";
 
 export type SupplierAccountsIndex200MetaLinksItem = {
   url: SupplierAccountsIndex200MetaLinksItemUrl;

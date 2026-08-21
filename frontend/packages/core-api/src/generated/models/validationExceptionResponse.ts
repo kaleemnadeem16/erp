@@ -4,7 +4,7 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { ValidationExceptionResponseErrors } from './validationExceptionResponseErrors';
+import type { ValidationExceptionResponseErrors } from "./validationExceptionResponseErrors";
 
 export type ValidationExceptionResponse = {
   /** Errors overview. */

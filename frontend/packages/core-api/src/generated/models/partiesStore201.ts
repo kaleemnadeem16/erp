@@ -4,7 +4,7 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { PartyResource } from './partyResource';
+import type { PartyResource } from "./partyResource";
 
 export type PartiesStore201 = {
   data: PartyResource;

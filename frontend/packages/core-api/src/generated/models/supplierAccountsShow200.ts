@@ -4,7 +4,7 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { SupplierAccountResource } from './supplierAccountResource';
+import type { SupplierAccountResource } from "./supplierAccountResource";
 
 export type SupplierAccountsShow200 = {
   data: SupplierAccountResource;

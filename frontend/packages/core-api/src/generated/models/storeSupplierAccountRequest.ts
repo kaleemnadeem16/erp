@@ -4,9 +4,9 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { StoreSupplierAccountRequestLeadTimeDays } from './storeSupplierAccountRequestLeadTimeDays';
-import type { StoreSupplierAccountRequestDefaultCurrencyId } from './storeSupplierAccountRequestDefaultCurrencyId';
-import type { Status } from './status';
+import type { StoreSupplierAccountRequestLeadTimeDays } from "./storeSupplierAccountRequestLeadTimeDays";
+import type { StoreSupplierAccountRequestDefaultCurrencyId } from "./storeSupplierAccountRequestDefaultCurrencyId";
+import type { Status } from "./status";
 
 export interface StoreSupplierAccountRequest {
   /** A party can hold at most one supplier_account (unique(company_id, party_id))

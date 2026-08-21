@@ -4,14 +4,14 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { CategoryResourceParentId } from './categoryResourceParentId';
-import type { CategoryResourceIncomeAccountId } from './categoryResourceIncomeAccountId';
-import type { CategoryResourceExpenseAccountId } from './categoryResourceExpenseAccountId';
-import type { CategoryResourceInventoryAccountId } from './categoryResourceInventoryAccountId';
-import type { CategoryResourceDefaultValuationMethod } from './categoryResourceDefaultValuationMethod';
-import type { CategoryResourceParent } from './categoryResourceParent';
-import type { CategoryResourceCreatedAt } from './categoryResourceCreatedAt';
-import type { CategoryResourceUpdatedAt } from './categoryResourceUpdatedAt';
+import type { CategoryResourceParentId } from "./categoryResourceParentId";
+import type { CategoryResourceIncomeAccountId } from "./categoryResourceIncomeAccountId";
+import type { CategoryResourceExpenseAccountId } from "./categoryResourceExpenseAccountId";
+import type { CategoryResourceInventoryAccountId } from "./categoryResourceInventoryAccountId";
+import type { CategoryResourceDefaultValuationMethod } from "./categoryResourceDefaultValuationMethod";
+import type { CategoryResourceParent } from "./categoryResourceParent";
+import type { CategoryResourceCreatedAt } from "./categoryResourceCreatedAt";
+import type { CategoryResourceUpdatedAt } from "./categoryResourceUpdatedAt";
 
 export interface CategoryResource {
   id: number;

@@ -4,22 +4,22 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { RateType } from './rateType';
+import type { RateType } from "./rateType";
 
 export type ExchangeRatesIndexParams = {
-/**
- * @minimum 1
- */
-'filter[from_currency_id]'?: number;
-/**
- * @minimum 1
- */
-'filter[to_currency_id]'?: number;
-'filter[rate_type]'?: RateType;
-'filter[rate_date]'?: string;
-/**
- * @minimum 1
- * @maximum 100
- */
-per_page?: number;
+  /**
+   * @minimum 1
+   */
+  "filter[from_currency_id]"?: number;
+  /**
+   * @minimum 1
+   */
+  "filter[to_currency_id]"?: number;
+  "filter[rate_type]"?: RateType;
+  "filter[rate_date]"?: string;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  per_page?: number;
 };

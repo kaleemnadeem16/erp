@@ -23,8 +23,9 @@ Phase 6, per [ADR 0011](../../../../docs/decisions/0011-double-entry-open-item-a
 
 ## Key actions
 
-None yet — `ChartOfAccount`/`FiscalYear`/`AccountingPeriod` so far have no Action beyond direct
-create/update; add here once a real one exists (e.g. period close, in Phase 6).
+`CreateChartOfAccount`/`UpdateChartOfAccount`/`ArchiveChartOfAccount` own chart write
+transactions. Fiscal-year and period workflow Actions will be added with their APIs; period
+close remains a separate Phase 6 business operation.
 
 ## Events
 
