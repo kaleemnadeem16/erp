@@ -75,20 +75,39 @@ services:
 
   # Not functional until the frontend skeleton exists (packages/, apps/main) — see
   # phase-0-foundation.md "Frontend skeleton".
-  node:
+  node-volume-init:
     image: node:22-alpine
     working_dir: /app
+    entrypoint: ["/usr/local/bin/erp-node-volume-init"]
+    environment:
+      HOST_UID: "${HOST_UID:-1000}"
+      HOST_GID: "${HOST_GID:-1000}"
+    volumes:
+      - ./frontend:/app
+      - ./docker/frontend/dev-entrypoint.sh:/usr/local/bin/erp-node-volume-init:ro
+      - frontend_node_modules:/app/node_modules
+
+  node:
+    image: node:22-alpine
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    working_dir: /app
+    environment:
+      HOME: /tmp
     # host/port are set in apps/main/vite.config.ts (not passed as CLI flags here) —
     # `npm run dev` forwards through a nested workspace call and mangles `-- --flag`
     # args passed that way, which silently fell back to Vite's default port 5173.
     command: sh -c "npm install && npm run dev"
     volumes:
       - ./frontend:/app
+      - ./backend:/backend:ro
       - frontend_node_modules:/app/node_modules
     ports:
       - "5176:5176"
     networks:
       - erp-dev
+    depends_on:
+      node-volume-init:
+        condition: service_completed_successfully
 
   postgres:
     image: postgres:16

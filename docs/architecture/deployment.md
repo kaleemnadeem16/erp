@@ -65,6 +65,15 @@ slow.
 **Keep the repository inside the WSL2 filesystem** (e.g. `~/code/erp`), opened via the VS Code
 WSL Remote extension. Same editor, dramatically faster. Do this before scaffolding.
 
+The one-shot development `node-volume-init` service makes the Docker-managed `node_modules`
+volume and any existing workspace caches writable, then exits. The long-running `node` service
+runs npm, Vite, Orval and `docker compose exec node ...` commands as `${HOST_UID:-1000}` and
+`${HOST_GID:-1000}`. The defaults match a normal first WSL user and require no setup. A Linux
+developer with different IDs starts Compose with `HOST_UID=$(id -u) HOST_GID=$(id -g) docker
+compose up -d`; no tracked file needs editing. This prevents bind-mounted generated source from
+becoming `root:root`, which would block Git pulls and local edits. Do not override the service
+user or run npm/code generation with `docker compose exec --user root node ...`.
+
 ## Production
 
 ```
