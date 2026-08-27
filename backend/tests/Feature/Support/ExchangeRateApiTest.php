@@ -199,6 +199,35 @@ class ExchangeRateApiTest extends TestCase
         $this->getJson('/api/v1/exchange-rates?per_page=-1')
             ->assertUnprocessable()
             ->assertJsonValidationErrors('per_page');
+
+        $this->getJson('/api/v1/exchange-rates?include=unknown')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('include');
+
+        $this->getJson('/api/v1/exchange-rates?sort=unknown')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('sort');
+    }
+
+    public function test_index_can_include_currencies_and_sort_by_rate(): void
+    {
+        $user = User::factory()->create();
+
+        ExchangeRate::create([
+            'from_currency_id' => $this->usd->id, 'to_currency_id' => $this->pkr->id,
+            'rate' => '280.5', 'rate_date' => '2026-08-13', 'rate_type' => RateType::Spot,
+        ]);
+        ExchangeRate::create([
+            'from_currency_id' => $this->usd->id, 'to_currency_id' => $this->pkr->id,
+            'rate' => '281.0', 'rate_date' => '2026-08-14', 'rate_type' => RateType::Spot,
+        ]);
+
+        $this->actingAs($user)
+            ->getJson('/api/v1/exchange-rates?sort=rate&include=from_currency,to_currency')
+            ->assertOk()
+            ->assertJsonPath('data.0.rate', '280.500000000')
+            ->assertJsonPath('data.0.from_currency.code', 'USD')
+            ->assertJsonPath('data.0.to_currency.code', 'PKR');
     }
 
     public function test_show_can_include_the_currency_relations(): void
@@ -216,6 +245,20 @@ class ExchangeRateApiTest extends TestCase
         $response->assertOk();
         $response->assertJsonPath('data.from_currency.code', 'USD');
         $response->assertJsonPath('data.to_currency.code', 'PKR');
+    }
+
+    public function test_show_rejects_an_unsupported_include(): void
+    {
+        $user = User::factory()->create();
+        $rate = ExchangeRate::create([
+            'from_currency_id' => $this->usd->id, 'to_currency_id' => $this->pkr->id,
+            'rate' => '280.5', 'rate_date' => '2026-08-13', 'rate_type' => RateType::Spot,
+        ]);
+
+        $this->actingAs($user)
+            ->getJson("/api/v1/exchange-rates/{$rate->id}?include=unknown")
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('include');
     }
 
     public function test_only_the_rate_itself_can_be_updated(): void

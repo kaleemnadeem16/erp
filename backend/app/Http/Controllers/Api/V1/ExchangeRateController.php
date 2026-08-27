@@ -6,14 +6,14 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ExchangeRate\IndexExchangeRateRequest;
+use App\Http\Requests\ExchangeRate\ShowExchangeRateRequest;
 use App\Http\Requests\ExchangeRate\StoreExchangeRateRequest;
 use App\Http\Requests\ExchangeRate\UpdateExchangeRateRequest;
 use App\Http\Resources\ExchangeRateResource;
 use App\Models\ExchangeRate;
-use Illuminate\Database\Eloquent\Builder;
+use App\Support\Concerns\AppliesApiQuery;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Validation\ValidationException;
 
@@ -24,17 +24,26 @@ use Illuminate\Validation\ValidationException;
  */
 class ExchangeRateController extends Controller
 {
+    use AppliesApiQuery;
+
     /** @var array<string, string> */
     private const INCLUDABLE = [
         'from_currency' => 'fromCurrency',
         'to_currency' => 'toCurrency',
     ];
 
+    /** @var array<string, string> */
+    private const SORTABLE = [
+        'rate_date' => 'rate_date',
+        'rate' => 'rate',
+        'created_at' => 'created_at',
+    ];
+
     public function index(IndexExchangeRateRequest $request): AnonymousResourceCollection
     {
         $query = ExchangeRate::query();
 
-        $this->applyIncludes($query, $request);
+        $this->applyIncludes($query, $request, self::INCLUDABLE);
 
         if ($request->filled('filter.from_currency_id')) {
             $query->where('from_currency_id', $request->input('filter.from_currency_id'));
@@ -52,7 +61,13 @@ class ExchangeRateController extends Controller
             $query->whereDate('rate_date', $request->input('filter.rate_date'));
         }
 
-        $query->orderByDesc('rate_date')->orderByDesc('id');
+        if ($request->filled('sort')) {
+            $this->applySort($query, $request, self::SORTABLE, 'rate_date');
+        } else {
+            // Preserve the endpoint's established newest-first default, including
+            // deterministic ordering when multiple rates share the same date.
+            $query->orderByDesc('rate_date')->orderByDesc('id');
+        }
 
         $perPage = $request->integer('per_page', 25);
 
@@ -80,10 +95,10 @@ class ExchangeRateController extends Controller
         return (new ExchangeRateResource($rate))->response()->setStatusCode(201);
     }
 
-    public function show(Request $request, ExchangeRate $exchange_rate): ExchangeRateResource
+    public function show(ShowExchangeRateRequest $request, ExchangeRate $exchange_rate): ExchangeRateResource
     {
         return new ExchangeRateResource($exchange_rate->load(
-            $this->requestedIncludes($request)
+            $this->requestedIncludes($request, self::INCLUDABLE)
         ));
     }
 
@@ -99,25 +114,5 @@ class ExchangeRateController extends Controller
         $exchange_rate->delete();
 
         return response()->json(status: 204);
-    }
-
-    /**
-     * @param  Builder<ExchangeRate>  $query
-     */
-    private function applyIncludes(Builder $query, Request $request): void
-    {
-        foreach ($this->requestedIncludes($request) as $relation) {
-            $query->with($relation);
-        }
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function requestedIncludes(Request $request): array
-    {
-        $requested = array_filter(explode(',', (string) $request->query('include', '')));
-
-        return array_values(array_intersect_key(self::INCLUDABLE, array_flip($requested)));
     }
 }
