@@ -9,7 +9,27 @@ Questions do not linger once resolved.
 
 ## Blocking
 
-None currently. Q1, Q2 and Q3 were resolved on 2026-08-10 — see
+### Q13 — Negative stock policy
+
+**Blocks:** Phase 2 stock transaction engine completion
+
+Should an issue that would take an item/location below zero be blocked, allowed with a warning,
+or controlled by a per-company setting? Allowing it makes AVCO undefined and can make apparently
+precise cost figures fictional. The current recommendation in [stock.md](domain/stock.md) is to
+block by default, potentially configurable per company, but the configuration scope and any
+exception workflow need an explicit decision before stock movements ship.
+
+### Q14 — Backdated stock receipts
+
+**Blocks:** Phase 2 valuation engine completion
+
+If a receipt is entered before already-costed issues, should the system recalculate every later
+valuation forward, or reject backdating past the latest affected issue? Forward recalculation is
+more flexible but substantially more complex and must preserve posted history once GL integration
+exists; blocking is simpler but constrains operations. Decide the initial policy and how it will
+interact with closed accounting periods before Phase 2 ships.
+
+Q1, Q2 and Q3 were resolved on 2026-08-10 — see
 [ADR 0023](decisions/0023-retention-retainage-enabled.md),
 [ADR 0024](decisions/0024-onboarding-base-currency-and-fiscal-year.md) and
 [ADR 0025](decisions/0025-configurable-tax-engine.md).

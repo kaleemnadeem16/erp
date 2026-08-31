@@ -1,10 +1,9 @@
 # Project Status
 
 **Updated:** 2026-08-31
-**Current phase:** Phase 0 — Foundation (in progress — everything except deploying to mainvm is
-done, deliberately deferred until there's a real feature worth shipping). Phase 1 — Master data
-is complete: schema, models, full APIs, acceptance criteria and domain-document reconciliation
-are all done. Phase 2 planning is next.
+**Current phase:** Phase 0 — Foundation (production deployment still deliberately deferred) and
+Phase 2 — Purchasing & stock (in progress: dedicated plan written; implementation not started).
+Phase 1 — Master data is complete.
 **Application code:** Laravel 12 skeleton + company scoping + auth (Sanctum, roles/permissions, activity log) + UoM conversion + custom fields mechanism + gapless numbering sequences + currencies/exchange rates + Scramble→Orval type pipeline + `Parties` module (party identity, customer/supplier accounts and sites, full CRUD API) + `Inventory` module (categories, items, hierarchical GL-default resolution, full CRUD API) + `Accounting` module (chart of accounts, fiscal years, accounting periods, full CRUD API on chart of accounts) + three global exception handlers closing a systemic "raw exception/DB error leaks as a 500" gap across every endpoint; React 19 + Vite frontend skeleton (login, one authenticated page, mobile-first shell) + a generated TS client covering every Phase 1 endpoint
 
 ---
@@ -78,6 +77,7 @@ tech stack, extensibility strategy and deployment approach are recorded as [ADRs
 | **Phase 1 CRUD audit fixes** — all six master-data APIs now delegate writes to transactional module Actions; updates expose PATCH only; list sorting/includes are validated and typed; item valuation cannot be cleared; parties cannot be archived ahead of active customer/supplier roles; non-null tax-code references are blocked until the tax table exists; delete responses generate as empty 204s; and session-auth tests pin the SPA stateful domains instead of inheriting a developer's ignored `.env` | 2026-08-22 |
 | **Exchange-rate query contract aligned** — index/show includes are validated instead of silently ignored, collection sorting is validated and typed, and the established newest-rate-first default remains unchanged | 2026-08-27 |
 | **Phase 1 domain documentation reconciled against implementation** — `items.md`, `parties.md` and `general-ledger.md` now record the actual nullability/defaults, tenant-integrity layers and deletion/archive boundaries; Phase 1 is complete | 2026-08-31 |
+| **Phase 2 plan established** — Purchasing & stock has a dedicated scope, module boundary, implementation sequence and acceptance criteria; negative-stock and backdated-receipt policies surfaced as blocking Q13/Q14 | 2026-08-31 |
 
 ## In progress
 
@@ -100,23 +100,27 @@ Phase 1 is complete, including its domain-document reconciliation.
 
 ## Next
 
-**Expand [Phase 2 — Purchasing & stock](phases/README.md#phase-2--purchasing--stock) into its own
-phase document**, then begin implementation. `item_suppliers` is already designed
-([ADR 0033](decisions/0033-item-suppliers-relationship.md)) but not built.
+Begin [Phase 2 — Purchasing & stock](phases/phase-2-purchasing-stock.md):
+
+1. Write the missing purchasing domain design and settle its document/status workflow.
+2. Resolve [Q13/Q14](OPEN-QUESTIONS.md#blocking) as ADRs before the valuation engine ships.
+3. Scaffold the Purchasing module, then build `item_suppliers` and warehouse/location foundations.
 
 [Phase 0 — Foundation](phases/phase-0-foundation.md) remains in progress in parallel — the two
 former blockers are resolved (`btree_gist` confirmed available on dbvm, `REDIS_PREFIX=erp_`
 collision check came back clean) and nothing else is outstanding except the deliberately-deferred
 production deployment.
 
-Neither phase has a dependency on the open questions below and **both can proceed.**
+Unblocked Phase 2 foundation work can proceed while the two stock-policy questions are resolved.
 
 ## Blocked / awaiting input
 
-None currently blocking. Q1–Q7 resolved 2026-08-10 (see ADRs 0023–0028 above).
+Q13 and Q14 block completion of the Phase 2 stock transaction/valuation engine, but not its
+sourcing, purchasing-design or warehouse-foundation work.
 
-Full list: [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) — 0 blocking, 2 non-blocking (second customer
-profile; sharing master data across a customer's own legal entities). Q11 (stock valuation
+Full list: [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) — 2 Phase 2 blockers (negative stock and
+backdated receipts), 2 non-blocking (second customer profile; sharing master data across a
+customer's own legal entities). Q11 (stock valuation
 method) resolved 2026-08-20 — see [ADR 0032](decisions/0032-per-item-valuation-method.md). Q12
 (multi-supplier catalog) resolved 2026-08-20 — see
 [ADR 0033](decisions/0033-item-suppliers-relationship.md). Q7's actual
@@ -129,7 +133,7 @@ resolved 2026-08-19 — see ADR 0031.
 |---|---|---|
 | 0 | [Foundation](phases/phase-0-foundation.md) | In progress |
 | 1 | [Master data](phases/phase-1-master-data.md) | Complete |
-| 2 | Purchasing & stock | Not started |
+| 2 | [Purchasing & stock](phases/phase-2-purchasing-stock.md) | In progress |
 | 3 | Estimating core | Not started |
 | 4 | Sales pipeline | Not started |
 | 5 | Job execution | Not started |

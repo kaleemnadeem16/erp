@@ -8,8 +8,8 @@ Eight phases, each independently shippable. Current state is in
 | Phase | Name | Status | Detail |
 |---|---|---|---|
 | 0 | Foundation | In progress | [phase-0-foundation.md](phase-0-foundation.md) |
-| 1 | Master data | In progress | [phase-1-master-data.md](phase-1-master-data.md) |
-| 2 | Purchasing & stock | Not started | *expanded when reached* |
+| 1 | Master data | Complete | [phase-1-master-data.md](phase-1-master-data.md) |
+| 2 | Purchasing & stock | In progress | [phase-2-purchasing-stock.md](phase-2-purchasing-stock.md) |
 | 3 | Estimating core | Not started | *expanded when reached* |
 | 4 | Sales pipeline | Not started | *expanded when reached* |
 | 5 | Job execution | Not started | *expanded when reached* |
@@ -51,7 +51,7 @@ Purchase orders, supplier sourcing (`item_suppliers`,
 locations, stock moves, per-item valuation (AVCO/FIFO/SPECIFIC,
 [ADR 0032](../decisions/0032-per-item-valuation-method.md)), physical counts. The negative-stock
 and backdated-receipt policies must be decided here.
-→ [stock.md](../domain/stock.md)
+→ [phase-2-purchasing-stock.md](phase-2-purchasing-stock.md) · [stock.md](../domain/stock.md)
 
 ### Phase 3 — Estimating core
 **The differentiator.** Formulations with versioning and customer overrides, rate dimensions,
