@@ -2,9 +2,9 @@
 
 # Phase 1 — Master data
 
-- **Status:** build done — schema, models, and a full CRUD API for every resource in scope, all
-  task-list items and acceptance criteria checked. Only doc reconciliation remains (see "Docs to
-  update on completion" below)
+- **Status:** complete — schema, models, full CRUD API, acceptance criteria and domain-document
+  reconciliation are done. Expanding the Phase 2 plan is the next phase-start task, not remaining
+  Phase 1 implementation work
 - **Depends on:** [Phase 0 — Foundation](phase-0-foundation.md) (company scoping, custom fields,
   UoM, sequences, currencies schema)
 - **Blocked by:** nothing
@@ -238,10 +238,12 @@ Tick these in the same commit as the work.
 ## Docs to update on completion
 
 - [x] [STATUS.md](../STATUS.md) — mark Phase 1 done, move Next to Phase 2 — done 2026-08-21
-- [ ] [items.md](../domain/items.md), [parties.md](../domain/parties.md) — reconcile any schema
-      drift found during implementation
-- [ ] [general-ledger.md](../domain/general-ledger.md) — confirm `chart_of_accounts` matches what
-      was actually built
+- [x] [items.md](../domain/items.md), [parties.md](../domain/parties.md) — reconciled 2026-08-31;
+      documented implemented nullability/defaults, soft-delete boundaries, parent/site ownership
+      guards and composite tenant foreign keys
+- [x] [general-ledger.md](../domain/general-ledger.md) — reconciled 2026-08-31; confirmed the
+      implemented `chart_of_accounts` shape and made its Phase 1 physical-delete versus Phase 6
+      archive-after-posting boundary explicit
 - [ ] Expand [phase-2](README.md#phase-2--purchasing--stock) into its own doc
 
 ## Related

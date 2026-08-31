@@ -16,19 +16,21 @@ purchasing. Built in [Phase 1](../phases/README.md).
 ```
 items
   id, company_id
-  code, name, description
+  code, name
+  description       NULLABLE
   type              RAW | SEMI_FINISHED | FINISHED | SERVICE | LABOUR | PLANT
   stock_uom_id      → uoms
-  is_stocked        bool
-  is_purchasable    bool
-  is_sellable       bool
+  is_stocked        bool DEFAULT false
+  is_purchasable    bool DEFAULT false
+  is_sellable       bool DEFAULT false
   valuation_method  AVCO | FIFO | SPECIFIC   -- see "Valuation method" below
-  tracking          NONE | BATCH | SERIAL
+  tracking          NONE | BATCH | SERIAL DEFAULT NONE
   category_id
-  default_supplier_id
-  income_account_id, expense_account_id, inventory_account_id   -- GL mapping
-  custom_fields     json
-  status            ACTIVE | ARCHIVED
+  default_supplier_id  NULLABLE → supplier_accounts
+  income_account_id, expense_account_id, inventory_account_id   -- NULLABLE GL mapping
+  custom_fields     jsonb NULLABLE DEFAULT '{}'
+  status            ACTIVE | ARCHIVED DEFAULT ACTIVE
+  deleted_at        NULLABLE   -- soft deletion/archive
 
   unique(['company_id', 'code'])         -- composite, always
 
@@ -127,7 +129,13 @@ grams. Purchase UoM is a property of the purchase line, not the item.
 category accidentally set as its own ancestor would infinite-loop the GL-mapping walk above.
 Closed at the application level: `App\Modules\Inventory\Models\Category`'s `saving` hook walks
 the new parent chain and rejects any reparent that would revisit the category's own id, tested
-in `CategoryTest`.
+in `CategoryTest`. Category deletion is a real delete, not a soft archive; PostgreSQL foreign
+keys reject it while items or child categories still reference the row.
+
+**Tenant-safe references.** Every company-scoped reference on `items` and `categories` is
+validated through the current company in the application. Composite PostgreSQL foreign keys
+also pair each referenced id with `company_id`, so raw SQL cannot attach an item to another
+company's category, UoM, supplier account or GL account.
 
 ## Related
 

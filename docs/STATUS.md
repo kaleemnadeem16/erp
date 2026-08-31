@@ -1,12 +1,10 @@
 # Project Status
 
-**Updated:** 2026-08-27
+**Updated:** 2026-08-31
 **Current phase:** Phase 0 — Foundation (in progress — everything except deploying to mainvm is
-done, deliberately deferred until there's a real feature worth shipping) and Phase 1 — Master
-data (build, tests and acceptance criteria all done — schema, models, and a full API for
-`items`/`categories`/`parties`/`customer-accounts`/`supplier-accounts`/`chart-of-accounts`/
-`exchange-rates`; a handful of doc-reconciliation items remain, see
-[phase-1-master-data.md](phases/phase-1-master-data.md))
+done, deliberately deferred until there's a real feature worth shipping). Phase 1 — Master data
+is complete: schema, models, full APIs, acceptance criteria and domain-document reconciliation
+are all done. Phase 2 planning is next.
 **Application code:** Laravel 12 skeleton + company scoping + auth (Sanctum, roles/permissions, activity log) + UoM conversion + custom fields mechanism + gapless numbering sequences + currencies/exchange rates + Scramble→Orval type pipeline + `Parties` module (party identity, customer/supplier accounts and sites, full CRUD API) + `Inventory` module (categories, items, hierarchical GL-default resolution, full CRUD API) + `Accounting` module (chart of accounts, fiscal years, accounting periods, full CRUD API on chart of accounts) + three global exception handlers closing a systemic "raw exception/DB error leaks as a 500" gap across every endpoint; React 19 + Vite frontend skeleton (login, one authenticated page, mobile-first shell) + a generated TS client covering every Phase 1 endpoint
 
 ---
@@ -79,6 +77,7 @@ tech stack, extensibility strategy and deployment approach are recorded as [ADRs
 | **Frontend development ownership fixed** — a one-shot Compose `node-volume-init` service prepares Docker-managed dependency directories, while the actual `node` service and all `docker compose exec node ...` commands run as the configurable host UID/GID (default 1000 for WSL). This prevents generated files and workspace caches becoming `root:root` and blocking Git operations → [deployment.md](architecture/deployment.md#-windows-development) | 2026-08-21 |
 | **Phase 1 CRUD audit fixes** — all six master-data APIs now delegate writes to transactional module Actions; updates expose PATCH only; list sorting/includes are validated and typed; item valuation cannot be cleared; parties cannot be archived ahead of active customer/supplier roles; non-null tax-code references are blocked until the tax table exists; delete responses generate as empty 204s; and session-auth tests pin the SPA stateful domains instead of inheriting a developer's ignored `.env` | 2026-08-22 |
 | **Exchange-rate query contract aligned** — index/show includes are validated instead of silently ignored, collection sorting is validated and typed, and the established newest-rate-first default remains unchanged | 2026-08-27 |
+| **Phase 1 domain documentation reconciled against implementation** — `items.md`, `parties.md` and `general-ledger.md` now record the actual nullability/defaults, tenant-integrity layers and deletion/archive boundaries; Phase 1 is complete | 2026-08-31 |
 
 ## In progress
 
@@ -97,22 +96,13 @@ Session note: work moved from a Windows-side VS Code window (browsing the repo o
 `\\wsl.localhost\...`) to a proper **Remote-WSL** VS Code window on 2026-08-11 — do Docker/git
 commands natively from the WSL shell now, no `wsl.exe`/`MSYS_NO_PATHCONV` wrapping needed.
 
-Phase 1's task list and acceptance criteria are all done (see Done table above). What's left is
-purely doc reconciliation — see Next.
+Phase 1 is complete, including its domain-document reconciliation.
 
 ## Next
 
-**Close out [Phase 1 — Master data](phases/phase-1-master-data.md)'s remaining "Docs to update on
-completion" items**, not yet done:
-- [items.md](domain/items.md), [parties.md](domain/parties.md) — reconcile any schema drift found
-  during implementation (none identified so far, but not yet audited line by line)
-- [general-ledger.md](domain/general-ledger.md) — confirm `chart_of_accounts` matches what was
-  actually built
-- Expand [phase-2](phases/README.md#phase-2--purchasing--stock) into its own doc
-
-Then **[Phase 2 — Purchasing & stock](phases/README.md#phase-2--purchasing--stock)** starts for
-real. `item_suppliers` is already designed ([ADR 0033](decisions/0033-item-suppliers-relationship.md))
-but not built.
+**Expand [Phase 2 — Purchasing & stock](phases/README.md#phase-2--purchasing--stock) into its own
+phase document**, then begin implementation. `item_suppliers` is already designed
+([ADR 0033](decisions/0033-item-suppliers-relationship.md)) but not built.
 
 [Phase 0 — Foundation](phases/phase-0-foundation.md) remains in progress in parallel — the two
 former blockers are resolved (`btree_gist` confirmed available on dbvm, `REDIS_PREFIX=erp_`
@@ -138,7 +128,7 @@ resolved 2026-08-19 — see ADR 0031.
 | Phase | Name | Status |
 |---|---|---|
 | 0 | [Foundation](phases/phase-0-foundation.md) | In progress |
-| 1 | [Master data](phases/phase-1-master-data.md) | Build done, doc reconciliation left |
+| 1 | [Master data](phases/phase-1-master-data.md) | Complete |
 | 2 | Purchasing & stock | Not started |
 | 3 | Estimating core | Not started |
 | 4 | Sales pipeline | Not started |

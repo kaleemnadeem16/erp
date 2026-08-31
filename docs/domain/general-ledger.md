@@ -26,20 +26,20 @@ chart_of_accounts
   type            ASSET | LIABILITY | EQUITY | INCOME | EXPENSE
   parent_id       NULLABLE → chart_of_accounts    -- hierarchy; guarded like categories.parent_id
                                                       (no self-parent, no cycles, same company)
-  is_postable     bool              -- false for summary/header accounts
+  is_postable     bool DEFAULT true   -- false for summary/header accounts
   currency_id     NULLABLE          -- account restricted to one currency (e.g. a USD bank
                                         account in a PKR-base company); null = follows the
                                         company's base currency. Still translated to base
                                         currency for reporting, same as any transaction currency
                                         — see multi-currency.md
-  status          ACTIVE | ARCHIVED   -- archived, never deleted, once anything posts against it
+  status          ACTIVE | ARCHIVED DEFAULT ACTIVE
 
   unique(['company_id', 'code'])
 
 fiscal_years
   id, company_id
   name, starts_on, ends_on
-  status          OPEN | CLOSED
+  status          OPEN | CLOSED DEFAULT OPEN
 
   unique(['company_id', 'name'])
   starts_on <= ends_on
@@ -48,7 +48,7 @@ fiscal_years
 accounting_periods
   id, company_id, fiscal_year_id   -- must resolve to a fiscal_year in the same company
   period_no, name, starts_on, ends_on
-  status          OPEN | CLOSED
+  status          OPEN | CLOSED DEFAULT OPEN
 
   unique(['fiscal_year_id', 'period_no'])
   starts_on <= ends_on
@@ -127,6 +127,20 @@ the same shape as `categories.parent_id`'s guard. The inverse update is guarded 
 exist, changing a fiscal year's dates is rejected if the new range would exclude any of them.
 Fiscal-year edits therefore cannot silently strand previously valid periods outside their
 parent range.
+
+### Account lifecycle in Phase 1
+
+`chart_of_accounts` does not use soft deletes. The current DELETE endpoint physically removes an
+account, but PostgreSQL foreign keys reject the operation while a child account, item/category
+GL mapping, or customer/supplier control account references it. This is appropriate before any
+journal tables exist. Once Phase 6 introduces posting, accounts with journal history must only be
+archived (`status = ARCHIVED`) and never deleted; that posting-history guard is not implemented
+in Phase 1 because there is no journal history to query yet. Selection of archived or
+non-postable accounts for new mappings is likewise deferred to Phase 6.
+
+The account hierarchy is tenant-safe at both layers: the model rejects self-parenting, cycles
+and cross-company parents on create and update, while a composite `(parent_id, company_id)`
+foreign key protects raw database writes.
 
 ### Immutability
 

@@ -29,24 +29,28 @@ parties
   registration_no   NULLABLE
   tax_id            NULLABLE   -- e.g. VAT/GST/NTN number
   website           NULLABLE
-  custom_fields     json
-  status            ACTIVE | ARCHIVED
+  custom_fields     jsonb NULLABLE DEFAULT '{}'
+  status            ACTIVE | ARCHIVED DEFAULT ACTIVE
+  deleted_at        NULLABLE
 
   unique(['company_id', 'code'])
 
 party_contacts
   id, party_id
-  name, email, phone
+  name
+  email, phone       NULLABLE
   title             NULLABLE   -- job title at the party
-  is_primary        bool
+  is_primary        bool DEFAULT false
+  deleted_at        NULLABLE
 
 party_sites
   id, party_id
   code, name
-  address_line1, address_line2
-  city, state, postal_code
+  address_line1, address_line2   NULLABLE
+  city, state, postal_code       NULLABLE
   country_code      char(2), NULLABLE   -- ISO 3166-1 alpha-2, uppercase
-  status            ACTIVE | ARCHIVED
+  status            ACTIVE | ARCHIVED DEFAULT ACTIVE
+  deleted_at        NULLABLE
 
   unique(['party_id', 'code'])
 
@@ -61,8 +65,9 @@ customer_accounts
                                                      revenue itself comes from item/category
                                                      income_account_id, not from here
   default_currency_id      NULLABLE → currencies
-  custom_fields            json
-  status                   ACTIVE | ARCHIVED
+  custom_fields            jsonb NULLABLE DEFAULT '{}'
+  status                   ACTIVE | ARCHIVED DEFAULT ACTIVE
+  deleted_at               NULLABLE
 
   unique(['company_id', 'party_id'])   -- one customer account per party per company
   unique(['company_id', 'code'])
@@ -70,7 +75,8 @@ customer_accounts
 customer_sites
   id, customer_account_id, party_site_id
   role              BILL_TO | SHIP_TO
-  is_default        bool
+  is_default        bool DEFAULT false
+  deleted_at        NULLABLE
 
   unique(['customer_account_id', 'party_site_id', 'role'])
 
@@ -82,8 +88,9 @@ supplier_accounts
                                        -- overrides this per item, see ADR 0033
   payable_account_id       → chart_of_accounts
   default_currency_id      NULLABLE → currencies
-  custom_fields            json
-  status                   ACTIVE | ARCHIVED
+  custom_fields            jsonb NULLABLE DEFAULT '{}'
+  status                   ACTIVE | ARCHIVED DEFAULT ACTIVE
+  deleted_at               NULLABLE
 
   unique(['company_id', 'party_id'])
   unique(['company_id', 'code'])
@@ -91,7 +98,8 @@ supplier_accounts
 supplier_sites
   id, supplier_account_id, party_site_id
   role              ORDER_FROM | SHIP_FROM
-  is_default        bool
+  is_default        bool DEFAULT false
+  deleted_at        NULLABLE
 
   unique(['supplier_account_id', 'party_site_id', 'role'])
 ```
@@ -159,11 +167,22 @@ as a supplier — forcing them to be one value would mean picking a side.
 
 ### Archiving, not deleting
 
-Same as [items.md](items.md): soft status throughout, never hard-deleted, since documents from
-Phase 4 onward will reference these and must remain readable. Customer and supplier roles have
-independent lifecycles, but the shared party is their aggregate root: archive both role accounts
-before archiving the party. This prevents an active role remaining queryable while its required
-`party` relation has disappeared through the soft-delete scope.
+Same as [items.md](items.md): the party aggregate uses Laravel soft deletion throughout, so API
+DELETE operations set `deleted_at` rather than physically removing rows. The `status` column is
+a separate business lifecycle flag; it is not the mechanism used by the current archive Actions.
+Customer and supplier roles have independent lifecycles, but the shared party is their aggregate
+root: archive both role accounts before archiving the party. `ArchiveParty` locks the party row
+and rejects the operation while either non-deleted role exists. This prevents an active role
+remaining queryable while its required `party` relation has disappeared through the soft-delete
+scope.
+
+### Tenant boundaries
+
+Only `parties`, `customer_accounts` and `supplier_accounts` carry `company_id`. Contacts, shared
+sites and role-site joins inherit their scope through their owning parent relation. Parent ids
+are re-resolved through company-scoped models on create and update; customer/supplier site joins
+additionally require the role account and shared site to belong to the same party. Composite
+PostgreSQL foreign keys protect the company-bearing references against raw writes as well.
 
 ## Landmines
 
