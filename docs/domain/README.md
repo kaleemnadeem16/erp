@@ -79,6 +79,7 @@ Lead → Opportunity → Quotation (revisions) → Job → Work Order → Invoic
 | [purchasing.md](purchasing.md) | Purchase orders, receipts, QA and matching boundaries |
 | [acquisition-costing.md](acquisition-costing.md) | Provisional/actual purchase cost and landed-cost allocation |
 | [stock.md](stock.md) | Warehouses, moves, AVCO valuation |
+| [inventory-cutover.md](inventory-cutover.md) | Migrated history, opening stock and valuation continuity at go-live |
 | [sales-pipeline.md](sales-pipeline.md) | Leads, opportunities, quotations, revisions |
 | [job-costing.md](job-costing.md) | Jobs, work orders, timesheets, variance |
 

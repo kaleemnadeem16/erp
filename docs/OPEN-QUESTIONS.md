@@ -13,21 +13,37 @@ Questions do not linger once resolved.
 
 **Blocks:** Phase 2 stock transaction engine completion
 
-Should an issue that would take an item/location below zero be blocked, allowed with a warning,
-or controlled by a per-company setting? Allowing it makes AVCO undefined and can make apparently
-precise cost figures fictional. The current recommendation in [stock.md](domain/stock.md) is to
-block by default, potentially configurable per company, but the configuration scope and any
-exception workflow need an explicit decision before stock movements ship.
+Controlled history migration is already separated by
+[ADR 0036](decisions/0036-controlled-inventory-cutover.md), so this question concerns **live
+post-cutover operations** plus one tightly controlled opening-state exception.
+
+**Agreed so far — Q13.1 (2026-09-01):** negative stock is a per-company live policy with
+`BLOCK` as the mandatory default. A company may explicitly enable `AUTHORISED_OVERRIDE`, keeping
+negative inventory exceptional rather than an unrestricted workflow. An override never bypasses
+hard integrity constraints: in particular, a missing SPECIFIC/serial-identified unit cannot be
+issued. Migration/history remains governed by ADR 0036. The eligible movement types,
+balance-check scope, permissions/reason/approval/audit requirements, AVCO/FIFO provisional-cost
+and repair policy, and negative cutover opening balance remain to be decided below.
+
+**Resume here — Q13.2:** decide the balance-check scope (exact item/location/tracking identity,
+warehouse, or company) and how an explicit transfer relates to stock available elsewhere. Then
+decide eligible override transaction types (Q13.3), approval/audit controls (Q13.4),
+valuation-specific provisional-cost repair (Q13.5), and the cutover opening-balance exception
+(Q13.6). AVCO/FIFO/SPECIFIC feasibility, transactional concurrency checks, serial identity and
+auditability remain system requirements rather than optional policy.
 
 ### Q14 — Backdated stock receipts
 
 **Blocks:** Phase 2 valuation engine completion
 
-If a receipt is entered before already-costed issues, should the system recalculate every later
-valuation forward, or reject backdating past the latest affected issue? Forward recalculation is
-more flexible but substantially more complex and must preserve posted history once GL integration
-exists; blocking is simpler but constrains operations. Decide the initial policy and how it will
-interact with closed accounting periods before Phase 2 ships.
+Controlled source history preserves its source dates under
+[ADR 0036](decisions/0036-controlled-inventory-cutover.md); it is not live backdated posting.
+For **post-cutover operations**, decide whether a receipt may be valuation-effective before a
+later costed movement by blocking it, forward-recalculating open history, or requiring an
+authorised recalculation; whether the conflict scope is item-wide or location/warehouse-specific;
+and whether an additional maximum backdating window is wanted. Closed periods, immutable posted
+financial history, true physical/source-date retention and auditable current-period correction
+are hard requirements rather than optional policy.
 
 Q1, Q2 and Q3 were resolved on 2026-08-10 — see
 [ADR 0023](decisions/0023-retention-retainage-enabled.md),

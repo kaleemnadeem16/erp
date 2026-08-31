@@ -50,7 +50,9 @@ Purchase orders, supplier sourcing (`item_suppliers`,
 [ADR 0033](../decisions/0033-item-suppliers-relationship.md)), goods receipt, warehouses and
 locations, stock moves, per-item valuation (AVCO/FIFO/SPECIFIC,
 [ADR 0032](../decisions/0032-per-item-valuation-method.md)), physical counts. The negative-stock
-and backdated-receipt policies must be decided here.
+and backdated-receipt policies must be decided here. Inventory onboarding also establishes a
+controlled cutover/opening state without weakening live policy
+([ADR 0036](../decisions/0036-controlled-inventory-cutover.md)).
 → [phase-2-purchasing-stock.md](phase-2-purchasing-stock.md) · [stock.md](../domain/stock.md)
 
 ### Phase 3 — Estimating core

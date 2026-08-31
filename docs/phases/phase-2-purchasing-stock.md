@@ -31,6 +31,9 @@ create journal entries itself.
 - `warehouses` and `locations` in the existing `Inventory` module
 - `stock_moves`, `stock_layers`, `item_average_costs` and `stock_valuation_entries` per
   [stock.md](../domain/stock.md), with retained batch/serial and source-document identity
+- Inventory cutover foundations per [ADR 0036](../decisions/0036-controlled-inventory-cutover.md):
+  explicit cutover timestamp/mode, provenance-capable stock schema, opening AVCO/FIFO/SPECIFIC
+  state Actions and reconciliation; generic mapping UI/engine delivery remains separately scoped
 - Transactional AVCO, FIFO and SPECIFIC valuation selected by `items.valuation_method`
 - Goods receipt, internal transfer, stock issue/return, adjustment and physical-count workflows
 - Locking `items.valuation_method` and `stock_uom_id` after the first stock move
@@ -127,6 +130,21 @@ The order matters because later work needs stable document and stock boundaries:
       base amounts using the pinned FX rate, without creating GL journals
 - [ ] Prevent normal edits to an item's `valuation_method` or `stock_uom_id` after its first move
 
+### Inventory cutover foundation
+
+- [ ] Extend the generic ADR 0027 import contract for `INVENTORY_CUTOVER`; do not build a parallel
+      uploader/mapper or permit the generic importer to write stock domain tables directly
+- [ ] Build company cutover records with one explicit timestamp/mode, immutable source provenance,
+      dedicated permissions, staging/preview/approval/finalisation and idempotent batch identity
+- [ ] Implement reconciled opening-state Actions: AVCO quantity/value, FIFO residual or labelled
+      synthetic layers, and per-serial SPECIFIC costs; preserve source method across a method change
+- [ ] Validate quantity/value control totals, UoM/FX snapshots, batch/serial identity and layer
+      totals; make incomplete full history downgrade visibly rather than inventing detail
+- [ ] Keep historical negative/backdated source facts separate from live posting, and test that no
+      ordinary API, mapping template or post-cutover batch can invoke migration-only exceptions
+- [ ] Leave open-PO materialisation to Purchasing and the balancing opening journal to Phase 6,
+      connected through immutable cutover/source references
+
 ### Counts, API and audit
 
 - [ ] Build physical-count documents with snapshot lines, count/recount workflow and posted
@@ -155,6 +173,8 @@ Tick these in the same commit as the work.
 - [ ] Transfers preserve total company quantity and value; issues/returns/adjustments change them
       only through recorded stock moves
 - [ ] Negative-stock and backdated-receipt behaviour exactly matches the accepted Q13/Q14 ADRs
+- [ ] A finalised inventory cutover reconciles by item/location and value, establishes valid
+      continuing AVCO/FIFO/SPECIFIC state, and cannot weaken post-cutover Q13/Q14 controls
 - [ ] An item's valuation method and stock UoM cannot be changed after its first stock move
 - [ ] A posted physical count creates auditable variance moves and cannot be posted twice
 - [ ] Cross-company access and raw cross-company foreign-key writes fail for every new table
@@ -179,6 +199,8 @@ Tick these in the same commit as the work.
 - [ADR 0032](../decisions/0032-per-item-valuation-method.md)
 - [ADR 0033](../decisions/0033-item-suppliers-relationship.md)
 - [ADR 0035](../decisions/0035-separate-purchasing-operational-and-financial-facts.md)
+- [ADR 0036](../decisions/0036-controlled-inventory-cutover.md) ·
+  [inventory-cutover.md](../domain/inventory-cutover.md)
 - [multi-currency.md](../domain/multi-currency.md) ·
   [units-of-measure.md](../domain/units-of-measure.md)
 - [database.md](../architecture/database.md) ·

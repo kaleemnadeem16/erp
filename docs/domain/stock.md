@@ -154,6 +154,12 @@ issues were costed at an average that has since changed. Either recalculate forw
 correct) or block backdating past the last issue (simple). **Decide before Phase 2 ships** —
 retrofitting recalculation over history is unpleasant.
 
+**Migration is not live posting.** Controlled pre-go-live source history and opening state use
+[inventory-cutover.md](inventory-cutover.md), not ordinary movement endpoints. Historical
+negative balances/backdating may be preserved as source facts without weakening the post-cutover
+Q13/Q14 policy. The live stock schema must retain cutover/source provenance and support AVCO,
+FIFO and SPECIFIC opening states without silently recalculating official source history.
+
 **Purchase UoM vs stock UoM.** Bought in 25 kg drums, consumed in grams. Convert on receipt and
 store in the item's stock UoM; keep the purchase UoM on the purchase line for reference.
 
@@ -175,6 +181,8 @@ must not be forgotten once it does.
 - [formulations.md](formulations.md) — consumes stock cost
 - [general-ledger.md](general-ledger.md) — where valuation posts
 - [ADR 0032](../decisions/0032-per-item-valuation-method.md) — per-item valuation method
+- [inventory-cutover.md](inventory-cutover.md) — controlled history and opening-state migration
+- [ADR 0036](../decisions/0036-controlled-inventory-cutover.md) — migration/live-policy boundary
 - [ADR 0035](../decisions/0035-separate-purchasing-operational-and-financial-facts.md) — separates
   receipt, QA, supplier liability and acquisition cost
 - [ADR 0007](../decisions/0007-avco-valuation.md) — superseded by 0032, original AVCO reasoning

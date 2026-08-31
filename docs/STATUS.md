@@ -1,6 +1,6 @@
 # Project Status
 
-**Updated:** 2026-08-31
+**Updated:** 2026-09-01
 **Current phase:** Phase 0 — Foundation (production deployment still deliberately deferred) and
 Phase 2 — Purchasing & stock (in progress: dedicated plan written; implementation not started).
 Phase 1 — Master data is complete.
@@ -79,6 +79,8 @@ tech stack, extensibility strategy and deployment approach are recorded as [ADRs
 | **Phase 1 domain documentation reconciled against implementation** — `items.md`, `parties.md` and `general-ledger.md` now record the actual nullability/defaults, tenant-integrity layers and deletion/archive boundaries; Phase 1 is complete | 2026-08-31 |
 | **Phase 2 plan established** — Purchasing & stock has a dedicated scope, module boundary, implementation sequence and acceptance criteria; negative-stock and backdated-receipt policies surfaced as blocking Q13/Q14 | 2026-08-31 |
 | **Purchasing foundation agreed and documented** — procurement, receiving, QA, AP and acquisition costing remain separate auditable facts; partial receipts/invoices, three-/four-way line matching, provisional/actual costs, landed-cost allocation and immutable correction boundaries are fixed in ADR 0035 and the new purchasing/acquisition-costing domain docs | 2026-08-31 |
+| **Inventory migration/cutover architecture established** — ADR 0027 remains the single generic mapping/staging engine, while ADR 0036 and `inventory-cutover.md` define opening-state, operational and full-history modes; immutable source provenance, method continuity/change, reconciliation and a hard boundary between controlled pre-go-live exceptions and live Q13/Q14 policy are now owned by Phase 2/Phase 6 | 2026-08-31 |
+| **Q13.1 live negative-stock direction agreed** — `BLOCK` is the per-company default, with an explicitly enabled `AUTHORISED_OVERRIDE` option that cannot bypass hard integrity constraints such as SPECIFIC serial identity; movement eligibility, balance scope, controls, AVCO/FIFO cost repair and the cutover opening exception remain open | 2026-09-01 |
 
 ## In progress
 
@@ -103,7 +105,8 @@ Phase 1 is complete, including its domain-document reconciliation.
 
 Begin [Phase 2 — Purchasing & stock](phases/phase-2-purchasing-stock.md):
 
-1. Resolve [Q13/Q14](OPEN-QUESTIONS.md#blocking) as ADRs before the valuation engine ships.
+1. Continue Q13 at its documented **Q13.2 balance-scope** question, then finish Q13 and Q14 as
+   ADRs before the valuation engine ships; controlled migration is already separated by ADR 0036.
 2. Scaffold the Purchasing module, then build `item_suppliers` and warehouse/location foundations.
 
 [Phase 0 — Foundation](phases/phase-0-foundation.md) remains in progress in parallel — the two

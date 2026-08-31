@@ -53,6 +53,7 @@ import_mappings                     -- one saved template
 import_batches
   id, import_profile_id
   file_name, uploaded_at, uploaded_by
+  purpose             STANDARD | INVENTORY_CUTOVER | FINANCE_OPENING
   status              STAGED | VALIDATED | COMMITTED | FAILED
 
 import_batch_rows
@@ -84,6 +85,18 @@ Opening balances (Phase 6) import against the same mechanism but need a defined 
 post as a balancing journal entry, not bypass the GL — see
 [general-ledger.md](../domain/general-ledger.md).
 
+### Inventory cutover is a domain-controlled use of this engine
+
+Inventory migration reuses these profiles, mappings, staging rows, previews and idempotency
+controls; it is not a second import mechanism. The generic engine must not write stock tables or
+bypass live Actions itself. An Inventory-owned cutover Action interprets approved staged data,
+creates the method-specific opening state and records immutable source provenance.
+
+Historical source facts may legitimately violate the company's live negative-stock or backdating
+policy. They remain evidence inside a controlled pre-cutover batch and cannot be submitted through
+ordinary stock APIs. See [inventory-cutover.md](../domain/inventory-cutover.md) and
+[ADR 0036](../decisions/0036-controlled-inventory-cutover.md).
+
 ## Landmines
 
 **Committing without a staging step.** The moment invalid rows can reach live tables directly,
@@ -100,4 +113,6 @@ links that are hard to notice later.
 
 - [extensibility.md](extensibility.md) — custom-field landing spot for unmapped columns
 - [domain/general-ledger.md](../domain/general-ledger.md) — opening balance posting
+- [domain/inventory-cutover.md](../domain/inventory-cutover.md) — inventory-specific cutover contract
 - [ADR 0027 — Generic column-mapping data import](../decisions/0027-generic-column-mapping-import.md)
+- [ADR 0036 — Controlled inventory cutover](../decisions/0036-controlled-inventory-cutover.md)
