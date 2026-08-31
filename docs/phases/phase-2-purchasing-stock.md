@@ -22,8 +22,8 @@ create journal entries itself.
 
 ### In
 
-- A purchasing domain document defining purchase-order/line schema, statuses, approval/issue
-  boundaries, cancellation, partial receipt and UoM/currency snapshots before code is written
+- The purchasing and acquisition-costing domain designs: purchase-order/receipt schema, QA and
+  matching boundaries, partial receipt and UoM/currency/cost snapshots
 - `item_suppliers` per [ADR 0033](../decisions/0033-item-suppliers-relationship.md), including
   migration of `items.default_supplier_id` into priority-1 relationships and removal of that
   obsolete column
@@ -39,7 +39,8 @@ create journal entries itself.
 
 ### Out
 
-- Supplier invoices, three-way matching, payables and payment runs — Phase 6 Finance
+- Supplier-invoice/payables tables, matching approval/payment holds and payment runs — Phase 6
+  Finance; Phase 2 preserves the receipt/allocation contract those workflows require
 - Balanced `journal_entries`/`journal_lines`; Phase 2 only writes valuation-feed rows — Phase 6
 - Sales orders, customer returns initiated from sales, quotations and frontend CRUD — Phase 4
 - Job/work-order material issue screens and job-cost entries — Phase 5
@@ -55,7 +56,9 @@ create journal entries itself.
 
 The order matters because later work needs stable document and stock boundaries:
 
-1. Complete purchasing design and resolve Q13/Q14 as ADRs.
+1. Resolve Q13/Q14 as ADRs; the purchasing foundation is recorded in
+   [purchasing.md](../domain/purchasing.md), [acquisition-costing.md](../domain/acquisition-costing.md)
+   and [ADR 0035](../decisions/0035-separate-purchasing-operational-and-financial-facts.md).
 2. Build supplier sourcing and warehouse/location foundations.
 3. Build purchase orders and goods-receipt documents with immutable issued-line snapshots.
 4. Build the single stock-movement Action and valuation engines behind it.
@@ -66,11 +69,13 @@ The order matters because later work needs stable document and stock boundaries:
 
 ### Design and module boundaries
 
-- [ ] Write `docs/domain/purchasing.md` before the Purchasing module's first feature; define PO
-      headers/lines, status transitions, issue/cancel rules, partial receipts, over-receipt policy,
-      purchase-UoM conversion and transaction/base-currency snapshots
+- [x] Write the purchasing/acquisition-costing domain design before the Purchasing module's first
+      feature; define document boundaries, partial receipts, QA/matching integration, provisional
+      costing, purchase-UoM conversion and transaction/base-currency snapshots
 - [ ] Resolve Q13 and Q14 in accepted ADRs, remove them from `OPEN-QUESTIONS.md`, and update
       `stock.md` with the chosen policies
+- [ ] Set over-receipt tolerance/approval behaviour before goods-receipt implementation; keep it
+      aligned with the later Phase 6 matching-tolerance policy
 - [ ] Scaffold `app/Modules/Purchasing/README.md`, provider and routes; document the boundary:
       Purchasing owns sourcing and source documents, Inventory owns physical movement/valuation,
       and cross-module writes go through Actions rather than direct model mutation
@@ -168,9 +173,12 @@ Tick these in the same commit as the work.
 ## Related
 
 - [stock.md](../domain/stock.md)
+- [purchasing.md](../domain/purchasing.md) ·
+  [acquisition-costing.md](../domain/acquisition-costing.md)
 - [items.md](../domain/items.md) · [parties.md](../domain/parties.md)
 - [ADR 0032](../decisions/0032-per-item-valuation-method.md)
 - [ADR 0033](../decisions/0033-item-suppliers-relationship.md)
+- [ADR 0035](../decisions/0035-separate-purchasing-operational-and-financial-facts.md)
 - [multi-currency.md](../domain/multi-currency.md) ·
   [units-of-measure.md](../domain/units-of-measure.md)
 - [database.md](../architecture/database.md) ·

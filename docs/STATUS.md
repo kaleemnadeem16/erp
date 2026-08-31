@@ -78,6 +78,7 @@ tech stack, extensibility strategy and deployment approach are recorded as [ADRs
 | **Exchange-rate query contract aligned** — index/show includes are validated instead of silently ignored, collection sorting is validated and typed, and the established newest-rate-first default remains unchanged | 2026-08-27 |
 | **Phase 1 domain documentation reconciled against implementation** — `items.md`, `parties.md` and `general-ledger.md` now record the actual nullability/defaults, tenant-integrity layers and deletion/archive boundaries; Phase 1 is complete | 2026-08-31 |
 | **Phase 2 plan established** — Purchasing & stock has a dedicated scope, module boundary, implementation sequence and acceptance criteria; negative-stock and backdated-receipt policies surfaced as blocking Q13/Q14 | 2026-08-31 |
+| **Purchasing foundation agreed and documented** — procurement, receiving, QA, AP and acquisition costing remain separate auditable facts; partial receipts/invoices, three-/four-way line matching, provisional/actual costs, landed-cost allocation and immutable correction boundaries are fixed in ADR 0035 and the new purchasing/acquisition-costing domain docs | 2026-08-31 |
 
 ## In progress
 
@@ -102,9 +103,8 @@ Phase 1 is complete, including its domain-document reconciliation.
 
 Begin [Phase 2 — Purchasing & stock](phases/phase-2-purchasing-stock.md):
 
-1. Write the missing purchasing domain design and settle its document/status workflow.
-2. Resolve [Q13/Q14](OPEN-QUESTIONS.md#blocking) as ADRs before the valuation engine ships.
-3. Scaffold the Purchasing module, then build `item_suppliers` and warehouse/location foundations.
+1. Resolve [Q13/Q14](OPEN-QUESTIONS.md#blocking) as ADRs before the valuation engine ships.
+2. Scaffold the Purchasing module, then build `item_suppliers` and warehouse/location foundations.
 
 [Phase 0 — Foundation](phases/phase-0-foundation.md) remains in progress in parallel — the two
 former blockers are resolved (`btree_gist` confirmed available on dbvm, `REDIS_PREFIX=erp_`

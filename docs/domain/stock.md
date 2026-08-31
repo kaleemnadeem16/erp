@@ -107,6 +107,12 @@ return to supplier like an issue. What distinguishes a return from an ordinary r
 One table, one polymorphic source reference. Every quantity change in the system is a
 `stock_move` — there is no other way to alter stock.
 
+A supplier invoice is never a stock source. Even a future quick-purchase UI must create a linked
+goods receipt and supplier invoice; only the receipt-side inventory transaction changes quantity.
+Posted stock movements are not edited in place: corrections create explicit reversal, return or
+adjustment movements after validating downstream dependencies. See
+[ADR 0035](../decisions/0035-separate-purchasing-operational-and-financial-facts.md).
+
 ### Historical retention for replay
 
 The schema above retains enough to replay history under a *different* method than an item's
@@ -164,7 +170,11 @@ must not be forgotten once it does.
 ## Related
 
 - [items.md](items.md) — what is stocked, and where `valuation_method` is chosen
+- [purchasing.md](purchasing.md) — which receipt documents originate purchase stock moves
+- [acquisition-costing.md](acquisition-costing.md) — provisional cost and later adjustments
 - [formulations.md](formulations.md) — consumes stock cost
 - [general-ledger.md](general-ledger.md) — where valuation posts
 - [ADR 0032](../decisions/0032-per-item-valuation-method.md) — per-item valuation method
+- [ADR 0035](../decisions/0035-separate-purchasing-operational-and-financial-facts.md) — separates
+  receipt, QA, supplier liability and acquisition cost
 - [ADR 0007](../decisions/0007-avco-valuation.md) — superseded by 0032, original AVCO reasoning
