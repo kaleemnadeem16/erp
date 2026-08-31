@@ -25,6 +25,7 @@ import type {
   ExchangeRatesIndex200,
   ExchangeRatesIndexParams,
   ExchangeRatesShow200,
+  ExchangeRatesShowParams,
   ExchangeRatesStore201,
   ExchangeRatesUpdate200,
   ModelNotFoundExceptionResponse,
@@ -371,11 +372,18 @@ export type exchangeRatesShowResponse404 = {
   status: 404;
 };
 
+export type exchangeRatesShowResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
+};
+
 export type exchangeRatesShowResponseSuccess = exchangeRatesShowResponse200 & {
   headers: Headers;
 };
 export type exchangeRatesShowResponseError = (
-  exchangeRatesShowResponse401 | exchangeRatesShowResponse404
+  | exchangeRatesShowResponse401
+  | exchangeRatesShowResponse404
+  | exchangeRatesShowResponse422
 ) & {
   headers: Headers;
 };
@@ -383,16 +391,32 @@ export type exchangeRatesShowResponseError = (
 export type exchangeRatesShowResponse =
   exchangeRatesShowResponseSuccess | exchangeRatesShowResponseError;
 
-export const getExchangeRatesShowUrl = (exchangeRate: number) => {
-  return `/v1/exchange-rates/${exchangeRate}`;
+export const getExchangeRatesShowUrl = (
+  exchangeRate: number,
+  params?: ExchangeRatesShowParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/v1/exchange-rates/${exchangeRate}?${stringifiedParams}`
+    : `/v1/exchange-rates/${exchangeRate}`;
 };
 
 export const exchangeRatesShow = async (
   exchangeRate: number,
+  params?: ExchangeRatesShowParams,
   options?: RequestInit,
 ): Promise<exchangeRatesShowResponse> => {
   return fetchClient<exchangeRatesShowResponse>(
-    getExchangeRatesShowUrl(exchangeRate),
+    getExchangeRatesShowUrl(exchangeRate, params),
     {
       ...options,
       method: "GET",
@@ -400,15 +424,25 @@ export const exchangeRatesShow = async (
   );
 };
 
-export const getExchangeRatesShowQueryKey = (exchangeRate?: number) => {
-  return [`/v1/exchange-rates/${exchangeRate}`] as const;
+export const getExchangeRatesShowQueryKey = (
+  exchangeRate?: number,
+  params?: ExchangeRatesShowParams,
+) => {
+  return [
+    `/v1/exchange-rates/${exchangeRate}`,
+    ...(params ? [params] : []),
+  ] as const;
 };
 
 export const getExchangeRatesShowQueryOptions = <
   TData = Awaited<ReturnType<typeof exchangeRatesShow>>,
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
 >(
   exchangeRate: number,
+  params?: ExchangeRatesShowParams,
   options?: {
     query?: Partial<
       UseQueryOptions<
@@ -423,11 +457,12 @@ export const getExchangeRatesShowQueryOptions = <
   const { query: queryOptions, request: requestOptions } = options ?? {};
 
   const queryKey =
-    queryOptions?.queryKey ?? getExchangeRatesShowQueryKey(exchangeRate);
+    queryOptions?.queryKey ??
+    getExchangeRatesShowQueryKey(exchangeRate, params);
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof exchangeRatesShow>>
-  > = () => exchangeRatesShow(exchangeRate, requestOptions);
+  > = () => exchangeRatesShow(exchangeRate, params, requestOptions);
 
   return {
     queryKey,
@@ -445,13 +480,19 @@ export type ExchangeRatesShowQueryResult = NonNullable<
   Awaited<ReturnType<typeof exchangeRatesShow>>
 >;
 export type ExchangeRatesShowQueryError =
-  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
+  | AuthenticationExceptionResponse
+  | ModelNotFoundExceptionResponse
+  | ValidationExceptionResponse;
 
 export function useExchangeRatesShow<
   TData = Awaited<ReturnType<typeof exchangeRatesShow>>,
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
 >(
   exchangeRate: number,
+  params: undefined | ExchangeRatesShowParams,
   options: {
     query: Partial<
       UseQueryOptions<
@@ -476,9 +517,13 @@ export function useExchangeRatesShow<
 };
 export function useExchangeRatesShow<
   TData = Awaited<ReturnType<typeof exchangeRatesShow>>,
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
 >(
   exchangeRate: number,
+  params?: ExchangeRatesShowParams,
   options?: {
     query?: Partial<
       UseQueryOptions<
@@ -503,9 +548,13 @@ export function useExchangeRatesShow<
 };
 export function useExchangeRatesShow<
   TData = Awaited<ReturnType<typeof exchangeRatesShow>>,
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
 >(
   exchangeRate: number,
+  params?: ExchangeRatesShowParams,
   options?: {
     query?: Partial<
       UseQueryOptions<
@@ -523,9 +572,13 @@ export function useExchangeRatesShow<
 
 export function useExchangeRatesShow<
   TData = Awaited<ReturnType<typeof exchangeRatesShow>>,
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
 >(
   exchangeRate: number,
+  params?: ExchangeRatesShowParams,
   options?: {
     query?: Partial<
       UseQueryOptions<
@@ -540,7 +593,11 @@ export function useExchangeRatesShow<
 ): UseQueryResult<TData, TError> & {
   queryKey: DataTag<QueryKey, TData, TError>;
 } {
-  const queryOptions = getExchangeRatesShowQueryOptions(exchangeRate, options);
+  const queryOptions = getExchangeRatesShowQueryOptions(
+    exchangeRate,
+    params,
+    options,
+  );
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<
     TData,

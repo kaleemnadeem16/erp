@@ -5,6 +5,7 @@
  * OpenAPI spec version: 0.0.1
  */
 import type { RateType } from "./rateType";
+import type { ExchangeRatesIndexSort } from "./exchangeRatesIndexSort";
 
 export type ExchangeRatesIndexParams = {
   /**
@@ -17,6 +18,8 @@ export type ExchangeRatesIndexParams = {
   "filter[to_currency_id]"?: number;
   "filter[rate_type]"?: RateType;
   "filter[rate_date]"?: string;
+  sort?: ExchangeRatesIndexSort;
+  include?: string;
   /**
    * @minimum 1
    * @maximum 100
