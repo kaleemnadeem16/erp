@@ -143,11 +143,12 @@ exactly that base value into the destination pool, whose average is recalculated
 inflow, not external acquisition cost. The paired valuation effects retain both pool identities,
 rounding cannot create/destroy company value, and company total quantity/value remain unchanged.
 
-If the physical source location has sufficient quantity but its wider source pool is non-positive,
-the last defensible provisional pool AVCO is carried to the destination. Both effects remain
-provisional and linked to the source recovery chain; later repair appends paired adjustments and
+If the physical source location has sufficient quantity but its wider source pool is non-positive
+(possible for `WAREHOUSE_ITEM` when another location in that warehouse pool is negative), the last
+defensible provisional pool AVCO is carried to the destination. Both effects remain provisional
+and linked to the same source recovery/repair chain; later repair appends paired adjustments and
 propagates through affected destination dependencies while preserving company-value neutrality.
-This never permits a negative physical-source transfer.
+This is a non-positive valuation-pool case and never permits a negative physical-source transfer.
 
 ### Negative stock contract
 
@@ -165,10 +166,21 @@ Unsupported AVCO/FIFO quantity uses a defensible system-derived provisional cost
 and recovers independently at its resolved configured pool; a negative location does not freeze a
 positive wider pool. FIFO records a shortage, never a fake receipt layer. Compatible inbound
 settles oldest shortages first and appends linked adjustments without mutating original history.
+AVCO provisional cost uses the pool's last valid official average, then a specifically linked
+trusted expected inbound/acquisition cost, then exactly one unambiguous eligible expected inbound;
+multiple plausible sources or no defensible source block, and users never enter an estimate.
+FIFO cost prefers a specifically linked PO/expected receipt/inbound; without a link, exactly one
+unambiguous eligible expected inbound may be used. Multiple plausible sources or no defensible
+source block—the system never chooses an inbound merely because it is oldest, cheapest or nearest.
 
 Cutover-only AVCO/FIFO negative openings require exact identity, defensible cost, approval,
-resolution ownership/date and per-location/pool/company reconciliation. They grant no live
-authority; SPECIFIC/serial negatives remain blocked. See
+resolution ownership/date and per-location/pool/company reconciliation. Acceptance immediately
+creates an `OPEN_CUTOVER_SHORTAGE` linked to official opening state and governed by normal
+compatible settlement and append-only repair; historical source negatives remain separate
+migration evidence. Its target defaults to cutover plus 30 elapsed days; an alternative requires
+explicit approval/reason, while overdue status escalates and reports but never creates an automatic
+inventory adjustment. The opening grants no live authority and SPECIFIC/serial negatives remain
+blocked. See
 [inventory-cutover.md](inventory-cutover.md#dates-negative-balances-and-corrections).
 
 A supplier invoice is never a stock source. Even a future quick-purchase UI must create a linked
@@ -236,8 +248,66 @@ configured pools and real cross-pool dependencies for AVCO, the affected layer/d
 graph for FIFO, the exact serial chain for SPECIFIC and the compatible settlement/adjustment chain
 for negative shortages. Unrelated pools are excluded. Preview may overestimate conservatively;
 actual adjustments are limited to changed economic results, replay runs to deterministic
-convergence and execution revalidates the dependency scope. Request/approval expiry and the final
-open-/closed-period correction workflow remain to be decided in Q14.
+convergence and execution revalidates the dependency scope.
+
+[ADR 0040](../decisions/0040-control-backdated-stock-recalculation-and-corrections.md)
+separates review delay, changed facts and ageing authority. Pending review has a bounded
+company-configurable SLA (72 elapsed hours by default); breach marks `OVERDUE` and escalates while
+preserving requester/approver separation, but does not invalidate the request. Staleness is
+state-based. Each request owns immutable append-only impact versions, approval targets one exact
+version, and execution revalidation automatically appends a fresh version requiring fresh approval
+when material dependencies or economics change. Normal rolling-floor clock progression alone is
+not stale. Approved execution authority has a hard bounded company-configurable TTL (24 elapsed
+hours by default); expiry prevents execution. Trusted server time and persisted deadlines govern,
+and later policy changes do not rewrite them.
+
+The same ADR makes
+materiality exact and semantic: changed executable economics/dependencies create an automatic
+replacement impact version, while authority-only changes reroute/invalidate approval against the
+same version. Every version is independently `NORMAL_RISK` or `HIGH_RISK`. Closed-period effects,
+qualifying finalised downstream effects, controlled ordinary-tier self-review and later defined
+non-disableable governance conditions are hard high-risk triggers requiring a second independent
+approver. Optional bounded company thresholds use base/functional currency and may strengthen,
+never disable, hard routing.
+
+Final revalidation/execution serialises overlapping recalculations and locks the complete Q14.2
+economic closure: affected configured AVCO pools plus cross-pool dependencies; FIFO layers,
+allocations and downstream graph; the exact SPECIFIC serial/unit chain; and affected shortage
+settlement/repair chains. Locking is never narrower than valuation state that can change the
+deterministic result. Stale versions cannot execute. The bounded regeneration counter counts only
+material invalidations after at least one approval, never pre-review recomputation; manual
+resumption does not reset it and a repeated cap hit escalates more severely.
+
+The same ADR closes the correction workflow with an append-only linked correction package based on
+the exact approved impact version. It preserves original and counterfactual results, exact approved
+delta, historical dates and actual applicable FX bases; current-rate retranslation is not the
+default and genuine FX effects remain separate. Deterministic replay allocates economic lines among
+remaining Inventory value, consumed job costs, Sales/COGS and other economic owners without
+changing physical quantity or mutating any original/finalised record. Accounting represents those
+lines in the GL rather than adding another economic allocation; Tax, integrations and ancillary
+obligations reconcile separately on their own bases.
+
+Implemented synchronous participants declared inside one internal transaction execute atomically;
+any failure rolls back all and cannot become a pending obligation after partial internal commit.
+Unimplemented, intentionally asynchronous, Tax-deferred and external owners remain explicit,
+monitored obligations delivered where applicable through a durable idempotent outbox/correction
+event. The earliest permitted open period is the default posting point; no valid point means
+pending/blocked, never automatic reopening. Full reconciliation requires economic allocation to
+equal the approved delta, GL to reconcile to that allocation, ancillary obligations to reconcile
+on their own bases and explicit rounding to leave no unexplained residual.
+
+The final operational details also require that Q13 immediate review records `JUSTIFIED` or
+`FLAGGED`; the latter enters accountability/correction without automatically reversing stock, and
+review remains separate from shortage settlement. Independent Q13 review is the default; an
+explicitly recorded self-review is available only through a separately enabled, elevated and
+audited small-company policy and does not itself invoke Q14. Separately, ordinary-tier self-review
+of an actual Q14 impact is a mandatory high-risk trigger requiring its second independent approval.
+Consequential company settings require elevated permission, mandatory reason,
+actor, old/new values and timestamp without rewriting snapshotted deadlines/context. Correction
+packages have unique stable identity and idempotent execution, so retries resolve existing results
+instead of duplicating value. They expose cumulative period/account/financial-line/prior-package
+and currency context for Accounting-owned materiality. An unlinked manual journal cannot resolve a
+Q14 package, though legitimate manual journals outside that workflow remain available.
 
 Backdating horizon is a separate eligibility dimension. The company defaults to current + previous
 open period, or may select period-lock-only or one fixed/rolling posting floor. Rolling floors use

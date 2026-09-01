@@ -5,10 +5,9 @@
 - **Status:** in progress — planning established 2026-08-31; implementation not started
 - **Depends on:** [Phase 1 — Master data](phase-1-master-data.md) (items, supplier accounts,
   currencies, UoMs and chart-of-account references)
-- **Blocked by:** the valuation engine cannot ship until
-  [Q14](../OPEN-QUESTIONS.md#q14--backdated-stock-receipts) is resolved; negative stock is fixed by
-  [ADR 0037](../decisions/0037-controlled-negative-stock-overrides.md), and sourcing and warehouse
-  foundations are not blocked
+- **Blocked by:** nothing currently; negative stock is fixed by
+  [ADR 0037](../decisions/0037-controlled-negative-stock-overrides.md) and backdated receipts by
+  [ADR 0040](../decisions/0040-control-backdated-stock-recalculation-and-corrections.md)
 
 ## Goal
 
@@ -76,8 +75,8 @@ The order matters because later work needs stable document and stock boundaries:
 - [x] Write the purchasing/acquisition-costing domain design before the Purchasing module's first
       feature; define document boundaries, partial receipts, QA/matching integration, provisional
       costing, purchase-UoM conversion and transaction/base-currency snapshots
-- [ ] Resolve Q14 in an accepted ADR and remove it from `OPEN-QUESTIONS.md`; Q13 is resolved by
-      ADR 0037 and already reconciled into `stock.md`
+- [x] Resolve Q14 in an accepted ADR and remove it from `OPEN-QUESTIONS.md`; Q13 is resolved by
+      ADR 0037 and both policies are reconciled into `stock.md`
 - [ ] Set over-receipt tolerance/approval behaviour before goods-receipt implementation; keep it
       aligned with the later Phase 6 matching-tolerance policy
 - [ ] Scaffold `app/Modules/Purchasing/README.md`, provider and routes; document the boundary:
@@ -145,6 +144,25 @@ The order matters because later work needs stable document and stock boundaries:
 - [ ] Snapshot request-time rolling-floor context, preserve eligibility across normal clock
       progression, revalidate material policy/boundary changes at execution and reject per-request
       horizon extensions
+- [ ] Build recalculation requests with immutable append-only impact versions, exact-version
+      approvals, state-based staleness and automatic replacement-version generation per
+      [ADR 0040](../decisions/0040-control-backdated-stock-recalculation-and-corrections.md)
+- [ ] Enforce bounded company-configurable review SLAs (72-hour default), overdue escalation that
+      preserves requester/approver separation, and hard approved-execution TTLs (24-hour default)
+      using persisted deadlines and trusted server time
+- [ ] Implement exact semantic impact comparison, authority-only approval rerouting, per-version
+      normal/high-risk classification and mandatory second independent approval for hard high-risk
+      consequences per
+      [ADR 0040](../decisions/0040-control-backdated-stock-recalculation-and-corrections.md)
+- [ ] Audit every consequential company-policy change with elevated permission, mandatory reason,
+      actor, old/new values and timestamp without rewriting snapshotted request context/deadlines
+- [ ] Serialise overlapping recalculation execution with deterministic locks over the complete
+      method-specific replay closure, count only post-approval material invalidations toward the
+      regeneration cap, and escalate repeated cap hits without resetting the counter
+- [ ] Build idempotent append-only correction packages preserving exact approved deltas, historical
+      FX bases, deterministic downstream allocation, explicit pending owners and zero-residual
+      reconciliation per
+      [ADR 0040](../decisions/0040-control-backdated-stock-recalculation-and-corrections.md)
 
 ### Inventory cutover foundation
 
@@ -205,6 +223,14 @@ Tick these in the same commit as the work.
 - [ ] Horizon eligibility uses the configured period/floor mode, snapshots trusted rolling context,
       cannot cross stricter cutover/period/policy boundaries and routes outside-horizon differences
       to the explicit correction workflow without falsifying physical dates
+- [ ] A backdated correction package is idempotent, preserves approved historical FX/deltas,
+      allocates its economic lines without changing physical quantity, reconciles GL representation
+      without double counting, reconciles Tax/integration/ancillary obligations on their own bases,
+      and cannot finish with an unexplained residual or unresolved required obligation
+- [ ] Retrying after a correction commit/response timeout resolves the unique existing package and
+      never duplicates value; an unlinked manual journal cannot resolve its Accounting obligation
+- [ ] A failure by any synchronous implemented participant rolls the declared internal transaction
+      back in full; only deliberately deferred/asynchronous/external obligations may remain pending
 - [ ] A posted physical count creates auditable variance moves and cannot be posted twice
 - [ ] Cross-company access and raw cross-company foreign-key writes fail for every new table
 - [ ] Full Pest/Pint/Larastan/frontend/codegen pipeline passes on PostgreSQL 16

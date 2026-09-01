@@ -155,10 +155,34 @@ partial entry that balances in one currency but not the other must be rejected.
 
 ### Periods
 
-Posting into a `CLOSED` period is rejected. Backdated entries need the period reopened, which
-should be permissioned and logged. The persisted `CLOSED` value already locks
+Posting into a `CLOSED` period is rejected. Direct posting into that historical period would
+require a separate permissioned and logged Accounting reopen workflow. The persisted `CLOSED`
+value already locks
 `companies.fiscal_year_start_month` per ADR 0024; the authorised close/reopen workflow itself
 remains Phase 6 work and is not implied by that setting guard.
+
+Inventory recalculation is not authority to reopen a period. Under
+[ADR 0040](../decisions/0040-control-backdated-stock-recalculation-and-corrections.md), an
+approved backdated-stock difference uses an append-only linked correction at the earliest
+permitted open posting point by default; if none exists, it remains pending or blocked. Accounting
+owns classification under the applicable framework—including prior-period error, estimate change,
+ordinary late information, materiality and any financial-statement presentation—while Inventory
+supplies immutable original/counterfactual facts and cumulative period/account context.
+
+Economic correction allocation lines must sum to the exact approved functional/base-currency
+delta. The correction journal represents and reconciles to those allocation lines; it is not an
+additional economic allocation to add again. Tax/VAT/duty, integrations and ancillary obligations
+reconcile separately on their own bases. Historical FX uses the actual applicable original and
+counterfactual bases rather than universal current-rate retranslation, while a genuine separate FX
+effect is classified and posted separately. Explicit rounding treatment is required and no
+unexplained residual may remain before the package is fully reconciled.
+
+The correction package supplies cumulative affected periods, accounts, known financial-statement
+lines, prior related packages and transaction/base-currency amounts. Accounting owns materiality,
+classification and restatement treatment. A linked GL posting is required for Q14 reconciliation;
+an unrelated manual journal cannot resolve the package, although legitimate manual journals remain
+available outside this workflow. Stable package identity and idempotent execution prevent a retry
+after an ambiguous timeout from posting the same economic correction twice.
 
 ### What posts when
 
@@ -206,3 +230,4 @@ balance.
 - [parties.md](parties.md) — `receivable_account_id` / `payable_account_id`
 - [ADR 0011](../decisions/0011-double-entry-open-item-ar.md)
 - [ADR 0024](../decisions/0024-onboarding-base-currency-and-fiscal-year.md) — `companies.fiscal_year_start_month`
+- [ADR 0040](../decisions/0040-control-backdated-stock-recalculation-and-corrections.md) — canonical Q14 controls and Accounting reconciliation

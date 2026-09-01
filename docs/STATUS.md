@@ -91,6 +91,7 @@ tech stack, extensibility strategy and deployment approach are recorded as [ADRs
 | **Initial AVCO pool and Q14.2 replay scope agreed** — ADR 0038 initially fixed AVCO at one company-wide pool per item; the subsequent migration-continuity review superseded that pool restriction with ADR 0039 while retaining dependency-aware replay | 2026-09-01 |
 | **Constrained configurable AVCO pools accepted** — [ADR 0039](decisions/0039-configurable-avco-valuation-pools.md) supports `COMPANY_ITEM` (default), `WAREHOUSE_ITEM` and batch-only `COMPANY_ITEM_BATCH`; scope is persisted/locked, historical pool identity is immutable, transfers conserve company value, and cutover/replay preserve actual pool dependencies | 2026-09-01 |
 | **Q14.3 live backdating horizon agreed** — companies default to current + previous open period, with explicit period-lock-only or fixed/rolling posting-floor alternatives; trusted request-time context, execution revalidation and the strictest boundary govern, one-off extensions are forbidden, and outside-horizon economics use the later correction workflow without falsifying physical dates | 2026-09-01 |
+| **Q14 backdated-receipt policy completed and reconciled** — [ADR 0040](decisions/0040-control-backdated-stock-recalculation-and-corrections.md) consolidates controlled exact-version replay, method-specific dependency locking, bounded review/approval, semantic staleness, high-risk routing, append-only idempotent corrections, historical FX, atomic/deferred ownership and non-double-counting reconciliation; it also preserves the distinct Q13/Q14 self-review workflows, and Q14 is removed as the Phase 2 blocker | 2026-09-02 |
 
 ## In progress
 
@@ -115,24 +116,23 @@ Phase 1 is complete, including its domain-document reconciliation.
 
 Begin [Phase 2 — Purchasing & stock](phases/phase-2-purchasing-stock.md):
 
-1. Continue Q14 at its documented **Q14.4 recalculation request/approval governance** question, then record it as
-   ADRs before the valuation engine ships; controlled migration is already separated by ADR 0036.
-2. Scaffold the Purchasing module, then build `item_suppliers` and warehouse/location foundations.
+1. Scaffold the Purchasing module, then build `item_suppliers` and warehouse/location foundations.
+2. Implement the Phase 2 stock schema and valuation engine against the governing ADRs 0036–0040.
 
 [Phase 0 — Foundation](phases/phase-0-foundation.md) remains in progress in parallel — the two
 former blockers are resolved (`btree_gist` confirmed available on dbvm, `REDIS_PREFIX=erp_`
 collision check came back clean) and nothing else is outstanding except the deliberately-deferred
 production deployment.
 
-Unblocked Phase 2 foundation work can proceed while the two stock-policy questions are resolved.
+Phase 2 has no remaining stock-policy blocker.
 
 ## Blocked / awaiting input
 
-Q14 blocks completion of the Phase 2 valuation engine, but not its sourcing,
-purchasing-design or warehouse-foundation work. Q13 is resolved by
-[ADR 0037](decisions/0037-controlled-negative-stock-overrides.md).
+No current Phase 2 blocker. Q13 and Q14 are resolved by
+[ADR 0037](decisions/0037-controlled-negative-stock-overrides.md) and
+[ADR 0040](decisions/0040-control-backdated-stock-recalculation-and-corrections.md).
 
-Full list: [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) — 1 Phase 2 blocker (backdated receipts),
+Full list: [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) — 0 blocking,
 2 non-blocking (second customer profile; sharing master data across a
 customer's own legal entities). Q11 (stock valuation
 method) resolved 2026-08-20 — see [ADR 0032](decisions/0032-per-item-valuation-method.md). Q12
