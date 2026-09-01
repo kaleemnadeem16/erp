@@ -69,6 +69,12 @@ depends on valuation method and accounting policy. That policy remains outstandi
 retain source, effective and posting dates plus immutable links so AVCO, FIFO and SPECIFIC can be
 handled without reconstructing history.
 
+For AVCO, receipt and later acquisition-cost effects enter the resolved immutable pool identified
+under [ADR 0039](../decisions/0039-configurable-avco-valuation-pools.md). A transfer-in across AVCO
+pools carries source-pool inventory value and is not a new external acquisition-cost component.
+Historical adjustments retain the pool identity used at posting rather than resolving against an
+item's later configuration.
+
 ## Landmines
 
 **Overwriting the estimate.** This destroys expected-versus-actual reporting and makes the
@@ -94,4 +100,4 @@ differences have different sources and later accounting treatment; retain their 
 - [Multi-currency](multi-currency.md) · [Tax](tax.md)
 - [ADR 0032](../decisions/0032-per-item-valuation-method.md)
 - [ADR 0035](../decisions/0035-separate-purchasing-operational-and-financial-facts.md)
-
+- [ADR 0039](../decisions/0039-configurable-avco-valuation-pools.md)

@@ -185,7 +185,8 @@ move solely to express “inspection pending” combines physical and quality tr
 consumed or financially matched. Validate dependencies and create explicit correcting events;
 never edit the original or automatically unwind unrelated downstream facts.
 
-**Unsettled inventory policy.** Negative-stock and backdated-receipt behaviour remain Q13/Q14 and
+**Inventory timing policy.** Negative stock is governed by
+[ADR 0037](../decisions/0037-controlled-negative-stock-overrides.md); backdated-receipt behaviour remains Q14 and
 must be decided before the valuation engine ships.
 
 ## Related
@@ -196,4 +197,3 @@ must be decided before the valuation engine ships.
 - [Units of measure](units-of-measure.md) · [Multi-currency](multi-currency.md)
 - [ADR 0035](../decisions/0035-separate-purchasing-operational-and-financial-facts.md)
 - [Phase 2](../phases/phase-2-purchasing-stock.md)
-

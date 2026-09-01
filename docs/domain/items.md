@@ -24,6 +24,7 @@ items
   is_purchasable    bool DEFAULT false
   is_sellable       bool DEFAULT false
   valuation_method  AVCO | FIFO | SPECIFIC   -- see "Valuation method" below
+  avco_pool_scope   NULLABLE COMPANY_ITEM | WAREHOUSE_ITEM | COMPANY_ITEM_BATCH
   tracking          NONE | BATCH | SERIAL DEFAULT NONE
   category_id
   default_supplier_id  NULLABLE → supplier_accounts
@@ -102,6 +103,15 @@ nothing is not tolerated here — item creation fails rather than leaving `valua
 enforceable yet, nothing to check against today). Changing an item's method after that point is a
 controlled conversion/revaluation, not a field edit.
 
+For an AVCO item, `avco_pool_scope` is resolved before its first movement from an explicit choice
+or the company's `COMPANY_ITEM` default, then persisted. Supported scopes are `COMPANY_ITEM`,
+`WAREHOUSE_ITEM` and `COMPANY_ITEM_BATCH`; the last requires `BATCH` tracking. Batch tracking does
+not itself choose batch valuation. Non-AVCO items leave the field null. Like valuation method,
+scope is locked after the first movement and never dynamically follows later company-default
+changes. A live change requires an effective-dated, approved valuation-policy migration with
+rebased pools and quantity/value reconciliation, per
+[ADR 0039](../decisions/0039-configurable-avco-valuation-pools.md).
+
 **Three independent concepts — do not conflate them:** `valuation_method` (accounting cost basis),
 `tracking` (whether units/lots are traceable at all), and a warehouse's physical removal strategy
 (not built — future `FIFO`/`FEFO`/`MANUAL`, picking order on the floor). `BATCH` tracking does not
@@ -150,3 +160,5 @@ company's category, UoM, supplier account or GL account.
 - [stock.md](stock.md) — where `valuation_method` actually posts
 - [ADR 0032](../decisions/0032-per-item-valuation-method.md) — why valuation method is per-item,
   not company-wide
+- [ADR 0039](../decisions/0039-configurable-avco-valuation-pools.md) — constrained AVCO scope,
+  locking and historical pool identity

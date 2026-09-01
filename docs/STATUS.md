@@ -80,7 +80,17 @@ tech stack, extensibility strategy and deployment approach are recorded as [ADRs
 | **Phase 2 plan established** — Purchasing & stock has a dedicated scope, module boundary, implementation sequence and acceptance criteria; negative-stock and backdated-receipt policies surfaced as blocking Q13/Q14 | 2026-08-31 |
 | **Purchasing foundation agreed and documented** — procurement, receiving, QA, AP and acquisition costing remain separate auditable facts; partial receipts/invoices, three-/four-way line matching, provisional/actual costs, landed-cost allocation and immutable correction boundaries are fixed in ADR 0035 and the new purchasing/acquisition-costing domain docs | 2026-08-31 |
 | **Inventory migration/cutover architecture established** — ADR 0027 remains the single generic mapping/staging engine, while ADR 0036 and `inventory-cutover.md` define opening-state, operational and full-history modes; immutable source provenance, method continuity/change, reconciliation and a hard boundary between controlled pre-go-live exceptions and live Q13/Q14 policy are now owned by Phase 2/Phase 6 | 2026-08-31 |
-| **Q13.1 live negative-stock direction agreed** — `BLOCK` is the per-company default, with an explicitly enabled `AUTHORISED_OVERRIDE` option that cannot bypass hard integrity constraints such as SPECIFIC serial identity; movement eligibility, balance scope, controls, AVCO/FIFO cost repair and the cutover opening exception remain open | 2026-09-01 |
+| **Q13.1 live negative-stock direction agreed** — `BLOCK` is the per-company default, with an explicitly enabled `AUTHORISED_OVERRIDE` option that cannot bypass hard integrity constraints such as SPECIFIC serial identity; the remaining policy was subsequently resolved through Q13.2–Q13.6 and ADR 0037 | 2026-09-01 |
+| **Q13.2 live availability scope agreed** — outbound stock is checked at the exact source location and tracking identity; stock elsewhere requires an explicit transfer (or an eligible authorised override), missing serial identity remains a hard block, and physical availability is explicitly independent of valuation scope | 2026-09-01 |
+| **Q13.3 override eligibility agreed** — companies using `AUTHORISED_OVERRIDE` configure eligibility across a fixed set of genuine outbound/consumption classes; transfers are permanently excluded, corrections/reversals use a separate dependency-aware workflow, hard integrity blocks remain non-configurable, and policy changes are permissioned and audited | 2026-09-01 |
+| **Q13.4 override transaction controls agreed** — eligible classes use `PRIOR_APPROVAL` by default or `IMMEDIATE_WITH_REVIEW`; every use is explicit, permissioned, reasoned and immutably audited, immediate reviews have a default 24-hour bounded SLA and escalation, review outcomes remain distinct from shortage settlement, and constrained self-review is visible and policy-controlled | 2026-09-01 |
+| **Q13.5 provisional valuation/repair agreed** — unsupported AVCO/FIFO quantity uses a defensible system-held provisional cost, never unstable averaging, fake layers, free-form estimates or guesses; compatible inbound settles shortages oldest-first and appends immutable linked adjustments, while AVCO recovery excludes exhausted pre-negative inventory | 2026-09-01 |
+| **Q13.6 negative cutover opening agreed** — dedicated cutover may preserve an evidenced AVCO/FIFO negative opening with exact identity, defensible cost, approval, reconciliation and a resolution plan (30 elapsed days by default); it creates a tracked shortage but no live privilege, blocks SPECIFIC/invented provenance, and overdue status escalates without fabricating stock events | 2026-09-01 |
+| **Q13 negative-stock policy accepted** — exact-location availability; constrained, permissioned overrides for genuine outbound consumption; no negative-source transfers or missing SPECIFIC identity; explicit AVCO/FIFO provisional valuation and settlement; and isolated negative cutover openings are fixed in [ADR 0037](decisions/0037-controlled-negative-stock-overrides.md) | 2026-09-01 |
+| **Q14.1 live backdating direction agreed** — conflicting valuation backdates block by default, with optional authorised, impact-previewed deterministic forward replay; physical/source truth remains distinct, automatic replay and history mutation are excluded, closed periods stay immutable, and policy/reviewer changes plus execution revalidation are controlled and audited | 2026-09-01 |
+| **Initial AVCO pool and Q14.2 replay scope agreed** — ADR 0038 initially fixed AVCO at one company-wide pool per item; the subsequent migration-continuity review superseded that pool restriction with ADR 0039 while retaining dependency-aware replay | 2026-09-01 |
+| **Constrained configurable AVCO pools accepted** — [ADR 0039](decisions/0039-configurable-avco-valuation-pools.md) supports `COMPANY_ITEM` (default), `WAREHOUSE_ITEM` and batch-only `COMPANY_ITEM_BATCH`; scope is persisted/locked, historical pool identity is immutable, transfers conserve company value, and cutover/replay preserve actual pool dependencies | 2026-09-01 |
+| **Q14.3 live backdating horizon agreed** — companies default to current + previous open period, with explicit period-lock-only or fixed/rolling posting-floor alternatives; trusted request-time context, execution revalidation and the strictest boundary govern, one-off extensions are forbidden, and outside-horizon economics use the later correction workflow without falsifying physical dates | 2026-09-01 |
 
 ## In progress
 
@@ -105,7 +115,7 @@ Phase 1 is complete, including its domain-document reconciliation.
 
 Begin [Phase 2 — Purchasing & stock](phases/phase-2-purchasing-stock.md):
 
-1. Continue Q13 at its documented **Q13.2 balance-scope** question, then finish Q13 and Q14 as
+1. Continue Q14 at its documented **Q14.4 recalculation request/approval governance** question, then record it as
    ADRs before the valuation engine ships; controlled migration is already separated by ADR 0036.
 2. Scaffold the Purchasing module, then build `item_suppliers` and warehouse/location foundations.
 
@@ -118,11 +128,12 @@ Unblocked Phase 2 foundation work can proceed while the two stock-policy questio
 
 ## Blocked / awaiting input
 
-Q13 and Q14 block completion of the Phase 2 stock transaction/valuation engine, but not its
-sourcing, purchasing-design or warehouse-foundation work.
+Q14 blocks completion of the Phase 2 valuation engine, but not its sourcing,
+purchasing-design or warehouse-foundation work. Q13 is resolved by
+[ADR 0037](decisions/0037-controlled-negative-stock-overrides.md).
 
-Full list: [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) — 2 Phase 2 blockers (negative stock and
-backdated receipts), 2 non-blocking (second customer profile; sharing master data across a
+Full list: [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) — 1 Phase 2 blocker (backdated receipts),
+2 non-blocking (second customer profile; sharing master data across a
 customer's own legal entities). Q11 (stock valuation
 method) resolved 2026-08-20 — see [ADR 0032](decisions/0032-per-item-valuation-method.md). Q12
 (multi-supplier catalog) resolved 2026-08-20 — see

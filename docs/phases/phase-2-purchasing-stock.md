@@ -5,9 +5,9 @@
 - **Status:** in progress — planning established 2026-08-31; implementation not started
 - **Depends on:** [Phase 1 — Master data](phase-1-master-data.md) (items, supplier accounts,
   currencies, UoMs and chart-of-account references)
-- **Blocked by:** the stock transaction engine cannot ship until
-  [Q13](../OPEN-QUESTIONS.md#q13--negative-stock-policy) and
-  [Q14](../OPEN-QUESTIONS.md#q14--backdated-stock-receipts) are resolved; sourcing and warehouse
+- **Blocked by:** the valuation engine cannot ship until
+  [Q14](../OPEN-QUESTIONS.md#q14--backdated-stock-receipts) is resolved; negative stock is fixed by
+  [ADR 0037](../decisions/0037-controlled-negative-stock-overrides.md), and sourcing and warehouse
   foundations are not blocked
 
 ## Goal
@@ -29,7 +29,7 @@ create journal entries itself.
   obsolete column
 - A `Purchasing` module owning supplier sourcing, purchase orders and goods-receipt documents
 - `warehouses` and `locations` in the existing `Inventory` module
-- `stock_moves`, `stock_layers`, `item_average_costs` and `stock_valuation_entries` per
+- `stock_moves`, `stock_layers`, explicit `avco_pools` and `stock_valuation_entries` per
   [stock.md](../domain/stock.md), with retained batch/serial and source-document identity
 - Inventory cutover foundations per [ADR 0036](../decisions/0036-controlled-inventory-cutover.md):
   explicit cutover timestamp/mode, provenance-capable stock schema, opening AVCO/FIFO/SPECIFIC
@@ -59,7 +59,8 @@ create journal entries itself.
 
 The order matters because later work needs stable document and stock boundaries:
 
-1. Resolve Q13/Q14 as ADRs; the purchasing foundation is recorded in
+1. Resolve Q14 as an ADR; Q13 is resolved by
+   [ADR 0037](../decisions/0037-controlled-negative-stock-overrides.md), and the purchasing foundation is recorded in
    [purchasing.md](../domain/purchasing.md), [acquisition-costing.md](../domain/acquisition-costing.md)
    and [ADR 0035](../decisions/0035-separate-purchasing-operational-and-financial-facts.md).
 2. Build supplier sourcing and warehouse/location foundations.
@@ -75,8 +76,8 @@ The order matters because later work needs stable document and stock boundaries:
 - [x] Write the purchasing/acquisition-costing domain design before the Purchasing module's first
       feature; define document boundaries, partial receipts, QA/matching integration, provisional
       costing, purchase-UoM conversion and transaction/base-currency snapshots
-- [ ] Resolve Q13 and Q14 in accepted ADRs, remove them from `OPEN-QUESTIONS.md`, and update
-      `stock.md` with the chosen policies
+- [ ] Resolve Q14 in an accepted ADR and remove it from `OPEN-QUESTIONS.md`; Q13 is resolved by
+      ADR 0037 and already reconciled into `stock.md`
 - [ ] Set over-receipt tolerance/approval behaviour before goods-receipt implementation; keep it
       aligned with the later Phase 6 matching-tolerance policy
 - [ ] Scaffold `app/Modules/Purchasing/README.md`, provider and routes; document the boundary:
@@ -119,8 +120,15 @@ The order matters because later work needs stable document and stock boundaries:
       costs, immutable source identity, and indexes for item/location/date and open FIFO layers
 - [ ] Implement one transactional inventory movement boundary used by receipts, issues, returns,
       transfers and adjustments; no other code path may alter quantity or valuation state
-- [ ] Implement AVCO with row locking around `item_average_costs`; prove two concurrent receipts
-      cannot calculate from the same stale average
+- [ ] Resolve and persist each AVCO item's `COMPANY_ITEM`, `WAREHOUSE_ITEM` or
+      `COMPANY_ITEM_BATCH` pool scope (default `COMPANY_ITEM`), enforce tracking compatibility and
+      lock it after the first movement; defer `WAREHOUSE_ITEM_BATCH`, per ADR 0039
+- [ ] Implement AVCO with row locking around resolved `avco_pools`; prove two concurrent receipts
+      into one pool cannot calculate from stale state while independent pools remain independent
+- [ ] Implement same-pool transfer neutrality and cross-pool transfer value conservation,
+      destination-average recalculation and immutable source/destination pool identities
+- [ ] Implement provisional cross-pool transfer repair propagation without permitting a negative
+      physical source or creating/destroying company inventory value
 - [ ] Implement FIFO oldest-layer consumption with partial-layer splits and row locking
 - [ ] Implement SPECIFIC receipt/issue validation: exact serial identity is required and a serial
       cannot be received twice or issued more than once while on hand
@@ -128,7 +136,15 @@ The order matters because later work needs stable document and stock boundaries:
       preserve batch/serial data on moves and layers
 - [ ] Write one `stock_valuation_entries` feed for every costed movement; store transaction and
       base amounts using the pinned FX rate, without creating GL journals
-- [ ] Prevent normal edits to an item's `valuation_method` or `stock_uom_id` after its first move
+- [ ] Prevent normal edits to an item's `valuation_method`, `avco_pool_scope` or `stock_uom_id`
+      after its first move; scope changes use a separate effective-dated valuation cutover
+- [ ] Implement company backdating horizon modes (`CURRENT_AND_PREVIOUS_PERIOD` default,
+      `PERIOD_LOCK_ONLY`, `POSTING_FLOOR` with fixed/rolling subtype), audited policy changes and
+      most-restrictive-boundary evaluation; rolling mode requires a valid company IANA accounting
+      timezone and trusted server time, never user-controlled clocks
+- [ ] Snapshot request-time rolling-floor context, preserve eligibility across normal clock
+      progression, revalidate material policy/boundary changes at execution and reject per-request
+      horizon extensions
 
 ### Inventory cutover foundation
 
@@ -136,10 +152,12 @@ The order matters because later work needs stable document and stock boundaries:
       uploader/mapper or permit the generic importer to write stock domain tables directly
 - [ ] Build company cutover records with one explicit timestamp/mode, immutable source provenance,
       dedicated permissions, staging/preview/approval/finalisation and idempotent batch identity
-- [ ] Implement reconciled opening-state Actions: AVCO quantity/value, FIFO residual or labelled
-      synthetic layers, and per-serial SPECIFIC costs; preserve source method across a method change
-- [ ] Validate quantity/value control totals, UoM/FX snapshots, batch/serial identity and layer
-      totals; make incomplete full history downgrade visibly rather than inventing detail
+- [ ] Implement reconciled opening-state Actions: target AVCO pools, FIFO residual or labelled
+      synthetic layers, and per-serial SPECIFIC costs; preserve source method/scope/pool identity
+      and effective-dated transitions across a method or AVCO-scope change
+- [ ] Validate quantity/value by exact location, target AVCO pool and company total, plus UoM/FX,
+      batch/serial identity and layer totals; reject unsupported broad→narrow pool allocation or
+      require an explicitly approved revaluation basis rather than inventing detail
 - [ ] Keep historical negative/backdated source facts separate from live posting, and test that no
       ordinary API, mapping template or post-cutover batch can invoke migration-only exceptions
 - [ ] Leave open-PO materialisation to Purchasing and the balancing opening journal to Phase 6,
@@ -165,17 +183,28 @@ Tick these in the same commit as the work.
       master data changes
 - [ ] A partial receipt updates outstanding PO quantity exactly once and creates the matching
       stock move/layer/valuation feed atomically
-- [ ] Simultaneous receipts for one AVCO item produce the mathematically correct final quantity
-      and average cost under a real PostgreSQL concurrency test
+- [ ] Simultaneous receipts into one AVCO pool produce the mathematically correct quantity/value
+      and average under a real PostgreSQL concurrency test; supported scopes resolve uniquely and
+      remain tenant-isolated
 - [ ] FIFO issues consume the oldest available layers, including an issue spanning multiple layers;
       SPECIFIC issues consume only the named on-hand serial
 - [ ] Batch/serial requirements follow `items.tracking`, not `valuation_method`
-- [ ] Transfers preserve total company quantity and value; issues/returns/adjustments change them
-      only through recorded stock moves
+- [ ] Same-pool transfers leave pool value/average unchanged; cross-pool transfers carry source
+      AVCO into the destination, recalculate destination AVCO and preserve total company quantity
+      and value, including provisional repair propagation
 - [ ] Negative-stock and backdated-receipt behaviour exactly matches the accepted Q13/Q14 ADRs
-- [ ] A finalised inventory cutover reconciles by item/location and value, establishes valid
-      continuing AVCO/FIFO/SPECIFIC state, and cannot weaken post-cutover Q13/Q14 controls
-- [ ] An item's valuation method and stock UoM cannot be changed after its first stock move
+- [ ] A finalised inventory cutover reconciles exact locations, each target AVCO pool and company
+      totals; continues or explicitly converts source valuation scope without rewriting history;
+      and establishes valid AVCO/FIFO/SPECIFIC state without weakening Q13/Q14 controls
+- [ ] An item's valuation method, AVCO pool scope and stock UoM cannot be changed normally after
+      its first move; historical valuation entries retain their original immutable pool identity
+- [ ] A negative location does not freeze a positive wider AVCO pool; each configured pool freezes
+      and recovers independently when its own quantity becomes non-positive
+- [ ] Authorised backdated replay follows affected configured AVCO pools and real cross-pool
+      dependencies while excluding unrelated pools
+- [ ] Horizon eligibility uses the configured period/floor mode, snapshots trusted rolling context,
+      cannot cross stricter cutover/period/policy boundaries and routes outside-horizon differences
+      to the explicit correction workflow without falsifying physical dates
 - [ ] A posted physical count creates auditable variance moves and cannot be posted twice
 - [ ] Cross-company access and raw cross-company foreign-key writes fail for every new table
 - [ ] Full Pest/Pint/Larastan/frontend/codegen pipeline passes on PostgreSQL 16
@@ -201,6 +230,8 @@ Tick these in the same commit as the work.
 - [ADR 0035](../decisions/0035-separate-purchasing-operational-and-financial-facts.md)
 - [ADR 0036](../decisions/0036-controlled-inventory-cutover.md) ·
   [inventory-cutover.md](../domain/inventory-cutover.md)
+- [ADR 0037](../decisions/0037-controlled-negative-stock-overrides.md)
+- [ADR 0039](../decisions/0039-configurable-avco-valuation-pools.md)
 - [multi-currency.md](../domain/multi-currency.md) ·
   [units-of-measure.md](../domain/units-of-measure.md)
 - [database.md](../architecture/database.md) ·
