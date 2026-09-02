@@ -150,6 +150,14 @@ period. Source facts and committed batches are never overwritten.
 
 ## Completeness and degradation
 
+Warehouse imports preserve source warehouse/location keys, hierarchy, names/codes, recognised
+location types, barcodes and operational roles where the source supplies them. This supports
+common SAP, Odoo and ERPNext shapes without copying any one product's schema. A company with only
+one effective location per warehouse may remain `SIMPLE`; importing multiple locations or any
+structured metadata requires `STRUCTURED`. Mapping may normalise source type names into the fixed
+target vocabulary, but must retain source provenance and report unmapped values. It must never
+silently flatten a hierarchy or invent capacity/address data.
+
 Full history is accepted only to the level supported by the source export. Missing batch/serial,
 layer, UoM, FX or value detail is reported explicitly. The implementation may downgrade the plan
 to operational or opening-state migration; it must not invent precise history. Analytical replay
@@ -168,3 +176,4 @@ into product price, and open/unmatched source financial documents remain Phase 6
 - [ADR 0037](../decisions/0037-controlled-negative-stock-overrides.md)
 - [ADR 0038](../decisions/0038-company-wide-per-item-avco-pool.md)
 - [ADR 0039](../decisions/0039-configurable-avco-valuation-pools.md)
+- [ADR 0041](../decisions/0041-progressive-inventory-location-capabilities.md)

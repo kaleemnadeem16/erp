@@ -19,6 +19,6 @@ class ShowLocationRequest extends FormRequest
     /** @return array<string, mixed> */
     public function rules(): array
     {
-        return $this->includeRules(['warehouse']);
+        return $this->includeRules(['warehouse', 'parent', 'children']);
     }
 }

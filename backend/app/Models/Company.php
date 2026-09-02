@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Modules\Accounting\Models\AccountingPeriod;
 use App\Modules\Accounting\Support\PeriodStatus;
+use App\Modules\Inventory\Support\InventoryLocationMode;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use RuntimeException;
 
@@ -18,10 +19,18 @@ use RuntimeException;
  * @property string $name
  * @property int|null $base_currency_id
  * @property int $fiscal_year_start_month
+ * @property InventoryLocationMode $inventory_location_mode
  */
 class Company extends Model
 {
     protected $guarded = ['id'];
+
+    protected function casts(): array
+    {
+        return [
+            'inventory_location_mode' => InventoryLocationMode::class,
+        ];
+    }
 
     protected static function booted(): void
     {

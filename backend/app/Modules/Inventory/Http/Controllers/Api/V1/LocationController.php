@@ -24,15 +24,15 @@ class LocationController extends Controller
 {
     use AppliesApiQuery;
 
-    private const INCLUDABLE = ['warehouse' => 'warehouse'];
+    private const INCLUDABLE = ['warehouse' => 'warehouse', 'parent' => 'parent', 'children' => 'children'];
 
-    private const SORTABLE = ['code' => 'code', 'name' => 'name', 'created_at' => 'created_at'];
+    private const SORTABLE = ['code' => 'code', 'name' => 'name', 'sort_order' => 'sort_order', 'created_at' => 'created_at'];
 
     public function index(IndexLocationRequest $request): AnonymousResourceCollection
     {
         $query = Location::query();
         $this->applyIncludes($query, $request, self::INCLUDABLE);
-        foreach (['warehouse_id', 'active'] as $field) {
+        foreach (['warehouse_id', 'parent_id', 'type', 'active'] as $field) {
             if ($request->filled("filter.{$field}")) {
                 $query->where($field, $request->input("filter.{$field}"));
             }

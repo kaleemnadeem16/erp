@@ -4,12 +4,25 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
+import type { StoreLocationRequestParentId } from "./storeLocationRequestParentId";
+import type { LocationType } from "./locationType";
+import type { StoreLocationRequestBarcode } from "./storeLocationRequestBarcode";
 
 export interface StoreLocationRequest {
   warehouse_id: number;
+  parent_id?: StoreLocationRequestParentId;
   /** @maxLength 255 */
   code: string;
   /** @maxLength 255 */
   name: string;
+  type?: LocationType;
+  /** @maxLength 255 */
+  barcode?: StoreLocationRequestBarcode;
+  /**
+   * @minimum 0
+   * @maximum 32767
+   */
+  sort_order?: number;
+  allows_stock?: boolean;
   active?: boolean;
 }

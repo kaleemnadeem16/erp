@@ -4,11 +4,24 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
+import type { UpdateLocationRequestParentId } from "./updateLocationRequestParentId";
+import type { LocationType } from "./locationType";
+import type { UpdateLocationRequestBarcode } from "./updateLocationRequestBarcode";
 
 export interface UpdateLocationRequest {
+  parent_id?: UpdateLocationRequestParentId;
   /** @maxLength 255 */
   code?: string;
   /** @maxLength 255 */
   name?: string;
+  type?: LocationType;
+  /** @maxLength 255 */
+  barcode?: UpdateLocationRequestBarcode;
+  /**
+   * @minimum 0
+   * @maximum 32767
+   */
+  sort_order?: number;
+  allows_stock?: boolean;
   active?: boolean;
 }

@@ -37,4 +37,10 @@ class Warehouse extends Model
     {
         return $this->hasMany(Location::class);
     }
+
+    /** @return HasMany<WarehouseLocationAssignment, $this> */
+    public function locationRoles(): HasMany
+    {
+        return $this->hasMany(WarehouseLocationAssignment::class);
+    }
 }

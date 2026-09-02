@@ -99,6 +99,8 @@ The order matters because later work needs stable document and stock boundaries:
 - [x] Build company-scoped `warehouses` and child `locations`; require at least one location per
       usable warehouse and enforce one default warehouse per company with a partial unique index
 - [x] Add APIs and tests for warehouse/location lifecycle, composite uniqueness, tenant isolation
+- [x] Add progressive `SIMPLE`/`STRUCTURED` location capability modes, same-warehouse hierarchy,
+      fixed types/barcodes/stock semantics, operational roles and guarded downgrade per ADR 0041
       and deletion restrictions once stock history exists
 
 ### Purchase orders and receipts

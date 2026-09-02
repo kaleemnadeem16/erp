@@ -24,7 +24,13 @@ warehouses
   id, company_id, code, name, is_default, active
 
 locations
-  id, warehouse_id, code, name, active  -- bins/zones; a usable warehouse has at least one active
+  id, warehouse_id, parent_id NULLABLE, code, name
+  type, barcode NULLABLE, sort_order, allows_stock, active
+  -- hierarchy and operational metadata; a usable warehouse has at least one active location
+
+warehouse_location_roles
+  id, company_id, warehouse_id, location_id, role
+  -- one named RECEIVING/QUARANTINE/DISPATCH/RETURNS/TRANSIT/PRODUCTION location per warehouse
 
 stock_batches
   id, company_id, item_id, code         -- stable batch identity; never key pools by free text
@@ -72,6 +78,22 @@ stock_valuation_entries                 -- cost impact of each move; feeds the G
 ```
 
 ## Behaviour
+
+### Progressive warehouse structure
+
+Per [ADR 0041](../decisions/0041-progressive-inventory-location-capabilities.md), every company
+uses the same capable schema but chooses one cohesive mode. `SIMPLE` is the default: creating a
+warehouse atomically creates its single stock-holding location, while additional locations,
+hierarchy, metadata and operational-role assignment are unavailable. `STRUCTURED` enables
+multiple locations, same-warehouse parent/child hierarchy, fixed location types, barcode,
+display order, stock-holding semantics and named operational roles. `VIEW` locations cannot hold
+stock. Barcodes are unique within a warehouse.
+
+The API Actions enforce mode-dependent requirements; PostgreSQL still enforces fixed enums,
+same-warehouse hierarchy/role references, uniqueness and `VIEW` semantics for every write path.
+Downgrade to `SIMPLE` is blocked until extra locations and every structured attribute/role are
+removed. Addresses/site identity, dimensions/capacity, putaway/picking rules, automation and a
+future advanced-WMS mode remain deferred until a phase that consumes them.
 
 ### Valuation by method
 
@@ -356,3 +378,5 @@ must not be forgotten once it does.
 - [ADR 0035](../decisions/0035-separate-purchasing-operational-and-financial-facts.md) — separates
   receipt, QA, supplier liability and acquisition cost
 - [ADR 0007](../decisions/0007-avco-valuation.md) — superseded by 0032, original AVCO reasoning
+- [ADR 0041](../decisions/0041-progressive-inventory-location-capabilities.md) — simple and
+  structured location modes

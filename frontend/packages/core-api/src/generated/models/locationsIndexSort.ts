@@ -12,8 +12,10 @@ export type LocationsIndexSort =
 export const LocationsIndexSort = {
   code: "code",
   name: "name",
+  sort_order: "sort_order",
   created_at: "created_at",
   "-code": "-code",
   "-name": "-name",
+  "-sort_order": "-sort_order",
   "-created_at": "-created_at",
 } as const;

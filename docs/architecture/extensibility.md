@@ -120,6 +120,20 @@ approval step configures it.
 
 ---
 
+## Progressive capability modes
+
+When a domain needs both a low-hassle path and richer behaviour, prefer a small number of
+cohesive company-level modes over many independent feature flags. The database may support the
+superset, while Actions validate the selected mode and the UI reveals only relevant controls.
+Defaults must be safe and simple; enabling a mode may introduce conditional requirements for
+that company, and downgrade must be refused while incompatible data exists. Inventory locations
+are the first implementation of this pattern — see
+[ADR 0041](../decisions/0041-progressive-inventory-location-capabilities.md).
+
+Use a plugin only for genuinely customer-specific behaviour, not for a broadly useful capability
+that belongs in the core domain. Do not reserve speculative nullable columns for unknown needs;
+add advanced fields when their consuming workflow and invariants are known.
+
 ## Frontend extensibility
 
 Usually forgotten, and harder than the backend. Handled by **build-time composition**, not a
@@ -158,3 +172,4 @@ concrete until a real second customer creates real evidence. See
 - [ADR 0010](../decisions/0010-core-plus-plugins.md)
 - [ADR 0009](../decisions/0009-company-defined-rate-dimensions.md)
 - [code-structure.md](code-structure.md)
+- [ADR 0041](../decisions/0041-progressive-inventory-location-capabilities.md)

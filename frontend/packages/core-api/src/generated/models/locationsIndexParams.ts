@@ -4,6 +4,7 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
+import type { LocationType } from "./locationType";
 import type { LocationsIndexSort } from "./locationsIndexSort";
 
 export type LocationsIndexParams = {
@@ -11,6 +12,11 @@ export type LocationsIndexParams = {
    * @minimum 1
    */
   "filter[warehouse_id]"?: number;
+  /**
+   * @minimum 1
+   */
+  "filter[parent_id]"?: number;
+  "filter[type]"?: LocationType;
   "filter[active]"?: boolean;
   /**
    * @maxLength 255

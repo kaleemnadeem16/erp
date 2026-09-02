@@ -14,7 +14,8 @@ movement and valuation, built in Phase 2.
 - `Item` — everything bought, held, made, consumed or sold; one table with a `type`
   discriminator (`RAW`/`SEMI_FINISHED`/`FINISHED`/`SERVICE`/`LABOUR`/`PLANT`) rather than
   separate product/service/resource tables ([Phase 1](../../../../docs/phases/phase-1-master-data.md))
-- `Warehouse` and `Location` — Phase 2 stock custody foundations
+- `Warehouse`, hierarchical `Location`, and warehouse location roles — Phase 2 stock custody
+  foundations with SIMPLE/STRUCTURED company modes
 - `StockMove`, `StockLayer` — later Phase 2 work, per
   [docs/domain/stock.md](../../../../docs/domain/stock.md)
 
@@ -34,7 +35,9 @@ invariants regardless of which Action invokes them.
 
 `CreateWarehouse` always creates its first location in the same transaction, so an active
 warehouse cannot enter normal use without an exact physical location. Warehouse and location
-updates/archiving use their corresponding Actions.
+updates/archiving use their corresponding Actions. `SIMPLE` mode keeps one plain location per
+warehouse; `STRUCTURED` enables hierarchy, location metadata and operational role assignments.
+Mode changes go through `UpdateInventorySettings`, which blocks unsafe downgrade.
 
 ## Events
 
@@ -59,3 +62,4 @@ silently move an already-created item's official cost basis. See
 - [domain/stock.md](../../../../docs/domain/stock.md)
 - [decisions/0032-per-item-valuation-method.md](../../../../docs/decisions/0032-per-item-valuation-method.md)
 - [architecture/multi-tenancy.md](../../../../docs/architecture/multi-tenancy.md)
+- [decisions/0041-progressive-inventory-location-capabilities.md](../../../../docs/decisions/0041-progressive-inventory-location-capabilities.md)

@@ -15,6 +15,22 @@ class LocationResource extends JsonResource
     public function toArray(Request $request): array
     {/** @var Location $location */ $location = $this->resource;
 
-        return ['id' => $location->id, 'warehouse_id' => $location->warehouse_id, 'code' => $location->code, 'name' => $location->name, 'active' => $location->active, 'warehouse' => $this->whenLoaded('warehouse', fn () => new WarehouseResource($location->warehouse)), 'created_at' => $location->created_at?->toIso8601String(), 'updated_at' => $location->updated_at?->toIso8601String()];
+        return [
+            'id' => $location->id,
+            'warehouse_id' => $location->warehouse_id,
+            'parent_id' => $location->parent_id,
+            'code' => $location->code,
+            'name' => $location->name,
+            'type' => $location->type->value,
+            'barcode' => $location->barcode,
+            'sort_order' => $location->sort_order,
+            'allows_stock' => $location->allows_stock,
+            'active' => $location->active,
+            'warehouse' => $this->whenLoaded('warehouse', fn () => new WarehouseResource($location->warehouse)),
+            'parent' => $this->whenLoaded('parent', fn () => new self($location->parent)),
+            'children' => self::collection($this->whenLoaded('children')),
+            'created_at' => $location->created_at?->toIso8601String(),
+            'updated_at' => $location->updated_at?->toIso8601String(),
+        ];
     }
 }

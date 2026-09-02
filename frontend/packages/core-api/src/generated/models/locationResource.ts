@@ -4,17 +4,27 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
+import type { LocationResourceParentId } from "./locationResourceParentId";
+import type { LocationResourceBarcode } from "./locationResourceBarcode";
 import type { WarehouseResource } from "./warehouseResource";
+import type { LocationResourceParent } from "./locationResourceParent";
 import type { LocationResourceCreatedAt } from "./locationResourceCreatedAt";
 import type { LocationResourceUpdatedAt } from "./locationResourceUpdatedAt";
 
 export interface LocationResource {
   id: number;
   warehouse_id: number;
+  parent_id: LocationResourceParentId;
   code: string;
   name: string;
+  type: string;
+  barcode: LocationResourceBarcode;
+  sort_order: number;
+  allows_stock: boolean;
   active: boolean;
   warehouse?: WarehouseResource;
+  parent?: LocationResourceParent;
+  children?: LocationResource[];
   created_at: LocationResourceCreatedAt;
   updated_at: LocationResourceUpdatedAt;
 }
