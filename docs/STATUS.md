@@ -98,6 +98,7 @@ tech stack, extensibility strategy and deployment approach are recorded as [ADRs
 | **Progressive-location audit follow-up completed** — warehouse-role collection/show endpoints now follow validated filter/sort/include/pagination conventions; every mode-sensitive write serialises on the company row to prevent downgrade races; the Phase 2 checklist wrap is repaired; and ADR 0042 makes item/supplier relationship identity immutable with archive-and-create replacement. All 313 Pest tests, Pint, Larastan, frontend type-checks and production build pass. | 2026-09-02 |
 | **Purchase-order and receipt posting architecture accepted** — ADR 0043 fixes immutable PO/receipt/QA facts, cumulative V1 over-receipt tolerance, hard short-close, line-level FX/cost, atomic deterministic posting, first-class partial QA dispositions, reversal versus Supplier Return, tracked identity, provisional acquisition cost and the Phase 2 Inventory/GR-IR bridge. Approval, service acceptance, PO-less receipt and AP matching remain explicit extensions. | 2026-09-02 |
 | **Purchase-order schema/model checkpoint built** — typed one-row-per-company purchasing settings plus tenant-safe PO header/line tables and models now establish status, FX policy, money/UoM precision, tolerance snapshots and supplier-site ownership. PO lines deliberately carry `company_id` for cross-document procurement queries and composite tenant FKs; PostgreSQL `smallint` limits are pinned by a regression test. Draft/issue/cancel/short-close Actions and API remain the next slice. | 2026-09-02 |
+| **Purchase-order workflow built** — validated nested draft CRUD, query endpoints, typed purchasing settings, gapless issue, immutable issue-time item/supplier/UoM/money/FX/tolerance snapshots, cancellation and hard line short-close now run through transactional Actions. Closing the final line closes the PO; malformed precision and PostgreSQL `smallint` inputs return validation errors. Goods receipt and stock posting are the next slice. | 2026-09-02 |
 
 ## In progress
 
@@ -122,8 +123,8 @@ Phase 1 is complete, including its domain-document reconciliation.
 
 Begin [Phase 2 — Purchasing & stock](phases/phase-2-purchasing-stock.md):
 
-1. Build purchase orders and goods receipts with immutable issued-line snapshots against ADR 0043.
-2. Implement the Phase 2 stock schema and valuation engine against the governing ADRs 0036–0040.
+1. Build the stock-movement/valuation foundation against ADRs 0036–0040.
+2. Build goods receipts and connect their atomic posting to that Inventory boundary per ADR 0043.
 
 [Phase 0 — Foundation](phases/phase-0-foundation.md) remains in progress in parallel — the two
 former blockers are resolved (`btree_gist` confirmed available on dbvm, `REDIS_PREFIX=erp_`

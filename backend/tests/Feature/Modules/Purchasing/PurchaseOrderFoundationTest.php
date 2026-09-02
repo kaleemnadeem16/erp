@@ -71,7 +71,7 @@ class PurchaseOrderFoundationTest extends TestCase
     }
 
     /** @return array{PurchaseOrder, Item, Uom} */
-    private function makeOrder(): array
+    protected function makeOrder(): array
     {
         $currency = Currency::firstOrCreate(['code' => 'USD'], ['name' => 'US Dollar', 'symbol' => '$']);
         [$supplier, $site] = $this->makeSupplier('SUP');
@@ -89,7 +89,7 @@ class PurchaseOrderFoundationTest extends TestCase
     }
 
     /** @return array{SupplierAccount, SupplierSite} */
-    private function makeSupplier(string $code): array
+    protected function makeSupplier(string $code): array
     {
         $party = Party::create(['code' => $code, 'name' => $code]);
         $account = ChartOfAccount::create(['code' => 'pay-'.$code, 'name' => 'Payable '.$code, 'type' => AccountType::Liability]);
@@ -101,7 +101,7 @@ class PurchaseOrderFoundationTest extends TestCase
     }
 
     /** @return array<string, mixed> */
-    private function lineAttributes(PurchaseOrder $order, Item $item, Uom $uom, int $lineNumber = 1): array
+    protected function lineAttributes(PurchaseOrder $order, Item $item, Uom $uom, int $lineNumber = 1): array
     {
         return [
             'purchase_order_id' => $order->id, 'line_number' => $lineNumber, 'item_id' => $item->id,

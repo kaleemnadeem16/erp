@@ -22,6 +22,8 @@ class ControllerActionBoundaryTest extends TestCase
             'locations' => ['app/Modules/Inventory/Http/Controllers/Api/V1/LocationController.php'],
             'warehouse location roles' => ['app/Modules/Inventory/Http/Controllers/Api/V1/WarehouseLocationAssignmentController.php'],
             'inventory settings' => ['app/Modules/Inventory/Http/Controllers/Api/V1/InventorySettingsController.php'],
+            'purchase orders' => ['app/Modules/Purchasing/Http/Controllers/Api/V1/PurchaseOrderController.php'],
+            'purchasing settings' => ['app/Modules/Purchasing/Http/Controllers/Api/V1/PurchasingSettingsController.php'],
         ];
     }
 

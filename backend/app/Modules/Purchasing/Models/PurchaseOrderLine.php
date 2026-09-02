@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace App\Modules\Purchasing\Models;
 
+use App\Exceptions\DomainInvariantException;
 use App\Models\Model;
 use App\Models\Uom;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Purchasing\Support\OverReceiptMode;
+use App\Modules\Purchasing\Support\PurchaseOrderStatus;
 use App\Support\Concerns\BelongsToCompany;
 use App\Support\Concerns\GuardsRelatedCompanyScope;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $company_id
@@ -25,6 +28,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $stock_uom_id
  * @property string $uom_factor
  * @property string $unit_price
+ * @property Carbon|null $expected_delivery_date
  * @property bool $qa_required
  * @property OverReceiptMode|null $over_receipt_mode
  * @property string|null $over_receipt_tolerance_percent
@@ -38,6 +42,24 @@ class PurchaseOrderLine extends Model
     use GuardsRelatedCompanyScope;
 
     protected $guarded = ['id'];
+
+    protected static function booted(): void
+    {
+        static::creating(function (PurchaseOrderLine $line): void {
+            $order = PurchaseOrder::query()->find($line->purchase_order_id);
+            if ($order === null || $order->status !== PurchaseOrderStatus::Draft) {
+                throw new DomainInvariantException('Lines can only be added to a draft purchase order.', 'purchase_order_id');
+            }
+        });
+
+        static::updating(function (PurchaseOrderLine $line): void {
+            if ($line->purchaseOrder->status !== PurchaseOrderStatus::Draft
+                && $line->getDirty() !== []
+                && array_diff(array_keys($line->getDirty()), ['short_closed_stock_qty', 'updated_at']) !== []) {
+                throw new DomainInvariantException('Issued purchase-order line snapshots are immutable.', 'status');
+            }
+        });
+    }
 
     protected static function companyScopedForeignKeys(): array
     {

@@ -2,7 +2,7 @@
 
 # Phase 2 — Purchasing & stock
 
-- **Status:** in progress — planning established 2026-08-31; implementation not started
+- **Status:** in progress — purchasing and warehouse foundations plus the PO workflow are built
 - **Depends on:** [Phase 1 — Master data](phase-1-master-data.md) (items, supplier accounts,
   currencies, UoMs and chart-of-account references)
 - **Blocked by:** nothing currently; negative stock is fixed by
@@ -105,13 +105,15 @@ The order matters because later work needs stable document and stock boundaries:
 
 ### Purchase orders and receipts
 
-- [ ] Build purchase orders and lines from `purchasing.md`, using gapless numbering through the
+- [x] Build purchase orders and lines from `purchasing.md`, using gapless numbering through the
       existing `NumberingScheme`, supplier-account/site references and explicit currency/FX data
-- [ ] Snapshot supplier item code, description, ordered quantity, purchase UoM, converted stock
+- [x] Snapshot supplier item code, description, ordered quantity, purchase UoM, converted stock
       quantity, unit price, currency and pinned FX rate when a PO is issued; never reconstruct an
       issued PO from current supplier/item/rate master data
-- [ ] Implement transactional issue, cancel and partial/full receipt Actions with concurrency-safe
-      outstanding quantities and idempotency protection against duplicate receipt submission
+- [x] Implement transactional draft create/update, issue, cancel and hard line short-close Actions;
+      close the PO when every line is terminal and expose validated query/settings APIs
+- [ ] Implement partial/full receipt Actions with concurrency-safe outstanding quantities and
+      idempotency protection against duplicate receipt submission
 - [ ] Build goods-receipt headers/lines that retain the PO-line link, received purchase quantity,
       converted stock quantity, location, batch/serial identity and actual receipt timestamp
 - [ ] Implement V1 cumulative `BLOCK`/`ALLOW_WITHIN_TOLERANCE` in pinned stock UoM, hard

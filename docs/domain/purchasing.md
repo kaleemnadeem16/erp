@@ -30,7 +30,8 @@ Phase 2 receipt model does not close it off.
 
 ## Schema
 
-Annotated planning schema; precise table names may be reconciled when the module is built.
+The purchase-order/settings portion below is implemented. Receipt and QA tables remain annotated
+planning schema for the next Phase 2 slices.
 
 ```
 purchasing_settings
@@ -140,6 +141,11 @@ pinned stock UoM; indivisible-item limits are floored. Above-tolerance approval 
 
 A future quick/direct-purchase screen may atomically create a receipt and invoice for convenience.
 It does not create a special document that lets an invoice alter stock.
+
+The V1 PO API supports validated list/show, nested draft create/update, issue, cancellation and
+line short-close endpoints. Issue allocates the gapless number and freezes item/supplier policy,
+quantity/UoM, monetary and FX snapshots. Company purchasing defaults use one typed settings row;
+reading that singleton initialises its database defaults through an Action when necessary.
 
 ### Document boundaries
 

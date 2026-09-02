@@ -12,7 +12,7 @@ Owns supplier sourcing and the purchase-order and goods-receipt source documents
   item-specific sourcing terms
 - `PurchasingSetting` — typed company purchasing policy defaults
 - `PurchaseOrder` and `PurchaseOrderLine` — draft commercial commitments and immutable issue
-  snapshots; Actions/API are the next Phase 2 slice
+  snapshots with draft, issue, cancel and hard short-close APIs
 - Goods receipts — later Phase 2 work
 
 ## Does not own
@@ -24,9 +24,11 @@ Owns supplier sourcing and the purchase-order and goods-receipt source documents
 ## Key actions
 
 `CreateItemSupplier`, `UpdateItemSupplier` and `ArchiveItemSupplier` are the write boundary for
-supplier sourcing. Purchasing may read Parties and Inventory models directly; writes to those
-modules remain behind their owning Actions. Item and supplier identity are immutable after
-creation; archive-and-create replaces a relationship per ADR 0042.
+supplier sourcing. Purchase-order writes likewise use dedicated create, update, issue, cancel and
+short-close Actions; purchasing-setting initialisation and updates also remain behind Actions.
+Purchasing may read Parties and Inventory models directly; writes to those modules remain behind
+their owning Actions. Item and supplier identity are immutable after creation;
+archive-and-create replaces a relationship per ADR 0042.
 
 ## Events
 

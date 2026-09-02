@@ -1,0 +1,77 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Modules\Purchasing\Http\Controllers\Api\V1;
+
+use App\Http\Controllers\Controller;
+use App\Modules\Purchasing\Actions\CancelPurchaseOrder;
+use App\Modules\Purchasing\Actions\CreatePurchaseOrder;
+use App\Modules\Purchasing\Actions\IssuePurchaseOrder;
+use App\Modules\Purchasing\Actions\ShortClosePurchaseOrderLine;
+use App\Modules\Purchasing\Actions\UpdatePurchaseOrder;
+use App\Modules\Purchasing\Http\Requests\PurchaseOrder\CancelPurchaseOrderRequest;
+use App\Modules\Purchasing\Http\Requests\PurchaseOrder\IndexPurchaseOrderRequest;
+use App\Modules\Purchasing\Http\Requests\PurchaseOrder\ShowPurchaseOrderRequest;
+use App\Modules\Purchasing\Http\Requests\PurchaseOrder\StorePurchaseOrderRequest;
+use App\Modules\Purchasing\Http\Requests\PurchaseOrder\UpdatePurchaseOrderRequest;
+use App\Modules\Purchasing\Http\Resources\PurchaseOrderLineResource;
+use App\Modules\Purchasing\Http\Resources\PurchaseOrderResource;
+use App\Modules\Purchasing\Models\PurchaseOrder;
+use App\Modules\Purchasing\Models\PurchaseOrderLine;
+use App\Support\Concerns\AppliesApiQuery;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+
+class PurchaseOrderController extends Controller
+{
+    use AppliesApiQuery;
+
+    private const INCLUDABLE = ['lines' => 'lines'];
+
+    private const SORTABLE = ['number' => 'number', 'order_date' => 'order_date', 'created_at' => 'created_at'];
+
+    public function index(IndexPurchaseOrderRequest $request): AnonymousResourceCollection
+    {
+        $query = PurchaseOrder::query();
+        $this->applyIncludes($query, $request, self::INCLUDABLE);
+        foreach (['supplier_account_id', 'status'] as $field) {
+            if ($request->filled("filter.{$field}")) {
+                $query->where($field, $request->input("filter.{$field}"));
+            }
+        }
+        $this->applySort($query, $request, self::SORTABLE, 'created_at');
+
+        return PurchaseOrderResource::collection($query->paginate($request->integer('per_page', 25)));
+    }
+
+    public function store(StorePurchaseOrderRequest $request, CreatePurchaseOrder $create): JsonResponse
+    {
+        return (new PurchaseOrderResource($create($request->validated())))->response()->setStatusCode(201);
+    }
+
+    public function show(ShowPurchaseOrderRequest $request, PurchaseOrder $purchaseOrder): PurchaseOrderResource
+    {
+        return new PurchaseOrderResource($purchaseOrder->load($this->requestedIncludes($request, self::INCLUDABLE)));
+    }
+
+    public function update(UpdatePurchaseOrderRequest $request, PurchaseOrder $purchaseOrder, UpdatePurchaseOrder $update): PurchaseOrderResource
+    {
+        return new PurchaseOrderResource($update($purchaseOrder, $request->validated()));
+    }
+
+    public function issue(PurchaseOrder $purchaseOrder, IssuePurchaseOrder $issue): PurchaseOrderResource
+    {
+        return new PurchaseOrderResource($issue($purchaseOrder));
+    }
+
+    public function cancel(CancelPurchaseOrderRequest $request, PurchaseOrder $purchaseOrder, CancelPurchaseOrder $cancel): PurchaseOrderResource
+    {
+        return new PurchaseOrderResource($cancel($purchaseOrder, $request->string('reason')->toString()));
+    }
+
+    public function shortClose(PurchaseOrderLine $purchaseOrderLine, ShortClosePurchaseOrderLine $shortClose): PurchaseOrderLineResource
+    {
+        return new PurchaseOrderLineResource($shortClose($purchaseOrderLine));
+    }
+}

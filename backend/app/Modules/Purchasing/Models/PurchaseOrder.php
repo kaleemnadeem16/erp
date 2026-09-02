@@ -13,8 +13,10 @@ use App\Modules\Purchasing\Support\PurchaseOrderFxPolicy;
 use App\Modules\Purchasing\Support\PurchaseOrderStatus;
 use App\Support\Concerns\BelongsToCompany;
 use App\Support\Concerns\GuardsRelatedCompanyScope;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 /**
  * @property string|null $number
@@ -26,6 +28,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $fx_rate
  * @property string $fx_rate_type
  * @property string $fx_rate_source
+ * @property Carbon $fx_rate_date
+ * @property Carbon $order_date
+ * @property Carbon|null $expected_delivery_date
+ * @property CarbonImmutable|null $issued_at
+ * @property CarbonImmutable|null $closed_at
+ * @property CarbonImmutable|null $cancelled_at
  * @property-read SupplierAccount $supplierAccount
  * @property-read SupplierSite|null $supplierSite
  * @property-read Currency $currency
@@ -39,6 +47,13 @@ class PurchaseOrder extends Model
 
     protected static function booted(): void
     {
+        static::updating(function (PurchaseOrder $purchaseOrder): void {
+            if ($purchaseOrder->getOriginal('status') !== PurchaseOrderStatus::Draft->value
+                && $purchaseOrder->isDirty(['supplier_account_id', 'supplier_site_id', 'currency_id', 'fx_policy', 'fx_rate', 'fx_rate_date', 'fx_rate_type', 'fx_rate_source', 'order_date', 'expected_delivery_date'])) {
+                throw new DomainInvariantException('Issued purchase-order commercial data is immutable.', 'status');
+            }
+        });
+
         static::saving(function (PurchaseOrder $purchaseOrder): void {
             if (! $purchaseOrder->isDirty(['supplier_account_id', 'supplier_site_id'])
                 || $purchaseOrder->supplier_site_id === null) {
