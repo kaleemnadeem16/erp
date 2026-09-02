@@ -5,6 +5,6 @@
  * OpenAPI spec version: 0.0.1
  */
 
-export type WarehouseLocationRolesUpdate200DataAllOf = {
-  [key: string]: unknown;
+export type WarehouseLocationRolesShowParams = {
+  include?: string;
 };

@@ -27,7 +27,9 @@ import type {
   UpdateWarehouseLocationAssignmentRequest,
   ValidationExceptionResponse,
   WarehouseLocationRolesIndex200,
+  WarehouseLocationRolesIndexParams,
   WarehouseLocationRolesShow200,
+  WarehouseLocationRolesShowParams,
   WarehouseLocationRolesStore201,
   WarehouseLocationRolesUpdate200,
 } from ".././models";
@@ -46,28 +48,50 @@ export type warehouseLocationRolesIndexResponse401 = {
   status: 401;
 };
 
+export type warehouseLocationRolesIndexResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
+};
+
 export type warehouseLocationRolesIndexResponseSuccess =
   warehouseLocationRolesIndexResponse200 & {
     headers: Headers;
   };
-export type warehouseLocationRolesIndexResponseError =
-  warehouseLocationRolesIndexResponse401 & {
-    headers: Headers;
-  };
+export type warehouseLocationRolesIndexResponseError = (
+  | warehouseLocationRolesIndexResponse401
+  | warehouseLocationRolesIndexResponse422
+) & {
+  headers: Headers;
+};
 
 export type warehouseLocationRolesIndexResponse =
   | warehouseLocationRolesIndexResponseSuccess
   | warehouseLocationRolesIndexResponseError;
 
-export const getWarehouseLocationRolesIndexUrl = () => {
-  return `/v1/warehouse-location-roles`;
+export const getWarehouseLocationRolesIndexUrl = (
+  params?: WarehouseLocationRolesIndexParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/v1/warehouse-location-roles?${stringifiedParams}`
+    : `/v1/warehouse-location-roles`;
 };
 
 export const warehouseLocationRolesIndex = async (
+  params?: WarehouseLocationRolesIndexParams,
   options?: RequestInit,
 ): Promise<warehouseLocationRolesIndexResponse> => {
   return fetchClient<warehouseLocationRolesIndexResponse>(
-    getWarehouseLocationRolesIndexUrl(),
+    getWarehouseLocationRolesIndexUrl(params),
     {
       ...options,
       method: "GET",
@@ -75,31 +99,36 @@ export const warehouseLocationRolesIndex = async (
   );
 };
 
-export const getWarehouseLocationRolesIndexQueryKey = () => {
-  return [`/v1/warehouse-location-roles`] as const;
+export const getWarehouseLocationRolesIndexQueryKey = (
+  params?: WarehouseLocationRolesIndexParams,
+) => {
+  return [`/v1/warehouse-location-roles`, ...(params ? [params] : [])] as const;
 };
 
 export const getWarehouseLocationRolesIndexQueryOptions = <
   TData = Awaited<ReturnType<typeof warehouseLocationRolesIndex>>,
-  TError = AuthenticationExceptionResponse,
->(options?: {
-  query?: Partial<
-    UseQueryOptions<
-      Awaited<ReturnType<typeof warehouseLocationRolesIndex>>,
-      TError,
-      TData
-    >
-  >;
-  request?: SecondParameter<typeof fetchClient>;
-}) => {
+  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+>(
+  params?: WarehouseLocationRolesIndexParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof warehouseLocationRolesIndex>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+) => {
   const { query: queryOptions, request: requestOptions } = options ?? {};
 
   const queryKey =
-    queryOptions?.queryKey ?? getWarehouseLocationRolesIndexQueryKey();
+    queryOptions?.queryKey ?? getWarehouseLocationRolesIndexQueryKey(params);
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof warehouseLocationRolesIndex>>
-  > = () => warehouseLocationRolesIndex(requestOptions);
+  > = () => warehouseLocationRolesIndex(params, requestOptions);
 
   return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
     Awaited<ReturnType<typeof warehouseLocationRolesIndex>>,
@@ -112,12 +141,13 @@ export type WarehouseLocationRolesIndexQueryResult = NonNullable<
   Awaited<ReturnType<typeof warehouseLocationRolesIndex>>
 >;
 export type WarehouseLocationRolesIndexQueryError =
-  AuthenticationExceptionResponse;
+  AuthenticationExceptionResponse | ValidationExceptionResponse;
 
 export function useWarehouseLocationRolesIndex<
   TData = Awaited<ReturnType<typeof warehouseLocationRolesIndex>>,
-  TError = AuthenticationExceptionResponse,
+  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
 >(
+  params: undefined | WarehouseLocationRolesIndexParams,
   options: {
     query: Partial<
       UseQueryOptions<
@@ -142,8 +172,9 @@ export function useWarehouseLocationRolesIndex<
 };
 export function useWarehouseLocationRolesIndex<
   TData = Awaited<ReturnType<typeof warehouseLocationRolesIndex>>,
-  TError = AuthenticationExceptionResponse,
+  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
 >(
+  params?: WarehouseLocationRolesIndexParams,
   options?: {
     query?: Partial<
       UseQueryOptions<
@@ -168,8 +199,9 @@ export function useWarehouseLocationRolesIndex<
 };
 export function useWarehouseLocationRolesIndex<
   TData = Awaited<ReturnType<typeof warehouseLocationRolesIndex>>,
-  TError = AuthenticationExceptionResponse,
+  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
 >(
+  params?: WarehouseLocationRolesIndexParams,
   options?: {
     query?: Partial<
       UseQueryOptions<
@@ -187,8 +219,9 @@ export function useWarehouseLocationRolesIndex<
 
 export function useWarehouseLocationRolesIndex<
   TData = Awaited<ReturnType<typeof warehouseLocationRolesIndex>>,
-  TError = AuthenticationExceptionResponse,
+  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
 >(
+  params?: WarehouseLocationRolesIndexParams,
   options?: {
     query?: Partial<
       UseQueryOptions<
@@ -203,7 +236,10 @@ export function useWarehouseLocationRolesIndex<
 ): UseQueryResult<TData, TError> & {
   queryKey: DataTag<QueryKey, TData, TError>;
 } {
-  const queryOptions = getWarehouseLocationRolesIndexQueryOptions(options);
+  const queryOptions = getWarehouseLocationRolesIndexQueryOptions(
+    params,
+    options,
+  );
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<
     TData,
@@ -350,12 +386,19 @@ export type warehouseLocationRolesShowResponse404 = {
   status: 404;
 };
 
+export type warehouseLocationRolesShowResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
+};
+
 export type warehouseLocationRolesShowResponseSuccess =
   warehouseLocationRolesShowResponse200 & {
     headers: Headers;
   };
 export type warehouseLocationRolesShowResponseError = (
-  warehouseLocationRolesShowResponse401 | warehouseLocationRolesShowResponse404
+  | warehouseLocationRolesShowResponse401
+  | warehouseLocationRolesShowResponse404
+  | warehouseLocationRolesShowResponse422
 ) & {
   headers: Headers;
 };
@@ -366,16 +409,30 @@ export type warehouseLocationRolesShowResponse =
 
 export const getWarehouseLocationRolesShowUrl = (
   warehouseLocationRole: number,
+  params?: WarehouseLocationRolesShowParams,
 ) => {
-  return `/v1/warehouse-location-roles/${warehouseLocationRole}`;
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/v1/warehouse-location-roles/${warehouseLocationRole}?${stringifiedParams}`
+    : `/v1/warehouse-location-roles/${warehouseLocationRole}`;
 };
 
 export const warehouseLocationRolesShow = async (
   warehouseLocationRole: number,
+  params?: WarehouseLocationRolesShowParams,
   options?: RequestInit,
 ): Promise<warehouseLocationRolesShowResponse> => {
   return fetchClient<warehouseLocationRolesShowResponse>(
-    getWarehouseLocationRolesShowUrl(warehouseLocationRole),
+    getWarehouseLocationRolesShowUrl(warehouseLocationRole, params),
     {
       ...options,
       method: "GET",
@@ -385,15 +442,23 @@ export const warehouseLocationRolesShow = async (
 
 export const getWarehouseLocationRolesShowQueryKey = (
   warehouseLocationRole?: number,
+  params?: WarehouseLocationRolesShowParams,
 ) => {
-  return [`/v1/warehouse-location-roles/${warehouseLocationRole}`] as const;
+  return [
+    `/v1/warehouse-location-roles/${warehouseLocationRole}`,
+    ...(params ? [params] : []),
+  ] as const;
 };
 
 export const getWarehouseLocationRolesShowQueryOptions = <
   TData = Awaited<ReturnType<typeof warehouseLocationRolesShow>>,
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
 >(
   warehouseLocationRole: number,
+  params?: WarehouseLocationRolesShowParams,
   options?: {
     query?: Partial<
       UseQueryOptions<
@@ -409,11 +474,12 @@ export const getWarehouseLocationRolesShowQueryOptions = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getWarehouseLocationRolesShowQueryKey(warehouseLocationRole);
+    getWarehouseLocationRolesShowQueryKey(warehouseLocationRole, params);
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof warehouseLocationRolesShow>>
-  > = () => warehouseLocationRolesShow(warehouseLocationRole, requestOptions);
+  > = () =>
+    warehouseLocationRolesShow(warehouseLocationRole, params, requestOptions);
 
   return {
     queryKey,
@@ -431,13 +497,19 @@ export type WarehouseLocationRolesShowQueryResult = NonNullable<
   Awaited<ReturnType<typeof warehouseLocationRolesShow>>
 >;
 export type WarehouseLocationRolesShowQueryError =
-  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
+  | AuthenticationExceptionResponse
+  | ModelNotFoundExceptionResponse
+  | ValidationExceptionResponse;
 
 export function useWarehouseLocationRolesShow<
   TData = Awaited<ReturnType<typeof warehouseLocationRolesShow>>,
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
 >(
   warehouseLocationRole: number,
+  params: undefined | WarehouseLocationRolesShowParams,
   options: {
     query: Partial<
       UseQueryOptions<
@@ -462,9 +534,13 @@ export function useWarehouseLocationRolesShow<
 };
 export function useWarehouseLocationRolesShow<
   TData = Awaited<ReturnType<typeof warehouseLocationRolesShow>>,
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
 >(
   warehouseLocationRole: number,
+  params?: WarehouseLocationRolesShowParams,
   options?: {
     query?: Partial<
       UseQueryOptions<
@@ -489,9 +565,13 @@ export function useWarehouseLocationRolesShow<
 };
 export function useWarehouseLocationRolesShow<
   TData = Awaited<ReturnType<typeof warehouseLocationRolesShow>>,
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
 >(
   warehouseLocationRole: number,
+  params?: WarehouseLocationRolesShowParams,
   options?: {
     query?: Partial<
       UseQueryOptions<
@@ -509,9 +589,13 @@ export function useWarehouseLocationRolesShow<
 
 export function useWarehouseLocationRolesShow<
   TData = Awaited<ReturnType<typeof warehouseLocationRolesShow>>,
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
 >(
   warehouseLocationRole: number,
+  params?: WarehouseLocationRolesShowParams,
   options?: {
     query?: Partial<
       UseQueryOptions<
@@ -528,6 +612,7 @@ export function useWarehouseLocationRolesShow<
 } {
   const queryOptions = getWarehouseLocationRolesShowQueryOptions(
     warehouseLocationRole,
+    params,
     options,
   );
 

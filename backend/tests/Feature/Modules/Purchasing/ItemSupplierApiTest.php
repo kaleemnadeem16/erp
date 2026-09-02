@@ -108,6 +108,29 @@ class ItemSupplierApiTest extends TestCase
         $this->assertFalse($row->refresh()->active);
     }
 
+    public function test_relationship_identity_cannot_be_repointed_after_creation(): void
+    {
+        $user = User::factory()->create();
+        $originalSupplier = $this->supplier('SUP-A');
+        $replacementSupplier = $this->supplier('SUP-B');
+        $row = ItemSupplier::create([
+            'item_id' => $this->item->id,
+            'supplier_account_id' => $originalSupplier->id,
+        ]);
+
+        $this->actingAs($user)->patchJson("/api/v1/item-suppliers/{$row->id}", [
+            'supplier_account_id' => $replacementSupplier->id,
+            'supplier_item_code' => 'UPDATED-CODE',
+        ])->assertOk();
+
+        $row->refresh();
+        $this->assertSame($originalSupplier->id, $row->supplier_account_id);
+        $this->assertSame('UPDATED-CODE', $row->supplier_item_code);
+
+        $this->expectException(RuntimeException::class);
+        $row->update(['supplier_account_id' => $replacementSupplier->id]);
+    }
+
     public function test_supplier_reference_cannot_cross_company_boundary(): void
     {
         $otherCompany = DB::table('companies')->insertGetId(['name' => 'Other', 'created_at' => now(), 'updated_at' => now()]);

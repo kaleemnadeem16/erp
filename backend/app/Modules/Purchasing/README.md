@@ -22,7 +22,8 @@ Owns supplier sourcing and the purchase-order and goods-receipt source documents
 
 `CreateItemSupplier`, `UpdateItemSupplier` and `ArchiveItemSupplier` are the write boundary for
 supplier sourcing. Purchasing may read Parties and Inventory models directly; writes to those
-modules remain behind their owning Actions.
+modules remain behind their owning Actions. Item and supplier identity are immutable after
+creation; archive-and-create replaces a relationship per ADR 0042.
 
 ## Events
 
@@ -33,3 +34,4 @@ No events emitted yet.
 - [Phase 2](../../../../docs/phases/phase-2-purchasing-stock.md)
 - [Inventory module](../Inventory/README.md)
 - [Parties module](../Parties/README.md)
+- [ADR 0042](../../../../docs/decisions/0042-immutable-item-supplier-identity.md)

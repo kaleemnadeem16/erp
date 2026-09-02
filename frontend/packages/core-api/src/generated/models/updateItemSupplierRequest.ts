@@ -11,8 +11,6 @@ import type { UpdateItemSupplierRequestMinimumOrderQty } from "./updateItemSuppl
 import type { UpdateItemSupplierRequestPurchaseUomId } from "./updateItemSupplierRequestPurchaseUomId";
 
 export interface UpdateItemSupplierRequest {
-  item_id?: number;
-  supplier_account_id?: number;
   /** @maxLength 255 */
   supplier_item_code?: UpdateItemSupplierRequestSupplierItemCode;
   /**

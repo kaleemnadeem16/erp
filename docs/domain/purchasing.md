@@ -105,6 +105,13 @@ supplier_invoice_line_allocations        -- Phase 6 contract, not a Phase 2 tabl
 
 ## Behaviour
 
+### Supplier sourcing identity
+
+An `item_suppliers` row has immutable `item_id` and `supplier_account_id`, per
+[ADR 0042](../decisions/0042-immutable-item-supplier-identity.md). Its sourcing terms may change,
+but moving the row to a different item or supplier would change its meaning. Archive the old
+relationship and create a new one instead; issued purchase documents retain their own snapshots.
+
 ### Normal and partial purchasing
 
 The default user journey is `Create PO → Receive → Enter invoice → Done`. One PO line may be

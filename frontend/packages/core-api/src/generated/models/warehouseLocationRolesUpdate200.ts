@@ -4,8 +4,8 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { WarehouseLocationRolesUpdate200Data } from "./warehouseLocationRolesUpdate200Data";
+import type { WarehouseLocationAssignmentResource } from "./warehouseLocationAssignmentResource";
 
 export type WarehouseLocationRolesUpdate200 = {
-  data: WarehouseLocationRolesUpdate200Data;
+  data: WarehouseLocationAssignmentResource;
 };

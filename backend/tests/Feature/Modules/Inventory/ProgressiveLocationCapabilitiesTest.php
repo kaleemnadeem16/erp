@@ -116,4 +116,25 @@ class ProgressiveLocationCapabilitiesTest extends TestCase
 
         $this->assertNotSame($oneRoot->warehouse_id, $twoRoot->warehouse_id);
     }
+
+    public function test_location_role_queries_validate_filters_sort_includes_and_pagination(): void
+    {
+        $user = User::factory()->create();
+        Company::query()->findOrFail(1)->update(['inventory_location_mode' => InventoryLocationMode::Structured]);
+        $warehouse = Warehouse::create(['code' => 'main', 'name' => 'Main']);
+        $location = $warehouse->locations()->create(['code' => 'main', 'name' => 'Main']);
+
+        $roleId = $this->actingAs($user)->postJson('/api/v1/warehouse-location-roles', [
+            'warehouse_id' => $warehouse->id, 'location_id' => $location->id, 'role' => 'RECEIVING',
+        ])->assertCreated()->assertJsonMissingPath('data.warehouse')->json('data.id');
+
+        $this->getJson('/api/v1/warehouse-location-roles?filter[warehouse_id]='.$warehouse->id.'&sort=-created_at&include=warehouse,location&per_page=1')
+            ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('meta.per_page', 1)
+            ->assertJsonPath('data.0.warehouse.id', $warehouse->id)
+            ->assertJsonPath('data.0.location.id', $location->id);
+
+        $this->getJson('/api/v1/warehouse-location-roles?sort=name')->assertUnprocessable();
+        $this->getJson('/api/v1/warehouse-location-roles?include=unknown')->assertUnprocessable();
+        $this->getJson("/api/v1/warehouse-location-roles/{$roleId}?include=unknown")->assertUnprocessable();
+    }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Purchasing\Models;
 
+use App\Exceptions\DomainInvariantException;
 use App\Models\Model;
 use App\Models\Uom;
 use App\Modules\Inventory\Models\Item;
@@ -31,6 +32,18 @@ class ItemSupplier extends Model
     use GuardsRelatedCompanyScope;
 
     protected $guarded = ['id'];
+
+    protected static function booted(): void
+    {
+        static::updating(function (ItemSupplier $itemSupplier): void {
+            if ($itemSupplier->isDirty(['item_id', 'supplier_account_id'])) {
+                throw new DomainInvariantException(
+                    'An item-supplier relationship cannot be repointed; archive it and create another.',
+                    $itemSupplier->isDirty('item_id') ? 'item_id' : 'supplier_account_id',
+                );
+            }
+        });
+    }
 
     protected static function companyScopedForeignKeys(): array
     {

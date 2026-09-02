@@ -4,12 +4,12 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { WarehouseLocationRolesIndex200DataItem } from "./warehouseLocationRolesIndex200DataItem";
+import type { WarehouseLocationAssignmentResource } from "./warehouseLocationAssignmentResource";
 import type { WarehouseLocationRolesIndex200Links } from "./warehouseLocationRolesIndex200Links";
 import type { WarehouseLocationRolesIndex200Meta } from "./warehouseLocationRolesIndex200Meta";
 
 export type WarehouseLocationRolesIndex200 = {
-  data: WarehouseLocationRolesIndex200DataItem[];
+  data: WarehouseLocationAssignmentResource[];
   links: WarehouseLocationRolesIndex200Links;
   meta: WarehouseLocationRolesIndex200Meta;
 };

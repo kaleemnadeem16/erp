@@ -21,7 +21,7 @@ final class UpdateLocation
         return DB::transaction(function () use ($location, $attributes): Location {
             $structuredFields = ['parent_id', 'type', 'barcode', 'sort_order', 'allows_stock'];
             if (array_intersect(array_keys($attributes), $structuredFields) !== []) {
-                $company = Company::query()->findOrFail($this->companyContext->id());
+                $company = Company::query()->lockForUpdate()->findOrFail($this->companyContext->id());
                 if ($company->inventory_location_mode !== InventoryLocationMode::Structured) {
                     throw new DomainInvariantException(
                         'Structured location fields require STRUCTURED inventory location mode.',

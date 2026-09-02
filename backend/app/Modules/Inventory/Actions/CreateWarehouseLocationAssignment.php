@@ -19,7 +19,7 @@ final class CreateWarehouseLocationAssignment
     public function __invoke(array $attributes): WarehouseLocationAssignment
     {
         return DB::transaction(function () use ($attributes): WarehouseLocationAssignment {
-            $company = Company::query()->findOrFail($this->companyContext->id());
+            $company = Company::query()->lockForUpdate()->findOrFail($this->companyContext->id());
             if ($company->inventory_location_mode !== InventoryLocationMode::Structured) {
                 throw new DomainInvariantException(
                     'Warehouse location roles require STRUCTURED inventory location mode.',

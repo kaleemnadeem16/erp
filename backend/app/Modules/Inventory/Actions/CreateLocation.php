@@ -20,7 +20,7 @@ final class CreateLocation
     public function __invoke(array $attributes): Location
     {
         return DB::transaction(function () use ($attributes): Location {
-            $company = Company::query()->findOrFail($this->companyContext->id());
+            $company = Company::query()->lockForUpdate()->findOrFail($this->companyContext->id());
             if ($company->inventory_location_mode !== InventoryLocationMode::Structured) {
                 throw new DomainInvariantException(
                     'Additional locations require STRUCTURED inventory location mode.',
