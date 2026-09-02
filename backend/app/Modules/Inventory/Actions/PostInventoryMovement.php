@@ -28,7 +28,13 @@ use Illuminate\Support\Facades\DB;
 final class PostInventoryMovement
 {
     /**
-     * @param  array{item_id:int, location_id:int, qty:string, uom_id:int, moved_at:mixed, source_type:string, source_id:int, unit_cost:string, currency_id:int, fx_rate:string, base_unit_cost:string, batch_no?:string|null, serial_no?:string|null}  $input
+     * @param  array{item_id:int, location_id:int, qty:string, uom_id:int, moved_at:mixed, source_type:string, source_id:int, unit_cost:string, currency_id:int, fx_rate:string, base_unit_cost:string, batch_no?:string|null, serial_no?:string|null, amount?:string, base_amount?:string}  $input
+     *
+     * amount/base_amount are optional pinned ledger totals. When the caller has an
+     * authoritative total that isn't exactly qty × unit_cost — e.g. a UoM-converted
+     * receipt, where unit_cost is a rounded per-stock-unit figure and re-deriving the
+     * total from it would lose a rounding residual — pass it explicitly here rather
+     * than letting it be silently recomputed. Defaults to qty × unit_cost.
      */
     public function __invoke(array $input): StockMove
     {
@@ -85,8 +91,12 @@ final class PostInventoryMovement
                 'batch_id' => $batch?->id, 'serial_no' => $serialNo,
             ]);
 
-            $transactionAmount = $qty->multipliedBy($unitCost)->toScale(4, RoundingMode::HALF_UP);
-            $baseAmount = $qty->multipliedBy($baseUnitCost)->toScale(4, RoundingMode::HALF_UP);
+            $transactionAmount = isset($input['amount'])
+                ? BigDecimal::of($input['amount'])
+                : $qty->multipliedBy($unitCost)->toScale(4, RoundingMode::HALF_UP);
+            $baseAmount = isset($input['base_amount'])
+                ? BigDecimal::of($input['base_amount'])
+                : $qty->multipliedBy($baseUnitCost)->toScale(4, RoundingMode::HALF_UP);
             if ($pool !== null) {
                 $newQty = BigDecimal::of($pool->qty_on_hand)->plus($qty);
                 $newValue = BigDecimal::of($pool->inventory_value)->plus($baseAmount)->toScale(4, RoundingMode::HALF_UP);

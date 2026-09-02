@@ -40,6 +40,14 @@ final class PostGoodsReceipt
                 throw new DomainInvariantException('A goods receipt must contain at least one line.', 'lines');
             }
             $poLineIds = $receiptLines->pluck('purchase_order_line_id')->filter()->unique()->sort()->values();
+
+            // Lock order headers before lines, matching ShortClosePurchaseOrderLine's
+            // header-then-line order, so the two actions can't deadlock on the same PO.
+            $orderIds = PurchaseOrderLine::query()->whereKey($poLineIds)->pluck('purchase_order_id')->unique()->sort()->values();
+            foreach ($orderIds as $orderId) {
+                PurchaseOrder::query()->lockForUpdate()->findOrFail($orderId);
+            }
+
             $poLines = PurchaseOrderLine::query()->with(['purchaseOrder', 'item.stockUom'])
                 ->whereKey($poLineIds)->orderBy('id')->lockForUpdate()->get()->keyBy('id');
             if ($poLines->count() !== $poLineIds->count()) {
@@ -83,13 +91,29 @@ final class PostGoodsReceipt
             }
 
             foreach ($receiptLines as $line) {
+                $factor = BigDecimal::of($line->uom_factor);
+                // provisional_unit_cost/base_unit_cost are priced per received UoM unit
+                // (same convention as a PO line's unit_price). unit_cost/base_unit_cost
+                // below rescale that to a per-stock-unit figure for display and future
+                // layer costing, but for a non-divisible factor (e.g. 1 box = 3 stock
+                // units) that rounded figure loses value on re-multiplication
+                // (10.0000 / 3 = 3.3333, × 3 = 9.9999 instead of 10.0000). The ledger
+                // amount is pinned to the exact total actually paid — received_qty ×
+                // provisional_unit_cost — computed straight from the receipt, not
+                // re-derived from the rounded per-unit cost.
+                $unitCost = BigDecimal::of($line->provisional_unit_cost)->dividedBy($factor, 4, RoundingMode::HALF_UP);
+                $baseUnitCost = BigDecimal::of($line->base_unit_cost)->dividedBy($factor, 4, RoundingMode::HALF_UP);
+                $amount = BigDecimal::of($line->received_qty)->multipliedBy(BigDecimal::of($line->provisional_unit_cost))->toScale(4, RoundingMode::HALF_UP);
+                $baseAmount = $amount->multipliedBy(BigDecimal::of($line->fx_rate))->toScale(4, RoundingMode::HALF_UP);
+
                 ($this->postMovement)([
                     'item_id' => $line->item_id, 'location_id' => $line->location_id,
                     'qty' => $line->stock_qty, 'uom_id' => $line->stock_uom_id,
                     'moved_at' => $receipt->physical_arrival_at,
                     'source_type' => 'GOODS_RECEIPT_LINE', 'source_id' => $line->id,
-                    'unit_cost' => $line->provisional_unit_cost, 'currency_id' => $line->currency_id,
-                    'fx_rate' => $line->fx_rate, 'base_unit_cost' => $line->base_unit_cost,
+                    'unit_cost' => (string) $unitCost, 'currency_id' => $line->currency_id,
+                    'fx_rate' => $line->fx_rate, 'base_unit_cost' => (string) $baseUnitCost,
+                    'amount' => (string) $amount, 'base_amount' => (string) $baseAmount,
                     'batch_no' => $line->batch_no, 'serial_no' => $line->serial_no,
                 ]);
             }

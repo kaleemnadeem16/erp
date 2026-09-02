@@ -33,14 +33,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * see GuardsRelatedCompanyScope.
  *
  * valuation_method works differently: it's resolved once, in booted()'s
- * creating hook, from an explicit override or Category::
+ * saving hook, from an explicit override or Category::
  * resolveDefaultValuationMethod(), and stored directly — not re-resolved on
  * every read the way the GL columns are, since a later change to the
  * category default must not silently move an already-created item. See
  * docs/domain/items.md "Valuation method" and
- * docs/decisions/0032-per-item-valuation-method.md. Locking it once the item
- * has inventory transactions is a Phase 2 concern (no stock_moves table
- * exists yet to check against) — deliberately not implemented here.
+ * docs/decisions/0032-per-item-valuation-method.md. valuation_method,
+ * avco_pool_scope and stock_uom_id are locked by the updating hook once the
+ * item has a stock_moves row.
  *
  * @property string $code
  * @property string $name
@@ -71,7 +71,10 @@ class Item extends Model
 
     protected static function booted(): void
     {
-        static::creating(function (Item $item): void {
+        static::saving(function (Item $item): void {
+            // Resolve valuation_method here (not in a separate creating hook): Eloquent
+            // always fires saving before creating on insert, so a hook downstream that
+            // branches on valuation_method must see it already resolved.
             $item->valuation_method ??= $item->category?->resolveDefaultValuationMethod();
 
             if ($item->valuation_method === null) {
@@ -81,9 +84,6 @@ class Item extends Model
                 ), field: 'valuation_method');
             }
 
-        });
-
-        static::saving(function (Item $item): void {
             if ($item->valuation_method === ValuationMethod::Avco) {
                 $item->avco_pool_scope ??= Company::query()->findOrFail(app(CompanyContext::class)->id())->default_avco_pool_scope;
                 if ($item->avco_pool_scope === AvcoPoolScope::CompanyItemBatch && $item->tracking !== ItemTracking::Batch) {

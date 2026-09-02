@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Modules\Purchasing;
 
+use App\Models\Uom;
 use App\Models\User;
 use App\Modules\Accounting\Models\ChartOfAccount;
 use App\Modules\Inventory\Actions\CreateWarehouse;
@@ -13,6 +14,7 @@ use App\Modules\Inventory\Support\ItemTracking;
 use App\Modules\Inventory\Support\ValuationMethod;
 use App\Modules\Purchasing\Actions\IssuePurchaseOrder;
 use App\Modules\Purchasing\Models\PurchaseOrderLine;
+use App\Support\UomDimension;
 
 class GoodsReceiptPostingTest extends PurchaseOrderFoundationTest
 {
@@ -52,6 +54,54 @@ class GoodsReceiptPostingTest extends PurchaseOrderFoundationTest
         $this->assertSame('15.0000', $pool->base_avg_unit_cost);
     }
 
+    public function test_receipt_in_a_different_uom_rescales_unit_cost_to_the_stock_uom(): void
+    {
+        [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Avco, qty: '24.0000');
+        $box = Uom::create(['code' => 'box', 'name' => 'Box of 12', 'dimension' => UomDimension::Count, 'factor_to_base' => '12']);
+        $receiptId = $this->createReceipt($order->lines()->sole()->id, $item->id, $box->id, $this->locationId(), [
+            'received_qty' => '2.0000', 'provisional_unit_cost' => '120.0000',
+        ]);
+
+        $this->postJson("/api/v1/goods-receipts/{$receiptId}/post")->assertOk();
+
+        $move = StockMove::query()->with('valuationEntry')->sole();
+        $this->assertSame('24.0000', $move->qty, 'received qty is converted to the stock UoM basis');
+        $this->assertSame('10.0000', $move->unit_cost, 'unit cost is rescaled to the stock UoM basis');
+        $this->assertSame('240.0000', $move->valuationEntry->base_amount, 'total value matches what was actually paid');
+        $pool = AvcoPool::query()->sole();
+        $this->assertSame('10.0000', $pool->avg_unit_cost);
+    }
+
+    public function test_avco_receipt_with_a_non_divisible_uom_factor_preserves_the_exact_valuation_total(): void
+    {
+        // 1 box = 3 stock units, costing 10.0000/box: 3 x (10.0000 / 3 rounded to 3.3333)
+        // = 9.9999, silently losing a cent of value. The ledger total must stay 10.0000 —
+        // the exact amount actually paid — even though the per-unit cost is necessarily
+        // rounded to fit decimal(19,4).
+        [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Avco, qty: '3.0000');
+        $box = Uom::create(['code' => 'box3', 'name' => 'Box of 3', 'dimension' => UomDimension::Count, 'factor_to_base' => '3']);
+        $receiptId = $this->createReceipt($order->lines()->sole()->id, $item->id, $box->id, $this->locationId(), [
+            'received_qty' => '1.0000', 'provisional_unit_cost' => '10.0000',
+        ]);
+
+        $this->postJson("/api/v1/goods-receipts/{$receiptId}/post")->assertOk();
+
+        $move = StockMove::query()->with('valuationEntry')->sole();
+        $this->assertSame('3.0000', $move->qty);
+        $this->assertSame('3.3333', $move->unit_cost, 'per-stock-unit cost is rounded for display and future costing');
+        $this->assertSame('10.0000', $move->valuationEntry->amount, 'exact total is preserved, not 3 x 3.3333 = 9.9999');
+        $this->assertSame('10.0000', $move->valuationEntry->base_amount);
+
+        $layer = StockLayer::query()->sole();
+        $this->assertSame('3.3333', $layer->unit_cost);
+        $this->assertSame('3.3333', $layer->base_unit_cost);
+
+        $pool = AvcoPool::query()->sole();
+        $this->assertSame('3.0000', $pool->qty_on_hand);
+        $this->assertSame('10.0000', $pool->inventory_value, 'pool value must not lose the rounding residual');
+        $this->assertSame('3.3333', $pool->avg_unit_cost);
+    }
+
     public function test_fifo_receipt_creates_cost_layer_without_avco_pool(): void
     {
         [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Fifo);
@@ -62,6 +112,24 @@ class GoodsReceiptPostingTest extends PurchaseOrderFoundationTest
         $this->assertDatabaseCount('avco_pools', 0);
         $this->assertSame('2.0000', StockLayer::query()->sole()->qty_remaining);
         $this->assertNull(StockMove::query()->with('valuationEntry')->sole()->valuationEntry->avco_pool_id);
+    }
+
+    public function test_fifo_receipt_with_a_non_divisible_uom_factor_preserves_the_exact_valuation_total(): void
+    {
+        [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Fifo, qty: '3.0000');
+        $box = Uom::create(['code' => 'box3f', 'name' => 'Box of 3', 'dimension' => UomDimension::Count, 'factor_to_base' => '3']);
+        $receiptId = $this->createReceipt($order->lines()->sole()->id, $item->id, $box->id, $this->locationId(), [
+            'received_qty' => '1.0000', 'provisional_unit_cost' => '10.0000',
+        ]);
+
+        $this->postJson("/api/v1/goods-receipts/{$receiptId}/post")->assertOk();
+
+        $this->assertDatabaseCount('avco_pools', 0);
+        $move = StockMove::query()->with('valuationEntry')->sole();
+        $this->assertSame('3.0000', $move->qty);
+        $this->assertSame('3.3333', $move->unit_cost);
+        $this->assertSame('10.0000', $move->valuationEntry->amount, 'FIFO keeps the exact total too, not 3 x 3.3333 = 9.9999');
+        $this->assertSame('3.3333', StockLayer::query()->sole()->unit_cost);
     }
 
     public function test_specific_receipt_requires_and_preserves_one_exact_serial(): void
@@ -100,6 +168,31 @@ class GoodsReceiptPostingTest extends PurchaseOrderFoundationTest
 
         $this->assertDatabaseCount('stock_moves', 2);
         $this->assertSame(['SER-001', 'SER-002'], StockLayer::query()->orderBy('serial_no')->pluck('serial_no')->all());
+    }
+
+    public function test_specific_receipt_with_a_fractional_uom_factor_computes_the_correct_exact_total(): void
+    {
+        // SPECIFIC always posts exactly one stock unit per serialised line, so a
+        // non-divisible factor can't be amplified into a visible residual the way it
+        // can for AVCO/FIFO (the residual scales with quantity, and quantity here is
+        // pinned to 1) — but the same exact-total code path is exercised, and the
+        // result must still be mathematically correct: 3 "third" units at 10.0000
+        // each is 30.0000 total for the one stock unit they convert to.
+        [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Specific, ItemTracking::Serial, '1.0000');
+        $third = Uom::create(['code' => 'third', 'name' => 'Third', 'dimension' => UomDimension::Count, 'factor_to_base' => '0.333333333']);
+        $receiptId = $this->createReceipt($order->lines()->sole()->id, $item->id, $third->id, $this->locationId(), [
+            'received_qty' => '3.0000', 'provisional_unit_cost' => '10.0000', 'serial_no' => 'SER-001',
+        ]);
+
+        $this->postJson("/api/v1/goods-receipts/{$receiptId}/post")->assertOk();
+
+        $move = StockMove::query()->with('valuationEntry')->sole();
+        $this->assertSame('1.0000', $move->qty, 'SPECIFIC always posts exactly one stock unit per serial');
+        $this->assertSame('30.0000', $move->unit_cost);
+        $this->assertSame('30.0000', $move->valuationEntry->amount, 'matches 3 thirds at 10.0000 each = 30.0000 total');
+        $layer = StockLayer::query()->sole();
+        $this->assertSame('SER-001', $layer->serial_no);
+        $this->assertSame('30.0000', $layer->unit_cost);
     }
 
     public function test_post_retry_is_idempotent(): void
