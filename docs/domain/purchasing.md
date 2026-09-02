@@ -83,22 +83,27 @@ goods_receipt_lines
   fx_rate_date, fx_rate_type, fx_rate_source
   batch_no, serial_no NULLABLE
 
-quality_inspections
-  id, company_id, goods_receipt_line_id
-  status                    DRAFT | POSTED | REVERSED
-  inspected_qty, inspection_uom_id, stock_qty, uom_factor
-  result                    PASS | FAIL
-  inspected_at, posted_at NULLABLE
-  notes NULLABLE
-
 quality_dispositions
-  id, company_id, quality_inspection_id
+  id, company_id, goods_receipt_line_id
+  source_disposition_id NULLABLE   -- null = allocates from the line's own pending
+                                    -- quantity; set = allocates from that (non-terminal)
+                                    -- disposition's own remaining balance
   disposition              PASS | ACCEPT_WITH_CONCESSION | RETURN_TO_SUPPLIER |
                            REWORK | SCRAP | PENDING_DECISION
-  qty, stock_qty, uom_factor
-  reason, authorised_by NULLABLE, authorised_at NULLABLE
-  resulting_stock_move_id NULLABLE
+  qty                       -- in the receipt line's own stock UoM; identity (batch/
+                             -- serial) is inherited from the line, not stored again here
+  reason
+  disposed_by, disposed_at
+  resulting_stock_move_id NULLABLE  -- always null until the transfer/issue movement
+                                     -- boundary exists (see Behaviour below)
+  idempotency_key NULLABLE
 ```
+
+A `quality_inspection_id` column is not implemented: ADR 0043 allows a disposition to
+reference "the receipt line directly or through its inspection," and nothing in Phase 2's scope
+requires a separate, formally-posted inspection record ahead of the disposition decision — the
+disposition enum's own `PASS` outcome already covers the simple case. A future formal-inspection
+requirement can add that column without reshaping this table.
 
 `purchase_order_lines` deliberately carries `company_id` even though it belongs to a parent
 document. Procurement and reorder reporting queries lines independently across many POs, and the
@@ -185,10 +190,19 @@ concession is a recorded failure explicitly accepted by an authorised user; it m
 available or restricted stock according to policy without erasing the failed result.
 
 Inspection-required quantity starts QA-pending. Each partial or final decision is a separately
-posted QA Disposition referencing the receipt line and exact quantity/tracking identities, source
-and resulting states, actor/reason and any generated movements. Multiple dispositions may consume
-the pending quantity over time; concurrent allocation of the same quantity is locked out. The
-posted receipt itself is never updated with later QA outcomes.
+posted QA Disposition referencing the receipt line directly (a root disposition) or a still-open
+`REWORK`/`PENDING_DECISION` disposition as its source, plus quantity, actor, reason and any
+generated movement. `PASS`, `ACCEPT_WITH_CONCESSION`, `RETURN_TO_SUPPLIER` and `SCRAP` are
+terminal — nothing may be posted against them as a source — while `REWORK` and `PENDING_DECISION`
+stay open, carrying their own remaining balance for a later disposition to resolve. Multiple
+dispositions may consume the pending quantity over time; concurrent allocation of the same
+quantity is locked out by serialising on the receipt line. The posted receipt itself is never
+updated with later QA outcomes.
+
+Terminal and *available* are different questions. Of the four terminal outcomes, only `PASS` and
+`ACCEPT_WITH_CONCESSION` release quantity to available stock; `SCRAP` and `RETURN_TO_SUPPLIER` are
+just as terminal (the QA decision is final) but the quantity must never be treated as available —
+it is destined for destruction or return. See the landmine below.
 
 V1 assumes normal company-owned purchases. Supplier-, customer- and consignment-owned stock are
 not modelled until a real requirement justifies that additional dimension.
@@ -241,6 +255,15 @@ document totals. Always match lines and allocated quantities.
 
 **QA state is not a warehouse.** Moving stock to a quarantine bin may be useful, but requiring a
 move solely to express “inspection pending” combines physical and quality truth.
+
+**QA-pending stock is not available stock, and terminal doesn't mean available.** Physical receipt
+already posts full quantity on hand regardless of `qa_required`; Phase 2 does not gate that. A
+future outbound issue/consumption implementation must exclude from availability: quantity that has
+never had a disposition posted against it, open `REWORK`/`PENDING_DECISION` quantity, **and**
+terminal `SCRAP`/`RETURN_TO_SUPPLIER` quantity — only quantity covered by a `PASS` or
+`ACCEPT_WITH_CONCESSION` disposition may ever be issued. This is found by tracing a stock
+layer/move's `source_id` back to its receipt line and checking that line's dispositions; nothing
+written in Phase 2 enforces it yet.
 
 **Blind reversal of a transaction chain.** A receipt may already be inspected, transferred,
 consumed or financially matched. Validate dependencies and create explicit correcting events;

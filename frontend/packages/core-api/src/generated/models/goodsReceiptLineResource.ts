@@ -7,6 +7,8 @@
 import type { GoodsReceiptLineResourcePurchaseOrderLineId } from "./goodsReceiptLineResourcePurchaseOrderLineId";
 import type { GoodsReceiptLineResourceBatchNo } from "./goodsReceiptLineResourceBatchNo";
 import type { GoodsReceiptLineResourceSerialNo } from "./goodsReceiptLineResourceSerialNo";
+import type { GoodsReceiptLineResourceQaUnallocatedQty } from "./goodsReceiptLineResourceQaUnallocatedQty";
+import type { GoodsReceiptLineResourceQaUnresolvedQty } from "./goodsReceiptLineResourceQaUnresolvedQty";
 
 export interface GoodsReceiptLineResource {
   id: number;
@@ -27,4 +29,6 @@ export interface GoodsReceiptLineResource {
   fx_rate_source: string;
   batch_no: GoodsReceiptLineResourceBatchNo;
   serial_no: GoodsReceiptLineResourceSerialNo;
+  qa_unallocated_qty: GoodsReceiptLineResourceQaUnallocatedQty;
+  qa_unresolved_qty: GoodsReceiptLineResourceQaUnresolvedQty;
 }

@@ -18,17 +18,21 @@ class GoodsReceiptController extends Controller
     public function store(StoreGoodsReceiptRequest $request, CreateGoodsReceipt $create): JsonResponse
     {
         $receipt = $create($request->validated(), $request->header('Idempotency-Key'));
+        $receipt->load(['lines' => fn ($query) => $query->withQaAggregates()]);
 
         return (new GoodsReceiptResource($receipt))->response()->setStatusCode(201);
     }
 
     public function show(Request $request, GoodsReceipt $goodsReceipt): GoodsReceiptResource
     {
-        return new GoodsReceiptResource($goodsReceipt->load('lines'));
+        return new GoodsReceiptResource($goodsReceipt->load(['lines' => fn ($query) => $query->withQaAggregates()]));
     }
 
     public function post(GoodsReceipt $goodsReceipt, PostGoodsReceipt $post): GoodsReceiptResource
     {
-        return new GoodsReceiptResource($post($goodsReceipt));
+        $receipt = $post($goodsReceipt);
+        $receipt->load(['lines' => fn ($query) => $query->withQaAggregates()]);
+
+        return new GoodsReceiptResource($receipt);
     }
 }

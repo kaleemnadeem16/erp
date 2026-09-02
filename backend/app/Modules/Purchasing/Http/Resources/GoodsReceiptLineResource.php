@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Purchasing\Http\Resources;
 
 use App\Modules\Purchasing\Models\GoodsReceiptLine;
+use Brick\Math\BigDecimal;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -23,6 +24,36 @@ class GoodsReceiptLineResource extends JsonResource
             'fx_rate' => $this->fx_rate, 'base_unit_cost' => $this->base_unit_cost,
             'fx_rate_date' => $this->fx_rate_date->format('Y-m-d'), 'fx_rate_type' => $this->fx_rate_type,
             'fx_rate_source' => $this->fx_rate_source, 'batch_no' => $this->batch_no, 'serial_no' => $this->serial_no,
+            'qa_unallocated_qty' => $this->qaUnallocatedQty(), 'qa_unresolved_qty' => $this->qaUnresolvedQty(),
         ];
+    }
+
+    /**
+     * Relies entirely on GoodsReceiptLine::scopeWithQaAggregates() having been
+     * applied by the caller — purchaseOrderLine and both qa_*_allocated_qty sums are
+     * read here, never queried, so rendering a collection costs one pair of
+     * aggregate queries total instead of one pair per row.
+     */
+    private function qaRequired(): bool
+    {
+        return $this->purchaseOrderLine !== null && $this->purchaseOrderLine->qa_required;
+    }
+
+    private function qaUnallocatedQty(): ?string
+    {
+        if (! $this->qaRequired()) {
+            return null;
+        }
+
+        return (string) BigDecimal::of($this->stock_qty)->minus(BigDecimal::of((string) ($this->qa_root_allocated_qty ?? '0')));
+    }
+
+    private function qaUnresolvedQty(): ?string
+    {
+        if (! $this->qaRequired()) {
+            return null;
+        }
+
+        return (string) BigDecimal::of($this->stock_qty)->minus(BigDecimal::of((string) ($this->qa_terminal_allocated_qty ?? '0')));
     }
 }

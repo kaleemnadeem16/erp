@@ -118,7 +118,7 @@ The order matters because later work needs stable document and stock boundaries:
       converted stock quantity, location, batch/serial identity and actual receipt timestamp
 - [x] Implement V1 cumulative `BLOCK`/`ALLOW_WITHIN_TOLERANCE` in pinned stock UoM, hard
       short-close, line-level receipt currency/cost/FX and same-supplier/currency grouping
-- [ ] Post QA outcomes as repeatable immutable dispositions over pending receipt quantity; lock
+- [x] Post QA outcomes as repeatable immutable dispositions over pending receipt quantity; lock
       concurrent dispositions and keep QA state independent from physical location
 - [ ] Implement explicit receipt reversal with dependency checks and Inventory/GR-IR valuation
       feed effects; do not conflate reversal with the separately deferred Supplier Return
@@ -143,6 +143,9 @@ The order matters because later work needs stable document and stock boundaries:
       cannot be received twice or issued more than once while on hand
 - [ ] Enforce tracking rules (`NONE`/`BATCH`/`SERIAL`) independently from valuation method and
       preserve batch/serial data on moves and layers
+- [ ] Exclude non-`PASS`/`ACCEPT_WITH_CONCESSION` quantity (never-dispositioned, open `REWORK`/
+      `PENDING_DECISION`, and terminal `SCRAP`/`RETURN_TO_SUPPLIER`) from an item's
+      available-to-issue balance for a `qa_required` receipt line
 - [ ] Write one `stock_valuation_entries` feed for every costed movement; store transaction and
       base amounts using the pinned FX rate, without creating GL journals
 - [x] Prevent normal edits to an item's `valuation_method`, `avco_pool_scope` or `stock_uom_id`
@@ -213,7 +216,7 @@ Tick these in the same commit as the work.
       stock move/layer/valuation feed atomically
 - [ ] Exact/above tolerance, indivisible flooring, cumulative partials and hard short-close behave
       per ADR 0043; simultaneous receipts and duplicate posting cannot exceed or duplicate state
-- [ ] Partial/repeated QA dispositions cannot allocate more than pending quantity, including under
+- [x] Partial/repeated QA dispositions cannot allocate more than pending quantity, including under
       concurrent posting, and never mutate the original receipt
 - [ ] Simultaneous receipts into one AVCO pool produce the mathematically correct quantity/value
       and average under a real PostgreSQL concurrency test; supported scopes resolve uniquely and

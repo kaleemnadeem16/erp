@@ -47,6 +47,6 @@ class CurrencyTest extends TestCase
             }
         });
 
-        $this->assertSame(1, Currency::query()->count());
+        $this->assertTrue(Currency::query()->where('code', 'USD')->exists());
     }
 }

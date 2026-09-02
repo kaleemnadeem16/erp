@@ -8,9 +8,12 @@ use App\Exceptions\DomainInvariantException;
 use App\Models\Model;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Models\Location;
+use App\Modules\Purchasing\Support\DispositionOutcome;
 use App\Modules\Purchasing\Support\GoodsReceiptStatus;
 use App\Support\Concerns\BelongsToCompanyThroughParent;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -85,5 +88,26 @@ class GoodsReceiptLine extends Model
     public function location(): BelongsTo
     {
         return $this->belongsTo(Location::class);
+    }
+
+    /** @return HasMany<QualityDisposition, $this> */
+    public function qualityDispositions(): HasMany
+    {
+        return $this->hasMany(QualityDisposition::class);
+    }
+
+    /**
+     * Eager-loads everything GoodsReceiptLineResource's qa_unallocated_qty/
+     * qa_unresolved_qty fields need for a whole collection in one pair of queries,
+     * instead of each rendered row running its own aggregate (and its own
+     * purchaseOrderLine lookup) independently.
+     *
+     * @param  Builder<GoodsReceiptLine>  $query
+     */
+    public function scopeWithQaAggregates(Builder $query): void
+    {
+        $query->with('purchaseOrderLine')
+            ->withSum(['qualityDispositions as qa_root_allocated_qty' => fn (Builder $q) => $q->whereNull('source_disposition_id')], 'qty')
+            ->withSum(['qualityDispositions as qa_terminal_allocated_qty' => fn (Builder $q) => $q->whereIn('disposition', DispositionOutcome::terminalValues())], 'qty');
     }
 }
