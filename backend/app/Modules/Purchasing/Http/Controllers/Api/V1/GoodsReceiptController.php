@@ -7,6 +7,8 @@ namespace App\Modules\Purchasing\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Modules\Purchasing\Actions\CreateGoodsReceipt;
 use App\Modules\Purchasing\Actions\PostGoodsReceipt;
+use App\Modules\Purchasing\Actions\ReverseGoodsReceipt;
+use App\Modules\Purchasing\Http\Requests\GoodsReceipt\ReverseGoodsReceiptRequest;
 use App\Modules\Purchasing\Http\Requests\GoodsReceipt\StoreGoodsReceiptRequest;
 use App\Modules\Purchasing\Http\Resources\GoodsReceiptResource;
 use App\Modules\Purchasing\Models\GoodsReceipt;
@@ -31,6 +33,14 @@ class GoodsReceiptController extends Controller
     public function post(GoodsReceipt $goodsReceipt, PostGoodsReceipt $post): GoodsReceiptResource
     {
         $receipt = $post($goodsReceipt);
+        $receipt->load(['lines' => fn ($query) => $query->withQaAggregates()]);
+
+        return new GoodsReceiptResource($receipt);
+    }
+
+    public function reverse(ReverseGoodsReceiptRequest $request, GoodsReceipt $goodsReceipt, ReverseGoodsReceipt $reverse): GoodsReceiptResource
+    {
+        $receipt = $reverse($goodsReceipt, $request->string('reason')->toString(), $request->user()->id);
         $receipt->load(['lines' => fn ($query) => $query->withQaAggregates()]);
 
         return new GoodsReceiptResource($receipt);

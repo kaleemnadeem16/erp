@@ -6,6 +6,7 @@ namespace App\Modules\Purchasing\Models;
 
 use App\Exceptions\DomainInvariantException;
 use App\Models\Model;
+use App\Models\User;
 use App\Modules\Parties\Models\SupplierAccount;
 use App\Modules\Purchasing\Support\GoodsReceiptStatus;
 use App\Support\Concerns\BelongsToCompany;
@@ -22,6 +23,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon $posting_date
  * @property CarbonImmutable|null $posted_at
  * @property CarbonImmutable|null $reversed_at
+ * @property int|null $reversed_by
  */
 class GoodsReceipt extends Model
 {
@@ -34,7 +36,7 @@ class GoodsReceipt extends Model
     {
         static::updating(function (GoodsReceipt $receipt): void {
             if ($receipt->getOriginal('status') !== GoodsReceiptStatus::Draft
-                && array_diff(array_keys($receipt->getDirty()), ['status', 'reversed_at', 'correction_reason', 'updated_at']) !== []) {
+                && array_diff(array_keys($receipt->getDirty()), ['status', 'reversed_at', 'reversed_by', 'correction_reason', 'updated_at']) !== []) {
                 throw new DomainInvariantException('Posted goods-receipt facts are immutable.', 'status');
             }
         });
@@ -42,7 +44,7 @@ class GoodsReceipt extends Model
 
     protected static function companyScopedForeignKeys(): array
     {
-        return ['supplier_account_id' => SupplierAccount::class, 'reversal_of_id' => self::class];
+        return ['supplier_account_id' => SupplierAccount::class, 'reversal_of_id' => self::class, 'reversed_by' => User::class];
     }
 
     protected function casts(): array

@@ -19,6 +19,7 @@ class GoodsReceiptResource extends JsonResource
             'status' => $this->status->value, 'physical_arrival_at' => $this->physical_arrival_at->toIso8601String(),
             'recorded_at' => $this->recorded_at->toIso8601String(), 'posting_date' => $this->posting_date->format('Y-m-d'),
             'posted_at' => $this->posted_at?->toIso8601String(), 'reversed_at' => $this->reversed_at?->toIso8601String(),
+            'reversed_by' => $this->reversed_by,
             'reversal_of_id' => $this->reversal_of_id, 'correction_reason' => $this->correction_reason,
             'lines' => GoodsReceiptLineResource::collection($this->whenLoaded('lines')),
         ];

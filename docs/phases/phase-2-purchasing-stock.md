@@ -120,7 +120,7 @@ The order matters because later work needs stable document and stock boundaries:
       short-close, line-level receipt currency/cost/FX and same-supplier/currency grouping
 - [x] Post QA outcomes as repeatable immutable dispositions over pending receipt quantity; lock
       concurrent dispositions and keep QA state independent from physical location
-- [ ] Implement explicit receipt reversal with dependency checks and Inventory/GR-IR valuation
+- [x] Implement explicit receipt reversal with dependency checks and Inventory/GR-IR valuation
       feed effects; do not conflate reversal with the separately deferred Supplier Return
 
 ### Stock movement and valuation

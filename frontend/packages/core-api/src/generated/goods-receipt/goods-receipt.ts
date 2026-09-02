@@ -23,9 +23,11 @@ import type {
 import type {
   AuthenticationExceptionResponse,
   GoodsReceiptsPost200,
+  GoodsReceiptsReverse200,
   GoodsReceiptsShow200,
   GoodsReceiptsStore201,
   ModelNotFoundExceptionResponse,
+  ReverseGoodsReceiptRequest,
   StoreGoodsReceiptRequest,
   ValidationExceptionResponse,
 } from ".././models";
@@ -453,6 +455,138 @@ export const useGoodsReceiptsPost = <
   TContext
 > => {
   const mutationOptions = getGoodsReceiptsPostMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+export type goodsReceiptsReverseResponse200 = {
+  data: GoodsReceiptsReverse200;
+  status: 200;
+};
+
+export type goodsReceiptsReverseResponse401 = {
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
+
+export type goodsReceiptsReverseResponse404 = {
+  data: ModelNotFoundExceptionResponse;
+  status: 404;
+};
+
+export type goodsReceiptsReverseResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
+};
+
+export type goodsReceiptsReverseResponseSuccess =
+  goodsReceiptsReverseResponse200 & {
+    headers: Headers;
+  };
+export type goodsReceiptsReverseResponseError = (
+  | goodsReceiptsReverseResponse401
+  | goodsReceiptsReverseResponse404
+  | goodsReceiptsReverseResponse422
+) & {
+  headers: Headers;
+};
+
+export type goodsReceiptsReverseResponse =
+  goodsReceiptsReverseResponseSuccess | goodsReceiptsReverseResponseError;
+
+export const getGoodsReceiptsReverseUrl = (goodsReceipt: number) => {
+  return `/v1/goods-receipts/${goodsReceipt}/reverse`;
+};
+
+export const goodsReceiptsReverse = async (
+  goodsReceipt: number,
+  reverseGoodsReceiptRequest: ReverseGoodsReceiptRequest,
+  options?: RequestInit,
+): Promise<goodsReceiptsReverseResponse> => {
+  return fetchClient<goodsReceiptsReverseResponse>(
+    getGoodsReceiptsReverseUrl(goodsReceipt),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(reverseGoodsReceiptRequest),
+    },
+  );
+};
+
+export const getGoodsReceiptsReverseMutationOptions = <
+  TError =
+    | AuthenticationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof goodsReceiptsReverse>>,
+    TError,
+    { goodsReceipt: number; data: ReverseGoodsReceiptRequest },
+    TContext
+  >;
+  request?: SecondParameter<typeof fetchClient>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof goodsReceiptsReverse>>,
+  TError,
+  { goodsReceipt: number; data: ReverseGoodsReceiptRequest },
+  TContext
+> => {
+  const mutationKey = ["goodsReceiptsReverse"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof goodsReceiptsReverse>>,
+    { goodsReceipt: number; data: ReverseGoodsReceiptRequest }
+  > = (props) => {
+    const { goodsReceipt, data } = props ?? {};
+
+    return goodsReceiptsReverse(goodsReceipt, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type GoodsReceiptsReverseMutationResult = NonNullable<
+  Awaited<ReturnType<typeof goodsReceiptsReverse>>
+>;
+export type GoodsReceiptsReverseMutationBody = ReverseGoodsReceiptRequest;
+export type GoodsReceiptsReverseMutationError =
+  | AuthenticationExceptionResponse
+  | ModelNotFoundExceptionResponse
+  | ValidationExceptionResponse;
+
+export const useGoodsReceiptsReverse = <
+  TError =
+    | AuthenticationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof goodsReceiptsReverse>>,
+      TError,
+      { goodsReceipt: number; data: ReverseGoodsReceiptRequest },
+      TContext
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof goodsReceiptsReverse>>,
+  TError,
+  { goodsReceipt: number; data: ReverseGoodsReceiptRequest },
+  TContext
+> => {
+  const mutationOptions = getGoodsReceiptsReverseMutationOptions(options);
 
   return useMutation(mutationOptions, queryClient);
 };

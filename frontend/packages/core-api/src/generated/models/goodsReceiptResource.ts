@@ -7,6 +7,7 @@
 import type { GoodsReceiptResourceNumber } from "./goodsReceiptResourceNumber";
 import type { GoodsReceiptResourcePostedAt } from "./goodsReceiptResourcePostedAt";
 import type { GoodsReceiptResourceReversedAt } from "./goodsReceiptResourceReversedAt";
+import type { GoodsReceiptResourceReversedBy } from "./goodsReceiptResourceReversedBy";
 import type { GoodsReceiptResourceReversalOfId } from "./goodsReceiptResourceReversalOfId";
 import type { GoodsReceiptResourceCorrectionReason } from "./goodsReceiptResourceCorrectionReason";
 import type { GoodsReceiptLineResource } from "./goodsReceiptLineResource";
@@ -21,6 +22,7 @@ export interface GoodsReceiptResource {
   posting_date: string;
   posted_at: GoodsReceiptResourcePostedAt;
   reversed_at: GoodsReceiptResourceReversedAt;
+  reversed_by: GoodsReceiptResourceReversedBy;
   reversal_of_id: GoodsReceiptResourceReversalOfId;
   correction_reason: GoodsReceiptResourceCorrectionReason;
   lines?: GoodsReceiptLineResource[];

@@ -70,7 +70,7 @@ goods_receipts
   status                    DRAFT | POSTED | REVERSED
   physical_arrival_at, recorded_at
   posting_date
-  posted_at NULLABLE, reversed_at NULLABLE
+  posted_at NULLABLE, reversed_at NULLABLE, reversed_by NULLABLE
   reversal_of_id NULLABLE, correction_reason NULLABLE
   idempotency_key NULLABLE
 
@@ -172,7 +172,13 @@ reading that singleton initialises its database defaults through an Action when 
 - Posting locks the draft receipt and referenced PO lines in deterministic ID order, revalidates
   all cumulative quantities and creates movement/valuation effects in one idempotent transaction.
 - Receipt reversal corrects an erroneous posting; supplier return records a later real outbound
-  event. Neither mutates the original and a return does not automatically reopen the PO.
+  event. Neither mutates the original and a return does not automatically reopen the PO. For
+  reversal, "does not mutate" means posted quantity, cost and line facts stay untouched — the
+  same original `goods_receipts` row transitions `status` to `REVERSED` and records
+  `reversed_at`/`reversed_by`/`correction_reason` on itself, exactly like a PO's own `status`
+  transitions after issue. `reversal_of_id` is not populated by reversal itself; it is reserved
+  for a separate, later feature that links an ordinary replacement receipt back to the one it
+  corrects.
 
 ### Location, quality and availability
 

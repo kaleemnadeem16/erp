@@ -77,6 +77,17 @@ stock_valuation_entries                 -- cost impact of each move; feeds the G
   account_id
 ```
 
+`stock_valuation_entries.qty`/`amount`/`base_amount` are a signed feed, unlike every quantity
+column elsewhere in this schema: an inbound receipt posts positive (a debit), an outbound
+movement — reversal today, issues/transfers once built — posts the same magnitude negative (a
+credit). `unit_cost` stays a positive per-unit magnitude regardless of direction; direction on
+`stock_moves` itself is expressed by `from`/`to` location nullability, not by a signed `qty`
+(`stock_moves.qty` keeps its `> 0` constraint). This lets "inventory account balance equals the
+sum of stock valuation" (see the landmine below) stay a flat `SUM(base_amount)`, not
+direction-aware logic — set by [ADR 0043](../decisions/0043-control-purchase-order-receipt-and-qa-posting.md)'s
+receipt reversal (`App\Modules\Inventory\Actions\PostInventoryMovement::reverseReceipt()`), binding
+for whoever builds the general issue/transfer engine next.
+
 ## Behaviour
 
 Purchase receipt and QA movements enter this ledger only through ADR 0043's atomic posting and
