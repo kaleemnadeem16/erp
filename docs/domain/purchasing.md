@@ -30,8 +30,8 @@ Phase 2 receipt model does not close it off.
 
 ## Schema
 
-The purchase-order/settings portion below is implemented. Receipt and QA tables remain annotated
-planning schema for the next Phase 2 slices.
+The purchase-order/settings and goods-receipt portions below are implemented. QA tables remain
+annotated planning schema for the next Phase 2 slices.
 
 ```
 purchasing_settings
@@ -72,6 +72,7 @@ goods_receipts
   posting_date
   posted_at NULLABLE, reversed_at NULLABLE
   reversal_of_id NULLABLE, correction_reason NULLABLE
+  idempotency_key NULLABLE
 
 goods_receipt_lines
   id, goods_receipt_id, purchase_order_line_id NULLABLE
@@ -105,6 +106,12 @@ column permits PostgreSQL composite foreign keys that prevent cross-company item
 
 QA quantities are derived from posted inspection/disposition events and their stock movements;
 there are no independently editable accepted/rejected counters on a receipt line.
+
+Draft Goods Receipts are created from issued PO lines. Posting serialises on the receipt and its
+PO lines in deterministic order, re-derives cumulative effective receipt quantity, then calls
+Inventory's sole movement boundary for every line. AVCO, FIFO and SPECIFIC receipts all create a
+move, receipt layer and valuation-feed entry; AVCO additionally updates its locked pool. Posting
+the same receipt again resolves the existing result without duplicating quantity or value.
 
 Future Phase 6 records must support many-to-many line allocations rather than assuming one PO,
 one receipt and one invoice:

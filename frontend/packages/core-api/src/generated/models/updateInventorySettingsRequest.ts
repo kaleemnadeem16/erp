@@ -5,7 +5,9 @@
  * OpenAPI spec version: 0.0.1
  */
 import type { InventoryLocationMode } from "./inventoryLocationMode";
+import type { AvcoPoolScope } from "./avcoPoolScope";
 
 export interface UpdateInventorySettingsRequest {
-  inventory_location_mode: InventoryLocationMode;
+  inventory_location_mode?: InventoryLocationMode;
+  default_avco_pool_scope?: AvcoPoolScope;
 }

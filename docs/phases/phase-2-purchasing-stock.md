@@ -112,11 +112,11 @@ The order matters because later work needs stable document and stock boundaries:
       issued PO from current supplier/item/rate master data
 - [x] Implement transactional draft create/update, issue, cancel and hard line short-close Actions;
       close the PO when every line is terminal and expose validated query/settings APIs
-- [ ] Implement partial/full receipt Actions with concurrency-safe outstanding quantities and
+- [x] Implement partial/full receipt Actions with concurrency-safe outstanding quantities and
       idempotency protection against duplicate receipt submission
-- [ ] Build goods-receipt headers/lines that retain the PO-line link, received purchase quantity,
+- [x] Build goods-receipt headers/lines that retain the PO-line link, received purchase quantity,
       converted stock quantity, location, batch/serial identity and actual receipt timestamp
-- [ ] Implement V1 cumulative `BLOCK`/`ALLOW_WITHIN_TOLERANCE` in pinned stock UoM, hard
+- [x] Implement V1 cumulative `BLOCK`/`ALLOW_WITHIN_TOLERANCE` in pinned stock UoM, hard
       short-close, line-level receipt currency/cost/FX and same-supplier/currency grouping
 - [ ] Post QA outcomes as repeatable immutable dispositions over pending receipt quantity; lock
       concurrent dispositions and keep QA state independent from physical location
@@ -125,11 +125,11 @@ The order matters because later work needs stable document and stock boundaries:
 
 ### Stock movement and valuation
 
-- [ ] Build the stock tables in `stock.md` with company-aware foreign keys, decimal quantities and
+- [x] Build the stock tables in `stock.md` with company-aware foreign keys, decimal quantities and
       costs, immutable source identity, and indexes for item/location/date and open FIFO layers
 - [ ] Implement one transactional inventory movement boundary used by receipts, issues, returns,
       transfers and adjustments; no other code path may alter quantity or valuation state
-- [ ] Resolve and persist each AVCO item's `COMPANY_ITEM`, `WAREHOUSE_ITEM` or
+- [x] Resolve and persist each AVCO item's `COMPANY_ITEM`, `WAREHOUSE_ITEM` or
       `COMPANY_ITEM_BATCH` pool scope (default `COMPANY_ITEM`), enforce tracking compatibility and
       lock it after the first movement; defer `WAREHOUSE_ITEM_BATCH`, per ADR 0039
 - [ ] Implement AVCO with row locking around resolved `avco_pools`; prove two concurrent receipts
@@ -145,7 +145,7 @@ The order matters because later work needs stable document and stock boundaries:
       preserve batch/serial data on moves and layers
 - [ ] Write one `stock_valuation_entries` feed for every costed movement; store transaction and
       base amounts using the pinned FX rate, without creating GL journals
-- [ ] Prevent normal edits to an item's `valuation_method`, `avco_pool_scope` or `stock_uom_id`
+- [x] Prevent normal edits to an item's `valuation_method`, `avco_pool_scope` or `stock_uom_id`
       after its first move; scope changes use a separate effective-dated valuation cutover
 - [ ] Implement company backdating horizon modes (`CURRENT_AND_PREVIOUS_PERIOD` default,
       `PERIOD_LOCK_ONLY`, `POSTING_FLOOR` with fixed/rolling subtype), audited policy changes and

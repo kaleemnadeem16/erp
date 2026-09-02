@@ -5,13 +5,16 @@ declare(strict_types=1);
 namespace App\Modules\Inventory\Models;
 
 use App\Exceptions\DomainInvariantException;
+use App\Models\Company;
 use App\Models\Model;
 use App\Models\Uom;
 use App\Modules\Accounting\Models\ChartOfAccount;
+use App\Modules\Inventory\Support\AvcoPoolScope;
 use App\Modules\Inventory\Support\ItemTracking;
 use App\Modules\Inventory\Support\ItemType;
 use App\Modules\Inventory\Support\ValuationMethod;
 use App\Modules\Purchasing\Models\ItemSupplier;
+use App\Support\CompanyContext;
 use App\Support\Concerns\BelongsToCompany;
 use App\Support\Concerns\GuardsRelatedCompanyScope;
 use App\Support\Concerns\HasCustomFields;
@@ -48,6 +51,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property bool $is_purchasable
  * @property bool $is_sellable
  * @property ValuationMethod $valuation_method
+ * @property AvcoPoolScope|null $avco_pool_scope
  * @property ItemTracking $tracking
  * @property int $category_id
  * @property int|null $income_account_id
@@ -75,6 +79,31 @@ class Item extends Model
                     'Item cannot be created: no valuation_method given, and category %d sets no default_valuation_method anywhere in its ancestry.',
                     $item->category_id,
                 ), field: 'valuation_method');
+            }
+
+        });
+
+        static::saving(function (Item $item): void {
+            if ($item->valuation_method === ValuationMethod::Avco) {
+                $item->avco_pool_scope ??= Company::query()->findOrFail(app(CompanyContext::class)->id())->default_avco_pool_scope;
+                if ($item->avco_pool_scope === AvcoPoolScope::CompanyItemBatch && $item->tracking !== ItemTracking::Batch) {
+                    throw new DomainInvariantException('COMPANY_ITEM_BATCH AVCO requires BATCH tracking.', 'avco_pool_scope');
+                }
+            } else {
+                $item->avco_pool_scope = null;
+            }
+            if ($item->valuation_method === ValuationMethod::Specific && $item->tracking !== ItemTracking::Serial) {
+                throw new DomainInvariantException('SPECIFIC valuation requires SERIAL tracking.', 'tracking');
+            }
+        });
+
+        static::updating(function (Item $item): void {
+            if ($item->isDirty(['valuation_method', 'avco_pool_scope', 'stock_uom_id'])
+                && StockMove::query()->where('item_id', $item->getKey())->exists()) {
+                throw new DomainInvariantException(
+                    'Valuation method, AVCO pool scope and stock UoM are immutable after the first stock movement.',
+                    'valuation_method',
+                );
             }
         });
     }
@@ -104,6 +133,7 @@ class Item extends Model
             'is_purchasable' => 'bool',
             'is_sellable' => 'bool',
             'valuation_method' => ValuationMethod::class,
+            'avco_pool_scope' => AvcoPoolScope::class,
             'tracking' => ItemTracking::class,
             'status' => Status::class,
         ];

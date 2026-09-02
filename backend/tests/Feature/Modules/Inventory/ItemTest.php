@@ -231,7 +231,11 @@ class ItemTest extends TestCase
     public function test_valuation_method_can_be_overridden_per_item(): void
     {
         $category = $this->makeCategory(['default_valuation_method' => ValuationMethod::Avco]);
-        $item = Item::create($this->baseAttributes(['category_id' => $category->id, 'valuation_method' => ValuationMethod::Specific]));
+        $item = Item::create($this->baseAttributes([
+            'category_id' => $category->id,
+            'valuation_method' => ValuationMethod::Specific,
+            'tracking' => ItemTracking::Serial,
+        ]));
 
         $this->assertSame(ValuationMethod::Specific, $item->fresh()->valuation_method);
     }

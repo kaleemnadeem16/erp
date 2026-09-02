@@ -7,6 +7,7 @@
 import type { StoreItemRequestDescription } from "./storeItemRequestDescription";
 import type { ItemType } from "./itemType";
 import type { StoreItemRequestValuationMethod } from "./storeItemRequestValuationMethod";
+import type { StoreItemRequestAvcoPoolScope } from "./storeItemRequestAvcoPoolScope";
 import type { ItemTracking } from "./itemTracking";
 import type { StoreItemRequestIncomeAccountId } from "./storeItemRequestIncomeAccountId";
 import type { StoreItemRequestExpenseAccountId } from "./storeItemRequestExpenseAccountId";
@@ -25,6 +26,7 @@ export interface StoreItemRequest {
   is_purchasable?: boolean;
   is_sellable?: boolean;
   valuation_method?: StoreItemRequestValuationMethod;
+  avco_pool_scope?: StoreItemRequestAvcoPoolScope;
   tracking?: ItemTracking;
   category_id: number;
   income_account_id?: StoreItemRequestIncomeAccountId;

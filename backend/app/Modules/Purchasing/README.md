@@ -13,7 +13,8 @@ Owns supplier sourcing and the purchase-order and goods-receipt source documents
 - `PurchasingSetting` — typed company purchasing policy defaults
 - `PurchaseOrder` and `PurchaseOrderLine` — draft commercial commitments and immutable issue
   snapshots with draft, issue, cancel and hard short-close APIs
-- Goods receipts — later Phase 2 work
+- `GoodsReceipt` and `GoodsReceiptLine` — immutable posted receipt facts with partial/cumulative
+  PO receipt control, pinned UoM/cost/FX/tracking identity and idempotent Inventory posting
 
 ## Does not own
 
@@ -26,6 +27,8 @@ Owns supplier sourcing and the purchase-order and goods-receipt source documents
 `CreateItemSupplier`, `UpdateItemSupplier` and `ArchiveItemSupplier` are the write boundary for
 supplier sourcing. Purchase-order writes likewise use dedicated create, update, issue, cancel and
 short-close Actions; purchasing-setting initialisation and updates also remain behind Actions.
+`CreateGoodsReceipt` builds draft snapshots; `PostGoodsReceipt` performs deterministic PO-line
+locking, tolerance revalidation and atomic posting through Inventory's `PostInventoryMovement`.
 Purchasing may read Parties and Inventory models directly; writes to those modules remain behind
 their owning Actions. Item and supplier identity are immutable after creation;
 archive-and-create replaces a relationship per ADR 0042.

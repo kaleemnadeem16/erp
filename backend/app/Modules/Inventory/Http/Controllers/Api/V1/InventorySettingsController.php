@@ -9,7 +9,6 @@ use App\Models\Company;
 use App\Modules\Inventory\Actions\UpdateInventorySettings;
 use App\Modules\Inventory\Http\Requests\InventorySettings\UpdateInventorySettingsRequest;
 use App\Modules\Inventory\Http\Resources\InventorySettingsResource;
-use App\Modules\Inventory\Support\InventoryLocationMode;
 use App\Support\CompanyContext;
 
 class InventorySettingsController extends Controller
@@ -21,8 +20,6 @@ class InventorySettingsController extends Controller
 
     public function update(UpdateInventorySettingsRequest $request, UpdateInventorySettings $update): InventorySettingsResource
     {
-        $mode = InventoryLocationMode::from($request->string('inventory_location_mode')->toString());
-
-        return new InventorySettingsResource($update($mode));
+        return new InventorySettingsResource($update($request->validated()));
     }
 }

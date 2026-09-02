@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Inventory\Http\Requests\Item;
 
 use App\Modules\Inventory\Models\Item;
+use App\Modules\Inventory\Support\AvcoPoolScope;
 use App\Modules\Inventory\Support\ItemTracking;
 use App\Modules\Inventory\Support\ItemType;
 use App\Modules\Inventory\Support\ValuationMethod;
@@ -52,6 +53,7 @@ class StoreItemRequest extends FormRequest
             // No default here — omitted falls through to Category::
             // resolveDefaultValuationMethod() in Item::booted(), per ADR 0032.
             'valuation_method' => ['sometimes', 'nullable', Rule::enum(ValuationMethod::class)],
+            'avco_pool_scope' => ['sometimes', 'nullable', Rule::enum(AvcoPoolScope::class)],
             'tracking' => ['sometimes', Rule::enum(ItemTracking::class)],
             'category_id' => ['required', 'integer', CompanyScoped::exists('categories')],
             'income_account_id' => ['sometimes', 'nullable', 'integer', CompanyScoped::exists('chart_of_accounts')],

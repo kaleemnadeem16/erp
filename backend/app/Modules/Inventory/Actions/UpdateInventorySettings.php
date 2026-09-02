@@ -17,17 +17,18 @@ final class UpdateInventorySettings
 {
     public function __construct(private readonly CompanyContext $companyContext) {}
 
-    public function __invoke(InventoryLocationMode $mode): Company
+    /** @param array<string, mixed> $attributes */
+    public function __invoke(array $attributes): Company
     {
-        return DB::transaction(function () use ($mode): Company {
+        return DB::transaction(function () use ($attributes): Company {
             $company = Company::query()->lockForUpdate()->findOrFail($this->companyContext->id());
 
             if ($company->inventory_location_mode === InventoryLocationMode::Structured
-                && $mode === InventoryLocationMode::Simple) {
+                && ($attributes['inventory_location_mode'] ?? null) === InventoryLocationMode::Simple->value) {
                 $this->guardSimpleDowngrade();
             }
 
-            $company->update(['inventory_location_mode' => $mode]);
+            $company->update($attributes);
 
             return $company->refresh();
         });

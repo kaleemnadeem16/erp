@@ -32,6 +32,7 @@ class ItemResource extends JsonResource
             'is_purchasable' => $item->is_purchasable,
             'is_sellable' => $item->is_sellable,
             'valuation_method' => $item->valuation_method->value,
+            'avco_pool_scope' => $item->avco_pool_scope?->value,
             'tracking' => $item->tracking->value,
             'category_id' => $item->category_id,
             'income_account_id' => $item->income_account_id,

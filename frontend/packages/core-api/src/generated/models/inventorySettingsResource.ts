@@ -7,4 +7,5 @@
 
 export interface InventorySettingsResource {
   inventory_location_mode: string;
+  default_avco_pool_scope: string;
 }

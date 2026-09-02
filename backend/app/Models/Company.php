@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Modules\Accounting\Models\AccountingPeriod;
 use App\Modules\Accounting\Support\PeriodStatus;
+use App\Modules\Inventory\Support\AvcoPoolScope;
 use App\Modules\Inventory\Support\InventoryLocationMode;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use RuntimeException;
@@ -20,6 +21,7 @@ use RuntimeException;
  * @property int|null $base_currency_id
  * @property int $fiscal_year_start_month
  * @property InventoryLocationMode $inventory_location_mode
+ * @property AvcoPoolScope $default_avco_pool_scope
  */
 class Company extends Model
 {
@@ -29,6 +31,7 @@ class Company extends Model
     {
         return [
             'inventory_location_mode' => InventoryLocationMode::class,
+            'default_avco_pool_scope' => AvcoPoolScope::class,
         ];
     }
 

@@ -5,6 +5,7 @@
  * OpenAPI spec version: 0.0.1
  */
 import type { ItemResourceDescription } from "./itemResourceDescription";
+import type { ItemResourceAvcoPoolScope } from "./itemResourceAvcoPoolScope";
 import type { ItemResourceIncomeAccountId } from "./itemResourceIncomeAccountId";
 import type { ItemResourceExpenseAccountId } from "./itemResourceExpenseAccountId";
 import type { ItemResourceInventoryAccountId } from "./itemResourceInventoryAccountId";
@@ -24,6 +25,7 @@ export interface ItemResource {
   is_purchasable: boolean;
   is_sellable: boolean;
   valuation_method: string;
+  avco_pool_scope: ItemResourceAvcoPoolScope;
   tracking: string;
   category_id: number;
   income_account_id: ItemResourceIncomeAccountId;

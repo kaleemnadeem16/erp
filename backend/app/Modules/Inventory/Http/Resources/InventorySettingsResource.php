@@ -17,6 +17,9 @@ class InventorySettingsResource extends JsonResource
         /** @var Company $company */
         $company = $this->resource;
 
-        return ['inventory_location_mode' => $company->inventory_location_mode->value];
+        return [
+            'inventory_location_mode' => $company->inventory_location_mode->value,
+            'default_avco_pool_scope' => $company->default_avco_pool_scope->value,
+        ];
     }
 }

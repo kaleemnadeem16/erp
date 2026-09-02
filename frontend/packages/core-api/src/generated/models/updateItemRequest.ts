@@ -7,6 +7,7 @@
 import type { UpdateItemRequestDescription } from "./updateItemRequestDescription";
 import type { ItemType } from "./itemType";
 import type { ValuationMethod } from "./valuationMethod";
+import type { UpdateItemRequestAvcoPoolScope } from "./updateItemRequestAvcoPoolScope";
 import type { ItemTracking } from "./itemTracking";
 import type { UpdateItemRequestIncomeAccountId } from "./updateItemRequestIncomeAccountId";
 import type { UpdateItemRequestExpenseAccountId } from "./updateItemRequestExpenseAccountId";
@@ -25,6 +26,7 @@ export interface UpdateItemRequest {
   is_purchasable?: boolean;
   is_sellable?: boolean;
   valuation_method?: ValuationMethod;
+  avco_pool_scope?: UpdateItemRequestAvcoPoolScope;
   tracking?: ItemTracking;
   category_id?: number;
   income_account_id?: UpdateItemRequestIncomeAccountId;

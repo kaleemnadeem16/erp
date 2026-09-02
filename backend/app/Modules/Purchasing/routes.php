@@ -1,5 +1,6 @@
 <?php
 
+use App\Modules\Purchasing\Http\Controllers\Api\V1\GoodsReceiptController;
 use App\Modules\Purchasing\Http\Controllers\Api\V1\ItemSupplierController;
 use App\Modules\Purchasing\Http\Controllers\Api\V1\PurchaseOrderController;
 use App\Modules\Purchasing\Http\Controllers\Api\V1\PurchasingSettingsController;
@@ -13,6 +14,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('purchase-orders/{purchaseOrder}/issue', [PurchaseOrderController::class, 'issue'])->name('purchase-orders.issue');
     Route::post('purchase-orders/{purchaseOrder}/cancel', [PurchaseOrderController::class, 'cancel'])->name('purchase-orders.cancel');
     Route::post('purchase-order-lines/{purchaseOrderLine}/short-close', [PurchaseOrderController::class, 'shortClose'])->name('purchase-order-lines.short-close');
+    Route::apiResource('goods-receipts', GoodsReceiptController::class)->only(['store', 'show']);
+    Route::post('goods-receipts/{goodsReceipt}/post', [GoodsReceiptController::class, 'post'])->name('goods-receipts.post');
     Route::get('purchasing-settings', [PurchasingSettingsController::class, 'show'])->name('purchasing-settings.show');
     Route::patch('purchasing-settings', [PurchasingSettingsController::class, 'update'])->name('purchasing-settings.update');
 });

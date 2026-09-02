@@ -100,6 +100,7 @@ tech stack, extensibility strategy and deployment approach are recorded as [ADRs
 | **Purchase-order schema/model checkpoint built** — typed one-row-per-company purchasing settings plus tenant-safe PO header/line tables and models now establish status, FX policy, money/UoM precision, tolerance snapshots and supplier-site ownership. PO lines deliberately carry `company_id` for cross-document procurement queries and composite tenant FKs; PostgreSQL `smallint` limits are pinned by a regression test. Draft/issue/cancel/short-close Actions and API remain the next slice. | 2026-09-02 |
 | **Purchase-order workflow built** — validated nested draft CRUD, query endpoints, typed purchasing settings, gapless issue, immutable issue-time item/supplier/UoM/money/FX/tolerance snapshots, cancellation and hard line short-close now run through transactional Actions. Closing the final line closes the PO; malformed precision and PostgreSQL `smallint` inputs return validation errors. Goods receipt and stock posting are the next slice. | 2026-09-02 |
 | **Purchase-order workflow audit fixes completed** — draft commercial-header edits now pass the enum-cast immutability guard, header FX/currency changes atomically refresh all existing line base amounts, incompatible purchase/stock UoM dimensions return a stable validation response, and rounding tests pin the converted transaction line total as the authoritative base amount. | 2026-09-02 |
+| **Goods-receipt and inbound valuation slice built** — complete stock/receipt schema, stable batch and AVCO-pool identity, database tenant guards, locked item valuation policy, one Inventory movement boundary and atomic idempotent PO receipt posting now support AVCO, FIFO and serial-specific inbound valuation. Cumulative partial/tolerance checks, pinned UoM/FX/cost, layers and valuation-feed effects are live; outbound depletion, receipt reversal and QA remain next. | 2026-09-02 |
 
 ## In progress
 
@@ -124,8 +125,9 @@ Phase 1 is complete, including its domain-document reconciliation.
 
 Begin [Phase 2 — Purchasing & stock](phases/phase-2-purchasing-stock.md):
 
-1. Build the stock-movement/valuation foundation against ADRs 0036–0040.
-2. Build goods receipts and connect their atomic posting to that Inventory boundary per ADR 0043.
+1. Extend the single stock-movement boundary with FIFO/SPECIFIC/AVCO issues and transfers,
+   including negative-stock controls and value-conserving cross-pool transfers.
+2. Add Goods Receipt reversal and QA inspection/disposition posting per ADR 0043.
 
 [Phase 0 — Foundation](phases/phase-0-foundation.md) remains in progress in parallel — the two
 former blockers are resolved (`btree_gist` confirmed available on dbvm, `REDIS_PREFIX=erp_`
