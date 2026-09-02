@@ -11,6 +11,7 @@ use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Support\UomConversionService;
 use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
+use InvalidArgumentException;
 
 final class BuildPurchaseOrderLineAttributes
 {
@@ -26,7 +27,14 @@ final class BuildPurchaseOrderLineAttributes
         $purchaseUom = Uom::query()->findOrFail($input['purchase_uom_id']);
         $stockUom = Uom::query()->findOrFail($item->stock_uom_id);
         $qty = BigDecimal::of((string) $input['ordered_qty']);
-        $factor = $this->conversion->convert('1', $purchaseUom, $stockUom);
+        try {
+            $factor = $this->conversion->convert('1', $purchaseUom, $stockUom);
+        } catch (InvalidArgumentException) {
+            throw new DomainInvariantException(
+                'Purchase UoM must have the same dimension as the item stock UoM.',
+                'purchase_uom_id',
+            );
+        }
         $stockQty = $qty->multipliedBy($factor)->toScale(4, RoundingMode::HALF_UP);
         $unitPrice = BigDecimal::of((string) $input['unit_price']);
         $discount = BigDecimal::of((string) ($input['discount_amount'] ?? '0'));

@@ -212,6 +212,9 @@ must remain within the same UoM dimension.
 Every monetary row stores transaction and base-currency amounts with its pinned FX rate and rate
 reference. PO, receipt, supplier invoice and landed-cost documents can legitimately use different
 rates; purchase-price and FX variances must not be collapsed into one unexplained difference.
+For a PO line, `base_line_amount` is the rounded transaction `line_amount` converted at the pinned
+FX rate. Individually converted base unit-price, discount and tax fields are informative components;
+their separately rounded values are not used to reconstruct the authoritative base line total.
 The PO snapshots a `FLOATING` or `FIXED` FX policy as well as its rate evidence. Receipt currency,
 provisional cost and FX evidence live on each line. V1 accepts multiple PO-backed lines on one
 receipt only for one supplier and one transaction currency.

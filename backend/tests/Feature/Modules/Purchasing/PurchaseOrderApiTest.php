@@ -2,10 +2,12 @@
 
 namespace Tests\Feature\Modules\Purchasing;
 
+use App\Models\Uom;
 use App\Models\User;
 use App\Modules\Purchasing\Models\ItemSupplier;
 use App\Modules\Purchasing\Models\PurchasingSetting;
 use App\Modules\Purchasing\Support\OverReceiptMode;
+use App\Support\UomDimension;
 
 class PurchaseOrderApiTest extends PurchaseOrderFoundationTest
 {
@@ -34,6 +36,67 @@ class PurchaseOrderApiTest extends PurchaseOrderFoundationTest
         $payload['lines'][0]['line_number'] = 32768;
         $this->postJson('/api/v1/purchase-orders', $payload)
             ->assertUnprocessable()->assertJsonValidationErrors('lines.0.line_number');
+    }
+
+    public function test_draft_header_can_be_edited_and_fx_derived_line_amounts_are_recalculated(): void
+    {
+        [$order, $item, $uom] = $this->makeOrder();
+        $line = $order->lines()->create(array_merge($this->lineAttributes($order, $item, $uom), [
+            'discount_amount' => '1.0000',
+            'tax_amount' => '0.5000',
+            'line_amount' => '19.5000',
+            'base_discount_amount' => '1.0000',
+            'base_tax_amount' => '0.5000',
+            'base_line_amount' => '19.5000',
+        ]));
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->patchJson("/api/v1/purchase-orders/{$order->id}", [
+            'fx_rate' => '1.500000000',
+        ])->assertOk()
+            ->assertJsonPath('data.status', 'DRAFT')
+            ->assertJsonPath('data.fx_rate', '1.500000000')
+            ->assertJsonPath('data.lines.0.base_unit_price', '15.0000')
+            ->assertJsonPath('data.lines.0.base_discount_amount', '1.5000')
+            ->assertJsonPath('data.lines.0.base_tax_amount', '0.7500')
+            ->assertJsonPath('data.lines.0.base_line_amount', '29.2500');
+
+        $this->assertSame($line->id, $order->lines()->sole()->id);
+    }
+
+    public function test_purchase_uom_with_a_different_dimension_returns_validation_error(): void
+    {
+        [$template, $item, $uom] = $this->makeOrder();
+        $volumeUom = Uom::create([
+            'code' => 'l',
+            'name' => 'Litre',
+            'dimension' => UomDimension::Volume,
+            'factor_to_base' => '1',
+        ]);
+        $payload = $this->payload($template, $item->id, $uom->id);
+        $payload['lines'][0]['purchase_uom_id'] = $volumeUom->id;
+
+        $this->actingAs(User::factory()->create())->postJson('/api/v1/purchase-orders', $payload)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('purchase_uom_id');
+    }
+
+    public function test_base_line_amount_converts_the_rounded_transaction_line_total(): void
+    {
+        [$template, $item, $uom] = $this->makeOrder();
+        $payload = $this->payload($template, $item->id, $uom->id);
+        $payload['fx_rate'] = '1.234567890';
+        $payload['lines'][0] = array_merge($payload['lines'][0], [
+            'ordered_qty' => '3.0000',
+            'unit_price' => '0.3333',
+            'discount_amount' => '0.0001',
+            'tax_amount' => '0.0001',
+        ]);
+
+        $this->actingAs(User::factory()->create())->postJson('/api/v1/purchase-orders', $payload)
+            ->assertCreated()
+            ->assertJsonPath('data.lines.0.line_amount', '0.9999')
+            ->assertJsonPath('data.lines.0.base_line_amount', '1.2344');
     }
 
     public function test_issue_snapshots_policy_item_and_supplier_data_then_blocks_editing(): void

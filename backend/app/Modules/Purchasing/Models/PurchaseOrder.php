@@ -48,7 +48,7 @@ class PurchaseOrder extends Model
     protected static function booted(): void
     {
         static::updating(function (PurchaseOrder $purchaseOrder): void {
-            if ($purchaseOrder->getOriginal('status') !== PurchaseOrderStatus::Draft->value
+            if ($purchaseOrder->getOriginal('status') !== PurchaseOrderStatus::Draft
                 && $purchaseOrder->isDirty(['supplier_account_id', 'supplier_site_id', 'currency_id', 'fx_policy', 'fx_rate', 'fx_rate_date', 'fx_rate_type', 'fx_rate_source', 'order_date', 'expected_delivery_date'])) {
                 throw new DomainInvariantException('Issued purchase-order commercial data is immutable.', 'status');
             }
