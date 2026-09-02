@@ -77,8 +77,8 @@ The order matters because later work needs stable document and stock boundaries:
       costing, purchase-UoM conversion and transaction/base-currency snapshots
 - [x] Resolve Q14 in an accepted ADR and remove it from `OPEN-QUESTIONS.md`; Q13 is resolved by
       ADR 0037 and both policies are reconciled into `stock.md`
-- [ ] Set over-receipt tolerance/approval behaviour before goods-receipt implementation; keep it
-      aligned with the later Phase 6 matching-tolerance policy
+- [x] Fix partial/over-receipt, short-close, QA-disposition, FX, reversal, GR/IR and posting
+      concurrency behaviour in ADR 0043; keep later Phase 6 matching tolerance separate
 - [x] Scaffold `app/Modules/Purchasing/README.md`, provider and routes; document the boundary:
       Purchasing owns sourcing and source documents, Inventory owns physical movement/valuation,
       and cross-module writes go through Actions rather than direct model mutation
@@ -114,6 +114,12 @@ The order matters because later work needs stable document and stock boundaries:
       outstanding quantities and idempotency protection against duplicate receipt submission
 - [ ] Build goods-receipt headers/lines that retain the PO-line link, received purchase quantity,
       converted stock quantity, location, batch/serial identity and actual receipt timestamp
+- [ ] Implement V1 cumulative `BLOCK`/`ALLOW_WITHIN_TOLERANCE` in pinned stock UoM, hard
+      short-close, line-level receipt currency/cost/FX and same-supplier/currency grouping
+- [ ] Post QA outcomes as repeatable immutable dispositions over pending receipt quantity; lock
+      concurrent dispositions and keep QA state independent from physical location
+- [ ] Implement explicit receipt reversal with dependency checks and Inventory/GR-IR valuation
+      feed effects; do not conflate reversal with the separately deferred Supplier Return
 
 ### Stock movement and valuation
 
@@ -203,6 +209,10 @@ Tick these in the same commit as the work.
       master data changes
 - [ ] A partial receipt updates outstanding PO quantity exactly once and creates the matching
       stock move/layer/valuation feed atomically
+- [ ] Exact/above tolerance, indivisible flooring, cumulative partials and hard short-close behave
+      per ADR 0043; simultaneous receipts and duplicate posting cannot exceed or duplicate state
+- [ ] Partial/repeated QA dispositions cannot allocate more than pending quantity, including under
+      concurrent posting, and never mutate the original receipt
 - [ ] Simultaneous receipts into one AVCO pool produce the mathematically correct quantity/value
       and average under a real PostgreSQL concurrency test; supported scopes resolve uniquely and
       remain tenant-isolated
@@ -260,6 +270,7 @@ Tick these in the same commit as the work.
   [inventory-cutover.md](../domain/inventory-cutover.md)
 - [ADR 0037](../decisions/0037-controlled-negative-stock-overrides.md)
 - [ADR 0039](../decisions/0039-configurable-avco-valuation-pools.md)
+- [ADR 0043](../decisions/0043-control-purchase-order-receipt-and-qa-posting.md)
 - [multi-currency.md](../domain/multi-currency.md) ·
   [units-of-measure.md](../domain/units-of-measure.md)
 - [database.md](../architecture/database.md) ·

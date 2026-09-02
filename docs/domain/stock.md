@@ -79,6 +79,10 @@ stock_valuation_entries                 -- cost impact of each move; feeds the G
 
 ## Behaviour
 
+Purchase receipt and QA movements enter this ledger only through ADR 0043's atomic posting and
+immutable disposition/reversal boundaries. Receipt reversal corrects an erroneous event; a later
+Supplier Return is a distinct outbound source and does not rewrite receipt or PO history.
+
 ### Progressive warehouse structure
 
 Per [ADR 0041](../decisions/0041-progressive-inventory-location-capabilities.md), every company
@@ -380,3 +384,5 @@ must not be forgotten once it does.
 - [ADR 0007](../decisions/0007-avco-valuation.md) — superseded by 0032, original AVCO reasoning
 - [ADR 0041](../decisions/0041-progressive-inventory-location-capabilities.md) — simple and
   structured location modes
+- [ADR 0043](../decisions/0043-control-purchase-order-receipt-and-qa-posting.md) — purchase
+  receipt, QA disposition and reversal posting contract

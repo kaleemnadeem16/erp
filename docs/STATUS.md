@@ -96,6 +96,7 @@ tech stack, extensibility strategy and deployment approach are recorded as [ADRs
 | **Phase 2 foundation audit fixes and test isolation hardened** — added the missing composite target key required by `item_suppliers`' tenant-safe item FK, bounded supplier priority to PostgreSQL's signed `smallint`, blocked warehouse reactivation without an active location, and regenerated the Orval client. The shared early testing bootstrap now protects direct `artisan --env=testing` commands as well as PHPUnit; a regression test proves hostile Docker dev variables still resolve to `testing`/`erp_testing`, and the dev entrypoint no longer suppresses test migration failures. Clean migrate, rollback/reapply, 300 Pest tests, Pint, Larastan, all frontend type-checks and the production build pass. | 2026-09-02 |
 | **Progressive warehouse capabilities built** — accepted ADR 0041 and implemented a company-level `SIMPLE` default for one-location warehouses plus an opt-in `STRUCTURED` mode with same-warehouse hierarchy, fixed location types, barcodes, ordering, stock-holding semantics and operational location roles. API Actions enforce conditional requirements and block unsafe downgrade; PostgreSQL retains relational and row-level integrity. Import and future advanced-WMS boundaries are documented without burdening small companies with unused fields. Clean rollback/reapply, 307 Pest tests, Pint, Larastan, all frontend type-checks and the production build pass. | 2026-09-02 |
 | **Progressive-location audit follow-up completed** — warehouse-role collection/show endpoints now follow validated filter/sort/include/pagination conventions; every mode-sensitive write serialises on the company row to prevent downgrade races; the Phase 2 checklist wrap is repaired; and ADR 0042 makes item/supplier relationship identity immutable with archive-and-create replacement. All 313 Pest tests, Pint, Larastan, frontend type-checks and production build pass. | 2026-09-02 |
+| **Purchase-order and receipt posting architecture accepted** — ADR 0043 fixes immutable PO/receipt/QA facts, cumulative V1 over-receipt tolerance, hard short-close, line-level FX/cost, atomic deterministic posting, first-class partial QA dispositions, reversal versus Supplier Return, tracked identity, provisional acquisition cost and the Phase 2 Inventory/GR-IR bridge. Approval, service acceptance, PO-less receipt and AP matching remain explicit extensions. | 2026-09-02 |
 
 ## In progress
 
@@ -120,8 +121,7 @@ Phase 1 is complete, including its domain-document reconciliation.
 
 Begin [Phase 2 — Purchasing & stock](phases/phase-2-purchasing-stock.md):
 
-1. Set the over-receipt tolerance/approval policy, then build purchase orders and goods receipts
-   with immutable issued-line snapshots.
+1. Build purchase orders and goods receipts with immutable issued-line snapshots against ADR 0043.
 2. Implement the Phase 2 stock schema and valuation engine against the governing ADRs 0036–0040.
 
 [Phase 0 — Foundation](phases/phase-0-foundation.md) remains in progress in parallel — the two

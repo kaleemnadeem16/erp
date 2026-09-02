@@ -33,11 +33,18 @@ Phase 2 receipt model does not close it off.
 Annotated planning schema; precise table names may be reconciled when the module is built.
 
 ```
+purchasing_settings
+  company_id                             -- one typed settings row per company
+  over_receipt_mode                      -- BLOCK | ALLOW_WITHIN_TOLERANCE
+  over_receipt_tolerance_percent
+  purchase_order_required
+
 purchase_orders
   id, company_id, number
   supplier_account_id, supplier_site_id NULLABLE
   status                    DRAFT | ISSUED | CLOSED | CANCELLED
   currency_id, fx_rate, fx_rate_date, fx_rate_type
+  fx_policy                              -- FLOATING | FIXED, snapshotted on issue
   order_date, expected_delivery_date NULLABLE
   issued_at NULLABLE, closed_at NULLABLE, cancelled_at NULLABLE
   cancellation_reason NULLABLE
@@ -53,6 +60,8 @@ purchase_order_lines
   base_unit_price, base_discount_amount, base_tax_amount, base_line_amount
   expected_delivery_date NULLABLE
   qa_required
+  over_receipt_mode, over_receipt_tolerance_percent  -- resolved issue snapshots
+  short_closed_stock_qty
 
 goods_receipts
   id, company_id, number
@@ -69,6 +78,7 @@ goods_receipt_lines
   received_qty, received_uom_id
   stock_qty, stock_uom_id, uom_factor    -- pinned conversion
   provisional_unit_cost, currency_id, fx_rate, base_unit_cost
+  fx_rate_date, fx_rate_type, fx_rate_source
   batch_no, serial_no NULLABLE
 
 quality_inspections
@@ -118,6 +128,12 @@ The default user journey is `Create PO → Receive → Enter invoice → Done`. 
 received or invoiced in several parts; one invoice line may cover several receipts. Outstanding
 quantities are calculated from posted allocations, never trusted from a manually editable total.
 
+Original ordered quantity is immutable. A line can be explicitly short-closed; its remaining
+quantity then becomes zero and later receipt is blocked unless a future audited reopen/revision
+action makes it receivable again. V1 over-receipt is `BLOCK` or `ALLOW_WITHIN_TOLERANCE`, resolved
+from PO-line override then company default and snapshotted on issue. It is checked cumulatively in
+pinned stock UoM; indivisible-item limits are floored. Above-tolerance approval is deferred.
+
 A future quick/direct-purchase screen may atomically create a receipt and invoice for convenience.
 It does not create a special document that lets an invoice alter stock.
 
@@ -131,6 +147,10 @@ It does not create a special document that lets an invoice alter stock.
 - Receipt posting creates the stock move and provisional valuation atomically and idempotently.
 - PO receipt progress is derived from posted quantities. A cached workflow status, if used for
   queries, is not the authoritative balance.
+- Posting locks the draft receipt and referenced PO lines in deterministic ID order, revalidates
+  all cumulative quantities and creates movement/valuation effects in one idempotent transaction.
+- Receipt reversal corrects an erroneous posting; supplier return records a later real outbound
+  event. Neither mutates the original and a return does not automatically reopen the PO.
 
 ### Location, quality and availability
 
@@ -146,6 +166,12 @@ Quarantine may be a physical location for one company and only a QA/hold state f
 Availability is derived from inspection state, holds and company policy wherever possible. A
 concession is a recorded failure explicitly accepted by an authorised user; it may produce
 available or restricted stock according to policy without erasing the failed result.
+
+Inspection-required quantity starts QA-pending. Each partial or final decision is a separately
+posted QA Disposition referencing the receipt line and exact quantity/tracking identities, source
+and resulting states, actor/reason and any generated movements. Multiple dispositions may consume
+the pending quantity over time; concurrent allocation of the same quantity is locked out. The
+posted receipt itself is never updated with later QA outcomes.
 
 V1 assumes normal company-owned purchases. Supplier-, customer- and consignment-owned stock are
 not modelled until a real requirement justifies that additional dimension.
@@ -176,6 +202,14 @@ must remain within the same UoM dimension.
 Every monetary row stores transaction and base-currency amounts with its pinned FX rate and rate
 reference. PO, receipt, supplier invoice and landed-cost documents can legitimately use different
 rates; purchase-price and FX variances must not be collapsed into one unexplained difference.
+The PO snapshots a `FLOATING` or `FIXED` FX policy as well as its rate evidence. Receipt currency,
+provisional cost and FX evidence live on each line. V1 accepts multiple PO-backed lines on one
+receipt only for one supplier and one transaction currency.
+
+Tracked inventory requires batch/serial identity before V1 receipt posting. PO-less receipt is a
+controlled future exception requiring explicit provisional cost/currency/FX; it is not an opening
+stock path. Physical goods use receipt, while service/non-stock lines remain compatible with a
+future acceptance or direct-invoice workflow.
 
 ## Landmines
 
@@ -193,8 +227,8 @@ consumed or financially matched. Validate dependencies and create explicit corre
 never edit the original or automatically unwind unrelated downstream facts.
 
 **Inventory timing policy.** Negative stock is governed by
-[ADR 0037](../decisions/0037-controlled-negative-stock-overrides.md); backdated-receipt behaviour remains Q14 and
-must be decided before the valuation engine ships.
+[ADR 0037](../decisions/0037-controlled-negative-stock-overrides.md); backdated receipts and
+corrections are governed by [ADR 0040](../decisions/0040-control-backdated-stock-recalculation-and-corrections.md).
 
 ## Related
 
@@ -203,4 +237,5 @@ must be decided before the valuation engine ships.
 - [Parties](parties.md) · [Items](items.md)
 - [Units of measure](units-of-measure.md) · [Multi-currency](multi-currency.md)
 - [ADR 0035](../decisions/0035-separate-purchasing-operational-and-financial-facts.md)
+- [ADR 0043](../decisions/0043-control-purchase-order-receipt-and-qa-posting.md)
 - [Phase 2](../phases/phase-2-purchasing-stock.md)

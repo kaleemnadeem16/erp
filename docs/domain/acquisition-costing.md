@@ -15,6 +15,11 @@ Product invoice + landed-cost documents ──────┴→ actual cost →
 Phase 2 records provisional receipt valuation and the source identity needed for adjustment.
 Phase 6 adds supplier invoices, payables, final matching and GL posting.
 
+Per [ADR 0043](../decisions/0043-control-purchase-order-receipt-and-qa-posting.md), a posted
+receipt also records the valuation-feed identity for the conceptual Debit Inventory/acquisition
+asset and Credit GR/IR bridge. The later supplier invoice clears GR/IR to AP and keeps quantity,
+price, FX and tax variances distinct. This Phase 2 feed is not yet a balanced GL journal.
+
 ## Schema
 
 The event shape below is the required contract; physical table boundaries are finalised with the
@@ -46,6 +51,11 @@ landed_cost_allocations
 Acquisition cost includes purchase price, import duty, non-recoverable taxes, freight, insurance,
 handling and other directly attributable costs, less trade discounts, rebates and supplier
 credits. Recoverable VAT/GST is excluded from inventory cost.
+
+Receipt-line cost retains its own transaction currency, actual FX rate and rate policy/source;
+PO, receipt and invoice rates may differ. A PO-less receipt, when that controlled exception is
+built, must receive explicit provisional unit cost/currency/FX rather than borrowing last price or
+average inventory cost.
 
 When actual cost arrives, preserve all three views:
 
@@ -101,3 +111,4 @@ differences have different sources and later accounting treatment; retain their 
 - [ADR 0032](../decisions/0032-per-item-valuation-method.md)
 - [ADR 0035](../decisions/0035-separate-purchasing-operational-and-financial-facts.md)
 - [ADR 0039](../decisions/0039-configurable-avco-valuation-pools.md)
+- [ADR 0043](../decisions/0043-control-purchase-order-receipt-and-qa-posting.md)
