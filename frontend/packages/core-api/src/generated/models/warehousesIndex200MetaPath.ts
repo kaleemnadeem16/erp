@@ -5,4 +5,7 @@
  * OpenAPI spec version: 0.0.1
  */
 
-export type UpdateItemRequestDefaultSupplierId = number | null;
+/**
+ * Base path for paginator generated URLs.
+ */
+export type WarehousesIndex200MetaPath = string | null;

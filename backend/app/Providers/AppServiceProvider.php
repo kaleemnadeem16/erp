@@ -17,6 +17,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        // Defence in depth for cached or stale environment configuration: once the
+        // application identifies as testing, no command may default to the dev database.
+        if ($this->app->environment('testing')) {
+            $this->app['config']->set('database.default', 'testing');
+        }
+
         $this->app->singleton(CompanyContext::class);
         $this->app->bind(NumberingScheme::class, DefaultNumberingScheme::class);
     }

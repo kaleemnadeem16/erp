@@ -10,8 +10,6 @@ use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Support\ItemTracking;
 use App\Modules\Inventory\Support\ItemType;
 use App\Modules\Inventory\Support\ValuationMethod;
-use App\Modules\Parties\Models\Party;
-use App\Modules\Parties\Models\SupplierAccount;
 use App\Support\CompanyContext;
 use App\Support\Status;
 use App\Support\UomDimension;
@@ -99,21 +97,6 @@ class ItemTest extends TestCase
         ], $overrides);
     }
 
-    private function makeSupplier(): SupplierAccount
-    {
-        $party = Party::create(['code' => 'SUPPLIER', 'name' => 'Supplier']);
-        $payableAccount = ChartOfAccount::create([
-            'code' => '2100', 'name' => 'Payables', 'type' => AccountType::Liability,
-        ]);
-
-        return SupplierAccount::create([
-            'party_id' => $party->id,
-            'code' => 'SUPPLIER',
-            'payment_terms_days' => 30,
-            'payable_account_id' => $payableAccount->id,
-        ]);
-    }
-
     public function test_code_is_unique_per_company(): void
     {
         Item::create($this->baseAttributes());
@@ -160,17 +143,6 @@ class ItemTest extends TestCase
         $this->expectException(RuntimeException::class);
 
         Item::create($this->baseAttributes(['stock_uom_id' => $otherUom->id]));
-    }
-
-    public function test_default_supplier_id_cannot_point_at_another_companys_supplier(): void
-    {
-        $this->actingAsCompany($this->createSecondCompany());
-        $otherSupplier = $this->makeSupplier();
-        $this->actingAsCompany(1);
-
-        $this->expectException(RuntimeException::class);
-
-        Item::create($this->baseAttributes(['default_supplier_id' => $otherSupplier->id]));
     }
 
     public function test_status_defaults_to_active_and_casts_to_the_enum(): void

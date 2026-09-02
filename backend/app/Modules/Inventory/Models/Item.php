@@ -11,13 +11,14 @@ use App\Modules\Accounting\Models\ChartOfAccount;
 use App\Modules\Inventory\Support\ItemTracking;
 use App\Modules\Inventory\Support\ItemType;
 use App\Modules\Inventory\Support\ValuationMethod;
-use App\Modules\Parties\Models\SupplierAccount;
+use App\Modules\Purchasing\Models\ItemSupplier;
 use App\Support\Concerns\BelongsToCompany;
 use App\Support\Concerns\GuardsRelatedCompanyScope;
 use App\Support\Concerns\HasCustomFields;
 use App\Support\Status;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -49,7 +50,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property ValuationMethod $valuation_method
  * @property ItemTracking $tracking
  * @property int $category_id
- * @property int|null $default_supplier_id
  * @property int|null $income_account_id
  * @property int|null $expense_account_id
  * @property int|null $inventory_account_id
@@ -87,7 +87,6 @@ class Item extends Model
         return [
             'category_id' => Category::class,
             'stock_uom_id' => Uom::class,
-            'default_supplier_id' => SupplierAccount::class,
             'income_account_id' => ChartOfAccount::class,
             'expense_account_id' => ChartOfAccount::class,
             'inventory_account_id' => ChartOfAccount::class,
@@ -138,6 +137,12 @@ class Item extends Model
     public function stockUom(): BelongsTo
     {
         return $this->belongsTo(Uom::class, 'stock_uom_id');
+    }
+
+    /** @return HasMany<ItemSupplier, $this> */
+    public function suppliers(): HasMany
+    {
+        return $this->hasMany(ItemSupplier::class);
     }
 
     public function resolveIncomeAccountId(): ?int

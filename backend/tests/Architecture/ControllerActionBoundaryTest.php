@@ -17,6 +17,9 @@ class ControllerActionBoundaryTest extends TestCase
             'customer accounts' => ['app/Modules/Parties/Http/Controllers/Api/V1/CustomerAccountController.php'],
             'supplier accounts' => ['app/Modules/Parties/Http/Controllers/Api/V1/SupplierAccountController.php'],
             'chart of accounts' => ['app/Modules/Accounting/Http/Controllers/Api/V1/ChartOfAccountController.php'],
+            'item suppliers' => ['app/Modules/Purchasing/Http/Controllers/Api/V1/ItemSupplierController.php'],
+            'warehouses' => ['app/Modules/Inventory/Http/Controllers/Api/V1/WarehouseController.php'],
+            'locations' => ['app/Modules/Inventory/Http/Controllers/Api/V1/LocationController.php'],
         ];
     }
 

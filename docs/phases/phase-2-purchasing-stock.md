@@ -79,26 +79,26 @@ The order matters because later work needs stable document and stock boundaries:
       ADR 0037 and both policies are reconciled into `stock.md`
 - [ ] Set over-receipt tolerance/approval behaviour before goods-receipt implementation; keep it
       aligned with the later Phase 6 matching-tolerance policy
-- [ ] Scaffold `app/Modules/Purchasing/README.md`, provider and routes; document the boundary:
+- [x] Scaffold `app/Modules/Purchasing/README.md`, provider and routes; document the boundary:
       Purchasing owns sourcing and source documents, Inventory owns physical movement/valuation,
       and cross-module writes go through Actions rather than direct model mutation
 
 ### Supplier sourcing
 
-- [ ] Build `item_suppliers` with tenant-safe item/supplier/UoM references, pair uniqueness,
+- [x] Build `item_suppliers` with tenant-safe item/supplier/UoM references, pair uniqueness,
       priority, active flag, supplier SKU, lead-time override and minimum-order quantity
-- [ ] Enforce at most one active priority-1 supplier per item with a PostgreSQL partial unique
+- [x] Enforce at most one active priority-1 supplier per item with a PostgreSQL partial unique
       index; define deterministic behaviour when no preferred supplier exists
-- [ ] Migrate each populated `items.default_supplier_id` to an active priority-1 relationship,
+- [x] Migrate each populated `items.default_supplier_id` to an active priority-1 relationship,
       then remove the obsolete column, model relation, request/resource fields and generated types
-- [ ] Add CRUD/query APIs and tests proving multiple approved suppliers, same-company ownership,
+- [x] Add CRUD/query APIs and tests proving multiple approved suppliers, same-company ownership,
       preference uniqueness and lead-time fallback to `supplier_accounts.lead_time_days`
 
 ### Warehouse foundation
 
-- [ ] Build company-scoped `warehouses` and child `locations`; require at least one location per
+- [x] Build company-scoped `warehouses` and child `locations`; require at least one location per
       usable warehouse and enforce one default warehouse per company with a partial unique index
-- [ ] Add APIs and tests for warehouse/location lifecycle, composite uniqueness, tenant isolation
+- [x] Add APIs and tests for warehouse/location lifecycle, composite uniqueness, tenant isolation
       and deletion restrictions once stock history exists
 
 ### Purchase orders and receipts

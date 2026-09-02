@@ -1,10 +1,10 @@
 # Project Status
 
-**Updated:** 2026-09-01
+**Updated:** 2026-09-02
 **Current phase:** Phase 0 — Foundation (production deployment still deliberately deferred) and
-Phase 2 — Purchasing & stock (in progress: dedicated plan written; implementation not started).
+Phase 2 — Purchasing & stock (in progress: supplier sourcing and warehouse foundations built).
 Phase 1 — Master data is complete.
-**Application code:** Laravel 12 skeleton + company scoping + auth (Sanctum, roles/permissions, activity log) + UoM conversion + custom fields mechanism + gapless numbering sequences + currencies/exchange rates + Scramble→Orval type pipeline + `Parties` module (party identity, customer/supplier accounts and sites, full CRUD API) + `Inventory` module (categories, items, hierarchical GL-default resolution, full CRUD API) + `Accounting` module (chart of accounts, fiscal years, accounting periods, full CRUD API on chart of accounts) + three global exception handlers closing a systemic "raw exception/DB error leaks as a 500" gap across every endpoint; React 19 + Vite frontend skeleton (login, one authenticated page, mobile-first shell) + a generated TS client covering every Phase 1 endpoint
+**Application code:** Laravel 12 skeleton + company scoping + auth (Sanctum, roles/permissions, activity log) + UoM conversion + custom fields mechanism + gapless numbering sequences + currencies/exchange rates + Scramble→Orval type pipeline + `Parties` module (party identity, customer/supplier accounts and sites, full CRUD API) + `Inventory` module (categories, items, warehouses and locations, full CRUD APIs) + `Purchasing` supplier-sourcing foundation (`item_suppliers`, full CRUD API) + `Accounting` module (chart of accounts, fiscal years, accounting periods, full CRUD API on chart of accounts) + three global exception handlers closing a systemic "raw exception/DB error leaks as a 500" gap across every endpoint; React 19 + Vite frontend skeleton (login, one authenticated page, mobile-first shell) + a generated TS client covering every implemented endpoint
 
 ---
 
@@ -92,6 +92,8 @@ tech stack, extensibility strategy and deployment approach are recorded as [ADRs
 | **Constrained configurable AVCO pools accepted** — [ADR 0039](decisions/0039-configurable-avco-valuation-pools.md) supports `COMPANY_ITEM` (default), `WAREHOUSE_ITEM` and batch-only `COMPANY_ITEM_BATCH`; scope is persisted/locked, historical pool identity is immutable, transfers conserve company value, and cutover/replay preserve actual pool dependencies | 2026-09-01 |
 | **Q14.3 live backdating horizon agreed** — companies default to current + previous open period, with explicit period-lock-only or fixed/rolling posting-floor alternatives; trusted request-time context, execution revalidation and the strictest boundary govern, one-off extensions are forbidden, and outside-horizon economics use the later correction workflow without falsifying physical dates | 2026-09-01 |
 | **Q14 backdated-receipt policy completed and reconciled** — [ADR 0040](decisions/0040-control-backdated-stock-recalculation-and-corrections.md) consolidates controlled exact-version replay, method-specific dependency locking, bounded review/approval, semantic staleness, high-risk routing, append-only idempotent corrections, historical FX, atomic/deferred ownership and non-double-counting reconciliation; it also preserves the distinct Q13/Q14 self-review workflows, and Q14 is removed as the Phase 2 blocker | 2026-09-02 |
+| **Phase 2 sourcing and warehouse foundations built** — new `Purchasing` module with full `item_suppliers` CRUD/query API, tenant-safe supplier/item/UoM references, one-active-preferred enforcement and lead-time fallback; existing `items.default_supplier_id` data migrates into priority-1 relationships before the obsolete field is removed. Inventory now owns warehouse/location CRUD, creates the first location atomically, enforces one company default and prevents removal of the last active location. | 2026-09-02 |
+| **Phase 2 foundation audit fixes and test isolation hardened** — added the missing composite target key required by `item_suppliers`' tenant-safe item FK, bounded supplier priority to PostgreSQL's signed `smallint`, blocked warehouse reactivation without an active location, and regenerated the Orval client. The shared early testing bootstrap now protects direct `artisan --env=testing` commands as well as PHPUnit; a regression test proves hostile Docker dev variables still resolve to `testing`/`erp_testing`, and the dev entrypoint no longer suppresses test migration failures. Clean migrate, rollback/reapply, 300 Pest tests, Pint, Larastan, all frontend type-checks and the production build pass. | 2026-09-02 |
 
 ## In progress
 
@@ -116,7 +118,8 @@ Phase 1 is complete, including its domain-document reconciliation.
 
 Begin [Phase 2 — Purchasing & stock](phases/phase-2-purchasing-stock.md):
 
-1. Scaffold the Purchasing module, then build `item_suppliers` and warehouse/location foundations.
+1. Set the over-receipt tolerance/approval policy, then build purchase orders and goods receipts
+   with immutable issued-line snapshots.
 2. Implement the Phase 2 stock schema and valuation engine against the governing ADRs 0036–0040.
 
 [Phase 0 — Foundation](phases/phase-0-foundation.md) remains in progress in parallel — the two

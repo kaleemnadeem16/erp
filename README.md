@@ -35,6 +35,7 @@ reinstall.
 
 ```bash
 docker compose exec app php artisan test          # Pest
+docker compose exec app php artisan migrate:fresh --env=testing --seed  # isolated test DB only
 docker compose exec app ./vendor/bin/pint          # format
 docker compose exec app ./vendor/bin/phpstan analyse  # Larastan, level 6+
 ```

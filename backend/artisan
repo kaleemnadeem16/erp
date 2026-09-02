@@ -6,6 +6,20 @@ use Symfony\Component\Console\Input\ArgvInput;
 
 define('LARAVEL_START', microtime(true));
 
+// `tests/bootstrap.php` protects PHPUnit, but ordinary Artisan commands never load it.
+// Apply the same overrides before Laravel boots when testing is explicitly requested,
+// including `php artisan migrate:fresh --env=testing` inside the development container.
+$testingRequested = getenv('APP_ENV') === 'testing'
+    || in_array('--env=testing', $argv, true)
+    || (($environmentOption = array_search('--env', $argv, true)) !== false
+        && ($argv[$environmentOption + 1] ?? null) === 'testing');
+
+if ($testingRequested) {
+    require __DIR__.'/bootstrap/testing-environment.php';
+}
+
+unset($testingRequested, $environmentOption);
+
 // Register the Composer autoloader...
 require __DIR__.'/vendor/autoload.php';
 

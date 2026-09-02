@@ -5,7 +5,6 @@
  * OpenAPI spec version: 0.0.1
  */
 import type { ItemResourceDescription } from "./itemResourceDescription";
-import type { ItemResourceDefaultSupplierId } from "./itemResourceDefaultSupplierId";
 import type { ItemResourceIncomeAccountId } from "./itemResourceIncomeAccountId";
 import type { ItemResourceExpenseAccountId } from "./itemResourceExpenseAccountId";
 import type { ItemResourceInventoryAccountId } from "./itemResourceInventoryAccountId";
@@ -27,7 +26,6 @@ export interface ItemResource {
   valuation_method: string;
   tracking: string;
   category_id: number;
-  default_supplier_id: ItemResourceDefaultSupplierId;
   income_account_id: ItemResourceIncomeAccountId;
   expense_account_id: ItemResourceExpenseAccountId;
   inventory_account_id: ItemResourceInventoryAccountId;

@@ -27,7 +27,6 @@ items
   avco_pool_scope   NULLABLE COMPANY_ITEM | WAREHOUSE_ITEM | COMPANY_ITEM_BATCH
   tracking          NONE | BATCH | SERIAL DEFAULT NONE
   category_id
-  default_supplier_id  NULLABLE → supplier_accounts
   income_account_id, expense_account_id, inventory_account_id   -- NULLABLE GL mapping
   custom_fields     jsonb NULLABLE DEFAULT '{}'
   status            ACTIVE | ARCHIVED DEFAULT ACTIVE
@@ -135,6 +134,14 @@ quantity. Block it once any stock move or document line references the item.
 **Assuming purchase UoM equals stock UoM.** Pigment is bought in 25 kg drums and consumed in
 grams. Purchase UoM is a property of the purchase line, not the item.
 
+**Supplier sourcing.** Approved suppliers are represented by Purchasing's company-scoped
+`item_suppliers` relationship, not a single column on `items`. Each relationship may carry the
+supplier SKU, priority, purchase UoM, MOQ and an item-specific lead-time override. Priority 1 is
+the preferred data-entry default; no preferred row is a valid deterministic state and means the
+caller must choose a supplier explicitly. Pricing remains transactional on the PO line. Existing
+Phase 1 `default_supplier_id` values were migrated to active priority-1 relationships before that
+column was removed.
+
 **Category cycles.** `parent_id` is a plain self-reference with no schema-level cycle guard — a
 category accidentally set as its own ancestor would infinite-loop the GL-mapping walk above.
 Closed at the application level: `App\Modules\Inventory\Models\Category`'s `saving` hook walks
@@ -145,18 +152,16 @@ keys reject it while items or child categories still reference the row.
 **Tenant-safe references.** Every company-scoped reference on `items` and `categories` is
 validated through the current company in the application. Composite PostgreSQL foreign keys
 also pair each referenced id with `company_id`, so raw SQL cannot attach an item to another
-company's category, UoM, supplier account or GL account.
+company's category, UoM or GL account. `item_suppliers` applies the same protection to its item,
+supplier-account and optional purchase-UoM references.
 
 ## Related
 
 - [units-of-measure.md](units-of-measure.md)
 - [stock.md](stock.md) — valuation of stocked items
 - [formulations.md](formulations.md) — items as recipe inputs and outputs
-- [parties.md](parties.md) — `default_supplier_id` references a supplier account. It's a Phase 1
-  data-entry default only, not a restriction to one supplier; Phase 2 adds a real `item_suppliers`
-  catalog (supplier-specific code, priority, lead time, MOQ, purchase UoM) and
-  `default_supplier_id` is deprecated once it exists, see
-  [ADR 0033](../decisions/0033-item-suppliers-relationship.md)
+- [parties.md](parties.md) — supplier accounts referenced by Phase 2's `item_suppliers` catalogue
+- [ADR 0033](../decisions/0033-item-suppliers-relationship.md) — approved supplier relationships
 - [stock.md](stock.md) — where `valuation_method` actually posts
 - [ADR 0032](../decisions/0032-per-item-valuation-method.md) — why valuation method is per-item,
   not company-wide

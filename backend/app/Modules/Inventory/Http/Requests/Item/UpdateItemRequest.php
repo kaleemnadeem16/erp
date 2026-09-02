@@ -50,7 +50,6 @@ class UpdateItemRequest extends FormRequest
             'valuation_method' => ['sometimes', Rule::enum(ValuationMethod::class)],
             'tracking' => ['sometimes', Rule::enum(ItemTracking::class)],
             'category_id' => ['sometimes', 'integer', CompanyScoped::exists('categories')],
-            'default_supplier_id' => ['sometimes', 'nullable', 'integer', CompanyScoped::exists('supplier_accounts')],
             'income_account_id' => ['sometimes', 'nullable', 'integer', CompanyScoped::exists('chart_of_accounts')],
             'expense_account_id' => ['sometimes', 'nullable', 'integer', CompanyScoped::exists('chart_of_accounts')],
             'inventory_account_id' => ['sometimes', 'nullable', 'integer', CompanyScoped::exists('chart_of_accounts')],

@@ -5,4 +5,8 @@
  * OpenAPI spec version: 0.0.1
  */
 
-export type ItemResourceDefaultSupplierId = number | null;
+/**
+ * @minimum 0
+ * @maximum 32767
+ */
+export type StoreItemSupplierRequestLeadTimeDays = number | null;

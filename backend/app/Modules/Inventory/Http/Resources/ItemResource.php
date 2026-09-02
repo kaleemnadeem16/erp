@@ -34,7 +34,6 @@ class ItemResource extends JsonResource
             'valuation_method' => $item->valuation_method->value,
             'tracking' => $item->tracking->value,
             'category_id' => $item->category_id,
-            'default_supplier_id' => $item->default_supplier_id,
             'income_account_id' => $item->income_account_id,
             'expense_account_id' => $item->expense_account_id,
             'inventory_account_id' => $item->inventory_account_id,

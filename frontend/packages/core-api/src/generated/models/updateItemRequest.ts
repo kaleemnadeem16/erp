@@ -8,7 +8,6 @@ import type { UpdateItemRequestDescription } from "./updateItemRequestDescriptio
 import type { ItemType } from "./itemType";
 import type { ValuationMethod } from "./valuationMethod";
 import type { ItemTracking } from "./itemTracking";
-import type { UpdateItemRequestDefaultSupplierId } from "./updateItemRequestDefaultSupplierId";
 import type { UpdateItemRequestIncomeAccountId } from "./updateItemRequestIncomeAccountId";
 import type { UpdateItemRequestExpenseAccountId } from "./updateItemRequestExpenseAccountId";
 import type { UpdateItemRequestInventoryAccountId } from "./updateItemRequestInventoryAccountId";
@@ -28,7 +27,6 @@ export interface UpdateItemRequest {
   valuation_method?: ValuationMethod;
   tracking?: ItemTracking;
   category_id?: number;
-  default_supplier_id?: UpdateItemRequestDefaultSupplierId;
   income_account_id?: UpdateItemRequestIncomeAccountId;
   expense_account_id?: UpdateItemRequestExpenseAccountId;
   inventory_account_id?: UpdateItemRequestInventoryAccountId;

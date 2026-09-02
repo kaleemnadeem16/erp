@@ -14,7 +14,8 @@ movement and valuation, built in Phase 2.
 - `Item` — everything bought, held, made, consumed or sold; one table with a `type`
   discriminator (`RAW`/`SEMI_FINISHED`/`FINISHED`/`SERVICE`/`LABOUR`/`PLANT`) rather than
   separate product/service/resource tables ([Phase 1](../../../../docs/phases/phase-1-master-data.md))
-- `Warehouse`, `StockMove`, `StockLayer` — Phase 2, per
+- `Warehouse` and `Location` — Phase 2 stock custody foundations
+- `StockMove`, `StockLayer` — later Phase 2 work, per
   [docs/domain/stock.md](../../../../docs/domain/stock.md)
 
 ## Does not own
@@ -30,6 +31,10 @@ movement and valuation, built in Phase 2.
 `CreateItem`/`UpdateItem`/`ArchiveItem` own the transactional write boundary used by HTTP and
 future non-HTTP entry points. Model guards still enforce tenant, hierarchy and valuation
 invariants regardless of which Action invokes them.
+
+`CreateWarehouse` always creates its first location in the same transaction, so an active
+warehouse cannot enter normal use without an exact physical location. Warehouse and location
+updates/archiving use their corresponding Actions.
 
 ## Events
 

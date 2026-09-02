@@ -207,11 +207,11 @@ the alternatives section of [ADR 0030](../decisions/0030-unified-party-model.md#
 
 ## Related
 
-- [items.md](items.md) — the same shared-table-with-discriminator precedent, and
-  `default_supplier_id` references a `supplier_accounts` row
+- [items.md](items.md) — the same shared-table-with-discriminator precedent; Purchasing's
+  `item_suppliers` catalogue references `supplier_accounts`
 - [multi-currency.md](multi-currency.md) — `default_currency_id`
 - [tax.md](tax.md) — `tax_code_id`
 - [general-ledger.md](general-ledger.md) — `receivable_account_id` / `payable_account_id`
 - [ADR 0030](../decisions/0030-unified-party-model.md) — the decision this doc implements
-- [ADR 0033](../decisions/0033-item-suppliers-relationship.md) — Phase 2's `item_suppliers`,
-  overriding `lead_time_days` per item
+- [ADR 0033](../decisions/0033-item-suppliers-relationship.md) — Phase 2's implemented
+  `item_suppliers`, overriding `lead_time_days` per item

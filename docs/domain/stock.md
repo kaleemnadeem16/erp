@@ -21,10 +21,10 @@ The bottom of the costing chain — the source of ingredient cost for
 
 ```
 warehouses
-  id, company_id, code, name, is_default
+  id, company_id, code, name, is_default, active
 
 locations
-  id, warehouse_id, code, name          -- bins/zones; a warehouse has at least one
+  id, warehouse_id, code, name, active  -- bins/zones; a usable warehouse has at least one active
 
 stock_batches
   id, company_id, item_id, code         -- stable batch identity; never key pools by free text

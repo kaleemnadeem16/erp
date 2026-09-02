@@ -6,35 +6,11 @@
  * APP_ENV, CACHE_STORE, SESSION_DRIVER etc. as real process environment variables
  * (docker-compose), which PHP auto-populates into $_SERVER at startup. That left
  * force="true" unable to win, and the whole suite silently ran against the dev
- * database and dev cache/session/queue drivers. Setting $_SERVER directly here,
- * before vendor/autoload.php (and therefore before Laravel ever loads env), is
- * what actually makes the override take effect. Discovered 2026-08-13.
+ * database and dev cache/session/queue drivers. The shared bootstrap required below
+ * sets $_SERVER before vendor/autoload.php (and therefore before Laravel ever loads
+ * env), which makes the override take effect for PHPUnit and direct testing Artisan
+ * commands alike. Discovered 2026-08-13; shared with Artisan 2026-09-02.
  */
-$testEnvironment = [
-    'APP_ENV' => 'testing',
-    'APP_MAINTENANCE_DRIVER' => 'file',
-    'BCRYPT_ROUNDS' => '4',
-    'BROADCAST_CONNECTION' => 'null',
-    'CACHE_STORE' => 'array',
-    // config/database.php hardcodes the erp_testing database for the 'testing'
-    // connection regardless of DB_DATABASE — see docs/architecture/database.md.
-    'DB_CONNECTION' => 'testing',
-    'DB_URL' => '',
-    'MAIL_MAILER' => 'array',
-    'QUEUE_CONNECTION' => 'sync',
-    // Session-auth tests must not inherit a developer's possibly stale ignored
-    // .env value (the dev SPA moved from 5173 to 5176 on 2026-08-18).
-    'SANCTUM_STATEFUL_DOMAINS' => 'localhost:5176,localhost:8090,127.0.0.1:5176,127.0.0.1:8090',
-    'SESSION_DRIVER' => 'array',
-    'PULSE_ENABLED' => 'false',
-    'TELESCOPE_ENABLED' => 'false',
-    'NIGHTWATCH_ENABLED' => 'false',
-];
-
-foreach ($testEnvironment as $name => $value) {
-    putenv("{$name}={$value}");
-    $_ENV[$name] = $value;
-    $_SERVER[$name] = $value;
-}
+require __DIR__.'/../bootstrap/testing-environment.php';
 
 require __DIR__.'/../vendor/autoload.php';

@@ -140,6 +140,28 @@ The dual-engine matrix and its drift risk are gone. What replaces that disciplin
 are reviewed for lock duration, and any query touching a table expected to exceed ~100k rows
 gets an `EXPLAIN` in review.
 
+Local Docker development keeps `erp` and `erp_testing` as separate PostgreSQL databases. The
+`testing` connection in `config/database.php` fixes its database name to `erp_testing`; it never
+inherits `DB_DATABASE`. The early bootstrap also sets `DB_DATABASE=erp_testing`, and
+`AppServiceProvider` forces the default connection to `testing` whenever the application
+environment is testing as defence in depth against stale or cached configuration. Docker's
+process environment takes precedence over Laravel env files, so the isolation overrides live in
+`bootstrap/testing-environment.php`, loaded before Laravel by:
+
+- PHPUnit through `tests/bootstrap.php`; and
+- `artisan` whenever `APP_ENV=testing`, `--env=testing` or `--env testing` is explicit.
+
+This makes both of these safe and equivalent with respect to database selection:
+
+```bash
+docker compose exec app php artisan test
+docker compose exec app php artisan migrate:fresh --env=testing --seed
+```
+
+Never run `migrate:fresh` without the explicit testing environment. The development entrypoint
+also migrates the named `testing` connection directly and fails startup if that migration fails;
+it must not hide a broken test schema behind `|| true`.
+
 ## Related
 
 - [ADR 0020](../decisions/0020-postgresql-only.md) — the decision and what it unlocks

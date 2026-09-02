@@ -8,7 +8,6 @@ import type { StoreItemRequestDescription } from "./storeItemRequestDescription"
 import type { ItemType } from "./itemType";
 import type { StoreItemRequestValuationMethod } from "./storeItemRequestValuationMethod";
 import type { ItemTracking } from "./itemTracking";
-import type { StoreItemRequestDefaultSupplierId } from "./storeItemRequestDefaultSupplierId";
 import type { StoreItemRequestIncomeAccountId } from "./storeItemRequestIncomeAccountId";
 import type { StoreItemRequestExpenseAccountId } from "./storeItemRequestExpenseAccountId";
 import type { StoreItemRequestInventoryAccountId } from "./storeItemRequestInventoryAccountId";
@@ -28,7 +27,6 @@ export interface StoreItemRequest {
   valuation_method?: StoreItemRequestValuationMethod;
   tracking?: ItemTracking;
   category_id: number;
-  default_supplier_id?: StoreItemRequestDefaultSupplierId;
   income_account_id?: StoreItemRequestIncomeAccountId;
   expense_account_id?: StoreItemRequestExpenseAccountId;
   inventory_account_id?: StoreItemRequestInventoryAccountId;

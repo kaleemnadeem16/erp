@@ -112,7 +112,10 @@ feature.
       violation to prove the check actually catches something. This required fixing
       `phpunit.xml`, which had been left on the Laravel-default in-memory sqlite
       connection — tests now run against the `testing` Postgres connection
-      (`erp_testing`), per [database.md](../architecture/database.md)
+      (`erp_testing`), per [database.md](../architecture/database.md). Hardened 2026-09-02:
+      the shared early test-environment bootstrap now also protects direct Artisan commands such
+      as `migrate:fresh --env=testing`, not only PHPUnit, and the dev entrypoint no longer hides
+      test-schema migration failures.
 
 ### Auth & access
 

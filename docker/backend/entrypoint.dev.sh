@@ -83,7 +83,7 @@ LOCK_FILE=/var/www/html/storage/framework/entrypoint.lock
     # The 'testing' connection in config/database.php always points to erp_testing
     # regardless of env vars, so this is safe even if APP_ENV is 'local'.
     echo ">>> [entrypoint] Running migrations on test database..."
-    php artisan migrate --database=testing --force --no-interaction 2>&1 || true
+    php artisan migrate --database=testing --force --no-interaction
 
     echo ">>> [entrypoint] Test database schema up to date."
 

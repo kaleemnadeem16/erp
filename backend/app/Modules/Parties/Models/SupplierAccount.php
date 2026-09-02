@@ -7,6 +7,7 @@ namespace App\Modules\Parties\Models;
 use App\Models\Currency;
 use App\Models\Model;
 use App\Modules\Accounting\Models\ChartOfAccount;
+use App\Modules\Purchasing\Models\ItemSupplier;
 use App\Support\Concerns\BelongsToCompany;
 use App\Support\Concerns\GuardsRelatedCompanyScope;
 use App\Support\Concerns\HasCustomFields;
@@ -90,5 +91,11 @@ class SupplierAccount extends Model
     public function sites(): HasMany
     {
         return $this->hasMany(SupplierSite::class);
+    }
+
+    /** @return HasMany<ItemSupplier, $this> */
+    public function suppliedItems(): HasMany
+    {
+        return $this->hasMany(ItemSupplier::class);
     }
 }
