@@ -36,7 +36,9 @@ If yes, it's independently queried — give it `company_id` directly. If no, it'
 it through the parent. A few tables that are technically derived from a parent document still
 get `company_id` directly because they *are* queried independently and heavily —
 `customer_ledger_entries`, `stock_moves`, `stock_layers` (statements, valuation, aging) — the
-test is query pattern, not data lineage.
+test is query pattern, not data lineage. `purchase_order_lines` follows the same exception:
+reorder/outstanding procurement reports query it across documents, and direct `company_id`
+allows database-enforced tenant-safe item and UoM foreign keys.
 
 #### Child tables scope through their parent
 

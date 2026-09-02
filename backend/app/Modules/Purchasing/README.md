@@ -10,7 +10,10 @@ Owns supplier sourcing and the purchase-order and goods-receipt source documents
 
 - `ItemSupplier` — the approved supplier catalogue for an item, including preference and
   item-specific sourcing terms
-- Purchase orders and goods receipts — later Phase 2 work
+- `PurchasingSetting` — typed company purchasing policy defaults
+- `PurchaseOrder` and `PurchaseOrderLine` — draft commercial commitments and immutable issue
+  snapshots; Actions/API are the next Phase 2 slice
+- Goods receipts — later Phase 2 work
 
 ## Does not own
 

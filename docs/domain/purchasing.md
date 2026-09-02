@@ -50,7 +50,7 @@ purchase_orders
   cancellation_reason NULLABLE
 
 purchase_order_lines
-  id, purchase_order_id, line_number
+  id, company_id, purchase_order_id, line_number
   item_id
   item_code, description                 -- immutable snapshots on issue
   supplier_item_code NULLABLE
@@ -97,6 +97,10 @@ quality_dispositions
   reason, authorised_by NULLABLE, authorised_at NULLABLE
   resulting_stock_move_id NULLABLE
 ```
+
+`purchase_order_lines` deliberately carries `company_id` even though it belongs to a parent
+document. Procurement and reorder reporting queries lines independently across many POs, and the
+column permits PostgreSQL composite foreign keys that prevent cross-company item/UoM references.
 
 QA quantities are derived from posted inspection/disposition events and their stock movements;
 there are no independently editable accepted/rejected counters on a receipt line.

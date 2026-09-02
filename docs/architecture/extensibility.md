@@ -134,6 +134,12 @@ Use a plugin only for genuinely customer-specific behaviour, not for a broadly u
 that belongs in the core domain. Do not reserve speculative nullable columns for unknown needs;
 add advanced fields when their consuming workflow and invariants are known.
 
+For storage, one stable cross-cutting setting may be a typed `companies` column. A cohesive group
+of module policies uses a typed one-row-per-company module settings table, as Purchasing does.
+JSONB is reserved for flexible, low-risk preferences rather than posting, valuation or approval
+policy. If a module outgrows a lone company column, migrate it into its settings table without
+changing the public capability contract.
+
 ## Frontend extensibility
 
 Usually forgotten, and harder than the backend. Handled by **build-time composition**, not a
