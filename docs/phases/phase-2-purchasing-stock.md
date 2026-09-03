@@ -134,7 +134,7 @@ The order matters because later work needs stable document and stock boundaries:
       lock it after the first movement; defer `WAREHOUSE_ITEM_BATCH`, per ADR 0039
 - [ ] Implement AVCO with row locking around resolved `avco_pools`; prove two concurrent receipts
       into one pool cannot calculate from stale state while independent pools remain independent
-- [ ] Implement same-pool transfer neutrality and cross-pool transfer value conservation,
+- [x] Implement same-pool transfer neutrality and cross-pool transfer value conservation,
       destination-average recalculation and immutable source/destination pool identities
 - [ ] Implement provisional cross-pool transfer repair propagation without permitting a negative
       physical source or creating/destroying company inventory value

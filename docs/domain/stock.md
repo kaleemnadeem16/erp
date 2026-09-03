@@ -52,7 +52,7 @@ stock_layers                            -- one per goods receipt; the FIFO consu
   qty_received, qty_remaining
   unit_cost, currency_id, fx_rate, base_unit_cost
   received_at
-  source_type, source_id
+  source_type, source_id, source_line_no -- preserves multiple transfer cost components
   batch_id, serial_no      NULLABLE     -- as above
 
 avco_pools                              -- explicit immutable pool identity; ADR 0039
@@ -91,24 +91,27 @@ negative_stock_settlements            -- immutable partial/full inbound allocati
   provisional_unit_cost, actual_unit_cost, unit_cost_difference
   valuation_adjustment, settled_at
 
+stock_transfer_details                -- immutable AVCO transfer dependency identity
+  id, company_id, stock_move_id
+  source_avco_pool_id NULLABLE, destination_avco_pool_id NULLABLE, is_provisional
+
 stock_valuation_entries                 -- cost impact of each move; feeds the GL
   id, stock_move_id
   avco_pool_id NULLABLE                 -- immutable pool used at posting time
-  pool_effect NULLABLE                  -- SOURCE_OUT | DESTINATION_IN | NULL
+  pool_effect NULLABLE                  -- SOURCE_OUT | DESTINATION_IN | VALUATION_ADJUSTMENT | NULL
   qty, unit_cost, amount, base_amount
   account_id
 ```
 
 `stock_valuation_entries.qty`/`amount`/`base_amount` are a signed feed, unlike every quantity
 column elsewhere in this schema: an inbound receipt posts positive (a debit), an outbound
-movement — reversal today, issues/transfers once built — posts the same magnitude negative (a
+movement posts the same magnitude negative (a
 credit). `unit_cost` stays a positive per-unit magnitude regardless of direction; direction on
 `stock_moves` itself is expressed by `from`/`to` location nullability, not by a signed `qty`
 (`stock_moves.qty` keeps its `> 0` constraint). This lets "inventory account balance equals the
 sum of stock valuation" (see the landmine below) stay a flat `SUM(base_amount)`, not
 direction-aware logic — set by [ADR 0043](../decisions/0043-control-purchase-order-receipt-and-qa-posting.md)'s
-receipt reversal (`App\Modules\Inventory\Actions\PostInventoryMovement::reverseReceipt()`), binding
-for whoever builds the general issue/transfer engine next.
+receipt reversal (`App\Modules\Inventory\Actions\PostInventoryMovement::reverseReceipt()`).
 
 ## Behaviour
 
@@ -136,10 +139,9 @@ future advanced-WMS mode remain deferred until a phase that consumes them.
 
 Per-item, not one method for the whole company — [items.md](items.md#valuation-method),
 [ADR 0032](../decisions/0032-per-item-valuation-method.md). Each item's `valuation_method` picks
-which of these applies. The shared receipt-side movement path and normal non-negative outbound
-issues are implemented for all three. Issues enforce exact-location/tracking availability and QA
-eligibility; transfers, authorised negative-stock settlement and replay remain later Phase 2
-slices.
+which of these applies. Receipts, outbound issues, shortage settlement and transfers are
+implemented for all three. Issues and transfers enforce exact-location/tracking availability and
+QA eligibility; replay and provisional transfer-repair propagation remain later Phase 2 slices.
 
 **AVCO.** On receipt:
 
@@ -211,6 +213,16 @@ defensible provisional pool AVCO is carried to the destination. Both effects rem
 and linked to the same source recovery/repair chain; later repair appends paired adjustments and
 propagates through affected destination dependencies while preserving company-value neutrality.
 This is a non-positive valuation-pool case and never permits a negative physical-source transfer.
+
+The movement boundary implements ordinary transfers transactionally. It locks both locations in
+deterministic ID order and then locks source layers, so opposite-direction work cannot invert lock
+order and an empty physical source cannot be overridden. FIFO creates one destination layer per
+source-cost component; SPECIFIC preserves the exact serial. AVCO writes equal-and-opposite source
+and destination valuation effects: a same-pool move leaves pool state untouched, while a
+cross-pool move removes and introduces the identical base amount before recalculating destination
+average. Immutable transfer detail retains both pool identities and whether a non-positive source
+made the value provisional. Propagating a later source-cost repair through those marked downstream
+dependencies remains a separate workflow.
 
 ### Negative stock contract
 

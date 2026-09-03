@@ -15,6 +15,7 @@ use App\Modules\Inventory\Models\NegativeStockShortage;
 use App\Modules\Inventory\Models\StockBatch;
 use App\Modules\Inventory\Models\StockLayer;
 use App\Modules\Inventory\Models\StockMove;
+use App\Modules\Inventory\Models\StockTransferDetail;
 use App\Modules\Inventory\Support\AvcoPoolScope;
 use App\Modules\Inventory\Support\AvcoPoolStatus;
 use App\Modules\Inventory\Support\ItemTracking;
@@ -183,6 +184,105 @@ final class PostInventoryMovement
             }
 
             return $move->load(['valuationEntries', 'negativeStockShortage']);
+        });
+    }
+
+    /**
+     * @param  array{item_id:int, from_location_id:int, to_location_id:int, qty:string, uom_id:int, moved_at:mixed, source_type:string, source_id:int, batch_no?:string|null, serial_no?:string|null}  $input
+     */
+    public function transfer(array $input): StockMove
+    {
+        return DB::transaction(function () use ($input): StockMove {
+            $existing = StockMove::query()->where('source_type', $input['source_type'])->where('source_id', $input['source_id'])->first();
+            if ($existing !== null) {
+                return $existing->load(['valuationEntries', 'transferDetail']);
+            }
+            if ($input['from_location_id'] === $input['to_location_id']) {
+                throw new DomainInvariantException('A stock transfer requires different source and destination locations.', 'to_location_id');
+            }
+            $item = Item::query()->findOrFail($input['item_id']);
+            $locations = Location::query()->with('warehouse')->whereIn('id', [$input['from_location_id'], $input['to_location_id']])->orderBy('id')->lockForUpdate()->get()->keyBy('id');
+            $source = $locations->get($input['from_location_id']);
+            $destination = $locations->get($input['to_location_id']);
+            if ($source === null || $destination === null) {
+                throw new DomainInvariantException('Both transfer locations must exist.', 'to_location_id');
+            }
+            foreach ([$source, $destination] as $location) {
+                if (! $location->active || ! $location->allows_stock || ! $location->warehouse->active) {
+                    throw new DomainInvariantException('Transfers require active stock-holding locations.', 'to_location_id');
+                }
+            }
+            $qty = BigDecimal::of($input['qty']);
+            if ($qty->isLessThanOrEqualTo(0) || ! $item->is_stocked || $item->stock_uom_id !== $input['uom_id']) {
+                throw new DomainInvariantException('Transfers require positive stock quantity in the pinned stock UoM.', 'qty');
+            }
+            if (StockMove::query()->where('item_id', $item->id)->where('moved_at', '>', $input['moved_at'])->exists()) {
+                throw new DomainInvariantException('This transfer conflicts with later valuation history and requires the controlled backdating workflow.', 'moved_at');
+            }
+            $batchNo = isset($input['batch_no']) ? strtolower(trim((string) $input['batch_no'])) : null;
+            $serialNo = isset($input['serial_no']) ? trim((string) $input['serial_no']) : null;
+            $this->validateIssueTracking($item, $qty, $batchNo, $serialNo);
+            $batch = $batchNo === null ? null : StockBatch::query()->where('item_id', $item->id)->where('code', $batchNo)->first();
+            if ($batchNo !== null && $batch === null) {
+                throw new DomainInvariantException('The requested batch is not on hand for this item.', 'batch_no');
+            }
+            $layers = $this->lockIssueLayers($item, $source, $batch, $serialNo);
+            $allocations = $this->allocateIssueLayers($layers, $qty);
+            $available = $allocations->reduce(fn (BigDecimal $total, array $allocation): BigDecimal => $total->plus($allocation['qty']), BigDecimal::zero());
+            if (! $available->isEqualTo($qty)) {
+                throw new DomainInvariantException('A transfer cannot create negative stock at its physical source.', 'qty');
+            }
+            $company = Company::query()->findOrFail(app(CompanyContext::class)->id());
+            if ($company->base_currency_id === null) {
+                throw new DomainInvariantException('A company base currency is required before stock can be transferred.', 'item_id');
+            }
+            $sourcePool = $item->valuation_method === ValuationMethod::Avco ? $this->lockAvcoPool($item, $source, $batch) : null;
+            $destinationPool = $item->valuation_method === ValuationMethod::Avco ? $this->lockAvcoPool($item, $destination, $batch) : null;
+            $provisional = $sourcePool !== null && BigDecimal::of($sourcePool->qty_on_hand)->isLessThanOrEqualTo(0);
+            $unitCost = $sourcePool !== null
+                ? BigDecimal::of($provisional ? $sourcePool->last_valid_avg_unit_cost : $sourcePool->base_avg_unit_cost)
+                : $allocations->reduce(fn (BigDecimal $total, array $allocation): BigDecimal => $total->plus($allocation['qty']->multipliedBy(BigDecimal::of($allocation['layer']->base_unit_cost))), BigDecimal::zero())->dividedBy($qty, 4, RoundingMode::HALF_UP);
+            if ($unitCost->isLessThanOrEqualTo(0)) {
+                throw new DomainInvariantException('No defensible transfer cost exists.', 'item_id');
+            }
+            $baseAmount = $qty->multipliedBy($unitCost)->toScale(4, RoundingMode::HALF_UP);
+            $settlements = $this->allocateInboundSettlements($item, $destination, $batch, $qty);
+            $settledQty = $settlements->reduce(fn (BigDecimal $total, array $settlement): BigDecimal => $total->plus($settlement['qty']), BigDecimal::zero());
+            $repair = $settlements->reduce(fn (BigDecimal $total, array $settlement): BigDecimal => $total->plus(BigDecimal::of($settlement['shortage']->provisional_unit_cost)->minus($unitCost)->multipliedBy($settlement['qty'])->toScale(4, RoundingMode::HALF_UP)), BigDecimal::zero());
+
+            $move = StockMove::query()->create([
+                'item_id' => $item->id, 'from_location_id' => $source->id, 'to_location_id' => $destination->id,
+                'qty' => (string) $qty, 'uom_id' => $item->stock_uom_id, 'moved_at' => $input['moved_at'],
+                'source_type' => $input['source_type'], 'source_id' => $input['source_id'],
+                'unit_cost' => (string) $unitCost, 'currency_id' => $company->base_currency_id, 'fx_rate' => '1.000000000',
+                'batch_id' => $batch?->id, 'serial_no' => $serialNo,
+            ]);
+            foreach ($allocations as $index => $allocation) {
+                $layer = $allocation['layer'];
+                $layer->update(['qty_remaining' => (string) BigDecimal::of($layer->qty_remaining)->minus($allocation['qty'])]);
+                StockLayer::query()->create([
+                    'item_id' => $item->id, 'location_id' => $destination->id,
+                    'qty_received' => (string) $allocation['qty'], 'qty_remaining' => (string) $allocation['qty'],
+                    'unit_cost' => $layer->unit_cost, 'currency_id' => $layer->currency_id, 'fx_rate' => $layer->fx_rate,
+                    'base_unit_cost' => $sourcePool === null ? $layer->base_unit_cost : (string) $unitCost,
+                    'received_at' => $input['moved_at'], 'source_type' => $input['source_type'], 'source_id' => $input['source_id'],
+                    'source_line_no' => $index + 1, 'batch_id' => $batch?->id, 'serial_no' => $serialNo,
+                ]);
+            }
+            $this->reduceTransferredDestinationLayers($move, $settledQty);
+            $accountId = $item->resolveInventoryAccountId();
+            if ($accountId === null) {
+                throw new DomainInvariantException('A stock transfer requires a resolved inventory account.', 'item_id');
+            }
+            $this->postTransferValuation($move, $allocations, $sourcePool, $destinationPool, $qty, $unitCost, $baseAmount, $accountId);
+            $this->updateTransferPools($sourcePool, $destinationPool, $qty, $baseAmount, $repair);
+            StockTransferDetail::query()->create([
+                'stock_move_id' => $move->id, 'source_avco_pool_id' => $sourcePool?->id,
+                'destination_avco_pool_id' => $destinationPool?->id, 'is_provisional' => $provisional,
+            ]);
+            $this->recordTransferSettlements($move, $settlements, $unitCost, $accountId, $destinationPool);
+
+            return $move->load(['valuationEntries', 'transferDetail']);
         });
     }
 
@@ -586,6 +686,73 @@ final class PostInventoryMovement
 
         /** @var Collection<int, array{shortage:NegativeStockShortage, qty:BigDecimal}> $allocations */
         return $allocations;
+    }
+
+    private function reduceTransferredDestinationLayers(StockMove $move, BigDecimal $settledQty): void
+    {
+        $layers = StockLayer::query()->where('source_type', $move->source_type)->where('source_id', $move->source_id)->orderBy('source_line_no')->get();
+        foreach ($layers as $layer) {
+            $received = BigDecimal::of($layer->qty_received);
+            $consume = $received->isLessThan($settledQty) ? $received : $settledQty;
+            $layer->update(['qty_remaining' => (string) $received->minus($consume)]);
+            $settledQty = $settledQty->minus($consume);
+        }
+    }
+
+    /** @param Collection<int, array{layer:StockLayer, qty:BigDecimal}> $allocations */
+    private function postTransferValuation(StockMove $move, Collection $allocations, ?AvcoPool $sourcePool, ?AvcoPool $destinationPool, BigDecimal $qty, BigDecimal $unitCost, BigDecimal $baseAmount, int $accountId): void
+    {
+        if ($sourcePool !== null) {
+            foreach ([[$sourcePool, 'SOURCE_OUT', $qty->negated(), $baseAmount->negated()], [$destinationPool, 'DESTINATION_IN', $qty, $baseAmount]] as [$pool, $effect, $entryQty, $amount]) {
+                $move->valuationEntries()->create(['avco_pool_id' => $pool->id, 'pool_effect' => $effect, 'qty' => (string) $entryQty, 'unit_cost' => (string) $unitCost, 'amount' => (string) $amount, 'base_amount' => (string) $amount, 'account_id' => $accountId]);
+            }
+
+            return;
+        }
+        foreach ($allocations as $allocation) {
+            $amount = $allocation['qty']->multipliedBy(BigDecimal::of($allocation['layer']->base_unit_cost))->toScale(4, RoundingMode::HALF_UP);
+            foreach ([[$allocation['qty']->negated(), $amount->negated()], [$allocation['qty'], $amount]] as [$entryQty, $entryAmount]) {
+                $move->valuationEntries()->create(['avco_pool_id' => null, 'pool_effect' => null, 'qty' => (string) $entryQty, 'unit_cost' => $allocation['layer']->base_unit_cost, 'amount' => (string) $entryAmount, 'base_amount' => (string) $entryAmount, 'account_id' => $accountId]);
+            }
+        }
+    }
+
+    private function updateTransferPools(?AvcoPool $source, ?AvcoPool $destination, BigDecimal $qty, BigDecimal $amount, BigDecimal $repair): void
+    {
+        if ($source === null || $destination === null) {
+            return;
+        }
+        if ($source->id === $destination->id) {
+            if (! $repair->isZero()) {
+                $this->writeTransferPoolState($source, BigDecimal::of($source->qty_on_hand), BigDecimal::of($source->inventory_value)->plus($repair));
+            }
+
+            return;
+        }
+        $this->writeTransferPoolState($source, BigDecimal::of($source->qty_on_hand)->minus($qty), BigDecimal::of($source->inventory_value)->minus($amount));
+        $this->writeTransferPoolState($destination, BigDecimal::of($destination->qty_on_hand)->plus($qty), BigDecimal::of($destination->inventory_value)->plus($amount)->plus($repair));
+    }
+
+    private function writeTransferPoolState(AvcoPool $pool, BigDecimal $qty, BigDecimal $value): void
+    {
+        $positive = $qty->isGreaterThan(0);
+        $average = $positive ? $value->dividedBy($qty, 4, RoundingMode::HALF_UP) : BigDecimal::of($pool->last_valid_avg_unit_cost);
+        $pool->update(['qty_on_hand' => (string) $qty, 'inventory_value' => (string) $value->toScale(4, RoundingMode::HALF_UP), 'avg_unit_cost' => (string) $average, 'base_avg_unit_cost' => (string) $average, 'last_valid_avg_unit_cost' => $positive ? (string) $average : $pool->last_valid_avg_unit_cost, 'status' => $positive ? 'ACTIVE' : 'FROZEN']);
+    }
+
+    /** @param Collection<int, array{shortage:NegativeStockShortage, qty:BigDecimal}> $settlements */
+    private function recordTransferSettlements(StockMove $move, Collection $settlements, BigDecimal $actualCost, int $accountId, ?AvcoPool $pool): void
+    {
+        foreach ($settlements as $settlement) {
+            $shortage = $settlement['shortage'];
+            $settledQty = $settlement['qty'];
+            $provisional = BigDecimal::of($shortage->provisional_unit_cost);
+            $repair = $provisional->minus($actualCost)->multipliedBy($settledQty)->toScale(4, RoundingMode::HALF_UP);
+            $move->valuationEntries()->create(['avco_pool_id' => $pool?->id, 'pool_effect' => $pool === null ? null : 'VALUATION_ADJUSTMENT', 'qty' => '0.0000', 'unit_cost' => (string) $actualCost->minus($provisional)->abs(), 'amount' => (string) $repair, 'base_amount' => (string) $repair, 'account_id' => $accountId]);
+            $open = BigDecimal::of($shortage->qty_open)->minus($settledQty);
+            $shortage->update(['qty_open' => (string) $open, 'status' => $open->isZero() ? 'SETTLED' : 'PARTIALLY_SETTLED', 'settled_at' => $open->isZero() ? now() : null]);
+            $shortage->settlements()->create(['inbound_move_id' => $move->id, 'qty_settled' => (string) $settledQty, 'provisional_unit_cost' => (string) $provisional, 'actual_unit_cost' => (string) $actualCost, 'unit_cost_difference' => (string) $actualCost->minus($provisional), 'valuation_adjustment' => (string) $repair, 'settled_at' => now()]);
+        }
     }
 
     private function hasOpenShortage(Item $item, Location $location, ?StockBatch $batch, bool $lock): bool

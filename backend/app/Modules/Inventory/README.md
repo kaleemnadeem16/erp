@@ -17,9 +17,10 @@ movement and valuation, built in Phase 2.
 - `Warehouse`, hierarchical `Location`, and warehouse location roles — Phase 2 stock custody
   foundations with SIMPLE/STRUCTURED company modes
 - `StockMove`, `StockLayer`, `StockBatch`, `AvcoPool` and `StockValuationEntry` — the immutable
-  movement, traceability and valuation-feed foundation; receipt and non-negative outbound issue
-  posting is live for AVCO/FIFO/SPECIFIC, while transfers and authorised shortage settlement
-  remain later Phase 2 work
+  movement, traceability and valuation-feed foundation; receipts, issues, shortage settlement and
+  physical transfers are live for AVCO/FIFO/SPECIFIC
+- `StockTransferDetail` — immutable source/destination AVCO identities and provisional-state
+  snapshot for transfer valuation and later repair propagation
 - `InventoryPolicyChange` — immutable, tenant-safe audit history for governed inventory-policy
   changes; ADR 0037 negative-stock policy defaults and eligibility are configured on `Company`
 - `NegativeStockOverrideRequest`, `NegativeStockOverrideApproval` and
@@ -63,7 +64,9 @@ Phase 6 valuation feed atomically. An explicitly supplied authorised override ma
 exact issue and no more than its snapshotted shortage. It consumes available stock first, derives
 unsupported AVCO/FIFO cost from system history, and creates linked shortage state atomically.
 Compatible inbound settles the oldest exact-identity shortage first, appends its valuation repair,
-and exposes only excess quantity as ordinary available stock. Transfers remain a separate slice.
+and exposes only excess quantity as ordinary available stock. Transfers reject negative physical
+sources, preserve FIFO/SPECIFIC layers, remain neutral inside one AVCO pool and conserve exact base
+value across pools. Provisional cross-pool repair propagation remains a separate slice.
 
 ## Events
 

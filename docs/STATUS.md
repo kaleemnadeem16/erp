@@ -108,6 +108,7 @@ tech stack, extensibility strategy and deployment approach are recorded as [ADRs
 | **Negative-stock override decision workflow built** — immutable tenant-safe request, approval and review records now snapshot the exact item/location/tracking shortage, source, controlled reason, explanation, authorisation mode and immediate-review deadline. Requests enforce the configured movement eligibility and reject serial/SPECIFIC negatives; `PRIOR_APPROVAL` requires a different permitted approver, while `IMMEDIATE_WITH_REVIEW` requires override permission up front and an independent reviewer by default. PostgreSQL enforces value shapes, scope and immutability. Posting and settlement deliberately remain the next slice. | 2026-09-03 |
 | **Authorised negative-stock posting built** — `PostInventoryMovement::issue()` now consumes an exact immutable ADR 0037 override only when live physical stock is insufficient, rejects a worsened shortage, and requires the prior decision where configured. Available FIFO/traceability layers are consumed first; unsupported AVCO uses locked last-valid official cost and freezes a non-positive pool, while unsupported FIFO uses the latest compatible actual acquisition cost. Missing defensible history blocks rather than accepting user cost. The move, signed valuation entries and one-to-one `OPEN` shortage are atomic; request reuse and deepening an existing shortage are blocked. Compatible receipts are routed through the settlement workflow described below. | 2026-09-03 |
 | **Negative-stock inbound settlement built** — compatible receipts now lock and allocate shortages oldest exact-identity first. Partial inbound leaves `PARTIALLY_SETTLED`; final recovery stamps `SETTLED`, while only receipt excess remains issuable on the traceability layer. Each allocation immutably snapshots provisional/actual base costs and appends a zero-quantity valuation repair instead of rewriting the original issue or receipt. AVCO applies actual receipt value and repairs atomically, remains frozen while non-positive, and derives a recovered average only from the positive remainder; FIFO repairs valuation without inventing a receipt layer for the historical shortage. PostgreSQL enforces tenant-safe shortage/movement compatibility and immutable settlement facts. | 2026-09-03 |
+| **Value-conserving stock transfers built** — the sole movement boundary now rejects negative physical sources and posts exact-location transfers for AVCO, FIFO and SPECIFIC. Same-pool AVCO moves append balanced custody effects without touching pool state; cross-pool moves remove and introduce the identical base value before recalculating destination average. FIFO preserves every source-cost component as a separately identified destination layer, while SPECIFIC retains exact serial identity. Deterministic location locks close opposite-direction deadlocks, transfer retries are source-idempotent, and immutable detail records retain source/destination pool identities plus provisional status for the pending repair-propagation workflow. | 2026-09-03 |
 
 ## In progress
 
@@ -132,7 +133,9 @@ Phase 1 is complete, including its domain-document reconciliation.
 
 Continue [Phase 2 — Purchasing & stock](phases/phase-2-purchasing-stock.md):
 
-1. Extend the movement boundary with same-pool neutral and value-conserving cross-pool transfers.
+1. Propagate later valuation repairs through provisional cross-pool transfer dependencies while
+   preserving paired company-value neutrality.
+2. Build ADR 0040's backdating horizon controls and recalculation workflow.
 
 [Phase 0 — Foundation](phases/phase-0-foundation.md) remains in progress in parallel — the two
 former blockers are resolved (`btree_gist` confirmed available on dbvm, `REDIS_PREFIX=erp_`

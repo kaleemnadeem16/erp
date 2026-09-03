@@ -11,6 +11,7 @@ use App\Modules\Inventory\Actions\DecideNegativeStockOverride;
 use App\Modules\Inventory\Actions\PostInventoryMovement;
 use App\Modules\Inventory\Actions\RequestNegativeStockOverride;
 use App\Modules\Inventory\Models\AvcoPool;
+use App\Modules\Inventory\Models\Location;
 use App\Modules\Inventory\Models\NegativeStockOverrideRequest;
 use App\Modules\Inventory\Models\NegativeStockShortage;
 use App\Modules\Inventory\Models\StockLayer;
@@ -258,6 +259,70 @@ class StockIssueTest extends PurchaseOrderFoundationTest
         $this->assertSame(['2.0000', '1.0000'], $shortage->settlements()->orderBy('id')->pluck('qty_settled')->all());
     }
 
+    public function test_same_pool_avco_transfer_moves_physical_stock_without_changing_pool_value(): void
+    {
+        [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Avco);
+        $sourceId = $this->locationId();
+        $destinationId = $this->otherLocationId('other');
+        $this->postReceipt($order->lines()->sole()->id, $item->id, $uom->id, $sourceId, '4.0000', '10.0000');
+        $before = AvcoPool::query()->sole();
+
+        $move = app(PostInventoryMovement::class)->transfer($this->transferInput($item->id, $uom->id, $sourceId, $destinationId, '1.5000', 1301));
+
+        $before->refresh();
+        $this->assertSame('4.0000', $before->qty_on_hand);
+        $this->assertSame('40.0000', $before->inventory_value);
+        $this->assertSame(['-15.0000', '15.0000'], $move->valuationEntries()->orderBy('id')->pluck('base_amount')->all());
+        $this->assertSame($move->transferDetail->source_avco_pool_id, $move->transferDetail->destination_avco_pool_id);
+        $this->assertFalse($move->transferDetail->is_provisional);
+        $this->assertSame('1.5000', StockLayer::query()->where('location_id', $destinationId)->sole()->qty_remaining);
+    }
+
+    public function test_cross_pool_avco_transfer_conserves_company_quantity_and_value(): void
+    {
+        [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Avco, qty: '4.0000');
+        $item->update(['avco_pool_scope' => AvcoPoolScope::WarehouseItem]);
+        $sourceId = $this->locationId();
+        $destinationId = $this->otherLocationId('other');
+        $lineId = $order->lines()->sole()->id;
+        $this->postReceipt($lineId, $item->id, $uom->id, $sourceId, '2.0000', '10.0000');
+        $this->postReceipt($lineId, $item->id, $uom->id, $destinationId, '2.0000', '20.0000');
+
+        $move = app(PostInventoryMovement::class)->transfer($this->transferInput($item->id, $uom->id, $sourceId, $destinationId, '1.0000', 1302));
+        $pools = AvcoPool::query()->orderBy('warehouse_id')->get();
+
+        $this->assertEquals(4, $pools->sum('qty_on_hand'));
+        $this->assertEquals(60, $pools->sum('inventory_value'));
+        $sourcePool = $pools->firstWhere('warehouse_id', Location::query()->findOrFail($sourceId)->warehouse_id);
+        $destinationPool = $pools->firstWhere('warehouse_id', Location::query()->findOrFail($destinationId)->warehouse_id);
+        $this->assertSame('1.0000', $sourcePool->qty_on_hand);
+        $this->assertSame('10.0000', $sourcePool->inventory_value);
+        $this->assertSame('3.0000', $destinationPool->qty_on_hand);
+        $this->assertSame('50.0000', $destinationPool->inventory_value);
+        $this->assertSame('16.6667', $destinationPool->base_avg_unit_cost);
+        $this->assertNotSame($move->transferDetail->source_avco_pool_id, $move->transferDetail->destination_avco_pool_id);
+    }
+
+    public function test_fifo_transfer_preserves_each_source_cost_layer_and_company_value(): void
+    {
+        [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Fifo, qty: '5.0000');
+        $sourceId = $this->locationId();
+        $destinationId = $this->otherLocationId('other');
+        $lineId = $order->lines()->sole()->id;
+        $this->postReceipt($lineId, $item->id, $uom->id, $sourceId, '2.0000', '10.0000');
+        $this->travel(1)->second();
+        $this->postReceipt($lineId, $item->id, $uom->id, $sourceId, '3.0000', '12.0000');
+
+        $move = app(PostInventoryMovement::class)->transfer($this->transferInput($item->id, $uom->id, $sourceId, $destinationId, '3.0000', 1303));
+
+        $destinationLayers = StockLayer::query()->where('location_id', $destinationId)->orderBy('source_line_no')->get();
+        $this->assertSame(['2.0000', '1.0000'], $destinationLayers->pluck('qty_remaining')->all());
+        $this->assertSame(['10.0000', '12.0000'], $destinationLayers->pluck('base_unit_cost')->all());
+        $this->assertSame(['-20.0000', '20.0000', '-12.0000', '12.0000'], $move->valuationEntries()->orderBy('id')->pluck('base_amount')->all());
+        $this->assertNull($move->transferDetail->source_avco_pool_id);
+        $this->assertNull($move->transferDetail->destination_avco_pool_id);
+    }
+
     private function issuedOrder(ValuationMethod $method, ItemTracking $tracking = ItemTracking::None, string $qty = '4.0000', bool $qaRequired = false): array
     {
         [$order, $item, $uom] = $this->makeOrder();
@@ -280,6 +345,13 @@ class StockIssueTest extends PurchaseOrderFoundationTest
     {
         return app(CreateWarehouse::class)([
             'code' => 'main', 'name' => 'Main', 'location_code' => 'main', 'location_name' => 'Main',
+        ])->locations()->sole()->id;
+    }
+
+    private function otherLocationId(string $code): int
+    {
+        return app(CreateWarehouse::class)([
+            'code' => $code, 'name' => ucfirst($code), 'location_code' => $code, 'location_name' => ucfirst($code),
         ])->locations()->sole()->id;
     }
 
@@ -307,6 +379,15 @@ class StockIssueTest extends PurchaseOrderFoundationTest
         return [
             'item_id' => $itemId, 'location_id' => $locationId, 'qty' => $qty, 'uom_id' => $uomId,
             'moved_at' => now(), 'source_type' => 'TEST_ISSUE', 'source_id' => $sourceId,
+        ];
+    }
+
+    private function transferInput(int $itemId, int $uomId, int $sourceId, int $destinationId, string $qty, int $referenceId): array
+    {
+        return [
+            'item_id' => $itemId, 'from_location_id' => $sourceId, 'to_location_id' => $destinationId,
+            'qty' => $qty, 'uom_id' => $uomId, 'moved_at' => now(),
+            'source_type' => 'TEST_TRANSFER', 'source_id' => $referenceId,
         ];
     }
 

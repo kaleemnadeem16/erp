@@ -59,4 +59,10 @@ class StockMove extends Model
     {
         return $this->hasOne(NegativeStockShortage::class, 'source_move_id');
     }
+
+    /** @return HasOne<StockTransferDetail, $this> */
+    public function transferDetail(): HasOne
+    {
+        return $this->hasOne(StockTransferDetail::class, 'stock_move_id');
+    }
 }

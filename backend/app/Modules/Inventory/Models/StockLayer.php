@@ -37,6 +37,7 @@ class StockLayer extends Model
             'qty_received' => 'decimal:4', 'qty_remaining' => 'decimal:4',
             'unit_cost' => 'decimal:4', 'fx_rate' => 'decimal:9',
             'base_unit_cost' => 'decimal:4', 'received_at' => 'immutable_datetime',
+            'source_line_no' => 'integer',
         ];
     }
 }
