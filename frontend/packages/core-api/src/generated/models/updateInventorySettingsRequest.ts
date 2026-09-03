@@ -6,8 +6,24 @@
  */
 import type { InventoryLocationMode } from "./inventoryLocationMode";
 import type { AvcoPoolScope } from "./avcoPoolScope";
+import type { NegativeStockMode } from "./negativeStockMode";
+import type { NegativeStockAuthorisationMode } from "./negativeStockAuthorisationMode";
 
 export interface UpdateInventorySettingsRequest {
   inventory_location_mode?: InventoryLocationMode;
   default_avco_pool_scope?: AvcoPoolScope;
+  negative_stock_mode?: NegativeStockMode;
+  negative_stock_authorisation_mode?: NegativeStockAuthorisationMode;
+  /**
+   * @minimum 1
+   * @maximum 168
+   */
+  negative_stock_review_sla_hours?: number;
+  negative_stock_allow_self_review?: boolean;
+  negative_stock_sales_despatch_enabled?: boolean;
+  negative_stock_material_consumption_enabled?: boolean;
+  negative_stock_supplier_return_enabled?: boolean;
+  negative_stock_scrap_writeoff_enabled?: boolean;
+  /** @maxLength 1000 */
+  reason?: string;
 }

@@ -8,6 +8,8 @@ use App\Modules\Accounting\Models\AccountingPeriod;
 use App\Modules\Accounting\Support\PeriodStatus;
 use App\Modules\Inventory\Support\AvcoPoolScope;
 use App\Modules\Inventory\Support\InventoryLocationMode;
+use App\Modules\Inventory\Support\NegativeStockAuthorisationMode;
+use App\Modules\Inventory\Support\NegativeStockMode;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use RuntimeException;
 
@@ -22,6 +24,14 @@ use RuntimeException;
  * @property int $fiscal_year_start_month
  * @property InventoryLocationMode $inventory_location_mode
  * @property AvcoPoolScope $default_avco_pool_scope
+ * @property NegativeStockMode $negative_stock_mode
+ * @property NegativeStockAuthorisationMode $negative_stock_authorisation_mode
+ * @property int $negative_stock_review_sla_hours
+ * @property bool $negative_stock_allow_self_review
+ * @property bool $negative_stock_sales_despatch_enabled
+ * @property bool $negative_stock_material_consumption_enabled
+ * @property bool $negative_stock_supplier_return_enabled
+ * @property bool $negative_stock_scrap_writeoff_enabled
  */
 class Company extends Model
 {
@@ -32,6 +42,13 @@ class Company extends Model
         return [
             'inventory_location_mode' => InventoryLocationMode::class,
             'default_avco_pool_scope' => AvcoPoolScope::class,
+            'negative_stock_mode' => NegativeStockMode::class,
+            'negative_stock_authorisation_mode' => NegativeStockAuthorisationMode::class,
+            'negative_stock_allow_self_review' => 'boolean',
+            'negative_stock_sales_despatch_enabled' => 'boolean',
+            'negative_stock_material_consumption_enabled' => 'boolean',
+            'negative_stock_supplier_return_enabled' => 'boolean',
+            'negative_stock_scrap_writeoff_enabled' => 'boolean',
         ];
     }
 

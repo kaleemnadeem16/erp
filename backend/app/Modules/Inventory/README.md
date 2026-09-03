@@ -20,6 +20,8 @@ movement and valuation, built in Phase 2.
   movement, traceability and valuation-feed foundation; receipt and non-negative outbound issue
   posting is live for AVCO/FIFO/SPECIFIC, while transfers and authorised shortage settlement
   remain later Phase 2 work
+- `InventoryPolicyChange` — immutable, tenant-safe audit history for governed inventory-policy
+  changes; ADR 0037 negative-stock policy defaults and eligibility are configured on `Company`
 
 ## Does not own
 
@@ -40,6 +42,9 @@ warehouse cannot enter normal use without an exact physical location. Warehouse 
 updates/archiving use their corresponding Actions. `SIMPLE` mode keeps one plain location per
 warehouse; `STRUCTURED` enables hierarchy, location metadata and operational role assignments.
 Mode changes go through `UpdateInventorySettings`, which blocks unsafe downgrade.
+The same Action governs negative-stock policy changes with an elevated permission, mandatory
+reason, bounded review SLA and an immutable old/new audit record. Policy configuration does not
+itself permit a negative movement; authorisation, posting and settlement are separate Actions.
 `PostInventoryMovement` is the sole quantity/valuation write boundary. Inbound receipts write a
 traceability layer and update the resolved AVCO pool where applicable. Normal outbound issues
 deplete exact-location/tracking availability, exclude unresolved or failed QA quantity, consume

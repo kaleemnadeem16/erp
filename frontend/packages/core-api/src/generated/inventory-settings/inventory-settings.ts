@@ -22,6 +22,7 @@ import type {
 
 import type {
   AuthenticationExceptionResponse,
+  AuthorizationExceptionResponse,
   InventorySettingsShow200,
   InventorySettingsUpdate200,
   ModelNotFoundExceptionResponse,
@@ -226,6 +227,11 @@ export type inventorySettingsUpdateResponse401 = {
   status: 401;
 };
 
+export type inventorySettingsUpdateResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type inventorySettingsUpdateResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -236,7 +242,9 @@ export type inventorySettingsUpdateResponseSuccess =
     headers: Headers;
   };
 export type inventorySettingsUpdateResponseError = (
-  inventorySettingsUpdateResponse401 | inventorySettingsUpdateResponse422
+  | inventorySettingsUpdateResponse401
+  | inventorySettingsUpdateResponse403
+  | inventorySettingsUpdateResponse422
 ) & {
   headers: Headers;
 };
@@ -264,7 +272,10 @@ export const inventorySettingsUpdate = async (
 };
 
 export const getInventorySettingsUpdateMutationOptions = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -307,10 +318,15 @@ export type InventorySettingsUpdateMutationResult = NonNullable<
 export type InventorySettingsUpdateMutationBody =
   UpdateInventorySettingsRequest;
 export type InventorySettingsUpdateMutationError =
-  AuthenticationExceptionResponse | ValidationExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
 
 export const useInventorySettingsUpdate = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(
   options?: {

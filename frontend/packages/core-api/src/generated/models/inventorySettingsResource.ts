@@ -8,4 +8,12 @@
 export interface InventorySettingsResource {
   inventory_location_mode: string;
   default_avco_pool_scope: string;
+  negative_stock_mode: string;
+  negative_stock_authorisation_mode: string;
+  negative_stock_review_sla_hours: number;
+  negative_stock_allow_self_review: boolean;
+  negative_stock_sales_despatch_enabled: boolean;
+  negative_stock_material_consumption_enabled: boolean;
+  negative_stock_supplier_return_enabled: boolean;
+  negative_stock_scrap_writeoff_enabled: boolean;
 }

@@ -20,6 +20,12 @@ class InventorySettingsController extends Controller
 
     public function update(UpdateInventorySettingsRequest $request, UpdateInventorySettings $update): InventorySettingsResource
     {
-        return new InventorySettingsResource($update($request->validated()));
+        $attributes = $request->safe()->except('reason');
+
+        return new InventorySettingsResource($update(
+            $attributes,
+            $request->user()->id,
+            $request->validated('reason'),
+        ));
     }
 }

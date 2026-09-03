@@ -20,6 +20,14 @@ class InventorySettingsResource extends JsonResource
         return [
             'inventory_location_mode' => $company->inventory_location_mode->value,
             'default_avco_pool_scope' => $company->default_avco_pool_scope->value,
+            'negative_stock_mode' => $company->negative_stock_mode->value,
+            'negative_stock_authorisation_mode' => $company->negative_stock_authorisation_mode->value,
+            'negative_stock_review_sla_hours' => $company->negative_stock_review_sla_hours,
+            'negative_stock_allow_self_review' => $company->negative_stock_allow_self_review,
+            'negative_stock_sales_despatch_enabled' => $company->negative_stock_sales_despatch_enabled,
+            'negative_stock_material_consumption_enabled' => $company->negative_stock_material_consumption_enabled,
+            'negative_stock_supplier_return_enabled' => $company->negative_stock_supplier_return_enabled,
+            'negative_stock_scrap_writeoff_enabled' => $company->negative_stock_scrap_writeoff_enabled,
         ];
     }
 }

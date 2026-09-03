@@ -64,6 +64,11 @@ avco_pools                              -- explicit immutable pool identity; ADR
   status
   updated_at
 
+inventory_policy_changes                -- immutable audit of governed settings
+  id, company_id, policy
+  old_values, new_values
+  reason, changed_by, changed_at
+
 negative_stock_shortages
   id, company_id, item_id, location_id, batch_id NULLABLE, avco_pool_id NULLABLE
   qty_open, provisional_unit_cost, status
@@ -201,6 +206,14 @@ other hard constraints are never overrideable. Corrections/reversals use a separ
 Overrides use prior approval by default or immediate posting with bounded review. Every use is
 explicit, reasoned, immutably audited and tracked separately by review outcome and shortage state
 (`OPEN`, `PARTIALLY_SETTLED`, `SETTLED`). Neither API nor UI applies one silently.
+
+The company policy foundation is live: `BLOCK` is the default; the authorisation mode defaults to
+`PRIOR_APPROVAL`; review SLA defaults to 24 hours and is bounded to 1–168 hours; independent
+review is the default; sales/despatch and material consumption are eligible candidates while
+supplier returns and scrap/write-off start disabled. Changing any of these fields requires the
+elevated `inventory.negative-stock-policy.manage` permission, a reason, and an immutable tenant-safe
+old/new audit record. This configuration does not itself authorise a movement—the request,
+approval/immediate-review, shortage and settlement workflows remain explicit subsequent steps.
 
 Unsupported AVCO/FIFO quantity uses a defensible system-derived provisional cost. AVCO freezes
 and recovers independently at its resolved configured pool; a negative location does not freeze a
