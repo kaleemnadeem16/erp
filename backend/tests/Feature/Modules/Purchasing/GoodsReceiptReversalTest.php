@@ -14,6 +14,8 @@ use App\Modules\Inventory\Support\ItemTracking;
 use App\Modules\Inventory\Support\ValuationMethod;
 use App\Modules\Purchasing\Actions\IssuePurchaseOrder;
 use App\Modules\Purchasing\Actions\PostQualityDisposition;
+use App\Modules\Purchasing\Actions\ReverseGoodsReceipt;
+use App\Modules\Purchasing\Models\GoodsReceipt;
 use App\Modules\Purchasing\Models\GoodsReceiptLine;
 use App\Modules\Purchasing\Models\PurchaseOrderLine;
 use Illuminate\Support\Facades\DB;
@@ -184,7 +186,7 @@ class GoodsReceiptReversalTest extends PurchaseOrderFoundationTest
         $this->assertDatabaseHas('purchase_orders', ['id' => $order->id, 'status' => 'ISSUED']);
     }
 
-    public function test_reversal_leaves_the_po_closed_when_another_posted_receipt_still_covers_the_line(): void
+    public function test_reversal_reopens_the_po_when_the_remaining_receipt_does_not_cover_the_line(): void
     {
         [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Avco, qty: '4.0000');
         $poLineId = $order->lines()->sole()->id;
@@ -203,6 +205,33 @@ class GoodsReceiptReversalTest extends PurchaseOrderFoundationTest
         // Reversing the second receipt already rolled the PO to ISSUED; reversing
         // the first must not error trying to "close" it again from that state.
         $this->assertDatabaseHas('purchase_orders', ['id' => $order->id, 'status' => 'ISSUED']);
+    }
+
+    public function test_reversal_locks_purchase_orders_and_lines_before_inventory_state(): void
+    {
+        [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Avco);
+        $receiptId = $this->postedReceipt($order->lines()->sole()->id, $item->id, $uom->id, $this->locationId());
+        $actorId = User::factory()->create()->id;
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        try {
+            app(ReverseGoodsReceipt::class)(GoodsReceipt::query()->findOrFail($receiptId), 'test', $actorId);
+            $queries = collect(DB::getQueryLog())->pluck('query')->values();
+        } finally {
+            DB::disableQueryLog();
+            DB::flushQueryLog();
+        }
+
+        $poHeaderLock = $queries->search(fn (string $sql): bool => str_contains($sql, 'from "purchase_orders"') && str_contains($sql, 'for update'));
+        $poLineLock = $queries->search(fn (string $sql): bool => str_contains($sql, 'from "purchase_order_lines"') && str_contains($sql, 'for update'));
+        $layerLock = $queries->search(fn (string $sql): bool => str_contains($sql, 'from "stock_layers"') && str_contains($sql, 'for update'));
+
+        $this->assertIsInt($poHeaderLock);
+        $this->assertIsInt($poLineLock);
+        $this->assertIsInt($layerLock);
+        $this->assertLessThan($poLineLock, $poHeaderLock);
+        $this->assertLessThan($layerLock, $poLineLock);
     }
 
     public function test_a_reversed_receipts_lines_still_reject_new_qa_dispositions(): void

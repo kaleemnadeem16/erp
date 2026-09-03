@@ -54,6 +54,15 @@ final class ReverseGoodsReceipt
                 }
             }
 
+            // Match PostGoodsReceipt's header-then-line lock order before entering
+            // Inventory. Otherwise a concurrent post can hold the PO while waiting
+            // for an AVCO pool that this reversal holds while waiting for that PO.
+            $poLineIds = $lines->pluck('purchase_order_line_id')->filter()->unique()->sort()->values();
+            $orderIds = PurchaseOrderLine::query()->whereKey($poLineIds)->pluck('purchase_order_id')->unique()->sort()->values();
+            /** @var Collection<int, PurchaseOrder> $orders */
+            $orders = PurchaseOrder::query()->whereKey($orderIds)->orderBy('id')->lockForUpdate()->get()->keyBy('id');
+            PurchaseOrderLine::query()->whereKey($poLineIds)->orderBy('id')->lockForUpdate()->get();
+
             $reversedAt = now();
             foreach ($lines as $line) {
                 $this->postMovement->reverseReceipt('GOODS_RECEIPT_LINE', $line->id, 'GOODS_RECEIPT_LINE_REVERSAL', $line->id, $reversedAt);
@@ -66,10 +75,11 @@ final class ReverseGoodsReceipt
 
             // Symmetric to PostGoodsReceipt's own close-when-terminal recompute:
             // a reversal can un-complete a PO that this receipt had closed.
-            $poLineIds = $lines->pluck('purchase_order_line_id')->filter()->unique()->sort()->values();
-            $orderIds = PurchaseOrderLine::query()->whereKey($poLineIds)->pluck('purchase_order_id')->unique()->sort()->values();
             foreach ($orderIds as $orderId) {
-                $order = PurchaseOrder::query()->lockForUpdate()->findOrFail($orderId);
+                $order = $orders->get($orderId);
+                if (! $order instanceof PurchaseOrder) {
+                    throw new DomainInvariantException('Every receipt line must resolve to a visible purchase order.', 'purchase_order_line_id');
+                }
                 if ($order->status !== PurchaseOrderStatus::Closed) {
                     continue;
                 }
