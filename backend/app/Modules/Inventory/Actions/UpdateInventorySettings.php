@@ -36,33 +36,34 @@ final class UpdateInventorySettings
                 $this->guardSimpleDowngrade();
             }
 
-            $policyChanges = array_intersect_key($attributes, array_flip(self::NEGATIVE_STOCK_FIELDS));
-            $oldValues = collect(array_keys($policyChanges))->mapWithKeys(
-                fn (string $field): array => [$field => $company->getRawOriginal($field)],
-            )->all();
-            $changedPolicyValues = array_filter(
-                $policyChanges,
-                fn (mixed $value, string $field): bool => $oldValues[$field] !== $value,
-                ARRAY_FILTER_USE_BOTH,
-            );
-            if ($changedPolicyValues !== [] && ($actorId === null || trim((string) $reason) === '')) {
+            $oldValues = collect(self::NEGATIVE_STOCK_FIELDS)
+                ->filter(fn (string $field): bool => array_key_exists($field, $attributes))
+                ->mapWithKeys(fn (string $field): array => [$field => $company->getRawOriginal($field)])
+                ->all();
+            $company->fill($attributes);
+            // Eloquent's cast-aware dirty check, so resubmitting an unchanged
+            // value in a different lexical form ("1" for a boolean, "24" for
+            // an integer) is not recorded as a policy change.
+            $changedPolicyFields = array_keys(array_intersect_key($company->getDirty(), array_flip(self::NEGATIVE_STOCK_FIELDS)));
+            if ($changedPolicyFields !== [] && ($actorId === null || trim((string) $reason) === '')) {
                 throw new DomainInvariantException('Negative-stock policy changes require an actor and reason.', 'reason');
             }
 
-            $company->update($attributes);
+            $company->save();
+            $company->refresh();
 
-            if ($changedPolicyValues !== []) {
+            if ($changedPolicyFields !== []) {
                 InventoryPolicyChange::query()->create([
                     'policy' => 'NEGATIVE_STOCK',
-                    'old_values' => array_intersect_key($oldValues, $changedPolicyValues),
-                    'new_values' => collect(array_keys($changedPolicyValues))->mapWithKeys(
+                    'old_values' => array_intersect_key($oldValues, array_flip($changedPolicyFields)),
+                    'new_values' => collect($changedPolicyFields)->mapWithKeys(
                         fn (string $field): array => [$field => $company->getRawOriginal($field)],
                     )->all(),
                     'reason' => trim((string) $reason), 'changed_by' => $actorId, 'changed_at' => now(),
                 ]);
             }
 
-            return $company->refresh();
+            return $company;
         });
     }
 

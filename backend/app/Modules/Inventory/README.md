@@ -58,20 +58,31 @@ itself permit a negative movement; authorisation, posting and settlement are sep
 `RequestNegativeStockOverride` snapshots the exact shortage and current authorisation policy;
 `DecideNegativeStockOverride` and `ReviewNegativeStockOverride` enforce their distinct modes,
 permissions and independent-user rules without mutating the request.
-`PostInventoryMovement` is the sole quantity/valuation write boundary. Inbound receipts write a
-traceability layer and update the resolved AVCO pool where applicable. Normal outbound issues
-deplete exact-location/tracking availability, exclude unresolved or failed QA quantity, consume
-FIFO layers or exact SPECIFIC serials, lock and cost AVCO at its resolved pool, and append the
-Phase 6 valuation feed atomically. An explicitly supplied authorised override may cover only its
-exact issue and no more than its snapshotted shortage. It consumes available stock first, derives
-unsupported AVCO/FIFO cost from system history, and creates linked shortage state atomically.
-Compatible inbound settles the oldest exact-identity shortage first, appends its valuation repair,
-and exposes only excess quantity as ordinary available stock. Transfers reject negative physical
-sources, preserve FIFO/SPECIFIC layers, remain neutral inside one AVCO pool and conserve exact base
-value across pools. Whenever a settlement brings a non-positive pool back positive, every provisional
-transfer taken out of it while frozen is corrected exactly once to the recovered rate — the exact
-base amount reallocates from source to destination pool, cascading onward if that destination had
-itself relayed the value through its own provisional transfer first.
+`PostInventoryMovement` is the sole quantity/valuation write boundary — a four-method facade
+whose per-movement logic lives in the internal `Actions/Movements/` collaborators (receipt,
+issue, transfer, pool state, layer allocation, settlement, repair propagation); nothing else may
+call those. Inbound receipts write a traceability layer and update the resolved AVCO pool where
+applicable — including a frozen pool: inbound at an open shortage's exact identity settles
+first, and inbound elsewhere in the pool posts normally rather than being blocked. Normal
+outbound issues deplete exact-location/tracking availability, exclude unresolved or failed QA
+quantity, consume FIFO layers or exact SPECIFIC serials, lock and cost AVCO at its resolved
+pool, and append the Phase 6 valuation feed atomically. A pool dragged non-positive (or below
+the source location's physical stock) by a shortage elsewhere never blocks physically available
+stock — the unsupported value posts at the pool's last valid average and the pool freezes until
+recovery. An explicitly supplied authorised override may cover only its exact issue and no more
+than its snapshotted shortage. It consumes available stock first, derives unsupported AVCO/FIFO
+cost from system history, and creates linked shortage state atomically. Compatible inbound
+settles the oldest exact-identity shortage first, appends its valuation repair (a settling
+transfer repairs at the exact incoming layer costs it consumes), and exposes only excess
+quantity as ordinary available stock. Transfers reject negative physical sources, preserve
+FIFO/SPECIFIC layers and their original receipt age, remain neutral inside one AVCO pool and
+conserve exact base value across pools, locking locations and pools in ascending-id order.
+Whenever a settlement brings a non-positive pool back positive, every provisional transfer taken
+out of it while frozen is corrected exactly once to the recovered rate — the exact base amount
+reallocates from source to destination pool, cascading onward (at the root recovery's rate; see
+Q15) if that destination had itself relayed the value through its own provisional transfer
+first. `StockConservationPropertyTest` fuzzes the whole engine and asserts feed/pool/layer/
+shortage agreement after every random movement.
 
 ## Events
 

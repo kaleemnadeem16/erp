@@ -12,6 +12,11 @@ SPECIFIC, defaulted from the item's category — see [items.md](items.md#valuati
 method is official for an item, the history needed to replay it under a *different* method
 analytically is still captured — see "Historical retention for replay" below.
 
+Two companion docs own the control workflows this model plugs into:
+[negative-stock.md](negative-stock.md) (ADR 0037 — policy, overrides, shortages, settlement,
+provisional transfer repairs) and [stock-recalculation.md](stock-recalculation.md) (ADR 0040 —
+backdated recalculation and corrections).
+
 ## Where it sits
 
 The bottom of the costing chain — the source of ingredient cost for
@@ -64,42 +69,6 @@ avco_pools                              -- explicit immutable pool identity; ADR
   status
   updated_at
 
-inventory_policy_changes                -- immutable audit of governed settings
-  id, company_id, policy
-  old_values, new_values
-  reason, changed_by, changed_at
-
-negative_stock_override_requests        -- immutable shortage + policy snapshot
-  id, company_id, item_id, location_id, batch_id NULLABLE
-  movement_class, requested_qty, available_qty, shortage_qty
-  source_type, source_id, reason_code, explanation
-  authorisation_mode, allow_self_review, requested_by, requested_at, review_due_at NULLABLE
-
-negative_stock_override_approvals       -- PRIOR_APPROVAL decision; one per request
-  id, company_id, request_id, decision, notes, decided_by, decided_at
-
-negative_stock_override_reviews         -- IMMEDIATE_WITH_REVIEW outcome; one per request
-  id, company_id, request_id, outcome, notes, reviewed_by, reviewed_at
-
-negative_stock_shortages
-  id, company_id, item_id, location_id, batch_id NULLABLE, avco_pool_id NULLABLE
-  qty_open, provisional_unit_cost, status
-  source_move_id, override_request_id, settled_at NULLABLE
-
-negative_stock_settlements            -- immutable partial/full inbound allocations
-  id, company_id, shortage_id, inbound_move_id, qty_settled
-  provisional_unit_cost, actual_unit_cost, unit_cost_difference
-  valuation_adjustment, settled_at
-
-stock_transfer_details                -- immutable AVCO transfer dependency identity
-  id, company_id, stock_move_id
-  source_avco_pool_id NULLABLE, destination_avco_pool_id NULLABLE, is_provisional
-
-stock_transfer_repairs                -- immutable, at most one per transfer detail, ever
-  id, company_id, stock_transfer_detail_id
-  qty, provisional_unit_cost, actual_unit_cost, unit_cost_difference
-  valuation_adjustment, repaired_at
-
 stock_valuation_entries                 -- cost impact of each move; feeds the GL
   id, stock_move_id
   avco_pool_id NULLABLE                 -- immutable pool used at posting time
@@ -108,15 +77,20 @@ stock_valuation_entries                 -- cost impact of each move; feeds the G
   account_id
 ```
 
+The negative-stock and transfer-repair tables (`inventory_policy_changes`,
+`negative_stock_override_*`, `negative_stock_shortages`, `negative_stock_settlements`,
+`stock_transfer_details`, `stock_transfer_repairs`) are documented in
+[negative-stock.md](negative-stock.md#schema).
+
 `stock_valuation_entries.qty`/`amount`/`base_amount` are a signed feed, unlike every quantity
 column elsewhere in this schema: an inbound receipt posts positive (a debit), an outbound
-movement posts the same magnitude negative (a
-credit). `unit_cost` stays a positive per-unit magnitude regardless of direction; direction on
-`stock_moves` itself is expressed by `from`/`to` location nullability, not by a signed `qty`
-(`stock_moves.qty` keeps its `> 0` constraint). This lets "inventory account balance equals the
-sum of stock valuation" (see the landmine below) stay a flat `SUM(base_amount)`, not
-direction-aware logic — set by [ADR 0043](../decisions/0043-control-purchase-order-receipt-and-qa-posting.md)'s
-receipt reversal (`App\Modules\Inventory\Actions\PostInventoryMovement::reverseReceipt()`).
+movement posts the same magnitude negative (a credit). `unit_cost` stays a positive per-unit
+magnitude regardless of direction; direction on `stock_moves` itself is expressed by `from`/`to`
+location nullability, not by a signed `qty` (`stock_moves.qty` keeps its `> 0` constraint). This
+lets "inventory account balance equals the sum of stock valuation" (see the landmine below) stay
+a flat `SUM(base_amount)`, not direction-aware logic — set by
+[ADR 0043](../decisions/0043-control-purchase-order-receipt-and-qa-posting.md)'s receipt
+reversal (`App\Modules\Inventory\Actions\PostInventoryMovement::reverseReceipt()`).
 
 ## Behaviour
 
@@ -145,8 +119,9 @@ future advanced-WMS mode remain deferred until a phase that consumes them.
 Per-item, not one method for the whole company — [items.md](items.md#valuation-method),
 [ADR 0032](../decisions/0032-per-item-valuation-method.md). Each item's `valuation_method` picks
 which of these applies. Receipts, outbound issues, shortage settlement and transfers are
-implemented for all three. Issues and transfers enforce exact-location/tracking availability and
-QA eligibility; replay and provisional transfer-repair propagation remain later Phase 2 slices.
+implemented for all three, as is provisional transfer-repair propagation. Issues and transfers
+enforce exact-location/tracking availability and QA eligibility; replay remains a later Phase 2
+slice.
 
 **AVCO.** On receipt:
 
@@ -157,7 +132,9 @@ new_avg = ((qty_on_hand × avg_unit_cost) + (received_qty × received_unit_cost)
 
 Issues are costed at the current average, materialised in `avco_pools`. The
 recalculation must be **transactional and concurrency-safe** — two simultaneous receipts
-computing from the same pool state produce a silently wrong cost.
+computing from the same pool state produce a silently wrong cost. An issue or transfer that
+consumes a positive pool's exact remaining quantity takes its exact remaining value, so rounding
+can never strand a residual on an emptied pool.
 
 [ADR 0039](../decisions/0039-configurable-avco-valuation-pools.md) supports exactly
 `COMPANY_ITEM` (the default), `WAREHOUSE_ITEM` and `COMPANY_ITEM_BATCH`; the last requires batch
@@ -206,123 +183,23 @@ return to supplier like an issue. What distinguishes a return from an ordinary r
 One table, one polymorphic source reference. Every quantity change in the system is a
 `stock_move` — there is no other way to alter stock.
 
+### Transfers
+
 For AVCO, a same-pool transfer changes physical custody but not pool quantity, value or average.
 A cross-pool transfer removes quantity/value at the source pool's official AVCO and introduces
 exactly that base value into the destination pool, whose average is recalculated. It is a pool
 inflow, not external acquisition cost. The paired valuation effects retain both pool identities,
 rounding cannot create/destroy company value, and company total quantity/value remain unchanged.
 
-If the physical source location has sufficient quantity but its wider source pool is non-positive
-(possible for `WAREHOUSE_ITEM` when another location in that warehouse pool is negative), the last
-defensible provisional pool AVCO is carried to the destination. Both effects remain provisional
-and linked to the same source recovery/repair chain; later repair appends paired adjustments and
-propagates through affected destination dependencies while preserving company-value neutrality.
-This is a non-positive valuation-pool case and never permits a negative physical-source transfer.
-
-The movement boundary implements ordinary transfers transactionally. It locks both locations in
-deterministic ID order and then locks source layers, so opposite-direction work cannot invert lock
-order and an empty physical source cannot be overridden. FIFO creates one destination layer per
-source-cost component; SPECIFIC preserves the exact serial. AVCO writes equal-and-opposite source
-and destination valuation effects: a same-pool move leaves pool state untouched, while a
-cross-pool move removes and introduces the identical base amount before recalculating destination
-average. Immutable transfer detail retains both pool identities and whether a non-positive source
-made the value provisional.
-
-When a settling receipt (or a transfer that itself settles a destination-side shortage) brings a
-non-positive pool back to positive, every still-open provisional transfer taken out of it while it
-was frozen is corrected exactly once, to that recovery's real rate: `qty × (actual − frozen)` moves
-out of the source and into the destination as a paired `VALUATION_ADJUSTMENT` valuation entry on
-the transfer's own move, plus an immutable `stock_transfer_repairs` row (unique per transfer
-detail, so it can never be double-applied). This is a pure reallocation between two pools — it
-never changes either pool's `qty_on_hand`, and the two paired amounts always net to zero, so total
-company value is unaffected by the repair itself. If the destination pool had, before this repair
-arrived, itself relayed that value onward through its own still-open provisional transfer, the same
-correction cascades transitively to that further destination. A settlement that only partially
-recovers the pool (it stays non-positive) intentionally does not propagate yet — there is no real
-recovered rate to carry forward until the pool is positive again.
-
-### Negative stock contract
-
-[ADR 0037](../decisions/0037-controlled-negative-stock-overrides.md) is the complete policy.
-Availability is exact-location/tracking-specific and independent from valuation scope. Live stock
-blocks by default; configured, permissioned overrides apply only to genuine outbound/consumption
-classes. Internal transfers, missing serial/SPECIFIC identity, negative physical-count results and
-other hard constraints are never overrideable. Corrections/reversals use a separate workflow.
-
-Overrides use prior approval by default or immediate posting with bounded review. Every use is
-explicit, reasoned, immutably audited and tracked separately by review outcome and shortage state
-(`OPEN`, `PARTIALLY_SETTLED`, `SETTLED`). Neither API nor UI applies one silently.
-
-The outbound movement boundary re-locks exact physical stock and the override request. A prior
-request must have an immutable `APPROVED` decision; immediate mode was already permission-gated at
-request time. If live shortage has worsened beyond the reviewed quantity, posting stops. If stock
-has recovered, the issue posts normally and leaves the override unused. One request can create at
-most one shortage and an already-open shortage at the same exact identity cannot be deepened.
-
-Supported quantity consumes ordinary layers first. Unsupported AVCO quantity uses the locked
-pool's last valid official average; a pool that becomes zero or negative is frozen without losing
-that average. Unsupported FIFO quantity uses the most recent compatible actual acquisition cost.
-Missing or non-positive cost history blocks posting. The resulting move, signed valuation feed
-and `OPEN` shortage are one transaction. Inbound to an open-shortage identity is routed through
-settlement before ordinary receipt averaging; a frozen AVCO pool cannot bypass that route.
-
-Settlement locks compatible shortages oldest-first by company, item, exact location and batch.
-Each allocation is immutable and snapshots settled quantity, provisional and actual base costs,
-their difference, the valuation adjustment and inbound movement. Partial settlement leaves
-`PARTIALLY_SETTLED`; the final allocation stamps `SETTLED` and `settled_at`. Receipt layers retain
-the full received quantity for traceability but only inbound excess has `qty_remaining`, so
-settled quantity cannot be issued again.
-
-The receipt's ordinary positive valuation remains unchanged. A zero-quantity valuation-only row
-appends `provisional − actual` for the settled quantity (`VALUATION_ADJUSTMENT` at an AVCO pool),
-bringing the original provisional issue to actual cost without mutation. AVCO applies receipt and
-repair together: a non-positive remainder stays frozen at its last valid average; once positive,
-the remainder alone establishes the recovered average. FIFO performs the same append-only repair
-without creating a fake shortage layer.
-
-The company policy foundation is live: `BLOCK` is the default; the authorisation mode defaults to
-`PRIOR_APPROVAL`; review SLA defaults to 24 hours and is bounded to 1–168 hours; independent
-review is the default; sales/despatch and material consumption are eligible candidates while
-supplier returns and scrap/write-off start disabled. Changing any of these fields requires the
-elevated `inventory.negative-stock-policy.manage` permission, a reason, and an immutable tenant-safe
-old/new audit record. This configuration does not itself authorise a movement—the request,
-approval/immediate-review, shortage and settlement workflows remain explicit subsequent steps.
-
-Override request, approval and review records are live as immutable, tenant-safe facts. Requests
-snapshot exact location/tracking shortage, source, controlled reason, written explanation and the
-then-current authorisation mode. Prior approval requires a different user with
-`inventory.negative-stock.approve`; immediate mode requires override permission up front and
-persists its review deadline, while review requires `inventory.negative-stock.review` and is
-independent unless the snapshotted company policy explicitly permits self-review. The movement
-boundary consumes them only after transactional availability revalidation and links every used
-request to its movement, shortage and later immutable settlement facts.
-
-Unsupported AVCO/FIFO quantity uses a defensible system-derived provisional cost. AVCO freezes
-and recovers independently at its resolved configured pool; a negative location does not freeze a
-positive wider pool. FIFO records a shortage, never a fake receipt layer. Compatible inbound
-settles oldest shortages first and appends linked adjustments without mutating original history.
-AVCO provisional cost uses the pool's last valid official average, then a specifically linked
-trusted expected inbound/acquisition cost, then exactly one unambiguous eligible expected inbound;
-multiple plausible sources or no defensible source block, and users never enter an estimate.
-FIFO cost prefers a specifically linked PO/expected receipt/inbound; without a link, exactly one
-unambiguous eligible expected inbound may be used. Multiple plausible sources or no defensible
-source block—the system never chooses an inbound merely because it is oldest, cheapest or nearest.
-
-Cutover-only AVCO/FIFO negative openings require exact identity, defensible cost, approval,
-resolution ownership/date and per-location/pool/company reconciliation. Acceptance immediately
-creates an `OPEN_CUTOVER_SHORTAGE` linked to official opening state and governed by normal
-compatible settlement and append-only repair; historical source negatives remain separate
-migration evidence. Its target defaults to cutover plus 30 elapsed days; an alternative requires
-explicit approval/reason, while overdue status escalates and reports but never creates an automatic
-inventory adjustment. The opening grants no live authority and SPECIFIC/serial negatives remain
-blocked. See
-[inventory-cutover.md](inventory-cutover.md#dates-negative-balances-and-corrections).
-
-A supplier invoice is never a stock source. Even a future quick-purchase UI must create a linked
-goods receipt and supplier invoice; only the receipt-side inventory transaction changes quantity.
-Posted stock movements are not edited in place: corrections create explicit reversal, return or
-adjustment movements after validating downstream dependencies. See
-[ADR 0035](../decisions/0035-separate-purchasing-operational-and-financial-facts.md).
+The movement boundary implements ordinary transfers transactionally. It locks both locations —
+and, for AVCO, both pools — in deterministic ascending-id order and then locks source layers, so
+opposite-direction work cannot invert lock order and an empty physical source cannot be
+overridden. FIFO creates one destination layer per source-cost component, each keeping its
+source layer's original `received_at` — FIFO age is a property of the stock, not of its custody
+path — and SPECIFIC preserves the exact serial. AVCO writes equal-and-opposite source and
+destination valuation effects. Immutable transfer detail retains both pool identities and
+whether a non-positive source made the value provisional — the repair chain for that case is
+[negative-stock.md](negative-stock.md#provisional-transfers-and-repair-propagation).
 
 ### Historical retention for replay
 
@@ -354,117 +231,40 @@ sense. Turning the feed into an actual balanced, immutable `journal_entries`/`jo
 ## Landmines
 
 **Negative stock.** Live stock is blocked by default, with a company-configurable authorised
-override. Availability is measured at the exact source location and tracking identity; missing
-serial identity is a hard block. Override eligibility is a constrained company configuration for
-genuine outbound/consumption classes; transfers are permanently excluded and corrections use a
-separate workflow. Transaction controls use prior approval by default or immediate posting with
-bounded review. AVCO/FIFO uses a defensible, system-derived provisional cost and later linked
-adjustments; it never averages through a non-positive AVCO pool, fabricates FIFO receipt layers or
-guesses among ambiguous sources. A tightly controlled AVCO/FIFO cutover opening exception is
-permitted without weakening post-go-live policy.
+override for genuine outbound/consumption classes only. Availability is measured at the exact
+source location and tracking identity; provisional AVCO/FIFO cost is system-derived, never
+guessed or user-entered. The complete contract — policy, overrides, shortages, settlement,
+provisional transfer repairs and the cutover exception — is
+[negative-stock.md](negative-stock.md).
 
 **Recalculating average under concurrency.** Two receipts processed simultaneously will both
 read the pre-update average. Requires row locking, and a test that actually exercises it.
 
 **Backdated receipts.** A receipt entered with an earlier date than existing issues means those
-issues may have been costed from incomplete chronology. Live operation defaults to blocking a
-conflicting valuation backdate while retaining separate truthful physical/source, ERP-entry,
-valuation-effective and future accounting dates. A company may enable authorised forward
-recalculation, but entry never triggers ordinary automatic replay: it creates an impact-previewed
-request requiring authorised review. Independent approval is the default; an elevated audited
-policy may allow explicitly identified self-review for a small company.
-
-Approved replay is deterministic and transactional, preserves original movements/valuation
-entries and appends linked adjustments. Immediately before execution it revalidates current
-policy and authority, affected history, valuation state, period state, shortage dependencies and
-hard integrity rules; stale approval cannot execute. Closed financial history is never rewritten
-and migration authority remains isolated. Conflict/replay scope is method-specific: affected
-configured pools and real cross-pool dependencies for AVCO, the affected layer/downstream movement
-graph for FIFO, the exact serial chain for SPECIFIC and the compatible settlement/adjustment chain
-for negative shortages. Unrelated pools are excluded. Preview may overestimate conservatively;
-actual adjustments are limited to changed economic results, replay runs to deterministic
-convergence and execution revalidates the dependency scope.
-
-[ADR 0040](../decisions/0040-control-backdated-stock-recalculation-and-corrections.md)
-separates review delay, changed facts and ageing authority. Pending review has a bounded
-company-configurable SLA (72 elapsed hours by default); breach marks `OVERDUE` and escalates while
-preserving requester/approver separation, but does not invalidate the request. Staleness is
-state-based. Each request owns immutable append-only impact versions, approval targets one exact
-version, and execution revalidation automatically appends a fresh version requiring fresh approval
-when material dependencies or economics change. Normal rolling-floor clock progression alone is
-not stale. Approved execution authority has a hard bounded company-configurable TTL (24 elapsed
-hours by default); expiry prevents execution. Trusted server time and persisted deadlines govern,
-and later policy changes do not rewrite them.
-
-The same ADR makes
-materiality exact and semantic: changed executable economics/dependencies create an automatic
-replacement impact version, while authority-only changes reroute/invalidate approval against the
-same version. Every version is independently `NORMAL_RISK` or `HIGH_RISK`. Closed-period effects,
-qualifying finalised downstream effects, controlled ordinary-tier self-review and later defined
-non-disableable governance conditions are hard high-risk triggers requiring a second independent
-approver. Optional bounded company thresholds use base/functional currency and may strengthen,
-never disable, hard routing.
-
-Final revalidation/execution serialises overlapping recalculations and locks the complete Q14.2
-economic closure: affected configured AVCO pools plus cross-pool dependencies; FIFO layers,
-allocations and downstream graph; the exact SPECIFIC serial/unit chain; and affected shortage
-settlement/repair chains. Locking is never narrower than valuation state that can change the
-deterministic result. Stale versions cannot execute. The bounded regeneration counter counts only
-material invalidations after at least one approval, never pre-review recomputation; manual
-resumption does not reset it and a repeated cap hit escalates more severely.
-
-The same ADR closes the correction workflow with an append-only linked correction package based on
-the exact approved impact version. It preserves original and counterfactual results, exact approved
-delta, historical dates and actual applicable FX bases; current-rate retranslation is not the
-default and genuine FX effects remain separate. Deterministic replay allocates economic lines among
-remaining Inventory value, consumed job costs, Sales/COGS and other economic owners without
-changing physical quantity or mutating any original/finalised record. Accounting represents those
-lines in the GL rather than adding another economic allocation; Tax, integrations and ancillary
-obligations reconcile separately on their own bases.
-
-Implemented synchronous participants declared inside one internal transaction execute atomically;
-any failure rolls back all and cannot become a pending obligation after partial internal commit.
-Unimplemented, intentionally asynchronous, Tax-deferred and external owners remain explicit,
-monitored obligations delivered where applicable through a durable idempotent outbox/correction
-event. The earliest permitted open period is the default posting point; no valid point means
-pending/blocked, never automatic reopening. Full reconciliation requires economic allocation to
-equal the approved delta, GL to reconcile to that allocation, ancillary obligations to reconcile
-on their own bases and explicit rounding to leave no unexplained residual.
-
-The final operational details also require that Q13 immediate review records `JUSTIFIED` or
-`FLAGGED`; the latter enters accountability/correction without automatically reversing stock, and
-review remains separate from shortage settlement. Independent Q13 review is the default; an
-explicitly recorded self-review is available only through a separately enabled, elevated and
-audited small-company policy and does not itself invoke Q14. Separately, ordinary-tier self-review
-of an actual Q14 impact is a mandatory high-risk trigger requiring its second independent approval.
-Consequential company settings require elevated permission, mandatory reason,
-actor, old/new values and timestamp without rewriting snapshotted deadlines/context. Correction
-packages have unique stable identity and idempotent execution, so retries resolve existing results
-instead of duplicating value. They expose cumulative period/account/financial-line/prior-package
-and currency context for Accounting-owned materiality. An unlinked manual journal cannot resolve a
-Q14 package, though legitimate manual journals outside that workflow remain available.
-
-Backdating horizon is a separate eligibility dimension. The company defaults to current + previous
-open period, or may select period-lock-only or one fixed/rolling posting floor. Rolling floors use
-trusted server time in the company accounting timezone and snapshot request-time context; normal
-clock progression does not stale an eligible request, but policy/boundary changes can. The strictest
-cutover, period, valuation-policy and horizon boundary wins; no per-request extension exists.
-Outside-horizon events retain physical truth, use the earliest permitted valuation-effective point
-and send economic differences to the Q14 correction workflow.
+issues may have been costed from incomplete chronology. Blocked by default; a company may enable
+authorised, impact-previewed forward recalculation with append-only corrections. The complete
+contract is [stock-recalculation.md](stock-recalculation.md).
 
 **Migration is not live posting.** Controlled pre-go-live source history and opening state use
 [inventory-cutover.md](inventory-cutover.md), not ordinary movement endpoints. Historical
 negative balances/backdating may be preserved as source facts without weakening the post-cutover
-[ADR 0037](../decisions/0037-controlled-negative-stock-overrides.md)/Q14 policy. The live stock
-schema must retain cutover/source provenance and support AVCO,
-FIFO and SPECIFIC opening states without silently recalculating official source history.
+[ADR 0037](../decisions/0037-controlled-negative-stock-overrides.md)/ADR 0040 policy. The live
+stock schema must retain cutover/source provenance and support AVCO, FIFO and SPECIFIC opening
+states without silently recalculating official source history.
+
+**A supplier invoice is never a stock source.** Even a future quick-purchase UI must create a
+linked goods receipt and supplier invoice; only the receipt-side inventory transaction changes
+quantity. Posted stock movements are not edited in place: corrections create explicit reversal,
+return or adjustment movements after validating downstream dependencies. See
+[ADR 0035](../decisions/0035-separate-purchasing-operational-and-financial-facts.md).
 
 **Purchase UoM vs stock UoM.** Bought in 25 kg drums, consumed in grams. Convert on receipt and
 store in the item's stock UoM; keep the purchase UoM on the purchase line for reference.
 
 **Stock value drifting from the GL.** The inventory account balance and the sum of stock
 valuation must agree. Build the reconciliation report early — discovering a discrepancy a year
-in is far worse than catching it in week one.
+in is far worse than catching it in week one. `StockConservationPropertyTest` already asserts
+the feed, pool, layer and shortage states agree after arbitrary movement sequences.
 
 **Changing an item's `valuation_method` after it has stock moves.** Must be locked once any
 `stock_move` references the item — see [items.md](items.md#valuation-method) and
@@ -477,20 +277,17 @@ must not be forgotten once it does.
 - [items.md](items.md) — what is stocked, and where `valuation_method` is chosen
 - [purchasing.md](purchasing.md) — which receipt documents originate purchase stock moves
 - [acquisition-costing.md](acquisition-costing.md) — provisional cost and later adjustments
+- [negative-stock.md](negative-stock.md) — ADR 0037 policy, overrides, shortages, settlement
+- [stock-recalculation.md](stock-recalculation.md) — ADR 0040 backdating and corrections
 - [formulations.md](formulations.md) — consumes stock cost
 - [general-ledger.md](general-ledger.md) — where valuation posts
-- [ADR 0032](../decisions/0032-per-item-valuation-method.md) — per-item valuation method
 - [inventory-cutover.md](inventory-cutover.md) — controlled history and opening-state migration
+- [ADR 0032](../decisions/0032-per-item-valuation-method.md) — per-item valuation method
 - [ADR 0036](../decisions/0036-controlled-inventory-cutover.md) — migration/live-policy boundary
-- [ADR 0037](../decisions/0037-controlled-negative-stock-overrides.md) — live negative-stock and
-  cutover-opening controls
-- [ADR 0038](../decisions/0038-company-wide-per-item-avco-pool.md) — superseded company-item-only
-  pool decision
 - [ADR 0039](../decisions/0039-configurable-avco-valuation-pools.md) — constrained AVCO pool
   scopes and immutable pool identity
 - [ADR 0035](../decisions/0035-separate-purchasing-operational-and-financial-facts.md) — separates
   receipt, QA, supplier liability and acquisition cost
-- [ADR 0007](../decisions/0007-avco-valuation.md) — superseded by 0032, original AVCO reasoning
 - [ADR 0041](../decisions/0041-progressive-inventory-location-capabilities.md) — simple and
   structured location modes
 - [ADR 0043](../decisions/0043-control-purchase-order-receipt-and-qa-posting.md) — purchase

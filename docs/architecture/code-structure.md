@@ -103,6 +103,24 @@ Why: controllers stay thin enough that adding a second entry point (a queued job
 command, a mobile-specific endpoint) is trivial. This is also what keeps
 [ADR 0002](../decisions/0002-api-first-react-spa.md)'s cost contained.
 
+### File size and splitting
+
+A class stays readable below roughly **300 lines** — the same budget the docs use. When a class
+outgrows that, split by responsibility behind the same public boundary rather than letting one
+file accrete every concern:
+
+- Keep the existing class as the narrow public entry point — nothing outside it changes, and
+  tests keep targeting it.
+- Move each cohesive concern into its own `final` collaborator class in a subnamespace named
+  after the boundary, constructor-injected so the container wires it.
+- Collaborators are internal to their boundary: say so in the class docblock, and never call
+  them from anywhere else.
+
+`PostInventoryMovement` is the exemplar: the sole stock-write boundary stayed a four-method
+Action while receipt, issue, transfer, pool-state, settlement and repair-propagation logic each
+live in an `Actions/Movements/` collaborator. The split changed no test, because tests exercise
+the boundary.
+
 ### Events between modules
 
 Modules **do not call each other directly.**

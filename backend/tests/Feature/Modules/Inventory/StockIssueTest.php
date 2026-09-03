@@ -319,6 +319,12 @@ class StockIssueTest extends PurchaseOrderFoundationTest
         $destinationLayers = StockLayer::query()->where('location_id', $destinationId)->orderBy('source_line_no')->get();
         $this->assertSame(['2.0000', '1.0000'], $destinationLayers->pluck('qty_remaining')->all());
         $this->assertSame(['10.0000', '12.0000'], $destinationLayers->pluck('base_unit_cost')->all());
+        $sourceLayers = StockLayer::query()->where('location_id', $sourceId)->orderBy('received_at')->get();
+        $this->assertSame(
+            $sourceLayers->map(fn (StockLayer $layer): string => (string) $layer->received_at)->all(),
+            $destinationLayers->map(fn (StockLayer $layer): string => (string) $layer->received_at)->all(),
+            'A transfer must preserve each source layer\'s original receipt time — FIFO age belongs to the stock, not its custody path.',
+        );
         $this->assertSame(['-20.0000', '20.0000', '-12.0000', '12.0000'], $move->valuationEntries()->orderBy('id')->pluck('base_amount')->all());
         $this->assertNull($move->transferDetail->source_avco_pool_id);
         $this->assertNull($move->transferDetail->destination_avco_pool_id);
@@ -405,7 +411,7 @@ class StockIssueTest extends PurchaseOrderFoundationTest
         $this->assertSame(0, StockTransferRepair::query()->count());
     }
 
-    private function issuedOrder(ValuationMethod $method, ItemTracking $tracking = ItemTracking::None, string $qty = '4.0000', bool $qaRequired = false): array
+    protected function issuedOrder(ValuationMethod $method, ItemTracking $tracking = ItemTracking::None, string $qty = '4.0000', bool $qaRequired = false): array
     {
         [$order, $item, $uom] = $this->makeOrder();
         Company::query()->findOrFail(1)->update(['base_currency_id' => $order->currency_id]);
@@ -423,21 +429,21 @@ class StockIssueTest extends PurchaseOrderFoundationTest
         return [$order->refresh(), $item->refresh(), $uom];
     }
 
-    private function locationId(): int
+    protected function locationId(): int
     {
         return app(CreateWarehouse::class)([
             'code' => 'main', 'name' => 'Main', 'location_code' => 'main', 'location_name' => 'Main',
         ])->locations()->sole()->id;
     }
 
-    private function otherLocationId(string $code): int
+    protected function otherLocationId(string $code): int
     {
         return app(CreateWarehouse::class)([
             'code' => $code, 'name' => ucfirst($code), 'location_code' => $code, 'location_name' => ucfirst($code),
         ])->locations()->sole()->id;
     }
 
-    private function postReceipt(int $poLineId, int $itemId, int $uomId, int $locationId, string $qty, string $cost, ?string $serialNo = null): int
+    protected function postReceipt(int $poLineId, int $itemId, int $uomId, int $locationId, string $qty, string $cost, ?string $serialNo = null): int
     {
         $poLine = PurchaseOrderLine::query()->findOrFail($poLineId);
         $receiptId = $this->actingAs(User::factory()->create())->postJson('/api/v1/goods-receipts', [
@@ -456,7 +462,7 @@ class StockIssueTest extends PurchaseOrderFoundationTest
         return $receiptId;
     }
 
-    private function issueInput(int $itemId, int $uomId, int $locationId, string $qty, int $sourceId): array
+    protected function issueInput(int $itemId, int $uomId, int $locationId, string $qty, int $sourceId): array
     {
         return [
             'item_id' => $itemId, 'location_id' => $locationId, 'qty' => $qty, 'uom_id' => $uomId,
@@ -464,7 +470,7 @@ class StockIssueTest extends PurchaseOrderFoundationTest
         ];
     }
 
-    private function transferInput(int $itemId, int $uomId, int $sourceId, int $destinationId, string $qty, int $referenceId): array
+    protected function transferInput(int $itemId, int $uomId, int $sourceId, int $destinationId, string $qty, int $referenceId): array
     {
         return [
             'item_id' => $itemId, 'from_location_id' => $sourceId, 'to_location_id' => $destinationId,
@@ -473,7 +479,7 @@ class StockIssueTest extends PurchaseOrderFoundationTest
         ];
     }
 
-    private function approvedOverride(int $itemId, int $locationId, string $requested, string $available, int $sourceId): NegativeStockOverrideRequest
+    protected function approvedOverride(int $itemId, int $locationId, string $requested, string $available, int $sourceId): NegativeStockOverrideRequest
     {
         $request = $this->requestOverride($itemId, $locationId, $requested, $available, $sourceId);
         $approver = User::factory()->create();
@@ -483,7 +489,7 @@ class StockIssueTest extends PurchaseOrderFoundationTest
         return $request;
     }
 
-    private function requestOverride(int $itemId, int $locationId, string $requested, string $available, int $sourceId): NegativeStockOverrideRequest
+    protected function requestOverride(int $itemId, int $locationId, string $requested, string $available, int $sourceId): NegativeStockOverrideRequest
     {
         Company::query()->findOrFail(1)->update([
             'negative_stock_mode' => 'AUTHORISED_OVERRIDE',
@@ -500,7 +506,7 @@ class StockIssueTest extends PurchaseOrderFoundationTest
         ], $requester);
     }
 
-    private function directReceipt(int $itemId, int $uomId, int $locationId, int $currencyId, string $qty, string $cost, int $sourceId): mixed
+    protected function directReceipt(int $itemId, int $uomId, int $locationId, int $currencyId, string $qty, string $cost, int $sourceId): mixed
     {
         return app(PostInventoryMovement::class)([
             'item_id' => $itemId, 'location_id' => $locationId, 'qty' => $qty, 'uom_id' => $uomId,

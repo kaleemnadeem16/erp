@@ -1,0 +1,111 @@
+[← Domain index](README.md)
+
+# Backdated recalculation and corrections
+
+How backdated stock events are controlled and how their economic differences are corrected,
+fixed by [ADR 0040](../decisions/0040-control-backdated-stock-recalculation-and-corrections.md).
+The core stock model is [stock.md](stock.md); negative-stock workflows are
+[negative-stock.md](negative-stock.md).
+
+## Live backdating
+
+A receipt entered with an earlier date than existing issues means those issues may have been
+costed from incomplete chronology. Live operation defaults to blocking a conflicting valuation
+backdate while retaining separate truthful physical/source, ERP-entry, valuation-effective and
+future accounting dates. A company may enable authorised forward recalculation, but entry never
+triggers ordinary automatic replay: it creates an impact-previewed request requiring authorised
+review. Independent approval is the default; an elevated audited policy may allow explicitly
+identified self-review for a small company.
+
+Approved replay is deterministic and transactional, preserves original movements/valuation
+entries and appends linked adjustments. Immediately before execution it revalidates current
+policy and authority, affected history, valuation state, period state, shortage dependencies and
+hard integrity rules; stale approval cannot execute. Closed financial history is never rewritten
+and migration authority remains isolated. Conflict/replay scope is method-specific: affected
+configured pools and real cross-pool dependencies for AVCO, the affected layer/downstream
+movement graph for FIFO, the exact serial chain for SPECIFIC and the compatible
+settlement/adjustment chain for negative shortages. Unrelated pools are excluded. Preview may
+overestimate conservatively; actual adjustments are limited to changed economic results, replay
+runs to deterministic convergence and execution revalidates the dependency scope.
+
+## Review, staleness and risk routing
+
+ADR 0040 separates review delay, changed facts and ageing authority. Pending review has a
+bounded company-configurable SLA (72 elapsed hours by default); breach marks `OVERDUE` and
+escalates while preserving requester/approver separation, but does not invalidate the request.
+Staleness is state-based. Each request owns immutable append-only impact versions, approval
+targets one exact version, and execution revalidation automatically appends a fresh version
+requiring fresh approval when material dependencies or economics change. Normal rolling-floor
+clock progression alone is not stale. Approved execution authority has a hard bounded
+company-configurable TTL (24 elapsed hours by default); expiry prevents execution. Trusted
+server time and persisted deadlines govern, and later policy changes do not rewrite them.
+
+Materiality is exact and semantic: changed executable economics/dependencies create an automatic
+replacement impact version, while authority-only changes reroute/invalidate approval against the
+same version. Every version is independently `NORMAL_RISK` or `HIGH_RISK`. Closed-period
+effects, qualifying finalised downstream effects, controlled ordinary-tier self-review and later
+defined non-disableable governance conditions are hard high-risk triggers requiring a second
+independent approver. Optional bounded company thresholds use base/functional currency and may
+strengthen, never disable, hard routing.
+
+Final revalidation/execution serialises overlapping recalculations and locks the complete Q14.2
+economic closure: affected configured AVCO pools plus cross-pool dependencies; FIFO layers,
+allocations and downstream graph; the exact SPECIFIC serial/unit chain; and affected shortage
+settlement/repair chains. Locking is never narrower than valuation state that can change the
+deterministic result. Stale versions cannot execute. The bounded regeneration counter counts
+only material invalidations after at least one approval, never pre-review recomputation; manual
+resumption does not reset it and a repeated cap hit escalates more severely.
+
+## The correction package
+
+The correction workflow closes with an append-only linked correction package based on the exact
+approved impact version. It preserves original and counterfactual results, exact approved delta,
+historical dates and actual applicable FX bases; current-rate retranslation is not the default
+and genuine FX effects remain separate. Deterministic replay allocates economic lines among
+remaining Inventory value, consumed job costs, Sales/COGS and other economic owners without
+changing physical quantity or mutating any original/finalised record. Accounting represents
+those lines in the GL rather than adding another economic allocation; Tax, integrations and
+ancillary obligations reconcile separately on their own bases.
+
+Implemented synchronous participants declared inside one internal transaction execute
+atomically; any failure rolls back all and cannot become a pending obligation after partial
+internal commit. Unimplemented, intentionally asynchronous, Tax-deferred and external owners
+remain explicit, monitored obligations delivered where applicable through a durable idempotent
+outbox/correction event. The earliest permitted open period is the default posting point; no
+valid point means pending/blocked, never automatic reopening. Full reconciliation requires
+economic allocation to equal the approved delta, GL to reconcile to that allocation, ancillary
+obligations to reconcile on their own bases and explicit rounding to leave no unexplained
+residual.
+
+The final operational details also require that Q13 immediate review records `JUSTIFIED` or
+`FLAGGED`; the latter enters accountability/correction without automatically reversing stock,
+and review remains separate from shortage settlement. Independent Q13 review is the default; an
+explicitly recorded self-review is available only through a separately enabled, elevated and
+audited small-company policy and does not itself invoke Q14. Separately, ordinary-tier
+self-review of an actual Q14 impact is a mandatory high-risk trigger requiring its second
+independent approval. Consequential company settings require elevated permission, mandatory
+reason, actor, old/new values and timestamp without rewriting snapshotted deadlines/context.
+Correction packages have unique stable identity and idempotent execution, so retries resolve
+existing results instead of duplicating value. They expose cumulative
+period/account/financial-line/prior-package and currency context for Accounting-owned
+materiality. An unlinked manual journal cannot resolve a Q14 package, though legitimate manual
+journals outside that workflow remain available.
+
+## Backdating horizon
+
+Backdating horizon is a separate eligibility dimension. The company defaults to current +
+previous open period, or may select period-lock-only or one fixed/rolling posting floor. Rolling
+floors use trusted server time in the company accounting timezone and snapshot request-time
+context; normal clock progression does not stale an eligible request, but policy/boundary
+changes can. The strictest cutover, period, valuation-policy and horizon boundary wins; no
+per-request extension exists. Outside-horizon events retain physical truth, use the earliest
+permitted valuation-effective point and send economic differences to the correction workflow
+without falsifying physical dates.
+
+## Related
+
+- [stock.md](stock.md) — the core movement, layer and pool model
+- [negative-stock.md](negative-stock.md) — shortage settlement chains replay must respect
+- [inventory-cutover.md](inventory-cutover.md) — migration is not live posting
+- [ADR 0040](../decisions/0040-control-backdated-stock-recalculation-and-corrections.md) — the
+  consolidated decision

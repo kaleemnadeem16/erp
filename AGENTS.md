@@ -6,8 +6,9 @@ Instructions for any agent or contributor working here. This is the canonical fi
 ERP system — formulation-based estimating, job costing and field service delivery.
 Laravel API backend + React SPA frontend.
 
-**No application code exists yet.** The project is in planning. See
-[docs/STATUS.md](docs/STATUS.md) before assuming anything about the current state.
+**Do not assume the project's state from this file** — it deliberately records only rules and
+conventions, never progress. See [docs/STATUS.md](docs/STATUS.md) for what exists and where
+implementation currently stands, before assuming anything about the current state.
 
 ---
 

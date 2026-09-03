@@ -78,7 +78,9 @@ Lead → Opportunity → Quotation (revisions) → Job → Work Order → Invoic
 | [parties.md](parties.md) | Customers and suppliers — unified party model, role accounts, sites |
 | [purchasing.md](purchasing.md) | Purchase orders, receipts, QA and matching boundaries |
 | [acquisition-costing.md](acquisition-costing.md) | Provisional/actual purchase cost and landed-cost allocation |
-| [stock.md](stock.md) | Warehouses, moves, AVCO valuation |
+| [stock.md](stock.md) | Warehouses, moves, layers, AVCO pools, the valuation feed |
+| [negative-stock.md](negative-stock.md) | ADR 0037 — negative-stock policy, overrides, settlement, transfer repairs |
+| [stock-recalculation.md](stock-recalculation.md) | ADR 0040 — backdated recalculation and corrections |
 | [inventory-cutover.md](inventory-cutover.md) | Migrated history, opening stock and valuation continuity at go-live |
 | [sales-pipeline.md](sales-pipeline.md) | Leads, opportunities, quotations, revisions |
 | [job-costing.md](job-costing.md) | Jobs, work orders, timesheets, variance |

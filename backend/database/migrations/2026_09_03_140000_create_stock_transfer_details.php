@@ -62,6 +62,28 @@ return new class extends Migration
     {
         DB::statement('DROP FUNCTION IF EXISTS prevent_stock_transfer_detail_mutation() CASCADE');
         DB::statement('DROP FUNCTION IF EXISTS enforce_stock_transfer_detail() CASCADE');
+        // Restore the stricter pre-transfer version of the settlement-scope
+        // function this migration's up() relaxed (receipt-only inbound moves),
+        // so a partial rollback leaves the earlier migration's contract intact.
+        DB::unprepared(<<<'SQL'
+            CREATE OR REPLACE FUNCTION enforce_negative_settlement_scope() RETURNS trigger AS $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1
+                    FROM negative_stock_shortages s
+                    JOIN stock_moves m ON m.id = NEW.inbound_move_id AND m.company_id = NEW.company_id
+                    WHERE s.id = NEW.shortage_id
+                      AND s.company_id = NEW.company_id
+                      AND s.item_id = m.item_id
+                      AND s.location_id = m.to_location_id
+                      AND m.from_location_id IS NULL
+                      AND s.batch_id IS NOT DISTINCT FROM m.batch_id
+                ) THEN
+                    RAISE EXCEPTION 'negative settlement references an incompatible shortage or inbound move' USING ERRCODE = '23503';
+                END IF;
+                RETURN NEW;
+            END; $$ LANGUAGE plpgsql;
+            SQL);
         Schema::dropIfExists('stock_transfer_details');
         DB::statement('ALTER TABLE stock_layers DROP CONSTRAINT IF EXISTS stock_layers_source_line_check');
         Schema::table('stock_layers', function (Blueprint $table) {
