@@ -15,6 +15,7 @@ use App\Modules\Inventory\Models\Location;
 use App\Modules\Inventory\Models\NegativeStockOverrideRequest;
 use App\Modules\Inventory\Models\NegativeStockShortage;
 use App\Modules\Inventory\Models\StockLayer;
+use App\Modules\Inventory\Models\StockTransferRepair;
 use App\Modules\Inventory\Support\AvcoPoolScope;
 use App\Modules\Inventory\Support\ItemTracking;
 use App\Modules\Inventory\Support\NegativeStockApprovalDecision;
@@ -321,6 +322,87 @@ class StockIssueTest extends PurchaseOrderFoundationTest
         $this->assertSame(['-20.0000', '20.0000', '-12.0000', '12.0000'], $move->valuationEntries()->orderBy('id')->pluck('base_amount')->all());
         $this->assertNull($move->transferDetail->source_avco_pool_id);
         $this->assertNull($move->transferDetail->destination_avco_pool_id);
+    }
+
+    public function test_provisional_cross_pool_transfer_repair_propagates_to_the_destination_pool_on_recovery(): void
+    {
+        [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Avco, qty: '10.0000');
+        $item->update(['avco_pool_scope' => AvcoPoolScope::WarehouseItem]);
+        $warehouse = app(CreateWarehouse::class)(['code' => 'w1', 'name' => 'W1', 'location_code' => 'a', 'location_name' => 'A']);
+        $locationAId = $warehouse->locations()->sole()->id;
+        $locationBId = $warehouse->locations()->create(['code' => 'b', 'name' => 'B'])->id;
+        $locationCId = $this->otherLocationId('c');
+        $lineId = $order->lines()->sole()->id;
+        $this->postReceipt($lineId, $item->id, $uom->id, $locationAId, '6.0000', '10.0000');
+        $this->postReceipt($lineId, $item->id, $uom->id, $locationBId, '4.0000', '10.0000');
+
+        $request = $this->approvedOverride($item->id, $locationAId, '15.0000', '6.0000', 1401);
+        app(PostInventoryMovement::class)->issue(array_merge(
+            $this->issueInput($item->id, $uom->id, $locationAId, '15.0000', 1401),
+            ['override_request_id' => $request->id],
+        ));
+        $pool = AvcoPool::query()->sole();
+        $this->assertSame('-5.0000', $pool->qty_on_hand);
+        $this->assertSame('FROZEN', $pool->status->value);
+
+        $transfer = app(PostInventoryMovement::class)->transfer($this->transferInput($item->id, $uom->id, $locationBId, $locationCId, '3.0000', 1402));
+        $this->assertTrue($transfer->transferDetail->is_provisional);
+        $destinationPool = AvcoPool::query()->where('id', '!=', $pool->id)->sole();
+        $this->assertSame('3.0000', $destinationPool->qty_on_hand);
+        $this->assertSame('30.0000', $destinationPool->inventory_value);
+
+        $this->directReceipt($item->id, $uom->id, $locationAId, $order->currency_id, '15.0000', '12.0000', 1403);
+
+        $pool->refresh();
+        $destinationPool->refresh();
+        $this->assertSame('7.0000', $pool->qty_on_hand);
+        $this->assertSame('76.0000', $pool->inventory_value);
+        $this->assertSame('3.0000', $destinationPool->qty_on_hand);
+        $this->assertSame('36.0000', $destinationPool->inventory_value);
+        $this->assertSame('12.0000', $destinationPool->base_avg_unit_cost);
+
+        $repair = StockTransferRepair::query()->sole();
+        $this->assertSame($transfer->transferDetail->id, $repair->stock_transfer_detail_id);
+        $this->assertSame('3.0000', $repair->qty);
+        $this->assertSame('10.0000', $repair->provisional_unit_cost);
+        $this->assertSame('12.0000', $repair->actual_unit_cost);
+        $this->assertSame('6.0000', $repair->valuation_adjustment);
+        $this->assertSame(
+            ['-30.0000', '30.0000', '-6.0000', '6.0000'],
+            $transfer->valuationEntries()->orderBy('id')->pluck('base_amount')->all(),
+        );
+    }
+
+    public function test_partial_settlement_leaves_a_provisional_transfer_uncorrected_until_the_pool_recovers(): void
+    {
+        [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Avco, qty: '10.0000');
+        $item->update(['avco_pool_scope' => AvcoPoolScope::WarehouseItem]);
+        $warehouse = app(CreateWarehouse::class)(['code' => 'w1', 'name' => 'W1', 'location_code' => 'a', 'location_name' => 'A']);
+        $locationAId = $warehouse->locations()->sole()->id;
+        $locationBId = $warehouse->locations()->create(['code' => 'b', 'name' => 'B'])->id;
+        $locationCId = $this->otherLocationId('c');
+        $lineId = $order->lines()->sole()->id;
+        $this->postReceipt($lineId, $item->id, $uom->id, $locationAId, '6.0000', '10.0000');
+        $this->postReceipt($lineId, $item->id, $uom->id, $locationBId, '4.0000', '10.0000');
+        $request = $this->approvedOverride($item->id, $locationAId, '15.0000', '6.0000', 1501);
+        app(PostInventoryMovement::class)->issue(array_merge(
+            $this->issueInput($item->id, $uom->id, $locationAId, '15.0000', 1501),
+            ['override_request_id' => $request->id],
+        ));
+        $pool = AvcoPool::query()->sole();
+        app(PostInventoryMovement::class)->transfer($this->transferInput($item->id, $uom->id, $locationBId, $locationCId, '3.0000', 1502));
+        $destinationPool = AvcoPool::query()->where('id', '!=', $pool->id)->sole();
+
+        $this->directReceipt($item->id, $uom->id, $locationAId, $order->currency_id, '5.0000', '12.0000', 1503);
+
+        $pool->refresh();
+        $destinationPool->refresh();
+        $this->assertSame('-3.0000', $pool->qty_on_hand);
+        $this->assertSame('FROZEN', $pool->status->value);
+        $this->assertSame('3.0000', $destinationPool->qty_on_hand);
+        $this->assertSame('30.0000', $destinationPool->inventory_value);
+        $this->assertSame('10.0000', $destinationPool->base_avg_unit_cost);
+        $this->assertSame(0, StockTransferRepair::query()->count());
     }
 
     private function issuedOrder(ValuationMethod $method, ItemTracking $tracking = ItemTracking::None, string $qty = '4.0000', bool $qaRequired = false): array

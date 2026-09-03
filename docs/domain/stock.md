@@ -95,6 +95,11 @@ stock_transfer_details                -- immutable AVCO transfer dependency iden
   id, company_id, stock_move_id
   source_avco_pool_id NULLABLE, destination_avco_pool_id NULLABLE, is_provisional
 
+stock_transfer_repairs                -- immutable, at most one per transfer detail, ever
+  id, company_id, stock_transfer_detail_id
+  qty, provisional_unit_cost, actual_unit_cost, unit_cost_difference
+  valuation_adjustment, repaired_at
+
 stock_valuation_entries                 -- cost impact of each move; feeds the GL
   id, stock_move_id
   avco_pool_id NULLABLE                 -- immutable pool used at posting time
@@ -221,8 +226,20 @@ source-cost component; SPECIFIC preserves the exact serial. AVCO writes equal-an
 and destination valuation effects: a same-pool move leaves pool state untouched, while a
 cross-pool move removes and introduces the identical base amount before recalculating destination
 average. Immutable transfer detail retains both pool identities and whether a non-positive source
-made the value provisional. Propagating a later source-cost repair through those marked downstream
-dependencies remains a separate workflow.
+made the value provisional.
+
+When a settling receipt (or a transfer that itself settles a destination-side shortage) brings a
+non-positive pool back to positive, every still-open provisional transfer taken out of it while it
+was frozen is corrected exactly once, to that recovery's real rate: `qty × (actual − frozen)` moves
+out of the source and into the destination as a paired `VALUATION_ADJUSTMENT` valuation entry on
+the transfer's own move, plus an immutable `stock_transfer_repairs` row (unique per transfer
+detail, so it can never be double-applied). This is a pure reallocation between two pools — it
+never changes either pool's `qty_on_hand`, and the two paired amounts always net to zero, so total
+company value is unaffected by the repair itself. If the destination pool had, before this repair
+arrived, itself relayed that value onward through its own still-open provisional transfer, the same
+correction cascades transitively to that further destination. A settlement that only partially
+recovers the pool (it stays non-positive) intentionally does not propagate yet — there is no real
+recovered rate to carry forward until the pool is positive again.
 
 ### Negative stock contract
 

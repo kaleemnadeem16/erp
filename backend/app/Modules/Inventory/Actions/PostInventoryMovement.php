@@ -16,6 +16,7 @@ use App\Modules\Inventory\Models\StockBatch;
 use App\Modules\Inventory\Models\StockLayer;
 use App\Modules\Inventory\Models\StockMove;
 use App\Modules\Inventory\Models\StockTransferDetail;
+use App\Modules\Inventory\Models\StockTransferRepair;
 use App\Modules\Inventory\Support\AvcoPoolScope;
 use App\Modules\Inventory\Support\AvcoPoolStatus;
 use App\Modules\Inventory\Support\ItemTracking;
@@ -238,6 +239,7 @@ final class PostInventoryMovement
             }
             $sourcePool = $item->valuation_method === ValuationMethod::Avco ? $this->lockAvcoPool($item, $source, $batch) : null;
             $destinationPool = $item->valuation_method === ValuationMethod::Avco ? $this->lockAvcoPool($item, $destination, $batch) : null;
+            $destinationWasNonPositive = $destinationPool !== null && BigDecimal::of($destinationPool->qty_on_hand)->isLessThanOrEqualTo(0);
             $provisional = $sourcePool !== null && BigDecimal::of($sourcePool->qty_on_hand)->isLessThanOrEqualTo(0);
             $unitCost = $sourcePool !== null
                 ? BigDecimal::of($provisional ? $sourcePool->last_valid_avg_unit_cost : $sourcePool->base_avg_unit_cost)
@@ -281,6 +283,9 @@ final class PostInventoryMovement
                 'destination_avco_pool_id' => $destinationPool?->id, 'is_provisional' => $provisional,
             ]);
             $this->recordTransferSettlements($move, $settlements, $unitCost, $accountId, $destinationPool);
+            if ($destinationPool !== null && $destinationWasNonPositive && BigDecimal::of($destinationPool->qty_on_hand)->isGreaterThan(0)) {
+                $this->propagateProvisionalTransferRepairs($destinationPool->id, $unitCost, $accountId);
+            }
 
             return $move->load(['valuationEntries', 'transferDetail']);
         });
@@ -371,6 +376,7 @@ final class PostInventoryMovement
                 ),
                 BigDecimal::zero(),
             )->toScale(4, RoundingMode::HALF_UP);
+            $poolWasNonPositive = $pool !== null && BigDecimal::of($pool->qty_on_hand)->isLessThanOrEqualTo(0);
             if ($pool !== null) {
                 $newQty = BigDecimal::of($pool->qty_on_hand)->plus($qty);
                 $newValue = BigDecimal::of($pool->inventory_value)->plus($baseAmount)->plus($baseAdjustment)->toScale(4, RoundingMode::HALF_UP);
@@ -424,6 +430,10 @@ final class PostInventoryMovement
                     'unit_cost_difference' => (string) $baseDifference,
                     'valuation_adjustment' => (string) $baseRepair, 'settled_at' => now(),
                 ]);
+            }
+
+            if ($pool !== null && $poolWasNonPositive && BigDecimal::of($pool->qty_on_hand)->isGreaterThan(0)) {
+                $this->propagateProvisionalTransferRepairs($pool->id, $baseUnitCost, $accountId);
             }
 
             return $move->load(['valuationEntry', 'valuationEntries']);
@@ -752,6 +762,56 @@ final class PostInventoryMovement
             $open = BigDecimal::of($shortage->qty_open)->minus($settledQty);
             $shortage->update(['qty_open' => (string) $open, 'status' => $open->isZero() ? 'SETTLED' : 'PARTIALLY_SETTLED', 'settled_at' => $open->isZero() ? now() : null]);
             $shortage->settlements()->create(['inbound_move_id' => $move->id, 'qty_settled' => (string) $settledQty, 'provisional_unit_cost' => (string) $provisional, 'actual_unit_cost' => (string) $actualCost, 'unit_cost_difference' => (string) $actualCost->minus($provisional), 'valuation_adjustment' => (string) $repair, 'settled_at' => now()]);
+        }
+    }
+
+    /**
+     * A pool that just recovered from non-positive may have carried its stale
+     * frozen rate onto other pools via provisional cross-pool transfers taken
+     * while it was frozen. Each such transfer is corrected exactly once, here,
+     * to the now-known true rate — moving the identical base amount out of its
+     * source and into its destination so company value stays conserved. If that
+     * destination itself relayed the value onward through its own provisional
+     * transfer before this repair arrived, the correction cascades to it too.
+     */
+    private function propagateProvisionalTransferRepairs(int $rootPoolId, BigDecimal $actualRate, int $accountId): void
+    {
+        $frontier = [$rootPoolId];
+        while ($frontier !== []) {
+            $poolId = array_shift($frontier);
+            $details = StockTransferDetail::query()
+                ->where('source_avco_pool_id', $poolId)
+                ->where('destination_avco_pool_id', '!=', $poolId)
+                ->where('is_provisional', true)
+                ->whereDoesntHave('repair')
+                ->with('stockMove')
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get();
+            foreach ($details as $detail) {
+                $move = $detail->stockMove;
+                $qty = BigDecimal::of($move->qty);
+                $frozenRate = BigDecimal::of($move->unit_cost);
+                $delta = $qty->multipliedBy($actualRate->minus($frozenRate))->toScale(4, RoundingMode::HALF_UP);
+                $source = AvcoPool::query()->lockForUpdate()->findOrFail($detail->source_avco_pool_id);
+                $destination = AvcoPool::query()->lockForUpdate()->findOrFail($detail->destination_avco_pool_id);
+                $this->writeTransferPoolState($source, BigDecimal::of($source->qty_on_hand), BigDecimal::of($source->inventory_value)->minus($delta));
+                $this->writeTransferPoolState($destination, BigDecimal::of($destination->qty_on_hand), BigDecimal::of($destination->inventory_value)->plus($delta));
+                foreach ([[$source, $delta->negated()], [$destination, $delta]] as [$pool, $amount]) {
+                    $move->valuationEntries()->create([
+                        'avco_pool_id' => $pool->id, 'pool_effect' => 'VALUATION_ADJUSTMENT', 'qty' => '0.0000',
+                        'unit_cost' => (string) $actualRate->minus($frozenRate)->abs(), 'amount' => (string) $amount,
+                        'base_amount' => (string) $amount, 'account_id' => $accountId,
+                    ]);
+                }
+                StockTransferRepair::query()->create([
+                    'stock_transfer_detail_id' => $detail->id, 'qty' => (string) $qty,
+                    'provisional_unit_cost' => (string) $frozenRate, 'actual_unit_cost' => (string) $actualRate,
+                    'unit_cost_difference' => (string) $actualRate->minus($frozenRate),
+                    'valuation_adjustment' => (string) $delta, 'repaired_at' => now(),
+                ]);
+                $frontier[] = $detail->destination_avco_pool_id;
+            }
         }
     }
 

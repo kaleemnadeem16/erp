@@ -21,6 +21,8 @@ movement and valuation, built in Phase 2.
   physical transfers are live for AVCO/FIFO/SPECIFIC
 - `StockTransferDetail` — immutable source/destination AVCO identities and provisional-state
   snapshot for transfer valuation and later repair propagation
+- `StockTransferRepair` — immutable, at most one per transfer detail, recording the paired
+  value reallocation once its source pool's provisional rate is later proven wrong
 - `InventoryPolicyChange` — immutable, tenant-safe audit history for governed inventory-policy
   changes; ADR 0037 negative-stock policy defaults and eligibility are configured on `Company`
 - `NegativeStockOverrideRequest`, `NegativeStockOverrideApproval` and
@@ -66,7 +68,10 @@ unsupported AVCO/FIFO cost from system history, and creates linked shortage stat
 Compatible inbound settles the oldest exact-identity shortage first, appends its valuation repair,
 and exposes only excess quantity as ordinary available stock. Transfers reject negative physical
 sources, preserve FIFO/SPECIFIC layers, remain neutral inside one AVCO pool and conserve exact base
-value across pools. Provisional cross-pool repair propagation remains a separate slice.
+value across pools. Whenever a settlement brings a non-positive pool back positive, every provisional
+transfer taken out of it while frozen is corrected exactly once to the recovered rate — the exact
+base amount reallocates from source to destination pool, cascading onward if that destination had
+itself relayed the value through its own provisional transfer first.
 
 ## Events
 

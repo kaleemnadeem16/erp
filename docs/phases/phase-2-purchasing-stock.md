@@ -136,7 +136,7 @@ The order matters because later work needs stable document and stock boundaries:
       into one pool cannot calculate from stale state while independent pools remain independent
 - [x] Implement same-pool transfer neutrality and cross-pool transfer value conservation,
       destination-average recalculation and immutable source/destination pool identities
-- [ ] Implement provisional cross-pool transfer repair propagation without permitting a negative
+- [x] Implement provisional cross-pool transfer repair propagation without permitting a negative
       physical source or creating/destroying company inventory value
 - [x] Implement FIFO oldest-layer consumption with partial-layer splits and row locking
 - [x] Implement SPECIFIC receipt/issue validation: exact serial identity is required and a serial

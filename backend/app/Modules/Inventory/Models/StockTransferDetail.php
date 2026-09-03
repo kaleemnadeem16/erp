@@ -8,6 +8,8 @@ use App\Exceptions\DomainInvariantException;
 use App\Models\Model;
 use App\Support\Concerns\BelongsToCompany;
 use App\Support\Concerns\GuardsRelatedCompanyScope;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class StockTransferDetail extends Model
 {
@@ -29,5 +31,17 @@ class StockTransferDetail extends Model
     protected function casts(): array
     {
         return ['is_provisional' => 'boolean'];
+    }
+
+    /** @return BelongsTo<StockMove, $this> */
+    public function stockMove(): BelongsTo
+    {
+        return $this->belongsTo(StockMove::class);
+    }
+
+    /** @return HasOne<StockTransferRepair, $this> */
+    public function repair(): HasOne
+    {
+        return $this->hasOne(StockTransferRepair::class);
     }
 }
