@@ -69,6 +69,18 @@ inventory_policy_changes                -- immutable audit of governed settings
   old_values, new_values
   reason, changed_by, changed_at
 
+negative_stock_override_requests        -- immutable shortage + policy snapshot
+  id, company_id, item_id, location_id, batch_id NULLABLE
+  movement_class, requested_qty, available_qty, shortage_qty
+  source_type, source_id, reason_code, explanation
+  authorisation_mode, allow_self_review, requested_by, requested_at, review_due_at NULLABLE
+
+negative_stock_override_approvals       -- PRIOR_APPROVAL decision; one per request
+  id, company_id, request_id, decision, notes, decided_by, decided_at
+
+negative_stock_override_reviews         -- IMMEDIATE_WITH_REVIEW outcome; one per request
+  id, company_id, request_id, outcome, notes, reviewed_by, reviewed_at
+
 negative_stock_shortages
   id, company_id, item_id, location_id, batch_id NULLABLE, avco_pool_id NULLABLE
   qty_open, provisional_unit_cost, status
@@ -214,6 +226,15 @@ supplier returns and scrap/write-off start disabled. Changing any of these field
 elevated `inventory.negative-stock-policy.manage` permission, a reason, and an immutable tenant-safe
 old/new audit record. This configuration does not itself authorise a movement—the request,
 approval/immediate-review, shortage and settlement workflows remain explicit subsequent steps.
+
+Override request, approval and review records are live as immutable, tenant-safe facts. Requests
+snapshot exact location/tracking shortage, source, controlled reason, written explanation and the
+then-current authorisation mode. Prior approval requires a different user with
+`inventory.negative-stock.approve`; immediate mode requires override permission up front and
+persists its review deadline, while review requires `inventory.negative-stock.review` and is
+independent unless the snapshotted company policy explicitly permits self-review. These records do
+not yet post inventory; the movement boundary will consume them only after transactional
+availability revalidation.
 
 Unsupported AVCO/FIFO quantity uses a defensible system-derived provisional cost. AVCO freezes
 and recovers independently at its resolved configured pool; a negative location does not freeze a

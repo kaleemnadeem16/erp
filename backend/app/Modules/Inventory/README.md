@@ -22,6 +22,9 @@ movement and valuation, built in Phase 2.
   remain later Phase 2 work
 - `InventoryPolicyChange` — immutable, tenant-safe audit history for governed inventory-policy
   changes; ADR 0037 negative-stock policy defaults and eligibility are configured on `Company`
+- `NegativeStockOverrideRequest`, `NegativeStockOverrideApproval` and
+  `NegativeStockOverrideReview` — immutable snapshots and independent decisions for ADR 0037's
+  prior-approval and immediate-with-review workflows
 
 ## Does not own
 
@@ -45,6 +48,9 @@ Mode changes go through `UpdateInventorySettings`, which blocks unsafe downgrade
 The same Action governs negative-stock policy changes with an elevated permission, mandatory
 reason, bounded review SLA and an immutable old/new audit record. Policy configuration does not
 itself permit a negative movement; authorisation, posting and settlement are separate Actions.
+`RequestNegativeStockOverride` snapshots the exact shortage and current authorisation policy;
+`DecideNegativeStockOverride` and `ReviewNegativeStockOverride` enforce their distinct modes,
+permissions and independent-user rules without mutating the request.
 `PostInventoryMovement` is the sole quantity/valuation write boundary. Inbound receipts write a
 traceability layer and update the resolved AVCO pool where applicable. Normal outbound issues
 deplete exact-location/tracking availability, exclude unresolved or failed QA quantity, consume

@@ -153,8 +153,10 @@ The order matters because later work needs stable document and stock boundaries:
 - [x] Build ADR 0037's conservative company policy foundation: `BLOCK` default, constrained
       movement eligibility, prior/immediate mode, bounded review SLA, elevated permission,
       mandatory reason and immutable old/new audit history
-- [ ] Build ADR 0037 override requests, independent approval or bounded immediate review,
-      provisional AVCO/FIFO shortage posting and append-only inbound settlement repairs
+- [x] Build immutable ADR 0037 override requests, independent prior-approval decisions and bounded
+      immediate-review outcomes with tenant-safe actors, permissions and snapshotted deadlines
+- [ ] Consume authorised override records in the movement boundary, derive provisional AVCO/FIFO
+      cost, create shortage state and append inbound settlement valuation repairs
 - [ ] Implement company backdating horizon modes (`CURRENT_AND_PREVIOUS_PERIOD` default,
       `PERIOD_LOCK_ONLY`, `POSTING_FLOOR` with fixed/rolling subtype), audited policy changes and
       most-restrictive-boundary evaluation; rolling mode requires a valid company IANA accounting
