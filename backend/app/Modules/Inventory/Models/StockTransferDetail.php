@@ -9,8 +9,12 @@ use App\Models\Model;
 use App\Support\Concerns\BelongsToCompany;
 use App\Support\Concerns\GuardsRelatedCompanyScope;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 
+/**
+ * Immutable record of which AVCO pools a transfer's value moved between, kept
+ * for valuation and audit. Per ADR 0045, a transfer's source rate is final at
+ * post time — there is no provisional state and nothing here is ever repaired.
+ */
 class StockTransferDetail extends Model
 {
     use BelongsToCompany, GuardsRelatedCompanyScope;
@@ -28,20 +32,9 @@ class StockTransferDetail extends Model
         return ['stock_move_id' => StockMove::class, 'source_avco_pool_id' => AvcoPool::class, 'destination_avco_pool_id' => AvcoPool::class];
     }
 
-    protected function casts(): array
-    {
-        return ['is_provisional' => 'boolean'];
-    }
-
     /** @return BelongsTo<StockMove, $this> */
     public function stockMove(): BelongsTo
     {
         return $this->belongsTo(StockMove::class);
-    }
-
-    /** @return HasOne<StockTransferRepair, $this> */
-    public function repair(): HasOne
-    {
-        return $this->hasOne(StockTransferRepair::class);
     }
 }

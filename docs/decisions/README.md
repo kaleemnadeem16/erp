@@ -51,21 +51,22 @@ in the same commit.
 | [0036](0036-controlled-inventory-cutover.md) | Separate controlled inventory cutover from live stock operations | accepted | 2026-08-31 |
 | [0037](0037-controlled-negative-stock-overrides.md) | Control negative stock through explicit overrides and settlement | accepted | 2026-09-01 |
 | [0038](0038-company-wide-per-item-avco-pool.md) | Maintain one company-wide AVCO pool per item | ~~superseded by [0039](0039-configurable-avco-valuation-pools.md)~~ | 2026-09-01 |
-| [0039](0039-configurable-avco-valuation-pools.md) | Use constrained configurable AVCO valuation pools | accepted | 2026-09-01 |
+| [0039](0039-configurable-avco-valuation-pools.md) | Use constrained configurable AVCO valuation pools | ~~superseded by [0045](0045-avco-transfer-rate-final-not-provisional.md)~~ | 2026-09-01 |
 | [0040](0040-control-backdated-stock-recalculation-and-corrections.md) | Control backdated stock recalculation and corrections | accepted | 2026-09-02 |
 | [0041](0041-progressive-inventory-location-capabilities.md) | Use one capable inventory schema with progressive location capabilities | accepted | 2026-09-02 |
 | [0042](0042-immutable-item-supplier-identity.md) | Keep item-supplier relationship identity immutable | accepted | 2026-09-02 |
 | [0043](0043-control-purchase-order-receipt-and-qa-posting.md) | Control purchase-order, receipt and QA posting | accepted | 2026-09-02 |
 | [0044](0044-status-log-context-budget.md) | Keep STATUS.md inside a fixed context budget with an append-only status log | accepted | 2026-09-03 |
+| [0045](0045-avco-transfer-rate-final-not-provisional.md) | AVCO transfers price final at post time, never provisional | accepted | 2026-09-03 |
 
-**Next number: 0045**
+**Next number: 0046**
 
 ## By theme
 
 - **Stack:** [0001](0001-laravel-backend.md) · [0002](0002-api-first-react-spa.md) · [0005](0005-sanctum-authentication.md) · [0006](0006-generated-api-client.md) · [0015](0015-capacitor-for-mobile.md) · [0016](0016-php-84-alignment.md) · [0020](0020-postgresql-only.md) · [0026](0026-english-only-no-rtl.md)
 - **Structure:** [0004](0004-multi-tenancy-ready-schema.md) · [0010](0010-core-plus-plugins.md) · [0014](0014-modular-monolith.md) · [0018](0018-single-repository.md) · [0022](0022-code-documentation-strategy.md) · [0027](0027-generic-column-mapping-import.md) · [0028](0028-dynamic-namespaced-permissions.md) · [0044](0044-status-log-context-budget.md)
 - **Infrastructure:** [0013](0013-docker-dev-and-production.md) · [0017](0017-deployment-topology.md) · [0021](0021-multi-architecture-images.md) · [0029](0029-develop-main-branching-model.md)
-- **Domain:** [0007](0007-avco-valuation.md) · [0008](0008-assembly-abstraction.md) · [0009](0009-company-defined-rate-dimensions.md) · [0030](0030-unified-party-model.md) · [0032](0032-per-item-valuation-method.md) · [0033](0033-item-suppliers-relationship.md) · [0034](0034-party-child-tables-inherit-company-scope.md) · [0035](0035-separate-purchasing-operational-and-financial-facts.md) · [0036](0036-controlled-inventory-cutover.md) · [0037](0037-controlled-negative-stock-overrides.md) · [0038](0038-company-wide-per-item-avco-pool.md) · [0039](0039-configurable-avco-valuation-pools.md) · [0040](0040-control-backdated-stock-recalculation-and-corrections.md) · [0041](0041-progressive-inventory-location-capabilities.md) · [0042](0042-immutable-item-supplier-identity.md) · [0043](0043-control-purchase-order-receipt-and-qa-posting.md)
+- **Domain:** [0007](0007-avco-valuation.md) · [0008](0008-assembly-abstraction.md) · [0009](0009-company-defined-rate-dimensions.md) · [0030](0030-unified-party-model.md) · [0032](0032-per-item-valuation-method.md) · [0033](0033-item-suppliers-relationship.md) · [0034](0034-party-child-tables-inherit-company-scope.md) · [0035](0035-separate-purchasing-operational-and-financial-facts.md) · [0036](0036-controlled-inventory-cutover.md) · [0037](0037-controlled-negative-stock-overrides.md) · [0038](0038-company-wide-per-item-avco-pool.md) · [0039](0039-configurable-avco-valuation-pools.md) · [0040](0040-control-backdated-stock-recalculation-and-corrections.md) · [0041](0041-progressive-inventory-location-capabilities.md) · [0042](0042-immutable-item-supplier-identity.md) · [0043](0043-control-purchase-order-receipt-and-qa-posting.md) · [0045](0045-avco-transfer-rate-final-not-provisional.md)
 - **Finance:** [0011](0011-double-entry-open-item-ar.md) · [0012](0012-multi-currency-dual-amounts.md) · [0023](0023-retention-retainage-enabled.md) · [0024](0024-onboarding-base-currency-and-fiscal-year.md) · [0025](0025-configurable-tax-engine.md) · [0031](0031-manual-exchange-rate-entry.md)
 
 ## Superseded chain
@@ -81,3 +82,7 @@ small controlled set of immutable valuation-pool scopes.
 
 `0030` → **`0034`** — the unified-party decision remains, but its child-table scoping and
 customer control-account wording were corrected after implementation exposed the precise shape.
+
+`0039` → **`0045`** — the AVCO pool-scope decision remains, but its transfer section's
+provisional-repair provision was corrected once review established a transfer's quantity is
+always fully physically backed and can never itself be shortage-backed.

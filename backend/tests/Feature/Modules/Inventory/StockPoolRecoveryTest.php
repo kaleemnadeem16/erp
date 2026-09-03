@@ -7,7 +7,6 @@ use App\Modules\Inventory\Actions\PostInventoryMovement;
 use App\Modules\Inventory\Models\AvcoPool;
 use App\Modules\Inventory\Models\NegativeStockShortage;
 use App\Modules\Inventory\Models\StockLayer;
-use App\Modules\Inventory\Models\StockTransferRepair;
 use App\Modules\Inventory\Support\AvcoPoolScope;
 use App\Modules\Inventory\Support\ValuationMethod;
 
@@ -116,58 +115,64 @@ class StockPoolRecoveryTest extends StockIssueTest
         );
     }
 
-    public function test_repair_propagation_cascades_through_a_relaying_pool(): void
+    /**
+     * ADR 0045 / Q15's worked example: a transfer's exact source location is
+     * always fully physically backed, so a frozen wider pool never makes the
+     * transfer itself provisional — it only means some other, unrelated
+     * location under the same pool has open shortage debt. The transfer
+     * prices at the pool's frozen rate and that is final; a later, unrelated
+     * settlement of that debt at a different price must never reprice it.
+     */
+    public function test_a_physically_backed_transfer_out_of_a_frozen_pool_is_never_repaired_by_an_unrelated_settlement(): void
     {
         [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Avco, qty: '10.0000');
         $item->update(['avco_pool_scope' => AvcoPoolScope::WarehouseItem]);
-        $warehouseA = app(CreateWarehouse::class)(['code' => 'wa', 'name' => 'WA', 'location_code' => 'a1', 'location_name' => 'A1']);
+        $warehouseA = app(CreateWarehouse::class)(['code' => 'wa', 'name' => 'Branch A', 'location_code' => 'a1', 'location_name' => 'A1']);
         $locationA1Id = $warehouseA->locations()->sole()->id;
         $locationA2Id = $warehouseA->locations()->create(['code' => 'a2', 'name' => 'A2'])->id;
-        $warehouseB = app(CreateWarehouse::class)(['code' => 'wb', 'name' => 'WB', 'location_code' => 'b1', 'location_name' => 'B1']);
+        $warehouseB = app(CreateWarehouse::class)(['code' => 'wb', 'name' => 'Branch B', 'location_code' => 'b1', 'location_name' => 'B1']);
         $locationB1Id = $warehouseB->locations()->sole()->id;
-        $locationB2Id = $warehouseB->locations()->create(['code' => 'b2', 'name' => 'B2'])->id;
-        $locationC1Id = $this->otherLocationId('wc');
+
+        // Receive 10 @ $10 at A1.
         $this->postReceipt($order->lines()->sole()->id, $item->id, $uom->id, $locationA1Id, '10.0000', '10.0000');
 
-        $requestA = $this->approvedOverride($item->id, $locationA2Id, '10.0000', '0.0000', 2501);
+        // An authorised shortage at A2 — a different location in the same
+        // WAREHOUSE_ITEM pool — freezes Branch A's pool.
+        $request = $this->approvedOverride($item->id, $locationA2Id, '12.0000', '0.0000', 2501);
         app(PostInventoryMovement::class)->issue(array_merge(
-            $this->issueInput($item->id, $uom->id, $locationA2Id, '10.0000', 2501),
-            ['override_request_id' => $requestA->id],
+            $this->issueInput($item->id, $uom->id, $locationA2Id, '12.0000', 2501),
+            ['override_request_id' => $request->id],
         ));
-        $first = app(PostInventoryMovement::class)->transfer($this->transferInput($item->id, $uom->id, $locationA1Id, $locationB1Id, '6.0000', 2502));
-        $this->assertTrue($first->transferDetail->is_provisional);
-        $requestB = $this->approvedOverride($item->id, $locationB2Id, '8.0000', '0.0000', 2503);
-        app(PostInventoryMovement::class)->issue(array_merge(
-            $this->issueInput($item->id, $uom->id, $locationB2Id, '8.0000', 2503),
-            ['override_request_id' => $requestB->id],
-        ));
-        $second = app(PostInventoryMovement::class)->transfer($this->transferInput($item->id, $uom->id, $locationB1Id, $locationC1Id, '5.0000', 2504));
-        $this->assertTrue($second->transferDetail->is_provisional);
-
-        $this->directReceipt($item->id, $uom->id, $locationA2Id, $order->currency_id, '12.0000', '16.0000', 2505);
-
         $poolA = AvcoPool::query()->where('warehouse_id', $warehouseA->id)->sole();
+        $this->assertSame('-2.0000', $poolA->qty_on_hand);
+        $this->assertSame('FROZEN', $poolA->status->value);
+
+        // A1's own physical stock (10 units, untouched by A2's shortage)
+        // fully covers a 6-unit transfer to Branch B — it is never provisional.
+        $transfer = app(PostInventoryMovement::class)->transfer($this->transferInput($item->id, $uom->id, $locationA1Id, $locationB1Id, '6.0000', 2502));
+        $this->assertSame('10.0000', $transfer->unit_cost);
         $poolB = AvcoPool::query()->where('warehouse_id', $warehouseB->id)->sole();
-        $poolC = AvcoPool::query()->whereNotIn('warehouse_id', [$warehouseA->id, $warehouseB->id])->sole();
-        $this->assertSame('6.0000', $poolA->qty_on_hand);
-        $this->assertSame('36.0000', $poolA->inventory_value);
-        $this->assertSame('-7.0000', $poolB->qty_on_hand);
-        $this->assertSame('-64.0000', $poolB->inventory_value);
-        $this->assertSame('FROZEN', $poolB->status->value);
-        $this->assertSame('5.0000', $poolC->qty_on_hand);
-        $this->assertSame('80.0000', $poolC->inventory_value);
-        $this->assertSame('16.0000', $poolC->base_avg_unit_cost);
-        $repairs = StockTransferRepair::query()->orderBy('stock_transfer_detail_id')->get();
+        $this->assertSame('6.0000', $poolB->qty_on_hand);
+        $this->assertSame('60.0000', $poolB->inventory_value);
+
+        // A later, unrelated receipt settles A2's shortage at $16 — nothing
+        // to do with the 6 units already transferred to Branch B.
+        $this->directReceipt($item->id, $uom->id, $locationA2Id, $order->currency_id, '12.0000', '16.0000', 2503);
+
+        $poolA->refresh();
+        $poolB->refresh();
+        $this->assertSame('4.0000', $poolA->qty_on_hand);
+        $this->assertSame('40.0000', $poolA->inventory_value);
+        // Branch B's pool — and the transfer that fed it — are completely
+        // unaffected by the $16 settlement at Branch A.
+        $this->assertSame('6.0000', $poolB->qty_on_hand);
+        $this->assertSame('60.0000', $poolB->inventory_value);
+        $this->assertSame('10.0000', $poolB->base_avg_unit_cost);
         $this->assertSame(
-            [$first->transferDetail->id, $second->transferDetail->id],
-            $repairs->pluck('stock_transfer_detail_id')->all(),
+            ['-60.0000', '60.0000'],
+            $transfer->valuationEntries()->orderBy('id')->pluck('base_amount')->all(),
         );
-        $this->assertSame(['16.0000', '16.0000'], $repairs->pluck('actual_unit_cost')->all());
-        $this->assertSame(['36.0000', '30.0000'], $repairs->pluck('valuation_adjustment')->all());
-        // The two repairs reallocate between pools without touching company
-        // totals: physical 6 + (-7 open) + 5 ... valued 36 - 64 + 80 = 52.
-        $this->assertEquals(52, AvcoPool::query()->sum('inventory_value'));
-        $this->assertSame('OPEN', NegativeStockShortage::query()->where('location_id', $locationB2Id)->sole()->status);
+        $this->assertEquals(100, AvcoPool::query()->sum('inventory_value'));
     }
 
     public function test_recovered_stock_posts_normally_and_leaves_the_override_unused(): void

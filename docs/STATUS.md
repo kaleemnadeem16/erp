@@ -27,8 +27,9 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 | **Normal outbound stock issues** — AVCO/FIFO/SPECIFIC blocking-mode issues at the sole movement boundary → [stock.md](domain/stock.md) | 2026-09-03 |
 | **Negative-stock policy + override workflows** — ADR 0037 company controls, immutable request/approval/review records → [negative-stock.md](domain/negative-stock.md) | 2026-09-03 |
 | **Authorised negative posting + inbound settlement** — provisional AVCO/FIFO cost, oldest-first exact-identity settlement, append-only repairs → [negative-stock.md](domain/negative-stock.md) | 2026-09-03 |
-| **Value-conserving transfers + provisional repair propagation** — same-pool neutrality, cross-pool conservation, exactly-once cascading repairs → [negative-stock.md](domain/negative-stock.md) | 2026-09-03 |
+| **Value-conserving transfers** — same-pool neutrality, cross-pool conservation, deterministic lock order → [negative-stock.md](domain/negative-stock.md) | 2026-09-03 |
 | **Stock-engine audit fixes** — frozen pools no longer block receiving at non-shortage locations; pool-level insufficiency no longer blocks physically available issues; transfers preserve FIFO age and settle at exact slice costs; pools lock in id order (deadlock fix); `PostInventoryMovement` split into `Movements/` collaborators per the new [file-size rule](architecture/code-structure.md#file-size-and-splitting); a seeded conservation property test now guards the whole engine; docs restructured per [ADR 0044](decisions/0044-status-log-context-budget.md); Q15/Q16 opened | 2026-09-03 |
+| **AVCO transfer repair removed** — a transfer's exact source is always fully physically backed, so a frozen pool never makes it provisional; its rate is final at post time, matching issues → [ADR 0045](decisions/0045-avco-transfer-rate-final-not-provisional.md), resolves Q15 | 2026-09-03 |
 
 ## Next
 
@@ -40,9 +41,8 @@ Continue [Phase 2 — Purchasing & stock](phases/phase-2-purchasing-stock.md):
 
 ## Blocked / awaiting input
 
-Nothing blocking. Open questions: [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) — 0 blocking, 4
-non-blocking (second customer profile; cross-entity master data; provisional transfer repair
-rate; movement posting actor).
+Nothing blocking. Open questions: [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) — 0 blocking, 3
+non-blocking (second customer profile; cross-entity master data; movement posting actor).
 
 ## Roadmap at a glance
 

@@ -60,28 +60,6 @@ real: a parent "account" grouping above `company_id`; per-record cross-company s
 accept duplication and reconcile via an external key. Not decided — no second legal entity
 exists yet to design against.
 
-### Q15 — Repair rate for provisional transfers of pre-negative stock
-**Blocks:** Nothing — company value is conserved either way. Affects how accurately cost is
-allocated *between* pools, so it matters before Phase 6 GL posting consumes the valuation feed.
-
-When a non-positive pool recovers, every still-open provisional transfer out of it is repaired
-to the recovery inbound's rate (see
-[negative-stock.md](domain/negative-stock.md#provisional-transfers-and-repair-propagation)).
-But the physical units such a transfer moved are, by construction, stock that existed *before*
-the pool went negative — and their true historical cost is often exactly the frozen
-`last_valid_avg_unit_cost` the transfer already used. Worked example: receive 10 @ 10 at A;
-authorised shortage of 10 at another location empties the pool; transfer 6 of the @10 units
-A→B (provisional, rate 10); recovery receipt 12 @ 16 settles the shortage. Settlement already
-trues the shortage's COGS from 10 to 16; the transfer repair *additionally* moves
-`6 × (16 − 10) = 36` out of A into B, leaving A's remaining @16 units undervalued and B's @10
-units overvalued by the same 36. The repair rate is only clearly right for stock that arrived
-*during* the frozen period at the new price. Options: repair only transfers of during-frozen
-inbound (track layer provenance); repair at the moved layers' own historical cost (often a
-no-op); or keep the current single recovery rate for simplicity and accept the misallocation.
-The cascade compounds the choice — second-hop repairs currently reuse the root recovery rate.
-Current behaviour is pinned by `StockPoolRecoveryTest` and conserves totals, so this is a
-refinement decision, not a correctness emergency.
-
 ### Q16 — Recording the posting actor on stock movements
 **Blocks:** Nothing yet — decide before sales despatch/consumption endpoints call
 `PostInventoryMovement::issue()` in Phase 4/5.

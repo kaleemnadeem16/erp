@@ -26,7 +26,6 @@ final class ReceiptPoster
         private readonly StockIdentity $identity,
         private readonly ShortageSettler $settler,
         private readonly AvcoPoolManager $pools,
-        private readonly TransferRepairPropagator $propagator,
     ) {}
 
     /** @param array{item_id:int, location_id:int, qty:string, uom_id:int, moved_at:mixed, source_type:string, source_id:int, unit_cost:string, currency_id:int, fx_rate:string, base_unit_cost:string, batch_no?:string|null, serial_no?:string|null, amount?:string, base_amount?:string} $input */
@@ -102,7 +101,6 @@ final class ReceiptPoster
             ),
             BigDecimal::zero(),
         )->toScale(4, RoundingMode::HALF_UP);
-        $poolWasNonPositive = $pool !== null && BigDecimal::of($pool->qty_on_hand)->isLessThanOrEqualTo(0);
         if ($pool !== null) {
             $newQty = BigDecimal::of($pool->qty_on_hand)->plus($qty);
             $newValue = BigDecimal::of($pool->inventory_value)->plus($baseAmount)->plus($baseAdjustment)->toScale(4, RoundingMode::HALF_UP);
@@ -129,10 +127,6 @@ final class ReceiptPoster
         ]);
 
         $this->settler->applyReceiptSettlements($move, $settlements, $unitCost, $baseUnitCost, $input['fx_rate'], $pool, $accountId);
-
-        if ($pool !== null && $poolWasNonPositive && BigDecimal::of($pool->qty_on_hand)->isGreaterThan(0)) {
-            $this->propagator->propagate($pool->id, $baseUnitCost, $accountId);
-        }
 
         return $move->load(['valuationEntry', 'valuationEntries']);
     }

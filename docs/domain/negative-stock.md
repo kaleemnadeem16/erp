@@ -4,9 +4,8 @@
 
 The live negative-stock contract fixed by
 [ADR 0037](../decisions/0037-controlled-negative-stock-overrides.md): company policy
-configuration, authorised override workflows, provisional valuation, shortage settlement and the
-provisional transfer-repair chain. The core stock model these tables attach to is
-[stock.md](stock.md).
+configuration, authorised override workflows, provisional valuation and shortage settlement. The
+core stock model these tables attach to is [stock.md](stock.md).
 
 Availability is exact-location/tracking-specific and independent from valuation scope. Live
 stock blocks by default; configured, permissioned overrides apply only to genuine
@@ -44,14 +43,11 @@ negative_stock_settlements            -- immutable partial/full inbound allocati
   provisional_unit_cost, actual_unit_cost, unit_cost_difference
   valuation_adjustment, settled_at
 
-stock_transfer_details                -- immutable AVCO transfer dependency identity
+stock_transfer_details                -- immutable AVCO pool identity a transfer's value moved
+                                       -- between, kept for valuation and audit (ADR 0045: a
+                                       -- transfer's rate is final at post time, never repaired)
   id, company_id, stock_move_id
-  source_avco_pool_id NULLABLE, destination_avco_pool_id NULLABLE, is_provisional
-
-stock_transfer_repairs                -- immutable, at most one per transfer detail, ever
-  id, company_id, stock_transfer_detail_id
-  qty, provisional_unit_cost, actual_unit_cost, unit_cost_difference
-  valuation_adjustment, repaired_at
+  source_avco_pool_id NULLABLE, destination_avco_pool_id NULLABLE
 ```
 
 ## Policy configuration
@@ -133,30 +129,27 @@ receipt and repair together: a non-positive remainder stays frozen at its last v
 once positive, the recovered average re-derives from the pool's actual quantity and value. FIFO
 performs the same append-only repair without creating a fake shortage layer.
 
-## Provisional transfers and repair propagation
+## Transfers from a frozen pool
 
 If a transfer's physical source location has sufficient quantity but its wider source pool is
-non-positive, the pool's last defensible provisional AVCO rate is carried to the destination and
-the transfer's immutable detail row is flagged provisional. This is a non-positive
-valuation-pool case and never permits a negative physical-source transfer.
+non-positive, the transfer prices at the pool's frozen `last_valid_avg_unit_cost`. This never
+permits a negative physical-source transfer — availability is still checked at the exact source
+location — and there is nothing provisional about the resulting value.
 
-When a settling receipt (or a transfer that itself settles a destination-side shortage) brings a
-non-positive pool back to positive, every still-open provisional transfer taken out of it while
-it was frozen is corrected exactly once, to that recovery's rate: `qty × (actual − frozen)`
-moves out of the source and into the destination as a paired `VALUATION_ADJUSTMENT` valuation
-entry on the transfer's own move, plus an immutable `stock_transfer_repairs` row (unique per
-transfer detail, so it can never be double-applied). This is a pure reallocation between two
-pools — it never changes either pool's `qty_on_hand`, and the paired amounts always net to zero,
-so total company value is unaffected by the repair itself. If the destination pool had itself
-relayed that value onward through its own still-open provisional transfer, the same correction
-cascades transitively, **at the root recovery's rate** — the cascade does not re-derive a rate
-per hop. A settlement that only partially recovers the pool (it stays non-positive)
-intentionally does not propagate — there is no real recovered rate to carry forward until the
-pool is positive again.
+Per [ADR 0045](../decisions/0045-avco-transfer-rate-final-not-provisional.md), that rate is
+**final at post time**, exactly like a physically-covered issue drawn from the same frozen pool
+(see "Pool-level insufficiency never blocks physical stock" above). A transfer's exact source
+location is always fully physically backed — `PostInventoryMovement::transfer()` has no
+negative-stock override path, and blocks any quantity exceeding physical availability there — so
+a non-positive wider pool only ever reflects unrelated shortage debt at some *other* location
+sharing that pool, never anything about the physical units this transfer is moving. A later
+settlement of that unrelated debt, at whatever rate, never revalues an already-posted transfer:
+there is no provisional flag, no repair, and no cascade between pools. `stock_transfer_details`
+retains both pool identities for valuation and audit, but nothing on it is ever corrected.
 
-Whether the recovery receipt's cost is always the right repair rate — the transferred units may
-be pre-negative stock whose frozen rate was their true historical cost — is an open question:
-see [Q15](../OPEN-QUESTIONS.md#q15--repair-rate-for-provisional-transfers-of-pre-negative-stock).
+This does not change how a transfer's *destination* settles an existing shortage at its own exact
+location — see "Settlement" above (`applyTransferSettlements` repairs at the exact incoming layer
+or pool rate consumed, unrelated to source-side pool freezing).
 
 ## Cutover openings
 
@@ -179,3 +172,5 @@ negatives remain blocked. See
 - [ADR 0039](../decisions/0039-configurable-avco-valuation-pools.md) — AVCO pool scopes
 - [ADR 0040](../decisions/0040-control-backdated-stock-recalculation-and-corrections.md) —
   correction workflow for later economic differences
+- [ADR 0045](../decisions/0045-avco-transfer-rate-final-not-provisional.md) — a transfer's rate
+  from a frozen pool is final, never repaired

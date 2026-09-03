@@ -2,7 +2,8 @@
 
 # 0039 — Use constrained configurable AVCO valuation pools
 
-- **Status:** accepted
+- **Status:** superseded by [0045](0045-avco-transfer-rate-final-not-provisional.md) — its
+  "Transfers" section's provisional-repair provision only; the pool-scope decision below stands
 - **Date:** 2026-09-01
 - **Affects:** Phase 2 Inventory, stock valuation, transfers, negative-stock recovery, inventory
   cutover, backdated replay and Phase 6 Finance

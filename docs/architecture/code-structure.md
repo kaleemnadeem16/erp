@@ -117,7 +117,7 @@ file accrete every concern:
   them from anywhere else.
 
 `PostInventoryMovement` is the exemplar: the sole stock-write boundary stayed a four-method
-Action while receipt, issue, transfer, pool-state, settlement and repair-propagation logic each
+Action while receipt, issue, transfer, pool-state, layer-allocation and settlement logic each
 live in an `Actions/Movements/` collaborator. The split changed no test, because tests exercise
 the boundary.
 

@@ -77,10 +77,9 @@ stock_valuation_entries                 -- cost impact of each move; feeds the G
   account_id
 ```
 
-The negative-stock and transfer-repair tables (`inventory_policy_changes`,
-`negative_stock_override_*`, `negative_stock_shortages`, `negative_stock_settlements`,
-`stock_transfer_details`, `stock_transfer_repairs`) are documented in
-[negative-stock.md](negative-stock.md#schema).
+The negative-stock and transfer tables (`inventory_policy_changes`, `negative_stock_override_*`,
+`negative_stock_shortages`, `negative_stock_settlements`, `stock_transfer_details`) are
+documented in [negative-stock.md](negative-stock.md#schema).
 
 `stock_valuation_entries.qty`/`amount`/`base_amount` are a signed feed, unlike every quantity
 column elsewhere in this schema: an inbound receipt posts positive (a debit), an outbound
@@ -119,9 +118,8 @@ future advanced-WMS mode remain deferred until a phase that consumes them.
 Per-item, not one method for the whole company — [items.md](items.md#valuation-method),
 [ADR 0032](../decisions/0032-per-item-valuation-method.md). Each item's `valuation_method` picks
 which of these applies. Receipts, outbound issues, shortage settlement and transfers are
-implemented for all three, as is provisional transfer-repair propagation. Issues and transfers
-enforce exact-location/tracking availability and QA eligibility; replay remains a later Phase 2
-slice.
+implemented for all three. Issues and transfers enforce exact-location/tracking availability and
+QA eligibility; replay remains a later Phase 2 slice.
 
 **AVCO.** On receipt:
 
@@ -197,9 +195,11 @@ opposite-direction work cannot invert lock order and an empty physical source ca
 overridden. FIFO creates one destination layer per source-cost component, each keeping its
 source layer's original `received_at` — FIFO age is a property of the stock, not of its custody
 path — and SPECIFIC preserves the exact serial. AVCO writes equal-and-opposite source and
-destination valuation effects. Immutable transfer detail retains both pool identities and
-whether a non-positive source made the value provisional — the repair chain for that case is
-[negative-stock.md](negative-stock.md#provisional-transfers-and-repair-propagation).
+destination valuation effects, priced at the source pool's current rate — its frozen
+`last_valid_avg_unit_cost` when non-positive — which is final at post time and never later
+repaired, per [ADR 0045](../decisions/0045-avco-transfer-rate-final-not-provisional.md); see
+[negative-stock.md](negative-stock.md#transfers-from-a-frozen-pool). Immutable transfer detail
+retains both pool identities for valuation and audit.
 
 ### Historical retention for replay
 
@@ -292,3 +292,5 @@ must not be forgotten once it does.
   structured location modes
 - [ADR 0043](../decisions/0043-control-purchase-order-receipt-and-qa-posting.md) — purchase
   receipt, QA disposition and reversal posting contract
+- [ADR 0045](../decisions/0045-avco-transfer-rate-final-not-provisional.md) — a transfer's rate
+  from a frozen pool is final, never repaired

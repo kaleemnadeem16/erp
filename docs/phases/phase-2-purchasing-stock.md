@@ -136,8 +136,8 @@ The order matters because later work needs stable document and stock boundaries:
       into one pool cannot calculate from stale state while independent pools remain independent
 - [x] Implement same-pool transfer neutrality and cross-pool transfer value conservation,
       destination-average recalculation and immutable source/destination pool identities
-- [x] Implement provisional cross-pool transfer repair propagation without permitting a negative
-      physical source or creating/destroying company inventory value
+- [x] Price a cross-pool transfer from a frozen source pool at its final frozen rate (ADR 0045),
+      without permitting a negative physical source or creating/destroying company inventory value
 - [x] Implement FIFO oldest-layer consumption with partial-layer splits and row locking
 - [x] Implement SPECIFIC receipt/issue validation: exact serial identity is required and a serial
       cannot be received twice or issued more than once while on hand
@@ -235,7 +235,7 @@ Tick these in the same commit as the work.
 - [ ] Batch/serial requirements follow `items.tracking`, not `valuation_method`
 - [ ] Same-pool transfers leave pool value/average unchanged; cross-pool transfers carry source
       AVCO into the destination, recalculate destination AVCO and preserve total company quantity
-      and value, including provisional repair propagation
+      and value; a frozen source pool's rate is final and never later repaired (ADR 0045)
 - [ ] Negative-stock and backdated-receipt behaviour exactly matches the accepted Q13/Q14 ADRs
 - [ ] A finalised inventory cutover reconciles exact locations, each target AVCO pool and company
       totals; continues or explicitly converts source valuation scope without rewriting history;

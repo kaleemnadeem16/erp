@@ -30,7 +30,6 @@ final class TransferPoster
         private readonly LayerAllocator $layers,
         private readonly AvcoPoolManager $pools,
         private readonly ShortageSettler $settler,
-        private readonly TransferRepairPropagator $propagator,
     ) {}
 
     /** @param array{item_id:int, from_location_id:int, to_location_id:int, qty:string, uom_id:int, moved_at:mixed, source_type:string, source_id:int, batch_no?:string|null, serial_no?:string|null} $input */
@@ -87,17 +86,23 @@ final class TransferPoster
         [$sourcePool, $destinationPool] = $item->valuation_method === ValuationMethod::Avco
             ? $this->pools->lockPair($item, $source, $destination, $batch)
             : [null, null];
-        $destinationWasNonPositive = $destinationPool !== null && BigDecimal::of($destinationPool->qty_on_hand)->isLessThanOrEqualTo(0);
-        $provisional = $sourcePool !== null && BigDecimal::of($sourcePool->qty_on_hand)->isLessThanOrEqualTo(0);
+        // A transfer's exact source location always has full physical cover
+        // for its quantity (checked above), so its value is final at post
+        // time whether the wider pool is currently active or frozen —
+        // last_valid_avg_unit_cost is the pool's live average when active and
+        // its preserved last-known rate when frozen, so one field covers both
+        // (ADR 0045: a non-positive pool never makes a physically-backed
+        // transfer provisional; that state only reflects unrelated shortage
+        // debt elsewhere in the pool).
         $unitCost = $sourcePool !== null
-            ? BigDecimal::of($provisional ? $sourcePool->last_valid_avg_unit_cost : $sourcePool->base_avg_unit_cost)
+            ? BigDecimal::of($sourcePool->last_valid_avg_unit_cost)
             : $allocations->reduce(fn (BigDecimal $total, array $allocation): BigDecimal => $total->plus($allocation['qty']->multipliedBy(BigDecimal::of($allocation['layer']->base_unit_cost))), BigDecimal::zero())->dividedBy($qty, 4, RoundingMode::HALF_UP);
         if ($unitCost->isLessThanOrEqualTo(0)) {
             throw new DomainInvariantException('No defensible transfer cost exists.', 'item_id');
         }
         // A full drawdown of a positive pool moves its precise remaining value,
         // so rounding can never strand a residual on the emptied source pool.
-        $baseAmount = $sourcePool !== null && ! $provisional && BigDecimal::of($sourcePool->qty_on_hand)->isEqualTo($qty)
+        $baseAmount = $sourcePool !== null && BigDecimal::of($sourcePool->qty_on_hand)->isEqualTo($qty)
             ? BigDecimal::of($sourcePool->inventory_value)
             : $qty->multipliedBy($unitCost)->toScale(4, RoundingMode::HALF_UP);
         $settlements = $this->settler->allocate($item, $destination, $batch, $qty);
@@ -132,13 +137,10 @@ final class TransferPoster
         $this->postTransferValuation($move, $allocations, $sourcePool, $destinationPool, $qty, $unitCost, $baseAmount, $accountId);
         StockTransferDetail::query()->create([
             'stock_move_id' => $move->id, 'source_avco_pool_id' => $sourcePool?->id,
-            'destination_avco_pool_id' => $destinationPool?->id, 'is_provisional' => $provisional,
+            'destination_avco_pool_id' => $destinationPool?->id,
         ]);
         $repair = $this->settler->applyTransferSettlements($move, $settlements, $this->costSlices($allocations, $sourcePool, $qty, $unitCost), $destinationPool, $accountId);
         $this->updateTransferPools($sourcePool, $destinationPool, $qty, $baseAmount, $repair);
-        if ($destinationPool !== null && $destinationWasNonPositive && BigDecimal::of($destinationPool->qty_on_hand)->isGreaterThan(0)) {
-            $this->propagator->propagate($destinationPool->id, $unitCost, $accountId);
-        }
 
         return $move->load(['valuationEntries', 'transferDetail']);
     }

@@ -19,10 +19,9 @@ movement and valuation, built in Phase 2.
 - `StockMove`, `StockLayer`, `StockBatch`, `AvcoPool` and `StockValuationEntry` — the immutable
   movement, traceability and valuation-feed foundation; receipts, issues, shortage settlement and
   physical transfers are live for AVCO/FIFO/SPECIFIC
-- `StockTransferDetail` — immutable source/destination AVCO identities and provisional-state
-  snapshot for transfer valuation and later repair propagation
-- `StockTransferRepair` — immutable, at most one per transfer detail, recording the paired
-  value reallocation once its source pool's provisional rate is later proven wrong
+- `StockTransferDetail` — immutable source/destination AVCO pool identities, retained for
+  transfer valuation and audit; a transfer's rate is final at post time and never repaired
+  (ADR 0045)
 - `InventoryPolicyChange` — immutable, tenant-safe audit history for governed inventory-policy
   changes; ADR 0037 negative-stock policy defaults and eligibility are configured on `Company`
 - `NegativeStockOverrideRequest`, `NegativeStockOverrideApproval` and
@@ -60,8 +59,8 @@ itself permit a negative movement; authorisation, posting and settlement are sep
 permissions and independent-user rules without mutating the request.
 `PostInventoryMovement` is the sole quantity/valuation write boundary — a four-method facade
 whose per-movement logic lives in the internal `Actions/Movements/` collaborators (receipt,
-issue, transfer, pool state, layer allocation, settlement, repair propagation); nothing else may
-call those. Inbound receipts write a traceability layer and update the resolved AVCO pool where
+issue, transfer, pool state, layer allocation, settlement); nothing else may call those. Inbound
+receipts write a traceability layer and update the resolved AVCO pool where
 applicable — including a frozen pool: inbound at an open shortage's exact identity settles
 first, and inbound elsewhere in the pool posts normally rather than being blocked. Normal
 outbound issues deplete exact-location/tracking availability, exclude unresolved or failed QA
@@ -76,13 +75,12 @@ settles the oldest exact-identity shortage first, appends its valuation repair (
 transfer repairs at the exact incoming layer costs it consumes), and exposes only excess
 quantity as ordinary available stock. Transfers reject negative physical sources, preserve
 FIFO/SPECIFIC layers and their original receipt age, remain neutral inside one AVCO pool and
-conserve exact base value across pools, locking locations and pools in ascending-id order.
-Whenever a settlement brings a non-positive pool back positive, every provisional transfer taken
-out of it while frozen is corrected exactly once to the recovered rate — the exact base amount
-reallocates from source to destination pool, cascading onward (at the root recovery's rate; see
-Q15) if that destination had itself relayed the value through its own provisional transfer
-first. `StockConservationPropertyTest` fuzzes the whole engine and asserts feed/pool/layer/
-shortage agreement after every random movement.
+conserve exact base value across pools, locking locations and pools in ascending-id order. A
+transfer's exact source location is always fully physically backed, so it always prices at the
+source pool's current rate — its frozen `last_valid_avg_unit_cost` when non-positive — and that
+rate is final at post time, never later repaired (ADR 0045). `StockConservationPropertyTest`
+fuzzes the whole engine and asserts feed/pool/layer/shortage agreement after every random
+movement.
 
 ## Events
 
@@ -108,3 +106,4 @@ silently move an already-created item's official cost basis. See
 - [decisions/0032-per-item-valuation-method.md](../../../../docs/decisions/0032-per-item-valuation-method.md)
 - [architecture/multi-tenancy.md](../../../../docs/architecture/multi-tenancy.md)
 - [decisions/0041-progressive-inventory-location-capabilities.md](../../../../docs/decisions/0041-progressive-inventory-location-capabilities.md)
+- [decisions/0045-avco-transfer-rate-final-not-provisional.md](../../../../docs/decisions/0045-avco-transfer-rate-final-not-provisional.md)
