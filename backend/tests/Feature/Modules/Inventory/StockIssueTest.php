@@ -7,19 +7,35 @@ use App\Models\Company;
 use App\Models\User;
 use App\Modules\Accounting\Models\ChartOfAccount;
 use App\Modules\Inventory\Actions\CreateWarehouse;
+use App\Modules\Inventory\Actions\DecideNegativeStockOverride;
 use App\Modules\Inventory\Actions\PostInventoryMovement;
+use App\Modules\Inventory\Actions\RequestNegativeStockOverride;
 use App\Modules\Inventory\Models\AvcoPool;
+use App\Modules\Inventory\Models\NegativeStockOverrideRequest;
+use App\Modules\Inventory\Models\NegativeStockShortage;
 use App\Modules\Inventory\Models\StockLayer;
 use App\Modules\Inventory\Support\AvcoPoolScope;
 use App\Modules\Inventory\Support\ItemTracking;
+use App\Modules\Inventory\Support\NegativeStockApprovalDecision;
 use App\Modules\Inventory\Support\ValuationMethod;
 use App\Modules\Purchasing\Actions\IssuePurchaseOrder;
 use App\Modules\Purchasing\Models\GoodsReceiptLine;
 use App\Modules\Purchasing\Models\PurchaseOrderLine;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\Feature\Modules\Purchasing\PurchaseOrderFoundationTest;
 
 class StockIssueTest extends PurchaseOrderFoundationTest
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        app(PermissionRegistrar::class)->setPermissionsTeamId(1);
+        foreach (['inventory.negative-stock.request', 'inventory.negative-stock.approve'] as $permission) {
+            Permission::findOrCreate($permission);
+        }
+    }
+
     public function test_avco_issue_uses_the_locked_average_and_reduces_pool_and_physical_layer(): void
     {
         [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Avco);
@@ -136,6 +152,74 @@ class StockIssueTest extends PurchaseOrderFoundationTest
         $this->assertDatabaseCount('stock_moves', 2);
     }
 
+    public function test_approved_fifo_override_posts_supported_and_provisional_cost_components(): void
+    {
+        [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Fifo, qty: '2.0000');
+        $locationId = $this->locationId();
+        $this->postReceipt($order->lines()->sole()->id, $item->id, $uom->id, $locationId, '2.0000', '10.0000');
+        $request = $this->approvedOverride($item->id, $locationId, '5.0000', '2.0000', 1101);
+
+        $move = app(PostInventoryMovement::class)->issue(array_merge(
+            $this->issueInput($item->id, $uom->id, $locationId, '5.0000', 1101),
+            ['override_request_id' => $request->id],
+        ));
+
+        $shortage = NegativeStockShortage::query()->sole();
+        $this->assertSame('3.0000', $shortage->qty_open);
+        $this->assertSame('10.0000', $shortage->provisional_unit_cost);
+        $this->assertSame($request->id, $shortage->override_request_id);
+        $this->assertSame(['-20.0000', '-30.0000'], $move->valuationEntries()->orderBy('id')->pluck('base_amount')->all());
+        $this->assertSame('0.0000', StockLayer::query()->sole()->qty_remaining);
+    }
+
+    public function test_override_blocks_when_live_shortage_is_worse_than_approved(): void
+    {
+        [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Fifo, qty: '1.0000');
+        $locationId = $this->locationId();
+        $this->postReceipt($order->lines()->sole()->id, $item->id, $uom->id, $locationId, '1.0000', '10.0000');
+        $request = $this->approvedOverride($item->id, $locationId, '5.0000', '2.0000', 1102);
+
+        $this->expectException(DomainInvariantException::class);
+        app(PostInventoryMovement::class)->issue(array_merge(
+            $this->issueInput($item->id, $uom->id, $locationId, '5.0000', 1102),
+            ['override_request_id' => $request->id],
+        ));
+    }
+
+    public function test_prior_override_cannot_post_before_approval(): void
+    {
+        [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Fifo, qty: '1.0000');
+        $locationId = $this->locationId();
+        $this->postReceipt($order->lines()->sole()->id, $item->id, $uom->id, $locationId, '1.0000', '10.0000');
+        $request = $this->requestOverride($item->id, $locationId, '2.0000', '1.0000', 1105);
+
+        $this->expectException(DomainInvariantException::class);
+        app(PostInventoryMovement::class)->issue(array_merge(
+            $this->issueInput($item->id, $uom->id, $locationId, '2.0000', 1105),
+            ['override_request_id' => $request->id],
+        ));
+    }
+
+    public function test_avco_override_uses_last_valid_average_and_freezes_negative_pool(): void
+    {
+        [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Avco, qty: '2.0000');
+        $locationId = $this->locationId();
+        $this->postReceipt($order->lines()->sole()->id, $item->id, $uom->id, $locationId, '2.0000', '10.0000');
+        app(PostInventoryMovement::class)->issue($this->issueInput($item->id, $uom->id, $locationId, '2.0000', 1103));
+        $request = $this->approvedOverride($item->id, $locationId, '1.0000', '0.0000', 1104);
+
+        app(PostInventoryMovement::class)->issue(array_merge(
+            $this->issueInput($item->id, $uom->id, $locationId, '1.0000', 1104),
+            ['override_request_id' => $request->id],
+        ));
+
+        $pool = AvcoPool::query()->sole();
+        $this->assertSame('-1.0000', $pool->qty_on_hand);
+        $this->assertSame('-10.0000', $pool->inventory_value);
+        $this->assertSame('10.0000', $pool->last_valid_avg_unit_cost);
+        $this->assertSame('FROZEN', $pool->status->value);
+    }
+
     private function issuedOrder(ValuationMethod $method, ItemTracking $tracking = ItemTracking::None, string $qty = '4.0000', bool $qaRequired = false): array
     {
         [$order, $item, $uom] = $this->makeOrder();
@@ -186,5 +270,32 @@ class StockIssueTest extends PurchaseOrderFoundationTest
             'item_id' => $itemId, 'location_id' => $locationId, 'qty' => $qty, 'uom_id' => $uomId,
             'moved_at' => now(), 'source_type' => 'TEST_ISSUE', 'source_id' => $sourceId,
         ];
+    }
+
+    private function approvedOverride(int $itemId, int $locationId, string $requested, string $available, int $sourceId): NegativeStockOverrideRequest
+    {
+        $request = $this->requestOverride($itemId, $locationId, $requested, $available, $sourceId);
+        $approver = User::factory()->create();
+        $approver->givePermissionTo('inventory.negative-stock.approve');
+        app(DecideNegativeStockOverride::class)($request, NegativeStockApprovalDecision::Approved, 'Evidence checked', $approver);
+
+        return $request;
+    }
+
+    private function requestOverride(int $itemId, int $locationId, string $requested, string $available, int $sourceId): NegativeStockOverrideRequest
+    {
+        Company::query()->findOrFail(1)->update([
+            'negative_stock_mode' => 'AUTHORISED_OVERRIDE',
+            'negative_stock_authorisation_mode' => 'PRIOR_APPROVAL',
+        ]);
+        $requester = User::factory()->create();
+        $requester->givePermissionTo('inventory.negative-stock.request');
+
+        return app(RequestNegativeStockOverride::class)([
+            'item_id' => $itemId, 'location_id' => $locationId, 'movement_class' => 'MATERIAL_CONSUMPTION',
+            'requested_qty' => $requested, 'available_qty' => $available,
+            'source_type' => 'TEST_ISSUE', 'source_id' => $sourceId,
+            'reason_code' => 'PAPERWORK_DELAY', 'explanation' => 'Receipt paperwork is delayed',
+        ], $requester);
     }
 }

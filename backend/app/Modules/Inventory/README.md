@@ -25,6 +25,8 @@ movement and valuation, built in Phase 2.
 - `NegativeStockOverrideRequest`, `NegativeStockOverrideApproval` and
   `NegativeStockOverrideReview` — immutable snapshots and independent decisions for ADR 0037's
   prior-approval and immediate-with-review workflows
+- `NegativeStockShortage` — open physical shortage state linked one-to-one to the consuming
+  override request and outbound movement, retaining its provisional cost until settlement
 
 ## Does not own
 
@@ -55,7 +57,11 @@ permissions and independent-user rules without mutating the request.
 traceability layer and update the resolved AVCO pool where applicable. Normal outbound issues
 deplete exact-location/tracking availability, exclude unresolved or failed QA quantity, consume
 FIFO layers or exact SPECIFIC serials, lock and cost AVCO at its resolved pool, and append the
-Phase 6 valuation feed atomically. Negative-stock overrides and transfers remain separate slices.
+Phase 6 valuation feed atomically. An explicitly supplied authorised override may cover only its
+exact issue and no more than its snapshotted shortage. It consumes available stock first, derives
+unsupported AVCO/FIFO cost from system history, and creates linked shortage state atomically.
+Compatible inbound is blocked until the settlement workflow handles it; settlement and transfers
+remain separate slices.
 
 ## Events
 

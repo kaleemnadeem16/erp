@@ -155,8 +155,9 @@ The order matters because later work needs stable document and stock boundaries:
       mandatory reason and immutable old/new audit history
 - [x] Build immutable ADR 0037 override requests, independent prior-approval decisions and bounded
       immediate-review outcomes with tenant-safe actors, permissions and snapshotted deadlines
-- [ ] Consume authorised override records in the movement boundary, derive provisional AVCO/FIFO
-      cost, create shortage state and append inbound settlement valuation repairs
+- [x] Consume authorised override records in the movement boundary, revalidate the exact shortage,
+      derive provisional AVCO/FIFO cost and atomically create linked shortage state
+- [ ] Settle compatible inbound against oldest exact-identity shortages and append valuation repairs
 - [ ] Implement company backdating horizon modes (`CURRENT_AND_PREVIOUS_PERIOD` default,
       `PERIOD_LOCK_ONLY`, `POSTING_FLOOR` with fixed/rolling subtype), audited policy changes and
       most-restrictive-boundary evaluation; rolling mode requires a valid company IANA accounting

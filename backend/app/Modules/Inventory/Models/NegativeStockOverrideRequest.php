@@ -25,6 +25,8 @@ use Illuminate\Support\Carbon;
  * @property string $requested_qty
  * @property string $available_qty
  * @property string $explanation
+ * @property string $source_type
+ * @property int $source_id
  * @property NegativeStockAuthorisationMode $authorisation_mode
  * @property bool $allow_self_review
  * @property string $shortage_qty
@@ -62,5 +64,11 @@ class NegativeStockOverrideRequest extends Model
     public function review(): HasOne
     {
         return $this->hasOne(NegativeStockOverrideReview::class, 'request_id');
+    }
+
+    /** @return HasOne<NegativeStockShortage, $this> */
+    public function shortage(): HasOne
+    {
+        return $this->hasOne(NegativeStockShortage::class, 'override_request_id');
     }
 }

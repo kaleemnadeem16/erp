@@ -53,4 +53,10 @@ class StockMove extends Model
     {
         return $this->hasMany(StockValuationEntry::class);
     }
+
+    /** @return HasOne<NegativeStockShortage, $this> */
+    public function negativeStockShortage(): HasOne
+    {
+        return $this->hasOne(NegativeStockShortage::class, 'source_move_id');
+    }
 }

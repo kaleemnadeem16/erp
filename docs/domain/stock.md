@@ -84,7 +84,7 @@ negative_stock_override_reviews         -- IMMEDIATE_WITH_REVIEW outcome; one pe
 negative_stock_shortages
   id, company_id, item_id, location_id, batch_id NULLABLE, avco_pool_id NULLABLE
   qty_open, provisional_unit_cost, status
-  source_move_id, settled_at NULLABLE
+  source_move_id, override_request_id, settled_at NULLABLE
 
 stock_valuation_entries                 -- cost impact of each move; feeds the GL
   id, stock_move_id
@@ -218,6 +218,20 @@ other hard constraints are never overrideable. Corrections/reversals use a separ
 Overrides use prior approval by default or immediate posting with bounded review. Every use is
 explicit, reasoned, immutably audited and tracked separately by review outcome and shortage state
 (`OPEN`, `PARTIALLY_SETTLED`, `SETTLED`). Neither API nor UI applies one silently.
+
+The outbound movement boundary re-locks exact physical stock and the override request. A prior
+request must have an immutable `APPROVED` decision; immediate mode was already permission-gated at
+request time. If live shortage has worsened beyond the reviewed quantity, posting stops. If stock
+has recovered, the issue posts normally and leaves the override unused. One request can create at
+most one shortage and an already-open shortage at the same exact identity cannot be deepened.
+
+Supported quantity consumes ordinary layers first. Unsupported AVCO quantity uses the locked
+pool's last valid official average; a pool that becomes zero or negative is frozen without losing
+that average. Unsupported FIFO quantity uses the most recent compatible actual acquisition cost.
+Missing or non-positive cost history blocks posting. The resulting move, signed valuation feed
+and `OPEN` shortage are one transaction. Ordinary inbound to an open-shortage identity—and every
+receipt into a frozen AVCO pool—is blocked until the settlement boundary can allocate it and
+append any valuation repair; it must never pass through the normal receipt averaging path.
 
 The company policy foundation is live: `BLOCK` is the default; the authorisation mode defaults to
 `PRIOR_APPROVAL`; review SLA defaults to 24 hours and is bounded to 1–168 hours; independent

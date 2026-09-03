@@ -10,11 +10,16 @@ use App\Models\Currency;
 use App\Modules\Inventory\Models\AvcoPool;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Models\Location;
+use App\Modules\Inventory\Models\NegativeStockOverrideRequest;
+use App\Modules\Inventory\Models\NegativeStockShortage;
 use App\Modules\Inventory\Models\StockBatch;
 use App\Modules\Inventory\Models\StockLayer;
 use App\Modules\Inventory\Models\StockMove;
 use App\Modules\Inventory\Support\AvcoPoolScope;
+use App\Modules\Inventory\Support\AvcoPoolStatus;
 use App\Modules\Inventory\Support\ItemTracking;
+use App\Modules\Inventory\Support\NegativeStockApprovalDecision;
+use App\Modules\Inventory\Support\NegativeStockAuthorisationMode;
 use App\Modules\Inventory\Support\ValuationMethod;
 use App\Modules\Purchasing\Models\GoodsReceiptLine;
 use App\Modules\Purchasing\Models\QualityDisposition;
@@ -33,22 +38,24 @@ use Illuminate\Support\Facades\DB;
 final class PostInventoryMovement
 {
     /**
-     * Posts a normal, non-negative outbound issue. Negative-stock authorisation
-     * remains a separate slice: this path always blocks when exact-location and
-     * tracking-specific available quantity is insufficient.
+     * Posts an outbound issue, optionally consuming an explicit ADR 0037
+     * authorisation when exact-location stock is insufficient.
      *
-     * @param  array{item_id:int, location_id:int, qty:string, uom_id:int, moved_at:mixed, source_type:string, source_id:int, batch_no?:string|null, serial_no?:string|null}  $input
+     * @param  array{item_id:int, location_id:int, qty:string, uom_id:int, moved_at:mixed, source_type:string, source_id:int, batch_no?:string|null, serial_no?:string|null, override_request_id?:int|null}  $input
      */
     public function issue(array $input): StockMove
     {
         return DB::transaction(function () use ($input): StockMove {
             $existing = StockMove::query()->where('source_type', $input['source_type'])->where('source_id', $input['source_id'])->first();
             if ($existing !== null) {
-                return $existing->load('valuationEntries');
+                return $existing->load(['valuationEntries', 'negativeStockShortage']);
             }
 
             $item = Item::query()->findOrFail($input['item_id']);
-            $location = Location::query()->with('warehouse')->findOrFail($input['location_id']);
+            // The location row is the stable lock even when this exact identity
+            // has no layer yet. It closes the zero-stock issue/receipt race that
+            // row-locking only existing layers cannot serialize.
+            $location = Location::query()->with('warehouse')->lockForUpdate()->findOrFail($input['location_id']);
             $qty = BigDecimal::of($input['qty']);
             if ($qty->isLessThanOrEqualTo(0)) {
                 throw new DomainInvariantException('Stock issue quantity must be greater than zero.', 'qty');
@@ -77,27 +84,41 @@ final class PostInventoryMovement
             // same-stock path; re-check before allocating or mutating anything.
             $existing = StockMove::query()->where('source_type', $input['source_type'])->where('source_id', $input['source_id'])->first();
             if ($existing !== null) {
-                return $existing->load('valuationEntries');
+                return $existing->load(['valuationEntries', 'negativeStockShortage']);
             }
-            $allocations = $this->allocateAvailableLayers($layers, $qty);
+            $allocations = $this->allocateIssueLayers($layers, $qty);
+            $availableQty = $allocations->reduce(
+                fn (BigDecimal $total, array $allocation): BigDecimal => $total->plus($allocation['qty']),
+                BigDecimal::zero(),
+            );
+            $shortageQty = $qty->minus($availableQty);
+            $override = $shortageQty->isGreaterThan(0)
+                ? $this->authoriseShortage($input, $item, $location, $batch, $qty, $shortageQty)
+                : null;
+            if ($shortageQty->isZero() && isset($input['override_request_id'])) {
+                $this->validateUnusedOverride($input, $item, $location, $batch, $qty);
+            }
             $baseCurrencyId = Company::query()->findOrFail(app(CompanyContext::class)->id())->base_currency_id;
             if ($baseCurrencyId === null) {
                 throw new DomainInvariantException('A company base currency is required before stock can be issued.', 'item_id');
             }
 
             $pool = $item->valuation_method === ValuationMethod::Avco ? $this->lockAvcoPool($item, $location, $batch) : null;
-            if ($pool !== null && BigDecimal::of($pool->qty_on_hand)->isLessThan($qty)) {
+            if ($pool !== null && $override === null && BigDecimal::of($pool->qty_on_hand)->isLessThan($qty)) {
                 throw new DomainInvariantException('Insufficient stock is available in the resolved AVCO pool.', 'qty');
             }
 
+            $provisionalUnitCost = $shortageQty->isGreaterThan(0)
+                ? $this->provisionalUnitCost($item, $location, $batch, $pool)
+                : null;
             $baseAmount = $item->valuation_method === ValuationMethod::Avco
-                ? (BigDecimal::of($pool->qty_on_hand)->isEqualTo($qty)
+                ? ($override === null && BigDecimal::of($pool->qty_on_hand)->isEqualTo($qty)
                     ? BigDecimal::of($pool->inventory_value)
-                    : $qty->multipliedBy(BigDecimal::of($pool->base_avg_unit_cost))->toScale(4, RoundingMode::HALF_UP))
+                    : $qty->multipliedBy($provisionalUnitCost ?? BigDecimal::of($pool->base_avg_unit_cost))->toScale(4, RoundingMode::HALF_UP))
                 : $allocations->reduce(
                     fn (BigDecimal $total, array $allocation): BigDecimal => $total->plus($allocation['qty']->multipliedBy(BigDecimal::of($allocation['layer']->base_unit_cost))),
                     BigDecimal::zero(),
-                )->toScale(4, RoundingMode::HALF_UP);
+                )->plus($shortageQty->multipliedBy($provisionalUnitCost ?? BigDecimal::zero()))->toScale(4, RoundingMode::HALF_UP);
             $unitCost = $baseAmount->dividedBy($qty, 4, RoundingMode::HALF_UP);
 
             $move = StockMove::query()->create([
@@ -115,10 +136,12 @@ final class PostInventoryMovement
             if ($pool !== null) {
                 $newQty = BigDecimal::of($pool->qty_on_hand)->minus($qty);
                 $newValue = BigDecimal::of($pool->inventory_value)->minus($baseAmount)->toScale(4, RoundingMode::HALF_UP);
+                $poolRemainsPositive = $newQty->isGreaterThan(0);
                 $pool->update([
                     'qty_on_hand' => (string) $newQty, 'inventory_value' => (string) $newValue,
-                    'avg_unit_cost' => $newQty->isZero() ? '0.0000' : (string) $newValue->dividedBy($newQty, 4, RoundingMode::HALF_UP),
-                    'base_avg_unit_cost' => $newQty->isZero() ? '0.0000' : (string) $newValue->dividedBy($newQty, 4, RoundingMode::HALF_UP),
+                    'avg_unit_cost' => $override === null ? ($newQty->isZero() ? '0.0000' : (string) $newValue->dividedBy($newQty, 4, RoundingMode::HALF_UP)) : ($poolRemainsPositive ? (string) $newValue->dividedBy($newQty, 4, RoundingMode::HALF_UP) : $pool->last_valid_avg_unit_cost),
+                    'base_avg_unit_cost' => $override === null ? ($newQty->isZero() ? '0.0000' : (string) $newValue->dividedBy($newQty, 4, RoundingMode::HALF_UP)) : ($poolRemainsPositive ? (string) $newValue->dividedBy($newQty, 4, RoundingMode::HALF_UP) : $pool->last_valid_avg_unit_cost),
+                    'status' => $override !== null && ! $poolRemainsPositive ? 'FROZEN' : $pool->status,
                 ]);
             }
 
@@ -141,9 +164,25 @@ final class PostInventoryMovement
                         'base_amount' => (string) $allocationAmount->negated(), 'account_id' => $accountId,
                     ]);
                 }
+                if ($shortageQty->isGreaterThan(0)) {
+                    $shortageAmount = $shortageQty->multipliedBy($provisionalUnitCost)->toScale(4, RoundingMode::HALF_UP);
+                    $move->valuationEntries()->create([
+                        'avco_pool_id' => null, 'pool_effect' => null, 'qty' => (string) $shortageQty->negated(),
+                        'unit_cost' => (string) $provisionalUnitCost, 'amount' => (string) $shortageAmount->negated(),
+                        'base_amount' => (string) $shortageAmount->negated(), 'account_id' => $accountId,
+                    ]);
+                }
+            }
+            if ($override !== null) {
+                NegativeStockShortage::query()->create([
+                    'item_id' => $item->id, 'location_id' => $location->id, 'batch_id' => $batch?->id,
+                    'avco_pool_id' => $pool?->id, 'qty_open' => (string) $shortageQty,
+                    'provisional_unit_cost' => (string) $provisionalUnitCost, 'status' => 'OPEN',
+                    'source_move_id' => $move->id, 'override_request_id' => $override->id,
+                ]);
             }
 
-            return $move->load('valuationEntries');
+            return $move->load(['valuationEntries', 'negativeStockShortage']);
         });
     }
 
@@ -170,7 +209,7 @@ final class PostInventoryMovement
                 // AVCO pools must remain able to post concurrently per ADR 0039.
                 $item = Item::query()->lockForUpdate()->findOrFail($input['item_id']);
             }
-            $location = Location::query()->with('warehouse')->findOrFail($input['location_id']);
+            $location = Location::query()->with('warehouse')->lockForUpdate()->findOrFail($input['location_id']);
             Currency::query()->findOrFail($input['currency_id']);
             if (! $item->is_stocked || $item->stock_uom_id !== $input['uom_id']) {
                 throw new DomainInvariantException('Stock receipts require a stocked item in its pinned stock UoM.', 'uom_id');
@@ -190,9 +229,15 @@ final class PostInventoryMovement
             $this->validateTracking($item, $qty, $batchNo, $serialNo);
 
             $batch = $batchNo === null ? null : $this->resolveBatch($item, $batchNo);
+            if ($this->hasOpenShortage($item, $location, $batch, lock: true)) {
+                throw new DomainInvariantException('Inbound stock for this identity requires the negative-shortage settlement workflow.', 'location_id');
+            }
             $pool = $item->valuation_method === ValuationMethod::Avco
                 ? $this->lockAvcoPool($item, $location, $batch)
                 : null;
+            if ($pool !== null && $pool->getRawOriginal('status') === AvcoPoolStatus::Frozen->value) {
+                throw new DomainInvariantException('Inbound stock for a frozen AVCO pool requires the negative-shortage settlement workflow.', 'location_id');
+            }
 
             $move = StockMove::query()->create([
                 'item_id' => $item->id, 'from_location_id' => null, 'to_location_id' => $location->id,
@@ -275,17 +320,16 @@ final class PostInventoryMovement
                 throw new DomainInvariantException('No posted inbound movement found to reverse for the given source.', 'source_id');
             }
 
-            $layer = StockLayer::query()->where('source_type', $originalSourceType)->where('source_id', $originalSourceId)
-                ->lockForUpdate()->firstOrFail();
+            $item = Item::query()->findOrFail($original->item_id);
+            $location = Location::query()->lockForUpdate()->findOrFail($original->to_location_id);
+            $layer = StockLayer::query()->where('source_type', $originalSourceType)->where('source_id', $originalSourceId)->lockForUpdate()->firstOrFail();
             $qty = BigDecimal::of($original->qty);
             if (! BigDecimal::of($layer->qty_remaining)->isEqualTo(BigDecimal::of($layer->qty_received))) {
                 throw new DomainInvariantException('This receipt has already been partly consumed and cannot be reversed.', 'source_id');
             }
 
-            $item = Item::query()->findOrFail($original->item_id);
             $pool = null;
             if ($item->valuation_method === ValuationMethod::Avco) {
-                $location = Location::query()->findOrFail($original->to_location_id);
                 $batch = $original->batch_id === null ? null : StockBatch::query()->find($original->batch_id);
                 $pool = $this->lockAvcoPool($item, $location, $batch);
                 if (BigDecimal::of($pool->qty_on_hand)->isLessThan($qty)) {
@@ -362,7 +406,7 @@ final class PostInventoryMovement
      * @param  Collection<int, StockLayer>  $layers
      * @return Collection<int, array{layer:StockLayer, qty:BigDecimal}>
      */
-    private function allocateAvailableLayers(Collection $layers, BigDecimal $required): Collection
+    private function allocateIssueLayers(Collection $layers, BigDecimal $required): Collection
     {
         $remaining = $required;
         $allocations = collect();
@@ -377,9 +421,6 @@ final class PostInventoryMovement
             if ($remaining->isZero()) {
                 break;
             }
-        }
-        if (! $remaining->isZero()) {
-            throw new DomainInvariantException('Insufficient available stock at the requested location and tracking identity.', 'qty');
         }
 
         /** @var Collection<int, array{layer:StockLayer, qty:BigDecimal}> $allocations */
@@ -405,6 +446,90 @@ final class PostInventoryMovement
         $available = BigDecimal::of((string) $accepted)->minus($alreadyConsumed);
 
         return $available->isGreaterThan(0) ? $available : BigDecimal::zero();
+    }
+
+    /**
+     * @param  array{source_type:string, source_id:int, override_request_id?:int|null}  $input
+     */
+    private function authoriseShortage(array $input, Item $item, Location $location, ?StockBatch $batch, BigDecimal $qty, BigDecimal $shortageQty): NegativeStockOverrideRequest
+    {
+        if (! isset($input['override_request_id'])) {
+            throw new DomainInvariantException('Insufficient available stock requires an authorised negative-stock override.', 'qty');
+        }
+
+        $request = NegativeStockOverrideRequest::query()->with('approval')->lockForUpdate()->findOrFail($input['override_request_id']);
+        $this->validateOverrideIdentity($request, $input, $item, $location, $batch, $qty);
+        if ($shortageQty->isGreaterThan(BigDecimal::of($request->shortage_qty))) {
+            throw new DomainInvariantException('The current shortage is worse than the authorised shortage.', 'qty');
+        }
+        if ($request->authorisation_mode === NegativeStockAuthorisationMode::PriorApproval
+            && $request->approval?->decision !== NegativeStockApprovalDecision::Approved) {
+            throw new DomainInvariantException('This negative-stock request has not been approved.', 'override_request_id');
+        }
+        if ($request->shortage()->lockForUpdate()->exists()) {
+            throw new DomainInvariantException('This negative-stock override has already been consumed.', 'override_request_id');
+        }
+        if ($this->hasOpenShortage($item, $location, $batch, lock: true)) {
+            throw new DomainInvariantException('An existing shortage at this exact stock identity must be settled before it can deepen.', 'qty');
+        }
+
+        return $request;
+    }
+
+    /**
+     * @param  array{source_type:string, source_id:int, override_request_id?:int|null}  $input
+     */
+    private function validateUnusedOverride(array $input, Item $item, Location $location, ?StockBatch $batch, BigDecimal $qty): void
+    {
+        $request = NegativeStockOverrideRequest::query()->lockForUpdate()->findOrFail($input['override_request_id']);
+        $this->validateOverrideIdentity($request, $input, $item, $location, $batch, $qty);
+    }
+
+    /** @param array{source_type:string, source_id:int} $input */
+    private function validateOverrideIdentity(NegativeStockOverrideRequest $request, array $input, Item $item, Location $location, ?StockBatch $batch, BigDecimal $qty): void
+    {
+        if ($request->item_id !== $item->id
+            || $request->location_id !== $location->id
+            || $request->batch_id !== $batch?->id
+            || $request->source_type !== $input['source_type']
+            || $request->source_id !== $input['source_id']
+            || ! BigDecimal::of($request->requested_qty)->isEqualTo($qty)) {
+            throw new DomainInvariantException('The override does not match this exact stock issue.', 'override_request_id');
+        }
+    }
+
+    private function provisionalUnitCost(Item $item, Location $location, ?StockBatch $batch, ?AvcoPool $pool): BigDecimal
+    {
+        if ($item->valuation_method === ValuationMethod::Avco) {
+            if ($pool === null) {
+                throw new DomainInvariantException('The resolved AVCO pool is missing.', 'item_id');
+            }
+            $cost = BigDecimal::of($pool->last_valid_avg_unit_cost);
+            if ($cost->isLessThanOrEqualTo(0)) {
+                throw new DomainInvariantException('No defensible AVCO cost history exists for this shortage.', 'override_request_id');
+            }
+
+            return $cost;
+        }
+
+        $layer = StockLayer::query()->where('item_id', $item->id)->where('location_id', $location->id)
+            ->when($batch === null, fn ($query) => $query->whereNull('batch_id'), fn ($query) => $query->where('batch_id', $batch->id))
+            ->whereNull('serial_no')->orderByDesc('received_at')->orderByDesc('id')->lockForUpdate()->first();
+        if ($layer === null || BigDecimal::of($layer->base_unit_cost)->isLessThanOrEqualTo(0)) {
+            throw new DomainInvariantException('No defensible FIFO acquisition cost exists for this shortage.', 'override_request_id');
+        }
+
+        return BigDecimal::of($layer->base_unit_cost);
+    }
+
+    private function hasOpenShortage(Item $item, Location $location, ?StockBatch $batch, bool $lock): bool
+    {
+        $query = NegativeStockShortage::query()
+            ->where('item_id', $item->id)->where('location_id', $location->id)
+            ->when($batch === null, fn ($builder) => $builder->whereNull('batch_id'), fn ($builder) => $builder->where('batch_id', $batch->id))
+            ->whereIn('status', ['OPEN', 'PARTIALLY_SETTLED', 'OPEN_CUTOVER_SHORTAGE']);
+
+        return ($lock ? $query->lockForUpdate() : $query)->exists();
     }
 
     private function validateTracking(Item $item, BigDecimal $qty, ?string $batchNo, ?string $serialNo): void

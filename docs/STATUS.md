@@ -106,6 +106,7 @@ tech stack, extensibility strategy and deployment approach are recorded as [ADRs
 | **Normal outbound stock issues built** — `PostInventoryMovement::issue()` handles blocking-mode issues for AVCO, FIFO and SPECIFIC inside the sole inventory transaction boundary. It locks exact-location/tracking layers in FIFO order, rejects insufficient stock without side effects, excludes QA-pending/open/failed quantity, consumes partial FIFO layers or one exact SPECIFIC serial, costs AVCO from its locked resolved pool, and appends signed valuation-feed rows in company base currency. A full AVCO drawdown consumes the pool's exact remaining value rather than leaving a rounded-average residual. Negative-stock authorisation/settlement and transfers remain separate Phase 2 slices. | 2026-09-03 |
 | **Negative-stock policy foundation built** — ADR 0037's company controls now default to `BLOCK` and `PRIOR_APPROVAL`, expose the conservative movement eligibility matrix, bound immediate-review SLA to 1–168 hours (24 default), and keep independent review as the default. Policy changes require `inventory.negative-stock-policy.manage`, a written reason and a tenant-safe immutable old/new `inventory_policy_changes` record enforced in both Eloquent and PostgreSQL. This intentionally grants no posting authority yet; override requests/approval or review, provisional shortage posting and settlement remain the next slice. | 2026-09-03 |
 | **Negative-stock override decision workflow built** — immutable tenant-safe request, approval and review records now snapshot the exact item/location/tracking shortage, source, controlled reason, explanation, authorisation mode and immediate-review deadline. Requests enforce the configured movement eligibility and reject serial/SPECIFIC negatives; `PRIOR_APPROVAL` requires a different permitted approver, while `IMMEDIATE_WITH_REVIEW` requires override permission up front and an independent reviewer by default. PostgreSQL enforces value shapes, scope and immutability. Posting and settlement deliberately remain the next slice. | 2026-09-03 |
+| **Authorised negative-stock posting built** — `PostInventoryMovement::issue()` now consumes an exact immutable ADR 0037 override only when live physical stock is insufficient, rejects a worsened shortage, and requires the prior decision where configured. Available FIFO/traceability layers are consumed first; unsupported AVCO uses locked last-valid official cost and freezes a non-positive pool, while unsupported FIFO uses the latest compatible actual acquisition cost. Missing defensible history blocks rather than accepting user cost. The move, signed valuation entries and one-to-one `OPEN` shortage are atomic; request reuse and deepening an existing shortage are blocked. Ordinary compatible receipts stop at the movement boundary until the next settlement slice can allocate and repair them safely. | 2026-09-03 |
 
 ## In progress
 
@@ -130,10 +131,9 @@ Phase 1 is complete, including its domain-document reconciliation.
 
 Continue [Phase 2 — Purchasing & stock](phases/phase-2-purchasing-stock.md):
 
-1. Consume authorised ADR 0037 override records in the issue boundary, revalidate the exact
-   shortage, derive defensible provisional AVCO/FIFO cost, and create shortage state.
-2. Settle compatible shortages from inbound stock with append-only valuation repairs.
-3. Extend the movement boundary with same-pool neutral and value-conserving cross-pool transfers.
+1. Settle compatible ADR 0037 shortages from inbound stock, oldest exact identity first, with
+   partial settlement and append-only valuation repairs.
+2. Extend the movement boundary with same-pool neutral and value-conserving cross-pool transfers.
 
 [Phase 0 — Foundation](phases/phase-0-foundation.md) remains in progress in parallel — the two
 former blockers are resolved (`btree_gist` confirmed available on dbvm, `REDIS_PREFIX=erp_`
