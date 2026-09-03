@@ -86,6 +86,11 @@ negative_stock_shortages
   qty_open, provisional_unit_cost, status
   source_move_id, override_request_id, settled_at NULLABLE
 
+negative_stock_settlements            -- immutable partial/full inbound allocations
+  id, company_id, shortage_id, inbound_move_id, qty_settled
+  provisional_unit_cost, actual_unit_cost, unit_cost_difference
+  valuation_adjustment, settled_at
+
 stock_valuation_entries                 -- cost impact of each move; feeds the GL
   id, stock_move_id
   avco_pool_id NULLABLE                 -- immutable pool used at posting time
@@ -229,9 +234,22 @@ Supported quantity consumes ordinary layers first. Unsupported AVCO quantity use
 pool's last valid official average; a pool that becomes zero or negative is frozen without losing
 that average. Unsupported FIFO quantity uses the most recent compatible actual acquisition cost.
 Missing or non-positive cost history blocks posting. The resulting move, signed valuation feed
-and `OPEN` shortage are one transaction. Ordinary inbound to an open-shortage identity—and every
-receipt into a frozen AVCO pool—is blocked until the settlement boundary can allocate it and
-append any valuation repair; it must never pass through the normal receipt averaging path.
+and `OPEN` shortage are one transaction. Inbound to an open-shortage identity is routed through
+settlement before ordinary receipt averaging; a frozen AVCO pool cannot bypass that route.
+
+Settlement locks compatible shortages oldest-first by company, item, exact location and batch.
+Each allocation is immutable and snapshots settled quantity, provisional and actual base costs,
+their difference, the valuation adjustment and inbound movement. Partial settlement leaves
+`PARTIALLY_SETTLED`; the final allocation stamps `SETTLED` and `settled_at`. Receipt layers retain
+the full received quantity for traceability but only inbound excess has `qty_remaining`, so
+settled quantity cannot be issued again.
+
+The receipt's ordinary positive valuation remains unchanged. A zero-quantity valuation-only row
+appends `provisional − actual` for the settled quantity (`VALUATION_ADJUSTMENT` at an AVCO pool),
+bringing the original provisional issue to actual cost without mutation. AVCO applies receipt and
+repair together: a non-positive remainder stays frozen at its last valid average; once positive,
+the remainder alone establishes the recovered average. FIFO performs the same append-only repair
+without creating a fake shortage layer.
 
 The company policy foundation is live: `BLOCK` is the default; the authorisation mode defaults to
 `PRIOR_APPROVAL`; review SLA defaults to 24 hours and is bounded to 1–168 hours; independent
@@ -246,9 +264,9 @@ snapshot exact location/tracking shortage, source, controlled reason, written ex
 then-current authorisation mode. Prior approval requires a different user with
 `inventory.negative-stock.approve`; immediate mode requires override permission up front and
 persists its review deadline, while review requires `inventory.negative-stock.review` and is
-independent unless the snapshotted company policy explicitly permits self-review. These records do
-not yet post inventory; the movement boundary will consume them only after transactional
-availability revalidation.
+independent unless the snapshotted company policy explicitly permits self-review. The movement
+boundary consumes them only after transactional availability revalidation and links every used
+request to its movement, shortage and later immutable settlement facts.
 
 Unsupported AVCO/FIFO quantity uses a defensible system-derived provisional cost. AVCO freezes
 and recovers independently at its resolved configured pool; a negative location does not freeze a

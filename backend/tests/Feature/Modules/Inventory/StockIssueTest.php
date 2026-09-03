@@ -218,6 +218,44 @@ class StockIssueTest extends PurchaseOrderFoundationTest
         $this->assertSame('-10.0000', $pool->inventory_value);
         $this->assertSame('10.0000', $pool->last_valid_avg_unit_cost);
         $this->assertSame('FROZEN', $pool->status->value);
+
+        $receipt = $this->directReceipt($item->id, $uom->id, $locationId, $order->currency_id, '2.0000', '12.0000', 1201);
+        $pool->refresh();
+        $this->assertSame('1.0000', $pool->qty_on_hand);
+        $this->assertSame('12.0000', $pool->inventory_value);
+        $this->assertSame('12.0000', $pool->base_avg_unit_cost);
+        $this->assertSame('ACTIVE', $pool->status->value);
+        $this->assertSame(['24.0000', '-2.0000'], $receipt->valuationEntries()->orderBy('id')->pluck('base_amount')->all());
+        $this->assertSame('1.0000', StockLayer::query()->where('source_id', 1201)->sole()->qty_remaining);
+        $this->assertSame('SETTLED', NegativeStockShortage::query()->sole()->status);
+    }
+
+    public function test_fifo_inbound_partially_then_fully_settles_shortage_and_only_excess_becomes_available(): void
+    {
+        [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Fifo, qty: '2.0000');
+        $locationId = $this->locationId();
+        $this->postReceipt($order->lines()->sole()->id, $item->id, $uom->id, $locationId, '2.0000', '10.0000');
+        $request = $this->approvedOverride($item->id, $locationId, '5.0000', '2.0000', 1202);
+        app(PostInventoryMovement::class)->issue(array_merge(
+            $this->issueInput($item->id, $uom->id, $locationId, '5.0000', 1202),
+            ['override_request_id' => $request->id],
+        ));
+
+        $partial = $this->directReceipt($item->id, $uom->id, $locationId, $order->currency_id, '2.0000', '12.0000', 1203);
+        $shortage = NegativeStockShortage::query()->sole();
+        $this->assertSame('1.0000', $shortage->qty_open);
+        $this->assertSame('PARTIALLY_SETTLED', $shortage->status);
+        $this->assertSame('0.0000', StockLayer::query()->where('source_id', 1203)->sole()->qty_remaining);
+        $this->assertSame(['24.0000', '-4.0000'], $partial->valuationEntries()->orderBy('id')->pluck('base_amount')->all());
+
+        $final = $this->directReceipt($item->id, $uom->id, $locationId, $order->currency_id, '2.0000', '14.0000', 1204);
+        $shortage->refresh();
+        $this->assertSame('0.0000', $shortage->qty_open);
+        $this->assertSame('SETTLED', $shortage->status);
+        $this->assertNotNull($shortage->settled_at);
+        $this->assertSame('1.0000', StockLayer::query()->where('source_id', 1204)->sole()->qty_remaining);
+        $this->assertSame(['28.0000', '-4.0000'], $final->valuationEntries()->orderBy('id')->pluck('base_amount')->all());
+        $this->assertSame(['2.0000', '1.0000'], $shortage->settlements()->orderBy('id')->pluck('qty_settled')->all());
     }
 
     private function issuedOrder(ValuationMethod $method, ItemTracking $tracking = ItemTracking::None, string $qty = '4.0000', bool $qaRequired = false): array
@@ -297,5 +335,15 @@ class StockIssueTest extends PurchaseOrderFoundationTest
             'source_type' => 'TEST_ISSUE', 'source_id' => $sourceId,
             'reason_code' => 'PAPERWORK_DELAY', 'explanation' => 'Receipt paperwork is delayed',
         ], $requester);
+    }
+
+    private function directReceipt(int $itemId, int $uomId, int $locationId, int $currencyId, string $qty, string $cost, int $sourceId): mixed
+    {
+        return app(PostInventoryMovement::class)([
+            'item_id' => $itemId, 'location_id' => $locationId, 'qty' => $qty, 'uom_id' => $uomId,
+            'moved_at' => now(), 'source_type' => 'DIRECT_RECEIPT', 'source_id' => $sourceId,
+            'unit_cost' => $cost, 'currency_id' => $currencyId, 'fx_rate' => '1.000000000',
+            'base_unit_cost' => $cost,
+        ]);
     }
 }

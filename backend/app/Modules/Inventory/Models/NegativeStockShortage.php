@@ -8,6 +8,7 @@ use App\Models\Model;
 use App\Support\Concerns\BelongsToCompany;
 use App\Support\Concerns\GuardsRelatedCompanyScope;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class NegativeStockShortage extends Model
 {
@@ -36,5 +37,11 @@ class NegativeStockShortage extends Model
     public function overrideRequest(): BelongsTo
     {
         return $this->belongsTo(NegativeStockOverrideRequest::class, 'override_request_id');
+    }
+
+    /** @return HasMany<NegativeStockSettlement, $this> */
+    public function settlements(): HasMany
+    {
+        return $this->hasMany(NegativeStockSettlement::class, 'shortage_id');
     }
 }

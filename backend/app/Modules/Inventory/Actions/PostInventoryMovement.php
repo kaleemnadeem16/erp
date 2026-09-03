@@ -229,13 +229,15 @@ final class PostInventoryMovement
             $this->validateTracking($item, $qty, $batchNo, $serialNo);
 
             $batch = $batchNo === null ? null : $this->resolveBatch($item, $batchNo);
-            if ($this->hasOpenShortage($item, $location, $batch, lock: true)) {
-                throw new DomainInvariantException('Inbound stock for this identity requires the negative-shortage settlement workflow.', 'location_id');
-            }
+            $settlements = $this->allocateInboundSettlements($item, $location, $batch, $qty);
+            $settledQty = $settlements->reduce(
+                fn (BigDecimal $total, array $settlement): BigDecimal => $total->plus($settlement['qty']),
+                BigDecimal::zero(),
+            );
             $pool = $item->valuation_method === ValuationMethod::Avco
                 ? $this->lockAvcoPool($item, $location, $batch)
                 : null;
-            if ($pool !== null && $pool->getRawOriginal('status') === AvcoPoolStatus::Frozen->value) {
+            if ($pool !== null && $pool->getRawOriginal('status') === AvcoPoolStatus::Frozen->value && $settlements->isEmpty()) {
                 throw new DomainInvariantException('Inbound stock for a frozen AVCO pool requires the negative-shortage settlement workflow.', 'location_id');
             }
 
@@ -249,7 +251,7 @@ final class PostInventoryMovement
 
             StockLayer::query()->create([
                 'item_id' => $item->id, 'location_id' => $location->id,
-                'qty_received' => (string) $qty, 'qty_remaining' => (string) $qty,
+                'qty_received' => (string) $qty, 'qty_remaining' => (string) $qty->minus($settledQty),
                 'unit_cost' => (string) $unitCost, 'currency_id' => $input['currency_id'],
                 'fx_rate' => $input['fx_rate'], 'base_unit_cost' => (string) $baseUnitCost,
                 'received_at' => $input['moved_at'], 'source_type' => $input['source_type'], 'source_id' => $input['source_id'],
@@ -262,14 +264,24 @@ final class PostInventoryMovement
             $baseAmount = isset($input['base_amount'])
                 ? BigDecimal::of($input['base_amount'])
                 : $qty->multipliedBy($baseUnitCost)->toScale(4, RoundingMode::HALF_UP);
+            $baseAdjustment = $settlements->reduce(
+                fn (BigDecimal $total, array $settlement): BigDecimal => $total->plus(
+                    BigDecimal::of($settlement['shortage']->provisional_unit_cost)->minus($baseUnitCost)
+                        ->multipliedBy($settlement['qty'])->toScale(4, RoundingMode::HALF_UP),
+                ),
+                BigDecimal::zero(),
+            )->toScale(4, RoundingMode::HALF_UP);
             if ($pool !== null) {
                 $newQty = BigDecimal::of($pool->qty_on_hand)->plus($qty);
-                $newValue = BigDecimal::of($pool->inventory_value)->plus($baseAmount)->toScale(4, RoundingMode::HALF_UP);
-                $newAverage = $newValue->dividedBy($newQty, 4, RoundingMode::HALF_UP);
+                $newValue = BigDecimal::of($pool->inventory_value)->plus($baseAmount)->plus($baseAdjustment)->toScale(4, RoundingMode::HALF_UP);
+                $newAverage = $newQty->isGreaterThan(0)
+                    ? $newValue->dividedBy($newQty, 4, RoundingMode::HALF_UP)
+                    : BigDecimal::of($pool->last_valid_avg_unit_cost);
                 $pool->update([
                     'qty_on_hand' => (string) $newQty, 'inventory_value' => (string) $newValue,
                     'avg_unit_cost' => (string) $newAverage, 'base_avg_unit_cost' => (string) $newAverage,
-                    'last_valid_avg_unit_cost' => (string) $newAverage, 'status' => 'ACTIVE',
+                    'last_valid_avg_unit_cost' => $newQty->isGreaterThan(0) ? (string) $newAverage : $pool->last_valid_avg_unit_cost,
+                    'status' => $newQty->isGreaterThan(0) ? 'ACTIVE' : 'FROZEN',
                 ]);
             }
 
@@ -277,14 +289,44 @@ final class PostInventoryMovement
             if ($accountId === null) {
                 throw new DomainInvariantException('A stock receipt requires a resolved inventory account.', 'item_id');
             }
-            $move->valuationEntry()->create([
+            $move->valuationEntries()->create([
                 'avco_pool_id' => $pool?->id, 'pool_effect' => $pool === null ? null : 'DESTINATION_IN',
                 'qty' => (string) $qty, 'unit_cost' => (string) $unitCost,
                 'amount' => (string) $transactionAmount, 'base_amount' => (string) $baseAmount,
                 'account_id' => $accountId,
             ]);
 
-            return $move->load('valuationEntry');
+            foreach ($settlements as $settlement) {
+                $shortage = $settlement['shortage'];
+                $settlementQty = $settlement['qty'];
+                $provisionalBaseCost = BigDecimal::of($shortage->provisional_unit_cost);
+                $baseDifference = $baseUnitCost->minus($provisionalBaseCost);
+                $baseRepair = $provisionalBaseCost->minus($baseUnitCost)->multipliedBy($settlementQty)->toScale(4, RoundingMode::HALF_UP);
+                $provisionalTransactionCost = $provisionalBaseCost->dividedBy(BigDecimal::of($input['fx_rate']), 4, RoundingMode::HALF_UP);
+                $transactionDifference = $unitCost->minus($provisionalTransactionCost);
+                $transactionRepair = $provisionalTransactionCost->minus($unitCost)->multipliedBy($settlementQty)->toScale(4, RoundingMode::HALF_UP);
+                $move->valuationEntries()->create([
+                    'avco_pool_id' => $pool?->id, 'pool_effect' => $pool === null ? null : 'VALUATION_ADJUSTMENT',
+                    'qty' => '0.0000', 'unit_cost' => (string) $transactionDifference->abs(),
+                    'amount' => (string) $transactionRepair, 'base_amount' => (string) $baseRepair,
+                    'account_id' => $accountId,
+                ]);
+                $newOpenQty = BigDecimal::of($shortage->qty_open)->minus($settlementQty);
+                $shortage->update([
+                    'qty_open' => (string) $newOpenQty,
+                    'status' => $newOpenQty->isZero() ? 'SETTLED' : 'PARTIALLY_SETTLED',
+                    'settled_at' => $newOpenQty->isZero() ? now() : null,
+                ]);
+                $shortage->settlements()->create([
+                    'inbound_move_id' => $move->id, 'qty_settled' => (string) $settlementQty,
+                    'provisional_unit_cost' => (string) $provisionalBaseCost,
+                    'actual_unit_cost' => (string) $baseUnitCost,
+                    'unit_cost_difference' => (string) $baseDifference,
+                    'valuation_adjustment' => (string) $baseRepair, 'settled_at' => now(),
+                ]);
+            }
+
+            return $move->load(['valuationEntry', 'valuationEntries']);
         });
     }
 
@@ -520,6 +562,30 @@ final class PostInventoryMovement
         }
 
         return BigDecimal::of($layer->base_unit_cost);
+    }
+
+    /** @return Collection<int, array{shortage:NegativeStockShortage, qty:BigDecimal}> */
+    private function allocateInboundSettlements(Item $item, Location $location, ?StockBatch $batch, BigDecimal $inboundQty): Collection
+    {
+        $shortages = NegativeStockShortage::query()
+            ->where('item_id', $item->id)->where('location_id', $location->id)
+            ->when($batch === null, fn ($query) => $query->whereNull('batch_id'), fn ($query) => $query->where('batch_id', $batch->id))
+            ->whereIn('status', ['OPEN', 'PARTIALLY_SETTLED', 'OPEN_CUTOVER_SHORTAGE'])
+            ->orderBy('created_at')->orderBy('id')->lockForUpdate()->get();
+        $remaining = $inboundQty;
+        $allocations = collect();
+        foreach ($shortages as $shortage) {
+            if ($remaining->isZero()) {
+                break;
+            }
+            $openQty = BigDecimal::of($shortage->qty_open);
+            $settledQty = $openQty->isLessThan($remaining) ? $openQty : $remaining;
+            $allocations->push(['shortage' => $shortage, 'qty' => $settledQty]);
+            $remaining = $remaining->minus($settledQty);
+        }
+
+        /** @var Collection<int, array{shortage:NegativeStockShortage, qty:BigDecimal}> $allocations */
+        return $allocations;
     }
 
     private function hasOpenShortage(Item $item, Location $location, ?StockBatch $batch, bool $lock): bool

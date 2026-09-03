@@ -157,7 +157,8 @@ The order matters because later work needs stable document and stock boundaries:
       immediate-review outcomes with tenant-safe actors, permissions and snapshotted deadlines
 - [x] Consume authorised override records in the movement boundary, revalidate the exact shortage,
       derive provisional AVCO/FIFO cost and atomically create linked shortage state
-- [ ] Settle compatible inbound against oldest exact-identity shortages and append valuation repairs
+- [x] Settle compatible inbound against oldest exact-identity shortages, support partial recovery,
+      expose only excess stock and append provisional-to-actual valuation repairs
 - [ ] Implement company backdating horizon modes (`CURRENT_AND_PREVIOUS_PERIOD` default,
       `PERIOD_LOCK_ONLY`, `POSTING_FLOOR` with fixed/rolling subtype), audited policy changes and
       most-restrictive-boundary evaluation; rolling mode requires a valid company IANA accounting

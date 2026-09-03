@@ -27,6 +27,8 @@ movement and valuation, built in Phase 2.
   prior-approval and immediate-with-review workflows
 - `NegativeStockShortage` — open physical shortage state linked one-to-one to the consuming
   override request and outbound movement, retaining its provisional cost until settlement
+- `NegativeStockSettlement` — immutable inbound allocation and provisional-to-actual valuation
+  repair facts; multiple rows support partial settlement without rewriting posted history
 
 ## Does not own
 
@@ -60,8 +62,8 @@ FIFO layers or exact SPECIFIC serials, lock and cost AVCO at its resolved pool, 
 Phase 6 valuation feed atomically. An explicitly supplied authorised override may cover only its
 exact issue and no more than its snapshotted shortage. It consumes available stock first, derives
 unsupported AVCO/FIFO cost from system history, and creates linked shortage state atomically.
-Compatible inbound is blocked until the settlement workflow handles it; settlement and transfers
-remain separate slices.
+Compatible inbound settles the oldest exact-identity shortage first, appends its valuation repair,
+and exposes only excess quantity as ordinary available stock. Transfers remain a separate slice.
 
 ## Events
 
