@@ -17,8 +17,9 @@ movement and valuation, built in Phase 2.
 - `Warehouse`, hierarchical `Location`, and warehouse location roles — Phase 2 stock custody
   foundations with SIMPLE/STRUCTURED company modes
 - `StockMove`, `StockLayer`, `StockBatch`, `AvcoPool` and `StockValuationEntry` — the immutable
-  movement, traceability and valuation-feed foundation; receipt-side AVCO/FIFO/SPECIFIC posting is
-  live, while outbound depletion and shortage settlement remain later Phase 2 work
+  movement, traceability and valuation-feed foundation; receipt and non-negative outbound issue
+  posting is live for AVCO/FIFO/SPECIFIC, while transfers and authorised shortage settlement
+  remain later Phase 2 work
 
 ## Does not own
 
@@ -39,9 +40,11 @@ warehouse cannot enter normal use without an exact physical location. Warehouse 
 updates/archiving use their corresponding Actions. `SIMPLE` mode keeps one plain location per
 warehouse; `STRUCTURED` enables hierarchy, location metadata and operational role assignments.
 Mode changes go through `UpdateInventorySettings`, which blocks unsafe downgrade.
-`PostInventoryMovement` is the sole quantity/valuation write boundary. Its first implemented path
-is inbound receipt posting: every method writes a receipt layer, AVCO also locks and updates its
-resolved pool, and every movement writes the Phase 6 valuation-feed seam atomically.
+`PostInventoryMovement` is the sole quantity/valuation write boundary. Inbound receipts write a
+traceability layer and update the resolved AVCO pool where applicable. Normal outbound issues
+deplete exact-location/tracking availability, exclude unresolved or failed QA quantity, consume
+FIFO layers or exact SPECIFIC serials, lock and cost AVCO at its resolved pool, and append the
+Phase 6 valuation feed atomically. Negative-stock overrides and transfers remain separate slices.
 
 ## Events
 

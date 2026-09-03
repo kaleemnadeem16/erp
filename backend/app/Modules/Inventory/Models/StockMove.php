@@ -10,6 +10,7 @@ use App\Models\Uom;
 use App\Support\Concerns\BelongsToCompany;
 use App\Support\Concerns\GuardsRelatedCompanyScope;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class StockMove extends Model
@@ -45,5 +46,11 @@ class StockMove extends Model
     public function valuationEntry(): HasOne
     {
         return $this->hasOne(StockValuationEntry::class);
+    }
+
+    /** @return HasMany<StockValuationEntry, $this> */
+    public function valuationEntries(): HasMany
+    {
+        return $this->hasMany(StockValuationEntry::class);
     }
 }

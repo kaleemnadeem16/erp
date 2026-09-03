@@ -138,15 +138,15 @@ The order matters because later work needs stable document and stock boundaries:
       destination-average recalculation and immutable source/destination pool identities
 - [ ] Implement provisional cross-pool transfer repair propagation without permitting a negative
       physical source or creating/destroying company inventory value
-- [ ] Implement FIFO oldest-layer consumption with partial-layer splits and row locking
-- [ ] Implement SPECIFIC receipt/issue validation: exact serial identity is required and a serial
+- [x] Implement FIFO oldest-layer consumption with partial-layer splits and row locking
+- [x] Implement SPECIFIC receipt/issue validation: exact serial identity is required and a serial
       cannot be received twice or issued more than once while on hand
-- [ ] Enforce tracking rules (`NONE`/`BATCH`/`SERIAL`) independently from valuation method and
+- [x] Enforce tracking rules (`NONE`/`BATCH`/`SERIAL`) independently from valuation method and
       preserve batch/serial data on moves and layers
-- [ ] Exclude non-`PASS`/`ACCEPT_WITH_CONCESSION` quantity (never-dispositioned, open `REWORK`/
+- [x] Exclude non-`PASS`/`ACCEPT_WITH_CONCESSION` quantity (never-dispositioned, open `REWORK`/
       `PENDING_DECISION`, and terminal `SCRAP`/`RETURN_TO_SUPPLIER`) from an item's
       available-to-issue balance for a `qa_required` receipt line
-- [ ] Write one `stock_valuation_entries` feed for every costed movement; store transaction and
+- [x] Write one `stock_valuation_entries` feed for every costed movement; store transaction and
       base amounts using the pinned FX rate, without creating GL journals
 - [x] Prevent normal edits to an item's `valuation_method`, `avco_pool_scope` or `stock_uom_id`
       after its first move; scope changes use a separate effective-dated valuation cutover

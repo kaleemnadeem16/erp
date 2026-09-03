@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Inventory\Actions;
 
 use App\Exceptions\DomainInvariantException;
+use App\Models\Company;
 use App\Models\Currency;
 use App\Modules\Inventory\Models\AvcoPool;
 use App\Modules\Inventory\Models\Item;
@@ -15,9 +16,13 @@ use App\Modules\Inventory\Models\StockMove;
 use App\Modules\Inventory\Support\AvcoPoolScope;
 use App\Modules\Inventory\Support\ItemTracking;
 use App\Modules\Inventory\Support\ValuationMethod;
+use App\Modules\Purchasing\Models\GoodsReceiptLine;
+use App\Modules\Purchasing\Models\QualityDisposition;
+use App\Modules\Purchasing\Support\DispositionOutcome;
 use App\Support\CompanyContext;
 use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -27,6 +32,121 @@ use Illuminate\Support\Facades\DB;
  */
 final class PostInventoryMovement
 {
+    /**
+     * Posts a normal, non-negative outbound issue. Negative-stock authorisation
+     * remains a separate slice: this path always blocks when exact-location and
+     * tracking-specific available quantity is insufficient.
+     *
+     * @param  array{item_id:int, location_id:int, qty:string, uom_id:int, moved_at:mixed, source_type:string, source_id:int, batch_no?:string|null, serial_no?:string|null}  $input
+     */
+    public function issue(array $input): StockMove
+    {
+        return DB::transaction(function () use ($input): StockMove {
+            $existing = StockMove::query()->where('source_type', $input['source_type'])->where('source_id', $input['source_id'])->first();
+            if ($existing !== null) {
+                return $existing->load('valuationEntries');
+            }
+
+            $item = Item::query()->findOrFail($input['item_id']);
+            $location = Location::query()->with('warehouse')->findOrFail($input['location_id']);
+            $qty = BigDecimal::of($input['qty']);
+            if ($qty->isLessThanOrEqualTo(0)) {
+                throw new DomainInvariantException('Stock issue quantity must be greater than zero.', 'qty');
+            }
+            if (! $item->is_stocked || $item->stock_uom_id !== $input['uom_id']) {
+                throw new DomainInvariantException('Stock issues require a stocked item in its pinned stock UoM.', 'uom_id');
+            }
+            if (! $location->active || ! $location->allows_stock || ! $location->warehouse->active) {
+                throw new DomainInvariantException('Stock can only be issued from an active stock-holding location.', 'location_id');
+            }
+            if (StockMove::query()->where('item_id', $item->id)->where('moved_at', '>', $input['moved_at'])->exists()) {
+                throw new DomainInvariantException('This issue conflicts with later valuation history and requires the controlled backdating workflow.', 'moved_at');
+            }
+
+            $batchNo = isset($input['batch_no']) ? strtolower(trim((string) $input['batch_no'])) : null;
+            $serialNo = isset($input['serial_no']) ? trim((string) $input['serial_no']) : null;
+            $this->validateIssueTracking($item, $qty, $batchNo, $serialNo);
+            $batch = $batchNo === null ? null : StockBatch::query()->where('item_id', $item->id)->where('code', $batchNo)->first();
+            if ($batchNo !== null && $batch === null) {
+                throw new DomainInvariantException('The requested batch is not on hand for this item.', 'batch_no');
+            }
+
+            $layers = $this->lockIssueLayers($item, $location, $batch, $serialNo);
+            // A concurrent retry may have passed the unlocked check before the
+            // first request committed. The layer lock serialises the ordinary
+            // same-stock path; re-check before allocating or mutating anything.
+            $existing = StockMove::query()->where('source_type', $input['source_type'])->where('source_id', $input['source_id'])->first();
+            if ($existing !== null) {
+                return $existing->load('valuationEntries');
+            }
+            $allocations = $this->allocateAvailableLayers($layers, $qty);
+            $baseCurrencyId = Company::query()->findOrFail(app(CompanyContext::class)->id())->base_currency_id;
+            if ($baseCurrencyId === null) {
+                throw new DomainInvariantException('A company base currency is required before stock can be issued.', 'item_id');
+            }
+
+            $pool = $item->valuation_method === ValuationMethod::Avco ? $this->lockAvcoPool($item, $location, $batch) : null;
+            if ($pool !== null && BigDecimal::of($pool->qty_on_hand)->isLessThan($qty)) {
+                throw new DomainInvariantException('Insufficient stock is available in the resolved AVCO pool.', 'qty');
+            }
+
+            $baseAmount = $item->valuation_method === ValuationMethod::Avco
+                ? (BigDecimal::of($pool->qty_on_hand)->isEqualTo($qty)
+                    ? BigDecimal::of($pool->inventory_value)
+                    : $qty->multipliedBy(BigDecimal::of($pool->base_avg_unit_cost))->toScale(4, RoundingMode::HALF_UP))
+                : $allocations->reduce(
+                    fn (BigDecimal $total, array $allocation): BigDecimal => $total->plus($allocation['qty']->multipliedBy(BigDecimal::of($allocation['layer']->base_unit_cost))),
+                    BigDecimal::zero(),
+                )->toScale(4, RoundingMode::HALF_UP);
+            $unitCost = $baseAmount->dividedBy($qty, 4, RoundingMode::HALF_UP);
+
+            $move = StockMove::query()->create([
+                'item_id' => $item->id, 'from_location_id' => $location->id, 'to_location_id' => null,
+                'qty' => (string) $qty, 'uom_id' => $item->stock_uom_id, 'moved_at' => $input['moved_at'],
+                'source_type' => $input['source_type'], 'source_id' => $input['source_id'],
+                'unit_cost' => (string) $unitCost, 'currency_id' => $baseCurrencyId, 'fx_rate' => '1.000000000',
+                'batch_id' => $batch?->id, 'serial_no' => $serialNo,
+            ]);
+
+            foreach ($allocations as $allocation) {
+                $layer = $allocation['layer'];
+                $layer->update(['qty_remaining' => (string) BigDecimal::of($layer->qty_remaining)->minus($allocation['qty'])]);
+            }
+            if ($pool !== null) {
+                $newQty = BigDecimal::of($pool->qty_on_hand)->minus($qty);
+                $newValue = BigDecimal::of($pool->inventory_value)->minus($baseAmount)->toScale(4, RoundingMode::HALF_UP);
+                $pool->update([
+                    'qty_on_hand' => (string) $newQty, 'inventory_value' => (string) $newValue,
+                    'avg_unit_cost' => $newQty->isZero() ? '0.0000' : (string) $newValue->dividedBy($newQty, 4, RoundingMode::HALF_UP),
+                    'base_avg_unit_cost' => $newQty->isZero() ? '0.0000' : (string) $newValue->dividedBy($newQty, 4, RoundingMode::HALF_UP),
+                ]);
+            }
+
+            $accountId = $item->resolveInventoryAccountId();
+            if ($accountId === null) {
+                throw new DomainInvariantException('A stock issue requires a resolved inventory account.', 'item_id');
+            }
+            if ($item->valuation_method === ValuationMethod::Avco) {
+                $move->valuationEntries()->create([
+                    'avco_pool_id' => $pool->id, 'pool_effect' => 'SOURCE_OUT', 'qty' => (string) $qty->negated(),
+                    'unit_cost' => (string) $unitCost, 'amount' => (string) $baseAmount->negated(),
+                    'base_amount' => (string) $baseAmount->negated(), 'account_id' => $accountId,
+                ]);
+            } else {
+                foreach ($allocations as $allocation) {
+                    $allocationAmount = $allocation['qty']->multipliedBy(BigDecimal::of($allocation['layer']->base_unit_cost))->toScale(4, RoundingMode::HALF_UP);
+                    $move->valuationEntries()->create([
+                        'avco_pool_id' => null, 'pool_effect' => null, 'qty' => (string) $allocation['qty']->negated(),
+                        'unit_cost' => $allocation['layer']->base_unit_cost, 'amount' => (string) $allocationAmount->negated(),
+                        'base_amount' => (string) $allocationAmount->negated(), 'account_id' => $accountId,
+                    ]);
+                }
+            }
+
+            return $move->load('valuationEntries');
+        });
+    }
+
     /**
      * @param  array{item_id:int, location_id:int, qty:string, uom_id:int, moved_at:mixed, source_type:string, source_id:int, unit_cost:string, currency_id:int, fx_rate:string, base_unit_cost:string, batch_no?:string|null, serial_no?:string|null, amount?:string, base_amount?:string}  $input
      *
@@ -208,6 +328,83 @@ final class PostInventoryMovement
 
             return $move->load('valuationEntry');
         });
+    }
+
+    private function validateIssueTracking(Item $item, BigDecimal $qty, ?string $batchNo, ?string $serialNo): void
+    {
+        if ($item->tracking === ItemTracking::None && ($batchNo !== null || $serialNo !== null)) {
+            throw new DomainInvariantException('Untracked issues cannot carry batch or serial identity.', 'batch_no');
+        }
+        if ($item->tracking === ItemTracking::Batch && ($batchNo === null || $serialNo !== null)) {
+            throw new DomainInvariantException('Batch-tracked issues require a batch and cannot carry a serial.', 'batch_no');
+        }
+        if ($item->tracking === ItemTracking::Serial && ($serialNo === null || $batchNo !== null || ! $qty->isEqualTo(1))) {
+            throw new DomainInvariantException('Serial-tracked issues require exactly one unit and one serial.', 'serial_no');
+        }
+        if ($item->valuation_method === ValuationMethod::Specific && $item->tracking !== ItemTracking::Serial) {
+            throw new DomainInvariantException('SPECIFIC valuation requires SERIAL tracking.', 'item_id');
+        }
+    }
+
+    /** @return Collection<int, StockLayer> */
+    private function lockIssueLayers(Item $item, Location $location, ?StockBatch $batch, ?string $serialNo): Collection
+    {
+        return StockLayer::query()
+            ->where('item_id', $item->id)
+            ->where('location_id', $location->id)
+            ->where('qty_remaining', '>', 0)
+            ->when($batch === null, fn ($query) => $query->whereNull('batch_id'), fn ($query) => $query->where('batch_id', $batch->id))
+            ->when($serialNo === null, fn ($query) => $query->whereNull('serial_no'), fn ($query) => $query->where('serial_no', $serialNo))
+            ->orderBy('received_at')->orderBy('id')->lockForUpdate()->get();
+    }
+
+    /**
+     * @param  Collection<int, StockLayer>  $layers
+     * @return Collection<int, array{layer:StockLayer, qty:BigDecimal}>
+     */
+    private function allocateAvailableLayers(Collection $layers, BigDecimal $required): Collection
+    {
+        $remaining = $required;
+        $allocations = collect();
+        foreach ($layers as $layer) {
+            $available = $this->issuableLayerQuantity($layer);
+            if ($available->isLessThanOrEqualTo(0)) {
+                continue;
+            }
+            $take = $available->isLessThan($remaining) ? $available : $remaining;
+            $allocations->push(['layer' => $layer, 'qty' => $take]);
+            $remaining = $remaining->minus($take);
+            if ($remaining->isZero()) {
+                break;
+            }
+        }
+        if (! $remaining->isZero()) {
+            throw new DomainInvariantException('Insufficient available stock at the requested location and tracking identity.', 'qty');
+        }
+
+        /** @var Collection<int, array{layer:StockLayer, qty:BigDecimal}> $allocations */
+        return $allocations;
+    }
+
+    private function issuableLayerQuantity(StockLayer $layer): BigDecimal
+    {
+        if ($layer->source_type !== 'GOODS_RECEIPT_LINE') {
+            return BigDecimal::of($layer->qty_remaining);
+        }
+
+        $receiptLine = GoodsReceiptLine::query()->with('purchaseOrderLine')->find($layer->source_id);
+        if ($receiptLine === null || $receiptLine->purchaseOrderLine === null || ! $receiptLine->purchaseOrderLine->qa_required) {
+            return BigDecimal::of($layer->qty_remaining);
+        }
+
+        $accepted = QualityDisposition::query()
+            ->where('goods_receipt_line_id', $receiptLine->id)
+            ->whereIn('disposition', [DispositionOutcome::Pass->value, DispositionOutcome::AcceptWithConcession->value])
+            ->sum('qty');
+        $alreadyConsumed = BigDecimal::of($layer->qty_received)->minus(BigDecimal::of($layer->qty_remaining));
+        $available = BigDecimal::of((string) $accepted)->minus($alreadyConsumed);
+
+        return $available->isGreaterThan(0) ? $available : BigDecimal::zero();
     }
 
     private function validateTracking(Item $item, BigDecimal $qty, ?string $batchNo, ?string $serialNo): void

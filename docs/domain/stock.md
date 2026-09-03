@@ -114,8 +114,10 @@ future advanced-WMS mode remain deferred until a phase that consumes them.
 
 Per-item, not one method for the whole company — [items.md](items.md#valuation-method),
 [ADR 0032](../decisions/0032-per-item-valuation-method.md). Each item's `valuation_method` picks
-which of these applies. The shared receipt-side movement path is implemented for all three;
-outbound depletion, transfers, negative-stock settlement and replay remain later Phase 2 slices.
+which of these applies. The shared receipt-side movement path and normal non-negative outbound
+issues are implemented for all three. Issues enforce exact-location/tracking availability and QA
+eligibility; transfers, authorised negative-stock settlement and replay remain later Phase 2
+slices.
 
 **AVCO.** On receipt:
 
