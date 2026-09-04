@@ -18,6 +18,7 @@ use App\Modules\Inventory\Models\Location;
 use App\Modules\Inventory\Models\RecalculationImpactVersion;
 use App\Modules\Inventory\Models\RecalculationRequest;
 use App\Modules\Inventory\Support\AvcoPoolScope;
+use App\Modules\Inventory\Support\ItemTracking;
 use App\Modules\Inventory\Support\ValuationMethod;
 use App\Support\UomDimension;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -47,7 +48,7 @@ class RequestStockRecalculationTest extends TestCase
     }
 
     /** @return array{0: Item, 1: Uom, 2: Location} */
-    private function makeAvcoItem(?ValuationMethod $method = null): array
+    private function makeAvcoItem(?ValuationMethod $method = null, ItemTracking $tracking = ItemTracking::None): array
     {
         $currency = Currency::firstOrCreate(['code' => 'USD'], ['name' => 'US Dollar', 'symbol' => '$']);
         Company::query()->findOrFail(1)->update(['base_currency_id' => $currency->id]);
@@ -55,7 +56,7 @@ class RequestStockRecalculationTest extends TestCase
         $category = Category::create(['code' => 'raw', 'name' => 'Raw', 'default_valuation_method' => 'AVCO']);
         $item = Item::create([
             'code' => 'item', 'name' => 'Item', 'type' => 'RAW', 'stock_uom_id' => $uom->id, 'category_id' => $category->id,
-            'is_stocked' => true, 'valuation_method' => $method ?? ValuationMethod::Avco,
+            'is_stocked' => true, 'valuation_method' => $method ?? ValuationMethod::Avco, 'tracking' => $tracking,
             'avco_pool_scope' => ($method ?? ValuationMethod::Avco) === ValuationMethod::Avco ? AvcoPoolScope::CompanyItem : null,
             'inventory_account_id' => ChartOfAccount::query()->firstOr(fn () => ChartOfAccount::create(['code' => 'inv', 'name' => 'Inventory', 'type' => AccountType::Asset]))->id,
         ]);
@@ -106,20 +107,52 @@ class RequestStockRecalculationTest extends TestCase
         app(RequestStockRecalculation::class)($this->requestInput($item, $location, Carbon::parse('2026-01-05'), 1), $actor);
     }
 
-    public function test_fifo_items_are_not_yet_supported(): void
+    public function test_fifo_items_compute_a_real_layer_based_impact(): void
     {
         [$item, $uom, $location] = $this->makeAvcoItem(ValuationMethod::Fifo);
         app(PostInventoryMovement::class)([
             'item_id' => $item->id, 'location_id' => $location->id, 'qty' => '5.0000', 'uom_id' => $uom->id,
-            'moved_at' => Carbon::parse('2026-01-10'), 'source_type' => 'TEST_RECEIPT', 'source_id' => 1,
+            'moved_at' => Carbon::parse('2026-01-01'), 'source_type' => 'TEST_RECEIPT', 'source_id' => 1,
             'unit_cost' => '10.0000', 'currency_id' => Company::query()->findOrFail(1)->base_currency_id,
             'fx_rate' => '1.000000000', 'base_unit_cost' => '10.0000',
+        ]);
+        app(PostInventoryMovement::class)->issue([
+            'item_id' => $item->id, 'location_id' => $location->id, 'qty' => '2.0000', 'uom_id' => $uom->id,
+            'moved_at' => Carbon::parse('2026-01-10'), 'source_type' => 'TEST_ISSUE', 'source_id' => 2,
         ]);
         $actor = User::factory()->create();
         $actor->givePermissionTo('inventory.recalculation.request');
 
-        $this->expectException(DomainInvariantException::class);
-        app(RequestStockRecalculation::class)($this->requestInput($item, $location, Carbon::parse('2026-01-05'), 1), $actor);
+        $request = app(RequestStockRecalculation::class)($this->requestInput($item, $location, Carbon::parse('2026-01-05'), 3), $actor);
+
+        $version = $request->impactVersions->sole();
+        $this->assertNull($version->avco_pool_id);
+        $this->assertSame('30.0000', $version->original_inventory_value);
+    }
+
+    public function test_specific_items_new_serial_computes_its_own_value_with_no_repricing_of_other_stock(): void
+    {
+        [$item, $uom, $location] = $this->makeAvcoItem(ValuationMethod::Specific, ItemTracking::Serial);
+        app(PostInventoryMovement::class)([
+            'item_id' => $item->id, 'location_id' => $location->id, 'qty' => '1.0000', 'uom_id' => $uom->id,
+            'moved_at' => Carbon::parse('2026-01-10'), 'source_type' => 'TEST_RECEIPT', 'source_id' => 1,
+            'unit_cost' => '25.0000', 'currency_id' => Company::query()->findOrFail(1)->base_currency_id,
+            'fx_rate' => '1.000000000', 'base_unit_cost' => '25.0000', 'serial_no' => 'SER-OTHER',
+        ]);
+        $actor = User::factory()->create();
+        $actor->givePermissionTo('inventory.recalculation.request');
+        $input = array_merge($this->requestInput($item, $location, Carbon::parse('2026-01-05'), 2), [
+            'qty' => '1.0000', 'unit_cost' => '30.0000', 'base_unit_cost' => '30.0000', 'serial_no' => 'SER-NEW',
+        ]);
+
+        $request = app(RequestStockRecalculation::class)($input, $actor);
+
+        $version = $request->impactVersions->sole();
+        $this->assertNull($version->avco_pool_id);
+        // Nothing existed for this serial before, so the adjustment is
+        // exactly the new unit's own value, not a repricing of anything else.
+        $this->assertSame('0.0000', $version->original_inventory_value);
+        $this->assertSame('30.0000', $version->valuation_adjustment);
     }
 
     public function test_a_date_that_does_not_conflict_with_later_history_is_rejected(): void

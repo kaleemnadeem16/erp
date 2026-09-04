@@ -14,7 +14,8 @@ This ADR is large; it is being built in phases, and the checklist in
 is fully true for every valuation method — partial delivery is recorded here and in `STATUS.md`
 instead of by checking a box early.
 
-**Built today**, for **AVCO receipts only**:
+**Built today**, for **receipts only** (issues/transfers as the conflicting event remain unbuilt),
+across **all three valuation methods**:
 
 - The backdating horizon (`BackdatingHorizonMode`/`BackdatingHorizonEvaluator`) — company policy
   plus the boundary-evaluation service, method-agnostic.
@@ -22,36 +23,44 @@ instead of by checking a box early.
   `RequestStockRecalculation` — a separate, proactive Action a caller uses when they know a
   receipt conflicts with later valuation history, the same relationship
   `RequestNegativeStockOverride` has to `IssuePoster`. `ReceiptPoster` itself is unchanged and
-  still hard-blocks the conflict; this doesn't catch that exception.
+  still hard-blocks the conflict; this doesn't catch that exception. It picks the replayer by the
+  item's `valuation_method`: `AvcoCounterfactualReplayer` for AVCO,
+  `LayerCounterfactualReplayer` for FIFO/SPECIFIC — both produce the same `ImpactPreview` shape.
 - `AvcoCounterfactualReplayer` — a real, computed impact preview, reconstructed from the
   append-only `StockValuationEntry` ledger (no manual/estimated figures accepted). It refuses,
   rather than guesses, whenever the pool had any negative-stock shortage activity in the replay
   window, or was already non-positive at the proposed date — faithfully replaying
   `ShortageSettler`'s provisional-cost rules in a parallel pure form is not yet built.
+- `stock_layer_consumptions` — permanently links each `LayerAllocator::allocate()` result to the
+  move it served (an issue, or a transfer's source side), FIFO/SPECIFIC only — the fact
+  `PostInventoryMovement` previously discarded once `qty_remaining` was decremented. AVCO writes
+  none; its replay works from the value ledger instead.
+- `LayerCounterfactualReplayer` — the FIFO/SPECIFIC counterpart, built on that ledger. One class
+  covers both methods: SPECIFIC is FIFO with exactly one always-available layer of qty 1, so a
+  brand-new serial degenerates to "its own value, zero repricing of anything else" without a
+  special-cased branch. For FIFO, it reconstructs the layer group's state as of the proposed date,
+  inserts the hypothetical layer, then re-walks every later receipt (passthrough) and consumption
+  (re-running the real, unmodified `LayerAllocator::allocate()` against the counterfactual queue —
+  reusing the production selection algorithm rather than a second copy that could drift). Same
+  shortage-window refusal boundary as the AVCO replayer, same reasoning. A transfer's destination
+  side is out of scope for both replayers — treated as an ordinary outbound consumption from the
+  source, no cascade into the destination's own subsequent history.
 - `RecalculationRequest` → `RecalculationImpactVersion` (immutable, append-only, one controlled
   `is_stale` false→true transition) → `RecalculationApproval` (targets one exact version,
-  requester/approver separation is absolute). Review SLA and approval TTL are persisted deadlines,
-  lazily evaluated from `now()` — no scheduled sweep exists in this codebase (a deliberate choice;
-  see `RequestNegativeStockOverride`'s identical `review_due_at` precedent). Deciding an approval
-  re-runs the replay as a revalidation precondition: a changed result marks the current version
-  stale and appends a replacement under the same request instead of deciding against stale
-  numbers.
-- `stock_layer_consumptions` — the FIFO/SPECIFIC replay foundation. `LayerAllocator::allocate()`
-  computes which layer(s) a given issue/transfer draws from and how much of each, but
-  `PostInventoryMovement` previously only persisted the resulting `qty_remaining` decrement,
-  discarding the allocation itself once posted. `LayerAllocator::recordConsumption()` now
-  permanently links each allocation to the move it served, for FIFO/SPECIFIC issues and the
-  source-side of FIFO/SPECIFIC transfers (not the newly-created destination layer, and not
-  `TransferPoster::reduceTransferredDestinationLayers()`'s destination-shortage settlement, which
-  isn't a `LayerAllocator` allocation). AVCO writes none — its replay works from the value ledger
-  and has no reader for this. This closes the data gap; the FIFO/SPECIFIC replayer that reads it
-  is still the next slice.
+  requester/approver separation is absolute). `avco_pool_id` is set for AVCO and null for
+  FIFO/SPECIFIC, which has no pool concept — identified instead by
+  `(item, location, batch/serial)`, already on the request. Review SLA and approval TTL are
+  persisted deadlines, lazily evaluated from `now()` — no scheduled sweep exists in this codebase
+  (a deliberate choice; see `RequestNegativeStockOverride`'s identical `review_due_at` precedent).
+  Deciding an approval re-runs the replay (the correct one for the item's method) as a
+  revalidation precondition: a changed result marks the current version stale and appends a
+  replacement under the same request instead of deciding against stale numbers.
 
-**Not yet built**: the FIFO/SPECIFIC replayer itself (the ledger above is the prerequisite, now
-in place), issue/transfer backdating (receipts only so far), risk classification and the mandatory
-second approver for high-risk consequences, the regeneration cap (not reachable yet — see below),
-execution of an approved version, and the append-only correction package. No HTTP/API layer exists
-for any of this, matching the negative-stock workflow, which doesn't have one either.
+**Not yet built**: issue/transfer backdating (receipts only so far, for every method), risk
+classification and the mandatory second approver for high-risk consequences, the regeneration cap
+(not reachable yet — see below), execution of an approved version, and the append-only correction
+package. No HTTP/API layer exists for any of this, matching the negative-stock workflow, which
+doesn't have one either.
 
 A note on the regeneration cap: it counts *post-approval* material invalidations. In the design
 above, revalidation happens synchronously as a precondition of deciding, so a version can only be

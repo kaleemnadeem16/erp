@@ -23,6 +23,7 @@ use Illuminate\Support\Carbon;
  * @property int $item_id
  * @property int $location_id
  * @property int|null $batch_id
+ * @property string|null $serial_no
  * @property string $qty
  * @property string $unit_cost
  * @property int $currency_id

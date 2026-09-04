@@ -8,7 +8,24 @@ use App\Exceptions\DomainInvariantException;
 use App\Models\Model;
 use App\Support\Concerns\BelongsToCompany;
 use App\Support\Concerns\GuardsRelatedCompanyScope;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property int $item_id
+ * @property int $location_id
+ * @property int|null $batch_id
+ * @property string|null $serial_no
+ * @property string $qty_received
+ * @property string $qty_remaining
+ * @property string $unit_cost
+ * @property int $currency_id
+ * @property string $fx_rate
+ * @property string $base_unit_cost
+ * @property Carbon $received_at
+ * @property string $source_type
+ * @property int $source_id
+ * @property int|null $source_line_no
+ */
 class StockLayer extends Model
 {
     use BelongsToCompany;

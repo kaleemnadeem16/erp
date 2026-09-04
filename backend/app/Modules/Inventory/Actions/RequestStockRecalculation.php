@@ -9,6 +9,8 @@ use App\Models\Company;
 use App\Models\User;
 use App\Modules\Inventory\Actions\Backdating\BackdatingHorizonEvaluator;
 use App\Modules\Inventory\Actions\Recalculation\AvcoCounterfactualReplayer;
+use App\Modules\Inventory\Actions\Recalculation\ImpactPreview;
+use App\Modules\Inventory\Actions\Recalculation\LayerCounterfactualReplayer;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Models\Location;
 use App\Modules\Inventory\Models\RecalculationImpactVersion;
@@ -29,18 +31,19 @@ use Illuminate\Support\Facades\DB;
  * have a backdated receipt calls this instead of the blocked receipt, the
  * same relationship RequestNegativeStockOverride has to IssuePoster.
  *
- * AVCO items only — FIFO/SPECIFIC recalculation has no replay data to compute
- * against yet (see AvcoCounterfactualReplayer's docblock) and cleanly refuses
- * rather than accept a manual estimate.
+ * AVCO uses AvcoCounterfactualReplayer (the value ledger); FIFO/SPECIFIC uses
+ * LayerCounterfactualReplayer (the layer-consumption ledger) — both produce
+ * the same ImpactPreview shape, so this Action only picks which one to call.
  */
 final class RequestStockRecalculation
 {
     public function __construct(
         private readonly BackdatingHorizonEvaluator $horizon,
-        private readonly AvcoCounterfactualReplayer $replayer,
+        private readonly AvcoCounterfactualReplayer $avcoReplayer,
+        private readonly LayerCounterfactualReplayer $layerReplayer,
     ) {}
 
-    /** @param array{item_id:int, location_id:int, batch_no?:string|null, qty:string, unit_cost:string, currency_id:int, fx_rate:string, base_unit_cost:string, moved_at:mixed, source_type:string, source_id:int} $input */
+    /** @param array{item_id:int, location_id:int, batch_no?:string|null, serial_no?:string|null, qty:string, unit_cost:string, currency_id:int, fx_rate:string, base_unit_cost:string, moved_at:mixed, source_type:string, source_id:int} $input */
     public function __invoke(array $input, User $actor): RecalculationRequest
     {
         return DB::transaction(function () use ($input, $actor): RecalculationRequest {
@@ -58,9 +61,6 @@ final class RequestStockRecalculation
             }
 
             $item = Item::query()->findOrFail($input['item_id']);
-            if ($item->valuation_method !== ValuationMethod::Avco) {
-                throw new DomainInvariantException('Recalculation is not yet supported for FIFO/SPECIFIC items.', 'item_id');
-            }
             $location = Location::query()->findOrFail($input['location_id']);
             $batchNo = isset($input['batch_no']) ? trim((string) $input['batch_no']) : null;
             $batch = null;
@@ -70,6 +70,8 @@ final class RequestStockRecalculation
                     throw new DomainInvariantException('The requested batch is not on hand for this item.', 'batch_no');
                 }
             }
+            $serialNo = isset($input['serial_no']) ? trim((string) $input['serial_no']) : null;
+            $serialNo = $serialNo === '' ? null : $serialNo;
 
             $movedAt = Carbon::parse($input['moved_at']);
             if (! StockMove::query()->where('item_id', $item->id)->where('moved_at', '>', $movedAt)->exists()) {
@@ -83,10 +85,10 @@ final class RequestStockRecalculation
 
             $qty = BigDecimal::of($input['qty']);
             $baseUnitCost = BigDecimal::of($input['base_unit_cost']);
-            $preview = $this->replayer->replay($item, $location, $batch, $qty, $baseUnitCost, $movedAt);
+            $preview = $this->replay($item, $location, $batch, $serialNo, $qty, $baseUnitCost, $movedAt);
 
             $request = RecalculationRequest::query()->create([
-                'item_id' => $item->id, 'location_id' => $location->id, 'batch_id' => $batch?->id,
+                'item_id' => $item->id, 'location_id' => $location->id, 'batch_id' => $batch?->id, 'serial_no' => $serialNo,
                 'qty' => (string) $qty, 'unit_cost' => $input['unit_cost'], 'currency_id' => $input['currency_id'],
                 'fx_rate' => $input['fx_rate'], 'base_unit_cost' => (string) $baseUnitCost, 'moved_at' => $movedAt,
                 'source_type' => $input['source_type'], 'source_id' => $input['source_id'],
@@ -96,7 +98,7 @@ final class RequestStockRecalculation
             ]);
 
             RecalculationImpactVersion::query()->create([
-                'recalculation_request_id' => $request->id, 'version_no' => 1, 'avco_pool_id' => $preview->pool->id,
+                'recalculation_request_id' => $request->id, 'version_no' => 1, 'avco_pool_id' => $preview->pool?->id,
                 'original_qty_on_hand' => (string) $preview->originalQtyOnHand,
                 'original_inventory_value' => (string) $preview->originalInventoryValue,
                 'original_avg_unit_cost' => (string) $preview->originalAvgUnitCost,
@@ -109,5 +111,12 @@ final class RequestStockRecalculation
 
             return $request->load('impactVersions');
         });
+    }
+
+    private function replay(Item $item, Location $location, ?StockBatch $batch, ?string $serialNo, BigDecimal $qty, BigDecimal $baseUnitCost, Carbon $movedAt): ImpactPreview
+    {
+        return $item->valuation_method === ValuationMethod::Avco
+            ? $this->avcoReplayer->replay($item, $location, $batch, $qty, $baseUnitCost, $movedAt)
+            : $this->layerReplayer->replay($item, $location, $batch, $serialNo, $qty, $baseUnitCost, $movedAt);
     }
 }

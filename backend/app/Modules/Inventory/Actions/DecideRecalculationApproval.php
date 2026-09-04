@@ -8,6 +8,8 @@ use App\Exceptions\DomainInvariantException;
 use App\Models\Company;
 use App\Models\User;
 use App\Modules\Inventory\Actions\Recalculation\AvcoCounterfactualReplayer;
+use App\Modules\Inventory\Actions\Recalculation\ImpactPreview;
+use App\Modules\Inventory\Actions\Recalculation\LayerCounterfactualReplayer;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Models\Location;
 use App\Modules\Inventory\Models\RecalculationApproval;
@@ -15,6 +17,7 @@ use App\Modules\Inventory\Models\RecalculationImpactVersion;
 use App\Modules\Inventory\Models\RecalculationRequest;
 use App\Modules\Inventory\Models\StockBatch;
 use App\Modules\Inventory\Support\RecalculationApprovalDecision;
+use App\Modules\Inventory\Support\ValuationMethod;
 use App\Support\CompanyContext;
 use Brick\Math\BigDecimal;
 use Illuminate\Support\Facades\DB;
@@ -31,7 +34,10 @@ use Illuminate\Support\Facades\DB;
  */
 final class DecideRecalculationApproval
 {
-    public function __construct(private readonly AvcoCounterfactualReplayer $replayer) {}
+    public function __construct(
+        private readonly AvcoCounterfactualReplayer $avcoReplayer,
+        private readonly LayerCounterfactualReplayer $layerReplayer,
+    ) {}
 
     public function __invoke(RecalculationImpactVersion $version, RecalculationApprovalDecision $decision, string $notes, User $actor): RecalculationApproval
     {
@@ -70,12 +76,12 @@ final class DecideRecalculationApproval
             $item = Item::query()->findOrFail($request->item_id);
             $location = Location::query()->findOrFail($request->location_id);
             $batch = $request->batch_id === null ? null : StockBatch::query()->find($request->batch_id);
-            $fresh = $this->replayer->replay($item, $location, $batch, BigDecimal::of($request->qty), BigDecimal::of($request->base_unit_cost), $request->moved_at);
+            $fresh = $this->replay($item, $location, $batch, $request);
             if (! $fresh->valuationAdjustment()->isEqualTo(BigDecimal::of($version->valuation_adjustment))) {
                 $version->update(['is_stale' => true]);
                 $nextVersionNo = (int) RecalculationImpactVersion::query()->where('recalculation_request_id', $request->id)->max('version_no') + 1;
                 RecalculationImpactVersion::query()->create([
-                    'recalculation_request_id' => $request->id, 'version_no' => $nextVersionNo, 'avco_pool_id' => $fresh->pool->id,
+                    'recalculation_request_id' => $request->id, 'version_no' => $nextVersionNo, 'avco_pool_id' => $fresh->pool?->id,
                     'original_qty_on_hand' => (string) $fresh->originalQtyOnHand,
                     'original_inventory_value' => (string) $fresh->originalInventoryValue,
                     'original_avg_unit_cost' => (string) $fresh->originalAvgUnitCost,
@@ -103,5 +109,12 @@ final class DecideRecalculationApproval
         }
 
         return $outcome;
+    }
+
+    private function replay(Item $item, Location $location, ?StockBatch $batch, RecalculationRequest $request): ImpactPreview
+    {
+        return $item->valuation_method === ValuationMethod::Avco
+            ? $this->avcoReplayer->replay($item, $location, $batch, BigDecimal::of($request->qty), BigDecimal::of($request->base_unit_cost), $request->moved_at)
+            : $this->layerReplayer->replay($item, $location, $batch, $request->serial_no, BigDecimal::of($request->qty), BigDecimal::of($request->base_unit_cost), $request->moved_at);
     }
 }
