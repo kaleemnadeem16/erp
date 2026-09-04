@@ -118,6 +118,8 @@ final class IssuePoster
         }
         if ($pool !== null) {
             $this->drawDownPool($pool, $qty, $baseAmount);
+        } else {
+            $this->layers->recordConsumption($move, $allocations);
         }
 
         $accountId = $item->resolveInventoryAccountId();

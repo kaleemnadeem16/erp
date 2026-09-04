@@ -36,13 +36,22 @@ instead of by checking a box early.
   re-runs the replay as a revalidation precondition: a changed result marks the current version
   stale and appends a replacement under the same request instead of deciding against stale
   numbers.
+- `stock_layer_consumptions` — the FIFO/SPECIFIC replay foundation. `LayerAllocator::allocate()`
+  computes which layer(s) a given issue/transfer draws from and how much of each, but
+  `PostInventoryMovement` previously only persisted the resulting `qty_remaining` decrement,
+  discarding the allocation itself once posted. `LayerAllocator::recordConsumption()` now
+  permanently links each allocation to the move it served, for FIFO/SPECIFIC issues and the
+  source-side of FIFO/SPECIFIC transfers (not the newly-created destination layer, and not
+  `TransferPoster::reduceTransferredDestinationLayers()`'s destination-shortage settlement, which
+  isn't a `LayerAllocator` allocation). AVCO writes none — its replay works from the value ledger
+  and has no reader for this. This closes the data gap; the FIFO/SPECIFIC replayer that reads it
+  is still the next slice.
 
-**Not yet built**: FIFO/SPECIFIC replay (no persisted layer-consumption ledger exists yet — see
-`AvcoCounterfactualReplayer`'s docblock), issue/transfer backdating (receipts only so far), risk
-classification and the mandatory second approver for high-risk consequences, the regeneration cap
-(not reachable yet — see below), execution of an approved version, and the append-only correction
-package. No HTTP/API layer exists for any of this, matching the negative-stock workflow, which
-doesn't have one either.
+**Not yet built**: the FIFO/SPECIFIC replayer itself (the ledger above is the prerequisite, now
+in place), issue/transfer backdating (receipts only so far), risk classification and the mandatory
+second approver for high-risk consequences, the regeneration cap (not reachable yet — see below),
+execution of an approved version, and the append-only correction package. No HTTP/API layer exists
+for any of this, matching the negative-stock workflow, which doesn't have one either.
 
 A note on the regeneration cap: it counts *post-approval* material invalidations. In the design
 above, revalidation happens synchronously as a precondition of deciding, so a version can only be

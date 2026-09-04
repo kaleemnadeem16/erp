@@ -218,6 +218,16 @@ Rules, per [ADR 0032](../decisions/0032-per-item-valuation-method.md):
 - Not building the replay engine now — this is Phase 2/3 work, done when the costing phase
   actually needs it. What matters today is that no schema decision closes the door on it later.
 
+This is a different concept from [ADR 0040](../decisions/0040-control-backdated-stock-recalculation-and-corrections.md)'s
+backdated-recalculation replay ([stock-recalculation.md](stock-recalculation.md)) — "what would a
+different official method have shown" versus "what would this item's own posted history look like
+if a late receipt were inserted at its true date." The latter turned out to need more than
+`stock_layers`/`stock_moves` alone retain: `LayerAllocator::allocate()` decides which layer(s) a
+given issue/transfer draws from, but that decision itself wasn't persisted, only its net effect
+(`qty_remaining`). `stock_layer_consumptions` (added alongside the ADR 0040 work) closes that gap
+for FIFO/SPECIFIC by permanently linking each allocation to the move it served — see
+`LayerAllocator::recordConsumption()`.
+
 ### GL posting
 
 Phase 2 does not post to the GL. A `stock_move` writes a `stock_valuation_entries` row (this

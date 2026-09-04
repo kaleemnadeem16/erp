@@ -23,7 +23,6 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 
 | Item | Date |
 |---|---|
-| **Normal outbound stock issues** — AVCO/FIFO/SPECIFIC blocking-mode issues at the sole movement boundary → [stock.md](domain/stock.md) | 2026-09-03 |
 | **Negative-stock policy + override workflows** — ADR 0037 company controls, immutable request/approval/review records → [negative-stock.md](domain/negative-stock.md) | 2026-09-03 |
 | **Authorised negative posting + inbound settlement** — provisional AVCO/FIFO cost, oldest-first exact-identity settlement, append-only repairs → [negative-stock.md](domain/negative-stock.md) | 2026-09-03 |
 | **Value-conserving transfers** — same-pool neutrality, cross-pool conservation, deterministic lock order → [negative-stock.md](domain/negative-stock.md) | 2026-09-03 |
@@ -31,14 +30,14 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 | **AVCO transfer repair removed** — a transfer's exact source is always fully physically backed, so a frozen pool never makes it provisional; its rate is final at post time, matching issues → [ADR 0045](decisions/0045-avco-transfer-rate-final-not-provisional.md), resolves Q15 | 2026-09-03 |
 | **Backdating horizon policy** — company-configurable current+previous-period/period-lock/posting-floor modes, audited via the existing inventory-policy-change trail, plus a standalone boundary evaluator for the recalculation workflow to consume → [ADR 0040](decisions/0040-control-backdated-stock-recalculation-and-corrections.md), [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-04 |
 | **Recalculation requests — AVCO receipts** — a real, ledger-reconstructed counterfactual impact preview (not a manual estimate), immutable append-only impact versions with revalidate-on-decide staleness, single-tier approval with SLA/TTL deadlines. FIFO/SPECIFIC, issues/transfers, risk tiers, execution and correction packages remain — phase-2 checklist stays unticked → [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-04 |
+| **Layer-consumption ledger** — `stock_layer_consumptions` permanently links each FIFO/SPECIFIC allocation to the move it served (previously discarded once `qty_remaining` was decremented), closing the data gap the AVCO-only recalculation slice named. Purely additive — existing issue/transfer behaviour and tests unchanged. The FIFO/SPECIFIC replayer that reads it is next → [stock.md](domain/stock.md), [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-04 |
 
 ## Next
 
 Continue [Phase 2 — Purchasing & stock](phases/phase-2-purchasing-stock.md):
 
-1. Extend ADR 0040 recalculation to FIFO/SPECIFIC — needs a new persisted layer-consumption
-   ledger (which layer served which issue is currently discarded after posting) before any replay
-   is possible for those methods.
+1. Build the FIFO/SPECIFIC counterfactual replayer on top of the new layer-consumption ledger,
+   and wire it into `RequestStockRecalculation` alongside the existing AVCO path.
 2. Then: risk classification/second approver, execution of an approved version, and the
    append-only correction package — none reachable without the foundation above.
 3. Longer-term: API endpoints + first UI screens for the stock engine, and the first real

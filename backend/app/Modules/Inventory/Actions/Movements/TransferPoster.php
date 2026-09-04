@@ -129,6 +129,9 @@ final class TransferPoster
                 'source_line_no' => $index + 1, 'batch_id' => $batch?->id, 'serial_no' => $serialNo,
             ]);
         }
+        if ($sourcePool === null) {
+            $this->layers->recordConsumption($move, $allocations);
+        }
         $this->reduceTransferredDestinationLayers($move, $settledQty);
         $accountId = $item->resolveInventoryAccountId();
         if ($accountId === null) {

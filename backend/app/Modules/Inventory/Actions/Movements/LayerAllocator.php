@@ -8,6 +8,8 @@ use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Models\Location;
 use App\Modules\Inventory\Models\StockBatch;
 use App\Modules\Inventory\Models\StockLayer;
+use App\Modules\Inventory\Models\StockLayerConsumption;
+use App\Modules\Inventory\Models\StockMove;
 use App\Modules\Purchasing\Models\GoodsReceiptLine;
 use App\Modules\Purchasing\Models\QualityDisposition;
 use App\Modules\Purchasing\Support\DispositionOutcome;
@@ -56,6 +58,25 @@ final class LayerAllocator
 
         /** @var Collection<int, array{layer:StockLayer, qty:BigDecimal}> $allocations */
         return $allocations;
+    }
+
+    /**
+     * Permanently links each allocation to the move it served — the FIFO/
+     * SPECIFIC replay foundation ADR 0040 needs, which allocate() itself
+     * deliberately doesn't persist so it stays a pure, reusable function.
+     * FIFO/SPECIFIC only: callers gate this to non-AVCO items, since AVCO's
+     * own replay works from the value ledger and has no reader for this.
+     *
+     * @param  Collection<int, array{layer:StockLayer, qty:BigDecimal}>  $allocations
+     */
+    public function recordConsumption(StockMove $move, Collection $allocations): void
+    {
+        foreach ($allocations as $allocation) {
+            StockLayerConsumption::query()->create([
+                'stock_move_id' => $move->id, 'stock_layer_id' => $allocation['layer']->id,
+                'qty_consumed' => (string) $allocation['qty'], 'unit_cost' => $allocation['layer']->base_unit_cost,
+            ]);
+        }
     }
 
     public function issuableQuantity(StockLayer $layer): BigDecimal
