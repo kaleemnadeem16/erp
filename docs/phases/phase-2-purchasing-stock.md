@@ -159,7 +159,7 @@ The order matters because later work needs stable document and stock boundaries:
       derive provisional AVCO/FIFO cost and atomically create linked shortage state
 - [x] Settle compatible inbound against oldest exact-identity shortages, support partial recovery,
       expose only excess stock and append provisional-to-actual valuation repairs
-- [ ] Implement company backdating horizon modes (`CURRENT_AND_PREVIOUS_PERIOD` default,
+- [x] Implement company backdating horizon modes (`CURRENT_AND_PREVIOUS_PERIOD` default,
       `PERIOD_LOCK_ONLY`, `POSTING_FLOOR` with fixed/rolling subtype), audited policy changes and
       most-restrictive-boundary evaluation; rolling mode requires a valid company IANA accounting
       timezone and trusted server time, never user-controlled clocks

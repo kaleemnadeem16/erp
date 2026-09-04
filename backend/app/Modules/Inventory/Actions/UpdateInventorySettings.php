@@ -16,11 +16,22 @@ use Illuminate\Support\Facades\DB;
 
 final class UpdateInventorySettings
 {
-    private const NEGATIVE_STOCK_FIELDS = [
-        'negative_stock_mode', 'negative_stock_authorisation_mode', 'negative_stock_review_sla_hours',
-        'negative_stock_allow_self_review', 'negative_stock_sales_despatch_enabled',
-        'negative_stock_material_consumption_enabled', 'negative_stock_supplier_return_enabled',
-        'negative_stock_scrap_writeoff_enabled',
+    /**
+     * Each group is one governed policy: changing any of its fields requires an
+     * actor + reason and writes its own InventoryPolicyChange audit row, keyed
+     * by the group name.
+     */
+    private const POLICY_FIELD_GROUPS = [
+        'NEGATIVE_STOCK' => [
+            'negative_stock_mode', 'negative_stock_authorisation_mode', 'negative_stock_review_sla_hours',
+            'negative_stock_allow_self_review', 'negative_stock_sales_despatch_enabled',
+            'negative_stock_material_consumption_enabled', 'negative_stock_supplier_return_enabled',
+            'negative_stock_scrap_writeoff_enabled',
+        ],
+        'BACKDATING_HORIZON' => [
+            'accounting_timezone', 'backdating_horizon_mode', 'backdating_posting_floor_subtype',
+            'backdating_posting_floor_fixed_date', 'backdating_posting_floor_rolling_days',
+        ],
     ];
 
     public function __construct(private readonly CompanyContext $companyContext) {}
@@ -36,7 +47,8 @@ final class UpdateInventorySettings
                 $this->guardSimpleDowngrade();
             }
 
-            $oldValues = collect(self::NEGATIVE_STOCK_FIELDS)
+            $allPolicyFields = array_merge(...array_values(self::POLICY_FIELD_GROUPS));
+            $oldValues = collect($allPolicyFields)
                 ->filter(fn (string $field): bool => array_key_exists($field, $attributes))
                 ->mapWithKeys(fn (string $field): array => [$field => $company->getRawOriginal($field)])
                 ->all();
@@ -44,19 +56,24 @@ final class UpdateInventorySettings
             // Eloquent's cast-aware dirty check, so resubmitting an unchanged
             // value in a different lexical form ("1" for a boolean, "24" for
             // an integer) is not recorded as a policy change.
-            $changedPolicyFields = array_keys(array_intersect_key($company->getDirty(), array_flip(self::NEGATIVE_STOCK_FIELDS)));
+            $changedPolicyFields = array_keys(array_intersect_key($company->getDirty(), array_flip($allPolicyFields)));
             if ($changedPolicyFields !== [] && ($actorId === null || trim((string) $reason) === '')) {
-                throw new DomainInvariantException('Negative-stock policy changes require an actor and reason.', 'reason');
+                throw new DomainInvariantException('Policy changes require an actor and reason.', 'reason');
             }
 
             $company->save();
             $company->refresh();
 
-            if ($changedPolicyFields !== []) {
+            foreach (self::POLICY_FIELD_GROUPS as $policy => $groupFields) {
+                $changedInGroup = array_intersect($changedPolicyFields, $groupFields);
+                if ($changedInGroup === []) {
+                    continue;
+                }
+
                 InventoryPolicyChange::query()->create([
-                    'policy' => 'NEGATIVE_STOCK',
-                    'old_values' => array_intersect_key($oldValues, array_flip($changedPolicyFields)),
-                    'new_values' => collect($changedPolicyFields)->mapWithKeys(
+                    'policy' => $policy,
+                    'old_values' => array_intersect_key($oldValues, array_flip($changedInGroup)),
+                    'new_values' => collect($changedInGroup)->mapWithKeys(
                         fn (string $field): array => [$field => $company->getRawOriginal($field)],
                     )->all(),
                     'reason' => trim((string) $reason), 'changed_by' => $actorId, 'changed_at' => now(),

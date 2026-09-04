@@ -71,6 +71,18 @@ Any movement of stock between locations, with a polymorphic reference to its sou
 **Wastage**
 Material lost in the process, expressed as a percentage uplift on the required quantity.
 
+**Backdating horizon**
+The earliest valuation-effective date a company allows a backdated stock event to reach without
+being routed through recalculation-request review. Three modes: current + previous open period
+(default), period-lock-only, or a fixed/rolling posting floor.
+→ [decisions/0040-control-backdated-stock-recalculation-and-corrections.md](decisions/0040-control-backdated-stock-recalculation-and-corrections.md), [domain/stock-recalculation.md](domain/stock-recalculation.md)
+
+**Posting floor**
+A backdating horizon mode: one company-configured cutoff date, either fixed or rolling (N days
+before trusted server time in the company's accounting timezone). Distinct from a period boundary
+— it ignores accounting-period open/closed state entirely.
+→ [decisions/0040-control-backdated-stock-recalculation-and-corrections.md](decisions/0040-control-backdated-stock-recalculation-and-corrections.md)
+
 ---
 
 ## Sales & delivery

@@ -7,10 +7,13 @@ namespace App\Models;
 use App\Modules\Accounting\Models\AccountingPeriod;
 use App\Modules\Accounting\Support\PeriodStatus;
 use App\Modules\Inventory\Support\AvcoPoolScope;
+use App\Modules\Inventory\Support\BackdatingHorizonMode;
 use App\Modules\Inventory\Support\InventoryLocationMode;
 use App\Modules\Inventory\Support\NegativeStockAuthorisationMode;
 use App\Modules\Inventory\Support\NegativeStockMode;
+use App\Modules\Inventory\Support\PostingFloorSubtype;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 use RuntimeException;
 
 /**
@@ -32,6 +35,11 @@ use RuntimeException;
  * @property bool $negative_stock_material_consumption_enabled
  * @property bool $negative_stock_supplier_return_enabled
  * @property bool $negative_stock_scrap_writeoff_enabled
+ * @property string $accounting_timezone
+ * @property BackdatingHorizonMode $backdating_horizon_mode
+ * @property PostingFloorSubtype|null $backdating_posting_floor_subtype
+ * @property Carbon|null $backdating_posting_floor_fixed_date
+ * @property int|null $backdating_posting_floor_rolling_days
  */
 class Company extends Model
 {
@@ -49,6 +57,9 @@ class Company extends Model
             'negative_stock_material_consumption_enabled' => 'boolean',
             'negative_stock_supplier_return_enabled' => 'boolean',
             'negative_stock_scrap_writeoff_enabled' => 'boolean',
+            'backdating_horizon_mode' => BackdatingHorizonMode::class,
+            'backdating_posting_floor_subtype' => PostingFloorSubtype::class,
+            'backdating_posting_floor_fixed_date' => 'date',
         ];
     }
 
