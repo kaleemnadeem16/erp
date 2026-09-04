@@ -4,6 +4,10 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
+import type { InventorySettingsResourceBackdatingPostingFloorSubtype } from "./inventorySettingsResourceBackdatingPostingFloorSubtype";
+import type { InventorySettingsResourceBackdatingPostingFloorFixedDate } from "./inventorySettingsResourceBackdatingPostingFloorFixedDate";
+import type { InventorySettingsResourceBackdatingPostingFloorRollingDays } from "./inventorySettingsResourceBackdatingPostingFloorRollingDays";
+import type { InventorySettingsResourceRecalculationHighRiskThresholdBaseAmount } from "./inventorySettingsResourceRecalculationHighRiskThresholdBaseAmount";
 
 export interface InventorySettingsResource {
   inventory_location_mode: string;
@@ -16,4 +20,13 @@ export interface InventorySettingsResource {
   negative_stock_material_consumption_enabled: boolean;
   negative_stock_supplier_return_enabled: boolean;
   negative_stock_scrap_writeoff_enabled: boolean;
+  accounting_timezone: string;
+  backdating_horizon_mode: string;
+  backdating_posting_floor_subtype: InventorySettingsResourceBackdatingPostingFloorSubtype;
+  backdating_posting_floor_fixed_date: InventorySettingsResourceBackdatingPostingFloorFixedDate;
+  backdating_posting_floor_rolling_days: InventorySettingsResourceBackdatingPostingFloorRollingDays;
+  authorised_forward_recalculation_enabled: boolean;
+  recalculation_review_sla_hours: number;
+  recalculation_approval_ttl_hours: number;
+  recalculation_high_risk_threshold_base_amount: InventorySettingsResourceRecalculationHighRiskThresholdBaseAmount;
 }

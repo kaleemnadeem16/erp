@@ -8,6 +8,9 @@ import type { InventoryLocationMode } from "./inventoryLocationMode";
 import type { AvcoPoolScope } from "./avcoPoolScope";
 import type { NegativeStockMode } from "./negativeStockMode";
 import type { NegativeStockAuthorisationMode } from "./negativeStockAuthorisationMode";
+import type { BackdatingHorizonMode } from "./backdatingHorizonMode";
+import type { PostingFloorSubtype } from "./postingFloorSubtype";
+import type { UpdateInventorySettingsRequestRecalculationHighRiskThresholdBaseAmount } from "./updateInventorySettingsRequestRecalculationHighRiskThresholdBaseAmount";
 
 export interface UpdateInventorySettingsRequest {
   inventory_location_mode?: InventoryLocationMode;
@@ -24,6 +27,27 @@ export interface UpdateInventorySettingsRequest {
   negative_stock_material_consumption_enabled?: boolean;
   negative_stock_supplier_return_enabled?: boolean;
   negative_stock_scrap_writeoff_enabled?: boolean;
+  accounting_timezone?: string;
+  backdating_horizon_mode?: BackdatingHorizonMode;
+  backdating_posting_floor_subtype?: PostingFloorSubtype;
+  backdating_posting_floor_fixed_date?: string;
+  /**
+   * @minimum 1
+   * @maximum 3650
+   */
+  backdating_posting_floor_rolling_days?: number;
+  authorised_forward_recalculation_enabled?: boolean;
+  /**
+   * @minimum 1
+   * @maximum 168
+   */
+  recalculation_review_sla_hours?: number;
+  /**
+   * @minimum 1
+   * @maximum 168
+   */
+  recalculation_approval_ttl_hours?: number;
+  recalculation_high_risk_threshold_base_amount?: UpdateInventorySettingsRequestRecalculationHighRiskThresholdBaseAmount;
   /** @maxLength 1000 */
   reason?: string;
 }
