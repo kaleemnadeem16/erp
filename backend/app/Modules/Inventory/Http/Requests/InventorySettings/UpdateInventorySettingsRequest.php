@@ -27,6 +27,10 @@ class UpdateInventorySettingsRequest extends FormRequest
         'backdating_posting_floor_fixed_date', 'backdating_posting_floor_rolling_days',
     ];
 
+    private const RECALCULATION_FIELDS = [
+        'authorised_forward_recalculation_enabled', 'recalculation_review_sla_hours', 'recalculation_approval_ttl_hours',
+    ];
+
     public function authorize(): bool
     {
         if ($this->hasAny(self::NEGATIVE_STOCK_FIELDS) && $this->user()?->can('inventory.negative-stock-policy.manage') !== true) {
@@ -34,6 +38,10 @@ class UpdateInventorySettingsRequest extends FormRequest
         }
 
         if ($this->hasAny(self::BACKDATING_HORIZON_FIELDS) && $this->user()?->can('inventory.backdating-horizon-policy.manage') !== true) {
+            return false;
+        }
+
+        if ($this->hasAny(self::RECALCULATION_FIELDS) && $this->user()?->can('inventory.recalculation-policy.manage') !== true) {
             return false;
         }
 
@@ -71,8 +79,11 @@ class UpdateInventorySettingsRequest extends FormRequest
                 'prohibited_unless:backdating_posting_floor_subtype,'.PostingFloorSubtype::RollingFormula->value,
                 'integer', 'between:1,3650',
             ],
+            'authorised_forward_recalculation_enabled' => ['sometimes', 'boolean'],
+            'recalculation_review_sla_hours' => ['sometimes', 'integer', 'between:1,168'],
+            'recalculation_approval_ttl_hours' => ['sometimes', 'integer', 'between:1,168'],
             'reason' => [
-                'required_with:'.implode(',', [...self::NEGATIVE_STOCK_FIELDS, ...self::BACKDATING_HORIZON_FIELDS]),
+                'required_with:'.implode(',', [...self::NEGATIVE_STOCK_FIELDS, ...self::BACKDATING_HORIZON_FIELDS, ...self::RECALCULATION_FIELDS]),
                 'string', 'max:1000',
             ],
         ];

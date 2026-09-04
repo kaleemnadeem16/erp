@@ -87,6 +87,16 @@ final class AvcoPoolManager
         ]);
     }
 
+    /**
+     * Read-only pool lookup for preview/what-if computation — no lock, no
+     * insertOrIgnore. Returns null when the pool has never been touched by a
+     * live movement (nothing to preview against).
+     */
+    public function resolveExisting(Item $item, Location $location, ?StockBatch $batch): ?AvcoPool
+    {
+        return AvcoPool::query()->where($this->identity($item, $location, $batch))->first();
+    }
+
     /** @return array{item_id:int, scope:string, warehouse_id:int|null, batch_id:int|null} */
     private function identity(Item $item, Location $location, ?StockBatch $batch): array
     {

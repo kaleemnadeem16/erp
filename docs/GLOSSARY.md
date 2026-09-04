@@ -83,6 +83,13 @@ before trusted server time in the company's accounting timezone). Distinct from 
 — it ignores accounting-period open/closed state entirely.
 → [decisions/0040-control-backdated-stock-recalculation-and-corrections.md](decisions/0040-control-backdated-stock-recalculation-and-corrections.md)
 
+**Impact version**
+One immutable, computed snapshot of what a backdated event's economic effect would be — the
+original recorded result versus the counterfactual chronological one. A recalculation request owns
+a sequence of these; approval targets one exact version, never the request generally, and a
+material change appends a replacement rather than editing the existing one.
+→ [domain/stock-recalculation.md](domain/stock-recalculation.md)
+
 ---
 
 ## Sales & delivery

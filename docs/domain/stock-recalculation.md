@@ -7,6 +7,49 @@ fixed by [ADR 0040](../decisions/0040-control-backdated-stock-recalculation-and-
 The core stock model is [stock.md](stock.md); negative-stock workflows are
 [negative-stock.md](negative-stock.md).
 
+## Implementation status
+
+This ADR is large; it is being built in phases, and the checklist in
+[phase-2-purchasing-stock.md](../phases/phase-2-purchasing-stock.md) stays unticked until a line
+is fully true for every valuation method — partial delivery is recorded here and in `STATUS.md`
+instead of by checking a box early.
+
+**Built today**, for **AVCO receipts only**:
+
+- The backdating horizon (`BackdatingHorizonMode`/`BackdatingHorizonEvaluator`) — company policy
+  plus the boundary-evaluation service, method-agnostic.
+- `Company.authorised_forward_recalculation_enabled` (the "Live policy" toggle), and
+  `RequestStockRecalculation` — a separate, proactive Action a caller uses when they know a
+  receipt conflicts with later valuation history, the same relationship
+  `RequestNegativeStockOverride` has to `IssuePoster`. `ReceiptPoster` itself is unchanged and
+  still hard-blocks the conflict; this doesn't catch that exception.
+- `AvcoCounterfactualReplayer` — a real, computed impact preview, reconstructed from the
+  append-only `StockValuationEntry` ledger (no manual/estimated figures accepted). It refuses,
+  rather than guesses, whenever the pool had any negative-stock shortage activity in the replay
+  window, or was already non-positive at the proposed date — faithfully replaying
+  `ShortageSettler`'s provisional-cost rules in a parallel pure form is not yet built.
+- `RecalculationRequest` → `RecalculationImpactVersion` (immutable, append-only, one controlled
+  `is_stale` false→true transition) → `RecalculationApproval` (targets one exact version,
+  requester/approver separation is absolute). Review SLA and approval TTL are persisted deadlines,
+  lazily evaluated from `now()` — no scheduled sweep exists in this codebase (a deliberate choice;
+  see `RequestNegativeStockOverride`'s identical `review_due_at` precedent). Deciding an approval
+  re-runs the replay as a revalidation precondition: a changed result marks the current version
+  stale and appends a replacement under the same request instead of deciding against stale
+  numbers.
+
+**Not yet built**: FIFO/SPECIFIC replay (no persisted layer-consumption ledger exists yet — see
+`AvcoCounterfactualReplayer`'s docblock), issue/transfer backdating (receipts only so far), risk
+classification and the mandatory second approver for high-risk consequences, the regeneration cap
+(not reachable yet — see below), execution of an approved version, and the append-only correction
+package. No HTTP/API layer exists for any of this, matching the negative-stock workflow, which
+doesn't have one either.
+
+A note on the regeneration cap: it counts *post-approval* material invalidations. In the design
+above, revalidation happens synchronously as a precondition of deciding, so a version can only be
+superseded *before* it has a decision — the scenario the cap exists to bound (an approved version
+sitting unexecuted while new conflicting movements post) can't occur without execution existing,
+so there is nothing to count yet.
+
 ## Live backdating
 
 A receipt entered with an earlier date than existing issues means those issues may have been

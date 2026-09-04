@@ -23,7 +23,6 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 
 | Item | Date |
 |---|---|
-| **Goods receipt reversal** — ADR 0043's reversal contract, lock-order aligned with posting → [phase-2](phases/phase-2-purchasing-stock.md) | 2026-09-03 |
 | **Normal outbound stock issues** — AVCO/FIFO/SPECIFIC blocking-mode issues at the sole movement boundary → [stock.md](domain/stock.md) | 2026-09-03 |
 | **Negative-stock policy + override workflows** — ADR 0037 company controls, immutable request/approval/review records → [negative-stock.md](domain/negative-stock.md) | 2026-09-03 |
 | **Authorised negative posting + inbound settlement** — provisional AVCO/FIFO cost, oldest-first exact-identity settlement, append-only repairs → [negative-stock.md](domain/negative-stock.md) | 2026-09-03 |
@@ -31,15 +30,19 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 | **Stock-engine audit fixes** — frozen pools no longer block receiving at non-shortage locations; pool-level insufficiency no longer blocks physically available issues; transfers preserve FIFO age and settle at exact slice costs; pools lock in id order (deadlock fix); `PostInventoryMovement` split into `Movements/` collaborators per the new [file-size rule](architecture/code-structure.md#file-size-and-splitting); a seeded conservation property test now guards the whole engine; docs restructured per [ADR 0044](decisions/0044-status-log-context-budget.md); Q15/Q16 opened | 2026-09-03 |
 | **AVCO transfer repair removed** — a transfer's exact source is always fully physically backed, so a frozen pool never makes it provisional; its rate is final at post time, matching issues → [ADR 0045](decisions/0045-avco-transfer-rate-final-not-provisional.md), resolves Q15 | 2026-09-03 |
 | **Backdating horizon policy** — company-configurable current+previous-period/period-lock/posting-floor modes, audited via the existing inventory-policy-change trail, plus a standalone boundary evaluator for the recalculation workflow to consume → [ADR 0040](decisions/0040-control-backdated-stock-recalculation-and-corrections.md), [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-04 |
+| **Recalculation requests — AVCO receipts** — a real, ledger-reconstructed counterfactual impact preview (not a manual estimate), immutable append-only impact versions with revalidate-on-decide staleness, single-tier approval with SLA/TTL deadlines. FIFO/SPECIFIC, issues/transfers, risk tiers, execution and correction packages remain — phase-2 checklist stays unticked → [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-04 |
 
 ## Next
 
 Continue [Phase 2 — Purchasing & stock](phases/phase-2-purchasing-stock.md):
 
-1. Build ADR 0040's recalculation-request workflow (impact versions, review/staleness/risk
-   routing, append-only correction packages) on top of the horizon evaluator just built.
-2. Then: API endpoints + first UI screens for the stock engine, and the first real deployment
-   to the production VMs (both planned for the end of Phase 2).
+1. Extend ADR 0040 recalculation to FIFO/SPECIFIC — needs a new persisted layer-consumption
+   ledger (which layer served which issue is currently discarded after posting) before any replay
+   is possible for those methods.
+2. Then: risk classification/second approver, execution of an approved version, and the
+   append-only correction package — none reachable without the foundation above.
+3. Longer-term: API endpoints + first UI screens for the stock engine, and the first real
+   deployment to the production VMs (both planned for the end of Phase 2).
 
 ## Blocked / awaiting input
 

@@ -40,6 +40,9 @@ use RuntimeException;
  * @property PostingFloorSubtype|null $backdating_posting_floor_subtype
  * @property Carbon|null $backdating_posting_floor_fixed_date
  * @property int|null $backdating_posting_floor_rolling_days
+ * @property bool $authorised_forward_recalculation_enabled
+ * @property int $recalculation_review_sla_hours
+ * @property int $recalculation_approval_ttl_hours
  */
 class Company extends Model
 {
@@ -60,6 +63,7 @@ class Company extends Model
             'backdating_horizon_mode' => BackdatingHorizonMode::class,
             'backdating_posting_floor_subtype' => PostingFloorSubtype::class,
             'backdating_posting_floor_fixed_date' => 'date',
+            'authorised_forward_recalculation_enabled' => 'boolean',
         ];
     }
 

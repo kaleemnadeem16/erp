@@ -33,6 +33,9 @@ class InventorySettingsResource extends JsonResource
             'backdating_posting_floor_subtype' => $company->backdating_posting_floor_subtype?->value,
             'backdating_posting_floor_fixed_date' => $company->backdating_posting_floor_fixed_date?->toDateString(),
             'backdating_posting_floor_rolling_days' => $company->backdating_posting_floor_rolling_days,
+            'authorised_forward_recalculation_enabled' => $company->authorised_forward_recalculation_enabled,
+            'recalculation_review_sla_hours' => $company->recalculation_review_sla_hours,
+            'recalculation_approval_ttl_hours' => $company->recalculation_approval_ttl_hours,
         ];
     }
 }

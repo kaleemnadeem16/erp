@@ -32,6 +32,9 @@ final class UpdateInventorySettings
             'accounting_timezone', 'backdating_horizon_mode', 'backdating_posting_floor_subtype',
             'backdating_posting_floor_fixed_date', 'backdating_posting_floor_rolling_days',
         ],
+        'RECALCULATION' => [
+            'authorised_forward_recalculation_enabled', 'recalculation_review_sla_hours', 'recalculation_approval_ttl_hours',
+        ],
     ];
 
     public function __construct(private readonly CompanyContext $companyContext) {}
