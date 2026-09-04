@@ -11,6 +11,7 @@ use App\Modules\Inventory\Actions\Backdating\BackdatingHorizonEvaluator;
 use App\Modules\Inventory\Actions\Recalculation\AvcoCounterfactualReplayer;
 use App\Modules\Inventory\Actions\Recalculation\ImpactPreview;
 use App\Modules\Inventory\Actions\Recalculation\LayerCounterfactualReplayer;
+use App\Modules\Inventory\Actions\Recalculation\RecalculationRiskClassifier;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Models\Location;
 use App\Modules\Inventory\Models\RecalculationImpactVersion;
@@ -34,6 +35,10 @@ use Illuminate\Support\Facades\DB;
  * AVCO uses AvcoCounterfactualReplayer (the value ledger); FIFO/SPECIFIC uses
  * LayerCounterfactualReplayer (the layer-consumption ledger) — both produce
  * the same ImpactPreview shape, so this Action only picks which one to call.
+ * The resulting preview is classified NORMAL_RISK/HIGH_RISK by
+ * RecalculationRiskClassifier before the first impact version is created —
+ * see DecideRecalculationApproval for how that classification determines the
+ * required number of approvers.
  */
 final class RequestStockRecalculation
 {
@@ -41,6 +46,7 @@ final class RequestStockRecalculation
         private readonly BackdatingHorizonEvaluator $horizon,
         private readonly AvcoCounterfactualReplayer $avcoReplayer,
         private readonly LayerCounterfactualReplayer $layerReplayer,
+        private readonly RecalculationRiskClassifier $riskClassifier,
     ) {}
 
     /** @param array{item_id:int, location_id:int, batch_no?:string|null, serial_no?:string|null, qty:string, unit_cost:string, currency_id:int, fx_rate:string, base_unit_cost:string, moved_at:mixed, source_type:string, source_id:int} $input */
@@ -86,6 +92,7 @@ final class RequestStockRecalculation
             $qty = BigDecimal::of($input['qty']);
             $baseUnitCost = BigDecimal::of($input['base_unit_cost']);
             $preview = $this->replay($item, $location, $batch, $serialNo, $qty, $baseUnitCost, $movedAt);
+            $risk = $this->riskClassifier->classify($company, $movedAt, $preview->valuationAdjustment());
 
             $request = RecalculationRequest::query()->create([
                 'item_id' => $item->id, 'location_id' => $location->id, 'batch_id' => $batch?->id, 'serial_no' => $serialNo,
@@ -106,7 +113,7 @@ final class RequestStockRecalculation
                 'counterfactual_inventory_value' => (string) $preview->counterfactualInventoryValue,
                 'counterfactual_avg_unit_cost' => (string) $preview->counterfactualAvgUnitCost,
                 'valuation_adjustment' => (string) $preview->valuationAdjustment(),
-                'computed_at' => now(), 'is_stale' => false,
+                'computed_at' => now(), 'is_stale' => false, 'risk_classification' => $risk,
             ]);
 
             return $request->load('impactVersions');

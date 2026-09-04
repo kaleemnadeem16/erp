@@ -36,6 +36,7 @@ class InventorySettingsResource extends JsonResource
             'authorised_forward_recalculation_enabled' => $company->authorised_forward_recalculation_enabled,
             'recalculation_review_sla_hours' => $company->recalculation_review_sla_hours,
             'recalculation_approval_ttl_hours' => $company->recalculation_approval_ttl_hours,
+            'recalculation_high_risk_threshold_base_amount' => $company->recalculation_high_risk_threshold_base_amount,
         ];
     }
 }

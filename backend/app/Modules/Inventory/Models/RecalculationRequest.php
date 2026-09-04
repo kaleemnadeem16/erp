@@ -84,6 +84,6 @@ class RecalculationRequest extends Model
 
     public function isOverdue(): bool
     {
-        return $this->review_due_at->isPast() && $this->currentImpactVersion()?->approval === null;
+        return $this->review_due_at->isPast() && $this->currentImpactVersion()?->isDecided() !== true;
     }
 }

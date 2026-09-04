@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Modules\Inventory\Actions\Recalculation\AvcoCounterfactualReplayer;
 use App\Modules\Inventory\Actions\Recalculation\ImpactPreview;
 use App\Modules\Inventory\Actions\Recalculation\LayerCounterfactualReplayer;
+use App\Modules\Inventory\Actions\Recalculation\RecalculationRiskClassifier;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Models\Location;
 use App\Modules\Inventory\Models\RecalculationApproval;
@@ -27,16 +28,31 @@ use Illuminate\Support\Facades\DB;
  * generally, per ADR 0040. Requester/approver separation is absolute (no
  * small-company self-review exception: that's Q13's negative-stock immediate
  * review only, not this Q14 approval). Revalidates by re-running the replay
- * as a precondition of deciding: if the pool's ledger changed since this
- * version was computed, the version is marked stale and a replacement is
- * appended under the same request, requiring fresh review — deciding never
- * proceeds against numbers that are no longer accurate.
+ * as a precondition of deciding: if the ledger changed since this version was
+ * computed, the version is marked stale and a replacement is appended under
+ * the same request, requiring fresh review — deciding never proceeds against
+ * numbers that are no longer accurate.
+ *
+ * A version's own risk_classification (set once, at creation, by
+ * RecalculationRiskClassifier) determines how many independent approvers it
+ * needs: one for NORMAL_RISK, two for HIGH_RISK. Each eligible actor may
+ * decide a version at most once (enforced by a unique DB constraint on
+ * (impact_version_id, decided_by), on top of the requester exclusion above —
+ * "independent" means a different person than the requester *and* than any
+ * approver who already decided this version). A REJECTED decision is
+ * terminal: no further decisions are accepted from anyone once one lands,
+ * whether it was the first or the second. Only the approval that brings the
+ * version's approved count up to its required number carries expires_at —
+ * approved-execution authority is a property of the version being fully
+ * approved, not of any single decision, so a HIGH_RISK version's first
+ * approval alone grants no execution window.
  */
 final class DecideRecalculationApproval
 {
     public function __construct(
         private readonly AvcoCounterfactualReplayer $avcoReplayer,
         private readonly LayerCounterfactualReplayer $layerReplayer,
+        private readonly RecalculationRiskClassifier $riskClassifier,
     ) {}
 
     public function __invoke(RecalculationImpactVersion $version, RecalculationApprovalDecision $decision, string $notes, User $actor): RecalculationApproval
@@ -54,7 +70,7 @@ final class DecideRecalculationApproval
         // commit has already landed.
         $outcome = DB::transaction(function () use ($version, $decision, $notes, $actor): RecalculationApproval|null {
             $request = RecalculationRequest::query()->lockForUpdate()->findOrFail($version->recalculation_request_id);
-            $version = RecalculationImpactVersion::query()->lockForUpdate()->findOrFail($version->id);
+            $version = RecalculationImpactVersion::query()->lockForUpdate()->with('approvals')->findOrFail($version->id);
             if ($version->is_stale) {
                 throw new DomainInvariantException("This impact version is stale — review the request's current version instead.", 'impact_version_id');
             }
@@ -64,13 +80,20 @@ final class DecideRecalculationApproval
             if (! $actor->can('inventory.recalculation.approve')) {
                 throw new DomainInvariantException('The actor is not permitted to decide recalculation requests.', 'decided_by');
             }
-            $existing = RecalculationApproval::query()->where('impact_version_id', $version->id)->first();
-            if ($existing !== null) {
-                if ($existing->decision !== $decision || $existing->decided_by !== $actor->id || $existing->notes !== trim($notes)) {
-                    throw new DomainInvariantException('This impact version already has a different approval decision.', 'impact_version_id');
+
+            $existingByActor = $version->approvals->firstWhere('decided_by', $actor->id);
+            if ($existingByActor !== null) {
+                if ($existingByActor->decision !== $decision || $existingByActor->notes !== trim($notes)) {
+                    throw new DomainInvariantException('This actor already decided this impact version differently.', 'impact_version_id');
                 }
 
-                return $existing;
+                return $existingByActor;
+            }
+            if ($version->isRejected()) {
+                throw new DomainInvariantException('This impact version has already been rejected — no further decisions are accepted.', 'impact_version_id');
+            }
+            if ($version->isFullyApproved()) {
+                throw new DomainInvariantException('This impact version already has its required number of approvals.', 'impact_version_id');
             }
 
             $item = Item::query()->findOrFail($request->item_id);
@@ -80,6 +103,8 @@ final class DecideRecalculationApproval
             if (! $fresh->valuationAdjustment()->isEqualTo(BigDecimal::of($version->valuation_adjustment))) {
                 $version->update(['is_stale' => true]);
                 $nextVersionNo = (int) RecalculationImpactVersion::query()->where('recalculation_request_id', $request->id)->max('version_no') + 1;
+                $company = Company::query()->findOrFail(app(CompanyContext::class)->id());
+                $risk = $this->riskClassifier->classify($company, $request->moved_at, $fresh->valuationAdjustment());
                 RecalculationImpactVersion::query()->create([
                     'recalculation_request_id' => $request->id, 'version_no' => $nextVersionNo, 'avco_pool_id' => $fresh->pool?->id,
                     'original_qty_on_hand' => (string) $fresh->originalQtyOnHand,
@@ -89,18 +114,20 @@ final class DecideRecalculationApproval
                     'counterfactual_inventory_value' => (string) $fresh->counterfactualInventoryValue,
                     'counterfactual_avg_unit_cost' => (string) $fresh->counterfactualAvgUnitCost,
                     'valuation_adjustment' => (string) $fresh->valuationAdjustment(),
-                    'computed_at' => now(), 'is_stale' => false,
+                    'computed_at' => now(), 'is_stale' => false, 'risk_classification' => $risk,
                 ]);
 
                 return null;
             }
 
             $company = Company::query()->findOrFail(app(CompanyContext::class)->id());
+            $approvedCountBefore = $version->approvals->filter(fn (RecalculationApproval $a): bool => $a->decision === RecalculationApprovalDecision::Approved)->count();
+            $willComplete = $decision === RecalculationApprovalDecision::Approved && ($approvedCountBefore + 1) >= $version->requiredApprovalCount();
 
             return RecalculationApproval::query()->create([
                 'impact_version_id' => $version->id, 'decision' => $decision, 'notes' => trim($notes),
                 'decided_by' => $actor->id, 'decided_at' => now(),
-                'expires_at' => $decision === RecalculationApprovalDecision::Approved ? now()->addHours($company->recalculation_approval_ttl_hours) : null,
+                'expires_at' => $willComplete ? now()->addHours($company->recalculation_approval_ttl_hours) : null,
             ]);
         });
 

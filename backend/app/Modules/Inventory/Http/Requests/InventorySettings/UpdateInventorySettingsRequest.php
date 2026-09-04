@@ -29,6 +29,7 @@ class UpdateInventorySettingsRequest extends FormRequest
 
     private const RECALCULATION_FIELDS = [
         'authorised_forward_recalculation_enabled', 'recalculation_review_sla_hours', 'recalculation_approval_ttl_hours',
+        'recalculation_high_risk_threshold_base_amount',
     ];
 
     public function authorize(): bool
@@ -82,6 +83,7 @@ class UpdateInventorySettingsRequest extends FormRequest
             'authorised_forward_recalculation_enabled' => ['sometimes', 'boolean'],
             'recalculation_review_sla_hours' => ['sometimes', 'integer', 'between:1,168'],
             'recalculation_approval_ttl_hours' => ['sometimes', 'integer', 'between:1,168'],
+            'recalculation_high_risk_threshold_base_amount' => ['sometimes', 'nullable', 'numeric', 'gt:0'],
             'reason' => [
                 'required_with:'.implode(',', [...self::NEGATIVE_STOCK_FIELDS, ...self::BACKDATING_HORIZON_FIELDS, ...self::RECALCULATION_FIELDS]),
                 'string', 'max:1000',

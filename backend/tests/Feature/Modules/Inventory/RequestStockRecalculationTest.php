@@ -7,8 +7,11 @@ use App\Models\Company;
 use App\Models\Currency;
 use App\Models\Uom;
 use App\Models\User;
+use App\Modules\Accounting\Models\AccountingPeriod;
 use App\Modules\Accounting\Models\ChartOfAccount;
+use App\Modules\Accounting\Models\FiscalYear;
 use App\Modules\Accounting\Support\AccountType;
+use App\Modules\Accounting\Support\PeriodStatus;
 use App\Modules\Inventory\Actions\CreateWarehouse;
 use App\Modules\Inventory\Actions\PostInventoryMovement;
 use App\Modules\Inventory\Actions\RequestStockRecalculation;
@@ -234,5 +237,78 @@ class RequestStockRecalculationTest extends TestCase
 
         $this->assertSame($first->id, $second->id);
         $this->assertSame(1, RecalculationImpactVersion::query()->count());
+    }
+
+    public function test_the_first_impact_version_is_classified_normal_risk_by_default(): void
+    {
+        [$item, $uom, $location] = $this->makeAvcoItem();
+        app(PostInventoryMovement::class)([
+            'item_id' => $item->id, 'location_id' => $location->id, 'qty' => '5.0000', 'uom_id' => $uom->id,
+            'moved_at' => Carbon::parse('2026-01-01'), 'source_type' => 'TEST_RECEIPT', 'source_id' => 1,
+            'unit_cost' => '10.0000', 'currency_id' => Company::query()->findOrFail(1)->base_currency_id,
+            'fx_rate' => '1.000000000', 'base_unit_cost' => '10.0000',
+        ]);
+        app(PostInventoryMovement::class)->issue([
+            'item_id' => $item->id, 'location_id' => $location->id, 'qty' => '2.0000', 'uom_id' => $uom->id,
+            'moved_at' => Carbon::parse('2026-01-10'), 'source_type' => 'TEST_ISSUE', 'source_id' => 2,
+        ]);
+        $actor = User::factory()->create();
+        $actor->givePermissionTo('inventory.recalculation.request');
+
+        $request = app(RequestStockRecalculation::class)($this->requestInput($item, $location, Carbon::parse('2026-01-05'), 3), $actor);
+
+        $this->assertSame('NORMAL_RISK', $request->impactVersions->sole()->risk_classification->value);
+    }
+
+    public function test_a_valuation_adjustment_meeting_the_company_threshold_is_classified_high_risk(): void
+    {
+        Company::query()->findOrFail(1)->update(['recalculation_high_risk_threshold_base_amount' => '1.0000']);
+        [$item, $uom, $location] = $this->makeAvcoItem();
+        app(PostInventoryMovement::class)([
+            'item_id' => $item->id, 'location_id' => $location->id, 'qty' => '5.0000', 'uom_id' => $uom->id,
+            'moved_at' => Carbon::parse('2026-01-01'), 'source_type' => 'TEST_RECEIPT', 'source_id' => 1,
+            'unit_cost' => '10.0000', 'currency_id' => Company::query()->findOrFail(1)->base_currency_id,
+            'fx_rate' => '1.000000000', 'base_unit_cost' => '10.0000',
+        ]);
+        app(PostInventoryMovement::class)->issue([
+            'item_id' => $item->id, 'location_id' => $location->id, 'qty' => '2.0000', 'uom_id' => $uom->id,
+            'moved_at' => Carbon::parse('2026-01-10'), 'source_type' => 'TEST_ISSUE', 'source_id' => 2,
+        ]);
+        $actor = User::factory()->create();
+        $actor->givePermissionTo('inventory.recalculation.request');
+
+        $request = app(RequestStockRecalculation::class)($this->requestInput($item, $location, Carbon::parse('2026-01-05'), 3), $actor);
+
+        $this->assertSame('HIGH_RISK', $request->impactVersions->sole()->risk_classification->value);
+    }
+
+    public function test_a_closed_period_overlapping_the_replay_window_is_classified_high_risk_even_under_posting_floor(): void
+    {
+        // POSTING_FLOOR mode never consults period status for horizon
+        // eligibility — this proves the risk classifier's closed-period
+        // trigger is a genuinely independent guard, not a restatement of the
+        // horizon check.
+        $fiscalYear = FiscalYear::query()->create(['name' => 'FY2026', 'starts_on' => '2026-01-01', 'ends_on' => '2026-12-31']);
+        AccountingPeriod::query()->create([
+            'fiscal_year_id' => $fiscalYear->id, 'period_no' => 1, 'name' => 'Jan 2026',
+            'starts_on' => '2026-01-01', 'ends_on' => '2026-01-31', 'status' => PeriodStatus::Closed,
+        ]);
+        [$item, $uom, $location] = $this->makeAvcoItem();
+        app(PostInventoryMovement::class)([
+            'item_id' => $item->id, 'location_id' => $location->id, 'qty' => '5.0000', 'uom_id' => $uom->id,
+            'moved_at' => Carbon::parse('2026-01-01'), 'source_type' => 'TEST_RECEIPT', 'source_id' => 1,
+            'unit_cost' => '10.0000', 'currency_id' => Company::query()->findOrFail(1)->base_currency_id,
+            'fx_rate' => '1.000000000', 'base_unit_cost' => '10.0000',
+        ]);
+        app(PostInventoryMovement::class)->issue([
+            'item_id' => $item->id, 'location_id' => $location->id, 'qty' => '2.0000', 'uom_id' => $uom->id,
+            'moved_at' => Carbon::parse('2026-01-10'), 'source_type' => 'TEST_ISSUE', 'source_id' => 2,
+        ]);
+        $actor = User::factory()->create();
+        $actor->givePermissionTo('inventory.recalculation.request');
+
+        $request = app(RequestStockRecalculation::class)($this->requestInput($item, $location, Carbon::parse('2026-01-05'), 3), $actor);
+
+        $this->assertSame('HIGH_RISK', $request->impactVersions->sole()->risk_classification->value);
     }
 }

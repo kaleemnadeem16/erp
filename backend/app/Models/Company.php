@@ -43,6 +43,7 @@ use RuntimeException;
  * @property bool $authorised_forward_recalculation_enabled
  * @property int $recalculation_review_sla_hours
  * @property int $recalculation_approval_ttl_hours
+ * @property string|null $recalculation_high_risk_threshold_base_amount
  */
 class Company extends Model
 {
@@ -64,6 +65,7 @@ class Company extends Model
             'backdating_posting_floor_subtype' => PostingFloorSubtype::class,
             'backdating_posting_floor_fixed_date' => 'date',
             'authorised_forward_recalculation_enabled' => 'boolean',
+            'recalculation_high_risk_threshold_base_amount' => 'decimal:4',
         ];
     }
 

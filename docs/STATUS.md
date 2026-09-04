@@ -31,6 +31,7 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 | **Recalculation requests — AVCO receipts** — a real, ledger-reconstructed counterfactual impact preview (not a manual estimate), immutable append-only impact versions with revalidate-on-decide staleness, single-tier approval with SLA/TTL deadlines. FIFO/SPECIFIC, issues/transfers, risk tiers, execution and correction packages remain — phase-2 checklist stays unticked → [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-04 |
 | **Layer-consumption ledger** — `stock_layer_consumptions` permanently links each FIFO/SPECIFIC allocation to the move it served (previously discarded once `qty_remaining` was decremented), closing the data gap the AVCO-only recalculation slice named. Purely additive — existing issue/transfer behaviour and tests unchanged → [stock.md](domain/stock.md), [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-04 |
 | **FIFO/SPECIFIC recalculation replayer** — `LayerCounterfactualReplayer` (one class covers both methods) reconstructs a layer group's state from the consumption ledger and re-walks later events using the real, unmodified `LayerAllocator::allocate()`. `RequestStockRecalculation`/`DecideRecalculationApproval` now branch by valuation method. Recalculation is real for all three methods, receipts only; issues/transfers, risk tiers, execution and correction packages remain — phase-2 checklist stays unticked → [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-04 |
+| **Recalculation risk classification + second approver** — `RecalculationRiskClassifier` marks every impact version `NORMAL_RISK`/`HIGH_RISK` at creation (closed-period overlap and an optional bounded company threshold; two other named hard triggers stay honestly unbuilt — no invoicing/job-costing model exists yet, and self-review still can't happen at all). `DecideRecalculationApproval` now requires one or two independent approvers by risk tier, DB-enforced (`guard_recalculation_approval_insert`) as well as in the Action; only the completing approval carries the TTL expiry. Issues/transfers, authority-only rerouting, execution and correction packages remain — phase-2 checklist stays unticked → [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-04 |
 
 ## Next
 
@@ -38,8 +39,8 @@ Continue [Phase 2 — Purchasing & stock](phases/phase-2-purchasing-stock.md):
 
 1. Extend recalculation to issues/transfers as the conflicting event (currently receipts only,
    for all three methods).
-2. Then: risk classification/second approver, execution of an approved version, and the
-   append-only correction package — none reachable without the foundation above.
+2. Then: execution of an approved version, and the append-only correction package — the biggest
+   remaining pieces, both needing the foundation above plus the risk tiers already built.
 3. Longer-term: API endpoints + first UI screens for the stock engine, and the first real
    deployment to the production VMs (both planned for the end of Phase 2).
 

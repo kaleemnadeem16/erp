@@ -6,10 +6,12 @@ namespace App\Modules\Inventory\Models;
 
 use App\Exceptions\DomainInvariantException;
 use App\Models\Model;
+use App\Modules\Inventory\Support\RecalculationApprovalDecision;
+use App\Modules\Inventory\Support\RecalculationRiskClassification;
 use App\Support\Concerns\BelongsToCompany;
 use App\Support\Concerns\GuardsRelatedCompanyScope;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -21,9 +23,16 @@ use Illuminate\Support\Carbon;
  * version's numbers no longer match a fresh replay and appends a
  * replacement under the same request.
  *
+ * risk_classification is set once, by RecalculationRiskClassifier, at the
+ * same time as every other economic column, and determines how many
+ * approvals() rows this version requires: one for NORMAL_RISK, two
+ * independent approvers for HIGH_RISK (see DecideRecalculationApproval and
+ * the guard_recalculation_approval_insert DB trigger, which enforces the
+ * same count).
+ *
  * @property int $recalculation_request_id
  * @property int $version_no
- * @property int $avco_pool_id
+ * @property int|null $avco_pool_id
  * @property string $original_qty_on_hand
  * @property string $original_inventory_value
  * @property string $original_avg_unit_cost
@@ -33,6 +42,7 @@ use Illuminate\Support\Carbon;
  * @property string $valuation_adjustment
  * @property Carbon $computed_at
  * @property bool $is_stale
+ * @property RecalculationRiskClassification $risk_classification
  */
 class RecalculationImpactVersion extends Model
 {
@@ -56,6 +66,7 @@ class RecalculationImpactVersion extends Model
             'original_qty_on_hand' => 'decimal:4', 'original_inventory_value' => 'decimal:4', 'original_avg_unit_cost' => 'decimal:4',
             'counterfactual_qty_on_hand' => 'decimal:4', 'counterfactual_inventory_value' => 'decimal:4', 'counterfactual_avg_unit_cost' => 'decimal:4',
             'valuation_adjustment' => 'decimal:4', 'computed_at' => 'immutable_datetime', 'is_stale' => 'boolean',
+            'risk_classification' => RecalculationRiskClassification::class,
         ];
     }
 
@@ -65,9 +76,40 @@ class RecalculationImpactVersion extends Model
         return $this->belongsTo(RecalculationRequest::class, 'recalculation_request_id');
     }
 
-    /** @return HasOne<RecalculationApproval, $this> */
-    public function approval(): HasOne
+    /** @return HasMany<RecalculationApproval, $this> */
+    public function approvals(): HasMany
     {
-        return $this->hasOne(RecalculationApproval::class, 'impact_version_id');
+        return $this->hasMany(RecalculationApproval::class, 'impact_version_id');
+    }
+
+    public function requiredApprovalCount(): int
+    {
+        return $this->risk_classification->requiredApprovalCount();
+    }
+
+    public function isRejected(): bool
+    {
+        return $this->approvals->contains(fn (RecalculationApproval $approval): bool => $approval->decision === RecalculationApprovalDecision::Rejected);
+    }
+
+    public function isFullyApproved(): bool
+    {
+        $approvedCount = $this->approvals->filter(fn (RecalculationApproval $approval): bool => $approval->decision === RecalculationApprovalDecision::Approved)->count();
+
+        return $approvedCount >= $this->requiredApprovalCount();
+    }
+
+    /** Terminal: either fully approved or rejected — no further decisions are accepted. */
+    public function isDecided(): bool
+    {
+        return $this->isRejected() || $this->isFullyApproved();
+    }
+
+    /** The one approval whose acceptance completed the requirement — the only row carrying expires_at. */
+    public function completingApproval(): ?RecalculationApproval
+    {
+        return $this->approvals->first(
+            fn (RecalculationApproval $approval): bool => $approval->decision === RecalculationApprovalDecision::Approved && $approval->expires_at !== null,
+        );
     }
 }

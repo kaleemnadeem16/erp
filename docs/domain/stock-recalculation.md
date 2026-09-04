@@ -46,8 +46,8 @@ across **all three valuation methods**:
   side is out of scope for both replayers — treated as an ordinary outbound consumption from the
   source, no cascade into the destination's own subsequent history.
 - `RecalculationRequest` → `RecalculationImpactVersion` (immutable, append-only, one controlled
-  `is_stale` false→true transition) → `RecalculationApproval` (targets one exact version,
-  requester/approver separation is absolute). `avco_pool_id` is set for AVCO and null for
+  `is_stale` false→true transition) → one or more `RecalculationApproval`s (each targets one exact
+  version, requester/approver separation is absolute). `avco_pool_id` is set for AVCO and null for
   FIFO/SPECIFIC, which has no pool concept — identified instead by
   `(item, location, batch/serial)`, already on the request. Review SLA and approval TTL are
   persisted deadlines, lazily evaluated from `now()` — no scheduled sweep exists in this codebase
@@ -55,12 +55,37 @@ across **all three valuation methods**:
   Deciding an approval re-runs the replay (the correct one for the item's method) as a
   revalidation precondition: a changed result marks the current version stale and appends a
   replacement under the same request instead of deciding against stale numbers.
+- `RecalculationRiskClassifier` — classifies every impact version, at creation, as `NORMAL_RISK`
+  or `HIGH_RISK`; frozen thereafter the same as every other economic column on the version. Two of
+  the ADR's named hard triggers are implemented, both readable from state that already exists in
+  this codebase: a closed `AccountingPeriod` overlapping the window from the proposed date forward
+  (deliberately independent of `BackdatingHorizonEvaluator` — it only ever matters under
+  `POSTING_FLOOR`, the one horizon mode that doesn't itself consult period status), and an optional
+  bounded company threshold (`recalculation_high_risk_threshold_base_amount`, base/functional
+  currency, additive-only — it can raise the bar but never disable a hard trigger). Two more named
+  triggers are not implemented, honestly, the same way the regeneration cap is documented as "not
+  reachable yet" below: "qualifying finalised downstream effects" has no invoicing or job-costing
+  model yet to observe (Phase 4/5/6), and "controlled ordinary-tier self-review" can't fire because
+  self-review is not permitted at all — see the next point.
+- `DecideRecalculationApproval` enforces requester/approver separation absolutely (still no
+  small-company self-review exception — that remains Q13-only, per `RequestNegativeStockOverride`)
+  and, per version, requires as many *independent* approvers as `risk_classification` demands: one
+  for `NORMAL_RISK`, two for `HIGH_RISK`. Each eligible actor may decide a version at most once (a
+  DB unique constraint on `(impact_version_id, decided_by)` makes "independent" mean a different
+  person than the requester *and* than any approver who already decided it). A `REJECTED` decision
+  is terminal — no further decisions are accepted from anyone once one lands. Only the approval
+  that brings a version's approved count up to its required number carries `expires_at`:
+  approved-execution authority is a property of the version being fully approved, not of any one
+  decision, so a `HIGH_RISK` version's first approval alone grants no execution window. A DB
+  trigger (`guard_recalculation_approval_insert`) enforces the same count-and-terminal-rejection
+  invariants independently of the Action, the same defense-in-depth style as the immutability
+  triggers elsewhere in this workflow.
 
-**Not yet built**: issue/transfer backdating (receipts only so far, for every method), risk
-classification and the mandatory second approver for high-risk consequences, the regeneration cap
-(not reachable yet — see below), execution of an approved version, and the append-only correction
-package. No HTTP/API layer exists for any of this, matching the negative-stock workflow, which
-doesn't have one either.
+**Not yet built**: issue/transfer backdating (receipts only so far, for every method),
+authority-only approval rerouting (a changed approver's authority, not the economics, requiring
+reroute rather than a fresh impact version), the regeneration cap (not reachable yet — see below),
+execution of an approved version, and the append-only correction package. No HTTP/API layer exists
+for any of this, matching the negative-stock workflow, which doesn't have one either.
 
 A note on the regeneration cap: it counts *post-approval* material invalidations. In the design
 above, revalidation happens synchronously as a precondition of deciding, so a version can only be

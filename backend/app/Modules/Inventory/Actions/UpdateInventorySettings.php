@@ -34,6 +34,7 @@ final class UpdateInventorySettings
         ],
         'RECALCULATION' => [
             'authorised_forward_recalculation_enabled', 'recalculation_review_sla_hours', 'recalculation_approval_ttl_hours',
+            'recalculation_high_risk_threshold_base_amount',
         ],
     ];
 

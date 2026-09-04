@@ -16,6 +16,7 @@ use App\Modules\Inventory\Actions\RequestStockRecalculation;
 use App\Modules\Inventory\Models\Category;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Models\Location;
+use App\Modules\Inventory\Models\RecalculationApproval;
 use App\Modules\Inventory\Models\RecalculationImpactVersion;
 use App\Modules\Inventory\Models\RecalculationRequest;
 use App\Modules\Inventory\Support\AvcoPoolScope;
@@ -67,8 +68,14 @@ class DecideRecalculationApprovalTest extends TestCase
     }
 
     /** @return array{0: Item, 1: Uom, 2: Location, 3: RecalculationRequest, 4: User} requester */
-    private function makeRequestWithConflict(): array
+    private function makeRequestWithConflict(bool $highRisk = false): array
     {
+        if ($highRisk) {
+            // Any nonzero adjustment clears this threshold — the exact
+            // magnitude doesn't matter, only that the version is classified
+            // HIGH_RISK before DecideRecalculationApproval sees it.
+            Company::query()->findOrFail(1)->update(['recalculation_high_risk_threshold_base_amount' => '1.0000']);
+        }
         [$item, $uom, $location] = $this->makeAvcoItem();
         app(PostInventoryMovement::class)([
             'item_id' => $item->id, 'location_id' => $location->id, 'qty' => '5.0000', 'uom_id' => $uom->id,
@@ -229,5 +236,129 @@ class DecideRecalculationApprovalTest extends TestCase
 
         $this->expectException(QueryException::class);
         DB::table('recalculation_approvals')->where('id', $approval->id)->update(['notes' => 'rewritten']);
+    }
+
+    public function test_a_high_risk_version_needs_two_independent_approvers_before_it_is_fully_approved(): void
+    {
+        [, , , $request] = $this->makeRequestWithConflict(highRisk: true);
+        $version = $request->impactVersions->sole();
+        $this->assertSame('HIGH_RISK', $version->risk_classification->value);
+        $first = User::factory()->create();
+        $first->givePermissionTo('inventory.recalculation.approve');
+        $second = User::factory()->create();
+        $second->givePermissionTo('inventory.recalculation.approve');
+
+        $firstApproval = app(DecideRecalculationApproval::class)($version, RecalculationApprovalDecision::Approved, 'first check', $first);
+        $this->assertNull($firstApproval->expires_at);
+        $this->assertFalse($version->fresh()->load('approvals')->isFullyApproved());
+
+        $secondApproval = app(DecideRecalculationApproval::class)($version, RecalculationApprovalDecision::Approved, 'second check', $second);
+        $this->assertNotNull($secondApproval->expires_at);
+        $this->assertTrue($secondApproval->expires_at->isSameHour(now()->addHours(24)));
+        $this->assertTrue($version->fresh()->load('approvals')->isFullyApproved());
+    }
+
+    public function test_the_same_approver_deciding_twice_does_not_satisfy_the_high_risk_requirement(): void
+    {
+        [, , , $request] = $this->makeRequestWithConflict(highRisk: true);
+        $version = $request->impactVersions->sole();
+        $approver = User::factory()->create();
+        $approver->givePermissionTo('inventory.recalculation.approve');
+
+        app(DecideRecalculationApproval::class)($version, RecalculationApprovalDecision::Approved, 'checked', $approver);
+        app(DecideRecalculationApproval::class)($version, RecalculationApprovalDecision::Approved, 'checked', $approver);
+
+        $this->assertSame(1, RecalculationApproval::query()->where('impact_version_id', $version->id)->count());
+        $this->assertFalse($version->fresh()->load('approvals')->isFullyApproved());
+    }
+
+    public function test_a_third_actor_cannot_decide_a_fully_approved_high_risk_version(): void
+    {
+        [, , , $request] = $this->makeRequestWithConflict(highRisk: true);
+        $version = $request->impactVersions->sole();
+        $first = User::factory()->create();
+        $first->givePermissionTo('inventory.recalculation.approve');
+        $second = User::factory()->create();
+        $second->givePermissionTo('inventory.recalculation.approve');
+        $third = User::factory()->create();
+        $third->givePermissionTo('inventory.recalculation.approve');
+        app(DecideRecalculationApproval::class)($version, RecalculationApprovalDecision::Approved, 'first check', $first);
+        app(DecideRecalculationApproval::class)($version, RecalculationApprovalDecision::Approved, 'second check', $second);
+
+        $this->expectException(DomainInvariantException::class);
+        app(DecideRecalculationApproval::class)($version->fresh(), RecalculationApprovalDecision::Approved, 'late check', $third);
+    }
+
+    public function test_a_rejection_by_either_high_risk_approver_is_terminal(): void
+    {
+        [, , , $request] = $this->makeRequestWithConflict(highRisk: true);
+        $version = $request->impactVersions->sole();
+        $first = User::factory()->create();
+        $first->givePermissionTo('inventory.recalculation.approve');
+        $second = User::factory()->create();
+        $second->givePermissionTo('inventory.recalculation.approve');
+        $third = User::factory()->create();
+        $third->givePermissionTo('inventory.recalculation.approve');
+        app(DecideRecalculationApproval::class)($version, RecalculationApprovalDecision::Approved, 'first check', $first);
+        $rejection = app(DecideRecalculationApproval::class)($version, RecalculationApprovalDecision::Rejected, 'not justified', $second);
+        $this->assertNull($rejection->expires_at);
+
+        $this->expectException(DomainInvariantException::class);
+        app(DecideRecalculationApproval::class)($version->fresh(), RecalculationApprovalDecision::Approved, 'too late', $third);
+    }
+
+    public function test_the_db_bounds_approval_decisions_by_the_versions_risk_tier(): void
+    {
+        [, , , $request] = $this->makeRequestWithConflict();
+        $version = $request->impactVersions->sole();
+        $this->assertSame('NORMAL_RISK', $version->risk_classification->value);
+        $first = User::factory()->create();
+        DB::table('recalculation_approvals')->insert([
+            'company_id' => 1, 'impact_version_id' => $version->id, 'decision' => 'APPROVED', 'notes' => 'ok',
+            'decided_by' => $first->id, 'decided_at' => now(), 'expires_at' => now()->addHours(24),
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $second = User::factory()->create();
+
+        $this->expectException(QueryException::class);
+        DB::table('recalculation_approvals')->insert([
+            'company_id' => 1, 'impact_version_id' => $version->id, 'decision' => 'APPROVED', 'notes' => 'ok too',
+            'decided_by' => $second->id, 'decided_at' => now(), 'expires_at' => now()->addHours(24),
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+    }
+
+    public function test_the_db_rejects_a_partial_approval_that_sets_an_expiry(): void
+    {
+        [, , , $request] = $this->makeRequestWithConflict(highRisk: true);
+        $version = $request->impactVersions->sole();
+        $approver = User::factory()->create();
+
+        $this->expectException(QueryException::class);
+        DB::table('recalculation_approvals')->insert([
+            'company_id' => 1, 'impact_version_id' => $version->id, 'decision' => 'APPROVED', 'notes' => 'ok',
+            'decided_by' => $approver->id, 'decided_at' => now(), 'expires_at' => now()->addHours(24),
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+    }
+
+    public function test_the_db_rejects_any_decision_after_a_rejection(): void
+    {
+        [, , , $request] = $this->makeRequestWithConflict(highRisk: true);
+        $version = $request->impactVersions->sole();
+        $first = User::factory()->create();
+        DB::table('recalculation_approvals')->insert([
+            'company_id' => 1, 'impact_version_id' => $version->id, 'decision' => 'REJECTED', 'notes' => 'no',
+            'decided_by' => $first->id, 'decided_at' => now(), 'expires_at' => null,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $second = User::factory()->create();
+
+        $this->expectException(QueryException::class);
+        DB::table('recalculation_approvals')->insert([
+            'company_id' => 1, 'impact_version_id' => $version->id, 'decision' => 'APPROVED', 'notes' => 'ok',
+            'decided_by' => $second->id, 'decided_at' => now(), 'expires_at' => now()->addHours(24),
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
     }
 }
