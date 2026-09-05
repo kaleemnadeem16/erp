@@ -14,9 +14,11 @@ This ADR is large; it is being built in phases, and the checklist in
 is fully true for every valuation method — partial delivery is recorded here and in `STATUS.md`
 instead of by checking a box early.
 
-**Built today**, for **receipts only** (issues/transfers as the conflicting event remain unbuilt),
-across **all three valuation methods**:
+**Built today**: receipt, issue and transfer request/preview/approval workflows across
+**all three valuation methods**, within the supported clean-history boundaries below.
 
+- Issue/transfer proposals now use connected movement replay with derived costs, both transfer
+  sides and onward dependencies — see [stock-movement-replay.md](stock-movement-replay.md).
 - The backdating horizon (`BackdatingHorizonMode`/`BackdatingHorizonEvaluator`) — company policy
   plus the boundary-evaluation service, method-agnostic.
 - `Company.authorised_forward_recalculation_enabled` (the "Live policy" toggle), and
@@ -43,8 +45,8 @@ across **all three valuation methods**:
   inserts the hypothetical layer, then re-walks every later receipt (passthrough) and consumption
   (re-running the real, unmodified `LayerAllocator::allocate()` against the counterfactual queue —
   reusing the production selection algorithm rather than a second copy that could drift). Same
-  shortage-window refusal boundary as the AVCO replayer, same reasoning. A transfer's destination
-  side is out of scope for both replayers — treated as an ordinary outbound consumption from the
+  shortage-window refusal boundary as the AVCO replayer, same reasoning. For these receipt replayers, a transfer's destination
+  side remains out of scope — treated as an ordinary outbound consumption from the
   source, no cascade into the destination's own subsequent history.
 - `RecalculationRequest` → `RecalculationImpactVersion` (immutable, append-only, one controlled
   `is_stale` false→true transition) → one or more `RecalculationApproval`s (each targets one exact
@@ -64,8 +66,7 @@ across **all three valuation methods**:
   `POSTING_FLOOR`, the one horizon mode that doesn't itself consult period status), and an optional
   bounded company threshold (`recalculation_high_risk_threshold_base_amount`, base/functional
   currency, additive-only — it can raise the bar but never disable a hard trigger). Two more named
-  triggers are not implemented, honestly, the same way the regeneration cap is documented as "not
-  reachable yet" below: "qualifying finalised downstream effects" has no invoicing or job-costing
+  triggers remain unimplemented because their underlying models/policies do not exist: "qualifying finalised downstream effects" has no invoicing or job-costing
   model yet to observe (Phase 4/5/6), and "controlled ordinary-tier self-review" can't fire because
   self-review is not permitted at all — see the next point.
 - `DecideRecalculationApproval` enforces requester/approver separation absolutely (still no
@@ -84,11 +85,13 @@ across **all three valuation methods**:
   invariants independently of the Action, the same defense-in-depth style as the immutability
   triggers elsewhere in this workflow.
 
-**Not yet built**: issue/transfer backdating (receipts only so far, for every method),
-authority-only approval rerouting (a changed approver's authority, not the economics, requiring
+**Not yet built**: authority-only approval rerouting (a changed approver's authority, not the economics, requiring
 reroute rather than a fresh impact version),
 execution of an approved version, and the append-only correction package. No HTTP/API layer exists
-for any of this, matching the negative-stock workflow, which doesn't have one either.
+for any of this, matching the negative-stock workflow, which doesn't have one either. Before
+execution is built, approvals also need alignment with ADR 0040's **each-required-approval TTL**:
+today only the completing decision has an expiry; earlier-tier expiry and same-version renewal
+are still missing. This is an existing approval gap, not a change to the accepted decision.
 
 ## Replay integrity and regeneration review
 
@@ -249,6 +252,7 @@ without falsifying physical dates.
 ## Related
 
 - [stock.md](stock.md) — the core movement, layer and pool model
+- [stock-movement-replay.md](stock-movement-replay.md) — connected issue/transfer preview
 - [negative-stock.md](negative-stock.md) — shortage settlement chains replay must respect
 - [inventory-cutover.md](inventory-cutover.md) — migration is not live posting
 - [ADR 0040](../decisions/0040-control-backdated-stock-recalculation-and-corrections.md) — the

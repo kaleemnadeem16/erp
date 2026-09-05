@@ -30,8 +30,8 @@ use Carbon\CarbonInterface;
  *    modes — it only ever matters under POSTING_FLOOR, which doesn't consult
  *    period status at all.
  *  - Optional company threshold: recalculation_high_risk_threshold_base_amount,
- *    when set, marks HIGH_RISK whenever the absolute valuation adjustment (in
- *    base/functional currency, per docs) meets or exceeds it. Additive only,
+ *    when set, marks HIGH_RISK when the receipt adjustment or the documented
+ *    outbound gross exposure (base/functional currency) meets or exceeds it. Additive only,
  *    per the ADR's "may strengthen, never disable, hard routing" — there is
  *    no company setting that can turn a hard trigger off.
  *

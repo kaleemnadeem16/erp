@@ -8,6 +8,7 @@ use App\Exceptions\DomainInvariantException;
 use App\Models\Model;
 use App\Models\User;
 use App\Modules\Inventory\Support\BackdatingHorizonMode;
+use App\Modules\Inventory\Support\RecalculationMovementKind;
 use App\Support\Concerns\BelongsToCompany;
 use App\Support\Concerns\GuardsRelatedCompanyScope;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
- * One continuing ADR 0040 recalculation case for a single backdated receipt —
+ * One continuing ADR 0040 recalculation case for one backdated receipt, issue or transfer —
  * see docs/domain/stock-recalculation.md. Immutable: everything that can
  * change over the request's life (impact versions, approvals) lives in child
  * records, never here.
@@ -25,10 +26,12 @@ use Illuminate\Support\Carbon;
  * @property int|null $batch_id
  * @property string|null $serial_no
  * @property string $qty
- * @property string $unit_cost
- * @property int $currency_id
- * @property string $fx_rate
- * @property string $base_unit_cost
+ * @property RecalculationMovementKind $movement_kind
+ * @property int|null $destination_location_id
+ * @property string|null $unit_cost
+ * @property int|null $currency_id
+ * @property string|null $fx_rate
+ * @property string|null $base_unit_cost
  * @property Carbon $moved_at
  * @property string $source_type
  * @property int $source_id
@@ -52,13 +55,14 @@ class RecalculationRequest extends Model
 
     protected static function companyScopedForeignKeys(): array
     {
-        return ['item_id' => Item::class, 'location_id' => Location::class, 'batch_id' => StockBatch::class, 'requested_by' => User::class];
+        return ['item_id' => Item::class, 'location_id' => Location::class, 'batch_id' => StockBatch::class, 'destination_location_id' => Location::class, 'requested_by' => User::class];
     }
 
     protected function casts(): array
     {
         return [
             'qty' => 'decimal:4', 'unit_cost' => 'decimal:4', 'fx_rate' => 'decimal:9', 'base_unit_cost' => 'decimal:4',
+            'movement_kind' => RecalculationMovementKind::class,
             'moved_at' => 'immutable_datetime', 'horizon_mode' => BackdatingHorizonMode::class,
             'horizon_permitted_floor' => 'immutable_date', 'requested_at' => 'immutable_datetime', 'review_due_at' => 'immutable_datetime',
         ];

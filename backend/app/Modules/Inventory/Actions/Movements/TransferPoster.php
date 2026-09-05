@@ -109,6 +109,7 @@ final class TransferPoster
         $settledQty = $settlements->reduce(fn (BigDecimal $total, array $settlement): BigDecimal => $total->plus($settlement['qty']), BigDecimal::zero());
 
         $move = StockMove::query()->create([
+            'movement_kind' => 'TRANSFER',
             'item_id' => $item->id, 'from_location_id' => $source->id, 'to_location_id' => $destination->id,
             'qty' => (string) $qty, 'uom_id' => $item->stock_uom_id, 'moved_at' => $input['moved_at'],
             'source_type' => $input['source_type'], 'source_id' => $input['source_id'],

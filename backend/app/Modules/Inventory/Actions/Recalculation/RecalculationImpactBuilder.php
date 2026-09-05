@@ -15,6 +15,7 @@ use App\Modules\Inventory\Models\RecalculationRequest;
 use App\Modules\Inventory\Models\StockBatch;
 use App\Modules\Inventory\Models\StockMove;
 use App\Modules\Inventory\Models\StockValuationEntry;
+use App\Modules\Inventory\Support\RecalculationMovementKind;
 use App\Modules\Inventory\Support\ValuationMethod;
 use Brick\Math\BigDecimal;
 
@@ -26,11 +27,15 @@ final class RecalculationImpactBuilder
         private readonly LayerCounterfactualReplayer $layers,
         private readonly RecalculationRiskClassifier $risk,
         private readonly AvcoPoolManager $pools,
+        private readonly MovementCounterfactualReplayer $movements,
     ) {}
 
-    /** @return array<string, int|string|null> */
+    /** @return array<string, mixed> */
     public function attributes(RecalculationRequest $request, Company $company): array
     {
+        if ($request->movement_kind !== RecalculationMovementKind::Receipt) {
+            return $this->movementAttributes($request, $company);
+        }
         $item = Item::query()->findOrFail($request->item_id);
         $location = Location::query()->lockForUpdate()->findOrFail($request->location_id);
         $batch = $request->batch_id === null ? null : StockBatch::query()->findOrFail($request->batch_id);
@@ -70,7 +75,7 @@ final class RecalculationImpactBuilder
         ];
     }
 
-    /** @param array<string, int|string|null> $attributes */
+    /** @param array<string, mixed> $attributes */
     public function append(RecalculationRequest $request, array $attributes): RecalculationImpactVersion
     {
         return RecalculationImpactVersion::query()->create($attributes + [
@@ -80,7 +85,7 @@ final class RecalculationImpactBuilder
         ]);
     }
 
-    /** @param array<string, int|string|null> $attributes */
+    /** @param array<string, mixed> $attributes */
     public function matches(RecalculationImpactVersion $version, array $attributes): bool
     {
         foreach ($attributes as $key => $value) {
@@ -88,7 +93,11 @@ final class RecalculationImpactBuilder
             if ($stored instanceof \BackedEnum) {
                 $stored = $stored->value;
             }
-            if (str_ends_with($key, 'fingerprint') || $key === 'risk_classification' || $key === 'avco_pool_id') {
+            if ($key === 'movement_impact') {
+                if ($this->canonical($stored) !== $this->canonical($value)) {
+                    return false;
+                }
+            } elseif (str_ends_with($key, 'fingerprint') || $key === 'risk_classification' || $key === 'avco_pool_id') {
                 if ($stored !== $value) {
                     return false;
                 }
@@ -98,5 +107,30 @@ final class RecalculationImpactBuilder
         }
 
         return true;
+    }
+
+    /** @return array<string, mixed> */
+    private function movementAttributes(RecalculationRequest $request, Company $company): array
+    {
+        $attributes = $this->movements->attributes($request, $company);
+        $attributes['risk_classification'] = $this->risk->classify($company, $request->moved_at, $attributes['risk_exposure'])->value;
+        unset($attributes['risk_exposure']);
+        $periods = AccountingPeriod::query()->whereDate('ends_on', '>=', $request->moved_at)
+            ->whereDate('starts_on', '<=', now())->orderBy('id')->get(['id', 'starts_on', 'ends_on', 'status'])->toArray();
+        $attributes['dependency_fingerprint'] = hash('sha256', json_encode($this->canonical([$attributes['movement_impact'], $periods]), JSON_THROW_ON_ERROR));
+
+        return $attributes;
+    }
+
+    private function canonical(mixed $value): mixed
+    {
+        if (! is_array($value)) {
+            return $value;
+        }
+        if (! array_is_list($value)) {
+            ksort($value);
+        }
+
+        return array_map(fn ($entry) => $this->canonical($entry), $value);
     }
 }

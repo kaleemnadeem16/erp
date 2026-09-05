@@ -168,10 +168,13 @@ The order matters because later work needs stable document and stock boundaries:
       horizon extensions
 - [ ] Build recalculation requests with immutable append-only impact versions, exact-version
       approvals, state-based staleness and automatic replacement-version generation per
-      [ADR 0040](../decisions/0040-control-backdated-stock-recalculation-and-corrections.md)
+      [ADR 0040](../decisions/0040-control-backdated-stock-recalculation-and-corrections.md). Receipt,
+      issue and transfer previews are implemented for supported histories;
+      [connected replay](../domain/stock-movement-replay.md) includes both transfer sides
 - [ ] Enforce bounded company-configurable review SLAs (72-hour default), overdue escalation that
       preserves requester/approver separation, and hard approved-execution TTLs (24-hour default)
-      using persisted deadlines and trusted server time
+      using persisted deadlines and trusted server time; each required approval needs its own
+      expiry and same-version renewal (the current completing-decision-only expiry is incomplete)
 - [ ] Implement exact semantic impact comparison, authority-only approval rerouting, per-version
       normal/high-risk classification and mandatory second independent approval for hard high-risk
       consequences per

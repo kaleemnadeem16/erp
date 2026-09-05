@@ -23,7 +23,6 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 
 | Item | Date |
 |---|---|
-| **Stock-engine audit fixes** — frozen pools no longer block receiving at non-shortage locations; pool-level insufficiency no longer blocks physically available issues; transfers preserve FIFO age and settle at exact slice costs; pools lock in id order (deadlock fix); `PostInventoryMovement` split into `Movements/` collaborators per the new [file-size rule](architecture/code-structure.md#file-size-and-splitting); a seeded conservation property test now guards the whole engine; docs restructured per [ADR 0044](decisions/0044-status-log-context-budget.md); Q15/Q16 opened | 2026-09-03 |
 | **AVCO transfer repair removed** — a transfer's exact source is always fully physically backed, so a frozen pool never makes it provisional; its rate is final at post time, matching issues → [ADR 0045](decisions/0045-avco-transfer-rate-final-not-provisional.md), resolves Q15 | 2026-09-03 |
 | **Backdating horizon policy** — company-configurable current+previous-period/period-lock/posting-floor modes, audited via the existing inventory-policy-change trail, plus a standalone boundary evaluator for the recalculation workflow to consume → [ADR 0040](decisions/0040-control-backdated-stock-recalculation-and-corrections.md), [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-04 |
 | **Recalculation requests — AVCO receipts** — a real, ledger-reconstructed counterfactual impact preview (not a manual estimate), immutable append-only impact versions with revalidate-on-decide staleness, single-tier approval with SLA/TTL deadlines. FIFO/SPECIFIC, issues/transfers, risk tiers, execution and correction packages remain — phase-2 checklist stays unticked → [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-04 |
@@ -31,15 +30,16 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 | **FIFO/SPECIFIC recalculation replayer** — `LayerCounterfactualReplayer` (one class covers both methods) reconstructs a layer group's state from the consumption ledger and re-walks later events using the real, unmodified `LayerAllocator::allocate()`. `RequestStockRecalculation`/`DecideRecalculationApproval` now branch by valuation method. Recalculation is real for all three methods, receipts only; issues/transfers, risk tiers, execution and correction packages remain — phase-2 checklist stays unticked → [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-04 |
 | **Recalculation risk classification + second approver** — `RecalculationRiskClassifier` marks every impact version `NORMAL_RISK`/`HIGH_RISK` at creation (closed-period overlap and an optional bounded company threshold; two other named hard triggers stay honestly unbuilt — no invoicing/job-costing model exists yet, and self-review still can't happen at all). `DecideRecalculationApproval` now requires one or two independent approvers by risk tier, DB-enforced (`guard_recalculation_approval_insert`) as well as in the Action; only the completing approval carries the TTL expiry. Issues/transfers, authority-only rerouting, execution and correction packages remain — phase-2 checklist stays unticked → [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-04 |
 | **Recalculation audit fixes** — exact-layer reversals, transfer arrival/FIFO-age separation, incomplete/shortage/QA history guards, complete impact revalidation, dedicated second-approver authority and capped regeneration with audited manual resumption → [stock-recalculation.md](domain/stock-recalculation.md#replay-integrity-and-regeneration-review) | 2026-09-05 |
+| **Backdated issues and transfers** — clean-history previews now derive outbound costs and follow both transfer sides plus onward FIFO/SPECIFIC or configured AVCO dependencies, retaining exact per-scope/per-movement differences for review → [stock-movement-replay.md](domain/stock-movement-replay.md) | 2026-09-05 |
 
 ## Next
 
 Continue [Phase 2 — Purchasing & stock](phases/phase-2-purchasing-stock.md):
 
-1. Extend recalculation to issues/transfers as the conflicting event (currently receipts only,
-   for all three methods).
-2. Then: execution of an approved version, and the append-only correction package — the biggest
-   remaining pieces, both needing the foundation above plus the risk tiers already built.
+1. Align approval expiry with ADR 0040: each required approval needs its own TTL and same-version
+   renewal; current code only expires the completing decision. Authority-only rerouting remains.
+2. Then implement approved execution and the append-only correction package, including complete
+   dependency revalidation and explicit unsupported-history boundaries.
 3. Longer-term: API endpoints + first UI screens for the stock engine, and the first real
    deployment to the production VMs (both planned for the end of Phase 2).
 

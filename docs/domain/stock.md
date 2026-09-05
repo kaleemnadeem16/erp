@@ -226,7 +226,9 @@ if a late receipt were inserted at its true date." The latter turned out to need
 given issue/transfer draws from, but that decision itself wasn't persisted, only its net effect
 (`qty_remaining`). `stock_layer_consumptions` (added alongside the ADR 0040 work) closes that gap
 for FIFO/SPECIFIC by permanently linking each allocation to the move it served — see
-`LayerAllocator::recordConsumption()`.
+`LayerAllocator::recordConsumption()`. New moves also record their `movement_kind`; reversals
+retain `reverses_move_id`. See [stock-movement-replay.md](stock-movement-replay.md#schema) for
+the additive schema and its use in connected issue/transfer previews.
 
 Receipt reversal now records an immutable `stock_layer_consumptions` row with
 `purpose = REVERSAL`; ordinary issues/transfers default to `ALLOCATION`. This is FIFO/SPECIFIC

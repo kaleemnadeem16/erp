@@ -28,7 +28,7 @@ class StockMove extends Model
 
     protected static function companyScopedForeignKeys(): array
     {
-        return ['item_id' => Item::class, 'from_location_id' => Location::class, 'to_location_id' => Location::class, 'uom_id' => Uom::class, 'batch_id' => StockBatch::class];
+        return ['item_id' => Item::class, 'from_location_id' => Location::class, 'to_location_id' => Location::class, 'uom_id' => Uom::class, 'batch_id' => StockBatch::class, 'reverses_move_id' => self::class];
     }
 
     protected function casts(): array

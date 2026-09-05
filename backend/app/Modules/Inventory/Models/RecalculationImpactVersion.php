@@ -66,7 +66,7 @@ class RecalculationImpactVersion extends Model
             'original_qty_on_hand' => 'decimal:4', 'original_inventory_value' => 'decimal:4', 'original_avg_unit_cost' => 'decimal:4',
             'counterfactual_qty_on_hand' => 'decimal:4', 'counterfactual_inventory_value' => 'decimal:4', 'counterfactual_avg_unit_cost' => 'decimal:4',
             'valuation_adjustment' => 'decimal:4', 'computed_at' => 'immutable_datetime', 'is_stale' => 'boolean',
-            'risk_classification' => RecalculationRiskClassification::class,
+            'risk_classification' => RecalculationRiskClassification::class, 'movement_impact' => 'array',
         ];
     }
 

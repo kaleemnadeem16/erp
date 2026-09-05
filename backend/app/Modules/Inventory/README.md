@@ -84,9 +84,12 @@ movement.
 
 ## Recalculation review
 
-Inventory also owns the backdated-receipt request, immutable impact/approval records,
+Inventory also owns backdated receipt/issue/transfer requests, immutable impact/approval records,
 layer-consumption ledger and regeneration coordination reviews. `RequestStockRecalculation`
-builds the preview; `DecideRecalculationApproval` revalidates economics, dependencies and risk,
+builds the preview; issues/transfers reconstruct connected history, derive outbound costs and
+include both transfer sides and onward dependencies without posting stock. See
+[stock-movement-replay.md](../../../../docs/domain/stock-movement-replay.md) for supported history.
+`DecideRecalculationApproval` revalidates economics, dependencies and risk,
 requiring dedicated higher-risk authority for a second approval. Three post-approval material
 invalidations pause automatic regeneration. `ResumeRecalculationRegeneration` records manual
 coordination and appends an unapproved replacement without resetting history. Execution and

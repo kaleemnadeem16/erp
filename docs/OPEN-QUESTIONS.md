@@ -32,6 +32,12 @@ method) resolved 2026-08-20 — see [ADR 0032](decisions/0032-per-item-valuation
 (multi-supplier catalog) resolved 2026-08-20 — see
 [ADR 0033](decisions/0033-item-suppliers-relationship.md).
 
+**Implementation follow-up, not a new policy question:** before recalculation execution,
+resolve the approval-expiry mismatch: ADR 0040 requires a TTL on **each** required approval;
+current code expires only the completing decision and has no same-version tier renewal.
+Tracked in [Phase 2](phases/phase-2-purchasing-stock.md) and
+[stock-recalculation.md](domain/stock-recalculation.md); the accepted decision stays unchanged.
+
 ### Q8 — Second customer profile
 **Blocks:** Nothing yet — but shapes Phase 3 and the plugin design
 

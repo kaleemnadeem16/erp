@@ -73,6 +73,7 @@ final class ReceiptPoster
             : null;
 
         $move = StockMove::query()->create([
+            'movement_kind' => 'RECEIPT',
             'item_id' => $item->id, 'from_location_id' => null, 'to_location_id' => $location->id,
             'qty' => (string) $qty, 'uom_id' => $item->stock_uom_id, 'moved_at' => $input['moved_at'],
             'source_type' => $input['source_type'], 'source_id' => $input['source_id'],
@@ -180,6 +181,7 @@ final class ReceiptPoster
         }
 
         $move = StockMove::query()->create([
+            'movement_kind' => 'REVERSAL', 'reverses_move_id' => $original->id,
             'item_id' => $item->id, 'from_location_id' => $original->to_location_id, 'to_location_id' => null,
             'qty' => (string) $qty, 'uom_id' => $original->uom_id, 'moved_at' => $reversedAt,
             'source_type' => $reversalSourceType, 'source_id' => $reversalSourceId,
