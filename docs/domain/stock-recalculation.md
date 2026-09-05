@@ -16,7 +16,7 @@ instead of by checking a box early.
 
 **Built today**: receipt, issue and transfer request/preview/approval workflows across
 **all three valuation methods**, within the supported clean-history boundaries below, plus
-execution for one narrow slice — AVCO receipts with no shortage involvement.
+execution for a narrow slice — AVCO or SPECIFIC receipts with no shortage involvement.
 
 - Issue/transfer proposals now use connected movement replay with derived costs, both transfer
   sides and onward dependencies — see [stock-movement-replay.md](stock-movement-replay.md).
@@ -104,16 +104,24 @@ execution for one narrow slice — AVCO receipts with no shortage involvement.
   *most recent* decision so a renewal counts. One immutable `RecalculationExecution` row per
   request (DB-unique) is the Inventory-owned slice of the eventual
   `APPEND_ONLY_LINKED_CORRECTION_PACKAGE` — a retry resolves to the existing row rather than
-  posting twice. Scoped to what this codebase can execute correctly today: AVCO receipts only, and
-  only when no negative-stock shortage exists for the item/location/batch.
+  posting twice. SPECIFIC receipts execute too, trivially: a serial's layer group is scoped so
+  tightly that nothing could have consumed a unit before it existed, so a new serial's
+  `valuation_adjustment` is provably always exactly its own value (see
+  `RequestStockRecalculationTest::test_specific_items_new_serial_computes_its_own_value_with_no_repricing_of_other_stock`)
+  — a plain layer insert, no pool, no second entry. Scoped to what this codebase can execute
+  correctly today: AVCO or SPECIFIC receipts only, and only when no negative-stock shortage exists
+  for the item/location/batch.
 
 **Not yet built**: authority-only approval rerouting (a changed approver's authority, not the
 economics, requiring reroute rather than a fresh impact version — distinct from the same-actor
-renewal above); FIFO/SPECIFIC execution (needs real layer re-insertion and downstream consumption
-re-linking, not just a converged average) and issue/transfer execution; and the full multi-owner
-correction package — Sales/Job Execution/Accounting routing, cross-module reconciliation and
-deferred obligations all need owning modules that don't exist yet, so every case this codebase can
-execute today is "remaining stock," the one slice ADR 0040 lets Inventory own outright. No HTTP/API
+renewal above); FIFO execution (unlike SPECIFIC, a FIFO layer group can hold many layers, and a
+backdated receipt's earlier `received_at` can shift which existing layer a later issue would have
+drawn from in oldest-first order — fixing that needs correcting the immutable
+`stock_layer_consumptions` ledger itself, real downstream re-linking, not just a converged average)
+and issue/transfer execution; and the full multi-owner correction package — Sales/Job
+Execution/Accounting routing, cross-module reconciliation and deferred obligations all need owning
+modules that don't exist yet, so every case this codebase can execute today is "remaining stock,"
+the one slice ADR 0040 lets Inventory own outright. No HTTP/API
 layer exists for any of this, matching the negative-stock workflow, which doesn't have one either.
 
 ## Replay integrity and regeneration review

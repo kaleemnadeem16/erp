@@ -31,22 +31,38 @@ use Illuminate\Support\Facades\DB;
  * per ADR 0040's "Approved execution lifetime" — the expected flow is
  * approve, lock, revalidate and execute. Posts the backdated receipt
  * truthfully at its physical moved_at (original movements are never
- * mutated — this is a new, additional move), then converges the AVCO pool's
- * live running average to the exact approved counterfactual. That
- * convergence *is* the correction here: AVCO tracks a running average, not
- * per-entry history, so there is nothing else to rewrite.
+ * mutated — this is a new, additional move), then reconciles live valuation
+ * state to the exact approved counterfactual.
  *
- * Scoped to the one case this codebase can execute correctly today: an AVCO
- * receipt with no negative-stock shortage involvement for the item/location/
- * batch. FIFO/SPECIFIC execution (needs real layer re-insertion and
- * downstream consumption re-linking, not just a converged average) and
- * issue/transfer execution remain unbuilt — the same honesty this ADR slice
- * has used throughout; see docs/domain/stock-recalculation.md. The
- * append-only correction package this produces (RecalculationExecution) is
- * Inventory-only for the same reason: Sales/Job Execution/Accounting, the
- * other potential owners of a correction delta, don't exist yet, so every
- * executable case today is "remaining stock," the one slice ADR 0040 lets
- * Inventory own outright.
+ * Two supported methods, two very different amounts of work, because a
+ * SPECIFIC layer group is scoped to one exact serial: nothing could have
+ * consumed a unit before it was received, so a new serial's layer group is
+ * always empty beforehand and never touched by a later event — its
+ * valuation_adjustment is provably always exactly the receipt's own value
+ * (see RequestStockRecalculationTest::
+ * test_specific_items_new_serial_computes_its_own_value_with_no_repricing_of_other_stock).
+ * Execution there is a plain layer insert with a residual that's always
+ * zero — the `$residualAdjustment->isZero()` guard below is a defensive
+ * assertion of that fact, not a load-bearing branch. AVCO is genuinely
+ * different work: its pool is a running average, not per-entry history, so
+ * execution converges `AvcoPoolManager` state to the approved
+ * `counterfactual_*` figures via one additional VALUATION_ADJUSTMENT entry.
+ *
+ * FIFO execution remains unbuilt — unlike SPECIFIC, a FIFO layer group can
+ * hold many layers, and a backdated receipt's earlier `received_at` can
+ * shift which existing layer a later issue would have drawn from in
+ * oldest-first order. Fixing that needs correcting the immutable
+ * `stock_layer_consumptions` ledger itself (paired reversal/re-consumption
+ * entries, cascading through any transfer that relayed a shifted layer
+ * onward) — real downstream re-linking, not just a converged average — and
+ * is deferred rather than guessed at. Issue/transfer execution remains
+ * unbuilt too, the same honesty this ADR slice has used throughout; see
+ * docs/domain/stock-recalculation.md. The append-only correction package
+ * this produces (RecalculationExecution) is Inventory-only for the same
+ * reason as everywhere else in this slice: Sales/Job Execution/Accounting,
+ * the other potential owners of a correction delta, don't exist yet, so
+ * every executable case today is "remaining stock," the one slice ADR 0040
+ * lets Inventory own outright.
  *
  * Execution authority is deliberately not required to be a person distinct
  * from the requester or approvers — ADR 0040 only mandates that separation
@@ -86,8 +102,8 @@ final class ExecuteRecalculation
                 throw new DomainInvariantException('Execution is only implemented for backdated receipts so far.', 'movement_kind');
             }
             $item = Item::query()->findOrFail($request->item_id);
-            if ($item->valuation_method !== ValuationMethod::Avco) {
-                throw new DomainInvariantException('Execution is only implemented for AVCO items so far.', 'item_id');
+            if (! in_array($item->valuation_method, [ValuationMethod::Avco, ValuationMethod::Specific], true)) {
+                throw new DomainInvariantException('Execution is only implemented for AVCO and SPECIFIC items so far.', 'item_id');
             }
             if (! $version->hasUnexpiredFullApproval()) {
                 throw new DomainInvariantException('Execution requires every required approval to be present and currently unexpired.', 'impact_version_id');
@@ -115,7 +131,7 @@ final class ExecuteRecalculation
                 return null;
             }
 
-            $pool = $this->pools->lock($item, $location, $batch);
+            $pool = $item->valuation_method === ValuationMethod::Avco ? $this->pools->lock($item, $location, $batch) : null;
             $qty = BigDecimal::of($request->qty);
             $unitCost = BigDecimal::of($request->unit_cost);
             $baseUnitCost = BigDecimal::of($request->base_unit_cost);
@@ -148,18 +164,28 @@ final class ExecuteRecalculation
             // its pre-execution value to exactly the approved counterfactual.
             $receiptBaseAmount = $qty->multipliedBy($baseUnitCost)->toScale(4, RoundingMode::HALF_UP);
             $move->valuationEntries()->create([
-                'avco_pool_id' => $pool->id, 'pool_effect' => 'DESTINATION_IN',
+                'avco_pool_id' => $pool?->id, 'pool_effect' => $pool === null ? null : 'DESTINATION_IN',
                 'qty' => (string) $qty, 'unit_cost' => (string) $unitCost,
                 'amount' => (string) $qty->multipliedBy($unitCost)->toScale(4, RoundingMode::HALF_UP),
                 'base_amount' => (string) $receiptBaseAmount, 'account_id' => $accountId,
             ]);
             $residualAdjustment = BigDecimal::of($attributes['valuation_adjustment'])->minus($receiptBaseAmount)->toScale(4, RoundingMode::HALF_UP);
-            $move->valuationEntries()->create([
-                'avco_pool_id' => $pool->id, 'pool_effect' => 'VALUATION_ADJUSTMENT',
-                'qty' => '0.0000', 'unit_cost' => '0.0000',
-                'amount' => (string) $residualAdjustment, 'base_amount' => (string) $residualAdjustment, 'account_id' => $accountId,
-            ]);
-            $this->pools->write($pool, BigDecimal::of($attributes['counterfactual_qty_on_hand']), BigDecimal::of($attributes['counterfactual_inventory_value']));
+            if (! $residualAdjustment->isZero()) {
+                if ($pool === null) {
+                    // Provably unreachable for SPECIFIC today — see the class
+                    // doc comment — but refusing beats silently dropping a
+                    // downstream correction this method can't yet apply.
+                    throw new DomainInvariantException('This request needs a downstream valuation correction execution does not support for this method yet.', 'item_id');
+                }
+                $move->valuationEntries()->create([
+                    'avco_pool_id' => $pool->id, 'pool_effect' => 'VALUATION_ADJUSTMENT',
+                    'qty' => '0.0000', 'unit_cost' => '0.0000',
+                    'amount' => (string) $residualAdjustment, 'base_amount' => (string) $residualAdjustment, 'account_id' => $accountId,
+                ]);
+            }
+            if ($pool !== null) {
+                $this->pools->write($pool, BigDecimal::of($attributes['counterfactual_qty_on_hand']), BigDecimal::of($attributes['counterfactual_inventory_value']));
+            }
 
             return RecalculationExecution::query()->create([
                 'recalculation_request_id' => $request->id, 'impact_version_id' => $version->id,

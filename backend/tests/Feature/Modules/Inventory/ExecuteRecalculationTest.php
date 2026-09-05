@@ -246,6 +246,49 @@ class ExecuteRecalculationTest extends TestCase
         $this->assertSame(1, RecalculationExecution::query()->where('recalculation_request_id', $request->id)->count());
     }
 
+    public function test_execution_posts_a_specific_items_new_serial_with_no_pool_and_no_adjustment_entry(): void
+    {
+        $currency = Currency::firstOrCreate(['code' => 'USD'], ['name' => 'US Dollar', 'symbol' => '$']);
+        Company::query()->findOrFail(1)->update(['base_currency_id' => $currency->id]);
+        $uom = Uom::create(['code' => 'ea', 'name' => 'Each', 'dimension' => UomDimension::Count, 'factor_to_base' => '1']);
+        $category = Category::create(['code' => 'raw', 'name' => 'Raw', 'default_valuation_method' => 'SPECIFIC']);
+        $item = Item::create([
+            'code' => 'item', 'name' => 'Item', 'type' => 'RAW', 'stock_uom_id' => $uom->id, 'category_id' => $category->id,
+            'is_stocked' => true, 'valuation_method' => ValuationMethod::Specific, 'tracking' => 'SERIAL',
+            'inventory_account_id' => ChartOfAccount::query()->firstOr(fn () => ChartOfAccount::create(['code' => 'inv', 'name' => 'Inventory', 'type' => AccountType::Asset]))->id,
+        ]);
+        $location = app(CreateWarehouse::class)(['code' => 'main', 'name' => 'Main', 'location_code' => 'main', 'location_name' => 'Main'])->locations()->sole();
+        // Establishes the item-wide "later history exists" conflict — the
+        // proposed serial (SER-NEW) never overlaps this one's own layer group.
+        app(PostInventoryMovement::class)([
+            'item_id' => $item->id, 'location_id' => $location->id, 'qty' => '1.0000', 'uom_id' => $uom->id,
+            'moved_at' => Carbon::parse('2026-01-10'), 'source_type' => 'TEST_RECEIPT', 'source_id' => 1,
+            'unit_cost' => '25.0000', 'currency_id' => $currency->id, 'fx_rate' => '1.000000000', 'base_unit_cost' => '25.0000',
+            'serial_no' => 'SER-OTHER',
+        ]);
+        $requester = User::factory()->create();
+        $requester->givePermissionTo('inventory.recalculation.request');
+        $request = app(RequestStockRecalculation::class)([
+            'item_id' => $item->id, 'location_id' => $location->id,
+            'qty' => '1.0000', 'unit_cost' => '30.0000', 'currency_id' => $currency->id,
+            'fx_rate' => '1.000000000', 'base_unit_cost' => '30.0000', 'moved_at' => Carbon::parse('2026-01-05'),
+            'source_type' => 'TEST_BACKDATED_RECEIPT', 'source_id' => 2, 'serial_no' => 'SER-NEW',
+        ], $requester);
+        $version = $this->approveFully($request->impactVersions->sole());
+        $this->assertSame('30.0000', $version->valuation_adjustment);
+
+        $execution = app(ExecuteRecalculation::class)($version, $this->executor());
+
+        $move = StockMove::query()->where('source_type', 'TEST_BACKDATED_RECEIPT')->where('source_id', 2)->sole();
+        $this->assertSame($execution->stock_move_id, $move->id);
+        $this->assertSame('SER-NEW', $move->serial_no);
+        $entries = $move->valuationEntries()->get();
+        $this->assertSame(1, $entries->count());
+        $this->assertNull($entries->sole()->pool_effect);
+        $this->assertSame('30.0000', $entries->sole()->base_amount);
+        $this->assertSame(0, AvcoPool::query()->where('item_id', $item->id)->count());
+    }
+
     public function test_execution_is_idempotent(): void
     {
         [, , , $request] = $this->makeConflictingRequest();
