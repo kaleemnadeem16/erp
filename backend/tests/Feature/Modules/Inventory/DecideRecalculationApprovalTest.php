@@ -250,7 +250,8 @@ class DecideRecalculationApprovalTest extends TestCase
         $second->givePermissionTo(['inventory.recalculation.approve', 'inventory.recalculation.approve-high-risk']);
 
         $firstApproval = app(DecideRecalculationApproval::class)($version, RecalculationApprovalDecision::Approved, 'first check', $first);
-        $this->assertNull($firstApproval->expires_at);
+        $this->assertNotNull($firstApproval->expires_at);
+        $this->assertTrue($firstApproval->expires_at->isSameHour(now()->addHours(24)));
         $this->assertFalse($version->fresh()->load('approvals')->isFullyApproved());
 
         $secondApproval = app(DecideRecalculationApproval::class)($version, RecalculationApprovalDecision::Approved, 'second check', $second);
@@ -329,7 +330,7 @@ class DecideRecalculationApprovalTest extends TestCase
         ]);
     }
 
-    public function test_the_db_rejects_a_partial_approval_that_sets_an_expiry(): void
+    public function test_the_db_requires_an_approved_decision_to_set_an_expiry(): void
     {
         [, , , $request] = $this->makeRequestWithConflict(highRisk: true);
         $version = $request->impactVersions->sole();
@@ -338,9 +339,148 @@ class DecideRecalculationApprovalTest extends TestCase
         $this->expectException(QueryException::class);
         DB::table('recalculation_approvals')->insert([
             'company_id' => 1, 'impact_version_id' => $version->id, 'decision' => 'APPROVED', 'notes' => 'ok',
+            'decided_by' => $approver->id, 'decided_at' => now(), 'expires_at' => null,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+    }
+
+    public function test_the_db_rejects_a_rejection_that_sets_an_expiry(): void
+    {
+        [, , , $request] = $this->makeRequestWithConflict();
+        $version = $request->impactVersions->sole();
+        $approver = User::factory()->create();
+
+        $this->expectException(QueryException::class);
+        DB::table('recalculation_approvals')->insert([
+            'company_id' => 1, 'impact_version_id' => $version->id, 'decision' => 'REJECTED', 'notes' => 'no',
             'decided_by' => $approver->id, 'decided_at' => now(), 'expires_at' => now()->addHours(24),
             'created_at' => now(), 'updated_at' => now(),
         ]);
+    }
+
+    public function test_the_db_rejects_a_second_active_decision_from_the_same_actor(): void
+    {
+        [, , , $request] = $this->makeRequestWithConflict(highRisk: true);
+        $version = $request->impactVersions->sole();
+        $approver = User::factory()->create();
+        DB::table('recalculation_approvals')->insert([
+            'company_id' => 1, 'impact_version_id' => $version->id, 'decision' => 'APPROVED', 'notes' => 'first',
+            'decided_by' => $approver->id, 'decided_at' => now(), 'expires_at' => now()->addHours(24),
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $this->expectException(QueryException::class);
+        DB::table('recalculation_approvals')->insert([
+            'company_id' => 1, 'impact_version_id' => $version->id, 'decision' => 'APPROVED', 'notes' => 'second',
+            'decided_by' => $approver->id, 'decided_at' => now(), 'expires_at' => now()->addHours(24),
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+    }
+
+    public function test_the_db_allows_a_renewal_once_the_actors_own_decision_has_expired(): void
+    {
+        [, , , $request] = $this->makeRequestWithConflict();
+        $version = $request->impactVersions->sole();
+        $approver = User::factory()->create();
+        DB::table('recalculation_approvals')->insert([
+            'company_id' => 1, 'impact_version_id' => $version->id, 'decision' => 'APPROVED', 'notes' => 'first',
+            'decided_by' => $approver->id, 'decided_at' => now()->subHours(30), 'expires_at' => now()->subHours(6),
+            'created_at' => now()->subHours(30), 'updated_at' => now()->subHours(30),
+        ]);
+
+        DB::table('recalculation_approvals')->insert([
+            'company_id' => 1, 'impact_version_id' => $version->id, 'decision' => 'APPROVED', 'notes' => 'renewed',
+            'decided_by' => $approver->id, 'decided_at' => now(), 'expires_at' => now()->addHours(24),
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $this->assertSame(2, RecalculationApproval::query()->where('impact_version_id', $version->id)->where('decided_by', $approver->id)->count());
+    }
+
+    public function test_the_db_still_bounds_distinct_approvers_by_risk_tier_after_an_expiry(): void
+    {
+        [, , , $request] = $this->makeRequestWithConflict();
+        $version = $request->impactVersions->sole();
+        $first = User::factory()->create();
+        DB::table('recalculation_approvals')->insert([
+            'company_id' => 1, 'impact_version_id' => $version->id, 'decision' => 'APPROVED', 'notes' => 'ok',
+            'decided_by' => $first->id, 'decided_at' => now()->subHours(30), 'expires_at' => now()->subHours(6),
+            'created_at' => now()->subHours(30), 'updated_at' => now()->subHours(30),
+        ]);
+        $second = User::factory()->create();
+
+        // An expired grant frees nothing for a *different* approver — that
+        // would be rerouting, not renewal, and this trigger doesn't do it.
+        $this->expectException(QueryException::class);
+        DB::table('recalculation_approvals')->insert([
+            'company_id' => 1, 'impact_version_id' => $version->id, 'decision' => 'APPROVED', 'notes' => 'ok too',
+            'decided_by' => $second->id, 'decided_at' => now(), 'expires_at' => now()->addHours(24),
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+    }
+
+    /**
+     * The approval that needs renewing is seeded by a raw insert with a
+     * genuinely past expires_at, not Carbon::setTestNow() — approvals are
+     * DB-immutable so an existing row can't be backdated after the fact, and
+     * the guard_recalculation_approval_insert trigger's "is this actor's
+     * decision still active" check compares against the database's own
+     * now(), which a PHP-level time mock never moves.
+     */
+    public function test_an_approver_can_renew_their_own_expired_approval_through_the_action(): void
+    {
+        [, , , $request] = $this->makeRequestWithConflict();
+        $version = $request->impactVersions->sole();
+        $approver = User::factory()->create();
+        $approver->givePermissionTo('inventory.recalculation.approve');
+        DB::table('recalculation_approvals')->insert([
+            'company_id' => 1, 'impact_version_id' => $version->id, 'decision' => 'APPROVED', 'notes' => 'checked',
+            'decided_by' => $approver->id, 'decided_at' => now()->subHours(30), 'expires_at' => now()->subHours(6),
+            'created_at' => now()->subHours(30), 'updated_at' => now()->subHours(30),
+        ]);
+        $original = RecalculationApproval::query()->where('impact_version_id', $version->id)->sole();
+
+        $renewed = app(DecideRecalculationApproval::class)($version->fresh()->load('approvals'), RecalculationApprovalDecision::Approved, 'checked again', $approver);
+
+        $this->assertNotSame($original->id, $renewed->id);
+        $this->assertTrue($renewed->expires_at->isAfter($original->expires_at));
+        $this->assertSame(2, RecalculationApproval::query()->where('impact_version_id', $version->id)->count());
+        $this->assertNotNull(RecalculationApproval::query()->find($original->id), 'the expired approval remains, immutable');
+    }
+
+    public function test_renewing_the_first_high_risk_approval_does_not_require_high_risk_authority(): void
+    {
+        [, , , $request] = $this->makeRequestWithConflict(highRisk: true);
+        $version = $request->impactVersions->sole();
+        $first = User::factory()->create();
+        $first->givePermissionTo('inventory.recalculation.approve');
+        DB::table('recalculation_approvals')->insert([
+            'company_id' => 1, 'impact_version_id' => $version->id, 'decision' => 'APPROVED', 'notes' => 'first check',
+            'decided_by' => $first->id, 'decided_at' => now()->subHours(30), 'expires_at' => now()->subHours(6),
+            'created_at' => now()->subHours(30), 'updated_at' => now()->subHours(30),
+        ]);
+
+        $renewed = app(DecideRecalculationApproval::class)($version->fresh()->load('approvals'), RecalculationApprovalDecision::Approved, 'renewed', $first);
+
+        $this->assertNotNull($renewed->expires_at);
+        $this->assertFalse($version->fresh()->load('approvals')->isFullyApproved());
+    }
+
+    public function test_a_different_approver_cannot_claim_a_slot_freed_by_expiry(): void
+    {
+        [, , , $request] = $this->makeRequestWithConflict();
+        $version = $request->impactVersions->sole();
+        $first = User::factory()->create();
+        DB::table('recalculation_approvals')->insert([
+            'company_id' => 1, 'impact_version_id' => $version->id, 'decision' => 'APPROVED', 'notes' => 'checked',
+            'decided_by' => $first->id, 'decided_at' => now()->subHours(30), 'expires_at' => now()->subHours(6),
+            'created_at' => now()->subHours(30), 'updated_at' => now()->subHours(30),
+        ]);
+        $second = User::factory()->create();
+        $second->givePermissionTo('inventory.recalculation.approve');
+
+        $this->expectException(DomainInvariantException::class);
+        app(DecideRecalculationApproval::class)($version->fresh()->load('approvals'), RecalculationApprovalDecision::Approved, 'late', $second);
     }
 
     public function test_the_db_rejects_any_decision_after_a_rejection(): void

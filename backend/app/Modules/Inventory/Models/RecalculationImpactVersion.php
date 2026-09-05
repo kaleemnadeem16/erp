@@ -13,6 +13,7 @@ use App\Support\Concerns\GuardsRelatedCompanyScope;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 
 /**
  * One immutable, append-only computed impact for a RecalculationRequest — see
@@ -25,10 +26,12 @@ use Illuminate\Support\Carbon;
  *
  * risk_classification is set once, by RecalculationRiskClassifier, at the
  * same time as every other economic column, and determines how many
- * approvals() rows this version requires: one for NORMAL_RISK, two
+ * distinct approvers() this version requires: one for NORMAL_RISK, two
  * independent approvers for HIGH_RISK (see DecideRecalculationApproval and
  * the guard_recalculation_approval_insert DB trigger, which enforces the
- * same count).
+ * same count). approvals() may hold more rows than that once an approver's
+ * expired decision has been renewed — required count is measured in
+ * distinct decided_by, not row count; see approvedActorIds().
  *
  * @property int $recalculation_request_id
  * @property int $version_no
@@ -92,24 +95,29 @@ class RecalculationImpactVersion extends Model
         return $this->approvals->contains(fn (RecalculationApproval $approval): bool => $approval->decision === RecalculationApprovalDecision::Rejected);
     }
 
+    /**
+     * Distinct approvers currently holding an APPROVED decision, regardless
+     * of expiry — a filled slot stays filled even once its grant lapses.
+     * Renewal (the same approver deciding again after expiry) reuses the
+     * slot; it never frees it for a different approver to claim.
+     *
+     * @return Collection<int, int>
+     */
+    public function approvedActorIds(): Collection
+    {
+        return $this->approvals
+            ->filter(fn (RecalculationApproval $approval): bool => $approval->decision === RecalculationApprovalDecision::Approved)
+            ->pluck('decided_by')->unique();
+    }
+
     public function isFullyApproved(): bool
     {
-        $approvedCount = $this->approvals->filter(fn (RecalculationApproval $approval): bool => $approval->decision === RecalculationApprovalDecision::Approved)->count();
-
-        return $approvedCount >= $this->requiredApprovalCount();
+        return $this->approvedActorIds()->count() >= $this->requiredApprovalCount();
     }
 
     /** Terminal: either fully approved or rejected — no further decisions are accepted. */
     public function isDecided(): bool
     {
         return $this->isRejected() || $this->isFullyApproved();
-    }
-
-    /** The one approval whose acceptance completed the requirement — the only row carrying expires_at. */
-    public function completingApproval(): ?RecalculationApproval
-    {
-        return $this->approvals->first(
-            fn (RecalculationApproval $approval): bool => $approval->decision === RecalculationApprovalDecision::Approved && $approval->expires_at !== null,
-        );
     }
 }

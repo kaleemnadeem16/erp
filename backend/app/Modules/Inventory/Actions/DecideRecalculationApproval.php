@@ -28,17 +28,28 @@ use Illuminate\Support\Facades\DB;
  *
  * A version's own risk_classification (set once, at creation, by
  * RecalculationRiskClassifier) determines how many independent approvers it
- * needs: one for NORMAL_RISK, two for HIGH_RISK. Each eligible actor may
- * decide a version at most once (enforced by a unique DB constraint on
- * (impact_version_id, decided_by), on top of the requester exclusion above —
- * "independent" means a different person than the requester *and* than any
- * approver who already decided this version). A REJECTED decision is
- * terminal: no further decisions are accepted from anyone once one lands,
- * whether it was the first or the second. Only the approval that brings the
- * version's approved count up to its required number carries expires_at —
- * approved-execution authority is a property of the version being fully
- * approved, not of any single decision, so a HIGH_RISK version's first
- * approval alone grants no execution window.
+ * needs: one for NORMAL_RISK, two for HIGH_RISK — measured in distinct
+ * decided_by among APPROVED decisions (RecalculationImpactVersion::
+ * approvedActorIds()), on top of the requester exclusion above.
+ * "Independent" means a different person than the requester *and* than any
+ * *other* approver already holding a slot. A REJECTED decision is terminal:
+ * no further decisions are accepted from anyone once one lands, whether it
+ * was the first or the second.
+ *
+ * Per ADR 0040's APPROVAL_TTL_TARGET: EACH_REQUIRED_APPROVAL, every APPROVED
+ * decision carries its own expires_at the moment it's granted — a HIGH_RISK
+ * version's first approval gets a real execution-window deadline too, not
+ * just its completing second. Approvals stay immutable and append-only, so
+ * once an approver's own decision has expired, they may decide again: that
+ * append is a *renewal* of their existing slot, not a new approver claiming
+ * it, and never counts against the version's required-approver cap (an
+ * unexpired existing decision from the same actor is rejected instead, by
+ * both this Action and the guard_recalculation_approval_insert DB trigger —
+ * one live decision per approver per version at a time). A renewal also
+ * skips the second-approver high-risk-authority check below, since that
+ * authority was already validated when the actor's slot was first granted;
+ * a *different* person taking over an expired slot is authority-only
+ * rerouting, a separate ADR 0040 mechanism this Action does not implement.
  */
 final class DecideRecalculationApproval
 {
@@ -74,8 +85,8 @@ final class DecideRecalculationApproval
                 throw new DomainInvariantException('The actor is not permitted to decide recalculation requests.', 'decided_by');
             }
 
-            $existingByActor = $version->approvals->firstWhere('decided_by', $actor->id);
-            if ($existingByActor !== null) {
+            $existingByActor = $version->approvals->where('decided_by', $actor->id)->sortByDesc('id')->first();
+            if ($existingByActor !== null && ! $existingByActor->isExpired()) {
                 if ($existingByActor->decision !== $decision || $existingByActor->notes !== trim($notes)) {
                     throw new DomainInvariantException('This actor already decided this impact version differently.', 'impact_version_id');
                 }
@@ -85,7 +96,9 @@ final class DecideRecalculationApproval
             if ($version->isRejected()) {
                 throw new DomainInvariantException('This impact version has already been rejected — no further decisions are accepted.', 'impact_version_id');
             }
-            if ($version->isFullyApproved()) {
+            $approvedActorIds = $version->approvedActorIds();
+            $isRenewal = $approvedActorIds->contains($actor->id);
+            if (! $isRenewal && $approvedActorIds->count() >= $version->requiredApprovalCount()) {
                 throw new DomainInvariantException('This impact version already has its required number of approvals.', 'impact_version_id');
             }
 
@@ -100,17 +113,15 @@ final class DecideRecalculationApproval
                 return null;
             }
 
-            $approvedCountBefore = $version->approvals->filter(fn (RecalculationApproval $a): bool => $a->decision === RecalculationApprovalDecision::Approved)->count();
-            if ($version->requiredApprovalCount() === 2 && $approvedCountBefore >= 1
+            if (! $isRenewal && $version->requiredApprovalCount() === 2 && $approvedActorIds->isNotEmpty()
                 && ! $actor->can('inventory.recalculation.approve-high-risk')) {
                 throw new DomainInvariantException('The second high-risk decision requires dedicated higher-risk authority.', 'decided_by');
             }
-            $willComplete = $decision === RecalculationApprovalDecision::Approved && ($approvedCountBefore + 1) >= $version->requiredApprovalCount();
 
             return RecalculationApproval::query()->create([
                 'impact_version_id' => $version->id, 'decision' => $decision, 'notes' => trim($notes),
                 'decided_by' => $actor->id, 'decided_at' => now(),
-                'expires_at' => $willComplete ? now()->addHours($company->recalculation_approval_ttl_hours) : null,
+                'expires_at' => $decision === RecalculationApprovalDecision::Approved ? now()->addHours($company->recalculation_approval_ttl_hours) : null,
             ]);
         });
 

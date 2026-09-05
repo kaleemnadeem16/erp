@@ -173,8 +173,10 @@ The order matters because later work needs stable document and stock boundaries:
       [connected replay](../domain/stock-movement-replay.md) includes both transfer sides
 - [ ] Enforce bounded company-configurable review SLAs (72-hour default), overdue escalation that
       preserves requester/approver separation, and hard approved-execution TTLs (24-hour default)
-      using persisted deadlines and trusted server time; each required approval needs its own
-      expiry and same-version renewal (the current completing-decision-only expiry is incomplete)
+      using persisted deadlines and trusted server time. Each required approval now persists its
+      own expiry and supports same-actor renewal after expiry
+      ([stock-recalculation.md](../domain/stock-recalculation.md)); enforcing the TTL at execution
+      time (`ALL_REQUIRED_APPROVALS_UNEXPIRED`) remains, since execution itself is unbuilt
 - [ ] Implement exact semantic impact comparison, authority-only approval rerouting, per-version
       normal/high-risk classification and mandatory second independent approval for hard high-risk
       consequences per

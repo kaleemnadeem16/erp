@@ -72,26 +72,29 @@ instead of by checking a box early.
 - `DecideRecalculationApproval` enforces requester/approver separation absolutely (still no
   small-company self-review exception — that remains Q13-only, per `RequestNegativeStockOverride`)
   and, per version, requires as many *independent* approvers as `risk_classification` demands: one
-  for `NORMAL_RISK`, two for `HIGH_RISK`. Each eligible actor may decide a version at most once (a
-  DB unique constraint on `(impact_version_id, decided_by)` makes "independent" mean a different
-  person than the requester *and* than any approver who already decided it). A `REJECTED` decision
-  is terminal — no further decisions are accepted from anyone once one lands. Only the approval
-  that brings a version's approved count up to its required number carries `expires_at`:
-  approved-execution authority is a property of the version being fully approved, not of any one
-  decision, so a `HIGH_RISK` version's first approval alone grants no execution window. The
-  second decision also requires `inventory.recalculation.approve-high-risk`, in addition to
-  ordinary `inventory.recalculation.approve` authority. A DB
-  trigger (`guard_recalculation_approval_insert`) enforces the same count-and-terminal-rejection
-  invariants independently of the Action, the same defense-in-depth style as the immutability
-  triggers elsewhere in this workflow.
+  for `NORMAL_RISK`, two for `HIGH_RISK` — counted as distinct `decided_by` among `APPROVED` rows
+  (`RecalculationImpactVersion::approvedActorIds()`), making "independent" mean a different person
+  than the requester *and* than any *other* approver already holding a slot. A `REJECTED` decision
+  is terminal — no further decisions are accepted from anyone once one lands. Per ADR 0040's
+  `APPROVAL_TTL_TARGET: EACH_REQUIRED_APPROVAL`, every `APPROVED` decision carries its own
+  `expires_at` the moment it's granted, not just whichever one completes the requirement — a
+  `HIGH_RISK` version's first approval gets a real execution-window deadline too. Approvals stay
+  immutable and append-only, so once an approver's own decision expires they may decide again: a
+  same-actor **renewal** appends a fresh row rather than reviving the old one, reuses their
+  existing slot (never counts as a new approver, and skips the second-approver
+  `inventory.recalculation.approve-high-risk` check, already satisfied when the slot was first
+  granted), and is blocked while that approver still holds an unexpired decision (one live decision
+  per approver per version at a time). A *different* approver can never claim a slot an expiry
+  freed — that's authority-only rerouting, a separate, still-unbuilt mechanism. A DB trigger
+  (`guard_recalculation_approval_insert`) enforces the same terminal-rejection, distinct-approver-count
+  and one-live-decision-per-actor invariants independently of the Action, the same defense-in-depth
+  style as the immutability triggers elsewhere in this workflow.
 
-**Not yet built**: authority-only approval rerouting (a changed approver's authority, not the economics, requiring
-reroute rather than a fresh impact version),
-execution of an approved version, and the append-only correction package. No HTTP/API layer exists
-for any of this, matching the negative-stock workflow, which doesn't have one either. Before
-execution is built, approvals also need alignment with ADR 0040's **each-required-approval TTL**:
-today only the completing decision has an expiry; earlier-tier expiry and same-version renewal
-are still missing. This is an existing approval gap, not a change to the accepted decision.
+**Not yet built**: authority-only approval rerouting (a changed approver's authority, not the
+economics, requiring reroute rather than a fresh impact version — distinct from the same-actor
+renewal above), execution of an approved version, and the append-only correction package. No
+HTTP/API layer exists for any of this, matching the negative-stock workflow, which doesn't have
+one either.
 
 ## Replay integrity and regeneration review
 
