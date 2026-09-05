@@ -289,6 +289,115 @@ class ExecuteRecalculationTest extends TestCase
         $this->assertSame(0, AvcoPool::query()->where('item_id', $item->id)->count());
     }
 
+    /** @return array{0: Item, 1: Uom, 2: Location} */
+    private function makeFifoItem(): array
+    {
+        $currency = Currency::firstOrCreate(['code' => 'USD'], ['name' => 'US Dollar', 'symbol' => '$']);
+        Company::query()->findOrFail(1)->update(['base_currency_id' => $currency->id]);
+        $uom = Uom::create(['code' => 'ea', 'name' => 'Each', 'dimension' => UomDimension::Count, 'factor_to_base' => '1']);
+        $category = Category::create(['code' => 'raw', 'name' => 'Raw', 'default_valuation_method' => 'FIFO']);
+        $item = Item::create([
+            'code' => 'item', 'name' => 'Item', 'type' => 'RAW', 'stock_uom_id' => $uom->id, 'category_id' => $category->id,
+            'is_stocked' => true, 'valuation_method' => ValuationMethod::Fifo,
+            'inventory_account_id' => ChartOfAccount::query()->firstOr(fn () => ChartOfAccount::create(['code' => 'inv', 'name' => 'Inventory', 'type' => AccountType::Asset]))->id,
+        ]);
+        $location = app(CreateWarehouse::class)(['code' => 'main', 'name' => 'Main', 'location_code' => 'main', 'location_name' => 'Main'])->locations()->sole();
+
+        return [$item, $uom, $location];
+    }
+
+    /**
+     * The pre-existing older layer (5@10, Jan 1) already covers the later
+     * issue (2 units, Jan 10) on its own, so the backdated layer (10@20,
+     * Jan 5 — chronologically between them) is never actually drawn from:
+     * same fixture as RequestStockRecalculationTest::
+     * test_fifo_items_compute_a_real_layer_based_impact.
+     */
+    public function test_execution_posts_a_fifo_receipt_untouched_by_later_history_with_no_adjustment_entry(): void
+    {
+        [$item, $uom, $location] = $this->makeFifoItem();
+        app(PostInventoryMovement::class)([
+            'item_id' => $item->id, 'location_id' => $location->id, 'qty' => '5.0000', 'uom_id' => $uom->id,
+            'moved_at' => Carbon::parse('2026-01-01'), 'source_type' => 'TEST_RECEIPT', 'source_id' => 1,
+            'unit_cost' => '10.0000', 'currency_id' => Company::query()->findOrFail(1)->base_currency_id,
+            'fx_rate' => '1.000000000', 'base_unit_cost' => '10.0000',
+        ]);
+        app(PostInventoryMovement::class)->issue([
+            'item_id' => $item->id, 'location_id' => $location->id, 'qty' => '2.0000', 'uom_id' => $uom->id,
+            'moved_at' => Carbon::parse('2026-01-10'), 'source_type' => 'TEST_ISSUE', 'source_id' => 2,
+        ]);
+        $requester = User::factory()->create();
+        $requester->givePermissionTo('inventory.recalculation.request');
+        $request = app(RequestStockRecalculation::class)([
+            'item_id' => $item->id, 'location_id' => $location->id,
+            'qty' => '10.0000', 'unit_cost' => '20.0000', 'currency_id' => Company::query()->findOrFail(1)->base_currency_id,
+            'fx_rate' => '1.000000000', 'base_unit_cost' => '20.0000', 'moved_at' => Carbon::parse('2026-01-05'),
+            'source_type' => 'TEST_BACKDATED_RECEIPT', 'source_id' => 3,
+        ], $requester);
+        $version = $this->approveFully($request->impactVersions->sole());
+        $this->assertSame('200.0000', $version->valuation_adjustment);
+
+        $execution = app(ExecuteRecalculation::class)($version, $this->executor());
+
+        $move = StockMove::query()->where('source_type', 'TEST_BACKDATED_RECEIPT')->where('source_id', 3)->sole();
+        $this->assertSame($execution->stock_move_id, $move->id);
+        $entries = $move->valuationEntries()->get();
+        $this->assertSame(1, $entries->count());
+        $this->assertNull($entries->sole()->pool_effect);
+        $this->assertSame('200.0000', $entries->sole()->base_amount);
+        // Real history is untouched: the pre-existing layer's consumption
+        // record from the Jan 10 issue is exactly what it always was.
+        $this->assertSame(0, AvcoPool::query()->where('item_id', $item->id)->count());
+    }
+
+    /**
+     * Older layer A (5@10, Jan 1) is exhausted by a later 6-unit issue that
+     * also needs 1 unit from B (5@12, Jan 10) — real history. A backdated
+     * layer C (3@20, Jan 5) sits between A and B in FIFO order: in the
+     * counterfactual, A+C's combined 8 units cover the issue without ever
+     * touching B, so B's actual consumption record no longer matches what
+     * the counterfactual says should have happened. Real re-linking is
+     * needed, which this Action doesn't build yet — it must refuse rather
+     * than silently leave B's history wrong.
+     */
+    public function test_execution_refuses_a_fifo_receipt_that_needs_real_layer_reallocation(): void
+    {
+        [$item, $uom, $location] = $this->makeFifoItem();
+        app(PostInventoryMovement::class)([
+            'item_id' => $item->id, 'location_id' => $location->id, 'qty' => '5.0000', 'uom_id' => $uom->id,
+            'moved_at' => Carbon::parse('2026-01-01'), 'source_type' => 'TEST_RECEIPT', 'source_id' => 1,
+            'unit_cost' => '10.0000', 'currency_id' => Company::query()->findOrFail(1)->base_currency_id,
+            'fx_rate' => '1.000000000', 'base_unit_cost' => '10.0000',
+        ]);
+        app(PostInventoryMovement::class)([
+            'item_id' => $item->id, 'location_id' => $location->id, 'qty' => '5.0000', 'uom_id' => $uom->id,
+            'moved_at' => Carbon::parse('2026-01-10'), 'source_type' => 'TEST_RECEIPT', 'source_id' => 2,
+            'unit_cost' => '12.0000', 'currency_id' => Company::query()->findOrFail(1)->base_currency_id,
+            'fx_rate' => '1.000000000', 'base_unit_cost' => '12.0000',
+        ]);
+        app(PostInventoryMovement::class)->issue([
+            'item_id' => $item->id, 'location_id' => $location->id, 'qty' => '6.0000', 'uom_id' => $uom->id,
+            'moved_at' => Carbon::parse('2026-01-15'), 'source_type' => 'TEST_ISSUE', 'source_id' => 3,
+        ]);
+        $requester = User::factory()->create();
+        $requester->givePermissionTo('inventory.recalculation.request');
+        $request = app(RequestStockRecalculation::class)([
+            'item_id' => $item->id, 'location_id' => $location->id,
+            'qty' => '3.0000', 'unit_cost' => '20.0000', 'currency_id' => Company::query()->findOrFail(1)->base_currency_id,
+            'fx_rate' => '1.000000000', 'base_unit_cost' => '20.0000', 'moved_at' => Carbon::parse('2026-01-05'),
+            'source_type' => 'TEST_BACKDATED_RECEIPT', 'source_id' => 4,
+        ], $requester);
+        $version = $this->approveFully($request->impactVersions->sole());
+        // Not 60.0000 (3 * 20, the receipt's own value alone) — the approved
+        // preview already reflects that B's real 1-unit consumption would
+        // not have happened counterfactually.
+        $this->assertNotSame('60.0000', $version->valuation_adjustment);
+
+        $this->expectException(DomainInvariantException::class);
+        $this->expectExceptionMessage('downstream valuation correction');
+        app(ExecuteRecalculation::class)($version, $this->executor());
+    }
+
     public function test_execution_is_idempotent(): void
     {
         [, , , $request] = $this->makeConflictingRequest();

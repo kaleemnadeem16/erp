@@ -187,8 +187,10 @@ The order matters because later work needs stable document and stock boundaries:
 - [ ] Serialise overlapping recalculation execution with deterministic locks over the complete
       method-specific replay closure, count only post-approval material invalidations toward the
       regeneration cap, and escalate repeated cap hits without resetting the counter.
-      `ExecuteRecalculation` does this for AVCO and SPECIFIC receipts (locks pool+location where an
-      AVCO pool exists, revalidates before posting); FIFO and issue/transfer execution remain
+      `ExecuteRecalculation` does this for AVCO, SPECIFIC and untouched-history FIFO receipts
+      (locks pool+location where an AVCO pool exists, revalidates before posting); FIFO
+      reallocation (a backdated layer that real history did draw from) and issue/transfer
+      execution remain
 - [ ] Build idempotent append-only correction packages preserving exact approved deltas, historical
       FX bases, deterministic downstream allocation, explicit pending owners and zero-residual
       reconciliation per

@@ -16,7 +16,8 @@ instead of by checking a box early.
 
 **Built today**: receipt, issue and transfer request/preview/approval workflows across
 **all three valuation methods**, within the supported clean-history boundaries below, plus
-execution for a narrow slice — AVCO or SPECIFIC receipts with no shortage involvement.
+execution for AVCO/SPECIFIC receipts, and untouched-history FIFO receipts, with no shortage
+involvement.
 
 - Issue/transfer proposals now use connected movement replay with derived costs, both transfer
   sides and onward dependencies — see [stock-movement-replay.md](stock-movement-replay.md).
@@ -108,17 +109,23 @@ execution for a narrow slice — AVCO or SPECIFIC receipts with no shortage invo
   tightly that nothing could have consumed a unit before it existed, so a new serial's
   `valuation_adjustment` is provably always exactly its own value (see
   `RequestStockRecalculationTest::test_specific_items_new_serial_computes_its_own_value_with_no_repricing_of_other_stock`)
-  — a plain layer insert, no pool, no second entry. Scoped to what this codebase can execute
-  correctly today: AVCO or SPECIFIC receipts only, and only when no negative-stock shortage exists
-  for the item/location/batch.
+  — a plain layer insert, no pool, no second entry. FIFO shares that same path, gated by whether
+  the residual (`valuation_adjustment` minus the receipt's own value) is zero: if every existing
+  older layer already had enough for every later event, the backdated layer is provably never
+  drawn from during replay (removing an item a priority queue never selects doesn't change what it
+  selects for anyone else) and the residual is exactly zero — genuinely untouched, not a value
+  coincidence, since a real reallocation between differently-costed layers always shows up in the
+  residual. A nonzero residual means real layer reallocation is needed and execution refuses rather
+  than guesses. Scoped to what this codebase can execute correctly today: AVCO always; SPECIFIC
+  always; FIFO only when the backdated layer turns out untouched — and always only when no
+  negative-stock shortage exists for the item/location/batch.
 
 **Not yet built**: authority-only approval rerouting (a changed approver's authority, not the
 economics, requiring reroute rather than a fresh impact version — distinct from the same-actor
-renewal above); FIFO execution (unlike SPECIFIC, a FIFO layer group can hold many layers, and a
-backdated receipt's earlier `received_at` can shift which existing layer a later issue would have
-drawn from in oldest-first order — fixing that needs correcting the immutable
-`stock_layer_consumptions` ledger itself, real downstream re-linking, not just a converged average)
-and issue/transfer execution; and the full multi-owner correction package — Sales/Job
+renewal above); FIFO execution when real reallocation is needed (correcting the immutable
+`stock_layer_consumptions` ledger itself — paired reversal/re-consumption entries, cascading
+through any transfer that relayed a shifted layer onward — not just a converged average); and
+issue/transfer execution; and the full multi-owner correction package — Sales/Job
 Execution/Accounting routing, cross-module reconciliation and deferred obligations all need owning
 modules that don't exist yet, so every case this codebase can execute today is "remaining stock,"
 the one slice ADR 0040 lets Inventory own outright. No HTTP/API

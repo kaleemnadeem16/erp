@@ -94,11 +94,13 @@ requiring dedicated higher-risk authority for a second approval; each required a
 its own expiry and supports same-actor renewal after expiry. Three post-approval material
 invalidations pause automatic regeneration. `ResumeRecalculationRegeneration` records manual
 coordination and appends an unapproved replacement without resetting history.
-`ExecuteRecalculation` posts an approved AVCO or SPECIFIC receipt — AVCO converges the pool to the
-approved counterfactual, SPECIFIC is a plain layer insert since a new serial's adjustment is always
-its own value. FIFO execution (needs real downstream consumption re-linking, not just a converged
-average), issue/transfer execution, authority-only rerouting and the multi-owner correction package
-remain unbuilt. Supported history and permission details live in
+`ExecuteRecalculation` posts an approved AVCO, SPECIFIC or FIFO receipt — AVCO converges the pool
+to the approved counterfactual; SPECIFIC and untouched-history FIFO are a plain layer insert, since
+neither ever needs a downstream correction (provably, not by coincidence — see the class doc
+comment). A FIFO receipt real history actually drew from is refused: that needs real downstream
+consumption re-linking, not just a converged average. Issue/transfer execution, authority-only
+rerouting and the multi-owner correction package remain unbuilt. Supported history and permission
+details live in
 [stock-recalculation.md](../../../../docs/domain/stock-recalculation.md).
 
 ## Events

@@ -34,35 +34,47 @@ use Illuminate\Support\Facades\DB;
  * mutated — this is a new, additional move), then reconciles live valuation
  * state to the exact approved counterfactual.
  *
- * Two supported methods, two very different amounts of work, because a
- * SPECIFIC layer group is scoped to one exact serial: nothing could have
- * consumed a unit before it was received, so a new serial's layer group is
- * always empty beforehand and never touched by a later event — its
- * valuation_adjustment is provably always exactly the receipt's own value
- * (see RequestStockRecalculationTest::
- * test_specific_items_new_serial_computes_its_own_value_with_no_repricing_of_other_stock).
- * Execution there is a plain layer insert with a residual that's always
- * zero — the `$residualAdjustment->isZero()` guard below is a defensive
- * assertion of that fact, not a load-bearing branch. AVCO is genuinely
- * different work: its pool is a running average, not per-entry history, so
- * execution converges `AvcoPoolManager` state to the approved
- * `counterfactual_*` figures via one additional VALUATION_ADJUSTMENT entry.
+ * AVCO's pool is a running average, not per-entry history, so execution
+ * converges `AvcoPoolManager` state to the approved `counterfactual_*`
+ * figures via one additional VALUATION_ADJUSTMENT entry.
  *
- * FIFO execution remains unbuilt — unlike SPECIFIC, a FIFO layer group can
- * hold many layers, and a backdated receipt's earlier `received_at` can
- * shift which existing layer a later issue would have drawn from in
- * oldest-first order. Fixing that needs correcting the immutable
- * `stock_layer_consumptions` ledger itself (paired reversal/re-consumption
- * entries, cascading through any transfer that relayed a shifted layer
- * onward) — real downstream re-linking, not just a converged average — and
- * is deferred rather than guessed at. Issue/transfer execution remains
- * unbuilt too, the same honesty this ADR slice has used throughout; see
- * docs/domain/stock-recalculation.md. The append-only correction package
- * this produces (RecalculationExecution) is Inventory-only for the same
- * reason as everywhere else in this slice: Sales/Job Execution/Accounting,
- * the other potential owners of a correction delta, don't exist yet, so
- * every executable case today is "remaining stock," the one slice ADR 0040
- * lets Inventory own outright.
+ * SPECIFIC and FIFO share a layer-based path with no pool, gated by whether
+ * `$residualAdjustment` (valuation_adjustment minus the receipt's own value)
+ * is zero — a *structural* fact, not a value coincidence gone unchecked:
+ * - SPECIFIC's layer group is scoped to one exact serial. Nothing could have
+ *   consumed a unit before it was received, so a new serial's group is
+ *   always empty beforehand and untouched by any later event — its
+ *   valuation_adjustment is provably always exactly the receipt's own value
+ *   (see RequestStockRecalculationTest::
+ *   test_specific_items_new_serial_computes_its_own_value_with_no_repricing_of_other_stock).
+ *   The zero-residual guard below is a defensive assertion of that proof,
+ *   never expected to actually trip.
+ * - FIFO's layer group can hold many layers, and a backdated receipt's
+ *   earlier received_at *can* shift which existing layer a later issue drew
+ *   from in oldest-first order — but only when an existing older layer runs
+ *   short before that later event, forcing allocation to reach past it into
+ *   the new one. If every existing older layer already had enough, the new
+ *   layer is provably never touched by LayerAllocator::allocate() during
+ *   replay (removing an item a priority queue never selects doesn't change
+ *   what it selects for anyone else), and valuation_adjustment again equals
+ *   exactly the receipt's own value. Genuine reallocation always costs
+ *   differently per layer wherever it matters (same layer group, so same
+ *   batch; a same-cost coincidence swaps two economically identical layers,
+ *   observable nowhere given QA-gated history is already refused upstream
+ *   by LayerCounterfactualReplayer::guardHistory()) — so a zero residual
+ *   here is genuinely proof of "untouched," not luck. A nonzero residual
+ *   means real reallocation is needed: correcting the immutable
+ *   stock_layer_consumptions ledger itself (paired reversal/re-consumption
+ *   entries, cascading through any transfer that relayed a shifted layer
+ *   onward), which this Action refuses rather than guesses at.
+ *
+ * Issue/transfer execution remains unbuilt, the same honesty this ADR slice
+ * has used throughout; see docs/domain/stock-recalculation.md. The
+ * append-only correction package this produces (RecalculationExecution) is
+ * Inventory-only for the same reason as everywhere else in this slice:
+ * Sales/Job Execution/Accounting, the other potential owners of a
+ * correction delta, don't exist yet, so every executable case today is
+ * "remaining stock," the one slice ADR 0040 lets Inventory own outright.
  *
  * Execution authority is deliberately not required to be a person distinct
  * from the requester or approvers — ADR 0040 only mandates that separation
@@ -102,8 +114,8 @@ final class ExecuteRecalculation
                 throw new DomainInvariantException('Execution is only implemented for backdated receipts so far.', 'movement_kind');
             }
             $item = Item::query()->findOrFail($request->item_id);
-            if (! in_array($item->valuation_method, [ValuationMethod::Avco, ValuationMethod::Specific], true)) {
-                throw new DomainInvariantException('Execution is only implemented for AVCO and SPECIFIC items so far.', 'item_id');
+            if (! in_array($item->valuation_method, [ValuationMethod::Avco, ValuationMethod::Specific, ValuationMethod::Fifo], true)) {
+                throw new DomainInvariantException('Execution is only implemented for AVCO, FIFO and SPECIFIC items so far.', 'item_id');
             }
             if (! $version->hasUnexpiredFullApproval()) {
                 throw new DomainInvariantException('Execution requires every required approval to be present and currently unexpired.', 'impact_version_id');
@@ -172,9 +184,10 @@ final class ExecuteRecalculation
             $residualAdjustment = BigDecimal::of($attributes['valuation_adjustment'])->minus($receiptBaseAmount)->toScale(4, RoundingMode::HALF_UP);
             if (! $residualAdjustment->isZero()) {
                 if ($pool === null) {
-                    // Provably unreachable for SPECIFIC today — see the class
-                    // doc comment — but refusing beats silently dropping a
-                    // downstream correction this method can't yet apply.
+                    // Provably unreachable for SPECIFIC (see the class doc
+                    // comment); the expected refusal path for FIFO's genuine
+                    // layer-reallocation case, which needs real downstream
+                    // consumption re-linking this Action doesn't build yet.
                     throw new DomainInvariantException('This request needs a downstream valuation correction execution does not support for this method yet.', 'item_id');
                 }
                 $move->valuationEntries()->create([
