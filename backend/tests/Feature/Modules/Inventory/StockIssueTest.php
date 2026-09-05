@@ -9,6 +9,7 @@ use App\Modules\Accounting\Models\ChartOfAccount;
 use App\Modules\Inventory\Actions\CreateWarehouse;
 use App\Modules\Inventory\Actions\DecideNegativeStockOverride;
 use App\Modules\Inventory\Actions\PostInventoryMovement;
+use App\Modules\Inventory\Actions\Recalculation\LayerCounterfactualReplayer;
 use App\Modules\Inventory\Actions\RequestNegativeStockOverride;
 use App\Modules\Inventory\Models\AvcoPool;
 use App\Modules\Inventory\Models\Location;
@@ -22,6 +23,7 @@ use App\Modules\Inventory\Support\ValuationMethod;
 use App\Modules\Purchasing\Actions\IssuePurchaseOrder;
 use App\Modules\Purchasing\Models\GoodsReceiptLine;
 use App\Modules\Purchasing\Models\PurchaseOrderLine;
+use Brick\Math\BigDecimal;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\Feature\Modules\Purchasing\PurchaseOrderFoundationTest;
@@ -378,6 +380,19 @@ class StockIssueTest extends PurchaseOrderFoundationTest
         $this->assertSame(
             ['-30.0000', '30.0000'],
             $transfer->valuationEntries()->orderBy('id')->pluck('base_amount')->all(),
+        );
+    }
+
+    public function test_recalculation_refuses_current_qa_totals_as_historical_availability(): void
+    {
+        [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Fifo, qaRequired: true);
+        $locationId = $this->locationId();
+        $this->postReceipt($order->lines()->sole()->id, $item->id, $uom->id, $locationId, '4.0000', '10.0000');
+        $this->expectException(DomainInvariantException::class);
+        $this->expectExceptionMessage('Historical QA availability');
+        app(LayerCounterfactualReplayer::class)->replay(
+            $item, Location::query()->findOrFail($locationId), null, null,
+            BigDecimal::of('1'), BigDecimal::of('10'), now()->subDay(),
         );
     }
 

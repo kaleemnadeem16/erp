@@ -14,9 +14,8 @@ use Carbon\CarbonInterface;
 /**
  * ADR 0040 / docs/domain/stock-recalculation.md "Review, staleness and risk
  * routing" — classifies one impact version as NORMAL_RISK or HIGH_RISK.
- * Called once per version (initial and every replacement), never re-evaluated
- * afterwards: risk_classification is frozen at creation the same as every
- * other economic column on RecalculationImpactVersion.
+ * Re-evaluated on decision; changed risk requires a replacement immutable
+ * version and fresh review. Stored classifications are never rewritten.
  *
  * Two of the ADR's named hard triggers are implemented here, both readable
  * from state that already exists in this codebase:
@@ -37,8 +36,7 @@ use Carbon\CarbonInterface;
  *    no company setting that can turn a hard trigger off.
  *
  * Two other named hard triggers are not implemented — there is nothing in
- * this codebase yet for them to observe, the same "not reachable yet" honesty
- * STATUS.md already applies to the regeneration cap:
+ * this codebase yet for them to observe, because the underlying downstream models/self-review policy do not exist:
  *
  *  - "Qualifying finalised downstream effects" (e.g. an already-invoiced sale
  *    or a closed job cost consuming the affected stock) — no invoicing or
@@ -70,6 +68,7 @@ final class RecalculationRiskClassifier
             ->where('company_id', $company->getKey())
             ->where('status', PeriodStatus::Closed)
             ->whereDate('ends_on', '>=', $movedAt)
+            ->whereDate('starts_on', '<=', now())
             ->exists();
     }
 }

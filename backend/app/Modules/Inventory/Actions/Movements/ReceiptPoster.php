@@ -10,6 +10,7 @@ use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Models\Location;
 use App\Modules\Inventory\Models\StockBatch;
 use App\Modules\Inventory\Models\StockLayer;
+use App\Modules\Inventory\Models\StockLayerConsumption;
 use App\Modules\Inventory\Models\StockMove;
 use App\Modules\Inventory\Support\ValuationMethod;
 use Brick\Math\BigDecimal;
@@ -187,6 +188,12 @@ final class ReceiptPoster
         ]);
 
         $layer->update(['qty_remaining' => (string) BigDecimal::of($layer->qty_remaining)->minus($qty)]);
+        if ($item->valuation_method !== ValuationMethod::Avco) {
+            StockLayerConsumption::query()->create([
+                'stock_move_id' => $move->id, 'stock_layer_id' => $layer->id,
+                'qty_consumed' => (string) $qty, 'unit_cost' => $layer->base_unit_cost, 'purpose' => 'REVERSAL',
+            ]);
+        }
 
         if ($pool !== null) {
             $newQty = BigDecimal::of($pool->qty_on_hand)->minus($qty);

@@ -228,6 +228,13 @@ given issue/transfer draws from, but that decision itself wasn't persisted, only
 for FIFO/SPECIFIC by permanently linking each allocation to the move it served — see
 `LayerAllocator::recordConsumption()`.
 
+Receipt reversal now records an immutable `stock_layer_consumptions` row with
+`purpose = REVERSAL`; ordinary issues/transfers default to `ALLOCATION`. This is FIFO/SPECIFIC
+only and preserves the exact reversed layer for historical replay. The ledger is protected
+against SQL updates/deletes as well as model mutations. See
+[stock-recalculation.md](stock-recalculation.md#replay-integrity-and-regeneration-review) for
+history completeness checks and the additional review schema.
+
 ### GL posting
 
 Phase 2 does not post to the GL. A `stock_move` writes a `stock_valuation_entries` row (this

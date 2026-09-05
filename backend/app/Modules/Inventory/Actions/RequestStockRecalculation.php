@@ -8,17 +8,17 @@ use App\Exceptions\DomainInvariantException;
 use App\Models\Company;
 use App\Models\User;
 use App\Modules\Inventory\Actions\Backdating\BackdatingHorizonEvaluator;
+use App\Modules\Inventory\Actions\Movements\StockIdentity;
 use App\Modules\Inventory\Actions\Recalculation\AvcoCounterfactualReplayer;
 use App\Modules\Inventory\Actions\Recalculation\ImpactPreview;
 use App\Modules\Inventory\Actions\Recalculation\LayerCounterfactualReplayer;
+use App\Modules\Inventory\Actions\Recalculation\RecalculationImpactBuilder;
 use App\Modules\Inventory\Actions\Recalculation\RecalculationRiskClassifier;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Models\Location;
-use App\Modules\Inventory\Models\RecalculationImpactVersion;
 use App\Modules\Inventory\Models\RecalculationRequest;
 use App\Modules\Inventory\Models\StockBatch;
 use App\Modules\Inventory\Models\StockMove;
-use App\Modules\Inventory\Support\ValuationMethod;
 use App\Support\CompanyContext;
 use Brick\Math\BigDecimal;
 use Illuminate\Support\Carbon;
@@ -34,7 +34,7 @@ use Illuminate\Support\Facades\DB;
  *
  * AVCO uses AvcoCounterfactualReplayer (the value ledger); FIFO/SPECIFIC uses
  * LayerCounterfactualReplayer (the layer-consumption ledger) — both produce
- * the same ImpactPreview shape, so this Action only picks which one to call.
+ * the same ImpactPreview shape through the shared RecalculationImpactBuilder.
  * The resulting preview is classified NORMAL_RISK/HIGH_RISK by
  * RecalculationRiskClassifier before the first impact version is created —
  * see DecideRecalculationApproval for how that classification determines the
@@ -44,9 +44,8 @@ final class RequestStockRecalculation
 {
     public function __construct(
         private readonly BackdatingHorizonEvaluator $horizon,
-        private readonly AvcoCounterfactualReplayer $avcoReplayer,
-        private readonly LayerCounterfactualReplayer $layerReplayer,
-        private readonly RecalculationRiskClassifier $riskClassifier,
+        private readonly RecalculationImpactBuilder $impacts,
+        private readonly StockIdentity $identity,
     ) {}
 
     /** @param array{item_id:int, location_id:int, batch_no?:string|null, serial_no?:string|null, qty:string, unit_cost:string, currency_id:int, fx_rate:string, base_unit_cost:string, moved_at:mixed, source_type:string, source_id:int} $input */
@@ -68,7 +67,7 @@ final class RequestStockRecalculation
 
             $item = Item::query()->findOrFail($input['item_id']);
             $location = Location::query()->findOrFail($input['location_id']);
-            $batchNo = isset($input['batch_no']) ? trim((string) $input['batch_no']) : null;
+            $batchNo = isset($input['batch_no']) ? strtolower(trim((string) $input['batch_no'])) : null;
             $batch = null;
             if ($batchNo !== null && $batchNo !== '') {
                 $batch = StockBatch::query()->where('item_id', $item->id)->where('code', $batchNo)->first();
@@ -91,8 +90,10 @@ final class RequestStockRecalculation
 
             $qty = BigDecimal::of($input['qty']);
             $baseUnitCost = BigDecimal::of($input['base_unit_cost']);
-            $preview = $this->replay($item, $location, $batch, $serialNo, $qty, $baseUnitCost, $movedAt);
-            $risk = $this->riskClassifier->classify($company, $movedAt, $preview->valuationAdjustment());
+            $this->identity->validateReceiptTracking($item, $qty, $batchNo === '' ? null : $batchNo, $serialNo);
+            if ($qty->isLessThanOrEqualTo(0) || $baseUnitCost->isLessThanOrEqualTo(0) || ! $item->is_stocked) {
+                throw new DomainInvariantException('Recalculation requires a stocked item and positive receipt quantity and base cost.', 'qty');
+            }
 
             $request = RecalculationRequest::query()->create([
                 'item_id' => $item->id, 'location_id' => $location->id, 'batch_id' => $batch?->id, 'serial_no' => $serialNo,
@@ -104,26 +105,9 @@ final class RequestStockRecalculation
                 'review_due_at' => now()->addHours($company->recalculation_review_sla_hours),
             ]);
 
-            RecalculationImpactVersion::query()->create([
-                'recalculation_request_id' => $request->id, 'version_no' => 1, 'avco_pool_id' => $preview->pool?->id,
-                'original_qty_on_hand' => (string) $preview->originalQtyOnHand,
-                'original_inventory_value' => (string) $preview->originalInventoryValue,
-                'original_avg_unit_cost' => (string) $preview->originalAvgUnitCost,
-                'counterfactual_qty_on_hand' => (string) $preview->counterfactualQtyOnHand,
-                'counterfactual_inventory_value' => (string) $preview->counterfactualInventoryValue,
-                'counterfactual_avg_unit_cost' => (string) $preview->counterfactualAvgUnitCost,
-                'valuation_adjustment' => (string) $preview->valuationAdjustment(),
-                'computed_at' => now(), 'is_stale' => false, 'risk_classification' => $risk,
-            ]);
+            $this->impacts->append($request, $this->impacts->attributes($request, $company));
 
             return $request->load('impactVersions');
         });
-    }
-
-    private function replay(Item $item, Location $location, ?StockBatch $batch, ?string $serialNo, BigDecimal $qty, BigDecimal $baseUnitCost, Carbon $movedAt): ImpactPreview
-    {
-        return $item->valuation_method === ValuationMethod::Avco
-            ? $this->avcoReplayer->replay($item, $location, $batch, $qty, $baseUnitCost, $movedAt)
-            : $this->layerReplayer->replay($item, $location, $batch, $serialNo, $qty, $baseUnitCost, $movedAt);
     }
 }

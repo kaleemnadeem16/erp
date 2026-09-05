@@ -32,7 +32,8 @@ across **all three valuation methods**:
   window, or was already non-positive at the proposed date — faithfully replaying
   `ShortageSettler`'s provisional-cost rules in a parallel pure form is not yet built.
 - `stock_layer_consumptions` — permanently links each `LayerAllocator::allocate()` result to the
-  move it served (an issue, or a transfer's source side), FIFO/SPECIFIC only — the fact
+  move it served (an issue, a transfer's source side, or an exact-layer receipt reversal),
+  FIFO/SPECIFIC only — the fact
   `PostInventoryMovement` previously discarded once `qty_remaining` was decremented. AVCO writes
   none; its replay works from the value ledger instead.
 - `LayerCounterfactualReplayer` — the FIFO/SPECIFIC counterpart, built on that ledger. One class
@@ -76,22 +77,79 @@ across **all three valuation methods**:
   is terminal — no further decisions are accepted from anyone once one lands. Only the approval
   that brings a version's approved count up to its required number carries `expires_at`:
   approved-execution authority is a property of the version being fully approved, not of any one
-  decision, so a `HIGH_RISK` version's first approval alone grants no execution window. A DB
+  decision, so a `HIGH_RISK` version's first approval alone grants no execution window. The
+  second decision also requires `inventory.recalculation.approve-high-risk`, in addition to
+  ordinary `inventory.recalculation.approve` authority. A DB
   trigger (`guard_recalculation_approval_insert`) enforces the same count-and-terminal-rejection
   invariants independently of the Action, the same defense-in-depth style as the immutability
   triggers elsewhere in this workflow.
 
 **Not yet built**: issue/transfer backdating (receipts only so far, for every method),
 authority-only approval rerouting (a changed approver's authority, not the economics, requiring
-reroute rather than a fresh impact version), the regeneration cap (not reachable yet — see below),
+reroute rather than a fresh impact version),
 execution of an approved version, and the append-only correction package. No HTTP/API layer exists
 for any of this, matching the negative-stock workflow, which doesn't have one either.
 
-A note on the regeneration cap: it counts *post-approval* material invalidations. In the design
-above, revalidation happens synchronously as a precondition of deciding, so a version can only be
-superseded *before* it has a decision — the scenario the cap exists to bound (an approved version
-sitting unexecuted while new conflicting movements post) can't occur without execution existing,
-so there is nothing to count yet.
+## Replay integrity and regeneration review
+
+Reversal consumption rows carry `purpose = REVERSAL`: replay removes the exact original layer,
+not whatever FIFO would allocate that day. Arrival comes from the layer's source `StockMove`;
+`received_at` remains its FIFO age. Ties use movement id, then layer age/id for allocation.
+The allocator must cover the entire historical draw; partial allocation cannot silently pass.
+
+Before replay, every layer must reconcile `qty_received - SUM(qty_consumed) = qty_remaining`.
+Older stock with missing ledger entries, including historical reversals, is refused until its
+history is repaired through a separately controlled process; no guessed backfill is performed.
+An open shortage or a shortage created/settled in the replay window is refused, including a
+shortage created before the proposed receipt. Older settlement deductions without consumption
+records also fail reconciliation. QA-controlled receipt histories are refused: today's QA
+release totals cannot establish availability on a historical date. These are explicit unsupported
+cases, not previews reporting invented quantity or value.
+
+Initial calculation, decision revalidation and manual resumption share one impact builder.
+It locks the physical location then the AVCO pool (when present), matching posting lock order.
+Revalidation compares all stored economic figures, current risk and an immutable-history/period
+fingerprint, rather than net adjustment alone. Closing a period or changing stock history can
+therefore require fresh review even when the net adjustment is unchanged. Legacy versions lack
+a fingerprint and require regeneration on their next decision. Stored versions remain immutable.
+The database also serialises approval inserts and refuses stale-version or requester approvals;
+the consumption ledger is immutable even through raw SQL.
+
+The provisional regeneration interval is **three post-approval material invalidations**.
+Pre-approval replacements count zero. The count is derived from stale versions with at least one
+`APPROVED` decision, so manual review never resets it. At three, automatic replacement stops with
+`PRIORITY_REVIEW`; after manual resumption, the next three require `HIGHER_SEVERITY`, as do further
+cap hits. A paused request has no current executable impact; `RegenerationLimit::pending()`
+exposes its stale version, cumulative count and escalation for future API/UI consumers.
+
+`ResumeRecalculationRegeneration` requires an independent actor with
+`inventory.recalculation.review-regeneration`, mandatory notes and, for repeated cap hits,
+`inventory.recalculation.approve-high-risk`. It appends an immutable manual coordination record
+and a freshly computed, unapproved impact atomically. Identical retries return the same
+replacement. This is not approval, execution or a reset of the historical invalidation count.
+
+Additive schema (annotated pseudo-DDL):
+
+```sql
+stock_layer_consumptions: purpose varchar NOT NULL DEFAULT 'ALLOCATION'
+  CHECK purpose IN ('ALLOCATION', 'REVERSAL'); -- exact-layer reversal versus FIFO draw
+recalculation_impact_versions: dependency_fingerprint varchar(64) NULL;
+  -- NULL only for older versions; frozen with the other impact facts
+recalculation_regeneration_reviews (
+  id bigint PK, company_id bigint NOT NULL,
+  impact_version_id bigint NOT NULL, reviewed_by bigint NOT NULL,
+  invalidation_count integer NOT NULL, escalation varchar NOT NULL,
+  notes text NOT NULL, reviewed_at timestamptz NOT NULL,
+  created_at timestamp, updated_at timestamp,
+  UNIQUE (company_id, id), UNIQUE (company_id, impact_version_id)
+  -- composite tenant FKs to impact versions/users; all rows immutable
+);
+```
+
+Rejected shortcuts: treating FIFO age as arrival time; guessing missing depletion records;
+using today's QA releases for past allocation; treating equal net money as identical impact;
+and resetting the invalidation count after manual review. Each loses facts needed for safe replay
+or permits repeated approval churn without escalation.
 
 ## Live backdating
 

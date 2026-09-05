@@ -7,20 +7,14 @@ namespace App\Modules\Inventory\Actions;
 use App\Exceptions\DomainInvariantException;
 use App\Models\Company;
 use App\Models\User;
-use App\Modules\Inventory\Actions\Recalculation\AvcoCounterfactualReplayer;
-use App\Modules\Inventory\Actions\Recalculation\ImpactPreview;
-use App\Modules\Inventory\Actions\Recalculation\LayerCounterfactualReplayer;
+use App\Modules\Inventory\Actions\Recalculation\RecalculationImpactBuilder;
 use App\Modules\Inventory\Actions\Recalculation\RecalculationRiskClassifier;
-use App\Modules\Inventory\Models\Item;
-use App\Modules\Inventory\Models\Location;
+use App\Modules\Inventory\Actions\Recalculation\RegenerationLimit;
 use App\Modules\Inventory\Models\RecalculationApproval;
 use App\Modules\Inventory\Models\RecalculationImpactVersion;
 use App\Modules\Inventory\Models\RecalculationRequest;
-use App\Modules\Inventory\Models\StockBatch;
 use App\Modules\Inventory\Support\RecalculationApprovalDecision;
-use App\Modules\Inventory\Support\ValuationMethod;
 use App\Support\CompanyContext;
-use Brick\Math\BigDecimal;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -29,9 +23,8 @@ use Illuminate\Support\Facades\DB;
  * small-company self-review exception: that's Q13's negative-stock immediate
  * review only, not this Q14 approval). Revalidates by re-running the replay
  * as a precondition of deciding: if the ledger changed since this version was
- * computed, the version is marked stale and a replacement is appended under
- * the same request, requiring fresh review — deciding never proceeds against
- * numbers that are no longer accurate.
+ * computed, the version is marked stale. A replacement requires fresh review;
+ * at the regeneration cap, replacement instead waits for manual coordination.
  *
  * A version's own risk_classification (set once, at creation, by
  * RecalculationRiskClassifier) determines how many independent approvers it
@@ -50,9 +43,8 @@ use Illuminate\Support\Facades\DB;
 final class DecideRecalculationApproval
 {
     public function __construct(
-        private readonly AvcoCounterfactualReplayer $avcoReplayer,
-        private readonly LayerCounterfactualReplayer $layerReplayer,
-        private readonly RecalculationRiskClassifier $riskClassifier,
+        private readonly RecalculationImpactBuilder $impacts,
+        private readonly RegenerationLimit $limit,
     ) {}
 
     public function __invoke(RecalculationImpactVersion $version, RecalculationApprovalDecision $decision, string $notes, User $actor): RecalculationApproval
@@ -69,6 +61,7 @@ final class DecideRecalculationApproval
         // of throwing, and the actual exception is raised below, once that
         // commit has already landed.
         $outcome = DB::transaction(function () use ($version, $decision, $notes, $actor): RecalculationApproval|null {
+            $company = Company::query()->lockForUpdate()->findOrFail(app(CompanyContext::class)->id());
             $request = RecalculationRequest::query()->lockForUpdate()->findOrFail($version->recalculation_request_id);
             $version = RecalculationImpactVersion::query()->lockForUpdate()->with('approvals')->findOrFail($version->id);
             if ($version->is_stale) {
@@ -96,32 +89,22 @@ final class DecideRecalculationApproval
                 throw new DomainInvariantException('This impact version already has its required number of approvals.', 'impact_version_id');
             }
 
-            $item = Item::query()->findOrFail($request->item_id);
-            $location = Location::query()->findOrFail($request->location_id);
-            $batch = $request->batch_id === null ? null : StockBatch::query()->find($request->batch_id);
-            $fresh = $this->replay($item, $location, $batch, $request);
-            if (! $fresh->valuationAdjustment()->isEqualTo(BigDecimal::of($version->valuation_adjustment))) {
+            $attributes = $this->impacts->attributes($request, $company);
+            if (! $this->impacts->matches($version, $attributes)) {
                 $version->update(['is_stale' => true]);
-                $nextVersionNo = (int) RecalculationImpactVersion::query()->where('recalculation_request_id', $request->id)->max('version_no') + 1;
-                $company = Company::query()->findOrFail(app(CompanyContext::class)->id());
-                $risk = $this->riskClassifier->classify($company, $request->moved_at, $fresh->valuationAdjustment());
-                RecalculationImpactVersion::query()->create([
-                    'recalculation_request_id' => $request->id, 'version_no' => $nextVersionNo, 'avco_pool_id' => $fresh->pool?->id,
-                    'original_qty_on_hand' => (string) $fresh->originalQtyOnHand,
-                    'original_inventory_value' => (string) $fresh->originalInventoryValue,
-                    'original_avg_unit_cost' => (string) $fresh->originalAvgUnitCost,
-                    'counterfactual_qty_on_hand' => (string) $fresh->counterfactualQtyOnHand,
-                    'counterfactual_inventory_value' => (string) $fresh->counterfactualInventoryValue,
-                    'counterfactual_avg_unit_cost' => (string) $fresh->counterfactualAvgUnitCost,
-                    'valuation_adjustment' => (string) $fresh->valuationAdjustment(),
-                    'computed_at' => now(), 'is_stale' => false, 'risk_classification' => $risk,
-                ]);
+                if ($this->limit->pending($request) !== null) {
+                    return null;
+                }
+                $this->impacts->append($request, $attributes);
 
                 return null;
             }
 
-            $company = Company::query()->findOrFail(app(CompanyContext::class)->id());
             $approvedCountBefore = $version->approvals->filter(fn (RecalculationApproval $a): bool => $a->decision === RecalculationApprovalDecision::Approved)->count();
+            if ($version->requiredApprovalCount() === 2 && $approvedCountBefore >= 1
+                && ! $actor->can('inventory.recalculation.approve-high-risk')) {
+                throw new DomainInvariantException('The second high-risk decision requires dedicated higher-risk authority.', 'decided_by');
+            }
             $willComplete = $decision === RecalculationApprovalDecision::Approved && ($approvedCountBefore + 1) >= $version->requiredApprovalCount();
 
             return RecalculationApproval::query()->create([
@@ -132,16 +115,13 @@ final class DecideRecalculationApproval
         });
 
         if ($outcome === null) {
-            throw new DomainInvariantException('The economic impact changed since this version was computed — a new version was generated and requires fresh review.', 'impact_version_id');
+            $request = RecalculationRequest::query()->findOrFail($version->recalculation_request_id);
+            $pause = $this->limit->pending($request);
+            throw new DomainInvariantException($pause === null
+                ? 'The impact or its risk/dependencies changed — a new version requires fresh review.'
+                : 'Automatic regeneration is paused for '.$pause['escalation'].'. Manual coordination is required.', 'impact_version_id');
         }
 
         return $outcome;
-    }
-
-    private function replay(Item $item, Location $location, ?StockBatch $batch, RecalculationRequest $request): ImpactPreview
-    {
-        return $item->valuation_method === ValuationMethod::Avco
-            ? $this->avcoReplayer->replay($item, $location, $batch, BigDecimal::of($request->qty), BigDecimal::of($request->base_unit_cost), $request->moved_at)
-            : $this->layerReplayer->replay($item, $location, $batch, $request->serial_no, BigDecimal::of($request->qty), BigDecimal::of($request->base_unit_cost), $request->moved_at);
     }
 }

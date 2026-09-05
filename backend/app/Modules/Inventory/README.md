@@ -82,6 +82,17 @@ rate is final at post time, never later repaired (ADR 0045). `StockConservationP
 fuzzes the whole engine and asserts feed/pool/layer/shortage agreement after every random
 movement.
 
+## Recalculation review
+
+Inventory also owns the backdated-receipt request, immutable impact/approval records,
+layer-consumption ledger and regeneration coordination reviews. `RequestStockRecalculation`
+builds the preview; `DecideRecalculationApproval` revalidates economics, dependencies and risk,
+requiring dedicated higher-risk authority for a second approval. Three post-approval material
+invalidations pause automatic regeneration. `ResumeRecalculationRegeneration` records manual
+coordination and appends an unapproved replacement without resetting history. Execution and
+correction packages remain unbuilt. Supported history and permission details live in
+[stock-recalculation.md](../../../../docs/domain/stock-recalculation.md).
+
 ## Events
 
 No events emitted yet.

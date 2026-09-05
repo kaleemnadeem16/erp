@@ -8,6 +8,7 @@ use App\Exceptions\DomainInvariantException;
 use App\Models\Model;
 use App\Support\Concerns\BelongsToCompany;
 use App\Support\Concerns\GuardsRelatedCompanyScope;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class NegativeStockSettlement extends Model
 {
@@ -24,6 +25,12 @@ class NegativeStockSettlement extends Model
     protected static function companyScopedForeignKeys(): array
     {
         return ['shortage_id' => NegativeStockShortage::class, 'inbound_move_id' => StockMove::class];
+    }
+
+    /** @return BelongsTo<StockMove, $this> */
+    public function inboundMove(): BelongsTo
+    {
+        return $this->belongsTo(StockMove::class, 'inbound_move_id');
     }
 
     protected function casts(): array

@@ -41,6 +41,7 @@ class DecideRecalculationApprovalTest extends TestCase
         app(PermissionRegistrar::class)->setPermissionsTeamId(1);
         Permission::findOrCreate('inventory.recalculation.request');
         Permission::findOrCreate('inventory.recalculation.approve');
+        Permission::findOrCreate('inventory.recalculation.approve-high-risk');
         Company::query()->findOrFail(1)->update([
             'authorised_forward_recalculation_enabled' => true,
             'backdating_horizon_mode' => 'POSTING_FLOOR',
@@ -246,7 +247,7 @@ class DecideRecalculationApprovalTest extends TestCase
         $first = User::factory()->create();
         $first->givePermissionTo('inventory.recalculation.approve');
         $second = User::factory()->create();
-        $second->givePermissionTo('inventory.recalculation.approve');
+        $second->givePermissionTo(['inventory.recalculation.approve', 'inventory.recalculation.approve-high-risk']);
 
         $firstApproval = app(DecideRecalculationApproval::class)($version, RecalculationApprovalDecision::Approved, 'first check', $first);
         $this->assertNull($firstApproval->expires_at);
@@ -279,7 +280,7 @@ class DecideRecalculationApprovalTest extends TestCase
         $first = User::factory()->create();
         $first->givePermissionTo('inventory.recalculation.approve');
         $second = User::factory()->create();
-        $second->givePermissionTo('inventory.recalculation.approve');
+        $second->givePermissionTo(['inventory.recalculation.approve', 'inventory.recalculation.approve-high-risk']);
         $third = User::factory()->create();
         $third->givePermissionTo('inventory.recalculation.approve');
         app(DecideRecalculationApproval::class)($version, RecalculationApprovalDecision::Approved, 'first check', $first);
@@ -296,7 +297,7 @@ class DecideRecalculationApprovalTest extends TestCase
         $first = User::factory()->create();
         $first->givePermissionTo('inventory.recalculation.approve');
         $second = User::factory()->create();
-        $second->givePermissionTo('inventory.recalculation.approve');
+        $second->givePermissionTo(['inventory.recalculation.approve', 'inventory.recalculation.approve-high-risk']);
         $third = User::factory()->create();
         $third->givePermissionTo('inventory.recalculation.approve');
         app(DecideRecalculationApproval::class)($version, RecalculationApprovalDecision::Approved, 'first check', $first);

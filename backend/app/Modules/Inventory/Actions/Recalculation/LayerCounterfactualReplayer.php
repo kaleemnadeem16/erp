@@ -11,6 +11,9 @@ use App\Modules\Inventory\Models\Location;
 use App\Modules\Inventory\Models\NegativeStockShortage;
 use App\Modules\Inventory\Models\StockBatch;
 use App\Modules\Inventory\Models\StockLayer;
+use App\Modules\Inventory\Models\StockMove;
+use App\Modules\Purchasing\Models\GoodsReceiptLine;
+use App\Support\CompanyContext;
 use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
 use Carbon\CarbonInterface;
@@ -19,28 +22,9 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Computes what a FIFO or SPECIFIC layer group's remaining value would be if a
- * proposed receipt had been posted at its true chronological position (T) —
- * see docs/domain/stock-recalculation.md. Pure/read-only: no locks, no writes,
- * no layer is ever saved. One class covers both methods: SPECIFIC is FIFO
- * with exactly one always-available layer of qty 1, so a brand-new serial
- * naturally degenerates to zero impact — nothing else can reference a serial
- * that didn't exist yet — with no special-cased branch needed.
- *
- * Reuses the real, unmodified LayerAllocator::allocate() to re-derive which
- * layer(s) each later issue/transfer-out would have drawn from — the FIFO
- * analogue of AvcoCounterfactualReplayer reusing AvcoPoolManager's averaging
- * formula: one selection algorithm, not two that can quietly drift apart.
- *
- * Deliberately refuses (DomainInvariantException) rather than guess whenever
- * the group had any negative-stock shortage activity in the replay window —
- * same boundary AvcoCounterfactualReplayer draws, same reasoning.
- *
- * A transfer's destination side is out of scope: it's treated as an ordinary
- * outbound consumption from this group (stock_layer_consumptions already
- * records it that way), with no cascade into the destination location's own
- * subsequent history — the same single-pool boundary the AVCO replayer draws
- * for a transfer's other side.
+ * Read-only FIFO/SPECIFIC replay, internal to recalculation Actions. Movement
+ * time controls physical availability; received_at controls FIFO age. Refuses
+ * incomplete ledgers and QA/shortage histories whose rules cannot be replayed.
  */
 final class LayerCounterfactualReplayer
 {
@@ -55,12 +39,14 @@ final class LayerCounterfactualReplayer
         BigDecimal $proposedUnitCost,
         CarbonInterface $movedAt,
     ): ImpactPreview {
-        if ($this->hasShortageCreatedAfter($item, $location, $batch, $movedAt)) {
+        if ($this->hasUnsupportedShortage($item, $location, $batch, $movedAt)) {
             throw new DomainInvariantException("This location had negative-stock shortage activity after the proposed date — recalculation isn't yet supported for this case.", 'moved_at');
         }
 
         $allLayers = $this->groupLayers($item, $location, $batch, $serialNo);
-        $preT = $allLayers->filter(fn (StockLayer $layer): bool => $layer->received_at->lte($movedAt))->values();
+        $arrivals = $this->arrivals($allLayers);
+        $this->guardHistory($allLayers);
+        $preT = $allLayers->filter(fn (StockLayer $layer): bool => $arrivals[$layer->id]['at']->lte($movedAt))->values();
 
         $consumedByLayerAtT = $this->consumedUpTo($preT->pluck('id'), $movedAt);
         $queue = $preT->map(function (StockLayer $layer) use ($consumedByLayerAtT): StockLayer {
@@ -78,9 +64,10 @@ final class LayerCounterfactualReplayer
             'base_unit_cost' => (string) $proposedUnitCost, 'received_at' => $movedAt,
             'batch_id' => $batch?->id, 'serial_no' => $serialNo,
         ]);
+        $newLayer->id = PHP_INT_MAX;
         $queue->push($newLayer);
 
-        foreach ($this->laterEvents($allLayers, $movedAt) as $event) {
+        foreach ($this->laterEvents($allLayers, $arrivals, $movedAt) as $event) {
             if ($event['type'] === 'supply') {
                 $fresh = $event['layer']->replicate();
                 $fresh->id = $event['layer']->id;
@@ -89,7 +76,22 @@ final class LayerCounterfactualReplayer
 
                 continue;
             }
+            if ($event['type'] === 'reversal') {
+                $layer = $queue->firstWhere('id', $event['layer_id']);
+                if ($layer === null || BigDecimal::of($layer->qty_remaining)->isLessThan($event['qty'])) {
+                    throw new DomainInvariantException('The counterfactual consumes stock needed by a receipt reversal.', 'moved_at');
+                }
+                $layer->qty_remaining = (string) BigDecimal::of($layer->qty_remaining)->minus($event['qty']);
+
+                continue;
+            }
+            // A transfer may arrive later while carrying an older FIFO age.
+            $queue = $queue->sortBy([['received_at', 'asc'], ['id', 'asc']])->values();
             $allocations = $this->layers->allocate($queue, $event['qty']);
+            $allocated = $allocations->reduce(fn (BigDecimal $sum, array $a): BigDecimal => $sum->plus($a['qty']), BigDecimal::zero());
+            if (! $allocated->isEqualTo($event['qty'])) {
+                throw new DomainInvariantException('The counterfactual cannot cover a historical consumption.', 'moved_at');
+            }
             foreach ($allocations as $allocation) {
                 $allocatedLayer = $allocation['layer'];
                 $allocatedLayer->qty_remaining = (string) BigDecimal::of($allocatedLayer->qty_remaining)->minus($allocation['qty']);
@@ -130,7 +132,7 @@ final class LayerCounterfactualReplayer
             return collect();
         }
 
-        return DB::table('stock_layer_consumptions')
+        return DB::table('stock_layer_consumptions')->where('stock_layer_consumptions.company_id', app(CompanyContext::class)->id())
             ->whereIn('stock_layer_id', $layerIds)
             ->join('stock_moves', 'stock_moves.id', '=', 'stock_layer_consumptions.stock_move_id')
             ->where('stock_moves.moved_at', '<=', $movedAt)
@@ -144,35 +146,73 @@ final class LayerCounterfactualReplayer
     }
 
     /**
-     * Merges two later-event sources into one chronological sequence: a
-     * post-T layer arriving (a receipt or a transfer-in — stock_layers
-     * doesn't distinguish, and neither needs to here) adds fresh supply;
-     * a later move's consumption rows in this group (an issue, or a
-     * transfer's source side) re-allocate that move's original total qty.
-     *
-     * @param  Collection<int, StockLayer>  $allLayers
-     * @return Collection<int, array{type:string, at:CarbonInterface, layer?:StockLayer, qty?:BigDecimal}>
+     * @param  Collection<int, StockLayer>  $layers
+     * @return array<int, array{at: CarbonInterface, move_id: int}>
      */
-    private function laterEvents(Collection $allLayers, CarbonInterface $movedAt): Collection
+    private function arrivals(Collection $layers): array
+    {
+        $moves = StockMove::query()->whereIn('source_type', $layers->pluck('source_type'))
+            ->whereIn('source_id', $layers->pluck('source_id'))->get()
+            ->keyBy(fn (StockMove $move): string => $move->source_type.':'.$move->source_id);
+
+        return $layers->mapWithKeys(function (StockLayer $layer) use ($moves): array {
+            $move = $moves->get($layer->source_type.':'.$layer->source_id);
+            if ($move === null) {
+                throw new DomainInvariantException('A layer has no recorded arrival movement.', 'moved_at');
+            }
+
+            return [$layer->id => ['at' => Carbon::parse($move->moved_at), 'move_id' => $move->id]];
+        })->all();
+    }
+
+    /** Refuse missing pre-ledger depletion and present-day QA masquerading as history.
+     * @param  Collection<int, StockLayer>  $layers
+     */
+    private function guardHistory(Collection $layers): void
+    {
+        $totals = DB::table('stock_layer_consumptions')->where('stock_layer_consumptions.company_id', app(CompanyContext::class)->id())->whereIn('stock_layer_id', $layers->pluck('id'))
+            ->selectRaw('stock_layer_id, SUM(qty_consumed) AS qty')->groupBy('stock_layer_id')->pluck('qty', 'stock_layer_id');
+        foreach ($layers as $layer) {
+            if (! BigDecimal::of($layer->qty_received)->minus($totals->get($layer->id, '0'))->isEqualTo($layer->qty_remaining)) {
+                throw new DomainInvariantException('Layer history is incomplete or includes shortage settlement; replay cannot reconstruct it safely.', 'moved_at');
+            }
+        }
+        $receiptIds = $layers->where('source_type', 'GOODS_RECEIPT_LINE')->pluck('source_id');
+        if (GoodsReceiptLine::query()->whereIn('id', $receiptIds)->whereHas('purchaseOrderLine', fn ($q) => $q->where('qa_required', true))->exists()) {
+            throw new DomainInvariantException('Historical QA availability is not yet supported by recalculation.', 'moved_at');
+        }
+    }
+
+    /**
+     * @param  Collection<int, StockLayer>  $allLayers
+     * @param  array<int, array{at: CarbonInterface, move_id: int}>  $arrivals
+     * @return Collection<int, array{type: string, at: CarbonInterface, move_id: int, layer?: StockLayer, layer_id?: int, qty?: BigDecimal}>
+     */
+    private function laterEvents(Collection $allLayers, array $arrivals, CarbonInterface $movedAt): Collection
     {
         $events = collect();
-        foreach ($allLayers->filter(fn (StockLayer $layer): bool => $layer->received_at->gt($movedAt)) as $layer) {
-            $events->push(['type' => 'supply', 'at' => $layer->received_at, 'layer' => $layer]);
+        foreach ($allLayers as $layer) {
+            $arrival = $arrivals[$layer->id];
+            if ($arrival['at']->gt($movedAt)) {
+                $events->push(['type' => 'supply', 'at' => $arrival['at'], 'move_id' => $arrival['move_id'], 'layer' => $layer]);
+            }
         }
-
-        $consumptionsByMove = DB::table('stock_layer_consumptions')
+        $rows = DB::table('stock_layer_consumptions')->where('stock_layer_consumptions.company_id', app(CompanyContext::class)->id())
             ->whereIn('stock_layer_id', $allLayers->pluck('id'))
             ->join('stock_moves', 'stock_moves.id', '=', 'stock_layer_consumptions.stock_move_id')
             ->where('stock_moves.moved_at', '>', $movedAt)
-            ->select('stock_layer_consumptions.qty_consumed', 'stock_moves.id as move_id', 'stock_moves.moved_at as move_moved_at')
-            ->get()
-            ->groupBy('move_id');
-        foreach ($consumptionsByMove as $rows) {
-            $qty = $rows->reduce(fn (BigDecimal $total, $row): BigDecimal => $total->plus(BigDecimal::of($row->qty_consumed)), BigDecimal::zero());
-            $events->push(['type' => 'consume', 'at' => Carbon::parse($rows->first()->move_moved_at), 'qty' => $qty]);
+            ->select('stock_layer_consumptions.*', 'stock_moves.moved_at')->get();
+        foreach ($rows->groupBy('stock_move_id') as $moveId => $consumptions) {
+            $first = $consumptions->first();
+            $events->push([
+                'type' => $first->purpose === 'REVERSAL' ? 'reversal' : 'consume',
+                'at' => Carbon::parse($first->moved_at), 'move_id' => $moveId,
+                'layer_id' => $first->stock_layer_id,
+                'qty' => $consumptions->reduce(fn (BigDecimal $sum, $row): BigDecimal => $sum->plus($row->qty_consumed), BigDecimal::zero()),
+            ]);
         }
 
-        return $events->sortBy('at')->values();
+        return $events->sortBy([['at', 'asc'], ['move_id', 'asc']])->values();
     }
 
     /**
@@ -191,15 +231,19 @@ final class LayerCounterfactualReplayer
         return [$qty, $value];
     }
 
-    private function hasShortageCreatedAfter(Item $item, Location $location, ?StockBatch $batch, CarbonInterface $movedAt): bool
+    private function hasUnsupportedShortage(Item $item, Location $location, ?StockBatch $batch, CarbonInterface $movedAt): bool
     {
         return NegativeStockShortage::query()
             ->where('item_id', $item->id)->where('location_id', $location->id)
             ->when($batch === null, fn ($query) => $query->whereNull('batch_id'), fn ($query) => $query->where('batch_id', $batch->id))
-            ->whereExists(function ($query) use ($movedAt): void {
-                $query->select(DB::raw(1))->from('stock_moves')
-                    ->whereColumn('stock_moves.id', 'negative_stock_shortages.source_move_id')
-                    ->where('stock_moves.moved_at', '>', $movedAt);
+            ->where(function ($scope) use ($movedAt): void {
+                $scope->where('qty_open', '>', 0)
+                    ->orWhereHas('settlements', fn ($q) => $q->whereHas('inboundMove', fn ($m) => $m->where('moved_at', '>=', $movedAt)))
+                    ->orWhereExists(function ($query) use ($movedAt): void {
+                        $query->select(DB::raw(1))->from('stock_moves')
+                            ->whereColumn('stock_moves.id', 'negative_stock_shortages.source_move_id')
+                            ->where('stock_moves.moved_at', '>', $movedAt);
+                    });
             })
             ->exists();
     }

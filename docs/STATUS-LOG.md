@@ -102,3 +102,5 @@ loaded routinely; read it only when you need the full narrative of a past change
 | **Goods receipt reversal** — ADR 0043's reversal contract, lock-order aligned with posting → [phase-2](phases/phase-2-purchasing-stock.md) | 2026-09-03 |
 | **Normal outbound stock issues** — AVCO/FIFO/SPECIFIC blocking-mode issues at the sole movement boundary → [stock.md](domain/stock.md) | 2026-09-03 |
 | **Negative-stock policy + override workflows** — ADR 0037 company controls, immutable request/approval/review records → [negative-stock.md](domain/negative-stock.md) | 2026-09-03 |
+| **Authorised negative posting + inbound settlement** — provisional AVCO/FIFO cost, oldest-first exact-identity settlement, append-only repairs → [negative-stock.md](domain/negative-stock.md) | 2026-09-03 |
+| **Value-conserving transfers** — same-pool neutrality, cross-pool conservation, deterministic lock order → [negative-stock.md](domain/negative-stock.md) | 2026-09-03 |
