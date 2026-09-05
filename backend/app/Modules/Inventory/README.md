@@ -90,11 +90,14 @@ builds the preview; issues/transfers reconstruct connected history, derive outbo
 include both transfer sides and onward dependencies without posting stock. See
 [stock-movement-replay.md](../../../../docs/domain/stock-movement-replay.md) for supported history.
 `DecideRecalculationApproval` revalidates economics, dependencies and risk,
-requiring dedicated higher-risk authority for a second approval. Three post-approval material
+requiring dedicated higher-risk authority for a second approval; each required approval persists
+its own expiry and supports same-actor renewal after expiry. Three post-approval material
 invalidations pause automatic regeneration. `ResumeRecalculationRegeneration` records manual
-coordination and appends an unapproved replacement without resetting history. Execution and
-correction packages remain unbuilt. Supported history and permission details live in
-[stock-recalculation.md](../../../../docs/domain/stock-recalculation.md).
+coordination and appends an unapproved replacement without resetting history.
+`ExecuteRecalculation` posts an approved AVCO receipt (the one slice covered so far) and converges
+the pool to the approved counterfactual; FIFO/SPECIFIC and issue/transfer execution, authority-only
+rerouting and the multi-owner correction package remain unbuilt. Supported history and permission
+details live in [stock-recalculation.md](../../../../docs/domain/stock-recalculation.md).
 
 ## Events
 

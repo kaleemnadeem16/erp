@@ -174,9 +174,10 @@ The order matters because later work needs stable document and stock boundaries:
 - [ ] Enforce bounded company-configurable review SLAs (72-hour default), overdue escalation that
       preserves requester/approver separation, and hard approved-execution TTLs (24-hour default)
       using persisted deadlines and trusted server time. Each required approval now persists its
-      own expiry and supports same-actor renewal after expiry
-      ([stock-recalculation.md](../domain/stock-recalculation.md)); enforcing the TTL at execution
-      time (`ALL_REQUIRED_APPROVALS_UNEXPIRED`) remains, since execution itself is unbuilt
+      own expiry and supports same-actor renewal after expiry, and `ExecuteRecalculation` enforces
+      `ALL_REQUIRED_APPROVALS_UNEXPIRED` for the one slice execution covers so far — full coverage
+      across every movement kind/method remains
+      ([stock-recalculation.md](../domain/stock-recalculation.md))
 - [ ] Implement exact semantic impact comparison, authority-only approval rerouting, per-version
       normal/high-risk classification and mandatory second independent approval for hard high-risk
       consequences per
@@ -185,11 +186,16 @@ The order matters because later work needs stable document and stock boundaries:
       actor, old/new values and timestamp without rewriting snapshotted request context/deadlines
 - [ ] Serialise overlapping recalculation execution with deterministic locks over the complete
       method-specific replay closure, count only post-approval material invalidations toward the
-      regeneration cap, and escalate repeated cap hits without resetting the counter
+      regeneration cap, and escalate repeated cap hits without resetting the counter.
+      `ExecuteRecalculation` does this for AVCO receipts (locks pool+location, revalidates before
+      posting); FIFO/SPECIFIC and issue/transfer execution remain
 - [ ] Build idempotent append-only correction packages preserving exact approved deltas, historical
       FX bases, deterministic downstream allocation, explicit pending owners and zero-residual
       reconciliation per
-      [ADR 0040](../decisions/0040-control-backdated-stock-recalculation-and-corrections.md)
+      [ADR 0040](../decisions/0040-control-backdated-stock-recalculation-and-corrections.md).
+      `RecalculationExecution` is the idempotent, append-only Inventory-owned slice
+      ([stock-recalculation.md](../domain/stock-recalculation.md)); cross-module allocation,
+      pending owners and reconciliation need Sales/Job Execution/Accounting, which don't exist yet
 
 ### Inventory cutover foundation
 

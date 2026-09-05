@@ -96,6 +96,22 @@ class RecalculationImpactVersion extends Model
     }
 
     /**
+     * Each distinct approver's most recent APPROVED decision — a renewal
+     * appends a fresh row rather than reviving the old one, so this is the
+     * row that speaks for that approver's slot now. Rejection is excluded:
+     * it's terminal and handled separately by isRejected().
+     *
+     * @return Collection<int, RecalculationApproval>
+     */
+    public function currentApprovalsByActor(): Collection
+    {
+        return $this->approvals
+            ->filter(fn (RecalculationApproval $approval): bool => $approval->decision === RecalculationApprovalDecision::Approved)
+            ->groupBy('decided_by')
+            ->map(fn (Collection $decisions): RecalculationApproval => $decisions->sortByDesc('id')->first());
+    }
+
+    /**
      * Distinct approvers currently holding an APPROVED decision, regardless
      * of expiry — a filled slot stays filled even once its grant lapses.
      * Renewal (the same approver deciding again after expiry) reuses the
@@ -105,14 +121,27 @@ class RecalculationImpactVersion extends Model
      */
     public function approvedActorIds(): Collection
     {
-        return $this->approvals
-            ->filter(fn (RecalculationApproval $approval): bool => $approval->decision === RecalculationApprovalDecision::Approved)
-            ->pluck('decided_by')->unique();
+        return $this->currentApprovalsByActor()->keys();
     }
 
     public function isFullyApproved(): bool
     {
         return $this->approvedActorIds()->count() >= $this->requiredApprovalCount();
+    }
+
+    /**
+     * ADR 0040 "Approved execution lifetime": ALL_REQUIRED_APPROVALS_PRESENT
+     * and ALL_REQUIRED_APPROVALS_UNEXPIRED. Unlike isFullyApproved() (a
+     * historical/structural fact that survives expiry), this asks whether
+     * execution could proceed *right now* — every required slot filled, and
+     * every slot-holder's most recent decision still live.
+     */
+    public function hasUnexpiredFullApproval(): bool
+    {
+        $current = $this->currentApprovalsByActor();
+
+        return $current->count() >= $this->requiredApprovalCount()
+            && $current->every(fn (RecalculationApproval $approval): bool => ! $approval->isExpired());
     }
 
     /** Terminal: either fully approved or rejected — no further decisions are accepted. */

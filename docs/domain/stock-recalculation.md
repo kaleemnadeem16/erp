@@ -15,7 +15,8 @@ is fully true for every valuation method — partial delivery is recorded here a
 instead of by checking a box early.
 
 **Built today**: receipt, issue and transfer request/preview/approval workflows across
-**all three valuation methods**, within the supported clean-history boundaries below.
+**all three valuation methods**, within the supported clean-history boundaries below, plus
+execution for one narrow slice — AVCO receipts with no shortage involvement.
 
 - Issue/transfer proposals now use connected movement replay with derived costs, both transfer
   sides and onward dependencies — see [stock-movement-replay.md](stock-movement-replay.md).
@@ -90,11 +91,30 @@ instead of by checking a box early.
   and one-live-decision-per-actor invariants independently of the Action, the same defense-in-depth
   style as the immutability triggers elsewhere in this workflow.
 
+- `ExecuteRecalculation` posts an approved version's backdated receipt truthfully at its physical
+  `moved_at` (a new, additional `StockMove` — original movements are never mutated), then converges
+  the AVCO pool's running average to the exact approved `counterfactual_*` figures via a second
+  `VALUATION_ADJUSTMENT` valuation entry alongside the receipt's own `DESTINATION_IN` entry. That
+  convergence *is* the correction for AVCO: it tracks a running average, not per-entry history, so
+  there is nothing else to rewrite. Preconditions mirror deciding: locks the same closure, re-runs
+  the replay as a revalidation precondition (stale-flip + throw on mismatch, same as
+  `DecideRecalculationApproval`), and additionally requires
+  `RecalculationImpactVersion::hasUnexpiredFullApproval()` — ADR 0040's
+  `ALL_REQUIRED_APPROVALS_PRESENT` and `ALL_REQUIRED_APPROVALS_UNEXPIRED`, using each approver's
+  *most recent* decision so a renewal counts. One immutable `RecalculationExecution` row per
+  request (DB-unique) is the Inventory-owned slice of the eventual
+  `APPEND_ONLY_LINKED_CORRECTION_PACKAGE` — a retry resolves to the existing row rather than
+  posting twice. Scoped to what this codebase can execute correctly today: AVCO receipts only, and
+  only when no negative-stock shortage exists for the item/location/batch.
+
 **Not yet built**: authority-only approval rerouting (a changed approver's authority, not the
 economics, requiring reroute rather than a fresh impact version — distinct from the same-actor
-renewal above), execution of an approved version, and the append-only correction package. No
-HTTP/API layer exists for any of this, matching the negative-stock workflow, which doesn't have
-one either.
+renewal above); FIFO/SPECIFIC execution (needs real layer re-insertion and downstream consumption
+re-linking, not just a converged average) and issue/transfer execution; and the full multi-owner
+correction package — Sales/Job Execution/Accounting routing, cross-module reconciliation and
+deferred obligations all need owning modules that don't exist yet, so every case this codebase can
+execute today is "remaining stock," the one slice ADR 0040 lets Inventory own outright. No HTTP/API
+layer exists for any of this, matching the negative-stock workflow, which doesn't have one either.
 
 ## Replay integrity and regeneration review
 

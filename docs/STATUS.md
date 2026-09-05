@@ -23,7 +23,6 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 
 | Item | Date |
 |---|---|
-| **Backdating horizon policy** — company-configurable current+previous-period/period-lock/posting-floor modes, audited via the existing inventory-policy-change trail, plus a standalone boundary evaluator for the recalculation workflow to consume → [ADR 0040](decisions/0040-control-backdated-stock-recalculation-and-corrections.md), [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-04 |
 | **Recalculation requests — AVCO receipts** — a real, ledger-reconstructed counterfactual impact preview (not a manual estimate), immutable append-only impact versions with revalidate-on-decide staleness, single-tier approval with SLA/TTL deadlines. FIFO/SPECIFIC, issues/transfers, risk tiers, execution and correction packages remain — phase-2 checklist stays unticked → [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-04 |
 | **Layer-consumption ledger** — `stock_layer_consumptions` permanently links each FIFO/SPECIFIC allocation to the move it served (previously discarded once `qty_remaining` was decremented), closing the data gap the AVCO-only recalculation slice named. Purely additive — existing issue/transfer behaviour and tests unchanged → [stock.md](domain/stock.md), [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-04 |
 | **FIFO/SPECIFIC recalculation replayer** — `LayerCounterfactualReplayer` (one class covers both methods) reconstructs a layer group's state from the consumption ledger and re-walks later events using the real, unmodified `LayerAllocator::allocate()`. `RequestStockRecalculation`/`DecideRecalculationApproval` now branch by valuation method. Recalculation is real for all three methods, receipts only; issues/transfers, risk tiers, execution and correction packages remain — phase-2 checklist stays unticked → [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-04 |
@@ -31,15 +30,18 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 | **Recalculation audit fixes** — exact-layer reversals, transfer arrival/FIFO-age separation, incomplete/shortage/QA history guards, complete impact revalidation, dedicated second-approver authority and capped regeneration with audited manual resumption → [stock-recalculation.md](domain/stock-recalculation.md#replay-integrity-and-regeneration-review) | 2026-09-05 |
 | **Backdated issues and transfers** — clean-history previews now derive outbound costs and follow both transfer sides plus onward FIFO/SPECIFIC or configured AVCO dependencies, retaining exact per-scope/per-movement differences for review → [stock-movement-replay.md](domain/stock-movement-replay.md) | 2026-09-05 |
 | **Recalculation approval expiry per ADR 0040** — every required approval now persists its own TTL the moment it's granted, not just whichever one completes the requirement; an approver may renew their own expired decision (a fresh append, never a mutation) without needing high-risk authority re-checked. A different approver still cannot claim a slot an expiry frees — that's authority-only rerouting, which remains unbuilt → [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-05 |
+| **Recalculation execution — AVCO receipts** — `ExecuteRecalculation` posts an approved backdated receipt truthfully at its physical date and converges the AVCO pool to the exact approved counterfactual via one immutable, idempotent `RecalculationExecution` record — the Inventory-owned correction package slice, since Sales/Job Execution/Accounting don't exist yet to own the rest. FIFO/SPECIFIC and issue/transfer execution, authority-only rerouting and multi-owner reconciliation remain → [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-05 |
 
 ## Next
 
 Continue [Phase 2 — Purchasing & stock](phases/phase-2-purchasing-stock.md):
 
-1. Implement approved execution and the append-only correction package: lock the full economic
-   closure, revalidate `ALL_REQUIRED_APPROVALS_PRESENT`/`UNEXPIRED`/`TARGET_CURRENT_VERSION`, then
-   execute. Authority-only approval rerouting remains a separate, still-unbuilt piece.
-2. Longer-term: API endpoints + first UI screens for the stock engine, and the first real
+1. Extend execution to FIFO/SPECIFIC receipts (real layer re-insertion and downstream re-linking,
+   not just a converged average) and to issues/transfers, then build authority-only approval
+   rerouting.
+2. The multi-owner correction package (Sales/Job Execution/Accounting routing, cross-module
+   reconciliation) waits on those modules existing — Phase 4/5/6.
+3. Longer-term: API endpoints + first UI screens for the stock engine, and the first real
    deployment to the production VMs (both planned for the end of Phase 2).
 
 ## Blocked / awaiting input
