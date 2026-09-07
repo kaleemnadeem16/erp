@@ -178,7 +178,7 @@ The order matters because later work needs stable document and stock boundaries:
       `ALL_REQUIRED_APPROVALS_UNEXPIRED` for the one slice execution covers so far — full coverage
       across every movement kind/method remains
       ([stock-recalculation.md](../domain/stock-recalculation.md))
-- [ ] Implement exact semantic impact comparison, authority-only approval rerouting, per-version
+- [x] Implement exact semantic impact comparison, authority-only approval rerouting, per-version
       normal/high-risk classification and mandatory second independent approval for hard high-risk
       consequences per
       [ADR 0040](../decisions/0040-control-backdated-stock-recalculation-and-corrections.md)

@@ -47,9 +47,17 @@ use Illuminate\Support\Facades\DB;
  * both this Action and the guard_recalculation_approval_insert DB trigger —
  * one live decision per approver per version at a time). A renewal also
  * skips the second-approver high-risk-authority check below, since that
- * authority was already validated when the actor's slot was first granted;
- * a *different* person taking over an expired slot is authority-only
- * rerouting, a separate ADR 0040 mechanism this Action does not implement.
+ * authority was already validated when the actor's slot was first granted.
+ *
+ * A *different* person taking over an expired slot is ADR 0040's
+ * authority-only rerouting (`AUTHORITY_ONLY_CHANGE:
+ * REROUTE_OR_INVALIDATE_APPROVAL_WITHOUT_NEW_IMPACT_VERSION`): the cap check
+ * below only ever bounds a non-renewing actor by currently-*unexpired* slots
+ * (RecalculationImpactVersion::unexpiredApprovedActorIds()), so an expired
+ * slot is simply open for anyone eligible to claim — no separate rerouting
+ * action, permission or new impact version needed, since the economics
+ * haven't changed. They still go through the ordinary requester-separation
+ * and high-risk-authority checks like any other non-renewal decision.
  */
 final class DecideRecalculationApproval
 {
@@ -98,8 +106,12 @@ final class DecideRecalculationApproval
             }
             $approvedActorIds = $version->approvedActorIds();
             $isRenewal = $approvedActorIds->contains($actor->id);
-            if (! $isRenewal && $approvedActorIds->count() >= $version->requiredApprovalCount()) {
-                throw new DomainInvariantException('This impact version already has its required number of approvals.', 'impact_version_id');
+            // A different actor is only ever bounded by currently-live slots
+            // — an expired one is open for rerouting. The same actor renewing
+            // their own slot is exempted regardless, whether it (or anyone
+            // else's) has expired.
+            if (! $isRenewal && $version->unexpiredApprovedActorIds()->count() >= $version->requiredApprovalCount()) {
+                throw new DomainInvariantException('This impact version already has its required number of currently-unexpired approvals.', 'impact_version_id');
             }
 
             $attributes = $this->impacts->attributes($request, $company);

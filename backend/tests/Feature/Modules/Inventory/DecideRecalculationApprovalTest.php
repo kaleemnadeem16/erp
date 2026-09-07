@@ -397,7 +397,12 @@ class DecideRecalculationApprovalTest extends TestCase
         $this->assertSame(2, RecalculationApproval::query()->where('impact_version_id', $version->id)->where('decided_by', $approver->id)->count());
     }
 
-    public function test_the_db_still_bounds_distinct_approvers_by_risk_tier_after_an_expiry(): void
+    /**
+     * ADR 0040 authority-only rerouting: an expired grant frees the slot for
+     * a *different* approver to claim, without a new impact version — the
+     * economics are unchanged, only who satisfies the requirement now.
+     */
+    public function test_the_db_allows_a_different_approver_to_claim_a_slot_freed_by_expiry(): void
     {
         [, , , $request] = $this->makeRequestWithConflict();
         $version = $request->impactVersions->sole();
@@ -409,8 +414,29 @@ class DecideRecalculationApprovalTest extends TestCase
         ]);
         $second = User::factory()->create();
 
-        // An expired grant frees nothing for a *different* approver — that
-        // would be rerouting, not renewal, and this trigger doesn't do it.
+        DB::table('recalculation_approvals')->insert([
+            'company_id' => 1, 'impact_version_id' => $version->id, 'decision' => 'APPROVED', 'notes' => 'ok too',
+            'decided_by' => $second->id, 'decided_at' => now(), 'expires_at' => now()->addHours(24),
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $this->assertSame(2, RecalculationApproval::query()->where('impact_version_id', $version->id)->count());
+    }
+
+    public function test_the_db_still_bounds_distinct_approvers_by_risk_tier_while_a_grant_is_unexpired(): void
+    {
+        [, , , $request] = $this->makeRequestWithConflict();
+        $version = $request->impactVersions->sole();
+        $first = User::factory()->create();
+        DB::table('recalculation_approvals')->insert([
+            'company_id' => 1, 'impact_version_id' => $version->id, 'decision' => 'APPROVED', 'notes' => 'ok',
+            'decided_by' => $first->id, 'decided_at' => now(), 'expires_at' => now()->addHours(24),
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $second = User::factory()->create();
+
+        // A live, unexpired grant still fully occupies a NORMAL_RISK
+        // version's one slot — rerouting only opens once it actually expires.
         $this->expectException(QueryException::class);
         DB::table('recalculation_approvals')->insert([
             'company_id' => 1, 'impact_version_id' => $version->id, 'decision' => 'APPROVED', 'notes' => 'ok too',
@@ -466,7 +492,15 @@ class DecideRecalculationApprovalTest extends TestCase
         $this->assertFalse($version->fresh()->load('approvals')->isFullyApproved());
     }
 
-    public function test_a_different_approver_cannot_claim_a_slot_freed_by_expiry(): void
+    /**
+     * ADR 0040 authority-only rerouting: the first approver's grant expired
+     * (seeded by raw insert — approvals are DB-immutable, so an existing row
+     * can't be backdated after the fact) and never renewed it themselves. A
+     * different, independent approver may now claim that slot directly
+     * through the Action — no new impact version, no separate rerouting
+     * action or permission.
+     */
+    public function test_a_different_approver_can_claim_a_slot_freed_by_expiry(): void
     {
         [, , , $request] = $this->makeRequestWithConflict();
         $version = $request->impactVersions->sole();
@@ -479,8 +513,65 @@ class DecideRecalculationApprovalTest extends TestCase
         $second = User::factory()->create();
         $second->givePermissionTo('inventory.recalculation.approve');
 
+        $rerouted = app(DecideRecalculationApproval::class)($version->fresh()->load('approvals'), RecalculationApprovalDecision::Approved, 'late', $second);
+
+        $this->assertFalse($rerouted->isExpired());
+        $this->assertTrue($version->fresh()->load('approvals')->isFullyApproved());
+        $this->assertTrue($version->fresh()->load('approvals')->hasUnexpiredFullApproval());
+    }
+
+    public function test_a_different_approver_still_cannot_claim_a_slot_that_is_not_yet_expired(): void
+    {
+        [, , , $request] = $this->makeRequestWithConflict();
+        $version = $request->impactVersions->sole();
+        $first = User::factory()->create();
+        $first->givePermissionTo('inventory.recalculation.approve');
+        app(DecideRecalculationApproval::class)($version, RecalculationApprovalDecision::Approved, 'checked', $first);
+        $second = User::factory()->create();
+        $second->givePermissionTo('inventory.recalculation.approve');
+
         $this->expectException(DomainInvariantException::class);
-        app(DecideRecalculationApproval::class)($version->fresh()->load('approvals'), RecalculationApprovalDecision::Approved, 'late', $second);
+        app(DecideRecalculationApproval::class)($version->fresh()->load('approvals'), RecalculationApprovalDecision::Approved, 'too soon', $second);
+    }
+
+    /**
+     * A HIGH_RISK version's freed slot still enforces every ordinary rule a
+     * fresh decision would: the claimant needs independent high-risk
+     * authority the same as any other non-renewal second approver.
+     */
+    public function test_rerouting_a_high_risk_slot_still_requires_high_risk_authority(): void
+    {
+        [, , , $request] = $this->makeRequestWithConflict(highRisk: true);
+        $version = $request->impactVersions->sole();
+        $first = User::factory()->create();
+        DB::table('recalculation_approvals')->insert([
+            'company_id' => 1, 'impact_version_id' => $version->id, 'decision' => 'APPROVED', 'notes' => 'first check',
+            'decided_by' => $first->id, 'decided_at' => now()->subHours(30), 'expires_at' => now()->subHours(6),
+            'created_at' => now()->subHours(30), 'updated_at' => now()->subHours(30),
+        ]);
+        // A second, still-live approver already holds the version's other
+        // slot, so rerouting the first (expired) one is the only thing left
+        // to complete the requirement.
+        $second = User::factory()->create();
+        $second->givePermissionTo(['inventory.recalculation.approve', 'inventory.recalculation.approve-high-risk']);
+        app(DecideRecalculationApproval::class)($version->fresh()->load('approvals'), RecalculationApprovalDecision::Approved, 'second check', $second);
+        $ordinary = User::factory()->create();
+        $ordinary->givePermissionTo('inventory.recalculation.approve');
+
+        try {
+            app(DecideRecalculationApproval::class)($version->fresh()->load('approvals'), RecalculationApprovalDecision::Approved, 'late', $ordinary);
+            $this->fail('Rerouting into a high-risk slot still needs high-risk authority.');
+        } catch (DomainInvariantException $e) {
+            $this->assertStringContainsString('dedicated higher-risk authority', $e->getMessage());
+        }
+        $this->assertFalse($version->fresh()->load('approvals')->hasUnexpiredFullApproval());
+
+        $elevated = User::factory()->create();
+        $elevated->givePermissionTo(['inventory.recalculation.approve', 'inventory.recalculation.approve-high-risk']);
+        $rerouted = app(DecideRecalculationApproval::class)($version->fresh()->load('approvals'), RecalculationApprovalDecision::Approved, 'late', $elevated);
+
+        $this->assertTrue($version->fresh()->load('approvals')->hasUnexpiredFullApproval());
+        $this->assertNotSame($first->id, $rerouted->decided_by);
     }
 
     public function test_the_db_rejects_any_decision_after_a_rejection(): void

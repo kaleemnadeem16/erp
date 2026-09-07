@@ -91,9 +91,13 @@ include both transfer sides and onward dependencies without posting stock. See
 [stock-movement-replay.md](../../../../docs/domain/stock-movement-replay.md) for supported history.
 `DecideRecalculationApproval` revalidates economics, dependencies and risk,
 requiring dedicated higher-risk authority for a second approval; each required approval persists
-its own expiry and supports same-actor renewal after expiry. Three post-approval material
-invalidations pause automatic regeneration. `ResumeRecalculationRegeneration` records manual
-coordination and appends an unapproved replacement without resetting history.
+its own expiry and supports same-actor renewal after expiry. A *different*, eligible approver may
+also claim a slot an expiry freed — authority-only rerouting, bounded by currently-unexpired
+distinct approvers (`RecalculationImpactVersion::unexpiredApprovedActorIds()`) rather than a
+separate action, since the economics haven't changed and no new impact version is needed. Three
+post-approval material invalidations pause automatic regeneration.
+`ResumeRecalculationRegeneration` records manual coordination and appends an unapproved
+replacement without resetting history.
 `ExecuteRecalculation` posts an approved AVCO, SPECIFIC or FIFO receipt — AVCO converges the pool
 to the approved counterfactual; SPECIFIC and untouched-history FIFO are a plain layer insert.
 When a FIFO receipt changes later direct issues, execution appends exact allocation reversals and
@@ -106,8 +110,8 @@ approved backdated ISSUE or TRANSFER (`OutboundRecalculationExecutor`), mirrorin
 `IssuePoster`/`TransferPoster`'s posting shape at the true historical date — but only when the
 revalidated replay changes no other move; a request that reprices other history still refuses,
 since `MovementReplayState`'s preview simulation has no real-layer-id bridge yet for the same
-append-only correction receipts get. Authority-only rerouting and the multi-owner correction
-package remain unbuilt. Supported history and permission details live in
+append-only correction receipts get. The multi-owner correction package remains unbuilt. Supported
+history and permission details live in
 [stock-recalculation.md](../../../../docs/domain/stock-recalculation.md).
 
 ## Events

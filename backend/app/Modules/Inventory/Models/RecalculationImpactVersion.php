@@ -112,10 +112,13 @@ class RecalculationImpactVersion extends Model
     }
 
     /**
-     * Distinct approvers currently holding an APPROVED decision, regardless
-     * of expiry — a filled slot stays filled even once its grant lapses.
-     * Renewal (the same approver deciding again after expiry) reuses the
-     * slot; it never frees it for a different approver to claim.
+     * Distinct approvers who have ever held an APPROVED decision, regardless
+     * of expiry — the historical/structural fact isFullyApproved() reads,
+     * and how a renewal recognises "this is the same actor reclaiming their
+     * own slot" regardless of whether it (or anyone else's) has since
+     * expired. Whether an expired slot is currently open for a *different*
+     * approver to claim is a separate question — see
+     * unexpiredApprovedActorIds().
      *
      * @return Collection<int, int>
      */
@@ -130,18 +133,41 @@ class RecalculationImpactVersion extends Model
     }
 
     /**
+     * Distinct approvers whose most recent APPROVED decision is still live
+     * right now — an expired one drops out, freeing that slot for a
+     * different eligible approver to claim. This is ADR 0040's
+     * authority-only rerouting (`AUTHORITY_ONLY_CHANGE:
+     * REROUTE_OR_INVALIDATE_APPROVAL_WITHOUT_NEW_IMPACT_VERSION`): the
+     * economics haven't changed, so no new impact version is needed, only a
+     * different actor filling the vacated slot. Consulted only for admitting
+     * a genuinely *different* actor — the same actor renewing their own
+     * expired slot is detected via approvedActorIds() instead, since a
+     * renewal reclaims their existing slot regardless of whether it (or
+     * anyone else's) has expired.
+     *
+     * @return Collection<int, int>
+     */
+    public function unexpiredApprovedActorIds(): Collection
+    {
+        return $this->currentApprovalsByActor()
+            ->filter(fn (RecalculationApproval $approval): bool => ! $approval->isExpired())
+            ->keys();
+    }
+
+    /**
      * ADR 0040 "Approved execution lifetime": ALL_REQUIRED_APPROVALS_PRESENT
      * and ALL_REQUIRED_APPROVALS_UNEXPIRED. Unlike isFullyApproved() (a
      * historical/structural fact that survives expiry), this asks whether
-     * execution could proceed *right now* — every required slot filled, and
-     * every slot-holder's most recent decision still live.
+     * execution could proceed *right now* — at least as many distinct
+     * approvers as required currently hold a live decision. Authority-only
+     * rerouting can leave more distinct historical approvers than a version
+     * actually requires (an expired original plus whoever rerouted into
+     * their slot), so this counts live slots rather than demanding every
+     * approver who ever decided still be unexpired.
      */
     public function hasUnexpiredFullApproval(): bool
     {
-        $current = $this->currentApprovalsByActor();
-
-        return $current->count() >= $this->requiredApprovalCount()
-            && $current->every(fn (RecalculationApproval $approval): bool => ! $approval->isExpired());
+        return $this->unexpiredApprovedActorIds()->count() >= $this->requiredApprovalCount();
     }
 
     /** Terminal: either fully approved or rejected — no further decisions are accepted. */

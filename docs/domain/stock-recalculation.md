@@ -88,10 +88,23 @@ shortage involvement. FIFO histories that cross a transfer remain explicitly blo
   existing slot (never counts as a new approver, and skips the second-approver
   `inventory.recalculation.approve-high-risk` check, already satisfied when the slot was first
   granted), and is blocked while that approver still holds an unexpired decision (one live decision
-  per approver per version at a time). A *different* approver can never claim a slot an expiry
-  freed — that's authority-only rerouting, a separate, still-unbuilt mechanism. A DB trigger
-  (`guard_recalculation_approval_insert`) enforces the same terminal-rejection, distinct-approver-count
-  and one-live-decision-per-actor invariants independently of the Action, the same defense-in-depth
+  per approver per version at a time). A *different* approver **can** claim a slot an expiry
+  freed — ADR 0040's authority-only rerouting
+  (`AUTHORITY_ONLY_CHANGE: REROUTE_OR_INVALIDATE_APPROVAL_WITHOUT_NEW_IMPACT_VERSION`): the
+  economics haven't changed, so no new impact version is generated, only a different eligible
+  actor filling the vacated slot. The required-approver-count check is measured in distinct
+  `decided_by` among *currently unexpired* `APPROVED` rows
+  (`RecalculationImpactVersion::unexpiredApprovedActorIds()`) for a non-renewing actor — renewal
+  detection itself still uses the historical, expiry-blind `approvedActorIds()`, since reclaiming
+  one's own slot doesn't depend on whether it (or anyone else's) has expired. A rerouted claimant
+  goes through every ordinary rule a fresh decision would — requester separation and, for a
+  `HIGH_RISK` version's second slot, `approve-high-risk` authority — so nothing about rerouting
+  bypasses the risk tier's independence requirement; there is no separate rerouting action,
+  permission or audit record; it is simply what `DecideRecalculationApproval` already does once a
+  slot is live-empty. A `REJECTED` decision remains terminal regardless — no further decisions are
+  accepted from anyone once one lands. A DB trigger (`guard_recalculation_approval_insert`)
+  enforces the same terminal-rejection, expiry-aware distinct-approver-count and
+  one-live-decision-per-actor invariants independently of the Action, the same defense-in-depth
   style as the immutability triggers elsewhere in this workflow.
 
 - `ExecuteRecalculation` posts an approved version's backdated receipt truthfully at its physical
@@ -151,9 +164,7 @@ shortage involvement. FIFO histories that cross a transfer remain explicitly blo
   no preserved mapping back to real `stock_layers.id`, so correcting other moves the way
   `FifoReceiptReallocator` does for receipts needs that bridge built first.
 
-**Not yet built**: authority-only approval rerouting (a changed approver's authority, not the
-economics, requiring reroute rather than a fresh impact version — distinct from the same-actor
-renewal above); issue/transfer execution when the replay changes other history; and the full
+**Not yet built**: issue/transfer execution when the replay changes other history; and the full
 multi-owner correction package — Sales/Job
 Execution/Accounting routing, cross-module reconciliation and deferred obligations all need owning
 modules that don't exist yet, so every case this codebase can execute today is "remaining stock,"
