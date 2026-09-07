@@ -60,6 +60,12 @@ inventory_cutover_avco_pools
   warehouse_id NULLABLE, batch_id NULLABLE
   opening_quantity, opening_value, base_opening_value, derived_average
   policy_transition_effective_at, revaluation_basis NULLABLE
+
+inventory_cutover_policy_transitions
+  id, company_id, inventory_cutover_id, item_id
+  source_valuation_method, source_avco_scope NULLABLE, source_pool_identity NULLABLE
+  target_valuation_method, target_avco_scope NULLABLE
+  effective_at, revaluation_basis NULLABLE
 ```
 
 Exact normalised layer/movement columns are reconciled during implementation. Source facts must
@@ -106,6 +112,13 @@ Finalisation is implemented but intentionally refuses until every linked batch i
 the upcoming Inventory-owned opening-state Action. Approval alone can therefore never claim that
 stock is live. PostgreSQL triggers enforce provenance scope, immutable definitions/source facts and
 monotonic status transitions even for raw SQL.
+
+The first small opening-state prerequisite is implemented too:
+`InventoryCutoverPolicyTransition` records one immutable source-method/scope/pool → target-method/
+scope transition per distinct source identity, always effective at the cutover timestamp. Target
+policy item codes are normalised, AVCO targets require exactly one supported scope, method changes
+may retain structured revaluation evidence, and validation derives the ledger idempotently. This
+is provenance only; it creates no live stock state and the larger opening-state task remains open.
 
 ## Valuation continuity
 

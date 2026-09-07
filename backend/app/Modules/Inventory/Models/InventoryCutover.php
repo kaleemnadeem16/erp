@@ -73,6 +73,12 @@ class InventoryCutover extends Model
         return $this->hasMany(InventorySourceFact::class);
     }
 
+    /** @return HasMany<InventoryCutoverPolicyTransition, $this> */
+    public function policyTransitions(): HasMany
+    {
+        return $this->hasMany(InventoryCutoverPolicyTransition::class);
+    }
+
     /** @return BelongsTo<User, $this> */
     public function creator(): BelongsTo
     {

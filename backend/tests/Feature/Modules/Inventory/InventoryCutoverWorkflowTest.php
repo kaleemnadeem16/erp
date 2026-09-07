@@ -20,6 +20,7 @@ use App\Modules\Inventory\Actions\FinaliseInventoryCutover;
 use App\Modules\Inventory\Actions\PreviewInventoryCutover;
 use App\Modules\Inventory\Actions\ValidateInventoryCutover;
 use App\Modules\Inventory\Models\Category;
+use App\Modules\Inventory\Models\InventoryCutoverPolicyTransition;
 use App\Modules\Inventory\Models\InventorySourceFact;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Support\InventoryCutoverBatchStatus;
@@ -68,6 +69,13 @@ class InventoryCutoverWorkflowTest extends TestCase
         $this->assertSame('125.0000', $preview['base_source_value']);
 
         $validated = app(ValidateInventoryCutover::class)($cutover, $this->permittedUser('inventory.cutover.validate'));
+        $transition = InventoryCutoverPolicyTransition::query()->sole();
+        $this->assertSame('AVCO', $transition->source_valuation_method->value);
+        $this->assertSame('COMPANY_ITEM', $transition->source_avco_scope->value);
+        $this->assertSame('AVCO', $transition->target_valuation_method->value);
+        $this->assertSame('COMPANY_ITEM', $transition->target_avco_scope->value);
+        $this->assertTrue($transition->effective_at->equalTo($validated->cutover_at));
+        $this->assertArrayHasKey('sku-100', $validated->target_valuation_policy);
         $approved = app(ApproveInventoryCutover::class)($validated, $this->permittedUser('inventory.cutover.approve'));
         $this->assertSame('APPROVED', $approved->status->value);
         $this->assertNotNull($approved->approved_at);
@@ -149,6 +157,29 @@ class InventoryCutoverWorkflowTest extends TestCase
 
         $this->expectException(QueryException::class);
         DB::table('inventory_source_facts')->where('id', $fact->id)->update(['qty' => '99.0000']);
+    }
+
+    public function test_policy_transitions_are_database_immutable_and_idempotent(): void
+    {
+        [, $batch] = $this->validatedImportBatch();
+        $input = $this->cutoverInput();
+        $input['target_valuation_policy'] = [
+            'SKU-100' => ['method' => 'FIFO', 'revaluation_basis' => ['kind' => 'SYNTHETIC_LAYER']],
+        ];
+        $cutover = app(CreateInventoryCutover::class)($input, $this->permittedUser('inventory.cutover.create'));
+        app(AttachInventoryCutoverBatch::class)($cutover, $batch, $this->permittedUser('inventory.cutover.stage'));
+        app(ValidateInventoryCutover::class)($cutover, $this->permittedUser('inventory.cutover.validate'));
+        app(ValidateInventoryCutover::class)($cutover->refresh(), $this->permittedUser('inventory.cutover.validate'));
+        $this->assertDatabaseCount('inventory_cutover_policy_transitions', 1);
+        $transition = InventoryCutoverPolicyTransition::query()->sole();
+        $this->assertSame('AVCO', $transition->source_valuation_method->value);
+        $this->assertSame('FIFO', $transition->target_valuation_method->value);
+        $this->assertNull($transition->target_avco_scope);
+        $this->assertSame(['kind' => 'SYNTHETIC_LAYER'], $transition->revaluation_basis);
+
+        $this->expectException(QueryException::class);
+        DB::table('inventory_cutover_policy_transitions')->where('id', $transition->id)
+            ->update(['target_valuation_method' => 'FIFO', 'target_avco_scope' => null]);
     }
 
     /** @return array{ImportProfile, ImportBatch} */

@@ -208,6 +208,8 @@ The order matters because later work needs stable document and stock boundaries:
 - [ ] Implement reconciled opening-state Actions: target AVCO pools, FIFO residual or labelled
       synthetic layers, and per-serial SPECIFIC costs; preserve source method/scope/pool identity
       and effective-dated transitions across a method or AVCO-scope change
+      - Partial: immutable, idempotent source→target policy transitions are derived during cutover
+        validation; AVCO/FIFO/SPECIFIC opening-state posting remains.
 - [ ] Validate quantity/value by exact location, target AVCO pool and company total, plus UoM/FX,
       batch/serial identity and layer totals; reject unsupported broad→narrow pool allocation or
       require an explicitly approved revaluation basis rather than inventing detail

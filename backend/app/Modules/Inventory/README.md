@@ -36,6 +36,8 @@ movement and valuation, built in Phase 2.
 - `InventoryCutover`, `InventoryCutoverBatch` and `InventorySourceFact` — the permissioned cutover
   workflow and immutable predecessor-system evidence; approval cannot finalise before a later
   opening-state Action commits every batch
+- `InventoryCutoverPolicyTransition` — immutable effective-dated source method/scope/pool to target
+  method/scope provenance, derived idempotently during cutover validation
 
 ## Does not own
 
@@ -133,7 +135,9 @@ uses its own `inventory.cutover.*` permission; approval is independent from crea
 `PreviewInventoryCutover` exposes exact staged/control totals without changing state. Attachment
 normalises a validated generic `OPENING_STATE` batch into immutable source facts, but no Action in
 this slice creates live stock. Finalisation remains gated on the method-specific opening-state
-Action that follows.
+Action that follows. `RecordInventoryCutoverPolicyTransitions` is the first small prerequisite:
+it freezes each distinct source valuation identity's target policy at `cutover_at`, but does not
+post quantity or value.
 
 ## Events
 

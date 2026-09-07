@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\DB;
 
 final class ValidateInventoryCutover
 {
+    public function __construct(private readonly RecordInventoryCutoverPolicyTransitions $policyTransitions) {}
+
     public function __invoke(InventoryCutover $cutover, User $actor): InventoryCutover
     {
         if (! $actor->can('inventory.cutover.validate')) {
@@ -38,6 +40,7 @@ final class ValidateInventoryCutover
             if (! $quantity->isEqualTo($cutover->control_quantity) || ! $value->isEqualTo($cutover->control_value) || ! $baseValue->isEqualTo($cutover->base_control_value)) {
                 throw new DomainInvariantException('Source totals do not reconcile to the cutover control totals.', 'control_quantity');
             }
+            $this->policyTransitions->record($cutover);
             foreach ($batches as $batch) {
                 $batch->update(['status' => InventoryCutoverBatchStatus::Validated]);
             }
