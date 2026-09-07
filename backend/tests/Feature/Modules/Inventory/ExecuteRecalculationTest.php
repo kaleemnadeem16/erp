@@ -557,11 +557,16 @@ class ExecuteRecalculationTest extends TestCase
 
     /**
      * The destination's own stock is transferred onward a second time before
-     * the backdated receipt is proposed — a nested transfer chain, which
-     * stays refused for now (the one-hop boundary this slice draws). Nothing
-     * commits: the whole recalculation execution rolls back atomically.
+     * the backdated receipt is proposed: source -> destination (transfer 1,
+     * draws A(5)+B(1)) -> tertiary (transfer 2, draws all 6 units again,
+     * i.e. the transfer-1 destination layers D_A(5)+D_B(1) in full). The
+     * backdated layer C bumps B out of transfer 1 exactly as in the one-hop
+     * test, and that correction must cascade a second time: transfer 2's own
+     * draw on the now-superseded D_B is released and re-pointed at the newly
+     * minted destination layer, which itself gets superseded and re-minted
+     * one more time at tertiary. Recursion depth is no longer capped.
      */
-    public function test_fifo_execution_refuses_a_second_transfer_hop(): void
+    public function test_execution_cascades_a_fifo_correction_through_two_transfer_hops(): void
     {
         [$item, $uom, $source] = $this->makeFifoItem();
         $destination = app(CreateWarehouse::class)([
@@ -581,12 +586,12 @@ class ExecuteRecalculationTest extends TestCase
                 'fx_rate' => '1.000000000', 'base_unit_cost' => $receipt['cost'],
             ]);
         }
-        app(PostInventoryMovement::class)->transfer([
+        $transfer1 = app(PostInventoryMovement::class)->transfer([
             'item_id' => $item->id, 'from_location_id' => $source->id, 'to_location_id' => $destination->id,
             'qty' => '6.0000', 'uom_id' => $uom->id, 'moved_at' => Carbon::parse('2026-01-15'),
             'source_type' => 'TEST_TRANSFER', 'source_id' => 3,
         ]);
-        app(PostInventoryMovement::class)->transfer([
+        $transfer2 = app(PostInventoryMovement::class)->transfer([
             'item_id' => $item->id, 'from_location_id' => $destination->id, 'to_location_id' => $tertiary->id,
             'qty' => '6.0000', 'uom_id' => $uom->id, 'moved_at' => Carbon::parse('2026-01-20'),
             'source_type' => 'TEST_SECOND_TRANSFER', 'source_id' => 5,
@@ -601,17 +606,52 @@ class ExecuteRecalculationTest extends TestCase
         ], $requester);
         $version = $this->approveFully($request->impactVersions->sole());
 
-        try {
-            app(ExecuteRecalculation::class)($version, $this->executor());
-            $this->fail('A second transfer hop should remain blocked.');
-        } catch (DomainInvariantException $exception) {
-            $this->assertStringContainsString('transfer hop', $exception->getMessage());
-        }
-        $this->assertFalse(StockMove::query()->where('source_type', 'TEST_BACKDATED_RECEIPT')->where('source_id', 4)->exists());
-        // The whole execution rolls back atomically: no minted destination
-        // layer survives from the first transfer's (attempted) correction.
-        $this->assertSame(2, StockLayer::query()->where('source_type', 'TEST_TRANSFER')->where('source_id', 3)->count());
-        $this->assertSame(2, StockLayer::query()->where('source_type', 'TEST_SECOND_TRANSFER')->where('source_id', 5)->count());
+        app(ExecuteRecalculation::class)($version, $this->executor());
+
+        $layerB = StockLayer::query()->where('source_type', 'TEST_RECEIPT')->where('source_id', 2)->sole();
+        $layerC = StockLayer::query()->where('source_type', 'TEST_BACKDATED_RECEIPT')->where('source_id', 4)->sole();
+        $this->assertSame('5.0000', $layerB->qty_remaining);
+        $this->assertSame('2.0000', $layerC->qty_remaining);
+
+        $destinationLayers = StockLayer::query()->where('source_type', 'TEST_TRANSFER')->where('source_id', 3)->orderBy('source_line_no')->get();
+        $this->assertSame(3, $destinationLayers->count());
+        [$layerDA, $layerDB, $layerDC] = $destinationLayers->all();
+        $this->assertSame('0.0000', $layerDA->qty_remaining);
+        $this->assertSame('0.0000', $layerDB->qty_remaining);
+        $this->assertSame('20.0000', $layerDC->base_unit_cost);
+        // D_C is itself fully carried onward by transfer 2's own correction.
+        $this->assertSame('0.0000', $layerDC->qty_remaining);
+
+        $tertiaryLayers = StockLayer::query()->where('source_type', 'TEST_SECOND_TRANSFER')->where('source_id', 5)->orderBy('source_line_no')->get();
+        $this->assertSame(3, $tertiaryLayers->count());
+        [$layerTA, $layerTB, $layerTC] = $tertiaryLayers->all();
+        $this->assertSame('5.0000', $layerTA->qty_remaining);
+        $this->assertSame('0.0000', $layerTB->qty_remaining);
+        $this->assertSame('20.0000', $layerTC->base_unit_cost);
+        $this->assertSame('1.0000', $layerTC->qty_remaining);
+        $this->assertTrue($layerTC->received_at->isSameDay(Carbon::parse('2026-01-05')));
+
+        $reversalOnTransfer1 = StockLayerConsumption::query()->where('stock_move_id', $transfer1->id)
+            ->where('purpose', 'REVERSAL')->where('stock_layer_id', $layerDB->id)->sole();
+        $reversalOnTransfer2 = StockLayerConsumption::query()->where('stock_move_id', $transfer2->id)
+            ->where('purpose', 'REVERSAL')->where('stock_layer_id', $layerTB->id)->sole();
+        $this->assertSame('1.0000', $reversalOnTransfer1->qty_consumed);
+        $this->assertSame('1.0000', $reversalOnTransfer2->qty_consumed);
+        $this->assertSame($request->id, $reversalOnTransfer1->recalculation_request_id);
+        $this->assertSame($request->id, $reversalOnTransfer2->recalculation_request_id);
+
+        $transfer2SourceRows = StockLayerConsumption::query()->where('stock_move_id', $transfer2->id)
+            ->whereIn('purpose', ['ALLOCATION', 'ALLOCATION_REVERSAL'])->get();
+        $releasedFromDB = $transfer2SourceRows->sole(fn (StockLayerConsumption $row): bool => $row->purpose === 'ALLOCATION_REVERSAL');
+        $consumedFromDC = $transfer2SourceRows->sole(fn (StockLayerConsumption $row): bool => $row->purpose === 'ALLOCATION' && $row->stock_layer_id === $layerDC->id);
+        $this->assertSame('1.0000', $releasedFromDB->qty_consumed);
+        $this->assertSame('1.0000', $consumedFromDC->qty_consumed);
+
+        // Company-wide physical quantity is conserved: the only net addition
+        // anywhere is the backdated receipt's own 3 units.
+        $total = StockLayer::query()->where('item_id', $item->id)->get()
+            ->reduce(fn (BigDecimal $sum, StockLayer $layer): BigDecimal => $sum->plus($layer->qty_remaining), BigDecimal::zero());
+        $this->assertTrue($total->isEqualTo('13.0000'));
     }
 
     public function test_fifo_execution_allows_an_unchanged_later_transfer(): void

@@ -98,11 +98,12 @@ coordination and appends an unapproved replacement without resetting history.
 to the approved counterfactual; SPECIFIC and untouched-history FIFO are a plain layer insert.
 When a FIFO receipt changes later direct issues, execution appends exact allocation reversals and
 replacement consumptions, adjusts live layer balances and posts the residual value correction in
-the same transaction. A changed later transfer is corrected one hop out too — its destination
-layer-component(s) are superseded by freshly minted ones and the same reallocation cascades into
-whatever the destination's own later issues already consumed from them; a second transfer hop
-still blocks. Issue/transfer execution, authority-only rerouting and the multi-owner correction
-package remain unbuilt. Supported history and permission details live in
+the same transaction. A changed later transfer is corrected the same way at every hop it reaches —
+each transfer's destination layer-component(s) are superseded by freshly minted ones and the same
+reallocation cascades into whatever that destination's own later issues or further transfers
+already consumed from them, however deep the real chain goes. Issue/transfer execution,
+authority-only rerouting and the multi-owner correction package remain unbuilt. Supported history
+and permission details live in
 [stock-recalculation.md](../../../../docs/domain/stock-recalculation.md).
 
 ## Events

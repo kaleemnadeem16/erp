@@ -121,24 +121,24 @@ shortage involvement. FIFO histories that cross a transfer remain explicitly blo
   releases happen before replacements so reallocating stock from a later issue to an earlier one
   is independent of iteration order. The receipt move carries a zero-quantity residual valuation
   entry when needed, so its entries sum to the approved adjustment. An unchanged later transfer is
-  allowed; a transfer whose allocation would change is corrected one hop out — its own source-side
-  draw is reallocated the same way, then its destination layer-component(s) are superseded by
-  freshly minted ones carrying the corrected cost/age (an append-only `REVERSAL` row against the
-  transfer's move accounts for the superseded quantity, never mutating the old layer's received
-  facts), and `FifoReceiptReallocator` runs its own reallocation again, recursively, against
-  whatever the destination's own later issues already drew from them —
-  `LayerCounterfactualReplayer::planTransferCascade()` simulates that destination timeline the same
-  way `plan()` simulates the source's. A *second* transfer hop out of that destination still
-  aborts and rolls back — the immutable destination-layer provenance question repeats one level
-  further and isn't chased past one hop yet, enforced both in the Action (by recursion depth) and
-  in the database (`guard_stock_layer_allocation_reversal` only authorises a correction row at the
-  request's own location or at the exact one-hop transfer destination). Scoped to no negative-stock
-  shortage for the item/location/batch.
+  allowed; a transfer whose allocation would change is corrected the same way at every hop it
+  reaches — its own source-side draw is reallocated first, then its destination layer-component(s)
+  are superseded by freshly minted ones carrying the corrected cost/age (an append-only `REVERSAL`
+  row against the transfer's move accounts for the superseded quantity, never mutating the old
+  layer's received facts), and `FifoReceiptReallocator` runs its own reallocation again,
+  recursively, against whatever the destination's own later issues *or further transfers* already
+  drew from them — `LayerCounterfactualReplayer::planTransferCascade()` simulates each hop's
+  destination timeline the same way `plan()` simulates the source's. Recursion depth is not capped
+  in the Action; it terminates on real history alone, since each hop's cascade only ever looks at
+  moves strictly later than the one before it. The database mirrors this generally too:
+  `guard_stock_layer_allocation_reversal` authorises a correction row wherever its layer sits —
+  the request's own location, or any location reachable from it by a chain of `TRANSFER` moves for
+  the same item, walked with a recursive query rather than hardcoded to one hop. Scoped to no
+  negative-stock shortage for the item/location/batch.
 
 **Not yet built**: authority-only approval rerouting (a changed approver's authority, not the
 economics, requiring reroute rather than a fresh impact version — distinct from the same-actor
-renewal above); FIFO receipt execution through a *second* (or deeper) transfer hop; issue/transfer
-execution; and the full multi-owner correction package — Sales/Job
+renewal above); issue/transfer execution; and the full multi-owner correction package — Sales/Job
 Execution/Accounting routing, cross-module reconciliation and deferred obligations all need owning
 modules that don't exist yet, so every case this codebase can execute today is "remaining stock,"
 the one slice ADR 0040 lets Inventory own outright. No HTTP/API

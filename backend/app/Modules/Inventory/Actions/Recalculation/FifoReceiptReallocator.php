@@ -26,10 +26,11 @@ use Illuminate\Support\Collection;
  * carrying the corrected cost/age (the old components stay, immutable, with
  * a purpose = REVERSAL row accounting for whatever part of them no longer
  * happened), and this same reallocation runs again, recursively, against
- * whatever the destination's own later issues already consumed from them. A
- * transfer landing on another transfer stays refused — the one-hop boundary
- * this slice draws; deeper chains are a future slice, same as issue/transfer
- * execution itself.
+ * whatever the destination's own later issues — or its own later transfers,
+ * cascading through however many hops real history actually contains —
+ * already consumed from them. Recursion is bounded by real history alone
+ * (each hop strictly follows a later stock_moves.moved_at than the one
+ * before it), the same way issue/transfer execution itself remains unbuilt.
  */
 final class FifoReceiptReallocator
 {
@@ -96,12 +97,9 @@ final class FifoReceiptReallocator
             ->map(fn (string $key): int => (int) explode(':', $key, 2)[0])->unique();
         $unsupported = $changedMoveIds->filter(fn (int $moveId): bool => ! in_array($moves->get($moveId)?->movement_kind, ['ISSUE', 'TRANSFER'], true));
         if ($unsupported->isNotEmpty()) {
-            throw new DomainInvariantException('FIFO execution through transfers or legacy outbound history is not supported yet.', 'item_id');
+            throw new DomainInvariantException('FIFO execution through legacy outbound history is not supported yet.', 'item_id');
         }
         $transferMoveIds = $changedMoveIds->filter(fn (int $moveId): bool => $moves->get($moveId)?->movement_kind === 'TRANSFER');
-        if ($depth > 0 && $transferMoveIds->isNotEmpty()) {
-            throw new DomainInvariantException('FIFO execution through more than one transfer hop is not supported yet.', 'item_id');
-        }
 
         $layerIds = $keys->map(fn (string $key): int => (int) explode(':', $key, 2)[1])->unique()->sort()->values();
         $layers = StockLayer::query()->whereIn('id', $layerIds)->orderBy('id')->lockForUpdate()->get()->keyBy('id');
@@ -154,7 +152,7 @@ final class FifoReceiptReallocator
 
         foreach ($transferMoveIds as $transferMoveId) {
             $this->cascadeIntoTransferDestination(
-                $request, $moves->get($transferMoveId), $allocationRows, $decreases, $increases, $layers,
+                $request, $moves->get($transferMoveId), $allocationRows, $decreases, $increases, $layers, $depth,
             );
         }
     }
@@ -180,6 +178,7 @@ final class FifoReceiptReallocator
         Collection $decreases,
         Collection $increases,
         Collection $layers,
+        int $depth,
     ): void {
         $originalAllocations = $allocationRows->where('stock_move_id', $transferMove->id)->sortBy('id')->values();
         $destinationLayers = StockLayer::query()
@@ -256,7 +255,7 @@ final class FifoReceiptReallocator
         // downstream draw first guarantees there is room for the subsequent
         // reduction below to never go negative (the qty_received/qty_remaining
         // CHECK constraint would otherwise reject an out-of-order write).
-        $this->applyToGroup($request, $mintedBySentinel, $cascadePlan, 1);
+        $this->applyToGroup($request, $mintedBySentinel, $cascadePlan, $depth + 1);
 
         foreach ($supersededComponents as $destLayerId => $entry) {
             StockLayerConsumption::query()->create([
