@@ -87,12 +87,25 @@ journal. Cross-module writes use Actions; the importer does not write domain tab
 
 ### Implemented foundation
 
-The shared Imports module now supports the `INVENTORY_CUTOVER` purpose with company-scoped saved
+The shared Imports module supports the `INVENTORY_CUTOVER` purpose with company-scoped saved
 mappings, immutable raw/mapped staging rows, per-row validation errors and idempotent external
 batch identity backed by a source checksum. Inventory registers the `OPENING_STATE` target schema;
 using that schema under `STANDARD` is rejected. The shared target contract exposes validation
 rules only, so staging/validation cannot commit `stock_moves`, `stock_layers` or `avco_pools`.
-Cutover records, approval and the Inventory-owned opening-state Actions are the next slice.
+
+Inventory's orchestration layer is also live. One non-failed `InventoryCutover` per company fixes
+the mode, timestamp, source system, target-policy snapshot and quantity/value controls. A validated
+generic batch attaches idempotently as an `InventoryCutoverBatch`; attachment resolves item,
+warehouse/location, UoM and currency references and creates immutable `InventorySourceFact` rows
+that retain both raw and mapped payloads. Preview returns exact decimal-string totals, validation
+reconciles them to the company controls, and approval must be independent of both creation and
+validation. The dedicated permissions are `inventory.cutover.create`, `.stage`, `.validate`,
+`.approve` and `.finalise`.
+
+Finalisation is implemented but intentionally refuses until every linked batch is `COMMITTED` by
+the upcoming Inventory-owned opening-state Action. Approval alone can therefore never claim that
+stock is live. PostgreSQL triggers enforce provenance scope, immutable definitions/source facts and
+monotonic status transitions even for raw SQL.
 
 ## Valuation continuity
 

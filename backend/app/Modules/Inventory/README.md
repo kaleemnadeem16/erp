@@ -33,6 +33,9 @@ movement and valuation, built in Phase 2.
   repair facts; multiple rows support partial settlement without rewriting posted history
 - `OpeningStateImportTarget` — the validation-only `INVENTORY_CUTOVER` schema registered with the
   shared Imports module; generic staging cannot use it for ordinary imports or write stock state
+- `InventoryCutover`, `InventoryCutoverBatch` and `InventorySourceFact` — the permissioned cutover
+  workflow and immutable predecessor-system evidence; approval cannot finalise before a later
+  opening-state Action commits every batch
 
 ## Does not own
 
@@ -121,6 +124,16 @@ synthetic-id bridge for either method: the already-approved, already-revalidated
 The multi-owner correction package remains unbuilt. Supported
 history and permission details live in
 [stock-recalculation.md](../../../../docs/domain/stock-recalculation.md).
+
+## Inventory cutover
+
+`CreateInventoryCutover`, `AttachInventoryCutoverBatch`, `ValidateInventoryCutover`,
+`ApproveInventoryCutover` and `FinaliseInventoryCutover` own the orchestration states. Each step
+uses its own `inventory.cutover.*` permission; approval is independent from creation/validation.
+`PreviewInventoryCutover` exposes exact staged/control totals without changing state. Attachment
+normalises a validated generic `OPENING_STATE` batch into immutable source facts, but no Action in
+this slice creates live stock. Finalisation remains gated on the method-specific opening-state
+Action that follows.
 
 ## Events
 

@@ -25,6 +25,7 @@ final class OpeningStateImportTarget implements ImportTarget
         return [
             'source_record_id' => ['required', 'string', 'max:255'],
             'item_code' => ['required', 'string', 'max:100'],
+            'warehouse_code' => ['required', 'string', 'max:100'],
             'location_code' => ['required', 'string', 'max:100'],
             'source_valuation_method' => ['required', Rule::in(['AVCO', 'FIFO', 'SPECIFIC'])],
             'source_avco_scope' => ['nullable', Rule::in(['COMPANY_ITEM', 'WAREHOUSE_ITEM', 'COMPANY_ITEM_BATCH'])],

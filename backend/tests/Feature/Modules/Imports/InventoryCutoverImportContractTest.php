@@ -128,6 +128,7 @@ class InventoryCutoverImportContractTest extends TestCase
         return [
             'source_id' => 'source_record_id',
             'sku' => 'item_code',
+            'warehouse' => 'warehouse_code',
             'location' => 'location_code',
             'method' => 'source_valuation_method',
             'scope' => 'source_avco_scope',
@@ -149,7 +150,7 @@ class InventoryCutoverImportContractTest extends TestCase
     private function validSourceRow(): array
     {
         return [
-            'source_id' => 'ROW-1', 'sku' => 'SKU-100', 'location' => 'MAIN',
+            'source_id' => 'ROW-1', 'sku' => 'SKU-100', 'warehouse' => 'MAIN', 'location' => 'MAIN',
             'method' => 'AVCO', 'scope' => 'COMPANY_ITEM', 'pool' => 'SKU-100',
             'qty' => '10.0000', 'uom' => 'EA', 'unit_cost' => '12.5000',
             'value' => '125.0000', 'base_value' => '125.0000',
