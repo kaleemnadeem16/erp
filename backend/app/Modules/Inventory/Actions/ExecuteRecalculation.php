@@ -8,6 +8,9 @@ use App\Exceptions\DomainInvariantException;
 use App\Models\Company;
 use App\Models\User;
 use App\Modules\Inventory\Actions\Movements\AvcoPoolManager;
+use App\Modules\Inventory\Actions\Recalculation\FifoReceiptReallocator;
+use App\Modules\Inventory\Actions\Recalculation\LayerCounterfactualReplayer;
+use App\Modules\Inventory\Actions\Recalculation\LayerReplayPlan;
 use App\Modules\Inventory\Actions\Recalculation\RecalculationImpactBuilder;
 use App\Modules\Inventory\Actions\Recalculation\RegenerationLimit;
 use App\Modules\Inventory\Models\Item;
@@ -38,35 +41,23 @@ use Illuminate\Support\Facades\DB;
  * converges `AvcoPoolManager` state to the approved `counterfactual_*`
  * figures via one additional VALUATION_ADJUSTMENT entry.
  *
- * SPECIFIC and FIFO share a layer-based path with no pool, gated by whether
- * `$residualAdjustment` (valuation_adjustment minus the receipt's own value)
- * is zero — a *structural* fact, not a value coincidence gone unchecked:
+ * SPECIFIC and FIFO share layer-based storage with no pool, but their
+ * execution paths differ:
  * - SPECIFIC's layer group is scoped to one exact serial. Nothing could have
  *   consumed a unit before it was received, so a new serial's group is
  *   always empty beforehand and untouched by any later event — its
  *   valuation_adjustment is provably always exactly the receipt's own value
  *   (see RequestStockRecalculationTest::
  *   test_specific_items_new_serial_computes_its_own_value_with_no_repricing_of_other_stock).
- *   The zero-residual guard below is a defensive assertion of that proof,
- *   never expected to actually trip.
+ *   Its zero-residual guard below is a defensive assertion of that proof.
  * - FIFO's layer group can hold many layers, and a backdated receipt's
- *   earlier received_at *can* shift which existing layer a later issue drew
- *   from in oldest-first order — but only when an existing older layer runs
- *   short before that later event, forcing allocation to reach past it into
- *   the new one. If every existing older layer already had enough, the new
- *   layer is provably never touched by LayerAllocator::allocate() during
- *   replay (removing an item a priority queue never selects doesn't change
- *   what it selects for anyone else), and valuation_adjustment again equals
- *   exactly the receipt's own value. Genuine reallocation always costs
- *   differently per layer wherever it matters (same layer group, so same
- *   batch; a same-cost coincidence swaps two economically identical layers,
- *   observable nowhere given QA-gated history is already refused upstream
- *   by LayerCounterfactualReplayer::guardHistory()) — so a zero residual
- *   here is genuinely proof of "untouched," not luck. A nonzero residual
- *   means real reallocation is needed: correcting the immutable
- *   stock_layer_consumptions ledger itself (paired reversal/re-consumption
- *   entries, cascading through any transfer that relayed a shifted layer
- *   onward), which this Action refuses rather than guesses at.
+ *   earlier received_at can shift later allocations. The replay plan compares
+ *   exact layer quantities, independently of whether equal costs happen to
+ *   make the monetary residual zero. Direct later issues are corrected by
+ *   append-only ALLOCATION_REVERSAL/replacement ALLOCATION pairs. An unchanged
+ *   later transfer is harmless; a transfer whose allocation changes remains
+ *   blocked because its immutable destination layers need provenance
+ *   correction as well as source reallocation.
  *
  * Issue/transfer execution remains unbuilt, the same honesty this ADR slice
  * has used throughout; see docs/domain/stock-recalculation.md. The
@@ -87,6 +78,8 @@ final class ExecuteRecalculation
         private readonly RecalculationImpactBuilder $impacts,
         private readonly RegenerationLimit $limit,
         private readonly AvcoPoolManager $pools,
+        private readonly LayerCounterfactualReplayer $layerReplay,
+        private readonly FifoReceiptReallocator $fifo,
     ) {}
 
     public function __invoke(RecalculationImpactVersion $version, User $actor): RecalculationExecution
@@ -147,6 +140,9 @@ final class ExecuteRecalculation
             $qty = BigDecimal::of($request->qty);
             $unitCost = BigDecimal::of($request->unit_cost);
             $baseUnitCost = BigDecimal::of($request->base_unit_cost);
+            $layerPlan = $item->valuation_method === ValuationMethod::Fifo
+                ? $this->layerReplay->plan($item, $location, $batch, $request->serial_no, $qty, $baseUnitCost, $request->moved_at)
+                : null;
 
             $move = StockMove::query()->create([
                 'movement_kind' => 'RECEIPT',
@@ -156,7 +152,7 @@ final class ExecuteRecalculation
                 'unit_cost' => (string) $unitCost, 'currency_id' => $request->currency_id, 'fx_rate' => $request->fx_rate,
                 'batch_id' => $batch?->id, 'serial_no' => $request->serial_no,
             ]);
-            StockLayer::query()->create([
+            $newLayer = StockLayer::query()->create([
                 'item_id' => $item->id, 'location_id' => $location->id,
                 'qty_received' => (string) $qty, 'qty_remaining' => (string) $qty,
                 'unit_cost' => (string) $unitCost, 'currency_id' => $request->currency_id,
@@ -164,16 +160,18 @@ final class ExecuteRecalculation
                 'received_at' => $request->moved_at, 'source_type' => $request->source_type, 'source_id' => $request->source_id,
                 'batch_id' => $batch?->id, 'serial_no' => $request->serial_no,
             ]);
+            if ($layerPlan instanceof LayerReplayPlan) {
+                $this->fifo->apply($request, $newLayer, $layerPlan);
+            }
 
             $accountId = $item->resolveInventoryAccountId();
             if ($accountId === null) {
                 throw new DomainInvariantException('A stock receipt requires a resolved inventory account.', 'item_id');
             }
-            // Two entries, auditable independently: the receipt's own true
-            // economic fact, plus whatever residual the approved counterfactual
-            // needs on top of it. Their base_amount sum always equals
-            // valuation_adjustment, which by construction brings the pool from
-            // its pre-execution value to exactly the approved counterfactual.
+            // The receipt's own true economic fact plus, when nonzero, the
+            // approved residual. Their base_amount sum always equals the
+            // valuation adjustment and converges the live method state to the
+            // approved counterfactual without rewriting an older feed row.
             $receiptBaseAmount = $qty->multipliedBy($baseUnitCost)->toScale(4, RoundingMode::HALF_UP);
             $move->valuationEntries()->create([
                 'avco_pool_id' => $pool?->id, 'pool_effect' => $pool === null ? null : 'DESTINATION_IN',
@@ -183,15 +181,13 @@ final class ExecuteRecalculation
             ]);
             $residualAdjustment = BigDecimal::of($attributes['valuation_adjustment'])->minus($receiptBaseAmount)->toScale(4, RoundingMode::HALF_UP);
             if (! $residualAdjustment->isZero()) {
-                if ($pool === null) {
-                    // Provably unreachable for SPECIFIC (see the class doc
-                    // comment); the expected refusal path for FIFO's genuine
-                    // layer-reallocation case, which needs real downstream
-                    // consumption re-linking this Action doesn't build yet.
+                if ($pool === null && $item->valuation_method !== ValuationMethod::Fifo) {
+                    // Provably unreachable for SPECIFIC; retain the assertion
+                    // rather than silently dropping an impossible residual.
                     throw new DomainInvariantException('This request needs a downstream valuation correction execution does not support for this method yet.', 'item_id');
                 }
                 $move->valuationEntries()->create([
-                    'avco_pool_id' => $pool->id, 'pool_effect' => 'VALUATION_ADJUSTMENT',
+                    'avco_pool_id' => $pool?->id, 'pool_effect' => $pool === null ? null : 'VALUATION_ADJUSTMENT',
                     'qty' => '0.0000', 'unit_cost' => '0.0000',
                     'amount' => (string) $residualAdjustment, 'base_amount' => (string) $residualAdjustment, 'account_id' => $accountId,
                 ]);

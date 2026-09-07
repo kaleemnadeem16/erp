@@ -92,7 +92,8 @@ final class MovementReplayScope
         }
         if ($history->item->valuation_method !== ValuationMethod::Avco) {
             $consumed = DB::table('stock_layer_consumptions')->where('company_id', $history->item->company_id)
-                ->whereIn('stock_layer_id', $history->layers->pluck('id'))->selectRaw('stock_layer_id, SUM(qty_consumed) AS qty')
+                ->whereIn('stock_layer_id', $history->layers->pluck('id'))
+                ->selectRaw("stock_layer_id, SUM(CASE WHEN purpose = 'ALLOCATION_REVERSAL' THEN -qty_consumed ELSE qty_consumed END) AS qty")
                 ->groupBy('stock_layer_id')->pluck('qty', 'stock_layer_id');
             foreach ($history->layers as $layer) {
                 if (! BigDecimal::of($layer->qty_received)->minus($consumed->get($layer->id, '0'))->isEqualTo($layer->qty_remaining)) {

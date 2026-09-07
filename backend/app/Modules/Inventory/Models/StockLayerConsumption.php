@@ -11,11 +11,9 @@ use App\Support\Concerns\GuardsRelatedCompanyScope;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Immutable record that one StockMove consumed a specific quantity of one
- * StockLayer, at that layer's own cost — the fact LayerAllocator::allocate()
- * computes but PostInventoryMovement previously discarded once qty_remaining
- * was decremented. FIFO/SPECIFIC only (see LayerAllocator::recordConsumption()):
- * AVCO's own replay works from the value ledger and has no reader for this.
+ * Immutable allocation ledger. ALLOCATION and receipt REVERSAL rows consume a
+ * layer; ALLOCATION_REVERSAL points to and negates part or all of one prior
+ * ALLOCATION without changing it. FIFO/SPECIFIC only.
  */
 class StockLayerConsumption extends Model
 {
@@ -31,7 +29,12 @@ class StockLayerConsumption extends Model
 
     protected static function companyScopedForeignKeys(): array
     {
-        return ['stock_move_id' => StockMove::class, 'stock_layer_id' => StockLayer::class];
+        return [
+            'stock_move_id' => StockMove::class,
+            'stock_layer_id' => StockLayer::class,
+            'reverses_consumption_id' => self::class,
+            'recalculation_request_id' => RecalculationRequest::class,
+        ];
     }
 
     protected function casts(): array

@@ -16,8 +16,8 @@ instead of by checking a box early.
 
 **Built today**: receipt, issue and transfer request/preview/approval workflows across
 **all three valuation methods**, within the supported clean-history boundaries below, plus
-execution for AVCO/SPECIFIC receipts, and untouched-history FIFO receipts, with no shortage
-involvement.
+execution for AVCO/SPECIFIC receipts and FIFO receipts through later direct issues, with no
+shortage involvement. FIFO histories that cross a transfer remain explicitly blocked.
 
 - Issue/transfer proposals now use connected movement replay with derived costs, both transfer
   sides and onward dependencies — see [stock-movement-replay.md](stock-movement-replay.md).
@@ -37,9 +37,11 @@ involvement.
   `ShortageSettler`'s provisional-cost rules in a parallel pure form is not yet built.
 - `stock_layer_consumptions` — permanently links each `LayerAllocator::allocate()` result to the
   move it served (an issue, a transfer's source side, or an exact-layer receipt reversal),
-  FIFO/SPECIFIC only — the fact
-  `PostInventoryMovement` previously discarded once `qty_remaining` was decremented. AVCO writes
-  none; its replay works from the value ledger instead.
+  FIFO/SPECIFIC only. Recalculation corrections are append-only too: an
+  `ALLOCATION_REVERSAL` references the exact prior `ALLOCATION` it negates, and a replacement
+  `ALLOCATION` identifies the recalculation request. PostgreSQL verifies matching company,
+  request, movement and layer scope and prevents over-reversal. AVCO writes none; its replay works
+  from the value ledger instead.
 - `LayerCounterfactualReplayer` — the FIFO/SPECIFIC counterpart, built on that ledger. One class
   covers both methods: SPECIFIC is FIFO with exactly one always-available layer of qty 1, so a
   brand-new serial degenerates to "its own value, zero repricing of anything else" without a
@@ -109,23 +111,25 @@ involvement.
   tightly that nothing could have consumed a unit before it existed, so a new serial's
   `valuation_adjustment` is provably always exactly its own value (see
   `RequestStockRecalculationTest::test_specific_items_new_serial_computes_its_own_value_with_no_repricing_of_other_stock`)
-  — a plain layer insert, no pool, no second entry. FIFO shares that same path, gated by whether
-  the residual (`valuation_adjustment` minus the receipt's own value) is zero: if every existing
-  older layer already had enough for every later event, the backdated layer is provably never
-  drawn from during replay (removing an item a priority queue never selects doesn't change what it
-  selects for anyone else) and the residual is exactly zero — genuinely untouched, not a value
-  coincidence, since a real reallocation between differently-costed layers always shows up in the
-  residual. A nonzero residual means real layer reallocation is needed and execution refuses rather
-  than guesses. Scoped to what this codebase can execute correctly today: AVCO always; SPECIFIC
-  always; FIFO only when the backdated layer turns out untouched — and always only when no
-  negative-stock shortage exists for the item/location/batch.
+  — a plain layer insert, no pool, no second entry. FIFO derives an exact desired allocation per
+  historical consumption and compares layer quantities independently of monetary value, so even
+  an equal-cost layer swap cannot hide a provenance change. If every later allocation is unchanged,
+  the receipt is a plain layer insert; otherwise later direct issues execute by releasing obsolete
+  draws with linked
+  `ALLOCATION_REVERSAL` rows, appending replacement `ALLOCATION` rows and changing only live
+  `qty_remaining`; the original movement, allocation and valuation facts stay immutable. All
+  releases happen before replacements so reallocating stock from a later issue to an earlier one
+  is independent of iteration order. The receipt move carries a zero-quantity residual valuation
+  entry when needed, so its entries sum to the approved adjustment. An unchanged later transfer is
+  allowed, but a transfer allocation that would change aborts and rolls back because its immutable
+  destination layers preserve the original cost/provenance slices and need a cascading append-only
+  correction of their own. Scoped to no negative-stock shortage for the item/location/batch.
 
 **Not yet built**: authority-only approval rerouting (a changed approver's authority, not the
 economics, requiring reroute rather than a fresh impact version — distinct from the same-actor
-renewal above); FIFO execution when real reallocation is needed (correcting the immutable
-`stock_layer_consumptions` ledger itself — paired reversal/re-consumption entries, cascading
-through any transfer that relayed a shifted layer onward — not just a converged average); and
-issue/transfer execution; and the full multi-owner correction package — Sales/Job
+renewal above); FIFO receipt execution through transfers (correcting immutable destination-layer
+provenance and cascading through any onward consumption); issue/transfer execution; and the full
+multi-owner correction package — Sales/Job
 Execution/Accounting routing, cross-module reconciliation and deferred obligations all need owning
 modules that don't exist yet, so every case this codebase can execute today is "remaining stock,"
 the one slice ADR 0040 lets Inventory own outright. No HTTP/API
@@ -133,12 +137,16 @@ layer exists for any of this, matching the negative-stock workflow, which doesn'
 
 ## Replay integrity and regeneration review
 
-Reversal consumption rows carry `purpose = REVERSAL`: replay removes the exact original layer,
-not whatever FIFO would allocate that day. Arrival comes from the layer's source `StockMove`;
+Receipt-reversal consumption rows carry `purpose = REVERSAL`: replay removes the exact original
+layer, not whatever FIFO would allocate that day. Allocation corrections use the distinct
+`ALLOCATION_REVERSAL`, whose signed effect releases quantity from its referenced allocation;
+replacement `ALLOCATION` rows consume it elsewhere. Arrival comes from the layer's source `StockMove`;
 `received_at` remains its FIFO age. Ties use movement id, then layer age/id for allocation.
 The allocator must cover the entire historical draw; partial allocation cannot silently pass.
 
-Before replay, every layer must reconcile `qty_received - SUM(qty_consumed) = qty_remaining`.
+Before replay, every layer must reconcile receipt/replacement allocations and exact receipt
+reversals minus allocation reversals back to `qty_received - effective consumption =
+qty_remaining`.
 Older stock with missing ledger entries, including historical reversals, is refused until its
 history is repaired through a separately controlled process; no guessed backfill is performed.
 An open shortage or a shortage created/settled in the replay window is refused, including a
@@ -172,8 +180,11 @@ replacement. This is not approval, execution or a reset of the historical invali
 Additive schema (annotated pseudo-DDL):
 
 ```sql
-stock_layer_consumptions: purpose varchar NOT NULL DEFAULT 'ALLOCATION'
-  CHECK purpose IN ('ALLOCATION', 'REVERSAL'); -- exact-layer reversal versus FIFO draw
+stock_layer_consumptions:
+  purpose varchar NOT NULL DEFAULT 'ALLOCATION'
+    CHECK purpose IN ('ALLOCATION', 'REVERSAL', 'ALLOCATION_REVERSAL');
+  reverses_consumption_id bigint NULL; -- only ALLOCATION_REVERSAL; exact prior allocation
+  recalculation_request_id bigint NULL; -- append-only correction provenance
 recalculation_impact_versions: dependency_fingerprint varchar(64) NULL;
   -- NULL only for older versions; frozen with the other impact facts
 recalculation_regeneration_reviews (

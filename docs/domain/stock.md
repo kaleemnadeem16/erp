@@ -233,7 +233,11 @@ the additive schema and its use in connected issue/transfer previews.
 Receipt reversal now records an immutable `stock_layer_consumptions` row with
 `purpose = REVERSAL`; ordinary issues/transfers default to `ALLOCATION`. This is FIFO/SPECIFIC
 only and preserves the exact reversed layer for historical replay. The ledger is protected
-against SQL updates/deletes as well as model mutations. See
+against SQL updates/deletes as well as model mutations. Approved FIFO receipt execution can also
+append an `ALLOCATION_REVERSAL` referencing the exact allocation it releases, followed by a
+replacement `ALLOCATION`; both retain their recalculation request. PostgreSQL constrains the
+reference to the same move/layer and prevents cumulative over-reversal, while replay treats the
+pair as a signed correction without rewriting either original fact. See
 [stock-recalculation.md](stock-recalculation.md#replay-integrity-and-regeneration-review) for
 history completeness checks and the additional review schema.
 

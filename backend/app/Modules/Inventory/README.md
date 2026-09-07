@@ -95,12 +95,13 @@ its own expiry and supports same-actor renewal after expiry. Three post-approval
 invalidations pause automatic regeneration. `ResumeRecalculationRegeneration` records manual
 coordination and appends an unapproved replacement without resetting history.
 `ExecuteRecalculation` posts an approved AVCO, SPECIFIC or FIFO receipt — AVCO converges the pool
-to the approved counterfactual; SPECIFIC and untouched-history FIFO are a plain layer insert, since
-neither ever needs a downstream correction (provably, not by coincidence — see the class doc
-comment). A FIFO receipt real history actually drew from is refused: that needs real downstream
-consumption re-linking, not just a converged average. Issue/transfer execution, authority-only
-rerouting and the multi-owner correction package remain unbuilt. Supported history and permission
-details live in
+to the approved counterfactual; SPECIFIC and untouched-history FIFO are a plain layer insert.
+When a FIFO receipt changes later direct issues, execution appends exact allocation reversals and
+replacement consumptions, adjusts live layer balances and posts the residual value correction in
+the same transaction. Transfer-connected FIFO execution remains blocked until immutable
+destination-layer provenance can be corrected and cascaded too. Issue/transfer execution,
+authority-only rerouting and the multi-owner correction package remain unbuilt. Supported history
+and permission details live in
 [stock-recalculation.md](../../../../docs/domain/stock-recalculation.md).
 
 ## Events

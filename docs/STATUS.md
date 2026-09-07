@@ -1,13 +1,14 @@
 # Project Status
 
-**Updated:** 2026-09-05
+**Updated:** 2026-09-07
 **Current phase:** Phase 2 — Purchasing & stock (in progress). Phase 1 — Master data is
 complete. Phase 0 — Foundation is done except the deliberately deferred production deployment.
 **Application code:** Laravel 12 backend — Phase 0 foundations (auth, company scoping, UoM,
 custom fields, sequences, currencies, Scramble→Orval type pipeline), Phase 1 master data
 (`Parties`, `Inventory`, `Accounting` CRUD APIs), and Phase 2 purchasing & stock (purchase
 orders, goods receipts, QA dispositions, reversal, and the full stock movement/valuation engine:
-issues, transfers, ADR 0037 negative-stock workflows). React 19 + Vite frontend skeleton with a
+issues, transfers, ADR 0037 negative-stock workflows, and append-only direct-issue FIFO receipt
+reallocation). React 19 + Vite frontend skeleton with a
 generated TS client covering every implemented endpoint.
 
 ---
@@ -23,22 +24,21 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 
 | Item | Date |
 |---|---|
-| **FIFO/SPECIFIC recalculation replayer** — `LayerCounterfactualReplayer` (one class covers both methods) reconstructs a layer group's state from the consumption ledger and re-walks later events using the real, unmodified `LayerAllocator::allocate()`. `RequestStockRecalculation`/`DecideRecalculationApproval` now branch by valuation method. Recalculation is real for all three methods, receipts only; issues/transfers, risk tiers, execution and correction packages remain — phase-2 checklist stays unticked → [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-04 |
 | **Recalculation risk classification + second approver** — `RecalculationRiskClassifier` marks every impact version `NORMAL_RISK`/`HIGH_RISK` at creation (closed-period overlap and an optional bounded company threshold; two other named hard triggers stay honestly unbuilt — no invoicing/job-costing model exists yet, and self-review still can't happen at all). `DecideRecalculationApproval` now requires one or two independent approvers by risk tier, DB-enforced (`guard_recalculation_approval_insert`) as well as in the Action; only the completing approval carries the TTL expiry. Issues/transfers, authority-only rerouting, execution and correction packages remain — phase-2 checklist stays unticked → [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-04 |
 | **Recalculation audit fixes** — exact-layer reversals, transfer arrival/FIFO-age separation, incomplete/shortage/QA history guards, complete impact revalidation, dedicated second-approver authority and capped regeneration with audited manual resumption → [stock-recalculation.md](domain/stock-recalculation.md#replay-integrity-and-regeneration-review) | 2026-09-05 |
 | **Backdated issues and transfers** — clean-history previews now derive outbound costs and follow both transfer sides plus onward FIFO/SPECIFIC or configured AVCO dependencies, retaining exact per-scope/per-movement differences for review → [stock-movement-replay.md](domain/stock-movement-replay.md) | 2026-09-05 |
 | **Recalculation approval expiry per ADR 0040** — every required approval now persists its own TTL the moment it's granted, not just whichever one completes the requirement; an approver may renew their own expired decision (a fresh append, never a mutation) without needing high-risk authority re-checked. A different approver still cannot claim a slot an expiry frees — that's authority-only rerouting, which remains unbuilt → [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-05 |
 | **Recalculation execution — AVCO receipts** — `ExecuteRecalculation` posts an approved backdated receipt truthfully at its physical date and converges the AVCO pool to the exact approved counterfactual via one immutable, idempotent `RecalculationExecution` record — the Inventory-owned correction package slice, since Sales/Job Execution/Accounting don't exist yet to own the rest. FIFO/SPECIFIC and issue/transfer execution, authority-only rerouting and multi-owner reconciliation remain → [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-05 |
-| **Recalculation execution — SPECIFIC receipts** — a new serial's layer group is scoped so tightly that nothing could have consumed it before it existed, so its adjustment is provably always its own value; `ExecuteRecalculation` now posts it as a plain layer insert, no pool, no correction entry. FIFO execution still needs real downstream consumption re-linking (a backdated receipt can shift which layer a later issue drew from), not just a converged average → [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-05 |
-| **Recalculation execution — untouched FIFO receipts** — extended the same zero-residual gate to FIFO: if every existing older layer already covered every later event, the backdated layer is provably never drawn from (a priority queue's unselected items don't affect what's selected for others), so it executes as a plain layer insert. A nonzero residual means real layer reallocation is needed and execution still refuses, since that needs correcting the immutable `stock_layer_consumptions` ledger itself → [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-05 |
+| **Recalculation execution — SPECIFIC receipts** — a new serial's layer group is scoped so tightly that nothing could have consumed it before it existed, so its adjustment is provably always its own value; `ExecuteRecalculation` posts it as a plain layer insert, no pool and no correction entry. FIFO uses its separate exact allocation-plan path → [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-05 |
+| **Recalculation execution — untouched FIFO receipts** — if the exact replay plan leaves every later layer allocation unchanged, the backdated receipt executes as a plain layer insert without manufacturing a correction. Allocation comparison is now independent of monetary residual, so an equal-cost provenance change cannot hide → [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-05 |
+| **Recalculation execution — direct-issue FIFO reallocation** — approved backdated FIFO receipts now append exact `ALLOCATION_REVERSAL` links and replacement allocations, update live layer balances atomically and post the approved residual valuation adjustment without mutating original issue facts. Transfer-connected histories still refuse because their immutable destination-layer provenance needs the next cascading slice → [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-07 |
 
 ## Next
 
 Continue [Phase 2 — Purchasing & stock](phases/phase-2-purchasing-stock.md):
 
-1. Extend execution to FIFO's genuine-reallocation case — needs correcting the immutable
-   `stock_layer_consumptions` ledger itself (paired reversal/re-consumption, cascading through any
-   transfer that relayed a shifted layer onward), then to issues/transfers, then build
+1. Extend FIFO receipt execution through transfers by appending corrected destination-layer
+   provenance and cascading into onward consumption; then add issue/transfer execution and
    authority-only approval rerouting.
 2. The multi-owner correction package (Sales/Job Execution/Accounting routing, cross-module
    reconciliation) waits on those modules existing — Phase 4/5/6.

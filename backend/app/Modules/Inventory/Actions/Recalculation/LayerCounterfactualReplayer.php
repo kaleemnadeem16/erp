@@ -39,6 +39,18 @@ final class LayerCounterfactualReplayer
         BigDecimal $proposedUnitCost,
         CarbonInterface $movedAt,
     ): ImpactPreview {
+        return $this->plan($item, $location, $batch, $serialNo, $proposedQty, $proposedUnitCost, $movedAt)->preview;
+    }
+
+    public function plan(
+        Item $item,
+        Location $location,
+        ?StockBatch $batch,
+        ?string $serialNo,
+        BigDecimal $proposedQty,
+        BigDecimal $proposedUnitCost,
+        CarbonInterface $movedAt,
+    ): LayerReplayPlan {
         if ($this->hasUnsupportedShortage($item, $location, $batch, $movedAt)) {
             throw new DomainInvariantException("This location had negative-stock shortage activity after the proposed date — recalculation isn't yet supported for this case.", 'moved_at');
         }
@@ -66,6 +78,7 @@ final class LayerCounterfactualReplayer
         ]);
         $newLayer->id = PHP_INT_MAX;
         $queue->push($newLayer);
+        $allocationsByMove = collect();
 
         foreach ($this->laterEvents($allLayers, $arrivals, $movedAt) as $event) {
             if ($event['type'] === 'supply') {
@@ -96,12 +109,16 @@ final class LayerCounterfactualReplayer
                 $allocatedLayer = $allocation['layer'];
                 $allocatedLayer->qty_remaining = (string) BigDecimal::of($allocatedLayer->qty_remaining)->minus($allocation['qty']);
             }
+            $allocationsByMove->put((int) $event['move_id'], $allocations->map(fn (array $allocation): array => [
+                'layer_id' => (int) $allocation['layer']->id,
+                'qty' => $allocation['qty'],
+            ])->values());
         }
 
         [$originalQty, $originalValue] = $this->aggregate($allLayers);
         [$counterfactualQty, $counterfactualValue] = $this->aggregate($queue);
 
-        return new ImpactPreview(
+        $preview = new ImpactPreview(
             pool: null,
             originalQtyOnHand: $originalQty,
             originalInventoryValue: $originalValue,
@@ -110,6 +127,8 @@ final class LayerCounterfactualReplayer
             counterfactualInventoryValue: $counterfactualValue,
             counterfactualAvgUnitCost: $counterfactualQty->isZero() ? BigDecimal::zero() : $counterfactualValue->dividedBy($counterfactualQty, 4, RoundingMode::HALF_UP),
         );
+
+        return new LayerReplayPlan($preview, $allocationsByMove);
     }
 
     /** @return Collection<int, StockLayer> */
@@ -136,11 +155,13 @@ final class LayerCounterfactualReplayer
             ->whereIn('stock_layer_id', $layerIds)
             ->join('stock_moves', 'stock_moves.id', '=', 'stock_layer_consumptions.stock_move_id')
             ->where('stock_moves.moved_at', '<=', $movedAt)
-            ->select('stock_layer_consumptions.stock_layer_id', 'stock_layer_consumptions.qty_consumed')
+            ->select('stock_layer_consumptions.stock_layer_id', 'stock_layer_consumptions.qty_consumed', 'stock_layer_consumptions.purpose')
             ->get()
             ->groupBy('stock_layer_id')
             ->map(fn (Collection $rows): BigDecimal => $rows->reduce(
-                fn (BigDecimal $total, $row): BigDecimal => $total->plus(BigDecimal::of($row->qty_consumed)),
+                fn (BigDecimal $total, $row): BigDecimal => $row->purpose === 'ALLOCATION_REVERSAL'
+                    ? $total->minus(BigDecimal::of($row->qty_consumed))
+                    : $total->plus(BigDecimal::of($row->qty_consumed)),
                 BigDecimal::zero(),
             ));
     }
@@ -171,7 +192,8 @@ final class LayerCounterfactualReplayer
     private function guardHistory(Collection $layers): void
     {
         $totals = DB::table('stock_layer_consumptions')->where('stock_layer_consumptions.company_id', app(CompanyContext::class)->id())->whereIn('stock_layer_id', $layers->pluck('id'))
-            ->selectRaw('stock_layer_id, SUM(qty_consumed) AS qty')->groupBy('stock_layer_id')->pluck('qty', 'stock_layer_id');
+            ->selectRaw("stock_layer_id, SUM(CASE WHEN purpose = 'ALLOCATION_REVERSAL' THEN -qty_consumed ELSE qty_consumed END) AS qty")
+            ->groupBy('stock_layer_id')->pluck('qty', 'stock_layer_id');
         foreach ($layers as $layer) {
             if (! BigDecimal::of($layer->qty_received)->minus($totals->get($layer->id, '0'))->isEqualTo($layer->qty_remaining)) {
                 throw new DomainInvariantException('Layer history is incomplete or includes shortage settlement; replay cannot reconstruct it safely.', 'moved_at');
@@ -204,11 +226,21 @@ final class LayerCounterfactualReplayer
             ->select('stock_layer_consumptions.*', 'stock_moves.moved_at')->get();
         foreach ($rows->groupBy('stock_move_id') as $moveId => $consumptions) {
             $first = $consumptions->first();
+            $isReceiptReversal = $consumptions->every(fn ($row): bool => $row->purpose === 'REVERSAL');
+            $qty = $consumptions->reduce(
+                fn (BigDecimal $sum, $row): BigDecimal => $row->purpose === 'ALLOCATION_REVERSAL'
+                    ? $sum->minus(BigDecimal::of($row->qty_consumed))
+                    : $sum->plus(BigDecimal::of($row->qty_consumed)),
+                BigDecimal::zero(),
+            );
+            if ($qty->isZero()) {
+                continue;
+            }
             $events->push([
-                'type' => $first->purpose === 'REVERSAL' ? 'reversal' : 'consume',
+                'type' => $isReceiptReversal ? 'reversal' : 'consume',
                 'at' => Carbon::parse($first->moved_at), 'move_id' => $moveId,
                 'layer_id' => $first->stock_layer_id,
-                'qty' => $consumptions->reduce(fn (BigDecimal $sum, $row): BigDecimal => $sum->plus($row->qty_consumed), BigDecimal::zero()),
+                'qty' => $qty,
             ]);
         }
 
