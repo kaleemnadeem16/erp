@@ -13,14 +13,16 @@ use App\Modules\Inventory\Support\AvcoPoolScope;
 use App\Support\CompanyContext;
 use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Resolves, locks and writes AVCO pool state for PostInventoryMovement.
- * Internal to the sole movement boundary — never call this from outside that
- * Action. All multi-pool locking here is in ascending pool-id order so
- * concurrent movements over the same pools cannot invert lock order and
- * deadlock.
+ * Resolves, locks and writes AVCO pool state for PostInventoryMovement and,
+ * for the recalculation workflow's own execution Actions
+ * (ExecuteRecalculation, OutboundRecalculationExecutor), for converging live
+ * pool state to an approved counterfactual. All multi-pool locking here is
+ * in ascending pool-id order so concurrent movements over the same pools
+ * cannot invert lock order and deadlock.
  */
 final class AvcoPoolManager
 {
@@ -55,6 +57,44 @@ final class AvcoPoolManager
         }
 
         return [$source, $destination];
+    }
+
+    /**
+     * Resolves and locks every pool an outbound recalculation's connected
+     * component actually touched, keyed by the same scope-key strings
+     * MovementReplayHistory::key() and movement_impact's counterfactual_scopes
+     * already use ('company' | 'warehouse:ID' | 'batch:ID') — ascending
+     * pool-id lock order, the same discipline lock()/lockPair() use, just
+     * generalised to however many pools a connected component contains
+     * instead of exactly one or two.
+     *
+     * @param  Collection<int, string>  $scopeKeys
+     * @return Collection<string, AvcoPool> keyed by scope key
+     */
+    public function lockByScopeKeys(Item $item, Collection $scopeKeys): Collection
+    {
+        $identityByKey = $scopeKeys->mapWithKeys(fn (string $key): array => [$key => $this->identityForScopeKey($item, $key)]);
+        foreach ($identityByKey as $identity) {
+            $this->ensureExists($identity);
+        }
+        $poolIdByKey = $identityByKey->map(fn (array $identity): int => (int) AvcoPool::query()->where($identity)->value('id'));
+        $pools = AvcoPool::query()->whereIn('id', $poolIdByKey->unique()->values())
+            ->orderBy('id')->lockForUpdate()->get()->keyBy('id');
+
+        return $poolIdByKey->map(fn (int $id): AvcoPool => $pools->get($id));
+    }
+
+    /** @return array{item_id:int, scope:string, warehouse_id:int|null, batch_id:int|null} */
+    private function identityForScopeKey(Item $item, string $key): array
+    {
+        $base = ['item_id' => $item->id, 'scope' => $item->avco_pool_scope->value, 'warehouse_id' => null, 'batch_id' => null];
+
+        return match (true) {
+            $key === 'company' => $base,
+            str_starts_with($key, 'warehouse:') => [...$base, 'warehouse_id' => (int) substr($key, strlen('warehouse:'))],
+            str_starts_with($key, 'batch:') => [...$base, 'batch_id' => (int) substr($key, strlen('batch:'))],
+            default => throw new DomainInvariantException('Unrecognised AVCO scope key.', 'item_id'),
+        };
     }
 
     /**

@@ -65,6 +65,11 @@ Leads, opportunities, quotations with revisions, cost snapshotting, PDF output. 
 substantial UI work — mobile layout patterns should be settled before this. RTL is not
 needed — English only ([ADR 0026](../decisions/0026-english-only-no-rtl.md)).
 
+**Owes [ADR 0040](../decisions/0040-control-backdated-stock-recalculation-and-corrections.md)'s
+multi-owner correction package**: once sold stock exists, a backdated-recalculation correction
+delta touching it needs a Sales/COGS correction line — see
+[stock-recalculation.md](../domain/stock-recalculation.md)'s "Not yet built."
+
 *Formerly blocked by Q3 — tax model now decided
 ([ADR 0025](../decisions/0025-configurable-tax-engine.md)).*
 → [sales-pipeline.md](../domain/sales-pipeline.md)
@@ -72,11 +77,21 @@ needed — English only ([ADR 0026](../decisions/0026-english-only-no-rtl.md)).
 ### Phase 5 — Job execution
 Jobs, work orders, material issue, timesheets, unified job cost entries, estimate-vs-actual
 variance reporting. This is where the system starts paying for itself.
+
+**Owes [ADR 0040](../decisions/0040-control-backdated-stock-recalculation-and-corrections.md)'s
+multi-owner correction package**: once job-consumed stock exists, a correction delta touching it
+needs a Job Execution job-cost correction line — see
+[stock-recalculation.md](../domain/stock-recalculation.md)'s "Not yet built."
 → [job-costing.md](../domain/job-costing.md)
 
 ### Phase 6 — Finance
 Double-entry GL, progress invoicing, receipts, allocation, customer ledger and statements,
 aging, realised FX. The largest phase.
+
+**Owes [ADR 0040](../decisions/0040-control-backdated-stock-recalculation-and-corrections.md)'s
+multi-owner correction package**: once the GL exists, a correction's economic allocation needs a
+balanced-journal representation, not just Inventory's own valuation-adjustment feed — see
+[stock-recalculation.md](../domain/stock-recalculation.md)'s "Not yet built."
 
 *Formerly blocked by Q1 and Q3 — retention and tax model now decided
 ([ADR 0023](../decisions/0023-retention-retainage-enabled.md),

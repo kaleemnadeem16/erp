@@ -107,10 +107,16 @@ each transfer's destination layer-component(s) are superseded by freshly minted 
 reallocation cascades into whatever that destination's own later issues or further transfers
 already consumed from them, however deep the real chain goes. `ExecuteRecalculation` also posts an
 approved backdated ISSUE or TRANSFER (`OutboundRecalculationExecutor`), mirroring
-`IssuePoster`/`TransferPoster`'s posting shape at the true historical date — but only when the
-revalidated replay changes no other move; a request that reprices other history still refuses,
-since `MovementReplayState`'s preview simulation has no real-layer-id bridge yet for the same
-append-only correction receipts get. The multi-owner correction package remains unbuilt. Supported
+`IssuePoster`/`TransferPoster`'s posting shape at the true historical date, whether or not the
+revalidated replay changes other history. FIFO/SPECIFIC use the same real-layer-id engine as the
+receipt case — `LayerCounterfactualReplayer::planOutboundInsertion()` performs the new move's own
+outbound draw against reconstructed as-of-`moved_at` state, then `FifoReceiptReallocator::
+applyCorrections()` cascades whatever later real moves that draw displaces, however many hops
+deep. AVCO converges every pool the connected component touched (not just source/destination) to
+its own `counterfactual_scopes` snapshot and posts a residual per pool. The GL side never needs a
+synthetic-id bridge for either method: the already-approved, already-revalidated
+`valuation_adjustment` is posted as-is, split into the new move's own entry plus a residual plug.
+The multi-owner correction package remains unbuilt. Supported
 history and permission details live in
 [stock-recalculation.md](../../../../docs/domain/stock-recalculation.md).
 

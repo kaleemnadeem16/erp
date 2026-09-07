@@ -82,9 +82,9 @@ final class LayerCounterfactualReplayer
     /**
      * Reconstructs a layer group's real state as of a point in time — real
      * layer ids, qty_remaining as it stood then — shared by plan()'s pre-T
-     * queue and HistoricalLayerAllocator's fresh outbound allocation. Also
-     * returns the group's full layer set and their arrival moves, since
-     * plan() needs both again to walk later events.
+     * queue and planOutboundInsertion()'s fresh outbound allocation. Also
+     * returns the group's full layer set and their arrival moves, since both
+     * callers need them again to walk later events.
      *
      * @return array{0: Collection<int, StockLayer>, 1: array<int, array{at: CarbonInterface, move_id: int}>, 2: Collection<int, StockLayer>}
      */
@@ -110,6 +110,53 @@ final class LayerCounterfactualReplayer
         })->values();
 
         return [$allLayers, $arrivals, $queue];
+    }
+
+    /**
+     * The outbound counterpart to plan(): instead of inserting a new layer,
+     * this performs a new outbound draw — an approved backdated ISSUE, or
+     * the source-side leg of a backdated TRANSFER — against the group's real
+     * state as of moved_at, then continues the identical walkLaterEvents()
+     * re-walk to find whatever later real moves that draw displaces. Real
+     * layer ids throughout, since nothing new is being received — no
+     * synthetic-id bridge is needed the way MovementReplayState's preview
+     * simulation would need one. The GL/value side is deliberately not
+     * computed here: MovementCounterfactualReplayer's already-approved,
+     * already-revalidated `valuation_adjustment` remains the sole source for
+     * that; this method only ever answers "which real layer(s) now".
+     *
+     * @return array{ownAllocation: Collection<int, array{layer: StockLayer, qty: BigDecimal}>, plan: LayerReplayPlan}
+     */
+    public function planOutboundInsertion(Item $item, Location $location, ?StockBatch $batch, ?string $serialNo, BigDecimal $qty, CarbonInterface $movedAt): array
+    {
+        [$allLayers, $arrivals, $queue] = $this->reconstructAsOf($item, $location, $batch, $serialNo, $movedAt);
+
+        $sorted = $queue->sortBy([['received_at', 'asc'], ['id', 'asc']])->values();
+        $ownAllocation = $this->layers->allocate($sorted, $qty);
+        $allocated = $ownAllocation->reduce(fn (BigDecimal $sum, array $a): BigDecimal => $sum->plus($a['qty']), BigDecimal::zero());
+        if (! $allocated->isEqualTo($qty)) {
+            throw new DomainInvariantException('The live ledger no longer has physical cover for this backdated movement.', 'moved_at');
+        }
+        foreach ($ownAllocation as $allocation) {
+            $allocation['layer']->qty_remaining = (string) BigDecimal::of($allocation['layer']->qty_remaining)->minus($allocation['qty']);
+        }
+
+        [$queue, $allocationsByMove] = $this->walkLaterEvents($allLayers, $arrivals, $movedAt, $queue);
+
+        [$originalQty, $originalValue] = $this->aggregate($allLayers);
+        [$counterfactualQty, $counterfactualValue] = $this->aggregate($queue);
+
+        $preview = new ImpactPreview(
+            pool: null,
+            originalQtyOnHand: $originalQty,
+            originalInventoryValue: $originalValue,
+            originalAvgUnitCost: $originalQty->isZero() ? BigDecimal::zero() : $originalValue->dividedBy($originalQty, 4, RoundingMode::HALF_UP),
+            counterfactualQtyOnHand: $counterfactualQty,
+            counterfactualInventoryValue: $counterfactualValue,
+            counterfactualAvgUnitCost: $counterfactualQty->isZero() ? BigDecimal::zero() : $counterfactualValue->dividedBy($counterfactualQty, 4, RoundingMode::HALF_UP),
+        );
+
+        return ['ownAllocation' => $ownAllocation, 'plan' => new LayerReplayPlan($preview, $allocationsByMove)];
     }
 
     /**

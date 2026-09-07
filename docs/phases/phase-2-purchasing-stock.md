@@ -171,12 +171,12 @@ The order matters because later work needs stable document and stock boundaries:
       [ADR 0040](../decisions/0040-control-backdated-stock-recalculation-and-corrections.md). Receipt,
       issue and transfer previews are implemented for supported histories;
       [connected replay](../domain/stock-movement-replay.md) includes both transfer sides
-- [ ] Enforce bounded company-configurable review SLAs (72-hour default), overdue escalation that
+- [x] Enforce bounded company-configurable review SLAs (72-hour default), overdue escalation that
       preserves requester/approver separation, and hard approved-execution TTLs (24-hour default)
-      using persisted deadlines and trusted server time. Each required approval now persists its
-      own expiry and supports same-actor renewal after expiry, and `ExecuteRecalculation` enforces
-      `ALL_REQUIRED_APPROVALS_UNEXPIRED` for the one slice execution covers so far — full coverage
-      across every movement kind/method remains
+      using persisted deadlines and trusted server time. Each required approval persists its own
+      expiry and supports same-actor renewal after expiry, and `ExecuteRecalculation` enforces
+      `ALL_REQUIRED_APPROVALS_UNEXPIRED` uniformly before branching by movement kind, covering every
+      movement kind and valuation method
       ([stock-recalculation.md](../domain/stock-recalculation.md))
 - [x] Implement exact semantic impact comparison, authority-only approval rerouting, per-version
       normal/high-risk classification and mandatory second independent approval for hard high-risk
@@ -184,13 +184,13 @@ The order matters because later work needs stable document and stock boundaries:
       [ADR 0040](../decisions/0040-control-backdated-stock-recalculation-and-corrections.md)
 - [ ] Audit every consequential company-policy change with elevated permission, mandatory reason,
       actor, old/new values and timestamp without rewriting snapshotted request context/deadlines
-- [ ] Serialise overlapping recalculation execution with deterministic locks over the complete
+- [x] Serialise overlapping recalculation execution with deterministic locks over the complete
       method-specific replay closure, count only post-approval material invalidations toward the
       regeneration cap, and escalate repeated cap hits without resetting the counter.
       `ExecuteRecalculation` does this for AVCO, SPECIFIC and FIFO receipts through later direct
-      issues and any depth of transfer chain, and for backdated issues/transfers whose replay
-      changes nothing else (locks the location/valuation closure and revalidates before posting);
-      issue/transfer execution when the replay reprices other history remains
+      issues and any depth of transfer chain, and for backdated issues/transfers whether or not
+      their replay reprices other history (`OutboundRecalculationExecutor`, same real-layer-id
+      correction engine as the receipt case for FIFO/SPECIFIC, multi-pool convergence for AVCO)
 - [ ] Build idempotent append-only correction packages preserving exact approved deltas, historical
       FX bases, deterministic downstream allocation, explicit pending owners and zero-residual
       reconciliation per

@@ -15,9 +15,13 @@ use Brick\Math\BigDecimal;
 use Illuminate\Support\Collection;
 
 /**
- * Applies an approved FIFO receipt replay's downstream corrections. Internal
- * to ExecuteRecalculation and must run inside that Action's locked
- * transaction.
+ * Applies an approved FIFO recalculation replay's downstream corrections.
+ * Internal to ExecuteRecalculation and must run inside that Action's locked
+ * transaction. Two entry points share the same correction engine below:
+ * apply() for a backdated receipt (a newly minted layer other moves may now
+ * draw from) and applyCorrections() for a backdated ISSUE/TRANSFER's own
+ * outbound insertion (no new layer — displaced draws land on an existing
+ * real layer instead, since nothing new is being received).
  *
  * A later direct issue is corrected in place: release its stale ALLOCATION,
  * append a replacement. A later transfer is corrected one level deeper — its
@@ -30,7 +34,7 @@ use Illuminate\Support\Collection;
  * cascading through however many hops real history actually contains —
  * already consumed from them. Recursion is bounded by real history alone
  * (each hop strictly follows a later stock_moves.moved_at than the one
- * before it), the same way issue/transfer execution itself remains unbuilt.
+ * before it).
  */
 final class FifoReceiptReallocator
 {
@@ -41,6 +45,17 @@ final class FifoReceiptReallocator
     public function apply(RecalculationRequest $request, StockLayer $newLayer, LayerReplayPlan $plan): void
     {
         $this->applyToGroup($request, collect([self::PROPOSED_LAYER_ID => $newLayer]), $plan, 0);
+    }
+
+    /**
+     * A backdated ISSUE/TRANSFER's own outbound draw needs no new layer —
+     * every displaced allocation this plan names is already a real,
+     * pre-existing layer (LayerCounterfactualReplayer::planOutboundInsertion()
+     * builds it that way), so the sentinel map stays empty.
+     */
+    public function applyCorrections(RecalculationRequest $request, LayerReplayPlan $plan): void
+    {
+        $this->applyToGroup($request, collect(), $plan, 0);
     }
 
     /** @param  Collection<int, StockLayer>  $newLayersBySentinel */

@@ -16,8 +16,11 @@ instead of by checking a box early.
 
 **Built today**: receipt, issue and transfer request/preview/approval workflows across
 **all three valuation methods**, within the supported clean-history boundaries below, plus
-execution for AVCO/SPECIFIC receipts and FIFO receipts through later direct issues, with no
-shortage involvement. FIFO histories that cross a transfer remain explicitly blocked.
+execution for AVCO/SPECIFIC receipts and FIFO receipts through later direct issues and however
+many transfer hops real history contains, with no shortage involvement; backdated issue/transfer
+execution for all three valuation methods, whether or not the replay changes other history; and
+authority-only approval rerouting. This completes ADR 0040's executable-today scope — everything
+left is the multi-owner correction package (see "Not yet built" below).
 
 - Issue/transfer proposals now use connected movement replay with derived costs, both transfer
   sides and onward dependencies — see [stock-movement-replay.md](stock-movement-replay.md).
@@ -49,9 +52,13 @@ shortage involvement. FIFO histories that cross a transfer remain explicitly blo
   inserts the hypothetical layer, then re-walks every later receipt (passthrough) and consumption
   (re-running the real, unmodified `LayerAllocator::allocate()` against the counterfactual queue —
   reusing the production selection algorithm rather than a second copy that could drift). Same
-  shortage-window refusal boundary as the AVCO replayer, same reasoning. For these receipt replayers, a transfer's destination
-  side remains out of scope — treated as an ordinary outbound consumption from the
-  source, no cascade into the destination's own subsequent history.
+  shortage-window refusal boundary as the AVCO replayer, same reasoning. The *preview value* this
+  computes never needs to look past a transfer's destination — a transfer is just an ordinary
+  outbound consumption from the source group's own perspective, and since the GL inventory account
+  isn't location-partitioned, the source group's own aggregate is already the complete, correct
+  approval number regardless of what happens downstream. *Execution* is what actually walks into
+  the destination (and however many further hops) to keep the physical ledger consistent — see
+  `planTransferCascade()` below.
 - `RecalculationRequest` → `RecalculationImpactVersion` (immutable, append-only, one controlled
   `is_stale` false→true transition) → one or more `RecalculationApproval`s (each targets one exact
   version, requester/approver separation is absolute). `avco_pool_id` is set for AVCO and null for
@@ -149,27 +156,37 @@ shortage involvement. FIFO histories that cross a transfer remain explicitly blo
   the same item, walked with a recursive query rather than hardcoded to one hop. Scoped to no
   negative-stock shortage for the item/location/batch.
 
-- `ExecuteRecalculation` also posts an approved backdated **ISSUE or TRANSFER**, for the
-  clean-replay case only: the freshly-revalidated `movement_impact['changed_movements']` must be
-  empty — inserting the proposed move at its true date changes no other real move's allocation or
-  cost. `OutboundRecalculationExecutor` then posts it at that true `moved_at`, mirroring
-  `IssuePoster`/`TransferPoster`'s own shape (physical layer decrement, AVCO pool convergence to
-  the revalidated `counterfactual_scopes` entry for each pool touched, destination layer creation
-  for a transfer). FIFO/SPECIFIC use `HistoricalLayerAllocator` — the real layer state as it stood
-  at `moved_at`, since which layer a draw lands on determines its cost and a not-yet-arrived layer
-  must never be drawn from; AVCO uses the same *live*, today's-remaining-layers allocation
-  `TransferPoster` always uses regardless of method, since an AVCO layer is pure traceability, not
-  a cost source. A request whose replay would reprice other history still refuses — the
-  synthetic-only layer ids `MovementReplayState`'s simulation uses for FIFO/SPECIFIC preview have
-  no preserved mapping back to real `stock_layers.id`, so correcting other moves the way
-  `FifoReceiptReallocator` does for receipts needs that bridge built first.
+- `ExecuteRecalculation` also posts an approved backdated **ISSUE or TRANSFER**
+  (`OutboundRecalculationExecutor`), whether or not the revalidated replay changes other history.
+  It posts the new move at its true `moved_at`, mirroring `IssuePoster`/`TransferPoster`'s own
+  posting shape (physical layer decrement, AVCO pool convergence, destination layer creation for a
+  transfer). FIFO/SPECIFIC reuse the same real-layer-id engine the receipt case already proved:
+  `LayerCounterfactualReplayer::planOutboundInsertion()` performs the new move's own outbound draw
+  against the group's reconstructed as-of-`moved_at` state (real layer ids throughout — no
+  synthetic bridge needed, since nothing new is being received), then the shared `walkLaterEvents()`
+  re-walk finds whatever later real moves that draw displaces; `FifoReceiptReallocator::
+  applyCorrections()` cascades the correction into them exactly like a receipt's, however many
+  transfer hops deep. Corrections for those later moves must run *before* this move's own
+  allocation is locked, not after — the new move's own draw can depend on capacity a later move's
+  stale over-consumption only releases back once corrected. AVCO has no physical side to correct
+  (an AVCO layer is pure traceability with no consumption ledger), so its changed-history case is
+  only the value side: every pool the connected component touched — not just source/destination —
+  converges to its own already-computed `counterfactual_scopes` snapshot
+  (`AvcoPoolManager::lockByScopeKeys()`, same ascending-id lock-ordering discipline as
+  `lock()`/`lockPair()`, generalised to however many pools a component spans), and a residual
+  entry per pool keeps that pool's own GL feed reconciling. For both methods the GL/value side
+  never needs re-deriving at execution time: the already-approved, already-revalidated
+  `valuation_adjustment` is posted as-is, split into the new move's own entry plus whatever
+  residual plug makes the total exact — the same "own entry + residual" pattern the receipt case
+  uses.
 
-**Not yet built**: issue/transfer execution when the replay changes other history; and the full
-multi-owner correction package — Sales/Job
-Execution/Accounting routing, cross-module reconciliation and deferred obligations all need owning
-modules that don't exist yet, so every case this codebase can execute today is "remaining stock,"
-the one slice ADR 0040 lets Inventory own outright. No HTTP/API
-layer exists for any of this, matching the negative-stock workflow, which doesn't have one either.
+**Not yet built**: the full multi-owner correction package — Sales/Job Execution/Accounting
+routing, cross-module reconciliation and deferred obligations all need owning modules that don't
+exist yet ([phase-2-purchasing-stock.md](../phases/phase-2-purchasing-stock.md) and
+[phases/README.md](../phases/README.md) cross-reference this at Phase 4/5/6), so every case this
+codebase can execute today is "remaining stock," the one slice ADR 0040 lets Inventory own
+outright. No HTTP/API layer exists for any of this, matching the negative-stock workflow, which
+doesn't have one either.
 
 ## Replay integrity and regeneration review
 

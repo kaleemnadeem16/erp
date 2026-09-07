@@ -7,10 +7,11 @@ complete. Phase 0 — Foundation is done except the deliberately deferred produc
 custom fields, sequences, currencies, Scramble→Orval type pipeline), Phase 1 master data
 (`Parties`, `Inventory`, `Accounting` CRUD APIs), and Phase 2 purchasing & stock (purchase
 orders, goods receipts, QA dispositions, reversal, and the full stock movement/valuation engine:
-issues, transfers, ADR 0037 negative-stock workflows, append-only FIFO receipt reallocation
-through direct issues and however many transfer hops real history contains, clean-replay backdated
-issue/transfer execution, and authority-only recalculation approval rerouting). React 19 + Vite
-frontend skeleton with a generated TS client covering every implemented endpoint.
+issues, transfers, ADR 0037 negative-stock workflows, and ADR 0040's backdated recalculation
+workflow complete for every executable case — receipts, issues and transfers, all three valuation
+methods, clean or changed-history replay alike, plus authority-only approval rerouting; only the
+multi-owner correction package awaiting Phase 4/5/6 remains). React 19 + Vite frontend skeleton
+with a generated TS client covering every implemented endpoint.
 
 ---
 
@@ -25,7 +26,6 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 
 | Item | Date |
 |---|---|
-| **Recalculation execution — AVCO receipts** — `ExecuteRecalculation` posts an approved backdated receipt truthfully at its physical date and converges the AVCO pool to the exact approved counterfactual via one immutable, idempotent `RecalculationExecution` record — the Inventory-owned correction package slice, since Sales/Job Execution/Accounting don't exist yet to own the rest. FIFO/SPECIFIC and issue/transfer execution, authority-only rerouting and multi-owner reconciliation remain → [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-05 |
 | **Recalculation execution — SPECIFIC receipts** — a new serial's layer group is scoped so tightly that nothing could have consumed it before it existed, so its adjustment is provably always its own value; `ExecuteRecalculation` posts it as a plain layer insert, no pool and no correction entry. FIFO uses its separate exact allocation-plan path → [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-05 |
 | **Recalculation execution — untouched FIFO receipts** — if the exact replay plan leaves every later layer allocation unchanged, the backdated receipt executes as a plain layer insert without manufacturing a correction. Allocation comparison is now independent of monetary residual, so an equal-cost provenance change cannot hide → [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-05 |
 | **Recalculation execution — direct-issue FIFO reallocation** — approved backdated FIFO receipts now append exact `ALLOCATION_REVERSAL` links and replacement allocations, update live layer balances atomically and post the approved residual valuation adjustment without mutating original issue facts. Transfer-connected histories still refuse because their immutable destination-layer provenance needs the next cascading slice → [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-07 |
@@ -33,17 +33,25 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 | **Recalculation execution — arbitrary-depth FIFO transfer reallocation** — the one-hop cap is gone: `FifoReceiptReallocator` recurses through however many transfer hops a chain actually has (bounded only by real history — each hop strictly later than the one before), and the DB guard now authorises a correction row anywhere reachable from the request's location by a recursive transfer-connected-component query instead of one hardcoded hop → [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-07 |
 | **Recalculation execution — clean-replay issue/transfer execution** — `ExecuteRecalculation` now posts an approved backdated ISSUE or TRANSFER too, when its revalidated replay changes no other move (`OutboundRecalculationExecutor`, mirroring `IssuePoster`/`TransferPoster`'s posting shape at the true historical date). A request whose replay reprices other history still refuses — that needs a real→synthetic layer-id bridge `MovementReplayState`'s preview simulation doesn't have yet → [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-07 |
 | **Authority-only recalculation approval rerouting** — ADR 0040's `REROUTE_OR_INVALIDATE_APPROVAL_WITHOUT_NEW_IMPACT_VERSION`: a different, eligible approver can now claim a slot an expiry freed, on the same impact version, with no new version generated. The required-approver count for a new claimant is measured in currently-unexpired distinct approvers (`unexpiredApprovedActorIds()`); renewal detection stays expiry-blind. DB-enforced in the same trigger as well as in the Action → [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-07 |
+| **Recalculation execution — outbound changed-history case, ADR 0040 complete** — a backdated ISSUE/TRANSFER now executes even when its replay reprices other real history, closing the last executable gap: FIFO/SPECIFIC reuse the receipt case's real-layer-id engine (`LayerCounterfactualReplayer::planOutboundInsertion()` + `FifoReceiptReallocator::applyCorrections()`, arbitrary transfer-hop depth) with no synthetic-id bridge needed; AVCO converges every pool a connected component touched, not just source/destination. Only the multi-owner correction package (Phase 4/5/6) remains → [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-07 |
 
 ## Next
 
-Continue [Phase 2 — Purchasing & stock](phases/phase-2-purchasing-stock.md):
+ADR 0040's executable-today scope is done — every backdated receipt/issue/transfer case across all
+three valuation methods now previews, approves and executes, clean or changed-history alike. The
+multi-owner correction package (Sales/Job Execution/Accounting routing, cross-module
+reconciliation) waits on those modules existing — Phase 4/5/6, tracked at each phase's entry in
+[phases/README.md](phases/README.md). Continue the rest of
+[Phase 2 — Purchasing & stock](phases/phase-2-purchasing-stock.md):
 
-1. Extend issue/transfer execution to the case where the replay changes other history — needs a
-   real-layer-id bridge for `MovementReplayState`'s FIFO/SPECIFIC simulation.
-2. The multi-owner correction package (Sales/Job Execution/Accounting routing, cross-module
-   reconciliation) waits on those modules existing — Phase 4/5/6.
-3. Longer-term: API endpoints + first UI screens for the stock engine, and the first real
-   deployment to the production VMs (both planned for the end of Phase 2).
+1. Inventory cutover foundation — reconciled opening AVCO/FIFO/SPECIFIC state from the generic
+   ADR 0027 importer, without a parallel uploader.
+2. Physical-count documents (snapshot lines, count/recount, posted variance through the same
+   movement Action).
+3. API polish across Phase 2 (list filters/sorting/pagination, stable 409/422 conflict responses),
+   Orval client regeneration, and a Phase 2 integrity audit.
+4. Phase 2 close-out: first UI screens for the stock engine and the first real deployment to the
+   production VMs.
 
 ## Blocked / awaiting input
 

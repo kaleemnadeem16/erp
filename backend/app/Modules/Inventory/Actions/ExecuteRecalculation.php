@@ -59,15 +59,17 @@ use Illuminate\Support\Facades\DB;
  *   later transfer is harmless; a transfer whose allocation changes has its
  *   own source-side draw corrected the same way, then its destination
  *   layer-component(s) superseded by freshly minted ones and the same
- *   correction cascaded into whatever the destination's own later issues
- *   already consumed from them (see FifoReceiptReallocator). A transfer
- *   landing on another transfer remains blocked — that second hop is not yet
- *   supported.
+ *   correction cascaded into whatever the destination's own later issues or
+ *   further transfers already consumed from them (see
+ *   FifoReceiptReallocator) — however many hops real history contains, not
+ *   capped at one.
  *
- * Issue/transfer execution remains unbuilt, the same honesty this ADR slice
- * has used throughout; see docs/domain/stock-recalculation.md. The
- * append-only correction package this produces (RecalculationExecution) is
- * Inventory-only for the same reason as everywhere else in this slice:
+ * A backdated ISSUE or TRANSFER request itself also executes now
+ * (OutboundRecalculationExecutor), whether or not its replay changes other
+ * history — the same FifoReceiptReallocator correction engine handles a new
+ * outbound draw exactly like a new receipt layer, just without minting one.
+ * The append-only correction package this produces (RecalculationExecution)
+ * is Inventory-only for the same reason as everywhere else in this slice:
  * Sales/Job Execution/Accounting, the other potential owners of a
  * correction delta, don't exist yet, so every executable case today is
  * "remaining stock," the one slice ADR 0040 lets Inventory own outright.
@@ -150,9 +152,6 @@ final class ExecuteRecalculation
             }
 
             if ($request->movement_kind !== RecalculationMovementKind::Receipt) {
-                if (! empty($attributes['movement_impact']['changed_movements'])) {
-                    throw new DomainInvariantException('Execution for issue/transfer requests that change other history is not supported yet.', 'movement_kind');
-                }
                 $move = $this->outbound->post($request, $item, $company, $location, $destination, $batch, $attributes);
 
                 return RecalculationExecution::query()->create([
