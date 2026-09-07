@@ -85,6 +85,15 @@ The generic engine owns upload, mapping, staging and batch mechanics. Inventory 
 and state creation. Purchasing owns imported open POs. Finance later owns the balancing opening
 journal. Cross-module writes use Actions; the importer does not write domain tables directly.
 
+### Implemented foundation
+
+The shared Imports module now supports the `INVENTORY_CUTOVER` purpose with company-scoped saved
+mappings, immutable raw/mapped staging rows, per-row validation errors and idempotent external
+batch identity backed by a source checksum. Inventory registers the `OPENING_STATE` target schema;
+using that schema under `STANDARD` is rejected. The shared target contract exposes validation
+rules only, so staging/validation cannot commit `stock_moves`, `stock_layers` or `avco_pools`.
+Cutover records, approval and the Inventory-owned opening-state Actions are the next slice.
+
 ## Valuation continuity
 
 ### Same method after cutover

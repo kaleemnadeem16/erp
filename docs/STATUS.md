@@ -3,15 +3,12 @@
 **Updated:** 2026-09-07
 **Current phase:** Phase 2 — Purchasing & stock (in progress). Phase 1 — Master data is
 complete. Phase 0 — Foundation is done except the deliberately deferred production deployment.
-**Application code:** Laravel 12 backend — Phase 0 foundations (auth, company scoping, UoM,
-custom fields, sequences, currencies, Scramble→Orval type pipeline), Phase 1 master data
-(`Parties`, `Inventory`, `Accounting` CRUD APIs), and Phase 2 purchasing & stock (purchase
-orders, goods receipts, QA dispositions, reversal, and the full stock movement/valuation engine:
-issues, transfers, ADR 0037 negative-stock workflows, and ADR 0040's backdated recalculation
-workflow complete for every executable case — receipts, issues and transfers, all three valuation
-methods, clean or changed-history replay alike, plus authority-only approval rerouting; only the
-multi-owner correction package awaiting Phase 4/5/6 remains). React 19 + Vite frontend skeleton
-with a generated TS client covering every implemented endpoint.
+**Application code:** Laravel 12 backend — Phase 0 foundations (auth, scoping, UoM, custom fields,
+sequences, currencies, Scramble→Orval), Phase 1 master-data APIs, and Phase 2 purchasing/stock:
+purchase orders, receipts, QA/reversal and the full movement/valuation engine. ADR 0037 negative
+stock and ADR 0040 backdated recalculation are complete for every executable receipt/issue/transfer
+case across all valuation methods; only the Phase 4/5/6 multi-owner correction package remains.
+React 19 + Vite frontend skeleton with a generated client covering every implemented endpoint.
 
 ---
 
@@ -26,7 +23,6 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 
 | Item | Date |
 |---|---|
-| **Recalculation execution — SPECIFIC receipts** — a new serial's layer group is scoped so tightly that nothing could have consumed it before it existed, so its adjustment is provably always its own value; `ExecuteRecalculation` posts it as a plain layer insert, no pool and no correction entry. FIFO uses its separate exact allocation-plan path → [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-05 |
 | **Recalculation execution — untouched FIFO receipts** — if the exact replay plan leaves every later layer allocation unchanged, the backdated receipt executes as a plain layer insert without manufacturing a correction. Allocation comparison is now independent of monetary residual, so an equal-cost provenance change cannot hide → [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-05 |
 | **Recalculation execution — direct-issue FIFO reallocation** — approved backdated FIFO receipts now append exact `ALLOCATION_REVERSAL` links and replacement allocations, update live layer balances atomically and post the approved residual valuation adjustment without mutating original issue facts. Transfer-connected histories still refuse because their immutable destination-layer provenance needs the next cascading slice → [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-07 |
 | **Recalculation execution — one-hop FIFO transfer reallocation** — a transfer whose corrected source draw changes now gets its destination layer-component(s) superseded by freshly minted ones carrying the right cost/age (an append-only `REVERSAL` row, not a mutation), and the same reallocation cascades recursively into whatever the destination's own later issues already consumed from them. A second transfer hop out of that destination still refuses, DB-enforced as well as in the Action → [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-07 |
@@ -34,6 +30,7 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 | **Recalculation execution — clean-replay issue/transfer execution** — `ExecuteRecalculation` now posts an approved backdated ISSUE or TRANSFER too, when its revalidated replay changes no other move (`OutboundRecalculationExecutor`, mirroring `IssuePoster`/`TransferPoster`'s posting shape at the true historical date). A request whose replay reprices other history still refuses — that needs a real→synthetic layer-id bridge `MovementReplayState`'s preview simulation doesn't have yet → [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-07 |
 | **Authority-only recalculation approval rerouting** — ADR 0040's `REROUTE_OR_INVALIDATE_APPROVAL_WITHOUT_NEW_IMPACT_VERSION`: a different, eligible approver can now claim a slot an expiry freed, on the same impact version, with no new version generated. The required-approver count for a new claimant is measured in currently-unexpired distinct approvers (`unexpiredApprovedActorIds()`); renewal detection stays expiry-blind. DB-enforced in the same trigger as well as in the Action → [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-07 |
 | **Recalculation execution — outbound changed-history case, ADR 0040 complete** — a backdated ISSUE/TRANSFER now executes even when its replay reprices other real history, closing the last executable gap: FIFO/SPECIFIC reuse the receipt case's real-layer-id engine (`LayerCounterfactualReplayer::planOutboundInsertion()` + `FifoReceiptReallocator::applyCorrections()`, arbitrary transfer-hop depth) with no synthetic-id bridge needed; AVCO converges every pool a connected component touched, not just source/destination. Only the multi-owner correction package (Phase 4/5/6) remains → [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-07 |
+| **Generic inventory-cutover import contract** — ADR 0027's shared Imports foundation now stages arbitrary mapped rows under an idempotent source identity and validates Inventory's `INVENTORY_CUTOVER`/`OPENING_STATE` schema without any generic domain-write callback. Raw/mapped evidence is immutable and purpose-bound; cutover orchestration is next → [inventory-cutover.md](domain/inventory-cutover.md) | 2026-09-07 |
 
 ## Next
 
@@ -44,8 +41,8 @@ reconciliation) waits on those modules existing — Phase 4/5/6, tracked at each
 [phases/README.md](phases/README.md). Continue the rest of
 [Phase 2 — Purchasing & stock](phases/phase-2-purchasing-stock.md):
 
-1. Inventory cutover foundation — reconciled opening AVCO/FIFO/SPECIFIC state from the generic
-   ADR 0027 importer, without a parallel uploader.
+1. Inventory cutover orchestration — company records, dedicated permissions, approval/finalisation
+   and idempotent batch linkage through the new ADR 0027 `INVENTORY_CUTOVER` contract.
 2. Physical-count documents (snapshot lines, count/recount, posted variance through the same
    movement Action).
 3. API polish across Phase 2 (list filters/sorting/pagination, stable 409/422 conflict responses),

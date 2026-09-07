@@ -51,7 +51,9 @@ import_mappings                     -- one saved template
   transform            NULLABLE     -- e.g. date format, unit conversion
 
 import_batches
-  id, import_profile_id
+  id, company_id, import_profile_id
+  entity_type        -- snapshotted from the profile
+  external_batch_id, source_sha256
   file_name, uploaded_at, uploaded_by
   purpose             STANDARD | INVENTORY_CUTOVER | FINANCE_OPENING
   status              STAGED | VALIDATED | COMMITTED | FAILED
@@ -96,6 +98,14 @@ Historical source facts may legitimately violate the company's live negative-sto
 policy. They remain evidence inside a controlled pre-cutover batch and cannot be submitted through
 ordinary stock APIs. See [inventory-cutover.md](../domain/inventory-cutover.md) and
 [ADR 0036](../decisions/0036-controlled-inventory-cutover.md).
+
+The implemented foundation reflects that boundary structurally. The shared Imports module owns
+company-scoped profiles, mappings, batch identities/checksums, immutable staged rows and per-row
+validation. Domains register purpose-specific, validation-only target schemas; the target contract
+has no commit method. Inventory currently registers `INVENTORY_CUTOVER` + `OPENING_STATE`. A later
+Inventory-owned Action will consume the validated batch for approval, reconciliation and opening
+state creation. File parsing and the mapping UI remain future delivery; the current staging Action
+starts from already-parsed source rows.
 
 ## Landmines
 

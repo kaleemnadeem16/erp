@@ -201,7 +201,7 @@ The order matters because later work needs stable document and stock boundaries:
 
 ### Inventory cutover foundation
 
-- [ ] Extend the generic ADR 0027 import contract for `INVENTORY_CUTOVER`; do not build a parallel
+- [x] Extend the generic ADR 0027 import contract for `INVENTORY_CUTOVER`; do not build a parallel
       uploader/mapper or permit the generic importer to write stock domain tables directly
 - [ ] Build company cutover records with one explicit timestamp/mode, immutable source provenance,
       dedicated permissions, staging/preview/approval/finalisation and idempotent batch identity

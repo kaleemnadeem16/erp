@@ -31,6 +31,8 @@ movement and valuation, built in Phase 2.
   override request and outbound movement, retaining its provisional cost until settlement
 - `NegativeStockSettlement` — immutable inbound allocation and provisional-to-actual valuation
   repair facts; multiple rows support partial settlement without rewriting posted history
+- `OpeningStateImportTarget` — the validation-only `INVENTORY_CUTOVER` schema registered with the
+  shared Imports module; generic staging cannot use it for ordinary imports or write stock state
 
 ## Does not own
 
