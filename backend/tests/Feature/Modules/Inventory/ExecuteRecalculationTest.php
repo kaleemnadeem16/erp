@@ -191,33 +191,6 @@ class ExecuteRecalculationTest extends TestCase
         app(ExecuteRecalculation::class)($version, $this->executor());
     }
 
-    public function test_execution_is_only_implemented_for_backdated_receipts(): void
-    {
-        [$item, $uom, $location] = $this->makeAvcoItem();
-        app(PostInventoryMovement::class)([
-            'item_id' => $item->id, 'location_id' => $location->id, 'qty' => '5.0000', 'uom_id' => $uom->id,
-            'moved_at' => Carbon::parse('2026-01-01'), 'source_type' => 'TEST_RECEIPT', 'source_id' => 1,
-            'unit_cost' => '10.0000', 'currency_id' => Company::query()->findOrFail(1)->base_currency_id,
-            'fx_rate' => '1.000000000', 'base_unit_cost' => '10.0000',
-        ]);
-        app(PostInventoryMovement::class)->issue([
-            'item_id' => $item->id, 'location_id' => $location->id, 'qty' => '2.0000', 'uom_id' => $uom->id,
-            'moved_at' => Carbon::parse('2026-01-10'), 'source_type' => 'TEST_ISSUE', 'source_id' => 2,
-        ]);
-        $requester = User::factory()->create();
-        $requester->givePermissionTo('inventory.recalculation.request');
-        $request = app(RequestStockRecalculation::class)([
-            'movement_kind' => 'ISSUE', 'item_id' => $item->id, 'location_id' => $location->id,
-            'qty' => '1.0000', 'moved_at' => Carbon::parse('2026-01-05'),
-            'source_type' => 'TEST_PROPOSED_ISSUE', 'source_id' => 100,
-        ], $requester);
-        $version = $this->approveFully($request->impactVersions->sole());
-
-        $this->expectException(DomainInvariantException::class);
-        $this->expectExceptionMessage('backdated receipts');
-        app(ExecuteRecalculation::class)($version, $this->executor());
-    }
-
     public function test_execution_posts_the_backdated_receipt_and_converges_the_pool_to_the_approved_counterfactual(): void
     {
         [$item, , $location, $request] = $this->makeConflictingRequest();

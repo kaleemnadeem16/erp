@@ -136,9 +136,25 @@ shortage involvement. FIFO histories that cross a transfer remain explicitly blo
   the same item, walked with a recursive query rather than hardcoded to one hop. Scoped to no
   negative-stock shortage for the item/location/batch.
 
+- `ExecuteRecalculation` also posts an approved backdated **ISSUE or TRANSFER**, for the
+  clean-replay case only: the freshly-revalidated `movement_impact['changed_movements']` must be
+  empty — inserting the proposed move at its true date changes no other real move's allocation or
+  cost. `OutboundRecalculationExecutor` then posts it at that true `moved_at`, mirroring
+  `IssuePoster`/`TransferPoster`'s own shape (physical layer decrement, AVCO pool convergence to
+  the revalidated `counterfactual_scopes` entry for each pool touched, destination layer creation
+  for a transfer). FIFO/SPECIFIC use `HistoricalLayerAllocator` — the real layer state as it stood
+  at `moved_at`, since which layer a draw lands on determines its cost and a not-yet-arrived layer
+  must never be drawn from; AVCO uses the same *live*, today's-remaining-layers allocation
+  `TransferPoster` always uses regardless of method, since an AVCO layer is pure traceability, not
+  a cost source. A request whose replay would reprice other history still refuses — the
+  synthetic-only layer ids `MovementReplayState`'s simulation uses for FIFO/SPECIFIC preview have
+  no preserved mapping back to real `stock_layers.id`, so correcting other moves the way
+  `FifoReceiptReallocator` does for receipts needs that bridge built first.
+
 **Not yet built**: authority-only approval rerouting (a changed approver's authority, not the
 economics, requiring reroute rather than a fresh impact version — distinct from the same-actor
-renewal above); issue/transfer execution; and the full multi-owner correction package — Sales/Job
+renewal above); issue/transfer execution when the replay changes other history; and the full
+multi-owner correction package — Sales/Job
 Execution/Accounting routing, cross-module reconciliation and deferred obligations all need owning
 modules that don't exist yet, so every case this codebase can execute today is "remaining stock,"
 the one slice ADR 0040 lets Inventory own outright. No HTTP/API

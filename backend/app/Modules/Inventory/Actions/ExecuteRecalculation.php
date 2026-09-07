@@ -11,6 +11,7 @@ use App\Modules\Inventory\Actions\Movements\AvcoPoolManager;
 use App\Modules\Inventory\Actions\Recalculation\FifoReceiptReallocator;
 use App\Modules\Inventory\Actions\Recalculation\LayerCounterfactualReplayer;
 use App\Modules\Inventory\Actions\Recalculation\LayerReplayPlan;
+use App\Modules\Inventory\Actions\Recalculation\OutboundRecalculationExecutor;
 use App\Modules\Inventory\Actions\Recalculation\RecalculationImpactBuilder;
 use App\Modules\Inventory\Actions\Recalculation\RegenerationLimit;
 use App\Modules\Inventory\Models\Item;
@@ -84,6 +85,7 @@ final class ExecuteRecalculation
         private readonly AvcoPoolManager $pools,
         private readonly LayerCounterfactualReplayer $layerReplay,
         private readonly FifoReceiptReallocator $fifo,
+        private readonly OutboundRecalculationExecutor $outbound,
     ) {}
 
     public function __invoke(RecalculationImpactVersion $version, User $actor): RecalculationExecution
@@ -107,9 +109,6 @@ final class ExecuteRecalculation
             if ($version->isRejected()) {
                 throw new DomainInvariantException('A rejected impact version cannot execute.', 'impact_version_id');
             }
-            if ($request->movement_kind !== RecalculationMovementKind::Receipt) {
-                throw new DomainInvariantException('Execution is only implemented for backdated receipts so far.', 'movement_kind');
-            }
             $item = Item::query()->findOrFail($request->item_id);
             if (! in_array($item->valuation_method, [ValuationMethod::Avco, ValuationMethod::Specific, ValuationMethod::Fifo], true)) {
                 throw new DomainInvariantException('Execution is only implemented for AVCO, FIFO and SPECIFIC items so far.', 'item_id');
@@ -118,12 +117,22 @@ final class ExecuteRecalculation
                 throw new DomainInvariantException('Execution requires every required approval to be present and currently unexpired.', 'impact_version_id');
             }
 
-            $location = Location::query()->with('warehouse')->lockForUpdate()->findOrFail($request->location_id);
+            // A transfer request needs both locations locked together in
+            // ascending id order up front, matching TransferPoster itself —
+            // a receipt never has a destination_location_id.
+            $locations = $request->destination_location_id === null
+                ? collect([$request->location_id => Location::query()->with('warehouse')->lockForUpdate()->findOrFail($request->location_id)])
+                : Location::query()->with('warehouse')->whereIn('id', [$request->location_id, $request->destination_location_id])
+                    ->orderBy('id')->lockForUpdate()->get()->keyBy('id');
+            $location = $locations->get($request->location_id);
+            $destination = $request->destination_location_id === null ? null : $locations->get($request->destination_location_id);
             $batch = $request->batch_id === null ? null : StockBatch::query()->findOrFail($request->batch_id);
-            if (NegativeStockShortage::query()->where('item_id', $item->id)->where('location_id', $location->id)
-                ->when($batch === null, fn ($q) => $q->whereNull('batch_id'), fn ($q) => $q->where('batch_id', $batch->id))
-                ->whereIn('status', ['OPEN', 'PARTIALLY_SETTLED', 'OPEN_CUTOVER_SHORTAGE'])->exists()) {
-                throw new DomainInvariantException('Execution alongside an open negative-stock shortage is not yet supported.', 'item_id');
+            foreach (array_filter([$location, $destination]) as $place) {
+                if (NegativeStockShortage::query()->where('item_id', $item->id)->where('location_id', $place->id)
+                    ->when($batch === null, fn ($q) => $q->whereNull('batch_id'), fn ($q) => $q->where('batch_id', $batch->id))
+                    ->whereIn('status', ['OPEN', 'PARTIALLY_SETTLED', 'OPEN_CUTOVER_SHORTAGE'])->exists()) {
+                    throw new DomainInvariantException('Execution alongside an open negative-stock shortage is not yet supported.', 'item_id');
+                }
             }
 
             // Same revalidate-before-acting precondition as DecideRecalculationApproval:
@@ -138,6 +147,18 @@ final class ExecuteRecalculation
                 $this->impacts->append($request, $attributes);
 
                 return null;
+            }
+
+            if ($request->movement_kind !== RecalculationMovementKind::Receipt) {
+                if (! empty($attributes['movement_impact']['changed_movements'])) {
+                    throw new DomainInvariantException('Execution for issue/transfer requests that change other history is not supported yet.', 'movement_kind');
+                }
+                $move = $this->outbound->post($request, $item, $company, $location, $destination, $batch, $attributes);
+
+                return RecalculationExecution::query()->create([
+                    'recalculation_request_id' => $request->id, 'impact_version_id' => $version->id,
+                    'stock_move_id' => $move->id, 'executed_by' => $actor->id, 'executed_at' => now(),
+                ]);
             }
 
             $pool = $item->valuation_method === ValuationMethod::Avco ? $this->pools->lock($item, $location, $batch) : null;

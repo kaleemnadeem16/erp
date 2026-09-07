@@ -101,9 +101,13 @@ replacement consumptions, adjusts live layer balances and posts the residual val
 the same transaction. A changed later transfer is corrected the same way at every hop it reaches —
 each transfer's destination layer-component(s) are superseded by freshly minted ones and the same
 reallocation cascades into whatever that destination's own later issues or further transfers
-already consumed from them, however deep the real chain goes. Issue/transfer execution,
-authority-only rerouting and the multi-owner correction package remain unbuilt. Supported history
-and permission details live in
+already consumed from them, however deep the real chain goes. `ExecuteRecalculation` also posts an
+approved backdated ISSUE or TRANSFER (`OutboundRecalculationExecutor`), mirroring
+`IssuePoster`/`TransferPoster`'s posting shape at the true historical date — but only when the
+revalidated replay changes no other move; a request that reprices other history still refuses,
+since `MovementReplayState`'s preview simulation has no real-layer-id bridge yet for the same
+append-only correction receipts get. Authority-only rerouting and the multi-owner correction
+package remain unbuilt. Supported history and permission details live in
 [stock-recalculation.md](../../../../docs/domain/stock-recalculation.md).
 
 ## Events

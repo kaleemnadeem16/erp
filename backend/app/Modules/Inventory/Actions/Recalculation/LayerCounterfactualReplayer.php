@@ -51,24 +51,7 @@ final class LayerCounterfactualReplayer
         BigDecimal $proposedUnitCost,
         CarbonInterface $movedAt,
     ): LayerReplayPlan {
-        if ($this->hasUnsupportedShortage($item, $location, $batch, $movedAt)) {
-            throw new DomainInvariantException("This location had negative-stock shortage activity after the proposed date — recalculation isn't yet supported for this case.", 'moved_at');
-        }
-
-        $allLayers = $this->groupLayers($item, $location, $batch, $serialNo);
-        $arrivals = $this->arrivals($allLayers);
-        $this->guardHistory($allLayers);
-        $preT = $allLayers->filter(fn (StockLayer $layer): bool => $arrivals[$layer->id]['at']->lte($movedAt))->values();
-
-        $consumedByLayerAtT = $this->consumedUpTo($preT->pluck('id'), $movedAt);
-        $queue = $preT->map(function (StockLayer $layer) use ($consumedByLayerAtT): StockLayer {
-            $reconstructed = $layer->replicate();
-            $reconstructed->id = $layer->id;
-            $reconstructed->qty_remaining = (string) BigDecimal::of($layer->qty_received)
-                ->minus($consumedByLayerAtT->get($layer->id, BigDecimal::zero()));
-
-            return $reconstructed;
-        })->values();
+        [$allLayers, $arrivals, $queue] = $this->reconstructAsOf($item, $location, $batch, $serialNo, $movedAt);
 
         $newLayer = new StockLayer([
             'item_id' => $item->id, 'location_id' => $location->id,
@@ -94,6 +77,39 @@ final class LayerCounterfactualReplayer
         );
 
         return new LayerReplayPlan($preview, $allocationsByMove);
+    }
+
+    /**
+     * Reconstructs a layer group's real state as of a point in time — real
+     * layer ids, qty_remaining as it stood then — shared by plan()'s pre-T
+     * queue and HistoricalLayerAllocator's fresh outbound allocation. Also
+     * returns the group's full layer set and their arrival moves, since
+     * plan() needs both again to walk later events.
+     *
+     * @return array{0: Collection<int, StockLayer>, 1: array<int, array{at: CarbonInterface, move_id: int}>, 2: Collection<int, StockLayer>}
+     */
+    public function reconstructAsOf(Item $item, Location $location, ?StockBatch $batch, ?string $serialNo, CarbonInterface $movedAt): array
+    {
+        if ($this->hasUnsupportedShortage($item, $location, $batch, $movedAt)) {
+            throw new DomainInvariantException("This location had negative-stock shortage activity after the proposed date — recalculation isn't yet supported for this case.", 'moved_at');
+        }
+
+        $allLayers = $this->groupLayers($item, $location, $batch, $serialNo);
+        $arrivals = $this->arrivals($allLayers);
+        $this->guardHistory($allLayers);
+        $preT = $allLayers->filter(fn (StockLayer $layer): bool => $arrivals[$layer->id]['at']->lte($movedAt))->values();
+
+        $consumedByLayerAtT = $this->consumedUpTo($preT->pluck('id'), $movedAt);
+        $queue = $preT->map(function (StockLayer $layer) use ($consumedByLayerAtT): StockLayer {
+            $reconstructed = $layer->replicate();
+            $reconstructed->id = $layer->id;
+            $reconstructed->qty_remaining = (string) BigDecimal::of($layer->qty_received)
+                ->minus($consumedByLayerAtT->get($layer->id, BigDecimal::zero()));
+
+            return $reconstructed;
+        })->values();
+
+        return [$allLayers, $arrivals, $queue];
     }
 
     /**
