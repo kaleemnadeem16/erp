@@ -78,8 +78,122 @@ final class LayerCounterfactualReplayer
         ]);
         $newLayer->id = PHP_INT_MAX;
         $queue->push($newLayer);
-        $allocationsByMove = collect();
+        [$queue, $allocationsByMove] = $this->walkLaterEvents($allLayers, $arrivals, $movedAt, $queue);
 
+        [$originalQty, $originalValue] = $this->aggregate($allLayers);
+        [$counterfactualQty, $counterfactualValue] = $this->aggregate($queue);
+
+        $preview = new ImpactPreview(
+            pool: null,
+            originalQtyOnHand: $originalQty,
+            originalInventoryValue: $originalValue,
+            originalAvgUnitCost: $originalQty->isZero() ? BigDecimal::zero() : $originalValue->dividedBy($originalQty, 4, RoundingMode::HALF_UP),
+            counterfactualQtyOnHand: $counterfactualQty,
+            counterfactualInventoryValue: $counterfactualValue,
+            counterfactualAvgUnitCost: $counterfactualQty->isZero() ? BigDecimal::zero() : $counterfactualValue->dividedBy($counterfactualQty, 4, RoundingMode::HALF_UP),
+        );
+
+        return new LayerReplayPlan($preview, $allocationsByMove);
+    }
+
+    /**
+     * The destination-side counterpart to plan(): a transfer's own corrected
+     * source-side allocation (computed elsewhere, by FifoReceiptReallocator)
+     * implies its destination layer(s) arrived with different cost/age than
+     * what was actually posted. This reconstructs the destination group's
+     * real timeline exactly like plan() does, but instead of inserting one
+     * brand-new future layer, it caps each superseded destination
+     * layer-component's contribution by its invalidated quantity and inserts
+     * the corrected replacement component(s) at the same transfer arrival,
+     * then re-walks later events identically. Internal to ExecuteRecalculation
+     * via FifoReceiptReallocator; never called directly by preview/approval.
+     *
+     * $supersededComponents is keyed by the existing destination StockLayer id
+     * being partly/fully superseded. $newComponents is keyed by an arbitrary
+     * sentinel id (never a real layer id) — the corrected replacement
+     * component(s) arriving at the same transfer.
+     *
+     * @param  Collection<int, array{layer: StockLayer, invalidatedQty: BigDecimal}>  $supersededComponents
+     * @param  Collection<int, array{qty: BigDecimal, baseUnitCost: BigDecimal, receivedAt: CarbonInterface}>  $newComponents
+     */
+    public function planTransferCascade(
+        Item $item,
+        Location $destination,
+        ?StockBatch $batch,
+        ?string $serialNo,
+        StockMove $transferMove,
+        Collection $supersededComponents,
+        Collection $newComponents,
+    ): LayerReplayPlan {
+        $movedAt = Carbon::parse($transferMove->moved_at);
+        if ($this->hasUnsupportedShortage($item, $destination, $batch, $movedAt)) {
+            throw new DomainInvariantException("This location had negative-stock shortage activity after the proposed date — recalculation isn't yet supported for this case.", 'moved_at');
+        }
+
+        $allLayers = $this->groupLayers($item, $destination, $batch, $serialNo);
+        $arrivals = $this->arrivals($allLayers);
+        $this->guardHistory($allLayers);
+        $preT = $allLayers->filter(fn (StockLayer $layer): bool => $arrivals[$layer->id]['at']->lte($movedAt))->values();
+
+        $consumedByLayerAtT = $this->consumedUpTo($preT->pluck('id'), $movedAt);
+        $queue = $preT->map(function (StockLayer $layer) use ($consumedByLayerAtT, $supersededComponents): StockLayer {
+            $reconstructed = $layer->replicate();
+            $reconstructed->id = $layer->id;
+            $remaining = BigDecimal::of($layer->qty_received)->minus($consumedByLayerAtT->get($layer->id, BigDecimal::zero()));
+            $superseded = $supersededComponents->get($layer->id);
+            if ($superseded !== null) {
+                $remaining = $remaining->minus($superseded['invalidatedQty']);
+                if ($remaining->isNegative()) {
+                    throw new DomainInvariantException('The live transfer destination ledger no longer matches the approved replay.', 'moved_at');
+                }
+            }
+            $reconstructed->qty_remaining = (string) $remaining;
+
+            return $reconstructed;
+        })->values();
+
+        foreach ($newComponents as $sentinelId => $component) {
+            $inserted = new StockLayer([
+                'item_id' => $item->id, 'location_id' => $destination->id,
+                'qty_received' => (string) $component['qty'], 'qty_remaining' => (string) $component['qty'],
+                'base_unit_cost' => (string) $component['baseUnitCost'], 'received_at' => $component['receivedAt'],
+                'batch_id' => $batch?->id, 'serial_no' => $serialNo,
+            ]);
+            $inserted->id = $sentinelId;
+            $queue->push($inserted);
+        }
+
+        [$queue, $allocationsByMove] = $this->walkLaterEvents($allLayers, $arrivals, $movedAt, $queue);
+
+        [$originalQty, $originalValue] = $this->aggregate($allLayers);
+        [$counterfactualQty, $counterfactualValue] = $this->aggregate($queue);
+
+        $preview = new ImpactPreview(
+            pool: null,
+            originalQtyOnHand: $originalQty,
+            originalInventoryValue: $originalValue,
+            originalAvgUnitCost: $originalQty->isZero() ? BigDecimal::zero() : $originalValue->dividedBy($originalQty, 4, RoundingMode::HALF_UP),
+            counterfactualQtyOnHand: $counterfactualQty,
+            counterfactualInventoryValue: $counterfactualValue,
+            counterfactualAvgUnitCost: $counterfactualQty->isZero() ? BigDecimal::zero() : $counterfactualValue->dividedBy($counterfactualQty, 4, RoundingMode::HALF_UP),
+        );
+
+        return new LayerReplayPlan($preview, $allocationsByMove);
+    }
+
+    /**
+     * Shared later-events walker for plan() and planTransferCascade(): given a
+     * reconstructed pre-T queue, replays every later supply/reversal/consume
+     * event identically regardless of what was inserted before T.
+     *
+     * @param  Collection<int, StockLayer>  $allLayers
+     * @param  array<int, array{at: CarbonInterface, move_id: int}>  $arrivals
+     * @param  Collection<int, StockLayer>  $queue
+     * @return array{0: Collection<int, StockLayer>, 1: Collection<int, Collection<int, array{layer_id:int, qty:BigDecimal}>>}
+     */
+    private function walkLaterEvents(Collection $allLayers, array $arrivals, CarbonInterface $movedAt, Collection $queue): array
+    {
+        $allocationsByMove = collect();
         foreach ($this->laterEvents($allLayers, $arrivals, $movedAt) as $event) {
             if ($event['type'] === 'supply') {
                 $fresh = $event['layer']->replicate();
@@ -115,20 +229,7 @@ final class LayerCounterfactualReplayer
             ])->values());
         }
 
-        [$originalQty, $originalValue] = $this->aggregate($allLayers);
-        [$counterfactualQty, $counterfactualValue] = $this->aggregate($queue);
-
-        $preview = new ImpactPreview(
-            pool: null,
-            originalQtyOnHand: $originalQty,
-            originalInventoryValue: $originalValue,
-            originalAvgUnitCost: $originalQty->isZero() ? BigDecimal::zero() : $originalValue->dividedBy($originalQty, 4, RoundingMode::HALF_UP),
-            counterfactualQtyOnHand: $counterfactualQty,
-            counterfactualInventoryValue: $counterfactualValue,
-            counterfactualAvgUnitCost: $counterfactualQty->isZero() ? BigDecimal::zero() : $counterfactualValue->dividedBy($counterfactualQty, 4, RoundingMode::HALF_UP),
-        );
-
-        return new LayerReplayPlan($preview, $allocationsByMove);
+        return [$queue, $allocationsByMove];
     }
 
     /** @return Collection<int, StockLayer> */
@@ -225,8 +326,24 @@ final class LayerCounterfactualReplayer
             ->where('stock_moves.moved_at', '>', $movedAt)
             ->select('stock_layer_consumptions.*', 'stock_moves.moved_at')->get();
         foreach ($rows->groupBy('stock_move_id') as $moveId => $consumptions) {
-            $first = $consumptions->first();
-            $isReceiptReversal = $consumptions->every(fn ($row): bool => $row->purpose === 'REVERSAL');
+            // A genuine receipt reversal always names exactly one layer, but a
+            // transfer-destination provenance correction can supersede more
+            // than one component of the same move at once — each must stay
+            // its own exact-layer event rather than collapsing into one.
+            if ($consumptions->every(fn ($row): bool => $row->purpose === 'REVERSAL')) {
+                foreach ($consumptions->groupBy('stock_layer_id') as $layerId => $layerRows) {
+                    $qty = $layerRows->reduce(fn (BigDecimal $sum, $row): BigDecimal => $sum->plus(BigDecimal::of($row->qty_consumed)), BigDecimal::zero());
+                    if ($qty->isZero()) {
+                        continue;
+                    }
+                    $events->push([
+                        'type' => 'reversal', 'at' => Carbon::parse($layerRows->first()->moved_at), 'move_id' => $moveId,
+                        'layer_id' => (int) $layerId, 'qty' => $qty,
+                    ]);
+                }
+
+                continue;
+            }
             $qty = $consumptions->reduce(
                 fn (BigDecimal $sum, $row): BigDecimal => $row->purpose === 'ALLOCATION_REVERSAL'
                     ? $sum->minus(BigDecimal::of($row->qty_consumed))
@@ -237,9 +354,9 @@ final class LayerCounterfactualReplayer
                 continue;
             }
             $events->push([
-                'type' => $isReceiptReversal ? 'reversal' : 'consume',
-                'at' => Carbon::parse($first->moved_at), 'move_id' => $moveId,
-                'layer_id' => $first->stock_layer_id,
+                'type' => 'consume',
+                'at' => Carbon::parse($consumptions->first()->moved_at), 'move_id' => $moveId,
+                'layer_id' => $consumptions->first()->stock_layer_id,
                 'qty' => $qty,
             ]);
         }

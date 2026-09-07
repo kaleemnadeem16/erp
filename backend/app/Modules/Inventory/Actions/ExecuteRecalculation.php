@@ -55,9 +55,13 @@ use Illuminate\Support\Facades\DB;
  *   exact layer quantities, independently of whether equal costs happen to
  *   make the monetary residual zero. Direct later issues are corrected by
  *   append-only ALLOCATION_REVERSAL/replacement ALLOCATION pairs. An unchanged
- *   later transfer is harmless; a transfer whose allocation changes remains
- *   blocked because its immutable destination layers need provenance
- *   correction as well as source reallocation.
+ *   later transfer is harmless; a transfer whose allocation changes has its
+ *   own source-side draw corrected the same way, then its destination
+ *   layer-component(s) superseded by freshly minted ones and the same
+ *   correction cascaded into whatever the destination's own later issues
+ *   already consumed from them (see FifoReceiptReallocator). A transfer
+ *   landing on another transfer remains blocked — that second hop is not yet
+ *   supported.
  *
  * Issue/transfer execution remains unbuilt, the same honesty this ADR slice
  * has used throughout; see docs/domain/stock-recalculation.md. The
@@ -143,6 +147,19 @@ final class ExecuteRecalculation
             $layerPlan = $item->valuation_method === ValuationMethod::Fifo
                 ? $this->layerReplay->plan($item, $location, $batch, $request->serial_no, $qty, $baseUnitCost, $request->moved_at)
                 : null;
+            if ($layerPlan instanceof LayerReplayPlan) {
+                // A changed transfer needs its destination location locked
+                // too, before anything is mutated there — matching how
+                // TransferPoster itself locks both sides up front.
+                $transferDestinationIds = StockMove::query()
+                    ->whereIn('id', $layerPlan->allocationsByMove->keys())
+                    ->where('movement_kind', 'TRANSFER')->where('item_id', $item->id)
+                    ->pluck('to_location_id')->filter(fn (?int $id): bool => $id !== null && $id !== $location->id)
+                    ->unique()->sort()->values();
+                if ($transferDestinationIds->isNotEmpty()) {
+                    Location::query()->whereIn('id', $transferDestinationIds)->orderBy('id')->lockForUpdate()->get();
+                }
+            }
 
             $move = StockMove::query()->create([
                 'movement_kind' => 'RECEIPT',

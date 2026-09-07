@@ -188,8 +188,8 @@ The order matters because later work needs stable document and stock boundaries:
       method-specific replay closure, count only post-approval material invalidations toward the
       regeneration cap, and escalate repeated cap hits without resetting the counter.
       `ExecuteRecalculation` does this for AVCO, SPECIFIC and FIFO receipts through later direct
-      issues (locks the location/valuation closure and revalidates before posting); FIFO transfer
-      cascades and issue/transfer execution remain
+      issues and one transfer hop (locks the location/valuation closure and revalidates before
+      posting); a second transfer hop and issue/transfer execution remain
 - [ ] Build idempotent append-only correction packages preserving exact approved deltas, historical
       FX bases, deterministic downstream allocation, explicit pending owners and zero-residual
       reconciliation per

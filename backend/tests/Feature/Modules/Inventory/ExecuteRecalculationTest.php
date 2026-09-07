@@ -420,11 +420,155 @@ class ExecuteRecalculationTest extends TestCase
         $this->assertTrue(BigDecimal::of($entries[0]->base_amount)->plus($entries[1]->base_amount)->isEqualTo($version->valuation_adjustment));
     }
 
-    public function test_fifo_execution_refuses_transfer_reallocation_until_destination_provenance_can_be_corrected(): void
+    /**
+     * Same fixture as before ADR 0040's transfer slice: layer A (5@10, Jan1)
+     * and B (5@12, Jan10) at the source; a transfer of 6 units on Jan15 draws
+     * A(5)+B(1), delivering destination layers D_A (5@10, age Jan1) and D_B
+     * (1@12, age Jan10). A backdated layer C (3@20, Jan5) sits between A and
+     * B: counterfactually the transfer draws A(5)+C(1) instead, so D_B's
+     * one-unit component is superseded by a freshly minted destination layer
+     * carrying C's cost/age, with nothing left downstream at the destination
+     * to reallocate in this scenario (see the next test for that case).
+     */
+    public function test_execution_reallocates_a_fifo_transfer_and_corrects_destination_provenance(): void
     {
         [$item, $uom, $source] = $this->makeFifoItem();
         $destination = app(CreateWarehouse::class)([
             'code' => 'secondary', 'name' => 'Secondary', 'location_code' => 'secondary', 'location_name' => 'Secondary',
+        ])->locations()->sole();
+        foreach ([
+            ['qty' => '5.0000', 'at' => '2026-01-01', 'cost' => '10.0000', 'source' => 1],
+            ['qty' => '5.0000', 'at' => '2026-01-10', 'cost' => '12.0000', 'source' => 2],
+        ] as $receipt) {
+            app(PostInventoryMovement::class)([
+                'item_id' => $item->id, 'location_id' => $source->id, 'qty' => $receipt['qty'], 'uom_id' => $uom->id,
+                'moved_at' => Carbon::parse($receipt['at']), 'source_type' => 'TEST_RECEIPT', 'source_id' => $receipt['source'],
+                'unit_cost' => $receipt['cost'], 'currency_id' => Company::query()->findOrFail(1)->base_currency_id,
+                'fx_rate' => '1.000000000', 'base_unit_cost' => $receipt['cost'],
+            ]);
+        }
+        $transfer = app(PostInventoryMovement::class)->transfer([
+            'item_id' => $item->id, 'from_location_id' => $source->id, 'to_location_id' => $destination->id,
+            'qty' => '6.0000', 'uom_id' => $uom->id, 'moved_at' => Carbon::parse('2026-01-15'),
+            'source_type' => 'TEST_TRANSFER', 'source_id' => 3,
+        ]);
+        $requester = User::factory()->create();
+        $requester->givePermissionTo('inventory.recalculation.request');
+        $request = app(RequestStockRecalculation::class)([
+            'item_id' => $item->id, 'location_id' => $source->id,
+            'qty' => '3.0000', 'unit_cost' => '20.0000', 'currency_id' => Company::query()->findOrFail(1)->base_currency_id,
+            'fx_rate' => '1.000000000', 'base_unit_cost' => '20.0000', 'moved_at' => Carbon::parse('2026-01-05'),
+            'source_type' => 'TEST_BACKDATED_RECEIPT', 'source_id' => 4,
+        ], $requester);
+        $version = $this->approveFully($request->impactVersions->sole());
+
+        $execution = app(ExecuteRecalculation::class)($version, $this->executor());
+
+        $this->assertTrue(StockMove::query()->where('source_type', 'TEST_BACKDATED_RECEIPT')->where('source_id', 4)->exists());
+        $layerB = StockLayer::query()->where('source_type', 'TEST_RECEIPT')->where('source_id', 2)->sole();
+        $layerC = StockLayer::query()->where('source_type', 'TEST_BACKDATED_RECEIPT')->where('source_id', 4)->sole();
+        $this->assertSame('5.0000', $layerB->qty_remaining);
+        $this->assertSame('2.0000', $layerC->qty_remaining);
+
+        $destinationLayers = StockLayer::query()->where('source_type', 'TEST_TRANSFER')->where('source_id', 3)->orderBy('source_line_no')->get();
+        $this->assertSame(3, $destinationLayers->count());
+        $oldComponent = $destinationLayers[1];
+        $newComponent = $destinationLayers[2];
+        $this->assertSame('0.0000', $oldComponent->qty_remaining);
+        $this->assertSame('1.0000', $newComponent->qty_received);
+        $this->assertSame('1.0000', $newComponent->qty_remaining);
+        $this->assertSame('20.0000', $newComponent->base_unit_cost);
+        $this->assertTrue($newComponent->received_at->isSameDay(Carbon::parse('2026-01-05')));
+
+        $reversal = StockLayerConsumption::query()->where('stock_move_id', $transfer->id)
+            ->where('purpose', 'REVERSAL')->where('stock_layer_id', $oldComponent->id)->sole();
+        $this->assertSame('1.0000', $reversal->qty_consumed);
+        $this->assertSame($request->id, $reversal->recalculation_request_id);
+
+        $entries = StockMove::query()->findOrFail($execution->stock_move_id)->valuationEntries()->orderBy('id')->get();
+        $this->assertSame(2, $entries->count());
+        $this->assertSame('60.0000', $entries[0]->base_amount);
+        $this->assertSame('-8.0000', $entries[1]->base_amount);
+        $this->assertTrue(BigDecimal::of($entries[0]->base_amount)->plus($entries[1]->base_amount)->isEqualTo($version->valuation_adjustment));
+    }
+
+    /**
+     * The same transfer as above, but the destination doesn't sit idle: a
+     * real issue of 6 units on Jan20 exhausts both D_A and D_B before the
+     * backdated receipt is ever proposed. Correcting the transfer must also
+     * release the issue's stale draw on D_B and re-point it to the freshly
+     * minted destination layer — the same append-only pattern as a direct
+     * issue at the source, just applied one hop further out.
+     */
+    public function test_execution_cascades_a_fifo_transfer_correction_into_a_destination_issue(): void
+    {
+        [$item, $uom, $source] = $this->makeFifoItem();
+        $destination = app(CreateWarehouse::class)([
+            'code' => 'secondary', 'name' => 'Secondary', 'location_code' => 'secondary', 'location_name' => 'Secondary',
+        ])->locations()->sole();
+        foreach ([
+            ['qty' => '5.0000', 'at' => '2026-01-01', 'cost' => '10.0000', 'source' => 1],
+            ['qty' => '5.0000', 'at' => '2026-01-10', 'cost' => '12.0000', 'source' => 2],
+        ] as $receipt) {
+            app(PostInventoryMovement::class)([
+                'item_id' => $item->id, 'location_id' => $source->id, 'qty' => $receipt['qty'], 'uom_id' => $uom->id,
+                'moved_at' => Carbon::parse($receipt['at']), 'source_type' => 'TEST_RECEIPT', 'source_id' => $receipt['source'],
+                'unit_cost' => $receipt['cost'], 'currency_id' => Company::query()->findOrFail(1)->base_currency_id,
+                'fx_rate' => '1.000000000', 'base_unit_cost' => $receipt['cost'],
+            ]);
+        }
+        $transfer = app(PostInventoryMovement::class)->transfer([
+            'item_id' => $item->id, 'from_location_id' => $source->id, 'to_location_id' => $destination->id,
+            'qty' => '6.0000', 'uom_id' => $uom->id, 'moved_at' => Carbon::parse('2026-01-15'),
+            'source_type' => 'TEST_TRANSFER', 'source_id' => 3,
+        ]);
+        $destinationIssue = app(PostInventoryMovement::class)->issue([
+            'item_id' => $item->id, 'location_id' => $destination->id, 'qty' => '6.0000', 'uom_id' => $uom->id,
+            'moved_at' => Carbon::parse('2026-01-20'), 'source_type' => 'TEST_DESTINATION_ISSUE', 'source_id' => 5,
+        ]);
+        $requester = User::factory()->create();
+        $requester->givePermissionTo('inventory.recalculation.request');
+        $request = app(RequestStockRecalculation::class)([
+            'item_id' => $item->id, 'location_id' => $source->id,
+            'qty' => '3.0000', 'unit_cost' => '20.0000', 'currency_id' => Company::query()->findOrFail(1)->base_currency_id,
+            'fx_rate' => '1.000000000', 'base_unit_cost' => '20.0000', 'moved_at' => Carbon::parse('2026-01-05'),
+            'source_type' => 'TEST_BACKDATED_RECEIPT', 'source_id' => 4,
+        ], $requester);
+        $version = $this->approveFully($request->impactVersions->sole());
+
+        app(ExecuteRecalculation::class)($version, $this->executor());
+
+        $destinationLayers = StockLayer::query()->where('source_type', 'TEST_TRANSFER')->where('source_id', 3)->orderBy('source_line_no')->get();
+        $this->assertSame(3, $destinationLayers->count());
+        [$layerDA, $oldComponent, $newComponent] = $destinationLayers->all();
+        $this->assertSame('0.0000', $oldComponent->qty_remaining);
+        $this->assertSame('0.0000', $newComponent->qty_remaining);
+
+        $issueRows = StockLayerConsumption::query()->where('stock_move_id', $destinationIssue->id)->orderBy('id')->get();
+        $reversal = $issueRows->sole(fn (StockLayerConsumption $row): bool => $row->purpose === 'ALLOCATION_REVERSAL');
+        $replacement = $issueRows->sole(fn (StockLayerConsumption $row): bool => $row->purpose === 'ALLOCATION' && $row->stock_layer_id === $newComponent->id);
+        $originalOnA = $issueRows->sole(fn (StockLayerConsumption $row): bool => $row->purpose === 'ALLOCATION' && $row->stock_layer_id === $layerDA->id);
+        $this->assertSame('5.0000', $originalOnA->qty_consumed);
+        $this->assertSame('1.0000', $reversal->qty_consumed);
+        $this->assertSame('1.0000', $replacement->qty_consumed);
+        $this->assertSame($request->id, $reversal->recalculation_request_id);
+        $this->assertSame($request->id, $replacement->recalculation_request_id);
+    }
+
+    /**
+     * The destination's own stock is transferred onward a second time before
+     * the backdated receipt is proposed — a nested transfer chain, which
+     * stays refused for now (the one-hop boundary this slice draws). Nothing
+     * commits: the whole recalculation execution rolls back atomically.
+     */
+    public function test_fifo_execution_refuses_a_second_transfer_hop(): void
+    {
+        [$item, $uom, $source] = $this->makeFifoItem();
+        $destination = app(CreateWarehouse::class)([
+            'code' => 'secondary', 'name' => 'Secondary', 'location_code' => 'secondary', 'location_name' => 'Secondary',
+        ])->locations()->sole();
+        $tertiary = app(CreateWarehouse::class)([
+            'code' => 'tertiary', 'name' => 'Tertiary', 'location_code' => 'tertiary', 'location_name' => 'Tertiary',
         ])->locations()->sole();
         foreach ([
             ['qty' => '5.0000', 'at' => '2026-01-01', 'cost' => '10.0000', 'source' => 1],
@@ -442,6 +586,11 @@ class ExecuteRecalculationTest extends TestCase
             'qty' => '6.0000', 'uom_id' => $uom->id, 'moved_at' => Carbon::parse('2026-01-15'),
             'source_type' => 'TEST_TRANSFER', 'source_id' => 3,
         ]);
+        app(PostInventoryMovement::class)->transfer([
+            'item_id' => $item->id, 'from_location_id' => $destination->id, 'to_location_id' => $tertiary->id,
+            'qty' => '6.0000', 'uom_id' => $uom->id, 'moved_at' => Carbon::parse('2026-01-20'),
+            'source_type' => 'TEST_SECOND_TRANSFER', 'source_id' => 5,
+        ]);
         $requester = User::factory()->create();
         $requester->givePermissionTo('inventory.recalculation.request');
         $request = app(RequestStockRecalculation::class)([
@@ -454,12 +603,15 @@ class ExecuteRecalculationTest extends TestCase
 
         try {
             app(ExecuteRecalculation::class)($version, $this->executor());
-            $this->fail('Transfer-connected FIFO execution should remain blocked.');
+            $this->fail('A second transfer hop should remain blocked.');
         } catch (DomainInvariantException $exception) {
-            $this->assertStringContainsString('through transfers', $exception->getMessage());
+            $this->assertStringContainsString('transfer hop', $exception->getMessage());
         }
         $this->assertFalse(StockMove::query()->where('source_type', 'TEST_BACKDATED_RECEIPT')->where('source_id', 4)->exists());
-        $this->assertSame(2, StockLayerConsumption::query()->where('stock_move_id', StockMove::query()->where('source_type', 'TEST_TRANSFER')->value('id'))->count());
+        // The whole execution rolls back atomically: no minted destination
+        // layer survives from the first transfer's (attempted) correction.
+        $this->assertSame(2, StockLayer::query()->where('source_type', 'TEST_TRANSFER')->where('source_id', 3)->count());
+        $this->assertSame(2, StockLayer::query()->where('source_type', 'TEST_SECOND_TRANSFER')->where('source_id', 5)->count());
     }
 
     public function test_fifo_execution_allows_an_unchanged_later_transfer(): void
