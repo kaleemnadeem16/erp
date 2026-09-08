@@ -18,6 +18,9 @@ import {
   ItemSuppliersListScreen,
   ItemsListScreen,
   LoginScreen,
+  NegativeStockOverrideCreateScreen,
+  NegativeStockOverrideDetailScreen,
+  NegativeStockOverridesListScreen,
   PhysicalCountCreateScreen,
   PhysicalCountDetailScreen,
   PhysicalCountsListScreen,
@@ -281,6 +284,36 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <InventoryCutoverDetailScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/negative-stock-overrides"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <NegativeStockOverridesListScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/negative-stock-overrides/new"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <NegativeStockOverrideCreateScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/negative-stock-overrides/:id"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <NegativeStockOverrideDetailScreen />
               </AppShell>
             </ProtectedRoute>
           }

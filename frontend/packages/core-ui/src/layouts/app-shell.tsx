@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Boxes, ClipboardList, History, LayoutDashboard, LogOut, Package, ScrollText, Tags, Warehouse } from 'lucide-react';
+import { Boxes, ClipboardList, History, LayoutDashboard, LogOut, Package, ScrollText, ShieldAlert, Tags, Warehouse } from 'lucide-react';
 import { NavLink, useNavigate } from 'react-router';
 import { useLogout } from '@erp/core-api';
 
@@ -16,6 +16,7 @@ const navItems = [
   { to: '/stock-moves', label: 'Stock Ledger', icon: ScrollText },
   { to: '/physical-counts', label: 'Physical Counts', icon: ClipboardList },
   { to: '/inventory-cutovers', label: 'Inventory Cutovers', icon: History },
+  { to: '/negative-stock-overrides', label: 'Negative-Stock Overrides', icon: ShieldAlert },
 ];
 
 // Mobile-first: a fixed bottom tab bar below `md`, a persistent sidebar above it —

@@ -304,8 +304,14 @@ page-based list). Do not tick Phase 2 complete while any of these is still Actio
       batches through
 - [ ] **Stock recalculation** — `RequestStockRecalculation`, `DecideRecalculationApproval`,
       `ExecuteRecalculation`, `ResumeRecalculationRegeneration`
-- [ ] **Negative-stock overrides** — `RequestNegativeStockOverride`,
-      `DecideNegativeStockOverride`, `ReviewNegativeStockOverride`, `UpdateInventorySettings`
+- [x] **Negative-stock overrides** — full HTTP surface: `POST/GET
+      /api/v1/negative-stock-override-requests`, `GET .../{id}`, `POST .../decide`
+      (`DecideNegativeStockOverride`) and `POST .../review` (`ReviewNegativeStockOverride`) —
+      the header (`RequestNegativeStockOverride`) stays create/read-only over HTTP, and decide/
+      review are named actions on the same resource (no separate exception resource, unlike the
+      cutover negative-opening exception). `UpdateInventorySettings` was already exposed via
+      `PATCH /api/v1/inventory-settings`. No status column exists on the request — the frontend
+      derives display status from `authorisation_mode` plus whether `approval`/`review` exists
 - [x] **Physical counts** — full HTTP surface: `POST/GET /api/v1/physical-counts`,
       `GET /api/v1/physical-counts/{id}`, `POST .../lines` (`AddPhysicalCountLine`),
       `POST /api/v1/physical-count-lines/{id}/count` (`RecordPhysicalCountLine`),
@@ -317,7 +323,9 @@ page-based list). Do not tick Phase 2 complete while any of these is still Actio
       Physical Counts (`/physical-counts`) is the first screen with a document workflow (create,
       add lines, record counts, post/cancel); Inventory Cutovers (`/inventory-cutovers`) is the
       first with a multi-actor approval lifecycle (validate, independent approve, commit,
-      finalise) plus its own negative-opening exception sub-flow
+      finalise) plus its own negative-opening exception sub-flow; Negative-Stock Overrides
+      (`/negative-stock-overrides`) is the first screen with no server-side status column,
+      deriving its display status entirely from `authorisation_mode` and child-record presence
 - [ ] First real deployment to the production VMs (deferred from Phase 0)
 
 Tick these in the same commit as the work.

@@ -5,6 +5,7 @@ use App\Modules\Inventory\Http\Controllers\Api\V1\InventoryCutoverController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\InventorySettingsController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\ItemController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\LocationController;
+use App\Modules\Inventory\Http\Controllers\Api\V1\NegativeStockOverrideRequestController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\PhysicalCountController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\StockMoveController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\WarehouseController;
@@ -38,6 +39,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('inventory-cutover-negative-openings/{inventoryCutoverNegativeOpening}/approve', [InventoryCutoverController::class, 'approveNegativeOpening'])->name('inventory-cutover-negative-openings.approve');
     Route::get('inventory-settings', [InventorySettingsController::class, 'show'])->name('inventory-settings.show');
     Route::patch('inventory-settings', [InventorySettingsController::class, 'update'])->name('inventory-settings.update');
+    Route::apiResource('negative-stock-override-requests', NegativeStockOverrideRequestController::class)->only(['index', 'store', 'show']);
+    Route::post('negative-stock-override-requests/{negativeStockOverrideRequest}/decide', [NegativeStockOverrideRequestController::class, 'decide'])->name('negative-stock-override-requests.decide');
+    Route::post('negative-stock-override-requests/{negativeStockOverrideRequest}/review', [NegativeStockOverrideRequestController::class, 'review'])->name('negative-stock-override-requests.review');
     Route::apiResource('warehouse-location-roles', WarehouseLocationAssignmentController::class)
         ->parameters(['warehouse-location-roles' => 'warehouseLocationRole'])->except('update');
     Route::patch('warehouse-location-roles/{warehouseLocationRole}', [WarehouseLocationAssignmentController::class, 'update'])

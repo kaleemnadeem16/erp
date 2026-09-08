@@ -10,6 +10,7 @@ export * from './generated/location/location';
 export * from './generated/stock-move/stock-move';
 export * from './generated/physical-count/physical-count';
 export * from './generated/inventory-cutover/inventory-cutover';
+export * from './generated/negative-stock-override-request/negative-stock-override-request';
 export * from './generated/chart-of-account/chart-of-account';
 export * from './generated/supplier-account/supplier-account';
 export * from './generated/item-supplier/item-supplier';

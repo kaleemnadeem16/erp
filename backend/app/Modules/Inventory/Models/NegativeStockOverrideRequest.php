@@ -12,6 +12,7 @@ use App\Modules\Inventory\Support\NegativeStockMovementClass;
 use App\Modules\Inventory\Support\NegativeStockReasonCode;
 use App\Support\Concerns\BelongsToCompany;
 use App\Support\Concerns\GuardsRelatedCompanyScope;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 
@@ -30,6 +31,7 @@ use Illuminate\Support\Carbon;
  * @property NegativeStockAuthorisationMode $authorisation_mode
  * @property bool $allow_self_review
  * @property string $shortage_qty
+ * @property Carbon $requested_at
  * @property Carbon|null $review_due_at
  */
 class NegativeStockOverrideRequest extends Model
@@ -70,5 +72,23 @@ class NegativeStockOverrideRequest extends Model
     public function shortage(): HasOne
     {
         return $this->hasOne(NegativeStockShortage::class, 'override_request_id');
+    }
+
+    /** @return BelongsTo<Item, $this> */
+    public function item(): BelongsTo
+    {
+        return $this->belongsTo(Item::class);
+    }
+
+    /** @return BelongsTo<Location, $this> */
+    public function location(): BelongsTo
+    {
+        return $this->belongsTo(Location::class);
+    }
+
+    /** @return BelongsTo<StockBatch, $this> */
+    public function batch(): BelongsTo
+    {
+        return $this->belongsTo(StockBatch::class);
     }
 }

@@ -163,6 +163,28 @@ automatic inventory adjustment. The opening grants no live authority and SPECIFI
 negatives remain blocked. See
 [inventory-cutover.md](inventory-cutover.md#dates-negative-balances-and-corrections).
 
+## User interface
+
+The negative-stock override HTTP surface is exposed per
+[phase-2-purchasing-stock.md](../phases/phase-2-purchasing-stock.md#close-out): the header
+(`NegativeStockOverrideRequest`) is create/read-only over HTTP (`POST`/`GET
+/api/v1/negative-stock-override-requests`, `GET .../{id}`), and `POST .../decide` /
+`POST .../review` are named actions on that *same* resource — unlike the cutover negative-opening
+exception, decide/review don't get their own addressable resource, since a request only ever
+receives the one its snapshotted `authorisation_mode` calls for. `UpdateInventorySettings` (the
+4th action on the original close-out list) was already exposed via `PATCH /api/v1/inventory-settings`
+before this work started.
+
+There is no status column on the request — unlike physical counts and inventory cutover, this
+table intentionally carries no derived state, only the immutable facts it snapshotted. The
+`/negative-stock-overrides` list, create and `/negative-stock-overrides/:id` detail screens derive
+a display status entirely client-side from `authorisation_mode` plus whether `approval`/`review`
+is present (and, for a still-pending immediate review, whether `review_due_at` has passed). The
+detail screen shows only the one of Decide/Review that's still outstanding for the request's mode,
+same "refetch after every mutation, no optimistic state" rule as physical counts and cutover. This
+queue produces the `override_request_id` an issue's own posting call already knows how to consume
+(see "Authorised outbound posting" above) — the screen itself never posts a movement.
+
 ## Related
 
 - [stock.md](stock.md) — the core movement, layer and pool model

@@ -10,10 +10,12 @@ use App\Models\User;
 use App\Modules\Inventory\Support\NegativeStockApprovalDecision;
 use App\Support\Concerns\BelongsToCompany;
 use App\Support\Concerns\GuardsRelatedCompanyScope;
+use Illuminate\Support\Carbon;
 
 /**
  * @property NegativeStockApprovalDecision $decision
  * @property int $decided_by
+ * @property Carbon $decided_at
  * @property string $notes
  */
 class NegativeStockOverrideApproval extends Model

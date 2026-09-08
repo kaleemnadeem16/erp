@@ -166,16 +166,17 @@ module adds its own seeder to that list. Both the command and every module seede
 unless Laravel's environment is `local` or `testing`, so a normal production `db:seed` cannot
 install demo data. The demo login defaults to `user@erp.x1techs.com` / `!User@Erp@123`; local
 environment variables `DEMO_USER_EMAIL`, `DEMO_USER_PASSWORD` and `DEMO_USER_NAME` may override
-it. `StockDemoSeeder` grants this login every `inventory.physical_count.*` and
-`inventory.cutover.*` permission those screens gate on — without it the demo login could not use
-either workflow at all.
+it. `StockDemoSeeder` grants this login every `inventory.physical_count.*`, `inventory.cutover.*`
+and `inventory.negative-stock.*` permission those screens gate on — without it the demo login
+could not use any of the three workflows at all.
 
 `StockDemoSeeder` also creates two throwaway accounts, `demo-ops@erp.x1techs.com` and
 `demo-supervisor@erp.x1techs.com` — **not meant to be logged into** (their passwords are random
-and never surfaced). They exist only as distinct actors so the seeded physical count and
-inventory cutover satisfy separation-of-duties rules a single login cannot (a count's poster and
-a cutover's approver must differ from its creator/validator) — they show up as `created_by`/
-`approved_by` on that seeded data, the same way a second real staff member would in production.
+and never surfaced). They exist only as distinct actors so the seeded physical count, inventory
+cutover and negative-stock override requests satisfy separation-of-duties rules a single login
+cannot (a count's poster, a cutover's approver, and an override's decider/reviewer must differ
+from the record's own creator/requester) — they show up as `created_by`/`approved_by`/
+`requested_by` on that seeded data, the same way a second real staff member would in production.
 
 ### Follow the existing deployment pattern
 

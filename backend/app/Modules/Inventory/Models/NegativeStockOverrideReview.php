@@ -10,10 +10,12 @@ use App\Models\User;
 use App\Modules\Inventory\Support\NegativeStockReviewOutcome;
 use App\Support\Concerns\BelongsToCompany;
 use App\Support\Concerns\GuardsRelatedCompanyScope;
+use Illuminate\Support\Carbon;
 
 /**
  * @property NegativeStockReviewOutcome $outcome
  * @property int $reviewed_by
+ * @property Carbon $reviewed_at
  * @property string $notes
  */
 class NegativeStockOverrideReview extends Model

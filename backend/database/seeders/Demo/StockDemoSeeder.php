@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Seeders\Demo;
 
+use App\Models\Company;
 use App\Models\Currency;
 use App\Models\User;
 use App\Modules\Imports\Actions\CreateImportProfile;
@@ -17,6 +18,7 @@ use App\Modules\Inventory\Actions\CreateInventoryCutover;
 use App\Modules\Inventory\Actions\CreatePhysicalCount;
 use App\Modules\Inventory\Actions\PostPhysicalCount;
 use App\Modules\Inventory\Actions\RecordPhysicalCountLine;
+use App\Modules\Inventory\Actions\RequestNegativeStockOverride;
 use App\Modules\Inventory\Actions\ValidateInventoryCutover;
 use App\Modules\Inventory\Models\InventoryCutover;
 use App\Modules\Inventory\Models\Item;
@@ -35,17 +37,20 @@ use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 
 /**
- * Populates the stock ledger, physical counts and inventory cutover screens
- * with real data produced through the same Actions the app itself uses —
- * goods receipts, physical count posting, and one inventory cutover left at
- * APPROVED so the demo login can complete Commit/Finalise itself in the UI.
+ * Populates the stock ledger, physical counts, inventory cutover and
+ * negative-stock override screens with real data produced through the same
+ * Actions the app itself uses — goods receipts, physical count posting, an
+ * inventory cutover left at APPROVED, and two override requests (one per
+ * authorisation mode) left undecided/unreviewed — so the demo login can
+ * complete the remaining step of each workflow itself in the UI.
  *
  * Two throwaway actor accounts (never documented as logins) exist purely to
- * satisfy separation-of-duties rules (a physical count's poster and an
- * inventory cutover's approver must differ from its creator/validator) —
- * exactly the kind of multi-person workflow this data is meant to show off.
- * The demo login itself is granted every permission these screens gate on,
- * so it can drive the remaining actions after seeding.
+ * satisfy separation-of-duties rules (a physical count's poster, an
+ * inventory cutover's approver, and a negative-stock override's decider/
+ * reviewer must differ from the request's own creator) — exactly the kind
+ * of multi-person workflow this data is meant to show off. The demo login
+ * itself is granted every permission these screens gate on, so it can drive
+ * the remaining actions after seeding.
  */
 final class StockDemoSeeder extends Seeder
 {
@@ -61,6 +66,8 @@ final class StockDemoSeeder extends Seeder
             'inventory.cutover.create', 'inventory.cutover.stage', 'inventory.cutover.validate', 'inventory.cutover.approve',
             'inventory.cutover.commit', 'inventory.cutover.finalise',
             'inventory.cutover.negative_opening.request', 'inventory.cutover.negative_opening.approve',
+            'inventory.negative-stock.request', 'inventory.negative-stock.override',
+            'inventory.negative-stock.approve', 'inventory.negative-stock.review',
         ] as $permission) {
             Permission::findOrCreate($permission);
         }
@@ -71,11 +78,14 @@ final class StockDemoSeeder extends Seeder
             'inventory.cutover.create', 'inventory.cutover.stage', 'inventory.cutover.validate', 'inventory.cutover.approve',
             'inventory.cutover.commit', 'inventory.cutover.finalise',
             'inventory.cutover.negative_opening.request', 'inventory.cutover.negative_opening.approve',
+            'inventory.negative-stock.request', 'inventory.negative-stock.override',
+            'inventory.negative-stock.approve', 'inventory.negative-stock.review',
         ]);
 
         $ops = $this->seedActor('demo-ops@erp.x1techs.com', 'Demo Ops Assistant', [
             'inventory.physical_count.create', 'inventory.physical_count.count',
             'inventory.cutover.create', 'inventory.cutover.stage', 'inventory.cutover.validate',
+            'inventory.negative-stock.request', 'inventory.negative-stock.override',
         ]);
         $supervisor = $this->seedActor('demo-supervisor@erp.x1techs.com', 'Demo Inventory Supervisor', [
             'inventory.cutover.approve',
@@ -88,6 +98,7 @@ final class StockDemoSeeder extends Seeder
         $this->seedGoodsReceipts($location, $currency);
         $this->seedPhysicalCounts($warehouse, $location, $ops, $demoUser);
         $this->seedInventoryCutover($location, $currency, $ops, $supervisor);
+        $this->seedNegativeStockOverrides($location, $ops);
     }
 
     /** @param  list<string>  $permissions */
@@ -197,5 +208,35 @@ final class StockDemoSeeder extends Seeder
         // Commit/Finalise no more than it needs one for this step, so the
         // demo login (already granted both permissions) can finish it live.
         app(ApproveInventoryCutover::class)($cutover->refresh(), $approver);
+    }
+
+    /**
+     * One request per authorisation mode, both left at their one
+     * outstanding step (undecided / unreviewed) so the demo login can
+     * finish either live. authorisation_mode is snapshotted per-request
+     * from the company's setting at request time, so flipping company
+     * policy between the two calls is what produces one of each — company
+     * policy itself is left on IMMEDIATE_WITH_REVIEW afterwards, since
+     * that's the more permissive mode to explore new requests under.
+     */
+    private function seedNegativeStockOverrides(Location $location, User $requester): void
+    {
+        $item = Item::query()->where('code', 'demo-pig-blue')->firstOrFail();
+        $company = Company::query()->findOrFail(1);
+        $company->update(['negative_stock_mode' => 'AUTHORISED_OVERRIDE']);
+
+        $company->update(['negative_stock_authorisation_mode' => 'PRIOR_APPROVAL']);
+        app(RequestNegativeStockOverride::class)([
+            'item_id' => $item->getKey(), 'location_id' => $location->getKey(), 'movement_class' => 'MATERIAL_CONSUMPTION',
+            'requested_qty' => '30.0000', 'available_qty' => '24.0000', 'source_type' => 'DEMO_JOB_ISSUE', 'source_id' => 1,
+            'reason_code' => 'OPERATIONAL_EMERGENCY', 'explanation' => 'Urgent job material issue ahead of the delayed weekly delivery.',
+        ], $requester);
+
+        $company->update(['negative_stock_authorisation_mode' => 'IMMEDIATE_WITH_REVIEW']);
+        app(RequestNegativeStockOverride::class)([
+            'item_id' => $item->getKey(), 'location_id' => $location->getKey(), 'movement_class' => 'MATERIAL_CONSUMPTION',
+            'requested_qty' => '15.0000', 'available_qty' => '12.0000', 'source_type' => 'DEMO_JOB_ISSUE', 'source_id' => 2,
+            'reason_code' => 'PAPERWORK_DELAY', 'explanation' => 'Supplier delivery note is delayed; stock physically received.',
+        ], $requester);
     }
 }
