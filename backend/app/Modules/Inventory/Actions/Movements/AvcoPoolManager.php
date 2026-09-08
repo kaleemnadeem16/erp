@@ -130,6 +130,23 @@ final class AvcoPoolManager
     }
 
     /**
+     * Seeds a fresh, never-before-touched pool with an evidenced negative
+     * ADR 0037 cutover opening (Cutover\OpeningStateItemPoster) — the one
+     * legitimate way last_valid_avg_unit_cost becomes nonzero without a
+     * prior positive receipt. Live posting can never do this: IssuePoster's
+     * defensibleAvcoCost() always blocks on a last_valid of zero, since an
+     * ordinary pool cannot go negative before it has ever held stock.
+     */
+    public function seedNegativeOpening(AvcoPool $pool, BigDecimal $qty, BigDecimal $value, BigDecimal $provisionalUnitCost): void
+    {
+        $pool->update([
+            'qty_on_hand' => (string) $qty, 'inventory_value' => (string) $value->toScale(4, RoundingMode::HALF_UP),
+            'avg_unit_cost' => (string) $provisionalUnitCost, 'base_avg_unit_cost' => (string) $provisionalUnitCost,
+            'last_valid_avg_unit_cost' => (string) $provisionalUnitCost, 'status' => 'FROZEN',
+        ]);
+    }
+
+    /**
      * Read-only pool lookup for preview/what-if computation — no lock, no
      * insertOrIgnore. Returns null when the pool has never been touched by a
      * live movement (nothing to preview against).

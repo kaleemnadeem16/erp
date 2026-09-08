@@ -144,11 +144,10 @@ instead of a purchase:
   enforces the qty-1-plus-serial pairing the same way an ordinary serial receipt does.
 
 The Action is idempotent (a batch already `COMMITTED` is a no-op) and requires an active company
-base currency when a fact carries no explicit currency. A negative fact quantity is refused
-outright: ADR 0037 already decides the policy (see "Dates, negative balances and corrections"
-below), but its cutover-shortage exception workflow — resolution plan, target date, responsible
-owner, evidence — has no schema or Action yet, so a genuine negative predecessor closing balance
-cannot be preserved today. That remains open implementation work, not an open decision.
+base currency when a fact carries no explicit currency. A negative fact quantity requires an
+**approved** `InventoryCutoverNegativeOpening` at its exact item, location and batch — ADR 0037's
+cutover-shortage exception, detailed under "Dates, negative balances and corrections" below.
+Without one it still refuses outright, unchanged from before that exception existed.
 
 ## Valuation continuity
 
@@ -212,6 +211,30 @@ resulting ERP opening totals for later inventory/GL reconciliation.
 Posted operational transactions cannot be imported with an effective time after `cutover_at`.
 After finalisation, corrections use immutable normal stock adjustments/reversals in an allowed
 period. Source facts and committed batches are never overwritten.
+
+### Implemented
+
+`InventoryCutoverNegativeOpening` is the exception record: `RequestInventoryCutoverNegativeOpening`
+computes the evidenced quantity from the cutover's own immutable `InventorySourceFact` rows at the
+exact (item, location, batch) — never accepted as caller-supplied input — and requires a positive
+`provisional_unit_cost`, reason, structured supporting evidence, responsible owner and resolution
+plan. SPECIFIC and serial-tracked items are blocked outright, at request time. The default target
+date is `cutover_at` + 30 days; a different date requires an explicit `target_date_reason`.
+`ApproveInventoryCutoverNegativeOpening` is the dedicated cutover approval — the requester cannot
+approve their own request, DB-enforced as well as in the Action. Cutover authority is structurally
+separate from live ADR 0037 override authority: neither table nor Action references
+`NegativeStockOverrideRequest`, and approving here grants no live override permission.
+
+Once approved, `CommitInventoryCutoverOpeningState` posts it as an ISSUE-shaped `stock_moves` row
+plus a linked `NegativeStockShortage` (`status = OPEN_CUTOVER_SHORTAGE`) — `negative_stock_shortages`
+now accepts either a live `override_request_id` or an `inventory_cutover_negative_opening_id`,
+never both, DB-enforced. AVCO additionally seeds the resolved pool directly at the *approved*
+`provisional_unit_cost` (`AvcoPoolManager::seedNegativeOpening()`) — the one legitimate way a pool's
+`last_valid_avg_unit_cost` becomes nonzero with no prior positive receipt, something live posting
+can never do. FIFO creates no layer. The posted value always derives from the approved provisional
+cost, not the fact's own raw evidenced value, which remains on the exception purely as provenance.
+A later ordinary receipt settles the shortage exactly like a live one — `ShortageSettler` doesn't
+distinguish the two authorities.
 
 ## Completeness and degradation
 

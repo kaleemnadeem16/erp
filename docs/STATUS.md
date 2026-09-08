@@ -8,9 +8,9 @@ sequences, currencies, Scramble→Orval), Phase 1 master-data APIs, and Phase 2 
 purchase orders, receipts, QA/reversal and the full movement/valuation engine. ADR 0037 negative
 stock and ADR 0040 backdated recalculation are complete for every executable receipt/issue/transfer
 case across all valuation methods; only the Phase 4/5/6 multi-owner correction package remains.
-ADR 0036 inventory cutover now posts a real reconciled opening state (AVCO/FIFO/SPECIFIC); only its
-negative-opening exception is still unbuilt. React 19 + Vite frontend skeleton with a generated
-client covering every implemented endpoint.
+ADR 0036 inventory cutover now posts a real reconciled opening state (AVCO/FIFO/SPECIFIC) including
+ADR 0037's cutover-shortage negative-opening exception. React 19 + Vite frontend skeleton with a
+generated client covering every implemented endpoint.
 
 ---
 
@@ -25,14 +25,14 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 
 | Item | Date |
 |---|---|
-| **Recalculation execution — arbitrary-depth FIFO transfer reallocation** — the one-hop cap is gone: `FifoReceiptReallocator` recurses through however many transfer hops a chain actually has (bounded only by real history — each hop strictly later than the one before), and the DB guard now authorises a correction row anywhere reachable from the request's location by a recursive transfer-connected-component query instead of one hardcoded hop → [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-07 |
 | **Recalculation execution — clean-replay issue/transfer execution** — `ExecuteRecalculation` now posts an approved backdated ISSUE or TRANSFER too, when its revalidated replay changes no other move (`OutboundRecalculationExecutor`, mirroring `IssuePoster`/`TransferPoster`'s posting shape at the true historical date). A request whose replay reprices other history still refuses — that needs a real→synthetic layer-id bridge `MovementReplayState`'s preview simulation doesn't have yet → [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-07 |
 | **Authority-only recalculation approval rerouting** — ADR 0040's `REROUTE_OR_INVALIDATE_APPROVAL_WITHOUT_NEW_IMPACT_VERSION`: a different, eligible approver can now claim a slot an expiry freed, on the same impact version, with no new version generated. The required-approver count for a new claimant is measured in currently-unexpired distinct approvers (`unexpiredApprovedActorIds()`); renewal detection stays expiry-blind. DB-enforced in the same trigger as well as in the Action → [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-07 |
 | **Recalculation execution — outbound changed-history case, ADR 0040 complete** — a backdated ISSUE/TRANSFER now executes even when its replay reprices other real history, closing the last executable gap: FIFO/SPECIFIC reuse the receipt case's real-layer-id engine (`LayerCounterfactualReplayer::planOutboundInsertion()` + `FifoReceiptReallocator::applyCorrections()`, arbitrary transfer-hop depth) with no synthetic-id bridge needed; AVCO converges every pool a connected component touched, not just source/destination. Only the multi-owner correction package (Phase 4/5/6) remains → [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-07 |
 | **Generic inventory-cutover import contract** — ADR 0027's shared Imports foundation now stages arbitrary mapped rows under an idempotent source identity and validates Inventory's `INVENTORY_CUTOVER`/`OPENING_STATE` schema without any generic domain-write callback. Raw/mapped evidence is immutable and purpose-bound; cutover orchestration is next → [inventory-cutover.md](domain/inventory-cutover.md) | 2026-09-07 |
 | **Inventory cutover orchestration** — one immutable company cutover now stages validated generic batches into normalised source facts, previews/reconciles exact controls and enforces independent approval through dedicated permissions. Finalisation is present but cannot succeed until the next method-specific opening-state Action commits every batch → [inventory-cutover.md](domain/inventory-cutover.md) | 2026-09-07 |
 | **Cutover valuation-policy transition ledger** — validation now derives immutable, idempotent source method/scope/pool → target method/scope records effective exactly at `cutover_at`, including structured revaluation evidence for method changes. This is a deliberately small provenance slice; it posts no stock → [inventory-cutover.md](domain/inventory-cutover.md) | 2026-09-07 |
-| **Reconciled cutover opening-state posting** — `CommitInventoryCutoverOpeningState` posts every validated `OPENING_STATE` batch as real `stock_moves`/`stock_layers`, converging target AVCO pools (with new `InventoryCutoverAvcoPool` provenance), real/synthetic FIFO layers and per-serial SPECIFIC layers, retargeting each item's live valuation method/scope first since this is its first-ever movement. Finalisation can now actually succeed. A negative opening quantity still refuses — ADR 0037's cutover-shortage exception workflow remains unbuilt → [inventory-cutover.md](domain/inventory-cutover.md) | 2026-09-08 |
+| **Reconciled cutover opening-state posting** — `CommitInventoryCutoverOpeningState` posts every validated `OPENING_STATE` batch as real `stock_moves`/`stock_layers`, converging target AVCO pools (with new `InventoryCutoverAvcoPool` provenance), real/synthetic FIFO layers and per-serial SPECIFIC layers, retargeting each item's live valuation method/scope first since this is its first-ever movement. Finalisation can now actually succeed → [inventory-cutover.md](domain/inventory-cutover.md) | 2026-09-08 |
+| **Cutover negative-opening exception, ADR 0036/0037 opening-state posting complete** — `InventoryCutoverNegativeOpening` records an evidenced AVCO/FIFO negative opening (provisional cost, reason, evidence, owner, resolution plan, target date), requested and dedicated-approved by different actors. Approved, `CommitInventoryCutoverOpeningState` posts an `OPEN_CUTOVER_SHORTAGE` settled afterwards exactly like a live shortage — `negative_stock_shortages` now accepts either authority, never both. SPECIFIC/serial always blocked → [inventory-cutover.md](domain/inventory-cutover.md) | 2026-09-08 |
 
 ## Next
 
@@ -40,17 +40,15 @@ ADR 0040's executable-today scope is done — every backdated receipt/issue/tran
 three valuation methods now previews, approves and executes, clean or changed-history alike. The
 multi-owner correction package (Sales/Job Execution/Accounting routing, cross-module
 reconciliation) waits on those modules existing — Phase 4/5/6, tracked at each phase's entry in
-[phases/README.md](phases/README.md). Continue the rest of
+[phases/README.md](phases/README.md). ADR 0036 inventory cutover's opening-state posting, including
+its negative-opening exception, is complete. Continue the rest of
 [Phase 2 — Purchasing & stock](phases/phase-2-purchasing-stock.md):
 
-1. ADR 0037's cutover-shortage exception workflow (a genuine negative predecessor closing balance
-   at cutover) — resolution plan, target date, responsible owner, evidence — so
-   `CommitInventoryCutoverOpeningState` can stop refusing a negative opening quantity outright.
-2. Physical-count documents (snapshot lines, count/recount, posted variance through the same
+1. Physical-count documents (snapshot lines, count/recount, posted variance through the same
    movement Action).
-3. API polish across Phase 2 (list filters/sorting/pagination, stable 409/422 conflict responses),
+2. API polish across Phase 2 (list filters/sorting/pagination, stable 409/422 conflict responses),
    Orval client regeneration, and a Phase 2 integrity audit.
-4. Phase 2 close-out: first UI screens for the stock engine and the first real deployment to the
+3. Phase 2 close-out: first UI screens for the stock engine and the first real deployment to the
    production VMs.
 
 ## Blocked / awaiting input

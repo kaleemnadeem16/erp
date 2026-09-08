@@ -25,6 +25,7 @@ class NegativeStockShortage extends Model
             'avco_pool_id' => AvcoPool::class,
             'source_move_id' => StockMove::class,
             'override_request_id' => NegativeStockOverrideRequest::class,
+            'inventory_cutover_negative_opening_id' => InventoryCutoverNegativeOpening::class,
         ];
     }
 
@@ -37,6 +38,12 @@ class NegativeStockShortage extends Model
     public function overrideRequest(): BelongsTo
     {
         return $this->belongsTo(NegativeStockOverrideRequest::class, 'override_request_id');
+    }
+
+    /** @return BelongsTo<InventoryCutoverNegativeOpening, $this> */
+    public function cutoverNegativeOpening(): BelongsTo
+    {
+        return $this->belongsTo(InventoryCutoverNegativeOpening::class, 'inventory_cutover_negative_opening_id');
     }
 
     /** @return HasMany<NegativeStockSettlement, $this> */

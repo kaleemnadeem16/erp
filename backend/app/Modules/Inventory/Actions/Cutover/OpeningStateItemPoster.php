@@ -11,14 +11,17 @@ use App\Modules\Inventory\Actions\Movements\StockIdentity;
 use App\Modules\Inventory\Models\AvcoPool;
 use App\Modules\Inventory\Models\InventoryCutover;
 use App\Modules\Inventory\Models\InventoryCutoverAvcoPool;
+use App\Modules\Inventory\Models\InventoryCutoverNegativeOpening;
 use App\Modules\Inventory\Models\InventoryCutoverPolicyTransition;
 use App\Modules\Inventory\Models\InventorySourceFact;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Models\Location;
+use App\Modules\Inventory\Models\NegativeStockShortage;
 use App\Modules\Inventory\Models\StockBatch;
 use App\Modules\Inventory\Models\StockLayer;
 use App\Modules\Inventory\Models\StockMove;
 use App\Modules\Inventory\Support\AvcoPoolScope;
+use App\Modules\Inventory\Support\InventoryCutoverNegativeOpeningStatus;
 use App\Modules\Inventory\Support\ValuationMethod;
 use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
@@ -48,10 +51,11 @@ use Illuminate\Support\Collection;
  *   evidence itself; StockIdentity::validateReceiptTracking enforces the
  *   qty=1 + serial pairing).
  *
- * A negative fact quantity is refused: ADR 0037's cutover-shortage exception
- * workflow (resolution plan, target date, owner, evidence) does not exist
- * yet, so a genuine negative predecessor closing balance cannot be preserved
- * today. A zero-quantity fact is a no-op.
+ * A negative fact quantity requires an APPROVED InventoryCutoverNegativeOpening
+ * exception at its exact (item, location, batch) — see postNegativeOpening().
+ * Without one, it still refuses outright, unchanged from before that
+ * workflow existed. SPECIFIC and serial-tracked items can never have one
+ * (ADR 0037). A zero-quantity fact is a no-op.
  */
 final class OpeningStateItemPoster
 {
@@ -76,33 +80,43 @@ final class OpeningStateItemPoster
             ]);
         }
 
-        $usable = [];
+        $positive = [];
+        $negative = [];
         foreach ($facts as $fact) {
             $qty = BigDecimal::of($fact->qty);
-            if ($qty->isNegative()) {
-                throw new DomainInvariantException(
-                    "Item {$item->code} has a negative opening quantity at cutover; the negative-opening cutover exception workflow is not implemented yet.",
-                    'qty',
-                );
-            }
             if ($qty->isZero()) {
                 continue;
             }
             if ($fact->uom_id !== $item->stock_uom_id) {
                 throw new DomainInvariantException("Item {$item->code}'s opening quantity must be supplied in its stock UoM.", 'uom_id');
             }
-            $usable[] = $fact;
-        }
-        $usable = collect($usable);
-        if ($usable->isEmpty()) {
-            return;
+            if ($qty->isNegative()) {
+                $negative[] = $fact;
+
+                continue;
+            }
+            $positive[] = $fact;
         }
 
-        match ($targetMethod) {
-            ValuationMethod::Avco => $this->postAvco($cutover, $item, $usable, $transitions, $company, $targetScope),
-            ValuationMethod::Fifo => $this->postFifo($item, $usable, $cutover->cutover_at, $company),
-            ValuationMethod::Specific => $this->postSpecific($item, $usable, $cutover->cutover_at, $company),
-        };
+        $positive = collect($positive);
+        if ($positive->isNotEmpty()) {
+            match ($targetMethod) {
+                ValuationMethod::Avco => $this->postAvco($cutover, $item, $positive, $transitions, $company, $targetScope),
+                ValuationMethod::Fifo => $this->postFifo($item, $positive, $cutover->cutover_at, $company),
+                ValuationMethod::Specific => $this->postSpecific($item, $positive, $cutover->cutover_at, $company),
+            };
+        }
+
+        if ($negative === []) {
+            return;
+        }
+        if ($targetMethod === ValuationMethod::Specific) {
+            throw new DomainInvariantException("Item {$item->code} is SPECIFIC-valued; a negative opening quantity is never permitted for serial-tracked stock.", 'qty');
+        }
+        $groups = collect($negative)->groupBy(fn (InventorySourceFact $f): string => $f->location_id.'|'.($f->batch_no ?? ''));
+        foreach ($groups as $group) {
+            $this->postNegativeOpening($cutover, $item, $group, $targetMethod, $company);
+        }
     }
 
     /** @param Collection<int, InventorySourceFact> $facts */
@@ -189,6 +203,78 @@ final class OpeningStateItemPoster
                 'derived_average' => (string) ($qty->isZero() ? BigDecimal::zero() : $baseValue->dividedBy($qty, 4, RoundingMode::HALF_UP)),
             ]);
         }
+    }
+
+    /**
+     * Posts an ADR 0037 cutover-shortage exception: an ISSUE-shaped move (the
+     * opening position is exactly as if this quantity had already left with
+     * nothing received to cover it) and a linked NegativeStockShortage
+     * (status OPEN_CUTOVER_SHORTAGE), settled afterwards by ordinary
+     * compatible inbound stock exactly like a live shortage — see
+     * ShortageSettler. Creates no stock layer: "no fake FIFO layer" per
+     * docs/domain/inventory-cutover.md. Requires a matching APPROVED
+     * InventoryCutoverNegativeOpening whose own evidenced quantity still
+     * equals this group's staged facts — reconciliation the DB trigger
+     * doesn't duplicate, since it needs BigDecimal-precise comparison. Posted
+     * value always derives from the exception's approved
+     * provisional_unit_cost, never the fact's own raw evidenced value —
+     * "a defensible provisional cost" is deliberately a separate, adopted
+     * figure a migration may need to differ from the predecessor's own
+     * stated carrying cost, exactly like a live shortage's provisional
+     * pricing (IssuePoster::provisionalUnitCost()).
+     *
+     * @param  Collection<int, InventorySourceFact>  $facts
+     */
+    private function postNegativeOpening(InventoryCutover $cutover, Item $item, Collection $facts, ValuationMethod $targetMethod, Company $company): void
+    {
+        $first = $facts->first();
+        [$batch] = $this->resolveIdentity($item, $first);
+        $location = $this->location($first->location_id);
+        $qty = $facts->reduce(fn (BigDecimal $sum, InventorySourceFact $f): BigDecimal => $sum->plus($f->qty), BigDecimal::zero());
+
+        $exception = InventoryCutoverNegativeOpening::query()
+            ->where('inventory_cutover_id', $cutover->id)->where('item_id', $item->id)
+            ->where('location_id', $location->id)->where('batch_id', $batch?->id)
+            ->where('status', InventoryCutoverNegativeOpeningStatus::Approved)->first();
+        if ($exception === null) {
+            throw new DomainInvariantException("Item {$item->code} has a negative opening quantity at {$location->code} with no approved cutover negative-opening exception; request and approve one first.", 'qty');
+        }
+        if (! BigDecimal::of($exception->source_quantity)->isEqualTo($qty)) {
+            throw new DomainInvariantException("The approved negative-opening exception for item {$item->code} no longer matches its staged evidence.", 'qty');
+        }
+        if ($company->base_currency_id === null) {
+            throw new DomainInvariantException('A company base currency is required to post a cutover negative-opening exception.', 'currency_id');
+        }
+        $accountId = $item->resolveInventoryAccountId();
+        if ($accountId === null) {
+            throw new DomainInvariantException('A stock issue requires a resolved inventory account.', 'item_id');
+        }
+
+        $provisionalUnitCost = BigDecimal::of($exception->provisional_unit_cost);
+        $baseAmount = $qty->multipliedBy($provisionalUnitCost)->toScale(4, RoundingMode::HALF_UP);
+        $pool = $targetMethod === ValuationMethod::Avco ? $this->pools->lock($item, $location, $batch) : null;
+
+        $move = StockMove::query()->create([
+            'movement_kind' => 'ISSUE', 'item_id' => $item->id, 'from_location_id' => $location->id, 'to_location_id' => null,
+            'qty' => (string) $qty->abs(), 'uom_id' => $item->stock_uom_id, 'moved_at' => $cutover->cutover_at,
+            'source_type' => 'INVENTORY_CUTOVER_OPENING_SHORTAGE', 'source_id' => $exception->id,
+            'unit_cost' => (string) $provisionalUnitCost, 'currency_id' => $company->base_currency_id, 'fx_rate' => '1.000000000',
+            'batch_id' => $batch?->id, 'serial_no' => null,
+        ]);
+        $move->valuationEntries()->create([
+            'avco_pool_id' => $pool?->id, 'pool_effect' => $pool === null ? null : 'SOURCE_OUT',
+            'qty' => (string) $qty, 'unit_cost' => (string) $provisionalUnitCost,
+            'amount' => (string) $baseAmount, 'base_amount' => (string) $baseAmount, 'account_id' => $accountId,
+        ]);
+        if ($pool !== null) {
+            $this->pools->seedNegativeOpening($pool, $qty, $baseAmount, $provisionalUnitCost);
+        }
+        NegativeStockShortage::query()->create([
+            'item_id' => $item->id, 'location_id' => $location->id, 'batch_id' => $batch?->id,
+            'avco_pool_id' => $pool?->id, 'qty_open' => (string) $qty->abs(),
+            'provisional_unit_cost' => (string) $provisionalUnitCost, 'status' => 'OPEN_CUTOVER_SHORTAGE',
+            'source_move_id' => $move->id, 'inventory_cutover_negative_opening_id' => $exception->id,
+        ]);
     }
 
     /**
@@ -302,12 +388,19 @@ final class OpeningStateItemPoster
         return $location;
     }
 
-    /** @return array{0:?StockBatch, 1:?string} */
+    /**
+     * The tracking-shape rules only care about magnitude — abs() so a
+     * negative-opening fact (postNegativeOpening) validates identically to
+     * its positive counterpart instead of tripping the SERIAL qty-1 check on
+     * a negative number.
+     *
+     * @return array{0:?StockBatch, 1:?string}
+     */
     private function resolveIdentity(Item $item, InventorySourceFact $fact): array
     {
         $batchNo = $this->identity->normalisedBatchNo(['batch_no' => $fact->batch_no]);
         $serialNo = $this->identity->normalisedSerialNo(['serial_no' => $fact->serial_no]);
-        $this->identity->validateReceiptTracking($item, BigDecimal::of($fact->qty), $batchNo, $serialNo);
+        $this->identity->validateReceiptTracking($item, BigDecimal::of($fact->qty)->abs(), $batchNo, $serialNo);
         $batch = $batchNo === null ? null : $this->identity->resolveOrCreateBatch($item, $batchNo);
 
         return [$batch, $serialNo];

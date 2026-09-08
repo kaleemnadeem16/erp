@@ -27,8 +27,9 @@ movement and valuation, built in Phase 2.
 - `NegativeStockOverrideRequest`, `NegativeStockOverrideApproval` and
   `NegativeStockOverrideReview` — immutable snapshots and independent decisions for ADR 0037's
   prior-approval and immediate-with-review workflows
-- `NegativeStockShortage` — open physical shortage state linked one-to-one to the consuming
-  override request and outbound movement, retaining its provisional cost until settlement
+- `NegativeStockShortage` — open physical shortage state linked one-to-one to its outbound
+  movement and to exactly one authority: a live override request, or a cutover negative-opening
+  exception (`OPEN_CUTOVER_SHORTAGE`) — retaining its provisional cost until settlement
 - `NegativeStockSettlement` — immutable inbound allocation and provisional-to-actual valuation
   repair facts; multiple rows support partial settlement without rewriting posted history
 - `OpeningStateImportTarget` — the validation-only `INVENTORY_CUTOVER` schema registered with the
@@ -40,6 +41,9 @@ movement and valuation, built in Phase 2.
   method/scope provenance, derived idempotently during cutover validation
 - `InventoryCutoverAvcoPool` — immutable provenance for one target AVCO pool's opening state: which
   policy transition contributed, which resolved pool it landed in, the derived average
+- `InventoryCutoverNegativeOpening` — ADR 0037's cutover-shortage exception: evidenced negative
+  AVCO/FIFO opening balance, requested and approved by different actors, structurally separate
+  from live ADR 0037 override authority
 
 ## Does not own
 
@@ -147,8 +151,20 @@ then posts every non-zero source fact as a real receipt-shaped `stock_moves`/`st
 AVCO additionally converges the resolved target pool and records `InventoryCutoverAvcoPool`
 provenance; FIFO posts a real dated layer per fact that carries its own age or serial, merging the
 rest into one synthetic layer per location/batch dated at `cutover_at`; SPECIFIC always posts one
-real layer per serial. Idempotent by batch status. A negative fact quantity refuses outright —
-ADR 0037's cutover-shortage exception workflow isn't built yet.
+real layer per serial. Idempotent by batch status.
+
+A negative fact requires an **approved** `InventoryCutoverNegativeOpening` at its exact item,
+location and batch — ADR 0037's cutover-shortage exception. `RequestInventoryCutoverNegativeOpening`
+computes the evidenced quantity from the cutover's own immutable source facts (never free-form
+input) and requires a positive defensible `provisional_unit_cost`, reason, supporting evidence,
+responsible owner and resolution plan; `ApproveInventoryCutoverNegativeOpening` is the dedicated
+second, independent actor ADR 0037 requires — neither Action grants or implies live ADR 0037
+override authority. Once approved, `OpeningStateItemPoster::postNegativeOpening()` posts an
+ISSUE-shaped `stock_moves` row and a linked `NegativeStockShortage` (`OPEN_CUTOVER_SHORTAGE`) at
+the *approved* `provisional_unit_cost` — not the fact's own raw evidenced value, which stays on the
+exception purely as provenance — settled afterwards by ordinary compatible inbound stock exactly
+like a live shortage (`ShortageSettler`). SPECIFIC and serial-tracked items can never have one.
+Creates no stock layer. A negative fact with no approved exception still refuses outright.
 
 ## Events
 
