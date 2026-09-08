@@ -16,6 +16,8 @@ import {
   ItemsListScreen,
   LoginScreen,
   ProtectedRoute,
+  StockLedgerScreen,
+  StockMoveDetailScreen,
   WarehouseCreateScreen,
   WarehouseDetailScreen,
   WarehouseEditScreen,
@@ -193,6 +195,26 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <ItemSupplierEditScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/stock-moves"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <StockLedgerScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/stock-moves/:id"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <StockMoveDetailScreen />
               </AppShell>
             </ProtectedRoute>
           }

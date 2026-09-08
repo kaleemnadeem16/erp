@@ -266,6 +266,21 @@ pair, isn't balanced, and isn't immutable in the [invariant 3](../architecture/i
 sense. Turning the feed into an actual balanced, immutable `journal_entries`/`journal_lines` pair
 — the real GL posting — is [general-ledger.md](general-ledger.md)'s job, in Phase 6.
 
+### User interface
+
+`stock_moves` has the stock engine's first HTTP surface and screen, per
+[phase-2-purchasing-stock.md](../phases/phase-2-purchasing-stock.md#close-out): a cursor-paginated
+`GET /api/v1/stock-moves` list (filterable by item/warehouse/location/batch/source type/date
+range) and a `show` endpoint, both read-only — `PostInventoryMovement` remains the only write
+path. `item`/`from_location`/`to_location`/`batch`/`valuation_entries` are all opt-in via
+`include`, never loaded unconditionally. The React list and detail screens
+(`/stock-moves`, `/stock-moves/:id`) are the first frontend use of cursor pagination
+(`CursorDataTable`/`useCursorQueryState`), matching [api-conventions.md](../architecture/api-conventions.md#pagination)'s
+"page-based elsewhere, cursor for large/frequently-appended lists" split — this ledger has no
+`total`/page-jump UI, only Previous/Next against the API's opaque cursor. `stock_layers` and
+`avco_pools` still have no endpoint of their own; an item's open FIFO layers or current AVCO
+balance aren't independently queryable yet.
+
 ## Landmines
 
 **Negative stock.** Live stock is blocked by default, with a company-configurable authorised
@@ -321,6 +336,8 @@ must not be forgotten once it does.
 - [formulations.md](formulations.md) — consumes stock cost
 - [general-ledger.md](general-ledger.md) — where valuation posts
 - [inventory-cutover.md](inventory-cutover.md) — controlled history and opening-state migration
+- [phase-2-purchasing-stock.md](../phases/phase-2-purchasing-stock.md#close-out) — remaining
+  stock-engine HTTP/UI close-out work
 - [ADR 0032](../decisions/0032-per-item-valuation-method.md) — per-item valuation method
 - [ADR 0036](../decisions/0036-controlled-inventory-cutover.md) — migration/live-policy boundary
 - [ADR 0039](../decisions/0039-configurable-avco-valuation-pools.md) — constrained AVCO pool

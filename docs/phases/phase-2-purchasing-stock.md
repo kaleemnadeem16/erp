@@ -284,9 +284,12 @@ shape is driven by a real screen's needs rather than guessed upfront (the archit
 already flags the stock ledger as a cursor-pagination candidate, unlike every existing
 page-based list). Do not tick Phase 2 complete while any of these is still Action-only:
 
-- [ ] **Stock ledger** read APIs — `stock_moves`, `stock_layers`, `avco_pools`,
-      `stock_valuation_entries` have no list/show endpoint at all; `PostInventoryMovement` is the
-      only write path and should stay that way
+- [ ] **Stock ledger** read APIs — `stock_moves` now has a cursor-paginated list and a show
+      endpoint (`GET /api/v1/stock-moves`), filterable by item/warehouse/location/batch/source
+      type/date range, with `item`/`from_location`/`to_location`/`batch`/`valuation_entries`
+      available via `include`; `stock_layers` and `avco_pools` still have no endpoint of their own
+      (an item's open FIFO layers or current AVCO balance are not yet queryable independently of a
+      move). `PostInventoryMovement` remains the only write path.
 - [ ] **Inventory cutover** — `CreateInventoryCutover`, `AttachInventoryCutoverBatch`,
       `ValidateInventoryCutover`, `PreviewInventoryCutover`, `ApproveInventoryCutover`,
       `RequestInventoryCutoverNegativeOpening`, `ApproveInventoryCutoverNegativeOpening`,
@@ -297,7 +300,8 @@ page-based list). Do not tick Phase 2 complete while any of these is still Actio
       `DecideNegativeStockOverride`, `ReviewNegativeStockOverride`, `UpdateInventorySettings`
 - [ ] **Physical counts** — `CreatePhysicalCount`, `AddPhysicalCountLine`,
       `RecordPhysicalCountLine`, `PostPhysicalCount`, `CancelPhysicalCount`
-- [ ] First UI screens for the stock engine, built against the endpoints above as each lands
+- [x] First UI screens for the stock engine, built against the endpoints above as each lands —
+      the Stock Ledger list/detail screens (`/stock-moves`) are the first, reading `stock_moves`
 - [ ] First real deployment to the production VMs (deferred from Phase 0)
 
 Tick these in the same commit as the work.

@@ -10,8 +10,9 @@ stock and ADR 0040 backdated recalculation are complete for every executable rec
 case across all valuation methods; only the Phase 4/5/6 multi-owner correction package remains.
 ADR 0036 inventory cutover now posts a real reconciled opening state (AVCO/FIFO/SPECIFIC) including
 ADR 0037's cutover-shortage negative-opening exception. Physical-count documents (count/recount,
-posted variance through the ordinary movement boundary) are also complete. React 19 + Vite frontend
-skeleton with a generated client covering every implemented endpoint.
+posted variance through the ordinary movement boundary) are also complete, and the stock ledger
+now has its first read API and UI screen. React 19 + Vite frontend skeleton with a generated
+client covering every implemented endpoint.
 
 ---
 
@@ -26,6 +27,7 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 
 | Item | Date |
 |---|---|
+| **Stock ledger read API and Stock Ledger screen** — `stock_moves` gained its first HTTP surface: a cursor-paginated `GET /api/v1/stock-moves` (filterable by item/warehouse/location/batch/source type/date range) and a `show` endpoint, both including `item`/locations/`batch`/`valuation_entries` on request. A new `/stock-moves` list screen and `/stock-moves/:id` detail screen consume it — the first UI built against Phase 2's stock engine, and the first cursor-paginated list in the frontend (`CursorDataTable`, `useCursorQueryState`). `stock_layers`/`avco_pools` still have no endpoint of their own → [phase-2-purchasing-stock.md](phases/phase-2-purchasing-stock.md#close-out) | 2026-09-08 |
 | **Phase 2 integrity audit** — three real gaps found and fixed: the stock ledger (`stock_moves`/`stock_valuation_entries`/`stock_layers`) and purchasing documents were model-guarded only and are now database-immutable like every other Phase 2 history table; `recalculation_requests` was the one bare location reference with no company trigger; and the "two concurrent AVCO receipts" acceptance criterion had the lock but no proof — now `AvcoPoolConcurrencyTest`. Rollback proven for physical-count and cutover posting too. Duplicate-submission, precision and tracking had no gaps → [phase-2-purchasing-stock.md](phases/phase-2-purchasing-stock.md) | 2026-09-08 |
 | **Items frontend reference implementation** — reusable server-driven list/detail/print and form-error foundations now power item list, detail, create and edit routes; an authenticated company-scoped read-only UoM API supplies the item form without hardcoded units. The generated client includes validated page parameters, all frontend type-checks/build and focused Item/UoM API tests pass → [items.md](domain/items.md) | 2026-09-08 |
 | **Warehouse frontend workflow** — warehouse list, detail, create and edit routes now reuse the Items table/form/print foundation, including URL-backed search/status filters and inline API errors. Creation collects the mandatory initial location atomically while updates remain warehouse-only, preserving SIMPLE/STRUCTURED location rules → [stock.md](domain/stock.md#progressive-warehouse-structure) | 2026-09-08 |
@@ -33,7 +35,6 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 | **Login feedback and password visibility** — failed login now shows the API's specific credential validation message instead of a generic HTTP 422 error, and the password input has an accessible show/hide toggle. The development account was updated operationally (not seeded or committed) and verified against Laravel authentication → [phase-0-foundation.md](phases/phase-0-foundation.md#frontend-skeleton) | 2026-09-08 |
 | **Reload-safe sessions and list rendering** — protected routes now trust a successful `/user` response immediately instead of redirecting during the one-render Zustand synchronisation gap, so authenticated reloads persist. Shared tables default optional row selection to an empty controlled state, preventing the TanStack pagination crash seen across Items and Warehouses → [phase-0-foundation.md](phases/phase-0-foundation.md#frontend-skeleton), [items.md](domain/items.md#user-interface) | 2026-09-08 |
 | **Responsive forms and maintained demo data** — Select portals now have an opaque popover surface and shared form grids shrink within the app shell instead of clipping the second column. An idempotent, modular `demo:seed` command supplies realistic Foundation-to-Purchasing records and the development login, with command- and seeder-level production guards → [environments.md](architecture/environments.md#development-demo-data), [phase-0-foundation.md](phases/phase-0-foundation.md#frontend-skeleton) | 2026-09-08 |
-| **Compact top-aligned Quick Print** — shared list/detail reports now use one 8 mm page inset instead of compounding it with container padding, making substantially more paper width available. Stronger hierarchy, compact metadata, repeated table headers, alternating rows and page-break protection improve every current master-data printout → [items.md](domain/items.md#user-interface) | 2026-09-08 |
 
 ## Next
 
@@ -45,11 +46,11 @@ reconciliation) waits on those modules existing — Phase 4/5/6, tracked at each
 is its close-out, itemised under "Close-out" in
 [Phase 2 — Purchasing & stock](phases/phase-2-purchasing-stock.md):
 
-1. HTTP APIs for the five feature areas that are still Action-only (stock ledger reads,
-   inventory cutover, stock recalculation, negative-stock overrides, physical counts) — each built
-   when its first screen is designed, not before; the exact Action list to expose is in that
-   Close-out section so nothing gets missed.
-2. First UI screens for the stock engine, against those endpoints as each lands.
+1. HTTP APIs for the four feature areas still Action-only (inventory cutover, stock
+   recalculation, negative-stock overrides, physical counts) — each built when its first screen is
+   designed, not before; stock ledger reads shipped first. The exact Action list to expose is in
+   that Close-out section so nothing gets missed.
+2. Further UI screens for the stock engine, against those endpoints as each lands.
 3. First real deployment to the production VMs.
 
 ## Blocked / awaiting input

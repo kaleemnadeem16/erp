@@ -89,3 +89,5 @@ export { ItemSuppliersListScreen } from './features/item-suppliers/item-supplier
 export { ItemSupplierDetailScreen } from './features/item-suppliers/item-supplier-detail-screen';
 export { ItemSupplierCreateScreen } from './features/item-suppliers/item-supplier-create-screen';
 export { ItemSupplierEditScreen } from './features/item-suppliers/item-supplier-edit-screen';
+export { StockLedgerScreen } from './features/stock-ledger/stock-ledger-screen';
+export { StockMoveDetailScreen } from './features/stock-ledger/stock-move-detail-screen';

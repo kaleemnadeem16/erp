@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useSearchParams } from 'react-router';
 import type { SortingState } from '@tanstack/react-table';
 
@@ -85,6 +86,83 @@ export function useListQueryState<TFilters extends Record<string, string>>(optio
     setFilter: (key, value) => patch({ filters: { [key]: value } as Partial<TFilters> }),
     setFilters: (value) => patch({ filters: value }),
     clearFilters: () => patch({ filters: Object.fromEntries(Object.keys(filters).map((key) => [key, undefined])) as Partial<TFilters> }),
+  };
+}
+
+/**
+ * The cursor-paginated sibling of `useListQueryState`, for lists too large or
+ * too frequently appended to for `page`/`total` to make sense (the stock
+ * ledger first — see docs/architecture/api-conventions.md#pagination). Filters,
+ * sort and per_page are still URL-persisted the same way; the cursor itself
+ * is not, since a cursor is an opaque, short-lived token that doesn't make a
+ * meaningful bookmark. Instead this keeps a back-stack of visited cursors in
+ * memory so Previous/Next can page both ways — changing any filter, sort or
+ * per_page resets to the first page, matching `useListQueryState`.
+ */
+export interface CursorQueryState<TFilters extends Record<string, string>> {
+  cursor?: string;
+  perPage: number;
+  sort?: string;
+  filters: Partial<TFilters>;
+  canGoBack: boolean;
+  setPerPage: (perPage: number) => void;
+  setSort: (sort: string | undefined) => void;
+  setFilter: (key: keyof TFilters, value: string | undefined) => void;
+  goToNextCursor: (nextCursor: string | null | undefined) => void;
+  goBack: () => void;
+}
+
+export function useCursorQueryState<TFilters extends Record<string, string>>(options?: {
+  defaultSort?: string;
+  defaultPerPage?: number;
+}): CursorQueryState<TFilters> {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [cursorStack, setCursorStack] = useState<string[]>([]);
+
+  const perPage = Number(searchParams.get('per_page') ?? options?.defaultPerPage ?? 25);
+  const sort = searchParams.get('sort') ?? options?.defaultSort;
+  const filters = {} as Partial<TFilters>;
+  for (const [key, value] of searchParams.entries()) {
+    if (key.startsWith('filter.')) {
+      (filters as Record<string, string>)[key.slice('filter.'.length)] = value;
+    }
+  }
+
+  function patch(next: { perPage?: number; sort?: string | undefined; filters?: Partial<TFilters> }) {
+    setCursorStack([]);
+    setSearchParams(
+      (prev) => {
+        const params = new URLSearchParams(prev);
+        if (next.perPage !== undefined) params.set('per_page', String(next.perPage));
+        if (next.sort !== undefined) {
+          if (next.sort) params.set('sort', next.sort);
+          else params.delete('sort');
+        }
+        if (next.filters) {
+          for (const [key, value] of Object.entries(next.filters)) {
+            if (value === undefined || value === '') params.delete(`filter.${key}`);
+            else params.set(`filter.${key}`, String(value));
+          }
+        }
+        return params;
+      },
+      { replace: true }
+    );
+  }
+
+  return {
+    cursor: cursorStack.at(-1),
+    perPage,
+    sort,
+    filters,
+    canGoBack: cursorStack.length > 0,
+    setPerPage: (value) => patch({ perPage: value }),
+    setSort: (value) => patch({ sort: value }),
+    setFilter: (key, value) => patch({ filters: { [key]: value } as Partial<TFilters> }),
+    goToNextCursor: (nextCursor) => {
+      if (nextCursor) setCursorStack((stack) => [...stack, nextCursor]);
+    },
+    goBack: () => setCursorStack((stack) => stack.slice(0, -1)),
   };
 }
 

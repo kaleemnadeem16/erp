@@ -1,0 +1,151 @@
+<?php
+
+namespace Tests\Feature\Modules\Inventory;
+
+use App\Models\User;
+use App\Modules\Inventory\Models\Location;
+use App\Modules\Inventory\Models\StockMove;
+use App\Modules\Inventory\Support\ValuationMethod;
+use App\Support\CompanyContext;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Tests\Feature\Modules\Inventory\Concerns\BuildsOutboundRecalculation;
+use Tests\TestCase;
+
+/**
+ * The stock ledger's first HTTP surface — read-only, per
+ * docs/phases/phase-2-purchasing-stock.md#close-out. PostInventoryMovement
+ * remains the only write path; there is deliberately no store/update/destroy
+ * here to test.
+ */
+class StockMoveApiTest extends TestCase
+{
+    use BuildsOutboundRecalculation, RefreshDatabase;
+
+    private Location $warehouseA;
+
+    private Location $warehouseB;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->fixture(ValuationMethod::Avco);
+        $this->warehouseA = $this->location('a');
+        $this->warehouseB = $this->location('b');
+    }
+
+    public function test_it_requires_authentication(): void
+    {
+        $this->getJson('/api/v1/stock-moves')->assertUnauthorized();
+    }
+
+    public function test_index_cursor_paginates_newest_first_by_default(): void
+    {
+        $user = User::factory()->create();
+        $this->receive($this->warehouseA, '5', '10', '2026-01-01', 1);
+        $this->receive($this->warehouseA, '3', '12', '2026-01-02', 2);
+        $this->receive($this->warehouseA, '1', '15', '2026-01-03', 3);
+
+        $response = $this->actingAs($user)->getJson('/api/v1/stock-moves?per_page=2');
+
+        $response->assertOk();
+        $response->assertJsonCount(2, 'data');
+        $response->assertJsonPath('data.0.source_id', 3);
+        $response->assertJsonPath('data.1.source_id', 2);
+        $nextCursor = $response->json('meta.next_cursor');
+        $this->assertNotNull($nextCursor);
+
+        $second = $this->getJson('/api/v1/stock-moves?per_page=2&cursor='.$nextCursor);
+        $second->assertOk();
+        $second->assertJsonCount(1, 'data');
+        $second->assertJsonPath('data.0.source_id', 1);
+        $this->assertNull($second->json('meta.next_cursor'));
+    }
+
+    public function test_index_filters_by_item_warehouse_location_and_date_range(): void
+    {
+        $user = User::factory()->create();
+        $this->receive($this->warehouseA, '5', '10', '2026-01-01', 1);
+        $this->receive($this->warehouseB, '2', '10', '2026-01-05', 2);
+        $this->transfer($this->warehouseA, $this->warehouseB, '1', '2026-01-10', 3);
+
+        $this->actingAs($user);
+
+        $this->getJson('/api/v1/stock-moves?filter[warehouse_id]='.$this->warehouseA->warehouse_id)
+            ->assertOk()->assertJsonCount(2, 'data');
+
+        $this->getJson('/api/v1/stock-moves?filter[location_id]='.$this->warehouseB->id)
+            ->assertOk()->assertJsonCount(2, 'data');
+
+        $this->getJson('/api/v1/stock-moves?filter[moved_from]=2026-01-04&filter[moved_to]=2026-01-06')
+            ->assertOk()->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.source_id', 2);
+
+        $this->getJson('/api/v1/stock-moves?filter[source_type]=TEST_TRANSFER')
+            ->assertOk()->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.source_id', 3);
+    }
+
+    public function test_index_rejects_invalid_filters_sort_and_include(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->getJson('/api/v1/stock-moves?sort=unit_cost')
+            ->assertUnprocessable()->assertJsonValidationErrors('sort');
+
+        $this->getJson('/api/v1/stock-moves?include=unknown')
+            ->assertUnprocessable()->assertJsonValidationErrors('include');
+
+        $this->getJson('/api/v1/stock-moves?per_page=101')
+            ->assertUnprocessable()->assertJsonValidationErrors('per_page');
+    }
+
+    public function test_index_can_include_item_and_locations(): void
+    {
+        $user = User::factory()->create();
+        $this->receive($this->warehouseA, '5', '10', '2026-01-01', 1);
+
+        $response = $this->actingAs($user)->getJson('/api/v1/stock-moves?include=item,to_location');
+
+        $response->assertOk();
+        $response->assertJsonPath('data.0.item.code', 'item');
+        $response->assertJsonPath('data.0.to_location.warehouse.code', 'a');
+    }
+
+    public function test_show_can_include_valuation_entries(): void
+    {
+        $user = User::factory()->create();
+        $this->receive($this->warehouseA, '5', '10', '2026-01-01', 1);
+        $move = StockMove::query()->sole();
+
+        $response = $this->actingAs($user)->getJson("/api/v1/stock-moves/{$move->id}?include=valuation_entries");
+
+        $response->assertOk();
+        $response->assertJsonPath('data.qty', '5.0000');
+        $response->assertJsonCount(1, 'data.valuation_entries');
+        $response->assertJsonPath('data.valuation_entries.0.base_amount', '50.0000');
+    }
+
+    public function test_another_companys_stock_move_is_not_visible(): void
+    {
+        $this->receive($this->warehouseA, '5', '10', '2026-01-01', 1);
+        $move = StockMove::query()->sole();
+
+        $otherCompanyId = DB::table('companies')->insertGetId([
+            'name' => 'Other Co', 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $this->app->instance(CompanyContext::class, new class($otherCompanyId) extends CompanyContext
+        {
+            public function __construct(private readonly int $companyId) {}
+
+            public function id(): int
+            {
+                return $this->companyId;
+            }
+        });
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->getJson("/api/v1/stock-moves/{$move->id}")->assertNotFound();
+    }
+}
