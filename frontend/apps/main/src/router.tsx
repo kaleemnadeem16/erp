@@ -8,6 +8,10 @@ import {
   ItemsListScreen,
   LoginScreen,
   ProtectedRoute,
+  WarehouseCreateScreen,
+  WarehouseDetailScreen,
+  WarehouseEditScreen,
+  WarehousesListScreen,
 } from '@erp/core-ui';
 
 export function AppRouter() {
@@ -61,6 +65,46 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <ItemEditScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/warehouses"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <WarehousesListScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/warehouses/new"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <WarehouseCreateScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/warehouses/:id"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <WarehouseDetailScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/warehouses/:id/edit"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <WarehouseEditScreen />
               </AppShell>
             </ProtectedRoute>
           }

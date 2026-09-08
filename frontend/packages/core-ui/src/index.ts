@@ -50,11 +50,34 @@ export {
   DropdownMenuSubTrigger,
   DropdownMenuRadioGroup,
 } from './components/ui/dropdown-menu';
-export { Table, TableHeader, TableBody, TableFooter, TableHead, TableRow, TableCell, TableCaption } from './components/ui/table';
-export { Form, FormItem, FormLabel, FormControl, FormDescription, FormMessage, FormField, useFormField } from './components/ui/form';
+export {
+  Table,
+  TableHeader,
+  TableBody,
+  TableFooter,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableCaption,
+} from './components/ui/table';
+export {
+  Form,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormDescription,
+  FormMessage,
+  FormField,
+  useFormField,
+} from './components/ui/form';
 
 // Items — the reference implementation for this list/detail/print foundation.
 export { ItemsListScreen } from './features/items/items-list-screen';
 export { ItemDetailScreen } from './features/items/item-detail-screen';
 export { ItemCreateScreen } from './features/items/item-create-screen';
 export { ItemEditScreen } from './features/items/item-edit-screen';
+
+export { WarehousesListScreen } from './features/warehouses/warehouses-list-screen';
+export { WarehouseDetailScreen } from './features/warehouses/warehouse-detail-screen';
+export { WarehouseCreateScreen } from './features/warehouses/warehouse-create-screen';
+export { WarehouseEditScreen } from './features/warehouses/warehouse-edit-screen';

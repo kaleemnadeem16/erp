@@ -113,6 +113,12 @@ Downgrade to `SIMPLE` is blocked until extra locations and every structured attr
 removed. Addresses/site identity, dimensions/capacity, putaway/picking rules, automation and a
 future advanced-WMS mode remain deferred until a phase that consumes them.
 
+The React application exposes warehouse list, detail, create and edit screens. Creation always
+collects the initial location required by `CreateWarehouse`; editing changes only warehouse
+fields and cannot accidentally rewrite that location. The detail screen includes the existing
+locations read-only. Location hierarchy and operational-role management remain separate
+structured-mode workflows.
+
 ### Valuation by method
 
 Per-item, not one method for the whole company — [items.md](items.md#valuation-method),
