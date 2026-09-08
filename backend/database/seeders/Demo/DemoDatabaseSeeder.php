@@ -23,6 +23,7 @@ final class DemoDatabaseSeeder extends Seeder
                 PartiesDemoSeeder::class,
                 InventoryDemoSeeder::class,
                 PurchasingDemoSeeder::class,
+                StockDemoSeeder::class,
             ]);
         });
     }
