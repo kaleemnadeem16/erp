@@ -236,6 +236,31 @@ cost, not the fact's own raw evidenced value, which remains on the exception pur
 A later ordinary receipt settles the shortage exactly like a live one — `ShortageSettler` doesn't
 distinguish the two authorities.
 
+## User interface
+
+The inventory cutover HTTP surface is exposed per
+[phase-2-purchasing-stock.md](../phases/phase-2-purchasing-stock.md#close-out): the header
+(`InventoryCutover`) is create/read-only over HTTP (`POST`/`GET /api/v1/inventory-cutovers`,
+`GET /api/v1/inventory-cutovers/{id}`) and every state change is a named action — `POST
+.../batches` to attach a validated Imports batch, `.../validate`, `.../approve`, `.../commit`,
+`.../finalise` on the header, plus `POST .../negative-openings` and `POST
+/api/v1/inventory-cutover-negative-openings/{id}/approve` for ADR 0037's cutover-shortage
+exception. `GET .../preview` is the one read-only, no-state-change action.
+
+`AttachInventoryCutoverBatch` requires an already-`Validated` `ImportBatch`, but the Imports
+module owns batch creation and has no HTTP API or UI of its own yet
+([data-import.md](../architecture/data-import.md)). The `/inventory-cutovers/:id` detail screen's
+"attach batch" control therefore takes a raw numeric Import Batch ID rather than a picker — usable
+once a batch exists (seeded outside HTTP for now). The same gap applies to the negative-opening
+request form's "responsible owner": there is no user-picker endpoint yet either, so it also takes
+a raw numeric User ID. Both are expected to become real pickers once their owning modules get an
+HTTP surface, following the same incremental pattern as every other Phase 2 screen.
+
+The React screens (`/inventory-cutovers` list, `/inventory-cutovers/new`,
+`/inventory-cutovers/:id` detail) are the first UI with a multi-actor approval lifecycle — action
+buttons are gated by the cutover's current `status`, and every mutation refetches the cutover
+rather than patching local state, matching [physical-count.md](physical-count.md#user-interface).
+
 ## Completeness and degradation
 
 Warehouse imports preserve source warehouse/location keys, hierarchy, names/codes, recognised

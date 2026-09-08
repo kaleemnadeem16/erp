@@ -6,6 +6,9 @@ import {
   CategoryDetailScreen,
   CategoryEditScreen,
   DashboardScreen,
+  InventoryCutoverCreateScreen,
+  InventoryCutoverDetailScreen,
+  InventoryCutoversListScreen,
   ItemCreateScreen,
   ItemDetailScreen,
   ItemEditScreen,
@@ -248,6 +251,36 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <PhysicalCountDetailScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/inventory-cutovers"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <InventoryCutoversListScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/inventory-cutovers/new"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <InventoryCutoverCreateScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/inventory-cutovers/:id"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <InventoryCutoverDetailScreen />
               </AppShell>
             </ProtectedRoute>
           }

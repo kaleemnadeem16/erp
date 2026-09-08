@@ -290,10 +290,18 @@ page-based list). Do not tick Phase 2 complete while any of these is still Actio
       available via `include`; `stock_layers` and `avco_pools` still have no endpoint of their own
       (an item's open FIFO layers or current AVCO balance are not yet queryable independently of a
       move). `PostInventoryMovement` remains the only write path.
-- [ ] **Inventory cutover** — `CreateInventoryCutover`, `AttachInventoryCutoverBatch`,
-      `ValidateInventoryCutover`, `PreviewInventoryCutover`, `ApproveInventoryCutover`,
-      `RequestInventoryCutoverNegativeOpening`, `ApproveInventoryCutoverNegativeOpening`,
-      `CommitInventoryCutoverOpeningState`, `FinaliseInventoryCutover`
+- [x] **Inventory cutover** — full HTTP surface: `POST/GET /api/v1/inventory-cutovers`,
+      `GET /api/v1/inventory-cutovers/{id}`, `POST .../batches` (`AttachInventoryCutoverBatch`),
+      `POST .../validate` (`ValidateInventoryCutover`), `GET .../preview`
+      (`PreviewInventoryCutover`, read-only), `POST .../approve` (`ApproveInventoryCutover`),
+      `POST .../commit` (`CommitInventoryCutoverOpeningState`), `POST .../finalise`
+      (`FinaliseInventoryCutover`), `POST .../negative-openings`
+      (`RequestInventoryCutoverNegativeOpening`) and
+      `POST /api/v1/inventory-cutover-negative-openings/{id}/approve`
+      (`ApproveInventoryCutoverNegativeOpening`) — the header stays create/read-only over HTTP,
+      every state change is a named action per api-conventions.md. "Attach batch" takes a raw
+      Import Batch ID: the Imports module has no HTTP API/UI of its own yet to browse or create
+      batches through
 - [ ] **Stock recalculation** — `RequestStockRecalculation`, `DecideRecalculationApproval`,
       `ExecuteRecalculation`, `ResumeRecalculationRegeneration`
 - [ ] **Negative-stock overrides** — `RequestNegativeStockOverride`,
@@ -307,7 +315,9 @@ page-based list). Do not tick Phase 2 complete while any of these is still Actio
 - [x] First UI screens for the stock engine, built against the endpoints above as each lands —
       the Stock Ledger list/detail screens (`/stock-moves`) were first, reading `stock_moves`;
       Physical Counts (`/physical-counts`) is the first screen with a document workflow (create,
-      add lines, record counts, post/cancel)
+      add lines, record counts, post/cancel); Inventory Cutovers (`/inventory-cutovers`) is the
+      first with a multi-actor approval lifecycle (validate, independent approve, commit,
+      finalise) plus its own negative-opening exception sub-flow
 - [ ] First real deployment to the production VMs (deferred from Phase 0)
 
 Tick these in the same commit as the work.

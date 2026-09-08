@@ -38,7 +38,9 @@ use Illuminate\Support\Carbon;
  * @property string|null $target_date_reason
  * @property InventoryCutoverNegativeOpeningStatus $status
  * @property int $requested_by
+ * @property Carbon|null $requested_at
  * @property int|null $approved_by
+ * @property Carbon|null $approved_at
  */
 class InventoryCutoverNegativeOpening extends Model
 {

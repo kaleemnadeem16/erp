@@ -24,10 +24,14 @@ use Illuminate\Support\Carbon;
  * @property string $control_quantity
  * @property string $control_value
  * @property string $base_control_value
+ * @property array<string, mixed>|null $exception_summary
  * @property int $created_by
  * @property int|null $validated_by
+ * @property Carbon|null $validated_at
  * @property int|null $approved_by
+ * @property Carbon|null $approved_at
  * @property int|null $finalised_by
+ * @property Carbon|null $finalised_at
  */
 class InventoryCutover extends Model
 {
@@ -83,6 +87,12 @@ class InventoryCutover extends Model
     public function avcoPoolProvenance(): HasMany
     {
         return $this->hasMany(InventoryCutoverAvcoPool::class);
+    }
+
+    /** @return HasMany<InventoryCutoverNegativeOpening, $this> */
+    public function negativeOpenings(): HasMany
+    {
+        return $this->hasMany(InventoryCutoverNegativeOpening::class);
     }
 
     /** @return BelongsTo<User, $this> */

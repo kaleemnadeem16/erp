@@ -10,10 +10,10 @@ stock and ADR 0040 backdated recalculation are complete for every executable rec
 case across all valuation methods; only the Phase 4/5/6 multi-owner correction package remains.
 ADR 0036 inventory cutover now posts a real reconciled opening state (AVCO/FIFO/SPECIFIC) including
 ADR 0037's cutover-shortage negative-opening exception. Physical-count documents (count/recount,
-posted variance through the ordinary movement boundary) are also complete, and both now have a
-first read/write API and UI screen — physical counts with a full document workflow, the stock
-ledger read-only. React 19 + Vite frontend skeleton with a generated client covering every
-implemented endpoint.
+posted variance through the ordinary movement boundary) are also complete, and all three now have a
+first read/write API and UI screen — physical counts and inventory cutover with a full multi-actor
+document workflow, the stock ledger read-only. React 19 + Vite frontend skeleton with a generated
+client covering every implemented endpoint.
 
 ---
 
@@ -28,6 +28,7 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 
 | Item | Date |
 |---|---|
+| **Inventory cutover HTTP API and lifecycle screens** — the header is create/read-only over HTTP; every state change is a named action (`.../batches`, `.../validate`, `.../approve`, `.../commit`, `.../finalise`, plus `.../negative-openings` and its own approve route for ADR 0037's cutover-shortage exception). `GET .../preview` is read-only. The `/inventory-cutovers` list, create and `/inventory-cutovers/:id` detail screens are the frontend's first multi-actor approval lifecycle UI, action buttons gated by status; "attach batch" and the exception form's "responsible owner" take raw numeric IDs since Imports/Users have no picker endpoints yet → [inventory-cutover.md](domain/inventory-cutover.md#user-interface) | 2026-09-08 |
 | **Physical count HTTP API and workflow screens** — the header is create/read-only over HTTP; every state change is a named action (`POST .../lines`, `POST /api/v1/physical-count-lines/{id}/count`, `.../post`, `.../cancel`). The `/physical-counts` list, create and `/physical-counts/:id` detail screens are the frontend's first document-workflow UI — add a line, record/recount inline, supply a found cost for a positive variance, then post or cancel, verified end-to-end including separation-of-duties rejection → [physical-count.md](domain/physical-count.md#user-interface) | 2026-09-08 |
 | **Stock ledger read API and Stock Ledger screen** — `stock_moves` gained its first HTTP surface: a cursor-paginated `GET /api/v1/stock-moves` (filterable by item/warehouse/location/batch/source type/date range) and a `show` endpoint, both including `item`/locations/`batch`/`valuation_entries` on request. A new `/stock-moves` list screen and `/stock-moves/:id` detail screen consume it — the first UI built against Phase 2's stock engine, and the first cursor-paginated list in the frontend (`CursorDataTable`, `useCursorQueryState`). `stock_layers`/`avco_pools` still have no endpoint of their own → [phase-2-purchasing-stock.md](phases/phase-2-purchasing-stock.md#close-out) | 2026-09-08 |
 | **Phase 2 integrity audit** — three real gaps found and fixed: the stock ledger (`stock_moves`/`stock_valuation_entries`/`stock_layers`) and purchasing documents were model-guarded only and are now database-immutable like every other Phase 2 history table; `recalculation_requests` was the one bare location reference with no company trigger; and the "two concurrent AVCO receipts" acceptance criterion had the lock but no proof — now `AvcoPoolConcurrencyTest`. Rollback proven for physical-count and cutover posting too. Duplicate-submission, precision and tracking had no gaps → [phase-2-purchasing-stock.md](phases/phase-2-purchasing-stock.md) | 2026-09-08 |
@@ -35,7 +36,6 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 | **Warehouse frontend workflow** — warehouse list, detail, create and edit routes now reuse the Items table/form/print foundation, including URL-backed search/status filters and inline API errors. Creation collects the mandatory initial location atomically while updates remain warehouse-only, preserving SIMPLE/STRUCTURED location rules → [stock.md](domain/stock.md#progressive-warehouse-structure) | 2026-09-08 |
 | **Category and item-supplier frontend workflows** — list/detail/create/edit routes now cover category hierarchy/inherited valuation and GL defaults plus approved supplier sourcing terms. Item-supplier identity is selectable only on create and locked on edit per ADR 0042; URL-backed filters and quick print reuse the shared foundation → [items.md](domain/items.md#user-interface), [purchasing.md](domain/purchasing.md#supplier-sourcing-identity) | 2026-09-08 |
 | **Login feedback and password visibility** — failed login now shows the API's specific credential validation message instead of a generic HTTP 422 error, and the password input has an accessible show/hide toggle. The development account was updated operationally (not seeded or committed) and verified against Laravel authentication → [phase-0-foundation.md](phases/phase-0-foundation.md#frontend-skeleton) | 2026-09-08 |
-| **Reload-safe sessions and list rendering** — protected routes now trust a successful `/user` response immediately instead of redirecting during the one-render Zustand synchronisation gap, so authenticated reloads persist. Shared tables default optional row selection to an empty controlled state, preventing the TanStack pagination crash seen across Items and Warehouses → [phase-0-foundation.md](phases/phase-0-foundation.md#frontend-skeleton), [items.md](domain/items.md#user-interface) | 2026-09-08 |
 
 ## Next
 
@@ -47,10 +47,10 @@ reconciliation) waits on those modules existing — Phase 4/5/6, tracked at each
 is its close-out, itemised under "Close-out" in
 [Phase 2 — Purchasing & stock](phases/phase-2-purchasing-stock.md):
 
-1. HTTP APIs for the three feature areas still Action-only (inventory cutover, stock
-   recalculation, negative-stock overrides) — each built when its first screen is designed, not
-   before; stock ledger reads and physical counts shipped first. The exact Action list to expose
-   is in that Close-out section so nothing gets missed.
+1. HTTP APIs for the two feature areas still Action-only (stock recalculation, negative-stock
+   overrides) — each built when its first screen is designed, not before; stock ledger reads,
+   physical counts and inventory cutover shipped first. The exact Action list to expose is in
+   that Close-out section so nothing gets missed.
 2. Further UI screens for the stock engine, against those endpoints as each lands.
 3. First real deployment to the production VMs.
 

@@ -14,6 +14,7 @@ use App\Modules\Inventory\Support\ValuationMethod;
 use App\Support\Concerns\BelongsToCompany;
 use App\Support\Concerns\GuardsRelatedCompanyScope;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * Immutable normalised source evidence. It is not live stock state.
@@ -26,6 +27,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $base_amount
  * @property string|null $fx_rate
  * @property array<string, mixed> $source_payload
+ * @property Carbon|null $source_effective_at
+ * @property Carbon|null $source_posting_date
  */
 class InventorySourceFact extends Model
 {
