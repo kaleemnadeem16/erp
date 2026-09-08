@@ -277,9 +277,16 @@ path. `item`/`from_location`/`to_location`/`batch`/`valuation_entries` are all o
 (`/stock-moves`, `/stock-moves/:id`) are the first frontend use of cursor pagination
 (`CursorDataTable`/`useCursorQueryState`), matching [api-conventions.md](../architecture/api-conventions.md#pagination)'s
 "page-based elsewhere, cursor for large/frequently-appended lists" split — this ledger has no
-`total`/page-jump UI, only Previous/Next against the API's opaque cursor. `stock_layers` and
-`avco_pools` still have no endpoint of their own; an item's open FIFO layers or current AVCO
-balance aren't independently queryable yet.
+`total`/page-jump UI, only Previous/Next against the API's opaque cursor.
+
+`stock_layers` and `avco_pools` each have their own read endpoint too now, closing the last gap
+on this close-out item: a cursor-paginated `GET /api/v1/stock-layers` (`filter[open]` for an
+item's still-open FIFO/SPECIFIC layers — `stock_layers_open_fifo` exists specifically to serve
+this efficiently) and a page-paginated `GET /api/v1/avco-pools` (an item's current converged
+balance per pool scope). Both are deliberately backend-only, with no dedicated screen — this is
+reference data, not a document workflow, unlike every other Phase 2 close-out area. `item`/
+`location`/`batch` (layers) and `item`/`warehouse`/`batch` (pools) are opt-in via `include`, same
+convention as `stock_moves`.
 
 ## Landmines
 

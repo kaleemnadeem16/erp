@@ -11,6 +11,18 @@ use App\Support\Concerns\BelongsToCompany;
 use App\Support\Concerns\GuardsRelatedCompanyScope;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property int $item_id
+ * @property AvcoPoolScope $scope
+ * @property int|null $warehouse_id
+ * @property int|null $batch_id
+ * @property string $qty_on_hand
+ * @property string $inventory_value
+ * @property string $avg_unit_cost
+ * @property string $base_avg_unit_cost
+ * @property string $last_valid_avg_unit_cost
+ * @property AvcoPoolStatus $status
+ */
 class AvcoPool extends Model
 {
     use BelongsToCompany;
@@ -40,5 +52,17 @@ class AvcoPool extends Model
     public function item(): BelongsTo
     {
         return $this->belongsTo(Item::class);
+    }
+
+    /** @return BelongsTo<Warehouse, $this> */
+    public function warehouse(): BelongsTo
+    {
+        return $this->belongsTo(Warehouse::class);
+    }
+
+    /** @return BelongsTo<StockBatch, $this> */
+    public function batch(): BelongsTo
+    {
+        return $this->belongsTo(StockBatch::class);
     }
 }

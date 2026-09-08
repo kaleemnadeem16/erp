@@ -284,12 +284,15 @@ shape is driven by a real screen's needs rather than guessed upfront (the archit
 already flags the stock ledger as a cursor-pagination candidate, unlike every existing
 page-based list). Do not tick Phase 2 complete while any of these is still Action-only:
 
-- [ ] **Stock ledger** read APIs — `stock_moves` now has a cursor-paginated list and a show
-      endpoint (`GET /api/v1/stock-moves`), filterable by item/warehouse/location/batch/source
-      type/date range, with `item`/`from_location`/`to_location`/`batch`/`valuation_entries`
-      available via `include`; `stock_layers` and `avco_pools` still have no endpoint of their own
-      (an item's open FIFO layers or current AVCO balance are not yet queryable independently of a
-      move). `PostInventoryMovement` remains the only write path.
+- [x] **Stock ledger** read APIs — `stock_moves` has a cursor-paginated list and a show endpoint
+      (`GET /api/v1/stock-moves`), filterable by item/warehouse/location/batch/source type/date
+      range, with `item`/`from_location`/`to_location`/`batch`/`valuation_entries` available via
+      `include`. `stock_layers` (`GET /api/v1/stock-layers`, cursor-paginated, `filter[open]` for
+      an item's still-open FIFO/SPECIFIC layers) and `avco_pools` (`GET /api/v1/avco-pools`,
+      page-paginated, an item's current converged balance) now each have their own read endpoint
+      too — deliberately backend-only, no dedicated screen: this is reference data, not a
+      workflow, unlike the other four close-out areas. `PostInventoryMovement`,
+      `AvcoPoolManager` and the recalculation executors remain the only write paths.
 - [x] **Inventory cutover** — full HTTP surface: `POST/GET /api/v1/inventory-cutovers`,
       `GET /api/v1/inventory-cutovers/{id}`, `POST .../batches` (`AttachInventoryCutoverBatch`),
       `POST .../validate` (`ValidateInventoryCutover`), `GET .../preview`

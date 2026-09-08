@@ -8,6 +8,7 @@ use App\Exceptions\DomainInvariantException;
 use App\Models\Model;
 use App\Support\Concerns\BelongsToCompany;
 use App\Support\Concerns\GuardsRelatedCompanyScope;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
@@ -56,5 +57,23 @@ class StockLayer extends Model
             'base_unit_cost' => 'decimal:4', 'received_at' => 'immutable_datetime',
             'source_line_no' => 'integer',
         ];
+    }
+
+    /** @return BelongsTo<Item, $this> */
+    public function item(): BelongsTo
+    {
+        return $this->belongsTo(Item::class);
+    }
+
+    /** @return BelongsTo<Location, $this> */
+    public function location(): BelongsTo
+    {
+        return $this->belongsTo(Location::class);
+    }
+
+    /** @return BelongsTo<StockBatch, $this> */
+    public function batch(): BelongsTo
+    {
+        return $this->belongsTo(StockBatch::class);
     }
 }

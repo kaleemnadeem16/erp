@@ -1,5 +1,6 @@
 <?php
 
+use App\Modules\Inventory\Http\Controllers\Api\V1\AvcoPoolController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\CategoryController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\InventoryCutoverController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\InventorySettingsController;
@@ -8,6 +9,7 @@ use App\Modules\Inventory\Http\Controllers\Api\V1\LocationController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\NegativeStockOverrideRequestController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\PhysicalCountController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\RecalculationRequestController;
+use App\Modules\Inventory\Http\Controllers\Api\V1\StockLayerController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\StockMoveController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\WarehouseController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\WarehouseLocationAssignmentController;
@@ -24,6 +26,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('locations/{location}', [LocationController::class, 'update'])->name('locations.update');
     Route::apiResource('stock-moves', StockMoveController::class)
         ->parameters(['stock-moves' => 'stockMove'])->only(['index', 'show']);
+    Route::apiResource('stock-layers', StockLayerController::class)
+        ->parameters(['stock-layers' => 'stockLayer'])->only(['index', 'show']);
+    Route::apiResource('avco-pools', AvcoPoolController::class)
+        ->parameters(['avco-pools' => 'avcoPool'])->only(['index', 'show']);
     Route::apiResource('physical-counts', PhysicalCountController::class)->only(['index', 'store', 'show']);
     Route::post('physical-counts/{physicalCount}/lines', [PhysicalCountController::class, 'storeLine'])->name('physical-counts.lines.store');
     Route::post('physical-count-lines/{physicalCountLine}/count', [PhysicalCountController::class, 'count'])->name('physical-count-lines.count');
