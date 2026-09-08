@@ -129,6 +129,10 @@ reference implementation for the shared server-driven table, URL-persisted filte
 state and quick-print components used by later master-data screens. Create and edit share one
 validated form and map the API's standard `422` field errors back onto that form.
 
+The shared table always supplies an empty row-selection state when selection is not enabled;
+passing an explicit `undefined` controlled state causes TanStack Table's selected-row model to
+fail when the common pagination footer reads it.
+
 The UoM selector reads the company-scoped, read-only `/api/v1/uoms` endpoint; it does not
 hardcode units. Category and valuation choices follow the stored-resolution rules above:
 creation may request the category default, while edit always submits a concrete valuation

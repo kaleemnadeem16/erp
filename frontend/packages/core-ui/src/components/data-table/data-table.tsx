@@ -56,7 +56,7 @@ export function DataTable<TRow>({
   onPaginationChange,
   sorting,
   onSortingChange,
-  rowSelection,
+  rowSelection = {},
   onRowSelectionChange,
   columnVisibility,
   onColumnVisibilityChange,
