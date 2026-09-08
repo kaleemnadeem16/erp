@@ -55,11 +55,10 @@ inventory_source_facts
 
 inventory_cutover_avco_pools
   id, company_id, inventory_cutover_id, item_id
-  source_scope, target_scope
-  source_pool_identity NULLABLE, target_avco_pool_id
-  warehouse_id NULLABLE, batch_id NULLABLE
+  policy_transition_id                        -- source method/scope/pool identity, by reference
+  warehouse_id NULLABLE, batch_id NULLABLE    -- the resolved target pool's own scope dimension
+  target_avco_pool_id
   opening_quantity, opening_value, base_opening_value, derived_average
-  policy_transition_effective_at, revaluation_basis NULLABLE
 
 inventory_cutover_policy_transitions
   id, company_id, inventory_cutover_id, item_id
@@ -70,6 +69,13 @@ inventory_cutover_policy_transitions
 
 Exact normalised layer/movement columns are reconciled during implementation. Source facts must
 not be hidden solely in JSON when a field drives stock identity, valuation or reconciliation.
+`inventory_cutover_avco_pools` references its policy transition by id instead of duplicating
+source method/scope/pool columns; a `FIFO`/`SPECIFIC` target needs no equivalent table because its
+posted `stock_layers` rows (real or synthetic, tagged by `source_type`) already are the evidence —
+only a target AVCO pool's derived average is a computed number with no other single source row
+proving it. One row exists per (policy transition, resolved target pool) — normally one, but more
+than one when a `WAREHOUSE_ITEM` target splits one source pool identity across several locations'
+own pools.
 
 ## Workflow and boundaries
 
@@ -106,19 +112,43 @@ warehouse/location, UoM and currency references and creates immutable `Inventory
 that retain both raw and mapped payloads. Preview returns exact decimal-string totals, validation
 reconciles them to the company controls, and approval must be independent of both creation and
 validation. The dedicated permissions are `inventory.cutover.create`, `.stage`, `.validate`,
-`.approve` and `.finalise`.
+`.approve`, `.commit` and `.finalise`.
 
-Finalisation is implemented but intentionally refuses until every linked batch is `COMMITTED` by
-the upcoming Inventory-owned opening-state Action. Approval alone can therefore never claim that
-stock is live. PostgreSQL triggers enforce provenance scope, immutable definitions/source facts and
-monotonic status transitions even for raw SQL.
+Finalisation refuses until every linked batch is `COMMITTED`. Approval alone can therefore never
+claim that stock is live. PostgreSQL triggers enforce provenance scope, immutable definitions/
+source facts and monotonic status transitions even for raw SQL.
 
-The first small opening-state prerequisite is implemented too:
 `InventoryCutoverPolicyTransition` records one immutable source-method/scope/pool → target-method/
 scope transition per distinct source identity, always effective at the cutover timestamp. Target
 policy item codes are normalised, AVCO targets require exactly one supported scope, method changes
-may retain structured revaluation evidence, and validation derives the ledger idempotently. This
-is provenance only; it creates no live stock state and the larger opening-state task remains open.
+may retain structured revaluation evidence, and validation derives the ledger idempotently. This is
+provenance only; it creates no live stock state.
+
+The opening-state posting Action, `CommitInventoryCutoverOpeningState`, follows an approved
+cutover and is the one that commits each `OPENING_STATE` batch. It applies each item's target
+method/scope from its recorded policy transition (mutable pre-cutover, since this is the item's
+first-ever stock movement — `valuation_method`/`avco_pool_scope` lock immutable the moment a
+`stock_moves` row exists), then posts every non-zero source fact as a real
+`stock_moves`/`stock_layers` receipt at its true `source_effective_at` where supplied, exactly like
+an ordinary receipt, just sourced from cutover evidence (`source_type = INVENTORY_CUTOVER_OPENING`)
+instead of a purchase:
+
+- **AVCO** additionally converges the resolved target pool per fact and records one
+  `InventoryCutoverAvcoPool` provenance row per (policy transition, target pool) — see the schema
+  note above.
+- **FIFO** posts a real layer for any fact carrying its own `source_effective_at` or a serial; facts
+  with neither are summarised data and are merged into one layer per (location, batch) dated at
+  `cutover_at`, tagged `source_type = INVENTORY_CUTOVER_SYNTHETIC` and anchored at the group's
+  lowest fact id (real evidence, not an invented row).
+- **SPECIFIC** always posts one real layer per fact; `StockIdentity::validateReceiptTracking`
+  enforces the qty-1-plus-serial pairing the same way an ordinary serial receipt does.
+
+The Action is idempotent (a batch already `COMMITTED` is a no-op) and requires an active company
+base currency when a fact carries no explicit currency. A negative fact quantity is refused
+outright: ADR 0037 already decides the policy (see "Dates, negative balances and corrections"
+below), but its cutover-shortage exception workflow — resolution plan, target date, responsible
+owner, evidence — has no schema or Action yet, so a genuine negative predecessor closing balance
+cannot be preserved today. That remains open implementation work, not an open decision.
 
 ## Valuation continuity
 

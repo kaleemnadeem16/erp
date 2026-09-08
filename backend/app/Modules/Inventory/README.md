@@ -34,10 +34,12 @@ movement and valuation, built in Phase 2.
 - `OpeningStateImportTarget` — the validation-only `INVENTORY_CUTOVER` schema registered with the
   shared Imports module; generic staging cannot use it for ordinary imports or write stock state
 - `InventoryCutover`, `InventoryCutoverBatch` and `InventorySourceFact` — the permissioned cutover
-  workflow and immutable predecessor-system evidence; approval cannot finalise before a later
-  opening-state Action commits every batch
+  workflow and immutable predecessor-system evidence; approval cannot finalise before
+  `CommitInventoryCutoverOpeningState` commits every batch
 - `InventoryCutoverPolicyTransition` — immutable effective-dated source method/scope/pool to target
   method/scope provenance, derived idempotently during cutover validation
+- `InventoryCutoverAvcoPool` — immutable provenance for one target AVCO pool's opening state: which
+  policy transition contributed, which resolved pool it landed in, the derived average
 
 ## Does not own
 
@@ -130,14 +132,23 @@ history and permission details live in
 ## Inventory cutover
 
 `CreateInventoryCutover`, `AttachInventoryCutoverBatch`, `ValidateInventoryCutover`,
-`ApproveInventoryCutover` and `FinaliseInventoryCutover` own the orchestration states. Each step
-uses its own `inventory.cutover.*` permission; approval is independent from creation/validation.
-`PreviewInventoryCutover` exposes exact staged/control totals without changing state. Attachment
-normalises a validated generic `OPENING_STATE` batch into immutable source facts, but no Action in
-this slice creates live stock. Finalisation remains gated on the method-specific opening-state
-Action that follows. `RecordInventoryCutoverPolicyTransitions` is the first small prerequisite:
-it freezes each distinct source valuation identity's target policy at `cutover_at`, but does not
-post quantity or value.
+`ApproveInventoryCutover`, `CommitInventoryCutoverOpeningState` and `FinaliseInventoryCutover` own
+the orchestration states. Each step uses its own `inventory.cutover.*` permission; approval is
+independent from creation/validation. `PreviewInventoryCutover` exposes exact staged/control totals
+without changing state. Attachment normalises a validated generic `OPENING_STATE` batch into
+immutable source facts. `RecordInventoryCutoverPolicyTransitions` freezes each distinct source
+valuation identity's target policy at `cutover_at` during validation, posting no quantity or value
+itself.
+
+`CommitInventoryCutoverOpeningState` is the method-specific opening-state Action finalisation
+waits on: an approved cutover's `OpeningStateItemPoster` collaborator applies each item's recorded
+target valuation policy (mutable pre-cutover — this is the item's first-ever `stock_moves` row),
+then posts every non-zero source fact as a real receipt-shaped `stock_moves`/`stock_layers` row.
+AVCO additionally converges the resolved target pool and records `InventoryCutoverAvcoPool`
+provenance; FIFO posts a real dated layer per fact that carries its own age or serial, merging the
+rest into one synthetic layer per location/batch dated at `cutover_at`; SPECIFIC always posts one
+real layer per serial. Idempotent by batch status. A negative fact quantity refuses outright —
+ADR 0037's cutover-shortage exception workflow isn't built yet.
 
 ## Events
 

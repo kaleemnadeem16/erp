@@ -17,10 +17,12 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Resolves, locks and writes AVCO pool state for PostInventoryMovement and,
+ * Resolves, locks and writes AVCO pool state for PostInventoryMovement,
  * for the recalculation workflow's own execution Actions
  * (ExecuteRecalculation, OutboundRecalculationExecutor), for converging live
- * pool state to an approved counterfactual. All multi-pool locking here is
+ * pool state to an approved counterfactual, and for
+ * Cutover\OpeningStateItemPoster, converging a fresh pool to its reconciled
+ * cutover opening state. All multi-pool locking here is
  * in ascending pool-id order so concurrent movements over the same pools
  * cannot invert lock order and deadlock.
  */

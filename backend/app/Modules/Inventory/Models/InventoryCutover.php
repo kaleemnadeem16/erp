@@ -79,6 +79,12 @@ class InventoryCutover extends Model
         return $this->hasMany(InventoryCutoverPolicyTransition::class);
     }
 
+    /** @return HasMany<InventoryCutoverAvcoPool, $this> */
+    public function avcoPoolProvenance(): HasMany
+    {
+        return $this->hasMany(InventoryCutoverAvcoPool::class);
+    }
+
     /** @return BelongsTo<User, $this> */
     public function creator(): BelongsTo
     {

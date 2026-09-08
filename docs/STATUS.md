@@ -1,6 +1,6 @@
 # Project Status
 
-**Updated:** 2026-09-07
+**Updated:** 2026-09-08
 **Current phase:** Phase 2 — Purchasing & stock (in progress). Phase 1 — Master data is
 complete. Phase 0 — Foundation is done except the deliberately deferred production deployment.
 **Application code:** Laravel 12 backend — Phase 0 foundations (auth, scoping, UoM, custom fields,
@@ -8,7 +8,9 @@ sequences, currencies, Scramble→Orval), Phase 1 master-data APIs, and Phase 2 
 purchase orders, receipts, QA/reversal and the full movement/valuation engine. ADR 0037 negative
 stock and ADR 0040 backdated recalculation are complete for every executable receipt/issue/transfer
 case across all valuation methods; only the Phase 4/5/6 multi-owner correction package remains.
-React 19 + Vite frontend skeleton with a generated client covering every implemented endpoint.
+ADR 0036 inventory cutover now posts a real reconciled opening state (AVCO/FIFO/SPECIFIC); only its
+negative-opening exception is still unbuilt. React 19 + Vite frontend skeleton with a generated
+client covering every implemented endpoint.
 
 ---
 
@@ -23,7 +25,6 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 
 | Item | Date |
 |---|---|
-| **Recalculation execution — one-hop FIFO transfer reallocation** — a transfer whose corrected source draw changes now gets its destination layer-component(s) superseded by freshly minted ones carrying the right cost/age (an append-only `REVERSAL` row, not a mutation), and the same reallocation cascades recursively into whatever the destination's own later issues already consumed from them. A second transfer hop out of that destination still refuses, DB-enforced as well as in the Action → [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-07 |
 | **Recalculation execution — arbitrary-depth FIFO transfer reallocation** — the one-hop cap is gone: `FifoReceiptReallocator` recurses through however many transfer hops a chain actually has (bounded only by real history — each hop strictly later than the one before), and the DB guard now authorises a correction row anywhere reachable from the request's location by a recursive transfer-connected-component query instead of one hardcoded hop → [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-07 |
 | **Recalculation execution — clean-replay issue/transfer execution** — `ExecuteRecalculation` now posts an approved backdated ISSUE or TRANSFER too, when its revalidated replay changes no other move (`OutboundRecalculationExecutor`, mirroring `IssuePoster`/`TransferPoster`'s posting shape at the true historical date). A request whose replay reprices other history still refuses — that needs a real→synthetic layer-id bridge `MovementReplayState`'s preview simulation doesn't have yet → [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-07 |
 | **Authority-only recalculation approval rerouting** — ADR 0040's `REROUTE_OR_INVALIDATE_APPROVAL_WITHOUT_NEW_IMPACT_VERSION`: a different, eligible approver can now claim a slot an expiry freed, on the same impact version, with no new version generated. The required-approver count for a new claimant is measured in currently-unexpired distinct approvers (`unexpiredApprovedActorIds()`); renewal detection stays expiry-blind. DB-enforced in the same trigger as well as in the Action → [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-07 |
@@ -31,6 +32,7 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 | **Generic inventory-cutover import contract** — ADR 0027's shared Imports foundation now stages arbitrary mapped rows under an idempotent source identity and validates Inventory's `INVENTORY_CUTOVER`/`OPENING_STATE` schema without any generic domain-write callback. Raw/mapped evidence is immutable and purpose-bound; cutover orchestration is next → [inventory-cutover.md](domain/inventory-cutover.md) | 2026-09-07 |
 | **Inventory cutover orchestration** — one immutable company cutover now stages validated generic batches into normalised source facts, previews/reconciles exact controls and enforces independent approval through dedicated permissions. Finalisation is present but cannot succeed until the next method-specific opening-state Action commits every batch → [inventory-cutover.md](domain/inventory-cutover.md) | 2026-09-07 |
 | **Cutover valuation-policy transition ledger** — validation now derives immutable, idempotent source method/scope/pool → target method/scope records effective exactly at `cutover_at`, including structured revaluation evidence for method changes. This is a deliberately small provenance slice; it posts no stock → [inventory-cutover.md](domain/inventory-cutover.md) | 2026-09-07 |
+| **Reconciled cutover opening-state posting** — `CommitInventoryCutoverOpeningState` posts every validated `OPENING_STATE` batch as real `stock_moves`/`stock_layers`, converging target AVCO pools (with new `InventoryCutoverAvcoPool` provenance), real/synthetic FIFO layers and per-serial SPECIFIC layers, retargeting each item's live valuation method/scope first since this is its first-ever movement. Finalisation can now actually succeed. A negative opening quantity still refuses — ADR 0037's cutover-shortage exception workflow remains unbuilt → [inventory-cutover.md](domain/inventory-cutover.md) | 2026-09-08 |
 
 ## Next
 
@@ -41,8 +43,9 @@ reconciliation) waits on those modules existing — Phase 4/5/6, tracked at each
 [phases/README.md](phases/README.md). Continue the rest of
 [Phase 2 — Purchasing & stock](phases/phase-2-purchasing-stock.md):
 
-1. Reconciled opening-state posting for target AVCO pools, FIFO residual/synthetic layers and
-   per-serial SPECIFIC costs; the effective-dated transition ledger is already in place.
+1. ADR 0037's cutover-shortage exception workflow (a genuine negative predecessor closing balance
+   at cutover) — resolution plan, target date, responsible owner, evidence — so
+   `CommitInventoryCutoverOpeningState` can stop refusing a negative opening quantity outright.
 2. Physical-count documents (snapshot lines, count/recount, posted variance through the same
    movement Action).
 3. API polish across Phase 2 (list filters/sorting/pagination, stable 409/422 conflict responses),

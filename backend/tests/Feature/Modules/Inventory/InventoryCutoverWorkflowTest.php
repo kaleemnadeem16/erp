@@ -6,6 +6,8 @@ use App\Exceptions\DomainInvariantException;
 use App\Models\Currency;
 use App\Models\Uom;
 use App\Models\User;
+use App\Modules\Accounting\Models\ChartOfAccount;
+use App\Modules\Accounting\Support\AccountType;
 use App\Modules\Imports\Actions\CreateImportProfile;
 use App\Modules\Imports\Actions\StageImportBatch;
 use App\Modules\Imports\Actions\ValidateImportBatch;
@@ -14,6 +16,7 @@ use App\Modules\Imports\Models\ImportProfile;
 use App\Modules\Imports\Support\ImportPurpose;
 use App\Modules\Inventory\Actions\ApproveInventoryCutover;
 use App\Modules\Inventory\Actions\AttachInventoryCutoverBatch;
+use App\Modules\Inventory\Actions\CommitInventoryCutoverOpeningState;
 use App\Modules\Inventory\Actions\CreateInventoryCutover;
 use App\Modules\Inventory\Actions\CreateWarehouse;
 use App\Modules\Inventory\Actions\FinaliseInventoryCutover;
@@ -23,7 +26,6 @@ use App\Modules\Inventory\Models\Category;
 use App\Modules\Inventory\Models\InventoryCutoverPolicyTransition;
 use App\Modules\Inventory\Models\InventorySourceFact;
 use App\Modules\Inventory\Models\Item;
-use App\Modules\Inventory\Support\InventoryCutoverBatchStatus;
 use App\Modules\Inventory\Support\ItemTracking;
 use App\Modules\Inventory\Support\ItemType;
 use App\Modules\Inventory\Support\ValuationMethod;
@@ -43,7 +45,7 @@ class InventoryCutoverWorkflowTest extends TestCase
     {
         parent::setUp();
         app(PermissionRegistrar::class)->setPermissionsTeamId(1);
-        foreach (['inventory.cutover.create', 'inventory.cutover.stage', 'inventory.cutover.validate', 'inventory.cutover.approve', 'inventory.cutover.finalise'] as $permission) {
+        foreach (['inventory.cutover.create', 'inventory.cutover.stage', 'inventory.cutover.validate', 'inventory.cutover.approve', 'inventory.cutover.commit', 'inventory.cutover.finalise'] as $permission) {
             Permission::findOrCreate($permission);
         }
         $this->createInventoryReferences();
@@ -133,7 +135,8 @@ class InventoryCutoverWorkflowTest extends TestCase
             $this->assertSame('APPROVED', $cutover->refresh()->status->value);
         }
 
-        $link->refresh()->update(['status' => InventoryCutoverBatchStatus::Committed]);
+        app(CommitInventoryCutoverOpeningState::class)($cutover, $this->permittedUser('inventory.cutover.commit'));
+        $this->assertSame('COMMITTED', $link->refresh()->status->value);
         $finalised = app(FinaliseInventoryCutover::class)($cutover, $finaliser);
         $this->assertSame('FINALISED', $finalised->status->value);
         $this->assertNotNull($finalised->finalised_at);
@@ -217,7 +220,10 @@ class InventoryCutoverWorkflowTest extends TestCase
     {
         Currency::query()->create(['code' => 'PKR', 'name' => 'Pakistan Rupee', 'symbol' => 'Rs', 'decimal_places' => 2]);
         $uom = Uom::query()->create(['code' => 'EA', 'name' => 'Each', 'dimension' => UomDimension::Count, 'factor_to_base' => '1.000000000', 'is_base' => true]);
-        $category = Category::query()->create(['code' => 'stock', 'name' => 'Stock', 'default_valuation_method' => ValuationMethod::Avco]);
+        $category = Category::query()->create([
+            'code' => 'stock', 'name' => 'Stock', 'default_valuation_method' => ValuationMethod::Avco,
+            'inventory_account_id' => ChartOfAccount::query()->firstOr(fn () => ChartOfAccount::create(['code' => 'inv', 'name' => 'Inventory', 'type' => AccountType::Asset]))->id,
+        ]);
         Item::query()->create([
             'code' => 'SKU-100', 'name' => 'Cutover item', 'type' => ItemType::Raw, 'stock_uom_id' => $uom->id,
             'is_stocked' => true, 'valuation_method' => ValuationMethod::Avco, 'tracking' => ItemTracking::None,
