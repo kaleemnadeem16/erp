@@ -193,6 +193,11 @@ feature.
       contracts (`PricingEngine`, `CostingStrategy`, `ApprovalPolicy`,
       `TaxResolver`) have no implementation yet — those arrive with the phases
       that need them (3, 4, 6)
+- [x] ~~Extensible development demo-data system~~ — done 2026-09-08. The opt-in,
+      idempotent `demo:seed` command composes dependency-ordered module seeders, preserves
+      unrelated local records and is independently environment-guarded at the command and
+      seeder levels. Laravel's normal `DatabaseSeeder` stays empty, so production seeding
+      cannot create a demo login or business records → [environments.md](../architecture/environments.md#development-demo-data)
 
 ### API & type pipeline
 
@@ -209,7 +214,9 @@ feature.
       `apps/main/src/index.css`), shadcn's default light-only token set, `Button`/`Input`/`Label`
       primitives copied into `core-ui` per "copied in, not a dependency" (tech-stack.md) — no
       `components.json`/CLI yet since the CLI assumes a single-app layout, not this shared-package
-      structure; adding more components means hand-copying until that's worth revisiting
+      structure; adding more components means hand-copying until that's worth revisiting. The
+      shared popover tokens now give portalled Select menus an opaque surface, while shared
+      `min-width: 0` boundaries keep two-column forms inside the available app-shell width
 - [x] ~~TanStack Query + Zustand~~ — TanStack Query owns server state (`useLogin`/`useLogout`/`useUser`
       from the generated client); Zustand (`useAuthStore`) mirrors the resolved identity so it's
       readable outside the query's subscriber tree, per tech-stack.md's "most ERP state is server

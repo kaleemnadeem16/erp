@@ -63,7 +63,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
-      <main className="flex-1 overflow-y-auto pb-16 md:pb-0">{children}</main>
+      <main className="min-w-0 flex-1 overflow-y-auto pb-16 md:pb-0">{children}</main>
 
       <nav className="fixed inset-x-0 bottom-0 flex overflow-x-auto border-t border-border bg-background md:hidden">
         {navItems.map((item) => (

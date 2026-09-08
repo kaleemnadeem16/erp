@@ -149,6 +149,23 @@ the amd64 variant has nothing to share with there, which is fine since it does n
 dbvm already runs both. Our production Compose file connects to them; it does not start its own.
 Local development runs its own Postgres via Compose — a dev-only concern.
 
+### Development demo data
+
+Demonstration data is deliberately opt-in and separate from Laravel's ordinary
+`DatabaseSeeder`, which stays empty. After migrations, run:
+
+```bash
+docker compose exec app php artisan demo:seed
+```
+
+The command is idempotent: stable codes update the records owned by the demo dataset without
+deleting unrelated local records. Its orchestrator calls small seeders for Foundation,
+Accounting, Parties, Inventory and Purchasing in dependency order; a new module adds its own
+seeder to that list. Both the command and every module seeder refuse to run unless Laravel's
+environment is `local` or `testing`, so a normal production `db:seed` cannot install demo data.
+The demo login defaults to `user@erp.x1techs.com` / `!User@Erp@123`; local environment variables
+`DEMO_USER_EMAIL`, `DEMO_USER_PASSWORD` and `DEMO_USER_NAME` may override it.
+
 ### Follow the existing deployment pattern
 
 Traefik on `proxy-net` with `Host()` routing rules and an HTTPS-redirect middleware; images in
