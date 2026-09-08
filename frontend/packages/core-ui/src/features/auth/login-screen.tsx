@@ -1,7 +1,7 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router';
-import { useLogin } from '@erp/core-api';
+import { primeCsrfCookie, useLogin } from '@erp/core-api';
 
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -17,8 +17,19 @@ export function LoginScreen() {
   const setUser = useAuthStore((state) => state.setUser);
   const login = useLogin();
 
-  function handleSubmit(event: FormEvent) {
+  // Nothing else on this page issues a prior request that would set the
+  // XSRF-TOKEN cookie Sanctum's session auth needs — a user landing straight
+  // on /login (no earlier visit to a protected route) would 419 forever
+  // otherwise. Kicked off on mount so it usually resolves before the user
+  // finishes typing; handleSubmit still awaits it as a safety net.
+  const csrfReady = useRef<Promise<void> | undefined>(undefined);
+  useEffect(() => {
+    csrfReady.current = primeCsrfCookie();
+  }, []);
+
+  async function handleSubmit(event: FormEvent) {
     event.preventDefault();
+    await (csrfReady.current ?? primeCsrfCookie()).catch(() => undefined);
     login.mutate(
       { data: { email, password } },
       {

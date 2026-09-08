@@ -17,6 +17,23 @@ function readCookie(name: string): string | null {
   return match?.[1] ? decodeURIComponent(match[1]) : null;
 }
 
+/**
+ * Sanctum's cookie-session flow needs a valid XSRF-TOKEN cookie before the
+ * first state-changing request, but nothing else in the app issues a prior
+ * GET that would set one for a user landing straight on /login (a plain
+ * `POST /login` with no cookie at all always 419s, and — since a rejected
+ * CSRF check throws before Laravel's VerifyCsrfToken middleware gets to set
+ * the cookie on the response — retrying the same failed request never
+ * recovers on its own). Laravel Sanctum ships `GET /sanctum/csrf-cookie`
+ * for exactly this: https://laravel.com/docs/sanctum#spa-authenticating.
+ * No-op for bearer-token (mobile) auth, which never uses XSRF at all.
+ */
+export async function primeCsrfCookie(): Promise<void> {
+  if (authToken || !baseUrl) return;
+
+  await fetch(`${new URL(baseUrl).origin}/sanctum/csrf-cookie`, { credentials: 'include' });
+}
+
 export async function fetchClient<T>(url: string, options: RequestInit = {}): Promise<T> {
   const headers = new Headers(options.headers);
   headers.set('Accept', 'application/json');
