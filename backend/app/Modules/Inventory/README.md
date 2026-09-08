@@ -44,6 +44,10 @@ movement and valuation, built in Phase 2.
 - `InventoryCutoverNegativeOpening` — ADR 0037's cutover-shortage exception: evidenced negative
   AVCO/FIFO opening balance, requested and approved by different actors, structurally separate
   from live ADR 0037 override authority
+- `PhysicalCount`, `PhysicalCountLine` and `PhysicalCountLineEntry` — count/recount documents whose
+  posted variance routes through `PostInventoryMovement`, the same boundary every other receipt/
+  issue posts through; a recount replaces the line's working count, with every attempt retained
+  immutably
 
 ## Does not own
 
@@ -165,6 +169,22 @@ the *approved* `provisional_unit_cost` — not the fact's own raw evidenced valu
 exception purely as provenance — settled afterwards by ordinary compatible inbound stock exactly
 like a live shortage (`ShortageSettler`). SPECIFIC and serial-tracked items can never have one.
 Creates no stock layer. A negative fact with no approved exception still refuses outright.
+
+## Physical counts
+
+`CreatePhysicalCount`/`AddPhysicalCountLine` build a draft document; each line snapshots
+`book_qty` as `SUM(stock_layers.qty_remaining)` at its exact (item, location, batch/serial)
+identity — valuation-method-agnostic, since every method already writes `stock_layers`.
+`RecordPhysicalCountLine` handles both the first count and any recount: the line's `counted_qty`
+always mirrors the latest call, while every attempt appends an immutable
+`PhysicalCountLineEntry`. `PostPhysicalCount` requires an actor distinct from the document's
+creator (mirroring `ApproveInventoryCutover`) and every line counted, then posts each non-zero
+variance through `PostInventoryMovement` itself — not a bespoke poster, per
+[physical-count.md](../../../../docs/domain/physical-count.md). A positive variance (found more)
+always needs an explicit reviewer-supplied `found_unit_cost`, never inferred from AVCO's average
+or any other source; a negative variance posts as an ordinary issue with no override authority,
+relying on `IssuePoster`'s own insufficient-stock guard for the rare race where something else
+moved the same identity after the count. `CancelPhysicalCount` abandons a draft with no postings.
 
 ## Events
 

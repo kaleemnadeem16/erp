@@ -205,23 +205,26 @@ The order matters because later work needs stable document and stock boundaries:
       uploader/mapper or permit the generic importer to write stock domain tables directly
 - [x] Build company cutover records with one explicit timestamp/mode, immutable source provenance,
       dedicated permissions, staging/preview/approval/finalisation and idempotent batch identity
-- [ ] Implement reconciled opening-state Actions: target AVCO pools, FIFO residual or labelled
+- [x] Implement reconciled opening-state Actions: target AVCO pools, FIFO residual or labelled
       synthetic layers, and per-serial SPECIFIC costs; preserve source method/scope/pool identity
       and effective-dated transitions across a method or AVCO-scope change
-      - Partial: immutable, idempotent source→target policy transitions are derived during cutover
-        validation; AVCO/FIFO/SPECIFIC opening-state posting remains.
+      (`CommitInventoryCutoverOpeningState`/`OpeningStateItemPoster`)
 - [ ] Validate quantity/value by exact location, target AVCO pool and company total, plus UoM/FX,
       batch/serial identity and layer totals; reject unsupported broad→narrow pool allocation or
       require an explicitly approved revaluation basis rather than inventing detail
-- [ ] Keep historical negative/backdated source facts separate from live posting, and test that no
+- [x] Keep historical negative/backdated source facts separate from live posting, and test that no
       ordinary API, mapping template or post-cutover batch can invoke migration-only exceptions
+      — the cutover-shortage exception (`InventoryCutoverNegativeOpening`) is a structurally
+      separate table/Action pair from live ADR 0037 overrides; the shared Imports target only
+      validates and never writes stock state
 - [ ] Leave open-PO materialisation to Purchasing and the balancing opening journal to Phase 6,
       connected through immutable cutover/source references
 
 ### Counts, API and audit
 
-- [ ] Build physical-count documents with snapshot lines, count/recount workflow and posted
+- [x] Build physical-count documents with snapshot lines, count/recount workflow and posted
       variance adjustments routed through the same movement Action
+      ([physical-count.md](../domain/physical-count.md))
 - [ ] Add validated list filters, sorting, includes and pagination for all Phase 2 APIs; return
       domain conflicts as stable 409/422 responses rather than leaking database exceptions
 - [ ] Regenerate and commit the Orval client; verify all frontend type-checks and production build
@@ -272,7 +275,7 @@ Tick these in the same commit as the work.
       never duplicates value; an unlinked manual journal cannot resolve its Accounting obligation
 - [ ] A failure by any synchronous implemented participant rolls the declared internal transaction
       back in full; only deliberately deferred/asynchronous/external obligations may remain pending
-- [ ] A posted physical count creates auditable variance moves and cannot be posted twice
+- [x] A posted physical count creates auditable variance moves and cannot be posted twice
 - [ ] Cross-company access and raw cross-company foreign-key writes fail for every new table
 - [ ] Full Pest/Pint/Larastan/frontend/codegen pipeline passes on PostgreSQL 16
 
@@ -298,6 +301,7 @@ Tick these in the same commit as the work.
 - [ADR 0036](../decisions/0036-controlled-inventory-cutover.md) ·
   [inventory-cutover.md](../domain/inventory-cutover.md)
 - [ADR 0037](../decisions/0037-controlled-negative-stock-overrides.md)
+- [physical-count.md](../domain/physical-count.md)
 - [ADR 0039](../decisions/0039-configurable-avco-valuation-pools.md)
 - [ADR 0043](../decisions/0043-control-purchase-order-receipt-and-qa-posting.md)
 - [multi-currency.md](../domain/multi-currency.md) ·

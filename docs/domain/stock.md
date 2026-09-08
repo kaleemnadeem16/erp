@@ -169,14 +169,16 @@ actually consumes.
 
 | From | To | Meaning |
 |---|---|---|
-| NULL | location | Goods receipt (including a customer return) |
-| location | NULL | Issue to a work order, write-off, or a return to supplier |
+| NULL | location | Goods receipt (including a customer return, or a physical count finding more) |
+| location | NULL | Issue to a work order, write-off, return to supplier, or a physical count finding less |
 | location | location | Transfer |
-| location | location | Adjustment after a physical count |
 
-Returns aren't a third physical direction — a customer return is shaped like a receipt, a
-return to supplier like an issue. What distinguishes a return from an ordinary receipt/issue is
-`source_type`, not `from`/`to`.
+Returns and physical-count variances aren't a third or fourth physical direction — a customer
+return is shaped like a receipt, a return to supplier like an issue, and a count's variance is
+shaped like whichever direction its sign implies. What distinguishes any of these from an
+ordinary receipt/issue is `source_type`, not `from`/`to`. See
+[physical-count.md](physical-count.md) for the count/recount workflow and why a found-stock
+receipt always needs an explicit reviewer-supplied cost.
 
 One table, one polymorphic source reference. Every quantity change in the system is a
 `stock_move` — there is no other way to alter stock.
@@ -302,6 +304,7 @@ must not be forgotten once it does.
 - [acquisition-costing.md](acquisition-costing.md) — provisional cost and later adjustments
 - [negative-stock.md](negative-stock.md) — ADR 0037 policy, overrides, shortages, settlement
 - [stock-recalculation.md](stock-recalculation.md) — ADR 0040 backdating and corrections
+- [physical-count.md](physical-count.md) — count/recount workflow and posted variance
 - [formulations.md](formulations.md) — consumes stock cost
 - [general-ledger.md](general-ledger.md) — where valuation posts
 - [inventory-cutover.md](inventory-cutover.md) — controlled history and opening-state migration
