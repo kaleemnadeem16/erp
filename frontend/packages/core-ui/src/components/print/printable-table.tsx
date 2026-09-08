@@ -17,13 +17,14 @@ export function PrintableTable<TRow>({ columns, rows, getRowKey }: PrintableTabl
   const printed = printableColumns(columns);
 
   return (
-    <table className="w-full border-collapse text-xs">
-      <thead>
-        <tr className="border-b-2 border-black/70">
+    <table className="w-full border-collapse text-[10.5px] leading-[1.4]">
+      <thead className="bg-black/[0.055] [display:table-header-group]">
+        <tr className="border-y border-black/40">
           {printed.map((column) => (
             <th
               key={column.key}
-              className="whitespace-nowrap px-2 py-1.5 font-semibold"
+              scope="col"
+              className="px-1.5 py-2 align-bottom font-bold [overflow-wrap:anywhere]"
               style={{ textAlign: column.align ?? 'left' }}
             >
               {column.header}
@@ -33,9 +34,16 @@ export function PrintableTable<TRow>({ columns, rows, getRowKey }: PrintableTabl
       </thead>
       <tbody>
         {rows.map((row, index) => (
-          <tr key={getRowKey ? getRowKey(row, index) : index} className="border-b border-black/15">
+          <tr
+            key={getRowKey ? getRowKey(row, index) : index}
+            className="border-b border-black/15 even:bg-black/[0.018] [break-inside:avoid]"
+          >
             {printed.map((column) => (
-              <td key={column.key} className="px-2 py-1" style={{ textAlign: column.align ?? 'left' }}>
+              <td
+                key={column.key}
+                className="px-1.5 py-1.5 align-top [overflow-wrap:anywhere]"
+                style={{ textAlign: column.align ?? 'left' }}
+              >
                 {formatColumnValue(column, row)}
               </td>
             ))}

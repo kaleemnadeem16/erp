@@ -1,6 +1,26 @@
 import { useRef } from 'react';
 import { useReactToPrint } from 'react-to-print';
 
+const quickPrintPageStyle = `
+  @page {
+    size: auto;
+    margin: 8mm;
+  }
+
+  @media print {
+    html,
+    body {
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+    body {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+  }
+`;
+
 /**
  * Frontend Quick Print vs backend formal documents — the two-track model this
  * whole `print/` folder implements:
@@ -23,7 +43,11 @@ import { useReactToPrint } from 'react-to-print';
  */
 export function useQuickPrint(options?: { documentTitle?: string }) {
   const contentRef = useRef<HTMLDivElement>(null);
-  const print = useReactToPrint({ contentRef, documentTitle: options?.documentTitle });
+  const print = useReactToPrint({
+    contentRef,
+    documentTitle: options?.documentTitle,
+    pageStyle: quickPrintPageStyle,
+  });
 
   return { contentRef, print };
 }

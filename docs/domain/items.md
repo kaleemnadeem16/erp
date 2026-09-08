@@ -129,6 +129,13 @@ reference implementation for the shared server-driven table, URL-persisted filte
 state and quick-print components used by later master-data screens. Create and edit share one
 validated form and map the API's standard `422` field errors back onto that form.
 
+Quick Print uses a dedicated paper layout shared by all current master-data list and detail
+screens. The browser page margin is the only outer inset (8 mm); the report does not add a second
+container padding, so content starts at the top-left printable boundary and uses the available
+paper width. Report headers and metadata stay with the following content, table headers repeat on
+later pages, and individual rows avoid splitting across pages. Browser-supplied URL/date/page
+headers and footers remain controlled by the user's print-dialog setting, not by the application.
+
 The shared table always supplies an empty row-selection state when selection is not enabled;
 passing an explicit `undefined` controlled state causes TanStack Table's selected-row model to
 fail when the common pagination footer reads it.

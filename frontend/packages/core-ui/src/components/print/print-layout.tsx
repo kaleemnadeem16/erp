@@ -27,32 +27,42 @@ export interface PrintLayoutProps {
  * passes in, per docs/architecture (frontend Quick Print vs backend formal
  * documents — see PrintTrigger's docblock for the split).
  */
-export function PrintLayout({ title, companyName, companyLogoUrl, meta, printedAt, recordCount, children }: PrintLayoutProps) {
+export function PrintLayout({
+  title,
+  companyName,
+  companyLogoUrl,
+  meta,
+  printedAt,
+  recordCount,
+  children,
+}: PrintLayoutProps) {
   return (
-    <div className="bg-white p-8 text-black">
-      {/* @page only applies when actually printing — harmless while this sits in a hidden div on screen. */}
-      <style>{'@page { size: auto; margin: 16mm; }'}</style>
-
-      <header className="mb-6 flex items-start justify-between border-b border-black/20 pb-4">
+    <div className="w-full bg-white text-left text-black">
+      <header className="mb-4 flex items-start justify-between gap-6 border-b-2 border-black/70 pb-3 [break-after:avoid]">
         <div className="flex items-center gap-3">
-          {companyLogoUrl && <img src={companyLogoUrl} alt="" className="h-10 w-10 object-contain" />}
+          {companyLogoUrl && <img src={companyLogoUrl} alt="" className="h-9 w-9 object-contain" />}
           <div>
-            {companyName && <div className="text-sm font-medium">{companyName}</div>}
-            <h1 className="text-lg font-bold tracking-wide">{title}</h1>
+            {companyName && (
+              <div className="mb-0.5 text-[10px] font-semibold uppercase tracking-wider text-black/60">
+                {companyName}
+              </div>
+            )}
+            <h1 className="text-xl font-bold leading-tight tracking-wide">{title}</h1>
           </div>
         </div>
         {printedAt && (
-          <div className="text-right text-xs text-black/60">
-            <div>Printed: {formatPrintedAt(printedAt)}</div>
+          <div className="shrink-0 pt-1 text-right text-[10px] leading-4 text-black/60">
+            <div className="font-semibold uppercase tracking-wide text-black/45">Printed</div>
+            <div>{formatPrintedAt(printedAt)}</div>
           </div>
         )}
       </header>
 
       {meta && meta.length > 0 && (
-        <div className="mb-4 space-y-0.5 text-xs text-black/70">
+        <div className="mb-3 flex flex-wrap gap-x-6 gap-y-1 border border-black/15 bg-black/[0.025] px-3 py-2 text-[10px] text-black/70 [break-after:avoid]">
           {meta.map((line) => (
             <div key={line.label}>
-              <span className="font-medium">{line.label}:</span> {line.value}
+              <span className="font-semibold text-black/85">{line.label}:</span> {line.value}
             </div>
           ))}
         </div>
@@ -61,8 +71,9 @@ export function PrintLayout({ title, companyName, companyLogoUrl, meta, printedA
       <div>{children}</div>
 
       {recordCount !== undefined && (
-        <footer className="mt-6 border-t border-black/20 pt-2 text-xs text-black/60">
-          Records printed: {recordCount}
+        <footer className="mt-4 flex items-center justify-between border-t border-black/25 pt-2 text-[10px] text-black/60 [break-inside:avoid]">
+          <span>Records printed</span>
+          <span className="font-semibold text-black/80">{recordCount}</span>
         </footer>
       )}
     </div>
