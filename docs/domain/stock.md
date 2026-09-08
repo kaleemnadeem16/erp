@@ -232,6 +232,13 @@ for FIFO/SPECIFIC by permanently linking each allocation to the move it served â
 retain `reverses_move_id`. See [stock-movement-replay.md](stock-movement-replay.md#schema) for
 the additive schema and its use in connected issue/transfer previews.
 
+The ledger itself is database-immutable, not only model-guarded: `stock_moves` and
+`stock_valuation_entries` reject every raw `UPDATE`/`DELETE`, and `stock_layers` rejects any
+change other than consuming `qty_remaining` â€” the same one-to-one mirror of the Eloquent guard
+that `goods_receipts`/`goods_receipt_lines` and issued `purchase_orders`/`purchase_order_lines`
+now also have. A test that must fabricate pre-guard history (e.g. `LEGACY` moves) switches the
+relevant trigger off for exactly that statement; application code never does.
+
 Receipt reversal now records an immutable `stock_layer_consumptions` row with
 `purpose = REVERSAL`; ordinary issues/transfers default to `ALLOCATION`. This is FIFO/SPECIFIC
 only and preserves the exact reversed layer for historical replay. The ledger is protected

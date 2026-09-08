@@ -119,6 +119,30 @@ class InventoryCutoverOpeningStatePostingTest extends TestCase
         app(CommitInventoryCutoverOpeningState::class)($cutover, $this->permittedUser('inventory.cutover.commit'));
     }
 
+    public function test_a_failing_item_rolls_back_every_other_items_posting(): void
+    {
+        $this->createReferenceData();
+        $cutover = $this->approvedCutover();
+        // The AVCO item (posted first) keeps a resolvable account of its own; every
+        // other item loses its category fallback, so the FIFO item fails mid-commit.
+        $account = ChartOfAccount::query()->firstOrFail();
+        Item::query()->where('code', 'sku-avco')->update(['inventory_account_id' => $account->id]);
+        Category::query()->where('code', 'stock')->update(['inventory_account_id' => null]);
+
+        try {
+            app(CommitInventoryCutoverOpeningState::class)($cutover, $this->permittedUser('inventory.cutover.commit'));
+            $this->fail('Expected the unresolvable inventory account to fail the whole commit.');
+        } catch (DomainInvariantException) {
+        }
+
+        $this->assertSame('APPROVED', $cutover->refresh()->status->value);
+        $this->assertTrue($cutover->batches->every(fn ($batch): bool => $batch->status->value === 'VALIDATED'));
+        $this->assertSame(0, StockMove::query()->count());
+        $this->assertSame(0, AvcoPool::query()->count());
+        $this->assertSame(0, InventoryCutoverAvcoPool::query()->count());
+        $this->assertSame(ValuationMethod::Avco, Item::query()->where('code', 'sku-fifo')->firstOrFail()->valuation_method, 'the FIFO item retargeting rolled back with everything else');
+    }
+
     public function test_negative_opening_quantity_is_refused(): void
     {
         Currency::query()->create(['code' => 'PKR', 'name' => 'Pakistan Rupee', 'symbol' => 'Rs', 'decimal_places' => 2]);

@@ -206,6 +206,34 @@ class PhysicalCountTest extends TestCase
         app(RecordPhysicalCountLine::class)($line, '5.0000', $counter);
     }
 
+    public function test_a_failing_line_rolls_back_every_other_lines_posting(): void
+    {
+        $itemA = $this->receiveAndReturnItem('SKU-CNT-RB-A', ValuationMethod::Avco, ItemTracking::None, '10.0000', '5.0000');
+        $itemB = $this->receiveAndReturnItem('SKU-CNT-RB-B', ValuationMethod::Avco, ItemTracking::None, '10.0000', '5.0000');
+        $creator = $this->permittedUser('inventory.physical_count.create');
+        $counter = $this->permittedUser('inventory.physical_count.count');
+        $poster = $this->permittedUser('inventory.physical_count.post');
+
+        $count = app(CreatePhysicalCount::class)(['warehouse_id' => $this->warehouseId], $creator);
+        $lineA = app(AddPhysicalCountLine::class)($count, ['item_id' => $itemA->id, 'location_id' => $this->locationId], $creator);
+        $lineB = app(AddPhysicalCountLine::class)($count->refresh(), ['item_id' => $itemB->id, 'location_id' => $this->locationId], $creator);
+        app(RecordPhysicalCountLine::class)($lineA, '8.0000', $counter);
+        app(RecordPhysicalCountLine::class)($lineB, '12.0000', $counter);
+
+        // Line A (posted first, in id order) is a valid write-off; line B's positive
+        // variance has no found-stock cost, so the whole post must fail as one unit.
+        try {
+            app(PostPhysicalCount::class)($count->refresh(), [], $poster);
+            $this->fail('Expected the missing found-stock cost to fail the whole post.');
+        } catch (DomainInvariantException) {
+        }
+
+        $this->assertSame('DRAFT', $count->refresh()->status->value);
+        $this->assertNull($lineA->refresh()->posted_stock_move_id);
+        $this->assertSame(0, StockMove::query()->where('source_type', 'PHYSICAL_COUNT_LINE')->count());
+        $this->assertSame('10.0000', AvcoPool::query()->where('item_id', $itemA->id)->sole()->qty_on_hand);
+    }
+
     private function receiveAndReturnItem(string $code, ValuationMethod $method, ItemTracking $tracking, string $qty, string $unitCost): Item
     {
         $item = $this->createItem($code, $method, $tracking);

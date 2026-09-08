@@ -524,13 +524,19 @@ class QualityDispositionPostingTest extends PurchaseOrderFoundationTest
         $orderId = (int) $pdo->query("insert into purchase_orders (company_id, supplier_account_id, currency_id, fx_rate, fx_rate_date, fx_rate_type, fx_rate_source, order_date, created_at, updated_at) values ({$companyId}, {$supplierId}, {$currencyId}, 1, current_date, 'SPOT', 'manual', current_date, now(), now()) returning id")->fetchColumn();
         $qaRequiredSql = $qaRequired ? 'true' : 'false';
         $orderLineId = (int) $pdo->query("insert into purchase_order_lines (company_id, purchase_order_id, line_number, item_id, description, ordered_qty, purchase_uom_id, ordered_stock_qty, stock_uom_id, uom_factor, unit_price, line_amount, base_unit_price, base_line_amount, qa_required, created_at, updated_at) values ({$companyId}, {$orderId}, 1, {$itemId}, '{$prefix} line', 10, {$uomId}, 10, {$uomId}, 1, 10, 100, 10, 100, {$qaRequiredSql}, now(), now()) returning id")->fetchColumn();
-        $receiptId = (int) $pdo->query("insert into goods_receipts (company_id, supplier_account_id, status, physical_arrival_at, recorded_at, posting_date, created_at, updated_at) values ({$companyId}, {$supplierId}, '{$receiptStatus}', now(), now(), current_date, now(), now()) returning id")->fetchColumn();
+        // Lines can only ever be added to a draft receipt (goods_receipt_lines_guard),
+        // so a fabricated posted receipt is built the way a real one is: draft first,
+        // line added, then the status transition.
+        $receiptId = (int) $pdo->query("insert into goods_receipts (company_id, supplier_account_id, status, physical_arrival_at, recorded_at, posting_date, created_at, updated_at) values ({$companyId}, {$supplierId}, 'DRAFT', now(), now(), current_date, now(), now()) returning id")->fetchColumn();
 
         $lineId = (int) $pdo->query(
             'insert into goods_receipt_lines (goods_receipt_id, purchase_order_line_id, item_id, location_id, received_qty, received_uom_id, '.
             'stock_qty, stock_uom_id, uom_factor, provisional_unit_cost, currency_id, fx_rate, base_unit_cost, fx_rate_date, fx_rate_type, fx_rate_source, created_at, updated_at) '.
             "values ({$receiptId}, {$orderLineId}, {$itemId}, {$locationId}, 10, {$uomId}, 10, {$uomId}, 1, 10, {$currencyId}, 1, 10, current_date, 'SPOT', 'manual', now(), now()) returning id"
         )->fetchColumn();
+        if ($receiptStatus !== 'DRAFT') {
+            $pdo->exec("update goods_receipts set status = '{$receiptStatus}', posted_at = now() where id = {$receiptId}");
+        }
 
         return [$lineId, $userId];
     }

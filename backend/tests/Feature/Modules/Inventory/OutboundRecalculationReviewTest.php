@@ -139,7 +139,12 @@ class OutboundRecalculationReviewTest extends TestCase
         $this->issue($a, '1', '2026-01-10', 3);
         app(PostInventoryMovement::class)->reverseReceipt('TEST_RECEIPT', 2, 'TEST_REVERSE', 4, '2026-01-11');
         // Simulate rows predating the discriminator; recorded economics/consumptions stay intact.
+        // The ledger is database-immutable (stock_moves_immutable), so the only way to fake
+        // rows that by definition predate that guard is to switch it off for exactly this one
+        // statement — never a pattern for application code.
+        DB::statement('ALTER TABLE stock_moves DISABLE TRIGGER stock_moves_immutable');
         DB::table('stock_moves')->whereNotNull('from_location_id')->update(['movement_kind' => 'LEGACY', 'reverses_move_id' => null]);
+        DB::statement('ALTER TABLE stock_moves ENABLE TRIGGER stock_moves_immutable');
         $version = $this->request($a, '1', '2026-01-05', $b)->impactVersions->sole();
         $this->assertSame('40.0000', $version->counterfactual_inventory_value);
         $this->assertSame(2, StockMove::where('movement_kind', 'LEGACY')->count());

@@ -24,6 +24,8 @@ use App\Modules\Purchasing\Actions\IssuePurchaseOrder;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Modules\Purchasing\Models\PurchaseOrderLine;
 use App\Support\UomDimension;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 
 class GoodsReceiptPostingTest extends PurchaseOrderFoundationTest
 {
@@ -298,6 +300,45 @@ class GoodsReceiptPostingTest extends PurchaseOrderFoundationTest
             ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $receiptB);
 
         $this->getJson('/api/v1/goods-receipts?sort=unknown')->assertUnprocessable();
+    }
+
+    /**
+     * Phase 2 integrity audit: the model's own "posted goods-receipt facts are
+     * immutable" guard is mirrored by goods_receipts_guard/goods_receipt_lines_guard
+     * in the database, so raw SQL that bypasses Eloquent still cannot rewrite or
+     * delete posted history — while a draft receipt stays fully deletable.
+     */
+    public function test_posted_receipt_and_its_lines_are_database_immutable(): void
+    {
+        [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Avco, qty: '4.0000');
+        $locationId = $this->locationId();
+        $poLineId = $order->lines()->sole()->id;
+        $posted = $this->createReceipt($poLineId, $item->id, $uom->id, $locationId);
+        $draft = $this->createReceipt($poLineId, $item->id, $uom->id, $locationId);
+        $this->postJson("/api/v1/goods-receipts/{$posted}/post")->assertOk();
+        $lineId = (int) DB::table('goods_receipt_lines')->where('goods_receipt_id', $posted)->value('id');
+
+        $this->assertDatabaseRejects(fn () => DB::table('goods_receipts')->where('id', $posted)->update(['supplier_account_id' => $order->supplier_account_id + 1]));
+        $this->assertDatabaseRejects(fn () => DB::table('goods_receipt_lines')->where('id', $lineId)->update(['received_qty' => '99.0000']));
+        $this->assertDatabaseRejects(fn () => DB::table('goods_receipt_lines')->where('id', $lineId)->delete());
+        $this->assertDatabaseRejects(fn () => DB::table('goods_receipts')->where('id', $posted)->delete());
+
+        DB::table('goods_receipts')->where('id', $draft)->delete();
+        $this->assertDatabaseMissing('goods_receipts', ['id' => $draft]);
+        $this->assertDatabaseHas('goods_receipts', ['id' => $posted, 'status' => 'POSTED']);
+    }
+
+    private function assertDatabaseRejects(callable $mutation): void
+    {
+        try {
+            DB::transaction($mutation);
+        } catch (QueryException $e) {
+            $this->assertSame('23514', (string) $e->getCode());
+
+            return;
+        }
+
+        $this->fail('Expected the database to reject the mutation.');
     }
 
     public function test_item_valuation_policy_is_locked_after_receipt(): void

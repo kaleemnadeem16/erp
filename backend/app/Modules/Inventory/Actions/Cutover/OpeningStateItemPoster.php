@@ -70,6 +70,9 @@ final class OpeningStateItemPoster
      */
     public function post(InventoryCutover $cutover, Item $item, Collection $facts, Collection $transitions, Company $company): void
     {
+        if (! $item->is_stocked) {
+            throw new DomainInvariantException("Item {$item->code} is not a stocked item and cannot hold opening stock.", 'item_id');
+        }
         $transition = $transitions->first();
         $targetMethod = $transition->target_valuation_method;
         $targetScope = $transition->target_avco_scope;

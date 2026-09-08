@@ -18,6 +18,8 @@ use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Modules\Purchasing\Models\PurchasingSetting;
 use App\Modules\Purchasing\Support\OverReceiptMode;
 use App\Support\UomDimension;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 
 class PurchaseOrderApiTest extends PurchaseOrderFoundationTest
 {
@@ -46,6 +48,45 @@ class PurchaseOrderApiTest extends PurchaseOrderFoundationTest
 
         $this->getJson('/api/v1/purchase-orders?filter[search]='.$numberB)
             ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $orderB->id);
+    }
+
+    /**
+     * Phase 2 integrity audit: "an issued PO remains historically unchanged" is
+     * enforced by the database (purchase_orders_guard/purchase_order_lines_guard),
+     * not only by the models' updating() guards — raw SQL cannot rewrite issued
+     * commercial data or line snapshots, while the columns issue/short-close/
+     * cancel legitimately change stay writable.
+     */
+    public function test_issued_order_commercial_data_and_line_snapshots_are_database_immutable(): void
+    {
+        [$order, $item, $uom] = $this->makeOrder();
+        $line = $order->lines()->create($this->lineAttributes($order, $item, $uom));
+        $this->actingAs(User::factory()->create())->postJson("/api/v1/purchase-orders/{$order->id}/issue")->assertOk();
+
+        $this->assertDatabaseRejects(fn () => DB::table('purchase_orders')->where('id', $order->id)->update(['order_date' => '2026-09-03']));
+        $this->assertDatabaseRejects(fn () => DB::table('purchase_order_lines')->where('id', $line->id)->update(['unit_price' => '1.0000']));
+        $this->assertDatabaseRejects(fn () => DB::table('purchase_order_lines')->where('id', $line->id)->delete());
+        $this->assertDatabaseRejects(fn () => DB::table('purchase_orders')->where('id', $order->id)->delete());
+        $this->assertDatabaseRejects(fn () => DB::table('purchase_order_lines')->insert(array_merge(
+            (array) DB::table('purchase_order_lines')->where('id', $line->id)->first(), ['id' => $line->id + 1000, 'line_number' => 99],
+        )));
+
+        DB::table('purchase_order_lines')->where('id', $line->id)->update(['short_closed_stock_qty' => '1.0000']);
+        DB::table('purchase_orders')->where('id', $order->id)->update(['cancellation_reason' => 'raw but permitted']);
+        $this->assertDatabaseHas('purchase_order_lines', ['id' => $line->id, 'short_closed_stock_qty' => '1.0000']);
+    }
+
+    private function assertDatabaseRejects(callable $mutation): void
+    {
+        try {
+            DB::transaction($mutation);
+        } catch (QueryException $e) {
+            $this->assertSame('23514', (string) $e->getCode());
+
+            return;
+        }
+
+        $this->fail('Expected the database to reject the mutation.');
     }
 
     public function test_draft_creation_calculates_stock_and_money_and_validates_smallint(): void

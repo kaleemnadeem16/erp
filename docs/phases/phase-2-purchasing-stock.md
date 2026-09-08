@@ -127,13 +127,17 @@ The order matters because later work needs stable document and stock boundaries:
 
 - [x] Build the stock tables in `stock.md` with company-aware foreign keys, decimal quantities and
       costs, immutable source identity, and indexes for item/location/date and open FIFO layers
-- [ ] Implement one transactional inventory movement boundary used by receipts, issues, returns,
+- [x] Implement one transactional inventory movement boundary used by receipts, issues, returns,
       transfers and adjustments; no other code path may alter quantity or valuation state
+      (`PostInventoryMovement`; physical-count variances route through it too, and the ledger
+      tables it writes are now database-immutable behind it — see the integrity audit below)
 - [x] Resolve and persist each AVCO item's `COMPANY_ITEM`, `WAREHOUSE_ITEM` or
       `COMPANY_ITEM_BATCH` pool scope (default `COMPANY_ITEM`), enforce tracking compatibility and
       lock it after the first movement; defer `WAREHOUSE_ITEM_BATCH`, per ADR 0039
-- [ ] Implement AVCO with row locking around resolved `avco_pools`; prove two concurrent receipts
+- [x] Implement AVCO with row locking around resolved `avco_pools`; prove two concurrent receipts
       into one pool cannot calculate from stale state while independent pools remain independent
+      (`AvcoPoolManager::lock()`; proven by `AvcoPoolConcurrencyTest` — two forked processes post
+      into one pool through `PostInventoryMovement` and the pool lands on the exact weighted average)
 - [x] Implement same-pool transfer neutrality and cross-pool transfer value conservation,
       destination-average recalculation and immutable source/destination pool identities
 - [x] Price a cross-pool transfer from a frozen source pool at its final frozen rate (ADR 0045),
@@ -236,8 +240,65 @@ The order matters because later work needs stable document and stock boundaries:
         with no HTTP surface at all — deliberately deferred to be built per-screen once Phase 2
         close-out's UI work actually needs each one, rather than guessed upfront.
 - [x] Regenerate and commit the Orval client; verify all frontend type-checks and production build
-- [ ] Run a Phase 2 integrity audit covering raw-write tenant protection, concurrency, rollback,
-      duplicate submission, precision, tracking and historical-retention guarantees
+- [x] Run a Phase 2 integrity audit covering raw-write tenant protection, concurrency, rollback,
+      duplicate submission, precision, tracking and historical-retention guarantees. Findings,
+      each fixed in the same commit:
+      - **Historical retention** — `stock_moves`, `stock_valuation_entries` and `stock_layers` (the
+        ledger itself), plus `goods_receipts`/`goods_receipt_lines` and `purchase_orders`/
+        `purchase_order_lines`, had only Eloquent guards; raw SQL could rewrite or delete posted
+        history. Every other immutable Phase 2 table already had a database trigger. Added
+        triggers mirroring each model's own guard one-to-one (a layer may still consume
+        `qty_remaining`; a document may still make its draft→posted/issued transition and the
+        status/reversal/short-close/cancel columns those flows legitimately write) →
+        `StockLedgerIntegrityTest`, `GoodsReceiptPostingTest`, `PurchaseOrderApiTest`.
+      - **Raw-write tenant protection** — `recalculation_requests.location_id`/
+        `destination_location_id` were the one bare location reference with no company trigger
+        (every other one had one). Added `rr_scope` → `StockLedgerIntegrityTest`. Structural
+        proof for everything else: `CompanyScopedForeignKeyTest`, `CompanyScopedUniqueIndexTest`.
+      - **Concurrency** — the "two concurrent AVCO receipts" acceptance criterion had the lock
+        but no proof → `AvcoPoolConcurrencyTest` (real forked processes, same technique as
+        `QualityDispositionPostingTest`'s). QA dispositions, gapless numbering and location-mode
+        locking were already proven.
+      - **Rollback** — receipt posting already proved it; physical-count posting and cutover
+        commit now do too: a failing later line/item leaves no earlier line's/item's move, pool,
+        provenance row or item retargeting behind → `PhysicalCountTest`,
+        `InventoryCutoverOpeningStatePostingTest`.
+      - **Duplicate submission** — already covered: receipt post retry, QA idempotency key,
+        cutover batch attach/commit, physical-count re-post, negative-opening request are all
+        idempotent-return. No gap found.
+      - **Precision** — no `real`/`double precision` column exists in the schema; every quantity
+        and money column is `numeric(19,4)` (FX `19,9`) with `BigDecimal` HALF_UP everywhere. No
+        gap found. Observation, not changed: `created_at`/`updated_at` from `$table->timestamps()`
+        are `timestamp without time zone` while every business timestamp is `timestamptz`; the app
+        runs in UTC so this is cosmetic.
+      - **Tracking** — batch/serial rules independent of valuation method are already covered
+        (`StockIdentity` + `stock_layers_active_serial_unique`). One consistency gap fixed: cutover
+        opening-state posting didn't check `is_stocked` the way every other posting path does.
+
+### Close-out
+
+Phase 2 closes with UI, not with the backend alone — and the first screens can only be built
+against HTTP APIs that exist. Five feature areas are complete as Actions but deliberately have
+**no HTTP surface yet**; each is to be exposed when its first screen is designed, so the API
+shape is driven by a real screen's needs rather than guessed upfront (the architecture doc
+already flags the stock ledger as a cursor-pagination candidate, unlike every existing
+page-based list). Do not tick Phase 2 complete while any of these is still Action-only:
+
+- [ ] **Stock ledger** read APIs — `stock_moves`, `stock_layers`, `avco_pools`,
+      `stock_valuation_entries` have no list/show endpoint at all; `PostInventoryMovement` is the
+      only write path and should stay that way
+- [ ] **Inventory cutover** — `CreateInventoryCutover`, `AttachInventoryCutoverBatch`,
+      `ValidateInventoryCutover`, `PreviewInventoryCutover`, `ApproveInventoryCutover`,
+      `RequestInventoryCutoverNegativeOpening`, `ApproveInventoryCutoverNegativeOpening`,
+      `CommitInventoryCutoverOpeningState`, `FinaliseInventoryCutover`
+- [ ] **Stock recalculation** — `RequestStockRecalculation`, `DecideRecalculationApproval`,
+      `ExecuteRecalculation`, `ResumeRecalculationRegeneration`
+- [ ] **Negative-stock overrides** — `RequestNegativeStockOverride`,
+      `DecideNegativeStockOverride`, `ReviewNegativeStockOverride`, `UpdateInventorySettings`
+- [ ] **Physical counts** — `CreatePhysicalCount`, `AddPhysicalCountLine`,
+      `RecordPhysicalCountLine`, `PostPhysicalCount`, `CancelPhysicalCount`
+- [ ] First UI screens for the stock engine, built against the endpoints above as each lands
+- [ ] First real deployment to the production VMs (deferred from Phase 0)
 
 Tick these in the same commit as the work.
 
@@ -245,17 +306,19 @@ Tick these in the same commit as the work.
 
 - [ ] One item can have several approved suppliers but no more than one active preferred supplier;
       supplier-specific SKU/UoM/MOQ/lead time round-trip through the API
-- [ ] An issued PO remains historically unchanged after item, supplier, exchange-rate or UoM
-      master data changes
+- [x] An issued PO remains historically unchanged after item, supplier, exchange-rate or UoM
+      master data changes (snapshotted at issue; commercial data and line snapshots are now also
+      database-immutable — `PurchaseOrderApiTest`)
 - [ ] A partial receipt updates outstanding PO quantity exactly once and creates the matching
       stock move/layer/valuation feed atomically
 - [ ] Exact/above tolerance, indivisible flooring, cumulative partials and hard short-close behave
       per ADR 0043; simultaneous receipts and duplicate posting cannot exceed or duplicate state
 - [x] Partial/repeated QA dispositions cannot allocate more than pending quantity, including under
       concurrent posting, and never mutate the original receipt
-- [ ] Simultaneous receipts into one AVCO pool produce the mathematically correct quantity/value
+- [x] Simultaneous receipts into one AVCO pool produce the mathematically correct quantity/value
       and average under a real PostgreSQL concurrency test; supported scopes resolve uniquely and
-      remain tenant-isolated
+      remain tenant-isolated (`AvcoPoolConcurrencyTest`; scope shape/uniqueness is enforced by
+      `avco_pools`' checks and partial unique indexes)
 - [ ] FIFO issues consume the oldest available layers, including an issue spanning multiple layers;
       SPECIFIC issues consume only the named on-hand serial
 - [ ] Batch/serial requirements follow `items.tracking`, not `valuation_method`
@@ -284,8 +347,10 @@ Tick these in the same commit as the work.
 - [ ] A failure by any synchronous implemented participant rolls the declared internal transaction
       back in full; only deliberately deferred/asynchronous/external obligations may remain pending
 - [x] A posted physical count creates auditable variance moves and cannot be posted twice
-- [ ] Cross-company access and raw cross-company foreign-key writes fail for every new table
-- [ ] Full Pest/Pint/Larastan/frontend/codegen pipeline passes on PostgreSQL 16
+- [x] Cross-company access and raw cross-company foreign-key writes fail for every new table
+      (`CompanyScopedForeignKeyTest` structurally, per-table scope triggers for every bare
+      `locations` reference — the last missing one, `recalculation_requests`, closed by the audit)
+- [x] Full Pest/Pint/Larastan/frontend/codegen pipeline passes on PostgreSQL 16
 
 ## Docs to update on completion
 

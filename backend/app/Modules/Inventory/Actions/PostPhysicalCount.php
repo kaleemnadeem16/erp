@@ -55,7 +55,7 @@ final class PostPhysicalCount
                 throw new DomainInvariantException('The actor who created this physical count cannot also post it.', 'posted_by');
             }
 
-            $lines = PhysicalCountLine::query()->where('physical_count_id', $count->id)->lockForUpdate()->get();
+            $lines = PhysicalCountLine::query()->where('physical_count_id', $count->id)->orderBy('id')->lockForUpdate()->get();
             if ($lines->isEmpty()) {
                 throw new DomainInvariantException('A physical count needs at least one line before it can be posted.', 'status');
             }

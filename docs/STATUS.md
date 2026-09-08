@@ -26,7 +26,6 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 
 | Item | Date |
 |---|---|
-| **Recalculation execution — outbound changed-history case, ADR 0040 complete** — a backdated ISSUE/TRANSFER now executes even when its replay reprices other real history, closing the last executable gap: FIFO/SPECIFIC reuse the receipt case's real-layer-id engine (`LayerCounterfactualReplayer::planOutboundInsertion()` + `FifoReceiptReallocator::applyCorrections()`, arbitrary transfer-hop depth) with no synthetic-id bridge needed; AVCO converges every pool a connected component touched, not just source/destination. Only the multi-owner correction package (Phase 4/5/6) remains → [stock-recalculation.md](domain/stock-recalculation.md) | 2026-09-07 |
 | **Generic inventory-cutover import contract** — ADR 0027's shared Imports foundation now stages arbitrary mapped rows under an idempotent source identity and validates Inventory's `INVENTORY_CUTOVER`/`OPENING_STATE` schema without any generic domain-write callback. Raw/mapped evidence is immutable and purpose-bound; cutover orchestration is next → [inventory-cutover.md](domain/inventory-cutover.md) | 2026-09-07 |
 | **Inventory cutover orchestration** — one immutable company cutover now stages validated generic batches into normalised source facts, previews/reconciles exact controls and enforces independent approval through dedicated permissions. Finalisation is present but cannot succeed until the next method-specific opening-state Action commits every batch → [inventory-cutover.md](domain/inventory-cutover.md) | 2026-09-07 |
 | **Cutover valuation-policy transition ledger** — validation now derives immutable, idempotent source method/scope/pool → target method/scope records effective exactly at `cutover_at`, including structured revaluation evidence for method changes. This is a deliberately small provenance slice; it posts no stock → [inventory-cutover.md](domain/inventory-cutover.md) | 2026-09-07 |
@@ -34,6 +33,7 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 | **Cutover negative-opening exception, ADR 0036/0037 opening-state posting complete** — `InventoryCutoverNegativeOpening` records an evidenced AVCO/FIFO negative opening (provisional cost, reason, evidence, owner, resolution plan, target date), requested and dedicated-approved by different actors. Approved, `CommitInventoryCutoverOpeningState` posts an `OPEN_CUTOVER_SHORTAGE` settled afterwards exactly like a live shortage — `negative_stock_shortages` now accepts either authority, never both. SPECIFIC/serial always blocked → [inventory-cutover.md](domain/inventory-cutover.md) | 2026-09-08 |
 | **Physical-count documents** — `CreatePhysicalCount`/`AddPhysicalCountLine` snapshot `book_qty` from `stock_layers` (method-agnostic); `RecordPhysicalCountLine` lets a recount replace the working count while every attempt stays immutable; `PostPhysicalCount` posts each non-zero variance through `PostInventoryMovement` itself — a found-more line always needs an explicit reviewer-supplied cost, a found-less line is an ordinary issue with no override authority → [physical-count.md](domain/physical-count.md) | 2026-09-08 |
 | **API polish for existing Phase 2 resources** — goods receipts gained the `index` endpoint it was missing entirely, quality dispositions gained a `disposition` filter, purchase orders gained `filter[search]` on number, and a global `23514` CHECK-violation handler mirrors the existing `23503` one so a genuine DB-only race returns 422 instead of an uncaught 500. Orval client regenerated; frontend type-checks and production build verified. Inventory cutover, recalculation, negative-stock, physical counts and the raw stock ledger remain deliberately API-less until Phase 2 close-out's UI work needs each one → [phase-2-purchasing-stock.md](phases/phase-2-purchasing-stock.md) | 2026-09-08 |
+| **Phase 2 integrity audit** — three real gaps found and fixed: the stock ledger (`stock_moves`/`stock_valuation_entries`/`stock_layers`) and purchasing documents were model-guarded only and are now database-immutable like every other Phase 2 history table; `recalculation_requests` was the one bare location reference with no company trigger; and the "two concurrent AVCO receipts" acceptance criterion had the lock but no proof — now `AvcoPoolConcurrencyTest`. Rollback proven for physical-count and cutover posting too. Duplicate-submission, precision and tracking had no gaps → [phase-2-purchasing-stock.md](phases/phase-2-purchasing-stock.md) | 2026-09-08 |
 
 ## Next
 
@@ -41,15 +41,16 @@ ADR 0040's executable-today scope is done — every backdated receipt/issue/tran
 three valuation methods now previews, approves and executes, clean or changed-history alike. The
 multi-owner correction package (Sales/Job Execution/Accounting routing, cross-module
 reconciliation) waits on those modules existing — Phase 4/5/6, tracked at each phase's entry in
-[phases/README.md](phases/README.md). Continue the rest of
+[phases/README.md](phases/README.md). Phase 2's backend work is complete and audited; what remains
+is its close-out, itemised under "Close-out" in
 [Phase 2 — Purchasing & stock](phases/phase-2-purchasing-stock.md):
 
-1. A Phase 2 integrity audit covering raw-write tenant protection, concurrency, rollback,
-   duplicate submission, precision, tracking and historical-retention guarantees.
-2. Phase 2 close-out: first UI screens for the stock engine (will need HTTP APIs building for
-   whichever of cutover/recalculation/negative-stock/physical-count/stock-ledger each screen
-   touches first — deliberately not built ahead of a real screen's needs) and the first real
-   deployment to the production VMs.
+1. HTTP APIs for the five feature areas that are still Action-only (stock ledger reads,
+   inventory cutover, stock recalculation, negative-stock overrides, physical counts) — each built
+   when its first screen is designed, not before; the exact Action list to expose is in that
+   Close-out section so nothing gets missed.
+2. First UI screens for the stock engine, against those endpoints as each lands.
+3. First real deployment to the production VMs.
 
 ## Blocked / awaiting input
 
