@@ -1,10 +1,18 @@
 import { BrowserRouter, Routes, Route } from 'react-router';
 import {
   AppShell,
+  CategoriesListScreen,
+  CategoryCreateScreen,
+  CategoryDetailScreen,
+  CategoryEditScreen,
   DashboardScreen,
   ItemCreateScreen,
   ItemDetailScreen,
   ItemEditScreen,
+  ItemSupplierCreateScreen,
+  ItemSupplierDetailScreen,
+  ItemSupplierEditScreen,
+  ItemSuppliersListScreen,
   ItemsListScreen,
   LoginScreen,
   ProtectedRoute,
@@ -105,6 +113,86 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <WarehouseEditScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/categories"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <CategoriesListScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/categories/new"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <CategoryCreateScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/categories/:id"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <CategoryDetailScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/categories/:id/edit"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <CategoryEditScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/item-suppliers"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <ItemSuppliersListScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/item-suppliers/new"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <ItemSupplierCreateScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/item-suppliers/:id"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <ItemSupplierDetailScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/item-suppliers/:id/edit"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <ItemSupplierEditScreen />
               </AppShell>
             </ProtectedRoute>
           }

@@ -134,6 +134,12 @@ hardcode units. Category and valuation choices follow the stored-resolution rule
 creation may request the category default, while edit always submits a concrete valuation
 method.
 
+Category list/detail/create/edit screens expose hierarchy, valuation defaults and nullable GL
+account defaults; blank values mean inheritance rather than an invented application default.
+Item-supplier list/detail/create/edit screens expose the approved-supplier catalogue. The edit
+form deliberately locks `item_id` and `supplier_account_id`, matching the immutable relationship
+identity rule below, while allowing sourcing terms to change.
+
 ## Landmines
 
 **Codes and case sensitivity.** Postgres is case-sensitive, so `PIG-001` and `pig-001` are

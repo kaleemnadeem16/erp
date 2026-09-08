@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { LayoutDashboard, LogOut, Package, Warehouse } from 'lucide-react';
+import { Boxes, LayoutDashboard, LogOut, Package, Tags, Warehouse } from 'lucide-react';
 import { NavLink, useNavigate } from 'react-router';
 import { useLogout } from '@erp/core-api';
 
@@ -11,6 +11,8 @@ const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/items', label: 'Items', icon: Package },
   { to: '/warehouses', label: 'Warehouses', icon: Warehouse },
+  { to: '/categories', label: 'Categories', icon: Tags },
+  { to: '/item-suppliers', label: 'Item suppliers', icon: Boxes },
 ];
 
 // Mobile-first: a fixed bottom tab bar below `md`, a persistent sidebar above it —
@@ -63,7 +65,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <main className="flex-1 overflow-y-auto pb-16 md:pb-0">{children}</main>
 
-      <nav className="fixed inset-x-0 bottom-0 flex border-t border-border bg-background md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 flex overflow-x-auto border-t border-border bg-background md:hidden">
         {navItems.map((item) => (
           <NavLink
             key={item.to}
@@ -71,7 +73,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             end
             className={({ isActive }) =>
               cn(
-                'flex flex-1 flex-col items-center gap-1 py-2 text-xs text-muted-foreground hover:text-foreground',
+                'flex min-w-20 flex-none flex-col items-center gap-1 py-2 text-xs text-muted-foreground hover:text-foreground',
                 isActive && 'text-foreground'
               )
             }
@@ -83,7 +85,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <button
           type="button"
           onClick={handleLogout}
-          className="flex flex-1 flex-col items-center gap-1 py-2 text-xs text-muted-foreground hover:text-foreground"
+          className="flex min-w-20 flex-none flex-col items-center gap-1 py-2 text-xs text-muted-foreground hover:text-foreground"
         >
           <LogOut className="size-5" />
           Log out

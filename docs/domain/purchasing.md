@@ -139,6 +139,11 @@ An `item_suppliers` row has immutable `item_id` and `supplier_account_id`, per
 but moving the row to a different item or supplier would change its meaning. Archive the old
 relationship and create a new one instead; issued purchase documents retain their own snapshots.
 
+The React item-supplier screens enforce the same boundary in their interaction design: item and
+supplier are selected on creation and shown read-only on edit, while supplier item code,
+priority, lead-time override, minimum order quantity, purchase UoM and active state remain
+editable. List filters cover item, supplier, active state and preferred status.
+
 ### Normal and partial purchasing
 
 The default user journey is `Create PO → Receive → Enter invoice → Done`. One PO line may be
