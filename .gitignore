@@ -29,7 +29,9 @@ backend/.phpunit.cache/
 backend/storage/api-docs/
 
 # Frontend
-frontend/node_modules/
+# npm workspaces can nest node_modules under any package/app, not just the root
+# (e.g. a version change that doesn't re-hoist cleanly) — ignore all of them.
+frontend/**/node_modules/
 frontend/**/dist/
 frontend/**/.vite/
 

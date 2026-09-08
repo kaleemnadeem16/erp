@@ -59,6 +59,14 @@ and rounding at storage compounds through the whole cost roll-up.
 
 **Round only at presentation.** Never round intermediate values in a calculation chain.
 
+### HTTP access
+
+Authenticated clients can read company-scoped UoMs through `GET /api/v1/uoms` and
+`GET /api/v1/uoms/{uom}`. The collection supports page-based pagination, sorting by code, name
+or creation time, and filters for dimension or a code/name search. It is deliberately read-only:
+forms such as Item's stock-UoM selector need authoritative options, while UoM administration is
+not yet part of the user interface.
+
 ## Landmines
 
 **Hardcoding a conversion.** `$sqm * 10.7639` will appear somewhere and will be wrong for

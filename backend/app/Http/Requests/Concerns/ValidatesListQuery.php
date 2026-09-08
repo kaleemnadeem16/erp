@@ -32,6 +32,12 @@ trait ValidatesListQuery
                 },
             ],
             'per_page' => ['sometimes', 'integer', 'between:1,100'],
+            // Laravel's paginate() already reads this from the query string regardless of
+            // whether it's declared here — this is purely so it's validated, documented in
+            // the OpenAPI spec and therefore typed in the generated client, matching
+            // docs/architecture/api-conventions.md's "every endpoint must produce a correct
+            // OpenAPI entry."
+            'page' => ['sometimes', 'integer', 'min:1'],
         ];
     }
 }

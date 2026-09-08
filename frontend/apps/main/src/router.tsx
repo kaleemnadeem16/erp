@@ -1,5 +1,14 @@
 import { BrowserRouter, Routes, Route } from 'react-router';
-import { AppShell, DashboardScreen, LoginScreen, ProtectedRoute } from '@erp/core-ui';
+import {
+  AppShell,
+  DashboardScreen,
+  ItemCreateScreen,
+  ItemDetailScreen,
+  ItemEditScreen,
+  ItemsListScreen,
+  LoginScreen,
+  ProtectedRoute,
+} from '@erp/core-ui';
 
 export function AppRouter() {
   return (
@@ -12,6 +21,46 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <DashboardScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/items"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <ItemsListScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/items/new"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <ItemCreateScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/items/:id"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <ItemDetailScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/items/:id/edit"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <ItemEditScreen />
               </AppShell>
             </ProtectedRoute>
           }

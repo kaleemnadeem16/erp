@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { LayoutDashboard, LogOut } from 'lucide-react';
+import { LayoutDashboard, LogOut, Package } from 'lucide-react';
 import { NavLink, useNavigate } from 'react-router';
 import { useLogout } from '@erp/core-api';
 
@@ -7,7 +7,10 @@ import { Button } from '../components/ui/button';
 import { useAuthStore } from '../stores/auth-store';
 import { cn } from '../lib/utils';
 
-const navItems = [{ to: '/', label: 'Dashboard', icon: LayoutDashboard }];
+const navItems = [
+  { to: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/items', label: 'Items', icon: Package },
+];
 
 // Mobile-first: a fixed bottom tab bar below `md`, a persistent sidebar above it —
 // both render the same `navItems`, only one is visible at a given width.

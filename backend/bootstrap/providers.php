@@ -8,11 +8,13 @@ use App\Modules\Purchasing\PurchasingServiceProvider;
 use App\Providers\AppServiceProvider;
 use App\Providers\AuthServiceProvider;
 use App\Providers\CurrencyServiceProvider;
+use App\Providers\UomServiceProvider;
 
 return [
     AppServiceProvider::class,
     AuthServiceProvider::class,
     CurrencyServiceProvider::class,
+    UomServiceProvider::class,
     ImportsServiceProvider::class,
     InventoryServiceProvider::class,
     PartiesServiceProvider::class,

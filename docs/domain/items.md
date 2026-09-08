@@ -122,6 +122,18 @@ has no obligation to match the accounting cost basis. See ADR 0032 for the full 
 Items are archived, never deleted. Historical documents reference them and must remain
 readable. Soft deletes throughout.
 
+### User interface
+
+The React application exposes item list, detail, create and edit screens. The list is the
+reference implementation for the shared server-driven table, URL-persisted filter/sort/page
+state and quick-print components used by later master-data screens. Create and edit share one
+validated form and map the API's standard `422` field errors back onto that form.
+
+The UoM selector reads the company-scoped, read-only `/api/v1/uoms` endpoint; it does not
+hardcode units. Category and valuation choices follow the stored-resolution rules above:
+creation may request the category default, while edit always submits a concrete valuation
+method.
+
 ## Landmines
 
 **Codes and case sensitivity.** Postgres is case-sensitive, so `PIG-001` and `pig-001` are
