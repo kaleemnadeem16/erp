@@ -11,6 +11,7 @@ use App\Support\Concerns\BelongsToCompany;
 use App\Support\Concerns\GuardsRelatedCompanyScope;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $physical_count_id
@@ -21,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $book_qty
  * @property string|null $counted_qty
  * @property int|null $counted_by
+ * @property Carbon|null $counted_at
  * @property string|null $found_unit_cost
  * @property int|null $posted_stock_move_id
  */

@@ -298,10 +298,16 @@ page-based list). Do not tick Phase 2 complete while any of these is still Actio
       `ExecuteRecalculation`, `ResumeRecalculationRegeneration`
 - [ ] **Negative-stock overrides** — `RequestNegativeStockOverride`,
       `DecideNegativeStockOverride`, `ReviewNegativeStockOverride`, `UpdateInventorySettings`
-- [ ] **Physical counts** — `CreatePhysicalCount`, `AddPhysicalCountLine`,
-      `RecordPhysicalCountLine`, `PostPhysicalCount`, `CancelPhysicalCount`
+- [x] **Physical counts** — full HTTP surface: `POST/GET /api/v1/physical-counts`,
+      `GET /api/v1/physical-counts/{id}`, `POST .../lines` (`AddPhysicalCountLine`),
+      `POST /api/v1/physical-count-lines/{id}/count` (`RecordPhysicalCountLine`),
+      `POST .../post` (`PostPhysicalCount`) and `.../cancel` (`CancelPhysicalCount`) — the header
+      stays create/read-only over HTTP, every state change is a named action per
+      api-conventions.md
 - [x] First UI screens for the stock engine, built against the endpoints above as each lands —
-      the Stock Ledger list/detail screens (`/stock-moves`) are the first, reading `stock_moves`
+      the Stock Ledger list/detail screens (`/stock-moves`) were first, reading `stock_moves`;
+      Physical Counts (`/physical-counts`) is the first screen with a document workflow (create,
+      add lines, record counts, post/cancel)
 - [ ] First real deployment to the production VMs (deferred from Phase 0)
 
 Tick these in the same commit as the work.

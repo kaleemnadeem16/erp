@@ -12,6 +12,7 @@ use App\Support\Concerns\BelongsToCompany;
 use App\Support\Concerns\GuardsRelatedCompanyScope;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $warehouse_id
@@ -19,7 +20,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property PhysicalCountStatus $status
  * @property int $created_by
  * @property int|null $posted_by
+ * @property Carbon|null $posted_at
  * @property int|null $cancelled_by
+ * @property Carbon|null $cancelled_at
  */
 class PhysicalCount extends Model
 {

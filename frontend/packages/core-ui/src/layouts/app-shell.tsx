@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Boxes, LayoutDashboard, LogOut, Package, ScrollText, Tags, Warehouse } from 'lucide-react';
+import { Boxes, ClipboardList, LayoutDashboard, LogOut, Package, ScrollText, Tags, Warehouse } from 'lucide-react';
 import { NavLink, useNavigate } from 'react-router';
 import { useLogout } from '@erp/core-api';
 
@@ -14,6 +14,7 @@ const navItems = [
   { to: '/categories', label: 'Categories', icon: Tags },
   { to: '/item-suppliers', label: 'Item suppliers', icon: Boxes },
   { to: '/stock-moves', label: 'Stock Ledger', icon: ScrollText },
+  { to: '/physical-counts', label: 'Physical Counts', icon: ClipboardList },
 ];
 
 // Mobile-first: a fixed bottom tab bar below `md`, a persistent sidebar above it —

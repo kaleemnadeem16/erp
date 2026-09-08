@@ -4,6 +4,7 @@ use App\Modules\Inventory\Http\Controllers\Api\V1\CategoryController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\InventorySettingsController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\ItemController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\LocationController;
+use App\Modules\Inventory\Http\Controllers\Api\V1\PhysicalCountController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\StockMoveController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\WarehouseController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\WarehouseLocationAssignmentController;
@@ -20,6 +21,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('locations/{location}', [LocationController::class, 'update'])->name('locations.update');
     Route::apiResource('stock-moves', StockMoveController::class)
         ->parameters(['stock-moves' => 'stockMove'])->only(['index', 'show']);
+    Route::apiResource('physical-counts', PhysicalCountController::class)->only(['index', 'store', 'show']);
+    Route::post('physical-counts/{physicalCount}/lines', [PhysicalCountController::class, 'storeLine'])->name('physical-counts.lines.store');
+    Route::post('physical-count-lines/{physicalCountLine}/count', [PhysicalCountController::class, 'count'])->name('physical-count-lines.count');
+    Route::post('physical-counts/{physicalCount}/post', [PhysicalCountController::class, 'post'])->name('physical-counts.post');
+    Route::post('physical-counts/{physicalCount}/cancel', [PhysicalCountController::class, 'cancel'])->name('physical-counts.cancel');
     Route::get('inventory-settings', [InventorySettingsController::class, 'show'])->name('inventory-settings.show');
     Route::patch('inventory-settings', [InventorySettingsController::class, 'update'])->name('inventory-settings.update');
     Route::apiResource('warehouse-location-roles', WarehouseLocationAssignmentController::class)

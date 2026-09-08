@@ -15,6 +15,9 @@ import {
   ItemSuppliersListScreen,
   ItemsListScreen,
   LoginScreen,
+  PhysicalCountCreateScreen,
+  PhysicalCountDetailScreen,
+  PhysicalCountsListScreen,
   ProtectedRoute,
   StockLedgerScreen,
   StockMoveDetailScreen,
@@ -215,6 +218,36 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <StockMoveDetailScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/physical-counts"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <PhysicalCountsListScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/physical-counts/new"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <PhysicalCountCreateScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/physical-counts/:id"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <PhysicalCountDetailScreen />
               </AppShell>
             </ProtectedRoute>
           }

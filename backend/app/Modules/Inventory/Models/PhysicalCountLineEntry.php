@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Support\Concerns\BelongsToCompany;
 use App\Support\Concerns\GuardsRelatedCompanyScope;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * One immutable count attempt (the first count, or a later recount) for one
@@ -20,6 +21,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $physical_count_line_id
  * @property string $counted_qty
  * @property int $counted_by
+ * @property Carbon $counted_at
  */
 class PhysicalCountLineEntry extends Model
 {

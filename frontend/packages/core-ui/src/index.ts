@@ -91,3 +91,6 @@ export { ItemSupplierCreateScreen } from './features/item-suppliers/item-supplie
 export { ItemSupplierEditScreen } from './features/item-suppliers/item-supplier-edit-screen';
 export { StockLedgerScreen } from './features/stock-ledger/stock-ledger-screen';
 export { StockMoveDetailScreen } from './features/stock-ledger/stock-move-detail-screen';
+export { PhysicalCountsListScreen } from './features/physical-counts/physical-counts-list-screen';
+export { PhysicalCountDetailScreen } from './features/physical-counts/physical-count-detail-screen';
+export { PhysicalCountCreateScreen } from './features/physical-counts/physical-count-create-screen';

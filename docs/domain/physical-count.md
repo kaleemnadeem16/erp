@@ -88,6 +88,26 @@ physical_count_line_entries         -- immutable append-only recount trail
   'PHYSICAL_COUNT_LINE'` is what distinguishes it, the same way a customer return is distinguished
   from an ordinary receipt.
 
+## User interface
+
+The physical count HTTP surface is exposed per
+[phase-2-purchasing-stock.md](../phases/phase-2-purchasing-stock.md#close-out): the header
+(`PhysicalCount`) is create/read-only over HTTP (`POST`/`GET /api/v1/physical-counts`,
+`GET /api/v1/physical-counts/{id}`) and every state change is a named action —
+`POST .../lines` to add a line, `POST /api/v1/physical-count-lines/{id}/count` to record or
+recount one, `POST .../post` and `.../cancel` on the header. `PhysicalCountController` reshapes
+`post`'s `found_costs` (a list of `{physical_count_line_id, unit_cost}` pairs — not a
+line-id-keyed object, which has no sound OpenAPI/generated-client type) into the
+`id => cost` array `PostPhysicalCount` actually expects.
+
+The React screens (`/physical-counts` list, `/physical-counts/new`, `/physical-counts/:id`
+detail) are the first document-workflow UI in the frontend, distinct from the master-data
+list/detail/print foundation [items.md](items.md#user-interface) established: the detail screen
+is the count's whole working surface while `DRAFT` — add a line, record its quantity inline,
+supply a found cost for anything counted higher than book, then post or cancel — and every
+mutation refetches the count rather than patching local state, since variance and "is every line
+counted" are always derived server-side.
+
 ## Related
 
 - [stock.md](stock.md) — the movement/valuation model this posts into
