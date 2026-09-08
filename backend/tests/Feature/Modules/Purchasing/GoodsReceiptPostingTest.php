@@ -2,17 +2,26 @@
 
 namespace Tests\Feature\Modules\Purchasing;
 
+use App\Models\Currency;
 use App\Models\Uom;
 use App\Models\User;
 use App\Modules\Accounting\Models\ChartOfAccount;
+use App\Modules\Accounting\Support\AccountType;
 use App\Modules\Inventory\Actions\CreateWarehouse;
 use App\Modules\Inventory\Models\AvcoPool;
+use App\Modules\Inventory\Models\Category;
+use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Models\StockLayer;
 use App\Modules\Inventory\Models\StockMove;
 use App\Modules\Inventory\Support\AvcoPoolScope;
 use App\Modules\Inventory\Support\ItemTracking;
 use App\Modules\Inventory\Support\ValuationMethod;
+use App\Modules\Parties\Models\Party;
+use App\Modules\Parties\Models\PartySite;
+use App\Modules\Parties\Models\SupplierAccount;
+use App\Modules\Parties\Models\SupplierSite;
 use App\Modules\Purchasing\Actions\IssuePurchaseOrder;
+use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Modules\Purchasing\Models\PurchaseOrderLine;
 use App\Support\UomDimension;
 
@@ -273,6 +282,24 @@ class GoodsReceiptPostingTest extends PurchaseOrderFoundationTest
         $this->assertDatabaseHas('purchase_orders', ['id' => $order->id, 'status' => 'CLOSED']);
     }
 
+    public function test_index_filters_by_supplier_and_status_and_paginates(): void
+    {
+        [$orderA, $itemA, $uomA] = $this->issuedOrder(ValuationMethod::Avco);
+        [$orderB, $itemB, $uomB] = $this->issuedOrderB();
+        $locationId = $this->locationId();
+        $receiptA = $this->createReceipt($orderA->lines()->sole()->id, $itemA->id, $uomA->id, $locationId);
+        $receiptB = $this->createReceipt($orderB->lines()->sole()->id, $itemB->id, $uomB->id, $locationId);
+        $this->postJson("/api/v1/goods-receipts/{$receiptB}/post")->assertOk();
+
+        $this->getJson('/api/v1/goods-receipts?filter[supplier_account_id]='.$orderA->supplier_account_id)
+            ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $receiptA);
+
+        $this->getJson('/api/v1/goods-receipts?filter[status]=POSTED')
+            ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $receiptB);
+
+        $this->getJson('/api/v1/goods-receipts?sort=unknown')->assertUnprocessable();
+    }
+
     public function test_item_valuation_policy_is_locked_after_receipt(): void
     {
         [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Avco);
@@ -296,6 +323,47 @@ class GoodsReceiptPostingTest extends PurchaseOrderFoundationTest
         $this->assertDatabaseCount('stock_layers', 0);
         $this->assertDatabaseCount('avco_pools', 0);
         $this->assertDatabaseHas('goods_receipts', ['id' => $receiptId, 'status' => 'DRAFT']);
+    }
+
+    /**
+     * A second, independently-coded order/item/uom/supplier — issuedOrder() reuses
+     * PurchaseOrderFoundationTest::makeOrder()'s hardcoded 'SUP'/'ea'/'raw'/'item'
+     * codes, which collide on a second call within the same test.
+     *
+     * @return array{PurchaseOrder, Item, Uom}
+     */
+    private function issuedOrderB(ValuationMethod $method = ValuationMethod::Avco, string $qty = '2.0000'): array
+    {
+        $currency = Currency::firstOrCreate(['code' => 'USD'], ['name' => 'US Dollar', 'symbol' => '$']);
+        $party = Party::create(['code' => 'SUP2', 'name' => 'SUP2']);
+        $account = ChartOfAccount::create(['code' => 'pay-SUP2', 'name' => 'Payable SUP2', 'type' => AccountType::Liability]);
+        $supplier = SupplierAccount::create(['party_id' => $party->id, 'code' => 'SUP2', 'payment_terms_days' => 30, 'payable_account_id' => $account->id]);
+        $partySite = PartySite::create(['party_id' => $party->id, 'code' => 'main', 'name' => 'Main']);
+        $site = SupplierSite::create(['supplier_account_id' => $supplier->id, 'party_site_id' => $partySite->id, 'role' => 'ORDER_FROM']);
+        $uom = Uom::create(['code' => 'ea2', 'name' => 'Each 2', 'dimension' => UomDimension::Count, 'factor_to_base' => '1']);
+        $category = Category::create(['code' => 'raw2', 'name' => 'Raw 2', 'default_valuation_method' => 'AVCO']);
+        $item = Item::create(['code' => 'item2', 'name' => 'Item 2', 'type' => 'RAW', 'stock_uom_id' => $uom->id, 'category_id' => $category->id]);
+        $order = PurchaseOrder::create([
+            'supplier_account_id' => $supplier->id, 'supplier_site_id' => $site->id,
+            'currency_id' => $currency->id, 'fx_rate' => '1.000000000',
+            'fx_rate_date' => '2026-09-02', 'fx_rate_type' => 'SPOT', 'fx_rate_source' => 'manual',
+            'order_date' => '2026-09-02',
+        ])->refresh();
+
+        $item->update([
+            'is_stocked' => true, 'valuation_method' => $method, 'tracking' => ItemTracking::None,
+            'avco_pool_scope' => $method === ValuationMethod::Avco ? AvcoPoolScope::CompanyItem : null,
+            'inventory_account_id' => $item->category->resolveInventoryAccountId(),
+        ]);
+        if ($item->inventory_account_id === null) {
+            $item->update(['inventory_account_id' => ChartOfAccount::query()->firstOrFail()->id]);
+        }
+        $order->lines()->create(array_merge($this->lineAttributes($order, $item, $uom), [
+            'ordered_qty' => $qty, 'ordered_stock_qty' => $qty, 'line_amount' => (string) ((int) $qty * 10).'.0000',
+        ]));
+        app(IssuePurchaseOrder::class)($order);
+
+        return [$order->refresh(), $item->refresh(), $uom];
     }
 
     private function issuedOrder(ValuationMethod $method, ItemTracking $tracking = ItemTracking::None, string $qty = '2.0000'): array

@@ -78,4 +78,22 @@ return Application::configure(basePath: dirname(__DIR__))
                 'message' => 'This record is still referenced by other records and cannot be changed this way.',
             ], 409);
         });
+
+        // A CHECK constraint reached by the database without a matching PHP-level
+        // DomainInvariantException — e.g. a genuine concurrent race two requests'
+        // own guards couldn't see coming. Every table pairs its checks/triggers with
+        // an Action-level guard where the violation is reachable in the ordinary
+        // flow, so this is a backstop for the race case, not the primary path — see
+        // docs/architecture/invariants.md. Without it, this shape of failure leaks
+        // as an uncaught 500 instead of api-conventions.md's 422 for a business-rule
+        // violation.
+        $exceptions->render(function (QueryException $e, Request $request) {
+            if ((string) $e->getCode() !== '23514' || ! $request->is('api/*')) {
+                return null;
+            }
+
+            return response()->json([
+                'message' => 'This action violates a data integrity rule and cannot be completed.',
+            ], 422);
+        });
     })->create();

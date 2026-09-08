@@ -244,6 +244,15 @@ class QualityDispositionPostingTest extends PurchaseOrderFoundationTest
             ->assertOk()->json('data');
         $this->assertSame(['6.0000', '4.0000', '4.0000'], array_column($full, 'qty'), 'sort=-qty must be descending, with a stable id tiebreaker for the equal-qty pair');
 
+        $filtered = $this->actingAs(User::factory()->create())
+            ->getJson("/api/v1/goods-receipt-lines/{$lineId}/quality-dispositions?filter[disposition]=PASS")
+            ->assertOk()->json('data');
+        $this->assertSame(['PASS'], array_unique(array_column($filtered, 'disposition')));
+        $this->assertCount(1, $filtered);
+
+        $this->actingAs(User::factory()->create())
+            ->getJson("/api/v1/goods-receipt-lines/{$lineId}/quality-dispositions?filter[disposition]=BOGUS")
+            ->assertUnprocessable()->assertJsonValidationErrors('filter.disposition');
         $this->actingAs(User::factory()->create())
             ->getJson("/api/v1/goods-receipt-lines/{$lineId}/quality-dispositions?sort=bogus")
             ->assertUnprocessable()->assertJsonValidationErrors('sort');

@@ -13,6 +13,10 @@ export type PurchaseOrdersIndexParams = {
    */
   "filter[supplier_account_id]"?: number;
   "filter[status]"?: PurchaseOrderStatus;
+  /**
+   * @maxLength 255
+   */
+  "filter[search]"?: string;
   sort?: PurchaseOrdersIndexSort;
   include?: string;
   /**

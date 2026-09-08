@@ -40,6 +40,9 @@ class PurchaseOrderController extends Controller
                 $query->where($field, $request->input("filter.{$field}"));
             }
         }
+        if ($request->filled('filter.search')) {
+            $query->where('number', 'ilike', '%'.$request->string('filter.search')->toString().'%');
+        }
         $this->applySort($query, $request, self::SORTABLE, 'created_at');
 
         return PurchaseOrderResource::collection($query->paginate($request->integer('per_page', 25)));

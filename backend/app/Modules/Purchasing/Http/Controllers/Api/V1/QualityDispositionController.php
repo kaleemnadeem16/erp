@@ -37,6 +37,9 @@ class QualityDispositionController extends Controller
         // plain query instead of chaining onto $goodsReceiptLine->qualityDispositions().
         $query = QualityDisposition::query()->where('goods_receipt_line_id', $goodsReceiptLine->id)
             ->withSum('childDispositions as children_qty_sum', 'qty');
+        if ($request->filled('filter.disposition')) {
+            $query->where('disposition', $request->input('filter.disposition'));
+        }
         $this->applySort($query, $request, self::SORTABLE, 'disposed_at');
 
         return QualityDispositionResource::collection($query->paginate($request->integer('per_page', 25)));

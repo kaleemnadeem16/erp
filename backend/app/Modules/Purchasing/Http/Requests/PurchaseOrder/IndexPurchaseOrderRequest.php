@@ -21,6 +21,11 @@ class IndexPurchaseOrderRequest extends FormRequest
     /** @return array<string, mixed> */
     public function rules(): array
     {
-        return array_merge(['filter' => ['sometimes', 'array:supplier_account_id,status'], 'filter.supplier_account_id' => ['sometimes', 'integer', 'min:1'], 'filter.status' => ['sometimes', Rule::enum(PurchaseOrderStatus::class)]], $this->listQueryRules(['number', 'order_date', 'created_at'], ['lines']));
+        return array_merge([
+            'filter' => ['sometimes', 'array:supplier_account_id,status,search'],
+            'filter.supplier_account_id' => ['sometimes', 'integer', 'min:1'],
+            'filter.status' => ['sometimes', Rule::enum(PurchaseOrderStatus::class)],
+            'filter.search' => ['sometimes', 'string', 'max:255'],
+        ], $this->listQueryRules(['number', 'order_date', 'created_at'], ['lines']));
     }
 }

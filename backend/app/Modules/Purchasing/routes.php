@@ -15,7 +15,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('purchase-orders/{purchaseOrder}/issue', [PurchaseOrderController::class, 'issue'])->name('purchase-orders.issue');
     Route::post('purchase-orders/{purchaseOrder}/cancel', [PurchaseOrderController::class, 'cancel'])->name('purchase-orders.cancel');
     Route::post('purchase-order-lines/{purchaseOrderLine}/short-close', [PurchaseOrderController::class, 'shortClose'])->name('purchase-order-lines.short-close');
-    Route::apiResource('goods-receipts', GoodsReceiptController::class)->only(['store', 'show']);
+    Route::apiResource('goods-receipts', GoodsReceiptController::class)->only(['index', 'store', 'show']);
     Route::post('goods-receipts/{goodsReceipt}/post', [GoodsReceiptController::class, 'post'])->name('goods-receipts.post');
     Route::post('goods-receipts/{goodsReceipt}/reverse', [GoodsReceiptController::class, 'reverse'])->name('goods-receipts.reverse');
     Route::post('goods-receipt-lines/{goodsReceiptLine}/quality-dispositions', [QualityDispositionController::class, 'store'])->name('quality-dispositions.store');

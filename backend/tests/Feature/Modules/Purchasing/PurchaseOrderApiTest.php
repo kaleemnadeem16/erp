@@ -2,9 +2,19 @@
 
 namespace Tests\Feature\Modules\Purchasing;
 
+use App\Models\Currency;
 use App\Models\Uom;
 use App\Models\User;
+use App\Modules\Accounting\Models\ChartOfAccount;
+use App\Modules\Accounting\Support\AccountType;
+use App\Modules\Inventory\Models\Category;
+use App\Modules\Inventory\Models\Item;
+use App\Modules\Parties\Models\Party;
+use App\Modules\Parties\Models\PartySite;
+use App\Modules\Parties\Models\SupplierAccount;
+use App\Modules\Parties\Models\SupplierSite;
 use App\Modules\Purchasing\Models\ItemSupplier;
+use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Modules\Purchasing\Models\PurchasingSetting;
 use App\Modules\Purchasing\Support\OverReceiptMode;
 use App\Support\UomDimension;
@@ -20,6 +30,22 @@ class PurchaseOrderApiTest extends PurchaseOrderFoundationTest
             ->assertOk()->assertJsonPath('data.over_receipt_tolerance_percent', '7.5000');
         $this->getJson('/api/v1/purchase-orders?sort=unknown')->assertUnprocessable();
         $this->getJson('/api/v1/purchase-orders?include=unknown')->assertUnprocessable();
+    }
+
+    public function test_index_search_filters_by_partial_number(): void
+    {
+        [$orderA, $itemA, $uomA] = $this->makeOrder();
+        $orderA->lines()->create($this->lineAttributes($orderA, $itemA, $uomA));
+        [$orderB, $itemB, $uomB] = $this->makeOrderB();
+        $orderB->lines()->create($this->lineAttributes($orderB, $itemB, $uomB));
+        $user = User::factory()->create();
+
+        $numberA = $this->actingAs($user)->postJson("/api/v1/purchase-orders/{$orderA->id}/issue")->assertOk()->json('data.number');
+        $numberB = $this->actingAs($user)->postJson("/api/v1/purchase-orders/{$orderB->id}/issue")->assertOk()->json('data.number');
+        $this->assertNotSame($numberA, $numberB);
+
+        $this->getJson('/api/v1/purchase-orders?filter[search]='.$numberB)
+            ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $orderB->id);
     }
 
     public function test_draft_creation_calculates_stock_and_money_and_validates_smallint(): void
@@ -141,6 +167,34 @@ class PurchaseOrderApiTest extends PurchaseOrderFoundationTest
         $this->postJson("/api/v1/purchase-orders/{$order->id}/cancel", ['reason' => 'Supplier cannot fulfil'])
             ->assertOk()->assertJsonPath('data.status', 'CANCELLED')
             ->assertJsonPath('data.cancellation_reason', 'Supplier cannot fulfil');
+    }
+
+    /**
+     * A second, independently-coded order/item/uom/supplier — makeOrder() reuses
+     * PurchaseOrderFoundationTest's hardcoded 'SUP'/'ea'/'raw'/'item' codes, which
+     * collide on a second call within the same test.
+     *
+     * @return array{PurchaseOrder, Item, Uom}
+     */
+    private function makeOrderB(): array
+    {
+        $currency = Currency::firstOrCreate(['code' => 'USD'], ['name' => 'US Dollar', 'symbol' => '$']);
+        $party = Party::create(['code' => 'SUP2', 'name' => 'SUP2']);
+        $account = ChartOfAccount::create(['code' => 'pay-SUP2', 'name' => 'Payable SUP2', 'type' => AccountType::Liability]);
+        $supplier = SupplierAccount::create(['party_id' => $party->id, 'code' => 'SUP2', 'payment_terms_days' => 30, 'payable_account_id' => $account->id]);
+        $partySite = PartySite::create(['party_id' => $party->id, 'code' => 'main', 'name' => 'Main']);
+        $site = SupplierSite::create(['supplier_account_id' => $supplier->id, 'party_site_id' => $partySite->id, 'role' => 'ORDER_FROM']);
+        $uom = Uom::create(['code' => 'ea2', 'name' => 'Each 2', 'dimension' => UomDimension::Count, 'factor_to_base' => '1']);
+        $category = Category::create(['code' => 'raw2', 'name' => 'Raw 2', 'default_valuation_method' => 'AVCO']);
+        $item = Item::create(['code' => 'item2', 'name' => 'Item 2', 'type' => 'RAW', 'stock_uom_id' => $uom->id, 'category_id' => $category->id]);
+        $order = PurchaseOrder::create([
+            'supplier_account_id' => $supplier->id, 'supplier_site_id' => $site->id,
+            'currency_id' => $currency->id, 'fx_rate' => '1.000000000',
+            'fx_rate_date' => '2026-09-02', 'fx_rate_type' => 'SPOT', 'fx_rate_source' => 'manual',
+            'order_date' => '2026-09-02',
+        ])->refresh();
+
+        return [$order, $item, $uom];
     }
 
     /** @return array<string, mixed> */

@@ -22,6 +22,8 @@ import type {
 
 import type {
   AuthenticationExceptionResponse,
+  GoodsReceiptsIndex200,
+  GoodsReceiptsIndexParams,
   GoodsReceiptsPost200,
   GoodsReceiptsReverse200,
   GoodsReceiptsShow200,
@@ -35,6 +37,212 @@ import type {
 import { fetchClient } from "../../mutator/fetch-client";
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
+export type goodsReceiptsIndexResponse200 = {
+  data: GoodsReceiptsIndex200;
+  status: 200;
+};
+
+export type goodsReceiptsIndexResponse401 = {
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
+
+export type goodsReceiptsIndexResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
+};
+
+export type goodsReceiptsIndexResponseSuccess =
+  goodsReceiptsIndexResponse200 & {
+    headers: Headers;
+  };
+export type goodsReceiptsIndexResponseError = (
+  goodsReceiptsIndexResponse401 | goodsReceiptsIndexResponse422
+) & {
+  headers: Headers;
+};
+
+export type goodsReceiptsIndexResponse =
+  goodsReceiptsIndexResponseSuccess | goodsReceiptsIndexResponseError;
+
+export const getGoodsReceiptsIndexUrl = (params?: GoodsReceiptsIndexParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/v1/goods-receipts?${stringifiedParams}`
+    : `/v1/goods-receipts`;
+};
+
+export const goodsReceiptsIndex = async (
+  params?: GoodsReceiptsIndexParams,
+  options?: RequestInit,
+): Promise<goodsReceiptsIndexResponse> => {
+  return fetchClient<goodsReceiptsIndexResponse>(
+    getGoodsReceiptsIndexUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGoodsReceiptsIndexQueryKey = (
+  params?: GoodsReceiptsIndexParams,
+) => {
+  return [`/v1/goods-receipts`, ...(params ? [params] : [])] as const;
+};
+
+export const getGoodsReceiptsIndexQueryOptions = <
+  TData = Awaited<ReturnType<typeof goodsReceiptsIndex>>,
+  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+>(
+  params?: GoodsReceiptsIndexParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof goodsReceiptsIndex>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGoodsReceiptsIndexQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof goodsReceiptsIndex>>
+  > = () => goodsReceiptsIndex(params, requestOptions);
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof goodsReceiptsIndex>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type GoodsReceiptsIndexQueryResult = NonNullable<
+  Awaited<ReturnType<typeof goodsReceiptsIndex>>
+>;
+export type GoodsReceiptsIndexQueryError =
+  AuthenticationExceptionResponse | ValidationExceptionResponse;
+
+export function useGoodsReceiptsIndex<
+  TData = Awaited<ReturnType<typeof goodsReceiptsIndex>>,
+  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+>(
+  params: undefined | GoodsReceiptsIndexParams,
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof goodsReceiptsIndex>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof goodsReceiptsIndex>>,
+          TError,
+          Awaited<ReturnType<typeof goodsReceiptsIndex>>
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useGoodsReceiptsIndex<
+  TData = Awaited<ReturnType<typeof goodsReceiptsIndex>>,
+  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+>(
+  params?: GoodsReceiptsIndexParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof goodsReceiptsIndex>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof goodsReceiptsIndex>>,
+          TError,
+          Awaited<ReturnType<typeof goodsReceiptsIndex>>
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useGoodsReceiptsIndex<
+  TData = Awaited<ReturnType<typeof goodsReceiptsIndex>>,
+  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+>(
+  params?: GoodsReceiptsIndexParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof goodsReceiptsIndex>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+
+export function useGoodsReceiptsIndex<
+  TData = Awaited<ReturnType<typeof goodsReceiptsIndex>>,
+  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+>(
+  params?: GoodsReceiptsIndexParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof goodsReceiptsIndex>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getGoodsReceiptsIndexQueryOptions(params, options);
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
 
 export type goodsReceiptsStoreResponse201 = {
   data: GoodsReceiptsStore201;

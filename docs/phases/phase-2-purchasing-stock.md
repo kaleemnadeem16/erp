@@ -227,7 +227,15 @@ The order matters because later work needs stable document and stock boundaries:
       ([physical-count.md](../domain/physical-count.md))
 - [ ] Add validated list filters, sorting, includes and pagination for all Phase 2 APIs; return
       domain conflicts as stable 409/422 responses rather than leaking database exceptions
-- [ ] Regenerate and commit the Orval client; verify all frontend type-checks and production build
+      - Partial: every resource that already had an HTTP API is now polished — goods receipts
+        gained the `index` it was missing entirely, quality dispositions gained a `disposition`
+        filter, purchase orders gained a `filter[search]` on number, and a global `23514` CHECK-
+        violation handler now mirrors the existing `23503` one. Inventory cutover, stock
+        recalculation, negative-stock overrides, physical counts and the raw stock ledger
+        (`stock_moves`/`stock_layers`/`avco_pools`/`stock_valuation_entries`) remain Action-only
+        with no HTTP surface at all — deliberately deferred to be built per-screen once Phase 2
+        close-out's UI work actually needs each one, rather than guessed upfront.
+- [x] Regenerate and commit the Orval client; verify all frontend type-checks and production build
 - [ ] Run a Phase 2 integrity audit covering raw-write tenant protection, concurrency, rollback,
       duplicate submission, precision, tracking and historical-retention guarantees
 

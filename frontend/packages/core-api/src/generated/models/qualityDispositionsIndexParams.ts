@@ -4,9 +4,11 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
+import type { DispositionOutcome } from "./dispositionOutcome";
 import type { QualityDispositionsIndexSort } from "./qualityDispositionsIndexSort";
 
 export type QualityDispositionsIndexParams = {
+  "filter[disposition]"?: DispositionOutcome;
   sort?: QualityDispositionsIndexSort;
   include?: string;
   /**
