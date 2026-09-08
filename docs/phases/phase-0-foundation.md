@@ -218,7 +218,9 @@ feature.
       mode, not the data-router/loader API — TanStack Query already owns data fetching), `AppShell`,
       `LoginScreen`, `DashboardScreen`. Verified with a real login → session-check → logout cycle
       against the dev backend (curl, replicating the SPA's exact CSRF/cookie flow) — no browser
-      tool was available to click through it, so this is the verification that was done
+      tool was available to click through it, so this is the verification that was done. The
+      login form exposes an accessible show/hide-password control and renders the API's specific
+      credential validation message instead of a generic HTTP 422 string
 - [x] ~~Mobile-first layout: bottom tabs below `md`, sidebar above~~ — pure Tailwind responsive
       classes (`hidden md:flex` / `md:hidden`), no JS state needed at this skeleton stage
 - [x] ~~`vite-plugin-pwa`~~ — configured, manifest generates on build; real icons/branding deferred
