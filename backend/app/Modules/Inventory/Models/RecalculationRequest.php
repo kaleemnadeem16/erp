@@ -13,6 +13,7 @@ use App\Support\Concerns\BelongsToCompany;
 use App\Support\Concerns\GuardsRelatedCompanyScope;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 
 /**
@@ -78,6 +79,30 @@ class RecalculationRequest extends Model
     public function item(): BelongsTo
     {
         return $this->belongsTo(Item::class);
+    }
+
+    /** @return BelongsTo<Location, $this> */
+    public function location(): BelongsTo
+    {
+        return $this->belongsTo(Location::class);
+    }
+
+    /** @return BelongsTo<Location, $this> */
+    public function destinationLocation(): BelongsTo
+    {
+        return $this->belongsTo(Location::class, 'destination_location_id');
+    }
+
+    /** @return BelongsTo<StockBatch, $this> */
+    public function batch(): BelongsTo
+    {
+        return $this->belongsTo(StockBatch::class);
+    }
+
+    /** @return HasOne<RecalculationExecution, $this> */
+    public function execution(): HasOne
+    {
+        return $this->hasOne(RecalculationExecution::class, 'recalculation_request_id');
     }
 
     /** The latest, still-current (non-stale) impact version. */

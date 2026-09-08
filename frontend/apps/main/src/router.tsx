@@ -25,6 +25,9 @@ import {
   PhysicalCountDetailScreen,
   PhysicalCountsListScreen,
   ProtectedRoute,
+  RecalculationRequestCreateScreen,
+  RecalculationRequestDetailScreen,
+  RecalculationRequestsListScreen,
   StockLedgerScreen,
   StockMoveDetailScreen,
   WarehouseCreateScreen,
@@ -314,6 +317,36 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <NegativeStockOverrideDetailScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/recalculation-requests"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <RecalculationRequestsListScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/recalculation-requests/new"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <RecalculationRequestCreateScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/recalculation-requests/:id"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <RecalculationRequestDetailScreen />
               </AppShell>
             </ProtectedRoute>
           }

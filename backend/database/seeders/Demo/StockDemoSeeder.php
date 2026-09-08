@@ -6,7 +6,10 @@ namespace Database\Seeders\Demo;
 
 use App\Models\Company;
 use App\Models\Currency;
+use App\Models\Uom;
 use App\Models\User;
+use App\Modules\Accounting\Models\ChartOfAccount;
+use App\Modules\Accounting\Support\AccountType;
 use App\Modules\Imports\Actions\CreateImportProfile;
 use App\Modules\Imports\Actions\StageImportBatch;
 use App\Modules\Imports\Actions\ValidateImportBatch;
@@ -16,15 +19,25 @@ use App\Modules\Inventory\Actions\ApproveInventoryCutover;
 use App\Modules\Inventory\Actions\AttachInventoryCutoverBatch;
 use App\Modules\Inventory\Actions\CreateInventoryCutover;
 use App\Modules\Inventory\Actions\CreatePhysicalCount;
+use App\Modules\Inventory\Actions\DecideRecalculationApproval;
+use App\Modules\Inventory\Actions\PostInventoryMovement;
 use App\Modules\Inventory\Actions\PostPhysicalCount;
 use App\Modules\Inventory\Actions\RecordPhysicalCountLine;
 use App\Modules\Inventory\Actions\RequestNegativeStockOverride;
+use App\Modules\Inventory\Actions\RequestStockRecalculation;
 use App\Modules\Inventory\Actions\ValidateInventoryCutover;
+use App\Modules\Inventory\Models\Category;
 use App\Modules\Inventory\Models\InventoryCutover;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Models\Location;
 use App\Modules\Inventory\Models\PhysicalCount;
+use App\Modules\Inventory\Models\RecalculationRequest;
 use App\Modules\Inventory\Models\Warehouse;
+use App\Modules\Inventory\Support\AvcoPoolScope;
+use App\Modules\Inventory\Support\ItemTracking;
+use App\Modules\Inventory\Support\ItemType;
+use App\Modules\Inventory\Support\RecalculationApprovalDecision;
+use App\Modules\Inventory\Support\ValuationMethod;
 use App\Modules\Parties\Models\SupplierAccount;
 use App\Modules\Purchasing\Actions\CreateGoodsReceipt;
 use App\Modules\Purchasing\Actions\CreatePurchaseOrder;
@@ -37,20 +50,22 @@ use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 
 /**
- * Populates the stock ledger, physical counts, inventory cutover and
- * negative-stock override screens with real data produced through the same
- * Actions the app itself uses — goods receipts, physical count posting, an
- * inventory cutover left at APPROVED, and two override requests (one per
- * authorisation mode) left undecided/unreviewed — so the demo login can
- * complete the remaining step of each workflow itself in the UI.
+ * Populates the stock ledger, physical counts, inventory cutover,
+ * negative-stock override and stock recalculation screens with real data
+ * produced through the same Actions the app itself uses — goods receipts,
+ * physical count posting, an inventory cutover left at APPROVED, two
+ * override requests (one per authorisation mode) left undecided/unreviewed,
+ * and a decided-but-unexecuted recalculation request — so the demo login
+ * can complete the remaining step of each workflow itself in the UI.
  *
  * Two throwaway actor accounts (never documented as logins) exist purely to
  * satisfy separation-of-duties rules (a physical count's poster, an
- * inventory cutover's approver, and a negative-stock override's decider/
- * reviewer must differ from the request's own creator) — exactly the kind
- * of multi-person workflow this data is meant to show off. The demo login
- * itself is granted every permission these screens gate on, so it can drive
- * the remaining actions after seeding.
+ * inventory cutover's approver, a negative-stock override's decider/
+ * reviewer, and a recalculation's approver must differ from the request's
+ * own creator) — exactly the kind of multi-person workflow this data is
+ * meant to show off. The demo login itself is granted every permission
+ * these screens gate on, so it can drive the remaining actions after
+ * seeding.
  */
 final class StockDemoSeeder extends Seeder
 {
@@ -68,6 +83,9 @@ final class StockDemoSeeder extends Seeder
             'inventory.cutover.negative_opening.request', 'inventory.cutover.negative_opening.approve',
             'inventory.negative-stock.request', 'inventory.negative-stock.override',
             'inventory.negative-stock.approve', 'inventory.negative-stock.review',
+            'inventory.recalculation.request', 'inventory.recalculation.approve',
+            'inventory.recalculation.approve-high-risk', 'inventory.recalculation.execute',
+            'inventory.recalculation.review-regeneration',
         ] as $permission) {
             Permission::findOrCreate($permission);
         }
@@ -80,15 +98,19 @@ final class StockDemoSeeder extends Seeder
             'inventory.cutover.negative_opening.request', 'inventory.cutover.negative_opening.approve',
             'inventory.negative-stock.request', 'inventory.negative-stock.override',
             'inventory.negative-stock.approve', 'inventory.negative-stock.review',
+            'inventory.recalculation.request', 'inventory.recalculation.approve',
+            'inventory.recalculation.approve-high-risk', 'inventory.recalculation.execute',
+            'inventory.recalculation.review-regeneration',
         ]);
 
         $ops = $this->seedActor('demo-ops@erp.x1techs.com', 'Demo Ops Assistant', [
             'inventory.physical_count.create', 'inventory.physical_count.count',
             'inventory.cutover.create', 'inventory.cutover.stage', 'inventory.cutover.validate',
             'inventory.negative-stock.request', 'inventory.negative-stock.override',
+            'inventory.recalculation.request',
         ]);
         $supervisor = $this->seedActor('demo-supervisor@erp.x1techs.com', 'Demo Inventory Supervisor', [
-            'inventory.cutover.approve',
+            'inventory.cutover.approve', 'inventory.recalculation.approve',
         ]);
 
         $warehouse = Warehouse::query()->where('code', 'demo-main')->firstOrFail();
@@ -99,6 +121,7 @@ final class StockDemoSeeder extends Seeder
         $this->seedPhysicalCounts($warehouse, $location, $ops, $demoUser);
         $this->seedInventoryCutover($location, $currency, $ops, $supervisor);
         $this->seedNegativeStockOverrides($location, $ops);
+        $this->seedRecalculationRequest($location, $currency, $ops, $supervisor);
     }
 
     /** @param  list<string>  $permissions */
@@ -238,5 +261,69 @@ final class StockDemoSeeder extends Seeder
             'requested_qty' => '15.0000', 'available_qty' => '12.0000', 'source_type' => 'DEMO_JOB_ISSUE', 'source_id' => 2,
             'reason_code' => 'PAPERWORK_DELAY', 'explanation' => 'Supplier delivery note is delayed; stock physically received.',
         ], $requester);
+    }
+
+    /**
+     * A dedicated item, not touched by any other seeded workflow: a
+     * recalculation targets one specific historical movement, so reusing an
+     * item already carrying receipts/counts/a cutover would tangle this
+     * fixture's dates with theirs for no real benefit. NORMAL_RISK only
+     * (no company threshold set) — a HIGH_RISK/paused-regeneration scenario
+     * needs three repeated ledger invalidations to construct and isn't
+     * worth the fixture complexity for demo purposes alone. Decided but
+     * left unexecuted so the demo login can execute it live.
+     */
+    private function seedRecalculationRequest(Location $location, Currency $currency, User $requester, User $approver): void
+    {
+        if (RecalculationRequest::query()->exists()) {
+            return;
+        }
+
+        $company = Company::query()->findOrFail(1);
+        $company->update([
+            'authorised_forward_recalculation_enabled' => true,
+            'backdating_horizon_mode' => 'POSTING_FLOOR',
+            'backdating_posting_floor_subtype' => 'FIXED_DATE',
+            'backdating_posting_floor_fixed_date' => now()->subYear()->toDateString(),
+        ]);
+
+        $uom = Uom::query()->where('code', 'l')->firstOrFail();
+        $category = Category::query()->where('code', 'demo-solvents')->firstOrFail();
+        $item = Item::withTrashed()->updateOrCreate(
+            ['code' => 'demo-recalc-thinner'],
+            [
+                'name' => 'Recalc Demo Thinner', 'description' => 'Dedicated item for the stock recalculation demo.',
+                'type' => ItemType::Raw, 'stock_uom_id' => $uom->id, 'is_stocked' => true, 'is_purchasable' => false, 'is_sellable' => false,
+                'valuation_method' => ValuationMethod::Avco, 'avco_pool_scope' => AvcoPoolScope::CompanyItem, 'tracking' => ItemTracking::None,
+                'category_id' => $category->id, 'inventory_account_id' => null, 'custom_fields' => [],
+            ],
+        );
+        $item->restore();
+        if ($item->resolveInventoryAccountId() === null) {
+            $item->update(['inventory_account_id' => ChartOfAccount::query()->firstOr(fn () => ChartOfAccount::create(['code' => 'inv', 'name' => 'Inventory', 'type' => AccountType::Asset]))->id]);
+        }
+
+        // Receipt 40@100 a month ago, an issue of 10 two weeks ago — the
+        // later movement a backdated receipt three weeks ago conflicts with.
+        app(PostInventoryMovement::class)([
+            'item_id' => $item->id, 'location_id' => $location->id, 'qty' => '40.0000', 'uom_id' => $uom->id,
+            'moved_at' => now()->subDays(30), 'source_type' => 'DEMO_RECALC_RECEIPT', 'source_id' => 1,
+            'unit_cost' => '100.0000', 'currency_id' => $currency->id, 'fx_rate' => '1.000000000', 'base_unit_cost' => '100.0000',
+        ]);
+        app(PostInventoryMovement::class)->issue([
+            'item_id' => $item->id, 'location_id' => $location->id, 'qty' => '10.0000', 'uom_id' => $uom->id,
+            'moved_at' => now()->subDays(14), 'source_type' => 'DEMO_RECALC_ISSUE', 'source_id' => 1,
+        ]);
+
+        $request = app(RequestStockRecalculation::class)([
+            'item_id' => $item->id, 'location_id' => $location->id, 'qty' => '20.0000',
+            'unit_cost' => '120.0000', 'currency_id' => $currency->id, 'fx_rate' => '1.000000000', 'base_unit_cost' => '120.0000',
+            'moved_at' => now()->subDays(21), 'source_type' => 'DEMO_RECALC_BACKDATED_RECEIPT', 'source_id' => 1,
+        ], $requester);
+
+        app(DecideRecalculationApproval::class)(
+            $request->impactVersions->sole(), RecalculationApprovalDecision::Approved,
+            'Late paperwork confirmed against the supplier invoice.', $approver,
+        );
     }
 }

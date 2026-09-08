@@ -9,12 +9,14 @@ purchase orders, receipts, QA/reversal and the full movement/valuation engine. A
 stock and ADR 0040 backdated recalculation are complete for every executable receipt/issue/transfer
 case across all valuation methods; only the Phase 4/5/6 multi-owner correction package remains.
 ADR 0036 inventory cutover now posts a real reconciled opening state (AVCO/FIFO/SPECIFIC) including
-ADR 0037's cutover-shortage negative-opening exception, and ADR 0037's live negative-stock override
-workflow (request, independent decide/review) is complete too. Physical-count documents (count/
-recount, posted variance through the ordinary movement boundary) are also complete. All four now
-have a first read/write API and UI screen — physical counts, inventory cutover and negative-stock
-overrides with a full multi-actor workflow, the stock ledger read-only. React 19 + Vite frontend
-skeleton with a generated client covering every implemented endpoint.
+ADR 0037's cutover-shortage negative-opening exception, ADR 0037's live negative-stock override
+workflow (request, independent decide/review), and ADR 0040's backdated stock recalculation
+workflow (request/preview, multi-approver decide, execute, regeneration resumption) are complete
+too. Physical-count documents (count/recount, posted variance through the ordinary movement
+boundary) are also complete. All five now have a first read/write API and UI screen — physical
+counts, inventory cutover, negative-stock overrides and stock recalculation with a full
+multi-actor workflow, the stock ledger read-only. React 19 + Vite frontend skeleton with a
+generated client covering every implemented endpoint.
 
 ---
 
@@ -29,14 +31,14 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 
 | Item | Date |
 |---|---|
-| **Negative-stock override HTTP API and screens** — the header (`RequestNegativeStockOverride`) is create/read-only over HTTP; `POST .../decide` and `.../review` are named actions on the same resource (no separate exception resource). The `/negative-stock-overrides` list/create/detail screens are the first UI with no server-side status column — status is derived client-side from `authorisation_mode` plus whether `approval`/`review` exists. `UpdateInventorySettings` was already exposed; this closes the last Phase 2 action area besides stock recalculation (deferred) → [negative-stock.md](domain/negative-stock.md#user-interface) | 2026-09-08 |
+| **Stock recalculation HTTP API and screens** — `RequestStockRecalculation` (header, create/read-only, also the preview) plus `POST .../decide`, `.../execute` and `.../resume-regeneration` on `RecalculationImpactVersion`, a distinct addressable child resource since a request accumulates several versions over its life. The `/recalculation-requests` screens are the most involved yet — version history, multi-approver approvals with individual expiry/renewal, risk-tier routing — with computed flags (`is_fully_approved` etc.) added server-side rather than pushed onto the frontend. Closes Phase 2's entire close-out action-area list → [stock-recalculation.md](domain/stock-recalculation.md#user-interface) | 2026-09-08 |
+| **Negative-stock override HTTP API and screens** — the header (`RequestNegativeStockOverride`) is create/read-only over HTTP; `POST .../decide` and `.../review` are named actions on the same resource (no separate exception resource). The `/negative-stock-overrides` list/create/detail screens are the first UI with no server-side status column — status is derived client-side from `authorisation_mode` plus whether `approval`/`review` exists. `UpdateInventorySettings` was already exposed → [negative-stock.md](domain/negative-stock.md#user-interface) | 2026-09-08 |
 | **Inventory cutover HTTP API and lifecycle screens** — the header is create/read-only over HTTP; every state change is a named action (`.../batches`, `.../validate`, `.../approve`, `.../commit`, `.../finalise`, plus `.../negative-openings` and its own approve route for ADR 0037's cutover-shortage exception). `GET .../preview` is read-only. The `/inventory-cutovers` list, create and `/inventory-cutovers/:id` detail screens are the frontend's first multi-actor approval lifecycle UI, action buttons gated by status; "attach batch" and the exception form's "responsible owner" take raw numeric IDs since Imports/Users have no picker endpoints yet → [inventory-cutover.md](domain/inventory-cutover.md#user-interface) | 2026-09-08 |
 | **Physical count HTTP API and workflow screens** — the header is create/read-only over HTTP; every state change is a named action (`POST .../lines`, `POST /api/v1/physical-count-lines/{id}/count`, `.../post`, `.../cancel`). The `/physical-counts` list, create and `/physical-counts/:id` detail screens are the frontend's first document-workflow UI — add a line, record/recount inline, supply a found cost for a positive variance, then post or cancel, verified end-to-end including separation-of-duties rejection → [physical-count.md](domain/physical-count.md#user-interface) | 2026-09-08 |
 | **Stock ledger read API and Stock Ledger screen** — `stock_moves` gained its first HTTP surface: a cursor-paginated `GET /api/v1/stock-moves` (filterable by item/warehouse/location/batch/source type/date range) and a `show` endpoint, both including `item`/locations/`batch`/`valuation_entries` on request. A new `/stock-moves` list screen and `/stock-moves/:id` detail screen consume it — the first UI built against Phase 2's stock engine, and the first cursor-paginated list in the frontend (`CursorDataTable`, `useCursorQueryState`). `stock_layers`/`avco_pools` still have no endpoint of their own → [phase-2-purchasing-stock.md](phases/phase-2-purchasing-stock.md#close-out) | 2026-09-08 |
 | **Phase 2 integrity audit** — three real gaps found and fixed: the stock ledger (`stock_moves`/`stock_valuation_entries`/`stock_layers`) and purchasing documents were model-guarded only and are now database-immutable like every other Phase 2 history table; `recalculation_requests` was the one bare location reference with no company trigger; and the "two concurrent AVCO receipts" acceptance criterion had the lock but no proof — now `AvcoPoolConcurrencyTest`. Rollback proven for physical-count and cutover posting too. Duplicate-submission, precision and tracking had no gaps → [phase-2-purchasing-stock.md](phases/phase-2-purchasing-stock.md) | 2026-09-08 |
 | **Items frontend reference implementation** — reusable server-driven list/detail/print and form-error foundations now power item list, detail, create and edit routes; an authenticated company-scoped read-only UoM API supplies the item form without hardcoded units. The generated client includes validated page parameters, all frontend type-checks/build and focused Item/UoM API tests pass → [items.md](domain/items.md) | 2026-09-08 |
 | **Warehouse frontend workflow** — warehouse list, detail, create and edit routes now reuse the Items table/form/print foundation, including URL-backed search/status filters and inline API errors. Creation collects the mandatory initial location atomically while updates remain warehouse-only, preserving SIMPLE/STRUCTURED location rules → [stock.md](domain/stock.md#progressive-warehouse-structure) | 2026-09-08 |
-| **Category and item-supplier frontend workflows** — list/detail/create/edit routes now cover category hierarchy/inherited valuation and GL defaults plus approved supplier sourcing terms. Item-supplier identity is selectable only on create and locked on edit per ADR 0042; URL-backed filters and quick print reuse the shared foundation → [items.md](domain/items.md#user-interface), [purchasing.md](domain/purchasing.md#supplier-sourcing-identity) | 2026-09-08 |
 
 ## Next
 
@@ -44,16 +46,13 @@ ADR 0040's executable-today scope is done — every backdated receipt/issue/tran
 three valuation methods now previews, approves and executes, clean or changed-history alike. The
 multi-owner correction package (Sales/Job Execution/Accounting routing, cross-module
 reconciliation) waits on those modules existing — Phase 4/5/6, tracked at each phase's entry in
-[phases/README.md](phases/README.md). Phase 2's backend work is complete and audited; what remains
-is its close-out, itemised under "Close-out" in
-[Phase 2 — Purchasing & stock](phases/phase-2-purchasing-stock.md):
+[phases/README.md](phases/README.md). Every Phase 2 close-out action area now has an HTTP API and
+screen — stock recalculation was the last and most involved. What remains, itemised under
+"Close-out" in [Phase 2 — Purchasing & stock](phases/phase-2-purchasing-stock.md):
 
-1. HTTP API for the one feature area still Action-only (stock recalculation, deliberately
-   deferred — highest complexity of what's left) — built when its first screen is designed, not
-   before; stock ledger reads, physical counts, inventory cutover and negative-stock overrides
-   shipped first. The exact Action list to expose is in that Close-out section.
-2. Further UI screens for the stock engine, against those endpoints as each lands.
-3. First real deployment to the production VMs.
+1. `stock_layers`/`avco_pools` read endpoints — an item's open FIFO layers or current AVCO
+   balance still aren't queryable independently of a `stock_moves` row.
+2. First real deployment to the production VMs.
 
 ## Blocked / awaiting input
 

@@ -12,6 +12,7 @@ use App\Support\Concerns\BelongsToCompany;
 use App\Support\Concerns\GuardsRelatedCompanyScope;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -46,6 +47,7 @@ use Illuminate\Support\Collection;
  * @property Carbon $computed_at
  * @property bool $is_stale
  * @property RecalculationRiskClassification $risk_classification
+ * @property array<string, mixed>|null $movement_impact
  */
 class RecalculationImpactVersion extends Model
 {
@@ -83,6 +85,18 @@ class RecalculationImpactVersion extends Model
     public function approvals(): HasMany
     {
         return $this->hasMany(RecalculationApproval::class, 'impact_version_id');
+    }
+
+    /** @return HasOne<RecalculationExecution, $this> */
+    public function execution(): HasOne
+    {
+        return $this->hasOne(RecalculationExecution::class, 'impact_version_id');
+    }
+
+    /** @return HasOne<RecalculationRegenerationReview, $this> */
+    public function regenerationReview(): HasOne
+    {
+        return $this->hasOne(RecalculationRegenerationReview::class, 'impact_version_id');
     }
 
     public function requiredApprovalCount(): int

@@ -7,6 +7,7 @@ use App\Modules\Inventory\Http\Controllers\Api\V1\ItemController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\LocationController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\NegativeStockOverrideRequestController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\PhysicalCountController;
+use App\Modules\Inventory\Http\Controllers\Api\V1\RecalculationRequestController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\StockMoveController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\WarehouseController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\WarehouseLocationAssignmentController;
@@ -42,6 +43,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('negative-stock-override-requests', NegativeStockOverrideRequestController::class)->only(['index', 'store', 'show']);
     Route::post('negative-stock-override-requests/{negativeStockOverrideRequest}/decide', [NegativeStockOverrideRequestController::class, 'decide'])->name('negative-stock-override-requests.decide');
     Route::post('negative-stock-override-requests/{negativeStockOverrideRequest}/review', [NegativeStockOverrideRequestController::class, 'review'])->name('negative-stock-override-requests.review');
+    Route::apiResource('recalculation-requests', RecalculationRequestController::class)->only(['index', 'store', 'show']);
+    Route::post('recalculation-impact-versions/{recalculationImpactVersion}/decide', [RecalculationRequestController::class, 'decide'])->name('recalculation-impact-versions.decide');
+    Route::post('recalculation-impact-versions/{recalculationImpactVersion}/execute', [RecalculationRequestController::class, 'execute'])->name('recalculation-impact-versions.execute');
+    Route::post('recalculation-impact-versions/{recalculationImpactVersion}/resume-regeneration', [RecalculationRequestController::class, 'resumeRegeneration'])->name('recalculation-impact-versions.resume-regeneration');
     Route::apiResource('warehouse-location-roles', WarehouseLocationAssignmentController::class)
         ->parameters(['warehouse-location-roles' => 'warehouseLocationRole'])->except('update');
     Route::patch('warehouse-location-roles/{warehouseLocationRole}', [WarehouseLocationAssignmentController::class, 'update'])

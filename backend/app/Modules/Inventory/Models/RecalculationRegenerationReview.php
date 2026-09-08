@@ -9,8 +9,18 @@ use App\Models\Model;
 use App\Models\User;
 use App\Support\Concerns\BelongsToCompany;
 use App\Support\Concerns\GuardsRelatedCompanyScope;
+use Illuminate\Support\Carbon;
 
-/** Immutable manual coordination record; does not approve the replacement impact. */
+/**
+ * Immutable manual coordination record; does not approve the replacement impact.
+ *
+ * @property int $impact_version_id
+ * @property int $invalidation_count
+ * @property string $escalation
+ * @property string $notes
+ * @property int $reviewed_by
+ * @property Carbon $reviewed_at
+ */
 class RecalculationRegenerationReview extends Model
 {
     use BelongsToCompany, GuardsRelatedCompanyScope;

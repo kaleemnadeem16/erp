@@ -302,8 +302,17 @@ page-based list). Do not tick Phase 2 complete while any of these is still Actio
       every state change is a named action per api-conventions.md. "Attach batch" takes a raw
       Import Batch ID: the Imports module has no HTTP API/UI of its own yet to browse or create
       batches through
-- [ ] **Stock recalculation** — `RequestStockRecalculation`, `DecideRecalculationApproval`,
-      `ExecuteRecalculation`, `ResumeRecalculationRegeneration`
+- [x] **Stock recalculation** — full HTTP surface: `POST/GET /api/v1/recalculation-requests`,
+      `GET .../{id}` (header, `RequestStockRecalculation`, create/read-only — it's also the
+      preview, computing the first impact version synchronously), `POST
+      /api/v1/recalculation-impact-versions/{id}/decide` (`DecideRecalculationApproval`),
+      `.../execute` (`ExecuteRecalculation`) and `.../resume-regeneration`
+      (`ResumeRecalculationRegeneration`) — the three state-change actions apply to
+      `RecalculationImpactVersion`, a genuinely distinct addressable child resource (a request
+      accumulates several versions over its life), not the header, mirroring the cutover
+      negative-opening exception's own route prefix. This closes the **entire** close-out
+      checklist's action areas — only the small `stock_layers`/`avco_pools` read-endpoint gap on
+      the stock-ledger item and production deployment remain
 - [x] **Negative-stock overrides** — full HTTP surface: `POST/GET
       /api/v1/negative-stock-override-requests`, `GET .../{id}`, `POST .../decide`
       (`DecideNegativeStockOverride`) and `POST .../review` (`ReviewNegativeStockOverride`) —
@@ -325,7 +334,13 @@ page-based list). Do not tick Phase 2 complete while any of these is still Actio
       first with a multi-actor approval lifecycle (validate, independent approve, commit,
       finalise) plus its own negative-opening exception sub-flow; Negative-Stock Overrides
       (`/negative-stock-overrides`) is the first screen with no server-side status column,
-      deriving its display status entirely from `authorisation_mode` and child-record presence
+      deriving its display status entirely from `authorisation_mode` and child-record presence;
+      Stock Recalculation (`/recalculation-requests`) is the most involved — a version history
+      (a request can accumulate several impact versions as staleness regenerates replacements),
+      multi-approver approvals with individual expiry/renewal, and risk-tier routing (1 vs 2
+      required approvers), with computed convenience flags (`is_fully_approved`,
+      `has_unexpired_full_approval`, etc.) added to the API response rather than pushed onto the
+      frontend, unlike every earlier derived-status screen
 - [ ] First real deployment to the production VMs (deferred from Phase 0)
 
 Tick these in the same commit as the work.

@@ -185,8 +185,7 @@ routing, cross-module reconciliation and deferred obligations all need owning mo
 exist yet ([phase-2-purchasing-stock.md](../phases/phase-2-purchasing-stock.md) and
 [phases/README.md](../phases/README.md) cross-reference this at Phase 4/5/6), so every case this
 codebase can execute today is "remaining stock," the one slice ADR 0040 lets Inventory own
-outright. No HTTP/API layer exists for any of this, matching the negative-stock workflow, which
-doesn't have one either.
+outright. See "User interface" below for the HTTP surface over this slice.
 
 ## Replay integrity and regeneration review
 
@@ -350,6 +349,30 @@ changes can. The strictest cutover, period, valuation-policy and horizon boundar
 per-request extension exists. Outside-horizon events retain physical truth, use the earliest
 permitted valuation-effective point and send economic differences to the correction workflow
 without falsifying physical dates.
+
+## User interface
+
+The stock recalculation HTTP surface is exposed per
+[phase-2-purchasing-stock.md](../phases/phase-2-purchasing-stock.md#close-out): the header
+(`RecalculationRequest`) is create/read-only over HTTP (`POST`/`GET
+/api/v1/recalculation-requests`, `GET .../{id}`) — `RequestStockRecalculation` is also the
+preview, computing and returning the first `RecalculationImpactVersion` synchronously, so there is
+no separate preview endpoint. `POST .../decide`, `.../execute` and `.../resume-regeneration` apply
+to `RecalculationImpactVersion` under its own top-level route prefix
+(`/api/v1/recalculation-impact-versions/{id}/...`), not the header — a request accumulates several
+versions over its life as staleness regenerates replacements, so the version is the genuinely
+addressable resource each action applies to, the same reasoning behind the cutover negative-opening
+exception's own route prefix.
+
+`RecalculationImpactVersionResource` includes computed convenience flags
+(`required_approval_count`, `is_rejected`, `is_fully_approved`, `has_unexpired_full_approval`,
+`is_decided`) straight from the model's own methods, rather than pushing the expiry-comparison and
+distinct-approver-counting logic onto the frontend the way every earlier derived-status screen
+could safely do — this domain's approval state is genuinely more involved. `decide` and `execute`
+both revalidate the ledger immediately before acting and can commit a stale-flip (and usually a
+replacement version) even when they go on to fail, so a 422 can still mean server state changed;
+the `/recalculation-requests/:id` detail screen refetches the request after every action attempt,
+not just a successful one.
 
 ## Related
 
