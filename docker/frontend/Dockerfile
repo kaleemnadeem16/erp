@@ -9,6 +9,15 @@ FROM node:22-alpine AS build
 
 WORKDIR /app
 COPY frontend/ .
+
+# Vite inlines env vars at build time, so the API origin is baked into the
+# bundle here and cannot be changed by the runtime container. Without it the
+# build falls back to the dev URL in apps/main/src/main.tsx and the deployed
+# SPA calls localhost. The CI build passes this as a build-arg; there is no
+# default on purpose, so a build that forgets it fails loudly.
+ARG VITE_API_BASE_URL
+ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+RUN test -n "$VITE_API_BASE_URL" || (echo 'VITE_API_BASE_URL build-arg is required' >&2; exit 1)
 RUN npm ci && npm run build --workspace apps/main
 
 # ---------------------------------------------------------------------------

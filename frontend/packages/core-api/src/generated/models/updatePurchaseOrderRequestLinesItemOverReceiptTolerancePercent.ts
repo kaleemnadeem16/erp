@@ -6,8 +6,8 @@
  */
 
 /**
- * @minimum 0
- * @maximum 100
+ * @minLength 0
+ * @maxLength 100
  */
 export type UpdatePurchaseOrderRequestLinesItemOverReceiptTolerancePercent =
-  number | null;
+  string | null;

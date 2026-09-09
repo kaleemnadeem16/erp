@@ -25,7 +25,7 @@ export interface StoreInventoryCutoverRequest {
   source_system: string;
   /** @minItems 1 */
   target_valuation_policy: string[];
-  control_quantity: number;
-  control_value: number;
-  base_control_value: number;
+  control_quantity: string;
+  control_value: string;
+  base_control_value: string;
 }

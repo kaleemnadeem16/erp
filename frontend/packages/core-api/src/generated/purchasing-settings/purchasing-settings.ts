@@ -22,6 +22,7 @@ import type {
 
 import type {
   AuthenticationExceptionResponse,
+  AuthorizationExceptionResponse,
   PurchasingSettingsShow200,
   PurchasingSettingsUpdate200,
   UpdatePurchasingSettingsRequest,
@@ -219,6 +220,11 @@ export type purchasingSettingsUpdateResponse401 = {
   status: 401;
 };
 
+export type purchasingSettingsUpdateResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type purchasingSettingsUpdateResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -229,7 +235,9 @@ export type purchasingSettingsUpdateResponseSuccess =
     headers: Headers;
   };
 export type purchasingSettingsUpdateResponseError = (
-  purchasingSettingsUpdateResponse401 | purchasingSettingsUpdateResponse422
+  | purchasingSettingsUpdateResponse401
+  | purchasingSettingsUpdateResponse403
+  | purchasingSettingsUpdateResponse422
 ) & {
   headers: Headers;
 };
@@ -258,7 +266,10 @@ export const purchasingSettingsUpdate = async (
 };
 
 export const getPurchasingSettingsUpdateMutationOptions = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -301,10 +312,15 @@ export type PurchasingSettingsUpdateMutationResult = NonNullable<
 export type PurchasingSettingsUpdateMutationBody =
   UpdatePurchasingSettingsRequest;
 export type PurchasingSettingsUpdateMutationError =
-  AuthenticationExceptionResponse | ValidationExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
 
 export const usePurchasingSettingsUpdate = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(
   options?: {

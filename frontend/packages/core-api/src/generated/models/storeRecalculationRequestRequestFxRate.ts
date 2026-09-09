@@ -5,4 +5,4 @@
  * OpenAPI spec version: 0.0.1
  */
 
-export type StoreRecalculationRequestRequestFxRate = number | null;
+export type StoreRecalculationRequestRequestFxRate = string | null;

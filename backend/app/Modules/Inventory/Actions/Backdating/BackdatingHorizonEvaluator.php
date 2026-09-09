@@ -8,31 +8,72 @@ use App\Exceptions\DomainInvariantException;
 use App\Models\Company;
 use App\Modules\Accounting\Models\AccountingPeriod;
 use App\Modules\Accounting\Support\PeriodStatus;
+use App\Modules\Inventory\Models\InventoryCutover;
 use App\Modules\Inventory\Support\BackdatingHorizonMode;
+use App\Modules\Inventory\Support\InventoryCutoverStatus;
 use App\Modules\Inventory\Support\PostingFloorSubtype;
 use Illuminate\Support\Carbon;
 
 /**
  * ADR 0040 / docs/domain/stock-recalculation.md "Backdating horizon" — decides
  * whether a proposed valuation-effective date is within the company's
- * configured horizon. This evaluates the horizon boundary in isolation only;
- * composing it with the other boundaries ADR 0040 names (cutover,
- * valuation-policy) is the caller's responsibility once those subsystems
- * exist — neither is implemented yet.
+ * configured horizon, composed with the ADR 0036 inventory-cutover boundary.
+ * ADR 0040: "the strictest cutover, accounting-period, valuation-policy and
+ * horizon boundary wins". The valuation-policy boundary is still the caller's
+ * responsibility — that subsystem does not exist yet.
  *
- * Read-only: queries AccountingPeriod directly, the same cross-module Eloquent
- * read Company::class already performs for its own fiscal_year_start_month
- * guard (docs/architecture/code-structure.md "Reads are direct Eloquent").
+ * Read-only: queries AccountingPeriod and InventoryCutover directly, the same
+ * cross-module Eloquent read Company::class already performs for its own
+ * fiscal_year_start_month guard (docs/architecture/code-structure.md "Reads
+ * are direct Eloquent").
  */
 final class BackdatingHorizonEvaluator
 {
     public function evaluate(Company $company, Carbon $proposedValuationEffectiveDate): HorizonBoundary
     {
-        return match ($company->backdating_horizon_mode) {
+        $boundary = match ($company->backdating_horizon_mode) {
             BackdatingHorizonMode::PostingFloor => $this->evaluatePostingFloor($company, $proposedValuationEffectiveDate),
             BackdatingHorizonMode::PeriodLockOnly => $this->evaluatePeriodLockOnly($company, $proposedValuationEffectiveDate),
             BackdatingHorizonMode::CurrentAndPreviousPeriod => $this->evaluateCurrentAndPreviousPeriod($company, $proposedValuationEffectiveDate),
         };
+
+        return $this->composeCutoverBoundary($company, $proposedValuationEffectiveDate, $boundary);
+    }
+
+    /**
+     * Nothing may be valuation-effective before the opening state an inventory
+     * cutover established. APPROVED is included alongside FINALISED because
+     * CommitInventoryCutoverOpeningState posts that opening state while the
+     * cutover is still APPROVED — waiting for FINALISED would leave the window
+     * between commit and finalisation unguarded.
+     */
+    private function composeCutoverBoundary(Company $company, Carbon $proposed, HorizonBoundary $boundary): HorizonBoundary
+    {
+        $cutoverAt = InventoryCutover::withoutGlobalScopes()
+            ->where('company_id', $company->getKey())
+            ->whereIn('status', [InventoryCutoverStatus::Approved->value, InventoryCutoverStatus::Finalised->value])
+            ->orderByDesc('cutover_at')
+            ->value('cutover_at');
+
+        if ($cutoverAt === null) {
+            return $boundary;
+        }
+
+        // The cutover instant decides eligibility; permittedFloor stays a date
+        // because that is the column it is snapshotted into, so a same-day
+        // movement before the cutover instant is refused by withinHorizon
+        // while the reported floor is that day. cutover_at casts to
+        // CarbonImmutable, so it is converted rather than handed straight to
+        // HorizonBoundary's mutable Carbon.
+        $cutoverFloor = Carbon::instance($cutoverAt)->startOfDay();
+
+        return new HorizonBoundary(
+            withinHorizon: $boundary->withinHorizon && $proposed->greaterThanOrEqualTo($cutoverAt),
+            permittedFloor: $boundary->permittedFloor === null
+                ? $cutoverFloor
+                : Carbon::instance($boundary->permittedFloor->max($cutoverFloor)),
+            mode: $boundary->mode,
+        );
     }
 
     private function evaluatePostingFloor(Company $company, Carbon $proposed): HorizonBoundary

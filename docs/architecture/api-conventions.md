@@ -83,6 +83,23 @@ Laravel's default validation shape, used consistently:
 Business rule violations return **422** with the same error shape as validation, so the frontend
 handles both identically.
 
+**The mapping is global**, registered in `bootstrap/app.php` so no database exception can reach a
+client. Registration order matters — the first renderer to return a response wins, and
+`UniqueConstraintViolationException` extends `QueryException`, so the specific handlers come
+first:
+
+| Source | Status |
+|---|---|
+| `DomainInvariantException` (a model or Action guard) | 422 |
+| `UniqueConstraintViolationException` | 422 |
+| SQLSTATE `23503` — foreign-key violation | 409 |
+| SQLSTATE `23514` — CHECK violation, including every immutability trigger | 422 |
+
+Known gap: an Action that rejects a caller on a permission check also raises
+`DomainInvariantException`, so it currently answers **422 rather than 403**. The table above
+reserves 403 for exactly that case; `UpdateInventorySettingsRequest::authorize()` is the only
+place today that returns a real 403.
+
 ## Pagination
 
 Cursor pagination for large or frequently-appended lists (stock moves, ledger entries, activity

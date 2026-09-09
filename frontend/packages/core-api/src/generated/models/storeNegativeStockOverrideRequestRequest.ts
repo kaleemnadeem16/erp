@@ -23,10 +23,13 @@ request, which rely on the Action's own resolution instead. */
   location_id: number;
   batch_id?: StoreNegativeStockOverrideRequestRequestBatchId;
   movement_class: NegativeStockMovementClass;
-  requested_qty: number;
-  /** @minimum 0 */
-  available_qty: number;
-  /** @maxLength 255 */
+  requested_qty: string;
+  /**
+   * available_qty is deliberately not accepted — the Action derives
+it from live stock, because it decides how much shortage the
+movement boundary will later authorise.
+   * @maxLength 255
+   */
   source_type: string;
   source_id: number;
   reason_code: NegativeStockReasonCode;

@@ -16,6 +16,7 @@ use App\Modules\Inventory\Actions\PostInventoryMovement;
 use App\Modules\Inventory\Actions\RequestStockRecalculation;
 use App\Modules\Inventory\Models\AvcoPool;
 use App\Modules\Inventory\Models\Category;
+use App\Modules\Inventory\Models\InventoryCutover;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Models\Location;
 use App\Modules\Inventory\Models\RecalculationExecution;
@@ -25,6 +26,8 @@ use App\Modules\Inventory\Models\StockLayer;
 use App\Modules\Inventory\Models\StockLayerConsumption;
 use App\Modules\Inventory\Models\StockMove;
 use App\Modules\Inventory\Support\AvcoPoolScope;
+use App\Modules\Inventory\Support\InventoryCutoverMode;
+use App\Modules\Inventory\Support\InventoryCutoverStatus;
 use App\Modules\Inventory\Support\RecalculationApprovalDecision;
 use App\Modules\Inventory\Support\ValuationMethod;
 use App\Support\UomDimension;
@@ -159,6 +162,27 @@ class ExecuteRecalculationTest extends TestCase
         [, , , $request] = $this->makeConflictingRequest();
         $version = $this->approveFully($request->impactVersions->sole());
         $version->update(['is_stale' => true]);
+
+        $this->expectException(DomainInvariantException::class);
+        app(ExecuteRecalculation::class)($version->fresh(), $this->executor());
+    }
+
+    public function test_a_cutover_approved_after_the_request_blocks_execution(): void
+    {
+        [, , , $request] = $this->makeConflictingRequest();
+        $version = $this->approveFully($request->impactVersions->sole());
+
+        // The request was raised and approved for 2026-01-05; a cutover
+        // establishing opening state after that date moves the boundary
+        // underneath it, so the snapshotted eligibility must be re-checked.
+        $actor = User::factory()->create()->id;
+        InventoryCutover::query()->create([
+            'mode' => InventoryCutoverMode::OpeningState->value, 'cutover_at' => '2026-01-06 00:00:00',
+            'source_system' => 'LEGACY', 'target_valuation_policy' => [], 'status' => InventoryCutoverStatus::Approved->value,
+            'control_quantity' => '0.0000', 'control_value' => '0.0000', 'base_control_value' => '0.0000',
+            'created_by' => $actor, 'validated_by' => $actor, 'validated_at' => Carbon::now(),
+            'approved_by' => $actor, 'approved_at' => Carbon::now(),
+        ]);
 
         $this->expectException(DomainInvariantException::class);
         app(ExecuteRecalculation::class)($version->fresh(), $this->executor());

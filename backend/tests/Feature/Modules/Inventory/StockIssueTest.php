@@ -160,7 +160,7 @@ class StockIssueTest extends PurchaseOrderFoundationTest
         [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Fifo, qty: '2.0000');
         $locationId = $this->locationId();
         $this->postReceipt($order->lines()->sole()->id, $item->id, $uom->id, $locationId, '2.0000', '10.0000');
-        $request = $this->approvedOverride($item->id, $locationId, '5.0000', '2.0000', 1101);
+        $request = $this->approvedOverride($item->id, $locationId, '5.0000', 1101);
 
         $move = app(PostInventoryMovement::class)->issue(array_merge(
             $this->issueInput($item->id, $uom->id, $locationId, '5.0000', 1101),
@@ -177,10 +177,18 @@ class StockIssueTest extends PurchaseOrderFoundationTest
 
     public function test_override_blocks_when_live_shortage_is_worse_than_approved(): void
     {
-        [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Fifo, qty: '1.0000');
+        [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Fifo, qty: '2.0000');
         $locationId = $this->locationId();
-        $this->postReceipt($order->lines()->sole()->id, $item->id, $uom->id, $locationId, '1.0000', '10.0000');
-        $request = $this->approvedOverride($item->id, $locationId, '5.0000', '2.0000', 1102);
+        $this->postReceipt($order->lines()->sole()->id, $item->id, $uom->id, $locationId, '2.0000', '10.0000');
+
+        // Approved against the 2 units on hand at request time — a 3-unit
+        // shortage.
+        $request = $this->approvedOverride($item->id, $locationId, '5.0000', 1102);
+        $this->assertSame('3.0000', $request->shortage_qty);
+
+        // One of those units is issued away before the override is used, so
+        // the live shortage is now 4 and exceeds what anyone approved.
+        app(PostInventoryMovement::class)->issue($this->issueInput($item->id, $uom->id, $locationId, '1.0000', 1103));
 
         $this->expectException(DomainInvariantException::class);
         app(PostInventoryMovement::class)->issue(array_merge(
@@ -194,7 +202,7 @@ class StockIssueTest extends PurchaseOrderFoundationTest
         [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Fifo, qty: '1.0000');
         $locationId = $this->locationId();
         $this->postReceipt($order->lines()->sole()->id, $item->id, $uom->id, $locationId, '1.0000', '10.0000');
-        $request = $this->requestOverride($item->id, $locationId, '2.0000', '1.0000', 1105);
+        $request = $this->requestOverride($item->id, $locationId, '2.0000', 1105);
 
         $this->expectException(DomainInvariantException::class);
         app(PostInventoryMovement::class)->issue(array_merge(
@@ -209,7 +217,7 @@ class StockIssueTest extends PurchaseOrderFoundationTest
         $locationId = $this->locationId();
         $this->postReceipt($order->lines()->sole()->id, $item->id, $uom->id, $locationId, '2.0000', '10.0000');
         app(PostInventoryMovement::class)->issue($this->issueInput($item->id, $uom->id, $locationId, '2.0000', 1103));
-        $request = $this->approvedOverride($item->id, $locationId, '1.0000', '0.0000', 1104);
+        $request = $this->approvedOverride($item->id, $locationId, '1.0000', 1104);
 
         app(PostInventoryMovement::class)->issue(array_merge(
             $this->issueInput($item->id, $uom->id, $locationId, '1.0000', 1104),
@@ -238,7 +246,7 @@ class StockIssueTest extends PurchaseOrderFoundationTest
         [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Fifo, qty: '2.0000');
         $locationId = $this->locationId();
         $this->postReceipt($order->lines()->sole()->id, $item->id, $uom->id, $locationId, '2.0000', '10.0000');
-        $request = $this->approvedOverride($item->id, $locationId, '5.0000', '2.0000', 1202);
+        $request = $this->approvedOverride($item->id, $locationId, '5.0000', 1202);
         app(PostInventoryMovement::class)->issue(array_merge(
             $this->issueInput($item->id, $uom->id, $locationId, '5.0000', 1202),
             ['override_request_id' => $request->id],
@@ -348,7 +356,7 @@ class StockIssueTest extends PurchaseOrderFoundationTest
         $this->postReceipt($lineId, $item->id, $uom->id, $locationAId, '6.0000', '10.0000');
         $this->postReceipt($lineId, $item->id, $uom->id, $locationBId, '4.0000', '10.0000');
 
-        $request = $this->approvedOverride($item->id, $locationAId, '15.0000', '6.0000', 1401);
+        $request = $this->approvedOverride($item->id, $locationAId, '15.0000', 1401);
         app(PostInventoryMovement::class)->issue(array_merge(
             $this->issueInput($item->id, $uom->id, $locationAId, '15.0000', 1401),
             ['override_request_id' => $request->id],
@@ -464,9 +472,9 @@ class StockIssueTest extends PurchaseOrderFoundationTest
         ];
     }
 
-    protected function approvedOverride(int $itemId, int $locationId, string $requested, string $available, int $sourceId): NegativeStockOverrideRequest
+    protected function approvedOverride(int $itemId, int $locationId, string $requested, int $sourceId): NegativeStockOverrideRequest
     {
-        $request = $this->requestOverride($itemId, $locationId, $requested, $available, $sourceId);
+        $request = $this->requestOverride($itemId, $locationId, $requested, $sourceId);
         $approver = User::factory()->create();
         $approver->givePermissionTo('inventory.negative-stock.approve');
         app(DecideNegativeStockOverride::class)($request, NegativeStockApprovalDecision::Approved, 'Evidence checked', $approver);
@@ -474,7 +482,7 @@ class StockIssueTest extends PurchaseOrderFoundationTest
         return $request;
     }
 
-    protected function requestOverride(int $itemId, int $locationId, string $requested, string $available, int $sourceId): NegativeStockOverrideRequest
+    protected function requestOverride(int $itemId, int $locationId, string $requested, int $sourceId): NegativeStockOverrideRequest
     {
         Company::query()->findOrFail(1)->update([
             'negative_stock_mode' => 'AUTHORISED_OVERRIDE',
@@ -485,7 +493,7 @@ class StockIssueTest extends PurchaseOrderFoundationTest
 
         return app(RequestNegativeStockOverride::class)([
             'item_id' => $itemId, 'location_id' => $locationId, 'movement_class' => 'MATERIAL_CONSUMPTION',
-            'requested_qty' => $requested, 'available_qty' => $available,
+            'requested_qty' => $requested,
             'source_type' => 'TEST_ISSUE', 'source_id' => $sourceId,
             'reason_code' => 'PAPERWORK_DELAY', 'explanation' => 'Receipt paperwork is delayed',
         ], $requester);

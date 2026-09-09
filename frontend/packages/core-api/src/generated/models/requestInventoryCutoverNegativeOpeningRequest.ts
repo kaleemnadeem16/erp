@@ -23,7 +23,7 @@ own resolution to enforce real scoping. */
   location_id: number;
   /** @maxLength 255 */
   batch_no?: RequestInventoryCutoverNegativeOpeningRequestBatchNo;
-  provisional_unit_cost: number;
+  provisional_unit_cost: string;
   reason: string;
   /** @minItems 1 */
   supporting_evidence: string[];

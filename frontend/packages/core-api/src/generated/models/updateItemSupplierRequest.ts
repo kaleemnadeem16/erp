@@ -23,7 +23,7 @@ export interface UpdateItemSupplierRequest {
    * @maximum 32767
    */
   lead_time_days?: UpdateItemSupplierRequestLeadTimeDays;
-  /** @maximum 1000000000000000 */
+  /** @maxLength 1000000000000000 */
   minimum_order_qty?: UpdateItemSupplierRequestMinimumOrderQty;
   purchase_uom_id?: UpdateItemSupplierRequestPurchaseUomId;
   active?: boolean;

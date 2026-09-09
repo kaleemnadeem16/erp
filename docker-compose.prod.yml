@@ -14,9 +14,11 @@ services:
     restart: unless-stopped
     env_file:
       - .env
-    volumes:
-      - ./logs/nginx:/var/log/nginx
-      - ./logs/laravel:/var/www/html/storage/logs
+    # No log bind mounts. Docker creates a bind-mount target root-owned, but
+    # php-fpm runs as www-data and could not write into it, so Monolog threw on
+    # its first write; and mounting over /var/log/nginx shadowed the
+    # /dev/stdout symlinks the image sets up, hiding nginx logs from
+    # `docker logs`. Both streams go to the json-file driver configured below.
     logging:
       driver: "json-file"
       options:

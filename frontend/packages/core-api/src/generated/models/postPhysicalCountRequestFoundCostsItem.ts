@@ -7,5 +7,5 @@
 
 export type PostPhysicalCountRequestFoundCostsItem = {
   physical_count_line_id: number;
-  unit_cost: number;
+  unit_cost: string;
 };

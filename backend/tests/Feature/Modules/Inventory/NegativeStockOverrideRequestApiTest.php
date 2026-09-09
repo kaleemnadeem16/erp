@@ -45,7 +45,7 @@ class NegativeStockOverrideRequestApiTest extends PurchaseOrderFoundationTest
         $requester = $this->permittedUser('inventory.negative-stock.request');
 
         $requestId = $this->actingAs($requester)->postJson('/api/v1/negative-stock-override-requests', $this->input($itemId, $locationId))
-            ->assertCreated()->assertJsonPath('data.shortage_qty', '3.0000')->assertJsonPath('data.authorisation_mode', 'PRIOR_APPROVAL')->json('data.id');
+            ->assertCreated()->assertJsonPath('data.available_qty', '0.0000')->assertJsonPath('data.shortage_qty', '5.0000')->assertJsonPath('data.authorisation_mode', 'PRIOR_APPROVAL')->json('data.id');
 
         $requester->givePermissionTo('inventory.negative-stock.approve');
         $this->actingAs($requester)->postJson("/api/v1/negative-stock-override-requests/{$requestId}/decide", ['decision' => 'APPROVED', 'notes' => 'self'])
@@ -145,7 +145,7 @@ class NegativeStockOverrideRequestApiTest extends PurchaseOrderFoundationTest
     {
         return [
             'item_id' => $itemId, 'location_id' => $locationId, 'movement_class' => 'MATERIAL_CONSUMPTION',
-            'requested_qty' => '5.0000', 'available_qty' => '2.0000', 'source_type' => 'TEST_ISSUE', 'source_id' => $sourceId,
+            'requested_qty' => '5.0000', 'source_type' => 'TEST_ISSUE', 'source_id' => $sourceId,
             'reason_code' => 'PAPERWORK_DELAY', 'explanation' => 'Receipt paperwork is delayed',
         ];
     }

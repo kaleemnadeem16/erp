@@ -32,6 +32,7 @@ use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Models\Location;
 use App\Modules\Inventory\Models\PhysicalCount;
 use App\Modules\Inventory\Models\RecalculationRequest;
+use App\Modules\Inventory\Models\StockLayer;
 use App\Modules\Inventory\Models\Warehouse;
 use App\Modules\Inventory\Support\AvcoPoolScope;
 use App\Modules\Inventory\Support\ItemTracking;
@@ -248,17 +249,25 @@ final class StockDemoSeeder extends Seeder
         $company = Company::query()->findOrFail(1);
         $company->update(['negative_stock_mode' => 'AUTHORISED_OVERRIDE']);
 
+        // The Action derives availability from live stock, so each demo
+        // request has to ask for genuinely more than is on hand — derived
+        // here rather than hardcoded so changing the seeded receipts above
+        // cannot silently make these requests impossible.
+        $onHand = (float) StockLayer::query()
+            ->where('item_id', $item->getKey())->where('location_id', $location->getKey())
+            ->whereNull('batch_id')->whereNull('serial_no')->sum('qty_remaining');
+
         $company->update(['negative_stock_authorisation_mode' => 'PRIOR_APPROVAL']);
         app(RequestNegativeStockOverride::class)([
             'item_id' => $item->getKey(), 'location_id' => $location->getKey(), 'movement_class' => 'MATERIAL_CONSUMPTION',
-            'requested_qty' => '30.0000', 'available_qty' => '24.0000', 'source_type' => 'DEMO_JOB_ISSUE', 'source_id' => 1,
+            'requested_qty' => number_format($onHand + 30, 4, '.', ''), 'source_type' => 'DEMO_JOB_ISSUE', 'source_id' => 1,
             'reason_code' => 'OPERATIONAL_EMERGENCY', 'explanation' => 'Urgent job material issue ahead of the delayed weekly delivery.',
         ], $requester);
 
         $company->update(['negative_stock_authorisation_mode' => 'IMMEDIATE_WITH_REVIEW']);
         app(RequestNegativeStockOverride::class)([
             'item_id' => $item->getKey(), 'location_id' => $location->getKey(), 'movement_class' => 'MATERIAL_CONSUMPTION',
-            'requested_qty' => '15.0000', 'available_qty' => '12.0000', 'source_type' => 'DEMO_JOB_ISSUE', 'source_id' => 2,
+            'requested_qty' => number_format($onHand + 15, 4, '.', ''), 'source_type' => 'DEMO_JOB_ISSUE', 'source_id' => 2,
             'reason_code' => 'PAPERWORK_DELAY', 'explanation' => 'Supplier delivery note is delayed; stock physically received.',
         ], $requester);
     }

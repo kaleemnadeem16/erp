@@ -36,7 +36,10 @@ class NegativeStockOverrideWorkflowTest extends PurchaseOrderFoundationTest
         $requester->givePermissionTo('inventory.negative-stock.request');
         $request = app(RequestNegativeStockOverride::class)($this->input($item->id, $locationId), $requester);
 
-        $this->assertSame('3.0000', $request->shortage_qty);
+        // Nothing is on hand at this location, so the derived availability is
+        // zero and the whole requested quantity is short.
+        $this->assertSame('0.0000', $request->available_qty);
+        $this->assertSame('5.0000', $request->shortage_qty);
         $this->assertSame('PRIOR_APPROVAL', $request->authorisation_mode->value);
         $this->assertNull($request->review_due_at);
 
@@ -113,8 +116,25 @@ class NegativeStockOverrideWorkflowTest extends PurchaseOrderFoundationTest
         return [$item, $locationId];
     }
 
+    public function test_a_client_supplied_available_qty_is_ignored_in_favour_of_live_stock(): void
+    {
+        [$item, $locationId] = $this->foundation('PRIOR_APPROVAL');
+        $requester = User::factory()->create();
+        $requester->givePermissionTo('inventory.negative-stock.request');
+
+        // A requester claiming 4 of the 5 are on hand would otherwise obtain
+        // authority for a 1-unit shortage and then issue all 5 against it.
+        $request = app(RequestNegativeStockOverride::class)(
+            array_merge($this->input($item->id, $locationId), ['available_qty' => '4.0000']),
+            $requester,
+        );
+
+        $this->assertSame('0.0000', $request->available_qty);
+        $this->assertSame('5.0000', $request->shortage_qty);
+    }
+
     private function input(int $itemId, int $locationId, int $sourceId = 1): array
     {
-        return ['item_id' => $itemId, 'location_id' => $locationId, 'movement_class' => 'MATERIAL_CONSUMPTION', 'requested_qty' => '5.0000', 'available_qty' => '2.0000', 'source_type' => 'TEST_ISSUE', 'source_id' => $sourceId, 'reason_code' => 'PAPERWORK_DELAY', 'explanation' => 'Receipt paperwork is delayed'];
+        return ['item_id' => $itemId, 'location_id' => $locationId, 'movement_class' => 'MATERIAL_CONSUMPTION', 'requested_qty' => '5.0000', 'source_type' => 'TEST_ISSUE', 'source_id' => $sourceId, 'reason_code' => 'PAPERWORK_DELAY', 'explanation' => 'Receipt paperwork is delayed'];
     }
 }

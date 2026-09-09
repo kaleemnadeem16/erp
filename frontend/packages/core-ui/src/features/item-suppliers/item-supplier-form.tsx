@@ -47,7 +47,7 @@ export function itemSupplierPayload(v: ItemSupplierFormValues) {
     supplier_item_code: v.supplier_item_code.trim() || null,
     priority: v.priority ? Number(v.priority) : null,
     lead_time_days: v.lead_time_days ? Number(v.lead_time_days) : null,
-    minimum_order_qty: v.minimum_order_qty ? Number(v.minimum_order_qty) : null,
+    minimum_order_qty: v.minimum_order_qty ? v.minimum_order_qty.trim() : null,
     purchase_uom_id: v.purchase_uom_id === NONE ? null : Number(v.purchase_uom_id),
     active: v.active,
   };

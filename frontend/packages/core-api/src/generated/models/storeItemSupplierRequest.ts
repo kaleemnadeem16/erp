@@ -25,7 +25,7 @@ export interface StoreItemSupplierRequest {
    * @maximum 32767
    */
   lead_time_days?: StoreItemSupplierRequestLeadTimeDays;
-  /** @maximum 1000000000000000 */
+  /** @maxLength 1000000000000000 */
   minimum_order_qty?: StoreItemSupplierRequestMinimumOrderQty;
   purchase_uom_id?: StoreItemSupplierRequestPurchaseUomId;
   active?: boolean;

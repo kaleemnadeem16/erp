@@ -23,7 +23,7 @@ class StockPoolRecoveryTest extends StockIssueTest
         $locationAId = $this->locationId();
         $locationBId = $this->otherLocationId('other');
         $this->postReceipt($order->lines()->sole()->id, $item->id, $uom->id, $locationAId, '2.0000', '10.0000');
-        $request = $this->approvedOverride($item->id, $locationAId, '4.0000', '2.0000', 2101);
+        $request = $this->approvedOverride($item->id, $locationAId, '4.0000', 2101);
         app(PostInventoryMovement::class)->issue(array_merge(
             $this->issueInput($item->id, $uom->id, $locationAId, '4.0000', 2101),
             ['override_request_id' => $request->id],
@@ -58,7 +58,7 @@ class StockPoolRecoveryTest extends StockIssueTest
         $locationAId = $this->locationId();
         $locationBId = $this->otherLocationId('other');
         $this->postReceipt($order->lines()->sole()->id, $item->id, $uom->id, $locationAId, '5.0000', '10.0000');
-        $request = $this->approvedOverride($item->id, $locationBId, '4.0000', '0.0000', 2201);
+        $request = $this->approvedOverride($item->id, $locationBId, '4.0000', 2201);
         app(PostInventoryMovement::class)->issue(array_merge(
             $this->issueInput($item->id, $uom->id, $locationBId, '4.0000', 2201),
             ['override_request_id' => $request->id],
@@ -90,7 +90,7 @@ class StockPoolRecoveryTest extends StockIssueTest
         $this->postReceipt($lineId, $item->id, $uom->id, $locationAId, '2.0000', '10.0000');
         $this->travel(1)->second();
         $this->postReceipt($lineId, $item->id, $uom->id, $locationAId, '3.0000', '12.0000');
-        $request = $this->approvedOverride($item->id, $locationBId, '2.0000', '0.0000', 2402);
+        $request = $this->approvedOverride($item->id, $locationBId, '2.0000', 2402);
         app(PostInventoryMovement::class)->issue(array_merge(
             $this->issueInput($item->id, $uom->id, $locationBId, '2.0000', 2402),
             ['override_request_id' => $request->id],
@@ -138,7 +138,7 @@ class StockPoolRecoveryTest extends StockIssueTest
 
         // An authorised shortage at A2 — a different location in the same
         // WAREHOUSE_ITEM pool — freezes Branch A's pool.
-        $request = $this->approvedOverride($item->id, $locationA2Id, '12.0000', '0.0000', 2501);
+        $request = $this->approvedOverride($item->id, $locationA2Id, '12.0000', 2501);
         app(PostInventoryMovement::class)->issue(array_merge(
             $this->issueInput($item->id, $uom->id, $locationA2Id, '12.0000', 2501),
             ['override_request_id' => $request->id],
@@ -181,7 +181,7 @@ class StockPoolRecoveryTest extends StockIssueTest
         $locationAId = $this->locationId();
         $lineId = $order->lines()->sole()->id;
         $this->postReceipt($lineId, $item->id, $uom->id, $locationAId, '2.0000', '10.0000');
-        $request = $this->approvedOverride($item->id, $locationAId, '3.0000', '2.0000', 2601);
+        $request = $this->approvedOverride($item->id, $locationAId, '3.0000', 2601);
         $this->travel(1)->second();
         $this->postReceipt($lineId, $item->id, $uom->id, $locationAId, '2.0000', '11.0000');
 

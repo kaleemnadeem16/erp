@@ -19,6 +19,6 @@ class ShowInventoryCutoverRequest extends FormRequest
     /** @return array<string, mixed> */
     public function rules(): array
     {
-        return $this->includeRules(['batches', 'batches.sourceFacts', 'policyTransitions', 'negativeOpenings', 'creator']);
+        return $this->includeRules(['batches', 'policyTransitions', 'negativeOpenings', 'creator']);
     }
 }

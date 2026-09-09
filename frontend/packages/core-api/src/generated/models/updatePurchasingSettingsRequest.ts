@@ -9,9 +9,11 @@ import type { OverReceiptMode } from "./overReceiptMode";
 export interface UpdatePurchasingSettingsRequest {
   over_receipt_mode?: OverReceiptMode;
   /**
-   * @minimum 0
-   * @maximum 100
+   * @minLength 0
+   * @maxLength 100
    */
-  over_receipt_tolerance_percent?: number;
+  over_receipt_tolerance_percent?: string;
   purchase_order_required?: boolean;
+  /** @maxLength 1000 */
+  reason?: string;
 }

@@ -146,7 +146,7 @@ tolerates delay: emails, exports, report generation.
 fan-out above. It does not mean every cross-module reference needs an indirection layer:
 
 - **Reads are direct Eloquent**, the same as any foreign key within one module.
-  `formulations.customer_id → customer_accounts`, `items.default_supplier_id → supplier_accounts`
+  `formulations.customer_id → customer_accounts`, `item_suppliers.supplier_account_id → supplier_accounts`
   — every `→ table` reference in the domain docs resolves this way. No repository or
   query-service layer exists in this codebase; introducing one for cross-module reads only would
   be new, unused indirection.

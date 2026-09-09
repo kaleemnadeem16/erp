@@ -7,8 +7,8 @@
 
 export interface RecordPhysicalCountLineRequest {
   /**
-   * @minimum 0
-   * @maximum 1000000000000000
+   * @minLength 0
+   * @maxLength 1000000000000000
    */
-  counted_qty: number;
+  counted_qty: string;
 }

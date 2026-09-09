@@ -29,9 +29,9 @@ export function InventoryCutoverCreateScreen() {
           // The generated type is imprecise here (see inventory-cutover-form.tsx) —
           // this is really an object keyed by item code, not a string[].
           target_valuation_policy: policyRowsToPolicy(policyRows) as unknown as StoreInventoryCutoverRequest['target_valuation_policy'],
-          control_quantity: Number(values.control_quantity),
-          control_value: Number(values.control_value),
-          base_control_value: Number(values.base_control_value),
+          control_quantity: values.control_quantity.trim(),
+          control_value: values.control_value.trim(),
+          base_control_value: values.base_control_value.trim(),
         },
       },
       {

@@ -98,11 +98,17 @@ class Item extends Model
         });
 
         static::updating(function (Item $item): void {
-            if ($item->isDirty(['valuation_method', 'avco_pool_scope', 'stock_uom_id'])
-                && StockMove::query()->where('item_id', $item->getKey())->exists()) {
+            $locked = array_values(array_intersect(
+                ['valuation_method', 'avco_pool_scope', 'stock_uom_id'],
+                array_keys($item->getDirty()),
+            ));
+            if ($locked !== [] && StockMove::query()->where('item_id', $item->getKey())->exists()) {
+                // Attributed to whichever locked field the caller actually
+                // changed, so the message renders against that form field
+                // rather than always against valuation_method.
                 throw new DomainInvariantException(
                     'Valuation method, AVCO pool scope and stock UoM are immutable after the first stock movement.',
-                    'valuation_method',
+                    $locked[0],
                 );
             }
         });

@@ -17,6 +17,20 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Production runs behind Traefik (docs/architecture/deployment.md). Without
+        // this every request appears to come from the proxy's own IP, which would
+        // collapse login's throttle:5,1 into five attempts per minute for the whole
+        // application, and would leave isSecure() false so X-Forwarded-Proto is
+        // ignored and secure cookies are never marked secure. TRUSTED_PROXIES is a
+        // comma-separated list; '*' is correct here because the container is only
+        // reachable through Traefik on the internal network.
+        $middleware->trustProxies(
+            at: explode(',', (string) env('TRUSTED_PROXIES', '*')),
+            headers: Request::HEADER_X_FORWARDED_FOR
+                | Request::HEADER_X_FORWARDED_HOST
+                | Request::HEADER_X_FORWARDED_PORT
+                | Request::HEADER_X_FORWARDED_PROTO,
+        );
         // Cookie-authenticates requests from the SPA's origin (SANCTUM_STATEFUL_DOMAINS)
         // instead of requiring a bearer token — see docs/decisions/0005-sanctum-authentication.md.
         $middleware->statefulApi();

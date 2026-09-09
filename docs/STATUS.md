@@ -32,6 +32,7 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 
 | Item | Date |
 |---|---|
+| **Pre-deployment audit and its fixes** — a full audit before the first deploy found, and this closes: a backdated recalculation could be valuation-effective *before* a finalised inventory cutover (the cutover boundary is now composed into `BackdatingHorizonEvaluator`, and `ExecuteRecalculation` re-evaluates the horizon rather than trusting the request-time snapshot); negative-stock `available_qty` was taken from client input and is now derived from live stock; decimals were documented as JSON numbers on every write path and now cross the wire as strings both ways (one Scramble rule transformer, no validation change); and purchasing's over-receipt policy gained the permission, reason and audit row it never had. Deploy blockers fixed too: the SPA no longer builds pointing at localhost, trusted proxies are configured, and `erp:create-admin` makes a fresh database signable-into → [phase-2-purchasing-stock.md](phases/phase-2-purchasing-stock.md), [deployment.md](architecture/deployment.md#first-deploy-runbook) | 2026-09-09 |
 | **Stock layer and AVCO pool read APIs** — `GET /api/v1/stock-layers` (cursor-paginated, `filter[open]` for an item's still-open FIFO/SPECIFIC layers) and `GET /api/v1/avco-pools` (page-paginated, an item's current converged balance) close the last gap on the stock-ledger close-out item. Deliberately backend-only — reference data, not a workflow, so no dedicated screen this time. Closes Phase 2's entire close-out checklist except production deployment → [phase-2-purchasing-stock.md](phases/phase-2-purchasing-stock.md#close-out) | 2026-09-09 |
 | **Stock recalculation HTTP API and screens** — `RequestStockRecalculation` (header, create/read-only, also the preview) plus `POST .../decide`, `.../execute` and `.../resume-regeneration` on `RecalculationImpactVersion`, a distinct addressable child resource since a request accumulates several versions over its life. The `/recalculation-requests` screens are the most involved yet — version history, multi-approver approvals with individual expiry/renewal, risk-tier routing — with computed flags (`is_fully_approved` etc.) added server-side rather than pushed onto the frontend → [stock-recalculation.md](domain/stock-recalculation.md#user-interface) | 2026-09-08 |
 | **Negative-stock override HTTP API and screens** — the header (`RequestNegativeStockOverride`) is create/read-only over HTTP; `POST .../decide` and `.../review` are named actions on the same resource (no separate exception resource). The `/negative-stock-overrides` list/create/detail screens are the first UI with no server-side status column — status is derived client-side from `authorisation_mode` plus whether `approval`/`review` exists. `UpdateInventorySettings` was already exposed → [negative-stock.md](domain/negative-stock.md#user-interface) | 2026-09-08 |
@@ -39,24 +40,26 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 | **Physical count HTTP API and workflow screens** — the header is create/read-only over HTTP; every state change is a named action (`POST .../lines`, `POST /api/v1/physical-count-lines/{id}/count`, `.../post`, `.../cancel`). The `/physical-counts` list, create and `/physical-counts/:id` detail screens are the frontend's first document-workflow UI — add a line, record/recount inline, supply a found cost for a positive variance, then post or cancel, verified end-to-end including separation-of-duties rejection → [physical-count.md](domain/physical-count.md#user-interface) | 2026-09-08 |
 | **Stock ledger read API and Stock Ledger screen** — `stock_moves` gained its first HTTP surface: a cursor-paginated `GET /api/v1/stock-moves` (filterable by item/warehouse/location/batch/source type/date range) and a `show` endpoint, both including `item`/locations/`batch`/`valuation_entries` on request. A new `/stock-moves` list screen and `/stock-moves/:id` detail screen consume it — the first UI built against Phase 2's stock engine, and the first cursor-paginated list in the frontend (`CursorDataTable`, `useCursorQueryState`) → [phase-2-purchasing-stock.md](phases/phase-2-purchasing-stock.md#close-out) | 2026-09-08 |
 | **Phase 2 integrity audit** — three real gaps found and fixed: the stock ledger (`stock_moves`/`stock_valuation_entries`/`stock_layers`) and purchasing documents were model-guarded only and are now database-immutable like every other Phase 2 history table; `recalculation_requests` was the one bare location reference with no company trigger; and the "two concurrent AVCO receipts" acceptance criterion had the lock but no proof — now `AvcoPoolConcurrencyTest`. Rollback proven for physical-count and cutover posting too. Duplicate-submission, precision and tracking had no gaps → [phase-2-purchasing-stock.md](phases/phase-2-purchasing-stock.md) | 2026-09-08 |
-| **Items frontend reference implementation** — reusable server-driven list/detail/print and form-error foundations now power item list, detail, create and edit routes; an authenticated company-scoped read-only UoM API supplies the item form without hardcoded units. The generated client includes validated page parameters, all frontend type-checks/build and focused Item/UoM API tests pass → [items.md](domain/items.md) | 2026-09-08 |
 
 ## Next
 
-ADR 0040's executable-today scope is done — every backdated receipt/issue/transfer case across all
-three valuation methods now previews, approves and executes, clean or changed-history alike. The
-multi-owner correction package (Sales/Job Execution/Accounting routing, cross-module
-reconciliation) waits on those modules existing — Phase 4/5/6, tracked at each phase's entry in
-[phases/README.md](phases/README.md). Phase 2's entire close-out checklist is now done except one
-item: first real deployment to the production VMs, itemised under "Close-out" in
-[Phase 2 — Purchasing & stock](phases/phase-2-purchasing-stock.md). (The separate "Acceptance
-criteria" section in that same doc has not been re-audited this session — full Phase 2 completion
-needs both satisfied, not just the close-out checklist.)
+Phase 2's close-out is complete except the first production deployment, and its acceptance
+criteria have now been re-audited: 12 of 21 satisfied (6 ticked this pass against existing proof),
+3 waiting on Phase 4/5/6, and the rest missing **tests** rather than enforcement — ADR 0043's
+over-receipt tolerance paths, `StockIdentity`'s rejection branches, and the `stock_uom_id`/
+`avco_pool_scope` locks. Per-location cutover reconciliation is a design decision, not just work.
+
+The deployment now has a runbook ([deployment.md](architecture/deployment.md#first-deploy-runbook))
+but is unrehearsed, and two prerequisites sit outside this repository: registering the self-hosted
+ARM64 runner the image build targets, and agreeing Redis database indices with invoiceflow and crm.
+`main` is ~103 commits behind `develop`, so that merge is itself the first real exercise of the
+multi-arch build.
 
 ## Blocked / awaiting input
 
-Nothing blocking. Open questions: [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) — 0 blocking, 3
-non-blocking (second customer profile; cross-entity master data; movement posting actor).
+Nothing blocking. Open questions: [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) — 0 blocking, 4
+non-blocking (second customer profile; cross-entity master data; movement posting actor; whether
+location mode and default AVCO pool scope are governed policies).
 
 ## Roadmap at a glance
 

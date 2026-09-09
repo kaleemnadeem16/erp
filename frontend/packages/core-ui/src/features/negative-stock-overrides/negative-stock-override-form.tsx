@@ -15,7 +15,6 @@ const negativeStockOverrideFormSchema = z.object({
   location_id: z.string().min(1, 'Location is required'),
   movement_class: z.string().min(1, 'Movement class is required'),
   requested_qty: z.string().min(1, 'Requested quantity is required'),
-  available_qty: z.string().min(1, 'Available quantity is required'),
   source_type: z.string().min(1, 'Source type is required').max(255),
   source_id: z.string().min(1, 'Source ID is required'),
   reason_code: z.string().min(1, 'Reason is required'),
@@ -25,12 +24,12 @@ const negativeStockOverrideFormSchema = z.object({
 export type NegativeStockOverrideFormValues = z.infer<typeof negativeStockOverrideFormSchema>;
 
 export const NEGATIVE_STOCK_OVERRIDE_FORM_FIELDS = [
-  'item_id', 'location_id', 'movement_class', 'requested_qty', 'available_qty',
+  'item_id', 'location_id', 'movement_class', 'requested_qty',
   'source_type', 'source_id', 'reason_code', 'explanation',
 ] as const satisfies readonly (keyof NegativeStockOverrideFormValues)[];
 
 const DEFAULT_VALUES: NegativeStockOverrideFormValues = {
-  item_id: '', location_id: '', movement_class: '', requested_qty: '', available_qty: '',
+  item_id: '', location_id: '', movement_class: '', requested_qty: '',
   source_type: '', source_id: '', reason_code: '', explanation: '',
 };
 
@@ -122,19 +121,6 @@ export function NegativeStockOverrideForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Requested quantity</FormLabel>
-                <FormControl>
-                  <Input type="number" step="0.0001" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="available_qty"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Available quantity</FormLabel>
                 <FormControl>
                   <Input type="number" step="0.0001" {...field} />
                 </FormControl>

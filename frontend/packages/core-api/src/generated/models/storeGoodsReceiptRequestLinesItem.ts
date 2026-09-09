@@ -11,17 +11,17 @@ export type StoreGoodsReceiptRequestLinesItem = {
   purchase_order_line_id: number;
   item_id: number;
   location_id: number;
-  /** @maximum 1000000000000000 */
-  received_qty: number;
+  /** @maxLength 1000000000000000 */
+  received_qty: string;
   received_uom_id: number;
   /**
-   * @minimum 0
-   * @maximum 1000000000000000
+   * @minLength 0
+   * @maxLength 1000000000000000
    */
-  provisional_unit_cost: number;
+  provisional_unit_cost: string;
   currency_id: number;
-  /** @maximum 10000000000 */
-  fx_rate: number;
+  /** @maxLength 10000000000 */
+  fx_rate: string;
   fx_rate_date: string;
   /** @maxLength 50 */
   fx_rate_type: string;

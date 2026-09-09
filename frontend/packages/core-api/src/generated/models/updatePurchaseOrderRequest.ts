@@ -14,8 +14,8 @@ export interface UpdatePurchaseOrderRequest {
   supplier_site_id?: UpdatePurchaseOrderRequestSupplierSiteId;
   currency_id?: number;
   fx_policy?: PurchaseOrderFxPolicy;
-  /** @maximum 10000000000 */
-  fx_rate?: number;
+  /** @maxLength 10000000000 */
+  fx_rate?: string;
   fx_rate_date?: string;
   /** @maxLength 50 */
   fx_rate_type?: string;

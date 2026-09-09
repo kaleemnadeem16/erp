@@ -17,30 +17,30 @@ export type StorePurchaseOrderRequestLinesItem = {
   item_id: number;
   /** @maxLength 255 */
   description: string;
-  /** @maximum 1000000000000000 */
-  ordered_qty: number;
+  /** @maxLength 1000000000000000 */
+  ordered_qty: string;
   purchase_uom_id: number;
   /**
-   * @minimum 0
-   * @maximum 1000000000000000
+   * @minLength 0
+   * @maxLength 1000000000000000
    */
-  unit_price: number;
+  unit_price: string;
   /**
-   * @minimum 0
-   * @maximum 1000000000000000
+   * @minLength 0
+   * @maxLength 1000000000000000
    */
-  discount_amount?: number;
+  discount_amount?: string;
   /**
-   * @minimum 0
-   * @maximum 1000000000000000
+   * @minLength 0
+   * @maxLength 1000000000000000
    */
-  tax_amount?: number;
+  tax_amount?: string;
   expected_delivery_date?: StorePurchaseOrderRequestLinesItemExpectedDeliveryDate;
   qa_required?: boolean;
   over_receipt_mode?: StorePurchaseOrderRequestLinesItemOverReceiptMode;
   /**
-   * @minimum 0
-   * @maximum 100
+   * @minLength 0
+   * @maxLength 100
    */
   over_receipt_tolerance_percent?: StorePurchaseOrderRequestLinesItemOverReceiptTolerancePercent;
 };

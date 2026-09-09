@@ -5,4 +5,4 @@
  * OpenAPI spec version: 0.0.1
  */
 
-export type StoreRecalculationRequestRequestUnitCost = number | null;
+export type StoreRecalculationRequestRequestUnitCost = string | null;

@@ -36,7 +36,9 @@ class StoreNegativeStockOverrideRequestRequest extends FormRequest
             'batch_id' => ['nullable', 'integer', CompanyScoped::exists('stock_batches')],
             'movement_class' => ['required', Rule::enum(NegativeStockMovementClass::class)],
             'requested_qty' => ['required', 'decimal:0,4', 'gt:0'],
-            'available_qty' => ['required', 'decimal:0,4', 'min:0'],
+            // available_qty is deliberately not accepted — the Action derives
+            // it from live stock, because it decides how much shortage the
+            // movement boundary will later authorise.
             'source_type' => ['required', 'string', 'max:255'],
             'source_id' => ['required', 'integer'],
             'reason_code' => ['required', Rule::enum(NegativeStockReasonCode::class)],

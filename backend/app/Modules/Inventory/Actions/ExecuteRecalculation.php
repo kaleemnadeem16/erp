@@ -7,6 +7,7 @@ namespace App\Modules\Inventory\Actions;
 use App\Exceptions\DomainInvariantException;
 use App\Models\Company;
 use App\Models\User;
+use App\Modules\Inventory\Actions\Backdating\BackdatingHorizonEvaluator;
 use App\Modules\Inventory\Actions\Movements\AvcoPoolManager;
 use App\Modules\Inventory\Actions\Recalculation\FifoReceiptReallocator;
 use App\Modules\Inventory\Actions\Recalculation\LayerCounterfactualReplayer;
@@ -28,6 +29,7 @@ use App\Modules\Inventory\Support\ValuationMethod;
 use App\Support\CompanyContext;
 use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -83,6 +85,7 @@ final class ExecuteRecalculation
 {
     public function __construct(
         private readonly RecalculationImpactBuilder $impacts,
+        private readonly BackdatingHorizonEvaluator $horizon,
         private readonly RegenerationLimit $limit,
         private readonly AvcoPoolManager $pools,
         private readonly LayerCounterfactualReplayer $layerReplay,
@@ -117,6 +120,15 @@ final class ExecuteRecalculation
             }
             if (! $version->hasUnexpiredFullApproval()) {
                 throw new DomainInvariantException('Execution requires every required approval to be present and currently unexpired.', 'impact_version_id');
+            }
+
+            // ADR 0040: eligibility is snapshotted at request time so ordinary
+            // clock progression cannot invalidate it, but a material policy or
+            // boundary change since then must. Re-evaluating here catches a
+            // tightened horizon, a newly closed period and a cutover approved
+            // after the request was raised.
+            if (! $this->horizon->evaluate($company, Carbon::instance($request->moved_at))->withinHorizon) {
+                throw new DomainInvariantException('The proposed date is no longer within the configured backdating horizon.', 'moved_at');
             }
 
             // A transfer request needs both locations locked together in

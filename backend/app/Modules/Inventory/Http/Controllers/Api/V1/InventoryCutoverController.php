@@ -42,7 +42,11 @@ class InventoryCutoverController extends Controller
     /** @var array<string, string> */
     private const INCLUDABLE = [
         'batches' => 'batches',
-        'batches.sourceFacts' => 'batches.sourceFacts',
+        // batches.sourceFacts is deliberately not includable: source facts are
+        // one row per imported inventory line, so an opening-state import
+        // serialises tens of thousands of rows into a single unpaginated
+        // response. No screen uses it; expose a paginated child resource if
+        // one ever needs to.
         'policyTransitions' => 'policyTransitions',
         'negativeOpenings' => 'negativeOpenings',
         'creator' => 'creator',

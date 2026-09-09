@@ -5,6 +5,8 @@ namespace App\Providers;
 use App\Contracts\NumberingScheme;
 use App\Support\CompanyContext;
 use App\Support\DefaultNumberingScheme;
+use App\Support\OpenApi\DecimalAsStringRuleTransformer;
+use Dedoc\Scramble\Scramble;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -36,5 +38,8 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('api', fn (Request $request) => Limit::perMinute(120)->by(
             $request->user()?->id ?: $request->ip()
         ));
+
+        // Invariant 6: decimals cross the wire as strings in both directions.
+        Scramble::configure()->withRuleTransformers(DecimalAsStringRuleTransformer::class);
     }
 }

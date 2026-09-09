@@ -136,7 +136,7 @@ export function InventoryCutoverDetailScreen() {
           item_id: Number(draft.item_id),
           location_id: Number(draft.location_id),
           batch_no: draft.batch_no.trim() || undefined,
-          provisional_unit_cost: Number(draft.provisional_unit_cost),
+          provisional_unit_cost: draft.provisional_unit_cost.trim(),
           reason: draft.reason,
           // The generated type is imprecise here for the same reason as
           // target_valuation_policy — Scramble defaults a bare 'array' rule

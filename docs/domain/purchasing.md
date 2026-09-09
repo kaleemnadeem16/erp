@@ -30,8 +30,8 @@ Phase 2 receipt model does not close it off.
 
 ## Schema
 
-The purchase-order/settings and goods-receipt portions below are implemented. QA tables remain
-annotated planning schema for the next Phase 2 slices.
+The purchase-order/settings, goods-receipt and QA-disposition portions below are all
+implemented.
 
 ```
 purchasing_settings

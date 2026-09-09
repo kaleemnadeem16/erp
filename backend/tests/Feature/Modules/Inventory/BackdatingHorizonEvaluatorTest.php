@@ -4,10 +4,14 @@ namespace Tests\Feature\Modules\Inventory;
 
 use App\Exceptions\DomainInvariantException;
 use App\Models\Company;
+use App\Models\User;
 use App\Modules\Accounting\Models\AccountingPeriod;
 use App\Modules\Accounting\Models\FiscalYear;
 use App\Modules\Accounting\Support\PeriodStatus;
 use App\Modules\Inventory\Actions\Backdating\BackdatingHorizonEvaluator;
+use App\Modules\Inventory\Models\InventoryCutover;
+use App\Modules\Inventory\Support\InventoryCutoverMode;
+use App\Modules\Inventory\Support\InventoryCutoverStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
@@ -160,5 +164,119 @@ class BackdatingHorizonEvaluatorTest extends TestCase
 
         $this->expectException(DomainInvariantException::class);
         $this->evaluator()->evaluate($company, Carbon::parse('2026-01-01'));
+    }
+
+    // --- ADR 0036 cutover boundary composition ---
+
+    private function cutover(string $cutoverAt, InventoryCutoverStatus $status): InventoryCutover
+    {
+        $actor = User::factory()->create()->id;
+        $now = Carbon::now();
+
+        // ic_audit_shape_check requires each status to carry the audit trail
+        // the states before it would have written.
+        $trail = match ($status) {
+            InventoryCutoverStatus::Draft, InventoryCutoverStatus::Failed => [],
+            InventoryCutoverStatus::Validated => ['validated_by' => $actor, 'validated_at' => $now],
+            InventoryCutoverStatus::Approved => ['validated_by' => $actor, 'validated_at' => $now, 'approved_by' => $actor, 'approved_at' => $now],
+            InventoryCutoverStatus::Finalised => ['validated_by' => $actor, 'validated_at' => $now, 'approved_by' => $actor, 'approved_at' => $now, 'finalised_by' => $actor, 'finalised_at' => $now],
+        };
+
+        return InventoryCutover::query()->create([
+            'mode' => InventoryCutoverMode::OpeningState->value,
+            'cutover_at' => $cutoverAt,
+            'source_system' => 'LEGACY',
+            'target_valuation_policy' => [],
+            'status' => $status->value,
+            'control_quantity' => '0.0000', 'control_value' => '0.0000', 'base_control_value' => '0.0000',
+            'created_by' => $actor,
+            ...$trail,
+        ]);
+    }
+
+    public function test_a_finalised_cutover_floors_a_horizon_that_would_otherwise_permit_earlier(): void
+    {
+        $company = $this->configuredCompany([
+            'backdating_horizon_mode' => 'POSTING_FLOOR',
+            'backdating_posting_floor_subtype' => 'FIXED_DATE',
+            'backdating_posting_floor_fixed_date' => '2026-01-01',
+        ]);
+        $this->cutover('2026-03-15 09:00:00', InventoryCutoverStatus::Finalised);
+
+        $beforeCutover = $this->evaluator()->evaluate($company, Carbon::parse('2026-02-10'));
+        $this->assertFalse($beforeCutover->withinHorizon);
+        $this->assertTrue($beforeCutover->permittedFloor->isSameDay(Carbon::parse('2026-03-15')));
+
+        $afterCutover = $this->evaluator()->evaluate($company, Carbon::parse('2026-03-20'));
+        $this->assertTrue($afterCutover->withinHorizon);
+    }
+
+    public function test_an_approved_cutover_binds_before_it_is_finalised(): void
+    {
+        $company = $this->configuredCompany([
+            'backdating_horizon_mode' => 'POSTING_FLOOR',
+            'backdating_posting_floor_subtype' => 'FIXED_DATE',
+            'backdating_posting_floor_fixed_date' => '2026-01-01',
+        ]);
+        $this->cutover('2026-03-15 09:00:00', InventoryCutoverStatus::Approved);
+
+        $this->assertFalse($this->evaluator()->evaluate($company, Carbon::parse('2026-02-10'))->withinHorizon);
+    }
+
+    public function test_a_draft_cutover_does_not_bind(): void
+    {
+        $company = $this->configuredCompany([
+            'backdating_horizon_mode' => 'POSTING_FLOOR',
+            'backdating_posting_floor_subtype' => 'FIXED_DATE',
+            'backdating_posting_floor_fixed_date' => '2026-01-01',
+        ]);
+        $this->cutover('2026-03-15 09:00:00', InventoryCutoverStatus::Draft);
+
+        $result = $this->evaluator()->evaluate($company, Carbon::parse('2026-02-10'));
+        $this->assertTrue($result->withinHorizon);
+        $this->assertTrue($result->permittedFloor->isSameDay(Carbon::parse('2026-01-01')));
+    }
+
+    public function test_the_stricter_of_the_horizon_floor_and_the_cutover_wins(): void
+    {
+        $company = $this->configuredCompany([
+            'backdating_horizon_mode' => 'POSTING_FLOOR',
+            'backdating_posting_floor_subtype' => 'FIXED_DATE',
+            'backdating_posting_floor_fixed_date' => '2026-06-01',
+        ]);
+        $this->cutover('2026-03-15 09:00:00', InventoryCutoverStatus::Finalised);
+
+        // The horizon floor is later than the cutover here, so it stays the
+        // binding constraint and the cutover does not loosen it.
+        $result = $this->evaluator()->evaluate($company, Carbon::parse('2026-04-01'));
+        $this->assertFalse($result->withinHorizon);
+        $this->assertTrue($result->permittedFloor->isSameDay(Carbon::parse('2026-06-01')));
+    }
+
+    public function test_a_cutover_supplies_a_floor_under_period_lock_only(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-04-15'));
+        $company = $this->configuredCompany(['backdating_horizon_mode' => 'PERIOD_LOCK_ONLY']);
+        $fiscalYear = FiscalYear::query()->create(['name' => 'FY2026', 'starts_on' => '2026-01-01', 'ends_on' => '2026-12-31']);
+        $this->addPeriod($fiscalYear, 1, 'Feb 2026', '2026-02-01', '2026-02-28', PeriodStatus::Open);
+        $this->cutover('2026-03-15 09:00:00', InventoryCutoverStatus::Finalised);
+
+        // The period is open, so the mode alone would permit this date.
+        $result = $this->evaluator()->evaluate($company, Carbon::parse('2026-02-10'));
+        $this->assertFalse($result->withinHorizon);
+        $this->assertTrue($result->permittedFloor->isSameDay(Carbon::parse('2026-03-15')));
+    }
+
+    public function test_a_movement_earlier_the_same_day_as_the_cutover_instant_is_refused(): void
+    {
+        $company = $this->configuredCompany([
+            'backdating_horizon_mode' => 'POSTING_FLOOR',
+            'backdating_posting_floor_subtype' => 'FIXED_DATE',
+            'backdating_posting_floor_fixed_date' => '2026-01-01',
+        ]);
+        $this->cutover('2026-03-15 09:00:00', InventoryCutoverStatus::Finalised);
+
+        $this->assertFalse($this->evaluator()->evaluate($company, Carbon::parse('2026-03-15 08:59:59'))->withinHorizon);
+        $this->assertTrue($this->evaluator()->evaluate($company, Carbon::parse('2026-03-15 09:00:00'))->withinHorizon);
     }
 }

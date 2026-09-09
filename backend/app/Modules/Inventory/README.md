@@ -48,6 +48,12 @@ movement and valuation, built in Phase 2.
   posted variance routes through `PostInventoryMovement`, the same boundary every other receipt/
   issue posts through; a recount replaces the line's working count, with every attempt retained
   immutably
+- `RecalculationRequest`, `RecalculationImpactVersion`, `RecalculationApproval`,
+  `RecalculationExecution` and `RecalculationRegenerationReview` — ADR 0040's authorised
+  backdating workflow: one request accumulates append-only impact versions, each approved at an
+  exact version with its own expiry, executed at most once
+- `StockLayerConsumption` — permanent link from each layer allocation to the move it served, the
+  FIFO/SPECIFIC replay foundation ADR 0040 depends on
 
 ## Does not own
 

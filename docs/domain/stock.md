@@ -125,7 +125,8 @@ Per-item, not one method for the whole company — [items.md](items.md#valuation
 [ADR 0032](../decisions/0032-per-item-valuation-method.md). Each item's `valuation_method` picks
 which of these applies. Receipts, outbound issues, shortage settlement and transfers are
 implemented for all three. Issues and transfers enforce exact-location/tracking availability and
-QA eligibility; replay remains a later Phase 2 slice.
+QA eligibility. Connected historical replay is implemented too — see
+[stock-movement-replay.md](stock-movement-replay.md).
 
 **AVCO.** On receipt:
 

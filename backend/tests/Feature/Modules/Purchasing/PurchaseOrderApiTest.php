@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Modules\Purchasing;
 
+use App\Exceptions\DomainInvariantException;
 use App\Models\Currency;
 use App\Models\Uom;
 use App\Models\User;
@@ -15,23 +16,59 @@ use App\Modules\Parties\Models\SupplierAccount;
 use App\Modules\Parties\Models\SupplierSite;
 use App\Modules\Purchasing\Models\ItemSupplier;
 use App\Modules\Purchasing\Models\PurchaseOrder;
+use App\Modules\Purchasing\Models\PurchasingPolicyChange;
 use App\Modules\Purchasing\Models\PurchasingSetting;
 use App\Modules\Purchasing\Support\OverReceiptMode;
 use App\Support\UomDimension;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 
 class PurchaseOrderApiTest extends PurchaseOrderFoundationTest
 {
     public function test_purchasing_settings_are_configurable_and_purchase_order_queries_are_validated(): void
     {
         $user = User::factory()->create();
+        app(PermissionRegistrar::class)->setPermissionsTeamId(1);
+        Permission::findOrCreate('purchasing.over-receipt-policy.manage');
+        $user->givePermissionTo('purchasing.over-receipt-policy.manage');
         $this->actingAs($user)->getJson('/api/v1/purchasing-settings')
             ->assertOk()->assertJsonPath('data.over_receipt_mode', 'BLOCK');
-        $this->patchJson('/api/v1/purchasing-settings', ['over_receipt_mode' => 'ALLOW_WITHIN_TOLERANCE', 'over_receipt_tolerance_percent' => '7.5000'])
+        $this->patchJson('/api/v1/purchasing-settings', ['over_receipt_mode' => 'ALLOW_WITHIN_TOLERANCE', 'over_receipt_tolerance_percent' => '7.5000', 'reason' => 'Supplier over-delivers within an agreed band'])
             ->assertOk()->assertJsonPath('data.over_receipt_tolerance_percent', '7.5000');
         $this->getJson('/api/v1/purchase-orders?sort=unknown')->assertUnprocessable();
         $this->getJson('/api/v1/purchase-orders?include=unknown')->assertUnprocessable();
+    }
+
+    public function test_over_receipt_policy_changes_need_permission_a_reason_and_leave_an_audit_row(): void
+    {
+        app(PermissionRegistrar::class)->setPermissionsTeamId(1);
+        Permission::findOrCreate('purchasing.over-receipt-policy.manage');
+        $unprivileged = User::factory()->create();
+        $this->actingAs($unprivileged)
+            ->patchJson('/api/v1/purchasing-settings', ['over_receipt_mode' => 'ALLOW_WITHIN_TOLERANCE', 'reason' => 'trying it on'])
+            ->assertForbidden();
+        $this->assertSame(0, PurchasingPolicyChange::query()->count());
+
+        $manager = User::factory()->create();
+        $manager->givePermissionTo('purchasing.over-receipt-policy.manage');
+        $this->actingAs($manager)
+            ->patchJson('/api/v1/purchasing-settings', ['over_receipt_mode' => 'ALLOW_WITHIN_TOLERANCE'])
+            ->assertUnprocessable();
+
+        $this->actingAs($manager)
+            ->patchJson('/api/v1/purchasing-settings', ['over_receipt_mode' => 'ALLOW_WITHIN_TOLERANCE', 'reason' => 'Agreed 5% band with the mill'])
+            ->assertSuccessful();
+
+        $change = PurchasingPolicyChange::query()->sole();
+        $this->assertSame('OVER_RECEIPT', $change->policy);
+        $this->assertSame('BLOCK', $change->old_values['over_receipt_mode']);
+        $this->assertSame('ALLOW_WITHIN_TOLERANCE', $change->new_values['over_receipt_mode']);
+        $this->assertSame($manager->id, $change->changed_by);
+
+        $this->expectException(DomainInvariantException::class);
+        $change->update(['reason' => 'rewritten']);
     }
 
     public function test_index_search_filters_by_partial_number(): void

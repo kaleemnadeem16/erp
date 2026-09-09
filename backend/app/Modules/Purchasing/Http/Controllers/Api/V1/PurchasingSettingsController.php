@@ -17,6 +17,10 @@ class PurchasingSettingsController extends Controller
 
     public function update(UpdatePurchasingSettingsRequest $request, UpdatePurchasingSettings $update): PurchasingSettingsResource
     {
-        return new PurchasingSettingsResource($update($request->validated()));
+        return new PurchasingSettingsResource($update(
+            $request->safe()->except('reason'),
+            $request->user()->id,
+            $request->validated('reason'),
+        ));
     }
 }

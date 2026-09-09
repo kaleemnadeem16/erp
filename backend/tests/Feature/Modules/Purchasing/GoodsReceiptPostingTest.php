@@ -23,6 +23,7 @@ use App\Modules\Parties\Models\SupplierSite;
 use App\Modules\Purchasing\Actions\IssuePurchaseOrder;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Modules\Purchasing\Models\PurchaseOrderLine;
+use App\Modules\Purchasing\Support\OverReceiptMode;
 use App\Support\UomDimension;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
@@ -341,6 +342,90 @@ class GoodsReceiptPostingTest extends PurchaseOrderFoundationTest
         $this->fail('Expected the database to reject the mutation.');
     }
 
+    /**
+     * ADR 0043's ALLOW_WITHIN_TOLERANCE arm had no posting test at all — only
+     * the BLOCK arm above was covered, so neither the tolerance ceiling nor
+     * its whole-unit flooring was ever exercised.
+     */
+    private function tolerantOrder(string $orderedQty, string $tolerancePercent): array
+    {
+        [$order, $item, $uom] = $this->makeOrder();
+        $item->update([
+            'is_stocked' => true, 'valuation_method' => ValuationMethod::Avco, 'tracking' => ItemTracking::None,
+            'avco_pool_scope' => AvcoPoolScope::CompanyItem,
+            'inventory_account_id' => $item->category->resolveInventoryAccountId() ?? ChartOfAccount::query()->firstOrFail()->id,
+        ]);
+        $order->lines()->create(array_merge($this->lineAttributes($order, $item, $uom), [
+            'ordered_qty' => $orderedQty, 'ordered_stock_qty' => $orderedQty, 'line_amount' => '100.0000',
+            'over_receipt_mode' => OverReceiptMode::AllowWithinTolerance,
+            'over_receipt_tolerance_percent' => $tolerancePercent,
+        ]));
+        app(IssuePurchaseOrder::class)($order);
+
+        return [$order->refresh(), $item->refresh(), $uom];
+    }
+
+    public function test_a_receipt_at_exactly_the_tolerance_ceiling_posts(): void
+    {
+        // 10 ordered + 20% = a ceiling of exactly 12.
+        [$order, $item, $uom] = $this->tolerantOrder('10.0000', '20.0000');
+        $receiptId = $this->createReceipt(
+            $order->lines()->sole()->id, $item->id, $uom->id, $this->locationId(), ['received_qty' => '12.0000'],
+        );
+
+        $this->postJson("/api/v1/goods-receipts/{$receiptId}/post")->assertOk();
+        $this->assertDatabaseCount('stock_moves', 1);
+    }
+
+    public function test_a_receipt_one_step_above_the_tolerance_ceiling_is_rejected(): void
+    {
+        [$order, $item, $uom] = $this->tolerantOrder('10.0000', '20.0000');
+        $receiptId = $this->createReceipt(
+            $order->lines()->sole()->id, $item->id, $uom->id, $this->locationId(), ['received_qty' => '12.0001'],
+        );
+
+        $this->postJson("/api/v1/goods-receipts/{$receiptId}/post")
+            ->assertUnprocessable()->assertJsonValidationErrors('stock_qty');
+        $this->assertDatabaseCount('stock_moves', 0);
+    }
+
+    public function test_the_tolerance_ceiling_floors_to_a_whole_unit_for_a_countable_item(): void
+    {
+        // 10 + 15% is 11.5, but the stock UoM is COUNT — half a unit cannot be
+        // received, so the ceiling floors to 11 rather than rounding to 12.
+        [$order, $item, $uom] = $this->tolerantOrder('10.0000', '15.0000');
+        $locationId = $this->locationId();
+
+        $rejected = $this->createReceipt(
+            $order->lines()->sole()->id, $item->id, $uom->id, $locationId, ['received_qty' => '12.0000'],
+        );
+        $this->postJson("/api/v1/goods-receipts/{$rejected}/post")
+            ->assertUnprocessable()->assertJsonValidationErrors('stock_qty');
+
+        $accepted = $this->createReceipt(
+            $order->lines()->sole()->id, $item->id, $uom->id, $locationId, ['received_qty' => '11.0000'],
+        );
+        $this->postJson("/api/v1/goods-receipts/{$accepted}/post")->assertOk();
+    }
+
+    public function test_cumulative_partial_receipts_are_measured_against_the_same_ceiling(): void
+    {
+        [$order, $item, $uom] = $this->tolerantOrder('10.0000', '20.0000');
+        $poLineId = $order->lines()->sole()->id;
+        $locationId = $this->locationId();
+
+        $first = $this->createReceipt($poLineId, $item->id, $uom->id, $locationId, ['received_qty' => '9.0000']);
+        $this->postJson("/api/v1/goods-receipts/{$first}/post")->assertOk();
+
+        // 9 + 3 = 12 is exactly the ceiling; 9 + 4 would exceed it.
+        $tooMuch = $this->createReceipt($poLineId, $item->id, $uom->id, $locationId, ['received_qty' => '4.0000']);
+        $this->postJson("/api/v1/goods-receipts/{$tooMuch}/post")
+            ->assertUnprocessable()->assertJsonValidationErrors('stock_qty');
+
+        $exact = $this->createReceipt($poLineId, $item->id, $uom->id, $locationId, ['received_qty' => '3.0000']);
+        $this->postJson("/api/v1/goods-receipts/{$exact}/post")->assertOk();
+    }
+
     public function test_item_valuation_policy_is_locked_after_receipt(): void
     {
         [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Avco);
@@ -349,6 +434,32 @@ class GoodsReceiptPostingTest extends PurchaseOrderFoundationTest
 
         $this->patchJson("/api/v1/items/{$item->id}", ['valuation_method' => 'FIFO'])
             ->assertUnprocessable()->assertJsonValidationErrors('valuation_method');
+    }
+
+    /**
+     * The same lock covers all three fields, but only valuation_method had a
+     * test — so a regression freeing either of the other two would have passed.
+     */
+    public function test_item_stock_uom_is_locked_after_receipt(): void
+    {
+        [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Avco);
+        $receiptId = $this->createReceipt($order->lines()->sole()->id, $item->id, $uom->id, $this->locationId());
+        $this->postJson("/api/v1/goods-receipts/{$receiptId}/post")->assertOk();
+
+        $otherUom = Uom::create(['code' => 'box-lock', 'name' => 'Box', 'dimension' => UomDimension::Count, 'factor_to_base' => '12']);
+
+        $this->patchJson("/api/v1/items/{$item->id}", ['stock_uom_id' => $otherUom->id])
+            ->assertUnprocessable()->assertJsonValidationErrors('stock_uom_id');
+    }
+
+    public function test_item_avco_pool_scope_is_locked_after_receipt(): void
+    {
+        [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Avco);
+        $receiptId = $this->createReceipt($order->lines()->sole()->id, $item->id, $uom->id, $this->locationId());
+        $this->postJson("/api/v1/goods-receipts/{$receiptId}/post")->assertOk();
+
+        $this->patchJson("/api/v1/items/{$item->id}", ['avco_pool_scope' => 'WAREHOUSE_ITEM'])
+            ->assertUnprocessable()->assertJsonValidationErrors('avco_pool_scope');
     }
 
     public function test_failure_rolls_back_every_inventory_effect_and_receipt_status(): void

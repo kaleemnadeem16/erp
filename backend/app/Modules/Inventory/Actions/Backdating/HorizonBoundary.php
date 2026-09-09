@@ -13,8 +13,9 @@ use Illuminate\Support\Carbon;
  * valuation-effective date the horizon allows — except under
  * BackdatingHorizonMode::PeriodLockOnly, where eligibility depends on the
  * proposed date's own accounting-period lock state rather than a single
- * calendar cutoff, so permittedFloor is null there; callers must branch on
- * withinHorizon, not on permittedFloor being set.
+ * calendar cutoff, so permittedFloor is null there unless a committed
+ * inventory cutover supplies one; callers must branch on withinHorizon, not
+ * on permittedFloor being set.
  */
 final readonly class HorizonBoundary
 {

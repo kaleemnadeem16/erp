@@ -11,6 +11,7 @@ use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Models\Location;
 use App\Modules\Inventory\Models\NegativeStockOverrideRequest;
 use App\Modules\Inventory\Models\StockBatch;
+use App\Modules\Inventory\Models\StockLayer;
 use App\Modules\Inventory\Support\ItemTracking;
 use App\Modules\Inventory\Support\NegativeStockAuthorisationMode;
 use App\Modules\Inventory\Support\NegativeStockMode;
@@ -23,7 +24,7 @@ use Illuminate\Support\Facades\DB;
 
 final class RequestNegativeStockOverride
 {
-    /** @param array{item_id:int,location_id:int,batch_id?:int|null,movement_class:string,requested_qty:string,available_qty:string,source_type:string,source_id:int,reason_code:string,explanation:string} $input */
+    /** @param array{item_id:int,location_id:int,batch_id?:int|null,movement_class:string,requested_qty:string,source_type:string,source_id:int,reason_code:string,explanation:string} $input */
     public function __invoke(array $input, User $actor): NegativeStockOverrideRequest
     {
         return DB::transaction(function () use ($input, $actor): NegativeStockOverrideRequest {
@@ -51,7 +52,16 @@ final class RequestNegativeStockOverride
                 throw new DomainInvariantException('A written explanation is required.', 'explanation');
             }
             $requested = BigDecimal::of($input['requested_qty']);
-            $available = BigDecimal::of($input['available_qty']);
+            // Derived, never taken from the caller: the movement boundary
+            // permits a shortage up to this record's shortage_qty, so a
+            // client-declared availability would let any requester
+            // manufacture authority for stock that was never short. Same
+            // live SUM(stock_layers.qty_remaining) at the exact identity that
+            // AddPhysicalCountLine snapshots as book_qty.
+            $available = BigDecimal::of((string) StockLayer::query()
+                ->where('item_id', $item->id)->where('location_id', $input['location_id'])
+                ->where('batch_id', $input['batch_id'] ?? null)->whereNull('serial_no')
+                ->sum('qty_remaining'));
             $shortage = $requested->minus($available);
             if ($requested->isLessThanOrEqualTo(0) || $available->isLessThan(0) || $shortage->isLessThanOrEqualTo(0)) {
                 throw new DomainInvariantException('An override request must describe a genuine positive shortage.', 'shortage_qty');
@@ -79,6 +89,7 @@ final class RequestNegativeStockOverride
             }
 
             return NegativeStockOverrideRequest::query()->create(array_merge($input, ['explanation' => trim($input['explanation']),
+                'available_qty' => (string) $available,
                 'shortage_qty' => (string) $shortage, 'authorisation_mode' => $company->negative_stock_authorisation_mode,
                 'allow_self_review' => $company->negative_stock_allow_self_review,
                 'requested_by' => $actor->id, 'requested_at' => now(),

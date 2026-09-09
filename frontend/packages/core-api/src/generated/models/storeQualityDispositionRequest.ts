@@ -9,8 +9,8 @@ import type { StoreQualityDispositionRequestSourceDispositionId } from "./storeQ
 
 export interface StoreQualityDispositionRequest {
   disposition: StoreQualityDispositionRequestDisposition;
-  /** @maximum 1000000000000000 */
-  qty: number;
+  /** @maxLength 1000000000000000 */
+  qty: string;
   /** @maxLength 500 */
   reason: string;
   source_disposition_id?: StoreQualityDispositionRequestSourceDispositionId;

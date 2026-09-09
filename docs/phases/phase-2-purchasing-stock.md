@@ -167,9 +167,13 @@ The order matters because later work needs stable document and stock boundaries:
       `PERIOD_LOCK_ONLY`, `POSTING_FLOOR` with fixed/rolling subtype), audited policy changes and
       most-restrictive-boundary evaluation; rolling mode requires a valid company IANA accounting
       timezone and trusted server time, never user-controlled clocks
-- [ ] Snapshot request-time rolling-floor context, preserve eligibility across normal clock
+- [x] Snapshot request-time rolling-floor context, preserve eligibility across normal clock
       progression, revalidate material policy/boundary changes at execution and reject per-request
-      horizon extensions
+      horizon extensions. `RequestStockRecalculation` snapshots `horizon_mode`/
+      `horizon_permitted_floor`; no request field can extend the horizon; and
+      `ExecuteRecalculation` re-evaluates the horizon before acting, so a tightened policy, a newly
+      closed period or a cutover approved after the request all stop execution
+      (`ExecuteRecalculationTest`)
 - [ ] Build recalculation requests with immutable append-only impact versions, exact-version
       approvals, state-based staleness and automatic replacement-version generation per
       [ADR 0040](../decisions/0040-control-backdated-stock-recalculation-and-corrections.md). Receipt,
@@ -188,6 +192,13 @@ The order matters because later work needs stable document and stock boundaries:
       [ADR 0040](../decisions/0040-control-backdated-stock-recalculation-and-corrections.md)
 - [ ] Audit every consequential company-policy change with elevated permission, mandatory reason,
       actor, old/new values and timestamp without rewriting snapshotted request context/deadlines
+      - Done for Inventory's three governed groups (`InventoryPolicyChange`) and, since the
+        pre-deployment audit, for Purchasing's over-receipt policy (`PurchasingPolicyChange`,
+        `purchasing.over-receipt-policy.manage`) — which previously had no permission, reason or
+        audit trail at all.
+      - Open: `inventory_location_mode` and `default_avco_pool_scope` remain ungoverned, pinned as
+        deliberate by an existing test. Whether that stands is Q17 in
+        [OPEN-QUESTIONS.md](../OPEN-QUESTIONS.md).
 - [x] Serialise overlapping recalculation execution with deterministic locks over the complete
       method-specific replay closure, count only post-approval material invalidations toward the
       regeneration cap, and escalate repeated cap hits without resetting the counter.
@@ -229,16 +240,17 @@ The order matters because later work needs stable document and stock boundaries:
 - [x] Build physical-count documents with snapshot lines, count/recount workflow and posted
       variance adjustments routed through the same movement Action
       ([physical-count.md](../domain/physical-count.md))
-- [ ] Add validated list filters, sorting, includes and pagination for all Phase 2 APIs; return
+- [x] Add validated list filters, sorting, includes and pagination for all Phase 2 APIs; return
       domain conflicts as stable 409/422 responses rather than leaking database exceptions
-      - Partial: every resource that already had an HTTP API is now polished — goods receipts
-        gained the `index` it was missing entirely, quality dispositions gained a `disposition`
-        filter, purchase orders gained a `filter[search]` on number, and a global `23514` CHECK-
-        violation handler now mirrors the existing `23503` one. Inventory cutover, stock
-        recalculation, negative-stock overrides, physical counts and the raw stock ledger
-        (`stock_moves`/`stock_layers`/`avco_pools`/`stock_valuation_entries`) remain Action-only
-        with no HTTP surface at all — deliberately deferred to be built per-screen once Phase 2
-        close-out's UI work actually needs each one, rather than guessed upfront.
+      - Every Phase 2 index endpoint validates `filter`, `sort`, `include` and its pagination
+        parameters through `ValidatesListQuery::listQueryRules()`; the cursor-paginated lists
+        (`stock-moves`, `stock-layers`) add `cursor` in place of `page`. Error mapping is global
+        in `bootstrap/app.php`: `DomainInvariantException` and unique-constraint violations →
+        422, SQLSTATE `23503` → 409, `23514` → 422, so no database exception reaches a client.
+      - All five originally Action-only areas now have HTTP surfaces — see Close-out below.
+        Remaining nit, deliberately left: `negative-stock-override-requests` and
+        `recalculation-requests` expose no `filter[status]`, because neither has a stored status
+        column (both derive it).
 - [x] Regenerate and commit the Orval client; verify all frontend type-checks and production build
 - [x] Run a Phase 2 integrity audit covering raw-write tenant protection, concurrency, rollback,
       duplicate submission, precision, tracking and historical-retention guarantees. Findings,
@@ -278,11 +290,11 @@ The order matters because later work needs stable document and stock boundaries:
 ### Close-out
 
 Phase 2 closes with UI, not with the backend alone — and the first screens can only be built
-against HTTP APIs that exist. Five feature areas are complete as Actions but deliberately have
-**no HTTP surface yet**; each is to be exposed when its first screen is designed, so the API
-shape is driven by a real screen's needs rather than guessed upfront (the architecture doc
-already flags the stock ledger as a cursor-pagination candidate, unlike every existing
-page-based list). Do not tick Phase 2 complete while any of these is still Action-only:
+against HTTP APIs that exist. Five feature areas were complete as Actions with no HTTP surface;
+each was exposed when its first screen was designed, so the API shape was driven by a real
+screen's needs rather than guessed upfront (the architecture doc flagged the stock ledger as a
+cursor-pagination candidate, unlike every existing page-based list). **All five now have both an
+HTTP surface and screens** — what remains below is the first production deployment:
 
 - [x] **Stock ledger** read APIs — `stock_moves` has a cursor-paginated list and a show endpoint
       (`GET /api/v1/stock-moves`), filterable by item/warehouse/location/batch/source type/date
@@ -350,40 +362,54 @@ Tick these in the same commit as the work.
 
 ## Acceptance criteria
 
-- [ ] One item can have several approved suppliers but no more than one active preferred supplier;
-      supplier-specific SKU/UoM/MOQ/lead time round-trip through the API
+- [x] One item can have several approved suppliers but no more than one active preferred supplier;
+      supplier-specific SKU/UoM/MOQ/lead time round-trip through the API (`ItemSupplierApiTest`;
+      preference uniqueness enforced by the `item_suppliers` partial unique index)
 - [x] An issued PO remains historically unchanged after item, supplier, exchange-rate or UoM
       master data changes (snapshotted at issue; commercial data and line snapshots are now also
       database-immutable — `PurchaseOrderApiTest`)
-- [ ] A partial receipt updates outstanding PO quantity exactly once and creates the matching
-      stock move/layer/valuation feed atomically
+- [x] A partial receipt updates outstanding PO quantity exactly once and creates the matching
+      stock move/layer/valuation feed atomically (`GoodsReceiptPostingTest`; outstanding quantity is
+      derived from posted rows rather than a mutable counter, so it cannot double-count)
 - [ ] Exact/above tolerance, indivisible flooring, cumulative partials and hard short-close behave
-      per ADR 0043; simultaneous receipts and duplicate posting cannot exceed or duplicate state
+      per ADR 0043; simultaneous receipts and duplicate posting cannot exceed or duplicate state.
+      The tolerance ceiling, one step above it, COUNT flooring (10 + 15% floors to 11, not 12) and
+      cumulative partials against one ceiling are all proven, as are short-close and duplicate
+      posting (`GoodsReceiptPostingTest`). **Still unproven:** two concurrent receipts against the
+      same PO line — the forked-process technique exists in `AvcoPoolConcurrencyTest` and
+      `QualityDispositionPostingTest` but has not been applied here
 - [x] Partial/repeated QA dispositions cannot allocate more than pending quantity, including under
       concurrent posting, and never mutate the original receipt
 - [x] Simultaneous receipts into one AVCO pool produce the mathematically correct quantity/value
       and average under a real PostgreSQL concurrency test; supported scopes resolve uniquely and
       remain tenant-isolated (`AvcoPoolConcurrencyTest`; scope shape/uniqueness is enforced by
       `avco_pools`' checks and partial unique indexes)
-- [ ] FIFO issues consume the oldest available layers, including an issue spanning multiple layers;
-      SPECIFIC issues consume only the named on-hand serial
+- [x] FIFO issues consume the oldest available layers, including an issue spanning multiple layers;
+      SPECIFIC issues consume only the named on-hand serial (`StockIssueTest`,
+      `StockLayerConsumptionTest`)
 - [ ] Batch/serial requirements follow `items.tracking`, not `valuation_method`
-- [ ] Same-pool transfers leave pool value/average unchanged; cross-pool transfers carry source
+- [x] Same-pool transfers leave pool value/average unchanged; cross-pool transfers carry source
       AVCO into the destination, recalculate destination AVCO and preserve total company quantity
       and value; a frozen source pool's rate is final and never later repaired (ADR 0045)
+      (`StockIssueTest`; ADR 0045 finality proven by `StockPoolRecoveryTest`)
 - [ ] Negative-stock and backdated-receipt behaviour exactly matches the accepted Q13/Q14 ADRs
 - [ ] A finalised inventory cutover reconciles exact locations, each target AVCO pool and company
       totals; continues or explicitly converts source valuation scope without rewriting history;
       and establishes valid AVCO/FIFO/SPECIFIC state without weakening Q13/Q14 controls
 - [ ] An item's valuation method, AVCO pool scope and stock UoM cannot be changed normally after
       its first move; historical valuation entries retain their original immutable pool identity
-- [ ] A negative location does not freeze a positive wider AVCO pool; each configured pool freezes
-      and recovers independently when its own quantity becomes non-positive
-- [ ] Authorised backdated replay follows affected configured AVCO pools and real cross-pool
-      dependencies while excluding unrelated pools
+- [x] A negative location does not freeze a positive wider AVCO pool; each configured pool freezes
+      and recovers independently when its own quantity becomes non-positive (`StockPoolRecoveryTest`;
+      freezing is decided per pool row in `AvcoPoolManager`)
+- [x] Authorised backdated replay follows affected configured AVCO pools and real cross-pool
+      dependencies while excluding unrelated pools (`MovementReplayScope`;
+      `OutboundRecalculationReviewTest`, `OutboundRecalculationTest`, `ExecuteRecalculationTest`)
 - [ ] Horizon eligibility uses the configured period/floor mode, snapshots trusted rolling context,
       cannot cross stricter cutover/period/policy boundaries and routes outside-horizon differences
-      to the explicit correction workflow without falsifying physical dates
+      to the explicit correction workflow without falsifying physical dates. Mode/floor/timezone,
+      the request-time snapshot and the **cutover** boundary are all proven
+      (`BackdatingHorizonEvaluatorTest`); the valuation-policy boundary is still uncomposed because
+      that subsystem does not exist yet
 - [ ] A backdated correction package is idempotent, preserves approved historical FX/deltas,
       allocates its economic lines without changing physical quantity, reconciles GL representation
       without double counting, reconciles Tax/integration/ancillary obligations on their own bases,

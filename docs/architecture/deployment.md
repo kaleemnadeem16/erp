@@ -91,6 +91,52 @@ own, but the compose file still does not embed a database — data lives outside
 Containers attach to `proxy-net` with Traefik labels; migrations run as a one-shot container
 before the app rolls over. Detail in [ci-cd.md](ci-cd.md#deployment).
 
+## First deploy runbook
+
+Never executed yet. These steps exist because each is a prerequisite the automated
+pipeline does **not** cover — CI builds and pushes images but does not deploy
+([pipeline.yml](../../.github/workflows/pipeline.yml)).
+
+**On dbvm, once, as a superuser:**
+
+1. Create the database and the application role, then grant it ownership of the schema.
+2. `CREATE EXTENSION btree_gist;` in the `erp` database. The `fiscal_years` migration
+   needs it and `erp_app` is not a superuser, so migrating first fails with
+   *permission denied to create extension*.
+3. Agree ERP's own `REDIS_DB` and `REDIS_CACHE_DB` indices with invoiceflow and crm, and
+   record them. They share the instance, and `cache:clear` issues `FLUSHDB`, which
+   ignores `REDIS_PREFIX` — so a clear on a shared index wipes a neighbour's cache.
+   **Keep `cache:clear` and `optimize:clear` out of the deploy sequence entirely.**
+
+**On mainvm, before the first `up`:**
+
+4. Copy `docker-compose.prod.yml` and a production `.env` into the project directory.
+   Set at minimum: `APP_ENV=production`, `APP_DEBUG=false`, a generated `APP_KEY`,
+   the dbvm database and Redis hosts, `SESSION_SECURE_COOKIE=true`, `TRUSTED_PROXIES`,
+   and `SANCTUM_STATEFUL_DOMAINS`/`CORS_ALLOWED_ORIGINS` matching the real SPA origin.
+5. Set the repository variable `ERP_API_BASE_URL` to the public API origin **before**
+   the image build — Vite inlines it at build time, so an image built without it
+   permanently points the SPA at localhost.
+6. Register the self-hosted ARM64 runner with the labels `self-hosted, arm64, erp`
+   ([ci-runner-setup.md](ci-runner-setup.md)). The `build` and `merge-manifest` jobs
+   target it and will queue forever without it.
+
+**Deploy:**
+
+7. Merge `develop` into `main` — the only branch that builds images
+   ([ADR 0029](../decisions/0029-develop-main-branching-model.md)). Wait for both
+   architectures and the manifest merge.
+8. `docker compose pull`.
+9. Run migrations as a one-shot container: `docker compose run --rm app php artisan migrate --force`.
+10. `docker compose up -d`.
+11. Create the first sign-in — migrations create company 1 but no user and no
+    permissions, and `demo:seed` refuses to run outside local/testing:
+    `docker compose run --rm app php artisan erp:create-admin --email=… --name=… --permissions=all`.
+
+**Rollback:** redeploy a previous image tag from `main`'s history by setting the image
+tag and repeating steps 8 and 10. Migrations are not automatically reversed — check
+whether the rollback target predates a schema change before rolling back.
+
 ## What a customer deployment needs
 
 Worth stating now, because it constrains design:

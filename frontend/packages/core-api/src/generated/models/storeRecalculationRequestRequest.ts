@@ -32,7 +32,7 @@ every prior Phase 2 FormRequest that references one. */
   batch_no?: StoreRecalculationRequestRequestBatchNo;
   /** @maxLength 255 */
   serial_no?: StoreRecalculationRequestRequestSerialNo;
-  qty: number;
+  qty: string;
   unit_cost?: StoreRecalculationRequestRequestUnitCost;
   base_unit_cost?: StoreRecalculationRequestRequestBaseUnitCost;
   currency_id?: StoreRecalculationRequestRequestCurrencyId;

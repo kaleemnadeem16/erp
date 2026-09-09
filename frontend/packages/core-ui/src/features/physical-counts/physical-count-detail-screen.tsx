@@ -113,7 +113,7 @@ export function PhysicalCountDetailScreen() {
     if (value === '') return;
     setActionError(null);
     recordLine.mutate(
-      { physicalCountLine: line.id, data: { counted_qty: Number(value) } },
+      { physicalCountLine: line.id, data: { counted_qty: String(value).trim() } },
       { onSuccess: () => countQuery.refetch(), onError: (error) => setActionError(getApiErrorMessage(error)) }
     );
   }
@@ -124,7 +124,7 @@ export function PhysicalCountDetailScreen() {
       .filter((line) => (lineVariance(line) ?? 0) > 0)
       .map((line) => ({
         physical_count_line_id: line.id,
-        unit_cost: Number(foundCostDrafts[line.id] ?? line.found_unit_cost ?? '0'),
+        unit_cost: String(foundCostDrafts[line.id] ?? line.found_unit_cost ?? '0').trim(),
       }));
 
     postCount.mutate(

@@ -6,6 +6,6 @@
  */
 
 /**
- * @maximum 1000000000000000
+ * @maxLength 1000000000000000
  */
-export type StoreItemSupplierRequestMinimumOrderQty = number | null;
+export type StoreItemSupplierRequestMinimumOrderQty = string | null;
