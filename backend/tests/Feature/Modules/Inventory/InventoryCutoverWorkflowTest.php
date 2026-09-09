@@ -26,6 +26,8 @@ use App\Modules\Inventory\Models\Category;
 use App\Modules\Inventory\Models\InventoryCutoverPolicyTransition;
 use App\Modules\Inventory\Models\InventorySourceFact;
 use App\Modules\Inventory\Models\Item;
+use App\Modules\Inventory\Models\Location;
+use App\Modules\Inventory\Support\InventoryCutoverBatchStatus;
 use App\Modules\Inventory\Support\ItemTracking;
 use App\Modules\Inventory\Support\ItemType;
 use App\Modules\Inventory\Support\ValuationMethod;
@@ -69,6 +71,9 @@ class InventoryCutoverWorkflowTest extends TestCase
         $preview = app(PreviewInventoryCutover::class)($cutover);
         $this->assertSame('10.0000', $preview['source_quantity']);
         $this->assertSame('125.0000', $preview['base_source_value']);
+        $this->assertSame('main', $preview['location_totals'][0]['warehouse_code']);
+        $this->assertSame('stock', $preview['location_totals'][0]['location_code']);
+        $this->assertSame('10.0000', $preview['location_totals'][0]['quantity']);
 
         $validated = app(ValidateInventoryCutover::class)($cutover, $this->permittedUser('inventory.cutover.validate'));
         $transition = InventoryCutoverPolicyTransition::query()->sole();
@@ -142,6 +147,70 @@ class InventoryCutoverWorkflowTest extends TestCase
         $this->assertNotNull($finalised->finalised_at);
     }
 
+    public function test_finalisation_rejects_a_batch_marked_committed_without_matching_location_and_pool_postings(): void
+    {
+        [, $batch] = $this->validatedImportBatch();
+        $cutover = app(CreateInventoryCutover::class)($this->cutoverInput(), $this->permittedUser('inventory.cutover.create'));
+        $link = app(AttachInventoryCutoverBatch::class)($cutover, $batch, $this->permittedUser('inventory.cutover.stage'));
+        $cutover = app(ValidateInventoryCutover::class)($cutover, $this->permittedUser('inventory.cutover.validate'));
+        $cutover = app(ApproveInventoryCutover::class)($cutover, $this->permittedUser('inventory.cutover.approve'));
+
+        // Simulate a broken owning-domain commit boundary. Status alone must
+        // never be enough to claim that opening stock reconciles.
+        $link->update(['status' => InventoryCutoverBatchStatus::Committed]);
+
+        try {
+            app(FinaliseInventoryCutover::class)($cutover, $this->permittedUser('inventory.cutover.finalise'));
+            $this->fail('Expected finalisation to independently reconcile the posted opening state.');
+        } catch (DomainInvariantException $e) {
+            $this->assertStringContainsString('does not reconcile', $e->getMessage());
+        }
+        $this->assertSame('APPROVED', $cutover->refresh()->status->value);
+        $this->assertDatabaseCount('stock_moves', 0);
+    }
+
+    public function test_batch_tracked_opening_stock_without_batch_identity_cannot_be_validated(): void
+    {
+        Item::query()->where('code', 'sku-100')->firstOrFail()->update(['tracking' => ItemTracking::Batch]);
+        [, $batch] = $this->validatedImportBatch();
+        $cutover = app(CreateInventoryCutover::class)($this->cutoverInput(), $this->permittedUser('inventory.cutover.create'));
+        app(AttachInventoryCutoverBatch::class)($cutover, $batch, $this->permittedUser('inventory.cutover.stage'));
+
+        try {
+            app(ValidateInventoryCutover::class)($cutover, $this->permittedUser('inventory.cutover.validate'));
+            $this->fail('Expected missing batch identity to keep the cutover unresolved.');
+        } catch (DomainInvariantException $e) {
+            $this->assertStringContainsString('require a batch', $e->getMessage());
+        }
+        $this->assertSame('DRAFT', $cutover->refresh()->status->value);
+    }
+
+    public function test_approved_default_location_resolves_to_a_real_location_and_is_visible_in_preview(): void
+    {
+        $openingLocation = Location::query()->sole();
+        $openingLocation->update(['code' => 'OPENING-BIN', 'name' => 'Opening bin']);
+        $approver = $this->permittedUser('inventory.cutover.approve');
+        [, $batch] = $this->validatedImportBatch(
+            transformations: ['location_code' => [
+                'type' => 'DEFAULT_IF_MISSING',
+                'value' => 'OPENING-BIN',
+                'reason' => 'Legacy balances are warehouse-level and this warehouse has one approved opening bin.',
+            ]],
+            approvedBy: $approver,
+            omitSourceFields: ['location'],
+        );
+        $cutover = app(CreateInventoryCutover::class)($this->cutoverInput(), $this->permittedUser('inventory.cutover.create'));
+        app(AttachInventoryCutoverBatch::class)($cutover, $batch, $this->permittedUser('inventory.cutover.stage'));
+
+        $fact = InventorySourceFact::query()->sole();
+        $this->assertSame($openingLocation->id, $fact->location_id);
+        $this->assertArrayNotHasKey('location', $fact->source_payload['raw']);
+        $this->assertSame('OPENING-BIN', $fact->source_payload['mapped']['location_code']);
+        $preview = app(PreviewInventoryCutover::class)($cutover);
+        $this->assertSame('opening-bin', $preview['location_totals'][0]['location_code']);
+        $this->assertSame($approver->id, $preview['transformation_decisions'][0]['approved_by']);
+    }
+
     public function test_only_one_non_failed_cutover_can_exist_for_a_company(): void
     {
         $creator = $this->permittedUser('inventory.cutover.create');
@@ -186,22 +255,32 @@ class InventoryCutoverWorkflowTest extends TestCase
     }
 
     /** @return array{ImportProfile, ImportBatch} */
-    private function validatedImportBatch(): array
-    {
+    private function validatedImportBatch(
+        array $transformations = [],
+        ?User $approvedBy = null,
+        array $omitSourceFields = [],
+    ): array {
         $profile = app(CreateImportProfile::class)('Cutover opening', ImportPurpose::InventoryCutover, 'OPENING_STATE', [
             'source_id' => 'source_record_id', 'sku' => 'item_code', 'warehouse' => 'warehouse_code',
             'location' => 'location_code', 'method' => 'source_valuation_method', 'scope' => 'source_avco_scope',
             'pool' => 'source_pool_identity', 'qty' => 'quantity', 'uom' => 'uom_code', 'cost' => 'unit_cost',
             'value' => 'amount', 'base_value' => 'base_amount', 'currency' => 'currency_code', 'fx' => 'fx_rate',
             'batch' => 'batch_no', 'serial' => 'serial_no', 'effective' => 'source_effective_at',
-        ]);
-        $batch = app(StageImportBatch::class)($profile, ImportPurpose::InventoryCutover, 'cutover-batch-1', 'opening.csv', [[
+        ], $transformations, $approvedBy);
+        $sourceRow = [
             'source_id' => 'LEGACY-ROW-1', 'sku' => 'SKU-100', 'warehouse' => 'MAIN', 'location' => 'STOCK',
             'method' => 'AVCO', 'scope' => 'COMPANY_ITEM', 'pool' => 'SKU-100', 'qty' => '10.0000',
             'uom' => 'EA', 'cost' => '12.5000', 'value' => '125.0000', 'base_value' => '125.0000',
             'currency' => 'PKR', 'fx' => '1.000000000', 'batch' => null, 'serial' => null,
             'effective' => '2026-09-01T00:00:00+05:00',
-        ]], User::factory()->create());
+        ];
+        foreach ($omitSourceFields as $field) {
+            unset($sourceRow[$field]);
+        }
+        $batch = app(StageImportBatch::class)(
+            $profile, ImportPurpose::InventoryCutover, 'cutover-batch-'.uniqid(), 'opening.csv',
+            [$sourceRow], User::factory()->create(),
+        );
 
         return [$profile, app(ValidateImportBatch::class)($batch)];
     }

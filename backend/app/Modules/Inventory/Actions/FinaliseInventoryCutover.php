@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\DB;
 
 final class FinaliseInventoryCutover
 {
+    public function __construct(private readonly InventoryCutoverReconciler $reconciler) {}
+
     public function __invoke(InventoryCutover $cutover, User $actor): InventoryCutover
     {
         if (! $actor->can('inventory.cutover.finalise')) {
@@ -31,6 +33,7 @@ final class FinaliseInventoryCutover
             if ($batches->isEmpty() || $batches->contains(fn ($batch): bool => $batch->status !== InventoryCutoverBatchStatus::Committed)) {
                 throw new DomainInvariantException('Every cutover batch must be committed by its owning domain Action before finalisation.', 'batches');
             }
+            $this->reconciler->assertCommittedStateReconciles($cutover);
             $cutover->update(['status' => InventoryCutoverStatus::Finalised, 'finalised_by' => $actor->id, 'finalised_at' => now()]);
 
             return $cutover->refresh();

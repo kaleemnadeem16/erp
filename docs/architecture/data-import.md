@@ -36,6 +36,14 @@ target schema (per entity) ──┐
 6. **Preview + commit.** The user sees a validation summary and error report before anything
    commits to live tables.
 
+Mappings may apply a narrowly defined `DEFAULT_IF_MISSING` transformation. For inventory opening
+state, each default is an explicit migration decision carrying its value, reason, authorised
+approver and approval time; the applied decision is copied into the immutable staged row beside
+the raw and mapped values. This is suitable for optional metadata or an approved opening location
+inside a supplied warehouse. It cannot default quantity, value, warehouse, item/UoM, valuation
+identity, batch or serial, and it never splits one source row across locations — see
+[ADR 0046](../decisions/0046-strict-staged-inventory-cutover-reconciliation.md).
+
 ## Schema
 
 ```
@@ -107,6 +115,12 @@ Inventory-owned Action will consume the validated batch for approval, reconcilia
 state creation. File parsing and the mapping UI remain future delivery; the current staging Action
 starts from already-parsed source rows.
 
+The implemented staging Action now executes approved missing-value defaults recorded on the
+profile and snapshots every applied decision in `mapped_data._transformations`. Inventory then
+validates the normalised facts and independently reconciles the committed ledger by exact
+item/location, target AVCO pool and company totals before finalisation. A legacy export need not
+mirror the target schema, but no critical inventory fact may be inferred silently.
+
 ## Landmines
 
 **Committing without a staging step.** The moment invalid rows can reach live tables directly,
@@ -126,3 +140,4 @@ links that are hard to notice later.
 - [domain/inventory-cutover.md](../domain/inventory-cutover.md) — inventory-specific cutover contract
 - [ADR 0027 — Generic column-mapping data import](../decisions/0027-generic-column-mapping-import.md)
 - [ADR 0036 — Controlled inventory cutover](../decisions/0036-controlled-inventory-cutover.md)
+- [ADR 0046 — Strict staged inventory cutover reconciliation](../decisions/0046-strict-staged-inventory-cutover-reconciliation.md)

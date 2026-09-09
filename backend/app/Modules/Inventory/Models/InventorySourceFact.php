@@ -79,6 +79,18 @@ class InventorySourceFact extends Model
         return $this->belongsTo(ImportBatchRow::class, 'import_batch_row_id');
     }
 
+    /** @return BelongsTo<Item, $this> */
+    public function item(): BelongsTo
+    {
+        return $this->belongsTo(Item::class);
+    }
+
+    /** @return BelongsTo<Location, $this> */
+    public function location(): BelongsTo
+    {
+        return $this->belongsTo(Location::class);
+    }
+
     /** @return BelongsTo<Currency, $this> */
     public function currency(): BelongsTo
     {

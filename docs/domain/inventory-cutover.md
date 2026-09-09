@@ -93,6 +93,14 @@ own pools.
    and activates live [ADR 0037](../decisions/0037-controlled-negative-stock-overrides.md)/Q14
    policy after `cutover_at`.
 
+Per [ADR 0046](../decisions/0046-strict-staged-inventory-cutover-reconciliation.md), the source
+export does not need to mirror this schema. Mapping/defaulting may produce the required staged
+shape, but it must be explicit and reviewable: an authorised `DEFAULT_IF_MISSING` decision may put
+a warehouse-only balance into an existing documented opening location, while the immutable staged
+row retains the raw absence, mapped value, reason, approver and approval time. No transform may
+invent quantity, value, warehouse allocation, item/UoM or valuation identity, batch or serial, and
+V1 never splits one company/warehouse total across target locations.
+
 The generic engine owns upload, mapping, staging and batch mechanics. Inventory owns validation
 and state creation. Purchasing owns imported open POs. Finance later owns the balancing opening
 journal. Cross-module writes use Actions; the importer does not write domain tables directly.
@@ -115,8 +123,17 @@ validation. The dedicated permissions are `inventory.cutover.create`, `.stage`, 
 `.approve`, `.commit` and `.finalise`.
 
 Finalisation refuses until every linked batch is `COMMITTED`. Approval alone can therefore never
-claim that stock is live. PostgreSQL triggers enforce provenance scope, immutable definitions/
-source facts and monotonic status transitions even for raw SQL.
+claim that stock is live. It also independently reconciles committed cutover movements against
+the immutable source facts by exact item/location, reconciles every target AVCO pool to its
+recorded contributions and rechecks company quantity/value controls; a false `COMMITTED` flag is
+not sufficient. PostgreSQL triggers enforce provenance scope, immutable definitions/source facts
+and monotonic status transitions even for raw SQL.
+
+Before approval, normalised facts must use the item's stock UoM and an active stock-holding
+location, satisfy tracking independently from valuation method, contain no duplicate serials, and
+reconcile quantity × unit cost and amount × FX rate where supplied. Missing optional metadata may
+remain null. Missing batch/serial identity or material location allocation remains unresolved.
+Preview includes exact location totals and every applied transformation decision.
 
 `InventoryCutoverPolicyTransition` records one immutable source-method/scope/pool → target-method/
 scope transition per distinct source identity, always effective at the cutover timestamp. Target
@@ -290,3 +307,4 @@ into product price, and open/unmatched source financial documents remain Phase 6
 - [ADR 0038](../decisions/0038-company-wide-per-item-avco-pool.md)
 - [ADR 0039](../decisions/0039-configurable-avco-valuation-pools.md)
 - [ADR 0041](../decisions/0041-progressive-inventory-location-capabilities.md)
+- [ADR 0046](../decisions/0046-strict-staged-inventory-cutover-reconciliation.md)

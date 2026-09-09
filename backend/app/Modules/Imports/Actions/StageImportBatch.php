@@ -25,9 +25,31 @@ final class StageImportBatch
             throw new DomainInvariantException('A source identity, file name and at least one row are required.');
         }
         $profile->loadMissing('mappings');
-        $mappedRows = array_map(fn (array $row): array => $profile->mappings->mapWithKeys(
-            fn ($mapping): array => [$mapping->target_field => $row[$mapping->source_column] ?? null]
-        )->all(), $rows);
+        $mappedRows = array_map(function (array $row) use ($profile): array {
+            $mapped = [];
+            /** @var array<int, array<string, mixed>> $appliedTransformations */
+            $appliedTransformations = [];
+            foreach ($profile->mappings as $mapping) {
+                $value = $row[$mapping->source_column] ?? null;
+                $transformation = $mapping->transform;
+                if (is_array($transformation)
+                    && ($transformation['type'] ?? null) === 'DEFAULT_IF_MISSING'
+                    && ($value === null || (is_string($value) && trim($value) === ''))) {
+                    $value = $transformation['value'];
+                    $appliedTransformations[] = [
+                        'source_column' => $mapping->source_column,
+                        'target_field' => $mapping->target_field,
+                        ...$transformation,
+                    ];
+                }
+                $mapped[$mapping->target_field] = $value;
+            }
+            if ($appliedTransformations !== []) {
+                $mapped['_transformations'] = $appliedTransformations;
+            }
+
+            return $mapped;
+        }, $rows);
         $checksum = hash('sha256', json_encode([$profile->id, $fileName, $rows], JSON_THROW_ON_ERROR));
 
         return DB::transaction(function () use ($profile, $purpose, $externalBatchId, $fileName, $rows, $mappedRows, $actor, $checksum): ImportBatch {

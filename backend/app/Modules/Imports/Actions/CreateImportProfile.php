@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Imports\Actions;
 
 use App\Exceptions\DomainInvariantException;
+use App\Models\User;
 use App\Modules\Imports\Models\ImportProfile;
 use App\Modules\Imports\Support\ImportPurpose;
 use App\Modules\Imports\Support\ImportTargetRegistry;
@@ -14,9 +15,18 @@ final class CreateImportProfile
 {
     public function __construct(private readonly ImportTargetRegistry $targets) {}
 
-    /** @param array<string, string> $mappings source column => target field */
-    public function __invoke(string $name, ImportPurpose $purpose, string $entityType, array $mappings): ImportProfile
-    {
+    /**
+     * @param  array<string, string>  $mappings  source column => target field
+     * @param  array<string, array<string, mixed>>  $transformations  target field => approved transform
+     */
+    public function __invoke(
+        string $name,
+        ImportPurpose $purpose,
+        string $entityType,
+        array $mappings,
+        array $transformations = [],
+        ?User $approvedBy = null,
+    ): ImportProfile {
         $target = $this->targets->get($purpose, $entityType);
         $knownFields = array_keys($target->rules());
         if (trim($name) === '') {
@@ -31,10 +41,45 @@ final class CreateImportProfile
             }
         }
 
-        return DB::transaction(function () use ($name, $target, $mappings): ImportProfile {
+        $storedTransformations = [];
+        if ($transformations !== []) {
+            if ($purpose !== ImportPurpose::InventoryCutover || $entityType !== 'OPENING_STATE') {
+                throw new DomainInvariantException('Approved defaults are currently supported only for inventory opening-state staging.', 'transformations');
+            }
+            if ($approvedBy === null || ! $approvedBy->can('inventory.cutover.approve')) {
+                throw new DomainInvariantException('Inventory cutover defaults require an authorised approver.', 'transformations');
+            }
+            $nonDefaultable = [
+                'source_record_id', 'item_code', 'warehouse_code', 'source_valuation_method',
+                'source_avco_scope', 'source_pool_identity', 'quantity', 'uom_code',
+                'amount', 'base_amount', 'batch_no', 'serial_no',
+            ];
+            foreach ($transformations as $targetField => $transformation) {
+                $type = $transformation['type'] ?? null;
+                $reason = trim((string) ($transformation['reason'] ?? ''));
+                if (! in_array($targetField, $mappings, true) || $type !== 'DEFAULT_IF_MISSING'
+                    || ! array_key_exists('value', $transformation) || ! is_scalar($transformation['value'])
+                    || $reason === '' || in_array($targetField, $nonDefaultable, true)) {
+                    throw new DomainInvariantException('The transformation is unsupported or attempts to default a critical inventory fact.', 'transformations');
+                }
+                $storedTransformations[$targetField] = [
+                    'type' => $type,
+                    'value' => $transformation['value'],
+                    'reason' => $reason,
+                    'approved_by' => $approvedBy->id,
+                    'approved_at' => now()->toIso8601String(),
+                ];
+            }
+        }
+
+        return DB::transaction(function () use ($name, $target, $mappings, $storedTransformations): ImportProfile {
             $profile = ImportProfile::query()->create(['name' => trim($name), 'entity_type' => $target->entityType()]);
             foreach ($mappings as $source => $field) {
-                $profile->mappings()->create(['source_column' => trim((string) $source), 'target_field' => $field]);
+                $profile->mappings()->create([
+                    'source_column' => trim((string) $source),
+                    'target_field' => $field,
+                    'transform' => $storedTransformations[$field] ?? null,
+                ]);
             }
 
             return $profile->load('mappings');

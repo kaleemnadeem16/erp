@@ -14,7 +14,10 @@ use Illuminate\Support\Facades\DB;
 
 final class ValidateInventoryCutover
 {
-    public function __construct(private readonly RecordInventoryCutoverPolicyTransitions $policyTransitions) {}
+    public function __construct(
+        private readonly RecordInventoryCutoverPolicyTransitions $policyTransitions,
+        private readonly InventoryCutoverReconciler $reconciler,
+    ) {}
 
     public function __invoke(InventoryCutover $cutover, User $actor): InventoryCutover
     {
@@ -34,6 +37,7 @@ final class ValidateInventoryCutover
             if ($batches->isEmpty() || ! $batches->contains('entity_type', 'OPENING_STATE')) {
                 throw new DomainInvariantException('At least one opening-state batch is required.', 'batches');
             }
+            $this->reconciler->assertStagedFactsAreTrustworthy($cutover);
             $quantity = $batches->reduce(fn (BigDecimal $sum, $batch): BigDecimal => $sum->plus($batch->source_quantity), BigDecimal::zero());
             $value = $batches->reduce(fn (BigDecimal $sum, $batch): BigDecimal => $sum->plus($batch->source_value), BigDecimal::zero());
             $baseValue = $batches->reduce(fn (BigDecimal $sum, $batch): BigDecimal => $sum->plus($batch->base_source_value), BigDecimal::zero());

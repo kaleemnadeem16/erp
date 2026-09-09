@@ -11,6 +11,8 @@ use App\Modules\Imports\Support\ImportPurpose;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class InventoryCutoverImportContractTest extends TestCase
@@ -64,6 +66,93 @@ class InventoryCutoverImportContractTest extends TestCase
         $this->assertArrayHasKey('source_valuation_method', $staged->errors);
         $this->assertArrayHasKey('quantity', $staged->errors);
         $this->assertEqualsCanonicalizing($row, $staged->raw_data);
+    }
+
+    public function test_an_approved_default_location_is_applied_and_retained_as_visible_staging_evidence(): void
+    {
+        app(PermissionRegistrar::class)->setPermissionsTeamId(1);
+        Permission::findOrCreate('inventory.cutover.approve');
+        $approver = User::factory()->create();
+        $approver->givePermissionTo('inventory.cutover.approve');
+        $profile = app(CreateImportProfile::class)(
+            'Legacy warehouse-only stock',
+            ImportPurpose::InventoryCutover,
+            'OPENING_STATE',
+            $this->mappings(),
+            ['location_code' => [
+                'type' => 'DEFAULT_IF_MISSING',
+                'value' => 'OPENING-BIN',
+                'reason' => 'The legacy ERP stores one stock balance per warehouse and the company approved its opening bin.',
+            ]],
+            $approver,
+        );
+        $source = $this->validSourceRow();
+        unset($source['location']);
+
+        $batch = app(StageImportBatch::class)(
+            $profile, ImportPurpose::InventoryCutover, 'explicit-default-location', 'stock.csv',
+            [$source], User::factory()->create(),
+        );
+        $batch = app(ValidateImportBatch::class)($batch);
+        $row = $batch->rows->sole();
+
+        $this->assertSame('VALID', $row->status->value);
+        $this->assertSame('OPENING-BIN', $row->mapped_data['location_code']);
+        $this->assertArrayNotHasKey('location', $row->raw_data);
+        $decision = $row->mapped_data['_transformations'][0];
+        $this->assertSame('location_code', $decision['target_field']);
+        $this->assertSame($approver->id, $decision['approved_by']);
+        $this->assertNotEmpty($decision['reason']);
+    }
+
+    public function test_critical_inventory_facts_cannot_be_defaulted(): void
+    {
+        app(PermissionRegistrar::class)->setPermissionsTeamId(1);
+        Permission::findOrCreate('inventory.cutover.approve');
+        $approver = User::factory()->create();
+        $approver->givePermissionTo('inventory.cutover.approve');
+
+        $this->expectException(DomainInvariantException::class);
+        app(CreateImportProfile::class)(
+            'Unsafe quantity default', ImportPurpose::InventoryCutover, 'OPENING_STATE', $this->mappings(),
+            ['quantity' => ['type' => 'DEFAULT_IF_MISSING', 'value' => '100.0000', 'reason' => 'Unknown quantity']],
+            $approver,
+        );
+    }
+
+    public function test_missing_warehouse_and_location_remain_validation_errors_without_explicit_mapping_decisions(): void
+    {
+        $profile = app(CreateImportProfile::class)(
+            'Unallocated company total', ImportPurpose::InventoryCutover, 'OPENING_STATE', $this->mappings(),
+        );
+        $source = $this->validSourceRow();
+        unset($source['warehouse'], $source['location']);
+        $batch = app(StageImportBatch::class)(
+            $profile, ImportPurpose::InventoryCutover, 'unallocated-company-total', 'stock.csv',
+            [$source], User::factory()->create(),
+        );
+        $batch = app(ValidateImportBatch::class)($batch);
+
+        $row = $batch->rows->sole();
+        $this->assertSame('INVALID', $row->status->value);
+        $this->assertArrayHasKey('warehouse_code', $row->errors);
+        $this->assertArrayHasKey('location_code', $row->errors);
+    }
+
+    public function test_missing_optional_metadata_does_not_block_staging_validation(): void
+    {
+        $profile = app(CreateImportProfile::class)(
+            'Minimal trusted opening', ImportPurpose::InventoryCutover, 'OPENING_STATE', $this->mappings(),
+        );
+        $source = $this->validSourceRow();
+        unset($source['unit_cost'], $source['currency'], $source['fx'], $source['batch'], $source['serial'], $source['effective_at']);
+        $batch = app(StageImportBatch::class)(
+            $profile, ImportPurpose::InventoryCutover, 'minimal-opening', 'stock.csv',
+            [$source], User::factory()->create(),
+        );
+        $batch = app(ValidateImportBatch::class)($batch);
+
+        $this->assertSame('VALID', $batch->rows->sole()->status->value);
     }
 
     public function test_external_batch_identity_is_idempotent_but_cannot_be_reused_for_different_source(): void

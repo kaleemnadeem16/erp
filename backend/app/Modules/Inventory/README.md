@@ -163,6 +163,13 @@ provenance; FIFO posts a real dated layer per fact that carries its own age or s
 rest into one synthetic layer per location/batch dated at `cutover_at`; SPECIFIC always posts one
 real layer per serial. Idempotent by batch status.
 
+`InventoryCutoverReconciler` is deliberately separate from the poster. Before validation it
+rejects untrustworthy normalised facts (wrong stock UoM, inactive/non-stock location, impossible
+tracking identity, duplicate serial, or inconsistent quantity/value/FX arithmetic). At
+finalisation it reconstructs the cutover's posted moves and proves exact item/location totals,
+target AVCO pools and company controls independently of the batch status flags. Preview exposes
+the location totals and every applied approved default from immutable staging evidence (ADR 0046).
+
 A negative fact requires an **approved** `InventoryCutoverNegativeOpening` at its exact item,
 location and batch — ADR 0037's cutover-shortage exception. `RequestInventoryCutoverNegativeOpening`
 computes the evidenced quantity from the cutover's own immutable source facts (never free-form

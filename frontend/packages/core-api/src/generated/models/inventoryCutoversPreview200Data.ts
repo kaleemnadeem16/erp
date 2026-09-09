@@ -4,6 +4,8 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
+import type { InventoryCutoversPreview200DataLocationTotalsItem } from "./inventoryCutoversPreview200DataLocationTotalsItem";
+import type { InventoryCutoversPreview200DataTransformationDecisionsItem } from "./inventoryCutoversPreview200DataTransformationDecisionsItem";
 
 export type InventoryCutoversPreview200Data = {
   status: string;
@@ -18,4 +20,6 @@ export type InventoryCutoversPreview200Data = {
   control_quantity: string;
   control_value: string;
   base_control_value: string;
+  location_totals: InventoryCutoversPreview200DataLocationTotalsItem[];
+  transformation_decisions: InventoryCutoversPreview200DataTransformationDecisionsItem[];
 };

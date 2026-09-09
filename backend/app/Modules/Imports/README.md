@@ -26,8 +26,15 @@ schema. `StageImportBatch` maps rows, freezes a SHA-256 source identity and make
 idempotent within company and purpose. `ValidateImportBatch` records per-row schema errors and
 freezes the batch for preview. Neither Action can write domain state.
 
+Inventory opening profiles may also carry an approved `DEFAULT_IF_MISSING` transformation for a
+non-critical target field or documented opening location. The value, reason, approver and approval
+time are stored on the mapping; each application is copied into the immutable staged row. Critical
+facts (including quantity/value, warehouse, item/UoM, valuation identity, batch and serial) cannot
+be defaulted, and staging never splits a source balance across target locations (ADR 0046).
+
 ## Related
 
 - [Data import](../../../../docs/architecture/data-import.md)
 - [ADR 0027](../../../../docs/decisions/0027-generic-column-mapping-import.md)
 - [Inventory cutover](../../../../docs/domain/inventory-cutover.md)
+- [ADR 0046](../../../../docs/decisions/0046-strict-staged-inventory-cutover-reconciliation.md)

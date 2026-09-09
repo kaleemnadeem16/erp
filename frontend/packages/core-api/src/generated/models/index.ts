@@ -223,6 +223,8 @@ export * from "./inventoryCutoversIndexSort";
 export * from "./inventoryCutoversNegativeOpeningsStore201";
 export * from "./inventoryCutoversPreview200";
 export * from "./inventoryCutoversPreview200Data";
+export * from "./inventoryCutoversPreview200DataLocationTotalsItem";
+export * from "./inventoryCutoversPreview200DataTransformationDecisionsItem";
 export * from "./inventoryCutoversShow200";
 export * from "./inventoryCutoversShowParams";
 export * from "./inventoryCutoversStore201";

@@ -8,6 +8,7 @@ use App\Models\Model;
 use App\Support\Concerns\BelongsToCompanyThroughParent;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/** @property array<string, mixed>|null $transform */
 class ImportMapping extends Model
 {
     use BelongsToCompanyThroughParent;

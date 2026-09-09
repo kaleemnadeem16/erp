@@ -9,6 +9,8 @@ use Brick\Math\BigDecimal;
 
 final class PreviewInventoryCutover
 {
+    public function __construct(private readonly InventoryCutoverReconciler $reconciler) {}
+
     /** @return array<string, mixed> */
     public function __invoke(InventoryCutover $cutover): array
     {
@@ -29,6 +31,7 @@ final class PreviewInventoryCutover
             'control_quantity' => $cutover->control_quantity,
             'control_value' => $cutover->control_value,
             'base_control_value' => $cutover->base_control_value,
+            ...$this->reconciler->preview($cutover),
         ];
     }
 }

@@ -224,9 +224,13 @@ The order matters because later work needs stable document and stock boundaries:
       synthetic layers, and per-serial SPECIFIC costs; preserve source method/scope/pool identity
       and effective-dated transitions across a method or AVCO-scope change
       (`CommitInventoryCutoverOpeningState`/`OpeningStateItemPoster`)
-- [ ] Validate quantity/value by exact location, target AVCO pool and company total, plus UoM/FX,
+- [x] Validate quantity/value by exact location, target AVCO pool and company total, plus UoM/FX,
       batch/serial identity and layer totals; reject unsupported broad→narrow pool allocation or
-      require an explicitly approved revaluation basis rather than inventing detail
+      require an explicitly approved revaluation basis rather than inventing detail. ADR 0046's
+      strict V1 boundary permits only approver-attributed defaults for optional fields or an exact
+      opening location within a supplied warehouse; validation rejects missing critical identity
+      or inconsistent arithmetic, and finalisation independently reconciles posted location/pool/
+      company totals (`InventoryCutoverImportContractTest`, `InventoryCutoverWorkflowTest`)
 - [x] Keep historical negative/backdated source facts separate from live posting, and test that no
       ordinary API, mapping template or post-cutover batch can invoke migration-only exceptions
       — the cutover-shortage exception (`InventoryCutoverNegativeOpening`) is a structurally
@@ -395,9 +399,10 @@ Tick these in the same commit as the work.
       and value; a frozen source pool's rate is final and never later repaired (ADR 0045)
       (`StockIssueTest`; ADR 0045 finality proven by `StockPoolRecoveryTest`)
 - [ ] Negative-stock and backdated-receipt behaviour exactly matches the accepted Q13/Q14 ADRs
-- [ ] A finalised inventory cutover reconciles exact locations, each target AVCO pool and company
+- [x] A finalised inventory cutover reconciles exact locations, each target AVCO pool and company
       totals; continues or explicitly converts source valuation scope without rewriting history;
       and establishes valid AVCO/FIFO/SPECIFIC state without weakening Q13/Q14 controls
+      (`InventoryCutoverWorkflowTest`, `InventoryCutoverOpeningStatePostingTest`, ADR 0046)
 - [x] An item's valuation method, AVCO pool scope and stock UoM cannot be changed normally after
       its first move; all three API rejection paths are proven after a real receipt, and historical
       valuation entries retain their original immutable pool identity (`GoodsReceiptPostingTest`,
