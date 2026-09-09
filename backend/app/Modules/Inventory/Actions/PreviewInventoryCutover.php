@@ -15,9 +15,10 @@ final class PreviewInventoryCutover
     public function __invoke(InventoryCutover $cutover): array
     {
         $cutover->loadMissing('batches');
-        $quantity = $cutover->batches->reduce(fn (BigDecimal $sum, $batch): BigDecimal => $sum->plus($batch->source_quantity), BigDecimal::zero());
-        $value = $cutover->batches->reduce(fn (BigDecimal $sum, $batch): BigDecimal => $sum->plus($batch->source_value), BigDecimal::zero());
-        $baseValue = $cutover->batches->reduce(fn (BigDecimal $sum, $batch): BigDecimal => $sum->plus($batch->base_source_value), BigDecimal::zero());
+        $openingBatches = $cutover->batches->where('entity_type', 'OPENING_STATE');
+        $quantity = $openingBatches->reduce(fn (BigDecimal $sum, $batch): BigDecimal => $sum->plus($batch->source_quantity), BigDecimal::zero());
+        $value = $openingBatches->reduce(fn (BigDecimal $sum, $batch): BigDecimal => $sum->plus($batch->source_value), BigDecimal::zero());
+        $baseValue = $openingBatches->reduce(fn (BigDecimal $sum, $batch): BigDecimal => $sum->plus($batch->base_source_value), BigDecimal::zero());
 
         return [
             'status' => $cutover->status->value,

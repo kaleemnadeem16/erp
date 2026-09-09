@@ -43,8 +43,8 @@ final class CreateImportProfile
 
         $storedTransformations = [];
         if ($transformations !== []) {
-            if ($purpose !== ImportPurpose::InventoryCutover || $entityType !== 'OPENING_STATE') {
-                throw new DomainInvariantException('Approved defaults are currently supported only for inventory opening-state staging.', 'transformations');
+            if ($purpose !== ImportPurpose::InventoryCutover || ! in_array($entityType, ['OPENING_STATE', 'OPEN_PURCHASE_ORDER'], true)) {
+                throw new DomainInvariantException('Approved defaults are currently supported only for registered cutover staging targets.', 'transformations');
             }
             if ($approvedBy === null || ! $approvedBy->can('inventory.cutover.approve')) {
                 throw new DomainInvariantException('Inventory cutover defaults require an authorised approver.', 'transformations');
@@ -53,6 +53,9 @@ final class CreateImportProfile
                 'source_record_id', 'item_code', 'warehouse_code', 'source_valuation_method',
                 'source_avco_scope', 'source_pool_identity', 'quantity', 'uom_code',
                 'amount', 'base_amount', 'batch_no', 'serial_no',
+                'source_purchase_order_id', 'source_line_id', 'supplier_code', 'currency_code',
+                'fx_rate', 'fx_rate_date', 'order_date', 'line_number', 'remaining_quantity',
+                'purchase_uom_code', 'unit_price',
             ];
             foreach ($transformations as $targetField => $transformation) {
                 $type = $transformation['type'] ?? null;

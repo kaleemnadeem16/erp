@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Modules\Purchasing\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Modules\Inventory\Models\InventoryCutover;
 use App\Modules\Purchasing\Actions\CancelPurchaseOrder;
+use App\Modules\Purchasing\Actions\CommitInventoryCutoverOpenPurchaseOrders;
 use App\Modules\Purchasing\Actions\CreatePurchaseOrder;
 use App\Modules\Purchasing\Actions\IssuePurchaseOrder;
 use App\Modules\Purchasing\Actions\ShortClosePurchaseOrderLine;
@@ -21,6 +23,7 @@ use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Modules\Purchasing\Models\PurchaseOrderLine;
 use App\Support\Concerns\AppliesApiQuery;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class PurchaseOrderController extends Controller
@@ -76,5 +79,10 @@ class PurchaseOrderController extends Controller
     public function shortClose(PurchaseOrderLine $purchaseOrderLine, ShortClosePurchaseOrderLine $shortClose): PurchaseOrderLineResource
     {
         return new PurchaseOrderLineResource($shortClose($purchaseOrderLine));
+    }
+
+    public function commitCutover(Request $request, InventoryCutover $inventoryCutover, CommitInventoryCutoverOpenPurchaseOrders $commit): AnonymousResourceCollection
+    {
+        return PurchaseOrderResource::collection($commit($inventoryCutover, $request->user()));
     }
 }

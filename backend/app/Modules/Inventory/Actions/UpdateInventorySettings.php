@@ -22,6 +22,8 @@ final class UpdateInventorySettings
      * by the group name.
      */
     private const POLICY_FIELD_GROUPS = [
+        'LOCATION_STRUCTURE' => ['inventory_location_mode'],
+        'DEFAULT_AVCO_POOL_SCOPE' => ['default_avco_pool_scope'],
         'NEGATIVE_STOCK' => [
             'negative_stock_mode', 'negative_stock_authorisation_mode', 'negative_stock_review_sla_hours',
             'negative_stock_allow_self_review', 'negative_stock_sales_despatch_enabled',

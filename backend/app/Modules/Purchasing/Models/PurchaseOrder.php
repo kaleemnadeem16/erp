@@ -7,6 +7,8 @@ namespace App\Modules\Purchasing\Models;
 use App\Exceptions\DomainInvariantException;
 use App\Models\Currency;
 use App\Models\Model;
+use App\Modules\Imports\Models\ImportBatch;
+use App\Modules\Inventory\Models\InventoryCutover;
 use App\Modules\Parties\Models\SupplierAccount;
 use App\Modules\Parties\Models\SupplierSite;
 use App\Modules\Purchasing\Support\PurchaseOrderFxPolicy;
@@ -34,6 +36,10 @@ use Illuminate\Support\Carbon;
  * @property CarbonImmutable|null $issued_at
  * @property CarbonImmutable|null $closed_at
  * @property CarbonImmutable|null $cancelled_at
+ * @property int|null $inventory_cutover_id
+ * @property int|null $import_batch_id
+ * @property string|null $source_system
+ * @property string|null $source_record_id
  * @property-read SupplierAccount $supplierAccount
  * @property-read SupplierSite|null $supplierSite
  * @property-read Currency $currency
@@ -49,7 +55,7 @@ class PurchaseOrder extends Model
     {
         static::updating(function (PurchaseOrder $purchaseOrder): void {
             if ($purchaseOrder->getOriginal('status') !== PurchaseOrderStatus::Draft
-                && $purchaseOrder->isDirty(['supplier_account_id', 'supplier_site_id', 'currency_id', 'fx_policy', 'fx_rate', 'fx_rate_date', 'fx_rate_type', 'fx_rate_source', 'order_date', 'expected_delivery_date'])) {
+                && $purchaseOrder->isDirty(['supplier_account_id', 'supplier_site_id', 'currency_id', 'fx_policy', 'fx_rate', 'fx_rate_date', 'fx_rate_type', 'fx_rate_source', 'order_date', 'expected_delivery_date', 'inventory_cutover_id', 'import_batch_id', 'source_system', 'source_record_id'])) {
                 throw new DomainInvariantException('Issued purchase-order commercial data is immutable.', 'status');
             }
         });
@@ -72,7 +78,10 @@ class PurchaseOrder extends Model
 
     protected static function companyScopedForeignKeys(): array
     {
-        return ['supplier_account_id' => SupplierAccount::class, 'supplier_site_id' => SupplierSite::class];
+        return [
+            'supplier_account_id' => SupplierAccount::class, 'supplier_site_id' => SupplierSite::class,
+            'inventory_cutover_id' => InventoryCutover::class, 'import_batch_id' => ImportBatch::class,
+        ];
     }
 
     protected function casts(): array
@@ -112,5 +121,17 @@ class PurchaseOrder extends Model
     public function currency(): BelongsTo
     {
         return $this->belongsTo(Currency::class);
+    }
+
+    /** @return BelongsTo<InventoryCutover, $this> */
+    public function inventoryCutover(): BelongsTo
+    {
+        return $this->belongsTo(InventoryCutover::class);
+    }
+
+    /** @return BelongsTo<ImportBatch, $this> */
+    public function importBatch(): BelongsTo
+    {
+        return $this->belongsTo(ImportBatch::class);
     }
 }

@@ -22,6 +22,8 @@ class NegativeStockPolicyTest extends TestCase
         parent::setUp();
         app(PermissionRegistrar::class)->setPermissionsTeamId(1);
         Permission::findOrCreate('inventory.negative-stock-policy.manage');
+        Permission::findOrCreate('inventory.location-policy.manage');
+        Permission::findOrCreate('inventory.valuation-policy.manage');
     }
 
     public function test_policy_defaults_are_conservative_and_typed(): void
@@ -58,15 +60,43 @@ class NegativeStockPolicyTest extends TestCase
         $this->assertSame($payload['reason'], $change->reason);
     }
 
-    public function test_non_policy_inventory_setting_does_not_require_elevated_permission_or_audit_reason(): void
+    public function test_location_mode_requires_its_own_permission_reason_and_audit_record(): void
     {
         $user = User::factory()->create();
 
         $this->actingAs($user)->patchJson('/api/v1/inventory-settings', [
             'inventory_location_mode' => 'STRUCTURED',
+        ])->assertForbidden();
+        $user->givePermissionTo('inventory.location-policy.manage');
+        $this->patchJson('/api/v1/inventory-settings', [
+            'inventory_location_mode' => 'STRUCTURED',
+        ])->assertUnprocessable()->assertJsonValidationErrors('reason');
+        $this->patchJson('/api/v1/inventory-settings', [
+            'inventory_location_mode' => 'STRUCTURED', 'reason' => 'Enable controlled bin structure',
         ])->assertOk();
 
-        $this->assertDatabaseCount('inventory_policy_changes', 0);
+        $change = InventoryPolicyChange::query()->sole();
+        $this->assertSame('LOCATION_STRUCTURE', $change->policy);
+        $this->assertSame(['inventory_location_mode' => 'SIMPLE'], $change->old_values);
+        $this->assertSame(['inventory_location_mode' => 'STRUCTURED'], $change->new_values);
+    }
+
+    public function test_default_avco_scope_requires_its_own_permission_reason_and_audit_record(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->patchJson('/api/v1/inventory-settings', [
+            'default_avco_pool_scope' => 'WAREHOUSE_ITEM',
+        ])->assertForbidden();
+        $user->givePermissionTo('inventory.valuation-policy.manage');
+        $this->patchJson('/api/v1/inventory-settings', [
+            'default_avco_pool_scope' => 'WAREHOUSE_ITEM', 'reason' => 'Value stock by warehouse',
+        ])->assertOk();
+
+        $change = InventoryPolicyChange::query()->sole();
+        $this->assertSame('DEFAULT_AVCO_POOL_SCOPE', $change->policy);
+        $this->assertSame(['default_avco_pool_scope' => 'COMPANY_ITEM'], $change->old_values);
+        $this->assertSame(['default_avco_pool_scope' => 'WAREHOUSE_ITEM'], $change->new_values);
     }
 
     public function test_review_sla_is_bounded_in_api_and_database(): void

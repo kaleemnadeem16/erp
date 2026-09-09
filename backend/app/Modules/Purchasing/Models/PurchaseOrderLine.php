@@ -7,6 +7,7 @@ namespace App\Modules\Purchasing\Models;
 use App\Exceptions\DomainInvariantException;
 use App\Models\Model;
 use App\Models\Uom;
+use App\Modules\Imports\Models\ImportBatchRow;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Purchasing\Support\OverReceiptMode;
 use App\Modules\Purchasing\Support\PurchaseOrderStatus;
@@ -33,6 +34,8 @@ use Illuminate\Support\Carbon;
  * @property OverReceiptMode|null $over_receipt_mode
  * @property string|null $over_receipt_tolerance_percent
  * @property string $short_closed_stock_qty
+ * @property int|null $import_batch_row_id
+ * @property string|null $source_record_id
  * @property-read PurchaseOrder $purchaseOrder
  * @property-read Item $item
  */
@@ -103,5 +106,11 @@ class PurchaseOrderLine extends Model
     public function stockUom(): BelongsTo
     {
         return $this->belongsTo(Uom::class, 'stock_uom_id');
+    }
+
+    /** @return BelongsTo<ImportBatchRow, $this> */
+    public function importBatchRow(): BelongsTo
+    {
+        return $this->belongsTo(ImportBatchRow::class);
     }
 }

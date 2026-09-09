@@ -38,9 +38,10 @@ final class ValidateInventoryCutover
                 throw new DomainInvariantException('At least one opening-state batch is required.', 'batches');
             }
             $this->reconciler->assertStagedFactsAreTrustworthy($cutover);
-            $quantity = $batches->reduce(fn (BigDecimal $sum, $batch): BigDecimal => $sum->plus($batch->source_quantity), BigDecimal::zero());
-            $value = $batches->reduce(fn (BigDecimal $sum, $batch): BigDecimal => $sum->plus($batch->source_value), BigDecimal::zero());
-            $baseValue = $batches->reduce(fn (BigDecimal $sum, $batch): BigDecimal => $sum->plus($batch->base_source_value), BigDecimal::zero());
+            $openingBatches = $batches->where('entity_type', 'OPENING_STATE');
+            $quantity = $openingBatches->reduce(fn (BigDecimal $sum, $batch): BigDecimal => $sum->plus($batch->source_quantity), BigDecimal::zero());
+            $value = $openingBatches->reduce(fn (BigDecimal $sum, $batch): BigDecimal => $sum->plus($batch->source_value), BigDecimal::zero());
+            $baseValue = $openingBatches->reduce(fn (BigDecimal $sum, $batch): BigDecimal => $sum->plus($batch->base_source_value), BigDecimal::zero());
             if (! $quantity->isEqualTo($cutover->control_quantity) || ! $value->isEqualTo($cutover->control_value) || ! $baseValue->isEqualTo($cutover->base_control_value)) {
                 throw new DomainInvariantException('Source totals do not reconcile to the cutover control totals.', 'control_quantity');
             }

@@ -15,6 +15,10 @@ use Illuminate\Validation\Rule;
 
 class UpdateInventorySettingsRequest extends FormRequest
 {
+    private const LOCATION_STRUCTURE_FIELDS = ['inventory_location_mode'];
+
+    private const VALUATION_POLICY_FIELDS = ['default_avco_pool_scope'];
+
     private const NEGATIVE_STOCK_FIELDS = [
         'negative_stock_mode', 'negative_stock_authorisation_mode', 'negative_stock_review_sla_hours',
         'negative_stock_allow_self_review', 'negative_stock_sales_despatch_enabled',
@@ -34,6 +38,14 @@ class UpdateInventorySettingsRequest extends FormRequest
 
     public function authorize(): bool
     {
+        if ($this->hasAny(self::LOCATION_STRUCTURE_FIELDS) && $this->user()?->can('inventory.location-policy.manage') !== true) {
+            return false;
+        }
+
+        if ($this->hasAny(self::VALUATION_POLICY_FIELDS) && $this->user()?->can('inventory.valuation-policy.manage') !== true) {
+            return false;
+        }
+
         if ($this->hasAny(self::NEGATIVE_STOCK_FIELDS) && $this->user()?->can('inventory.negative-stock-policy.manage') !== true) {
             return false;
         }
@@ -85,7 +97,10 @@ class UpdateInventorySettingsRequest extends FormRequest
             'recalculation_approval_ttl_hours' => ['sometimes', 'integer', 'between:1,168'],
             'recalculation_high_risk_threshold_base_amount' => ['sometimes', 'nullable', 'numeric', 'gt:0'],
             'reason' => [
-                'required_with:'.implode(',', [...self::NEGATIVE_STOCK_FIELDS, ...self::BACKDATING_HORIZON_FIELDS, ...self::RECALCULATION_FIELDS]),
+                'required_with:'.implode(',', [
+                    ...self::LOCATION_STRUCTURE_FIELDS, ...self::VALUATION_POLICY_FIELDS,
+                    ...self::NEGATIVE_STOCK_FIELDS, ...self::BACKDATING_HORIZON_FIELDS, ...self::RECALCULATION_FIELDS,
+                ]),
                 'string', 'max:1000',
             ],
         ];
