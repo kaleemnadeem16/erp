@@ -371,13 +371,13 @@ Tick these in the same commit as the work.
 - [x] A partial receipt updates outstanding PO quantity exactly once and creates the matching
       stock move/layer/valuation feed atomically (`GoodsReceiptPostingTest`; outstanding quantity is
       derived from posted rows rather than a mutable counter, so it cannot double-count)
-- [ ] Exact/above tolerance, indivisible flooring, cumulative partials and hard short-close behave
+- [x] Exact/above tolerance, indivisible flooring, cumulative partials and hard short-close behave
       per ADR 0043; simultaneous receipts and duplicate posting cannot exceed or duplicate state.
       The tolerance ceiling, one step above it, COUNT flooring (10 + 15% floors to 11, not 12) and
       cumulative partials against one ceiling are all proven, as are short-close and duplicate
-      posting (`GoodsReceiptPostingTest`). **Still unproven:** two concurrent receipts against the
-      same PO line — the forked-process technique exists in `AvcoPoolConcurrencyTest` and
-      `QualityDispositionPostingTest` but has not been applied here
+      posting (`GoodsReceiptPostingTest`). Two separate processes racing 6-unit receipts against
+      the same 10-unit PO line prove the PO header/line lock makes one re-read the other's commit;
+      exactly one posts and the loser leaves no inventory state (`GoodsReceiptConcurrencyTest`)
 - [x] Partial/repeated QA dispositions cannot allocate more than pending quantity, including under
       concurrent posting, and never mutate the original receipt
 - [x] Simultaneous receipts into one AVCO pool produce the mathematically correct quantity/value
@@ -387,7 +387,9 @@ Tick these in the same commit as the work.
 - [x] FIFO issues consume the oldest available layers, including an issue spanning multiple layers;
       SPECIFIC issues consume only the named on-hand serial (`StockIssueTest`,
       `StockLayerConsumptionTest`)
-- [ ] Batch/serial requirements follow `items.tracking`, not `valuation_method`
+- [x] Batch/serial requirements follow `items.tracking`, not `valuation_method`; every receipt and
+      issue rejection branch is covered, including the mutually-exclusive serial-with-batch case,
+      across AVCO/FIFO independently (`StockIdentityTrackingTest`)
 - [x] Same-pool transfers leave pool value/average unchanged; cross-pool transfers carry source
       AVCO into the destination, recalculate destination AVCO and preserve total company quantity
       and value; a frozen source pool's rate is final and never later repaired (ADR 0045)
@@ -396,8 +398,10 @@ Tick these in the same commit as the work.
 - [ ] A finalised inventory cutover reconciles exact locations, each target AVCO pool and company
       totals; continues or explicitly converts source valuation scope without rewriting history;
       and establishes valid AVCO/FIFO/SPECIFIC state without weakening Q13/Q14 controls
-- [ ] An item's valuation method, AVCO pool scope and stock UoM cannot be changed normally after
-      its first move; historical valuation entries retain their original immutable pool identity
+- [x] An item's valuation method, AVCO pool scope and stock UoM cannot be changed normally after
+      its first move; all three API rejection paths are proven after a real receipt, and historical
+      valuation entries retain their original immutable pool identity (`GoodsReceiptPostingTest`,
+      `StockLedgerIntegrityTest`)
 - [x] A negative location does not freeze a positive wider AVCO pool; each configured pool freezes
       and recovers independently when its own quantity becomes non-positive (`StockPoolRecoveryTest`;
       freezing is decided per pool row in `AvcoPoolManager`)

@@ -32,6 +32,7 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 
 | Item | Date |
 |---|---|
+| **Phase 2 missing test proofs closed** — a real forked-process PostgreSQL test now races two receipts against one PO line and proves its cumulative ceiling cannot be exceeded; tracking rejection coverage now spans receipt/issue paths and caught/fixed serial receipts accepting a batch; all three post-first-move item-policy locks are verified through the API. Phase 2 acceptance is now 15/21, with the remaining criteria requiring design or later-module ownership rather than missing tests → [phase-2-purchasing-stock.md](phases/phase-2-purchasing-stock.md#acceptance-criteria) | 2026-09-09 |
 | **Pre-deployment audit and its fixes** — a full audit before the first deploy found, and this closes: a backdated recalculation could be valuation-effective *before* a finalised inventory cutover (the cutover boundary is now composed into `BackdatingHorizonEvaluator`, and `ExecuteRecalculation` re-evaluates the horizon rather than trusting the request-time snapshot); negative-stock `available_qty` was taken from client input and is now derived from live stock; decimals were documented as JSON numbers on every write path and now cross the wire as strings both ways (one Scramble rule transformer, no validation change); and purchasing's over-receipt policy gained the permission, reason and audit row it never had. Deploy blockers fixed too: the SPA no longer builds pointing at localhost, trusted proxies are configured, and `erp:create-admin` makes a fresh database signable-into → [phase-2-purchasing-stock.md](phases/phase-2-purchasing-stock.md), [deployment.md](architecture/deployment.md#first-deploy-runbook) | 2026-09-09 |
 | **Stock layer and AVCO pool read APIs** — `GET /api/v1/stock-layers` (cursor-paginated, `filter[open]` for an item's still-open FIFO/SPECIFIC layers) and `GET /api/v1/avco-pools` (page-paginated, an item's current converged balance) close the last gap on the stock-ledger close-out item. Deliberately backend-only — reference data, not a workflow, so no dedicated screen this time. Closes Phase 2's entire close-out checklist except production deployment → [phase-2-purchasing-stock.md](phases/phase-2-purchasing-stock.md#close-out) | 2026-09-09 |
 | **Stock recalculation HTTP API and screens** — `RequestStockRecalculation` (header, create/read-only, also the preview) plus `POST .../decide`, `.../execute` and `.../resume-regeneration` on `RecalculationImpactVersion`, a distinct addressable child resource since a request accumulates several versions over its life. The `/recalculation-requests` screens are the most involved yet — version history, multi-approver approvals with individual expiry/renewal, risk-tier routing — with computed flags (`is_fully_approved` etc.) added server-side rather than pushed onto the frontend → [stock-recalculation.md](domain/stock-recalculation.md#user-interface) | 2026-09-08 |
@@ -43,17 +44,19 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 
 ## Next
 
-Phase 2's close-out is complete except the first production deployment, and its acceptance
-criteria have now been re-audited: 12 of 21 satisfied (6 ticked this pass against existing proof),
-3 waiting on Phase 4/5/6, and the rest missing **tests** rather than enforcement — ADR 0043's
-over-receipt tolerance paths, `StockIdentity`'s rejection branches, and the `stock_uom_id`/
-`avco_pool_scope` locks. Per-location cutover reconciliation is a design decision, not just work.
+Phase 2's UI/API close-out is complete. Its acceptance criteria are now 15 of 21 satisfied; the
+three previously missing proof groups are closed (ADR 0043 receipt concurrency, every
+`StockIdentity` rejection branch, and all three post-first-move item-policy locks). Of the six
+remaining criteria, three require Phase 4/5/6 correction-package owners; the others require
+explicit reconciliation/design work rather than more tests around existing enforcement,
+including per-location cutover reconciliation and the future valuation-policy boundary.
 
-The deployment now has a runbook ([deployment.md](architecture/deployment.md#first-deploy-runbook))
-but is unrehearsed, and two prerequisites sit outside this repository: registering the self-hosted
-ARM64 runner the image build targets, and agreeing Redis database indices with invoiceflow and crm.
-`main` is ~103 commits behind `develop`, so that merge is itself the first real exercise of the
-multi-arch build.
+The first production deployment remains deliberately last, after all Phase 2 criteria are
+complete. Its runbook is ready ([deployment.md](architecture/deployment.md#first-deploy-runbook))
+but unrehearsed, and two prerequisites sit outside this repository: registering the self-hosted
+ARM64 runner the image build targets, and agreeing Redis database indices with invoiceflow and
+crm. `main` is ~103 commits behind `develop`, so that merge is itself the first real exercise of
+the multi-arch build.
 
 ## Blocked / awaiting input
 

@@ -72,14 +72,42 @@ class StockIdentityTrackingTest extends TestCase
         $this->identity()->validateReceiptTracking($item, BigDecimal::of('1'), 'B1', 'S1');
     }
 
-    public function test_a_serial_receipt_must_be_exactly_one_unit_with_a_serial(): void
+    public function test_a_serial_receipt_must_be_exactly_one_unit_with_a_serial_and_no_batch(): void
     {
         $item = $this->item(ItemTracking::Serial, ValuationMethod::Specific);
 
-        foreach ([['2', 'S1'], ['1', null]] as [$qty, $serialNo]) {
+        foreach ([['2', null, 'S1'], ['1', null, null], ['1', 'B1', 'S1']] as [$qty, $batchNo, $serialNo]) {
             try {
-                $this->identity()->validateReceiptTracking($item, BigDecimal::of($qty), null, $serialNo);
-                $this->fail('Serial receipts must be one unit with one serial.');
+                $this->identity()->validateReceiptTracking($item, BigDecimal::of($qty), $batchNo, $serialNo);
+                $this->fail('Serial receipts must be one unit with one serial and no batch.');
+            } catch (DomainInvariantException) {
+                $this->addToAssertionCount(1);
+            }
+        }
+    }
+
+    public function test_an_untracked_issue_cannot_carry_a_batch_or_serial(): void
+    {
+        $item = $this->item(ItemTracking::None);
+
+        foreach ([['B1', null], [null, 'S1']] as [$batchNo, $serialNo]) {
+            try {
+                $this->identity()->validateIssueTracking($item, BigDecimal::of('1'), $batchNo, $serialNo);
+                $this->fail('Untracked issue identity must be rejected.');
+            } catch (DomainInvariantException) {
+                $this->addToAssertionCount(1);
+            }
+        }
+    }
+
+    public function test_a_batch_tracked_issue_requires_a_batch_and_refuses_a_serial(): void
+    {
+        $item = $this->item(ItemTracking::Batch);
+
+        foreach ([[null, null], ['B1', 'S1']] as [$batchNo, $serialNo]) {
+            try {
+                $this->identity()->validateIssueTracking($item, BigDecimal::of('1'), $batchNo, $serialNo);
+                $this->fail('Batch-tracked issues require exactly a batch identity.');
             } catch (DomainInvariantException) {
                 $this->addToAssertionCount(1);
             }

@@ -39,7 +39,7 @@ final class StockIdentity
         if ($item->tracking === ItemTracking::Batch && ($batchNo === null || $serialNo !== null)) {
             throw new DomainInvariantException('Batch-tracked items require a batch and cannot carry a serial.', 'batch_no');
         }
-        if ($item->tracking === ItemTracking::Serial && ($serialNo === null || ! $qty->isEqualTo(1))) {
+        if ($item->tracking === ItemTracking::Serial && ($serialNo === null || $batchNo !== null || ! $qty->isEqualTo(1))) {
             throw new DomainInvariantException('Serial-tracked receipts require exactly one unit and one serial per line.', 'serial_no');
         }
         if ($item->valuation_method === ValuationMethod::Specific && $item->tracking !== ItemTracking::Serial) {
