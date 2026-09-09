@@ -176,6 +176,20 @@ line short-close endpoints. Issue allocates the gapless number and freezes item/
 quantity/UoM, monetary and FX snapshots. Company purchasing defaults use one typed settings row;
 reading that singleton initialises its database defaults through an Action when necessary.
 
+### User interface
+
+The Phase 2 operational purchasing UI is being delivered as one continuous PO→receipt→QA journey
+under [user-interface.md](../architecture/user-interface.md). The first slice is the Purchase
+Orders list at `/purchase-orders`: server-paginated, URL-filtered by search, supplier and status,
+responsive through the shared table/card foundation, and linked from application navigation. The
+create screen provides repeatable lines, supplier/default-currency resolution, item-driven
+description/UoM defaults, explicit FX evidence and QA selection. The status-gated detail workspace
+shows immutable issued facts and confirms issue, cancellation and short-close consequences before
+calling their named actions. Drafts can be reopened in the same repeatable-line form. The detail
+response computes exact transaction/base totals with decimal arithmetic and derives received and
+outstanding stock quantities from posted receipts; the screen pairs these with currency and UoM
+reference labels. Reversed and draft receipts therefore never inflate operational progress.
+
 ### Document boundaries
 
 - Draft documents are editable and cancellable.
@@ -306,3 +320,4 @@ corrections are governed by [ADR 0040](../decisions/0040-control-backdated-stock
 - [ADR 0043](../decisions/0043-control-purchase-order-receipt-and-qa-posting.md)
 - [Inventory cutover](inventory-cutover.md)
 - [Phase 2](../phases/phase-2-purchasing-stock.md)
+- [User-interface delivery](../architecture/user-interface.md)

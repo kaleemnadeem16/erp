@@ -1,6 +1,6 @@
 # Project Status
 
-**Updated:** 2026-09-09
+**Updated:** 2026-09-10
 **Current phase:** Phase 2 — Purchasing & stock (in progress). Phase 1 — Master data is
 complete. Phase 0 — Foundation is done except the deliberately deferred production deployment.
 **Application code:** Laravel 12 backend with Phase 0 foundations, Phase 1 master-data APIs and
@@ -25,6 +25,7 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 
 | Item | Date |
 |---|---|
+| **Purchase-order operating UI** — users can now find, create, edit and inspect POs, then issue, cancel or short-close them through status-gated actions. Detail responses supply exact decimal totals and posted-receipt progress, while currency/UoM reference APIs keep labels human-readable → [purchasing.md](domain/purchasing.md#user-interface) | 2026-09-10 |
 | **Governed inventory structure/valuation defaults and operational cutover** — ADR 0047 closes Q17: location mode and default AVCO pool scope now require their own permission, reason and immutable policy audit. Operational/full-history cutovers can also materialise staged open PO remaining commitments through Purchasing with immutable provenance; consolidated Q13/Q14 evidence is complete → [phase-2-purchasing-stock.md](phases/phase-2-purchasing-stock.md), [ADR 0047](decisions/0047-govern-inventory-structure-and-default-valuation-policies.md) | 2026-09-09 |
 | **Strict staged inventory-cutover reconciliation** — ADR 0046 allows explicitly approved defaults for optional fields or a documented opening location while forbidding defaults for quantity/value, warehouse allocation, item/UoM and valuation identity, batch or serial. Validation now rejects untrustworthy staged facts; preview exposes exact location totals/default decisions; finalisation independently reconciles posted locations, target AVCO pools and company controls, raising Phase 2 acceptance to 16/21 → [inventory-cutover.md](domain/inventory-cutover.md), [ADR 0046](decisions/0046-strict-staged-inventory-cutover-reconciliation.md) | 2026-09-09 |
 | **Phase 2 missing test proofs closed** — a real forked-process PostgreSQL test now races two receipts against one PO line and proves its cumulative ceiling cannot be exceeded; tracking rejection coverage now spans receipt/issue paths and caught/fixed serial receipts accepting a batch; all three post-first-move item-policy locks are verified through the API. Phase 2 acceptance is now 15/21, with the remaining criteria requiring design or later-module ownership rather than missing tests → [phase-2-purchasing-stock.md](phases/phase-2-purchasing-stock.md#acceptance-criteria) | 2026-09-09 |

@@ -229,8 +229,12 @@ class GoodsReceiptPostingTest extends PurchaseOrderFoundationTest
         $first = $this->createReceipt($poLineId, $item->id, $uom->id, $locationId, ['received_qty' => '1.0000']);
         $this->postJson("/api/v1/goods-receipts/{$first}/post")->assertOk();
         $this->assertDatabaseHas('purchase_orders', ['id' => $order->id, 'status' => 'ISSUED']);
-
         $second = $this->createReceipt($poLineId, $item->id, $uom->id, $locationId, ['received_qty' => '1.0000']);
+        $this->getJson("/api/v1/purchase-orders/{$order->id}?include=lines")
+            ->assertOk()
+            ->assertJsonPath('data.lines.0.received_stock_qty', '1.0000')
+            ->assertJsonPath('data.lines.0.outstanding_stock_qty', '1.0000');
+
         $this->postJson("/api/v1/goods-receipts/{$second}/post")->assertOk();
 
         $this->assertDatabaseHas('purchase_orders', ['id' => $order->id, 'status' => 'CLOSED']);

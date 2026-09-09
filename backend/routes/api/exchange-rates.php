@@ -1,9 +1,12 @@
 <?php
 
+use App\Http\Controllers\Api\V1\CurrencyController;
 use App\Http\Controllers\Api\V1\ExchangeRateController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/currencies', [CurrencyController::class, 'index'])->name('currencies.index');
+    Route::get('/currencies/{currency}', [CurrencyController::class, 'show'])->name('currencies.show');
     Route::get('/exchange-rates', [ExchangeRateController::class, 'index'])->name('exchange-rates.index');
     Route::post('/exchange-rates', [ExchangeRateController::class, 'store'])->name('exchange-rates.store');
     Route::get('/exchange-rates/{exchange_rate}', [ExchangeRateController::class, 'show'])->name('exchange-rates.show');

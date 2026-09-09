@@ -21,6 +21,8 @@ export interface PurchaseOrderLineResource {
   ordered_qty: string;
   purchase_uom_id: number;
   ordered_stock_qty: string;
+  received_stock_qty: string;
+  outstanding_stock_qty: string;
   stock_uom_id: number;
   uom_factor: string;
   unit_price: string;

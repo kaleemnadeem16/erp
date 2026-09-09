@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router';
+import { BrowserRouter, Routes, Route } from "react-router";
 import {
   AppShell,
   CategoriesListScreen,
@@ -24,6 +24,10 @@ import {
   PhysicalCountCreateScreen,
   PhysicalCountDetailScreen,
   PhysicalCountsListScreen,
+  PurchaseOrdersListScreen,
+  PurchaseOrderDetailScreen,
+  PurchaseOrderCreateScreen,
+  PurchaseOrderEditScreen,
   ProtectedRoute,
   RecalculationRequestCreateScreen,
   RecalculationRequestDetailScreen,
@@ -34,7 +38,7 @@ import {
   WarehouseDetailScreen,
   WarehouseEditScreen,
   WarehousesListScreen,
-} from '@erp/core-ui';
+} from "@erp/core-ui";
 
 export function AppRouter() {
   return (
@@ -227,6 +231,46 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <StockMoveDetailScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/purchase-orders"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <PurchaseOrdersListScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/purchase-orders/:id"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <PurchaseOrderDetailScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/purchase-orders/new"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <PurchaseOrderCreateScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/purchase-orders/:id/edit"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <PurchaseOrderEditScreen />
               </AppShell>
             </ProtectedRoute>
           }

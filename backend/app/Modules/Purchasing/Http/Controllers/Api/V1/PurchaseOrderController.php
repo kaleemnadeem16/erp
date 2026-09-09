@@ -58,7 +58,12 @@ class PurchaseOrderController extends Controller
 
     public function show(ShowPurchaseOrderRequest $request, PurchaseOrder $purchaseOrder): PurchaseOrderResource
     {
-        return new PurchaseOrderResource($purchaseOrder->load($this->requestedIncludes($request, self::INCLUDABLE)));
+        $includes = $this->requestedIncludes($request, self::INCLUDABLE);
+        if (in_array('lines', $includes, true)) {
+            $purchaseOrder->load(['lines' => fn ($query) => $query->withReceiptProgress()]);
+        }
+
+        return new PurchaseOrderResource($purchaseOrder);
     }
 
     public function update(UpdatePurchaseOrderRequest $request, PurchaseOrder $purchaseOrder, UpdatePurchaseOrder $update): PurchaseOrderResource
@@ -78,7 +83,9 @@ class PurchaseOrderController extends Controller
 
     public function shortClose(PurchaseOrderLine $purchaseOrderLine, ShortClosePurchaseOrderLine $shortClose): PurchaseOrderLineResource
     {
-        return new PurchaseOrderLineResource($shortClose($purchaseOrderLine));
+        $line = $shortClose($purchaseOrderLine);
+
+        return new PurchaseOrderLineResource(PurchaseOrderLine::query()->withReceiptProgress()->findOrFail($line->id));
     }
 
     public function commitCutover(Request $request, InventoryCutover $inventoryCutover, CommitInventoryCutoverOpenPurchaseOrders $commit): AnonymousResourceCollection

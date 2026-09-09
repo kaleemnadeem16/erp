@@ -33,6 +33,8 @@ export interface PurchaseOrderResource {
   inventory_cutover_id: PurchaseOrderResourceInventoryCutoverId;
   source_system: PurchaseOrderResourceSourceSystem;
   source_record_id: PurchaseOrderResourceSourceRecordId;
+  total_amount?: string;
+  base_total_amount?: string;
   lines?: PurchaseOrderLineResource[];
   issued_at: PurchaseOrderResourceIssuedAt;
   closed_at: PurchaseOrderResourceClosedAt;

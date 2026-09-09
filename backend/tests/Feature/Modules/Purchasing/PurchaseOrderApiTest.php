@@ -135,7 +135,9 @@ class PurchaseOrderApiTest extends PurchaseOrderFoundationTest
         $this->actingAs($user)->postJson('/api/v1/purchase-orders', $payload)
             ->assertCreated()->assertJsonPath('data.status', 'DRAFT')
             ->assertJsonPath('data.lines.0.ordered_stock_qty', '2.0000')
-            ->assertJsonPath('data.lines.0.line_amount', '20.0000');
+            ->assertJsonPath('data.lines.0.line_amount', '20.0000')
+            ->assertJsonPath('data.total_amount', '20.0000')
+            ->assertJsonPath('data.base_total_amount', '20.0000');
 
         $payload['lines'][0]['line_number'] = 32768;
         $this->postJson('/api/v1/purchase-orders', $payload)

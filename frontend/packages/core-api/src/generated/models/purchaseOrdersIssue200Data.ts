@@ -10,5 +10,8 @@ import type { PurchaseOrdersIssue200DataAllOf } from "./purchaseOrdersIssue200Da
 export type PurchaseOrdersIssue200Data = PurchaseOrderResource &
   PurchaseOrdersIssue200DataAllOf &
   Required<
-    Pick<PurchaseOrderResource & PurchaseOrdersIssue200DataAllOf, "lines">
+    Pick<
+      PurchaseOrderResource & PurchaseOrdersIssue200DataAllOf,
+      "total_amount" | "base_total_amount" | "lines"
+    >
   >;

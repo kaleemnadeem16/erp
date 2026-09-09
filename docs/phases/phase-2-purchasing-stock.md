@@ -377,8 +377,12 @@ purchasing and inventory operating UI; that remaining boundary is listed below:
       on-order quantities; filter and drill down by item, warehouse, location and tracking identity;
       link every aggregate back to the stock ledger. Add purpose-built read models/endpoints rather
       than calculating decimal aggregates in React.
-- [ ] Build purchase-order list, draft create/edit and detail workspaces, including issue, cancel
-      and line short-close actions, immutable issued snapshots, totals and receipt progress.
+- [x] Build purchase-order list, draft create/edit and detail workspaces, including issue, cancel
+      and line short-close actions, immutable issued snapshots, totals and receipt progress. The
+      server-paginated URL-filtered list, repeatable-line draft creation and status-gated detail
+      actions use generated APIs throughout. Exact transaction/base totals are calculated on the
+      server with decimal arithmetic; received/outstanding progress is derived only from posted
+      receipts, while currency and purchase/stock UoMs are presented with human reference labels.
 - [ ] Build goods-receipt list/create/detail/post/reverse screens and receipt-line QA disposition
       workflow, including unresolved QA quantity, tracking entry and disposition history.
 - [ ] Build purchasing/inventory policy settings screens with permission-aware reason capture and

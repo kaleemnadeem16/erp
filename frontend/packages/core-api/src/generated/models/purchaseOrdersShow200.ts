@@ -4,8 +4,8 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { PurchaseOrderResource } from "./purchaseOrderResource";
+import type { PurchaseOrdersShow200Data } from "./purchaseOrdersShow200Data";
 
 export type PurchaseOrdersShow200 = {
-  data: PurchaseOrderResource;
+  data: PurchaseOrdersShow200Data;
 };

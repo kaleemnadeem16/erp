@@ -9,11 +9,14 @@ use App\Models\Model;
 use App\Models\Uom;
 use App\Modules\Imports\Models\ImportBatchRow;
 use App\Modules\Inventory\Models\Item;
+use App\Modules\Purchasing\Support\GoodsReceiptStatus;
 use App\Modules\Purchasing\Support\OverReceiptMode;
 use App\Modules\Purchasing\Support\PurchaseOrderStatus;
 use App\Support\Concerns\BelongsToCompany;
 use App\Support\Concerns\GuardsRelatedCompanyScope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -38,6 +41,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $source_record_id
  * @property-read PurchaseOrder $purchaseOrder
  * @property-read Item $item
+ * @property string|null $posted_received_stock_qty
  */
 class PurchaseOrderLine extends Model
 {
@@ -112,5 +116,21 @@ class PurchaseOrderLine extends Model
     public function importBatchRow(): BelongsTo
     {
         return $this->belongsTo(ImportBatchRow::class);
+    }
+
+    /** @return HasMany<GoodsReceiptLine, $this> */
+    public function receiptLines(): HasMany
+    {
+        return $this->hasMany(GoodsReceiptLine::class);
+    }
+
+    /** @param Builder<PurchaseOrderLine> $query */
+    public function scopeWithReceiptProgress(Builder $query): void
+    {
+        $query->withSum([
+            'receiptLines as posted_received_stock_qty' => fn (Builder $receiptLines) => $receiptLines
+                ->whereHas('goodsReceipt', fn (Builder $receipts) => $receipts
+                    ->where('status', GoodsReceiptStatus::Posted->value)),
+        ], 'stock_qty');
     }
 }
