@@ -383,8 +383,11 @@ purchasing and inventory operating UI; that remaining boundary is listed below:
       actions use generated APIs throughout. Exact transaction/base totals are calculated on the
       server with decimal arithmetic; received/outstanding progress is derived only from posted
       receipts, while currency and purchase/stock UoMs are presented with human reference labels.
-- [ ] Build goods-receipt list/create/detail/post/reverse screens and receipt-line QA disposition
-      workflow, including unresolved QA quantity, tracking entry and disposition history.
+- [x] Build goods-receipt list/create/detail/post/reverse screens and receipt-line QA disposition
+      workflow, including unresolved QA quantity, tracking entry and disposition history. Draft
+      entry draws only from the selected supplier's issued, outstanding PO lines; posting and
+      reversal use explicit consequence review, and QA roots/open branches are resolved inline
+      from server-derived unallocated/unresolved balances.
 - [ ] Build purchasing/inventory policy settings screens with permission-aware reason capture and
       audit context; replace temporary raw-ID controls in cutover screens when the required lookup
       endpoints exist.

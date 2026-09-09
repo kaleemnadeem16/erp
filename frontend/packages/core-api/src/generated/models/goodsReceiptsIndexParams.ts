@@ -13,6 +13,10 @@ export type GoodsReceiptsIndexParams = {
    */
   "filter[supplier_account_id]"?: number;
   "filter[status]"?: GoodsReceiptStatus;
+  /**
+   * @maxLength 255
+   */
+  "filter[search]"?: string;
   sort?: GoodsReceiptsIndexSort;
   include?: string;
   /**

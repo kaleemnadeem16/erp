@@ -38,6 +38,9 @@ class PurchaseOrderController extends Controller
     {
         $query = PurchaseOrder::query();
         $this->applyIncludes($query, $request, self::INCLUDABLE);
+        if (in_array('lines', $this->requestedIncludes($request, self::INCLUDABLE), true)) {
+            $query->with(['lines' => fn ($lines) => $lines->withReceiptProgress()]);
+        }
         foreach (['supplier_account_id', 'status'] as $field) {
             if ($request->filled("filter.{$field}")) {
                 $query->where($field, $request->input("filter.{$field}"));

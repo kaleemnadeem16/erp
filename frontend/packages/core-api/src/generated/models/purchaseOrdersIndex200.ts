@@ -4,12 +4,12 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { PurchaseOrderResource } from "./purchaseOrderResource";
+import type { PurchaseOrdersIndex200DataItem } from "./purchaseOrdersIndex200DataItem";
 import type { PurchaseOrdersIndex200Links } from "./purchaseOrdersIndex200Links";
 import type { PurchaseOrdersIndex200Meta } from "./purchaseOrdersIndex200Meta";
 
 export type PurchaseOrdersIndex200 = {
-  data: PurchaseOrderResource[];
+  data: PurchaseOrdersIndex200DataItem[];
   links: PurchaseOrdersIndex200Links;
   meta: PurchaseOrdersIndex200Meta;
 };

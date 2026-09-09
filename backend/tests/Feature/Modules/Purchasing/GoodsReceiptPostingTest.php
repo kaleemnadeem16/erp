@@ -234,6 +234,10 @@ class GoodsReceiptPostingTest extends PurchaseOrderFoundationTest
             ->assertOk()
             ->assertJsonPath('data.lines.0.received_stock_qty', '1.0000')
             ->assertJsonPath('data.lines.0.outstanding_stock_qty', '1.0000');
+        $this->getJson('/api/v1/purchase-orders?filter[status]=ISSUED&include=lines')
+            ->assertOk()
+            ->assertJsonPath('data.0.lines.0.received_stock_qty', '1.0000')
+            ->assertJsonPath('data.0.lines.0.outstanding_stock_qty', '1.0000');
 
         $this->postJson("/api/v1/goods-receipts/{$second}/post")->assertOk();
 
@@ -302,6 +306,9 @@ class GoodsReceiptPostingTest extends PurchaseOrderFoundationTest
             ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $receiptA);
 
         $this->getJson('/api/v1/goods-receipts?filter[status]=POSTED')
+            ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $receiptB);
+
+        $this->getJson('/api/v1/goods-receipts?filter[search]=0001')
             ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $receiptB);
 
         $this->getJson('/api/v1/goods-receipts?sort=unknown')->assertUnprocessable();

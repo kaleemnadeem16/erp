@@ -190,6 +190,16 @@ response computes exact transaction/base totals with decimal arithmetic and deri
 outstanding stock quantities from posted receipts; the screen pairs these with currency and UoM
 reference labels. Reversed and draft receipts therefore never inflate operational progress.
 
+The Goods Receipts list at `/goods-receipts` is server-paginated and URL-filtered by supplier and
+status. Draft entry begins with the supplier and offers only that supplier's issued PO lines with
+an outstanding posted-receipt balance; the issued PO snapshot supplies item, currency, FX and
+provisional-cost defaults while the receiver records physical time, posting date, put-away
+location, actual quantity/UoM and required batch or serial identity. The detail workspace confirms
+the stock consequences before posting and requires a reason before reversal. Posted
+inspection-required lines expose unallocated and unresolved quantities beside their immutable
+disposition history; root decisions and follow-up resolution of open `REWORK` or
+`PENDING_DECISION` branches are posted inline without calculating QA balances in React.
+
 ### Document boundaries
 
 - Draft documents are editable and cancellable.

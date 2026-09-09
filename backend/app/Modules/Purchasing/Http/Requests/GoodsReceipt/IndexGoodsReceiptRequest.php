@@ -22,9 +22,10 @@ class IndexGoodsReceiptRequest extends FormRequest
     public function rules(): array
     {
         return array_merge([
-            'filter' => ['sometimes', 'array:supplier_account_id,status'],
+            'filter' => ['sometimes', 'array:supplier_account_id,status,search'],
             'filter.supplier_account_id' => ['sometimes', 'integer', 'min:1'],
             'filter.status' => ['sometimes', Rule::enum(GoodsReceiptStatus::class)],
+            'filter.search' => ['sometimes', 'string', 'max:255'],
         ], $this->listQueryRules(['number', 'posting_date', 'created_at'], ['lines', 'supplierAccount']));
     }
 }

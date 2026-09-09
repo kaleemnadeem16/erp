@@ -6,6 +6,9 @@ import {
   CategoryDetailScreen,
   CategoryEditScreen,
   DashboardScreen,
+  GoodsReceiptCreateScreen,
+  GoodsReceiptDetailScreen,
+  GoodsReceiptsListScreen,
   InventoryCutoverCreateScreen,
   InventoryCutoverDetailScreen,
   InventoryCutoversListScreen,
@@ -241,6 +244,36 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <PurchaseOrdersListScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/goods-receipts"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <GoodsReceiptsListScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/goods-receipts/new"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <GoodsReceiptCreateScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/goods-receipts/:id"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <GoodsReceiptDetailScreen />
               </AppShell>
             </ProtectedRoute>
           }

@@ -122,3 +122,6 @@ export { PurchaseOrdersListScreen } from "./features/purchase-orders/purchase-or
 export { PurchaseOrderDetailScreen } from "./features/purchase-orders/purchase-order-detail-screen";
 export { PurchaseOrderCreateScreen } from "./features/purchase-orders/purchase-order-create-screen";
 export { PurchaseOrderEditScreen } from "./features/purchase-orders/purchase-order-edit-screen";
+export { GoodsReceiptsListScreen } from "./features/goods-receipts/goods-receipts-list-screen";
+export { GoodsReceiptCreateScreen } from "./features/goods-receipts/goods-receipt-create-screen";
+export { GoodsReceiptDetailScreen } from "./features/goods-receipts/goods-receipt-detail-screen";

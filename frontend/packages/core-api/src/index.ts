@@ -21,3 +21,5 @@ export * from "./generated/chart-of-account/chart-of-account";
 export * from "./generated/supplier-account/supplier-account";
 export * from "./generated/item-supplier/item-supplier";
 export * from "./generated/purchase-order/purchase-order";
+export * from "./generated/goods-receipt/goods-receipt";
+export * from "./generated/quality-disposition/quality-disposition";

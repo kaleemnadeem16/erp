@@ -486,6 +486,8 @@ export * from "./purchaseOrdersCancel200";
 export * from "./purchaseOrdersCancel200Data";
 export * from "./purchaseOrdersCancel200DataAllOf";
 export * from "./purchaseOrdersIndex200";
+export * from "./purchaseOrdersIndex200DataItem";
+export * from "./purchaseOrdersIndex200DataItemAllOf";
 export * from "./purchaseOrdersIndex200Links";
 export * from "./purchaseOrdersIndex200LinksFirst";
 export * from "./purchaseOrdersIndex200LinksLast";
