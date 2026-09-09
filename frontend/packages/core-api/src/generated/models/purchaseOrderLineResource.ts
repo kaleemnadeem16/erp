@@ -9,6 +9,7 @@ import type { PurchaseOrderLineResourceSupplierItemCode } from "./purchaseOrderL
 import type { PurchaseOrderLineResourceExpectedDeliveryDate } from "./purchaseOrderLineResourceExpectedDeliveryDate";
 import type { PurchaseOrderLineResourceOverReceiptMode } from "./purchaseOrderLineResourceOverReceiptMode";
 import type { PurchaseOrderLineResourceOverReceiptTolerancePercent } from "./purchaseOrderLineResourceOverReceiptTolerancePercent";
+import type { PurchaseOrderLineResourceSourceRecordId } from "./purchaseOrderLineResourceSourceRecordId";
 
 export interface PurchaseOrderLineResource {
   id: number;
@@ -35,4 +36,5 @@ export interface PurchaseOrderLineResource {
   over_receipt_mode: PurchaseOrderLineResourceOverReceiptMode;
   over_receipt_tolerance_percent: PurchaseOrderLineResourceOverReceiptTolerancePercent;
   short_closed_stock_qty: string;
+  source_record_id: PurchaseOrderLineResourceSourceRecordId;
 }

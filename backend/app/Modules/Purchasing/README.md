@@ -12,7 +12,8 @@ Owns supplier sourcing and the purchase-order and goods-receipt source documents
   item-specific sourcing terms
 - `PurchasingSetting` — typed company purchasing policy defaults
 - `PurchaseOrder` and `PurchaseOrderLine` — draft commercial commitments and immutable issue
-  snapshots with draft, issue, cancel and hard short-close APIs
+  snapshots with draft, issue, cancel and hard short-close APIs; operational cutover may create
+  issued remaining commitments with immutable source provenance
 - `GoodsReceipt` and `GoodsReceiptLine` — immutable posted receipt facts with partial/cumulative
   PO receipt control, pinned UoM/cost/FX/tracking identity and idempotent Inventory posting
 - `QualityDisposition` — immutable, repeatable QA decisions over a receipt line's pending
@@ -38,6 +39,10 @@ or deleted once posted, enforced by both a model guard and a database trigger. P
 read Parties and Inventory models directly; writes to those modules remain behind their owning
 Actions. Item and supplier identity are immutable after creation; archive-and-create replaces a
 relationship per ADR 0042.
+`CommitInventoryCutoverOpenPurchaseOrders` is the Purchasing-owned cutover boundary: it consumes
+validated `OPEN_PURCHASE_ORDER` staging rows, creates issued POs for remaining commitments only and
+marks those linked batches committed. It is permissioned and idempotent; Inventory remains the
+owner of cutover orchestration and finalisation.
 
 ## Events
 

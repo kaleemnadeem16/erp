@@ -166,6 +166,17 @@ base currency when a fact carries no explicit currency. A negative fact quantity
 cutover-shortage exception, detailed under "Dates, negative balances and corrections" below.
 Without one it still refuses outright, unchanged from before that exception existed.
 
+For `OPERATIONAL` and `FULL_HISTORY` modes, Purchasing registers a separate
+`OPEN_PURCHASE_ORDER` import target. One staged row represents one still-open source PO line with
+its remaining quantity and pinned commercial facts. After cutover approval,
+`CommitInventoryCutoverOpenPurchaseOrders` groups a source order's rows, validates consistent
+header and unique line identity, and uses Purchasing's normal create/issue boundary to materialise
+an issued target PO for the remaining commitment only. It never turns that commitment into stock,
+recreates predecessor receipts or invents a liability. Cutover/batch/row/source provenance is
+immutable and the Action is idempotent. The dedicated permission is `purchasing.cutover.commit`.
+Every attached open-PO batch must be committed through that owning Action before Inventory can
+finalise the cutover.
+
 ## Valuation continuity
 
 ### Same method after cutover
@@ -277,6 +288,9 @@ The React screens (`/inventory-cutovers` list, `/inventory-cutovers/new`,
 `/inventory-cutovers/:id` detail) are the first UI with a multi-actor approval lifecycle — action
 buttons are gated by the cutover's current `status`, and every mutation refetches the cutover
 rather than patching local state, matching [physical-count.md](physical-count.md#user-interface).
+An approved cutover with a pending `OPEN_PURCHASE_ORDER` batch shows a distinct **Commit open
+purchase orders** action alongside **Commit opening state**; finalisation remains unavailable at
+the domain boundary until every owning module has committed its batches.
 
 ## Completeness and degradation
 

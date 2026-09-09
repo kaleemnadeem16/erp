@@ -6,8 +6,9 @@ complete. Phase 0 — Foundation is done except the deliberately deferred produc
 **Application code:** Laravel 12 backend with Phase 0 foundations, Phase 1 master-data APIs and
 Phase 2 purchase orders, receipts, QA/reversal and the full stock movement/valuation engine.
 Inventory cutover now posts and strictly reconciles AVCO/FIFO/SPECIFIC opening state; controlled
-negative openings, live negative-stock overrides, backdated recalculation and physical counts are
-also complete. Each workflow has a read/write API and React UI; the stock ledger, layers and AVCO
+negative openings and staged open purchase-order commitments, live negative-stock overrides,
+backdated recalculation and physical counts are also complete. Each workflow has a read/write API
+and React UI; the stock ledger, layers and AVCO
 pools have read surfaces. The React 19 + Vite frontend uses the generated client for every
 implemented endpoint. Only the later Phase 4/5/6 multi-owner correction package remains.
 
@@ -24,6 +25,7 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 
 | Item | Date |
 |---|---|
+| **Governed inventory structure/valuation defaults and operational cutover** — ADR 0047 closes Q17: location mode and default AVCO pool scope now require their own permission, reason and immutable policy audit. Operational/full-history cutovers can also materialise staged open PO remaining commitments through Purchasing with immutable provenance; consolidated Q13/Q14 evidence is complete → [phase-2-purchasing-stock.md](phases/phase-2-purchasing-stock.md), [ADR 0047](decisions/0047-govern-inventory-structure-and-default-valuation-policies.md) | 2026-09-09 |
 | **Strict staged inventory-cutover reconciliation** — ADR 0046 allows explicitly approved defaults for optional fields or a documented opening location while forbidding defaults for quantity/value, warehouse allocation, item/UoM and valuation identity, batch or serial. Validation now rejects untrustworthy staged facts; preview exposes exact location totals/default decisions; finalisation independently reconciles posted locations, target AVCO pools and company controls, raising Phase 2 acceptance to 16/21 → [inventory-cutover.md](domain/inventory-cutover.md), [ADR 0046](decisions/0046-strict-staged-inventory-cutover-reconciliation.md) | 2026-09-09 |
 | **Phase 2 missing test proofs closed** — a real forked-process PostgreSQL test now races two receipts against one PO line and proves its cumulative ceiling cannot be exceeded; tracking rejection coverage now spans receipt/issue paths and caught/fixed serial receipts accepting a batch; all three post-first-move item-policy locks are verified through the API. Phase 2 acceptance is now 15/21, with the remaining criteria requiring design or later-module ownership rather than missing tests → [phase-2-purchasing-stock.md](phases/phase-2-purchasing-stock.md#acceptance-criteria) | 2026-09-09 |
 | **Pre-deployment audit and its fixes** — a full audit before the first deploy found, and this closes: a backdated recalculation could be valuation-effective *before* a finalised inventory cutover (the cutover boundary is now composed into `BackdatingHorizonEvaluator`, and `ExecuteRecalculation` re-evaluates the horizon rather than trusting the request-time snapshot); negative-stock `available_qty` was taken from client input and is now derived from live stock; decimals were documented as JSON numbers on every write path and now cross the wire as strings both ways (one Scramble rule transformer, no validation change); and purchasing's over-receipt policy gained the permission, reason and audit row it never had. Deploy blockers fixed too: the SPA no longer builds pointing at localhost, trusted proxies are configured, and `erp:create-admin` makes a fresh database signable-into → [phase-2-purchasing-stock.md](phases/phase-2-purchasing-stock.md), [deployment.md](architecture/deployment.md#first-deploy-runbook) | 2026-09-09 |
@@ -35,12 +37,13 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 
 ## Next
 
-Phase 2's UI/API close-out is complete. Its acceptance criteria are now 16 of 21 satisfied. The
-previously missing proof groups and strict cutover-reconciliation gap are closed: ADR 0043 receipt
-concurrency, every `StockIdentity` rejection branch and all three post-first-move item-policy
-locks. Of the five remaining criteria, three require Phase 4/5/6 correction-package
-owners; the others are the consolidated Q13/Q14 behaviour proof and the future valuation-policy
-boundary.
+Phase 2's first stock-engine UI/API slice is complete, but the operational UI audit found that
+purchase orders, receipts, QA, settings and an inventory overview still require researched
+interaction specifications and screens. Its acceptance criteria are now 17 of 22 satisfied. The
+previously missing proof groups and strict cutover-reconciliation gap are closed, including the
+consolidated Q13/Q14 behaviour proof. Of the five remaining criteria, three require Phase 4/5/6
+correction-package owners, one is the future valuation-policy boundary, and one is the operational
+Phase 2 UI journey.
 
 The first production deployment remains deliberately last, after all Phase 2 criteria are
 complete. Its runbook is ready ([deployment.md](architecture/deployment.md#first-deploy-runbook))
@@ -51,9 +54,8 @@ the multi-arch build.
 
 ## Blocked / awaiting input
 
-Nothing blocking. Open questions: [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) — 0 blocking, 4
-non-blocking (second customer profile; cross-entity master data; movement posting actor; whether
-location mode and default AVCO pool scope are governed policies).
+Nothing blocking. Open questions: [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) — 0 blocking, 3
+non-blocking (second customer profile; cross-entity master data; movement posting actor).
 
 ## Roadmap at a glance
 

@@ -49,6 +49,8 @@ purchase_orders
   order_date, expected_delivery_date NULLABLE
   issued_at NULLABLE, closed_at NULLABLE, cancelled_at NULLABLE
   cancellation_reason NULLABLE
+  inventory_cutover_id, import_batch_id NULLABLE  -- both set for an imported open PO
+  source_system, source_record_id NULLABLE         -- immutable predecessor identity
 
 purchase_order_lines
   id, company_id, purchase_order_id, line_number
@@ -63,6 +65,7 @@ purchase_order_lines
   qa_required
   over_receipt_mode, over_receipt_tolerance_percent  -- resolved issue snapshots
   short_closed_stock_qty
+  import_batch_row_id, source_record_id NULLABLE  -- immutable imported-line provenance
 
 goods_receipts
   id, company_id, number
@@ -109,8 +112,17 @@ requirement can add that column without reshaping this table.
 document. Procurement and reorder reporting queries lines independently across many POs, and the
 column permits PostgreSQL composite foreign keys that prevent cross-company item/UoM references.
 
-QA quantities are derived from posted inspection/disposition events and their stock movements;
+QA quantities are derived from posted disposition events and their stock movements;
 there are no independently editable accepted/rejected counters on a receipt line.
+
+An operational or full-history inventory cutover may stage one `OPEN_PURCHASE_ORDER` row per
+still-open predecessor PO line. Purchasing—not the generic importer—groups rows by immutable
+source-order identity, rejects inconsistent header or duplicate line facts, and creates an issued
+target PO containing the remaining commitment only. It does not recreate historical receipts or
+liabilities. The PO retains cutover, import-batch, source-system and source-order identity; each
+line retains its import-row and source-line identity. Database constraints make that provenance
+tenant-safe, unique and immutable. Retrying the commit returns the already-created orders rather
+than duplicating them.
 
 Draft Goods Receipts are created from issued PO lines. Posting serialises on the receipt and its
 PO lines in deterministic order, re-derives cumulative effective receipt quantity, then calls
@@ -292,4 +304,5 @@ corrections are governed by [ADR 0040](../decisions/0040-control-backdated-stock
 - [Units of measure](units-of-measure.md) · [Multi-currency](multi-currency.md)
 - [ADR 0035](../decisions/0035-separate-purchasing-operational-and-financial-facts.md)
 - [ADR 0043](../decisions/0043-control-purchase-order-receipt-and-qa-posting.md)
+- [Inventory cutover](inventory-cutover.md)
 - [Phase 2](../phases/phase-2-purchasing-stock.md)

@@ -7,11 +7,20 @@ use App\Models\User;
 use App\Modules\Inventory\Models\Warehouse;
 use App\Modules\Inventory\Support\InventoryLocationMode;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class ProgressiveLocationCapabilitiesTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        app(PermissionRegistrar::class)->setPermissionsTeamId(1);
+        Permission::findOrCreate('inventory.location-policy.manage');
+    }
 
     public function test_simple_mode_is_the_default_and_hides_structured_writes(): void
     {
@@ -30,11 +39,13 @@ class ProgressiveLocationCapabilitiesTest extends TestCase
     public function test_structured_mode_supports_hierarchy_metadata_and_operational_roles(): void
     {
         $user = User::factory()->create();
+        $user->givePermissionTo('inventory.location-policy.manage');
         $warehouse = Warehouse::create(['code' => 'main', 'name' => 'Main']);
         $root = $warehouse->locations()->create(['code' => 'main', 'name' => 'Main']);
 
         $this->actingAs($user)->patchJson('/api/v1/inventory-settings', [
             'inventory_location_mode' => 'STRUCTURED',
+            'reason' => 'Enable structured location operations',
         ])->assertOk()->assertJsonPath('data.inventory_location_mode', 'STRUCTURED');
 
         $response = $this->postJson('/api/v1/locations', [
@@ -62,6 +73,7 @@ class ProgressiveLocationCapabilitiesTest extends TestCase
     public function test_structured_integrity_and_safe_downgrade_are_enforced(): void
     {
         $user = User::factory()->create();
+        $user->givePermissionTo('inventory.location-policy.manage');
         Company::query()->findOrFail(1)->update(['inventory_location_mode' => InventoryLocationMode::Structured]);
         $warehouse = Warehouse::create(['code' => 'main', 'name' => 'Main']);
         $root = $warehouse->locations()->create(['code' => 'main', 'name' => 'Main']);
@@ -81,12 +93,14 @@ class ProgressiveLocationCapabilitiesTest extends TestCase
 
         $this->patchJson('/api/v1/inventory-settings', [
             'inventory_location_mode' => 'SIMPLE',
+            'reason' => 'Return to simple location operations',
         ])->assertUnprocessable()->assertJsonValidationErrors('inventory_location_mode');
     }
 
     public function test_downgrade_succeeds_when_each_warehouse_only_has_its_plain_location(): void
     {
         $user = User::factory()->create();
+        $user->givePermissionTo('inventory.location-policy.manage');
         $company = Company::query()->findOrFail(1);
         $company->update(['inventory_location_mode' => InventoryLocationMode::Structured]);
         $warehouse = Warehouse::create(['code' => 'main', 'name' => 'Main']);
@@ -94,6 +108,7 @@ class ProgressiveLocationCapabilitiesTest extends TestCase
 
         $this->actingAs($user)->patchJson('/api/v1/inventory-settings', [
             'inventory_location_mode' => 'SIMPLE',
+            'reason' => 'Return to simple location operations',
         ])->assertOk()->assertJsonPath('data.inventory_location_mode', 'SIMPLE');
     }
 

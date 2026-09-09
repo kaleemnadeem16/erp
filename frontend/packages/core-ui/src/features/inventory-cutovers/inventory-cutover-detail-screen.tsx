@@ -7,6 +7,7 @@ import {
   useInventoryCutoversPreview,
   useInventoryCutoversApprove,
   useInventoryCutoversCommit,
+  useInventoryCutoversOpenPurchaseOrdersCommit,
   useInventoryCutoversFinalise,
   useInventoryCutoversNegativeOpeningsStore,
   useInventoryCutoverNegativeOpeningsApprove,
@@ -81,6 +82,7 @@ export function InventoryCutoverDetailScreen() {
   const validateCutover = useInventoryCutoversValidate();
   const approveCutover = useInventoryCutoversApprove();
   const commitCutover = useInventoryCutoversCommit();
+  const commitOpenPurchaseOrders = useInventoryCutoversOpenPurchaseOrdersCommit();
   const finaliseCutover = useInventoryCutoversFinalise();
   const requestNegativeOpening = useInventoryCutoversNegativeOpeningsStore();
   const approveNegativeOpening = useInventoryCutoverNegativeOpeningsApprove();
@@ -117,6 +119,14 @@ export function InventoryCutoverDetailScreen() {
   function handleFinalise() {
     setActionError(null);
     finaliseCutover.mutate({ inventoryCutover: cutoverId }, { onSuccess: refetch, onError: (error) => setActionError(getApiErrorMessage(error)) });
+  }
+
+  function handleCommitOpenPurchaseOrders() {
+    setActionError(null);
+    commitOpenPurchaseOrders.mutate(
+      { inventoryCutover: cutoverId },
+      { onSuccess: refetch, onError: (error) => setActionError(getApiErrorMessage(error)) }
+    );
   }
 
   function handleApproveNegativeOpening(id: number) {
@@ -180,6 +190,9 @@ export function InventoryCutoverDetailScreen() {
   const isDraft = cutover.status === 'DRAFT';
   const isValidated = cutover.status === 'VALIDATED';
   const isApproved = cutover.status === 'APPROVED';
+  const hasPendingOpenPurchaseOrders = batches.some(
+    (batch) => batch.entity_type === 'OPEN_PURCHASE_ORDER' && batch.status !== 'COMMITTED'
+  );
   const preview = previewQuery.data?.status === 200 ? previewQuery.data.data.data : undefined;
 
   return (
@@ -208,6 +221,15 @@ export function InventoryCutoverDetailScreen() {
                 <Button variant="outline" onClick={handleCommit} disabled={commitCutover.isPending}>
                   Commit opening state
                 </Button>
+                {hasPendingOpenPurchaseOrders && (
+                  <Button
+                    variant="outline"
+                    onClick={handleCommitOpenPurchaseOrders}
+                    disabled={commitOpenPurchaseOrders.isPending}
+                  >
+                    Commit open purchase orders
+                  </Button>
+                )}
                 <Button onClick={handleFinalise} disabled={finaliseCutover.isPending}>
                   Finalise
                 </Button>

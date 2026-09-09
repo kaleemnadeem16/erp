@@ -190,15 +190,15 @@ The order matters because later work needs stable document and stock boundaries:
       normal/high-risk classification and mandatory second independent approval for hard high-risk
       consequences per
       [ADR 0040](../decisions/0040-control-backdated-stock-recalculation-and-corrections.md)
-- [ ] Audit every consequential company-policy change with elevated permission, mandatory reason,
+- [x] Audit every consequential company-policy change with elevated permission, mandatory reason,
       actor, old/new values and timestamp without rewriting snapshotted request context/deadlines
       - Done for Inventory's three governed groups (`InventoryPolicyChange`) and, since the
         pre-deployment audit, for Purchasing's over-receipt policy (`PurchasingPolicyChange`,
         `purchasing.over-receipt-policy.manage`) — which previously had no permission, reason or
         audit trail at all.
-      - Open: `inventory_location_mode` and `default_avco_pool_scope` remain ungoverned, pinned as
-        deliberate by an existing test. Whether that stands is Q17 in
-        [OPEN-QUESTIONS.md](../OPEN-QUESTIONS.md).
+      - ADR 0047 brings `inventory_location_mode` and `default_avco_pool_scope` under separate
+        location-structure and valuation-policy permissions, with the same mandatory reason and
+        immutable old/new-value audit contract (`NegativeStockPolicyTest`).
 - [x] Serialise overlapping recalculation execution with deterministic locks over the complete
       method-specific replay closure, count only post-approval material invalidations toward the
       regeneration cap, and escalate repeated cap hits without resetting the counter.
@@ -236,8 +236,12 @@ The order matters because later work needs stable document and stock boundaries:
       — the cutover-shortage exception (`InventoryCutoverNegativeOpening`) is a structurally
       separate table/Action pair from live ADR 0037 overrides; the shared Imports target only
       validates and never writes stock state
-- [ ] Leave open-PO materialisation to Purchasing and the balancing opening journal to Phase 6,
-      connected through immutable cutover/source references
+- [x] Leave open-PO materialisation to Purchasing and the balancing opening journal to Phase 6,
+      connected through immutable cutover/source references. Purchasing registers the
+      `OPEN_PURCHASE_ORDER` staged target and materialises each predecessor order's remaining
+      lines as one issued target PO, retaining immutable cutover/batch/row/source identity; retry
+      resolves the existing result. The Phase 6 balancing opening journal remains deferred
+      (`OpenPurchaseOrderCutoverTest`).
 
 ### Counts, API and audit
 
@@ -298,7 +302,8 @@ against HTTP APIs that exist. Five feature areas were complete as Actions with n
 each was exposed when its first screen was designed, so the API shape was driven by a real
 screen's needs rather than guessed upfront (the architecture doc flagged the stock ledger as a
 cursor-pagination candidate, unlike every existing page-based list). **All five now have both an
-HTTP surface and screens** — what remains below is the first production deployment:
+HTTP surface and screens**. This closes the stock-engine exception/document slice, not the normal
+purchasing and inventory operating UI; that remaining boundary is listed below:
 
 - [x] **Stock ledger** read APIs — `stock_moves` has a cursor-paginated list and a show endpoint
       (`GET /api/v1/stock-moves`), filterable by item/warehouse/location/batch/source type/date
@@ -320,7 +325,9 @@ HTTP surface and screens** — what remains below is the first production deploy
       (`ApproveInventoryCutoverNegativeOpening`) — the header stays create/read-only over HTTP,
       every state change is a named action per api-conventions.md. "Attach batch" takes a raw
       Import Batch ID: the Imports module has no HTTP API/UI of its own yet to browse or create
-      batches through
+      batches through. Operational/full-history cutovers additionally expose `POST
+      .../commit-open-purchase-orders`, the Purchasing-owned action for staged remaining
+      commitments
 - [x] **Stock recalculation** — full HTTP surface: `POST/GET /api/v1/recalculation-requests`,
       `GET .../{id}` (header, `RequestStockRecalculation`, create/read-only — it's also the
       preview, computing the first impact version synchronously), `POST
@@ -351,7 +358,8 @@ HTTP surface and screens** — what remains below is the first production deploy
       Physical Counts (`/physical-counts`) is the first screen with a document workflow (create,
       add lines, record counts, post/cancel); Inventory Cutovers (`/inventory-cutovers`) is the
       first with a multi-actor approval lifecycle (validate, independent approve, commit,
-      finalise) plus its own negative-opening exception sub-flow; Negative-Stock Overrides
+      finalise), a distinct open-PO commit action when such a batch is pending, plus its own
+      negative-opening exception sub-flow; Negative-Stock Overrides
       (`/negative-stock-overrides`) is the first screen with no server-side status column,
       deriving its display status entirely from `authorisation_mode` and child-record presence;
       Stock Recalculation (`/recalculation-requests`) is the most involved — a version history
@@ -360,6 +368,25 @@ HTTP surface and screens** — what remains below is the first production deploy
       required approvers), with computed convenience flags (`is_fully_approved`,
       `has_unexpired_full_approval`, etc.) added to the API response rather than pushed onto the
       frontend, unlike every earlier derived-status screen
+- [ ] Research and agree the Phase 2 interaction specification before adding more screens. Cover
+      user roles and task frequency, document status/permission actions, keyboard-efficient line
+      entry, responsive table/card behaviour, validation recovery, consequential-action review,
+      accessibility and realistic end-to-end prototypes per
+      [user-interface.md](../architecture/user-interface.md).
+- [ ] Build the inventory overview: clearly separate on-hand, available, QA-held, shortage and
+      on-order quantities; filter and drill down by item, warehouse, location and tracking identity;
+      link every aggregate back to the stock ledger. Add purpose-built read models/endpoints rather
+      than calculating decimal aggregates in React.
+- [ ] Build purchase-order list, draft create/edit and detail workspaces, including issue, cancel
+      and line short-close actions, immutable issued snapshots, totals and receipt progress.
+- [ ] Build goods-receipt list/create/detail/post/reverse screens and receipt-line QA disposition
+      workflow, including unresolved QA quantity, tracking entry and disposition history.
+- [ ] Build purchasing/inventory policy settings screens with permission-aware reason capture and
+      audit context; replace temporary raw-ID controls in cutover screens when the required lookup
+      endpoints exist.
+- [ ] Audit and improve existing Phase 2 screens for consistent hierarchy, terminology, empty/
+      loading/error states, keyboard/focus behaviour, responsive operation and WCAG 2.2 AA; test
+      the critical PO→receipt→QA and inventory-drill-down journeys.
 - [ ] First real deployment to the production VMs (deferred from Phase 0)
 
 Tick these in the same commit as the work.
@@ -398,7 +425,14 @@ Tick these in the same commit as the work.
       AVCO into the destination, recalculate destination AVCO and preserve total company quantity
       and value; a frozen source pool's rate is final and never later repaired (ADR 0045)
       (`StockIssueTest`; ADR 0045 finality proven by `StockPoolRecoveryTest`)
-- [ ] Negative-stock and backdated-receipt behaviour exactly matches the accepted Q13/Q14 ADRs
+- [x] Negative-stock and backdated-receipt behaviour exactly matches the accepted Q13/Q14 ADRs.
+      Q13's block/authorised-override, exact identity, approval/review, provisional valuation and
+      shortage settlement paths are covered by `NegativeStockOverrideWorkflowTest`,
+      `StockIssueTest` and `StockPoolRecoveryTest`; Q14's horizon, preview, exact-version approval,
+      staleness, risk routing and deterministic receipt/issue/transfer execution are covered by
+      `BackdatingHorizonEvaluatorTest`, `RequestStockRecalculationTest`,
+      `RecalculationApprovalAuditTest`, `ExecuteRecalculationTest` and
+      `ExecuteOutboundRecalculationTest`.
 - [x] A finalised inventory cutover reconciles exact locations, each target AVCO pool and company
       totals; continues or explicitly converts source valuation scope without rewriting history;
       and establishes valid AVCO/FIFO/SPECIFIC state without weakening Q13/Q14 controls
@@ -432,6 +466,11 @@ Tick these in the same commit as the work.
       (`CompanyScopedForeignKeyTest` structurally, per-table scope triggers for every bare
       `locations` reference — the last missing one, `recalculation_requests`, closed by the audit)
 - [x] Full Pest/Pint/Larastan/frontend/codegen pipeline passes on PostgreSQL 16
+- [ ] A user can complete the Phase 2 operational journeys without direct API/database access:
+      understand current inventory, create and issue a PO, receive it, resolve required QA and
+      inspect the resulting availability/ledger trail on desktop and narrow screens. Critical
+      actions are keyboard accessible, permission/status gated and recover clearly from validation
+      errors.
 
 ## Docs to update on completion
 
@@ -458,6 +497,7 @@ Tick these in the same commit as the work.
 - [physical-count.md](../domain/physical-count.md)
 - [ADR 0039](../decisions/0039-configurable-avco-valuation-pools.md)
 - [ADR 0043](../decisions/0043-control-purchase-order-receipt-and-qa-posting.md)
+- [ADR 0047](../decisions/0047-govern-inventory-structure-and-default-valuation-policies.md)
 - [multi-currency.md](../domain/multi-currency.md) ·
   [units-of-measure.md](../domain/units-of-measure.md)
 - [database.md](../architecture/database.md) ·

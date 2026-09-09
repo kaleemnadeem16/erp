@@ -73,27 +73,6 @@ conventions. Decide whether the movement boundary
 should stamp `posted_by` itself (one column, uniform trail) or whether source-document actors
 remain the single source of truth.
 
-### Q17 — Whether location mode and default AVCO pool scope are governed policies
-**Blocks:** Nothing today. Decide before the first real company configures itself, since
-retro-fitting an audit trail cannot recover changes already made without one.
-
-`UpdateInventorySettings` governs three policy groups (negative stock, backdating horizon,
-recalculation): each needs an elevated permission, a mandatory reason, and writes an immutable
-`InventoryPolicyChange` row. Two settings sit outside that treatment —
-`inventory_location_mode` ([ADR 0041](decisions/0041-progressive-inventory-location-capabilities.md))
-and `default_avco_pool_scope` ([ADR 0039](decisions/0039-configurable-avco-valuation-pools.md)) —
-and `NegativeStockPolicyTest::test_non_policy_inventory_setting_does_not_require_elevated_permission_or_audit_reason`
-pins that as deliberate.
-
-Both are arguably as consequential as the governed three: the location mode changes what the
-whole location model permits, and the default pool scope decides how every later AVCO item is
-valued. Neither ADR says anything about permissions or audit either way. Surfaced by the
-pre-deployment audit on 2026-09-09, which read the omission as a gap; the existing test reads it
-as a decision. Governing them was implemented and then reverted, because changing a tested
-decision needs an ADR rather than a silent fix. Purchasing's own over-receipt policy *was*
-brought under governance in the same pass — it had no such counter-decision, and the phase's
-"audit every consequential company-policy change" task explicitly asked for it.
-
 ---
 
 ## Answered

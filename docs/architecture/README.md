@@ -18,6 +18,7 @@ these choices were made, see [decisions/](../decisions/).
 | [extensibility.md](extensibility.md) | Variation ladder, plugins, custom fields | Handling a per-customer difference |
 | [authorization.md](authorization.md) | Roles, permissions, namespacing, Teams | Adding a permission or gating an action |
 | [data-import.md](data-import.md) | Column-mapping import engine | Building or extending an import |
+| [user-interface.md](user-interface.md) | UI research, interaction standards and phase screen ownership | Planning or building screens |
 | [api-conventions.md](api-conventions.md) | Routes, responses, errors, pagination | Adding an endpoint |
 | [deployment.md](deployment.md) | Targets, multi-arch, what a customer deployment needs | Deploying or changing infra |
 

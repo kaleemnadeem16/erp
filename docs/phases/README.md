@@ -20,6 +20,10 @@ Phase docs are written in detail **when the phase is about to start**, using
 [templates/phase.md](../templates/phase.md). Writing them all up front produces speculative
 fiction that has to be rewritten anyway.
 
+Screen ownership follows [user-interface.md](../architecture/user-interface.md). Each phase writes
+its detailed interaction specification when it starts; backend completion alone does not defer an
+operational UI silently to a later phase.
+
 ---
 
 ## Outline
@@ -124,3 +128,4 @@ real second customer ([Q8](../OPEN-QUESTIONS.md#q8--second-customer-profile)).
 - [STATUS.md](../STATUS.md) — current progress
 - [OPEN-QUESTIONS.md](../OPEN-QUESTIONS.md) — what's blocking what
 - [templates/phase.md](../templates/phase.md)
+- [User-interface delivery](../architecture/user-interface.md)

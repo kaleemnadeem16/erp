@@ -15,3 +15,4 @@ export * from './generated/recalculation-request/recalculation-request';
 export * from './generated/chart-of-account/chart-of-account';
 export * from './generated/supplier-account/supplier-account';
 export * from './generated/item-supplier/item-supplier';
+export * from './generated/purchase-order/purchase-order';

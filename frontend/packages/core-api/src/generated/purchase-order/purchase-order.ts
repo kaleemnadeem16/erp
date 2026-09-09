@@ -23,6 +23,7 @@ import type {
 import type {
   AuthenticationExceptionResponse,
   CancelPurchaseOrderRequest,
+  InventoryCutoversOpenPurchaseOrdersCommit200,
   ModelNotFoundExceptionResponse,
   PurchaseOrderLinesShortClose200,
   PurchaseOrdersCancel200,
@@ -1110,6 +1111,129 @@ export const usePurchaseOrderLinesShortClose = <
 > => {
   const mutationOptions =
     getPurchaseOrderLinesShortCloseMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+export type inventoryCutoversOpenPurchaseOrdersCommitResponse200 = {
+  data: InventoryCutoversOpenPurchaseOrdersCommit200;
+  status: 200;
+};
+
+export type inventoryCutoversOpenPurchaseOrdersCommitResponse401 = {
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
+
+export type inventoryCutoversOpenPurchaseOrdersCommitResponse404 = {
+  data: ModelNotFoundExceptionResponse;
+  status: 404;
+};
+
+export type inventoryCutoversOpenPurchaseOrdersCommitResponseSuccess =
+  inventoryCutoversOpenPurchaseOrdersCommitResponse200 & {
+    headers: Headers;
+  };
+export type inventoryCutoversOpenPurchaseOrdersCommitResponseError = (
+  | inventoryCutoversOpenPurchaseOrdersCommitResponse401
+  | inventoryCutoversOpenPurchaseOrdersCommitResponse404
+) & {
+  headers: Headers;
+};
+
+export type inventoryCutoversOpenPurchaseOrdersCommitResponse =
+  | inventoryCutoversOpenPurchaseOrdersCommitResponseSuccess
+  | inventoryCutoversOpenPurchaseOrdersCommitResponseError;
+
+export const getInventoryCutoversOpenPurchaseOrdersCommitUrl = (
+  inventoryCutover: number,
+) => {
+  return `/v1/inventory-cutovers/${inventoryCutover}/commit-open-purchase-orders`;
+};
+
+export const inventoryCutoversOpenPurchaseOrdersCommit = async (
+  inventoryCutover: number,
+  options?: RequestInit,
+): Promise<inventoryCutoversOpenPurchaseOrdersCommitResponse> => {
+  return fetchClient<inventoryCutoversOpenPurchaseOrdersCommitResponse>(
+    getInventoryCutoversOpenPurchaseOrdersCommitUrl(inventoryCutover),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
+
+export const getInventoryCutoversOpenPurchaseOrdersCommitMutationOptions = <
+  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof inventoryCutoversOpenPurchaseOrdersCommit>>,
+    TError,
+    { inventoryCutover: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof fetchClient>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof inventoryCutoversOpenPurchaseOrdersCommit>>,
+  TError,
+  { inventoryCutover: number },
+  TContext
+> => {
+  const mutationKey = ["inventoryCutoversOpenPurchaseOrdersCommit"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof inventoryCutoversOpenPurchaseOrdersCommit>>,
+    { inventoryCutover: number }
+  > = (props) => {
+    const { inventoryCutover } = props ?? {};
+
+    return inventoryCutoversOpenPurchaseOrdersCommit(
+      inventoryCutover,
+      requestOptions,
+    );
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type InventoryCutoversOpenPurchaseOrdersCommitMutationResult =
+  NonNullable<
+    Awaited<ReturnType<typeof inventoryCutoversOpenPurchaseOrdersCommit>>
+  >;
+
+export type InventoryCutoversOpenPurchaseOrdersCommitMutationError =
+  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
+
+export const useInventoryCutoversOpenPurchaseOrdersCommit = <
+  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof inventoryCutoversOpenPurchaseOrdersCommit>>,
+      TError,
+      { inventoryCutover: number },
+      TContext
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof inventoryCutoversOpenPurchaseOrdersCommit>>,
+  TError,
+  { inventoryCutover: number },
+  TContext
+> => {
+  const mutationOptions =
+    getInventoryCutoversOpenPurchaseOrdersCommitMutationOptions(options);
 
   return useMutation(mutationOptions, queryClient);
 };
