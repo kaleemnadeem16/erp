@@ -9,8 +9,10 @@ use App\Models\Model;
 use App\Models\User;
 use App\Support\Concerns\BelongsToCompany;
 use App\Support\Concerns\GuardsRelatedCompanyScope;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/** @property CarbonImmutable $changed_at */
 class PurchasingPolicyChange extends Model
 {
     use BelongsToCompany;

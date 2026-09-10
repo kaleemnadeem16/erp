@@ -12,6 +12,7 @@ import {
   InventoryCutoverCreateScreen,
   InventoryCutoverDetailScreen,
   InventoryCutoversListScreen,
+  InventoryOverviewScreen,
   ItemCreateScreen,
   ItemDetailScreen,
   ItemEditScreen,
@@ -31,7 +32,9 @@ import {
   PurchaseOrderDetailScreen,
   PurchaseOrderCreateScreen,
   PurchaseOrderEditScreen,
+  InventorySettingsScreen,
   ProtectedRoute,
+  PurchasingSettingsScreen,
   RecalculationRequestCreateScreen,
   RecalculationRequestDetailScreen,
   RecalculationRequestsListScreen,
@@ -424,6 +427,36 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <RecalculationRequestDetailScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings/purchasing"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <PurchasingSettingsScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings/inventory"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <InventorySettingsScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/inventory-overview"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <InventoryOverviewScreen />
               </AppShell>
             </ProtectedRoute>
           }

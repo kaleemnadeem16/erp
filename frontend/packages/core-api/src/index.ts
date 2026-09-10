@@ -23,3 +23,8 @@ export * from "./generated/item-supplier/item-supplier";
 export * from "./generated/purchase-order/purchase-order";
 export * from "./generated/goods-receipt/goods-receipt";
 export * from "./generated/quality-disposition/quality-disposition";
+export * from "./generated/purchasing-settings/purchasing-settings";
+export * from "./generated/inventory-settings/inventory-settings";
+export * from "./generated/purchasing-policy-change/purchasing-policy-change";
+export * from "./generated/inventory-policy-change/inventory-policy-change";
+export * from "./generated/inventory-overview/inventory-overview";

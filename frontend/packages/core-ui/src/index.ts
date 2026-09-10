@@ -143,3 +143,8 @@ export { PurchaseOrderEditScreen } from "./features/purchase-orders/purchase-ord
 export { GoodsReceiptsListScreen } from "./features/goods-receipts/goods-receipts-list-screen";
 export { GoodsReceiptCreateScreen } from "./features/goods-receipts/goods-receipt-create-screen";
 export { GoodsReceiptDetailScreen } from "./features/goods-receipts/goods-receipt-detail-screen";
+
+export { PurchasingSettingsScreen } from "./features/settings/purchasing-settings-screen";
+export { InventorySettingsScreen } from "./features/settings/inventory-settings-screen";
+
+export { InventoryOverviewScreen } from "./features/inventory-overview/inventory-overview-screen";

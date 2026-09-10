@@ -33,6 +33,7 @@ use App\Modules\Inventory\Models\Location;
 use App\Modules\Inventory\Models\PhysicalCount;
 use App\Modules\Inventory\Models\RecalculationRequest;
 use App\Modules\Inventory\Models\StockLayer;
+use App\Modules\Inventory\Models\StockMove;
 use App\Modules\Inventory\Models\Warehouse;
 use App\Modules\Inventory\Support\AvcoPoolScope;
 use App\Modules\Inventory\Support\ItemTracking;
@@ -44,9 +45,12 @@ use App\Modules\Purchasing\Actions\CreateGoodsReceipt;
 use App\Modules\Purchasing\Actions\CreatePurchaseOrder;
 use App\Modules\Purchasing\Actions\IssuePurchaseOrder;
 use App\Modules\Purchasing\Actions\PostGoodsReceipt;
+use App\Modules\Purchasing\Actions\PostQualityDisposition;
 use App\Modules\Purchasing\Models\GoodsReceipt;
+use App\Modules\Purchasing\Models\PurchaseOrder;
 use Database\Seeders\Demo\Concerns\EnsuresDemoEnvironment;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Carbon;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -72,37 +76,41 @@ final class StockDemoSeeder extends Seeder
 {
     use EnsuresDemoEnvironment;
 
+    /**
+     * Every permission the demo login is granted, in one place — the single
+     * source of truth `syncPermissions` below reads from, so re-running this
+     * seeder can't silently narrow what the demo login can do. Includes the
+     * settings/policy-history permissions Part A's screens gate on, which
+     * used to be granted ad hoc outside the seeder and would otherwise be
+     * wiped by the `syncPermissions` call below on the next re-seed.
+     *
+     * @var list<string>
+     */
+    private const DEMO_USER_PERMISSIONS = [
+        'inventory.physical_count.create', 'inventory.physical_count.count', 'inventory.physical_count.post',
+        'inventory.cutover.create', 'inventory.cutover.stage', 'inventory.cutover.validate', 'inventory.cutover.approve',
+        'inventory.cutover.commit', 'inventory.cutover.finalise',
+        'inventory.cutover.negative_opening.request', 'inventory.cutover.negative_opening.approve',
+        'inventory.negative-stock.request', 'inventory.negative-stock.override',
+        'inventory.negative-stock.approve', 'inventory.negative-stock.review',
+        'inventory.recalculation.request', 'inventory.recalculation.approve',
+        'inventory.recalculation.approve-high-risk', 'inventory.recalculation.execute',
+        'inventory.recalculation.review-regeneration',
+        'purchasing.over-receipt-policy.manage', 'purchasing.policy-history.view',
+        'inventory.location-policy.manage', 'inventory.valuation-policy.manage', 'inventory.policy-history.view',
+    ];
+
     public function run(): void
     {
         $this->ensureDemoEnvironment();
 
         app(PermissionRegistrar::class)->setPermissionsTeamId(1);
-        foreach ([
-            'inventory.physical_count.create', 'inventory.physical_count.count', 'inventory.physical_count.post',
-            'inventory.cutover.create', 'inventory.cutover.stage', 'inventory.cutover.validate', 'inventory.cutover.approve',
-            'inventory.cutover.commit', 'inventory.cutover.finalise',
-            'inventory.cutover.negative_opening.request', 'inventory.cutover.negative_opening.approve',
-            'inventory.negative-stock.request', 'inventory.negative-stock.override',
-            'inventory.negative-stock.approve', 'inventory.negative-stock.review',
-            'inventory.recalculation.request', 'inventory.recalculation.approve',
-            'inventory.recalculation.approve-high-risk', 'inventory.recalculation.execute',
-            'inventory.recalculation.review-regeneration',
-        ] as $permission) {
+        foreach (self::DEMO_USER_PERMISSIONS as $permission) {
             Permission::findOrCreate($permission);
         }
 
         $demoUser = User::query()->where('email', config('demo.user.email'))->firstOrFail();
-        $demoUser->syncPermissions([
-            'inventory.physical_count.create', 'inventory.physical_count.count', 'inventory.physical_count.post',
-            'inventory.cutover.create', 'inventory.cutover.stage', 'inventory.cutover.validate', 'inventory.cutover.approve',
-            'inventory.cutover.commit', 'inventory.cutover.finalise',
-            'inventory.cutover.negative_opening.request', 'inventory.cutover.negative_opening.approve',
-            'inventory.negative-stock.request', 'inventory.negative-stock.override',
-            'inventory.negative-stock.approve', 'inventory.negative-stock.review',
-            'inventory.recalculation.request', 'inventory.recalculation.approve',
-            'inventory.recalculation.approve-high-risk', 'inventory.recalculation.execute',
-            'inventory.recalculation.review-regeneration',
-        ]);
+        $demoUser->syncPermissions(self::DEMO_USER_PERMISSIONS);
 
         $ops = $this->seedActor('demo-ops@erp.x1techs.com', 'Demo Ops Assistant', [
             'inventory.physical_count.create', 'inventory.physical_count.count',
@@ -119,6 +127,7 @@ final class StockDemoSeeder extends Seeder
         $currency = Currency::query()->where('code', 'PKR')->firstOrFail();
 
         $this->seedGoodsReceipts($location, $currency);
+        $this->seedInventoryOverviewDemoData($location, $currency, $demoUser);
         $this->seedPhysicalCounts($warehouse, $location, $ops, $demoUser);
         $this->seedInventoryCutover($location, $currency, $ops, $supervisor);
         $this->seedNegativeStockOverrides($location, $ops);
@@ -140,15 +149,25 @@ final class StockDemoSeeder extends Seeder
         $item = Item::query()->where('code', 'demo-pig-blue')->firstOrFail();
         $supplier = SupplierAccount::query()->where('code', 'sup-punjab')->firstOrFail();
 
+        // This item can already carry earlier stock movements in a long-lived dev
+        // database (manually posted test moves, predating this seeder's own run) —
+        // a receipt dated before the latest one is rejected as backdated. Anchor
+        // relative to that latest move instead of a fixed "days ago" so this stays
+        // safe to run against both a fresh database and an already-populated one.
+        $latestExistingMove = StockMove::query()->where('item_id', $item->getKey())->max('moved_at');
+        $earliestSafeDate = $latestExistingMove !== null
+            ? Carbon::parse($latestExistingMove)->addDay()->min(now())
+            : now()->subDays(20);
+
         foreach ([
-            ['key' => 'demo-receipt-pigblue-1', 'qty' => '150.0000', 'cost' => '480.0000', 'daysAgo' => 20],
-            ['key' => 'demo-receipt-pigblue-2', 'qty' => '80.0000', 'cost' => '495.0000', 'daysAgo' => 6],
+            ['key' => 'demo-receipt-pigblue-1', 'qty' => '150.0000', 'cost' => '480.0000', 'movedAt' => $earliestSafeDate->copy()],
+            ['key' => 'demo-receipt-pigblue-2', 'qty' => '80.0000', 'cost' => '495.0000', 'movedAt' => $earliestSafeDate->copy()->addDays(3)->min(now())],
         ] as $data) {
             if (GoodsReceipt::query()->where('idempotency_key', $data['key'])->exists()) {
                 continue;
             }
 
-            $orderedAt = now()->subDays($data['daysAgo'])->format('Y-m-d');
+            $orderedAt = $data['movedAt']->format('Y-m-d');
             $order = app(CreatePurchaseOrder::class)([
                 'supplier_account_id' => $supplier->getKey(), 'currency_id' => $currency->getKey(),
                 'fx_rate' => '1.000000000', 'fx_rate_date' => $orderedAt, 'fx_rate_type' => 'SPOT', 'fx_rate_source' => 'manual',
@@ -163,7 +182,7 @@ final class StockDemoSeeder extends Seeder
 
             $receipt = app(CreateGoodsReceipt::class)([
                 'supplier_account_id' => $supplier->getKey(),
-                'physical_arrival_at' => now()->subDays($data['daysAgo'])->toIso8601String(),
+                'physical_arrival_at' => $data['movedAt']->toIso8601String(),
                 'posting_date' => $orderedAt,
                 'lines' => [[
                     'purchase_order_line_id' => $line->getKey(), 'item_id' => $item->getKey(), 'location_id' => $location->getKey(),
@@ -176,15 +195,207 @@ final class StockDemoSeeder extends Seeder
         }
     }
 
+    /**
+     * Beyond demo-pig-blue's two receipts above, gives every other stocked
+     * demo item a real on-hand quantity, plus a QA-held split and an
+     * outstanding (issued, unreceived) PO line — so the Inventory Overview
+     * screen (on-hand/available/QA-held/on-order/shortage) has real, varied
+     * numbers instead of a column of zeros. All through the same real
+     * Actions as seedGoodsReceipts above, never raw inventory-table writes.
+     * Shortage is deliberately left at 0 here: seedNegativeStockOverrides
+     * below already leaves two real override requests pending decision, so
+     * the demo login can produce a real shortage itself by approving one
+     * rather than one being pre-baked.
+     */
+    private function seedInventoryOverviewDemoData(Location $location, Currency $currency, User $demoUser): void
+    {
+        $this->seedPlainReceipt($location, $currency, 'demo-pig-red', 'sup-punjab', 'demo-receipt-pigred-1', '100.0000', '520.0000', 10, 'PR-OPEN-01');
+        $this->seedPlainReceipt($location, $currency, 'demo-thinner', 'sup-pakchem', 'demo-receipt-thinner-1', '60.0000', '340.0000', 8, null);
+        $this->seedPlainReceipt($location, $currency, 'demo-paint-white', 'sup-coatings', 'demo-receipt-paintwhite-1', '40.0000', '1200.0000', 5, 'PW-OPEN-01');
+        $this->seedSerialisedReceipts($location, $currency);
+        $this->seedQaHeldReceipt($location, $currency, $demoUser);
+        $this->seedOutstandingPurchaseOrder($currency);
+    }
+
+    /** A single-line PO, issued and fully received in one go — the same shape as seedGoodsReceipts' loop, parametrised for reuse across the remaining items. */
+    private function seedPlainReceipt(
+        Location $location, Currency $currency, string $itemCode, string $supplierCode,
+        string $idempotencyKey, string $qty, string $cost, int $daysAgo, ?string $batchNo
+    ): void {
+        if (GoodsReceipt::query()->where('idempotency_key', $idempotencyKey)->exists()) {
+            return;
+        }
+
+        $item = Item::query()->where('code', $itemCode)->firstOrFail();
+        $supplier = SupplierAccount::query()->where('code', $supplierCode)->firstOrFail();
+        $orderedAt = now()->subDays($daysAgo)->format('Y-m-d');
+
+        $order = app(CreatePurchaseOrder::class)([
+            'supplier_account_id' => $supplier->getKey(), 'currency_id' => $currency->getKey(),
+            'fx_rate' => '1.000000000', 'fx_rate_date' => $orderedAt, 'fx_rate_type' => 'SPOT', 'fx_rate_source' => 'manual',
+            'order_date' => $orderedAt,
+            'lines' => [[
+                'line_number' => 1, 'item_id' => $item->getKey(), 'description' => $item->name,
+                'ordered_qty' => $qty, 'purchase_uom_id' => $item->stock_uom_id, 'unit_price' => $cost,
+            ]],
+        ]);
+        $order = app(IssuePurchaseOrder::class)($order);
+        $line = $order->lines->sole();
+
+        $receipt = app(CreateGoodsReceipt::class)([
+            'supplier_account_id' => $supplier->getKey(),
+            'physical_arrival_at' => now()->subDays($daysAgo)->toIso8601String(),
+            'posting_date' => $orderedAt,
+            'lines' => [[
+                'purchase_order_line_id' => $line->getKey(), 'item_id' => $item->getKey(), 'location_id' => $location->getKey(),
+                'received_qty' => $qty, 'received_uom_id' => $item->stock_uom_id, 'provisional_unit_cost' => $cost,
+                'currency_id' => $currency->getKey(), 'fx_rate' => '1.000000000',
+                'fx_rate_date' => $orderedAt, 'fx_rate_type' => 'SPOT', 'fx_rate_source' => 'manual',
+                'batch_no' => $batchNo,
+            ]],
+        ], $idempotencyKey);
+        app(PostGoodsReceipt::class)($receipt);
+    }
+
+    /** demo-spray-unit is SERIAL-tracked (and SPECIFIC-valued): each receipt line is exactly one unit with its own serial. */
+    private function seedSerialisedReceipts(Location $location, Currency $currency): void
+    {
+        $item = Item::query()->where('code', 'demo-spray-unit')->firstOrFail();
+        $supplier = SupplierAccount::query()->where('code', 'sup-coatings')->firstOrFail();
+
+        foreach ([
+            ['key' => 'demo-receipt-sprayunit-1', 'serial' => 'SU-1001', 'daysAgo' => 12],
+            ['key' => 'demo-receipt-sprayunit-2', 'serial' => 'SU-1002', 'daysAgo' => 9],
+        ] as $data) {
+            if (GoodsReceipt::query()->where('idempotency_key', $data['key'])->exists()) {
+                continue;
+            }
+
+            $orderedAt = now()->subDays($data['daysAgo'])->format('Y-m-d');
+            $order = app(CreatePurchaseOrder::class)([
+                'supplier_account_id' => $supplier->getKey(), 'currency_id' => $currency->getKey(),
+                'fx_rate' => '1.000000000', 'fx_rate_date' => $orderedAt, 'fx_rate_type' => 'SPOT', 'fx_rate_source' => 'manual',
+                'order_date' => $orderedAt,
+                'lines' => [[
+                    'line_number' => 1, 'item_id' => $item->getKey(), 'description' => $item->name,
+                    'ordered_qty' => '1.0000', 'purchase_uom_id' => $item->stock_uom_id, 'unit_price' => '45000.0000',
+                ]],
+            ]);
+            $order = app(IssuePurchaseOrder::class)($order);
+            $line = $order->lines->sole();
+
+            $receipt = app(CreateGoodsReceipt::class)([
+                'supplier_account_id' => $supplier->getKey(),
+                'physical_arrival_at' => now()->subDays($data['daysAgo'])->toIso8601String(),
+                'posting_date' => $orderedAt,
+                'lines' => [[
+                    'purchase_order_line_id' => $line->getKey(), 'item_id' => $item->getKey(), 'location_id' => $location->getKey(),
+                    'received_qty' => '1.0000', 'received_uom_id' => $item->stock_uom_id, 'provisional_unit_cost' => '45000.0000',
+                    'currency_id' => $currency->getKey(), 'fx_rate' => '1.000000000',
+                    'fx_rate_date' => $orderedAt, 'fx_rate_type' => 'SPOT', 'fx_rate_source' => 'manual',
+                    'serial_no' => $data['serial'],
+                ]],
+            ], $data['key']);
+            app(PostGoodsReceipt::class)($receipt);
+        }
+    }
+
+    /**
+     * A second, QA-required demo-pig-red receipt, left with a partial PASS
+     * disposition — 30 of 50 released, 20 still QA-held — so the demo login
+     * can resolve the remaining branch live via the Goods Receipt detail
+     * screen instead of every QA case arriving pre-resolved.
+     */
+    private function seedQaHeldReceipt(Location $location, Currency $currency, User $demoUser): void
+    {
+        $key = 'demo-receipt-pigred-qa';
+        if (GoodsReceipt::query()->where('idempotency_key', $key)->exists()) {
+            return;
+        }
+
+        $item = Item::query()->where('code', 'demo-pig-red')->firstOrFail();
+        $supplier = SupplierAccount::query()->where('code', 'sup-punjab')->firstOrFail();
+        $orderedAt = now()->subDays(4)->format('Y-m-d');
+
+        $order = app(CreatePurchaseOrder::class)([
+            'supplier_account_id' => $supplier->getKey(), 'currency_id' => $currency->getKey(),
+            'fx_rate' => '1.000000000', 'fx_rate_date' => $orderedAt, 'fx_rate_type' => 'SPOT', 'fx_rate_source' => 'manual',
+            'order_date' => $orderedAt,
+            'lines' => [[
+                'line_number' => 1, 'item_id' => $item->getKey(), 'description' => $item->name,
+                'ordered_qty' => '50.0000', 'purchase_uom_id' => $item->stock_uom_id, 'unit_price' => '540.0000',
+                'qa_required' => true,
+            ]],
+        ]);
+        $order = app(IssuePurchaseOrder::class)($order);
+        $line = $order->lines->sole();
+
+        $receipt = app(CreateGoodsReceipt::class)([
+            'supplier_account_id' => $supplier->getKey(),
+            'physical_arrival_at' => now()->subDays(4)->toIso8601String(),
+            'posting_date' => $orderedAt,
+            'lines' => [[
+                'purchase_order_line_id' => $line->getKey(), 'item_id' => $item->getKey(), 'location_id' => $location->getKey(),
+                'received_qty' => '50.0000', 'received_uom_id' => $item->stock_uom_id, 'provisional_unit_cost' => '540.0000',
+                'currency_id' => $currency->getKey(), 'fx_rate' => '1.000000000',
+                'fx_rate_date' => $orderedAt, 'fx_rate_type' => 'SPOT', 'fx_rate_source' => 'manual',
+                'batch_no' => 'PR-QA-01',
+            ]],
+        ], $key);
+        app(PostGoodsReceipt::class)($receipt);
+
+        app(PostQualityDisposition::class)(
+            $receipt->lines->sole(),
+            ['disposition' => 'PASS', 'qty' => '30.0000', 'reason' => 'Demo: partial QA pass, remainder pending inspection.'],
+            $demoUser->getKey(),
+        );
+    }
+
+    /**
+     * Deliberately left ISSUED and unreceived — an outstanding order the
+     * demo login can receive live, and the source of demo-pig-blue's
+     * on_order_qty on the Inventory Overview screen.
+     */
+    private function seedOutstandingPurchaseOrder(Currency $currency): void
+    {
+        $item = Item::query()->where('code', 'demo-pig-blue')->firstOrFail();
+        $supplier = SupplierAccount::query()->where('code', 'sup-pakchem')->firstOrFail();
+
+        $alreadySeeded = PurchaseOrder::query()->where('supplier_account_id', $supplier->getKey())
+            ->whereHas('lines', fn ($query) => $query->where('item_id', $item->getKey())->where('ordered_qty', '75.0000'))
+            ->exists();
+        if ($alreadySeeded) {
+            return;
+        }
+
+        $orderedAt = now()->subDays(2)->format('Y-m-d');
+        $order = app(CreatePurchaseOrder::class)([
+            'supplier_account_id' => $supplier->getKey(), 'currency_id' => $currency->getKey(),
+            'fx_rate' => '1.000000000', 'fx_rate_date' => $orderedAt, 'fx_rate_type' => 'SPOT', 'fx_rate_source' => 'manual',
+            'order_date' => $orderedAt,
+            'lines' => [[
+                'line_number' => 1, 'item_id' => $item->getKey(), 'description' => $item->name,
+                'ordered_qty' => '75.0000', 'purchase_uom_id' => $item->stock_uom_id, 'unit_price' => '505.0000',
+            ]],
+        ]);
+        app(IssuePurchaseOrder::class)($order);
+    }
+
     private function seedPhysicalCounts(Warehouse $warehouse, Location $location, User $creator, User $poster): void
     {
         $item = Item::query()->where('code', 'demo-pig-blue')->firstOrFail();
 
         if (! PhysicalCount::query()->where('reference', 'DEMO-PC-001')->exists()) {
+            // Slightly under book by a fixed 6 units — a routine shrinkage write-off,
+            // no found cost needed. Derived from live book qty (not hardcoded) so it
+            // stays a small, routine-looking variance regardless of how much stock
+            // other seeded/manual receipts have already put on hand for this item.
+            $bookQty = (float) StockLayer::query()
+                ->where('item_id', $item->getKey())->where('location_id', $location->getKey())
+                ->whereNull('batch_id')->whereNull('serial_no')->sum('qty_remaining');
             $count = app(CreatePhysicalCount::class)(['warehouse_id' => $warehouse->getKey(), 'reference' => 'DEMO-PC-001'], $creator);
             $line = app(AddPhysicalCountLine::class)($count, ['item_id' => $item->getKey(), 'location_id' => $location->getKey()], $creator);
-            // Slightly under book — a routine shrinkage write-off, no found cost needed.
-            app(RecordPhysicalCountLine::class)($line, '224.0000', $creator);
+            app(RecordPhysicalCountLine::class)($line, number_format(max($bookQty - 6, 0), 4, '.', ''), $creator);
             app(PostPhysicalCount::class)($count, [], $poster);
         }
 

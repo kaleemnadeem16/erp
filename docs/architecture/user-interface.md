@@ -84,9 +84,10 @@ convention for list screens, not a pilot.
 
 - **Bottom tab nav**: exactly 4 primary tabs + a "More" bottom sheet, below `md` — a native tab bar
   stops feeling native past ~5 slots, so it's a fixed set rather than the full nav list scrolling
-  horizontally. The full nav stays in the `md`-and-up sidebar unchanged. The primary 4 (currently
-  Dashboard, Items, Purchase Orders, Goods Receipts) is a temporary fixed set — see the code comment
-  in `app-shell.tsx` — future work makes it dynamic per user (permissions + visit frequency) once
+  horizontally. The "More" sheet groups the remaining items the same way the `md`-and-up sidebar
+  does (see below) rather than listing them flat. The primary 4 (currently Dashboard, Items,
+  Purchase Orders, Goods Receipts) is a temporary fixed set — see the code comment in
+  `app-shell.tsx` — future work makes it dynamic per user (permissions + visit frequency) once
   permissions are fully dynamic.
 - **Table/card toggle**: `DataTable`/`CursorDataTable`'s `view`/`onViewChange`/`cardColumns` props.
   Table is the default and only option at `md` and up; below `md`, cards are the default, user-
@@ -114,6 +115,37 @@ convention for list screens, not a pilot.
   search box) move behind a "Filters" button (active-count badge) opening a bottom `Sheet`
   (`components/ui/sheet.tsx`); desktop's inline filter row is unchanged. Filters stay live inside the
   sheet, matching desktop's instant-filter behaviour — no staged "Apply" step.
+
+## Desktop sidebar: grouping, quick access, active colour
+
+The `md`-and-up sidebar (`app-shell.tsx`) groups its ~15 nav items into domain sections instead of
+one flat list — grouping by domain and keeping a small algorithmic "most used" row separate from the
+full menu is the pattern that recurs across SAP/NetSuite-style ERPs and general admin-dashboard
+practice; deep collapsible nesting was deliberately avoided (real complaint from Zoho users: features
+buried in submenus become undiscoverable).
+
+- **Groups**: `navGroups` in `app-shell.tsx` — Dashboard standalone, then Purchasing / Inventory /
+  Stock Operations as domain sections, then Settings last and visually separated (border-top) since
+  it's cross-cutting configuration, not a workflow module. Always expanded, no collapse state — every
+  item stays one click away. The mobile "More" sheet derives its own grouped view from the same
+  `navGroups`, filtered to whatever isn't already a primary tab.
+- **Quick access (hybrid: automatic + pinnable)**: a slim bar above the content area (`md`-and-up
+  only, right-aligned) shows up to `MAX_QUICK_LINKS` (4) icon shortcuts, excluding Dashboard.
+  Pinned items (hover any sidebar row → the pin icon that appears) always show, in pin order; any
+  remaining slots fill with whatever's visited most often. Both pins and visit counts live in
+  localStorage (`lib/use-nav-usage.ts`, keys `erp.nav-pinned` / `erp.nav-visits`) — no backend for
+  this yet, so this is a client-only preference exactly like the view-toggle/column-visibility
+  patterns above; swapping the read/write functions in that one file for a real endpoint later
+  won't touch `app-shell.tsx`. A visit is recorded once per route change, resolved to its *owning*
+  nav item via `resolveNavPath` (longest-prefix match) so `/items/5/edit` counts as a visit to
+  `/items`, not a separate untracked path.
+- **Active-item colour**: `--nav-active` / `--nav-active-foreground` (`apps/main/src/index.css`), a
+  light-blue tint + darker blue text/icon instead of the generic `bg-accent` grey every other active
+  state in the app still uses. Deliberately isolated to these two CSS custom properties, called out
+  in the CSS comment as a stand-in ahead of Phase 4's company-wide theming — swapping the palette
+  later is a one-place edit. Every non-Dashboard `NavLink` also dropped its `end` prop (Dashboard
+  keeps it, since `/` would otherwise prefix-match everything) so a detail/edit route now correctly
+  highlights its owning list item instead of highlighting nothing.
 
 ## Screen ownership by phase
 

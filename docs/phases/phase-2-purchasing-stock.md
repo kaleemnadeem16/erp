@@ -373,10 +373,18 @@ purchasing and inventory operating UI; that remaining boundary is listed below:
       entry, responsive table/card behaviour, validation recovery, consequential-action review,
       accessibility and realistic end-to-end prototypes per
       [user-interface.md](../architecture/user-interface.md).
-- [ ] Build the inventory overview: clearly separate on-hand, available, QA-held, shortage and
+- [x] Build the inventory overview: clearly separate on-hand, available, QA-held, shortage and
       on-order quantities; filter and drill down by item, warehouse, location and tracking identity;
       link every aggregate back to the stock ledger. Add purpose-built read models/endpoints rather
-      than calculating decimal aggregates in React.
+      than calculating decimal aggregates in React. `GET /api/v1/inventory-overview`
+      (`BuildInventoryOverviewQuery`) computes all five figures server-side in one set-based query
+      (avco_pools/stock_layers branched on `valuation_method` — they're kept in lockstep for AVCO
+      items, not mutually exclusive as first assumed, so summing both would have double-counted
+      on-hand; caught by the Feature test before it shipped); `/inventory-overview` filters by item
+      code/name and category, and each row's "View ledger" action opens the existing Stock Ledger
+      screen pre-filtered to that item, which already has warehouse/location/date filters — rather
+      than duplicating a second, competing drill-down UI on this screen (`InventoryOverviewApiTest`,
+      535 Purchasing/Inventory tests passing; verified end-to-end on desktop and mobile viewports).
 - [x] Build purchase-order list, draft create/edit and detail workspaces, including issue, cancel
       and line short-close actions, immutable issued snapshots, totals and receipt progress. The
       server-paginated URL-filtered list, repeatable-line draft creation and status-gated detail
@@ -388,9 +396,21 @@ purchasing and inventory operating UI; that remaining boundary is listed below:
       entry draws only from the selected supplier's issued, outstanding PO lines; posting and
       reversal use explicit consequence review, and QA roots/open branches are resolved inline
       from server-derived unallocated/unresolved balances.
-- [ ] Build purchasing/inventory policy settings screens with permission-aware reason capture and
-      audit context; replace temporary raw-ID controls in cutover screens when the required lookup
-      endpoints exist.
+- [x] Build purchasing/inventory policy settings screens with permission-aware reason capture and
+      audit context. `/settings/purchasing` (over-receipt mode/tolerance, PO-required) and
+      `/settings/inventory` (location mode, default AVCO pool scope — ADR 0047/Q17's two fields
+      only, not the other three policy groups the same `InventorySettingsResource` also carries)
+      each require a reason on change and show their own audit trail via two new read-only
+      endpoints, `GET /api/v1/{purchasing,inventory}-policy-changes`
+      (`PurchasingPolicyChangeApiTest`, `InventoryPolicyChangeApiTest`; verified end-to-end,
+      including the 403-before-permission-grant path). Reading either history requires its own
+      `{purchasing,inventory}.policy-history.view` permission, separate from the settings' own
+      manage permission — a user who can edit a policy isn't automatically allowed to see who
+      changed it before; both screens render "you don't have permission" rather than a misleading
+      empty list when that permission is missing.
+- [ ] Replace temporary raw-ID controls in cutover screens when the required lookup endpoints exist
+      (e.g. `inventory-cutover-detail-screen.tsx` still renders a bare `location_id` for negative
+      opening exceptions instead of resolving it to a code/name).
 - [ ] Audit and improve existing Phase 2 screens for consistent hierarchy, terminology, empty/
       loading/error states, keyboard/focus behaviour, responsive operation and WCAG 2.2 AA; test
       the critical PO→receipt→QA and inventory-drill-down journeys.
@@ -477,7 +497,10 @@ Tick these in the same commit as the work.
       understand current inventory, create and issue a PO, receive it, resolve required QA and
       inspect the resulting availability/ledger trail on desktop and narrow screens. Critical
       actions are keyboard accessible, permission/status gated and recover clearly from validation
-      errors.
+      errors. Every screen this journey touches now exists (inventory overview was the last
+      screen-level gap) and desktop/narrow-screen operation was verified per-screen while building
+      it, but the formal keyboard/focus/WCAG audit and an explicit end-to-end journey test below are
+      still open — not marking this done until that pass happens.
 
 ## Docs to update on completion
 

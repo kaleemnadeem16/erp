@@ -114,10 +114,15 @@ export function DataTable<TRow>({
   return (
     <div className="space-y-3">
       {(onColumnVisibilityChange || onViewChange) && (
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
           {onViewChange && (
             <div className="md:hidden">
               <DataTableViewToggle value={view ?? 'table'} onChange={onViewChange} />
+            </div>
+          )}
+          {view === 'cards' && cardColumns && (
+            <div className="min-w-0 flex-1 md:hidden">
+              <DataTableSortSelect columns={cardColumns} sorting={sorting} onSortingChange={onSortingChange} />
             </div>
           )}
           {onColumnVisibilityChange && (
@@ -125,11 +130,6 @@ export function DataTable<TRow>({
               <DataTableViewOptions table={table} />
             </div>
           )}
-        </div>
-      )}
-      {view === 'cards' && cardColumns && (
-        <div className="md:hidden">
-          <DataTableSortSelect columns={cardColumns} sorting={sorting} onSortingChange={onSortingChange} />
         </div>
       )}
       {view === 'cards' && cardColumns ? (

@@ -19,6 +19,8 @@
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-nav-active: var(--nav-active);
+  --color-nav-active-foreground: var(--nav-active-foreground);
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
   --color-destructive: var(--destructive);
@@ -48,6 +50,12 @@
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
+
+  /* Base accent for the active nav item — a stand-in ahead of Phase 4's
+     company-wide theming, deliberately isolated to these two tokens so
+     replacing it later is a one-place edit, not a hunt through app-shell.tsx. */
+  --nav-active: oklch(0.94 0.03 258);
+  --nav-active-foreground: oklch(0.48 0.19 258);
 
   /* Mobile bottom-tab-nav content height (excludes the safe-area inset, which
      callers add separately) — the one place this is defined; everything that

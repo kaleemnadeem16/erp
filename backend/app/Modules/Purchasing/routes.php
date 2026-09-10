@@ -3,6 +3,7 @@
 use App\Modules\Purchasing\Http\Controllers\Api\V1\GoodsReceiptController;
 use App\Modules\Purchasing\Http\Controllers\Api\V1\ItemSupplierController;
 use App\Modules\Purchasing\Http\Controllers\Api\V1\PurchaseOrderController;
+use App\Modules\Purchasing\Http\Controllers\Api\V1\PurchasingPolicyChangeController;
 use App\Modules\Purchasing\Http\Controllers\Api\V1\PurchasingSettingsController;
 use App\Modules\Purchasing\Http\Controllers\Api\V1\QualityDispositionController;
 use Illuminate\Support\Facades\Route;
@@ -24,4 +25,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('quality-dispositions/{qualityDisposition}', [QualityDispositionController::class, 'show'])->name('quality-dispositions.show');
     Route::get('purchasing-settings', [PurchasingSettingsController::class, 'show'])->name('purchasing-settings.show');
     Route::patch('purchasing-settings', [PurchasingSettingsController::class, 'update'])->name('purchasing-settings.update');
+    Route::get('purchasing-policy-changes', [PurchasingPolicyChangeController::class, 'index'])->name('purchasing-policy-changes.index');
 });

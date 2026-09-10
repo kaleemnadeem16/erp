@@ -3,6 +3,8 @@
 use App\Modules\Inventory\Http\Controllers\Api\V1\AvcoPoolController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\CategoryController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\InventoryCutoverController;
+use App\Modules\Inventory\Http\Controllers\Api\V1\InventoryOverviewController;
+use App\Modules\Inventory\Http\Controllers\Api\V1\InventoryPolicyChangeController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\InventorySettingsController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\ItemController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\LocationController;
@@ -30,6 +32,8 @@ Route::middleware('auth:sanctum')->group(function () {
         ->parameters(['stock-layers' => 'stockLayer'])->only(['index', 'show']);
     Route::apiResource('avco-pools', AvcoPoolController::class)
         ->parameters(['avco-pools' => 'avcoPool'])->only(['index', 'show']);
+    Route::get('inventory-overview', [InventoryOverviewController::class, 'index'])->name('inventory-overview.index');
+    Route::get('inventory-overview/summary', [InventoryOverviewController::class, 'summary'])->name('inventory-overview.summary');
     Route::apiResource('physical-counts', PhysicalCountController::class)->only(['index', 'store', 'show']);
     Route::post('physical-counts/{physicalCount}/lines', [PhysicalCountController::class, 'storeLine'])->name('physical-counts.lines.store');
     Route::post('physical-count-lines/{physicalCountLine}/count', [PhysicalCountController::class, 'count'])->name('physical-count-lines.count');
@@ -46,6 +50,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('inventory-cutover-negative-openings/{inventoryCutoverNegativeOpening}/approve', [InventoryCutoverController::class, 'approveNegativeOpening'])->name('inventory-cutover-negative-openings.approve');
     Route::get('inventory-settings', [InventorySettingsController::class, 'show'])->name('inventory-settings.show');
     Route::patch('inventory-settings', [InventorySettingsController::class, 'update'])->name('inventory-settings.update');
+    Route::get('inventory-policy-changes', [InventoryPolicyChangeController::class, 'index'])->name('inventory-policy-changes.index');
     Route::apiResource('negative-stock-override-requests', NegativeStockOverrideRequestController::class)->only(['index', 'store', 'show']);
     Route::post('negative-stock-override-requests/{negativeStockOverrideRequest}/decide', [NegativeStockOverrideRequestController::class, 'decide'])->name('negative-stock-override-requests.decide');
     Route::post('negative-stock-override-requests/{negativeStockOverrideRequest}/review', [NegativeStockOverrideRequestController::class, 'review'])->name('negative-stock-override-requests.review');
