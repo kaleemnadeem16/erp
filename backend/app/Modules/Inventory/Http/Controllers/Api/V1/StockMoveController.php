@@ -74,6 +74,12 @@ class StockMoveController extends Controller
             $query->where('moved_at', '<=', $request->date('filter.moved_to'));
         }
 
+        if ($request->filled('filter.search')) {
+            $search = $request->string('filter.search')->toString();
+            $query->whereHas('item', fn (Builder $q) => $q->where('code', 'ilike', "%{$search}%")
+                ->orWhere('name', 'ilike', "%{$search}%"));
+        }
+
         $this->applySort($query, $request, self::SORTABLE, '-moved_at');
 
         $perPage = $request->integer('per_page', 25);

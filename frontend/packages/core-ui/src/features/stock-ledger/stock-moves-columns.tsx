@@ -14,11 +14,13 @@ export const stockMoveColumns: DataColumn<StockMoveResource>[] = [
     header: 'Moved at',
     value: (move) => new Date(move.moved_at).toLocaleString(),
     sortable: true,
+    cardRole: 'subtitle',
   },
   {
     key: 'item',
     header: 'Item',
     value: (move) => (move.item ? `${move.item.code} — ${move.item.name}` : move.item_id),
+    cardRole: 'title',
   },
   {
     key: 'from_location',

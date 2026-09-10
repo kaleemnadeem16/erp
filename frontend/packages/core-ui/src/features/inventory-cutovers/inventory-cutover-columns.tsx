@@ -16,11 +16,13 @@ export const inventoryCutoverColumns: DataColumn<InventoryCutoverResource>[] = [
     key: 'id',
     header: 'Cutover',
     value: (cutover) => `#${cutover.id}`,
+    cardRole: 'title',
   },
   {
     key: 'source_system',
     header: 'Source system',
     value: (cutover) => cutover.source_system,
+    cardRole: 'subtitle',
   },
   {
     key: 'mode',
@@ -44,6 +46,20 @@ export const inventoryCutoverColumns: DataColumn<InventoryCutoverResource>[] = [
     header: 'Created',
     value: (cutover) => (cutover.created_at ? new Date(cutover.created_at).toLocaleString() : null),
     sortable: true,
+  },
+  {
+    key: 'validated_at',
+    header: 'Validated',
+    value: (cutover) => (cutover.validated_at ? new Date(cutover.validated_at).toLocaleString() : null),
+    sortable: true,
+    screenVisible: false,
+  },
+  {
+    key: 'approved_at',
+    header: 'Approved',
+    value: (cutover) => (cutover.approved_at ? new Date(cutover.approved_at).toLocaleString() : null),
+    sortable: true,
+    screenVisible: false,
   },
   {
     key: 'finalised_at',

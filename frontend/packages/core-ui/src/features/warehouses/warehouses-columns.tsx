@@ -10,6 +10,7 @@ export const warehouseColumns: DataColumn<WarehouseResource>[] = [
     value: (warehouse) => warehouse.code,
     sortable: true,
     filterable: true,
+    cardRole: 'subtitle',
   },
   {
     key: 'name',
@@ -17,6 +18,7 @@ export const warehouseColumns: DataColumn<WarehouseResource>[] = [
     value: (warehouse) => warehouse.name,
     sortable: true,
     filterable: true,
+    cardRole: 'title',
   },
   {
     key: 'is_default',

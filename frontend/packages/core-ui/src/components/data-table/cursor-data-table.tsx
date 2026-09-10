@@ -1,12 +1,18 @@
+import type { ReactNode } from 'react';
 import { flexRender, getCoreRowModel, useReactTable, type ColumnDef, type OnChangeFn, type SortingState, type VisibilityState } from '@tanstack/react-table';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 import { cn } from '../../lib/utils';
+import type { ListView } from '../../lib/use-view-preference';
 import { Button } from '../ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Skeleton } from '../ui/skeleton';
+import { DataTableCards } from './data-table-cards';
+import { DataTableSortSelect } from './data-table-sort-select';
 import { DataTableViewOptions } from './data-table-view-options';
+import { DataTableViewToggle } from './data-table-view-toggle';
+import type { DataColumn } from './types';
 
 export interface CursorDataTableProps<TRow> {
   columns: ColumnDef<TRow, unknown>[];
@@ -27,6 +33,19 @@ export interface CursorDataTableProps<TRow> {
   hasNext: boolean;
   onPrevious: () => void;
   onNext: () => void;
+  /** Current table/cards rendering mode. Omit entirely to keep this table always table-only (today's behavior). */
+  view?: ListView;
+  onViewChange?: (view: ListView) => void;
+  /** The plain `DataColumn[]` cards read from — required alongside `view`/`onViewChange` to enable card view. */
+  cardColumns?: DataColumn<TRow>[];
+  /**
+   * Per-row quick actions (icon buttons — edit, archive, etc.), rendered by
+   * the screen itself so this stays generic. Appears as a trailing column in
+   * table view and a top-right cluster in card view — one definition drives
+   * both. The base component only owns placement/layout; which actions exist
+   * is entirely up to the screen passing this prop.
+   */
+  rowActions?: (row: TRow) => ReactNode;
 }
 
 /**
@@ -55,6 +74,10 @@ export function CursorDataTable<TRow>({
   hasNext,
   onPrevious,
   onNext,
+  view,
+  onViewChange,
+  cardColumns,
+  rowActions,
 }: CursorDataTableProps<TRow>) {
   const table = useReactTable({
     data,
@@ -68,15 +91,43 @@ export function CursorDataTable<TRow>({
     getCoreRowModel: getCoreRowModel(),
   });
 
-  const columnCount = table.getVisibleFlatColumns().length;
+  const columnCount = table.getVisibleFlatColumns().length + (rowActions ? 1 : 0);
 
   return (
     <div className="space-y-3">
-      {onColumnVisibilityChange && (
-        <div className="flex justify-end">
-          <DataTableViewOptions table={table} />
+      {(onColumnVisibilityChange || onViewChange) && (
+        <div className="flex items-center justify-between gap-2">
+          {onViewChange && (
+            <div className="md:hidden">
+              <DataTableViewToggle value={view ?? 'table'} onChange={onViewChange} />
+            </div>
+          )}
+          {onColumnVisibilityChange && (
+            <div className="ml-auto">
+              <DataTableViewOptions table={table} />
+            </div>
+          )}
         </div>
       )}
+      {view === 'cards' && cardColumns && (
+        <div className="md:hidden">
+          <DataTableSortSelect columns={cardColumns} sorting={sorting} onSortingChange={onSortingChange} />
+        </div>
+      )}
+      {view === 'cards' && cardColumns ? (
+        <DataTableCards
+          columns={cardColumns}
+          data={data}
+          columnVisibility={columnVisibility}
+          onRowClick={onRowClick}
+          rowActions={rowActions}
+          isLoading={isLoading}
+          isError={isError}
+          errorMessage={errorMessage}
+          emptyMessage={emptyMessage}
+          skeletonCount={Math.min(perPage, 8)}
+        />
+      ) : (
       <div className="rounded-md border border-border">
         <Table>
           <TableHeader>
@@ -87,6 +138,11 @@ export function CursorDataTable<TRow>({
                     {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                   </TableHead>
                 ))}
+                {rowActions && (
+                  <TableHead className="w-px">
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
+                )}
               </TableRow>
             ))}
           </TableHeader>
@@ -123,12 +179,18 @@ export function CursorDataTable<TRow>({
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                   ))}
+                  {rowActions && (
+                    <TableCell className="text-right" onClick={(event) => event.stopPropagation()}>
+                      <div className="flex items-center justify-end gap-1">{rowActions(row.original)}</div>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))
             )}
           </TableBody>
         </Table>
       </div>
+      )}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">

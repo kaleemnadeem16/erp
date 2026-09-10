@@ -15,6 +15,7 @@ export const itemColumns: DataColumn<ItemResource>[] = [
     value: (item) => item.code,
     sortable: true,
     filterable: true,
+    cardRole: 'subtitle',
   },
   {
     key: 'name',
@@ -22,6 +23,7 @@ export const itemColumns: DataColumn<ItemResource>[] = [
     value: (item) => item.name,
     sortable: true,
     filterable: true,
+    cardRole: 'title',
   },
   {
     key: 'category',

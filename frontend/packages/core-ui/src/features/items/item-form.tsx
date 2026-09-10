@@ -104,6 +104,7 @@ export interface ItemFormProps {
   mode: 'create' | 'edit';
   defaultValues?: Partial<ItemFormValues>;
   onSubmit: (values: ItemFormValues, form: UseFormReturn<ItemFormValues>) => void;
+  onCancel?: () => void;
   isSubmitting?: boolean;
   formError?: string | null;
 }
@@ -115,7 +116,7 @@ export interface ItemFormProps {
  * the detail page it will become. Reused as-is by ItemCreateScreen and
  * ItemEditScreen — only `defaultValues` and the submit handler differ.
  */
-export function ItemForm({ mode, defaultValues, onSubmit, isSubmitting, formError }: ItemFormProps) {
+export function ItemForm({ mode, defaultValues, onSubmit, onCancel, isSubmitting, formError }: ItemFormProps) {
   const form = useForm<ItemFormValues>({
     resolver: zodResolver(itemFormSchema),
     defaultValues: { ...ITEM_FORM_DEFAULT_VALUES, ...defaultValues },
@@ -403,6 +404,11 @@ export function ItemForm({ mode, defaultValues, onSubmit, isSubmitting, formErro
         )}
 
         <div className="flex justify-end gap-2">
+          {onCancel && (
+            <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
+              Cancel
+            </Button>
+          )}
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? 'Saving…' : mode === 'create' ? 'Create item' : 'Save changes'}
           </Button>

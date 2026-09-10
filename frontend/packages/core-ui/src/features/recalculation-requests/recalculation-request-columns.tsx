@@ -52,11 +52,13 @@ export const recalculationRequestColumns: DataColumn<RecalculationRequestResourc
     key: 'id',
     header: 'Request',
     value: (request) => `#${request.id}`,
+    cardRole: 'title',
   },
   {
     key: 'item',
     header: 'Item',
     value: (request) => (request.item ? `${request.item.code} — ${request.item.name}` : request.item_id),
+    cardRole: 'subtitle',
   },
   {
     key: 'movement_kind',
@@ -83,5 +85,12 @@ export const recalculationRequestColumns: DataColumn<RecalculationRequestResourc
     header: 'Requested',
     value: (request) => (request.requested_at ? new Date(request.requested_at).toLocaleString() : null),
     sortable: true,
+  },
+  {
+    key: 'review_due_at',
+    header: 'Review due',
+    value: (request) => (request.review_due_at ? new Date(request.review_due_at).toLocaleString() : null),
+    sortable: true,
+    screenVisible: false,
   },
 ];

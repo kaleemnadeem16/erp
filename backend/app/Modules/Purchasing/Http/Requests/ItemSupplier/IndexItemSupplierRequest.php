@@ -20,11 +20,12 @@ class IndexItemSupplierRequest extends FormRequest
     public function rules(): array
     {
         return array_merge([
-            'filter' => ['sometimes', 'array:item_id,supplier_account_id,active,preferred'],
+            'filter' => ['sometimes', 'array:item_id,supplier_account_id,active,preferred,search'],
             'filter.item_id' => ['sometimes', 'integer', 'min:1'],
             'filter.supplier_account_id' => ['sometimes', 'integer', 'min:1'],
             'filter.active' => ['sometimes', 'boolean'],
             'filter.preferred' => ['sometimes', 'boolean'],
+            'filter.search' => ['sometimes', 'string', 'max:255'],
         ], $this->listQueryRules(['priority', 'created_at'], ['item', 'supplierAccount', 'purchaseUom']));
     }
 }

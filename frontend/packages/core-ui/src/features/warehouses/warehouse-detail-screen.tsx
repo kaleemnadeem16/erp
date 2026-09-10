@@ -8,7 +8,7 @@ import { Skeleton } from '../../components/ui/skeleton';
 import { DetailField } from '../../components/detail/detail-field';
 import { DetailPageLayout, DetailSection } from '../../components/detail/detail-page-layout';
 import { PageHeader } from '../../components/page/page-header';
-import { DetailPrintLayout, PrintTrigger, useQuickPrint, type DetailPrintField } from '../../components/print';
+import { DetailPrintLayout, PrintTrigger, useQuickPrint, type DetailPrintSection } from '../../components/print';
 
 export function WarehouseDetailScreen() {
   const warehouseId = Number(useParams<{ id: string }>().id);
@@ -39,14 +39,24 @@ export function WarehouseDetailScreen() {
       </div>
     );
 
-  const printFields: DetailPrintField[] = [
-    { label: 'Code', value: warehouse.code },
-    { label: 'Name', value: warehouse.name },
-    { label: 'Status', value: warehouse.active ? 'Active' : 'Inactive' },
-    { label: 'Default warehouse', value: warehouse.is_default ? 'Yes' : 'No' },
+  const printSections: DetailPrintSection[] = [
     {
-      label: 'Locations',
-      value: (warehouse.locations ?? []).map((location) => `${location.code} — ${location.name}`).join(', '),
+      title: 'General',
+      fields: [
+        { label: 'Code', value: warehouse.code },
+        { label: 'Name', value: warehouse.name },
+        { label: 'Status', value: warehouse.active ? 'Active' : 'Inactive' },
+        { label: 'Default warehouse', value: warehouse.is_default ? 'Yes' : 'No' },
+      ],
+    },
+    {
+      title: 'Locations',
+      fields: [
+        {
+          label: 'Locations',
+          value: (warehouse.locations ?? []).map((location) => `${location.code} — ${location.name}`).join(', '),
+        },
+      ],
     },
   ];
 
@@ -93,7 +103,7 @@ export function WarehouseDetailScreen() {
       </DetailPageLayout>
       <div className="hidden">
         <div ref={printRef}>
-          <DetailPrintLayout title={`WAREHOUSE: ${warehouse.code}`} printedAt={new Date()} fields={printFields} />
+          <DetailPrintLayout title={`WAREHOUSE: ${warehouse.code}`} printedAt={new Date()} sections={printSections} />
         </div>
       </div>
     </div>

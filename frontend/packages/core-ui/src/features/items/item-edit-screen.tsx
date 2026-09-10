@@ -86,11 +86,13 @@ export function ItemEditScreen() {
         title={`Edit ${item.name}`}
         description={item.code}
         breadcrumbs={[{ label: 'Items', to: '/items' }, { label: item.code, to: `/items/${item.id}` }, { label: 'Edit' }]}
+        backTo={`/items/${item.id}`}
       />
       <ItemForm
         mode="edit"
         defaultValues={defaultValues}
         onSubmit={handleSubmit}
+        onCancel={() => navigate(`/items/${item.id}`)}
         isSubmitting={updateItem.isPending}
         formError={formError}
       />

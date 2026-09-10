@@ -19,6 +19,7 @@ use App\Modules\Inventory\Models\RecalculationImpactVersion;
 use App\Modules\Inventory\Models\RecalculationRequest;
 use App\Modules\Inventory\Support\RecalculationApprovalDecision;
 use App\Support\Concerns\AppliesApiQuery;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -60,6 +61,11 @@ class RecalculationRequestController extends Controller
 
         if ($request->filled('filter.movement_kind')) {
             $query->where('movement_kind', $request->input('filter.movement_kind'));
+        }
+        if ($request->filled('filter.search')) {
+            $search = $request->string('filter.search')->toString();
+            $query->whereHas('item', fn (Builder $q) => $q->where('code', 'ilike', "%{$search}%")
+                ->orWhere('name', 'ilike', "%{$search}%"));
         }
 
         $this->applySort($query, $request, self::SORTABLE, '-requested_at');

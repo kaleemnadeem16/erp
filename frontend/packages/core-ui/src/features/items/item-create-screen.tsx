@@ -33,8 +33,15 @@ export function ItemCreateScreen() {
         title="New item"
         description="Add something the company buys, holds, makes, consumes or sells."
         breadcrumbs={[{ label: 'Items', to: '/items' }, { label: 'New' }]}
+        backTo="/items"
       />
-      <ItemForm mode="create" onSubmit={handleSubmit} isSubmitting={createItem.isPending} formError={formError} />
+      <ItemForm
+        mode="create"
+        onSubmit={handleSubmit}
+        onCancel={() => navigate('/items')}
+        isSubmitting={createItem.isPending}
+        formError={formError}
+      />
     </div>
   );
 }

@@ -22,6 +22,7 @@ export function purchaseOrderColumns(
       header: "Order",
       value: (order) => order.number ?? `Draft #${order.id}`,
       sortable: true,
+      cardRole: "title",
     },
     {
       key: "supplier",
@@ -29,6 +30,7 @@ export function purchaseOrderColumns(
       value: (order) =>
         suppliers.get(order.supplier_account_id) ??
         `#${order.supplier_account_id}`,
+      cardRole: "subtitle",
     },
     {
       key: "order_date",

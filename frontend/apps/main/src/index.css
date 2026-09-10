@@ -48,6 +48,12 @@
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
+
+  /* Mobile bottom-tab-nav content height (excludes the safe-area inset, which
+     callers add separately) — the one place this is defined; everything that
+     needs to clear or sit above the fixed bottom nav reads this instead of a
+     hardcoded value. See app-shell.tsx. */
+  --bottom-nav-h: 3.5rem;
 }
 
 @layer base {

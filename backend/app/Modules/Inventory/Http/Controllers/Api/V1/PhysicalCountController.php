@@ -57,6 +57,9 @@ class PhysicalCountController extends Controller
         if ($request->filled('filter.status')) {
             $query->where('status', $request->input('filter.status'));
         }
+        if ($request->filled('filter.search')) {
+            $query->where('reference', 'ilike', '%'.$request->string('filter.search')->toString().'%');
+        }
 
         $this->applySort($query, $request, self::SORTABLE, '-created_at');
 

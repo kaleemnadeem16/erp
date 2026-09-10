@@ -1,16 +1,27 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Plus } from 'lucide-react';
-import { useNavigate } from 'react-router';
-import type { PaginationState, SortingState, VisibilityState } from '@tanstack/react-table';
-import { useCategoriesIndex, useItemsIndex, type ItemResource, type ItemsIndexSort } from '@erp/core-api';
+import { Archive, ArchiveRestore, Pencil, SlidersHorizontal } from 'lucide-react';
+import { Link, useNavigate } from 'react-router';
+import type { PaginationState, SortingState } from '@tanstack/react-table';
+import { useCategoriesIndex, useItemsIndex, useItemsUpdate, type ItemResource, type ItemsIndexSort } from '@erp/core-api';
 
+import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '../../components/ui/sheet';
 import { PageHeader } from '../../components/page/page-header';
 import { DataTable, toTanStackColumns, isColumnVisibleByDefault } from '../../components/data-table';
 import { PrintLayout, PrintableTable, PrintTrigger, useQuickPrint } from '../../components/print';
-import { apiSortToTableSorting, describeSort, tableSortingToApiSort, useListQueryState } from '../../lib/list-query-state';
+import { getApiErrorMessage } from '../../lib/api-errors';
+import {
+  apiSortToTableSorting,
+  describeSort,
+  tableSortingToApiSort,
+  useListQueryState,
+  type ListQueryState,
+} from '../../lib/list-query-state';
+import { useColumnVisibilityPreference } from '../../lib/use-column-visibility-preference';
+import { useListViewPreference } from '../../lib/use-view-preference';
 import { itemColumns } from './items-columns';
 
 interface ItemFilters {
@@ -26,10 +37,15 @@ const ITEM_TYPES = ['RAW', 'SEMI_FINISHED', 'FINISHED', 'SERVICE', 'LABOUR', 'PL
 export function ItemsListScreen() {
   const navigate = useNavigate();
   const query = useListQueryState<ItemFilters>({ defaultSort: 'name', defaultPerPage: 25 });
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(() =>
+  const [columnVisibility, setColumnVisibility] = useColumnVisibilityPreference(
+    'items-list',
     Object.fromEntries(itemColumns.map((column) => [column.key, isColumnVisibleByDefault(column)]))
   );
   const [searchInput, setSearchInput] = useState(query.filters.search ?? '');
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [statusError, setStatusError] = useState<string | null>(null);
+  const { view, setView } = useListViewPreference('items-list');
+  const updateStatus = useItemsUpdate();
 
   // Debounce free-text search so every keystroke doesn't round-trip to the API —
   // the URL (and therefore the API call) only updates once typing pauses.
@@ -64,19 +80,51 @@ export function ItemsListScreen() {
   const pagination: PaginationState = { pageIndex: query.page - 1, pageSize: query.perPage };
 
   const activeFilterLines = describeFilters(query.filters, categories);
+  const activeFilterCount = [query.filters.category_id, query.filters.type, query.filters.status].filter(
+    Boolean
+  ).length;
   const { contentRef: printRef, print } = useQuickPrint({ documentTitle: 'Item List' });
 
+  function handleToggleStatus(item: ItemResource) {
+    setStatusError(null);
+    const nextStatus = item.status === 'ACTIVE' ? 'ARCHIVED' : 'ACTIVE';
+    updateStatus.mutate(
+      { item: item.id, data: { status: nextStatus } },
+      { onSuccess: () => itemsQuery.refetch(), onError: (error) => setStatusError(getApiErrorMessage(error)) }
+    );
+  }
+
+  function renderRowActions(item: ItemResource) {
+    return (
+      <>
+        <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+          <Link to={`/items/${item.id}/edit`} aria-label="Edit">
+            <Pencil className="h-4 w-4" />
+          </Link>
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          onClick={() => handleToggleStatus(item)}
+          aria-label={item.status === 'ACTIVE' ? 'Archive' : 'Activate'}
+        >
+          {item.status === 'ACTIVE' ? <Archive className="h-4 w-4" /> : <ArchiveRestore className="h-4 w-4" />}
+        </Button>
+      </>
+    );
+  }
+
   return (
-    <div className="space-y-4 p-6">
+    // Extra bottom padding below `md` clears the fixed MobileFab (its own height
+    // plus offset, on top of AppShell's bottom-nav clearance) so trailing content
+    // like the pagination row never sits underneath it — see PageHeader's
+    // `primaryAction` note in docs/architecture/user-interface.md.
+    <div className="space-y-4 p-4 pb-24 md:p-6">
       <PageHeader
         title="Items"
         description="Everything the company buys, holds, makes, consumes or sells."
-        actions={
-          <Button onClick={() => navigate('/items/new')}>
-            <Plus className="h-4 w-4" />
-            New item
-          </Button>
-        }
+        primaryAction={{ label: 'New item', onClick: () => navigate('/items/new') }}
       />
 
       <div className="flex flex-wrap items-center gap-2">
@@ -84,49 +132,49 @@ export function ItemsListScreen() {
           placeholder="Search code or name…"
           value={searchInput}
           onChange={(event) => setSearchInput(event.target.value)}
-          className="h-9 w-56"
+          className="h-9 flex-1 md:w-56 md:flex-none"
         />
-        <Select value={query.filters.category_id ?? 'all'} onValueChange={(value) => query.setFilter('category_id', value === 'all' ? undefined : value)}>
-          <SelectTrigger className="h-9 w-44">
-            <SelectValue placeholder="Category" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All categories</SelectItem>
-            {categories.map((category) => (
-              <SelectItem key={category.id} value={String(category.id)}>
-                {category.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={query.filters.type ?? 'all'} onValueChange={(value) => query.setFilter('type', value === 'all' ? undefined : value)}>
-          <SelectTrigger className="h-9 w-40">
-            <SelectValue placeholder="Type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All types</SelectItem>
-            {ITEM_TYPES.map((type) => (
-              <SelectItem key={type} value={type}>
-                {type.replace('_', ' ')}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={query.filters.status ?? 'all'} onValueChange={(value) => query.setFilter('status', value === 'all' ? undefined : value)}>
-          <SelectTrigger className="h-9 w-36">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
-            <SelectItem value="ACTIVE">Active</SelectItem>
-            <SelectItem value="ARCHIVED">Archived</SelectItem>
-          </SelectContent>
-        </Select>
 
-        <div className="ml-auto flex items-center gap-2">
-          <PrintTrigger onPrint={() => print()} />
+        <div className="hidden items-center gap-2 md:flex md:flex-wrap">
+          <ItemFilterControls categories={categories} query={query} />
+          <div className="ml-auto flex items-center gap-2">
+            <PrintTrigger onPrint={() => print()} />
+          </div>
         </div>
+
+        <Button variant="outline" size="sm" className="h-9 shrink-0 md:hidden" onClick={() => setFiltersOpen(true)}>
+          <SlidersHorizontal className="h-4 w-4" />
+          Filters
+          {activeFilterCount > 0 && <Badge className="ml-1">{activeFilterCount}</Badge>}
+        </Button>
       </div>
+
+      <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
+        <SheetContent side="bottom" className="md:hidden">
+          <SheetHeader>
+            <SheetTitle>Filters</SheetTitle>
+          </SheetHeader>
+          <div className="flex flex-col gap-3 py-4">
+            <ItemFilterControls categories={categories} query={query} full />
+            <PrintTrigger onPrint={() => print()} className="w-full justify-center" />
+          </div>
+          <SheetFooter>
+            <Button
+              variant="ghost"
+              onClick={() => query.setFilters({ category_id: undefined, type: undefined, status: undefined })}
+            >
+              Clear filters
+            </Button>
+            <Button onClick={() => setFiltersOpen(false)}>Done</Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+
+      {statusError && (
+        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+          {statusError}
+        </div>
+      )}
 
       <DataTable
         columns={tanStackColumns}
@@ -150,6 +198,10 @@ export function ItemsListScreen() {
         isError={itemsQuery.isError}
         errorMessage="Couldn't load items."
         emptyMessage="No items match these filters."
+        view={view}
+        onViewChange={setView}
+        cardColumns={itemColumns}
+        rowActions={renderRowActions}
       />
 
       {/* Quick Print — a dedicated print-only layout, hidden until react-to-print clones it. */}
@@ -169,6 +221,66 @@ export function ItemsListScreen() {
         </div>
       </div>
     </div>
+  );
+}
+
+interface ItemFilterControlsProps {
+  categories: { id: number; name: string }[];
+  query: ListQueryState<ItemFilters>;
+  /** Full-width sizing for the mobile filter sheet, vs. the desktop row's fixed widths. */
+  full?: boolean;
+}
+
+/** Category/Type/Status selects — shared by the always-visible desktop row and the mobile Filters sheet. */
+function ItemFilterControls({ categories, query, full }: ItemFilterControlsProps) {
+  return (
+    <>
+      <Select
+        value={query.filters.category_id ?? 'all'}
+        onValueChange={(value) => query.setFilter('category_id', value === 'all' ? undefined : value)}
+      >
+        <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-44'}>
+          <SelectValue placeholder="Category" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All categories</SelectItem>
+          {categories.map((category) => (
+            <SelectItem key={category.id} value={String(category.id)}>
+              {category.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Select
+        value={query.filters.type ?? 'all'}
+        onValueChange={(value) => query.setFilter('type', value === 'all' ? undefined : value)}
+      >
+        <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-40'}>
+          <SelectValue placeholder="Type" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All types</SelectItem>
+          {ITEM_TYPES.map((type) => (
+            <SelectItem key={type} value={type}>
+              {type.replace('_', ' ')}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Select
+        value={query.filters.status ?? 'all'}
+        onValueChange={(value) => query.setFilter('status', value === 'all' ? undefined : value)}
+      >
+        <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-36'}>
+          <SelectValue placeholder="Status" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All statuses</SelectItem>
+          <SelectItem value="ACTIVE">Active</SelectItem>
+          <SelectItem value="ARCHIVED">Archived</SelectItem>
+        </SelectContent>
+      </Select>
+    </>
   );
 }
 

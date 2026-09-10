@@ -1,6 +1,7 @@
+import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router';
-import { Pencil, ArrowLeft } from 'lucide-react';
-import { useItemsShow, useUomsShow } from '@erp/core-api';
+import { Archive, ArchiveRestore, Pencil, ArrowLeft } from 'lucide-react';
+import { useItemsShow, useItemsUpdate, useUomsShow } from '@erp/core-api';
 
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
@@ -8,18 +9,32 @@ import { Skeleton } from '../../components/ui/skeleton';
 import { PageHeader } from '../../components/page/page-header';
 import { DetailPageLayout, DetailSection } from '../../components/detail/detail-page-layout';
 import { DetailField } from '../../components/detail/detail-field';
-import { DetailPrintLayout, PrintTrigger, useQuickPrint, type DetailPrintField } from '../../components/print';
+import { DetailPrintLayout, PrintTrigger, useQuickPrint, type DetailPrintSection } from '../../components/print';
+import { getApiErrorMessage } from '../../lib/api-errors';
 
 export function ItemDetailScreen() {
   const params = useParams<{ id: string }>();
   const navigate = useNavigate();
   const itemId = Number(params.id);
+  const [statusError, setStatusError] = useState<string | null>(null);
 
   const itemQuery = useItemsShow(itemId, { include: 'category' });
   const item = itemQuery.data?.status === 200 ? itemQuery.data.data.data : undefined;
 
   const uomQuery = useUomsShow(item?.stock_uom_id ?? 0, { query: { enabled: !!item } });
   const uom = uomQuery.data?.status === 200 ? uomQuery.data.data.data : undefined;
+
+  const updateStatus = useItemsUpdate();
+
+  function handleToggleStatus() {
+    if (!item) return;
+    setStatusError(null);
+    const nextStatus = item.status === 'ACTIVE' ? 'ARCHIVED' : 'ACTIVE';
+    updateStatus.mutate(
+      { item: itemId, data: { status: nextStatus } },
+      { onSuccess: () => itemQuery.refetch(), onError: (error) => setStatusError(getApiErrorMessage(error)) }
+    );
+  }
 
   const { contentRef: printRef, print } = useQuickPrint({ documentTitle: item ? `Item ${item.code}` : 'Item' });
 
@@ -44,20 +59,30 @@ export function ItemDetailScreen() {
     );
   }
 
-  const printFields: DetailPrintField[] = [
-    { label: 'Code', value: item.code },
-    { label: 'Name', value: item.name },
-    { label: 'Type', value: item.type },
-    { label: 'Category', value: item.category?.name ?? '' },
-    { label: 'Status', value: item.status },
-    { label: 'Stock unit of measure', value: uom ? `${uom.name} (${uom.code})` : '' },
-    { label: 'Tracking', value: item.tracking },
-    { label: 'Valuation method', value: item.valuation_method },
-    { label: 'AVCO pool scope', value: item.avco_pool_scope ?? '' },
-    { label: 'Stocked', value: item.is_stocked ? 'Yes' : 'No' },
-    { label: 'Purchasable', value: item.is_purchasable ? 'Yes' : 'No' },
-    { label: 'Sellable', value: item.is_sellable ? 'Yes' : 'No' },
-    { label: 'Description', value: item.description ?? '' },
+  const printSections: DetailPrintSection[] = [
+    {
+      title: 'General',
+      fields: [
+        { label: 'Code', value: item.code },
+        { label: 'Name', value: item.name },
+        { label: 'Type', value: item.type },
+        { label: 'Category', value: item.category?.name ?? '' },
+        { label: 'Status', value: item.status },
+        { label: 'Description', value: item.description ?? '' },
+      ],
+    },
+    {
+      title: 'Stock & valuation',
+      fields: [
+        { label: 'Stock unit of measure', value: uom ? `${uom.name} (${uom.code})` : '' },
+        { label: 'Tracking', value: item.tracking },
+        { label: 'Valuation method', value: item.valuation_method },
+        { label: 'AVCO pool scope', value: item.avco_pool_scope ?? '' },
+        { label: 'Stocked', value: item.is_stocked ? 'Yes' : 'No' },
+        { label: 'Purchasable', value: item.is_purchasable ? 'Yes' : 'No' },
+        { label: 'Sellable', value: item.is_sellable ? 'Yes' : 'No' },
+      ],
+    },
   ];
 
   return (
@@ -66,9 +91,28 @@ export function ItemDetailScreen() {
         title={item.name}
         description={item.code}
         breadcrumbs={[{ label: 'Items', to: '/items' }, { label: item.code }]}
+        backTo="/items"
         actions={
           <>
             <PrintTrigger onPrint={() => print()} />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleToggleStatus}
+              disabled={updateStatus.isPending}
+            >
+              {item.status === 'ACTIVE' ? (
+                <>
+                  <Archive className="h-4 w-4" />
+                  Archive
+                </>
+              ) : (
+                <>
+                  <ArchiveRestore className="h-4 w-4" />
+                  Activate
+                </>
+              )}
+            </Button>
             <Button asChild size="sm">
               <Link to={`/items/${item.id}/edit`}>
                 <Pencil className="h-4 w-4" />
@@ -78,6 +122,12 @@ export function ItemDetailScreen() {
           </>
         }
       />
+
+      {statusError && (
+        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+          {statusError}
+        </div>
+      )}
 
       <DetailPageLayout>
         <DetailSection title="General">
@@ -109,7 +159,7 @@ export function ItemDetailScreen() {
       {/* Quick Print — a dedicated print-only layout, hidden until react-to-print clones it. */}
       <div className="hidden">
         <div ref={printRef}>
-          <DetailPrintLayout title={`ITEM: ${item.code}`} printedAt={new Date()} fields={printFields} />
+          <DetailPrintLayout title={`ITEM: ${item.code}`} printedAt={new Date()} sections={printSections} />
         </div>
       </div>
     </div>

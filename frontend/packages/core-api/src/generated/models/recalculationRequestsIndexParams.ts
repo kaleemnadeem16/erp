@@ -9,6 +9,10 @@ import type { RecalculationRequestsIndexSort } from "./recalculationRequestsInde
 
 export type RecalculationRequestsIndexParams = {
   "filter[movement_kind]"?: RecalculationMovementKind;
+  /**
+   * @maxLength 255
+   */
+  "filter[search]"?: string;
   sort?: RecalculationRequestsIndexSort;
   include?: string;
   /**

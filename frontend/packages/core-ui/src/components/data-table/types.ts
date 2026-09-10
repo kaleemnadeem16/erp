@@ -45,6 +45,14 @@ export interface DataColumn<TRow> {
   align?: 'left' | 'right' | 'center';
   /** Tailwind width class, e.g. "w-32". */
   widthClassName?: string;
+  /**
+   * Card-view rendering role (the mobile fallback for the table, ADR 0015).
+   * 'title' is the card's heading; 'subtitle' the line beneath it. Every
+   * other `screenVisible` column renders as a label/value row in the card
+   * body, in array order. At most one column of each role; if none is
+   * marked 'title', the first `screenVisible` column is used instead.
+   */
+  cardRole?: 'title' | 'subtitle';
 }
 
 export function isColumnVisibleByDefault<TRow>(column: DataColumn<TRow>): boolean {

@@ -22,8 +22,9 @@ class IndexRecalculationRequestRequest extends FormRequest
     public function rules(): array
     {
         return array_merge([
-            'filter' => ['sometimes', 'array:movement_kind'],
+            'filter' => ['sometimes', 'array:movement_kind,search'],
             'filter.movement_kind' => ['sometimes', Rule::enum(RecalculationMovementKind::class)],
+            'filter.search' => ['sometimes', 'string', 'max:255'],
         ], $this->listQueryRules(['requested_at', 'review_due_at'], ['item', 'location', 'destinationLocation', 'batch']));
     }
 }

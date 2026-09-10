@@ -32,11 +32,13 @@ export const negativeStockOverrideColumns: DataColumn<NegativeStockOverrideReque
     key: 'id',
     header: 'Request',
     value: (override) => `#${override.id}`,
+    cardRole: 'title',
   },
   {
     key: 'item',
     header: 'Item',
     value: (override) => (override.item ? `${override.item.code} — ${override.item.name}` : override.item_id),
+    cardRole: 'subtitle',
   },
   {
     key: 'movement_class',

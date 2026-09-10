@@ -29,6 +29,10 @@ export type StockMovesIndexParams = {
   "filter[source_type]"?: string;
   "filter[moved_from]"?: string;
   "filter[moved_to]"?: string;
+  /**
+   * @maxLength 255
+   */
+  "filter[search]"?: string;
   sort?: StockMovesIndexSort;
   include?: string;
   /**

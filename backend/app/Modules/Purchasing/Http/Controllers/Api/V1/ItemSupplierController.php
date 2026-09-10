@@ -15,6 +15,7 @@ use App\Modules\Purchasing\Http\Requests\ItemSupplier\UpdateItemSupplierRequest;
 use App\Modules\Purchasing\Http\Resources\ItemSupplierResource;
 use App\Modules\Purchasing\Models\ItemSupplier;
 use App\Support\Concerns\AppliesApiQuery;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Symfony\Component\HttpFoundation\Response;
@@ -38,6 +39,14 @@ class ItemSupplierController extends Controller
         }
         if ($request->boolean('filter.preferred')) {
             $query->where('priority', 1)->where('active', true);
+        }
+        if ($request->filled('filter.search')) {
+            $search = $request->string('filter.search')->toString();
+            $query->where(fn (Builder $q) => $q
+                ->where('supplier_item_code', 'ilike', "%{$search}%")
+                ->orWhereHas('item', fn (Builder $iq) => $iq->where('code', 'ilike', "%{$search}%")
+                    ->orWhere('name', 'ilike', "%{$search}%"))
+                ->orWhereHas('supplierAccount', fn (Builder $sq) => $sq->where('code', 'ilike', "%{$search}%")));
         }
         $this->applySort($query, $request, self::SORTABLE, 'priority');
 

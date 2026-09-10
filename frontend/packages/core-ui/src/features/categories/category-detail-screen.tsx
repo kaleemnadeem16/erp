@@ -6,7 +6,7 @@ import { Skeleton } from '../../components/ui/skeleton';
 import { DetailField } from '../../components/detail/detail-field';
 import { DetailPageLayout, DetailSection } from '../../components/detail/detail-page-layout';
 import { PageHeader } from '../../components/page/page-header';
-import { DetailPrintLayout, PrintTrigger, useQuickPrint, type DetailPrintField } from '../../components/print';
+import { DetailPrintLayout, PrintTrigger, useQuickPrint, type DetailPrintSection } from '../../components/print';
 
 export function CategoryDetailScreen() {
   const id = Number(useParams<{ id: string }>().id);
@@ -37,14 +37,24 @@ export function CategoryDetailScreen() {
     const a = account(accountId);
     return a ? `${a.code} — ${a.name}` : undefined;
   };
-  const fields: DetailPrintField[] = [
-    { label: 'Code', value: category.code },
-    { label: 'Name', value: category.name },
-    { label: 'Parent', value: category.parent?.name ?? '' },
-    { label: 'Default valuation', value: category.default_valuation_method ?? 'Inherited' },
-    { label: 'Income account', value: display(category.income_account_id) ?? 'Inherited' },
-    { label: 'Expense account', value: display(category.expense_account_id) ?? 'Inherited' },
-    { label: 'Inventory account', value: display(category.inventory_account_id) ?? 'Inherited' },
+  const printSections: DetailPrintSection[] = [
+    {
+      title: 'General',
+      fields: [
+        { label: 'Code', value: category.code },
+        { label: 'Name', value: category.name },
+        { label: 'Parent', value: category.parent?.name ?? '' },
+        { label: 'Default valuation', value: category.default_valuation_method ?? 'Inherited' },
+      ],
+    },
+    {
+      title: 'GL account defaults',
+      fields: [
+        { label: 'Income account', value: display(category.income_account_id) ?? 'Inherited' },
+        { label: 'Expense account', value: display(category.expense_account_id) ?? 'Inherited' },
+        { label: 'Inventory account', value: display(category.inventory_account_id) ?? 'Inherited' },
+      ],
+    },
   ];
   return (
     <div className="space-y-4 p-6">
@@ -90,7 +100,7 @@ export function CategoryDetailScreen() {
       </DetailPageLayout>
       <div className="hidden">
         <div ref={contentRef}>
-          <DetailPrintLayout title={`CATEGORY: ${category.code}`} printedAt={new Date()} fields={fields} />
+          <DetailPrintLayout title={`CATEGORY: ${category.code}`} printedAt={new Date()} sections={printSections} />
         </div>
       </div>
     </div>

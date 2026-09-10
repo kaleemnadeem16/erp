@@ -11,6 +11,10 @@ import type { NegativeStockOverrideRequestsIndexSort } from "./negativeStockOver
 export type NegativeStockOverrideRequestsIndexParams = {
   "filter[movement_class]"?: NegativeStockMovementClass;
   "filter[authorisation_mode]"?: NegativeStockAuthorisationMode;
+  /**
+   * @maxLength 255
+   */
+  "filter[search]"?: string;
   sort?: NegativeStockOverrideRequestsIndexSort;
   include?: string;
   /**

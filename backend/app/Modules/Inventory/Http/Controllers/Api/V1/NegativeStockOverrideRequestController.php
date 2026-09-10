@@ -18,6 +18,7 @@ use App\Modules\Inventory\Models\NegativeStockOverrideRequest;
 use App\Modules\Inventory\Support\NegativeStockApprovalDecision;
 use App\Modules\Inventory\Support\NegativeStockReviewOutcome;
 use App\Support\Concerns\AppliesApiQuery;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
@@ -51,6 +52,11 @@ class NegativeStockOverrideRequestController extends Controller
         }
         if ($request->filled('filter.authorisation_mode')) {
             $query->where('authorisation_mode', $request->input('filter.authorisation_mode'));
+        }
+        if ($request->filled('filter.search')) {
+            $search = $request->string('filter.search')->toString();
+            $query->whereHas('item', fn (Builder $q) => $q->where('code', 'ilike', "%{$search}%")
+                ->orWhere('name', 'ilike', "%{$search}%"));
         }
 
         $this->applySort($query, $request, self::SORTABLE, '-requested_at');

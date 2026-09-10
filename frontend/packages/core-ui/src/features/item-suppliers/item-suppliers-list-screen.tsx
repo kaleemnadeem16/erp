@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
-import { Plus } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { SlidersHorizontal } from 'lucide-react';
 import { useNavigate } from 'react-router';
-import type { PaginationState, SortingState, VisibilityState } from '@tanstack/react-table';
+import type { PaginationState, SortingState } from '@tanstack/react-table';
 import {
   useItemsIndex,
   useItemSuppliersIndex,
@@ -9,8 +9,11 @@ import {
   type ItemSupplierResource,
   type ItemSuppliersIndexSort,
 } from '@erp/core-api';
+import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '../../components/ui/sheet';
 import { PageHeader } from '../../components/page/page-header';
 import { DataTable, isColumnVisibleByDefault, toTanStackColumns } from '../../components/data-table';
 import { PrintLayout, PrintableTable, PrintTrigger, useQuickPrint } from '../../components/print';
@@ -20,8 +23,11 @@ import {
   tableSortingToApiSort,
   useListQueryState,
 } from '../../lib/list-query-state';
+import { useColumnVisibilityPreference } from '../../lib/use-column-visibility-preference';
+import { useListViewPreference } from '../../lib/use-view-preference';
 import { itemSupplierColumns } from './item-suppliers-columns';
 interface Filters {
+  search: string;
   item_id: string;
   supplier_account_id: string;
   active: string;
@@ -32,9 +38,23 @@ interface Filters {
 export function ItemSuppliersListScreen() {
   const navigate = useNavigate();
   const query = useListQueryState<Filters>({ defaultSort: 'priority' });
-  const [visibility, setVisibility] = useState<VisibilityState>(() =>
+  const [visibility, setVisibility] = useColumnVisibilityPreference(
+    'item-suppliers-list',
     Object.fromEntries(itemSupplierColumns.map((c) => [c.key, isColumnVisibleByDefault(c)]))
   );
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const { view, setView } = useListViewPreference('item-suppliers-list');
+  const [searchInput, setSearchInput] = useState(query.filters.search ?? '');
+
+  // Debounce free-text search so every keystroke doesn't round-trip to the API.
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      if (searchInput !== (query.filters.search ?? '')) query.setFilter('search', searchInput || undefined);
+    }, 300);
+    return () => clearTimeout(handle);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchInput]);
+
   const itemsResult = useItemsIndex({ per_page: 100, sort: 'name' });
   const items = itemsResult.data?.status === 200 ? itemsResult.data.data.data : [];
   const suppliersResult = useSupplierAccountsIndex({ per_page: 100, sort: 'code', include: 'party' });
@@ -46,6 +66,7 @@ export function ItemSuppliersListScreen() {
       : undefined,
     'filter[active]': query.filters.active ? query.filters.active === 'true' : undefined,
     'filter[preferred]': query.filters.preferred ? true : undefined,
+    'filter[search]': query.filters.search || undefined,
     include: 'item,supplierAccount,purchaseUom',
     sort: query.sort as ItemSuppliersIndexSort | undefined,
     per_page: query.perPage,
@@ -58,72 +79,72 @@ export function ItemSuppliersListScreen() {
   const pagination: PaginationState = { pageIndex: query.page - 1, pageSize: query.perPage };
   const { contentRef, print } = useQuickPrint({ documentTitle: 'Item Supplier List' });
   const filter = (name: keyof Filters, value: string) => query.setFilter(name, value === 'all' ? undefined : value);
+  const activeFilterCount = [
+    query.filters.item_id,
+    query.filters.supplier_account_id,
+    query.filters.active,
+    query.filters.preferred,
+  ].filter(Boolean).length;
   return (
-    <div className="space-y-4 p-6">
+    // Extra bottom padding below `md` clears the fixed MobileFab — see
+    // PageHeader's `primaryAction` note in docs/architecture/user-interface.md.
+    <div className="space-y-4 p-4 pb-24 md:p-6">
       <PageHeader
         title="Item suppliers"
         description="Approved supplier relationships and item-specific sourcing terms."
-        actions={
-          <Button onClick={() => navigate('/item-suppliers/new')}>
-            <Plus className="h-4 w-4" />
-            New relationship
-          </Button>
-        }
+        primaryAction={{ label: 'New relationship', onClick: () => navigate('/item-suppliers/new') }}
       />
-      <div className="flex flex-wrap gap-2">
-        <Select value={query.filters.item_id ?? 'all'} onValueChange={(v) => filter('item_id', v)}>
-          <SelectTrigger className="h-9 w-48">
-            <SelectValue placeholder="Item" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All items</SelectItem>
-            {items.map((i) => (
-              <SelectItem key={i.id} value={String(i.id)}>
-                {i.code} — {i.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select
-          value={query.filters.supplier_account_id ?? 'all'}
-          onValueChange={(v) => filter('supplier_account_id', v)}
-        >
-          <SelectTrigger className="h-9 w-48">
-            <SelectValue placeholder="Supplier" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All suppliers</SelectItem>
-            {suppliers.map((s) => (
-              <SelectItem key={s.id} value={String(s.id)}>
-                {s.code}
-                {s.party?.name ? ` — ${s.party.name}` : ''}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={query.filters.active ?? 'all'} onValueChange={(v) => filter('active', v)}>
-          <SelectTrigger className="h-9 w-36">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
-            <SelectItem value="true">Active</SelectItem>
-            <SelectItem value="false">Inactive</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={query.filters.preferred ?? 'all'} onValueChange={(v) => filter('preferred', v)}>
-          <SelectTrigger className="h-9 w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All priorities</SelectItem>
-            <SelectItem value="true">Preferred only</SelectItem>
-          </SelectContent>
-        </Select>
-        <div className="ml-auto">
+      <div className="flex flex-wrap items-center gap-2">
+        <Input
+          placeholder="Search item or supplier…"
+          value={searchInput}
+          onChange={(event) => setSearchInput(event.target.value)}
+          className="h-9 flex-1 md:w-56 md:flex-none"
+        />
+        <div className="hidden items-center gap-2 md:flex md:flex-wrap">
+          <ItemSupplierFilterControls items={items} suppliers={suppliers} query={query} filter={filter} />
           <PrintTrigger onPrint={print} />
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-9 shrink-0 md:hidden"
+          onClick={() => setFiltersOpen(true)}
+        >
+          <SlidersHorizontal className="h-4 w-4" />
+          Filters
+          {activeFilterCount > 0 && <Badge className="ml-1">{activeFilterCount}</Badge>}
+        </Button>
       </div>
+
+      <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
+        <SheetContent side="bottom" className="md:hidden">
+          <SheetHeader>
+            <SheetTitle>Filters</SheetTitle>
+          </SheetHeader>
+          <div className="flex flex-col gap-3 py-4">
+            <ItemSupplierFilterControls items={items} suppliers={suppliers} query={query} filter={filter} full />
+            <PrintTrigger onPrint={print} className="w-full justify-center" />
+          </div>
+          <SheetFooter>
+            <Button
+              variant="ghost"
+              onClick={() =>
+                query.setFilters({
+                  item_id: undefined,
+                  supplier_account_id: undefined,
+                  active: undefined,
+                  preferred: undefined,
+                })
+              }
+            >
+              Clear filters
+            </Button>
+            <Button onClick={() => setFiltersOpen(false)}>Done</Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+
       <DataTable
         columns={columns}
         data={rows}
@@ -144,6 +165,9 @@ export function ItemSuppliersListScreen() {
         isError={result.isError}
         errorMessage="Couldn't load item suppliers."
         emptyMessage="No relationships match these filters."
+        view={view}
+        onViewChange={setView}
+        cardColumns={itemSupplierColumns}
       />
       <div className="hidden">
         <div ref={contentRef}>
@@ -160,5 +184,67 @@ export function ItemSuppliersListScreen() {
         </div>
       </div>
     </div>
+  );
+}
+
+interface ItemSupplierFilterControlsProps {
+  items: { id: number; code: string; name: string }[];
+  suppliers: { id: number; code: string; party?: { name: string } | null }[];
+  query: ReturnType<typeof useListQueryState<Filters>>;
+  filter: (name: keyof Filters, value: string) => void;
+  full?: boolean;
+}
+
+/** Item/Supplier/Status/Preferred selects — shared by the desktop row and the mobile Filters sheet. */
+function ItemSupplierFilterControls({ items, suppliers, query, filter, full }: ItemSupplierFilterControlsProps) {
+  return (
+    <>
+      <Select value={query.filters.item_id ?? 'all'} onValueChange={(v) => filter('item_id', v)}>
+        <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-48'}>
+          <SelectValue placeholder="Item" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All items</SelectItem>
+          {items.map((i) => (
+            <SelectItem key={i.id} value={String(i.id)}>
+              {i.code} — {i.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Select value={query.filters.supplier_account_id ?? 'all'} onValueChange={(v) => filter('supplier_account_id', v)}>
+        <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-48'}>
+          <SelectValue placeholder="Supplier" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All suppliers</SelectItem>
+          {suppliers.map((s) => (
+            <SelectItem key={s.id} value={String(s.id)}>
+              {s.code}
+              {s.party?.name ? ` — ${s.party.name}` : ''}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Select value={query.filters.active ?? 'all'} onValueChange={(v) => filter('active', v)}>
+        <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-36'}>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All statuses</SelectItem>
+          <SelectItem value="true">Active</SelectItem>
+          <SelectItem value="false">Inactive</SelectItem>
+        </SelectContent>
+      </Select>
+      <Select value={query.filters.preferred ?? 'all'} onValueChange={(v) => filter('preferred', v)}>
+        <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-40'}>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All priorities</SelectItem>
+          <SelectItem value="true">Preferred only</SelectItem>
+        </SelectContent>
+      </Select>
+    </>
   );
 }

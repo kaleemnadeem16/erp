@@ -14,16 +14,18 @@ export const physicalCountColumns: DataColumn<PhysicalCountResource>[] = [
     key: 'id',
     header: 'Count',
     value: (count) => `#${count.id}`,
-  },
-  {
-    key: 'reference',
-    header: 'Reference',
-    value: (count) => count.reference,
+    cardRole: 'title',
   },
   {
     key: 'warehouse',
     header: 'Warehouse',
     value: (count) => count.warehouse?.name ?? null,
+    cardRole: 'subtitle',
+  },
+  {
+    key: 'reference',
+    header: 'Reference',
+    value: (count) => count.reference,
   },
   {
     key: 'status',

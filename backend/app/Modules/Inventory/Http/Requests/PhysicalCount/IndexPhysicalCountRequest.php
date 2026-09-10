@@ -22,9 +22,10 @@ class IndexPhysicalCountRequest extends FormRequest
     public function rules(): array
     {
         return array_merge([
-            'filter' => ['sometimes', 'array:warehouse_id,status'],
+            'filter' => ['sometimes', 'array:warehouse_id,status,search'],
             'filter.warehouse_id' => ['sometimes', 'integer', 'min:1'],
             'filter.status' => ['sometimes', Rule::enum(PhysicalCountStatus::class)],
+            'filter.search' => ['sometimes', 'string', 'max:255'],
         ], $this->listQueryRules(['created_at', 'posted_at'], ['warehouse', 'lines']));
     }
 }

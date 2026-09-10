@@ -7,7 +7,7 @@ import { Skeleton } from '../../components/ui/skeleton';
 import { DetailField } from '../../components/detail/detail-field';
 import { DetailPageLayout, DetailSection } from '../../components/detail/detail-page-layout';
 import { PageHeader } from '../../components/page/page-header';
-import { DetailPrintLayout, PrintTrigger, useQuickPrint, type DetailPrintField } from '../../components/print';
+import { DetailPrintLayout, PrintTrigger, useQuickPrint, type DetailPrintSection } from '../../components/print';
 export function ItemSupplierDetailScreen() {
   const id = Number(useParams<{ id: string }>().id);
   const navigate = useNavigate();
@@ -33,18 +33,29 @@ export function ItemSupplierDetailScreen() {
   const itemLabel = row.item ? `${row.item.code} — ${row.item.name}` : String(row.item_id);
   const supplierLabel = row.supplier_account?.code ?? String(row.supplier_account_id);
   const purchaseUomLabel = row.purchase_uom ? `${row.purchase_uom.name} (${row.purchase_uom.code})` : 'Stock unit';
-  const fields: DetailPrintField[] = [
-    { label: 'Item', value: itemLabel },
-    { label: 'Supplier', value: supplierLabel },
-    { label: 'Supplier item code', value: row.supplier_item_code ?? '' },
-    { label: 'Priority', value: row.priority == null ? '' : String(row.priority) },
-    { label: 'Lead time', value: `${row.resolved_lead_time_days} days` },
-    { label: 'Minimum order quantity', value: row.minimum_order_qty ?? '' },
+  const printSections: DetailPrintSection[] = [
     {
-      label: 'Purchase unit',
-      value: purchaseUomLabel,
+      title: 'Relationship',
+      fields: [
+        { label: 'Item', value: itemLabel },
+        { label: 'Supplier', value: supplierLabel },
+        { label: 'Supplier item code', value: row.supplier_item_code ?? '' },
+        { label: 'Priority', value: row.priority == null ? '' : String(row.priority) },
+        { label: 'Status', value: row.active ? 'Active' : 'Inactive' },
+      ],
     },
-    { label: 'Status', value: row.active ? 'Active' : 'Inactive' },
+    {
+      title: 'Sourcing terms',
+      fields: [
+        {
+          label: 'Lead time override',
+          value: row.lead_time_days == null ? 'Supplier default' : `${row.lead_time_days} days`,
+        },
+        { label: 'Resolved lead time', value: `${row.resolved_lead_time_days} days` },
+        { label: 'Minimum order quantity', value: row.minimum_order_qty ?? '' },
+        { label: 'Purchase unit', value: purchaseUomLabel },
+      ],
+    },
   ];
   return (
     <div className="space-y-4 p-6">
@@ -85,7 +96,7 @@ export function ItemSupplierDetailScreen() {
       </DetailPageLayout>
       <div className="hidden">
         <div ref={contentRef}>
-          <DetailPrintLayout title="ITEM SUPPLIER" printedAt={new Date()} fields={fields} />
+          <DetailPrintLayout title="ITEM SUPPLIER" printedAt={new Date()} sections={printSections} />
         </div>
       </div>
     </div>

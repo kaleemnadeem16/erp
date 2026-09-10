@@ -13,6 +13,10 @@ export type PhysicalCountsIndexParams = {
    */
   "filter[warehouse_id]"?: number;
   "filter[status]"?: PhysicalCountStatus;
+  /**
+   * @maxLength 255
+   */
+  "filter[search]"?: string;
   sort?: PhysicalCountsIndexSort;
   include?: string;
   /**

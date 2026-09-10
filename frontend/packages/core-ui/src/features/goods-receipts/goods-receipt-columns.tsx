@@ -19,6 +19,7 @@ export function goodsReceiptColumns(
       header: "Receipt",
       value: (receipt) => receipt.number ?? `Draft #${receipt.id}`,
       sortable: true,
+      cardRole: "title",
     },
     {
       key: "supplier",
@@ -26,6 +27,7 @@ export function goodsReceiptColumns(
       value: (receipt) =>
         suppliers.get(receipt.supplier_account_id) ??
         `#${receipt.supplier_account_id}`,
+      cardRole: "subtitle",
     },
     {
       key: "posting_date",

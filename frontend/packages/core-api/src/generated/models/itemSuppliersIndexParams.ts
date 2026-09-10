@@ -17,6 +17,10 @@ export type ItemSuppliersIndexParams = {
   "filter[supplier_account_id]"?: number;
   "filter[active]"?: boolean;
   "filter[preferred]"?: boolean;
+  /**
+   * @maxLength 255
+   */
+  "filter[search]"?: string;
   sort?: ItemSuppliersIndexSort;
   include?: string;
   /**

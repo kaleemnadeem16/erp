@@ -5,6 +5,12 @@ export { DashboardScreen } from "./features/dashboard/dashboard-screen";
 export { useAuthStore } from "./stores/auth-store";
 export { useSession } from "./hooks/use-session";
 export { cn } from "./lib/utils";
+export { useMediaQuery, MD_BREAKPOINT_QUERY } from "./lib/use-media-query";
+export {
+  useListViewPreference,
+  type ListView,
+} from "./lib/use-view-preference";
+export { useColumnVisibilityPreference } from "./lib/use-column-visibility-preference";
 
 // Reusable list/detail/print foundation — see docs/architecture (frontend)
 // and features/items for the reference implementation.
@@ -15,7 +21,9 @@ export {
   PageHeader,
   type PageHeaderProps,
   type PageHeaderBreadcrumb,
+  type PageHeaderPrimaryAction,
 } from "./components/page/page-header";
+export { MobileFab, type MobileFabProps } from "./components/page/mobile-fab";
 export {
   DetailPageLayout,
   DetailSection,
@@ -85,6 +93,16 @@ export {
   FormField,
   useFormField,
 } from "./components/ui/form";
+export {
+  Sheet,
+  SheetTrigger,
+  SheetClose,
+  SheetContent,
+  SheetHeader,
+  SheetFooter,
+  SheetTitle,
+  SheetDescription,
+} from "./components/ui/sheet";
 
 // Items — the reference implementation for this list/detail/print foundation.
 export { ItemsListScreen } from "./features/items/items-list-screen";

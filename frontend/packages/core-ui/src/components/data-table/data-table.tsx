@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import {
   flexRender,
   getCoreRowModel,
@@ -11,10 +12,15 @@ import {
 } from '@tanstack/react-table';
 
 import { cn } from '../../lib/utils';
+import type { ListView } from '../../lib/use-view-preference';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Skeleton } from '../ui/skeleton';
+import { DataTableCards } from './data-table-cards';
 import { DataTablePagination } from './data-table-pagination';
+import { DataTableSortSelect } from './data-table-sort-select';
 import { DataTableViewOptions } from './data-table-view-options';
+import { DataTableViewToggle } from './data-table-view-toggle';
+import type { DataColumn } from './types';
 
 export interface DataTableProps<TRow> {
   columns: ColumnDef<TRow, unknown>[];
@@ -36,6 +42,19 @@ export interface DataTableProps<TRow> {
   errorMessage?: string;
   emptyMessage?: string;
   pageSizeOptions?: number[];
+  /** Current table/cards rendering mode. Omit entirely to keep this table always table-only (today's behavior). */
+  view?: ListView;
+  onViewChange?: (view: ListView) => void;
+  /** The plain `DataColumn[]` cards read from — required alongside `view`/`onViewChange` to enable card view. */
+  cardColumns?: DataColumn<TRow>[];
+  /**
+   * Per-row quick actions (icon buttons — edit, archive, etc.), rendered by
+   * the screen itself so this stays generic. Appears as a trailing column in
+   * table view and a top-right cluster in card view — one definition drives
+   * both. The base component only owns placement/layout; which actions exist
+   * is entirely up to the screen passing this prop.
+   */
+  rowActions?: (row: TRow) => ReactNode;
 }
 
 /**
@@ -67,6 +86,10 @@ export function DataTable<TRow>({
   errorMessage,
   emptyMessage = 'No records found.',
   pageSizeOptions,
+  view,
+  onViewChange,
+  cardColumns,
+  rowActions,
 }: DataTableProps<TRow>) {
   const table = useReactTable({
     data,
@@ -86,15 +109,44 @@ export function DataTable<TRow>({
     getCoreRowModel: getCoreRowModel(),
   });
 
-  const columnCount = table.getVisibleFlatColumns().length;
+  const columnCount = table.getVisibleFlatColumns().length + (rowActions ? 1 : 0);
 
   return (
     <div className="space-y-3">
-      {onColumnVisibilityChange && (
-        <div className="flex justify-end">
-          <DataTableViewOptions table={table} />
+      {(onColumnVisibilityChange || onViewChange) && (
+        <div className="flex items-center justify-between gap-2">
+          {onViewChange && (
+            <div className="md:hidden">
+              <DataTableViewToggle value={view ?? 'table'} onChange={onViewChange} />
+            </div>
+          )}
+          {onColumnVisibilityChange && (
+            <div className="ml-auto">
+              <DataTableViewOptions table={table} />
+            </div>
+          )}
         </div>
       )}
+      {view === 'cards' && cardColumns && (
+        <div className="md:hidden">
+          <DataTableSortSelect columns={cardColumns} sorting={sorting} onSortingChange={onSortingChange} />
+        </div>
+      )}
+      {view === 'cards' && cardColumns ? (
+        <DataTableCards
+          columns={cardColumns}
+          data={data}
+          columnVisibility={columnVisibility}
+          getRowId={getRowId}
+          onRowClick={onRowClick}
+          rowActions={rowActions}
+          isLoading={isLoading}
+          isError={isError}
+          errorMessage={errorMessage}
+          emptyMessage={emptyMessage}
+          skeletonCount={Math.min(pagination.pageSize, 8)}
+        />
+      ) : (
       <div className="rounded-md border border-border">
         <Table>
           <TableHeader>
@@ -105,6 +157,11 @@ export function DataTable<TRow>({
                     {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                   </TableHead>
                 ))}
+                {rowActions && (
+                  <TableHead className="w-px">
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
+                )}
               </TableRow>
             ))}
           </TableHeader>
@@ -142,12 +199,18 @@ export function DataTable<TRow>({
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                   ))}
+                  {rowActions && (
+                    <TableCell className="text-right" onClick={(event) => event.stopPropagation()}>
+                      <div className="flex items-center justify-end gap-1">{rowActions(row.original)}</div>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))
             )}
           </TableBody>
         </Table>
       </div>
+      )}
 
       <DataTablePagination table={table} pageSizeOptions={pageSizeOptions} />
     </div>
