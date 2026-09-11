@@ -23,6 +23,7 @@ import { DetailPageLayout, DetailSection } from '../../components/detail/detail-
 import { DetailField } from '../../components/detail/detail-field';
 import { getApiErrorMessage } from '../../lib/api-errors';
 import { cn } from '../../lib/utils';
+import { useAuthStore } from '../../stores/auth-store';
 
 const STATUS_VARIANT: Record<string, 'secondary' | 'success' | 'destructive'> = {
   DRAFT: 'secondary',
@@ -50,6 +51,9 @@ export function PhysicalCountDetailScreen() {
   const countQuery = usePhysicalCountsShow(countId, { include: 'warehouse,lines,lines.item,lines.location' });
   const count = countQuery.data?.status === 200 ? countQuery.data.data.data : undefined;
   const lines = useMemo(() => count?.lines ?? [], [count]);
+
+  const currentUser = useAuthStore((state) => state.user);
+  const isOwnCount = !!currentUser && !!count && currentUser.id === count.created_by;
 
   const [countedDrafts, setCountedDrafts] = useState<Record<number, string>>({});
   const [foundCostDrafts, setFoundCostDrafts] = useState<Record<number, string>>({});
@@ -173,9 +177,18 @@ export function PhysicalCountDetailScreen() {
               <Button variant="outline" onClick={handleCancel} disabled={cancelCount.isPending}>
                 Cancel count
               </Button>
-              <Button onClick={handlePost} disabled={!everyLineCounted || postCount.isPending}>
-                {postCount.isPending ? 'Posting…' : 'Post count'}
-              </Button>
+              <div className="flex flex-col items-end gap-1">
+                <Button
+                  onClick={handlePost}
+                  disabled={!everyLineCounted || postCount.isPending || isOwnCount}
+                  title={isOwnCount ? "You can't post a physical count you created" : undefined}
+                >
+                  {postCount.isPending ? 'Posting…' : 'Post count'}
+                </Button>
+                {isOwnCount && (
+                  <span className="text-xs text-muted-foreground">You can't post your own count</span>
+                )}
+              </div>
             </>
           )
         }

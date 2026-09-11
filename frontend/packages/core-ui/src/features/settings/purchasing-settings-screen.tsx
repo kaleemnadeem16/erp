@@ -152,11 +152,23 @@ export function PurchasingSettingsScreen() {
                 control={form.control}
                 name="purchase_order_required"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-center gap-2 space-y-0">
-                    <FormControl>
-                      <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                    </FormControl>
-                    <FormLabel className="font-normal">A purchase order is required before receiving</FormLabel>
+                  <FormItem className="sm:col-span-2 space-y-1">
+                    <div className="flex flex-row items-center gap-2">
+                      <FormControl>
+                        {/* Locked on: PO-less receiving is a deferred V1 capability (ADR 0043,
+                            "Deferred capabilities") — every receipt already requires an issued
+                            PO regardless of this flag, so leaving it editable would let someone
+                            believe they'd turned that requirement off when nothing changed. */}
+                        <Checkbox checked disabled />
+                      </FormControl>
+                      <FormLabel className="font-normal text-muted-foreground">
+                        A purchase order is required before receiving
+                      </FormLabel>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Always on for now — PO-less receiving isn't built yet (ADR 0043). This will
+                      become configurable once that capability ships.
+                    </p>
                   </FormItem>
                 )}
               />

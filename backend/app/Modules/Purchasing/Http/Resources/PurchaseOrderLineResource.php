@@ -14,8 +14,15 @@ class PurchaseOrderLineResource extends JsonResource
     public function toArray(Request $request): array
     {
         $received = BigDecimal::of($this->posted_received_stock_qty ?? '0')->toScale(4);
+        // draft_held_stock_qty: quantity a still-unposted goods receipt already
+        // claims against this line. Excluded from received_stock_qty (nothing has
+        // actually landed yet) but must still reduce outstanding_stock_qty, or a
+        // second draft can claim the same "open" quantity a first draft is already
+        // holding — only caught later, confusingly, when the second one posts.
+        $draftHeld = BigDecimal::of($this->draft_held_stock_qty ?? '0')->toScale(4);
         $outstanding = BigDecimal::of($this->ordered_stock_qty)
             ->minus($received)
+            ->minus($draftHeld)
             ->minus(BigDecimal::of($this->short_closed_stock_qty));
         if ($outstanding->isNegative()) {
             $outstanding = BigDecimal::zero();

@@ -47,6 +47,7 @@ purchase_orders
   currency_id, fx_rate, fx_rate_date, fx_rate_type
   fx_policy                              -- FLOATING | FIXED, snapshotted on issue
   order_date, expected_delivery_date NULLABLE
+  notes NULLABLE                          -- order-level remarks, not any one line's own description
   issued_at NULLABLE, closed_at NULLABLE, cancelled_at NULLABLE
   cancellation_reason NULLABLE
   inventory_cutover_id, import_batch_id NULLABLE  -- both set for an imported open PO
@@ -186,13 +187,17 @@ create screen provides repeatable lines, supplier/default-currency resolution, i
 description/UoM defaults, explicit FX evidence and QA selection. The status-gated detail workspace
 shows immutable issued facts and confirms issue, cancellation and short-close consequences before
 calling their named actions. Drafts can be reopened in the same repeatable-line form. The detail
-response computes exact transaction/base totals with decimal arithmetic and derives received and
-outstanding stock quantities from posted receipts; the screen pairs these with currency and UoM
-reference labels. Reversed and draft receipts therefore never inflate operational progress.
+response computes exact transaction/base totals with decimal arithmetic and derives received stock
+quantity from posted receipts only, so a reversed or still-draft receipt never inflates operational
+progress. Outstanding stock quantity nets out posted receipts *and* quantity already held by any
+other still-unposted draft against the same line — not just this order's own progress, but what
+remains free to claim at all — so a second draft can't be opened against quantity a first,
+unposted one already claims; the screen pairs these with currency and UoM reference labels.
 
 The Goods Receipts list at `/goods-receipts` is server-paginated and URL-filtered by supplier and
 status. Draft entry begins with the supplier and offers only that supplier's issued PO lines with
-an outstanding posted-receipt balance; the issued PO snapshot supplies item, currency, FX and
+a remaining outstanding balance — ordered, less posted receipts and quantity already held by other
+drafts; the issued PO snapshot supplies item, currency, FX and
 provisional-cost defaults while the receiver records physical time, posting date, put-away
 location, actual quantity/UoM and required batch or serial identity. The detail workspace confirms
 the stock consequences before posting and requires a reason before reversal. Posted

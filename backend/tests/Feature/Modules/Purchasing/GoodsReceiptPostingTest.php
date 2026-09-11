@@ -229,20 +229,48 @@ class GoodsReceiptPostingTest extends PurchaseOrderFoundationTest
         $first = $this->createReceipt($poLineId, $item->id, $uom->id, $locationId, ['received_qty' => '1.0000']);
         $this->postJson("/api/v1/goods-receipts/{$first}/post")->assertOk();
         $this->assertDatabaseHas('purchase_orders', ['id' => $order->id, 'status' => 'ISSUED']);
+        // $second is still a DRAFT here (posted below) — its own 1.0000 is now folded
+        // into outstanding_stock_qty via draft_held_stock_qty, so outstanding reads
+        // 0.0000, not the ordered-minus-posted-only 1.0000 a second draft could
+        // otherwise be created against on top of it (the bug scopeWithReceiptProgress's
+        // draft_held_stock_qty sum exists to close).
         $second = $this->createReceipt($poLineId, $item->id, $uom->id, $locationId, ['received_qty' => '1.0000']);
         $this->getJson("/api/v1/purchase-orders/{$order->id}?include=lines")
             ->assertOk()
             ->assertJsonPath('data.lines.0.received_stock_qty', '1.0000')
-            ->assertJsonPath('data.lines.0.outstanding_stock_qty', '1.0000');
+            ->assertJsonPath('data.lines.0.outstanding_stock_qty', '0.0000');
         $this->getJson('/api/v1/purchase-orders?filter[status]=ISSUED&include=lines')
             ->assertOk()
             ->assertJsonPath('data.0.lines.0.received_stock_qty', '1.0000')
-            ->assertJsonPath('data.0.lines.0.outstanding_stock_qty', '1.0000');
+            ->assertJsonPath('data.0.lines.0.outstanding_stock_qty', '0.0000');
 
         $this->postJson("/api/v1/goods-receipts/{$second}/post")->assertOk();
 
         $this->assertDatabaseHas('purchase_orders', ['id' => $order->id, 'status' => 'CLOSED']);
         $this->assertDatabaseCount('stock_moves', 2);
+    }
+
+    /**
+     * The bug this closes: two separate draft receipts opened against the same
+     * PO line each used to see the full ordered quantity as "open" — nothing
+     * about creating the first draft reduced what the second's dropdown
+     * offered, since outstanding_stock_qty only ever subtracted *posted*
+     * receipts. Both would let the user allocate the full quantity, and only
+     * the second one's eventual POST would fail, confusingly, against the
+     * PO's tolerance ceiling. This proves a single still-unposted draft alone
+     * is now enough to bring outstanding_stock_qty to zero.
+     */
+    public function test_outstanding_quantity_reflects_a_still_unposted_draft_receipt(): void
+    {
+        [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Avco);
+        $poLineId = $order->lines()->sole()->id;
+
+        $this->createReceipt($poLineId, $item->id, $uom->id, $this->locationId(), ['received_qty' => '2.0000']);
+
+        $this->getJson("/api/v1/purchase-orders/{$order->id}?include=lines")
+            ->assertOk()
+            ->assertJsonPath('data.lines.0.received_stock_qty', '0.0000')
+            ->assertJsonPath('data.lines.0.outstanding_stock_qty', '0.0000');
     }
 
     public function test_cumulative_over_receipt_is_blocked_without_inventory_side_effects(): void
@@ -471,6 +499,23 @@ class GoodsReceiptPostingTest extends PurchaseOrderFoundationTest
 
         $this->patchJson("/api/v1/items/{$item->id}", ['avco_pool_scope' => 'WAREHOUSE_ITEM'])
             ->assertUnprocessable()->assertJsonValidationErrors('avco_pool_scope');
+    }
+
+    /**
+     * Unlike the other three, tracking wasn't locked at all until this test was
+     * added — StockIdentity's validate*Tracking()/findOnHandBatch() key batch/
+     * serial identity off the item's *current* tracking mode, so a change after
+     * stock exists strands the pre-change on-hand quantity with no way to
+     * acquire the identity a later mode requires.
+     */
+    public function test_item_tracking_is_locked_after_receipt(): void
+    {
+        [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Avco, ItemTracking::None);
+        $receiptId = $this->createReceipt($order->lines()->sole()->id, $item->id, $uom->id, $this->locationId());
+        $this->postJson("/api/v1/goods-receipts/{$receiptId}/post")->assertOk();
+
+        $this->patchJson("/api/v1/items/{$item->id}", ['tracking' => 'BATCH'])
+            ->assertUnprocessable()->assertJsonValidationErrors('tracking');
     }
 
     public function test_failure_rolls_back_every_inventory_effect_and_receipt_status(): void

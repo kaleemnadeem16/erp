@@ -124,13 +124,30 @@ class PurchaseOrderLine extends Model
         return $this->hasMany(GoodsReceiptLine::class);
     }
 
-    /** @param Builder<PurchaseOrderLine> $query */
+    /**
+     * `posted_received_stock_qty` and `draft_held_stock_qty` are deliberately
+     * separate sums, not one combined figure: PurchaseOrderLineResource needs
+     * both — the former for `received_stock_qty` (what's actually landed),
+     * the latter folded into `outstanding_stock_qty` so a *second* draft
+     * receipt against the same line can't claim quantity a still-unposted
+     * first draft already holds (each draft's own dropdown only excludes
+     * duplicate rows within itself — it has no visibility into other,
+     * separate drafts). Excludes REVERSED implicitly: a reversed receipt's
+     * lines belong to a goods_receipt no longer in either DRAFT or POSTED
+     * status, so neither sum counts them, correctly releasing the quantity.
+     *
+     * @param Builder<PurchaseOrderLine> $query
+     */
     public function scopeWithReceiptProgress(Builder $query): void
     {
         $query->withSum([
             'receiptLines as posted_received_stock_qty' => fn (Builder $receiptLines) => $receiptLines
                 ->whereHas('goodsReceipt', fn (Builder $receipts) => $receipts
                     ->where('status', GoodsReceiptStatus::Posted->value)),
+        ], 'stock_qty')->withSum([
+            'receiptLines as draft_held_stock_qty' => fn (Builder $receiptLines) => $receiptLines
+                ->whereHas('goodsReceipt', fn (Builder $receipts) => $receipts
+                    ->where('status', GoodsReceiptStatus::Draft->value)),
         ], 'stock_qty');
     }
 }

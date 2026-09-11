@@ -44,13 +44,31 @@ export function InventorySettingsScreen() {
   // succeed on retry, and the default retry-3 would otherwise leave the
   // "you don't have permission" state hidden behind loading skeletons for
   // several seconds.
-  const changesQuery = useInventoryPolicyChangesIndex(
-    { sort: '-changed_at', per_page: 25 },
+  //
+  // The backend only accepts one `filter[policy]` value per request (see
+  // IndexInventoryPolicyChangeRequest — 'filter.policy' is a single string
+  // rule, not an array), so this screen's two policy types are fetched as
+  // two filtered queries and merged client-side by changed_at, rather than
+  // over-fetching every policy's history and filtering it out afterwards —
+  // that previous approach let an unrelated policy's rows crowd out
+  // LOCATION_STRUCTURE/DEFAULT_AVCO_POOL_SCOPE changes within the page size.
+  const locationChangesQuery = useInventoryPolicyChangesIndex(
+    { 'filter[policy]': 'LOCATION_STRUCTURE', sort: '-changed_at', per_page: 25 },
     { query: { retry: false } }
   );
-  const allChanges = changesQuery.data?.status === 200 ? changesQuery.data.data.data : [];
-  const changes = allChanges.filter((change) => change.policy === 'LOCATION_STRUCTURE' || change.policy === 'DEFAULT_AVCO_POOL_SCOPE');
-  const changesForbidden = isApiError(changesQuery.error) && changesQuery.error.status === 403;
+  const avcoChangesQuery = useInventoryPolicyChangesIndex(
+    { 'filter[policy]': 'DEFAULT_AVCO_POOL_SCOPE', sort: '-changed_at', per_page: 25 },
+    { query: { retry: false } }
+  );
+  const locationChanges = locationChangesQuery.data?.status === 200 ? locationChangesQuery.data.data.data : [];
+  const avcoChanges = avcoChangesQuery.data?.status === 200 ? avcoChangesQuery.data.data.data : [];
+  const changes = [...locationChanges, ...avcoChanges]
+    .sort((a, b) => new Date(b.changed_at).getTime() - new Date(a.changed_at).getTime())
+    .slice(0, 25);
+  const changesLoading = locationChangesQuery.isLoading || avcoChangesQuery.isLoading;
+  const changesForbidden =
+    (isApiError(locationChangesQuery.error) && locationChangesQuery.error.status === 403) ||
+    (isApiError(avcoChangesQuery.error) && avcoChangesQuery.error.status === 403);
   const updateSettings = useInventorySettingsUpdate();
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -80,7 +98,8 @@ export function InventorySettingsScreen() {
       {
         onSuccess: () => {
           form.setValue('reason', '');
-          changesQuery.refetch();
+          locationChangesQuery.refetch();
+          avcoChangesQuery.refetch();
         },
         onError: (error) => setFormError(applyApiErrorsToForm(error, form.setError, FORM_FIELDS)),
       }
@@ -177,7 +196,7 @@ export function InventorySettingsScreen() {
           </form>
         </Form>
 
-        <PolicyChangeHistory changes={changes} isLoading={changesQuery.isLoading} isForbidden={changesForbidden} />
+        <PolicyChangeHistory changes={changes} isLoading={changesLoading} isForbidden={changesForbidden} />
       </DetailPageLayout>
     </div>
   );

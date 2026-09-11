@@ -39,8 +39,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * category default must not silently move an already-created item. See
  * docs/domain/items.md "Valuation method" and
  * docs/decisions/0032-per-item-valuation-method.md. valuation_method,
- * avco_pool_scope and stock_uom_id are locked by the updating hook once the
- * item has a stock_moves row.
+ * avco_pool_scope, stock_uom_id and tracking are locked by the updating hook
+ * once the item has a stock_moves row.
  *
  * @property string $code
  * @property string $name
@@ -99,15 +99,21 @@ class Item extends Model
 
         static::updating(function (Item $item): void {
             $locked = array_values(array_intersect(
-                ['valuation_method', 'avco_pool_scope', 'stock_uom_id'],
+                ['valuation_method', 'avco_pool_scope', 'stock_uom_id', 'tracking'],
                 array_keys($item->getDirty()),
             ));
             if ($locked !== [] && StockMove::query()->where('item_id', $item->getKey())->exists()) {
                 // Attributed to whichever locked field the caller actually
                 // changed, so the message renders against that form field
-                // rather than always against valuation_method.
+                // rather than always against valuation_method. `tracking` is
+                // locked alongside the other three: StockIdentity's
+                // validate*Tracking()/findOnHandBatch() key batch/serial
+                // identity off the item's *current* tracking mode, so
+                // changing it after stock exists strands the pre-change
+                // on-hand quantity — it can never acquire the identity a
+                // later mode now requires.
                 throw new DomainInvariantException(
-                    'Valuation method, AVCO pool scope and stock UoM are immutable after the first stock movement.',
+                    'Valuation method, AVCO pool scope, stock UoM and tracking mode are immutable after the first stock movement.',
                     $locked[0],
                 );
             }

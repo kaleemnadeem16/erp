@@ -19,6 +19,7 @@ import { DetailPageLayout, DetailSection } from '../../components/detail/detail-
 import { DetailField } from '../../components/detail/detail-field';
 import { getApiErrorMessage } from '../../lib/api-errors';
 import { currentVersion, latestVersion, recalculationStatus } from './recalculation-request-columns';
+import { useAuthStore } from '../../stores/auth-store';
 
 const RISK_VARIANT: Record<string, 'secondary' | 'destructive'> = { NORMAL_RISK: 'secondary', HIGH_RISK: 'destructive' };
 
@@ -41,6 +42,8 @@ export function RecalculationRequestDetailScreen() {
 
   const requestQuery = useRecalculationRequestsShow(requestId, { include: 'item,location,destinationLocation,batch' });
   const request = requestQuery.data?.status === 200 ? requestQuery.data.data.data : undefined;
+
+  const currentUser = useAuthStore((state) => state.user);
 
   const [actionError, setActionError] = useState<string | null>(null);
   const [decision, setDecision] = useState('');
@@ -131,6 +134,7 @@ export function RecalculationRequestDetailScreen() {
   const latest = latestVersion(request);
   const current = currentVersion(request);
   const paused = !latest?.execution && !latest?.is_rejected && !current;
+  const isOwnRequest = !!currentUser && currentUser.id === request.requested_by;
 
   return (
     <div className="space-y-4 p-6">
@@ -274,9 +278,18 @@ export function RecalculationRequestDetailScreen() {
                   <span className="text-xs font-medium text-muted-foreground">Notes</span>
                   <Textarea value={decideNotes} onChange={(event) => setDecideNotes(event.target.value)} className="h-9 min-h-9" />
                 </div>
-                <Button type="submit" disabled={!decision || !decideNotes.trim() || decide.isPending}>
-                  {decide.isPending ? 'Submitting…' : 'Submit decision'}
-                </Button>
+                <div className="flex flex-col items-start gap-1">
+                  <Button
+                    type="submit"
+                    disabled={!decision || !decideNotes.trim() || decide.isPending || isOwnRequest}
+                    title={isOwnRequest ? "You can't decide your own recalculation request" : undefined}
+                  >
+                    {decide.isPending ? 'Submitting…' : 'Submit decision'}
+                  </Button>
+                  {isOwnRequest && (
+                    <span className="text-xs text-muted-foreground">You can't decide your own request</span>
+                  )}
+                </div>
               </form>
             ) : (
               <p className="text-sm text-muted-foreground sm:col-span-2 border-t border-border pt-4">

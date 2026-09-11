@@ -6,8 +6,7 @@ import { useWarehousesShow, useWarehousesUpdate } from '@erp/core-api';
 import { Button } from '../../components/ui/button';
 import { Skeleton } from '../../components/ui/skeleton';
 import { PageHeader } from '../../components/page/page-header';
-import { applyApiErrorsToForm } from '../../lib/api-errors';
-import { WarehouseForm, WAREHOUSE_FORM_FIELDS, type WarehouseFormValues } from './warehouse-form';
+import { WarehouseForm, applyWarehouseFormErrors, type WarehouseFormValues } from './warehouse-form';
 
 export function WarehouseEditScreen() {
   const warehouseId = Number(useParams<{ id: string }>().id);
@@ -33,7 +32,7 @@ export function WarehouseEditScreen() {
         onSuccess: (result) => {
           if (result.status === 200) navigate(`/warehouses/${result.data.data.id}`);
         },
-        onError: (error) => setFormError(applyApiErrorsToForm(error, form.setError, WAREHOUSE_FORM_FIELDS)),
+        onError: (error) => setFormError(applyWarehouseFormErrors(error, form)),
       }
     );
   }

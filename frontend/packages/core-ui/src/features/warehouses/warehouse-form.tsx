@@ -7,6 +7,7 @@ import { Checkbox } from '../../components/ui/checkbox';
 import { Input } from '../../components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../components/ui/form';
 import { DetailSection } from '../../components/detail/detail-page-layout';
+import { applyApiErrorsToForm, isApiError } from '../../lib/api-errors';
 
 const warehouseFieldsSchema = z.object({
   code: z.string().trim().min(1, 'Code is required').max(255),
@@ -42,6 +43,25 @@ export const WAREHOUSE_FORM_FIELDS = [
   'location_code',
   'location_name',
 ] as const satisfies readonly (keyof WarehouseFormValues)[];
+
+/**
+ * `is_default` has a partial unique index (one default warehouse per
+ * company) that a concurrent submit can still race past `code`'s own
+ * request-time `CompanyScoped::unique()` check. That race lands in
+ * bootstrap/app.php's generic UniqueConstraintViolationException handler,
+ * which — unlike a normal validation 422 — has no way to know which field
+ * caused it and returns a non-field-attributable `conflict` key instead.
+ * `code` is always validated before the insert is attempted, so within this
+ * form a `conflict` error can only mean the is_default race; map it onto the
+ * checkbox's own FormMessage rather than showing it as a generic banner.
+ */
+export function applyWarehouseFormErrors(error: unknown, form: UseFormReturn<WarehouseFormValues>): string | null {
+  if (isApiError(error) && error.body?.errors?.conflict) {
+    form.setError('is_default', { type: 'server', message: 'Another warehouse is already set as default.' });
+    return null;
+  }
+  return applyApiErrorsToForm(error, form.setError, WAREHOUSE_FORM_FIELDS);
+}
 
 const DEFAULT_VALUES: WarehouseFormValues = {
   code: '',

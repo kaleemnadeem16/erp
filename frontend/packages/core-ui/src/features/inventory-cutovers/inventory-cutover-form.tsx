@@ -87,6 +87,16 @@ export function InventoryCutoverForm({
       setPolicyError('At least one item needs a target valuation policy.');
       return;
     }
+    // Defense in depth: policyRowsToPolicy keys by item code, so a duplicate
+    // silently overwrites an earlier row with no warning. The item picker
+    // below already prevents picking the same item twice, but this catches
+    // it regardless — e.g. if a row is edited after being filtered out once.
+    const seen = new Set<string>();
+    const duplicate = complete.find((row) => (seen.has(row.itemCode) ? true : (seen.add(row.itemCode), false)));
+    if (duplicate) {
+      setPolicyError(`"${duplicate.itemCode}" has more than one policy row — each item can only appear once.`);
+      return;
+    }
     setPolicyError(null);
     onSubmit(values, complete, form);
   }
@@ -191,7 +201,15 @@ export function InventoryCutoverForm({
 
         <DetailSection title="Target valuation policy" description="What each item's valuation method and AVCO pool scope should be after this cutover.">
           <div className="space-y-2 sm:col-span-2">
-            {policyRows.map((row, index) => (
+            {policyRows.map((row, index) => {
+              // An item already given a policy on another row can't be picked again here —
+              // policyRowsToPolicy keys by item code, so a repeat would silently overwrite
+              // whichever row set it first.
+              const usedByOtherRows = new Set(
+                policyRows.filter((_, i) => i !== index).map((other) => other.itemCode).filter(Boolean),
+              );
+              const availableItems = items.filter((item) => !usedByOtherRows.has(item.code));
+              return (
               <div key={index} className="flex flex-wrap items-end gap-2">
                 <div className="flex flex-col gap-1">
                   <span className="text-xs font-medium text-muted-foreground">Item</span>
@@ -200,7 +218,7 @@ export function InventoryCutoverForm({
                       <SelectValue placeholder="Select an item" />
                     </SelectTrigger>
                     <SelectContent>
-                      {items.map((item) => (
+                      {availableItems.map((item) => (
                         <SelectItem key={item.id} value={item.code}>
                           {item.code} — {item.name}
                         </SelectItem>
@@ -248,7 +266,8 @@ export function InventoryCutoverForm({
                   <X className="h-4 w-4" />
                 </Button>
               </div>
-            ))}
+              );
+            })}
             <Button type="button" variant="outline" size="sm" onClick={() => setPolicyRows((rows) => [...rows, { itemCode: '', method: '', scope: '' }])}>
               <Plus className="h-4 w-4" />
               Add item

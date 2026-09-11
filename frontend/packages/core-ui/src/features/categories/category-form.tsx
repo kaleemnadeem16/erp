@@ -28,6 +28,29 @@ export const CATEGORY_FORM_FIELDS = [
   'expense_account_id',
   'inventory_account_id',
 ] as const satisfies readonly (keyof CategoryFormValues)[];
+/** Every descendant of `id` within `categories`, walking parent_id links — not just its direct children. */
+function descendantCategoryIds(id: number | undefined, categories: { id: number; parent_id: number | null }[]): Set<number> {
+  const result = new Set<number>();
+  if (id === undefined) return result;
+  const childrenByParent = new Map<number, number[]>();
+  for (const category of categories) {
+    if (category.parent_id === null) continue;
+    const siblings = childrenByParent.get(category.parent_id) ?? [];
+    siblings.push(category.id);
+    childrenByParent.set(category.parent_id, siblings);
+  }
+  const queue = [id];
+  while (queue.length > 0) {
+    const current = queue.shift() as number;
+    for (const childId of childrenByParent.get(current) ?? []) {
+      if (!result.has(childId)) {
+        result.add(childId);
+        queue.push(childId);
+      }
+    }
+  }
+  return result;
+}
 export function categoryPayload(v: CategoryFormValues) {
   const id = (value: string) => (value === NONE ? null : Number(value));
   return {
@@ -68,9 +91,12 @@ export function CategoryForm({
     },
   });
   const categoriesResult = useCategoriesIndex({ per_page: 100, sort: 'name' });
-  const categories = (categoriesResult.data?.status === 200 ? categoriesResult.data.data.data : []).filter(
-    (c) => c.id !== excludeId
-  );
+  const allCategories = categoriesResult.data?.status === 200 ? categoriesResult.data.data.data : [];
+  // Excluding just excludeId isn't enough — picking a descendant as the parent
+  // would create a cycle just as surely, and the backend rejects it (422, see
+  // GuardsCompanyScopedHierarchy). Exclude the full descendant subtree too.
+  const excludedParentIds = descendantCategoryIds(excludeId, allCategories);
+  const categories = allCategories.filter((c) => c.id !== excludeId && !excludedParentIds.has(c.id));
   const accountsResult = useChartOfAccountsIndex({ per_page: 100, sort: 'code' });
   const accounts = accountsResult.data?.status === 200 ? accountsResult.data.data.data : [];
   const select = (

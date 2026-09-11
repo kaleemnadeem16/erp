@@ -4,8 +4,7 @@ import type { UseFormReturn } from 'react-hook-form';
 import { useWarehousesStore } from '@erp/core-api';
 
 import { PageHeader } from '../../components/page/page-header';
-import { applyApiErrorsToForm } from '../../lib/api-errors';
-import { WarehouseForm, WAREHOUSE_FORM_FIELDS, type WarehouseFormValues } from './warehouse-form';
+import { WarehouseForm, applyWarehouseFormErrors, type WarehouseFormValues } from './warehouse-form';
 
 export function WarehouseCreateScreen() {
   const navigate = useNavigate();
@@ -29,7 +28,7 @@ export function WarehouseCreateScreen() {
         onSuccess: (result) => {
           if (result.status === 201) navigate(`/warehouses/${result.data.data.id}`);
         },
-        onError: (error) => setFormError(applyApiErrorsToForm(error, form.setError, WAREHOUSE_FORM_FIELDS)),
+        onError: (error) => setFormError(applyWarehouseFormErrors(error, form)),
       }
     );
   }

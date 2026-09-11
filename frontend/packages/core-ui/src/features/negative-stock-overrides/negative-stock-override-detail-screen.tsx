@@ -18,6 +18,7 @@ import { DetailPageLayout, DetailSection } from '../../components/detail/detail-
 import { DetailField } from '../../components/detail/detail-field';
 import { getApiErrorMessage } from '../../lib/api-errors';
 import { overrideStatus } from './negative-stock-override-columns';
+import { useAuthStore } from '../../stores/auth-store';
 
 /**
  * The workspace for one override request: header/shortage evidence, plus
@@ -34,6 +35,8 @@ export function NegativeStockOverrideDetailScreen() {
 
   const overrideQuery = useNegativeStockOverrideRequestsShow(overrideId, { include: 'item,location,batch,approval,review' });
   const override = overrideQuery.data?.status === 200 ? overrideQuery.data.data.data : undefined;
+
+  const currentUser = useAuthStore((state) => state.user);
 
   const [actionError, setActionError] = useState<string | null>(null);
   const [decision, setDecision] = useState('');
@@ -102,6 +105,10 @@ export function NegativeStockOverrideDetailScreen() {
   const status = overrideStatus(override);
   const needsDecision = override.authorisation_mode === 'PRIOR_APPROVAL' && !override.approval;
   const needsReview = override.authorisation_mode === 'IMMEDIATE_WITH_REVIEW' && !override.review;
+  const isOwnRequest = !!currentUser && currentUser.id === override.requested_by;
+  // Decide has no self-review escape hatch; Review does, via allow_self_review.
+  const cannotDecide = isOwnRequest;
+  const cannotReview = isOwnRequest && !override.allow_self_review;
 
   return (
     <div className="space-y-4 p-6">
@@ -173,10 +180,17 @@ export function NegativeStockOverrideDetailScreen() {
               <span className="text-xs font-medium text-muted-foreground">Notes</span>
               <Textarea value={notes} onChange={(event) => setNotes(event.target.value)} />
             </div>
-            <div className="flex justify-end sm:col-span-2">
-              <Button onClick={handleDecide} disabled={!decision || !notes.trim() || decide.isPending}>
+            <div className="flex flex-col items-end gap-1 sm:col-span-2">
+              <Button
+                onClick={handleDecide}
+                disabled={!decision || !notes.trim() || decide.isPending || cannotDecide}
+                title={cannotDecide ? "You can't decide your own request" : undefined}
+              >
                 {decide.isPending ? 'Submitting…' : 'Submit decision'}
               </Button>
+              {cannotDecide && (
+                <span className="text-xs text-muted-foreground">You can't decide your own request</span>
+              )}
             </div>
           </DetailSection>
         )}
@@ -199,10 +213,17 @@ export function NegativeStockOverrideDetailScreen() {
               <span className="text-xs font-medium text-muted-foreground">Notes</span>
               <Textarea value={notes} onChange={(event) => setNotes(event.target.value)} />
             </div>
-            <div className="flex justify-end sm:col-span-2">
-              <Button onClick={handleReview} disabled={!outcome || !notes.trim() || review.isPending}>
+            <div className="flex flex-col items-end gap-1 sm:col-span-2">
+              <Button
+                onClick={handleReview}
+                disabled={!outcome || !notes.trim() || review.isPending || cannotReview}
+                title={cannotReview ? "You can't review your own request" : undefined}
+              >
                 {review.isPending ? 'Submitting…' : 'Submit review'}
               </Button>
+              {cannotReview && (
+                <span className="text-xs text-muted-foreground">You can't review your own request</span>
+              )}
             </div>
           </DetailSection>
         )}

@@ -27,6 +27,7 @@ import { PageHeader } from '../../components/page/page-header';
 import { DetailPageLayout, DetailSection } from '../../components/detail/detail-page-layout';
 import { DetailField } from '../../components/detail/detail-field';
 import { getApiErrorMessage } from '../../lib/api-errors';
+import { useAuthStore } from '../../stores/auth-store';
 
 const STATUS_VARIANT: Record<string, 'secondary' | 'default' | 'success' | 'destructive'> = {
   DRAFT: 'secondary',
@@ -62,6 +63,8 @@ export function InventoryCutoverDetailScreen() {
   const cutover = cutoverQuery.data?.status === 200 ? cutoverQuery.data.data.data : undefined;
   const batches = cutover?.batches ?? [];
   const negativeOpenings = cutover?.negative_openings ?? [];
+
+  const currentUser = useAuthStore((state) => state.user);
 
   const [actionError, setActionError] = useState<string | null>(null);
   const [importBatchId, setImportBatchId] = useState('');
@@ -190,6 +193,10 @@ export function InventoryCutoverDetailScreen() {
   const isDraft = cutover.status === 'DRAFT';
   const isValidated = cutover.status === 'VALIDATED';
   const isApproved = cutover.status === 'APPROVED';
+  // Mirrors ApproveInventoryCutover's own separation-of-duties check: approval
+  // must be independent from both creation and validation.
+  const isOwnCutover =
+    !!currentUser && (currentUser.id === cutover.created_by || currentUser.id === cutover.validated_by);
   const hasPendingOpenPurchaseOrders = batches.some(
     (batch) => batch.entity_type === 'OPEN_PURCHASE_ORDER' && batch.status !== 'COMMITTED'
   );
@@ -212,9 +219,20 @@ export function InventoryCutoverDetailScreen() {
               </Button>
             )}
             {isValidated && (
-              <Button onClick={handleApprove} disabled={approveCutover.isPending}>
-                Approve
-              </Button>
+              <div className="flex flex-col items-end gap-1">
+                <Button
+                  onClick={handleApprove}
+                  disabled={approveCutover.isPending || isOwnCutover}
+                  title={isOwnCutover ? "You can't approve a cutover you created or validated" : undefined}
+                >
+                  Approve
+                </Button>
+                {isOwnCutover && (
+                  <span className="text-xs text-muted-foreground">
+                    You can't approve your own cutover
+                  </span>
+                )}
+              </div>
             )}
             {isApproved && (
               <>
