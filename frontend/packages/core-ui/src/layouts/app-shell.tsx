@@ -96,6 +96,9 @@ const navItems = navGroups.flatMap((group) => group.items);
 const navPaths = navItems.map((item) => item.to);
 const navItemsByPath = new Map(navItems.map((item) => [item.to, item]));
 
+// navGroups[0] is always the standalone Dashboard entry declared above.
+const [dashboardGroup, ...restNavGroups] = navGroups as [NavGroup, ...NavGroup[]];
+
 // A native bottom tab bar only fits ~5 slots before it stops feeling native —
 // this fixed 4-item primary set (+ "More") is a temporary stand-in. Once
 // permissions are fully dynamic, the primary set should be computed per user
@@ -155,18 +158,56 @@ export function AppShell({ children }: { children: ReactNode }) {
   const activeNavItem = activeNavPath ? navItemsByPath.get(activeNavPath) : undefined;
   const quickLinkPaths = usagePrefs.quickLinks(["/"], MAX_QUICK_LINKS);
 
+  function renderNavItem(item: NavItem) {
+    return (
+      <div key={item.to} className="group/navitem relative flex items-center">
+        <NavLink to={item.to} end={item.to === "/"} className={SIDEBAR_LINK_CLASS}>
+          <item.icon className="size-4 shrink-0" />
+          <span className="truncate">{item.label}</span>
+        </NavLink>
+        <button
+          type="button"
+          onClick={() => usagePrefs.togglePin(item.to)}
+          className="absolute right-2 rounded p-1 text-muted-foreground opacity-0 hover:bg-background hover:text-foreground focus-visible:opacity-100 group-hover/navitem:opacity-100"
+          aria-label={usagePrefs.isPinned(item.to) ? `Unpin ${item.label}` : `Pin ${item.label}`}
+        >
+          {usagePrefs.isPinned(item.to) ? (
+            <PinOff className="size-3.5" />
+          ) : (
+            <Pin className="size-3.5" />
+          )}
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-background text-foreground md:flex-row">
       <aside className="hidden w-60 shrink-0 flex-col overflow-y-auto border-r border-border p-4 md:flex">
         <div className="mb-6 text-lg font-semibold">ERP</div>
         <nav className="flex flex-1 flex-col">
-          {navGroups.map((group, index) => (
+          <div className="flex flex-col gap-1">
+            {dashboardGroup.items.map(renderNavItem)}
+          </div>
+
+          {quickLinkPaths.length > 0 && (
+            <div className="mt-4 flex flex-col gap-1">
+              <div className="px-3 pb-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                Quick Access
+              </div>
+              {quickLinkPaths.flatMap((path) => {
+                const item = navItemsByPath.get(path);
+                return item ? [renderNavItem(item)] : [];
+              })}
+            </div>
+          )}
+
+          {restNavGroups.map((group, index) => (
             <div
               key={group.label ?? `group-${index}`}
               className={cn(
-                "flex flex-col gap-1",
-                index > 0 && "mt-4",
-                group.label === "Settings" && "mt-4 border-t border-border pt-4",
+                "mt-4 flex flex-col gap-1",
+                group.label === "Settings" && "border-t border-border pt-4",
               )}
             >
               {group.label && (
@@ -174,43 +215,10 @@ export function AppShell({ children }: { children: ReactNode }) {
                   {group.label}
                 </div>
               )}
-              {group.items.map((item) => (
-                <div key={item.to} className="group/navitem relative flex items-center">
-                  <NavLink to={item.to} end={item.to === "/"} className={SIDEBAR_LINK_CLASS}>
-                    <item.icon className="size-4 shrink-0" />
-                    <span className="truncate">{item.label}</span>
-                  </NavLink>
-                  <button
-                    type="button"
-                    onClick={() => usagePrefs.togglePin(item.to)}
-                    className="absolute right-2 rounded p-1 text-muted-foreground opacity-0 hover:bg-background hover:text-foreground focus-visible:opacity-100 group-hover/navitem:opacity-100"
-                    aria-label={usagePrefs.isPinned(item.to) ? `Unpin ${item.label}` : `Pin ${item.label}`}
-                  >
-                    {usagePrefs.isPinned(item.to) ? (
-                      <PinOff className="size-3.5" />
-                    ) : (
-                      <Pin className="size-3.5" />
-                    )}
-                  </button>
-                </div>
-              ))}
+              {group.items.map(renderNavItem)}
             </div>
           ))}
         </nav>
-        <div className="border-t border-border pt-4">
-          <div className="mb-2 truncate text-sm text-muted-foreground">
-            {user?.email}
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full"
-            onClick={handleLogout}
-          >
-            <LogOut className="size-4" />
-            Log out
-          </Button>
-        </div>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
@@ -224,48 +232,15 @@ export function AppShell({ children }: { children: ReactNode }) {
             )}
           </div>
 
-          {quickLinkPaths.length > 0 && (
-            <div className="flex shrink-0 items-center gap-1">
-              <span className="mr-1 text-xs text-muted-foreground">Quick access</span>
-              {quickLinkPaths.map((path) => {
-                const item = navItemsByPath.get(path);
-                if (!item) return null;
-                const pinned = usagePrefs.isPinned(path);
-                return (
-                  <div key={path} className="group/quicklink relative">
-                    <NavLink
-                      to={path}
-                      end={path === "/"}
-                      title={`${item.label} — ${pinned ? "pinned" : "frequently visited"}`}
-                      aria-label={item.label}
-                      className={({ isActive }) =>
-                        cn(
-                          "flex size-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-                          isActive && "bg-nav-active text-nav-active-foreground",
-                        )
-                      }
-                    >
-                      <item.icon className="size-4" />
-                    </NavLink>
-                    {/* Same pin state as the sidebar row's pin toggle — always shown once
-                        pinned (signals "this stays here"), otherwise only on hover so a
-                        frequently-visited item can be promoted to pinned right from here. */}
-                    <button
-                      type="button"
-                      onClick={() => usagePrefs.togglePin(path)}
-                      className={cn(
-                        "absolute -top-0.5 -right-0.5 flex size-3.5 items-center justify-center rounded-full border border-background bg-nav-active-foreground text-background",
-                        pinned ? "opacity-100" : "opacity-0 group-hover/quicklink:opacity-100",
-                      )}
-                      aria-label={pinned ? `Unpin ${item.label}` : `Pin ${item.label}`}
-                    >
-                      <Pin className="size-2" />
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          <div className="flex shrink-0 items-center gap-3">
+            <span className="max-w-[200px] truncate text-sm text-muted-foreground">
+              {user?.email}
+            </span>
+            <Button variant="outline" size="sm" onClick={handleLogout}>
+              <LogOut className="size-4" />
+              Log out
+            </Button>
+          </div>
         </div>
 
         <main
