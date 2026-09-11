@@ -12,8 +12,10 @@ export type GoodsReceiptsIndexSort =
 export const GoodsReceiptsIndexSort = {
   number: "number",
   posting_date: "posting_date",
+  physical_arrival_at: "physical_arrival_at",
   created_at: "created_at",
   "-number": "-number",
   "-posting_date": "-posting_date",
+  "-physical_arrival_at": "-physical_arrival_at",
   "-created_at": "-created_at",
 } as const;

@@ -7,6 +7,7 @@
 import type { PurchaseOrderResourceNumber } from "./purchaseOrderResourceNumber";
 import type { PurchaseOrderResourceSupplierSiteId } from "./purchaseOrderResourceSupplierSiteId";
 import type { PurchaseOrderResourceExpectedDeliveryDate } from "./purchaseOrderResourceExpectedDeliveryDate";
+import type { PurchaseOrderResourceNotes } from "./purchaseOrderResourceNotes";
 import type { PurchaseOrderResourceInventoryCutoverId } from "./purchaseOrderResourceInventoryCutoverId";
 import type { PurchaseOrderResourceSourceSystem } from "./purchaseOrderResourceSourceSystem";
 import type { PurchaseOrderResourceSourceRecordId } from "./purchaseOrderResourceSourceRecordId";
@@ -30,6 +31,7 @@ export interface PurchaseOrderResource {
   fx_rate_source: string;
   order_date: string;
   expected_delivery_date: PurchaseOrderResourceExpectedDeliveryDate;
+  notes: PurchaseOrderResourceNotes;
   inventory_cutover_id: PurchaseOrderResourceInventoryCutoverId;
   source_system: PurchaseOrderResourceSourceSystem;
   source_record_id: PurchaseOrderResourceSourceRecordId;

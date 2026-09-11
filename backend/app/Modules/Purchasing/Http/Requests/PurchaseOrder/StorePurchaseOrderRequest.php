@@ -29,6 +29,7 @@ class StorePurchaseOrderRequest extends FormRequest
             'fx_rate_date' => ['required', 'date_format:Y-m-d'], 'fx_rate_type' => ['required', 'string', 'max:50'],
             'fx_rate_source' => ['required', 'string', 'max:100'], 'order_date' => ['required', 'date_format:Y-m-d'],
             'expected_delivery_date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:order_date'],
+            'notes' => ['nullable', 'string', 'max:2000'],
             'lines' => ['required', 'array', 'min:1'],
             'lines.*.line_number' => ['required', 'integer', 'between:1,32767', 'distinct'],
             'lines.*.item_id' => ['required', 'integer', CompanyScoped::exists('items')],

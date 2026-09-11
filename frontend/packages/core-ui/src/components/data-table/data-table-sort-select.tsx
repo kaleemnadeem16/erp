@@ -49,12 +49,19 @@ function SortOptionPair({ sortKey, label }: { sortKey: string; label: string }) 
   return (
     <>
       <SelectItem value={`${sortKey}:asc`}>
-        <ArrowUp className="h-3.5 w-3.5" />
-        {label}
+        {/* A single wrapping span, not two loose children — SelectValue mirrors this
+            ItemText content into the trigger, where `[&>span]:line-clamp-1`'s
+            -webkit-box-orient:vertical stacks loose children instead of inlining them. */}
+        <span className="inline-flex items-center gap-1.5">
+          <ArrowUp className="h-3.5 w-3.5 shrink-0" />
+          {label}
+        </span>
       </SelectItem>
       <SelectItem value={`${sortKey}:desc`}>
-        <ArrowDown className="h-3.5 w-3.5" />
-        {label}
+        <span className="inline-flex items-center gap-1.5">
+          <ArrowDown className="h-3.5 w-3.5 shrink-0" />
+          {label}
+        </span>
       </SelectItem>
     </>
   );

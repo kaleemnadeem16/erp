@@ -8,16 +8,25 @@ import {
   useCurrenciesShow,
   useSupplierAccountsShow,
   useUomsIndex,
+  type PurchaseOrderLineResource,
 } from "@erp/core-api";
 
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
+import type { DataColumn } from "../../components/data-table/types";
 import { DetailField } from "../../components/detail/detail-field";
 import {
   DetailPageLayout,
   DetailSection,
 } from "../../components/detail/detail-page-layout";
 import { PageHeader } from "../../components/page/page-header";
+import {
+  DetailPrintLayout,
+  PrintableTable,
+  PrintTrigger,
+  useQuickPrint,
+  type DetailPrintSection,
+} from "../../components/print";
 import { Skeleton } from "../../components/ui/skeleton";
 import {
   Table,
@@ -83,6 +92,9 @@ export function PurchaseOrderDetailScreen() {
   const [actionError, setActionError] = useState<string | null>(null);
   const refetch = () => orderQuery.refetch();
   const fail = (error: unknown) => setActionError(getApiErrorMessage(error));
+  const { contentRef: printRef, print } = useQuickPrint({
+    documentTitle: order?.number ? `Purchase Order ${order.number}` : `Draft Purchase Order #${orderId}`,
+  });
 
   function handleIssue() {
     setActionError(null);
@@ -150,6 +162,43 @@ export function PurchaseOrderDetailScreen() {
   const supplierLabel = supplier
     ? `${supplier.code}${supplier.party?.name ? ` — ${supplier.party.name}` : ""}`
     : `Supplier #${order.supplier_account_id}`;
+
+  const printSections: DetailPrintSection[] = [
+    {
+      title: "Order",
+      fields: [
+        { label: "Status", value: order.status },
+        { label: "Supplier", value: supplierLabel },
+        { label: "Order date", value: order.order_date },
+        { label: "Expected delivery", value: order.expected_delivery_date ?? "" },
+        { label: "FX policy", value: order.fx_policy },
+        { label: "FX rate", value: order.fx_rate },
+        { label: "Currency", value: currency ? `${currency.code} — ${currency.name}` : `Currency #${order.currency_id}` },
+        { label: "Order total", value: `${order.total_amount ?? "—"} ${currency?.code ?? ""}` },
+        { label: "Notes", value: order.notes ?? "" },
+      ],
+    },
+  ];
+  const printLineColumns: DataColumn<PurchaseOrderLineResource>[] = [
+    { key: "line_number", header: "Line", value: (line) => line.line_number },
+    { key: "item", header: "Item", value: (line) => line.item_code ?? `#${line.item_id}` },
+    { key: "description", header: "Description", value: (line) => line.description },
+    {
+      key: "ordered_qty",
+      header: "Ordered",
+      value: (line) => `${line.ordered_qty} ${uomLabels.get(line.purchase_uom_id)?.split(" — ")[0] ?? ""}`,
+      align: "right",
+    },
+    { key: "received_stock_qty", header: "Received", value: (line) => line.received_stock_qty, align: "right" },
+    { key: "outstanding_stock_qty", header: "Outstanding", value: (line) => line.outstanding_stock_qty, align: "right" },
+    {
+      key: "line_amount",
+      header: "Amount",
+      value: (line) => `${line.line_amount} ${currency?.code ?? ""}`,
+      align: "right",
+    },
+  ];
+
   return (
     <div className="space-y-4 p-6">
       <PageHeader
@@ -165,6 +214,7 @@ export function PurchaseOrderDetailScreen() {
         ]}
         actions={
           <>
+            <PrintTrigger onPrint={() => print()} />
             {isDraft && (
               <Button
                 variant="outline"
@@ -312,6 +362,11 @@ export function PurchaseOrderDetailScreen() {
           <DetailField label="Base-currency total">
             {order.base_total_amount ?? "—"}
           </DetailField>
+          {order.notes && (
+            <DetailField label="Notes" fullWidth>
+              {order.notes}
+            </DetailField>
+          )}
           {order.cancellation_reason && (
             <DetailField label="Cancellation reason">
               {order.cancellation_reason}
@@ -340,6 +395,7 @@ export function PurchaseOrderDetailScreen() {
               <TableBody>
                 {(order.lines ?? []).map((line) => {
                   const closed = Number(line.short_closed_stock_qty) > 0;
+                  const fullyReceived = Number(line.outstanding_stock_qty) <= 0;
                   return (
                     <TableRow key={line.id}>
                       <TableCell>{line.line_number}</TableCell>
@@ -371,7 +427,7 @@ export function PurchaseOrderDetailScreen() {
                         {line.qa_required ? "Required" : "Not required"}
                       </TableCell>
                       <TableCell className="text-right">
-                        {isIssued && !closed && (
+                        {isIssued && !closed && !fullyReceived && (
                           <Button
                             size="sm"
                             variant="outline"
@@ -393,6 +449,19 @@ export function PurchaseOrderDetailScreen() {
           </div>
         </DetailSection>
       </DetailPageLayout>
+
+      {/* Quick Print — a dedicated print-only layout, hidden until react-to-print clones it. */}
+      <div className="hidden">
+        <div ref={printRef}>
+          <DetailPrintLayout
+            title={order.number ? `PURCHASE ORDER ${order.number}` : `DRAFT PURCHASE ORDER #${order.id}`}
+            printedAt={new Date()}
+            sections={printSections}
+          >
+            <PrintableTable columns={printLineColumns} rows={order.lines ?? []} getRowKey={(line) => line.id} />
+          </DetailPrintLayout>
+        </div>
+      </div>
     </div>
   );
 }

@@ -33,6 +33,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon $fx_rate_date
  * @property Carbon $order_date
  * @property Carbon|null $expected_delivery_date
+ * @property string|null $notes
  * @property CarbonImmutable|null $issued_at
  * @property CarbonImmutable|null $closed_at
  * @property CarbonImmutable|null $cancelled_at

@@ -12,6 +12,7 @@ import {
 } from "@erp/core-api";
 
 import { Button } from "../../components/ui/button";
+import { Combobox } from "../../components/ui/combobox";
 import { Input } from "../../components/ui/input";
 import {
   Select,
@@ -51,7 +52,29 @@ const schema = z.object({
   supplier_account_id: z.string().min(1, "Select a supplier."),
   physical_arrival_at: z.string().min(1, "Enter the physical arrival time."),
   posting_date: z.string().min(1, "Enter the posting date."),
-  lines: z.array(lineSchema).min(1),
+  lines: z
+    .array(lineSchema)
+    .min(1)
+    // Belt-and-suspenders: the dropdown already excludes a line picked in another
+    // row, but this catches it too — two rows against the same open PO line would
+    // double-allocate its outstanding quantity, and only fail confusingly later,
+    // at post time (PostGoodsReceipt sums all matching lines across the receipt).
+    .superRefine((lines, ctx) => {
+      const firstIndexById = new Map<string, number>();
+      lines.forEach((line, index) => {
+        if (!line.purchase_order_line_id) return;
+        const firstIndex = firstIndexById.get(line.purchase_order_line_id);
+        if (firstIndex !== undefined) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "This order line is already used in another row.",
+            path: [index, "purchase_order_line_id"],
+          });
+        } else {
+          firstIndexById.set(line.purchase_order_line_id, index);
+        }
+      });
+    }),
 });
 export type GoodsReceiptFormValues = z.infer<typeof schema>;
 
@@ -105,6 +128,14 @@ export function GoodsReceiptForm({
   });
   const suppliers =
     suppliersQuery.data?.status === 200 ? suppliersQuery.data.data.data : [];
+  const supplierOptions = useMemo(
+    () =>
+      suppliers.map((supplier) => ({
+        value: String(supplier.id),
+        label: `${supplier.code}${supplier.party?.name ? ` — ${supplier.party.name}` : ""}`,
+      })),
+    [suppliers],
+  );
   const ordersQuery = usePurchaseOrdersIndex(
     {
       "filter[supplier_account_id]": supplierId || undefined,
@@ -217,29 +248,19 @@ export function GoodsReceiptForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Supplier</FormLabel>
-                <Select
-                  value={field.value}
-                  onValueChange={(value) => {
-                    field.onChange(value);
-                    form.setValue("lines", [{ ...emptyLine }]);
-                  }}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select supplier" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {suppliers.map((supplier) => (
-                      <SelectItem key={supplier.id} value={String(supplier.id)}>
-                        {supplier.code}
-                        {supplier.party?.name
-                          ? ` — ${supplier.party.name}`
-                          : ""}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <FormControl>
+                  <Combobox
+                    value={field.value}
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      form.setValue("lines", [{ ...emptyLine }]);
+                    }}
+                    options={supplierOptions}
+                    placeholder="Select supplier"
+                    searchPlaceholder="Search suppliers…"
+                    emptyText="No suppliers found."
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -288,6 +309,19 @@ export function GoodsReceiptForm({
             const item = items.find(
               (candidate) => candidate.id === selected?.line.item_id,
             );
+            // A PO line already chosen on another row can't be chosen again here —
+            // each row draws down the same "outstanding" quantity, so reusing one
+            // would double-allocate it (only caught otherwise at post time).
+            const usedByOtherRows = new Set(
+              form
+                .watch("lines")
+                .filter((_, otherIndex) => otherIndex !== index)
+                .map((line) => line.purchase_order_line_id)
+                .filter(Boolean),
+            );
+            const availableLines = eligibleLines.filter(
+              ({ line }) => !usedByOtherRows.has(String(line.id)),
+            );
             return (
               <div
                 key={field.id}
@@ -315,7 +349,7 @@ export function GoodsReceiptForm({
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {eligibleLines.map(({ order, line }) => (
+                          {availableLines.map(({ order, line }) => (
                             <SelectItem key={line.id} value={String(line.id)}>
                               {order.number} / {line.line_number} —{" "}
                               {line.item_code ?? line.description} (

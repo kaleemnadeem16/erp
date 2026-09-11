@@ -17,6 +17,7 @@ import {
 
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
+import type { DataColumn } from "../../components/data-table/types";
 import { DetailField } from "../../components/detail/detail-field";
 import {
   DetailPageLayout,
@@ -24,6 +25,13 @@ import {
 } from "../../components/detail/detail-page-layout";
 import { Input } from "../../components/ui/input";
 import { PageHeader } from "../../components/page/page-header";
+import {
+  DetailPrintLayout,
+  PrintableTable,
+  PrintTrigger,
+  useQuickPrint,
+  type DetailPrintSection,
+} from "../../components/print";
 import {
   Select,
   SelectContent,
@@ -259,6 +267,9 @@ export function GoodsReceiptDetailScreen() {
   const [showReverse, setShowReverse] = useState(false);
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const { contentRef: printRef, print } = useQuickPrint({
+    documentTitle: receipt?.number ? `Goods Receipt ${receipt.number}` : `Draft Goods Receipt #${receiptId}`,
+  });
 
   if (query.isLoading)
     return (
@@ -285,6 +296,70 @@ export function GoodsReceiptDetailScreen() {
     ? `Goods receipt ${receipt.number}`
     : `Draft receipt #${receipt.id}`;
   const refetch = () => query.refetch();
+  // A line's qa_unallocated_qty only drops below its stock_qty once at least
+  // one QualityDisposition has been posted against it (qa_root_allocated_qty
+  // > 0) — mirrors ReverseGoodsReceipt's own per-line existence check without
+  // a separate query, since qa aggregates are already loaded with every line.
+  const hasQaDisposition = (receipt.lines ?? []).some(
+    (line) =>
+      line.qa_unallocated_qty !== null &&
+      Number(line.qa_unallocated_qty) < Number(line.stock_qty),
+  );
+
+  const printSections: DetailPrintSection[] = [
+    {
+      title: "Receipt",
+      fields: [
+        { label: "Status", value: receipt.status },
+        { label: "Supplier", value: supplierLabel },
+        { label: "Physical arrival", value: new Date(receipt.physical_arrival_at).toLocaleString() },
+        { label: "Posting date", value: receipt.posting_date },
+        { label: "Correction reason", value: receipt.correction_reason ?? "" },
+      ],
+    },
+  ];
+  const printLineColumns: DataColumn<GoodsReceiptLineResource>[] = [
+    {
+      key: "item",
+      header: "Item",
+      value: (line) => {
+        const item = items.find((candidate) => candidate.id === line.item_id);
+        return item ? `${item.code} — ${item.name}` : `Item #${line.item_id}`;
+      },
+    },
+    {
+      key: "location",
+      header: "Location",
+      value: (line) => {
+        const location = locations.find((candidate) => candidate.id === line.location_id);
+        return location ? `${location.code} — ${location.name}` : `Location #${line.location_id}`;
+      },
+    },
+    {
+      key: "received_qty",
+      header: "Received",
+      value: (line) => `${line.received_qty} ${uoms.find((uom) => uom.id === line.received_uom_id)?.code ?? ""}`,
+      align: "right",
+    },
+    {
+      key: "stock_qty",
+      header: "Stock qty",
+      value: (line) => `${line.stock_qty} ${uoms.find((uom) => uom.id === line.stock_uom_id)?.code ?? ""}`,
+      align: "right",
+    },
+    {
+      key: "provisional_unit_cost",
+      header: "Provisional cost",
+      value: (line) =>
+        `${line.provisional_unit_cost} ${currencies.find((currency) => currency.id === line.currency_id)?.code ?? ""}`,
+      align: "right",
+    },
+    {
+      key: "identity",
+      header: "Batch / Serial",
+      value: (line) => line.batch_no ?? line.serial_no ?? "",
+    },
+  ];
 
   return (
     <div className="space-y-4 p-6">
@@ -297,16 +372,30 @@ export function GoodsReceiptDetailScreen() {
         ]}
         actions={
           <>
+            <PrintTrigger onPrint={() => print()} />
             {receipt.status === "DRAFT" && (
               <Button onClick={() => setConfirmPost(true)}>Post receipt</Button>
             )}
             {receipt.status === "POSTED" && (
-              <Button
-                variant="outline"
-                onClick={() => setShowReverse((value) => !value)}
-              >
-                Reverse receipt
-              </Button>
+              <div className="flex flex-col items-end gap-1">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowReverse((value) => !value)}
+                  disabled={hasQaDisposition}
+                  title={
+                    hasQaDisposition
+                      ? "This receipt has a posted QA disposition and cannot be reversed"
+                      : undefined
+                  }
+                >
+                  Reverse receipt
+                </Button>
+                {hasQaDisposition && (
+                  <span className="text-xs text-muted-foreground">
+                    Blocked by a posted QA disposition
+                  </span>
+                )}
+              </div>
             )}
           </>
         }
@@ -494,6 +583,19 @@ export function GoodsReceiptDetailScreen() {
           );
         })}
       </section>
+
+      {/* Quick Print — a dedicated print-only layout, hidden until react-to-print clones it. */}
+      <div className="hidden">
+        <div ref={printRef}>
+          <DetailPrintLayout
+            title={receipt.number ? `GOODS RECEIPT ${receipt.number}` : `DRAFT GOODS RECEIPT #${receipt.id}`}
+            printedAt={new Date()}
+            sections={printSections}
+          >
+            <PrintableTable columns={printLineColumns} rows={receipt.lines ?? []} getRowKey={(line) => line.id} />
+          </DetailPrintLayout>
+        </div>
+      </div>
     </div>
   );
 }

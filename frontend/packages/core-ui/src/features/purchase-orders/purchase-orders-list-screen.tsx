@@ -6,6 +6,7 @@ import type {
   SortingState,
 } from "@tanstack/react-table";
 import {
+  useCurrenciesIndex,
   usePurchaseOrdersIndex,
   useSupplierAccountsIndex,
   type PurchaseOrderResource,
@@ -13,6 +14,7 @@ import {
 } from "@erp/core-api";
 
 import { Badge } from "../../components/ui/badge";
+import { Combobox } from "../../components/ui/combobox";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import {
@@ -35,8 +37,10 @@ import {
   isColumnVisibleByDefault,
   toTanStackColumns,
 } from "../../components/data-table";
+import { PrintLayout, PrintableTable, PrintTrigger, useQuickPrint } from "../../components/print";
 import {
   apiSortToTableSorting,
+  describeSort,
   tableSortingToApiSort,
   useListQueryState,
 } from "../../lib/list-query-state";
@@ -81,9 +85,20 @@ export function PurchaseOrdersListScreen() {
       ),
     [suppliers],
   );
+  const currenciesQuery = useCurrenciesIndex({ per_page: 100, sort: "code" });
+  const currencyLabels = useMemo(
+    () =>
+      new Map(
+        (currenciesQuery.data?.status === 200
+          ? currenciesQuery.data.data.data
+          : []
+        ).map((currency) => [currency.id, currency.code]),
+      ),
+    [currenciesQuery.data],
+  );
   const columns = useMemo(
-    () => purchaseOrderColumns(supplierLabels),
-    [supplierLabels],
+    () => purchaseOrderColumns(supplierLabels, currencyLabels),
+    [supplierLabels, currencyLabels],
   );
   const [columnVisibility, setColumnVisibility] = useColumnVisibilityPreference(
     "purchase-orders-list",
@@ -101,6 +116,7 @@ export function PurchaseOrdersListScreen() {
       (query.filters.status as (typeof STATUSES)[number] | undefined) ||
       undefined,
     sort: query.sort as PurchaseOrdersIndexSort | undefined,
+    include: "lines",
     per_page: query.perPage,
     page: query.page,
   });
@@ -118,6 +134,8 @@ export function PurchaseOrdersListScreen() {
     query.filters.supplier_account_id,
     query.filters.status,
   ].filter(Boolean).length;
+  const activeFilterLines = describeFilters(query.filters, supplierLabels);
+  const { contentRef: printRef, print } = useQuickPrint({ documentTitle: "Purchase Order List" });
 
   return (
     // Extra bottom padding below `md` clears the fixed MobileFab — see
@@ -143,6 +161,9 @@ export function PurchaseOrdersListScreen() {
             supplierLabels={supplierLabels}
             query={query}
           />
+          <div className="ml-auto flex items-center gap-2">
+            <PrintTrigger onPrint={() => print()} />
+          </div>
         </div>
         <Button
           variant="outline"
@@ -168,6 +189,7 @@ export function PurchaseOrdersListScreen() {
               query={query}
               full
             />
+            <PrintTrigger onPrint={() => print()} className="w-full justify-center" />
           </div>
           <SheetFooter>
             <Button
@@ -212,8 +234,39 @@ export function PurchaseOrdersListScreen() {
         onViewChange={setView}
         cardColumns={columns}
       />
+
+      {/* Quick Print — a dedicated print-only layout, hidden until react-to-print clones it. */}
+      <div className="hidden">
+        <div ref={printRef}>
+          <PrintLayout
+            title="PURCHASE ORDER LIST"
+            printedAt={new Date()}
+            recordCount={orders.length}
+            meta={[
+              ...(activeFilterLines.length > 0 ? [{ label: "Filters", value: activeFilterLines.join(", ") }] : []),
+              ...(query.sort ? [{ label: "Sort", value: describeSort(query.sort, columns) ?? query.sort }] : []),
+            ]}
+          >
+            <PrintableTable columns={columns} rows={orders} getRowKey={(order) => order.id} />
+          </PrintLayout>
+        </div>
+      </div>
     </div>
   );
+}
+
+function describeFilters(
+  filters: Partial<PurchaseOrderFilters>,
+  supplierLabels: ReadonlyMap<number, string>,
+): string[] {
+  const lines: string[] = [];
+  if (filters.supplier_account_id) {
+    lines.push(`Supplier = ${supplierLabels.get(Number(filters.supplier_account_id)) ?? filters.supplier_account_id}`);
+  }
+  if (filters.status) lines.push(`Status = ${filters.status}`);
+  if (filters.search) lines.push(`Search = "${filters.search}"`);
+
+  return lines;
 }
 
 interface PurchaseOrderFilterControlsProps {
@@ -225,9 +278,14 @@ interface PurchaseOrderFilterControlsProps {
 
 /** Supplier/Status selects — shared by the always-visible desktop row and the mobile Filters sheet. */
 function PurchaseOrderFilterControls({ suppliers, supplierLabels, query, full }: PurchaseOrderFilterControlsProps) {
+  const supplierOptions = [
+    { value: "all", label: "All suppliers" },
+    ...suppliers.map((supplier) => ({ value: String(supplier.id), label: supplierLabels.get(supplier.id) ?? `#${supplier.id}` })),
+  ];
+
   return (
     <>
-      <Select
+      <Combobox
         value={query.filters.supplier_account_id ?? "all"}
         onValueChange={(value) =>
           query.setFilter(
@@ -235,19 +293,12 @@ function PurchaseOrderFilterControls({ suppliers, supplierLabels, query, full }:
             value === "all" ? undefined : value,
           )
         }
-      >
-        <SelectTrigger className={full ? "h-9 w-full" : "h-9 w-56"}>
-          <SelectValue placeholder="Supplier" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All suppliers</SelectItem>
-          {suppliers.map((supplier) => (
-            <SelectItem key={supplier.id} value={String(supplier.id)}>
-              {supplierLabels.get(supplier.id)}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+        options={supplierOptions}
+        placeholder="Supplier"
+        searchPlaceholder="Search suppliers…"
+        emptyText="No suppliers found."
+        className={full ? "h-9 w-full" : "h-9 w-56"}
+      />
       <Select
         value={query.filters.status ?? "all"}
         onValueChange={(value) =>

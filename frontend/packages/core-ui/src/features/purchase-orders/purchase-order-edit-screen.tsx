@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router";
 import type { FieldPath, UseFormReturn } from "react-hook-form";
 import { usePurchaseOrdersShow, usePurchaseOrdersUpdate } from "@erp/core-api";
 
+import { AdvancedOptionsMenu, type AdvancedOption } from "../../components/ui/advanced-options-menu";
 import { Button } from "../../components/ui/button";
 import { PageHeader } from "../../components/page/page-header";
 import { Skeleton } from "../../components/ui/skeleton";
@@ -18,6 +19,7 @@ export function PurchaseOrderEditScreen() {
   const navigate = useNavigate();
   const orderId = Number(id);
   const [formError, setFormError] = useState<string | null>(null);
+  const [advancedOptions, setAdvancedOptions] = useState<AdvancedOption[]>([]);
   const orderQuery = usePurchaseOrdersShow(orderId, { include: "lines" });
   const order =
     orderQuery.data?.status === 200 ? orderQuery.data.data.data : undefined;
@@ -97,6 +99,7 @@ export function PurchaseOrderEditScreen() {
     fx_rate_source: order.fx_rate_source,
     order_date: order.order_date,
     expected_delivery_date: order.expected_delivery_date ?? "",
+    notes: order.notes ?? "",
     lines: (order.lines ?? []).map((line) => ({
       item_id: String(line.item_id),
       description: line.description,
@@ -120,12 +123,14 @@ export function PurchaseOrderEditScreen() {
           { label: `Draft #${order.id}`, to: `/purchase-orders/${order.id}` },
           { label: "Edit" },
         ]}
+        actions={<AdvancedOptionsMenu options={advancedOptions} />}
       />
       <PurchaseOrderForm
         defaultValues={defaultValues}
         onSubmit={handleSubmit}
         isSubmitting={update.isPending}
         formError={formError}
+        onAdvancedOptionsChange={setAdvancedOptions}
       />
     </div>
   );

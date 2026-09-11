@@ -7,6 +7,7 @@
 import type { UpdatePurchaseOrderRequestSupplierSiteId } from "./updatePurchaseOrderRequestSupplierSiteId";
 import type { PurchaseOrderFxPolicy } from "./purchaseOrderFxPolicy";
 import type { UpdatePurchaseOrderRequestExpectedDeliveryDate } from "./updatePurchaseOrderRequestExpectedDeliveryDate";
+import type { UpdatePurchaseOrderRequestNotes } from "./updatePurchaseOrderRequestNotes";
 import type { UpdatePurchaseOrderRequestLinesItem } from "./updatePurchaseOrderRequestLinesItem";
 
 export interface UpdatePurchaseOrderRequest {
@@ -23,6 +24,8 @@ export interface UpdatePurchaseOrderRequest {
   fx_rate_source?: string;
   order_date?: string;
   expected_delivery_date?: UpdatePurchaseOrderRequestExpectedDeliveryDate;
+  /** @maxLength 2000 */
+  notes?: UpdatePurchaseOrderRequestNotes;
   /** @minItems 1 */
   lines?: UpdatePurchaseOrderRequestLinesItem[];
 }

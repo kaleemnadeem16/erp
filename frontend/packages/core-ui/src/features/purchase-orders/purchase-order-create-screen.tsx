@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import type { FieldPath, UseFormReturn } from "react-hook-form";
 import { usePurchaseOrdersStore } from "@erp/core-api";
 
+import { AdvancedOptionsMenu, type AdvancedOption } from "../../components/ui/advanced-options-menu";
 import { PageHeader } from "../../components/page/page-header";
 import { getApiErrorMessage, isApiError } from "../../lib/api-errors";
 import {
@@ -15,6 +16,7 @@ export function PurchaseOrderCreateScreen() {
   const navigate = useNavigate();
   const create = usePurchaseOrdersStore();
   const [formError, setFormError] = useState<string | null>(null);
+  const [advancedOptions, setAdvancedOptions] = useState<AdvancedOption[]>([]);
 
   function handleSubmit(
     values: PurchaseOrderFormValues,
@@ -50,11 +52,13 @@ export function PurchaseOrderCreateScreen() {
           { label: "Purchase Orders", to: "/purchase-orders" },
           { label: "New" },
         ]}
+        actions={<AdvancedOptionsMenu options={advancedOptions} />}
       />
       <PurchaseOrderForm
         onSubmit={handleSubmit}
         isSubmitting={create.isPending}
         formError={formError}
+        onAdvancedOptionsChange={setAdvancedOptions}
       />
     </div>
   );

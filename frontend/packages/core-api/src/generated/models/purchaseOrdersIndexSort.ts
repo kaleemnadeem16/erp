@@ -12,8 +12,12 @@ export type PurchaseOrdersIndexSort =
 export const PurchaseOrdersIndexSort = {
   number: "number",
   order_date: "order_date",
+  expected_delivery_date: "expected_delivery_date",
+  total_amount: "total_amount",
   created_at: "created_at",
   "-number": "-number",
   "-order_date": "-order_date",
+  "-expected_delivery_date": "-expected_delivery_date",
+  "-total_amount": "-total_amount",
   "-created_at": "-created_at",
 } as const;

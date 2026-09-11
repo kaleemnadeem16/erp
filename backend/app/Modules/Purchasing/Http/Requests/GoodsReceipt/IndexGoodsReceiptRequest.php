@@ -26,6 +26,6 @@ class IndexGoodsReceiptRequest extends FormRequest
             'filter.supplier_account_id' => ['sometimes', 'integer', 'min:1'],
             'filter.status' => ['sometimes', Rule::enum(GoodsReceiptStatus::class)],
             'filter.search' => ['sometimes', 'string', 'max:255'],
-        ], $this->listQueryRules(['number', 'posting_date', 'created_at'], ['lines', 'supplierAccount']));
+        ], $this->listQueryRules(['number', 'posting_date', 'physical_arrival_at', 'created_at'], ['lines', 'supplierAccount']));
     }
 }

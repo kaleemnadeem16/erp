@@ -40,6 +40,7 @@ export function goodsReceiptColumns(
       header: "Arrived",
       value: (receipt) =>
         new Date(receipt.physical_arrival_at).toLocaleString(),
+      sortable: true,
     },
     {
       key: "status",

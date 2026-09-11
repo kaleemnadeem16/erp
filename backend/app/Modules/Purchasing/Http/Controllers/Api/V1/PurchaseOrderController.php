@@ -32,7 +32,7 @@ class PurchaseOrderController extends Controller
 
     private const INCLUDABLE = ['lines' => 'lines'];
 
-    private const SORTABLE = ['number' => 'number', 'order_date' => 'order_date', 'created_at' => 'created_at'];
+    private const SORTABLE = ['number' => 'number', 'order_date' => 'order_date', 'expected_delivery_date' => 'expected_delivery_date', 'created_at' => 'created_at'];
 
     public function index(IndexPurchaseOrderRequest $request): AnonymousResourceCollection
     {
@@ -49,7 +49,21 @@ class PurchaseOrderController extends Controller
         if ($request->filled('filter.search')) {
             $query->where('number', 'ilike', '%'.$request->string('filter.search')->toString().'%');
         }
-        $this->applySort($query, $request, self::SORTABLE, 'created_at');
+        $sort = $request->string('sort', 'created_at')->toString();
+        if (ltrim($sort, '-') === 'total_amount') {
+            // Not a real column — line_amount only exists per line — so this can't
+            // go through applySort()'s plain orderBy(). The subquery is safe without
+            // its own company_id filter: it's correlated to purchase_orders.id, which
+            // is already company-scoped by the outer query's BelongsToCompany global
+            // scope, and a line can never belong to a different company than its own
+            // order (see docs/architecture/database.md "no orphaned cross-tenant rows").
+            $query->orderByRaw(
+                '(SELECT COALESCE(SUM(line_amount), 0) FROM purchase_order_lines WHERE purchase_order_lines.purchase_order_id = purchase_orders.id) '
+                .(str_starts_with($sort, '-') ? 'DESC' : 'ASC')
+            )->orderBy('id');
+        } else {
+            $this->applySort($query, $request, self::SORTABLE, 'created_at');
+        }
 
         return PurchaseOrderResource::collection($query->paginate($request->integer('per_page', 25)));
     }

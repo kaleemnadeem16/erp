@@ -56,6 +56,37 @@ for the stronger 44 by 44 target. References:
   (`PATCH` toggling the existing `status` field) but deliberately not hard-delete, since that
   endpoint has no guard against an item still referenced by stock/purchasing records.
 
+## Advanced options: one menu per page, not one checkbox per section
+
+"Keep the UI minimum, features maximum": when a create/edit screen has a field group that already
+has a sensible default and is only occasionally overridden (a foreign-currency exchange rate, a
+non-default policy, anything in the same shape), **the default is this pattern, for every such
+group on every screen, unless the user explicitly asks for something else for that specific
+screen.** Don't invent a bespoke inline show/hide control per screen.
+
+- **One toggle per page, not one per section.** A single "Advanced options" button lives in the
+  screen's own `PageHeader` `actions` (top-right, same row as the title) — not inside the section
+  it controls, and not a separate control per optional group. Opening it shows a menu of
+  checkboxes, one per advanced option the page currently has. This scales to a page with several
+  optional groups without the header accumulating several separate toggle buttons.
+- **The section is absent, not collapsed.** Unchecked, it isn't on the page at all — no title, no
+  placeholder line, nothing to scroll past. Checking its box in the Advanced options menu inserts
+  the whole section (title, description, fields) exactly where an always-visible section would
+  sit; unchecking removes it and snaps its fields back to their default values, so re-checking
+  never reveals a stale override.
+- **Components**: `components/ui/advanced-options-menu.tsx` (`AdvancedOptionsMenu` — the header
+  button + checkbox menu) and `components/ui/advanced-option-section.tsx`
+  (`AdvancedOptionSection` — a plain conditional wrapper around the section, no chrome, no state
+  of its own).
+- **Ownership split**: the *form* component owns the state and the reset-on-uncheck logic (it's
+  the only thing with `form.setValue`); the *screen* wrapping it only decides where the menu
+  button renders. A form reports its current options through an `onAdvancedOptionsChange`
+  callback prop; the screen stores that in state and passes it to `AdvancedOptionsMenu` in its
+  `PageHeader`. This is what lets the same form component be used from both a create and an edit
+  screen without duplicating the toggle/reset logic in either one.
+- **Reference usage**: `PurchaseOrderForm`'s exchange-rate section, wired up from both
+  `purchase-order-create-screen.tsx` and `purchase-order-edit-screen.tsx`.
+
 ## Extending these patterns to another screen
 
 `DataTable`/`CursorDataTable`/`PageHeader`/`ItemForm` all follow the same shape: every behaviour

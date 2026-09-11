@@ -15,6 +15,7 @@ const STATUS_VARIANT: Record<
 
 export function purchaseOrderColumns(
   suppliers: ReadonlyMap<number, string>,
+  currencies: ReadonlyMap<number, string>,
 ): DataColumn<PurchaseOrderResource>[] {
   return [
     {
@@ -42,6 +43,30 @@ export function purchaseOrderColumns(
       key: "expected_delivery_date",
       header: "Expected",
       value: (order) => order.expected_delivery_date,
+      sortable: true,
+    },
+    {
+      key: "item_count",
+      header: "Items",
+      // Requires `?include=lines` on the list request — absent that, `lines` is
+      // unset and this reads as "—" rather than a misleading 0.
+      value: (order) => order.lines?.length ?? null,
+      align: "right",
+    },
+    {
+      key: "total_amount",
+      header: "Total value",
+      value: (order) => order.total_amount ?? null,
+      cell: (order) =>
+        order.total_amount === undefined ? (
+          "—"
+        ) : (
+          <span className="tabular-nums">
+            {order.total_amount} {currencies.get(order.currency_id) ?? ""}
+          </span>
+        ),
+      align: "right",
+      sortable: true,
     },
     {
       key: "status",

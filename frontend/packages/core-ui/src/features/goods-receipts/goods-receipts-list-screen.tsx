@@ -13,6 +13,7 @@ import {
 } from "@erp/core-api";
 
 import { Badge } from "../../components/ui/badge";
+import { Combobox } from "../../components/ui/combobox";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import {
@@ -35,8 +36,10 @@ import {
   isColumnVisibleByDefault,
   toTanStackColumns,
 } from "../../components/data-table";
+import { PrintLayout, PrintableTable, PrintTrigger, useQuickPrint } from "../../components/print";
 import {
   apiSortToTableSorting,
+  describeSort,
   tableSortingToApiSort,
   useListQueryState,
 } from "../../lib/list-query-state";
@@ -119,6 +122,8 @@ export function GoodsReceiptsListScreen() {
     query.filters.supplier_account_id,
     query.filters.status,
   ].filter(Boolean).length;
+  const activeFilterLines = describeFilters(query.filters, supplierLabels);
+  const { contentRef: printRef, print } = useQuickPrint({ documentTitle: "Goods Receipt List" });
 
   return (
     // Extra bottom padding below `md` clears the fixed MobileFab — see
@@ -144,6 +149,9 @@ export function GoodsReceiptsListScreen() {
             supplierLabels={supplierLabels}
             query={query}
           />
+          <div className="ml-auto flex items-center gap-2">
+            <PrintTrigger onPrint={() => print()} />
+          </div>
         </div>
         <Button
           variant="outline"
@@ -169,6 +177,7 @@ export function GoodsReceiptsListScreen() {
               query={query}
               full
             />
+            <PrintTrigger onPrint={() => print()} className="w-full justify-center" />
           </div>
           <SheetFooter>
             <Button
@@ -213,8 +222,39 @@ export function GoodsReceiptsListScreen() {
         onViewChange={setView}
         cardColumns={columns}
       />
+
+      {/* Quick Print — a dedicated print-only layout, hidden until react-to-print clones it. */}
+      <div className="hidden">
+        <div ref={printRef}>
+          <PrintLayout
+            title="GOODS RECEIPT LIST"
+            printedAt={new Date()}
+            recordCount={receipts.length}
+            meta={[
+              ...(activeFilterLines.length > 0 ? [{ label: "Filters", value: activeFilterLines.join(", ") }] : []),
+              ...(query.sort ? [{ label: "Sort", value: describeSort(query.sort, columns) ?? query.sort }] : []),
+            ]}
+          >
+            <PrintableTable columns={columns} rows={receipts} getRowKey={(receipt) => receipt.id} />
+          </PrintLayout>
+        </div>
+      </div>
     </div>
   );
+}
+
+function describeFilters(
+  filters: Partial<ReceiptFilters>,
+  supplierLabels: ReadonlyMap<number, string>,
+): string[] {
+  const lines: string[] = [];
+  if (filters.supplier_account_id) {
+    lines.push(`Supplier = ${supplierLabels.get(Number(filters.supplier_account_id)) ?? filters.supplier_account_id}`);
+  }
+  if (filters.status) lines.push(`Status = ${filters.status}`);
+  if (filters.search) lines.push(`Search = "${filters.search}"`);
+
+  return lines;
 }
 
 interface ReceiptFilterControlsProps {
@@ -226,9 +266,14 @@ interface ReceiptFilterControlsProps {
 
 /** Supplier/Status selects — shared by the always-visible desktop row and the mobile Filters sheet. */
 function ReceiptFilterControls({ suppliers, supplierLabels, query, full }: ReceiptFilterControlsProps) {
+  const supplierOptions = [
+    { value: "all", label: "All suppliers" },
+    ...suppliers.map((supplier) => ({ value: String(supplier.id), label: supplierLabels.get(supplier.id) ?? `#${supplier.id}` })),
+  ];
+
   return (
     <>
-      <Select
+      <Combobox
         value={query.filters.supplier_account_id ?? "all"}
         onValueChange={(value) =>
           query.setFilter(
@@ -236,19 +281,12 @@ function ReceiptFilterControls({ suppliers, supplierLabels, query, full }: Recei
             value === "all" ? undefined : value,
           )
         }
-      >
-        <SelectTrigger className={full ? "h-9 w-full" : "h-9 w-56"}>
-          <SelectValue placeholder="Supplier" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All suppliers</SelectItem>
-          {suppliers.map((supplier) => (
-            <SelectItem key={supplier.id} value={String(supplier.id)}>
-              {supplierLabels.get(supplier.id)}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+        options={supplierOptions}
+        placeholder="Supplier"
+        searchPlaceholder="Search suppliers…"
+        emptyText="No suppliers found."
+        className={full ? "h-9 w-full" : "h-9 w-56"}
+      />
       <Select
         value={query.filters.status ?? "all"}
         onValueChange={(value) =>

@@ -24,7 +24,7 @@ class GoodsReceiptController extends Controller
 
     private const INCLUDABLE = ['lines' => 'lines', 'supplierAccount' => 'supplierAccount'];
 
-    private const SORTABLE = ['number' => 'number', 'posting_date' => 'posting_date', 'created_at' => 'created_at'];
+    private const SORTABLE = ['number' => 'number', 'posting_date' => 'posting_date', 'physical_arrival_at' => 'physical_arrival_at', 'created_at' => 'created_at'];
 
     public function index(IndexGoodsReceiptRequest $request): AnonymousResourceCollection
     {

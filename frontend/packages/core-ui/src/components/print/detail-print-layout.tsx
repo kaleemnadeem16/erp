@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 import { PrintLayout, type PrintLayoutProps } from './print-layout';
 
 export interface DetailPrintField {
@@ -10,18 +12,22 @@ export interface DetailPrintSection {
   fields: DetailPrintField[];
 }
 
-export interface DetailPrintLayoutProps extends Omit<PrintLayoutProps, 'children' | 'recordCount'> {
+export interface DetailPrintLayoutProps extends Omit<PrintLayoutProps, 'recordCount' | 'children'> {
   /** Mirrors the on-screen page's `DetailSection`s — same titles, same grouping, same field order. */
   sections: DetailPrintSection[];
+  /** Rendered after the field sections — e.g. a `PrintableTable` for the record's own line items. */
+  children?: ReactNode;
 }
 
 /**
  * Quick Print for one record's detail page — label/value grids grouped under
  * the same section headings the screen itself uses (`DetailSection`), so the
  * printout reads as the same document rather than every field flattened into
- * one undifferentiated grid.
+ * one undifferentiated grid. `children`, if given, renders after the field
+ * sections — e.g. a `PrintableTable` for a record's own line items (a PO's
+ * or goods receipt's lines), which don't fit the label/value shape.
  */
-export function DetailPrintLayout({ sections, ...printLayoutProps }: DetailPrintLayoutProps) {
+export function DetailPrintLayout({ sections, children, ...printLayoutProps }: DetailPrintLayoutProps) {
   return (
     <PrintLayout {...printLayoutProps}>
       {sections.map((section) => (
@@ -39,6 +45,7 @@ export function DetailPrintLayout({ sections, ...printLayoutProps }: DetailPrint
           </dl>
         </section>
       ))}
+      {children}
     </PrintLayout>
   );
 }

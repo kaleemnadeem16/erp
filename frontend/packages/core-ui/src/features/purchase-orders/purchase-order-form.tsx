@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   useFieldArray,
   useForm,
@@ -15,6 +15,9 @@ import {
   useUomsIndex,
 } from "@erp/core-api";
 
+import { AdvancedOptionSection } from "../../components/ui/advanced-option-section";
+import type { AdvancedOption } from "../../components/ui/advanced-options-menu";
+import { Combobox } from "../../components/ui/combobox";
 import { Button } from "../../components/ui/button";
 import { Checkbox } from "../../components/ui/checkbox";
 import {
@@ -26,6 +29,7 @@ import {
   FormMessage,
 } from "../../components/ui/form";
 import { Input } from "../../components/ui/input";
+import { Textarea } from "../../components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -76,11 +80,24 @@ const schema = z.object({
     .max(100),
   order_date: z.string().min(1, "Order date is required"),
   expected_delivery_date: z.string(),
+  notes: z.string().max(2000, "Notes must be 2000 characters or fewer."),
   lines: z.array(lineSchema).min(1, "At least one line is required"),
 });
 export type PurchaseOrderFormValues = z.infer<typeof schema>;
 
 const today = new Date().toISOString().slice(0, 10);
+
+// No company-defaults settings exist yet (ADR pending) — until a real "base
+// currency, no conversion needed" concept lands server-side, a same-currency
+// 1:1 rate is the sensible stand-in default so the FX section can stay
+// collapsed for the common case instead of demanding four fields up front.
+const DEFAULT_FX = {
+  fx_policy: "FIXED" as const,
+  fx_rate: "1.000000000",
+  fx_rate_type: "MANUAL",
+  fx_rate_source: "Manual entry",
+};
+
 const emptyLine = (): PurchaseOrderFormValues["lines"][number] => ({
   item_id: "",
   description: "",
@@ -104,6 +121,7 @@ export function toPurchaseOrderPayload(values: PurchaseOrderFormValues) {
     fx_rate_source: values.fx_rate_source.trim(),
     order_date: values.order_date,
     expected_delivery_date: values.expected_delivery_date || null,
+    notes: values.notes.trim() || null,
     lines: values.lines.map((line, index) => ({
       line_number: index + 1,
       item_id: Number(line.item_id),
@@ -124,6 +142,7 @@ export function PurchaseOrderForm({
   onSubmit,
   isSubmitting,
   formError,
+  onAdvancedOptionsChange,
 }: {
   defaultValues?: PurchaseOrderFormValues;
   onSubmit: (
@@ -132,19 +151,25 @@ export function PurchaseOrderForm({
   ) => void;
   isSubmitting?: boolean;
   formError?: string | null;
+  /**
+   * Reports this form's "Advanced options" entries (currently just the FX
+   * override) so the screen wrapping this form can render an
+   * `AdvancedOptionsMenu` in its own `PageHeader` — the form keeps owning the
+   * state and the reset-on-uncheck logic; the screen only decides where the
+   * trigger button sits.
+   */
+  onAdvancedOptionsChange?: (options: AdvancedOption[]) => void;
 }) {
   const form = useForm<PurchaseOrderFormValues>({
     resolver: zodResolver(schema),
     defaultValues: defaultValues ?? {
       supplier_account_id: "",
       currency_id: "",
-      fx_policy: "FIXED",
-      fx_rate: "1.000000000",
+      ...DEFAULT_FX,
       fx_rate_date: today,
-      fx_rate_type: "MANUAL",
-      fx_rate_source: "Manual entry",
       order_date: today,
       expected_delivery_date: "",
+      notes: "",
       lines: [emptyLine()],
     },
   });
@@ -152,6 +177,42 @@ export function PurchaseOrderForm({
     control: form.control,
     name: "lines",
   });
+  // Collapsed for the common case; auto-expanded when editing an order whose
+  // FX fields were already customized, so existing overrides stay visible
+  // instead of hiding behind a click. `fx_rate_date` is excluded — it's
+  // expected to differ from `today` on every edit, not a sign of a real override.
+  const [showFxDetails, setShowFxDetails] = useState(
+    () =>
+      !!defaultValues &&
+      (defaultValues.fx_policy !== DEFAULT_FX.fx_policy ||
+        defaultValues.fx_rate !== DEFAULT_FX.fx_rate ||
+        defaultValues.fx_rate_type !== DEFAULT_FX.fx_rate_type ||
+        defaultValues.fx_rate_source !== DEFAULT_FX.fx_rate_source),
+  );
+  useEffect(() => {
+    onAdvancedOptionsChange?.([
+      {
+        id: "fx-override",
+        label: "Override the exchange rate",
+        checked: showFxDetails,
+        onCheckedChange: (checked) => {
+          if (!checked) {
+            // Unchecking always snaps back to the default, live values —
+            // never leaves a customized rate sitting hidden behind a
+            // collapsed section, which is what re-checking would then
+            // silently show again.
+            form.setValue("fx_policy", DEFAULT_FX.fx_policy);
+            form.setValue("fx_rate", DEFAULT_FX.fx_rate);
+            form.setValue("fx_rate_date", today);
+            form.setValue("fx_rate_type", DEFAULT_FX.fx_rate_type);
+            form.setValue("fx_rate_source", DEFAULT_FX.fx_rate_source);
+          }
+          setShowFxDetails(checked);
+        },
+      },
+    ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showFxDetails]);
   const suppliersQuery = useSupplierAccountsIndex({
     per_page: 100,
     sort: "code",
@@ -159,6 +220,14 @@ export function PurchaseOrderForm({
   });
   const suppliers =
     suppliersQuery.data?.status === 200 ? suppliersQuery.data.data.data : [];
+  const supplierOptions = useMemo(
+    () =>
+      suppliers.map((supplier) => ({
+        value: String(supplier.id),
+        label: `${supplier.code}${supplier.party?.name ? ` — ${supplier.party.name}` : ""}`,
+      })),
+    [suppliers],
+  );
   const currenciesQuery = useCurrenciesIndex({ per_page: 100, sort: "code" });
   const currencies =
     currenciesQuery.data?.status === 200 ? currenciesQuery.data.data.data : [];
@@ -200,23 +269,16 @@ export function PurchaseOrderForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Supplier</FormLabel>
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select supplier" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {suppliers.map((supplier) => (
-                      <SelectItem key={supplier.id} value={String(supplier.id)}>
-                        {supplier.code}
-                        {supplier.party?.name
-                          ? ` — ${supplier.party.name}`
-                          : ""}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <FormControl>
+                  <Combobox
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    options={supplierOptions}
+                    placeholder="Select supplier"
+                    searchPlaceholder="Search suppliers…"
+                    emptyText="No suppliers found."
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -271,71 +333,92 @@ export function PurchaseOrderForm({
               </FormItem>
             )}
           />
-        </DetailSection>
-        <DetailSection
-          title="Exchange rate"
-          description="The rate and its source are pinned when the order is issued."
-        >
           <FormField
             control={form.control}
-            name="fx_policy"
+            name="notes"
             render={({ field }) => (
-              <FormItem>
-                <FormLabel>Policy</FormLabel>
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="FIXED">Fixed</SelectItem>
-                    <SelectItem value="FLOATING">
-                      Floating until issue
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+              <FormItem className="sm:col-span-2">
+                <FormLabel>Notes</FormLabel>
+                <FormControl>
+                  <Textarea
+                    {...field}
+                    placeholder="Delivery instructions, requester reference, or any other remark for the order as a whole."
+                    rows={3}
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-          {(
-            [
-              "fx_rate",
-              "fx_rate_date",
-              "fx_rate_type",
-              "fx_rate_source",
-            ] as const
-          ).map((name) => (
+        </DetailSection>
+        <AdvancedOptionSection expanded={showFxDetails}>
+          <DetailSection
+            title="Exchange rate"
+            description="The rate and its source are pinned when the order is issued."
+          >
             <FormField
-              key={name}
               control={form.control}
-              name={name}
+              name="fx_policy"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>
-                    {
-                      {
-                        fx_rate: "Rate",
-                        fx_rate_date: "Rate date",
-                        fx_rate_type: "Rate type",
-                        fx_rate_source: "Source",
-                      }[name]
-                    }
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      type={name === "fx_rate_date" ? "date" : "text"}
-                      inputMode={name === "fx_rate" ? "decimal" : undefined}
-                      {...field}
-                    />
-                  </FormControl>
+                  <FormLabel>Policy</FormLabel>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="FIXED">Fixed</SelectItem>
+                      <SelectItem value="FLOATING">
+                        Floating until issue
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
             />
-          ))}
-        </DetailSection>
+            {(
+              [
+                "fx_rate",
+                "fx_rate_date",
+                "fx_rate_type",
+                "fx_rate_source",
+              ] as const
+            ).map((name) => (
+              <FormField
+                key={name}
+                control={form.control}
+                name={name}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      {
+                        {
+                          fx_rate: "Rate",
+                          fx_rate_date: "Rate date",
+                          fx_rate_type: "Rate type",
+                          fx_rate_source: "Source",
+                        }[name]
+                      }
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        type={name === "fx_rate_date" ? "date" : "text"}
+                        inputMode={
+                          name === "fx_rate" ? "decimal" : undefined
+                        }
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            ))}
+          </DetailSection>
+        </AdvancedOptionSection>
         <DetailSection
           title="Lines"
           description="Use Add line for each distinct item, delivery or QA requirement."

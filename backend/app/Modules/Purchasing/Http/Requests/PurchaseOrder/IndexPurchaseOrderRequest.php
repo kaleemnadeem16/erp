@@ -26,6 +26,6 @@ class IndexPurchaseOrderRequest extends FormRequest
             'filter.supplier_account_id' => ['sometimes', 'integer', 'min:1'],
             'filter.status' => ['sometimes', Rule::enum(PurchaseOrderStatus::class)],
             'filter.search' => ['sometimes', 'string', 'max:255'],
-        ], $this->listQueryRules(['number', 'order_date', 'created_at'], ['lines']));
+        ], $this->listQueryRules(['number', 'order_date', 'expected_delivery_date', 'total_amount', 'created_at'], ['lines']));
     }
 }
