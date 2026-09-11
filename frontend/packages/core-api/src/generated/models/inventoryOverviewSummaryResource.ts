@@ -6,6 +6,10 @@
  */
 
 export interface InventoryOverviewSummaryResource {
+  /** on_hand_value is a straight SUM of already-4-decimal-scale columns
+(no rounding ever needed); available_value additionally divides by
+on_hand_qty, and Postgres NUMERIC division doesn't preserve a fixed
+scale — rounding here is the norm, not the exception, for that one. */
   on_hand_value: string;
   available_value: string;
   item_count: number;
