@@ -62,6 +62,29 @@ class InventoryOverviewApiTest extends TestCase
         $response->assertJsonPath('data.0.shortage_qty', '3.0000');
     }
 
+    /**
+     * Regression test: on_hand_value/available_value were exposed per-row for
+     * the first time alongside type/stock_uom_id, and available_value's
+     * rounding requirement (see the summary-endpoint test above for why) was
+     * initially missed here — the per-row resource used the same
+     * default-toScale(4) call as on_hand_value, which throws instead of
+     * rounding once the SQL division doesn't terminate cleanly.
+     */
+    public function test_index_includes_type_uom_and_rounds_available_value_when_the_ratio_does_not_terminate(): void
+    {
+        $item = $this->seedFullScenario();
+        DB::table('avco_pools')->where('item_id', $item->id)->update(['inventory_value' => '61.0000']);
+
+        $response = $this->getJson('/api/v1/inventory-overview?filter[search]='.$item->code);
+
+        $response->assertOk();
+        $response->assertJsonPath('data.0.type', $item->type->value);
+        $response->assertJsonPath('data.0.stock_uom_id', $item->stock_uom_id);
+        $response->assertJsonPath('data.0.on_hand_value', '61.0000');
+        // 61 * (4/6) = 40.6666... -> rounds to 40.6667, same as the summary endpoint.
+        $response->assertJsonPath('data.0.available_value', '40.6667');
+    }
+
     public function test_summary_computes_value_and_counts_across_the_filtered_set(): void
     {
         $item = $this->seedFullScenario();

@@ -21,6 +21,18 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-nav-active: var(--nav-active);
   --color-nav-active-foreground: var(--nav-active-foreground);
+  --color-status-success: var(--status-success);
+  --color-status-success-foreground: var(--status-success-foreground);
+  --color-status-success-soft: var(--status-success-soft);
+  --color-status-warning: var(--status-warning);
+  --color-status-warning-foreground: var(--status-warning-foreground);
+  --color-status-warning-soft: var(--status-warning-soft);
+  --color-status-danger: var(--status-danger);
+  --color-status-danger-foreground: var(--status-danger-foreground);
+  --color-status-danger-soft: var(--status-danger-soft);
+  --color-status-info: var(--status-info);
+  --color-status-info-foreground: var(--status-info-foreground);
+  --color-status-info-soft: var(--status-info-soft);
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
   --color-destructive: var(--destructive);
@@ -56,6 +68,29 @@
      replacing it later is a one-place edit, not a hunt through app-shell.tsx. */
   --nav-active: oklch(0.94 0.03 258);
   --nav-active-foreground: oklch(0.48 0.19 258);
+
+  /* Semantic status colors — same stand-in status as --nav-active above: a
+     base neutral-hue default for every company until Phase 4's company-wide
+     theming can override them, kept to these token names so that override is
+     a one-place edit. Distinct from --destructive (a *destructive action*,
+     e.g. "delete this record") even where the value is close today — these
+     name a *business state* (a shortage, a QA hold, an in-flight order), a
+     different axis that shouldn't move just because a button's color does.
+     Each has a "-soft" tint for a badge/tile fill with the base color as its
+     text, and the base itself is meant for a solid fill needing the
+     "-foreground" text on top (a stat-card accent bar, a solid chip). */
+  --status-success: oklch(0.6 0.16 149);
+  --status-success-foreground: oklch(0.98 0 0);
+  --status-success-soft: oklch(0.94 0.05 149);
+  --status-warning: oklch(0.65 0.16 70);
+  --status-warning-foreground: oklch(0.98 0 0);
+  --status-warning-soft: oklch(0.94 0.06 80);
+  --status-danger: oklch(0.577 0.245 27.325);
+  --status-danger-foreground: oklch(0.98 0 0);
+  --status-danger-soft: oklch(0.94 0.06 27);
+  --status-info: oklch(0.55 0.18 258);
+  --status-info-foreground: oklch(0.98 0 0);
+  --status-info-soft: oklch(0.94 0.03 258);
 
   /* Mobile bottom-tab-nav content height (excludes the safe-area inset, which
      callers add separately) — the one place this is defined; everything that

@@ -44,8 +44,8 @@ use Illuminate\Support\Facades\DB;
  * already left stock via its own compensating move — correct if write-off
  * posting already reduces on-hand, an over-subtraction until it does.
  *
- * `on_hand_value`/`available_value`: not exposed on InventoryOverviewResource
- * (the per-item table doesn't show a value column), but selected here so
+ * `on_hand_value`/`available_value`: exposed per-row on
+ * InventoryOverviewResource, and also selected here so
  * InventoryOverviewController::summary() can SUM them across a filtered,
  * unpaginated copy of this same query for the screen's headline value cards.
  * on_hand_value reads avco_pools.inventory_value directly for AVCO items

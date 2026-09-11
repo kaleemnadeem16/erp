@@ -6,6 +6,7 @@ import {
   useCategoriesIndex,
   useInventoryOverviewIndex,
   useInventoryOverviewSummary,
+  useUomsIndex,
   type InventoryOverviewIndexSort,
   type InventoryOverviewResource,
 } from '@erp/core-api';
@@ -49,9 +50,18 @@ function formatMoney(value: string): string {
 export function InventoryOverviewScreen() {
   const navigate = useNavigate();
   const query = useListQueryState<InventoryOverviewFilters>({ defaultSort: 'name', defaultPerPage: 25 });
+  const uomsQuery = useUomsIndex({ per_page: 100, sort: 'name' });
+  const uomLabels = useMemo(
+    () =>
+      new Map(
+        (uomsQuery.data?.status === 200 ? uomsQuery.data.data.data : []).map((uom) => [uom.id, uom.code]),
+      ),
+    [uomsQuery.data],
+  );
+  const overviewColumns = useMemo(() => inventoryOverviewColumns(uomLabels), [uomLabels]);
   const [columnVisibility, setColumnVisibility] = useColumnVisibilityPreference(
     'inventory-overview-list',
-    Object.fromEntries(inventoryOverviewColumns.map((column) => [column.key, isColumnVisibleByDefault(column)]))
+    Object.fromEntries(overviewColumns.map((column) => [column.key, isColumnVisibleByDefault(column)]))
   );
   const [searchInput, setSearchInput] = useState(query.filters.search ?? '');
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -88,8 +98,11 @@ export function InventoryOverviewScreen() {
   });
   const summary = summaryQuery.data?.status === 200 ? summaryQuery.data.data.data : undefined;
 
-  const columns = useMemo(() => toTanStackColumns(inventoryOverviewColumns), []);
-  const sorting: SortingState = apiSortToTableSorting(query.sort, inventoryOverviewColumns);
+  // overviewColumns now depends on uomLabels (async), unlike the static
+  // array this used to memoize — the empty dep array this had before would
+  // permanently bake in the first render's still-empty UoM map.
+  const columns = useMemo(() => toTanStackColumns(overviewColumns), [overviewColumns]);
+  const sorting: SortingState = apiSortToTableSorting(query.sort, overviewColumns);
   const pagination: PaginationState = { pageIndex: query.page - 1, pageSize: query.perPage };
   const { contentRef: printRef, print } = useQuickPrint({ documentTitle: 'Inventory Overview' });
 
@@ -120,18 +133,30 @@ export function InventoryOverviewScreen() {
       />
 
       <div className="flex flex-wrap gap-3">
-        <StatCard label="On-hand value" value={summary ? formatMoney(summary.on_hand_value) : '—'} isLoading={summaryQuery.isLoading} />
-        <StatCard label="Available value" value={summary ? formatMoney(summary.available_value) : '—'} isLoading={summaryQuery.isLoading} />
+        <StatCard
+          label="On-hand value"
+          value={summary ? formatMoney(summary.on_hand_value) : '—'}
+          tone="info"
+          isLoading={summaryQuery.isLoading}
+        />
+        <StatCard
+          label="Available value"
+          value={summary ? formatMoney(summary.available_value) : '—'}
+          tone="success"
+          isLoading={summaryQuery.isLoading}
+        />
         <StatCard
           label="Items with shortage"
           value={summary?.shortage_item_count ?? '—'}
-          tone="warning"
+          tone="danger"
+          zeroIsNeutral
           isLoading={summaryQuery.isLoading}
         />
         <StatCard
           label="Items QA-held"
           value={summary?.qa_held_item_count ?? '—'}
           tone="warning"
+          zeroIsNeutral
           isLoading={summaryQuery.isLoading}
         />
       </div>
@@ -187,7 +212,7 @@ export function InventoryOverviewScreen() {
         sorting={sorting}
         onSortingChange={(updater) => {
           const next = typeof updater === 'function' ? updater(sorting) : updater;
-          query.setSort(tableSortingToApiSort(next, inventoryOverviewColumns));
+          query.setSort(tableSortingToApiSort(next, overviewColumns));
         }}
         columnVisibility={columnVisibility}
         onColumnVisibilityChange={setColumnVisibility}
@@ -198,7 +223,7 @@ export function InventoryOverviewScreen() {
         emptyMessage="No stocked items match these filters."
         view={view}
         onViewChange={setView}
-        cardColumns={inventoryOverviewColumns}
+        cardColumns={overviewColumns}
         rowActions={renderRowActions}
       />
 
@@ -211,11 +236,11 @@ export function InventoryOverviewScreen() {
             meta={[
               ...(filterLines.length ? [{ label: 'Filters', value: filterLines.join(', ') }] : []),
               ...(query.sort
-                ? [{ label: 'Sort', value: describeSort(query.sort, inventoryOverviewColumns) ?? query.sort }]
+                ? [{ label: 'Sort', value: describeSort(query.sort, overviewColumns) ?? query.sort }]
                 : []),
             ]}
           >
-            <PrintableTable columns={inventoryOverviewColumns} rows={rows} getRowKey={(row) => row.item_id} />
+            <PrintableTable columns={overviewColumns} rows={rows} getRowKey={(row) => row.item_id} />
           </PrintLayout>
         </div>
       </div>

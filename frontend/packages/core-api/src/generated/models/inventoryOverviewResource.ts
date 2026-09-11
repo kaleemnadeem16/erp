@@ -4,6 +4,7 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
+import type { ItemType } from "./itemType";
 import type { CategoryResource } from "./categoryResource";
 import type { ValuationMethod } from "./valuationMethod";
 
@@ -11,6 +12,8 @@ export interface InventoryOverviewResource {
   item_id: number;
   code: string;
   name: string;
+  type: ItemType;
+  stock_uom_id: number;
   category?: CategoryResource;
   valuation_method: ValuationMethod;
   on_hand_qty: string;
@@ -18,4 +21,6 @@ export interface InventoryOverviewResource {
   qa_held_qty: string;
   on_order_qty: string;
   shortage_qty: string;
+  on_hand_value: string;
+  available_value: string;
 }
