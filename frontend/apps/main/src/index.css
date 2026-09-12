@@ -78,17 +78,25 @@
      different axis that shouldn't move just because a button's color does.
      Each has a "-soft" tint for a badge/tile fill with the base color as its
      text, and the base itself is meant for a solid fill needing the
-     "-foreground" text on top (a stat-card accent bar, a solid chip). */
-  --status-success: oklch(0.6 0.16 149);
+     "-foreground" text on top (a stat-card accent bar, a solid chip).
+
+     Lightness on success/warning/info is picked for contrast, not aesthetics:
+     the base color doubles as text (Badge's soft-fill variants, StatCard's
+     value text), so it needs to clear WCAG 2.2 AA's 4.5:1 against both its
+     own "-soft" background and a plain white page background — the original
+     values (0.6/0.65/0.55) landed at 3.14:1/2.77:1/4.16:1 against their soft
+     tint, all failures. Danger's lightness was already low enough to pass
+     (3.75:1 soft / 4.76:1 white) and is unchanged. */
+  --status-success: oklch(0.5 0.16 149);
   --status-success-foreground: oklch(0.98 0 0);
   --status-success-soft: oklch(0.94 0.05 149);
-  --status-warning: oklch(0.65 0.16 70);
+  --status-warning: oklch(0.52 0.16 70);
   --status-warning-foreground: oklch(0.98 0 0);
   --status-warning-soft: oklch(0.94 0.06 80);
   --status-danger: oklch(0.577 0.245 27.325);
   --status-danger-foreground: oklch(0.98 0 0);
   --status-danger-soft: oklch(0.94 0.06 27);
-  --status-info: oklch(0.55 0.18 258);
+  --status-info: oklch(0.52 0.18 258);
   --status-info-foreground: oklch(0.98 0 0);
   --status-info-soft: oklch(0.94 0.03 258);
 

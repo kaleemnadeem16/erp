@@ -42,6 +42,7 @@ import {
 import { Skeleton } from "../../components/ui/skeleton";
 import { Textarea } from "../../components/ui/textarea";
 import { getApiErrorMessage } from "../../lib/api-errors";
+import { useFocusOnOpen } from "../../lib/use-focus-on-open";
 
 const OUTCOMES = [
   "PASS",
@@ -152,7 +153,7 @@ function QualityPanel({
               setQty(next ?? "");
             }}
           >
-            <SelectTrigger>
+            <SelectTrigger aria-label="Disposition source">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -172,7 +173,7 @@ function QualityPanel({
               setOutcome(value as StoreQualityDispositionRequestDisposition)
             }
           >
-            <SelectTrigger>
+            <SelectTrigger aria-label="Disposition outcome">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -267,6 +268,8 @@ export function GoodsReceiptDetailScreen() {
   const [showReverse, setShowReverse] = useState(false);
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const postHeadingRef = useFocusOnOpen<HTMLHeadingElement>(confirmPost);
+  const reverseHeadingRef = useFocusOnOpen<HTMLHeadingElement>(showReverse);
   const { contentRef: printRef, print } = useQuickPrint({
     documentTitle: receipt?.number ? `Goods Receipt ${receipt.number}` : `Draft Goods Receipt #${receiptId}`,
   });
@@ -407,7 +410,9 @@ export function GoodsReceiptDetailScreen() {
       )}
       {confirmPost && receipt.status === "DRAFT" && (
         <section className="space-y-3 rounded-md border p-4">
-          <h2 className="font-medium">Post this physical receipt?</h2>
+          <h2 ref={postHeadingRef} tabIndex={-1} className="font-medium outline-none">
+            Post this physical receipt?
+          </h2>
           <p className="text-sm text-muted-foreground">
             Posting allocates the receipt number, freezes every line and creates
             the stock and valuation movements. Corrections require reversal.
@@ -439,7 +444,9 @@ export function GoodsReceiptDetailScreen() {
       )}
       {showReverse && receipt.status === "POSTED" && (
         <section className="space-y-3 rounded-md border border-destructive/40 p-4">
-          <h2 className="font-medium">Reverse this receipt?</h2>
+          <h2 ref={reverseHeadingRef} tabIndex={-1} className="font-medium outline-none">
+            Reverse this receipt?
+          </h2>
           <p className="text-sm text-muted-foreground">
             Reversal posts opposite inventory effects. It is blocked after
             downstream consumption or any QA disposition.

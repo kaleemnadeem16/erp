@@ -183,6 +183,12 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-background text-foreground md:flex-row">
+      <a
+        href="#main-content"
+        className="sr-only focus-visible:not-sr-only focus-visible:absolute focus-visible:left-4 focus-visible:top-4 focus-visible:z-50 focus-visible:rounded-md focus-visible:bg-background focus-visible:px-4 focus-visible:py-2 focus-visible:text-sm focus-visible:font-medium focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        Skip to content
+      </a>
       <aside className="hidden w-60 shrink-0 flex-col overflow-y-auto border-r border-border p-4 md:flex">
         <div className="mb-6 text-lg font-semibold">ERP</div>
         <nav className="flex flex-1 flex-col">
@@ -244,8 +250,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
 
         <main
+          id="main-content"
           ref={mainRef}
-          className="min-w-0 flex-1 overflow-y-auto pb-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom))] md:pb-0"
+          tabIndex={-1}
+          className="min-w-0 flex-1 overflow-y-auto pb-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom))] outline-none md:pb-0"
         >
           {children}
         </main>

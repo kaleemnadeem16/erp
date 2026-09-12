@@ -38,6 +38,7 @@ import {
 } from "../../components/ui/table";
 import { Textarea } from "../../components/ui/textarea";
 import { getApiErrorMessage } from "../../lib/api-errors";
+import { useFocusOnOpen } from "../../lib/use-focus-on-open";
 
 const STATUS_VARIANT: Record<
   string,
@@ -90,6 +91,9 @@ export function PurchaseOrderDetailScreen() {
     number | null
   >(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const issueHeadingRef = useFocusOnOpen<HTMLHeadingElement>(showIssueConfirmation);
+  const cancelHeadingRef = useFocusOnOpen<HTMLHeadingElement>(showCancel);
+  const shortCloseHeadingRef = useFocusOnOpen<HTMLHeadingElement>(pendingShortCloseLineId !== null);
   const refetch = () => orderQuery.refetch();
   const fail = (error: unknown) => setActionError(getApiErrorMessage(error));
   const { contentRef: printRef, print } = useQuickPrint({
@@ -253,7 +257,9 @@ export function PurchaseOrderDetailScreen() {
           aria-label="Issue purchase order"
         >
           <div>
-            <h2 className="font-medium">Issue this purchase order</h2>
+            <h2 ref={issueHeadingRef} tabIndex={-1} className="font-medium outline-none">
+              Issue this purchase order
+            </h2>
             <p className="text-sm text-muted-foreground">
               Issuing allocates the official number and freezes the supplier,
               quantities, UoM, prices and FX snapshots.
@@ -278,7 +284,9 @@ export function PurchaseOrderDetailScreen() {
           aria-label="Cancel purchase order"
         >
           <div>
-            <h2 className="font-medium">Cancel this issued order</h2>
+            <h2 ref={cancelHeadingRef} tabIndex={-1} className="font-medium outline-none">
+              Cancel this issued order
+            </h2>
             <p className="text-sm text-muted-foreground">
               Cancellation stops future receiving and records the reason. Issued
               commercial facts remain unchanged.
@@ -309,7 +317,7 @@ export function PurchaseOrderDetailScreen() {
           aria-label="Short-close purchase-order line"
         >
           <div>
-            <h2 className="font-medium">
+            <h2 ref={shortCloseHeadingRef} tabIndex={-1} className="font-medium outline-none">
               Short-close line{" "}
               {
                 order.lines?.find((line) => line.id === pendingShortCloseLineId)
