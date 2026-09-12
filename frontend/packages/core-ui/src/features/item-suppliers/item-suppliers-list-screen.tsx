@@ -200,7 +200,7 @@ function ItemSupplierFilterControls({ items, suppliers, query, filter, full }: I
   return (
     <>
       <Select value={query.filters.item_id ?? 'all'} onValueChange={(v) => filter('item_id', v)}>
-        <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-48'}>
+        <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-48'} aria-label="Item">
           <SelectValue placeholder="Item" />
         </SelectTrigger>
         <SelectContent>
@@ -213,7 +213,7 @@ function ItemSupplierFilterControls({ items, suppliers, query, filter, full }: I
         </SelectContent>
       </Select>
       <Select value={query.filters.supplier_account_id ?? 'all'} onValueChange={(v) => filter('supplier_account_id', v)}>
-        <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-48'}>
+        <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-48'} aria-label="Supplier">
           <SelectValue placeholder="Supplier" />
         </SelectTrigger>
         <SelectContent>

@@ -173,7 +173,9 @@ export function CursorDataTable<TRow>({
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
-                  role={onRowClick ? 'button' : undefined}
+                  // No role="button": see the identical comment in data-table.tsx —
+                  // this row can carry a nested rowActions link/button, and
+                  // overriding the role collapses both into one confusing stop.
                   tabIndex={onRowClick ? 0 : undefined}
                   className={cn(onRowClick && 'cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset')}
                   onClick={() => onRowClick?.(row.original)}
@@ -205,7 +207,7 @@ export function CursorDataTable<TRow>({
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">Rows per page</span>
           <Select value={String(perPage)} onValueChange={(value) => onPerPageChange(Number(value))}>
-            <SelectTrigger className="h-8 w-18">
+            <SelectTrigger className="h-8 w-18" aria-label="Rows per page">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

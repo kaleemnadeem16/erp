@@ -283,6 +283,7 @@ function ReceiptFilterControls({ suppliers, supplierLabels, query, full }: Recei
         }
         options={supplierOptions}
         placeholder="Supplier"
+        aria-label="Supplier"
         searchPlaceholder="Search suppliers…"
         emptyText="No suppliers found."
         className={full ? "h-9 w-full" : "h-9 w-56"}
@@ -293,7 +294,7 @@ function ReceiptFilterControls({ suppliers, supplierLabels, query, full }: Recei
           query.setFilter("status", value === "all" ? undefined : value)
         }
       >
-        <SelectTrigger className={full ? "h-9 w-full" : "h-9 w-40"}>
+        <SelectTrigger className={full ? "h-9 w-full" : "h-9 w-40"} aria-label="Status">
           <SelectValue placeholder="Status" />
         </SelectTrigger>
         <SelectContent>

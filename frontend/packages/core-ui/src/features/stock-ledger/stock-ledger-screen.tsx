@@ -198,7 +198,7 @@ function StockMoveFilterControls({ items, warehouses, query, full }: StockMoveFi
   return (
     <>
       <Select value={query.filters.item_id ?? 'all'} onValueChange={(value) => query.setFilter('item_id', value === 'all' ? undefined : value)}>
-        <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-48'}>
+        <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-48'} aria-label="Item">
           <SelectValue placeholder="Item" />
         </SelectTrigger>
         <SelectContent>
@@ -214,7 +214,7 @@ function StockMoveFilterControls({ items, warehouses, query, full }: StockMoveFi
         value={query.filters.warehouse_id ?? 'all'}
         onValueChange={(value) => query.setFilter('warehouse_id', value === 'all' ? undefined : value)}
       >
-        <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-44'}>
+        <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-44'} aria-label="Warehouse">
           <SelectValue placeholder="Warehouse" />
         </SelectTrigger>
         <SelectContent>

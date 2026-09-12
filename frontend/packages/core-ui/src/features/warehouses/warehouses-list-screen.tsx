@@ -187,7 +187,7 @@ function WarehouseFilterControls({ query, full }: WarehouseFilterControlsProps) 
       value={query.filters.active ?? 'all'}
       onValueChange={(value) => query.setFilter('active', value === 'all' ? undefined : value)}
     >
-      <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-36'}>
+      <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-36'} aria-label="Status">
         <SelectValue placeholder="Status" />
       </SelectTrigger>
       <SelectContent>

@@ -162,7 +162,7 @@ function OverrideFilterControls({ query, full }: OverrideFilterControlsProps) {
         value={query.filters.movement_class ?? 'all'}
         onValueChange={(value) => query.setFilter('movement_class', value === 'all' ? undefined : value)}
       >
-        <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-52'}>
+        <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-52'} aria-label="Movement class">
           <SelectValue placeholder="Movement class" />
         </SelectTrigger>
         <SelectContent>
@@ -178,7 +178,7 @@ function OverrideFilterControls({ query, full }: OverrideFilterControlsProps) {
         value={query.filters.authorisation_mode ?? 'all'}
         onValueChange={(value) => query.setFilter('authorisation_mode', value === 'all' ? undefined : value)}
       >
-        <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-48'}>
+        <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-48'} aria-label="Authorisation mode">
           <SelectValue placeholder="Authorisation mode" />
         </SelectTrigger>
         <SelectContent>

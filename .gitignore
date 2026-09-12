@@ -35,6 +35,13 @@ frontend/**/node_modules/
 frontend/**/dist/
 frontend/**/.vite/
 
+# Playwright (frontend/apps/e2e) — run output and the saved login session,
+# never fixtures to commit.
+frontend/apps/e2e/test-results/
+frontend/apps/e2e/playwright-report/
+frontend/apps/e2e/blob-report/
+frontend/apps/e2e/.auth/
+
 # Docker
 logs/
 

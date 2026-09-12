@@ -239,7 +239,7 @@ function ItemFilterControls({ categories, query, full }: ItemFilterControlsProps
         value={query.filters.category_id ?? 'all'}
         onValueChange={(value) => query.setFilter('category_id', value === 'all' ? undefined : value)}
       >
-        <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-44'}>
+        <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-44'} aria-label="Category">
           <SelectValue placeholder="Category" />
         </SelectTrigger>
         <SelectContent>
@@ -255,7 +255,7 @@ function ItemFilterControls({ categories, query, full }: ItemFilterControlsProps
         value={query.filters.type ?? 'all'}
         onValueChange={(value) => query.setFilter('type', value === 'all' ? undefined : value)}
       >
-        <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-40'}>
+        <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-40'} aria-label="Type">
           <SelectValue placeholder="Type" />
         </SelectTrigger>
         <SelectContent>
@@ -271,7 +271,7 @@ function ItemFilterControls({ categories, query, full }: ItemFilterControlsProps
         value={query.filters.status ?? 'all'}
         onValueChange={(value) => query.setFilter('status', value === 'all' ? undefined : value)}
       >
-        <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-36'}>
+        <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-36'} aria-label="Status">
           <SelectValue placeholder="Status" />
         </SelectTrigger>
         <SelectContent>

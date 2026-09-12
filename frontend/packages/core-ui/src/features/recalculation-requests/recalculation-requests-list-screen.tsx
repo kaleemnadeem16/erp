@@ -155,7 +155,7 @@ function MovementKindFilterControls({ query, full }: MovementKindFilterControlsP
       value={query.filters.movement_kind ?? 'all'}
       onValueChange={(value) => query.setFilter('movement_kind', value === 'all' ? undefined : value)}
     >
-      <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-44'}>
+      <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-44'} aria-label="Movement kind">
         <SelectValue placeholder="Movement kind" />
       </SelectTrigger>
       <SelectContent>

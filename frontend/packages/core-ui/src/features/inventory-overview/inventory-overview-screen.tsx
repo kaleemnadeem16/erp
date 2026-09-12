@@ -260,7 +260,7 @@ function InventoryOverviewFilterControls({ categories, query, full }: InventoryO
       value={query.filters.category_id ?? 'all'}
       onValueChange={(value) => query.setFilter('category_id', value === 'all' ? undefined : value)}
     >
-      <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-40'}>
+      <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-40'} aria-label="Category">
         <SelectValue placeholder="Category" />
       </SelectTrigger>
       <SelectContent>

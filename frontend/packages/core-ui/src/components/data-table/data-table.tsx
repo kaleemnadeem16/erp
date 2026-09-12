@@ -193,7 +193,14 @@ export function DataTable<TRow>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() ? 'selected' : undefined}
-                  role={onRowClick ? 'button' : undefined}
+                  // No role="button" override: this row can carry a real nested
+                  // link/button via rowActions, and ARIA forbids one interactive
+                  // widget containing another — Chrome's own accessibility tree
+                  // collapsed the whole row (rowActions text included) into a
+                  // single button name when this was tried, burying "View ledger"
+                  // as a second, redundant tab stop instead of its own control.
+                  // Keeping the native row role and just adding tabIndex/onKeyDown
+                  // still makes it focusable and Enter/Space-activatable.
                   tabIndex={onRowClick ? 0 : undefined}
                   className={cn(onRowClick && 'cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset')}
                   onClick={() => onRowClick?.(row.original)}

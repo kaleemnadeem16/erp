@@ -158,7 +158,7 @@ function PhysicalCountFilterControls({ warehouses, query, full }: PhysicalCountF
         value={query.filters.warehouse_id ?? 'all'}
         onValueChange={(value) => query.setFilter('warehouse_id', value === 'all' ? undefined : value)}
       >
-        <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-44'}>
+        <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-44'} aria-label="Warehouse">
           <SelectValue placeholder="Warehouse" />
         </SelectTrigger>
         <SelectContent>
@@ -171,7 +171,7 @@ function PhysicalCountFilterControls({ warehouses, query, full }: PhysicalCountF
         </SelectContent>
       </Select>
       <Select value={query.filters.status ?? 'all'} onValueChange={(value) => query.setFilter('status', value === 'all' ? undefined : value)}>
-        <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-36'}>
+        <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-36'} aria-label="Status">
           <SelectValue placeholder="Status" />
         </SelectTrigger>
         <SelectContent>

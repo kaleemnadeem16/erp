@@ -94,7 +94,13 @@ export function DataTableCards<TRow>({
         return (
           <div
             key={key}
-            role={onRowClick ? 'button' : undefined}
+            // No role="button": this card can carry a real nested rowActions
+            // link/button (e.g. Inventory Overview's "View ledger"), and ARIA
+            // forbids nesting one interactive widget inside another — Chrome's
+            // accessibility tree collapsed the whole card, rowActions text
+            // included, into a single button name instead of exposing "View
+            // ledger" as its own control. tabIndex/onKeyDown alone still make
+            // this focusable and Enter/Space-activatable.
             tabIndex={onRowClick ? 0 : undefined}
             onClick={() => onRowClick?.(row)}
             onKeyDown={handleKeyDown}

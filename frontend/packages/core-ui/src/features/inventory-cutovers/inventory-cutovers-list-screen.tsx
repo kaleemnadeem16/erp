@@ -129,7 +129,7 @@ interface CutoverFilterControlsProps {
 function CutoverFilterControls({ query, full }: CutoverFilterControlsProps) {
   return (
     <Select value={query.filters.status ?? 'all'} onValueChange={(value) => query.setFilter('status', value === 'all' ? undefined : value)}>
-      <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-40'}>
+      <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-40'} aria-label="Status">
         <SelectValue placeholder="Status" />
       </SelectTrigger>
       <SelectContent>

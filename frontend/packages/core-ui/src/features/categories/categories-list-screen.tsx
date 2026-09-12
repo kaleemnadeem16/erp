@@ -158,7 +158,7 @@ function CategoryFilterControls({ parents, query, full }: CategoryFilterControls
       value={query.filters.parent_id ?? 'all'}
       onValueChange={(v) => query.setFilter('parent_id', v === 'all' ? undefined : v)}
     >
-      <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-48'}>
+      <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-48'} aria-label="Parent">
         <SelectValue placeholder="Parent" />
       </SelectTrigger>
       <SelectContent>

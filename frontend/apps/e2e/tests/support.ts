@@ -1,0 +1,34 @@
+import type { Locator, Page } from '@playwright/test';
+
+/** Opens a Combobox (searchable popover, e.g. Supplier) by its FormLabel text and picks an option. */
+export async function pickCombobox(page: Page, label: string, optionText: string) {
+  await page.getByLabel(label, { exact: true }).click();
+  await page.getByPlaceholder(/Search/).fill(optionText);
+  await page.getByRole('option', { name: new RegExp(optionText) }).first().click();
+}
+
+/** Opens a Radix Select by its FormLabel text and picks an option whose text matches. */
+export async function pickSelect(page: Page, label: string, optionText: string | RegExp) {
+  await page.getByLabel(label, { exact: true }).click();
+  await page.getByRole('option', { name: optionText }).first().click();
+}
+
+/** Escapes regex metacharacters so a literal string (e.g. an order number) can be matched exactly. */
+export function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Reads one cell's text from a DataTable row, resolving the column index from
+ * the header row at runtime instead of a hardcoded position — column
+ * visibility defaults (or a reorder) shouldn't break this.
+ */
+export async function readCell(table: Locator, row: Locator, headerText: string): Promise<string> {
+  const headers = table.locator('thead th');
+  const count = await headers.count();
+  for (let index = 0; index < count; index += 1) {
+    const text = (await headers.nth(index).innerText()).trim();
+    if (text === headerText) return (await row.locator('td').nth(index).innerText()).trim();
+  }
+  throw new Error(`Column "${headerText}" not found in table header`);
+}
