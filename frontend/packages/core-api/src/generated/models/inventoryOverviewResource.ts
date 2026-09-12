@@ -21,6 +21,11 @@ export interface InventoryOverviewResource {
   qa_held_qty: string;
   on_order_qty: string;
   shortage_qty: string;
+  /** on_hand_value is a straight SUM of already-4-decimal-scale columns
+(no rounding ever needed); available_value additionally prorates by
+on_hand_qty in SQL, and Postgres NUMERIC division doesn't preserve a
+fixed scale — rounding here is the norm, not the exception, for that
+one (mirrors InventoryOverviewSummaryResource's identical asymmetry). */
   on_hand_value: string;
   available_value: string;
 }

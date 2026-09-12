@@ -136,7 +136,7 @@ class PurchaseOrderLine extends Model
      * lines belong to a goods_receipt no longer in either DRAFT or POSTED
      * status, so neither sum counts them, correctly releasing the quantity.
      *
-     * @param Builder<PurchaseOrderLine> $query
+     * @param  Builder<PurchaseOrderLine>  $query
      */
     public function scopeWithReceiptProgress(Builder $query): void
     {
