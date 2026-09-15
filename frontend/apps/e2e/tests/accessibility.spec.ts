@@ -37,8 +37,14 @@ test('skip link moves keyboard focus past the nav into page content', async ({ p
 test('a desktop list row opens its detail page via keyboard alone', async ({ page }) => {
   await page.goto('/purchase-orders');
   const table = page.getByRole('table');
-  await expect(table.locator('tbody tr').first()).toBeVisible();
-  await table.locator('tbody tr').first().focus();
+  const firstRow = table.locator('tbody tr').first();
+  // While the request is in flight the table renders non-interactive skeleton
+  // rows (no tabindex) in the same tbody — .toBeVisible() alone can match one
+  // of those, and .focus() on a non-focusable row is a silent no-op. Waiting
+  // for tabindex="0" (only set on real, click/Enter-activatable rows) ensures
+  // real data has replaced the skeleton before we try to focus it.
+  await expect(firstRow).toHaveAttribute('tabindex', '0');
+  await firstRow.focus();
   await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/\/purchase-orders\/\d+$/);
 });
