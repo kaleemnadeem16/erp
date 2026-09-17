@@ -21,7 +21,7 @@ import { Input } from '../../components/ui/input';
 import { Textarea } from '../../components/ui/textarea';
 import { Badge } from '../../components/ui/badge';
 import { Skeleton } from '../../components/ui/skeleton';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { Combobox } from '../../components/ui/combobox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import { PageHeader } from '../../components/page/page-header';
 import { DetailPageLayout, DetailSection } from '../../components/detail/detail-page-layout';
@@ -394,33 +394,27 @@ export function InventoryCutoverDetailScreen() {
             <form onSubmit={handleRequestNegativeOpening} className="grid grid-cols-1 gap-3 border-t border-border pt-4 sm:col-span-2 sm:grid-cols-2">
               <div className="flex flex-col gap-1">
                 <span className="text-xs font-medium text-muted-foreground">Item</span>
-                <Select value={negativeOpeningDraft.item_id} onValueChange={(value) => setNegativeOpeningDraft((draft) => ({ ...draft, item_id: value }))}>
-                  <SelectTrigger className="h-9">
-                    <SelectValue placeholder="Select an item" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {items.map((item) => (
-                      <SelectItem key={item.id} value={String(item.id)}>
-                        {item.code} — {item.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Combobox
+                  className="h-9"
+                  value={negativeOpeningDraft.item_id}
+                  onValueChange={(value) => setNegativeOpeningDraft((draft) => ({ ...draft, item_id: value }))}
+                  placeholder="Select an item"
+                  searchPlaceholder="Search items…"
+                  emptyText="No items found."
+                  options={items.map((item) => ({ value: String(item.id), label: `${item.code} — ${item.name}` }))}
+                />
               </div>
               <div className="flex flex-col gap-1">
                 <span className="text-xs font-medium text-muted-foreground">Location</span>
-                <Select value={negativeOpeningDraft.location_id} onValueChange={(value) => setNegativeOpeningDraft((draft) => ({ ...draft, location_id: value }))}>
-                  <SelectTrigger className="h-9">
-                    <SelectValue placeholder="Select a location" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {locations.map((location) => (
-                      <SelectItem key={location.id} value={String(location.id)}>
-                        {location.code}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Combobox
+                  className="h-9"
+                  value={negativeOpeningDraft.location_id}
+                  onValueChange={(value) => setNegativeOpeningDraft((draft) => ({ ...draft, location_id: value }))}
+                  placeholder="Select a location"
+                  searchPlaceholder="Search locations…"
+                  emptyText="No locations found."
+                  options={locations.map((location) => ({ value: String(location.id), label: location.code }))}
+                />
               </div>
               <div className="flex flex-col gap-1">
                 <span className="text-xs font-medium text-muted-foreground">Batch (optional)</span>

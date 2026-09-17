@@ -1,10 +1,17 @@
 import type { Locator, Page } from '@playwright/test';
 
-/** Opens a Combobox (searchable popover, e.g. Supplier) by its FormLabel text and picks an option. */
-export async function pickCombobox(page: Page, label: string, optionText: string) {
+/**
+ * Opens a Combobox (searchable popover, e.g. Supplier) by its FormLabel text,
+ * types into its search box, and picks the option matching `optionText`.
+ * `optionText` doubles as the search term when it's a plain string; pass
+ * `searchText` separately when `optionText` needs to be a more precise regex
+ * than cmdk's own fuzzy filter would need to narrow the list down (e.g. an
+ * anchored pattern disambiguating two lines that share a search term).
+ */
+export async function pickCombobox(page: Page, label: string, optionText: string | RegExp, searchText?: string) {
   await page.getByLabel(label, { exact: true }).click();
-  await page.getByPlaceholder(/Search/).fill(optionText);
-  await page.getByRole('option', { name: new RegExp(optionText) }).first().click();
+  await page.getByPlaceholder(/Search/).fill(searchText ?? (typeof optionText === 'string' ? optionText : ''));
+  await page.getByRole('option', { name: optionText }).first().click();
 }
 
 /** Opens a Radix Select by its FormLabel text and picks an option whose text matches. */

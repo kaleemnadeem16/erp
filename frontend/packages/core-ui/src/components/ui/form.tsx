@@ -53,6 +53,7 @@ function useFormField() {
     id,
     name: fieldContext.name,
     formItemId: `${id}-form-item`,
+    formLabelId: `${id}-form-item-label`,
     formDescriptionId: `${id}-form-item-description`,
     formMessageId: `${id}-form-item-message`,
     ...fieldState,
@@ -82,22 +83,29 @@ const FormLabel = React.forwardRef<
   React.ElementRef<typeof LabelPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root>
 >(({ className, ...props }, ref) => {
-  const { error, formItemId } = useFormField();
+  const { error, formItemId, formLabelId } = useFormField();
 
   return (
-    <Label ref={ref} className={cn(error && 'text-destructive', className)} htmlFor={formItemId} {...props} />
+    <Label
+      ref={ref}
+      id={formLabelId}
+      className={cn(error && 'text-destructive', className)}
+      htmlFor={formItemId}
+      {...props}
+    />
   );
 });
 FormLabel.displayName = 'FormLabel';
 
 const FormControl = React.forwardRef<React.ElementRef<typeof Slot>, React.ComponentPropsWithoutRef<typeof Slot>>(
   ({ ...props }, ref) => {
-    const { error, formItemId, formDescriptionId, formMessageId } = useFormField();
+    const { error, formItemId, formLabelId, formDescriptionId, formMessageId } = useFormField();
 
     return (
       <Slot
         ref={ref}
         id={formItemId}
+        aria-labelledby={formLabelId}
         aria-describedby={!error ? formDescriptionId : `${formDescriptionId} ${formMessageId}`}
         aria-invalid={!!error}
         {...props}

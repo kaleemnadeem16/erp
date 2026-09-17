@@ -7,7 +7,8 @@ import { useItemsIndex, useStockMovesIndex, useWarehousesIndex, type StockMoveRe
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { Combobox } from '../../components/ui/combobox';
+import { DateField } from '../../components/ui/date-field';
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '../../components/ui/sheet';
 import { PageHeader } from '../../components/page/page-header';
 import { CursorDataTable, toTanStackColumns, isColumnVisibleByDefault } from '../../components/data-table';
@@ -197,54 +198,49 @@ interface StockMoveFilterControlsProps {
 function StockMoveFilterControls({ items, warehouses, query, full }: StockMoveFilterControlsProps) {
   return (
     <>
-      <Select value={query.filters.item_id ?? 'all'} onValueChange={(value) => query.setFilter('item_id', value === 'all' ? undefined : value)}>
-        <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-48'} aria-label="Item">
-          <SelectValue placeholder="Item" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All items</SelectItem>
-          {items.map((item) => (
-            <SelectItem key={item.id} value={String(item.id)}>
-              {item.code} — {item.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Select
+      <Combobox
+        className={full ? 'h-9 w-full' : 'h-9 w-48'}
+        aria-label="Item"
+        value={query.filters.item_id ?? 'all'}
+        onValueChange={(value) => query.setFilter('item_id', value === 'all' ? undefined : value)}
+        placeholder="Item"
+        searchPlaceholder="Search items…"
+        emptyText="No items found."
+        options={[
+          { value: 'all', label: 'All items' },
+          ...items.map((item) => ({ value: String(item.id), label: `${item.code} — ${item.name}` })),
+        ]}
+      />
+      <Combobox
+        className={full ? 'h-9 w-full' : 'h-9 w-44'}
+        aria-label="Warehouse"
         value={query.filters.warehouse_id ?? 'all'}
         onValueChange={(value) => query.setFilter('warehouse_id', value === 'all' ? undefined : value)}
-      >
-        <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-44'} aria-label="Warehouse">
-          <SelectValue placeholder="Warehouse" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All warehouses</SelectItem>
-          {warehouses.map((warehouse) => (
-            <SelectItem key={warehouse.id} value={String(warehouse.id)}>
-              {warehouse.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+        placeholder="Warehouse"
+        searchPlaceholder="Search warehouses…"
+        emptyText="No warehouses found."
+        options={[
+          { value: 'all', label: 'All warehouses' },
+          ...warehouses.map((warehouse) => ({ value: String(warehouse.id), label: warehouse.name })),
+        ]}
+      />
       <Input
         placeholder="Source type…"
         value={query.filters.source_type ?? ''}
         onChange={(event) => query.setFilter('source_type', event.target.value || undefined)}
         className={full ? 'h-9 w-full' : 'h-9 w-40'}
       />
-      <Input
-        type="date"
+      <DateField
         aria-label="Moved from"
         value={query.filters.moved_from ?? ''}
-        onChange={(event) => query.setFilter('moved_from', event.target.value || undefined)}
-        className={full ? 'h-9 w-full' : 'h-9 w-40'}
+        onChange={(value) => query.setFilter('moved_from', value || undefined)}
+        className={full ? 'w-full' : undefined}
       />
-      <Input
-        type="date"
+      <DateField
         aria-label="Moved to"
         value={query.filters.moved_to ?? ''}
-        onChange={(event) => query.setFilter('moved_to', event.target.value || undefined)}
-        className={full ? 'h-9 w-full' : 'h-9 w-40'}
+        onChange={(value) => query.setFilter('moved_to', value || undefined)}
+        className={full ? 'w-full' : undefined}
       />
     </>
   );

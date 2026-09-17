@@ -13,14 +13,8 @@ import {
 
 import { Button } from "../../components/ui/button";
 import { Combobox } from "../../components/ui/combobox";
+import { DateField } from "../../components/ui/date-field";
 import { Input } from "../../components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../../components/ui/select";
 import {
   Form,
   FormControl,
@@ -250,6 +244,7 @@ export function GoodsReceiptForm({
                 <FormLabel>Supplier</FormLabel>
                 <FormControl>
                   <Combobox
+                    ref={field.ref}
                     value={field.value}
                     onValueChange={(value) => {
                       field.onChange(value);
@@ -285,7 +280,7 @@ export function GoodsReceiptForm({
               <FormItem>
                 <FormLabel>Posting date</FormLabel>
                 <FormControl>
-                  <Input type="date" {...field} />
+                  <DateField value={field.value} onChange={field.onChange} onBlur={field.onBlur} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -333,31 +328,24 @@ export function GoodsReceiptForm({
                   render={({ field }) => (
                     <FormItem className="md:col-span-2">
                       <FormLabel>Purchase-order line</FormLabel>
-                      <Select
-                        value={field.value}
-                        onValueChange={(value) => chooseLine(index, value)}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue
-                              placeholder={
-                                supplierId
-                                  ? "Select open order line"
-                                  : "Select supplier first"
-                              }
-                            />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {availableLines.map(({ order, line }) => (
-                            <SelectItem key={line.id} value={String(line.id)}>
-                              {order.number} / {line.line_number} —{" "}
-                              {line.item_code ?? line.description} (
-                              {line.outstanding_stock_qty} open)
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <Combobox
+                          ref={field.ref}
+                          value={field.value}
+                          onValueChange={(value) => chooseLine(index, value)}
+                          options={availableLines.map(({ order, line }) => ({
+                            value: String(line.id),
+                            label: `${order.number} / ${line.line_number} — ${line.item_code ?? line.description} (${line.outstanding_stock_qty} open)`,
+                          }))}
+                          placeholder={
+                            supplierId
+                              ? "Select open order line"
+                              : "Select supplier first"
+                          }
+                          searchPlaceholder="Search order lines…"
+                          emptyText="No open order lines found."
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -368,26 +356,20 @@ export function GoodsReceiptForm({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Put-away location</FormLabel>
-                      <Select
-                        value={field.value}
-                        onValueChange={field.onChange}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select location" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {locations.map((location) => (
-                            <SelectItem
-                              key={location.id}
-                              value={String(location.id)}
-                            >
-                              {location.code} — {location.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <Combobox
+                          ref={field.ref}
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          options={locations.map((location) => ({
+                            value: String(location.id),
+                            label: `${location.code} — ${location.name}`,
+                          }))}
+                          placeholder="Select location"
+                          searchPlaceholder="Search locations…"
+                          emptyText="No locations found."
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -411,23 +393,20 @@ export function GoodsReceiptForm({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Received UoM</FormLabel>
-                      <Select
-                        value={field.value}
-                        onValueChange={field.onChange}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select UoM" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {uoms.map((uom) => (
-                            <SelectItem key={uom.id} value={String(uom.id)}>
-                              {uom.code} — {uom.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <Combobox
+                          ref={field.ref}
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          options={uoms.map((uom) => ({
+                            value: String(uom.id),
+                            label: `${uom.code} — ${uom.name}`,
+                          }))}
+                          placeholder="Select UoM"
+                          searchPlaceholder="Search units…"
+                          emptyText="No units found."
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}

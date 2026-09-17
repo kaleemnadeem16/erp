@@ -8,6 +8,7 @@ import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { Combobox } from '../../components/ui/combobox';
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '../../components/ui/sheet';
 import { PageHeader } from '../../components/page/page-header';
 import { DataTable, toTanStackColumns, isColumnVisibleByDefault } from '../../components/data-table';
@@ -154,22 +155,19 @@ interface PhysicalCountFilterControlsProps {
 function PhysicalCountFilterControls({ warehouses, query, full }: PhysicalCountFilterControlsProps) {
   return (
     <>
-      <Select
+      <Combobox
+        className={full ? 'h-9 w-full' : 'h-9 w-44'}
+        aria-label="Warehouse"
         value={query.filters.warehouse_id ?? 'all'}
         onValueChange={(value) => query.setFilter('warehouse_id', value === 'all' ? undefined : value)}
-      >
-        <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-44'} aria-label="Warehouse">
-          <SelectValue placeholder="Warehouse" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All warehouses</SelectItem>
-          {warehouses.map((warehouse) => (
-            <SelectItem key={warehouse.id} value={String(warehouse.id)}>
-              {warehouse.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+        placeholder="Warehouse"
+        searchPlaceholder="Search warehouses…"
+        emptyText="No warehouses found."
+        options={[
+          { value: 'all', label: 'All warehouses' },
+          ...warehouses.map((warehouse) => ({ value: String(warehouse.id), label: warehouse.name })),
+        ]}
+      />
       <Select value={query.filters.status ?? 'all'} onValueChange={(value) => query.setFilter('status', value === 'all' ? undefined : value)}>
         <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-36'} aria-label="Status">
           <SelectValue placeholder="Status" />

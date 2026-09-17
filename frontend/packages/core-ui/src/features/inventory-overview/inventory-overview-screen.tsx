@@ -14,7 +14,7 @@ import {
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { Combobox } from '../../components/ui/combobox';
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '../../components/ui/sheet';
 import { StatCard } from '../../components/ui/stat-card';
 import { PageHeader } from '../../components/page/page-header';
@@ -256,21 +256,18 @@ interface InventoryOverviewFilterControlsProps {
 
 function InventoryOverviewFilterControls({ categories, query, full }: InventoryOverviewFilterControlsProps) {
   return (
-    <Select
+    <Combobox
+      className={full ? 'h-9 w-full' : 'h-9 w-40'}
+      aria-label="Category"
       value={query.filters.category_id ?? 'all'}
       onValueChange={(value) => query.setFilter('category_id', value === 'all' ? undefined : value)}
-    >
-      <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-40'} aria-label="Category">
-        <SelectValue placeholder="Category" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="all">All categories</SelectItem>
-        {categories.map((category) => (
-          <SelectItem key={category.id} value={String(category.id)}>
-            {category.name}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+      placeholder="Category"
+      searchPlaceholder="Search categories…"
+      emptyText="No categories found."
+      options={[
+        { value: 'all', label: 'All categories' },
+        ...categories.map((category) => ({ value: String(category.id), label: category.name })),
+      ]}
+    />
   );
 }

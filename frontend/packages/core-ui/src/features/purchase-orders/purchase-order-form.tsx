@@ -18,6 +18,7 @@ import {
 import { AdvancedOptionSection } from "../../components/ui/advanced-option-section";
 import type { AdvancedOption } from "../../components/ui/advanced-options-menu";
 import { Combobox } from "../../components/ui/combobox";
+import { DateField } from "../../components/ui/date-field";
 import { Button } from "../../components/ui/button";
 import { Checkbox } from "../../components/ui/checkbox";
 import {
@@ -38,6 +39,8 @@ import {
   SelectValue,
 } from "../../components/ui/select";
 import { DetailSection } from "../../components/detail/detail-page-layout";
+import { DetailField } from "../../components/detail/detail-field";
+import { WizardShell, type WizardStep } from "../../components/page/wizard-shell";
 
 const decimal = (label: string, positive = false) =>
   z
@@ -110,6 +113,33 @@ const emptyLine = (): PurchaseOrderFormValues["lines"][number] => ({
   qa_required: false,
 });
 
+// The create flow only — an edit screen shows every section at once since
+// the user is changing an already-complete order, not filling one in for
+// the first time. Exchange rate has no step of its own: it's rarely edited
+// (see the "Override the exchange rate" advanced option below) and belongs
+// with the fields around it, not promoted to a whole extra step.
+const WIZARD_STEPS: WizardStep[] = [
+  { id: "details", label: "Supplier & dates" },
+  { id: "lines", label: "Lines" },
+  { id: "review", label: "Review" },
+];
+const WIZARD_STEP_FIELDS: FieldPath<PurchaseOrderFormValues>[][] = [
+  [
+    "supplier_account_id",
+    "order_date",
+    "expected_delivery_date",
+    "currency_id",
+    "notes",
+    "fx_policy",
+    "fx_rate",
+    "fx_rate_date",
+    "fx_rate_type",
+    "fx_rate_source",
+  ],
+  ["lines"],
+  [],
+];
+
 export function toPurchaseOrderPayload(values: PurchaseOrderFormValues) {
   return {
     supplier_account_id: Number(values.supplier_account_id),
@@ -160,6 +190,8 @@ export function PurchaseOrderForm({
    */
   onAdvancedOptionsChange?: (options: AdvancedOption[]) => void;
 }) {
+  const isCreate = !defaultValues;
+  const [step, setStep] = useState(0);
   const form = useForm<PurchaseOrderFormValues>({
     resolver: zodResolver(schema),
     defaultValues: defaultValues ?? {
@@ -213,6 +245,13 @@ export function PurchaseOrderForm({
     ]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showFxDetails]);
+  // Lands keyboard/screen-reader focus on Supplier — the form's first field —
+  // instead of wherever it was left (e.g. the "New PO" nav link), on create only.
+  useEffect(() => {
+    if (!defaultValues) form.setFocus("supplier_account_id");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const suppliersQuery = useSupplierAccountsIndex({
     per_page: 100,
     sort: "code",
@@ -231,6 +270,14 @@ export function PurchaseOrderForm({
   const currenciesQuery = useCurrenciesIndex({ per_page: 100, sort: "code" });
   const currencies =
     currenciesQuery.data?.status === 200 ? currenciesQuery.data.data.data : [];
+  const currencyOptions = useMemo(
+    () =>
+      currencies.map((currency) => ({
+        value: String(currency.id),
+        label: `${currency.code} — ${currency.name}`,
+      })),
+    [currencies],
+  );
   const itemsQuery = useItemsIndex({
     per_page: 100,
     sort: "name",
@@ -238,8 +285,24 @@ export function PurchaseOrderForm({
   });
   const items =
     itemsQuery.data?.status === 200 ? itemsQuery.data.data.data : [];
+  const itemOptions = useMemo(
+    () =>
+      items.map((item) => ({
+        value: String(item.id),
+        label: `${item.code} — ${item.name}`,
+      })),
+    [items],
+  );
   const uomsQuery = useUomsIndex({ per_page: 100, sort: "name" });
   const uoms = uomsQuery.data?.status === 200 ? uomsQuery.data.data.data : [];
+  const uomOptions = useMemo(
+    () =>
+      uoms.map((uom) => ({
+        value: String(uom.id),
+        label: `${uom.code} — ${uom.name}`,
+      })),
+    [uoms],
+  );
   const supplierId = form.watch("supplier_account_id");
   useEffect(() => {
     const supplier = suppliers.find(
@@ -251,17 +314,38 @@ export function PurchaseOrderForm({
       });
   }, [form, supplierId, suppliers]);
 
-  return (
-    <Form {...form}>
-      <form
-        className="space-y-6"
-        onSubmit={form.handleSubmit((values) => onSubmit(values, form))}
-      >
-        {formError && (
-          <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-            {formError}
-          </div>
-        )}
+  const watchedLines = form.watch("lines");
+
+  // A single stable button drives both "Next" and the final "Save draft" —
+  // it never swaps from type="button" to type="submit" under the user's own
+  // click. It used to: form.trigger() is async, and on a real click (mouse
+  // down, then up) there's enough of a gap for that promise to resolve and
+  // React to re-render *between* the two — if the re-render swaps in a
+  // type="submit" button at the same screen position, the same click's
+  // mouseup lands on it and silently double-fires (advance step *and*
+  // submit). Keeping one persistent element removes the race entirely.
+  async function handleFooterAction() {
+    const isLastStep = step === WIZARD_STEPS.length - 1;
+    const valid = await form.trigger(WIZARD_STEP_FIELDS[step]);
+    if (!valid) return;
+    if (isLastStep) form.handleSubmit((values) => onSubmit(values, form))();
+    else setStep((current) => Math.min(current + 1, WIZARD_STEPS.length - 1));
+  }
+  function goToPreviousStep() {
+    setStep((current) => Math.max(current - 1, 0));
+  }
+
+  // Every step's fields stay mounted in RHF's own form state regardless of
+  // which section is currently shown — only the JSX is conditional, so
+  // switching steps never loses a value the same way the AVCO-only field
+  // elsewhere in this codebase doesn't reset when it's hidden.
+  const showDetailsStep = !isCreate || step === 0;
+  const showLinesStep = !isCreate || step === 1;
+  const showReviewStep = isCreate && step === 2;
+
+  const sections = (
+    <>
+      {showDetailsStep && (
         <DetailSection title="Supplier and dates">
           <FormField
             control={form.control}
@@ -271,6 +355,7 @@ export function PurchaseOrderForm({
                 <FormLabel>Supplier</FormLabel>
                 <FormControl>
                   <Combobox
+                    ref={field.ref}
                     value={field.value}
                     onValueChange={field.onChange}
                     options={supplierOptions}
@@ -290,7 +375,7 @@ export function PurchaseOrderForm({
               <FormItem>
                 <FormLabel>Order date</FormLabel>
                 <FormControl>
-                  <Input type="date" {...field} />
+                  <DateField value={field.value} onChange={field.onChange} onBlur={field.onBlur} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -303,7 +388,7 @@ export function PurchaseOrderForm({
               <FormItem>
                 <FormLabel>Expected delivery</FormLabel>
                 <FormControl>
-                  <Input type="date" {...field} />
+                  <DateField value={field.value} onChange={field.onChange} onBlur={field.onBlur} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -315,20 +400,17 @@ export function PurchaseOrderForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Currency</FormLabel>
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select currency" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {currencies.map((currency) => (
-                      <SelectItem key={currency.id} value={String(currency.id)}>
-                        {currency.code} — {currency.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <FormControl>
+                  <Combobox
+                    ref={field.ref}
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    options={currencyOptions}
+                    placeholder="Select currency"
+                    searchPlaceholder="Search currencies…"
+                    emptyText="No currencies found."
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -351,6 +433,8 @@ export function PurchaseOrderForm({
             )}
           />
         </DetailSection>
+      )}
+      {showDetailsStep && (
         <AdvancedOptionSection expanded={showFxDetails}>
           <DetailSection
             title="Exchange rate"
@@ -404,13 +488,15 @@ export function PurchaseOrderForm({
                       }
                     </FormLabel>
                     <FormControl>
-                      <Input
-                        type={name === "fx_rate_date" ? "date" : "text"}
-                        inputMode={
-                          name === "fx_rate" ? "decimal" : undefined
-                        }
-                        {...field}
-                      />
+                      {name === "fx_rate_date" ? (
+                        <DateField value={field.value} onChange={field.onChange} onBlur={field.onBlur} />
+                      ) : (
+                        <Input
+                          type="text"
+                          inputMode={name === "fx_rate" ? "decimal" : undefined}
+                          {...field}
+                        />
+                      )}
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -419,6 +505,8 @@ export function PurchaseOrderForm({
             ))}
           </DetailSection>
         </AdvancedOptionSection>
+      )}
+      {showLinesStep && (
         <DetailSection
           title="Lines"
           description="Use Add line for each distinct item, delivery or QA requirement."
@@ -438,38 +526,32 @@ export function PurchaseOrderForm({
                   render={({ field: itemField }) => (
                     <FormItem>
                       <FormLabel>Item</FormLabel>
-                      <Select
-                        value={itemField.value}
-                        onValueChange={(value) => {
-                          itemField.onChange(value);
-                          const item = items.find(
-                            (candidate) => candidate.id === Number(value),
-                          );
-                          if (item) {
-                            form.setValue(
-                              `lines.${index}.description`,
-                              item.name,
+                      <FormControl>
+                        <Combobox
+                          ref={itemField.ref}
+                          value={itemField.value}
+                          onValueChange={(value) => {
+                            itemField.onChange(value);
+                            const item = items.find(
+                              (candidate) => candidate.id === Number(value),
                             );
-                            form.setValue(
-                              `lines.${index}.purchase_uom_id`,
-                              String(item.stock_uom_id),
-                            );
-                          }
-                        }}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select item" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {items.map((item) => (
-                            <SelectItem key={item.id} value={String(item.id)}>
-                              {item.code} — {item.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                            if (item) {
+                              form.setValue(
+                                `lines.${index}.description`,
+                                item.name,
+                              );
+                              form.setValue(
+                                `lines.${index}.purchase_uom_id`,
+                                String(item.stock_uom_id),
+                              );
+                            }
+                          }}
+                          options={itemOptions}
+                          placeholder="Select item"
+                          searchPlaceholder="Search items…"
+                          emptyText="No items found."
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -505,25 +587,29 @@ export function PurchaseOrderForm({
                           }
                         </FormLabel>
                         <FormControl>
-                          <Input
-                            type={
-                              name === "expected_delivery_date"
-                                ? "date"
-                                : "text"
-                            }
-                            inputMode={
-                              [
-                                "ordered_qty",
-                                "unit_price",
-                                "discount_amount",
-                                "tax_amount",
-                              ].includes(name)
-                                ? "decimal"
-                                : undefined
-                            }
-                            {...lineField}
-                            value={String(lineField.value)}
-                          />
+                          {name === "expected_delivery_date" ? (
+                            <DateField
+                              value={String(lineField.value)}
+                              onChange={lineField.onChange}
+                              onBlur={lineField.onBlur}
+                            />
+                          ) : (
+                            <Input
+                              type="text"
+                              inputMode={
+                                [
+                                  "ordered_qty",
+                                  "unit_price",
+                                  "discount_amount",
+                                  "tax_amount",
+                                ].includes(name)
+                                  ? "decimal"
+                                  : undefined
+                              }
+                              {...lineField}
+                              value={String(lineField.value)}
+                            />
+                          )}
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -536,23 +622,17 @@ export function PurchaseOrderForm({
                   render={({ field: uomField }) => (
                     <FormItem>
                       <FormLabel>Purchase UoM</FormLabel>
-                      <Select
-                        value={uomField.value}
-                        onValueChange={uomField.onChange}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select UoM" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {uoms.map((uom) => (
-                            <SelectItem key={uom.id} value={String(uom.id)}>
-                              {uom.code} — {uom.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <Combobox
+                          ref={uomField.ref}
+                          value={uomField.value}
+                          onValueChange={uomField.onChange}
+                          options={uomOptions}
+                          placeholder="Select UoM"
+                          searchPlaceholder="Search units…"
+                          emptyText="No units found."
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -599,11 +679,82 @@ export function PurchaseOrderForm({
             Add line
           </Button>
         </DetailSection>
-        <div className="flex justify-end">
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Saving…" : "Save draft"}
-          </Button>
-        </div>
+      )}
+      {showReviewStep && (
+        <DetailSection
+          title="Review"
+          description="Check the details below, then save the draft."
+        >
+          <DetailField label="Supplier">
+            {supplierOptions.find((option) => option.value === supplierId)?.label}
+          </DetailField>
+          <DetailField label="Order date">{form.watch("order_date") || undefined}</DetailField>
+          <DetailField label="Expected delivery">
+            {form.watch("expected_delivery_date") || undefined}
+          </DetailField>
+          <DetailField label="Currency">
+            {currencyOptions.find((option) => option.value === form.watch("currency_id"))?.label}
+          </DetailField>
+          <DetailField label="Notes" fullWidth>
+            {form.watch("notes") || undefined}
+          </DetailField>
+          <DetailField label="Lines" fullWidth>
+            <ul className="space-y-1">
+              {watchedLines.map((line, index) => (
+                <li key={index} className="text-sm">
+                  {itemOptions.find((option) => option.value === line.item_id)?.label ?? line.description}
+                  {" — "}
+                  {line.ordered_qty} × {line.unit_price}
+                </li>
+              ))}
+            </ul>
+          </DetailField>
+        </DetailSection>
+      )}
+    </>
+  );
+
+  const wizardFooter = (
+    <>
+      <Button
+        type="button"
+        variant="outline"
+        onClick={goToPreviousStep}
+        className={step === 0 ? "invisible" : undefined}
+      >
+        Back
+      </Button>
+      <Button type="button" onClick={handleFooterAction} disabled={isSubmitting}>
+        {step < WIZARD_STEPS.length - 1 ? "Next" : isSubmitting ? "Saving…" : "Save draft"}
+      </Button>
+    </>
+  );
+
+  return (
+    <Form {...form}>
+      <form
+        className="space-y-6"
+        onSubmit={form.handleSubmit((values) => onSubmit(values, form))}
+      >
+        {formError && (
+          <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+            {formError}
+          </div>
+        )}
+        {isCreate ? (
+          <WizardShell steps={WIZARD_STEPS} activeIndex={step} footer={wizardFooter}>
+            {sections}
+          </WizardShell>
+        ) : (
+          <>
+            {sections}
+            <div className="flex justify-end">
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Saving…" : "Save draft"}
+              </Button>
+            </div>
+          </>
+        )}
       </form>
     </Form>
   );

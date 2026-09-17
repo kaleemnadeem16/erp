@@ -48,3 +48,44 @@ test('a desktop list row opens its detail page via keyboard alone', async ({ pag
   await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/\/purchase-orders\/\d+$/);
 });
+
+test('DateField: arrow keys move between segments, Tab exits the whole control', async ({ page }) => {
+  await page.goto('/purchase-orders/new');
+  const orderDateGroup = page.getByRole('group', { name: 'Order date' });
+  const month = orderDateGroup.getByLabel('Month');
+  const day = orderDateGroup.getByLabel('Day');
+  const year = orderDateGroup.getByLabel('Year');
+
+  // Typing a full 2-digit month auto-advances to Day without a Tab/arrow key.
+  await month.focus();
+  await month.fill('');
+  await page.keyboard.type('11');
+  await expect(day).toBeFocused();
+
+  // ArrowLeft/ArrowRight move between segments — never a real Tab stop.
+  await page.keyboard.press('ArrowLeft');
+  await expect(month).toBeFocused();
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('ArrowRight');
+  await expect(year).toBeFocused();
+
+  // Only Month is in the Tab order — Tab from any segment leaves the whole
+  // control for the next real field (Expected delivery's own Month segment),
+  // it never lands on this control's own Day/Year.
+  await month.focus();
+  await page.keyboard.press('Tab');
+  await expect(day).not.toBeFocused();
+  const nextMonth = page.getByRole('group', { name: 'Expected delivery' }).getByLabel('Month');
+  await expect(nextMonth).toBeFocused();
+});
+
+test('Combobox: typing filters options to a search match', async ({ page }) => {
+  await page.goto('/items');
+  const categoryCombobox = page.getByLabel('Category', { exact: true });
+  await categoryCombobox.click();
+  const search = page.getByPlaceholder('Search categories…');
+  await search.fill('zzz-no-such-category-zzz');
+  await expect(page.getByText('No categories found.')).toBeVisible();
+  await search.fill('');
+  await expect(page.getByRole('option').first()).toBeVisible();
+});

@@ -5,7 +5,7 @@ import { useWarehousesIndex } from '@erp/core-api';
 
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { Combobox } from '../../components/ui/combobox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../components/ui/form';
 import { DetailSection } from '../../components/detail/detail-page-layout';
 
@@ -58,20 +58,17 @@ export function PhysicalCountForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Warehouse</FormLabel>
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a warehouse" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {warehouses.map((warehouse) => (
-                      <SelectItem key={warehouse.id} value={String(warehouse.id)}>
-                        {warehouse.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <FormControl>
+                  <Combobox
+                    ref={field.ref}
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    options={warehouses.map((warehouse) => ({ value: String(warehouse.id), label: warehouse.name }))}
+                    placeholder="Select a warehouse"
+                    searchPlaceholder="Search warehouses…"
+                    emptyText="No warehouses found."
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}

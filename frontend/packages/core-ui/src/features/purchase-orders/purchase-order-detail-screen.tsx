@@ -357,19 +357,6 @@ export function PurchaseOrderDetailScreen() {
           <DetailField label="Expected delivery">
             {order.expected_delivery_date ?? "Not set"}
           </DetailField>
-          <DetailField label="FX policy">{order.fx_policy}</DetailField>
-          <DetailField label="FX rate">{order.fx_rate}</DetailField>
-          <DetailField label="Currency">
-            {currency
-              ? `${currency.code} — ${currency.name}`
-              : `Currency #${order.currency_id}`}
-          </DetailField>
-          <DetailField label="Order total">
-            {order.total_amount ?? "—"} {currency?.code ?? ""}
-          </DetailField>
-          <DetailField label="Base-currency total">
-            {order.base_total_amount ?? "—"}
-          </DetailField>
           {order.notes && (
             <DetailField label="Notes" fullWidth>
               {order.notes}
@@ -380,6 +367,21 @@ export function PurchaseOrderDetailScreen() {
               {order.cancellation_reason}
             </DetailField>
           )}
+        </DetailSection>
+        <DetailSection title="Commercial">
+          <DetailField label="Currency">
+            {currency
+              ? `${currency.code} — ${currency.name}`
+              : `Currency #${order.currency_id}`}
+          </DetailField>
+          <DetailField label="FX policy">{order.fx_policy}</DetailField>
+          <DetailField label="FX rate">{order.fx_rate}</DetailField>
+          <DetailField label="Order total">
+            {order.total_amount ?? "—"} {currency?.code ?? ""}
+          </DetailField>
+          <DetailField label="Base-currency total">
+            {order.base_total_amount ?? "—"}
+          </DetailField>
         </DetailSection>
         <DetailSection
           title="Lines"

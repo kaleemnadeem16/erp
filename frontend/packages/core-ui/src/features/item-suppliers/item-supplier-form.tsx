@@ -5,7 +5,7 @@ import { useItemsIndex, useSupplierAccountsIndex, useUomsIndex } from '@erp/core
 import { Button } from '../../components/ui/button';
 import { Checkbox } from '../../components/ui/checkbox';
 import { Input } from '../../components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { Combobox } from '../../components/ui/combobox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../components/ui/form';
 import { DetailSection } from '../../components/detail/detail-page-layout';
 const NONE = 'NONE';
@@ -92,20 +92,18 @@ export function ItemSupplierForm({
       render={({ field }) => (
         <FormItem>
           <FormLabel>{label}</FormLabel>
-          <Select disabled={mode === 'edit'} value={field.value} onValueChange={field.onChange}>
-            <FormControl>
-              <SelectTrigger>
-                <SelectValue placeholder={`Select ${label.toLowerCase()}`} />
-              </SelectTrigger>
-            </FormControl>
-            <SelectContent>
-              {options.map((o) => (
-                <SelectItem key={o.id} value={String(o.id)}>
-                  {o.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <FormControl>
+            <Combobox
+              ref={field.ref}
+              disabled={mode === 'edit'}
+              value={field.value}
+              onValueChange={field.onChange}
+              options={options.map((o) => ({ value: String(o.id), label: o.label }))}
+              placeholder={`Select ${label.toLowerCase()}`}
+              searchPlaceholder={`Search ${label.toLowerCase()}s…`}
+              emptyText={`No ${label.toLowerCase()}s found.`}
+            />
+          </FormControl>
           <FormMessage />
         </FormItem>
       )}
@@ -197,21 +195,19 @@ export function ItemSupplierForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Purchase unit</FormLabel>
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value={NONE}>Use stock unit</SelectItem>
-                    {uoms.map((u) => (
-                      <SelectItem key={u.id} value={String(u.id)}>
-                        {u.name} ({u.code})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <FormControl>
+                  <Combobox
+                    ref={field.ref}
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    options={[
+                      { value: NONE, label: 'Use stock unit' },
+                      ...uoms.map((u) => ({ value: String(u.id), label: `${u.name} (${u.code})` })),
+                    ]}
+                    searchPlaceholder="Search units…"
+                    emptyText="No units found."
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}

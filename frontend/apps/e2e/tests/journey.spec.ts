@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { escapeRegExp, pickCombobox, pickSelect, readCell } from './support';
+import { escapeRegExp, pickCombobox, readCell } from './support';
 
 const SUPPLIER = 'Punjab Pigments';
 const ITEM = 'Phthalo Blue Pigment';
@@ -37,15 +37,20 @@ test('purchase order through receipt, QA and availability', async ({ page }) => 
   };
 
   // --- Create and issue the purchase order ---
+  // Create is a 3-step wizard (Supplier & dates -> Lines -> Review); "Next"
+  // gates on that step's own validation, same as submitting used to.
   await page.goto('/purchase-orders/new');
   await pickCombobox(page, 'Supplier', SUPPLIER);
   await expect(page.getByLabel('Currency', { exact: true })).not.toContainText('Select currency');
+  await page.getByRole('button', { name: 'Next' }).click();
 
-  await pickSelect(page, 'Item', new RegExp(ITEM));
+  await pickCombobox(page, 'Item', ITEM);
   await page.getByLabel('Quantity', { exact: true }).fill(String(QTY));
   await page.getByLabel('Unit price', { exact: true }).fill('100.0000');
   await page.getByLabel('QA required', { exact: true }).check();
+  await page.getByRole('button', { name: 'Next' }).click();
 
+  await expect(page.getByRole('heading', { name: 'Review' })).toBeVisible();
   await page.getByRole('button', { name: 'Save draft' }).click();
   await expect(page).toHaveURL(/\/purchase-orders\/\d+$/);
 
@@ -66,8 +71,8 @@ test('purchase order through receipt, QA and availability', async ({ page }) => 
   // --- Receive the full ordered quantity against the issued line ---
   await page.goto('/goods-receipts/new');
   await pickCombobox(page, 'Supplier', SUPPLIER);
-  await pickSelect(page, 'Purchase-order line', new RegExp(`^${escapeRegExp(poNumber)} / `));
-  await pickSelect(page, 'Put-away location', /Main Stock/);
+  await pickCombobox(page, 'Purchase-order line', new RegExp(`^${escapeRegExp(poNumber)} / `), poNumber);
+  await pickCombobox(page, 'Put-away location', 'Main Stock');
 
   await page.getByRole('button', { name: 'Save draft receipt' }).click();
   await expect(page).toHaveURL(/\/goods-receipts\/\d+$/);

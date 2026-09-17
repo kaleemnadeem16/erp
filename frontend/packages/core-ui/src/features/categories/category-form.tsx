@@ -5,6 +5,7 @@ import { useCategoriesIndex, useChartOfAccountsIndex, ValuationMethod } from '@e
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { Combobox } from '../../components/ui/combobox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../components/ui/form';
 import { DetailSection } from '../../components/detail/detail-page-layout';
 
@@ -110,21 +111,19 @@ export function CategoryForm({
       render={({ field }) => (
         <FormItem>
           <FormLabel>{label}</FormLabel>
-          <Select value={field.value} onValueChange={field.onChange}>
-            <FormControl>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-            </FormControl>
-            <SelectContent>
-              <SelectItem value={NONE}>None</SelectItem>
-              {options.map((o) => (
-                <SelectItem key={o.id} value={String(o.id)}>
-                  {o.code} — {o.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <FormControl>
+            <Combobox
+              ref={field.ref}
+              value={field.value}
+              onValueChange={field.onChange}
+              options={[
+                { value: NONE, label: 'None' },
+                ...options.map((o) => ({ value: String(o.id), label: `${o.code} — ${o.name}` })),
+              ]}
+              searchPlaceholder={`Search ${label.toLowerCase()}s…`}
+              emptyText="No results found."
+            />
+          </FormControl>
           <FormMessage />
         </FormItem>
       )}

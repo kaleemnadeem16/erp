@@ -13,6 +13,7 @@ import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { Combobox } from '../../components/ui/combobox';
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '../../components/ui/sheet';
 import { PageHeader } from '../../components/page/page-header';
 import { DataTable, isColumnVisibleByDefault, toTanStackColumns } from '../../components/data-table';
@@ -199,33 +200,35 @@ interface ItemSupplierFilterControlsProps {
 function ItemSupplierFilterControls({ items, suppliers, query, filter, full }: ItemSupplierFilterControlsProps) {
   return (
     <>
-      <Select value={query.filters.item_id ?? 'all'} onValueChange={(v) => filter('item_id', v)}>
-        <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-48'} aria-label="Item">
-          <SelectValue placeholder="Item" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All items</SelectItem>
-          {items.map((i) => (
-            <SelectItem key={i.id} value={String(i.id)}>
-              {i.code} — {i.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Select value={query.filters.supplier_account_id ?? 'all'} onValueChange={(v) => filter('supplier_account_id', v)}>
-        <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-48'} aria-label="Supplier">
-          <SelectValue placeholder="Supplier" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All suppliers</SelectItem>
-          {suppliers.map((s) => (
-            <SelectItem key={s.id} value={String(s.id)}>
-              {s.code}
-              {s.party?.name ? ` — ${s.party.name}` : ''}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <Combobox
+        className={full ? 'h-9 w-full' : 'h-9 w-48'}
+        aria-label="Item"
+        value={query.filters.item_id ?? 'all'}
+        onValueChange={(v) => filter('item_id', v)}
+        placeholder="Item"
+        searchPlaceholder="Search items…"
+        emptyText="No items found."
+        options={[
+          { value: 'all', label: 'All items' },
+          ...items.map((i) => ({ value: String(i.id), label: `${i.code} — ${i.name}` })),
+        ]}
+      />
+      <Combobox
+        className={full ? 'h-9 w-full' : 'h-9 w-48'}
+        aria-label="Supplier"
+        value={query.filters.supplier_account_id ?? 'all'}
+        onValueChange={(v) => filter('supplier_account_id', v)}
+        placeholder="Supplier"
+        searchPlaceholder="Search suppliers…"
+        emptyText="No suppliers found."
+        options={[
+          { value: 'all', label: 'All suppliers' },
+          ...suppliers.map((s) => ({
+            value: String(s.id),
+            label: `${s.code}${s.party?.name ? ` — ${s.party.name}` : ''}`,
+          })),
+        ]}
+      />
       <Select value={query.filters.active ?? 'all'} onValueChange={(v) => filter('active', v)}>
         <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-36'}>
           <SelectValue />

@@ -4,7 +4,13 @@ import type { FieldPath, UseFormReturn } from "react-hook-form";
 import { usePurchaseOrdersStore } from "@erp/core-api";
 
 import { AdvancedOptionsMenu, type AdvancedOption } from "../../components/ui/advanced-options-menu";
-import { PageHeader } from "../../components/page/page-header";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "../../components/ui/sheet";
 import { getApiErrorMessage, isApiError } from "../../lib/api-errors";
 import {
   PurchaseOrderForm,
@@ -44,22 +50,37 @@ export function PurchaseOrderCreateScreen() {
   }
 
   return (
-    <div className="space-y-4 p-6">
-      <PageHeader
-        title="New purchase order"
-        description="Create a draft supplier commitment. Nothing is frozen until issue."
-        breadcrumbs={[
-          { label: "Purchase Orders", to: "/purchase-orders" },
-          { label: "New" },
-        ]}
-        actions={<AdvancedOptionsMenu options={advancedOptions} />}
-      />
-      <PurchaseOrderForm
-        onSubmit={handleSubmit}
-        isSubmitting={create.isPending}
-        formError={formError}
-        onAdvancedOptionsChange={setAdvancedOptions}
-      />
-    </div>
+    <Sheet
+      open
+      onOpenChange={(open) => {
+        if (!open) navigate("/purchase-orders");
+      }}
+    >
+      <SheetContent
+        side="right"
+        className="flex w-full flex-col gap-0 sm:max-w-2xl"
+      >
+        <SheetHeader className="shrink-0 border-b border-border pb-4">
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <SheetTitle>New purchase order</SheetTitle>
+              <SheetDescription>
+                Create a draft supplier commitment. Nothing is frozen until
+                issue.
+              </SheetDescription>
+            </div>
+            <AdvancedOptionsMenu options={advancedOptions} />
+          </div>
+        </SheetHeader>
+        <div className="min-h-0 flex-1 overflow-y-auto pt-4">
+          <PurchaseOrderForm
+            onSubmit={handleSubmit}
+            isSubmitting={create.isPending}
+            formError={formError}
+            onAdvancedOptionsChange={setAdvancedOptions}
+          />
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }

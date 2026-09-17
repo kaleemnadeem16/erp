@@ -8,6 +8,7 @@ import { useItemsIndex, AvcoPoolScope, ValuationMethod, InventoryCutoverMode } f
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { Combobox } from '../../components/ui/combobox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../components/ui/form';
 import { DetailSection } from '../../components/detail/detail-page-layout';
 
@@ -213,18 +214,15 @@ export function InventoryCutoverForm({
               <div key={index} className="flex flex-wrap items-end gap-2">
                 <div className="flex flex-col gap-1">
                   <span className="text-xs font-medium text-muted-foreground">Item</span>
-                  <Select value={row.itemCode} onValueChange={(value) => updateRow(index, { itemCode: value })}>
-                    <SelectTrigger className="h-9 w-56">
-                      <SelectValue placeholder="Select an item" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableItems.map((item) => (
-                        <SelectItem key={item.id} value={item.code}>
-                          {item.code} — {item.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Combobox
+                    className="h-9 w-56"
+                    value={row.itemCode}
+                    onValueChange={(value) => updateRow(index, { itemCode: value })}
+                    placeholder="Select an item"
+                    searchPlaceholder="Search items…"
+                    emptyText="No items found."
+                    options={availableItems.map((item) => ({ value: item.code, label: `${item.code} — ${item.name}` }))}
+                  />
                 </div>
                 <div className="flex flex-col gap-1">
                   <span className="text-xs font-medium text-muted-foreground">Method</span>

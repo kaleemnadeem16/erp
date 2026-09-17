@@ -191,7 +191,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </a>
       <aside className="hidden w-60 shrink-0 flex-col overflow-y-auto border-r border-border p-4 md:flex">
         <div className="mb-6 text-lg font-semibold">ERP</div>
-        <nav className="flex flex-1 flex-col">
+        <nav className="flex flex-col">
           <div className="flex flex-col gap-1">
             {dashboardGroup.items.map(renderNavItem)}
           </div>

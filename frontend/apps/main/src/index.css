@@ -111,7 +111,17 @@
   * {
     border-color: var(--border);
   }
+  /* AppShell owns scrolling itself (overflow-hidden shell, overflow-y-auto
+     only on <main>) — html/body/#root must be pinned to the viewport height
+     with no overflow of their own, or any sub-pixel rounding lets <body>
+     grow a second, native scrollbar alongside <main>'s. */
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
   body {
+    overflow: hidden;
     background-color: var(--background);
     color: var(--foreground);
   }

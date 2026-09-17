@@ -6,6 +6,7 @@ import { useItemsIndex, useLocationsIndex, RecalculationMovementKind } from '@er
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { Combobox } from '../../components/ui/combobox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../components/ui/form';
 import { DetailSection } from '../../components/detail/detail-page-layout';
 
@@ -104,20 +105,17 @@ export function RecalculationRequestForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Item</FormLabel>
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select an item" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {items.map((item) => (
-                      <SelectItem key={item.id} value={String(item.id)}>
-                        {item.code} — {item.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <FormControl>
+                  <Combobox
+                    ref={field.ref}
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    options={items.map((item) => ({ value: String(item.id), label: `${item.code} — ${item.name}` }))}
+                    placeholder="Select an item"
+                    searchPlaceholder="Search items…"
+                    emptyText="No items found."
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -128,20 +126,17 @@ export function RecalculationRequestForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Location</FormLabel>
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a location" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {locations.map((location) => (
-                      <SelectItem key={location.id} value={String(location.id)}>
-                        {location.code}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <FormControl>
+                  <Combobox
+                    ref={field.ref}
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    options={locations.map((location) => ({ value: String(location.id), label: location.code }))}
+                    placeholder="Select a location"
+                    searchPlaceholder="Search locations…"
+                    emptyText="No locations found."
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -153,20 +148,17 @@ export function RecalculationRequestForm({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Destination location</FormLabel>
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a destination" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {locations.map((location) => (
-                        <SelectItem key={location.id} value={String(location.id)}>
-                          {location.code}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <Combobox
+                      ref={field.ref}
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      options={locations.map((location) => ({ value: String(location.id), label: location.code }))}
+                      placeholder="Select a destination"
+                      searchPlaceholder="Search locations…"
+                      emptyText="No locations found."
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

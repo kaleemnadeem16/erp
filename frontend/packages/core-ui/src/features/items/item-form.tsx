@@ -1,3 +1,4 @@
+import { useEffect, useMemo } from 'react';
 import { useForm, type UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -8,6 +9,7 @@ import { Input } from '../../components/ui/input';
 import { Textarea } from '../../components/ui/textarea';
 import { Checkbox } from '../../components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { Combobox } from '../../components/ui/combobox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../components/ui/form';
 import { DetailSection } from '../../components/detail/detail-page-layout';
 
@@ -122,11 +124,27 @@ export function ItemForm({ mode, defaultValues, onSubmit, onCancel, isSubmitting
     defaultValues: { ...ITEM_FORM_DEFAULT_VALUES, ...defaultValues },
   });
 
+  // Lands keyboard/screen-reader focus on the first field instead of wherever
+  // it was left (e.g. the "New item" nav link just activated) — only on
+  // create, since an edit screen's first field is rarely the one being changed.
+  useEffect(() => {
+    if (mode === 'create') form.setFocus('code');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const uomsQuery = useUomsIndex({ per_page: 100, sort: 'name' });
   const uoms = uomsQuery.data?.status === 200 ? uomsQuery.data.data.data : [];
+  const uomOptions = useMemo(
+    () => uoms.map((uom) => ({ value: String(uom.id), label: `${uom.name} (${uom.code})` })),
+    [uoms]
+  );
 
   const categoriesQuery = useCategoriesIndex({ per_page: 100, sort: 'name' });
   const categories = categoriesQuery.data?.status === 200 ? categoriesQuery.data.data.data : [];
+  const categoryOptions = useMemo(
+    () => categories.map((category) => ({ value: String(category.id), label: category.name })),
+    [categories]
+  );
 
   const valuationMethod = form.watch('valuation_method');
   const tracking = form.watch('tracking');
@@ -197,20 +215,17 @@ export function ItemForm({ mode, defaultValues, onSubmit, onCancel, isSubmitting
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Category</FormLabel>
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a category" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={String(category.id)}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <FormControl>
+                  <Combobox
+                    ref={field.ref}
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    options={categoryOptions}
+                    placeholder="Select a category"
+                    searchPlaceholder="Search categories…"
+                    emptyText="No categories found."
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -237,20 +252,17 @@ export function ItemForm({ mode, defaultValues, onSubmit, onCancel, isSubmitting
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Stock unit of measure</FormLabel>
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a unit" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {uoms.map((uom) => (
-                      <SelectItem key={uom.id} value={String(uom.id)}>
-                        {uom.name} ({uom.code})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <FormControl>
+                  <Combobox
+                    ref={field.ref}
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    options={uomOptions}
+                    placeholder="Select a unit"
+                    searchPlaceholder="Search units…"
+                    emptyText="No units found."
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
