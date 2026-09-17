@@ -24,6 +24,10 @@ Screen ownership follows [user-interface.md](../architecture/user-interface.md).
 its detailed interaction specification when it starts; backend completion alone does not defer an
 operational UI silently to a later phase.
 
+User-facing entry-to-exit workflows live in [product journeys](../journeys/README.md). A phase's
+journey is maintained alongside its screens and is the source for future training documents or
+presentations.
+
 ---
 
 ## Outline

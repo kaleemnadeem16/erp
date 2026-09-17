@@ -36,6 +36,11 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 
 ## Next
 
+The new [product journeys](journeys/README.md) layer records the implemented Phase 2 flow from
+login and master-data setup through PO, receipt, QA, stock visibility and controlled exceptions.
+Keep it current whenever a workflow screen, status or consequence changes; later phases add their
+own journeys.
+
 Phase 2's first stock-engine UI/API slice is complete, and every screen the operational UI journey
 needs now exists — settings screens and the inventory overview were the last two. Acceptance
 criteria are still 17 of 22 satisfied: closing the "operational Phase 2 UI journey" criterion needs
