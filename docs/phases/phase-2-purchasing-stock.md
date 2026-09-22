@@ -427,11 +427,11 @@ purchasing and inventory operating UI; that remaining boundary is listed below:
 - [x] First real deployment to the production VMs (deferred from Phase 0) — done 2026-09-22,
       ahead of the rest of Phase 2 at the user's request. Runbook and the gaps found while
       executing it: [deployment.md](../architecture/deployment.md#first-deploy-runbook).
-- [ ] Production-safe permission registration: `erp:create-admin --permissions=all` silently
-      grants nothing on a fresh database, because the app's ~25 permission strings are
-      currently only registered by `StockDemoSeeder` (refuses to run in production). Extract
-      that list into a real command (`permission:register` or similar) so the first deploy
-      doesn't need an ad hoc `artisan tinker` call — see deployment.md's runbook step 11.
+- [x] ~~Production-safe permission registration~~ — the application permission vocabulary now
+      lives in `App\Support\PermissionRegistry`; `permission:register` is safe to run in any
+      environment and idempotently registers it, while `erp:create-admin --permissions=all`
+      registers before assigning. Fresh-database and repeat-registration behaviour are covered by
+      `PermissionRegistrationTest`; the deployment runbook no longer needs an ad hoc tinker call.
 - [ ] Deploy automation: no deploy job exists in CI today — `pipeline.yml`'s `build`/
       `merge-manifest` push images to GHCR on merge to `main`, but every step after that
       (`docker compose pull/migrate/up`) was run by hand over SSH for the first deploy. Add a

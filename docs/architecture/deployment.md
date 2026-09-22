@@ -147,20 +147,16 @@ while running it the first time are folded in below rather than left as surprise
    rather than reusing an operator's.
 9. Run migrations as a one-shot container: `docker compose run --rm app php artisan migrate --force`.
 10. `docker compose up -d`.
-11. Create the first sign-in — migrations create company 1 but no user and no
-    permissions, and `demo:seed` refuses to run outside local/testing:
+11. Register the application permission vocabulary and create the first sign-in — migrations
+    create company 1 but no user or permissions, and `demo:seed` refuses to run outside
+    local/testing. Register permissions first:
+    `docker compose run --rm app php artisan permission:register`.
+    Then create the administrator:
     `docker compose run --rm app php artisan erp:create-admin --email=… --name=… --permissions=all`.
-    **Gap found:** `--permissions=all` means "every *registered* permission" — on a fresh
-    database the `permissions` table is empty (the app's ~25 permission strings are
-    currently only registered by `StockDemoSeeder`, which refuses to run in production),
-    so this granted **zero** permissions silently (a `WARN` line, easy to miss). Fixed
-    ad hoc via `artisan tinker` calling `Permission::findOrCreate()` for each of
-    `StockDemoSeeder::DEMO_USER_PERMISSIONS`, then `$user->syncPermissions(...)`, before
-    re-running step 11. **Still open:** there is no production-safe command that
-    registers the app's permission vocabulary — worth extracting that list into a real
-    `permission:register` (or similar) command so the next deploy doesn't repeat this by
-    hand. Not built here to keep this deploy from growing scope; tracked in
-    [phase-2-purchasing-stock.md](../phases/phase-2-purchasing-stock.md).
+    `permission:register` is production-safe and idempotent; `--permissions=all` also calls the
+    registry defensively, so a fresh database cannot silently produce an admin with zero
+    permissions. The vocabulary is owned by `App\Support\PermissionRegistry`, not the demo
+    seeder.
 12. Seed data. Company 1 doubles as a demo/sandbox company on this live deployment (the
     user's own choice), so `demo:seed`'s dataset belongs here too, not just in dev — it
     populates currencies/UoMs/chart of accounts/parties/items/warehouses and a run of

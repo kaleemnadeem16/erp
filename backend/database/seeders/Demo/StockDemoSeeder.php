@@ -39,10 +39,9 @@ use App\Modules\Inventory\Support\ItemTracking;
 use App\Modules\Inventory\Support\ItemType;
 use App\Modules\Inventory\Support\RecalculationApprovalDecision;
 use App\Modules\Inventory\Support\ValuationMethod;
+use App\Support\PermissionRegistry;
 use Database\Seeders\Demo\Concerns\EnsuresDemoEnvironment;
 use Illuminate\Database\Seeder;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\PermissionRegistrar;
 
 /**
  * Populates the physical counts, inventory cutover, negative-stock override
@@ -69,41 +68,16 @@ final class StockDemoSeeder extends Seeder
 {
     use EnsuresDemoEnvironment;
 
-    /**
-     * Every permission the demo login is granted, in one place — the single
-     * source of truth `syncPermissions` below reads from, so re-running this
-     * seeder can't silently narrow what the demo login can do. Includes the
-     * settings/policy-history permissions Part A's screens gate on, which
-     * used to be granted ad hoc outside the seeder and would otherwise be
-     * wiped by the `syncPermissions` call below on the next re-seed.
-     *
-     * @var list<string>
-     */
-    private const DEMO_USER_PERMISSIONS = [
-        'inventory.physical_count.create', 'inventory.physical_count.count', 'inventory.physical_count.post',
-        'inventory.cutover.create', 'inventory.cutover.stage', 'inventory.cutover.validate', 'inventory.cutover.approve',
-        'inventory.cutover.commit', 'inventory.cutover.finalise',
-        'inventory.cutover.negative_opening.request', 'inventory.cutover.negative_opening.approve',
-        'inventory.negative-stock.request', 'inventory.negative-stock.override',
-        'inventory.negative-stock.approve', 'inventory.negative-stock.review',
-        'inventory.recalculation.request', 'inventory.recalculation.approve',
-        'inventory.recalculation.approve-high-risk', 'inventory.recalculation.execute',
-        'inventory.recalculation.review-regeneration',
-        'purchasing.over-receipt-policy.manage', 'purchasing.policy-history.view',
-        'inventory.location-policy.manage', 'inventory.valuation-policy.manage', 'inventory.policy-history.view',
-    ];
-
     public function run(): void
     {
         $this->ensureDemoEnvironment();
 
-        app(PermissionRegistrar::class)->setPermissionsTeamId(1);
-        foreach (self::DEMO_USER_PERMISSIONS as $permission) {
-            Permission::findOrCreate($permission);
-        }
+        $permissions = app(PermissionRegistry::class);
+        $permissions->registerForTeam(1);
+        $demoPermissions = $permissions->all();
 
         $demoUser = User::query()->where('email', config('demo.user.email'))->firstOrFail();
-        $demoUser->syncPermissions(self::DEMO_USER_PERMISSIONS);
+        $demoUser->syncPermissions($demoPermissions);
 
         $ops = $this->seedActor('demo-ops@erp.x1techs.com', 'Demo Ops Assistant', [
             'inventory.physical_count.create', 'inventory.physical_count.count',

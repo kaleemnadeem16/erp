@@ -6,12 +6,11 @@ namespace App\Console\Commands;
 
 use App\Models\User;
 use App\Support\CompanyContext;
+use App\Support\PermissionRegistry;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\PermissionRegistrar;
 
 /**
  * Creates the first sign-in for a freshly migrated database.
@@ -31,7 +30,7 @@ final class CreateAdminUser extends Command
 
     protected $description = 'Create an administrator sign-in for a freshly migrated database';
 
-    public function handle(CompanyContext $companyContext): int
+    public function handle(CompanyContext $companyContext, PermissionRegistry $permissions): int
     {
         $email = (string) ($this->option('email') ?: $this->ask('Email address'));
         $name = (string) ($this->option('name') ?: $this->ask('Display name'));
@@ -54,18 +53,19 @@ final class CreateAdminUser extends Command
         /** @var list<string> $requested */
         $requested = (array) $this->option('permissions');
 
-        $user = DB::transaction(function () use ($email, $name, $password, $requested, $companyContext): User {
+        $user = DB::transaction(function () use ($email, $name, $password, $requested, $companyContext, $permissions): User {
             $user = User::query()->create(['name' => $name, 'email' => $email, 'password' => $password]);
             $user->forceFill(['email_verified_at' => now()])->save();
 
             // Permission checks resolve against the current team, which is the
-            // company (see SetPermissionsTeam) — there is no HTTP request here
-            // to set it, so it is set explicitly before granting.
-            app(PermissionRegistrar::class)->setPermissionsTeamId($companyContext->id());
-
-            $names = $requested === ['all']
-                ? Permission::query()->pluck('name')->all()
-                : $requested;
+            // company (see SetPermissionsTeam). Registering the vocabulary here
+            // makes --permissions=all safe on a fresh production database.
+            if ($requested === ['all']) {
+                $permissions->registerForTeam($companyContext->id());
+                $names = $permissions->all();
+            } else {
+                $names = $requested;
+            }
             if ($names !== []) {
                 $user->givePermissionTo($names);
             }
