@@ -383,23 +383,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Deploy on mainvm
+        working-directory: /home/ubuntu/erp
         run: |
           set -euo pipefail
-          # The runner service account can use Docker but cannot traverse
-          # /home/ubuntu. Run the release as the application owner instead;
-          # that account also owns the checked-out production compose project.
-          printf '%s' '${{ secrets.GITHUB_TOKEN }}' | sudo -n -u ubuntu -H docker login ghcr.io \
-            --username '${{ github.actor }}' --password-stdin
-          sudo -n -u ubuntu -H bash -lc '
-            set -euo pipefail
-            cd /home/ubuntu/erp
-            test -f .env
-            test -f docker-compose.yml
-            docker compose pull
-            docker compose run --rm app php artisan migrate --force
-            docker compose up -d --remove-orphans
-            docker compose run --rm app php artisan permission:register
-          '
+          test -f .env
+          test -f docker-compose.yml
+          docker compose pull
+          docker compose run --rm app php artisan migrate --force
+          docker compose up -d --remove-orphans
+          docker compose run --rm app php artisan permission:register
       - name: Verify production endpoints
         run: |
           set -euo pipefail
