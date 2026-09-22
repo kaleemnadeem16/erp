@@ -27,6 +27,17 @@ services:
     networks:
       - proxy-net
       - erp-internal
+    # Backs both the deploy job's `docker compose up -d --wait` (don't run
+    # permission:register against a container that isn't accepting connections
+    # yet) and Traefik's own active healthcheck below (don't route real
+    # traffic to it either) — single replica, so this is what stands in for a
+    # rolling deploy without needing Swarm/multi-replica infra.
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1/up"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 15s
     labels:
       - traefik.enable=true
       - traefik.docker.network=proxy-net
@@ -34,6 +45,7 @@ services:
       - traefik.http.routers.erp-api.rule=Host(`api-erp.x1techs.com`)
       - traefik.http.routers.erp-api.entrypoints=websecure
       - traefik.http.routers.erp-api.tls=true
+      - traefik.http.routers.erp-api.middlewares=erp-api-retry
       # HTTP router -> redirect to HTTPS
       - traefik.http.routers.erp-api-http.rule=Host(`api-erp.x1techs.com`)
       - traefik.http.routers.erp-api-http.entrypoints=web
@@ -41,8 +53,21 @@ services:
       # Redirect middleware
       - traefik.http.middlewares.erp-redirect-https.redirectscheme.scheme=https
       - traefik.http.middlewares.erp-redirect-https.redirectscheme.permanent=true
+      # Retries a request that lands exactly in a deploy's restart gap against
+      # the (by then updated) backend pool — paired with supervisord's
+      # stopsignal=QUIT and the loadbalancer healthcheck below; none of the
+      # three closes this alone on a single-replica deploy.
+      - traefik.http.middlewares.erp-api-retry.retry.attempts=4
+      - traefik.http.middlewares.erp-api-retry.retry.initialinterval=250ms
       # Service port
       - traefik.http.services.erp-api.loadbalancer.server.port=80
+      # Don't send traffic to a container until it actually answers /up —
+      # otherwise Traefik adds a just-started container to the pool the
+      # instant Docker reports it running, before php-fpm/nginx inside are
+      # ready to accept connections.
+      - traefik.http.services.erp-api.loadbalancer.healthcheck.path=/up
+      - traefik.http.services.erp-api.loadbalancer.healthcheck.interval=5s
+      - traefik.http.services.erp-api.loadbalancer.healthcheck.timeout=3s
 
   frontend:
     image: ghcr.io/kaleemnadeem16/erp-frontend:latest
@@ -50,16 +75,28 @@ services:
     restart: unless-stopped
     networks:
       - proxy-net
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
     labels:
       - traefik.enable=true
       - traefik.docker.network=proxy-net
       - traefik.http.routers.erp-frontend.rule=Host(`erp.x1techs.com`)
       - traefik.http.routers.erp-frontend.entrypoints=websecure
       - traefik.http.routers.erp-frontend.tls=true
+      - traefik.http.routers.erp-frontend.middlewares=erp-frontend-retry
       - traefik.http.routers.erp-frontend-http.rule=Host(`erp.x1techs.com`)
       - traefik.http.routers.erp-frontend-http.entrypoints=web
       - traefik.http.routers.erp-frontend-http.middlewares=erp-redirect-https
+      - traefik.http.middlewares.erp-frontend-retry.retry.attempts=4
+      - traefik.http.middlewares.erp-frontend-retry.retry.initialinterval=250ms
       - traefik.http.services.erp-frontend.loadbalancer.server.port=80
+      - traefik.http.services.erp-frontend.loadbalancer.healthcheck.path=/
+      - traefik.http.services.erp-frontend.loadbalancer.healthcheck.interval=5s
+      - traefik.http.services.erp-frontend.loadbalancer.healthcheck.timeout=3s
 
   worker:
     image: ghcr.io/kaleemnadeem16/erp-backend:latest

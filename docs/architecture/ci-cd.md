@@ -183,6 +183,10 @@ traverse into their home directory at all, regardless of the target folder's own
 Don't route around that with `sudo` to hop accounts either — that means granting a CI runner
 passwordless root access, which is worse than just owning the directory it operates on.
 
+`docker-compose.yml` on the server is not hand-maintained — the deploy job copies the
+repo's [docker-compose.prod.yml](../../docker-compose.prod.yml) over it fresh on every run, so
+the two can never drift. Only `.env` (secrets) lives solely on the server.
+
 Containers attach to `proxy-net` and carry Traefik labels in the existing style:
 
 ```yaml
@@ -193,6 +197,34 @@ labels:
   traefik.http.routers.erp-api.entrypoints: "websecure"
   traefik.http.routers.erp-api-http.middlewares: "erp-redirect-https"
 ```
+
+### Near-zero-downtime on a single replica
+
+Plain Compose (no Swarm, no multi-replica — see [runner constraints](#runner-constraints))
+recreates a service in place on every deploy: stop the old container, start the new one. Three
+things close that gap without adding orchestration:
+
+- **Graceful shutdown** — `docker/backend/supervisord.conf` sets `stopsignal=QUIT` for both
+  `nginx` and `php-fpm`. Docker sends `SIGTERM` on recreate; both processes treat plain `TERM`
+  as an immediate/fast shutdown that drops in-flight requests, where `QUIT` finishes them first.
+- **Traefik won't route to a container until it's actually ready** — each service's
+  `loadbalancer.healthcheck.path` (`/up` for the API, `/` for the frontend) means a freshly
+  started container isn't added to the pool the instant Docker reports it running, only once it
+  responds.
+- **A `retry` middleware** on both routers re-sends a request that still lands in the narrow
+  remaining gap against the (by then updated) pool, rather than surfacing the failure to the
+  browser as `ERR_CONNECTION_RESET`/`ERR_CONNECTION_CLOSED`.
+
+The deploy job itself also passes `--wait` to `docker compose up -d`, so it doesn't run
+`permission:register` against a container its own healthcheck hasn't yet confirmed is healthy.
+
+None of this is a substitute for the frontend's PWA caching being correct. The app registers a
+service worker (`vite-plugin-pwa`); `docker/frontend/nginx.conf` sets `Cache-Control: no-cache`
+on `index.html`/`sw.js`/`registerSW.js`/`manifest.webmanifest` since they have stable filenames,
+unlike everything content-hashed under `/assets/`. A stale cached copy of any of them means the
+browser can run a service worker whose precache manifest references asset hashes a later deploy
+has already removed outright — each deploy replaces the container's filesystem completely,
+nothing from the previous build persists.
 
 Production Compose connects to **dbvm's** PostgreSQL and Redis. It does not start its own —
 see [environments.md](environments.md#do-not-run-our-own-postgres-or-redis-in-production).

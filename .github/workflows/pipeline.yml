@@ -377,6 +377,7 @@ jobs:
     environment:
       name: production
     steps:
+      - uses: actions/checkout@v4
       - uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -392,10 +393,15 @@ jobs:
         run: |
           set -euo pipefail
           test -f .env
-          test -f docker-compose.yml
+          # docker-compose.prod.yml is the checked-in source of truth; copied fresh
+          # on every deploy so the two can never drift, instead of relying on
+          # someone remembering to hand-edit the server's copy.
+          cp "${{ github.workspace }}/docker-compose.prod.yml" docker-compose.yml
           docker compose pull
           docker compose run --rm app php artisan migrate --force
-          docker compose up -d --remove-orphans
+          # --wait: don't move on to permission:register until app's healthcheck
+          # (GET /up, docker-compose.prod.yml) reports healthy.
+          docker compose up -d --remove-orphans --wait
           docker compose run --rm app php artisan permission:register
       - name: Verify production endpoints
         run: |
