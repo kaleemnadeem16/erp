@@ -55,11 +55,12 @@ against the real domains. Full runbook, and the three real gaps found while runn
 resolving only as an SSH alias, not inside mainvm's containers; the GHCR images being private
 with no working pull credential on mainvm; `erp:create-admin --permissions=all` silently
 granting nothing because no permission strings are registered outside the production-blocked
-demo seeder) → [deployment.md](architecture/deployment.md#first-deploy-runbook). Still open, not
+demo seeder) → [deployment.md](architecture/deployment.md#first-deploy-runbook). The current
+permission vocabulary is now registered safely by `permission:register`; future modules must
+extend the shared registry and its tests when they introduce new permissions. Still open, not
 blocking: no deploy job exists in CI (every VM-side step was run by hand over SSH), mainvm's
-GHCR credential is a personal token rather than a dedicated one, and there is still no
-production-safe command to register the app's permission vocabulary (tracked in
-[phase-2-purchasing-stock.md](phases/phase-2-purchasing-stock.md)).
+GHCR credential is a personal token rather than a dedicated one, and the second production
+database check-in remains pending.
 
 ## Blocked / awaiting input
 

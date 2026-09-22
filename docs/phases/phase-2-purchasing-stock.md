@@ -533,7 +533,8 @@ Tick these in the same commit as the work.
 
 ## Docs to update on completion
 
-- [ ] [STATUS.md](../STATUS.md) — mark Phase 2 complete and move Next to Phase 3
+- [x] [STATUS.md](../STATUS.md) — reconcile current Phase 2 status; final Phase 2 closure and
+      moving `Next` to Phase 3 remain pending the deferred correction-package decision.
 - [x] ~~`docs/domain/purchasing.md` — reconcile the implemented document/API contract~~ —
       receipt/QA immutability, supplier sites, reversal semantics and operational UI/API boundaries
       are reconciled.
