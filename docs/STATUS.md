@@ -59,8 +59,10 @@ demo seeder) → [deployment.md](architecture/deployment.md#first-deploy-runbook
 permission vocabulary is now registered safely by `permission:register`; future modules must
 extend the shared registry and its tests when they introduce new permissions. Still open, not
 blocking: the first release was manual; the self-hosted deploy job is implemented but its first
-automated run is pending. The old personal GHCR credential remains as an emergency fallback, and
-the second production database check-in remains pending.
+automated run is pending. The old personal GHCR credential remains as an emergency fallback. The
+second production database check-in is resolved — the user owns invoiceflow and crm as well as
+ERP, so `REDIS_DB`/`REDIS_CACHE_DB` collisions are avoided by that single owner directly, not a
+cross-team re-confirmation.
 
 ## Blocked / awaiting input
 

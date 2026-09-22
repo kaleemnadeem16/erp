@@ -440,9 +440,11 @@ purchasing and inventory operating UI; that remaining boundary is listed below:
 - [ ] mainvm's persistent GHCR pull credential can be removed after the automated job succeeds —
       the job authenticates with its short-lived workflow token. Keep the manual credential as
       emergency fallback until that verification is complete.
-- [ ] Second production database check-in: re-confirm dbvm's `REDIS_DB=3`/`REDIS_CACHE_DB=4`
-      assignment with whoever owns invoiceflow/crm once either of those reaches production —
-      they claim no explicit index today, but that could change.
+- [x] ~~Second production database check-in: re-confirm dbvm's `REDIS_DB=3`/`REDIS_CACHE_DB=4`
+      assignment with whoever owns invoiceflow/crm once either of those reaches production~~ —
+      not a coordination risk: the user owns all three applications directly and assigns every
+      app's `REDIS_DB`/`REDIS_CACHE_DB` themselves, so a future collision is avoided by that
+      single owner rather than needing a cross-team re-confirmation step.
 
 Tick these in the same commit as the work.
 
