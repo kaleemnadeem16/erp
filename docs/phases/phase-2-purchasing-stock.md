@@ -421,7 +421,14 @@ purchasing and inventory operating UI; that remaining boundary is listed below:
 - [ ] Audit and improve existing Phase 2 screens for consistent hierarchy, terminology, empty/
       loading/error states, keyboard/focus behaviour, responsive operation and WCAG 2.2 AA; test
       the critical PO→receipt→QA and inventory-drill-down journeys.
-- [ ] First real deployment to the production VMs (deferred from Phase 0)
+- [x] First real deployment to the production VMs (deferred from Phase 0) — done 2026-09-22,
+      ahead of the rest of Phase 2 at the user's request. Runbook and the gaps found while
+      executing it: [deployment.md](../architecture/deployment.md#first-deploy-runbook).
+- [ ] Production-safe permission registration: `erp:create-admin --permissions=all` silently
+      grants nothing on a fresh database, because the app's ~25 permission strings are
+      currently only registered by `StockDemoSeeder` (refuses to run in production). Extract
+      that list into a real command (`permission:register` or similar) so the first deploy
+      doesn't need an ad hoc `artisan tinker` call — see deployment.md's runbook step 11.
 
 Tick these in the same commit as the work.
 

@@ -93,24 +93,28 @@ before the app rolls over. Detail in [ci-cd.md](ci-cd.md#deployment).
 
 ## First deploy runbook
 
-Never executed yet. These steps exist because each is a prerequisite the automated
+**Executed 2026-09-22.** These steps exist because each is a prerequisite the automated
 pipeline does **not** cover — CI builds and pushes images but does not deploy
-([pipeline.yml](../../.github/workflows/pipeline.yml)).
+([pipeline.yml](../../.github/workflows/pipeline.yml)). Kept as the reference for the *next*
+deploy (a second environment, or a rebuild of this one from scratch); three real gaps found
+while running it the first time are folded in below rather than left as surprises.
 
 **On dbvm, once, as a superuser:**
 
-1. Create the database and the application role, then grant it ownership of the schema.
+1. ~~Create the database and the application role~~ — already existed when this was run
+   (created in an earlier session), `erp_app` already owned the `erp` database/schema.
+   Verify with `\l` and `\dn+ <db>` before assuming this for a fresh instance.
 2. `CREATE EXTENSION btree_gist;` in the `erp` database. The `fiscal_years` migration
    needs it and `erp_app` is not a superuser, so migrating first fails with
    *permission denied to create extension*.
 3. ~~Agree ERP's own `REDIS_DB` and `REDIS_CACHE_DB` indices with invoiceflow and crm~~ —
-   done 2026-09-22: `REDIS_DB=3`, `REDIS_CACHE_DB=4` (see `.env.example`; neither
-   invoiceflow nor crm sets these explicitly today, so nothing on their side needed to
-   change — re-confirm with their owners once either reaches production, in case they
-   then claim explicit indices). They share the instance, and `cache:clear` issues
-   `FLUSHDB`, which ignores `REDIS_PREFIX` — so a clear on a shared index wipes a
-   neighbour's cache. **Keep `cache:clear` and `optimize:clear` out of the deploy
-   sequence entirely regardless.**
+   done: `REDIS_DB=3`, `REDIS_CACHE_DB=4` (see `.env.example`; neither invoiceflow nor crm
+   sets these explicitly today, confirmed via `redis-cli INFO keyspace` showing only db0 in
+   use, so nothing on their side needed to change — re-confirm with their owners once
+   either reaches production, in case they then claim explicit indices). They share the
+   instance, and `cache:clear` issues `FLUSHDB`, which ignores `REDIS_PREFIX` — so a clear
+   on a shared index wipes a neighbour's cache. **Keep `cache:clear` and `optimize:clear`
+   out of the deploy sequence entirely regardless.**
 
 **On mainvm, before the first `up`:**
 
@@ -118,24 +122,49 @@ pipeline does **not** cover — CI builds and pushes images but does not deploy
    Set at minimum: `APP_ENV=production`, `APP_DEBUG=false`, a generated `APP_KEY`,
    the dbvm database and Redis hosts, `SESSION_SECURE_COOKIE=true`, `TRUSTED_PROXIES`,
    and `SANCTUM_STATEFUL_DOMAINS`/`CORS_ALLOWED_ORIGINS` matching the real SPA origin.
-5. Set the repository variable `ERP_API_BASE_URL` to the public API origin **before**
-   the image build — Vite inlines it at build time, so an image built without it
-   permanently points the SPA at localhost.
+   **Gap found:** `.env.example` said `DB_HOST=dbvm`/`REDIS_HOST=dbvm` — that only resolves
+   as an SSH config alias on an operator's own machine, not inside mainvm's containers.
+   Use dbvm's private VCN IP instead (confirmed from another app already running on
+   mainvm, which does the same); fixed in `.env.example`.
+5. Set the repository variable `ERP_API_BASE_URL` to the public API origin, `/api`
+   appended (e.g. `https://api-erp.x1techs.com/api`) **before** the image build — Vite
+   inlines it at build time, so an image built without it permanently points the SPA at
+   localhost.
 6. Register the self-hosted ARM64 runner with the labels `self-hosted, arm64, erp`
    ([ci-runner-setup.md](ci-runner-setup.md)). The `build` and `merge-manifest` jobs
-   target it and will queue forever without it.
+   target it and will queue forever without it. (Was already done as of this run.)
 
 **Deploy:**
 
 7. Merge `develop` into `main` — the only branch that builds images
    ([ADR 0029](../decisions/0029-develop-main-branching-model.md)). Wait for both
    architectures and the manifest merge.
-8. `docker compose pull`.
+8. `docker compose pull`. **Gap found:** the `erp-backend`/`erp-frontend` GHCR packages
+   are private (matching the private source repo); mainvm's stored registry credential
+   didn't have pull access. Fixed by generating a token with `read:packages` scope and
+   `docker login ghcr.io` on mainvm with it — that credential is a personal OAuth token,
+   not a dedicated one; issue mainvm its own long-lived PAT or deploy key next time
+   rather than reusing an operator's.
 9. Run migrations as a one-shot container: `docker compose run --rm app php artisan migrate --force`.
 10. `docker compose up -d`.
 11. Create the first sign-in — migrations create company 1 but no user and no
     permissions, and `demo:seed` refuses to run outside local/testing:
     `docker compose run --rm app php artisan erp:create-admin --email=… --name=… --permissions=all`.
+    **Gap found:** `--permissions=all` means "every *registered* permission" — on a fresh
+    database the `permissions` table is empty (the app's ~25 permission strings are
+    currently only registered by `StockDemoSeeder`, which refuses to run in production),
+    so this granted **zero** permissions silently (a `WARN` line, easy to miss). Fixed
+    ad hoc via `artisan tinker` calling `Permission::findOrCreate()` for each of
+    `StockDemoSeeder::DEMO_USER_PERMISSIONS`, then `$user->syncPermissions(...)`, before
+    re-running step 11. **Still open:** there is no production-safe command that
+    registers the app's permission vocabulary — worth extracting that list into a real
+    `permission:register` (or similar) command so the next deploy doesn't repeat this by
+    hand. Not built here to keep this deploy from growing scope; tracked in
+    [phase-2-purchasing-stock.md](../phases/phase-2-purchasing-stock.md).
+
+**Verified working end-to-end** (2026-09-22): `https://erp.x1techs.com` (200, valid TLS),
+`https://api-erp.x1techs.com/api/v1/...` (401 unauthenticated as expected, not 500), and a
+full cookie-session login/CSRF round trip against the real domains, all through Traefik.
 
 **Rollback:** redeploy a previous image tag from `main`'s history by setting the image
 tag and repeating steps 8 and 10. Migrations are not automatically reversed — check

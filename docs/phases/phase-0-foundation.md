@@ -51,10 +51,12 @@ feature.
       2026-08-11; `app`/`nginx`/`postgres`/`redis`/`worker`/`scheduler` verified healthy, migrations
       run clean, HTTP 200 from the app. `node` stays failing until the frontend skeleton exists
       (documented placeholder, not a bug)
-- [ ] `docker-compose.prod.yml`: **no** database or redis services — connects to dbvm (written, not
-      yet deployed/verified against dbvm)
-- [ ] Multi-stage `Dockerfile`, **`linux/amd64` + `linux/arm64`**, `FROM php:8.4-fpm-alpine` pinned by **index** digest
-      (amd64 build verified this session; arm64 not yet built/tested)
+- [x] ~~`docker-compose.prod.yml`: **no** database or redis services — connects to dbvm~~ — done
+      2026-09-22, verified against dbvm's real Postgres/Redis in the first production deploy; see
+      [deployment.md](../architecture/deployment.md#first-deploy-runbook)
+- [x] ~~Multi-stage `Dockerfile`, **`linux/amd64` + `linux/arm64`**~~ — both arches built and
+      pushed by CI 2026-09-22 (`main`, commit `611696b`) and the arm64 image is what's actually
+      running in production on mainvm (itself ARM64) right now
 - [x] ~~Verify the Dockerfile hardcodes no architecture~~ — confirmed by inspection, uses the
       index-digest base and no arch-specific `RUN`/`COPY --platform` lines
 - [x] ~~Add the `intl` extension~~ (absent from the existing images) — builds and loads, confirmed

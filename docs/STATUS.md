@@ -2,7 +2,8 @@
 
 **Updated:** 2026-09-22
 **Current phase:** Phase 2 — Purchasing & stock (in progress). Phase 1 — Master data is
-complete. Phase 0 — Foundation is done except the deliberately deferred production deployment.
+complete. Phase 0 — Foundation is done, including production deployment (2026-09-22, ahead of
+the rest of Phase 2 at the user's request).
 **Application code:** Laravel 12 backend with Phase 0 foundations, Phase 1 master-data APIs and
 Phase 2 purchase orders, receipts, QA/reversal and the full stock movement/valuation engine.
 Inventory cutover now posts and strictly reconciles AVCO/FIFO/SPECIFIC opening state; controlled
@@ -25,6 +26,7 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 
 | Item | Date |
 |---|---|
+| **First production deployment** — `main` is live: `https://erp.x1techs.com` and `https://api-erp.x1techs.com` respond over real TLS through Traefik on mainvm, backed by dbvm's shared Postgres/Redis, with a working admin sign-in and full CORS/CSRF/cookie-session round trip verified. Run entirely by hand over SSH — no deploy job exists in CI, only build-and-push. Three real gaps found and fixed along the way, not previously known: `.env.example`'s `DB_HOST=dbvm`/`REDIS_HOST=dbvm` only resolved as an SSH alias, not inside mainvm's containers (needs dbvm's private VCN IP); the GHCR images are private and mainvm had no working pull credential; and `erp:create-admin --permissions=all` silently grants nothing on a fresh database, because the app's ~25 permission strings are only ever registered by the seeder that refuses to run in production (worked around by hand this time; a real fix is tracked as backlog) → [deployment.md](architecture/deployment.md#first-deploy-runbook) | 2026-09-22 |
 | **Supplier sites, a two-column detail layout and a Company/You settings menu** — suppliers can now have order-from/ship-from addresses: `party_sites`/`supplier_sites` (schema-complete since Phase 1 but never exposed) gained their first API (`SupplierSiteController`; nested `POST/GET supplier-accounts/{id}/sites`, flat `PATCH/DELETE supplier-sites/{id}`; a create request only asks for an address, `party_sites.code` is derived and de-duplicated server-side), wired into the PO form as a `Combobox` plus an inline "add a site" `Dialog` (a new centered-modal primitive, `components/ui/dialog.tsx`) and shown on the PO detail screen and its print. `DetailPageLayout` is now a responsive grid so short sections (Order/Supplier/Commercial) share a row instead of each stacking full-width; mark a table-bearing section `fullWidth` to keep it on its own. Quick Print's header dropped the boxed meta panel and colour bar that read as screen UI rather than a printed letterhead. A new Settings dropdown beside the dark-mode toggle groups Company (Purchasing/Inventory/Printing) vs. You (Appearance) → [parties.md](domain/parties.md#shared-sites), [purchasing.md](domain/purchasing.md#user-interface), [ui-building-blocks.md](architecture/ui-building-blocks.md) | 2026-09-22 |
 | **Searchable pickers, calendar date field, PO side sheet, light/dark theming and Quick Print branding** — reference-data dropdowns are searchable, dates use a `DateField` (Tab leaves the field, ←/→ move segments, calendar popup, no more placeholder clipping), and creating or opening a purchase order is a side sheet over the still-visible list (create is a 3-step wizard with a live order-summary side column, and an in-place confirm — not a raw ghost button — for discarding unfinished work); each screen keeps its full-page version, switchable in one place. New company/user-layered light/dark mode + 3 accent themes (`Settings → Appearance`, `AppearanceProvider`, pre-paint script against flash-of-wrong-theme) and a global Quick Print branding system (`Settings → Printing`; `PrintLayout`/`DetailPrintLayout`/`PrintableTable` read it directly, so one accent-colour change reaches all 16 print screens); the PO print/detail also gained a proper Supplier section (payment terms, tax ID, lead time) and an accent-styled totals table. Sheets now animate open/close. Also fixed the double scrollbar and the sidebar's dead space → [appearance-and-printing.md](architecture/appearance-and-printing.md), [ui-building-blocks.md](architecture/ui-building-blocks.md) | 2026-09-22 |
 | **Desktop sidebar grouping, quick access and inventory value cards** — the ~15-item flat sidebar now groups into Purchasing / Inventory / Stock Operations / Settings sections (mobile's "More" sheet mirrors the same grouping); a "Quick access" bar (hybrid: hover-to-pin any nav item, remaining slots fill by visit frequency, both tracked client-side in localStorage) sits above the content area; the active item now gets a distinct blue tint instead of generic grey, and every non-Dashboard nav link now correctly highlights on its detail/edit sub-routes too (dropped the `end` prop that was silently preventing it). Inventory Overview gained four headline cards (on-hand/available value, shortage/QA-held item counts) from a new `GET /api/v1/inventory-overview/summary` endpoint that rolls the same filtered set up into one aggregate query — a real bug surfaced immediately against live demo data: `available_value`'s SQL division doesn't preserve a fixed decimal scale, and the default `toScale(4)` throws rather than rounds; fixed with `RoundingMode::HALF_UP` and locked in with a regression test using a non-terminating ratio → [user-interface.md](architecture/user-interface.md#desktop-sidebar-grouping-quick-access-active-colour) | 2026-09-10 |
@@ -32,7 +34,6 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 | **Mobile UI standards, piloted then rolled out to every list screen** — bottom nav fixed to 4 primary tabs + a "More" sheet; lists default to cards below `md` (togglable back to table, persisted per-screen via localStorage, same for column visibility); a screen's primary action places as a `PageHeader` `primaryAction`, rendering as a fixed FAB on mobile with matching bottom-padding clearance; non-essential filters move behind a mobile "Filters" sheet; `DataTable`/`CursorDataTable`'s new `rowActions` prop adds icon-only quick actions (edit/archive) to both table rows and cards from one definition — Items exposes archive/activate (the safe, already-validated `status` toggle) but deliberately not hard-delete, which the backend leaves unguarded against existing stock/PO references. Also fixed: `AppShell` wasn't actually height-constrained (`min-h-dvh` vs `h-dvh`), so `<main>`'s `overflow-y-auto` never engaged and the whole window scrolled instead — the desktop sidebar was silently scrolling away with content; a client-side route change now resets scroll to top. Detail-page Quick Print now groups fields into the same sections the screen itself uses instead of one flat grid. Separately, the dev API base URL was hardcoded to `localhost`, breaking login from a phone on the LAN — now derived from the page's own host, with the backend's dev-only CORS/Sanctum config widened to match → [user-interface.md](architecture/user-interface.md#mobile-list-screen-patterns) | 2026-09-10 |
 | **Goods-receipt and QA operating UI** — users can now record tracked arrivals from outstanding issued PO lines, post/reverse receipts with consequence review, and resolve QA root/open-branch quantities inline from server-derived balances. Supplier/status list filters, human reference labels and immutable disposition history complete the operational receipt workspace → [purchasing.md](domain/purchasing.md#user-interface) | 2026-09-10 |
 | **Purchase-order operating UI** — users can now find, create, edit and inspect POs, then issue, cancel or short-close them through status-gated actions. Detail responses supply exact decimal totals and posted-receipt progress, while currency/UoM reference APIs keep labels human-readable → [purchasing.md](domain/purchasing.md#user-interface) | 2026-09-10 |
-| **Governed inventory structure/valuation defaults and operational cutover** — ADR 0047 closes Q17: location mode and default AVCO pool scope now require their own permission, reason and immutable policy audit. Operational/full-history cutovers can also materialise staged open PO remaining commitments through Purchasing with immutable provenance; consolidated Q13/Q14 evidence is complete → [phase-2-purchasing-stock.md](phases/phase-2-purchasing-stock.md), [ADR 0047](decisions/0047-govern-inventory-structure-and-default-valuation-policies.md) | 2026-09-09 |
 
 ## Next
 
@@ -48,18 +49,17 @@ the still-open keyboard/focus/WCAG audit and an explicit end-to-end journey test
 availability), not more screens. Of the other four remaining criteria, three require Phase 4/5/6
 correction-package owners and one is the future valuation-policy boundary.
 
-The first production deployment is now being prepared ahead of the rest of Phase 2, at the
-user's request (2026-09-22). Its runbook is ready
-([deployment.md](architecture/deployment.md#first-deploy-runbook)) but unrehearsed. The
-self-hosted ARM64 runner the image build targets is registered and online (confirmed live
-2026-09-22 — `ci-runner-setup.md`'s "done" status was correct; this file's own prior claim that
-registration was still outstanding was stale). ERP's Redis DB indices are now assigned
-(`REDIS_DB=3`, `REDIS_CACHE_DB=4`; runbook step 3) without needing invoiceflow's or crm's own
-config touched — both are still pre-production and neither claims an explicit index today. Still
-outside this repository and not something an agent can do: the SSH-run steps on dbvm/mainvm
-themselves, since no deploy job exists in CI yet. `main` is
-126 commits behind `develop` as of 2026-09-22 (last built 2026-08-18), so the `develop`→`main`
-merge is itself the first real exercise of the multi-arch build against current code.
+The first production deployment is done (2026-09-22) — `main`, `https://erp.x1techs.com` and
+`https://api-erp.x1techs.com` are live, TLS/CORS/CSRF/cookie-session login verified end-to-end
+against the real domains. Full runbook, and the three real gaps found while running it (dbvm
+resolving only as an SSH alias, not inside mainvm's containers; the GHCR images being private
+with no working pull credential on mainvm; `erp:create-admin --permissions=all` silently
+granting nothing because no permission strings are registered outside the production-blocked
+demo seeder) → [deployment.md](architecture/deployment.md#first-deploy-runbook). Still open, not
+blocking: no deploy job exists in CI (every VM-side step was run by hand over SSH), mainvm's
+GHCR credential is a personal token rather than a dedicated one, and there is still no
+production-safe command to register the app's permission vocabulary (tracked in
+[phase-2-purchasing-stock.md](phases/phase-2-purchasing-stock.md)).
 
 ## Blocked / awaiting input
 
