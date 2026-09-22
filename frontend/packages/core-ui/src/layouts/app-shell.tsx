@@ -10,13 +10,17 @@ import {
   LayoutDashboard,
   LogOut,
   MoreHorizontal,
+  Moon,
   Package,
+  Palette,
   Pin,
   PinOff,
+  Printer,
   ScrollText,
   Settings,
   ShieldAlert,
   SlidersHorizontal,
+  Sun,
   Tags,
   Warehouse,
 } from "lucide-react";
@@ -31,6 +35,7 @@ import {
   SheetTitle,
 } from "../components/ui/sheet";
 import { useAuthStore } from "../stores/auth-store";
+import { useAppearanceStore, useIsDarkMode } from "../stores/appearance-store";
 import { cn } from "../lib/utils";
 import {
   recordNavVisit,
@@ -88,6 +93,8 @@ const navGroups: NavGroup[] = [
     items: [
       { to: "/settings/purchasing", label: "Purchasing Settings", icon: Settings },
       { to: "/settings/inventory", label: "Inventory Settings", icon: SlidersHorizontal },
+      { to: "/settings/appearance", label: "Appearance", icon: Palette },
+      { to: "/settings/printing", label: "Printing", icon: Printer },
     ],
   },
 ];
@@ -135,6 +142,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [moreOpen, setMoreOpen] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
   const usagePrefs = useNavUsagePrefs(pathname);
+  const isDark = useIsDarkMode();
+  const setAppearance = useAppearanceStore((state) => state.setUser);
 
   // `<main>` (not `window`) is the actual scroll container — React Router
   // doesn't reset it on navigation, so without this a route opened while
@@ -239,6 +248,14 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
 
           <div className="flex shrink-0 items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+              onClick={() => setAppearance({ mode: isDark ? "light" : "dark" })}
+            >
+              {isDark ? <Sun className="size-4" /> : <Moon className="size-4" />}
+            </Button>
             <span className="max-w-[200px] truncate text-sm text-muted-foreground">
               {user?.email}
             </span>

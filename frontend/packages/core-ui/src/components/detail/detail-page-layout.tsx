@@ -12,7 +12,7 @@ export interface DetailSectionProps {
 /** One card-like section of a detail page — group related fields under an optional title. */
 export function DetailSection({ title, description, children, className }: DetailSectionProps) {
   return (
-    <section className={cn('min-w-0 rounded-lg border border-border p-4', className)}>
+    <section className={cn('min-w-0 rounded-lg border border-border bg-card p-4 text-card-foreground', className)}>
       {title && (
         <div className="mb-3">
           <h2 className="text-sm font-semibold">{title}</h2>

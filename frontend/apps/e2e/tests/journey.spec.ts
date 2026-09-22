@@ -37,22 +37,27 @@ test('purchase order through receipt, QA and availability', async ({ page }) => 
   };
 
   // --- Create and issue the purchase order ---
-  // Create is a 3-step wizard (Supplier & dates -> Lines -> Review); "Next"
-  // gates on that step's own validation, same as submitting used to.
+  // Create is a 3-step wizard (Supplier & dates -> Lines -> Review) in a side
+  // sheet over the PO list; "Next" gates on that step's own validation, same
+  // as submitting used to. Everything is scoped to the sheet because the list
+  // behind it has its own "Supplier" filter with the same label.
   await page.goto('/purchase-orders/new');
-  await pickCombobox(page, 'Supplier', SUPPLIER);
-  await expect(page.getByLabel('Currency', { exact: true })).not.toContainText('Select currency');
-  await page.getByRole('button', { name: 'Next' }).click();
+  const sheet = page.getByRole('dialog', { name: 'New purchase order' });
+  await pickCombobox(page, 'Supplier', SUPPLIER, { within: sheet });
+  await expect(sheet.getByLabel('Currency', { exact: true })).not.toContainText('Select currency');
+  await sheet.getByRole('button', { name: 'Next' }).click();
 
-  await pickCombobox(page, 'Item', ITEM);
-  await page.getByLabel('Quantity', { exact: true }).fill(String(QTY));
-  await page.getByLabel('Unit price', { exact: true }).fill('100.0000');
-  await page.getByLabel('QA required', { exact: true }).check();
-  await page.getByRole('button', { name: 'Next' }).click();
+  await pickCombobox(page, 'Item', ITEM, { within: sheet });
+  await sheet.getByLabel('Quantity', { exact: true }).fill(String(QTY));
+  await sheet.getByLabel('Unit price', { exact: true }).fill('100.0000');
+  await sheet.getByLabel('QA required', { exact: true }).check();
+  await sheet.getByRole('button', { name: 'Next' }).click();
 
-  await expect(page.getByRole('heading', { name: 'Review' })).toBeVisible();
-  await page.getByRole('button', { name: 'Save draft' }).click();
+  await expect(sheet.getByRole('heading', { name: 'Review' })).toBeVisible();
+  await sheet.getByRole('button', { name: 'Save draft' }).click();
   await expect(page).toHaveURL(/\/purchase-orders\/\d+$/);
+  // Saving is what finishes the order — nothing left behind for the sheet to offer back.
+  expect(await page.evaluate(() => Object.keys(sessionStorage).filter((key) => key.startsWith('erp:draft:')))).toEqual([]);
 
   await page.getByRole('button', { name: 'Issue purchase order' }).click();
   await expect(page.getByRole('heading', { name: 'Issue this purchase order' })).toBeFocused();
@@ -66,12 +71,13 @@ test('purchase order through receipt, QA and availability', async ({ page }) => 
   // older, still-open line sitting in the same dropdown (demo or prior
   // manual testing), and picking the wrong one silently receives someone
   // else's quantity instead of this run's.
-  const poNumber = (await page.getByRole('heading', { level: 1 }).innerText()).replace('Purchase order ', '').trim();
+  // (Matched by text rather than an <h1>: in a side sheet the title is a dialog heading.)
+  const poNumber = (await page.getByText(/^Purchase order \d+$/).first().innerText()).replace('Purchase order ', '').trim();
 
   // --- Receive the full ordered quantity against the issued line ---
   await page.goto('/goods-receipts/new');
   await pickCombobox(page, 'Supplier', SUPPLIER);
-  await pickCombobox(page, 'Purchase-order line', new RegExp(`^${escapeRegExp(poNumber)} / `), poNumber);
+  await pickCombobox(page, 'Purchase-order line', new RegExp(`^${escapeRegExp(poNumber)} / `), { searchText: poNumber });
   await pickCombobox(page, 'Put-away location', 'Main Stock');
 
   await page.getByRole('button', { name: 'Save draft receipt' }).click();

@@ -178,6 +178,57 @@ buried in submenus become undiscoverable).
   keeps it, since `/` would otherwise prefix-match everything) so a detail/edit route now correctly
   highlights its owning list item instead of highlighting nothing.
 
+## Form controls: searchable pickers and date fields
+
+- **Pickers**: a dropdown over reference data that grows with the business — items, suppliers,
+  categories, UoMs, currencies, locations, warehouses, accounts — is a searchable `Combobox`
+  (`components/ui/combobox.tsx`) whatever it holds today. A bounded enum (status, type, policy: a
+  handful of fixed values) stays a plain `Select`; searching a short fixed list is friction, not
+  help. In list-screen filters the "All …" choice is simply the first option.
+- **Dates**: `DateField` (`components/ui/date-field.tsx`) — typed `mm/dd/yyyy` segments plus a
+  calendar popup (`calendar.tsx`). Only the Month segment and the calendar button are Tab stops, so
+  Tab always moves on to the next field; ←/→ move between segments and ↑/↓ step a value. A native
+  `<input type="date">` can't do this — the browser keeps its own segment focus and script can't
+  change it — which is the only reason this is custom. It keeps the native input's value contract
+  (ISO `yyyy-mm-dd`, or `''`; only complete, valid dates are emitted), so it drops into
+  `FormControl` with no schema change. `datetime-local` fields stay native for now.
+
+## Create flows in a side sheet
+
+A multi-step "New …" flow — and a record's detail view — opens as a right-hand sheet over its list
+instead of a page of its own. Purchase orders are the reference: `purchase-order-create-screen.tsx`,
+`purchase-order-detail-screen.tsx`, `wizard-shell.tsx`, and `record-sheet.tsx` for the chrome.
+
+- **Route**: `new` and `:id` are *child* routes of the list (`router.tsx`), so the list stays
+  mounted, dimmed, behind the sheet, and the list's filters (held in the URL) are carried across
+  opening, closing, and the trip to the full-page edit and back.
+- **Page or sheet is one word**: both presentations are implemented and kept. Each screen takes a
+  `presentation` prop and `apps/main/src/presentation.ts` picks per screen — see
+  [ui-building-blocks.md](ui-building-blocks.md) for what exists and how to add another.
+- **Sizing**: `RecordSheet` sizes are a share of the screen with a floor and ceiling — forms use
+  `lg`; a data-dense record (the PO detail's lines table) uses `xl`, and in sheet mode drops the
+  unit's long name and wraps descriptions so no column, Short-close included, is pushed off-screen.
+  A table that can still overflow takes `scrollRegionLabel` so its scroll area is keyboard-reachable.
+- **Steps**: `WizardShell` is an indicator, the active step's fields and a sticky Back/Next footer.
+  "Next" validates only that step (`form.trigger`); on the last step the same button saves. It is
+  one persistent button, not a Next that swaps for a Save — the swap could land under the same click
+  and submit the form when the user only meant to advance.
+- **Closing is always safe**: on a create form a click outside the sheet is ignored (read-only detail
+  sheets do close on it), and the close button / Esc close instantly with no "discard?" prompt. The form keeps what was entered (`lib/session-draft.ts` —
+  sessionStorage keyed by user, alive for the tab) and offers it back: the list's button reads
+  "Continue new purchase order", and the sheet reopens on the same step with a "Picked up your
+  unfinished purchase order" line and a **Start over** control, the only way to discard. Saving
+  clears it and a blank form is never kept. The wording is "unfinished", never "draft" — a saved PO
+  in `DRAFT` status is a different thing.
+- **Edit stays a full page**, every section at once: the user is changing a complete record, not
+  building one.
+- **Considered and rejected**: a "discard changes?" confirmation — added friction, and it still
+  makes someone choose between their entries and checking another screen; a modal blocks everything
+  behind it, which is the wrong container for a task that needs other information (see NN/g's
+  [modal vs nonmodal guidance](https://www.nngroup.com/articles/modal-nonmodal-dialog/)). A
+  non-modal sheet — a side modal was the ask, and navigating away would unmount it anyway. Saving an
+  incomplete PO to the server — the API validates a complete order.
+
 ## Screen ownership by phase
 
 This is a durable allocation, not a complete speculative design. The detailed interaction
@@ -219,6 +270,8 @@ exist.
 
 ## Related
 
+- [UI building blocks](ui-building-blocks.md) — inventory of the reusable pieces and kept alternatives
+- [Appearance and printing](appearance-and-printing.md) — light/dark/theme tokens and Quick Print branding
 - [API conventions](api-conventions.md)
 - [Code structure](code-structure.md)
 - [Extensibility](extensibility.md)

@@ -1,0 +1,15 @@
+import type { Presentation } from "@erp/core-ui";
+
+/**
+ * How each record screen is shown: `"page"` (a page of its own) or `"sheet"` (a
+ * side sheet over its list, which stays visible behind it). Both are implemented
+ * for every screen listed here — change one word to try the other, nothing else.
+ * What exists and where: docs/architecture/ui-building-blocks.md.
+ */
+export const presentation: {
+  purchaseOrderCreate: Presentation;
+  purchaseOrderDetail: Presentation;
+} = {
+  purchaseOrderCreate: "sheet",
+  purchaseOrderDetail: "sheet",
+};

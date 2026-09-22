@@ -91,6 +91,12 @@ export const DateField = React.forwardRef<HTMLInputElement, DateFieldProps>(func
   forwardedRef
 ) {
   const [segments, setSegments] = React.useState<Segments>(() => parseIso(value));
+  // Handlers read the latest segments from this ref, never from the render's
+  // `segments`: focusing the next segment from inside a change handler blurs
+  // the current one synchronously, and that blur handler would otherwise see
+  // the value from *before* the keystroke and write it back (typing "11"
+  // came out "01").
+  const segmentsRef = React.useRef(segments);
   const [calendarOpen, setCalendarOpen] = React.useState(false);
   const focusedWithinRef = React.useRef(false);
   const inputRefs = {
@@ -105,11 +111,14 @@ export const DateField = React.forwardRef<HTMLInputElement, DateFieldProps>(func
   // is actively editing a segment, where a resync would fight their typing.
   React.useEffect(() => {
     if (focusedWithinRef.current) return;
-    setSegments(parseIso(value));
+    const parsed = parseIso(value);
+    segmentsRef.current = parsed;
+    setSegments(parsed);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
   function commit(next: Segments) {
+    segmentsRef.current = next;
     setSegments(next);
     onChange(toIso(next));
   }
@@ -122,7 +131,7 @@ export const DateField = React.forwardRef<HTMLInputElement, DateFieldProps>(func
 
   function handleSegmentChange(name: keyof Segments, rawInput: string) {
     const digits = rawInput.replace(/\D/g, '').slice(0, MAX_LENGTH[name]);
-    commit({ ...segments, [name]: digits });
+    commit({ ...segmentsRef.current, [name]: digits });
 
     const index = SEGMENT_ORDER.indexOf(name);
     const isLast = index === SEGMENT_ORDER.length - 1;
@@ -138,12 +147,14 @@ export const DateField = React.forwardRef<HTMLInputElement, DateFieldProps>(func
   }
 
   function handleSegmentBlur(name: keyof Segments) {
-    const padded = padOnBlur(name, segments[name]);
-    if (padded !== segments[name]) commit({ ...segments, [name]: padded });
+    const current = segmentsRef.current;
+    const padded = padOnBlur(name, current[name]);
+    if (padded !== current[name]) commit({ ...current, [name]: padded });
   }
 
   function handleKeyDown(name: keyof Segments, event: React.KeyboardEvent<HTMLInputElement>) {
     const index = SEGMENT_ORDER.indexOf(name);
+    const current = segmentsRef.current;
     if (event.key === 'ArrowLeft' && index > 0) {
       event.preventDefault();
       focusSegment(SEGMENT_ORDER[index - 1]!);
@@ -154,18 +165,18 @@ export const DateField = React.forwardRef<HTMLInputElement, DateFieldProps>(func
       event.preventDefault();
       const delta = event.key === 'ArrowUp' ? 1 : -1;
       if (name === 'year') {
-        const current = segments.year ? Number(segments.year) : new Date().getFullYear();
-        commit({ ...segments, year: String(Math.max(1, current + delta)).padStart(4, '0') });
+        const year = current.year ? Number(current.year) : new Date().getFullYear();
+        commit({ ...current, year: String(Math.max(1, year + delta)).padStart(4, '0') });
       } else {
         const max = MAX_VALUE[name];
-        const current = segments[name] ? Number(segments[name]) : delta > 0 ? 0 : 1;
-        const next = ((current - 1 + delta + max) % max) + 1;
-        commit({ ...segments, [name]: String(next).padStart(2, '0') });
+        const from = current[name] ? Number(current[name]) : delta > 0 ? 0 : 1;
+        const next = ((from - 1 + delta + max) % max) + 1;
+        commit({ ...current, [name]: String(next).padStart(2, '0') });
       }
-    } else if (event.key === 'Backspace' && segments[name] === '' && index > 0) {
+    } else if (event.key === 'Backspace' && current[name] === '' && index > 0) {
       event.preventDefault();
       const previous = SEGMENT_ORDER[index - 1]!;
-      commit({ ...segments, [previous]: segments[previous].slice(0, -1) });
+      commit({ ...current, [previous]: current[previous].slice(0, -1) });
       focusSegment(previous, false);
     }
   }
@@ -190,7 +201,9 @@ export const DateField = React.forwardRef<HTMLInputElement, DateFieldProps>(func
       aria-describedby={ariaDescribedBy}
       aria-invalid={ariaInvalid}
       className={cn(
-        'flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent pl-3 pr-1 text-sm shadow-sm ring-offset-background focus-within:ring-1 focus-within:ring-ring',
+        // `min-w-fit`: the field never gets narrower than the date it has to show,
+        // so a tight grid cell can crowd its neighbour but never clip the date.
+        'flex h-9 w-full min-w-fit items-center justify-between rounded-md border border-input bg-transparent pl-3 pr-1 text-sm shadow-sm ring-offset-background focus-within:ring-1 focus-within:ring-ring',
         disabled && 'cursor-not-allowed opacity-50',
         className
       )}
@@ -211,6 +224,24 @@ export const DateField = React.forwardRef<HTMLInputElement, DateFieldProps>(func
                 /
               </span>
             )}
+            {/* Each segment is sized by the text it has to show, not a fixed
+                width: the invisible sizers below (the placeholder, and a run of
+                digits) stack in the same grid cell as the input, so the cell is
+                as wide as the widest of them in whatever font is in use — the
+                input itself is absolutely positioned over them, because an
+                input's own intrinsic width would otherwise inflate the cell. A
+                fixed `ch` width clipped "MM"/"DD" — capital letters are wider
+                than the digit `ch` measures — and the amount it clipped by
+                changed from one font to the next. The sizers are padded more than the
+                input is, on purpose: that difference is the slack that keeps the
+                text from touching the edge whatever the rendering. */}
+            <span className="relative inline-grid">
+              <span aria-hidden="true" className="invisible col-start-1 row-start-1 whitespace-pre px-1.5 tabular-nums">
+                {SEGMENT_PLACEHOLDER[name]}
+              </span>
+              <span aria-hidden="true" className="invisible col-start-1 row-start-1 whitespace-pre px-1.5 tabular-nums">
+                {'0'.repeat(MAX_LENGTH[name])}
+              </span>
             <input
               ref={inputRefs[name]}
               type="text"
@@ -232,11 +263,9 @@ export const DateField = React.forwardRef<HTMLInputElement, DateFieldProps>(func
               onBlur={() => handleSegmentBlur(name)}
               onPaste={handlePaste}
               onFocus={(event) => event.currentTarget.select()}
-              className={cn(
-                'border-0 bg-transparent p-0 text-center tabular-nums text-foreground focus:outline-none disabled:cursor-not-allowed',
-                name === 'year' ? 'w-[4ch]' : 'w-[2ch]'
-              )}
+              className="absolute inset-0 h-full w-full min-w-0 border-0 bg-transparent px-0.5 py-0 text-center tabular-nums text-foreground focus:outline-none disabled:cursor-not-allowed"
             />
+            </span>
           </React.Fragment>
         ))}
       </div>

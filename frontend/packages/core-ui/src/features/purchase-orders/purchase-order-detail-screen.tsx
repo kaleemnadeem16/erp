@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useState, type ReactNode } from "react";
+import { useLocation, useNavigate, useParams } from "react-router";
 import {
   usePurchaseOrderLinesShortClose,
   usePurchaseOrdersCancel,
@@ -19,7 +19,8 @@ import {
   DetailPageLayout,
   DetailSection,
 } from "../../components/detail/detail-page-layout";
-import { PageHeader } from "../../components/page/page-header";
+import { PageHeader, type PageHeaderBreadcrumb } from "../../components/page/page-header";
+import { RecordSheet } from "../../components/page/record-sheet";
 import {
   DetailPrintLayout,
   PrintableTable,
@@ -38,6 +39,7 @@ import {
 } from "../../components/ui/table";
 import { Textarea } from "../../components/ui/textarea";
 import { getApiErrorMessage } from "../../lib/api-errors";
+import type { Presentation } from "../../lib/presentation";
 import { useFocusOnOpen } from "../../lib/use-focus-on-open";
 
 const STATUS_VARIANT: Record<
@@ -50,9 +52,16 @@ const STATUS_VARIANT: Record<
   CANCELLED: "destructive",
 };
 
-export function PurchaseOrderDetailScreen() {
+/**
+ * Both presentations are kept on purpose — switch with one word in
+ * `apps/main/src/presentation.ts`. `"page"` is the full-page detail; `"sheet"`
+ * (the nested `:id` route) shows the same content in a side sheet over the
+ * purchase-order list, which stays mounted behind it.
+ */
+export function PurchaseOrderDetailScreen({ presentation = "page" }: { presentation?: Presentation }) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { search } = useLocation();
   const orderId = Number(id);
   const orderQuery = usePurchaseOrdersShow(orderId, { include: "lines" });
   const order =
@@ -142,25 +151,63 @@ export function PurchaseOrderDetailScreen() {
     );
   }
 
-  if (orderQuery.isLoading)
+  // The same content either fills a page or a side sheet over the list.
+  function present(
+    content: ReactNode,
+    header?: { title: string; description?: string; breadcrumbs?: PageHeaderBreadcrumb[]; actions?: ReactNode },
+  ) {
+    if (presentation === "sheet") {
+      return (
+        <RecordSheet
+          title={header?.title ?? "Purchase order"}
+          description={header?.description}
+          actions={header?.actions}
+          size="xl"
+          onClose={() => navigate({ pathname: "/purchase-orders", search })}
+        >
+          <div className="space-y-4 pb-4">{content}</div>
+        </RecordSheet>
+      );
+    }
     return (
       <div className="space-y-4 p-6">
-        <Skeleton className="h-9 w-64" />
-        <Skeleton className="h-48 w-full" />
+        {header && (
+          <PageHeader
+            title={header.title}
+            description={header.description}
+            breadcrumbs={header.breadcrumbs}
+            actions={header.actions}
+          />
+        )}
+        {content}
       </div>
     );
+  }
+
+  if (orderQuery.isLoading)
+    return present(
+      <>
+        <Skeleton className="h-9 w-64" />
+        <Skeleton className="h-48 w-full" />
+      </>,
+    );
   if (orderQuery.isError || !order)
-    return (
-      <div className="space-y-4 p-6">
+    return present(
+      <>
         <p className="text-sm text-destructive">
           Couldn&apos;t load this purchase order.
         </p>
-        <Button variant="outline" onClick={() => navigate("/purchase-orders")}>
+        <Button variant="outline" onClick={() => navigate({ pathname: "/purchase-orders", search })}>
           Back to purchase orders
         </Button>
-      </div>
+      </>,
     );
 
+  // In the side sheet the lines table has less room than on a page, so it drops
+  // the unit's long name (kept as a hover title) and lets descriptions wrap —
+  // otherwise the QA and Short-close columns are pushed off the right edge.
+  const compact = presentation === "sheet";
+  const purchaseUomLabel = (uomId: number) => uomLabels.get(uomId) ?? `UoM #${uomId}`;
   const isDraft = order.status === "DRAFT";
   const isIssued = order.status === "ISSUED";
   const supplierLabel = supplier
@@ -172,19 +219,28 @@ export function PurchaseOrderDetailScreen() {
       title: "Order",
       fields: [
         { label: "Status", value: order.status },
-        { label: "Supplier", value: supplierLabel },
         { label: "Order date", value: order.order_date },
         { label: "Expected delivery", value: order.expected_delivery_date ?? "" },
-        { label: "FX policy", value: order.fx_policy },
-        { label: "FX rate", value: order.fx_rate },
         { label: "Currency", value: currency ? `${currency.code} — ${currency.name}` : `Currency #${order.currency_id}` },
-        { label: "Order total", value: `${order.total_amount ?? "—"} ${currency?.code ?? ""}` },
-        { label: "Notes", value: order.notes ?? "" },
+        { label: "FX policy", value: order.fx_policy },
+        { label: "FX rate", value: `${order.fx_rate} (${order.fx_rate_date}, ${order.fx_rate_source})` },
       ],
     },
+    {
+      title: "Supplier",
+      fields: [
+        { label: "Supplier", value: supplierLabel },
+        ...(supplier?.party?.tax_id ? [{ label: "Tax ID", value: supplier.party.tax_id }] : []),
+        ...(supplier?.party?.registration_no
+          ? [{ label: "Registration no.", value: supplier.party.registration_no }]
+          : []),
+        { label: "Payment terms", value: supplier ? `${supplier.payment_terms_days} days` : "" },
+      ],
+    },
+    ...(order.notes ? [{ title: "Notes", fullWidth: true, fields: [{ label: "Notes", value: order.notes }] }] : []),
   ];
   const printLineColumns: DataColumn<PurchaseOrderLineResource>[] = [
-    { key: "line_number", header: "Line", value: (line) => line.line_number },
+    { key: "line_number", header: "#", value: (line) => line.line_number, align: "right" },
     { key: "item", header: "Item", value: (line) => line.item_code ?? `#${line.item_id}` },
     { key: "description", header: "Description", value: (line) => line.description },
     {
@@ -193,8 +249,9 @@ export function PurchaseOrderDetailScreen() {
       value: (line) => `${line.ordered_qty} ${uomLabels.get(line.purchase_uom_id)?.split(" — ")[0] ?? ""}`,
       align: "right",
     },
-    { key: "received_stock_qty", header: "Received", value: (line) => line.received_stock_qty, align: "right" },
-    { key: "outstanding_stock_qty", header: "Outstanding", value: (line) => line.outstanding_stock_qty, align: "right" },
+    { key: "unit_price", header: "Unit price", value: (line) => line.unit_price, align: "right" },
+    { key: "discount_amount", header: "Discount", value: (line) => line.discount_amount, align: "right" },
+    { key: "tax_amount", header: "Tax", value: (line) => line.tax_amount, align: "right" },
     {
       key: "line_amount",
       header: "Amount",
@@ -202,50 +259,53 @@ export function PurchaseOrderDetailScreen() {
       align: "right",
     },
   ];
+  const printLineColumnCount = printLineColumns.length;
+  const printTotalsFooter = (
+    <tr>
+      <td
+        colSpan={printLineColumnCount - 1}
+        className="px-1.5 py-2 text-right text-[9.5px] font-semibold uppercase tracking-wide text-black/60"
+      >
+        Order total
+      </td>
+      <td className="px-1.5 py-2 text-right text-[11px] font-bold text-[var(--print-accent)]">
+        {order.total_amount ?? "—"} {currency?.code ?? ""}
+      </td>
+    </tr>
+  );
 
-  return (
-    <div className="space-y-4 p-6">
-      <PageHeader
-        title={
-          order.number
-            ? `Purchase order ${order.number}`
-            : `Draft purchase order #${order.id}`
-        }
-        description={supplierLabel}
-        breadcrumbs={[
-          { label: "Purchase Orders", to: "/purchase-orders" },
-          { label: order.number ?? `Draft #${order.id}` },
-        ]}
-        actions={
-          <>
-            <PrintTrigger onPrint={() => print()} />
-            {isDraft && (
-              <Button
-                variant="outline"
-                onClick={() => navigate(`/purchase-orders/${order.id}/edit`)}
-              >
-                Edit draft
-              </Button>
-            )}
-            {isDraft && (
-              <Button
-                onClick={() => setShowIssueConfirmation(true)}
-                disabled={issue.isPending}
-              >
-                Issue purchase order
-              </Button>
-            )}
-            {isIssued && (
-              <Button
-                variant="outline"
-                onClick={() => setShowCancel((value) => !value)}
-              >
-                Cancel order
-              </Button>
-            )}
-          </>
-        }
-      />
+  const actions = (
+    <>
+      <PrintTrigger onPrint={() => print()} />
+      {isDraft && (
+        <Button
+          variant="outline"
+          onClick={() => navigate({ pathname: `/purchase-orders/${order.id}/edit`, search })}
+        >
+          Edit draft
+        </Button>
+      )}
+      {isDraft && (
+        <Button
+          onClick={() => setShowIssueConfirmation(true)}
+          disabled={issue.isPending}
+        >
+          Issue purchase order
+        </Button>
+      )}
+      {isIssued && (
+        <Button
+          variant="outline"
+          onClick={() => setShowCancel((value) => !value)}
+        >
+          Cancel order
+        </Button>
+      )}
+    </>
+  );
+
+  return present(
+    <>
       {actionError && (
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
           {actionError}
@@ -352,7 +412,6 @@ export function PurchaseOrderDetailScreen() {
               {order.status}
             </Badge>
           </DetailField>
-          <DetailField label="Supplier">{supplierLabel}</DetailField>
           <DetailField label="Order date">{order.order_date}</DetailField>
           <DetailField label="Expected delivery">
             {order.expected_delivery_date ?? "Not set"}
@@ -366,6 +425,24 @@ export function PurchaseOrderDetailScreen() {
             <DetailField label="Cancellation reason">
               {order.cancellation_reason}
             </DetailField>
+          )}
+        </DetailSection>
+        <DetailSection title="Supplier">
+          <DetailField label="Supplier">{supplierLabel}</DetailField>
+          <DetailField label="Payment terms">
+            {supplier ? `${supplier.payment_terms_days} days` : undefined}
+          </DetailField>
+          {supplier?.party?.tax_id && (
+            <DetailField label="Tax ID">{supplier.party.tax_id}</DetailField>
+          )}
+          {supplier?.party?.registration_no && (
+            <DetailField label="Registration no.">{supplier.party.registration_no}</DetailField>
+          )}
+          {supplier?.party?.website && (
+            <DetailField label="Website">{supplier.party.website}</DetailField>
+          )}
+          {supplier?.lead_time_days != null && (
+            <DetailField label="Lead time">{supplier.lead_time_days} days</DetailField>
           )}
         </DetailSection>
         <DetailSection title="Commercial">
@@ -387,8 +464,8 @@ export function PurchaseOrderDetailScreen() {
           title="Lines"
           description="Ordered quantities and commercial values are immutable after issue."
         >
-          <div className="overflow-x-auto rounded-md border sm:col-span-2">
-            <Table>
+          <div className="overflow-hidden rounded-md border sm:col-span-2">
+            <Table scrollRegionLabel="Order lines">
               <TableHeader>
                 <TableRow>
                   <TableHead>Line</TableHead>
@@ -412,12 +489,15 @@ export function PurchaseOrderDetailScreen() {
                       <TableCell>
                         {line.item_code ?? `#${line.item_id}`}
                       </TableCell>
-                      <TableCell>{line.description}</TableCell>
+                      <TableCell className={compact ? "whitespace-normal" : undefined}>
+                        {line.description}
+                      </TableCell>
                       <TableCell className="text-right tabular-nums">
                         {line.ordered_qty}{" "}
-                        <span className="text-muted-foreground">
-                          {uomLabels.get(line.purchase_uom_id) ??
-                            `UoM #${line.purchase_uom_id}`}
+                        <span className="text-muted-foreground" title={purchaseUomLabel(line.purchase_uom_id)}>
+                          {compact
+                            ? purchaseUomLabel(line.purchase_uom_id).split(" — ")[0]
+                            : purchaseUomLabel(line.purchase_uom_id)}
                         </span>
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
@@ -464,14 +544,29 @@ export function PurchaseOrderDetailScreen() {
       <div className="hidden">
         <div ref={printRef}>
           <DetailPrintLayout
-            title={order.number ? `PURCHASE ORDER ${order.number}` : `DRAFT PURCHASE ORDER #${order.id}`}
+            title="Purchase order"
+            subtitle={order.number ? `No. ${order.number} · ${order.status}` : `Draft #${order.id} · ${order.status}`}
             printedAt={new Date()}
             sections={printSections}
           >
-            <PrintableTable columns={printLineColumns} rows={order.lines ?? []} getRowKey={(line) => line.id} />
+            <PrintableTable
+              columns={printLineColumns}
+              rows={order.lines ?? []}
+              getRowKey={(line) => line.id}
+              footer={printTotalsFooter}
+            />
           </DetailPrintLayout>
         </div>
       </div>
-    </div>
+    </>,
+    {
+      title: order.number ? `Purchase order ${order.number}` : `Draft purchase order #${order.id}`,
+      description: supplierLabel,
+      breadcrumbs: [
+        { label: "Purchase Orders", to: "/purchase-orders" },
+        { label: order.number ?? `Draft #${order.id}` },
+      ],
+      actions,
+    },
   );
 }

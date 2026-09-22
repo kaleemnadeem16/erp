@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router";
+import { BrowserRouter, Routes, Route, Outlet } from "react-router";
 import {
   AppShell,
   CategoriesListScreen,
@@ -33,6 +33,8 @@ import {
   PurchaseOrderCreateScreen,
   PurchaseOrderEditScreen,
   InventorySettingsScreen,
+  AppearanceSettingsScreen,
+  PrintingSettingsScreen,
   ProtectedRoute,
   PurchasingSettingsScreen,
   RecalculationRequestCreateScreen,
@@ -45,6 +47,10 @@ import {
   WarehouseEditScreen,
   WarehousesListScreen,
 } from "@erp/core-ui";
+import { presentation } from "./presentation";
+
+const purchaseOrderCreateAsSheet = presentation.purchaseOrderCreate === "sheet";
+const purchaseOrderDetailAsSheet = presentation.purchaseOrderDetail === "sheet";
 
 export function AppRouter() {
   return (
@@ -241,16 +247,39 @@ export function AppRouter() {
             </ProtectedRoute>
           }
         />
+        {/* Sheet presentations are nested so the list stays mounted (and visible,
+            dimmed) behind the side sheet the child route renders through
+            <Outlet />. Which screens are sheets: ./presentation.ts */}
         <Route
           path="/purchase-orders"
           element={
             <ProtectedRoute>
               <AppShell>
                 <PurchaseOrdersListScreen />
+                <Outlet />
               </AppShell>
             </ProtectedRoute>
           }
-        />
+        >
+          {purchaseOrderCreateAsSheet && (
+            <Route path="new" element={<PurchaseOrderCreateScreen presentation="sheet" />} />
+          )}
+          {purchaseOrderDetailAsSheet && (
+            <Route path=":id" element={<PurchaseOrderDetailScreen presentation="sheet" />} />
+          )}
+        </Route>
+        {!purchaseOrderCreateAsSheet && (
+          <Route
+            path="/purchase-orders/new"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <PurchaseOrderCreateScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
         <Route
           path="/goods-receipts"
           element={
@@ -281,32 +310,44 @@ export function AppRouter() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/purchase-orders/:id"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <PurchaseOrderDetailScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/purchase-orders/new"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <PurchaseOrderCreateScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
+        {!purchaseOrderDetailAsSheet && (
+          <Route
+            path="/purchase-orders/:id"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <PurchaseOrderDetailScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
         <Route
           path="/purchase-orders/:id/edit"
           element={
             <ProtectedRoute>
               <AppShell>
                 <PurchaseOrderEditScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings/appearance"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <AppearanceSettingsScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings/printing"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <PrintingSettingsScreen />
               </AppShell>
             </ProtectedRoute>
           }

@@ -25,6 +25,32 @@ export {
 } from "./components/page/page-header";
 export { MobileFab, type MobileFabProps } from "./components/page/mobile-fab";
 export {
+  RecordSheet,
+  RecordSheetAside,
+  type RecordSheetProps,
+  type RecordSheetSize,
+} from "./components/page/record-sheet";
+export type { Presentation } from "./lib/presentation";
+export { AppearanceProvider } from "./components/theme/appearance-provider";
+export {
+  THEMES,
+  DEFAULT_APPEARANCE,
+  resolveAppearance,
+  type Appearance,
+  type ColorMode,
+  type ThemeId,
+  type ThemeDefinition,
+} from "./lib/appearance";
+export { useAppearanceStore, useAppearance, useIsDarkMode } from "./stores/appearance-store";
+export { AppearanceSettingsScreen } from "./features/settings/appearance-settings-screen";
+export { PrintingSettingsScreen } from "./features/settings/printing-settings-screen";
+export {
+  usePrintSettingsStore,
+  DEFAULT_PRINT_SETTINGS,
+  type PrintSettings,
+} from "./stores/print-settings-store";
+export { OptionCards, type OptionCard, type OptionCardsProps } from "./components/ui/option-cards";
+export {
   DetailPageLayout,
   DetailSection,
   type DetailSectionProps,

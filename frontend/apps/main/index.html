@@ -7,6 +7,23 @@
          this no-op icon just stops the browser's default /favicon.ico request 404ing. -->
     <link rel="icon" href="data:," />
     <title>ERP</title>
+    <!-- Applies the saved colour mode / theme before the first paint, so a
+         dark-mode user never sees a white flash while React loads. Same key and
+         shape as core-ui's lib/appearance.ts; AppearanceProvider takes over once
+         the app is running. -->
+    <script>
+      (function () {
+        try {
+          var saved = JSON.parse(localStorage.getItem('erp.appearance') || '{}');
+          var root = document.documentElement;
+          var dark =
+            saved.mode === 'dark' ||
+            (saved.mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          if (dark) root.classList.add('dark');
+          if (saved.theme && saved.theme !== 'slate') root.setAttribute('data-theme', saved.theme);
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

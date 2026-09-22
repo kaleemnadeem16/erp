@@ -2,9 +2,26 @@ import * as React from 'react';
 
 import { cn } from '../../lib/utils';
 
-const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableElement>>(
-  ({ className, ...props }, ref) => (
-    <div className="relative w-full overflow-auto">
+export interface TableProps extends React.HTMLAttributes<HTMLTableElement> {
+  /**
+   * Name for the table's horizontal scroll area. Pass it for a table that can
+   * overflow its container (a wide table in a side sheet): the scroll area then
+   * becomes a labelled region keyboard users can focus and scroll — without
+   * it, columns pushed off-screen are unreachable without a mouse. Left off, a
+   * table adds no extra tab stop.
+   */
+  scrollRegionLabel?: string;
+}
+
+const Table = React.forwardRef<HTMLTableElement, TableProps>(
+  ({ className, scrollRegionLabel, ...props }, ref) => (
+    <div
+      className={cn(
+        'relative w-full overflow-auto',
+        scrollRegionLabel && 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring'
+      )}
+      {...(scrollRegionLabel ? { role: 'region', 'aria-label': scrollRegionLabel, tabIndex: 0 } : {})}
+    >
       <table ref={ref} className={cn('w-full caption-bottom text-sm', className)} {...props} />
     </div>
   )

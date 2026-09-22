@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useLocation, useNavigate, useParams } from "react-router";
 import type { FieldPath, UseFormReturn } from "react-hook-form";
 import { usePurchaseOrdersShow, usePurchaseOrdersUpdate } from "@erp/core-api";
 
@@ -17,6 +17,7 @@ import {
 export function PurchaseOrderEditScreen() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { search } = useLocation();
   const orderId = Number(id);
   const [formError, setFormError] = useState<string | null>(null);
   const [advancedOptions, setAdvancedOptions] = useState<AdvancedOption[]>([]);
@@ -35,7 +36,7 @@ export function PurchaseOrderEditScreen() {
       {
         onSuccess: (result) => {
           if (result.status === 200)
-            navigate(`/purchase-orders/${result.data.data.id}`);
+            navigate({ pathname: `/purchase-orders/${result.data.data.id}`, search });
         },
         onError: (error) => {
           if (isApiError(error) && error.body?.errors) {

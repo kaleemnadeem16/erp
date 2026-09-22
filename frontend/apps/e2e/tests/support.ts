@@ -7,10 +7,21 @@ import type { Locator, Page } from '@playwright/test';
  * `searchText` separately when `optionText` needs to be a more precise regex
  * than cmdk's own fuzzy filter would need to narrow the list down (e.g. an
  * anchored pattern disambiguating two lines that share a search term).
+ * Pass `within` when the trigger lives in a dialog over a page that has its
+ * own field with the same label (the PO create sheet sits over the PO list,
+ * whose supplier filter is also labelled "Supplier").
  */
-export async function pickCombobox(page: Page, label: string, optionText: string | RegExp, searchText?: string) {
-  await page.getByLabel(label, { exact: true }).click();
-  await page.getByPlaceholder(/Search/).fill(searchText ?? (typeof optionText === 'string' ? optionText : ''));
+export async function pickCombobox(
+  page: Page,
+  label: string,
+  optionText: string | RegExp,
+  { searchText, within }: { searchText?: string; within?: Locator } = {}
+) {
+  await (within ?? page).getByLabel(label, { exact: true }).click();
+  // The popover is portalled to <body>, outside any dialog its trigger is in,
+  // and the page behind can have its own "Search…" inputs — cmdk's own
+  // attribute picks out the open popover's box unambiguously.
+  await page.locator('[cmdk-input]').fill(searchText ?? (typeof optionText === 'string' ? optionText : ''));
   await page.getByRole('option', { name: optionText }).first().click();
 }
 

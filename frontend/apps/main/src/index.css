@@ -1,16 +1,25 @@
 @import "tailwindcss";
+@import "./themes.css";
 
 /* Tailwind's auto content detection stops at package boundaries, so classes used
    inside the @erp/core-ui workspace package (a sibling package, not a subdirectory
    of this app) are invisible unless scanned explicitly. */
 @source "../../../packages/core-ui/src";
 
-/* shadcn/ui default (light-only) theme tokens — dark mode isn't wired up yet,
-   customising beyond these defaults is a Phase 4 task (see phase-0-foundation.md). */
+/* Base (light, "slate") tokens. Dark mode and the accent themes are overrides of
+   these same variables in themes.css; how they're selected at runtime, and how a
+   company or user default layers on top, is in
+   docs/architecture/appearance-and-printing.md. */
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-panel: var(--panel);
+  --color-panel-foreground: var(--panel-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-soft-foreground: var(--primary-soft-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
@@ -47,12 +56,25 @@
   --radius: 0.5rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
+  /* card: a raised surface (a detail section); panel: a quiet side surface (the
+     order-summary column). Same as the page in light, distinct in dark. */
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --panel: oklch(0.978 0.004 250);
+  --panel-foreground: oklch(0.145 0 0);
+  /* A tint of the accent for soft surfaces (banners, icon tiles, active steps). */
+  --primary-soft: oklch(0.96 0 0);
+  --primary-soft-foreground: oklch(0.205 0 0);
   --primary: oklch(0.205 0 0);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
+  /* Slightly darker than the common 0.556 default: that value clears 4.5:1
+     against pure white but falls just short (4.45:1) against --panel, which
+     is a hair off-white — this keeps every muted-foreground use readable on
+     both without a per-component override. */
+  --muted-foreground: oklch(0.52 0 0);
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --popover: oklch(1 0 0);

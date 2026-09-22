@@ -1,25 +1,35 @@
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import type { FieldPath, UseFormReturn } from "react-hook-form";
+import { FilePlus2 } from "lucide-react";
 import { usePurchaseOrdersStore } from "@erp/core-api";
 
 import { AdvancedOptionsMenu, type AdvancedOption } from "../../components/ui/advanced-options-menu";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "../../components/ui/sheet";
+import { PageHeader } from "../../components/page/page-header";
+import { RecordSheet } from "../../components/page/record-sheet";
+import type { Presentation } from "../../lib/presentation";
 import { getApiErrorMessage, isApiError } from "../../lib/api-errors";
 import {
   PurchaseOrderForm,
+  clearUnfinishedPurchaseOrder,
   toPurchaseOrderPayload,
   type PurchaseOrderFormValues,
 } from "./purchase-order-form";
 
-export function PurchaseOrderCreateScreen() {
+const TITLE = "New purchase order";
+const DESCRIPTION = "Create a draft supplier commitment. Nothing is frozen until issue.";
+
+/**
+ * Both presentations are kept on purpose — switch with one word in
+ * `apps/main/src/presentation.ts`. `"sheet"` is for the nested `new` route: the
+ * purchase-order list stays mounted (dimmed) behind a side sheet, a click
+ * outside it is ignored, and closing is always safe because the form keeps what
+ * was entered (see PurchaseOrderForm). `"page"` is the same form on a page of
+ * its own.
+ */
+export function PurchaseOrderCreateScreen({ presentation = "page" }: { presentation?: Presentation }) {
   const navigate = useNavigate();
+  const { search } = useLocation();
   const create = usePurchaseOrdersStore();
   const [formError, setFormError] = useState<string | null>(null);
   const [advancedOptions, setAdvancedOptions] = useState<AdvancedOption[]>([]);
@@ -33,8 +43,10 @@ export function PurchaseOrderCreateScreen() {
       { data: toPurchaseOrderPayload(values) },
       {
         onSuccess: (result) => {
-          if (result.status === 201)
-            navigate(`/purchase-orders/${result.data.data.id}`);
+          if (result.status === 201) {
+            clearUnfinishedPurchaseOrder();
+            navigate({ pathname: `/purchase-orders/${result.data.data.id}`, search });
+          }
         },
         onError: (error) => {
           if (isApiError(error) && error.body?.errors) {
@@ -49,38 +61,43 @@ export function PurchaseOrderCreateScreen() {
     );
   }
 
-  return (
-    <Sheet
-      open
-      onOpenChange={(open) => {
-        if (!open) navigate("/purchase-orders");
-      }}
-    >
-      <SheetContent
-        side="right"
-        className="flex w-full flex-col gap-0 sm:max-w-2xl"
+  const form = (
+    <PurchaseOrderForm
+      onSubmit={handleSubmit}
+      isSubmitting={create.isPending}
+      formError={formError}
+      onAdvancedOptionsChange={setAdvancedOptions}
+    />
+  );
+  const advancedOptionsMenu = <AdvancedOptionsMenu options={advancedOptions} />;
+
+  if (presentation === "sheet") {
+    return (
+      <RecordSheet
+        title={TITLE}
+        description={DESCRIPTION}
+        icon={<FilePlus2 />}
+        size="xl"
+        actions={advancedOptionsMenu}
+        dismissOnOutsideClick={false}
+        onClose={() => navigate({ pathname: "/purchase-orders", search })}
       >
-        <SheetHeader className="shrink-0 border-b border-border pb-4">
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <SheetTitle>New purchase order</SheetTitle>
-              <SheetDescription>
-                Create a draft supplier commitment. Nothing is frozen until
-                issue.
-              </SheetDescription>
-            </div>
-            <AdvancedOptionsMenu options={advancedOptions} />
-          </div>
-        </SheetHeader>
-        <div className="min-h-0 flex-1 overflow-y-auto pt-4">
-          <PurchaseOrderForm
-            onSubmit={handleSubmit}
-            isSubmitting={create.isPending}
-            formError={formError}
-            onAdvancedOptionsChange={setAdvancedOptions}
-          />
-        </div>
-      </SheetContent>
-    </Sheet>
+        {form}
+      </RecordSheet>
+    );
+  }
+  return (
+    <div className="space-y-4 p-6">
+      <PageHeader
+        title={TITLE}
+        description={DESCRIPTION}
+        breadcrumbs={[
+          { label: "Purchase Orders", to: "/purchase-orders" },
+          { label: "New" },
+        ]}
+        actions={advancedOptionsMenu}
+      />
+      {form}
+    </div>
   );
 }

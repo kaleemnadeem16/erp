@@ -271,7 +271,7 @@ export function PhysicalCountDetailScreen() {
                         <TableCell
                           className={cn(
                             'text-right tabular-nums',
-                            varianceValue !== null && varianceValue > 0 && 'text-emerald-600',
+                            varianceValue !== null && varianceValue > 0 && 'text-status-success',
                             varianceValue !== null && varianceValue < 0 && 'text-destructive'
                           )}
                         >

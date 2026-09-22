@@ -6,7 +6,7 @@ import {
   type UseFormReturn,
 } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Trash2 } from "lucide-react";
+import { History, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { z } from "zod";
 import {
   useCurrenciesIndex,
@@ -40,7 +40,10 @@ import {
 } from "../../components/ui/select";
 import { DetailSection } from "../../components/detail/detail-page-layout";
 import { DetailField } from "../../components/detail/detail-field";
+import { RecordSheetAside } from "../../components/page/record-sheet";
 import { WizardShell, type WizardStep } from "../../components/page/wizard-shell";
+import { clearDraft, readDraft, writeDraft } from "../../lib/session-draft";
+import { PurchaseOrderSummary } from "./purchase-order-summary";
 
 const decimal = (label: string, positive = false) =>
   z
@@ -112,6 +115,59 @@ const emptyLine = (): PurchaseOrderFormValues["lines"][number] => ({
   expected_delivery_date: "",
   qa_required: false,
 });
+
+const createDefaults = (): PurchaseOrderFormValues => ({
+  supplier_account_id: "",
+  currency_id: "",
+  ...DEFAULT_FX,
+  fx_rate_date: today,
+  order_date: today,
+  expected_delivery_date: "",
+  notes: "",
+  lines: [emptyLine()],
+});
+
+// `fx_rate_date` is excluded — it's expected to differ from `today`, not a
+// sign of a real override.
+const fxIsCustomised = (values: PurchaseOrderFormValues) =>
+  values.fx_policy !== DEFAULT_FX.fx_policy ||
+  values.fx_rate !== DEFAULT_FX.fx_rate ||
+  values.fx_rate_type !== DEFAULT_FX.fx_rate_type ||
+  values.fx_rate_source !== DEFAULT_FX.fx_rate_source;
+
+// Closing the create sheet never throws away work: the form is kept for the
+// tab's lifetime and offered back the next time "New purchase order" opens —
+// someone partway through a PO who needs to check a supplier, a stock level
+// or an earlier order shouldn't have to choose between that and their entries.
+// Named "unfinished purchase order" in the UI, not "draft" — a *saved* PO in
+// DRAFT status is a different thing here.
+const DRAFT_NAME = "purchase-order";
+
+interface UnfinishedPurchaseOrder {
+  values: PurchaseOrderFormValues;
+  step: number;
+}
+
+const isPristine = (values: PurchaseOrderFormValues) =>
+  JSON.stringify(values) === JSON.stringify(createDefaults());
+
+function readUnfinishedPurchaseOrder(): UnfinishedPurchaseOrder | null {
+  const stored = readDraft<UnfinishedPurchaseOrder>(DRAFT_NAME)?.value;
+  if (!stored || typeof stored.step !== "number" || !Array.isArray(stored.values?.lines)) return null;
+  const base = createDefaults();
+  const values: PurchaseOrderFormValues = {
+    ...base,
+    ...stored.values,
+    lines: stored.values.lines.length
+      ? stored.values.lines.map((line) => ({ ...emptyLine(), ...line }))
+      : base.lines,
+  };
+  if (isPristine(values)) return null;
+  return { values, step: Math.min(Math.max(stored.step, 0), WIZARD_STEPS.length - 1) };
+}
+
+export const hasUnfinishedPurchaseOrder = () => readUnfinishedPurchaseOrder() !== null;
+export const clearUnfinishedPurchaseOrder = () => clearDraft(DRAFT_NAME);
 
 // The create flow only — an edit screen shows every section at once since
 // the user is changing an already-complete order, not filling one in for
@@ -191,36 +247,50 @@ export function PurchaseOrderForm({
   onAdvancedOptionsChange?: (options: AdvancedOption[]) => void;
 }) {
   const isCreate = !defaultValues;
-  const [step, setStep] = useState(0);
+  const [unfinished] = useState(() => (isCreate ? readUnfinishedPurchaseOrder() : null));
+  const [resumed, setResumed] = useState(unfinished !== null);
+  // Wiping the form is the one thing on this screen that can't be taken back,
+  // so it asks first — in place, not in a modal, and defaulting to "keep".
+  const [confirmingStartOver, setConfirmingStartOver] = useState(false);
+  const [step, setStep] = useState(unfinished?.step ?? 0);
+  const startingValues = defaultValues ?? unfinished?.values;
   const form = useForm<PurchaseOrderFormValues>({
     resolver: zodResolver(schema),
-    defaultValues: defaultValues ?? {
-      supplier_account_id: "",
-      currency_id: "",
-      ...DEFAULT_FX,
-      fx_rate_date: today,
-      order_date: today,
-      expected_delivery_date: "",
-      notes: "",
-      lines: [emptyLine()],
-    },
+    defaultValues: startingValues ?? createDefaults(),
   });
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: "lines",
   });
-  // Collapsed for the common case; auto-expanded when editing an order whose
-  // FX fields were already customized, so existing overrides stay visible
-  // instead of hiding behind a click. `fx_rate_date` is excluded — it's
-  // expected to differ from `today` on every edit, not a sign of a real override.
+  // Keep the unfinished order for as long as this tab lives (create only). A
+  // form back at its blank starting values isn't work worth keeping.
+  useEffect(() => {
+    if (!isCreate) return;
+    const persist = () => {
+      const values = form.getValues();
+      if (isPristine(values)) clearDraft(DRAFT_NAME);
+      else writeDraft<UnfinishedPurchaseOrder>(DRAFT_NAME, { values, step });
+    };
+    persist();
+    const subscription = form.watch(persist);
+    return () => subscription.unsubscribe();
+  }, [form, isCreate, step]);
+
+  // Collapsed for the common case; auto-expanded when editing an order — or
+  // resuming one — whose FX fields were already customized, so existing
+  // overrides stay visible instead of hiding behind a click.
   const [showFxDetails, setShowFxDetails] = useState(
-    () =>
-      !!defaultValues &&
-      (defaultValues.fx_policy !== DEFAULT_FX.fx_policy ||
-        defaultValues.fx_rate !== DEFAULT_FX.fx_rate ||
-        defaultValues.fx_rate_type !== DEFAULT_FX.fx_rate_type ||
-        defaultValues.fx_rate_source !== DEFAULT_FX.fx_rate_source),
+    () => !!startingValues && fxIsCustomised(startingValues),
   );
+
+  function startOver() {
+    form.reset(createDefaults());
+    setStep(0);
+    setShowFxDetails(false);
+    setResumed(false);
+    setConfirmingStartOver(false);
+    clearDraft(DRAFT_NAME);
+  }
   useEffect(() => {
     onAdvancedOptionsChange?.([
       {
@@ -342,6 +412,52 @@ export function PurchaseOrderForm({
   const showDetailsStep = !isCreate || step === 0;
   const showLinesStep = !isCreate || step === 1;
   const showReviewStep = isCreate && step === 2;
+
+  const LINE_FIELD_LABEL = {
+    description: "Description",
+    ordered_qty: "Quantity",
+    unit_price: "Unit price",
+    discount_amount: "Discount",
+    tax_amount: "Tax",
+    expected_delivery_date: "Expected date",
+  } as const;
+  const LINE_DECIMAL_FIELDS = ["ordered_qty", "unit_price", "discount_amount", "tax_amount"];
+  // One text/date input of a line. Declared in the order they should be
+  // tabbed through — quantity beside its unit, then the money, then the date.
+  function renderLineField(
+    index: number,
+    name: keyof typeof LINE_FIELD_LABEL,
+    className?: string,
+  ) {
+    return (
+      <FormField
+        control={form.control}
+        name={`lines.${index}.${name}` as FieldPath<PurchaseOrderFormValues>}
+        render={({ field: lineField }) => (
+          <FormItem className={className}>
+            <FormLabel>{LINE_FIELD_LABEL[name]}</FormLabel>
+            <FormControl>
+              {name === "expected_delivery_date" ? (
+                <DateField
+                  value={String(lineField.value)}
+                  onChange={lineField.onChange}
+                  onBlur={lineField.onBlur}
+                />
+              ) : (
+                <Input
+                  type="text"
+                  inputMode={LINE_DECIMAL_FIELDS.includes(name) ? "decimal" : undefined}
+                  {...lineField}
+                  value={String(lineField.value)}
+                />
+              )}
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    );
+  }
 
   const sections = (
     <>
@@ -515,7 +631,7 @@ export function PurchaseOrderForm({
             {fields.map((field, index) => (
               <fieldset
                 key={field.id}
-                className="grid gap-3 rounded-md border p-4 md:grid-cols-4"
+                className="grid gap-3 rounded-lg border bg-panel/60 p-4 @lg:grid-cols-2 @3xl:grid-cols-3 @5xl:grid-cols-4"
               >
                 <legend className="px-1 text-sm font-medium">
                   Line {index + 1}
@@ -556,66 +672,8 @@ export function PurchaseOrderForm({
                     </FormItem>
                   )}
                 />
-                {(
-                  [
-                    "description",
-                    "ordered_qty",
-                    "unit_price",
-                    "discount_amount",
-                    "tax_amount",
-                    "expected_delivery_date",
-                  ] as const
-                ).map((name) => (
-                  <FormField
-                    key={name}
-                    control={form.control}
-                    name={
-                      `lines.${index}.${name}` as FieldPath<PurchaseOrderFormValues>
-                    }
-                    render={({ field: lineField }) => (
-                      <FormItem>
-                        <FormLabel>
-                          {
-                            {
-                              description: "Description",
-                              ordered_qty: "Quantity",
-                              unit_price: "Unit price",
-                              discount_amount: "Discount",
-                              tax_amount: "Tax",
-                              expected_delivery_date: "Expected date",
-                            }[name]
-                          }
-                        </FormLabel>
-                        <FormControl>
-                          {name === "expected_delivery_date" ? (
-                            <DateField
-                              value={String(lineField.value)}
-                              onChange={lineField.onChange}
-                              onBlur={lineField.onBlur}
-                            />
-                          ) : (
-                            <Input
-                              type="text"
-                              inputMode={
-                                [
-                                  "ordered_qty",
-                                  "unit_price",
-                                  "discount_amount",
-                                  "tax_amount",
-                                ].includes(name)
-                                  ? "decimal"
-                                  : undefined
-                              }
-                              {...lineField}
-                              value={String(lineField.value)}
-                            />
-                          )}
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                ))}
+                {renderLineField(index, "description", "@3xl:col-span-2")}
+                {renderLineField(index, "ordered_qty")}
                 <FormField
                   control={form.control}
                   name={`lines.${index}.purchase_uom_id`}
@@ -637,11 +695,15 @@ export function PurchaseOrderForm({
                     </FormItem>
                   )}
                 />
+                {renderLineField(index, "unit_price")}
+                {renderLineField(index, "discount_amount")}
+                {renderLineField(index, "tax_amount")}
+                {renderLineField(index, "expected_delivery_date")}
                 <FormField
                   control={form.control}
                   name={`lines.${index}.qa_required`}
                   render={({ field: qaField }) => (
-                    <FormItem className="flex items-center gap-2 pt-6">
+                    <FormItem className="flex items-center gap-2 @lg:pt-6">
                       <FormControl>
                         <Checkbox
                           checked={qaField.value}
@@ -655,7 +717,7 @@ export function PurchaseOrderForm({
                     </FormItem>
                   )}
                 />
-                <div className="flex items-end justify-end">
+                <div className="flex items-end justify-end @lg:col-start-2 @3xl:col-start-3 @5xl:col-start-4">
                   <Button
                     type="button"
                     variant="outline"
@@ -733,12 +795,62 @@ export function PurchaseOrderForm({
   return (
     <Form {...form}>
       <form
-        className="space-y-6"
+        // A container of its own: the line grid below sizes to the room the
+        // form actually has (a sheet with a side column, a sheet without one,
+        // or a page), not to the browser window.
+        className="@container space-y-6"
         onSubmit={form.handleSubmit((values) => onSubmit(values, form))}
       >
+        {isCreate && (
+          <RecordSheetAside>
+            <PurchaseOrderSummary
+              control={form.control}
+              supplierOptions={supplierOptions}
+              currencyOptions={currencyOptions}
+              itemOptions={itemOptions}
+              uomOptions={uomOptions}
+            />
+          </RecordSheetAside>
+        )}
         {formError && (
           <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
             {formError}
+          </div>
+        )}
+        {isCreate && resumed && (
+          <div
+            role="status"
+            className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/20 bg-primary-soft px-4 py-3 text-primary-soft-foreground"
+          >
+            <div className="flex min-w-0 items-start gap-3">
+              <History aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+              <div className="min-w-0 text-sm">
+                <p className="font-medium">
+                  {confirmingStartOver ? "Discard everything you've entered?" : "Continuing your unfinished purchase order"}
+                </p>
+                <p className="text-xs opacity-80">
+                  {confirmingStartOver
+                    ? "The supplier, dates and lines will be cleared and can't be brought back."
+                    : "What you entered last time is still here."}
+                </p>
+              </div>
+            </div>
+            {confirmingStartOver ? (
+              <div className="flex items-center gap-2">
+                <Button type="button" size="sm" variant="destructive" onClick={startOver}>
+                  <RotateCcw />
+                  Yes, start over
+                </Button>
+                <Button type="button" size="sm" variant="outline" autoFocus onClick={() => setConfirmingStartOver(false)}>
+                  Keep it
+                </Button>
+              </div>
+            ) : (
+              <Button type="button" size="sm" variant="outline" onClick={() => setConfirmingStartOver(true)}>
+                <RotateCcw />
+                Start over
+              </Button>
+            )}
           </div>
         )}
         {isCreate ? (

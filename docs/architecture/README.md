@@ -19,6 +19,8 @@ these choices were made, see [decisions/](../decisions/).
 | [authorization.md](authorization.md) | Roles, permissions, namespacing, Teams | Adding a permission or gating an action |
 | [data-import.md](data-import.md) | Column-mapping import engine | Building or extending an import |
 | [user-interface.md](user-interface.md) | UI research, interaction standards and phase screen ownership | Planning or building screens |
+| [ui-building-blocks.md](ui-building-blocks.md) | The reusable UI that exists, and the alternatives kept on purpose | Before building any control, layout or screen behaviour |
+| [appearance-and-printing.md](appearance-and-printing.md) | Light/dark/theme tokens and Quick Print branding, both company/user-layered | Adding a colour, a theme, or touching print output |
 | [api-conventions.md](api-conventions.md) | Routes, responses, errors, pagination | Adding an endpoint |
 | [deployment.md](deployment.md) | Targets, multi-arch, what a customer deployment needs | Deploying or changing infra |
 

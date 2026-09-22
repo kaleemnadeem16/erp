@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { SlidersHorizontal } from "lucide-react";
 import type {
   PaginationState,
@@ -47,6 +47,7 @@ import {
 import { useColumnVisibilityPreference } from "../../lib/use-column-visibility-preference";
 import { useListViewPreference } from "../../lib/use-view-preference";
 import { purchaseOrderColumns } from "./purchase-order-columns";
+import { hasUnfinishedPurchaseOrder } from "./purchase-order-form";
 
 interface PurchaseOrderFilters {
   search: string;
@@ -59,6 +60,7 @@ const STATUSES = ["DRAFT", "ISSUED", "CLOSED", "CANCELLED"] as const;
 
 export function PurchaseOrdersListScreen() {
   const navigate = useNavigate();
+  const { search } = useLocation();
   const query = useListQueryState<PurchaseOrderFilters>({
     defaultSort: "-created_at",
     defaultPerPage: 25,
@@ -144,7 +146,14 @@ export function PurchaseOrdersListScreen() {
       <PageHeader
         title="Purchase Orders"
         description="Raise supplier commitments, track their lifecycle and continue into receiving."
-        primaryAction={{ label: "New purchase order", onClick: () => navigate("/purchase-orders/new") }}
+        primaryAction={{
+          // Re-read on every render (closing the sheet navigates, which re-renders
+          // this list) so the button reflects work left in the sheet.
+          label: hasUnfinishedPurchaseOrder() ? "Continue new purchase order" : "New purchase order",
+          // Keep the query string: the list stays mounted behind the create
+          // sheet and reads its filters/search from the URL.
+          onClick: () => navigate({ pathname: "/purchase-orders/new", search }),
+        }}
       />
       <div className="flex flex-wrap items-center gap-2">
         <Input
@@ -224,7 +233,7 @@ export function PurchaseOrdersListScreen() {
         columnVisibility={columnVisibility}
         onColumnVisibilityChange={setColumnVisibility}
         onRowClick={(order: PurchaseOrderResource) =>
-          navigate(`/purchase-orders/${order.id}`)
+          navigate({ pathname: `/purchase-orders/${order.id}`, search })
         }
         isLoading={ordersQuery.isLoading}
         isError={ordersQuery.isError}

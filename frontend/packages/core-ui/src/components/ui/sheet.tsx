@@ -17,7 +17,7 @@ const SheetOverlay = React.forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      'fixed inset-0 z-50 bg-black/50 transition-opacity duration-200 data-[state=closed]:opacity-0 data-[state=open]:opacity-100',
+      'fixed inset-0 z-50 bg-black/50 data-[state=open]:animate-overlay-in data-[state=closed]:animate-overlay-out motion-reduce:animate-none',
       className
     )}
     {...props}
@@ -26,16 +26,16 @@ const SheetOverlay = React.forwardRef<
 SheetOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
 const sheetVariants = cva(
-  'fixed z-50 flex flex-col gap-4 bg-background shadow-lg transition-transform duration-200 data-[state=closed]:pointer-events-none',
+  'fixed z-50 flex flex-col gap-4 bg-background shadow-lg data-[state=closed]:pointer-events-none motion-reduce:animate-none',
   {
     variants: {
       side: {
-        top: 'inset-x-0 top-0 border-b data-[state=closed]:-translate-y-full data-[state=open]:translate-y-0',
+        top: 'inset-x-0 top-0 border-b data-[state=open]:animate-sheet-in-top data-[state=closed]:animate-sheet-out-top',
         bottom:
-          'inset-x-0 bottom-0 max-h-[80dvh] overflow-y-auto rounded-t-xl border-t data-[state=closed]:translate-y-full data-[state=open]:translate-y-0',
-        left: 'inset-y-0 left-0 h-full w-3/4 border-r data-[state=closed]:-translate-x-full data-[state=open]:translate-x-0 sm:max-w-sm',
+          'inset-x-0 bottom-0 max-h-[80dvh] overflow-y-auto rounded-t-xl border-t data-[state=open]:animate-sheet-in-bottom data-[state=closed]:animate-sheet-out-bottom',
+        left: 'inset-y-0 left-0 h-full w-3/4 border-r data-[state=open]:animate-sheet-in-left data-[state=closed]:animate-sheet-out-left sm:max-w-sm',
         right:
-          'inset-y-0 right-0 h-full w-3/4 border-l data-[state=closed]:translate-x-full data-[state=open]:translate-x-0 sm:max-w-sm',
+          'inset-y-0 right-0 h-full w-3/4 border-l data-[state=open]:animate-sheet-in-right data-[state=closed]:animate-sheet-out-right sm:max-w-sm',
       },
     },
     defaultVariants: { side: 'right' },
