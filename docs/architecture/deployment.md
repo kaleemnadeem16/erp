@@ -161,6 +161,22 @@ while running it the first time are folded in below rather than left as surprise
     `permission:register` (or similar) command so the next deploy doesn't repeat this by
     hand. Not built here to keep this deploy from growing scope; tracked in
     [phase-2-purchasing-stock.md](../phases/phase-2-purchasing-stock.md).
+12. Seed data. Company 1 doubles as a demo/sandbox company on this live deployment (the
+    user's own choice), so `demo:seed`'s dataset belongs here too, not just in dev — it
+    populates currencies/UoMs/chart of accounts/parties/items/warehouses and a run of
+    realistic POs, receipts and stock activity. `demo:seed` still refuses to run outside
+    `local`/`testing` (rightly — this guard should stay in place), but Artisan's `--env=`
+    flag overrides `app()->environment()` for that one process only, without touching the
+    real `APP_ENV=production` the running containers use for anything else (verified via
+    `app()->environment()` vs `env('APP_ENV')` before trusting this): `docker compose run
+    --rm app php artisan demo:seed --env=local`. **Always override the demo login's
+    credentials** for a real deployment — its defaults (`user@erp.x1techs.com` /
+    `!User@Erp@123`, from `config/demo.php`) are written throughout this repo's dev docs,
+    so leaving them as-is on a public site hands out a working login:
+    `docker compose run --rm -e DEMO_USER_EMAIL=… -e DEMO_USER_PASSWORD=… app php artisan
+    demo:seed --env=local`. The seeder's other demo actors (`demo-ops@…`,
+    `demo-supervisor@…`) already get a random 40-character password each run and are never
+    meant to be signed into directly, so they need no such override.
 
 **Verified working end-to-end** (2026-09-22): `https://erp.x1techs.com` (200, valid TLS),
 `https://api-erp.x1techs.com/api/v1/...` (401 unauthenticated as expected, not 500), and a

@@ -429,6 +429,18 @@ purchasing and inventory operating UI; that remaining boundary is listed below:
       currently only registered by `StockDemoSeeder` (refuses to run in production). Extract
       that list into a real command (`permission:register` or similar) so the first deploy
       doesn't need an ad hoc `artisan tinker` call — see deployment.md's runbook step 11.
+- [ ] Deploy automation: no deploy job exists in CI today — `pipeline.yml`'s `build`/
+      `merge-manifest` push images to GHCR on merge to `main`, but every step after that
+      (`docker compose pull/migrate/up`) was run by hand over SSH for the first deploy. Add a
+      job (SSH, or a self-hosted deploy step on the runner) once the manual runbook has proven
+      itself a few more times.
+- [ ] mainvm's GHCR pull credential is a personal access token (an operator's own, refreshed
+      with `read:packages` scope for the first deploy), not a credential dedicated to the VM.
+      Issue mainvm its own long-lived PAT or deploy key and re-`docker login` with it, so pulls
+      don't depend on an individual's token staying valid.
+- [ ] Second production database check-in: re-confirm dbvm's `REDIS_DB=3`/`REDIS_CACHE_DB=4`
+      assignment with whoever owns invoiceflow/crm once either of those reaches production —
+      they claim no explicit index today, but that could change.
 
 Tick these in the same commit as the work.
 
