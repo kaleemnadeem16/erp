@@ -383,7 +383,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Deploy on mainvm
-        working-directory: /home/ubuntu/erp
+        # /srv/apps/erp is owned by the github-runner service account that
+        # runs this job, matching the existing invoiceflow deploy on this
+        # host — see docs/architecture/ci-cd.md#deployment. Do not point
+        # this back at a path under /home/ubuntu: that directory belongs to
+        # a different OS user and the runner cannot traverse into it.
+        working-directory: /srv/apps/erp
         run: |
           set -euo pipefail
           test -f .env

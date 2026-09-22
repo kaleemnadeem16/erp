@@ -170,10 +170,18 @@ Verify with `df -h /` before and after, and `docker ps` afterwards.
 Compose project per app, matching the existing nine on mainvm.
 
 ```
-/home/<user>/erp/
+/srv/apps/erp/
   docker-compose.yml          production
   .env                        secrets — never in the repo
 ```
+
+`/srv/apps/erp` is owned by the `github-runner` OS user that runs the deploy job — the same
+convention the existing `invoiceflow` deploy on this host already uses
+([ci-runner-setup.md](ci-runner-setup.md)). A path under a human user's home directory (the
+original choice here) doesn't work: `github-runner` isn't in that user's group and can't
+traverse into their home directory at all, regardless of the target folder's own permissions.
+Don't route around that with `sudo` to hop accounts either — that means granting a CI runner
+passwordless root access, which is worse than just owning the directory it operates on.
 
 Containers attach to `proxy-net` and carry Traefik labels in the existing style:
 
