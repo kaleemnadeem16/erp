@@ -340,17 +340,27 @@ jobs:
       - name: Merge manifest and tag latest
         run: |
           set -euo pipefail
-          for image in erp-backend erp-frontend; do
-            source_amd64="ghcr.io/${{ github.repository_owner }}/${image}:${{ github.sha }}-amd64"
-            source_arm64="ghcr.io/${{ github.repository_owner }}/${image}:${{ github.sha }}-arm64"
-            image_sha="ghcr.io/${{ github.repository_owner }}/${image}:${{ github.sha }}"
-            image_latest="ghcr.io/${{ github.repository_owner }}/${image}:latest"
-
-            docker manifest create "$image_sha" "$source_amd64" "$source_arm64"
-            docker manifest push "$image_sha"
-            docker manifest create "$image_latest" "$source_amd64" "$source_arm64"
-            docker manifest push "$image_latest"
-          done
+          # Keep each imagetools invocation to one destination tag. The
+          # self-hosted Buildx version has a concurrent-map bug when one
+          # invocation publishes multiple tags. The per-architecture build
+          # tags are single-platform manifest lists, which imagetools can
+          # combine into the final multi-platform index.
+          docker buildx imagetools create \
+            -t ghcr.io/${{ github.repository_owner }}/erp-backend:${{ github.sha }} \
+            ghcr.io/${{ github.repository_owner }}/erp-backend:${{ github.sha }}-amd64 \
+            ghcr.io/${{ github.repository_owner }}/erp-backend:${{ github.sha }}-arm64
+          docker buildx imagetools create \
+            -t ghcr.io/${{ github.repository_owner }}/erp-backend:latest \
+            ghcr.io/${{ github.repository_owner }}/erp-backend:${{ github.sha }}-amd64 \
+            ghcr.io/${{ github.repository_owner }}/erp-backend:${{ github.sha }}-arm64
+          docker buildx imagetools create \
+            -t ghcr.io/${{ github.repository_owner }}/erp-frontend:${{ github.sha }} \
+            ghcr.io/${{ github.repository_owner }}/erp-frontend:${{ github.sha }}-amd64 \
+            ghcr.io/${{ github.repository_owner }}/erp-frontend:${{ github.sha }}-arm64
+          docker buildx imagetools create \
+            -t ghcr.io/${{ github.repository_owner }}/erp-frontend:latest \
+            ghcr.io/${{ github.repository_owner }}/erp-frontend:${{ github.sha }}-amd64 \
+            ghcr.io/${{ github.repository_owner }}/erp-frontend:${{ github.sha }}-arm64
       - name: Prune old images and build cache
         run: |
           docker image prune -af --filter "until=168h" --filter "label=app=erp"
