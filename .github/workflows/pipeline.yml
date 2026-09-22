@@ -354,9 +354,34 @@ jobs:
           docker image prune -af --filter "until=168h" --filter "label=app=erp"
           docker builder prune -af --keep-storage 2GB
 
-  # deploy: not implemented yet. docker-compose.prod.yml is written but deliberately
-  # unverified against dbvm until there's a real feature worth deploying — see
-  # docs/STATUS.md "In progress". Add this job (SSH or a self-hosted deploy step
-  # running `docker compose pull && up -d` + the one-shot migration container) once
-  # that verification is done. Merging to `main` builds and pushes the image; it does
-  # not yet put it on mainvm.
+  deploy-production:
+    name: deploy production
+    if: github.ref == 'refs/heads/main'
+    needs: merge-manifest
+    runs-on: [self-hosted, arm64, erp]
+    permissions:
+      contents: read
+      packages: read
+    environment:
+      name: production
+    steps:
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Deploy on mainvm
+        working-directory: /home/ubuntu/erp
+        run: |
+          set -euo pipefail
+          test -f .env
+          test -f docker-compose.yml
+          docker compose pull
+          docker compose run --rm app php artisan migrate --force
+          docker compose up -d --remove-orphans
+          docker compose run --rm app php artisan permission:register
+      - name: Verify production endpoints
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --max-time 20 https://erp.x1techs.com/ >/dev/null
+          curl --fail --silent --show-error --max-time 20 https://api-erp.x1techs.com/up >/dev/null

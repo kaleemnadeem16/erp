@@ -93,11 +93,11 @@ before the app rolls over. Detail in [ci-cd.md](ci-cd.md#deployment).
 
 ## First deploy runbook
 
-**Executed 2026-09-22.** These steps exist because each is a prerequisite the automated
-pipeline does **not** cover — CI builds and pushes images but does not deploy
-([pipeline.yml](../../.github/workflows/pipeline.yml)). Kept as the reference for the *next*
-deploy (a second environment, or a rebuild of this one from scratch); three real gaps found
-while running it the first time are folded in below rather than left as surprises.
+**Executed manually 2026-09-22; automation configured 2026-09-22.** The first deployment was
+run by hand to verify the real mainvm/dbvm environment. Merges to `main` will run the production
+deploy job in [pipeline.yml](../../.github/workflows/pipeline.yml); this section remains the
+reference for a second environment, a rebuild from scratch, or emergency recovery. The first
+automated release is still the verification point for this job.
 
 **On dbvm, once, as a superuser:**
 
@@ -136,15 +136,12 @@ while running it the first time are folded in below rather than left as surprise
 
 **Deploy:**
 
-7. Merge `develop` into `main` — the only branch that builds images
+7. Merge `develop` into `main` — the only branch that builds and deploys images
    ([ADR 0029](../decisions/0029-develop-main-branching-model.md)). Wait for both
-   architectures and the manifest merge.
-8. `docker compose pull`. **Gap found:** the `erp-backend`/`erp-frontend` GHCR packages
-   are private (matching the private source repo); mainvm's stored registry credential
-   didn't have pull access. Fixed by generating a token with `read:packages` scope and
-   `docker login ghcr.io` on mainvm with it — that credential is a personal OAuth token,
-   not a dedicated one; issue mainvm its own long-lived PAT or deploy key next time
-   rather than reusing an operator's.
+   architectures, the manifest merge and the deploy job. The deploy job authenticates to GHCR
+   with the workflow's short-lived `GITHUB_TOKEN`; it does not depend on a personal PAT stored
+   on mainvm.
+8. `docker compose pull`.
 9. Run migrations as a one-shot container: `docker compose run --rm app php artisan migrate --force`.
 10. `docker compose up -d`.
 11. Register the application permission vocabulary and create the first sign-in — migrations
@@ -173,6 +170,20 @@ while running it the first time are folded in below rather than left as surprise
     demo:seed --env=local`. The seeder's other demo actors (`demo-ops@…`,
     `demo-supervisor@…`) already get a random 40-character password each run and are never
     meant to be signed into directly, so they need no such override.
+
+### Production data changes
+
+Deployments do not run general seeders automatically. Use these boundaries:
+
+- **Migrations** change schema and perform deterministic, versioned data transformations that
+  every environment must receive.
+- **Idempotent application commands** register runtime vocabulary such as permissions; the
+  deploy job runs `permission:register` on every release.
+- **Seeders** are for demo/reference data or explicitly requested one-off provisioning. They can
+  create duplicates, overwrite business data or grant access unexpectedly, so they require a
+  deliberate operator action in production.
+- **Roles and user assignments** are tenant/business configuration, not release seed data. Create
+  or change them through an administrative API/UI when available, or a reviewed one-off command.
 
 **Verified working end-to-end** (2026-09-22): `https://erp.x1techs.com` (200, valid TLS),
 `https://api-erp.x1techs.com/api/v1/...` (401 unauthenticated as expected, not 500), and a

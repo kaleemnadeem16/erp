@@ -432,15 +432,14 @@ purchasing and inventory operating UI; that remaining boundary is listed below:
       environment and idempotently registers it, while `erp:create-admin --permissions=all`
       registers before assigning. Fresh-database and repeat-registration behaviour are covered by
       `PermissionRegistrationTest`; the deployment runbook no longer needs an ad hoc tinker call.
-- [ ] Deploy automation: no deploy job exists in CI today — `pipeline.yml`'s `build`/
-      `merge-manifest` push images to GHCR on merge to `main`, but every step after that
-      (`docker compose pull/migrate/up`) was run by hand over SSH for the first deploy. Add a
-      job (SSH, or a self-hosted deploy step on the runner) once the manual runbook has proven
-      itself a few more times.
-- [ ] mainvm's GHCR pull credential is a personal access token (an operator's own, refreshed
-      with `read:packages` scope for the first deploy), not a credential dedicated to the VM.
-      Issue mainvm its own long-lived PAT or deploy key and re-`docker login` with it, so pulls
-      don't depend on an individual's token staying valid.
+- [ ] Deploy automation — the self-hosted production job is now implemented after the image
+      manifest: it will pull from GHCR with the workflow token, run migrations, recreate the
+      Compose services, register permissions and check both public endpoints. The first release
+      was manually verified against the real VMs; the first automated `main` run remains to be
+      verified.
+- [ ] mainvm's persistent GHCR pull credential can be removed after the automated job succeeds —
+      the job authenticates with its short-lived workflow token. Keep the manual credential as
+      emergency fallback until that verification is complete.
 - [ ] Second production database check-in: re-confirm dbvm's `REDIS_DB=3`/`REDIS_CACHE_DB=4`
       assignment with whoever owns invoiceflow/crm once either of those reaches production —
       they claim no explicit index today, but that could change.
