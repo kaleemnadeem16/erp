@@ -42,6 +42,7 @@ import {
 import { Skeleton } from "../../components/ui/skeleton";
 import { Textarea } from "../../components/ui/textarea";
 import { getApiErrorMessage } from "../../lib/api-errors";
+import { formatDateTime } from "../../lib/format-date";
 import { useFocusOnOpen } from "../../lib/use-focus-on-open";
 
 const OUTCOMES = [
@@ -315,7 +316,7 @@ export function GoodsReceiptDetailScreen() {
       fields: [
         { label: "Status", value: receipt.status },
         { label: "Supplier", value: supplierLabel },
-        { label: "Physical arrival", value: new Date(receipt.physical_arrival_at).toLocaleString() },
+        { label: "Physical arrival", value: formatDateTime(receipt.physical_arrival_at) ?? "" },
         { label: "Posting date", value: receipt.posting_date },
         { label: "Correction reason", value: receipt.correction_reason ?? "" },
       ],
@@ -498,9 +499,7 @@ export function GoodsReceiptDetailScreen() {
             </Badge>
           </DetailField>
           <DetailField label="Supplier">{supplierLabel}</DetailField>
-          <DetailField label="Physical arrival">
-            {new Date(receipt.physical_arrival_at).toLocaleString()}
-          </DetailField>
+          <DetailField label="Physical arrival">{formatDateTime(receipt.physical_arrival_at)}</DetailField>
           <DetailField label="Posting date">{receipt.posting_date}</DetailField>
           {receipt.correction_reason && (
             <DetailField label="Correction reason">

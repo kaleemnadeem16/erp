@@ -18,10 +18,12 @@ import { Badge } from '../../components/ui/badge';
 import { Skeleton } from '../../components/ui/skeleton';
 import { Combobox } from '../../components/ui/combobox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../../components/ui/tooltip';
 import { PageHeader } from '../../components/page/page-header';
 import { DetailPageLayout, DetailSection } from '../../components/detail/detail-page-layout';
 import { DetailField } from '../../components/detail/detail-field';
 import { getApiErrorMessage } from '../../lib/api-errors';
+import { formatDateTime } from '../../lib/format-date';
 import { cn } from '../../lib/utils';
 import { useAuthStore } from '../../stores/auth-store';
 
@@ -205,9 +207,9 @@ export function PhysicalCountDetailScreen() {
             <Badge variant={STATUS_VARIANT[count.status] ?? 'secondary'}>{count.status}</Badge>
           </DetailField>
           <DetailField label="Reference">{count.reference}</DetailField>
-          <DetailField label="Created">{count.created_at ? new Date(count.created_at).toLocaleString() : undefined}</DetailField>
-          <DetailField label="Posted">{count.posted_at ? new Date(count.posted_at).toLocaleString() : undefined}</DetailField>
-          <DetailField label="Cancelled">{count.cancelled_at ? new Date(count.cancelled_at).toLocaleString() : undefined}</DetailField>
+          <DetailField label="Created">{formatDateTime(count.created_at)}</DetailField>
+          <DetailField label="Posted">{formatDateTime(count.posted_at)}</DetailField>
+          <DetailField label="Cancelled">{formatDateTime(count.cancelled_at)}</DetailField>
         </DetailSection>
 
         <DetailSection title="Lines" description={isDraft ? 'Record a physical quantity for every line before posting.' : undefined} fullWidth>
@@ -252,17 +254,22 @@ export function PhysicalCountDetailScreen() {
                                 value={countedDrafts[line.id] ?? line.counted_qty ?? ''}
                                 onChange={(event) => setCountedDrafts((prev) => ({ ...prev, [line.id]: event.target.value }))}
                               />
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="icon"
-                                className="h-8 w-8 shrink-0"
-                                onClick={() => handleRecordLine(line)}
-                                disabled={recordLine.isPending}
-                                aria-label="Save count"
-                              >
-                                <Check className="h-4 w-4" />
-                              </Button>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-8 w-8 shrink-0"
+                                    onClick={() => handleRecordLine(line)}
+                                    disabled={recordLine.isPending}
+                                    aria-label="Save count"
+                                  >
+                                    <Check className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Save count</TooltipContent>
+                              </Tooltip>
                             </div>
                           ) : (
                             <span className="tabular-nums">{line.counted_qty ?? '—'}</span>

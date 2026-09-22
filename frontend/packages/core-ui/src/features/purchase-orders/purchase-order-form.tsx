@@ -699,7 +699,11 @@ export function PurchaseOrderForm({
             {fields.map((field, index) => (
               <fieldset
                 key={field.id}
-                className="grid gap-3 rounded-lg border bg-panel/60 p-4 @lg:grid-cols-2 @3xl:grid-cols-3 @5xl:grid-cols-4"
+                // `[&>*]:min-w-0`: a grid item's default `min-width: auto` sizes its
+                // track to its content's intrinsic width, so a long selected item
+                // name in the Combobox below would widen this whole row instead of
+                // truncating — same fix DetailSection's grid uses.
+                className="grid min-w-0 gap-3 rounded-lg border bg-panel/60 p-4 @lg:grid-cols-2 @3xl:grid-cols-3 @5xl:grid-cols-4 [&>*]:min-w-0"
               >
                 <legend className="px-1 text-sm font-medium">
                   Line {index + 1}

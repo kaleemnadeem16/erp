@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { PageHeader } from '../../components/page/page-header';
 import { DetailPageLayout, DetailSection } from '../../components/detail/detail-page-layout';
 import { DetailField } from '../../components/detail/detail-field';
+import { formatDateTime } from '../../lib/format-date';
 
 export function StockMoveDetailScreen() {
   const params = useParams<{ id: string }>();
@@ -48,7 +49,7 @@ export function StockMoveDetailScreen() {
 
       <DetailPageLayout>
         <DetailSection title="Movement">
-          <DetailField label="Moved at">{new Date(move.moved_at).toLocaleString()}</DetailField>
+          <DetailField label="Moved at">{formatDateTime(move.moved_at)}</DetailField>
           <DetailField label="Source">{`${move.source_type} #${move.source_id}`}</DetailField>
           <DetailField label="From location">{move.from_location?.code}</DetailField>
           <DetailField label="To location">{move.to_location?.code}</DetailField>

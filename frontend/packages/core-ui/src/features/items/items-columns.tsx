@@ -2,6 +2,7 @@ import type { ItemResource } from '@erp/core-api';
 
 import { Badge } from '../../components/ui/badge';
 import type { DataColumn } from '../../components/data-table/types';
+import { formatDate } from '../../lib/format-date';
 
 /**
  * The single source of truth for what an Item "is" on screen, in Quick Print
@@ -58,7 +59,7 @@ export const itemColumns: DataColumn<ItemResource>[] = [
   {
     key: 'created_at',
     header: 'Created',
-    value: (item) => (item.created_at ? new Date(item.created_at).toLocaleDateString() : null),
+    value: (item) => formatDate(item.created_at),
     sortable: true,
     screenVisible: false,
   },

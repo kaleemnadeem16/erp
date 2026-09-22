@@ -10,6 +10,7 @@ import { Input } from '../../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Combobox } from '../../components/ui/combobox';
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '../../components/ui/sheet';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../../components/ui/tooltip';
 import { PageHeader } from '../../components/page/page-header';
 import { DataTable, toTanStackColumns, isColumnVisibleByDefault } from '../../components/data-table';
 import { PrintLayout, PrintableTable, PrintTrigger, useQuickPrint } from '../../components/print';
@@ -96,22 +97,33 @@ export function ItemsListScreen() {
   }
 
   function renderRowActions(item: ItemResource) {
+    const toggleLabel = item.status === 'ACTIVE' ? 'Archive' : 'Activate';
     return (
       <>
-        <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-          <Link to={`/items/${item.id}/edit`} aria-label="Edit">
-            <Pencil className="h-4 w-4" />
-          </Link>
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8"
-          onClick={() => handleToggleStatus(item)}
-          aria-label={item.status === 'ACTIVE' ? 'Archive' : 'Activate'}
-        >
-          {item.status === 'ACTIVE' ? <Archive className="h-4 w-4" /> : <ArchiveRestore className="h-4 w-4" />}
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Edit" asChild>
+              <Link to={`/items/${item.id}/edit`}>
+                <Pencil className="h-4 w-4" />
+              </Link>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Edit</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => handleToggleStatus(item)}
+              aria-label={toggleLabel}
+            >
+              {item.status === 'ACTIVE' ? <Archive className="h-4 w-4" /> : <ArchiveRestore className="h-4 w-4" />}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{toggleLabel}</TooltipContent>
+        </Tooltip>
       </>
     );
   }

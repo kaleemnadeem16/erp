@@ -16,6 +16,7 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Combobox } from '../../components/ui/combobox';
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '../../components/ui/sheet';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../../components/ui/tooltip';
 import { StatCard } from '../../components/ui/stat-card';
 import { PageHeader } from '../../components/page/page-header';
 import { DataTable, isColumnVisibleByDefault, toTanStackColumns } from '../../components/data-table';
@@ -115,11 +116,16 @@ export function InventoryOverviewScreen() {
 
   function renderRowActions(row: InventoryOverviewResource) {
     return (
-      <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-        <Link to={`/stock-moves?filter.item_id=${row.item_id}`} aria-label="View ledger">
-          <History className="h-4 w-4" />
-        </Link>
-      </Button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="View ledger" asChild>
+            <Link to={`/stock-moves?filter.item_id=${row.item_id}`}>
+              <History className="h-4 w-4" />
+            </Link>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>View ledger</TooltipContent>
+      </Tooltip>
     );
   }
 
@@ -132,7 +138,11 @@ export function InventoryOverviewScreen() {
         description="On-hand, available, QA-held, on-order and shortage quantities per stocked item."
       />
 
-      <div className="flex flex-wrap gap-3">
+      {/* 2-col grid below `md`: `flex-wrap` with `flex-1` cards let each one
+          shrink below its money value's content width and ellipsize it —
+          a fixed 2-up grid keeps every card wide enough to show the full
+          figure instead. */}
+      <div className="grid grid-cols-2 gap-3 md:flex md:flex-wrap">
         <StatCard
           label="On-hand value"
           value={summary ? formatMoney(summary.on_hand_value) : '—'}

@@ -2,6 +2,7 @@ import type { GoodsReceiptResource } from "@erp/core-api";
 
 import { Badge } from "../../components/ui/badge";
 import type { DataColumn } from "../../components/data-table/types";
+import { formatDateTime } from "../../lib/format-date";
 
 const STATUS_VARIANT: Record<string, "secondary" | "default" | "destructive"> =
   {
@@ -38,8 +39,7 @@ export function goodsReceiptColumns(
     {
       key: "physical_arrival_at",
       header: "Arrived",
-      value: (receipt) =>
-        new Date(receipt.physical_arrival_at).toLocaleString(),
+      value: (receipt) => formatDateTime(receipt.physical_arrival_at),
       sortable: true,
     },
     {

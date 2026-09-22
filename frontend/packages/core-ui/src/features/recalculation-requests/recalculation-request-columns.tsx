@@ -2,6 +2,7 @@ import type { RecalculationRequestResource, RecalculationRequestResourceImpactVe
 
 import { Badge } from '../../components/ui/badge';
 import type { DataColumn } from '../../components/data-table/types';
+import { formatDateTime } from '../../lib/format-date';
 
 type BadgeVariant = 'secondary' | 'default' | 'success' | 'destructive';
 
@@ -83,13 +84,13 @@ export const recalculationRequestColumns: DataColumn<RecalculationRequestResourc
   {
     key: 'requested_at',
     header: 'Requested',
-    value: (request) => (request.requested_at ? new Date(request.requested_at).toLocaleString() : null),
+    value: (request) => formatDateTime(request.requested_at),
     sortable: true,
   },
   {
     key: 'review_due_at',
     header: 'Review due',
-    value: (request) => (request.review_due_at ? new Date(request.review_due_at).toLocaleString() : null),
+    value: (request) => formatDateTime(request.review_due_at),
     sortable: true,
     screenVisible: false,
   },

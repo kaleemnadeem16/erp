@@ -1,6 +1,7 @@
 import type { StockMoveResource } from '@erp/core-api';
 
 import type { DataColumn } from '../../components/data-table/types';
+import { formatDateTime } from '../../lib/format-date';
 
 /**
  * The single source of truth for what a stock ledger row "is" on screen and
@@ -12,7 +13,7 @@ export const stockMoveColumns: DataColumn<StockMoveResource>[] = [
   {
     key: 'moved_at',
     header: 'Moved at',
-    value: (move) => new Date(move.moved_at).toLocaleString(),
+    value: (move) => formatDateTime(move.moved_at),
     sortable: true,
     cardRole: 'subtitle',
   },

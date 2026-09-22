@@ -2,6 +2,7 @@ import type { WarehouseResource } from '@erp/core-api';
 
 import { Badge } from '../../components/ui/badge';
 import type { DataColumn } from '../../components/data-table/types';
+import { formatDate } from '../../lib/format-date';
 
 export const warehouseColumns: DataColumn<WarehouseResource>[] = [
   {
@@ -39,7 +40,7 @@ export const warehouseColumns: DataColumn<WarehouseResource>[] = [
   {
     key: 'created_at',
     header: 'Created',
-    value: (warehouse) => (warehouse.created_at ? new Date(warehouse.created_at).toLocaleDateString() : null),
+    value: (warehouse) => formatDate(warehouse.created_at),
     sortable: true,
     screenVisible: false,
   },

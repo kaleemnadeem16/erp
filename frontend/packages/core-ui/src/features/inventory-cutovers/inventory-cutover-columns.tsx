@@ -2,6 +2,7 @@ import type { InventoryCutoverResource } from '@erp/core-api';
 
 import { Badge } from '../../components/ui/badge';
 import type { DataColumn } from '../../components/data-table/types';
+import { formatDateTime } from '../../lib/format-date';
 
 const STATUS_VARIANT: Record<string, 'secondary' | 'default' | 'success' | 'destructive'> = {
   DRAFT: 'secondary',
@@ -39,32 +40,32 @@ export const inventoryCutoverColumns: DataColumn<InventoryCutoverResource>[] = [
   {
     key: 'cutover_at',
     header: 'Cutover at',
-    value: (cutover) => (cutover.cutover_at ? new Date(cutover.cutover_at).toLocaleString() : null),
+    value: (cutover) => formatDateTime(cutover.cutover_at),
   },
   {
     key: 'created_at',
     header: 'Created',
-    value: (cutover) => (cutover.created_at ? new Date(cutover.created_at).toLocaleString() : null),
+    value: (cutover) => formatDateTime(cutover.created_at),
     sortable: true,
   },
   {
     key: 'validated_at',
     header: 'Validated',
-    value: (cutover) => (cutover.validated_at ? new Date(cutover.validated_at).toLocaleString() : null),
+    value: (cutover) => formatDateTime(cutover.validated_at),
     sortable: true,
     screenVisible: false,
   },
   {
     key: 'approved_at',
     header: 'Approved',
-    value: (cutover) => (cutover.approved_at ? new Date(cutover.approved_at).toLocaleString() : null),
+    value: (cutover) => formatDateTime(cutover.approved_at),
     sortable: true,
     screenVisible: false,
   },
   {
     key: 'finalised_at',
     header: 'Finalised',
-    value: (cutover) => (cutover.finalised_at ? new Date(cutover.finalised_at).toLocaleString() : null),
+    value: (cutover) => formatDateTime(cutover.finalised_at),
     sortable: true,
     screenVisible: false,
   },

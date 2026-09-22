@@ -17,6 +17,7 @@ import { PageHeader } from '../../components/page/page-header';
 import { DetailPageLayout, DetailSection } from '../../components/detail/detail-page-layout';
 import { DetailField } from '../../components/detail/detail-field';
 import { getApiErrorMessage } from '../../lib/api-errors';
+import { formatDateTime } from '../../lib/format-date';
 import { overrideStatus } from './negative-stock-override-columns';
 import { useAuthStore } from '../../stores/auth-store';
 
@@ -134,8 +135,8 @@ export function NegativeStockOverrideDetailScreen() {
           <DetailField label="Shortage quantity">{override.shortage_qty}</DetailField>
           <DetailField label="Reason">{override.reason_code}</DetailField>
           <DetailField label="Authorisation mode">{override.authorisation_mode}</DetailField>
-          <DetailField label="Requested">{new Date(override.requested_at).toLocaleString()}</DetailField>
-          <DetailField label="Review due">{override.review_due_at ? new Date(override.review_due_at).toLocaleString() : undefined}</DetailField>
+          <DetailField label="Requested">{formatDateTime(override.requested_at)}</DetailField>
+          <DetailField label="Review due">{formatDateTime(override.review_due_at)}</DetailField>
           <DetailField label="Source" fullWidth>{`${override.source_type} #${override.source_id}`}</DetailField>
           <DetailField label="Explanation" fullWidth>{override.explanation}</DetailField>
         </DetailSection>
@@ -146,7 +147,7 @@ export function NegativeStockOverrideDetailScreen() {
               <Badge variant={override.approval.decision === 'APPROVED' ? 'success' : 'destructive'}>{override.approval.decision}</Badge>
             </DetailField>
             <DetailField label="Decided by">{override.approval.decided_by}</DetailField>
-            <DetailField label="Decided at">{new Date(override.approval.decided_at).toLocaleString()}</DetailField>
+            <DetailField label="Decided at">{formatDateTime(override.approval.decided_at)}</DetailField>
             <DetailField label="Notes" fullWidth>{override.approval.notes}</DetailField>
           </DetailSection>
         )}
@@ -157,7 +158,7 @@ export function NegativeStockOverrideDetailScreen() {
               <Badge variant={override.review.outcome === 'JUSTIFIED' ? 'success' : 'destructive'}>{override.review.outcome}</Badge>
             </DetailField>
             <DetailField label="Reviewed by">{override.review.reviewed_by}</DetailField>
-            <DetailField label="Reviewed at">{new Date(override.review.reviewed_at).toLocaleString()}</DetailField>
+            <DetailField label="Reviewed at">{formatDateTime(override.review.reviewed_at)}</DetailField>
             <DetailField label="Notes" fullWidth>{override.review.notes}</DetailField>
           </DetailSection>
         )}

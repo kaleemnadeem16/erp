@@ -2,16 +2,18 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { Check, KeyRound } from 'lucide-react';
 import { useAccountUpdate, useAccountPasswordUpdate } from '@erp/core-api';
 
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { PasswordInput } from '../../components/ui/password-input';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '../../components/ui/form';
 import { PageHeader } from '../../components/page/page-header';
 import { DetailPageLayout, DetailSection } from '../../components/detail/detail-page-layout';
 import { applyApiErrorsToForm } from '../../lib/api-errors';
+import { getInitials } from '../../lib/initials';
 import { useAuthStore } from '../../stores/auth-store';
 
 const profileSchema = z.object({
@@ -95,9 +97,19 @@ export function AccountSettingsScreen() {
     <div className="space-y-4 p-4 md:p-6">
       <PageHeader title="Account" description="Your name and password for signing in." />
 
+      <div className="flex items-center gap-4 rounded-lg border border-border bg-card p-4">
+        <div className="flex size-14 shrink-0 items-center justify-center rounded-full bg-primary text-lg font-semibold text-primary-foreground">
+          {getInitials(user?.name)}
+        </div>
+        <div className="min-w-0">
+          <div className="truncate text-base font-semibold">{user?.name}</div>
+          <div className="truncate text-sm text-muted-foreground">{user?.email}</div>
+        </div>
+      </div>
+
       <DetailPageLayout>
         <Form {...profileForm}>
-          <form className="col-span-full" onSubmit={profileForm.handleSubmit(handleProfileSubmit)}>
+          <form onSubmit={profileForm.handleSubmit(handleProfileSubmit)}>
             <DetailSection title="Profile" description="Shown across the app wherever your name appears.">
               {profileError && (
                 <div className="sm:col-span-2 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
@@ -123,7 +135,10 @@ export function AccountSettingsScreen() {
               </div>
               <div className="sm:col-span-2 flex items-center justify-end gap-3">
                 {profileSaved && !updateAccount.isPending && (
-                  <span className="text-sm text-muted-foreground">Saved.</span>
+                  <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                    <Check className="size-4 text-status-success" />
+                    Saved
+                  </span>
                 )}
                 <Button type="submit" disabled={updateAccount.isPending}>
                   {updateAccount.isPending ? 'Saving…' : 'Save changes'}
@@ -134,7 +149,7 @@ export function AccountSettingsScreen() {
         </Form>
 
         <Form {...passwordForm}>
-          <form className="col-span-full" onSubmit={passwordForm.handleSubmit(handlePasswordSubmit)}>
+          <form onSubmit={passwordForm.handleSubmit(handlePasswordSubmit)}>
             <DetailSection title="Password" description="You'll stay signed in on this device after changing it.">
               {passwordError && (
                 <div className="sm:col-span-2 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
@@ -163,6 +178,7 @@ export function AccountSettingsScreen() {
                     <FormControl>
                       <PasswordInput {...field} autoComplete="new-password" />
                     </FormControl>
+                    <FormDescription>At least 8 characters.</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -182,9 +198,13 @@ export function AccountSettingsScreen() {
               />
               <div className="sm:col-span-2 flex items-center justify-end gap-3">
                 {passwordSaved && !updatePassword.isPending && (
-                  <span className="text-sm text-muted-foreground">Password updated.</span>
+                  <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                    <Check className="size-4 text-status-success" />
+                    Updated
+                  </span>
                 )}
                 <Button type="submit" disabled={updatePassword.isPending}>
+                  <KeyRound className="size-4" />
                   {updatePassword.isPending ? 'Saving…' : 'Update password'}
                 </Button>
               </div>

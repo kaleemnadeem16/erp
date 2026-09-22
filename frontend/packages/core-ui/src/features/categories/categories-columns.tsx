@@ -1,5 +1,6 @@
 import type { CategoryResource } from '@erp/core-api';
 import type { DataColumn } from '../../components/data-table/types';
+import { formatDate } from '../../lib/format-date';
 
 export const categoryColumns: DataColumn<CategoryResource>[] = [
   { key: 'code', header: 'Code', value: (row) => row.code, sortable: true, filterable: true, cardRole: 'subtitle' },
@@ -9,7 +10,7 @@ export const categoryColumns: DataColumn<CategoryResource>[] = [
   {
     key: 'created_at',
     header: 'Created',
-    value: (row) => (row.created_at ? new Date(row.created_at).toLocaleDateString() : null),
+    value: (row) => formatDate(row.created_at),
     sortable: true,
     screenVisible: false,
   },

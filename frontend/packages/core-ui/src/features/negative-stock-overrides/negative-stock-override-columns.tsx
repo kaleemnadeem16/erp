@@ -2,6 +2,7 @@ import type { NegativeStockOverrideRequestResource } from '@erp/core-api';
 
 import { Badge } from '../../components/ui/badge';
 import type { DataColumn } from '../../components/data-table/types';
+import { formatDateTime } from '../../lib/format-date';
 
 type BadgeVariant = 'secondary' | 'default' | 'success' | 'destructive';
 
@@ -69,7 +70,7 @@ export const negativeStockOverrideColumns: DataColumn<NegativeStockOverrideReque
   {
     key: 'requested_at',
     header: 'Requested',
-    value: (override) => (override.requested_at ? new Date(override.requested_at).toLocaleString() : null),
+    value: (override) => formatDateTime(override.requested_at),
     sortable: true,
   },
 ];

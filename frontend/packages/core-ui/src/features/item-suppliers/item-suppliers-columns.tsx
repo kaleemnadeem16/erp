@@ -1,6 +1,7 @@
 import type { ItemSupplierResource } from '@erp/core-api';
 import { Badge } from '../../components/ui/badge';
 import type { DataColumn } from '../../components/data-table/types';
+import { formatDate } from '../../lib/format-date';
 
 export const itemSupplierColumns: DataColumn<ItemSupplierResource>[] = [
   {
@@ -30,7 +31,7 @@ export const itemSupplierColumns: DataColumn<ItemSupplierResource>[] = [
   {
     key: 'created_at',
     header: 'Created',
-    value: (row) => (row.created_at ? new Date(row.created_at).toLocaleDateString() : null),
+    value: (row) => formatDate(row.created_at),
     sortable: true,
     screenVisible: false,
   },

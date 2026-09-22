@@ -18,6 +18,7 @@ import { PageHeader } from '../../components/page/page-header';
 import { DetailPageLayout, DetailSection } from '../../components/detail/detail-page-layout';
 import { DetailField } from '../../components/detail/detail-field';
 import { getApiErrorMessage } from '../../lib/api-errors';
+import { formatDateTime } from '../../lib/format-date';
 import { currentVersion, latestVersion, recalculationStatus } from './recalculation-request-columns';
 import { useAuthStore } from '../../stores/auth-store';
 
@@ -157,9 +158,9 @@ export function RecalculationRequestDetailScreen() {
           <DetailField label="Location">{request.location?.code ?? request.location_id}</DetailField>
           <DetailField label="Destination">{request.destination_location?.code}</DetailField>
           <DetailField label="Quantity">{request.qty}</DetailField>
-          <DetailField label="True historical date">{new Date(request.moved_at).toLocaleString()}</DetailField>
+          <DetailField label="True historical date">{formatDateTime(request.moved_at)}</DetailField>
           <DetailField label="Horizon mode">{request.horizon_mode}</DetailField>
-          <DetailField label="Review due">{new Date(request.review_due_at).toLocaleString()}</DetailField>
+          <DetailField label="Review due">{formatDateTime(request.review_due_at)}</DetailField>
           <DetailField label="Source" fullWidth>{`${request.source_type} #${request.source_id}`}</DetailField>
         </DetailSection>
 
@@ -222,11 +223,11 @@ export function RecalculationRequestDetailScreen() {
                           <Badge variant={approval.decision === 'APPROVED' ? 'success' : 'destructive'}>{approval.decision}</Badge>
                         </TableCell>
                         <TableCell>{approval.notes}</TableCell>
-                        <TableCell>{new Date(approval.decided_at).toLocaleString()}</TableCell>
+                        <TableCell>{formatDateTime(approval.decided_at)}</TableCell>
                         <TableCell>
                           {approval.expires_at ? (
                             <span className={approval.is_expired ? 'text-destructive' : undefined}>
-                              {new Date(approval.expires_at).toLocaleString()}
+                              {formatDateTime(approval.expires_at)}
                               {approval.is_expired ? ' (expired)' : ''}
                             </span>
                           ) : (
@@ -244,7 +245,7 @@ export function RecalculationRequestDetailScreen() {
               <div className="sm:col-span-2 space-y-1 border-t border-border pt-4 text-sm">
                 <p className="font-medium">Executed</p>
                 <p className="text-muted-foreground">
-                  By user #{current.execution.executed_by} at {new Date(current.execution.executed_at).toLocaleString()} — stock move #
+                  By user #{current.execution.executed_by} at {formatDateTime(current.execution.executed_at)} — stock move #
                   {current.execution.stock_move_id}
                 </p>
               </div>

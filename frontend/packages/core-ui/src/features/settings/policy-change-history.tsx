@@ -1,5 +1,6 @@
 import { DetailSection } from '../../components/detail/detail-page-layout';
 import { Skeleton } from '../../components/ui/skeleton';
+import { formatDateTime } from '../../lib/format-date';
 
 export interface PolicyChangeRow {
   id: number;
@@ -83,7 +84,7 @@ export function PolicyChangeHistory({
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="font-medium">{change.policy.replace(/_/g, ' ')}</span>
               <span className="text-xs text-muted-foreground">
-                {new Date(change.changed_at).toLocaleString()}
+                {formatDateTime(change.changed_at)}
                 {change.changed_by_user ? ` — ${change.changed_by_user.name}` : ''}
               </span>
             </div>

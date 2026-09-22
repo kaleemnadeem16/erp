@@ -27,6 +27,7 @@ import { PageHeader } from '../../components/page/page-header';
 import { DetailPageLayout, DetailSection } from '../../components/detail/detail-page-layout';
 import { DetailField } from '../../components/detail/detail-field';
 import { getApiErrorMessage } from '../../lib/api-errors';
+import { formatDateTime } from '../../lib/format-date';
 import { useAuthStore } from '../../stores/auth-store';
 
 const STATUS_VARIANT: Record<string, 'secondary' | 'default' | 'success' | 'destructive'> = {
@@ -267,7 +268,7 @@ export function InventoryCutoverDetailScreen() {
             <Badge variant={STATUS_VARIANT[cutover.status] ?? 'secondary'}>{cutover.status}</Badge>
           </DetailField>
           <DetailField label="Mode">{cutover.mode}</DetailField>
-          <DetailField label="Cutover at">{new Date(cutover.cutover_at).toLocaleString()}</DetailField>
+          <DetailField label="Cutover at">{formatDateTime(cutover.cutover_at)}</DetailField>
           <DetailField label="Source system">{cutover.source_system}</DetailField>
           <DetailField label="Control quantity">{cutover.control_quantity}</DetailField>
           <DetailField label="Control value">{cutover.control_value}</DetailField>

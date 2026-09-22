@@ -8,6 +8,7 @@ import { useItemsIndex, AvcoPoolScope, ValuationMethod, InventoryCutoverMode } f
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../../components/ui/tooltip';
 import { Combobox } from '../../components/ui/combobox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../components/ui/form';
 import { DetailSection } from '../../components/detail/detail-page-layout';
@@ -252,17 +253,22 @@ export function InventoryCutoverForm({
                     </Select>
                   </div>
                 )}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="h-9 w-9 shrink-0"
-                  onClick={() => setPolicyRows((rows) => rows.filter((_, i) => i !== index))}
-                  disabled={policyRows.length === 1}
-                  aria-label="Remove row"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="h-9 w-9 shrink-0"
+                      onClick={() => setPolicyRows((rows) => rows.filter((_, i) => i !== index))}
+                      disabled={policyRows.length === 1}
+                      aria-label="Remove row"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Remove row</TooltipContent>
+                </Tooltip>
               </div>
               );
             })}

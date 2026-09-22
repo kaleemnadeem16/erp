@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-r
 
 import { Button } from '../ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 
 export function DataTablePagination<TRow>({
   table,
@@ -56,46 +57,66 @@ export function DataTablePagination<TRow>({
         </div>
 
         <div className="flex items-center gap-1">
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => table.setPageIndex(0)}
-            disabled={!table.getCanPreviousPage()}
-            aria-label="First page"
-          >
-            <ChevronsLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-            aria-label="Previous page"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-            aria-label="Next page"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-            disabled={!table.getCanNextPage()}
-            aria-label="Last page"
-          >
-            <ChevronsRight className="h-4 w-4" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => table.setPageIndex(0)}
+                disabled={!table.getCanPreviousPage()}
+                aria-label="First page"
+              >
+                <ChevronsLeft className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>First page</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
+                aria-label="Previous page"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Previous page</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
+                aria-label="Next page"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Next page</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+                disabled={!table.getCanNextPage()}
+                aria-label="Last page"
+              >
+                <ChevronsRight className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Last page</TooltipContent>
+          </Tooltip>
         </div>
       </div>
     </div>

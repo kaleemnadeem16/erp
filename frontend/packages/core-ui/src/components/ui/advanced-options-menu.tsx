@@ -38,9 +38,12 @@ export function AdvancedOptionsMenu({ options }: { options: AdvancedOption[] }) 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm">
+        {/* Text label hides below `sm` — alone in PageHeader's `actions` slot, the
+            full label pushed this onto its own crowded line on a narrow screen;
+            icon (+ count badge) only reads fine there without it. */}
+        <Button variant="outline" size="sm" aria-label="Advanced options">
           <SlidersHorizontal className="h-4 w-4" />
-          Advanced options
+          <span className="hidden sm:inline">Advanced options</span>
           {activeCount > 0 && <Badge className="ml-1">{activeCount}</Badge>}
         </Button>
       </DropdownMenuTrigger>

@@ -43,6 +43,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from "../components/ui/sheet";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../components/ui/tooltip";
+import { getInitials } from "../lib/initials";
 import { useAuthStore } from "../stores/auth-store";
 import { useAppearanceStore, useIsDarkMode } from "../stores/appearance-store";
 import { cn } from "../lib/utils";
@@ -169,14 +171,6 @@ const moreNavGroups = allNavGroups
 
 const MAX_QUICK_LINKS = 4;
 
-function getInitials(name?: string | null): string {
-  const parts = name?.trim().split(/\s+/).filter(Boolean) ?? [];
-  if (parts.length === 0) return "?";
-  const first = parts[0]!.charAt(0);
-  const last = parts.length > 1 ? parts[parts.length - 1]!.charAt(0) : "";
-  return (first + last).toUpperCase();
-}
-
 const SIDEBAR_LINK_CLASS = ({ isActive }: { isActive: boolean }) =>
   cn(
     "flex min-w-0 flex-1 items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground",
@@ -243,7 +237,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-background text-foreground md:flex-row">
+    <TooltipProvider delayDuration={300}>
+      <div className="flex h-dvh flex-col overflow-hidden bg-background text-foreground md:flex-row">
       <a
         href="#main-content"
         className="sr-only focus-visible:not-sr-only focus-visible:absolute focus-visible:left-4 focus-visible:top-4 focus-visible:z-50 focus-visible:rounded-md focus-visible:bg-background focus-visible:px-4 focus-visible:py-2 focus-visible:text-sm focus-visible:font-medium focus-visible:ring-2 focus-visible:ring-ring"
@@ -294,14 +289,19 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
 
           <div className="flex shrink-0 items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-              onClick={() => setAppearance({ mode: isDark ? "light" : "dark" })}
-            >
-              {isDark ? <Sun className="size-4" /> : <Moon className="size-4" />}
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+                  onClick={() => setAppearance({ mode: isDark ? "light" : "dark" })}
+                >
+                  {isDark ? <Sun className="size-4" /> : <Moon className="size-4" />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{isDark ? "Switch to light mode" : "Switch to dark mode"}</TooltipContent>
+            </Tooltip>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" aria-label="Settings">
@@ -452,6 +452,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </nav>
         </SheetContent>
       </Sheet>
-    </div>
+      </div>
+    </TooltipProvider>
   );
 }
