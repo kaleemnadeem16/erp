@@ -156,10 +156,14 @@ practice; deep collapsible nesting was deliberately avoided (real complaint from
 buried in submenus become undiscoverable).
 
 - **Groups**: `navGroups` in `app-shell.tsx` — Dashboard standalone, then Purchasing / Inventory /
-  Stock Operations as domain sections, then Settings last and visually separated (border-top) since
-  it's cross-cutting configuration, not a workflow module. Always expanded, no collapse state — every
-  item stays one click away. The mobile "More" sheet derives its own grouped view from the same
-  `navGroups`, filtered to whatever isn't already a primary tab.
+  Stock Operations as domain sections. Always expanded, no collapse state — every item stays one
+  click away. Settings is deliberately **not** one of these groups: it's cross-cutting configuration,
+  not a workflow module, and on desktop lives only in the top-bar Settings (gear) menu — see
+  [ui-building-blocks.md](ui-building-blocks.md). It's still declared as `settingsNavGroup` (not
+  rendered in the sidebar) so its routes resolve a top-bar title the same way every other nav item
+  does, and so the mobile "More" sheet — which has no separate top bar — can still reach it: that
+  sheet derives its grouped view from `navGroups` **plus** `settingsNavGroup`, filtered to whatever
+  isn't already a primary tab.
 - **Quick access (hybrid: automatic + pinnable)**: a slim bar above the content area (`md`-and-up
   only, right-aligned) shows up to `MAX_QUICK_LINKS` (4) icon shortcuts, excluding Dashboard.
   Pinned items (hover any sidebar row → the pin icon that appears) always show, in pin order; any

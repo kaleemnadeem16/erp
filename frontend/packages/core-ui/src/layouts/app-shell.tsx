@@ -22,6 +22,7 @@ import {
   SlidersHorizontal,
   Sun,
   Tags,
+  User,
   Warehouse,
 } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router";
@@ -65,8 +66,10 @@ interface NavGroup {
 
 // Grouped by domain so the desktop sidebar reads as a handful of sections
 // instead of one flat list of 15 links — see docs/architecture/user-interface.md
-// for the fuller rationale. Settings is deliberately last/visually separated:
-// it's cross-cutting configuration, not a workflow module like the others.
+// for the fuller rationale. Settings is deliberately NOT one of these groups:
+// it's cross-cutting configuration, not a workflow module, and lives only in
+// the top-bar user/settings menus (see SETTINGS_MENU below) plus the mobile
+// "More" sheet, which has no separate top bar to hold it.
 const navGroups: NavGroup[] = [
   { label: null, items: [{ to: "/", label: "Dashboard", icon: LayoutDashboard }] },
   {
@@ -96,23 +99,29 @@ const navGroups: NavGroup[] = [
       { to: "/recalculation-requests", label: "Stock Recalculation", icon: Calculator },
     ],
   },
-  {
-    label: "Settings",
-    items: [
-      { to: "/settings/purchasing", label: "Purchasing Settings", icon: Settings },
-      { to: "/settings/inventory", label: "Inventory Settings", icon: SlidersHorizontal },
-      { to: "/settings/appearance", label: "Appearance", icon: Palette },
-      { to: "/settings/printing", label: "Printing", icon: Printer },
-    ],
-  },
 ];
+
+// Not rendered in the desktop sidebar (see navGroups above) — it exists so
+// Settings routes still resolve a top-bar title via navItemsByPath, and so
+// the mobile "More" sheet (which has no separate header) can still reach
+// them via moreNavGroups.
+const settingsNavGroup: NavGroup = {
+  label: "Settings",
+  items: [
+    { to: "/settings/purchasing", label: "Purchasing Settings", icon: Settings },
+    { to: "/settings/inventory", label: "Inventory Settings", icon: SlidersHorizontal },
+    { to: "/settings/account", label: "Account", icon: User },
+    { to: "/settings/appearance", label: "Appearance", icon: Palette },
+    { to: "/settings/printing", label: "Printing", icon: Printer },
+  ],
+};
+
+const allNavGroups: NavGroup[] = [...navGroups, settingsNavGroup];
 
 // The top-bar Settings menu — split by *who it's for*, not by module, since
 // that's the question a person actually has ("is this mine or the
 // company's?"): Purchasing/Inventory/Printing apply to everyone in the
-// company; Appearance is this person's own browser. The sidebar's own
-// Settings group above stays as a second way in — this is a shortcut, not a
-// replacement for it.
+// company; Account/Appearance are this person's own.
 const SETTINGS_MENU: { label: string; items: NavItem[] }[] = [
   {
     label: "Company",
@@ -124,15 +133,20 @@ const SETTINGS_MENU: { label: string; items: NavItem[] }[] = [
   },
   {
     label: "You",
-    items: [{ to: "/settings/appearance", label: "Appearance", icon: Palette }],
+    items: [
+      { to: "/settings/account", label: "Account", icon: User },
+      { to: "/settings/appearance", label: "Appearance", icon: Palette },
+    ],
   },
 ];
 
-const navItems = navGroups.flatMap((group) => group.items);
+const navItems = allNavGroups.flatMap((group) => group.items);
 const navPaths = navItems.map((item) => item.to);
 const navItemsByPath = new Map(navItems.map((item) => [item.to, item]));
 
-// navGroups[0] is always the standalone Dashboard entry declared above.
+// navGroups[0] is always the standalone Dashboard entry declared above —
+// restNavGroups (Purchasing/Inventory/Stock Operations) is exactly what the
+// desktop sidebar renders; Settings is never in it.
 const [dashboardGroup, ...restNavGroups] = navGroups as [NavGroup, ...NavGroup[]];
 
 // A native bottom tab bar only fits ~5 slots before it stops feeling native —
@@ -147,12 +161,21 @@ const PRIMARY_PATHS = new Set([
 ]);
 const primaryNavItems = navItems.filter((item) => PRIMARY_PATHS.has(item.to));
 // Mobile's "More" sheet groups the same way the desktop sidebar does, minus
-// whatever groups' whole membership is already covered by the primary tabs.
-const moreNavGroups = navGroups
+// whatever groups' whole membership is already covered by the primary tabs —
+// plus Settings, which has no other way in on mobile (no top bar there).
+const moreNavGroups = allNavGroups
   .map((group) => ({ ...group, items: group.items.filter((item) => !PRIMARY_PATHS.has(item.to)) }))
   .filter((group) => group.items.length > 0);
 
 const MAX_QUICK_LINKS = 4;
+
+function getInitials(name?: string | null): string {
+  const parts = name?.trim().split(/\s+/).filter(Boolean) ?? [];
+  if (parts.length === 0) return "?";
+  const first = parts[0]!.charAt(0);
+  const last = parts.length > 1 ? parts[parts.length - 1]!.charAt(0) : "";
+  return (first + last).toUpperCase();
+}
 
 const SIDEBAR_LINK_CLASS = ({ isActive }: { isActive: boolean }) =>
   cn(
@@ -247,13 +270,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           )}
 
           {restNavGroups.map((group, index) => (
-            <div
-              key={group.label ?? `group-${index}`}
-              className={cn(
-                "mt-4 flex flex-col gap-1",
-                group.label === "Settings" && "border-t border-border pt-4",
-              )}
-            >
+            <div key={group.label ?? `group-${index}`} className="mt-4 flex flex-col gap-1">
               {group.label && (
                 <div className="px-3 pb-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                   {group.label}
@@ -308,13 +325,40 @@ export function AppShell({ children }: { children: ReactNode }) {
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
-            <span className="ml-2 max-w-[200px] truncate text-sm text-muted-foreground">
-              {user?.email}
-            </span>
-            <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="size-4" />
-              Log out
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="ml-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground hover:opacity-90"
+                  aria-label="Account menu"
+                >
+                  {getInitials(user?.name)}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col">
+                    <span className="truncate text-sm font-medium text-foreground">{user?.name}</span>
+                    <span className="truncate text-xs text-muted-foreground">{user?.email}</span>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <NavLink to="/settings/account" className="cursor-pointer gap-2">
+                    <User className="size-4 text-muted-foreground" />
+                    Account
+                  </NavLink>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onSelect={handleLogout}
+                  className="cursor-pointer gap-2 text-destructive focus:bg-destructive/10 focus:text-destructive"
+                >
+                  <LogOut className="size-4" />
+                  Log out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 

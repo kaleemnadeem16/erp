@@ -44,6 +44,7 @@ export {
 export { useAppearanceStore, useAppearance, useIsDarkMode } from "./stores/appearance-store";
 export { AppearanceSettingsScreen } from "./features/settings/appearance-settings-screen";
 export { PrintingSettingsScreen } from "./features/settings/printing-settings-screen";
+export { AccountSettingsScreen } from "./features/settings/account-settings-screen";
 export {
   usePrintSettingsStore,
   DEFAULT_PRINT_SETTINGS,

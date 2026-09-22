@@ -33,6 +33,7 @@ import {
   PurchaseOrderCreateScreen,
   PurchaseOrderEditScreen,
   InventorySettingsScreen,
+  AccountSettingsScreen,
   AppearanceSettingsScreen,
   PrintingSettingsScreen,
   ProtectedRoute,
@@ -328,6 +329,16 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <PurchaseOrderEditScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings/account"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <AccountSettingsScreen />
               </AppShell>
             </ProtectedRoute>
           }

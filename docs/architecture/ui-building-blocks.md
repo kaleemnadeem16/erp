@@ -21,6 +21,7 @@ Paths are relative to `frontend/packages/core-ui/src`.
 | `Form*` | `components/ui/form.tsx` | React-Hook-Form wiring. `FormControl` passes `id`, `aria-describedby`, `aria-invalid` **and** `aria-labelledby`, which is what labels composite controls such as `DateField`. |
 | `AdvancedOptionsMenu` / `AdvancedOptionSection` | `components/ui/advanced-option*.tsx` | Keep a rarely-changed section out of the page until it is opted into. |
 | `OptionCards` | `components/ui/option-cards.tsx` | Pick one of a few options that read better as small preview cards than as text — a colour mode, a theme, a document design. Native radio inputs underneath (`sr-only`), so grouping/arrow-key nav/announcements are the browser's own. |
+| `PasswordInput` | `components/ui/password-input.tsx` | An `Input[type=password]` with a show/hide eye toggle — used wherever a screen has its own password field (account settings' current/new password) rather than the login screen's inline one-off. |
 
 Native `datetime-local` is still used where a time is needed (goods-receipt arrival, recalculation
 date) — `DateField` is date-only.
@@ -46,7 +47,8 @@ date) — `DateField` is date-only.
 | `list-query-state` | `lib/list-query-state.ts` | List filters/sort/page kept in the URL. This is why sheet routes carry the list's `?…` string across navigations — the list stays mounted behind the sheet and reads its state from it. |
 | `appearance-store` / `AppearanceProvider` | `stores/appearance-store.ts`, `components/theme/appearance-provider.tsx` | Light/dark mode and accent theme, company/user-layered. See [appearance-and-printing.md](appearance-and-printing.md). |
 | `print-settings-store` | `stores/print-settings-store.ts` | Company name/logo/accent/footer for every Quick Print document — `PrintLayout` reads it directly, so a screen never needs its own print branding. See [appearance-and-printing.md](appearance-and-printing.md). |
-| Top-bar Settings menu | `SETTINGS_MENU` in `layouts/app-shell.tsx` | A `DropdownMenu` beside the dark-mode toggle, grouped **Company** (Purchasing/Inventory/Printing — affects everyone) vs. **You** (Appearance — this browser). A shortcut alongside the sidebar's own Settings group, not a replacement for it; add a new settings screen to both. |
+| Top-bar Settings menu | `SETTINGS_MENU` in `layouts/app-shell.tsx` | A `DropdownMenu` beside the dark-mode toggle, grouped **Company** (Purchasing/Inventory/Printing — affects everyone) vs. **You** (Account/Appearance — this person). The *only* way into Settings on desktop — the sidebar itself never lists it (see [user-interface.md](user-interface.md#desktop-sidebar-grouping-quick-access-active-colour)); the mobile "More" sheet still surfaces it via `settingsNavGroup` since mobile has no top bar. Add a new settings screen to both this menu and `settingsNavGroup`. |
+| Top-bar user menu | Trailing `DropdownMenu` in `layouts/app-shell.tsx` | The circular initials avatar at the far right of the top bar — replaced a plain email-plus-"Log out"-button pair. Opens to the signed-in user's name/email, an **Account** link (`/settings/account`), then **Log out** last, the layout convention most dashboards use. |
 
 An in-place confirm, not a modal, for a destructive action that only affects what's already on the
 current screen (discarding an unfinished purchase order — see `startOver` in

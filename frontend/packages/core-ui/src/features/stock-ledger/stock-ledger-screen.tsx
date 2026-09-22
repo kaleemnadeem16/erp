@@ -234,13 +234,13 @@ function StockMoveFilterControls({ items, warehouses, query, full }: StockMoveFi
         aria-label="Moved from"
         value={query.filters.moved_from ?? ''}
         onChange={(value) => query.setFilter('moved_from', value || undefined)}
-        className={full ? 'w-full' : undefined}
+        className={full ? 'w-full' : 'w-auto'}
       />
       <DateField
         aria-label="Moved to"
         value={query.filters.moved_to ?? ''}
         onChange={(value) => query.setFilter('moved_to', value || undefined)}
-        className={full ? 'w-full' : undefined}
+        className={full ? 'w-full' : 'w-auto'}
       />
     </>
   );

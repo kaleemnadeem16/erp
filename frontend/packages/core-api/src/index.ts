@@ -5,6 +5,7 @@ export {
 } from "./mutator/fetch-client";
 
 export * from "./generated/auth/auth";
+export * from "./generated/account/account";
 export * from "./generated/models";
 export * from "./generated/item/item";
 export * from "./generated/category/category";
