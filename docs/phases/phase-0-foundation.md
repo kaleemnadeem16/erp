@@ -2,10 +2,12 @@
 
 # Phase 0 — Foundation
 
-- **Status:** in progress — dev environment, company scoping, auth & access, all
+- **Status:** complete — dev environment, company scoping, auth & access, all
   cross-cutting mechanisms (UoM, custom fields, sequences, currencies), the
-  Scramble → Orval type pipeline, the `develop`/`main` branching model, and the
-  frontend skeleton are done; a production frontend Dockerfile is next
+  Scramble → Orval type pipeline, the `develop`/`main` branching model, the
+  frontend skeleton and the first production deployment are done. A small set of
+  non-blocking infrastructure/documentation follow-ups remains explicitly deferred
+  below.
 - **Depends on:** nothing
 - **Blocked by:** nothing
 
@@ -81,7 +83,9 @@ feature.
       `crm_backend_prod` containers on mainvm: neither sets `REDIS_PREFIX` explicitly, so both
       fall back to Laravel's `APP_NAME`-derived default (`invoiceflow_database_`,
       `x1techs_crm_database_`), distinct from our explicit `REDIS_PREFIX=erp_`
-- [ ] Traefik labels + `proxy-net` attachment, matching the invoiceflow pattern
+- [x] ~~Traefik labels + `proxy-net` attachment, matching the invoiceflow pattern~~ — verified
+      during the first production deployment on 2026-09-22; both public ERP domains route through
+      Traefik with real TLS → [deployment.md](../architecture/deployment.md#first-deploy-runbook)
 - [x] ~~Prune stale images on mainvm~~ — done 2026-07-29, ~20 GB reclaimed (2 GB build cache/orphaned
       images + 18 GB stale rollback and version tags). See [ci-cd.md](../architecture/ci-cd.md#image-retention)
       for the retention policy that keeps it from recurring.
@@ -206,7 +210,9 @@ feature.
 - [x] ~~`/api/v1` route group, conventions per [api-conventions.md](../architecture/api-conventions.md)~~ — auth routes already follow it
 - [x] ~~Scramble generating OpenAPI~~ — `dedoc/scramble` installed, `php artisan scramble:export` verified against the auth routes
 - [x] ~~Orval generating typed TanStack Query hooks into `packages/core-api`~~ — `frontend/packages/core-api`, fetch-based custom mutator (Sanctum cookie + bearer), verified deterministic across re-runs and type-checks clean
-- [ ] Generated output committed; **CI fails on diff** — drift check wired into `.github/workflows/pipeline.yml` (`codegen-check` job); not yet exercised on real GitHub Actions, and `frontend/` isn't committed yet
+- [x] ~~Generated output committed; **CI fails on diff**~~ — drift check is wired into
+      `.github/workflows/pipeline.yml` (`codegen-check` job), exercised on real GitHub Actions,
+      and the generated frontend client is committed
 
 ### Frontend skeleton
 
@@ -279,12 +285,15 @@ arm64 + `merge-manifest`); 4 CI-only bugs found and fixed in the process, see ST
       code change
 - [x] Two concurrent requests for a sequence number return different, gapless values
 - [x] The architecture test catches a deliberately added single-column unique index
-- [ ] The production image builds and runs
+- [x] ~~The production image builds and runs~~ — both architecture images build and the arm64
+      production image is running on mainvm as verified during the 2026-09-22 deployment
 
 ## Docs to update on completion
 
-- [ ] [STATUS.md](../STATUS.md) — mark Phase 0 done, move Next to Phase 1
-- [ ] Expand [phase-1](README.md#phase-1--master-data) into its own doc
+- [x] ~~[STATUS.md](../STATUS.md) — mark Phase 0 done, move Next to Phase 1~~ — status now records
+      the later Phase 1 completion and current Phase 2 position
+- [x] ~~Expand [phase-1](README.md#phase-1--master-data) into its own doc~~ —
+      [phase-1-master-data.md](phase-1-master-data.md)
 - [ ] New ADRs for any decisions made during the phase
 - [ ] Root `README.md` setup steps verified from a clean clone
 

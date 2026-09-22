@@ -70,7 +70,7 @@ non-blocking (second customer profile; cross-entity master data; movement postin
 
 | Phase | Name | Status |
 |---|---|---|
-| 0 | [Foundation](phases/phase-0-foundation.md) | In progress (only production deployment left, deliberately deferred) |
+| 0 | [Foundation](phases/phase-0-foundation.md) | Complete (2026-09-22; non-blocking reference-doc and infrastructure follow-ups remain) |
 | 1 | [Master data](phases/phase-1-master-data.md) | Complete |
 | 2 | [Purchasing & stock](phases/phase-2-purchasing-stock.md) | In progress |
 | 3 | Estimating core | Not started |
