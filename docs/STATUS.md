@@ -48,12 +48,18 @@ the still-open keyboard/focus/WCAG audit and an explicit end-to-end journey test
 availability), not more screens. Of the other four remaining criteria, three require Phase 4/5/6
 correction-package owners and one is the future valuation-policy boundary.
 
-The first production deployment remains deliberately last, after all Phase 2 criteria are
-complete. Its runbook is ready ([deployment.md](architecture/deployment.md#first-deploy-runbook))
-but unrehearsed, and two prerequisites sit outside this repository: registering the self-hosted
-ARM64 runner the image build targets, and agreeing Redis database indices with invoiceflow and
-crm. `main` is ~103 commits behind `develop`, so that merge is itself the first real exercise of
-the multi-arch build.
+The first production deployment is now being prepared ahead of the rest of Phase 2, at the
+user's request (2026-09-22). Its runbook is ready
+([deployment.md](architecture/deployment.md#first-deploy-runbook)) but unrehearsed. The
+self-hosted ARM64 runner the image build targets is registered and online (confirmed live
+2026-09-22 — `ci-runner-setup.md`'s "done" status was correct; this file's own prior claim that
+registration was still outstanding was stale). ERP's Redis DB indices are now assigned
+(`REDIS_DB=3`, `REDIS_CACHE_DB=4`; runbook step 3) without needing invoiceflow's or crm's own
+config touched — both are still pre-production and neither claims an explicit index today. Still
+outside this repository and not something an agent can do: the SSH-run steps on dbvm/mainvm
+themselves, since no deploy job exists in CI yet. `main` is
+126 commits behind `develop` as of 2026-09-22 (last built 2026-08-18), so the `develop`→`main`
+merge is itself the first real exercise of the multi-arch build against current code.
 
 ## Blocked / awaiting input
 

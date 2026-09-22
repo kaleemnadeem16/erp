@@ -30,7 +30,8 @@ not an organisation — GitHub does not offer org-level runners for personal acc
 project registers a **second, independent repo-scoped runner** on mainvm, alongside the existing
 one rather than sharing it.
 
-Not yet done. Step-by-step setup → [ci-runner-setup.md](ci-runner-setup.md).
+**Done (2026-08-11)** — `mainvm-erp-arm64` is registered and running; confirmed online again
+2026-09-22. Step-by-step setup → [ci-runner-setup.md](ci-runner-setup.md).
 
 ### Runner constraints
 

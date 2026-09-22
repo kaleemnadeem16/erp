@@ -103,10 +103,14 @@ pipeline does **not** cover — CI builds and pushes images but does not deploy
 2. `CREATE EXTENSION btree_gist;` in the `erp` database. The `fiscal_years` migration
    needs it and `erp_app` is not a superuser, so migrating first fails with
    *permission denied to create extension*.
-3. Agree ERP's own `REDIS_DB` and `REDIS_CACHE_DB` indices with invoiceflow and crm, and
-   record them. They share the instance, and `cache:clear` issues `FLUSHDB`, which
-   ignores `REDIS_PREFIX` — so a clear on a shared index wipes a neighbour's cache.
-   **Keep `cache:clear` and `optimize:clear` out of the deploy sequence entirely.**
+3. ~~Agree ERP's own `REDIS_DB` and `REDIS_CACHE_DB` indices with invoiceflow and crm~~ —
+   done 2026-09-22: `REDIS_DB=3`, `REDIS_CACHE_DB=4` (see `.env.example`; neither
+   invoiceflow nor crm sets these explicitly today, so nothing on their side needed to
+   change — re-confirm with their owners once either reaches production, in case they
+   then claim explicit indices). They share the instance, and `cache:clear` issues
+   `FLUSHDB`, which ignores `REDIS_PREFIX` — so a clear on a shared index wipes a
+   neighbour's cache. **Keep `cache:clear` and `optimize:clear` out of the deploy
+   sequence entirely regardless.**
 
 **On mainvm, before the first `up`:**
 

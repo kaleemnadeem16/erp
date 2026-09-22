@@ -411,6 +411,13 @@ purchasing and inventory operating UI; that remaining boundary is listed below:
 - [ ] Replace temporary raw-ID controls in cutover screens when the required lookup endpoints exist
       (e.g. `inventory-cutover-detail-screen.tsx` still renders a bare `location_id` for negative
       opening exceptions instead of resolving it to a code/name).
+- [ ] PO fields with no schema, API or UI yet, surfaced while building supplier sites
+      (2026-09-22): a ship-to/deliver-to location on the PO (today only the supplier's own
+      order-from/ship-from site is captured, see [parties.md](../domain/parties.md#shared-sites));
+      a per-PO payment-terms override (`payment_terms_days` lives only on `supplier_accounts`
+      today, applying to every PO from that supplier); a buyer/requester field; a shipping-method
+      field. None are blocked on anything and none have an ADR — add one only if a real
+      requirement narrows the design; otherwise implement directly when picked up.
 - [ ] Audit and improve existing Phase 2 screens for consistent hierarchy, terminology, empty/
       loading/error states, keyboard/focus behaviour, responsive operation and WCAG 2.2 AA; test
       the critical PO→receipt→QA and inventory-drill-down journeys.
