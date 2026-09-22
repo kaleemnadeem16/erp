@@ -92,6 +92,7 @@ export function PurchaseOrderEditScreen() {
 
   const defaultValues: PurchaseOrderFormValues = {
     supplier_account_id: String(order.supplier_account_id),
+    supplier_site_id: order.supplier_site_id ? String(order.supplier_site_id) : "",
     currency_id: String(order.currency_id),
     fx_policy: order.fx_policy as "FIXED" | "FLOATING",
     fx_rate: order.fx_rate,

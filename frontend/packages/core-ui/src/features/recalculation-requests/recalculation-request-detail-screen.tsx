@@ -163,7 +163,7 @@ export function RecalculationRequestDetailScreen() {
           <DetailField label="Source" fullWidth>{`${request.source_type} #${request.source_id}`}</DetailField>
         </DetailSection>
 
-        <DetailSection title="Impact versions" description="A version is replaced (never edited) whenever the ledger changes underneath an in-review request.">
+        <DetailSection title="Impact versions" description="A version is replaced (never edited) whenever the ledger changes underneath an in-review request." fullWidth>
           <div className="overflow-x-auto rounded-md border border-border sm:col-span-2">
             <Table>
               <TableHeader>
@@ -195,7 +195,7 @@ export function RecalculationRequestDetailScreen() {
         </DetailSection>
 
         {current && (
-          <DetailSection title={`Approvals — version #${current.version_no}`} description={`${current.required_approval_count} independent approver(s) required.`}>
+          <DetailSection title={`Approvals — version #${current.version_no}`} description={`${current.required_approval_count} independent approver(s) required.`} fullWidth>
             <div className="overflow-x-auto rounded-md border border-border sm:col-span-2">
               <Table>
                 <TableHeader>

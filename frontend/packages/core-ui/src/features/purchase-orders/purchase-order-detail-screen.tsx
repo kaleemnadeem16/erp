@@ -9,6 +9,7 @@ import {
   useSupplierAccountsShow,
   useUomsIndex,
   type PurchaseOrderLineResource,
+  type PurchaseOrderResource,
 } from "@erp/core-api";
 
 import { Badge } from "../../components/ui/badge";
@@ -52,6 +53,19 @@ const STATUS_VARIANT: Record<
   CANCELLED: "destructive",
 };
 
+const SITE_ROLE_LABEL: Record<string, string> = {
+  ORDER_FROM: "Ordering from",
+  SHIP_FROM: "Shipping from",
+};
+
+/** "12 Industrial Road, Lahore, Punjab 54000, PK" — skips whatever the address doesn't have. */
+function siteAddressLine(site: NonNullable<PurchaseOrderResource["supplier_site"]>): string {
+  const { address_line1, address_line2, city, state, postal_code, country_code } = site.party_site;
+  return [address_line1, address_line2, [city, state, postal_code].filter(Boolean).join(" "), country_code]
+    .filter(Boolean)
+    .join(", ");
+}
+
 /**
  * Both presentations are kept on purpose — switch with one word in
  * `apps/main/src/presentation.ts`. `"page"` is the full-page detail; `"sheet"`
@@ -63,7 +77,7 @@ export function PurchaseOrderDetailScreen({ presentation = "page" }: { presentat
   const navigate = useNavigate();
   const { search } = useLocation();
   const orderId = Number(id);
-  const orderQuery = usePurchaseOrdersShow(orderId, { include: "lines" });
+  const orderQuery = usePurchaseOrdersShow(orderId, { include: "lines,supplierSite" });
   const order =
     orderQuery.data?.status === 200 ? orderQuery.data.data.data : undefined;
   const supplierQuery = useSupplierAccountsShow(
@@ -230,6 +244,16 @@ export function PurchaseOrderDetailScreen({ presentation = "page" }: { presentat
       title: "Supplier",
       fields: [
         { label: "Supplier", value: supplierLabel },
+        ...(order.supplier_site
+          ? [
+              {
+                label: SITE_ROLE_LABEL[order.supplier_site.role] ?? "Site",
+                value: [order.supplier_site.party_site.name, siteAddressLine(order.supplier_site)]
+                  .filter(Boolean)
+                  .join(" — "),
+              },
+            ]
+          : []),
         ...(supplier?.party?.tax_id ? [{ label: "Tax ID", value: supplier.party.tax_id }] : []),
         ...(supplier?.party?.registration_no
           ? [{ label: "Registration no.", value: supplier.party.registration_no }]
@@ -429,6 +453,14 @@ export function PurchaseOrderDetailScreen({ presentation = "page" }: { presentat
         </DetailSection>
         <DetailSection title="Supplier">
           <DetailField label="Supplier">{supplierLabel}</DetailField>
+          {order.supplier_site && (
+            <DetailField label={SITE_ROLE_LABEL[order.supplier_site.role] ?? "Site"}>
+              <div>{order.supplier_site.party_site.name}</div>
+              {siteAddressLine(order.supplier_site) && (
+                <div className="text-xs text-muted-foreground">{siteAddressLine(order.supplier_site)}</div>
+              )}
+            </DetailField>
+          )}
           <DetailField label="Payment terms">
             {supplier ? `${supplier.payment_terms_days} days` : undefined}
           </DetailField>
@@ -463,6 +495,7 @@ export function PurchaseOrderDetailScreen({ presentation = "page" }: { presentat
         <DetailSection
           title="Lines"
           description="Ordered quantities and commercial values are immutable after issue."
+          fullWidth
         >
           <div className="overflow-hidden rounded-md border sm:col-span-2">
             <Table scrollRegionLabel="Order lines">

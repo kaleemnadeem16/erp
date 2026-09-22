@@ -29,6 +29,14 @@ import { useLogout } from "@erp/core-api";
 
 import { Button } from "../components/ui/button";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "../components/ui/dropdown-menu";
+import {
   Sheet,
   SheetContent,
   SheetHeader,
@@ -96,6 +104,27 @@ const navGroups: NavGroup[] = [
       { to: "/settings/appearance", label: "Appearance", icon: Palette },
       { to: "/settings/printing", label: "Printing", icon: Printer },
     ],
+  },
+];
+
+// The top-bar Settings menu — split by *who it's for*, not by module, since
+// that's the question a person actually has ("is this mine or the
+// company's?"): Purchasing/Inventory/Printing apply to everyone in the
+// company; Appearance is this person's own browser. The sidebar's own
+// Settings group above stays as a second way in — this is a shortcut, not a
+// replacement for it.
+const SETTINGS_MENU: { label: string; items: NavItem[] }[] = [
+  {
+    label: "Company",
+    items: [
+      { to: "/settings/purchasing", label: "Purchasing", icon: Settings },
+      { to: "/settings/inventory", label: "Inventory", icon: SlidersHorizontal },
+      { to: "/settings/printing", label: "Printing", icon: Printer },
+    ],
+  },
+  {
+    label: "You",
+    items: [{ to: "/settings/appearance", label: "Appearance", icon: Palette }],
   },
 ];
 
@@ -247,7 +276,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             )}
           </div>
 
-          <div className="flex shrink-0 items-center gap-3">
+          <div className="flex shrink-0 items-center gap-1">
             <Button
               variant="ghost"
               size="icon"
@@ -256,7 +285,30 @@ export function AppShell({ children }: { children: ReactNode }) {
             >
               {isDark ? <Sun className="size-4" /> : <Moon className="size-4" />}
             </Button>
-            <span className="max-w-[200px] truncate text-sm text-muted-foreground">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" aria-label="Settings">
+                  <Settings className="size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                {SETTINGS_MENU.map((group, index) => (
+                  <div key={group.label}>
+                    {index > 0 && <DropdownMenuSeparator />}
+                    <DropdownMenuLabel>{group.label}</DropdownMenuLabel>
+                    {group.items.map((item) => (
+                      <DropdownMenuItem key={item.to} asChild>
+                        <NavLink to={item.to} className="cursor-pointer gap-2">
+                          <item.icon className="size-4 text-muted-foreground" />
+                          {item.label}
+                        </NavLink>
+                      </DropdownMenuItem>
+                    ))}
+                  </div>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <span className="ml-2 max-w-[200px] truncate text-sm text-muted-foreground">
               {user?.email}
             </span>
             <Button variant="outline" size="sm" onClick={handleLogout}>

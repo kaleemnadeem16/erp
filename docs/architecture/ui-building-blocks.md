@@ -30,10 +30,11 @@ date) — `DateField` is date-only.
 | Block | File | Use it for |
 |---|---|---|
 | `PageHeader` (+ `MobileFab`) | `components/page/page-header.tsx` | Title, breadcrumbs, actions; `primaryAction` becomes a FAB below `md`. |
-| `DetailPageLayout` / `DetailSection` / `DetailField` | `components/detail/` | Read-only record views: cards of label/value pairs. |
+| `DetailPageLayout` / `DetailSection` / `DetailField` | `components/detail/` | Read-only record views: cards of label/value pairs. `DetailPageLayout` is a `@container` grid — short sections (a handful of fields) share a row from `@2xl` up instead of each stacking full-width; mark a section `fullWidth` (a table, a long-text-heavy section) to keep it on its own row. `DetailSection`'s own field grid stays viewport- (not container-) based, since the same component is also used standalone, at full width, inside every create/edit form. |
 | `WizardShell` | `components/page/wizard-shell.tsx` | Any multi-step create flow: step indicator, the active step's content, a sticky Back/Next footer. Presentational — the caller owns step state and validation. |
 | `RecordSheet` / `RecordSheetAside` | `components/page/record-sheet.tsx` | A record as a right-hand side sheet: title, optional header `icon`, header actions, scrolling body, `size` (`md`/`lg`/`xl`, each floor capped at `100vw` so it never overflows a narrow screen), `dismissOnOutsideClick` (off for forms). `RecordSheetAside` portals children into the sheet's own quiet side column (only shown from `@4xl` up) from anywhere inside the sheet's content — e.g. a live order summary — without lifting that state to the screen that mounts the sheet. Room inside the scroller so focus rings aren't clipped. Opens/closes with a slide animation (`--animate-sheet-in-*`/`-out-*` in `themes.css`); closing always plays the exit animation before `onClose` fires. |
 | `Sheet*` | `components/ui/sheet.tsx` | The raw Radix dialog primitives (also the mobile "More" and Filters sheets). Reach for `RecordSheet` for records. |
+| `Dialog*` | `components/ui/dialog.tsx` | A small **centered** modal for a quick, self-contained side-task started from inside a bigger form or sheet (adding a supplier site without leaving the PO being drafted — see `SupplierSiteDialog`). Scrolls internally past `90vh` rather than overflowing off-screen. Prefer `RecordSheet` for a record in its own right; stacking two side sheets reads as "which one am I in", where a centered dialog over a sheet reads as "a quick side-task, then back". |
 
 ## Behaviour
 
@@ -45,6 +46,7 @@ date) — `DateField` is date-only.
 | `list-query-state` | `lib/list-query-state.ts` | List filters/sort/page kept in the URL. This is why sheet routes carry the list's `?…` string across navigations — the list stays mounted behind the sheet and reads its state from it. |
 | `appearance-store` / `AppearanceProvider` | `stores/appearance-store.ts`, `components/theme/appearance-provider.tsx` | Light/dark mode and accent theme, company/user-layered. See [appearance-and-printing.md](appearance-and-printing.md). |
 | `print-settings-store` | `stores/print-settings-store.ts` | Company name/logo/accent/footer for every Quick Print document — `PrintLayout` reads it directly, so a screen never needs its own print branding. See [appearance-and-printing.md](appearance-and-printing.md). |
+| Top-bar Settings menu | `SETTINGS_MENU` in `layouts/app-shell.tsx` | A `DropdownMenu` beside the dark-mode toggle, grouped **Company** (Purchasing/Inventory/Printing — affects everyone) vs. **You** (Appearance — this browser). A shortcut alongside the sidebar's own Settings group, not a replacement for it; add a new settings screen to both. |
 
 An in-place confirm, not a modal, for a destructive action that only affects what's already on the
 current screen (discarding an unfinished purchase order — see `startOver` in

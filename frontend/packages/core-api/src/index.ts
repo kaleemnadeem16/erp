@@ -19,6 +19,7 @@ export * from "./generated/negative-stock-override-request/negative-stock-overri
 export * from "./generated/recalculation-request/recalculation-request";
 export * from "./generated/chart-of-account/chart-of-account";
 export * from "./generated/supplier-account/supplier-account";
+export * from "./generated/supplier-site/supplier-site";
 export * from "./generated/item-supplier/item-supplier";
 export * from "./generated/purchase-order/purchase-order";
 export * from "./generated/goods-receipt/goods-receipt";

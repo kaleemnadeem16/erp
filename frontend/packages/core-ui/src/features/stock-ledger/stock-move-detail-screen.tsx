@@ -58,7 +58,7 @@ export function StockMoveDetailScreen() {
           <DetailField label="Serial">{move.serial_no}</DetailField>
         </DetailSection>
 
-        <DetailSection title="Valuation entries" description="The cost impact this movement posted to the ledger.">
+        <DetailSection title="Valuation entries" description="The cost impact this movement posted to the ledger." fullWidth>
           <div className="sm:col-span-2 overflow-x-auto rounded-md border border-border">
             <Table>
               <TableHeader>

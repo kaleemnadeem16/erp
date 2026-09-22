@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   useFieldArray,
   useForm,
@@ -6,13 +6,15 @@ import {
   type UseFormReturn,
 } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { History, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { History, MapPin, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { z } from "zod";
 import {
   useCurrenciesIndex,
   useItemsIndex,
   useSupplierAccountsIndex,
+  useSupplierAccountsSitesIndex,
   useUomsIndex,
+  type SupplierSiteResource,
 } from "@erp/core-api";
 
 import { AdvancedOptionSection } from "../../components/ui/advanced-option-section";
@@ -44,6 +46,13 @@ import { RecordSheetAside } from "../../components/page/record-sheet";
 import { WizardShell, type WizardStep } from "../../components/page/wizard-shell";
 import { clearDraft, readDraft, writeDraft } from "../../lib/session-draft";
 import { PurchaseOrderSummary } from "./purchase-order-summary";
+import { SupplierSiteDialog } from "./supplier-site-form";
+
+// "CODE — City, ST" when there's an address to show; the name alone otherwise.
+const supplierSiteLabel = (site: SupplierSiteResource) => {
+  const place = [site.party_site.city, site.party_site.state].filter(Boolean).join(", ");
+  return `${site.party_site.name}${place ? ` — ${place}` : ""}`;
+};
 
 const decimal = (label: string, positive = false) =>
   z
@@ -70,6 +79,7 @@ const lineSchema = z.object({
 });
 const schema = z.object({
   supplier_account_id: z.string().min(1, "Supplier is required"),
+  supplier_site_id: z.string(),
   currency_id: z.string().min(1, "Currency is required"),
   fx_policy: z.enum(["FLOATING", "FIXED"]),
   fx_rate: z
@@ -118,6 +128,7 @@ const emptyLine = (): PurchaseOrderFormValues["lines"][number] => ({
 
 const createDefaults = (): PurchaseOrderFormValues => ({
   supplier_account_id: "",
+  supplier_site_id: "",
   currency_id: "",
   ...DEFAULT_FX,
   fx_rate_date: today,
@@ -182,6 +193,7 @@ const WIZARD_STEPS: WizardStep[] = [
 const WIZARD_STEP_FIELDS: FieldPath<PurchaseOrderFormValues>[][] = [
   [
     "supplier_account_id",
+    "supplier_site_id",
     "order_date",
     "expected_delivery_date",
     "currency_id",
@@ -199,6 +211,7 @@ const WIZARD_STEP_FIELDS: FieldPath<PurchaseOrderFormValues>[][] = [
 export function toPurchaseOrderPayload(values: PurchaseOrderFormValues) {
   return {
     supplier_account_id: Number(values.supplier_account_id),
+    supplier_site_id: values.supplier_site_id ? Number(values.supplier_site_id) : null,
     currency_id: Number(values.currency_id),
     fx_policy: values.fx_policy,
     fx_rate: values.fx_rate,
@@ -337,6 +350,13 @@ export function PurchaseOrderForm({
       })),
     [suppliers],
   );
+  const supplierIdNumber = Number(form.watch("supplier_account_id")) || 0;
+  const sitesQuery = useSupplierAccountsSitesIndex(supplierIdNumber, { per_page: 100 });
+  const sites = sitesQuery.data?.status === 200 ? sitesQuery.data.data.data : [];
+  const siteOptions = useMemo(
+    () => sites.map((site) => ({ value: String(site.id), label: supplierSiteLabel(site) })),
+    [sites],
+  );
   const currenciesQuery = useCurrenciesIndex({ per_page: 100, sort: "code" });
   const currencies =
     currenciesQuery.data?.status === 200 ? currenciesQuery.data.data.data : [];
@@ -383,6 +403,18 @@ export function PurchaseOrderForm({
         shouldValidate: true,
       });
   }, [form, supplierId, suppliers]);
+  // A site belongs to one supplier — dropping the old one when the supplier
+  // itself changes, but not on first mount, where it's the resumed or
+  // already-saved order's own valid combination and must survive untouched.
+  const previousSupplierId = useRef(supplierId);
+  useEffect(() => {
+    if (previousSupplierId.current !== supplierId) {
+      form.setValue("supplier_site_id", "");
+    }
+    previousSupplierId.current = supplierId;
+  }, [form, supplierId]);
+
+  const [addingSite, setAddingSite] = useState(false);
 
   const watchedLines = form.watch("lines");
 
@@ -480,6 +512,42 @@ export function PurchaseOrderForm({
                     emptyText="No suppliers found."
                   />
                 </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="supplier_site_id"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Supplier site</FormLabel>
+                <div className="flex gap-1.5">
+                  <FormControl>
+                    <Combobox
+                      ref={field.ref}
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      options={siteOptions}
+                      disabled={!supplierIdNumber}
+                      placeholder={supplierIdNumber ? "Order from the supplier's default" : "Select a supplier first"}
+                      searchPlaceholder="Search sites…"
+                      emptyText="No sites on file for this supplier yet."
+                      className="flex-1"
+                    />
+                  </FormControl>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    disabled={!supplierIdNumber}
+                    title="Add a supplier site"
+                    onClick={() => setAddingSite(true)}
+                  >
+                    <MapPin />
+                    <span className="sr-only">Add a supplier site</span>
+                  </Button>
+                </div>
                 <FormMessage />
               </FormItem>
             )}
@@ -806,6 +874,7 @@ export function PurchaseOrderForm({
             <PurchaseOrderSummary
               control={form.control}
               supplierOptions={supplierOptions}
+              siteOptions={siteOptions}
               currencyOptions={currencyOptions}
               itemOptions={itemOptions}
               uomOptions={uomOptions}
@@ -868,6 +937,17 @@ export function PurchaseOrderForm({
           </>
         )}
       </form>
+      {supplierIdNumber > 0 && (
+        <SupplierSiteDialog
+          supplierAccountId={supplierIdNumber}
+          open={addingSite}
+          onOpenChange={setAddingSite}
+          onCreated={(site) => {
+            sitesQuery.refetch();
+            form.setValue("supplier_site_id", String(site.id), { shouldValidate: true });
+          }}
+        />
+      )}
     </Form>
   );
 }

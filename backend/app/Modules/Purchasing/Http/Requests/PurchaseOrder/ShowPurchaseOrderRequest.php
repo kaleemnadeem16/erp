@@ -17,6 +17,6 @@ class ShowPurchaseOrderRequest extends FormRequest
     /** @return array<string, mixed> */
     public function rules(): array
     {
-        return $this->includeRules(['lines']);
+        return $this->includeRules(['lines', 'supplierSite']);
     }
 }

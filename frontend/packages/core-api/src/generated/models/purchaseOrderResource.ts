@@ -6,6 +6,7 @@
  */
 import type { PurchaseOrderResourceNumber } from "./purchaseOrderResourceNumber";
 import type { PurchaseOrderResourceSupplierSiteId } from "./purchaseOrderResourceSupplierSiteId";
+import type { PurchaseOrderResourceSupplierSite } from "./purchaseOrderResourceSupplierSite";
 import type { PurchaseOrderResourceExpectedDeliveryDate } from "./purchaseOrderResourceExpectedDeliveryDate";
 import type { PurchaseOrderResourceNotes } from "./purchaseOrderResourceNotes";
 import type { PurchaseOrderResourceInventoryCutoverId } from "./purchaseOrderResourceInventoryCutoverId";
@@ -22,6 +23,7 @@ export interface PurchaseOrderResource {
   number: PurchaseOrderResourceNumber;
   supplier_account_id: number;
   supplier_site_id: PurchaseOrderResourceSupplierSiteId;
+  supplier_site?: PurchaseOrderResourceSupplierSite;
   status: string;
   currency_id: number;
   fx_policy: string;

@@ -284,7 +284,7 @@ export function InventoryCutoverDetailScreen() {
           </DetailSection>
         )}
 
-        <DetailSection title="Batches" description={isDraft ? 'Attach a validated Imports batch by its ID.' : undefined}>
+        <DetailSection title="Batches" description={isDraft ? 'Attach a validated Imports batch by its ID.' : undefined} fullWidth>
           <div className="overflow-x-auto rounded-md border border-border sm:col-span-2">
             <Table>
               <TableHeader>
@@ -340,7 +340,7 @@ export function InventoryCutoverDetailScreen() {
           )}
         </DetailSection>
 
-        <DetailSection title="Negative openings" description="ADR 0037's cutover-shortage exception — an evidenced negative opening balance, requested and approved by different actors.">
+        <DetailSection title="Negative openings" description="ADR 0037's cutover-shortage exception — an evidenced negative opening balance, requested and approved by different actors." fullWidth>
           <div className="overflow-x-auto rounded-md border border-border sm:col-span-2">
             <Table>
               <TableHeader>

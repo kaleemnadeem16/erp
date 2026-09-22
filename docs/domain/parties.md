@@ -149,6 +149,16 @@ as its customer or supplier account; both create and update reject a site from a
 company. This preserves shared sites across the two roles without allowing one trading partner's
 role configuration to attach another trading partner's address.
 
+The supplier-facing half of this is exposed at `/api/v1/supplier-accounts/{id}/sites`
+(index/store) and `/api/v1/supplier-sites/{id}` (update/destroy) — `SupplierSiteController`,
+`App\Modules\Parties\Actions\{Create,Update,Delete}SupplierSite`. A create request only asks for
+an address and a role; the `party_sites.code` a party-level uniqueness needs is derived from the
+name and de-duplicated server-side, not asked of the user. Deleting a supplier site removes only
+its role join, never the underlying `party_sites` row, since another role (a customer join) may
+still reference it. There is no equivalent `customer-sites` endpoint yet, and no UI for `party_sites`
+independent of a role — see [purchasing.md](purchasing.md#user-interface) for where the supplier
+side is used.
+
 ### Country as a code, not a reference
 
 `party_sites.country_code` is a plain ISO 3166-1 alpha-2 string (normalised to uppercase in the

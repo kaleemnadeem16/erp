@@ -210,7 +210,7 @@ export function PhysicalCountDetailScreen() {
           <DetailField label="Cancelled">{count.cancelled_at ? new Date(count.cancelled_at).toLocaleString() : undefined}</DetailField>
         </DetailSection>
 
-        <DetailSection title="Lines" description={isDraft ? 'Record a physical quantity for every line before posting.' : undefined}>
+        <DetailSection title="Lines" description={isDraft ? 'Record a physical quantity for every line before posting.' : undefined} fullWidth>
           <div className="overflow-x-auto rounded-md border border-border sm:col-span-2">
             <Table>
               <TableHeader>

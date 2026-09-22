@@ -184,7 +184,11 @@ under [user-interface.md](../architecture/user-interface.md). The first slice is
 Orders list at `/purchase-orders`: server-paginated, URL-filtered by search, supplier and status,
 responsive through the shared table/card foundation, and linked from application navigation. The
 create screen provides repeatable lines, supplier/default-currency resolution, item-driven
-description/UoM defaults, explicit FX evidence and QA selection. The status-gated detail workspace
+description/UoM defaults, explicit FX evidence and QA selection. Once a supplier is chosen, an
+optional site picker offers that supplier's own order-from/ship-from addresses (`GET
+/api/v1/supplier-accounts/{id}/sites`), with an inline "add a site" dialog (`POST .../sites`) for
+a first-time address — see [parties.md](parties.md#shared-sites). The detail screen and Quick
+Print both show the resolved site's address once one is set. The status-gated detail workspace
 shows immutable issued facts and confirms issue, cancellation and short-close consequences before
 calling their named actions. Drafts can be reopened in the same repeatable-line form. The detail
 response computes exact transaction/base totals with decimal arithmetic and derives received stock

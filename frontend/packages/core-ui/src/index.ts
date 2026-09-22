@@ -129,6 +129,16 @@ export {
   SheetTitle,
   SheetDescription,
 } from "./components/ui/sheet";
+export {
+  Dialog,
+  DialogTrigger,
+  DialogClose,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+} from "./components/ui/dialog";
 
 // Items — the reference implementation for this list/detail/print foundation.
 export { ItemsListScreen } from "./features/items/items-list-screen";
@@ -166,6 +176,7 @@ export { PurchaseOrdersListScreen } from "./features/purchase-orders/purchase-or
 export { PurchaseOrderDetailScreen } from "./features/purchase-orders/purchase-order-detail-screen";
 export { PurchaseOrderCreateScreen } from "./features/purchase-orders/purchase-order-create-screen";
 export { PurchaseOrderEditScreen } from "./features/purchase-orders/purchase-order-edit-screen";
+export { SupplierSiteDialog } from "./features/purchase-orders/supplier-site-form";
 export { GoodsReceiptsListScreen } from "./features/goods-receipts/goods-receipts-list-screen";
 export { GoodsReceiptCreateScreen } from "./features/goods-receipts/goods-receipt-create-screen";
 export { GoodsReceiptDetailScreen } from "./features/goods-receipts/goods-receipt-detail-screen";

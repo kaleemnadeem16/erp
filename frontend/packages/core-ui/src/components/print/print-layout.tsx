@@ -62,8 +62,11 @@ export function PrintLayout({
 
   return (
     <div className="w-full bg-white text-left text-black" style={style}>
-      <div className="mb-4 h-1 bg-[var(--print-accent)] [break-after:avoid]" />
-      <header className="mb-4 flex items-start justify-between gap-6 border-b border-black/15 pb-3 [break-after:avoid]">
+      {/* A letterhead, not a web card: one clean rule under the header, no
+          boxed panels or colour blocks — those read as screen UI, not paper.
+          The accent colour still shows through, just on text/rules, the way
+          a printed letterhead uses a house colour sparingly. */}
+      <header className="mb-4 flex items-start justify-between gap-6 border-b-2 border-black pb-3 [break-after:avoid]">
         <div className="flex items-center gap-3">
           {resolvedLogoUrl && <img src={resolvedLogoUrl} alt="" className="h-10 w-10 object-contain" />}
           <div>
@@ -85,7 +88,7 @@ export function PrintLayout({
       </header>
 
       {meta && meta.length > 0 && (
-        <div className="mb-3 flex flex-wrap gap-x-6 gap-y-1 border-l-2 border-[var(--print-accent)] bg-black/[0.025] px-3 py-2 text-[10px] text-black/70 [break-after:avoid]">
+        <div className="mb-3 flex flex-wrap gap-x-6 gap-y-1.5 border-b border-black/15 pb-3 text-[10px] text-black/70 [break-after:avoid]">
           {meta.map((line) => (
             <div key={line.label}>
               <span className="font-semibold text-black/85">{line.label}:</span> {line.value}

@@ -105,7 +105,7 @@ export function PurchasingSettingsScreen() {
 
       <DetailPageLayout>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)}>
+          <form className="col-span-full" onSubmit={form.handleSubmit(handleSubmit)}>
             <DetailSection title="Over-receipt policy">
               {formError && (
                 <div className="sm:col-span-2 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">

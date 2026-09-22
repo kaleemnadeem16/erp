@@ -33,12 +33,14 @@ function SummaryGroup({ title, children }: { title: string; children: ReactNode 
 export function PurchaseOrderSummary({
   control,
   supplierOptions,
+  siteOptions,
   currencyOptions,
   itemOptions,
   uomOptions,
 }: {
   control: Control<PurchaseOrderFormValues>;
   supplierOptions: Option[];
+  siteOptions: Option[];
   currencyOptions: Option[];
   itemOptions: Option[];
   uomOptions: Option[];
@@ -55,6 +57,9 @@ export function PurchaseOrderSummary({
       <h3 className="text-sm font-semibold">Order summary</h3>
       <div className="space-y-4">
         <SummaryGroup title="Supplier">{label(supplierOptions, values.supplier_account_id) ?? NOT_SET}</SummaryGroup>
+        {values.supplier_site_id && (
+          <SummaryGroup title="Site">{label(siteOptions, values.supplier_site_id)}</SummaryGroup>
+        )}
         <div className="grid grid-cols-2 gap-4">
           <SummaryGroup title="Order date">{values.order_date || NOT_SET}</SummaryGroup>
           <SummaryGroup title="Expected">{values.expected_delivery_date || NOT_SET}</SummaryGroup>

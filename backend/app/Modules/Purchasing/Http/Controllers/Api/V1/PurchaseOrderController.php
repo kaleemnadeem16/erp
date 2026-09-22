@@ -30,7 +30,7 @@ class PurchaseOrderController extends Controller
 {
     use AppliesApiQuery;
 
-    private const INCLUDABLE = ['lines' => 'lines'];
+    private const INCLUDABLE = ['lines' => 'lines', 'supplierSite' => 'supplierSite'];
 
     private const SORTABLE = ['number' => 'number', 'order_date' => 'order_date', 'expected_delivery_date' => 'expected_delivery_date', 'created_at' => 'created_at'];
 
@@ -78,6 +78,9 @@ class PurchaseOrderController extends Controller
         $includes = $this->requestedIncludes($request, self::INCLUDABLE);
         if (in_array('lines', $includes, true)) {
             $purchaseOrder->load(['lines' => fn ($query) => $query->withReceiptProgress()]);
+        }
+        if (in_array('supplierSite', $includes, true)) {
+            $purchaseOrder->load('supplierSite.partySite');
         }
 
         return new PurchaseOrderResource($purchaseOrder);
