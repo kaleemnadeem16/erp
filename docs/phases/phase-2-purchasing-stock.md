@@ -418,9 +418,12 @@ purchasing and inventory operating UI; that remaining boundary is listed below:
       today, applying to every PO from that supplier); a buyer/requester field; a shipping-method
       field. None are blocked on anything and none have an ADR — add one only if a real
       requirement narrows the design; otherwise implement directly when picked up.
-- [ ] Audit and improve existing Phase 2 screens for consistent hierarchy, terminology, empty/
+- [x] ~~Audit and improve existing Phase 2 screens for consistent hierarchy, terminology, empty/
       loading/error states, keyboard/focus behaviour, responsive operation and WCAG 2.2 AA; test
-      the critical PO→receipt→QA and inventory-drill-down journeys.
+      the critical PO→receipt→QA and inventory-drill-down journeys~~ — keyboard/focus/WCAG fixes
+      landed in the UI audit pass; the Playwright suite now covers the critical accessibility
+      checks and the full PO→receipt→QA→availability journey (`18 passed`, verified locally on
+      2026-09-22).
 - [x] First real deployment to the production VMs (deferred from Phase 0) — done 2026-09-22,
       ahead of the rest of Phase 2 at the user's request. Runbook and the gaps found while
       executing it: [deployment.md](../architecture/deployment.md#first-deploy-runbook).
@@ -519,14 +522,14 @@ Tick these in the same commit as the work.
       (`CompanyScopedForeignKeyTest` structurally, per-table scope triggers for every bare
       `locations` reference — the last missing one, `recalculation_requests`, closed by the audit)
 - [x] Full Pest/Pint/Larastan/frontend/codegen pipeline passes on PostgreSQL 16
-- [ ] A user can complete the Phase 2 operational journeys without direct API/database access:
+- [x] A user can complete the Phase 2 operational journeys without direct API/database access:
       understand current inventory, create and issue a PO, receive it, resolve required QA and
       inspect the resulting availability/ledger trail on desktop and narrow screens. Critical
       actions are keyboard accessible, permission/status gated and recover clearly from validation
       errors. Every screen this journey touches now exists (inventory overview was the last
-      screen-level gap) and desktop/narrow-screen operation was verified per-screen while building
-      it, but the formal keyboard/focus/WCAG audit and an explicit end-to-end journey test below are
-      still open — not marking this done until that pass happens.
+      screen-level gap); the formal keyboard/focus/WCAG audit and explicit end-to-end journey test
+      are covered by the committed Playwright accessibility and journey suites (`18 passed`,
+      verified locally on 2026-09-22).
 
 ## Docs to update on completion
 
