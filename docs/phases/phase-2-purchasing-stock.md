@@ -534,12 +534,19 @@ Tick these in the same commit as the work.
 ## Docs to update on completion
 
 - [ ] [STATUS.md](../STATUS.md) — mark Phase 2 complete and move Next to Phase 3
-- [ ] `docs/domain/purchasing.md` — reconcile the implemented document/API contract
-- [ ] [stock.md](../domain/stock.md) — reconcile tables, valuation and movement policies
-- [ ] [items.md](../domain/items.md) and [parties.md](../domain/parties.md) — remove the Phase 1
-      `default_supplier_id` bridge and record supplier-catalog/stock-lock behaviour
-- [ ] Inventory and Purchasing module READMEs
-- [ ] New ADRs for every Phase 2 decision, especially Q13/Q14
+- [x] ~~`docs/domain/purchasing.md` — reconcile the implemented document/API contract~~ —
+      receipt/QA immutability, supplier sites, reversal semantics and operational UI/API boundaries
+      are reconciled.
+- [x] ~~[stock.md](../domain/stock.md) — reconcile tables, valuation and movement policies~~ —
+      AVCO/FIFO/SPECIFIC movement, QA availability enforcement, transfers, replay and policy
+      boundaries are reconciled.
+- [x] ~~[items.md](../domain/items.md) and [parties.md](../domain/parties.md) — remove the Phase 1
+      `default_supplier_id` bridge and record supplier-catalog/stock-lock behaviour~~ — the
+      migration, catalogue relationship and supplier-site API/UI are documented.
+- [x] ~~Inventory and Purchasing module READMEs~~ — current ownership, Actions, cutover,
+      movement and policy boundaries are documented.
+- [x] ~~New ADRs for every Phase 2 decision, especially Q13/Q14~~ — Q13/Q14 and subsequent
+      inventory/purchasing governance decisions are recorded in ADRs 0037 and 0040–0047.
 
 ## Related
 

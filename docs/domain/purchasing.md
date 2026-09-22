@@ -213,7 +213,7 @@ disposition history; root decisions and follow-up resolution of open `REWORK` or
 
 - Draft documents are editable and cancellable.
 - Issued POs snapshot resolved item, supplier, quantity, UoM, price, currency, FX and tax figures.
-- Posted receipts and inspections are immutable. Correction uses a linked correction, reversal,
+- Posted receipts and quality dispositions are immutable. Correction uses a linked correction, reversal,
   return or adjustment selected after checking downstream dependencies.
 - Only an inventory movement changes physical stock. Posting a supplier invoice never does.
 - Receipt posting creates the stock move and provisional valuation atomically and idempotently.
@@ -313,13 +313,12 @@ document totals. Always match lines and allocated quantities.
 move solely to express “inspection pending” combines physical and quality truth.
 
 **QA-pending stock is not available stock, and terminal doesn't mean available.** Physical receipt
-already posts full quantity on hand regardless of `qa_required`; Phase 2 does not gate that. A
-future outbound issue/consumption implementation must exclude from availability: quantity that has
-never had a disposition posted against it, open `REWORK`/`PENDING_DECISION` quantity, **and**
-terminal `SCRAP`/`RETURN_TO_SUPPLIER` quantity — only quantity covered by a `PASS` or
-`ACCEPT_WITH_CONCESSION` disposition may ever be issued. This is found by tracing a stock
-layer/move's `source_id` back to its receipt line and checking that line's dispositions; nothing
-written in Phase 2 enforces it yet.
+already posts full quantity on hand regardless of `qa_required`, but the outbound issue boundary
+excludes from availability quantity that has never had a disposition posted against it, open
+`REWORK`/`PENDING_DECISION` quantity, **and** terminal `SCRAP`/`RETURN_TO_SUPPLIER` quantity —
+only quantity covered by a `PASS` or `ACCEPT_WITH_CONCESSION` disposition may be issued. The
+boundary derives this by tracing a stock layer/move's `source_id` back to its receipt line and
+checking its dispositions; `StockIdentity` and the movement tests cover the rejection paths.
 
 **Blind reversal of a transaction chain.** A receipt may already be inspected, transferred,
 consumed or financially matched. Validate dependencies and create explicit correcting events;
