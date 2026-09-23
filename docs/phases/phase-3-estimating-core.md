@@ -93,9 +93,12 @@ module-scoped demo data (`database/seeders/Demo/Estimating/`, per
 - [x] **Rate dimensions + application rates** — schema, resolution algorithm, management UI
       (define dimensions/values, define rates, see the resolution fallback chain and gaps in the
       combination grid), demo scenarios covering every resolution tier — 2026-09-23
-- [ ] **Formulations** — schema, customer-override resolution, cycle detection, recursive-CTE
-      explosion with depth guard, cost-per-output-unit calculation, management UI (create/edit,
-      version list, nested-formulation breakdown showing wastage compounding per level)
+- [x] **Formulations** — schema, customer-override resolution, cycle detection (re-checked on
+      activation, not just save), depth-guarded recursive cost roll-up (PHP recursion, not the
+      CTE originally proposed — see formulations.md's "Nesting"), cost-per-output-unit
+      calculation, management UI (create/edit, version list with activate/delete, nested-formulation
+      breakdown showing wastage compounding per level), demo scenarios covering nesting,
+      versioning and customer override — 2026-09-23
 - [ ] **Overhead policies** — schema, three-level scope resolution, five v1 drivers, version
       freeze-on-reference, mandatory-reason audit (`.policy-history.view`-style permission via
       `PermissionRegistry`), onboarding default, Manufacturing/Estimating settings UI
@@ -104,8 +107,10 @@ module-scoped demo data (`database/seeders/Demo/Estimating/`, per
 - [ ] **Assembly cost preview** — resolution across all four layers (application rate →
       formulation → overhead policy → roll-up), read-only inspection UI surfacing which rate/
       policy was selected and any default-fallback warning
-- [ ] Recursive-CTE and exclusion-constraint patterns applied consistently across formulation,
-      assembly and overhead-policy version tables
+- [ ] Exclusion-constraint pattern applied consistently across formulation (done),
+      assembly and overhead-policy version tables. The recursive-CTE roll-up originally proposed
+      here was deliberately not used for formulations — see formulations.md's "Nesting" — so this
+      item now tracks the exclusion constraint only, not a CTE requirement for every version table
 
 Tick these in the same commit as the work.
 
@@ -115,11 +120,12 @@ Tick these in the same commit as the work.
       define per-item application rates against them; resolution falls back correctly through
       exact-match → required-only → default, and fails loudly (not silently 1:1) when nothing
       matches
-- [ ] A formulation can be created, versioned, and resolved for both a company default and a
+- [x] A formulation can be created, versioned, and resolved for both a company default and a
       customer-specific override for the same output item; editing an in-use version is
       impossible, only superseding it with a new version is
-- [ ] A nested formulation (a `SEMI_FINISHED` input with its own formulation) explodes correctly
-      via the recursive CTE, a cycle is rejected at save time, and depth beyond the guard is
+- [x] A nested formulation (a `SEMI_FINISHED` input with its own formulation) explodes correctly
+      (depth-guarded PHP recursion, not the CTE originally proposed here — see formulations.md),
+      a cycle is rejected at save time *and* at activation time, and depth beyond the guard is
       rejected with a clear error
 - [ ] An overhead policy resolves deterministically through assembly → nearest category ancestor
       → company → none, changing a policy requires a reason and produces an audit row, and an
