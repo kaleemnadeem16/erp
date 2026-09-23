@@ -26,6 +26,9 @@ class ControllerActionBoundaryTest extends TestCase
             'goods receipts' => ['app/Modules/Purchasing/Http/Controllers/Api/V1/GoodsReceiptController.php'],
             'quality dispositions' => ['app/Modules/Purchasing/Http/Controllers/Api/V1/QualityDispositionController.php'],
             'purchasing settings' => ['app/Modules/Purchasing/Http/Controllers/Api/V1/PurchasingSettingsController.php'],
+            'rate dimensions' => ['app/Modules/Estimating/Http/Controllers/Api/V1/RateDimensionController.php'],
+            'rate dimension values' => ['app/Modules/Estimating/Http/Controllers/Api/V1/RateDimensionValueController.php'],
+            'application rates' => ['app/Modules/Estimating/Http/Controllers/Api/V1/ApplicationRateController.php'],
         ];
     }
 

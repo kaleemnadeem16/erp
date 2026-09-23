@@ -1,6 +1,9 @@
 import { BrowserRouter, Routes, Route, Outlet } from "react-router";
 import {
   AppShell,
+  ApplicationRateCreateScreen,
+  ApplicationRateEditScreen,
+  ApplicationRatesListScreen,
   CategoriesListScreen,
   CategoryCreateScreen,
   CategoryDetailScreen,
@@ -38,6 +41,9 @@ import {
   PrintingSettingsScreen,
   ProtectedRoute,
   PurchasingSettingsScreen,
+  RateDimensionCreateScreen,
+  RateDimensionEditScreen,
+  RateDimensionsListScreen,
   RecalculationRequestCreateScreen,
   RecalculationRequestDetailScreen,
   RecalculationRequestsListScreen,
@@ -234,6 +240,66 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <StockLedgerScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/rate-dimensions"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <RateDimensionsListScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/rate-dimensions/new"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <RateDimensionCreateScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/rate-dimensions/:id/edit"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <RateDimensionEditScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/application-rates"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <ApplicationRatesListScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/application-rates/new"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <ApplicationRateCreateScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/application-rates/:id/edit"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <ApplicationRateEditScreen />
               </AppShell>
             </ProtectedRoute>
           }

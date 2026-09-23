@@ -13,9 +13,11 @@ import {
   Moon,
   Package,
   Palette,
+  Percent,
   Pin,
   PinOff,
   Printer,
+  Ruler,
   ScrollText,
   Settings,
   ShieldAlert,
@@ -99,6 +101,13 @@ const navGroups: NavGroup[] = [
       { to: "/inventory-cutovers", label: "Inventory Cutovers", icon: History },
       { to: "/negative-stock-overrides", label: "Negative-Stock Overrides", icon: ShieldAlert },
       { to: "/recalculation-requests", label: "Stock Recalculation", icon: Calculator },
+    ],
+  },
+  {
+    label: "Estimating",
+    items: [
+      { to: "/rate-dimensions", label: "Rate Dimensions", icon: Ruler },
+      { to: "/application-rates", label: "Application Rates", icon: Percent },
     ],
   },
 ];

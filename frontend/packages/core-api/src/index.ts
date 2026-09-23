@@ -30,3 +30,6 @@ export * from "./generated/inventory-settings/inventory-settings";
 export * from "./generated/purchasing-policy-change/purchasing-policy-change";
 export * from "./generated/inventory-policy-change/inventory-policy-change";
 export * from "./generated/inventory-overview/inventory-overview";
+export * from "./generated/rate-dimension/rate-dimension";
+export * from "./generated/rate-dimension-value/rate-dimension-value";
+export * from "./generated/application-rate/application-rate";
