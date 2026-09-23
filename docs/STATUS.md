@@ -1,7 +1,12 @@
 # Project Status
 
-**Updated:** 2026-09-22
-**Current phase:** Phase 2 — Purchasing & stock (in progress). Phase 1 — Master data is
+**Updated:** 2026-09-23
+**Current phase:** Phase 3 — Estimating core (in progress; plan and
+[ADR 0048](decisions/0048-configurable-hierarchical-overhead-allocation.md) written 2026-09-23,
+implementation starting in vertical slices per
+[phase-3-estimating-core.md](phases/phase-3-estimating-core.md)). Phase 2's remaining
+acceptance criteria depend on later phases' correction-package work and are picked up alongside
+Phase 3; UI polish on existing Phase 1/2 screens continues in parallel. Phase 1 — Master data is
 complete. Phase 0 — Foundation is done, including production deployment (2026-09-22, ahead of
 the rest of Phase 2 at the user's request).
 **Application code:** Laravel 12 backend with Phase 0 foundations, Phase 1 master-data APIs and

@@ -55,6 +55,20 @@ assembly_components
   multiplier           decimal(9,4)   -- e.g. number of coats
   rate_override        NULLABLE decimal(19,4)
   sequence
+
+overhead_policies                          -- see "Overhead allocation" below
+  id, company_id
+  scope_type        COMPANY | CATEGORY | ASSEMBLY
+  scope_id          NULLABLE → categories | assemblies   -- NULL iff scope_type = COMPANY
+  driver_type       PCT_MATERIAL | PCT_LABOUR | PCT_DIRECT_COST | PER_LABOUR_HOUR | PER_WORK_UNIT
+  rate              decimal(19,6)
+  status            DRAFT | ACTIVE | SUPERSEDED
+  effective_from, effective_to  NULLABLE
+  reason            -- mandatory on change, audited like Phase 2's policy changes
+  -- IMMUTABLE once referenced by a resolved cost roll-up that has been snapshotted into an
+  -- issued document
+
+  unique(['company_id', 'scope_type', 'scope_id']) WHERE status = 'ACTIVE'
 ```
 
 The `kind` discriminator is the standard estimating breakdown, and is what makes variance
@@ -133,9 +147,32 @@ Not a pointer to the assembly version. The version is immutable, but the *costs 
 
 ### Overhead allocation
 
-The least well-defined component kind. Decide the rule explicitly — percentage of direct cost,
-per labour hour, or per work unit — and record it. An unexamined overhead rule quietly makes
-every job look profitable.
+Configurable and hierarchical, not a single fixed basis — different manufacturing businesses
+drive overhead differently, and a general-purpose ERP can't hardcode one
+([ADR 0048](../decisions/0048-configurable-hierarchical-overhead-allocation.md)). Resolution
+walks a fixed scope order and stops at the first match — exactly one policy wins, never a sum of
+several:
+
+```
+Assembly's own overhead_policies row
+  ↓ (none?)
+Nearest ancestor in the output item's category chain with a policy (same walk as GL-account
+  resolution, items.md#gl-mapping)
+  ↓ (none?)
+Company default policy
+  ↓ (none?)
+No overhead applied — not an error, overhead/unit = 0
+```
+
+`overhead_policies` versions and freezes the same way formulation/assembly versions do — a
+resolved policy is immutable once a cost roll-up that used it has been snapshotted into an
+issued document (see "Snapshot on issue" below); changing the rule creates a new version rather
+than rewriting the old one, and each change carries a mandatory reason, audited the same way
+Phase 2's `PurchasingPolicyChange`/`InventoryPolicyChange` are.
+
+An unexamined overhead rule quietly makes every job look profitable — this configurability
+doesn't remove the need to actually pick a sensible one per assembly/category, it just stops the
+whole company being forced onto one.
 
 ## Related
 
@@ -143,3 +180,5 @@ every job look profitable.
 - [sales-pipeline.md](sales-pipeline.md) — where assemblies become quotation lines
 - [job-costing.md](job-costing.md) — estimate vs actual
 - [ADR 0008](../decisions/0008-assembly-abstraction.md)
+- [ADR 0048](../decisions/0048-configurable-hierarchical-overhead-allocation.md) — overhead
+  allocation policy
