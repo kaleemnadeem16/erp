@@ -73,8 +73,25 @@ Given an item, a work UoM and a set of dimension values from the document:
 4. No rate → error, do not silently assume 1:1
 ```
 
-Step 4 matters. A missing rate must fail loudly — silently defaulting produces a plausible
-estimate that is wrong by an unknown factor.
+Step 2 means exactly what it says: once every *required* dimension the document supplied matches
+a candidate rate, that rate wins at this tier regardless of what the document supplied — or the
+candidate carries — on any *optional* dimension. An optional-dimension mismatch is not a partial
+failure that falls through to step 3; it is simply not evaluated. `demo-metal` (tagged only
+`Surface Type = Metal`) matching a request for `Metal` + `Coats = 1` is the correct outcome, not
+a gap — see `ApplicationRatesDemoSeeder`.
+
+Step 3 also means what it says, and it is easy to misread step 4 against it: **once an item+work
+unit has a rate flagged `is_default`, step 4 is unreachable for it** — every request that fails
+steps 1 and 2 lands on the default, regardless of which dimension values were supplied. A rate
+with **no** dimension tags at all is only ever selected via `is_default`; it never wins step 1
+against an empty request either, which would otherwise collide the two tiers (a real bug this
+document's own demo data caught while being built — see `ResolveApplicationRate`'s docblock). A
+genuine step-4 failure therefore requires an item+work-unit combination with candidate rates but
+**no default configured** — that is a deliberate gap, not a missing feature, and
+`ApplicationRatesDemoSeeder`'s per-metre scenario exists specifically to demonstrate it.
+
+Step 4 matters regardless. A missing rate must fail loudly — silently defaulting produces a
+plausible estimate that is wrong by an unknown factor.
 
 ### Direction
 

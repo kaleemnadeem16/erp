@@ -74,6 +74,14 @@ cross-team re-confirmation.
 Nothing blocking. Open questions: [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) — 0 blocking, 3
 non-blocking (second customer profile; cross-entity master data; movement posting actor).
 
+Known non-blocking gap: `php artisan demo:seed` currently fails inside `StockDemoSeeder` on this
+dev database (a negative-stock-override conflict), discovered 2026-09-23 while adding Estimating
+demo data — unrelated to Estimating and not fixed there. Before fixing, determine whether the
+seeder itself isn't idempotent, the dev database holds stale manual/e2e state the reset workflow
+is supposed to clear, or a negative-stock invariant changed since the seeder was written — do not
+weaken a real inventory invariant just to make it pass. We now expect the full demo environment
+to be reproducible from a clean database, so this should not become permanent debt.
+
 ## Roadmap at a glance
 
 | Phase | Name | Status |
