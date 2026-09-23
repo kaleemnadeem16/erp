@@ -4,6 +4,7 @@ import {
   Calculator,
   ClipboardList,
   FileText,
+  FlaskConical,
   PackageCheck,
   History,
   Layers,
@@ -108,6 +109,7 @@ const navGroups: NavGroup[] = [
     items: [
       { to: "/rate-dimensions", label: "Rate Dimensions", icon: Ruler },
       { to: "/application-rates", label: "Application Rates", icon: Percent },
+      { to: "/formulations", label: "Formulations", icon: FlaskConical },
     ],
   },
 ];

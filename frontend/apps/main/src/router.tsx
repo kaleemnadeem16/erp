@@ -9,6 +9,9 @@ import {
   CategoryDetailScreen,
   CategoryEditScreen,
   DashboardScreen,
+  FormulationCreateScreen,
+  FormulationEditScreen,
+  FormulationsListScreen,
   GoodsReceiptCreateScreen,
   GoodsReceiptDetailScreen,
   GoodsReceiptsListScreen,
@@ -300,6 +303,36 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <ApplicationRateEditScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/formulations"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <FormulationsListScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/formulations/new"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <FormulationCreateScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/formulations/:id/edit"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <FormulationEditScreen />
               </AppShell>
             </ProtectedRoute>
           }

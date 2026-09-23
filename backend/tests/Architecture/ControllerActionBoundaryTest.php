@@ -29,6 +29,8 @@ class ControllerActionBoundaryTest extends TestCase
             'rate dimensions' => ['app/Modules/Estimating/Http/Controllers/Api/V1/RateDimensionController.php'],
             'rate dimension values' => ['app/Modules/Estimating/Http/Controllers/Api/V1/RateDimensionValueController.php'],
             'application rates' => ['app/Modules/Estimating/Http/Controllers/Api/V1/ApplicationRateController.php'],
+            'formulations' => ['app/Modules/Estimating/Http/Controllers/Api/V1/FormulationController.php'],
+            'formulation versions' => ['app/Modules/Estimating/Http/Controllers/Api/V1/FormulationVersionController.php'],
         ];
     }
 

@@ -1,6 +1,8 @@
 <?php
 
 use App\Modules\Estimating\Http\Controllers\Api\V1\ApplicationRateController;
+use App\Modules\Estimating\Http\Controllers\Api\V1\FormulationController;
+use App\Modules\Estimating\Http\Controllers\Api\V1\FormulationVersionController;
 use App\Modules\Estimating\Http\Controllers\Api\V1\RateDimensionController;
 use App\Modules\Estimating\Http\Controllers\Api\V1\RateDimensionValueController;
 use Illuminate\Support\Facades\Route;
@@ -18,4 +20,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('application-rates/resolve', [ApplicationRateController::class, 'resolve'])->name('application-rates.resolve');
     Route::apiResource('application-rates', ApplicationRateController::class)->except('update');
     Route::patch('application-rates/{application_rate}', [ApplicationRateController::class, 'update'])->name('application-rates.update');
+
+    // Registered before the apiResource below so "resolve" isn't swallowed by
+    // the {formulation} show route.
+    Route::get('formulations/resolve', [FormulationController::class, 'resolve'])->name('formulations.resolve');
+    Route::apiResource('formulations', FormulationController::class)->except('update');
+    Route::patch('formulations/{formulation}', [FormulationController::class, 'update'])->name('formulations.update');
+    Route::post('formulations/{formulation}/versions', [FormulationVersionController::class, 'store'])->name('formulations.versions.store');
+    Route::patch('formulation-versions/{formulation_version}', [FormulationVersionController::class, 'update'])->name('formulation-versions.update');
+    Route::delete('formulation-versions/{formulation_version}', [FormulationVersionController::class, 'destroy'])->name('formulation-versions.destroy');
+    Route::post('formulation-versions/{formulation_version}/activate', [FormulationVersionController::class, 'activate'])->name('formulation-versions.activate');
+    Route::get('formulation-versions/{formulation_version}/cost-breakdown', [FormulationVersionController::class, 'costBreakdown'])->name('formulation-versions.cost-breakdown');
 });
