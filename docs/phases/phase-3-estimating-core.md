@@ -85,9 +85,9 @@ Phase 2 actually shipped. Each slice below is independently demoable.
 
 ## Tasks
 
-- [ ] **Rate dimensions + application rates** — schema, resolution algorithm, management UI
+- [x] **Rate dimensions + application rates** — schema, resolution algorithm, management UI
       (define dimensions/values, define rates, see the resolution fallback chain and gaps in the
-      combination grid)
+      combination grid) — 2026-09-23
 - [ ] **Formulations** — schema, customer-override resolution, cycle detection, recursive-CTE
       explosion with depth guard, cost-per-output-unit calculation, management UI (create/edit,
       version list, nested-formulation breakdown showing wastage compounding per level)
@@ -106,7 +106,7 @@ Tick these in the same commit as the work.
 
 ## Acceptance criteria
 
-- [ ] A company can define its own rate dimensions and values with no core-code change, and
+- [x] A company can define its own rate dimensions and values with no core-code change, and
       define per-item application rates against them; resolution falls back correctly through
       exact-match → required-only → default, and fails loudly (not silently 1:1) when nothing
       matches
