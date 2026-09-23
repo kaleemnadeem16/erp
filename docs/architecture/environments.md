@@ -161,14 +161,55 @@ docker compose exec app php artisan demo:seed
 The command is idempotent: stable codes (or, where a screen has no natural code, a marker like
 `GoodsReceipt.idempotency_key` or `PhysicalCount.reference`) update or skip the records owned by
 the demo dataset without deleting unrelated local records. Its orchestrator calls small seeders
-for Foundation, Accounting, Parties, Inventory, Purchasing and Stock in dependency order; a new
-module adds its own seeder to that list. Both the command and every module seeder refuse to run
-unless Laravel's environment is `local` or `testing`, so a normal production `db:seed` cannot
-install demo data. The demo login defaults to `user@erp.x1techs.com` / `!User@Erp@123`; local
-environment variables `DEMO_USER_EMAIL`, `DEMO_USER_PASSWORD` and `DEMO_USER_NAME` may override
-it. `StockDemoSeeder` grants this login every `inventory.physical_count.*`, `inventory.cutover.*`,
-`inventory.negative-stock.*` and `inventory.recalculation.*` permission those screens gate on —
-without it the demo login could not use any of the four workflows at all.
+for Foundation, Accounting, Parties, Inventory, Purchasing, Stock and Estimating in dependency
+order; a new module adds its own seeder to that list. Both the command and every module seeder
+refuse to run unless Laravel's environment is `local` or `testing`, so a normal production
+`db:seed` cannot install demo data. The demo login defaults to `user@erp.x1techs.com` /
+`!User@Erp@123`; local environment variables `DEMO_USER_EMAIL`, `DEMO_USER_PASSWORD` and
+`DEMO_USER_NAME` may override it. `StockDemoSeeder` grants this login every
+`inventory.physical_count.*`, `inventory.cutover.*`, `inventory.negative-stock.*` and
+`inventory.recalculation.*` permission those screens gate on — without it the demo login could
+not use any of the four workflows at all.
+
+#### Demo data is part of the feature, not a later cleanup task
+
+**A meaningful new domain feature ships with representative demo data in the same slice**,
+exactly like it ships with tests and docs. Add the module's seeder(s) when the feature is built,
+not retroactively — this is what keeps `demo:seed` trustworthy as the codebase grows instead of
+becoming a stale snapshot of whatever existed when someone last remembered to update it.
+
+Demo data exists to be **manually inspected**, not just to make row counts non-zero. Prefer a
+small set of intentional, named scenarios that exercise the feature's real decision points over
+a large batch of interchangeable rows — a scenario nobody can distinguish from another proves
+nothing when something looks wrong in the UI. When a feature has a resolution/fallback/state
+algorithm, the demo data should let someone exercise every branch of it by hand: Estimating's
+`ApplicationRatesDemoSeeder` (`database/seeders/Demo/Estimating/`) is the reference example — one
+item, tagged rates and an untagged default deliberately shaped so the resolution-tester screen
+demonstrates an exact match, a required-dimensions-only fallback, the default fallback, *and* a
+genuine loud failure (a second work unit with no default configured, since once any default
+exists for an item+work-unit it always catches everything — that only became obvious by actually
+running the scenarios, not by reasoning about the algorithm on paper). Verify each scenario
+actually produces the outcome its comment claims — a demo seeder is real code and can be wrong in
+exactly the way this one initially was.
+
+**File layout**: default to one flat `Demo/{Module}DemoSeeder.php`, matching
+Foundation/Accounting/Parties/Inventory/Purchasing/Stock above. Promote to a `Demo/{Module}/`
+folder with one seeder per business capability only once a module's demo data will span more
+than one independently-meaningful capability — known in advance, not speculative. Estimating is
+`Demo/Estimating/{RateDimensions,ApplicationRates}DemoSeeder.php` because formulations and
+assemblies are separate worked scenarios still to come in the same module; Parties stays one file
+because suppliers and customers are one coherent "trading partner" concept. Don't fragment a
+single scenario into one file per table.
+
+**Idempotency without a natural code**: most tables here have a stable `code` to key
+`updateOrCreate` on. A table with no natural business key (e.g. `application_rates`, whose real
+identity is item + work unit + a dimension-value *combination* that lives in a pivot table) can
+instead delete the narrow slice it owns and recreate it every run — see
+`ApplicationRatesDemoSeeder` — rather than force a fragile partial-match key.
+
+Production initialization must never depend on demo data — system/reference data (currencies,
+UoMs, permissions) belongs in ordinary migrations or a `permission:register`-style command, never
+gated behind `demo:seed`.
 
 `StockDemoSeeder` also creates two throwaway accounts, `demo-ops@erp.x1techs.com` and
 `demo-supervisor@erp.x1techs.com` — **not meant to be logged into** (their passwords are random

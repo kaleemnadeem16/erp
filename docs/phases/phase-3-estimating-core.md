@@ -85,9 +85,14 @@ Phase 2 actually shipped. Each slice below is independently demoable.
 
 ## Tasks
 
+Each task below closes as: domain capability implemented → tests → API/UI → representative
+module-scoped demo data (`database/seeders/Demo/Estimating/`, per
+[environments.md](../architecture/environments.md#demo-data-is-part-of-the-feature-not-a-later-cleanup-task))
+→ docs updated — in the same commit, not a later pass.
+
 - [x] **Rate dimensions + application rates** — schema, resolution algorithm, management UI
       (define dimensions/values, define rates, see the resolution fallback chain and gaps in the
-      combination grid) — 2026-09-23
+      combination grid), demo scenarios covering every resolution tier — 2026-09-23
 - [ ] **Formulations** — schema, customer-override resolution, cycle detection, recursive-CTE
       explosion with depth guard, cost-per-output-unit calculation, management UI (create/edit,
       version list, nested-formulation breakdown showing wastage compounding per level)
