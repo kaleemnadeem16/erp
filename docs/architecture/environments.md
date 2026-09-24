@@ -214,6 +214,32 @@ identity is item + work unit + a dimension-value *combination* that lives in a p
 instead delete the narrow slice it owns and recreate it every run — see
 `ApplicationRatesDemoSeeder` — rather than force a fragile partial-match key.
 
+#### Immutable transactional demo data: create once, never reconcile
+
+Two different idempotency shapes exist in this codebase, and confusing them produces a real bug.
+**Mutable reference/master data** (an item, a rate dimension, an assembly) may be safely
+reconciled against current input on every run — `updateOrCreate` overwriting a name or a rate is
+fine, since the row carries no separate "as of when" meaning of its own. **Immutable
+transactional/workflow data** (a stock move, a negative-stock override request, an approval, a
+posted physical count — anything a database trigger or an Action enforces can never be edited or
+deleted once created) must instead be **created once and recognised-and-skipped on every later
+run**, never recalculated against today's state and compared against what history already says.
+
+`StockDemoSeeder::seedPhysicalCounts`/`seedInventoryCutover`/`seedRecalculationRequest` already
+get this right: each checks whether its own record already exists (`PhysicalCount::where(...)`,
+`InventoryCutover::query()->exists()`) and returns immediately if so, only computing anything
+live when the record doesn't exist yet. `seedNegativeStockOverrides` originally didn't — it
+recomputed `requested_qty`/`available_qty` from live stock on *every* run and handed them to
+`RequestNegativeStockOverride`, which correctly refused to silently rewrite an existing request
+whose immutable historical figures no longer matched current stock. On a long-lived dev database,
+where stock naturally drifts between `demo:seed` runs, this meant the method could only ever
+succeed once — a real gap in the seeder, not a data-cleanup problem, found and fixed while
+building Phase 3's Estimating demo data (2026-09-25). The fix was the same "does this natural key
+already exist?" guard the other three methods already use — not weakening
+`negative_stock_override_requests`' database-level immutability trigger or the Action's own
+mismatch check, both of which stay exactly as strict as before, and are exactly what caught this
+in the first place.
+
 Production initialization must never depend on demo data — system/reference data (currencies,
 UoMs, permissions) belongs in ordinary migrations or a `permission:register`-style command, never
 gated behind `demo:seed`.
