@@ -15,11 +15,12 @@ The top of the costing chain. Everything below it is optional.
 
 ```
 ASSEMBLY ← you are here
-  ├─ MATERIAL     → application rate → formulation → stock cost
-  ├─ LABOUR       → hours per work unit × labour item rate
-  ├─ PLANT        → equipment hours
-  ├─ SUBCONTRACT  → lump or per unit
-  └─ OVERHEAD     → allocation
+  ├─ MATERIAL     → application rate → formulation → stock cost      ┐
+  ├─ LABOUR       → hours per work unit × labour item rate           │ stored
+  ├─ PLANT        → equipment hours                                  │ component
+  ├─ SUBCONTRACT  → lump or per unit                                 ┘ rows
+  └─ OVERHEAD     → resolved from an overhead policy at roll-up time — never a
+                     stored row, see "Overhead allocation" below (ADR 0049)
 ```
 
 Built in [Phase 3](../phases/README.md); consumed by [sales-pipeline.md](sales-pipeline.md).
@@ -27,13 +28,21 @@ Built in [Phase 3](../phases/README.md); consumed by [sales-pipeline.md](sales-p
 ## Schema
 
 ```
+assembly_groups                            -- see "Overhead allocation" below
+  id, company_id
+  code, name
+  status           ACTIVE | ARCHIVED
+
+  unique(['company_id', 'code'])
+
 assemblies
   id, company_id
   code, name, description
-  work_uom_id      → uoms      -- what it is sold by: sqm, metre, hour, each
-  margin_type      MARGIN | MARKUP        -- NOT interchangeable, see below
-  margin_pct       decimal(9,4)
-  status           DRAFT | ACTIVE | ARCHIVED
+  work_uom_id        → uoms      -- what it is sold by: sqm, metre, hour, each
+  assembly_group_id  NULLABLE → assembly_groups   -- optional; see "Overhead allocation"
+  margin_type        MARGIN | MARKUP        -- NOT interchangeable, see below
+  margin_pct         decimal(9,4)
+  status             DRAFT | ACTIVE | ARCHIVED
 
   unique(['company_id', 'code'])
 
@@ -45,7 +54,7 @@ assembly_versions
 
 assembly_components
   id, assembly_version_id
-  kind                 MATERIAL | LABOUR | PLANT | SUBCONTRACT | OVERHEAD
+  kind                 MATERIAL | LABOUR | PLANT | SUBCONTRACT   -- no OVERHEAD, see below
   item_id              NULLABLE → items
   formulation_id       NULLABLE → formulations
   application_rate_id  NULLABLE → application_rates
@@ -58,8 +67,8 @@ assembly_components
 
 overhead_policies                          -- see "Overhead allocation" below
   id, company_id
-  scope_type        COMPANY | CATEGORY | ASSEMBLY
-  scope_id          NULLABLE → categories | assemblies   -- NULL iff scope_type = COMPANY
+  scope_type        COMPANY | ASSEMBLY_GROUP | ASSEMBLY
+  scope_id          NULLABLE → assembly_groups | assemblies  -- NULL iff scope_type = COMPANY
   driver_type       PCT_MATERIAL | PCT_LABOUR | PCT_DIRECT_COST | PER_LABOUR_HOUR | PER_WORK_UNIT
   rate              decimal(19,6)
   status            DRAFT | ACTIVE | SUPERSEDED
@@ -71,8 +80,13 @@ overhead_policies                          -- see "Overhead allocation" below
   unique(['company_id', 'scope_type', 'scope_id']) WHERE status = 'ACTIVE'
 ```
 
-The `kind` discriminator is the standard estimating breakdown, and is what makes variance
-reporting meaningful ([job-costing.md](job-costing.md)).
+The `kind` discriminator on `assembly_components` is four of the standard five-part estimating
+breakdown, and is what makes variance reporting meaningful
+([job-costing.md](job-costing.md)). `OVERHEAD` is the fifth — it's a real `kind` value on
+`job_cost_entries` for *actuals* (Phase 5), but on the *estimate* side it is never a stored
+`assembly_components` row; see "Overhead allocation" below for why and where its number actually
+comes from. Variance reporting compares the two sides by dollar amount per `kind`, which works
+identically regardless of which side computed its figure versus stored it.
 
 ## Behaviour
 
@@ -83,7 +97,8 @@ material/unit    = Σ (qty_per_work_unit × (1 + wastage) × multiplier × item_
 labour/unit      = Σ (hours_per_work_unit × labour_item_rate)
 plant/unit       = Σ (hours_per_work_unit × plant_rate)
 subcontract/unit = Σ (rate)
-overhead/unit    = allocation rule
+overhead/unit    = resolved overhead policy's rate applied to this roll-up — see
+                    "Overhead allocation"; not summed from assembly_components rows
 
 cost/unit  = material + labour + plant + subcontract + overhead
 sell/unit  = margin_type = MARGIN
@@ -149,15 +164,17 @@ Not a pointer to the assembly version. The version is immutable, but the *costs 
 
 Configurable and hierarchical, not a single fixed basis — different manufacturing businesses
 drive overhead differently, and a general-purpose ERP can't hardcode one
-([ADR 0048](../decisions/0048-configurable-hierarchical-overhead-allocation.md)). Resolution
-walks a fixed scope order and stops at the first match — exactly one policy wins, never a sum of
+([ADR 0049](../decisions/0049-assembly-group-overhead-scope.md), superseding
+[ADR 0048](../decisions/0048-configurable-hierarchical-overhead-allocation.md)). Resolution walks
+a fixed scope order and stops at the first match — exactly one policy wins, never a sum of
 several:
 
 ```
 Assembly's own overhead_policies row
   ↓ (none?)
-Nearest ancestor in the output item's category chain with a policy (same walk as GL-account
-  resolution, items.md#gl-mapping)
+Its assembly_group's overhead_policies row, if the assembly has one — a flat, optional,
+  company-defined grouping (assembly_groups), NOT the Inventory item-category tree; an assembly
+  has no output item to walk a category from (ADR 0008)
   ↓ (none?)
 Company default policy
   ↓ (none?)
@@ -170,8 +187,20 @@ issued document (see "Snapshot on issue" below); changing the rule creates a new
 than rewriting the old one, and each change carries a mandatory reason, audited the same way
 Phase 2's `PurchasingPolicyChange`/`InventoryPolicyChange` are.
 
+`assembly_groups` is deliberately flat (no `parent_id`) — a reusable classification for shared
+costing configuration ("Machining," "Welding," "Installation" are company-entered examples, never
+hardcoded), not a hierarchy. An assembly needing exceptional overhead treatment gets its own
+`ASSEMBLY`-scoped policy row directly; there is no manually-entered overhead component as an
+alternative path — see the schema note above for why that would reintroduce the exact ambiguity
+this design exists to avoid.
+
+A small company can ignore all of this and configure a single `COMPANY`-scope policy; the group
+and assembly-level tiers only exist for companies that create rows there. Which UI exposes the
+group/assembly-level tiers is a separate, later decision — see
+[extensibility.md](../architecture/extensibility.md#progressive-capability-modes).
+
 An unexamined overhead rule quietly makes every job look profitable — this configurability
-doesn't remove the need to actually pick a sensible one per assembly/category, it just stops the
+doesn't remove the need to actually pick a sensible one per assembly/group, it just stops the
 whole company being forced onto one.
 
 ## Related
@@ -179,6 +208,8 @@ whole company being forced onto one.
 - [application-rates.md](application-rates.md) · [formulations.md](formulations.md)
 - [sales-pipeline.md](sales-pipeline.md) — where assemblies become quotation lines
 - [job-costing.md](job-costing.md) — estimate vs actual
-- [ADR 0008](../decisions/0008-assembly-abstraction.md)
-- [ADR 0048](../decisions/0048-configurable-hierarchical-overhead-allocation.md) — overhead
-  allocation policy
+- [ADR 0008](../decisions/0008-assembly-abstraction.md) — why assemblies have no output item
+- [ADR 0049](../decisions/0049-assembly-group-overhead-scope.md) — overhead allocation policy
+  and Assembly Group *(supersedes [ADR 0048](../decisions/0048-configurable-hierarchical-overhead-allocation.md))*
+- [extensibility.md](../architecture/extensibility.md#progressive-capability-modes) — simple vs
+  advanced overhead UI, same backend either way

@@ -128,7 +128,37 @@ superset, while Actions validate the selected mode and the UI reveals only relev
 Defaults must be safe and simple; enabling a mode may introduce conditional requirements for
 that company, and downgrade must be refused while incompatible data exists. Inventory locations
 are the first implementation of this pattern — see
-[ADR 0041](../decisions/0041-progressive-inventory-location-capabilities.md).
+[ADR 0041](../decisions/0041-progressive-inventory-location-capabilities.md). Assembly overhead
+policy is the second — see
+[ADR 0049](../decisions/0049-assembly-group-overhead-scope.md).
+
+Three concerns stay separate even though one feature touches all three:
+
+1. **Domain capability** — what the backend supports. Build this at the mature/general level
+   where a requirement is credible across company sizes, not scaled down because a small company
+   won't use most of it today.
+2. **Company configuration** — which parts of that capability a given company actually uses.
+   Usually just data: rows a company creates (or doesn't) in optional tables and optional
+   relationships, not a schema difference between "simple" and "advanced" companies.
+3. **UI exposure** — which of the supported capability a screen shows. A small company's settings
+   screen may expose one field; an advanced company's the full engine underneath it. Both read and
+   write through the same domain/policy code — never a simplified reimplementation for the small
+   case and a real one for the advanced case.
+
+*Which* mechanism eventually decides how much UI a given company sees — a company setting, a
+permission, a subscription/package tier, deployment configuration — is a packaging decision
+separate from the domain design, and doesn't need to be settled to ship the capability: as long as
+the advanced parts are optional relationships or optional rows, a company that never touches them
+carries no UI and no awareness of them for free.
+
+**A UI/feature-visibility toggle must never itself be a historical fact.** Turning an advanced
+view on or off must not retroactively change, hide the effect of, or invalidate already-effective
+configuration underneath it — visibility and execution are different concerns, and only execution
+changes (posted facts, effective policies) need the
+[ADR 0040](../decisions/0040-control-backdated-stock-recalculation-and-corrections.md)-style
+correction-not-silent-rewrite discipline. A downgrade may be *refused* while it would orphan
+visible, in-use configuration (the same rule ADR 0041 already applies to location-mode downgrades)
+— it must never *silently discard or reinterpret* that configuration instead.
 
 Use a plugin only for genuinely customer-specific behaviour, not for a broadly useful capability
 that belongs in the core domain. Do not reserve speculative nullable columns for unknown needs;
@@ -179,3 +209,4 @@ concrete until a real second customer creates real evidence. See
 - [ADR 0009](../decisions/0009-company-defined-rate-dimensions.md)
 - [code-structure.md](code-structure.md)
 - [ADR 0041](../decisions/0041-progressive-inventory-location-capabilities.md)
+- [ADR 0049](../decisions/0049-assembly-group-overhead-scope.md)

@@ -1,8 +1,16 @@
 # 0048 — Configurable, hierarchical overhead allocation for assemblies
 
-- **Status:** accepted
+- **Status:** superseded by [0049](0049-assembly-group-overhead-scope.md)
 - **Date:** 2026-09-23
 - **Affects:** Phase 3, Estimating, company/category/assembly settings
+
+> **Superseded 2026-09-24.** The `CATEGORY` scope tier below assumed assemblies have an output
+> item to walk a category from; they don't ([ADR 0008](0008-assembly-abstraction.md)). ADR 0049
+> replaces that tier with a dedicated Assembly Group concept and moves `OVERHEAD` out of
+> `assembly_components.kind` entirely. Everything else here — no accumulation in v1, the five
+> drivers, the versioned/frozen lifecycle, the audit trail, the onboarding-default pattern —
+> remains the accepted design; read [0049](0049-assembly-group-overhead-scope.md) for what
+> changed and why.
 
 ## Context
 

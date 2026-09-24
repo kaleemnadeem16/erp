@@ -66,7 +66,7 @@ controlled cutover/opening state without weakening live policy
 ### Phase 3 — Estimating core
 **The differentiator.** Formulations with versioning and customer overrides, rate dimensions,
 application rates, assemblies, cost roll-up, and a configurable hierarchical overhead policy
-([ADR 0048](../decisions/0048-configurable-hierarchical-overhead-allocation.md)).
+scoped through Assembly Groups ([ADR 0049](../decisions/0049-assembly-group-overhead-scope.md)).
 → [phase-3-estimating-core.md](phase-3-estimating-core.md) · [formulations.md](../domain/formulations.md) · [application-rates.md](../domain/application-rates.md) · [assemblies.md](../domain/assemblies.md)
 
 ### Phase 4 — Sales pipeline
