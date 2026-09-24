@@ -29,6 +29,7 @@ final class PermissionRegistry
         'inventory.recalculation.review-regeneration',
         'purchasing.over-receipt-policy.manage', 'purchasing.policy-history.view',
         'inventory.location-policy.manage', 'inventory.valuation-policy.manage', 'inventory.policy-history.view',
+        'estimating.overhead-policy.manage', 'estimating.policy-history.view',
     ];
 
     public function __construct(private readonly PermissionRegistrar $registrar) {}

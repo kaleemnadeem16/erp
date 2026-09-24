@@ -15,6 +15,7 @@ import {
   CategoryDetailScreen,
   CategoryEditScreen,
   DashboardScreen,
+  EstimatingSettingsScreen,
   FormulationCreateScreen,
   FormulationEditScreen,
   FormulationsListScreen,
@@ -664,6 +665,16 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <InventorySettingsScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings/estimating"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <EstimatingSettingsScreen />
               </AppShell>
             </ProtectedRoute>
           }

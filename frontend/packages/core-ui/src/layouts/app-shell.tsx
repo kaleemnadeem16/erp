@@ -127,6 +127,7 @@ const settingsNavGroup: NavGroup = {
   items: [
     { to: "/settings/purchasing", label: "Purchasing Settings", icon: Settings },
     { to: "/settings/inventory", label: "Inventory Settings", icon: SlidersHorizontal },
+    { to: "/settings/estimating", label: "Estimating Settings", icon: Calculator },
     { to: "/settings/account", label: "Account", icon: User },
     { to: "/settings/appearance", label: "Appearance", icon: Palette },
     { to: "/settings/printing", label: "Printing", icon: Printer },
@@ -145,6 +146,7 @@ const SETTINGS_MENU: { label: string; items: NavItem[] }[] = [
     items: [
       { to: "/settings/purchasing", label: "Purchasing", icon: Settings },
       { to: "/settings/inventory", label: "Inventory", icon: SlidersHorizontal },
+      { to: "/settings/estimating", label: "Estimating", icon: Calculator },
       { to: "/settings/printing", label: "Printing", icon: Printer },
     ],
   },

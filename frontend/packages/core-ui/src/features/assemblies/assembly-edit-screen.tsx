@@ -1,12 +1,21 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import type { UseFormReturn } from 'react-hook-form';
-import { useAssembliesShow, useAssembliesUpdate } from '@erp/core-api';
+import { OverheadScopeType, useAssembliesShow, useAssembliesUpdate, useOverheadPoliciesResolve } from '@erp/core-api';
 import { Button } from '../../components/ui/button';
 import { Skeleton } from '../../components/ui/skeleton';
 import { PageHeader } from '../../components/page/page-header';
+import { DetailPageLayout } from '../../components/detail/detail-page-layout';
 import { applyApiErrorsToForm } from '../../lib/api-errors';
+import { OverheadPolicyPanel } from '../overhead-policies/overhead-policy-panel';
 import { ASSEMBLY_FORM_FIELDS, AssemblyForm, assemblyPayload, type AssemblyFormValues } from './assembly-form';
+
+const RESOLUTION_LABELS: Record<string, string> = {
+  ASSEMBLY: 'this assembly',
+  ASSEMBLY_GROUP: 'its assembly group',
+  COMPANY: 'the company default',
+  NONE: 'no policy',
+};
 
 export function AssemblyEditScreen() {
   const id = Number(useParams<{ id: string }>().id);
@@ -15,6 +24,8 @@ export function AssemblyEditScreen() {
   const row = query.data?.status === 200 ? query.data.data.data : undefined;
   const mutation = useAssembliesUpdate();
   const [error, setError] = useState<string | null>(null);
+  const resolveQuery = useOverheadPoliciesResolve({ assembly_id: id }, { query: { enabled: !!row, retry: false } });
+  const resolution = resolveQuery.data?.status === 200 ? resolveQuery.data.data.data : undefined;
 
   const submit = (v: AssemblyFormValues, form: UseFormReturn<AssemblyFormValues>) => {
     setError(null);
@@ -62,6 +73,15 @@ export function AssemblyEditScreen() {
         isSubmitting={mutation.isPending}
         formError={error}
       />
+      {resolution && (
+        <p className="text-sm text-muted-foreground">
+          Effective overhead: resolved from {RESOLUTION_LABELS[resolution.method] ?? resolution.method}
+          {resolution.method !== 'NONE' && ` (${resolution.policy?.rate} ${resolution.policy?.driver_type})`}.
+        </p>
+      )}
+      <DetailPageLayout>
+        <OverheadPolicyPanel scopeType={OverheadScopeType.ASSEMBLY} scopeId={row.id} />
+      </DetailPageLayout>
     </div>
   );
 }

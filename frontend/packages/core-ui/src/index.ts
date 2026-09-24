@@ -174,6 +174,7 @@ export { AssemblyGroupEditScreen } from "./features/assembly-groups/assembly-gro
 export { AssembliesListScreen } from "./features/assemblies/assemblies-list-screen";
 export { AssemblyCreateScreen } from "./features/assemblies/assembly-create-screen";
 export { AssemblyEditScreen } from "./features/assemblies/assembly-edit-screen";
+export { EstimatingSettingsScreen } from "./features/settings/estimating-settings-screen";
 export { StockLedgerScreen } from "./features/stock-ledger/stock-ledger-screen";
 export { StockMoveDetailScreen } from "./features/stock-ledger/stock-move-detail-screen";
 export { PhysicalCountsListScreen } from "./features/physical-counts/physical-counts-list-screen";

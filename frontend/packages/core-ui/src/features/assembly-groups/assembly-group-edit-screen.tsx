@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import type { UseFormReturn } from 'react-hook-form';
-import { useAssemblyGroupsShow, useAssemblyGroupsUpdate } from '@erp/core-api';
+import { OverheadScopeType, useAssemblyGroupsShow, useAssemblyGroupsUpdate } from '@erp/core-api';
 import { Button } from '../../components/ui/button';
 import { Skeleton } from '../../components/ui/skeleton';
 import { PageHeader } from '../../components/page/page-header';
+import { DetailPageLayout } from '../../components/detail/detail-page-layout';
 import { applyApiErrorsToForm } from '../../lib/api-errors';
+import { OverheadPolicyPanel } from '../overhead-policies/overhead-policy-panel';
 import {
   ASSEMBLY_GROUP_FORM_FIELDS,
   AssemblyGroupForm,
@@ -59,6 +61,9 @@ export function AssemblyGroupEditScreen() {
         isSubmitting={mutation.isPending}
         formError={error}
       />
+      <DetailPageLayout>
+        <OverheadPolicyPanel scopeType={OverheadScopeType.ASSEMBLY_GROUP} scopeId={row.id} />
+      </DetailPageLayout>
     </div>
   );
 }

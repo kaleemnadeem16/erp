@@ -5,6 +5,7 @@ use App\Modules\Estimating\Http\Controllers\Api\V1\AssemblyController;
 use App\Modules\Estimating\Http\Controllers\Api\V1\AssemblyGroupController;
 use App\Modules\Estimating\Http\Controllers\Api\V1\FormulationController;
 use App\Modules\Estimating\Http\Controllers\Api\V1\FormulationVersionController;
+use App\Modules\Estimating\Http\Controllers\Api\V1\OverheadPolicyController;
 use App\Modules\Estimating\Http\Controllers\Api\V1\RateDimensionController;
 use App\Modules\Estimating\Http\Controllers\Api\V1\RateDimensionValueController;
 use Illuminate\Support\Facades\Route;
@@ -38,4 +39,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('formulation-versions/{formulation_version}', [FormulationVersionController::class, 'destroy'])->name('formulation-versions.destroy');
     Route::post('formulation-versions/{formulation_version}/activate', [FormulationVersionController::class, 'activate'])->name('formulation-versions.activate');
     Route::get('formulation-versions/{formulation_version}/cost-breakdown', [FormulationVersionController::class, 'costBreakdown'])->name('formulation-versions.cost-breakdown');
+
+    // Registered before the apiResource below so "resolve" isn't swallowed by
+    // the {overhead_policy} show route.
+    Route::get('overhead-policies/resolve', [OverheadPolicyController::class, 'resolve'])->name('overhead-policies.resolve');
+    Route::apiResource('overhead-policies', OverheadPolicyController::class)->except('update');
+    Route::patch('overhead-policies/{overhead_policy}', [OverheadPolicyController::class, 'update'])->name('overhead-policies.update');
+    Route::post('overhead-policies/{overhead_policy}/activate', [OverheadPolicyController::class, 'activate'])->name('overhead-policies.activate');
 });

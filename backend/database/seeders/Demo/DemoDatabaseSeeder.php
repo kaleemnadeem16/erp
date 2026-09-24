@@ -8,6 +8,7 @@ use Database\Seeders\Demo\Concerns\EnsuresDemoEnvironment;
 use Database\Seeders\Demo\Estimating\ApplicationRatesDemoSeeder;
 use Database\Seeders\Demo\Estimating\AssembliesDemoSeeder;
 use Database\Seeders\Demo\Estimating\FormulationsDemoSeeder;
+use Database\Seeders\Demo\Estimating\OverheadPoliciesDemoSeeder;
 use Database\Seeders\Demo\Estimating\RateDimensionsDemoSeeder;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -32,6 +33,7 @@ final class DemoDatabaseSeeder extends Seeder
                 ApplicationRatesDemoSeeder::class,
                 FormulationsDemoSeeder::class,
                 AssembliesDemoSeeder::class,
+                OverheadPoliciesDemoSeeder::class,
             ]);
         });
     }
