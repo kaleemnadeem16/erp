@@ -147,11 +147,24 @@ module-scoped demo data (`database/seeders/Demo/Estimating/`, per
       data (one grouped, one ungrouped assembly) to create and reference these records — not the
       full costing feature. This exists specifically to give overhead policies (Step 2) something
       real to scope against — 2026-09-24
-- [ ] **Step 2 — Overhead policies** — schema, the full v1 `Assembly → Assembly Group → Company →
-      none` scope resolution (flat lookup at the group tier, no ancestor walk), five v1 drivers,
-      version freeze-on-reference, mandatory-reason audit (`.policy-history.view`-style permission
-      via `PermissionRegistry`), onboarding default, Manufacturing/Estimating settings UI — built
-      once, complete, against Step 1's real `assemblies`/`assembly_groups` rows
+- [x] **Step 2 — Overhead policies** — `overhead_policies` (versioned, same DRAFT/ACTIVE/SUPERSEDED
+      shape as `formulation_versions`, exclusion constraint + partial-unique "one ACTIVE per scope"
+      index — both `COALESCE(scope_id, 0)`-adjusted since `scope_id` is `NULL` for `COMPANY`), the
+      full v1 `Assembly → Assembly Group → Company → none` scope resolution (flat lookup at the
+      group tier, no ancestor walk — `ResolveOverheadPolicy`), five v1 drivers
+      (`OverheadAmountCalculator`, a pure function tested standalone ahead of Step 3 having real
+      component totals to feed it), DRAFT-editable/ACTIVE+SUPERSEDED-frozen (this phase's concrete
+      reading of "freeze on reference," same boundary formulations use), mandatory-reason audit
+      behind two permissions (`estimating.overhead-policy.manage` to write,
+      `estimating.policy-history.view` to read — registered via `PermissionRegistry`), an
+      unrestricted `resolve` preview endpoint every estimator can use regardless of either
+      permission. Onboarding default: no dedicated wizard — zero policy rows already *is* "no
+      overhead configured," a valid terminal state (`overhead/unit = 0`, not an error), so a new
+      company needs nothing beyond the Estimating settings screen's ordinary "set a new policy"
+      flow whenever it's ready to. UI: a reusable scope-bound panel embedded on the new Estimating
+      settings screen (COMPANY), and on Assembly Group's and Assembly's own edit screens
+      (ASSEMBLY_GROUP/ASSEMBLY) — built once, complete, against Step 1's real
+      `assemblies`/`assembly_groups` rows — 2026-09-24
       ([ADR 0049](../decisions/0049-assembly-group-overhead-scope.md))
 - [ ] **Step 3 — Remaining Assembly slice** — `assembly_versions`/`assembly_components` in full
       (four stored component kinds — material/labour/plant/subcontract, no `OVERHEAD` row), cost
@@ -161,9 +174,10 @@ module-scoped demo data (`database/seeders/Demo/Estimating/`, per
       formulation → overhead policy → roll-up), read-only inspection UI surfacing which rate/
       policy was selected and any default-fallback warning
 - [ ] Exclusion-constraint pattern applied consistently across formulation (done),
-      assembly and overhead-policy version tables. The recursive-CTE roll-up originally proposed
-      here was deliberately not used for formulations — see formulations.md's "Nesting" — so this
-      item now tracks the exclusion constraint only, not a CTE requirement for every version table
+      overhead-policy (done) and assembly (Step 3) version tables. The recursive-CTE roll-up
+      originally proposed here was deliberately not used for formulations — see formulations.md's
+      "Nesting" — so this item now tracks the exclusion constraint only, not a CTE requirement for
+      every version table
 
 Tick these in the same commit as the work.
 
@@ -180,7 +194,7 @@ Tick these in the same commit as the work.
       (depth-guarded PHP recursion, not the CTE originally proposed here — see formulations.md),
       a cycle is rejected at save time *and* at activation time, and depth beyond the guard is
       rejected with a clear error
-- [ ] An overhead policy resolves deterministically through assembly → assembly group → company
+- [x] An overhead policy resolves deterministically through assembly → assembly group → company
       → none, changing a policy requires a reason and produces an audit row, an in-use policy
       version cannot be edited in place, and a small company that never creates an Assembly
       Group or an assembly-level override still gets a correct result from the company default

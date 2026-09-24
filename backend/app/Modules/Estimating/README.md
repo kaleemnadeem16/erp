@@ -1,10 +1,10 @@
 # Estimating
 
 Owns Phase 3's costing layer: company-defined rate dimensions and application rates,
-formulations with versioning, customer overrides and cost roll-up, and assemblies (a sellable
-unit of work). Assembly today is Step 1 identity only — code/name/work UoM/margin and an optional
-`AssemblyGroup` classification; its own versions/components and the overhead-policy resolver that
-scopes against `AssemblyGroup` land in Steps 2–3 of the same phase.
+formulations with versioning, customer overrides and cost roll-up, assemblies (a sellable unit of
+work) and the overhead-policy resolver. Assembly itself is still Step 1 identity only —
+code/name/work UoM/margin and an optional `AssemblyGroup` classification; its own
+versions/components (the actual cost roll-up) land in Step 3.
 
 **Governed by:** [application-rates.md](../../../../docs/domain/application-rates.md),
 [formulations.md](../../../../docs/domain/formulations.md),
@@ -38,8 +38,16 @@ scopes against `AssemblyGroup` land in Steps 2–3 of the same phase.
 - `Assembly`/`AssemblyGroup` — Step 1 identity only. Assembly has no output item (ADR 0008) and no
   `assembly_versions`/`assembly_components` yet; every assembly stays DRAFT through this slice.
   `AssemblyGroup` is flat, optional, company-defined classification (not the Inventory category
-  tree) that exists so Step 2's overhead-policy resolver has a real scope target
+  tree) that gives the overhead-policy resolver below a real scope target
   (`Assembly → AssemblyGroup → Company → none`, ADR 0049)
+- `OverheadPolicy` — a versioned rule (driver + rate) at one of the three scope tiers above, same
+  DRAFT/ACTIVE/SUPERSEDED shape as `FormulationVersion`. `ResolveOverheadPolicy` walks the
+  hierarchy and returns which tier won (or `NONE` — not an error, overhead/unit = 0);
+  `OverheadAmountCalculator` is the one place a driver's `rate` is turned into a dollar amount,
+  a pure function so it's fully testable ahead of Step 3 having real
+  material/labour/plant/subcontract totals to feed it. `scope_id` carries no database-level FK —
+  it targets `assembly_groups` or `assemblies` depending on `scope_type`, or is `NULL` for
+  `COMPANY` — validated at the request layer instead
 
 ## Does not own
 
@@ -47,9 +55,9 @@ scopes against `AssemblyGroup` land in Steps 2–3 of the same phase.
   references them (`App\Support\UomConversionService` handles a formulation line specified in a
   different-but-convertible unit than its input item's stock UoM or a nested formulation's output
   UoM)
-- Overhead policies (the resolver itself) and the remaining Assembly slice (versions, components,
-  full cost roll-up across all five component kinds) — Steps 2 and 3 of this same phase, same
-  module
+- The remaining Assembly slice (`assembly_versions`/`assembly_components`, full cost roll-up
+  across all five component kinds, actually applying a resolved overhead policy to real
+  component totals) — Step 3 of this same phase, same module
 - Anything that issues a document or posts stock — Phase 4/5. Physically producing a
   `SEMI_FINISHED` item is Phase 5's `work_orders`, not this module
 
@@ -78,6 +86,18 @@ dimension actions. `assembly_group_id` is deliberately mutable — no repoint gu
 `ArchiveAssemblyGroup` hard-deletes (blocked by FK while any assembly still refers to it, same as
 `RateDimension`); `ArchiveAssembly` sets `status = ARCHIVED` (same as `ArchiveFormulation`) since
 Assembly already carries a status column ahead of Step 3's activation mechanism needing it.
+
+`CreateOverheadPolicy` always creates a DRAFT — every row is a governed change (mandatory
+`reason` + `changed_by`), there is no "current settings" row this is a delta from, unlike
+`InventoryPolicyChange`/`PurchasingPolicyChange`'s singleton-plus-log shape. `UpdateOverheadPolicy`
+and `DeleteOverheadPolicy` only act on DRAFT rows. `ActivateOverheadPolicy` is the sole place a
+policy's status/effective dates change — it supersedes whatever was previously ACTIVE *for the
+same scope* within the same transaction, same pattern as `ActivateFormulationVersion`. Reading a
+policy (`index`/`show`) requires `estimating.policy-history.view`; writing one requires
+`estimating.overhead-policy.manage` — deliberately separate permissions, same split
+`InventoryPolicyChange` uses. `ResolveOverheadPolicy`'s read is unrestricted (ordinary auth only,
+same as `ResolveApplicationRate`/`ResolveFormulation`) since every estimator needs "what applies
+right now," not just whoever can manage or audit policies.
 
 ## Events
 
