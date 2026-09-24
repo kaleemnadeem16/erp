@@ -4,6 +4,12 @@ import {
   ApplicationRateCreateScreen,
   ApplicationRateEditScreen,
   ApplicationRatesListScreen,
+  AssemblyCreateScreen,
+  AssemblyEditScreen,
+  AssembliesListScreen,
+  AssemblyGroupCreateScreen,
+  AssemblyGroupEditScreen,
+  AssemblyGroupsListScreen,
   CategoriesListScreen,
   CategoryCreateScreen,
   CategoryDetailScreen,
@@ -333,6 +339,66 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <FormulationEditScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/assembly-groups"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <AssemblyGroupsListScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/assembly-groups/new"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <AssemblyGroupCreateScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/assembly-groups/:id/edit"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <AssemblyGroupEditScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/assemblies"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <AssembliesListScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/assemblies/new"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <AssemblyCreateScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/assemblies/:id/edit"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <AssemblyEditScreen />
               </AppShell>
             </ProtectedRoute>
           }

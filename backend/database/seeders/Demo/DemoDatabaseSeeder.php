@@ -6,6 +6,7 @@ namespace Database\Seeders\Demo;
 
 use Database\Seeders\Demo\Concerns\EnsuresDemoEnvironment;
 use Database\Seeders\Demo\Estimating\ApplicationRatesDemoSeeder;
+use Database\Seeders\Demo\Estimating\AssembliesDemoSeeder;
 use Database\Seeders\Demo\Estimating\FormulationsDemoSeeder;
 use Database\Seeders\Demo\Estimating\RateDimensionsDemoSeeder;
 use Illuminate\Database\Seeder;
@@ -30,6 +31,7 @@ final class DemoDatabaseSeeder extends Seeder
                 RateDimensionsDemoSeeder::class,
                 ApplicationRatesDemoSeeder::class,
                 FormulationsDemoSeeder::class,
+                AssembliesDemoSeeder::class,
             ]);
         });
     }

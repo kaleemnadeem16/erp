@@ -168,6 +168,12 @@ export { ApplicationRateEditScreen } from "./features/application-rates/applicat
 export { FormulationsListScreen } from "./features/formulations/formulations-list-screen";
 export { FormulationCreateScreen } from "./features/formulations/formulation-create-screen";
 export { FormulationEditScreen } from "./features/formulations/formulation-edit-screen";
+export { AssemblyGroupsListScreen } from "./features/assembly-groups/assembly-groups-list-screen";
+export { AssemblyGroupCreateScreen } from "./features/assembly-groups/assembly-group-create-screen";
+export { AssemblyGroupEditScreen } from "./features/assembly-groups/assembly-group-edit-screen";
+export { AssembliesListScreen } from "./features/assemblies/assemblies-list-screen";
+export { AssemblyCreateScreen } from "./features/assemblies/assembly-create-screen";
+export { AssemblyEditScreen } from "./features/assemblies/assembly-edit-screen";
 export { StockLedgerScreen } from "./features/stock-ledger/stock-ledger-screen";
 export { StockMoveDetailScreen } from "./features/stock-ledger/stock-move-detail-screen";
 export { PhysicalCountsListScreen } from "./features/physical-counts/physical-counts-list-screen";

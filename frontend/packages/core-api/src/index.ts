@@ -36,3 +36,5 @@ export * from "./generated/rate-dimension-value/rate-dimension-value";
 export * from "./generated/application-rate/application-rate";
 export * from "./generated/formulation/formulation";
 export * from "./generated/formulation-version/formulation-version";
+export * from "./generated/assembly-group/assembly-group";
+export * from "./generated/assembly/assembly";

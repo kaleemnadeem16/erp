@@ -1,6 +1,8 @@
 <?php
 
 use App\Modules\Estimating\Http\Controllers\Api\V1\ApplicationRateController;
+use App\Modules\Estimating\Http\Controllers\Api\V1\AssemblyController;
+use App\Modules\Estimating\Http\Controllers\Api\V1\AssemblyGroupController;
 use App\Modules\Estimating\Http\Controllers\Api\V1\FormulationController;
 use App\Modules\Estimating\Http\Controllers\Api\V1\FormulationVersionController;
 use App\Modules\Estimating\Http\Controllers\Api\V1\RateDimensionController;
@@ -8,6 +10,11 @@ use App\Modules\Estimating\Http\Controllers\Api\V1\RateDimensionValueController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth:sanctum')->group(function () {
+    Route::apiResource('assembly-groups', AssemblyGroupController::class)->except('update');
+    Route::patch('assembly-groups/{assembly_group}', [AssemblyGroupController::class, 'update'])->name('assembly-groups.update');
+    Route::apiResource('assemblies', AssemblyController::class)->except('update');
+    Route::patch('assemblies/{assembly}', [AssemblyController::class, 'update'])->name('assemblies.update');
+
     Route::apiResource('rate-dimensions', RateDimensionController::class)->except('update');
     Route::patch('rate-dimensions/{rate_dimension}', [RateDimensionController::class, 'update'])->name('rate-dimensions.update');
     Route::get('rate-dimensions/{rate_dimension}/values', [RateDimensionValueController::class, 'index'])->name('rate-dimensions.values.index');
