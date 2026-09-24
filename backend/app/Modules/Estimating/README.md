@@ -1,14 +1,14 @@
 # Estimating
 
 Owns Phase 3's costing layer: company-defined rate dimensions and application rates,
-formulations with versioning, customer overrides and cost roll-up, assemblies (a sellable unit of
-work) and the overhead-policy resolver. Assembly itself is still Step 1 identity only —
-code/name/work UoM/margin and an optional `AssemblyGroup` classification; its own
-versions/components (the actual cost roll-up) land in Step 3.
+formulations with versioning, customer overrides and cost roll-up, the overhead-policy resolver,
+and assemblies (a sellable unit of work) with their own versioned components and full five-part
+cost roll-up.
 
 **Governed by:** [application-rates.md](../../../../docs/domain/application-rates.md),
 [formulations.md](../../../../docs/domain/formulations.md),
 [assemblies.md](../../../../docs/domain/assemblies.md),
+[items.md](../../../../docs/domain/items.md#resource-rates),
 [ADR 0009](../../../../docs/decisions/0009-company-defined-rate-dimensions.md),
 [ADR 0049](../../../../docs/decisions/0049-assembly-group-overhead-scope.md) and
 [phase-3-estimating-core.md](../../../../docs/phases/phase-3-estimating-core.md).
@@ -38,31 +38,42 @@ versions/components (the actual cost roll-up) land in Step 3.
 - `IngredientCostResolver` — leaf ingredient cost from stock valuation; supports exactly one
   configuration today (AVCO, company-wide `COMPANY_ITEM` pool scope) and fails loudly rather than
   guessing for FIFO/SPECIFIC items or a warehouse/batch-scoped pool
-- `Assembly`/`AssemblyGroup` — Step 1 identity only. Assembly has no output item (ADR 0008) and no
-  `assembly_versions`/`assembly_components` yet; every assembly stays DRAFT through this slice.
-  `AssemblyGroup` is flat, optional, company-defined classification (not the Inventory category
-  tree) that gives the overhead-policy resolver below a real scope target
-  (`Assembly → AssemblyGroup → Company → none`, ADR 0049)
+- `Assembly`/`AssemblyGroup` — Assembly has no output item (ADR 0008). `AssemblyGroup` is flat,
+  optional, company-defined classification (not the Inventory category tree) that gives the
+  overhead-policy resolver below a real scope target (`Assembly → AssemblyGroup → Company →
+  none`, ADR 0049)
 - `OverheadPolicy` — a versioned rule (driver + rate) at one of the three scope tiers above, same
   DRAFT/ACTIVE/SUPERSEDED shape as `FormulationVersion`. `ResolveOverheadPolicy` walks the
   hierarchy and returns which tier won (or `NONE` — not an error, overhead/unit = 0);
-  `OverheadAmountCalculator` is the one place a driver's `rate` is turned into a dollar amount,
-  a pure function so it's fully testable ahead of Step 3 having real
-  material/labour/plant/subcontract totals to feed it. `scope_id` carries no database-level FK —
-  it targets `assembly_groups` or `assemblies` depending on `scope_type`, or is `NULL` for
-  `COMPANY` — validated at the request layer instead
+  `OverheadAmountCalculator` is the one place a driver's `rate` is turned into a dollar amount, a
+  pure function. `scope_id` carries no database-level FK — it targets `assembly_groups` or
+  `assemblies` depending on `scope_type`, or is `NULL` for `COMPANY` — validated at the request
+  layer instead
+- `ResourceRate` — the LABOUR/PLANT estimating-rate source (`items` itself has no rate column,
+  and non-stocked items have no AVCO pool); an effective-dated table shaped like `exchange_rates`,
+  not the heavier versioned-policy lifecycle — see [items.md#resource-rates](../../../../docs/domain/items.md#resource-rates).
+  `ResolveResourceRate` returns the most recent row with `effective_from` on or before the target
+  date, or `null` — a legitimate "not configured yet" state, not an error
+- `AssemblyVersion`/`AssemblyComponent` — the assembly's own recipe. Same DRAFT/ACTIVE/SUPERSEDED
+  + exclusion-constraint shape as `FormulationVersion`/`FormulationLine`. Four component kinds
+  (`MATERIAL`/`LABOUR`/`PLANT`/`SUBCONTRACT` — no stored `OVERHEAD` row, ADR 0049);
+  `ExplodeAssemblyVersion` computes the four direct costs from components alone, then resolves
+  and computes overhead from those four figures — never the reverse, so overhead can never end up
+  inside its own base. Returns a fully explainable breakdown: each component's resolved
+  quantity/unit-cost/source, which overhead tier/driver resolved, and cost/sell per unit
 
 ## Does not own
 
 - Items, UoMs or their conversions — Phase 1 core/Inventory own those; this module only
   references them (`App\Support\UomConversionService` handles a formulation line specified in a
   different-but-convertible unit than its input item's stock UoM or a nested formulation's output
-  UoM)
-- The remaining Assembly slice (`assembly_versions`/`assembly_components`, full cost roll-up
-  across all five component kinds, actually applying a resolved overhead policy to real
-  component totals) — Step 3 of this same phase, same module
+  UoM, and the same check between an `AssemblyComponent`'s own UoM and its resolved
+  `ResourceRate`'s `rate_uom_id`)
 - Anything that issues a document or posts stock — Phase 4/5. Physically producing a
   `SEMI_FINISHED` item is Phase 5's `work_orders`, not this module
+- The fuller, ad-hoc **assembly cost preview** (quantity/dimension-value/customer selection with
+  live application-rate default-fallback visibility) — Step 3 shipped a narrower per-version
+  breakdown instead; see [phase-3-estimating-core.md](../../../../docs/phases/phase-3-estimating-core.md)
 
 ## Key actions
 
@@ -102,6 +113,19 @@ policy (`index`/`show`) requires `estimating.policy-history.view`; writing one r
 same as `ResolveApplicationRate`/`ResolveFormulation`) since every estimator needs "what applies
 right now," not just whoever can manage or audit policies.
 
+`CreateResourceRate` inserts a new dated row; there is deliberately no `UpdateResourceRate` — a
+rate correction is always a new row with a later `effective_from`, never an edit to an
+already-used historical one. `DeleteResourceRate` is unrestricted, same as `ArchiveRateDimension`
+— no "in use" tracking exists at this level yet.
+
+`CreateAssemblyVersion`/`UpdateAssemblyVersion`/`DeleteAssemblyVersion`/`ActivateAssemblyVersion`
+mirror the `FormulationVersion` Action family exactly, including managing `components` as an
+array payload on the version rather than separate per-component endpoints. No cycle guard is
+needed here (unlike `FormulationCycleGuard`) — assembly components never reference other
+assemblies, only items/formulations/application rates, and formulation-level cycles are already
+guarded entirely within `Formulation`'s own domain. `ExplodeAssemblyVersion` is read-only and
+reusable, called directly by the cost-breakdown endpoint.
+
 ## Events
 
 No events emitted yet.
@@ -110,7 +134,8 @@ No events emitted yet.
 
 - [Phase 3](../../../../docs/phases/phase-3-estimating-core.md)
 - [formulations.md](../../../../docs/domain/formulations.md) ·
-  [assemblies.md](../../../../docs/domain/assemblies.md)
+  [assemblies.md](../../../../docs/domain/assemblies.md) ·
+  [items.md](../../../../docs/domain/items.md#resource-rates)
 - [Invariants 1 and 4](../../../../docs/architecture/invariants.md) — snapshot-on-issue and
   versioned-immutability
 - [Inventory module](../Inventory/README.md)

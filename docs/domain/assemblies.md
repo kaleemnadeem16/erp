@@ -15,10 +15,10 @@ The top of the costing chain. Everything below it is optional.
 
 ```
 ASSEMBLY ← you are here
-  ├─ MATERIAL     → application rate → formulation → stock cost      ┐
-  ├─ LABOUR       → hours per work unit × labour item rate           │ stored
-  ├─ PLANT        → equipment hours                                  │ component
-  ├─ SUBCONTRACT  → lump or per unit                                 ┘ rows
+  ├─ MATERIAL     → application rate → formulation → stock (AVCO) cost   ┐
+  ├─ LABOUR       → hours per work unit × resource_rates rate            │ stored
+  ├─ PLANT        → hours per work unit × resource_rates rate            │ component
+  ├─ SUBCONTRACT  → a direct rate, always manually entered                ┘ rows
   └─ OVERHEAD     → resolved from an overhead policy at roll-up time — never a
                      stored row, see "Overhead allocation" below (ADR 0049)
 ```
@@ -50,6 +50,7 @@ assembly_versions
   id, assembly_id, version_no
   effective_from, effective_to NULLABLE
   status           DRAFT | ACTIVE | SUPERSEDED
+  notes
   -- IMMUTABLE once referenced by any document
 
 assembly_components
@@ -78,6 +79,16 @@ overhead_policies                          -- see "Overhead allocation" below
   -- issued document
 
   unique(['company_id', 'scope_type', 'scope_id']) WHERE status = 'ACTIVE'
+
+resource_rates                             -- see items.md "Resource rates"; the LABOUR/PLANT
+  id, company_id                           -- costing source, since items itself has no rate
+  item_id           → items                -- column and non-stocked items have no AVCO pool
+  rate              decimal(19,6)
+  rate_uom_id       → uoms
+  effective_from    date
+  -- no update endpoint — a correction is a new dated row
+
+  unique(['company_id', 'item_id', 'effective_from'])
 ```
 
 The `kind` discriminator on `assembly_components` is four of the standard five-part estimating
@@ -94,11 +105,11 @@ identically regardless of which side computed its figure versus stored it.
 
 ```
 material/unit    = Σ (qty_per_work_unit × (1 + wastage) × multiplier × item_cost)
-labour/unit      = Σ (hours_per_work_unit × labour_item_rate)
-plant/unit       = Σ (hours_per_work_unit × plant_rate)
-subcontract/unit = Σ (rate)
-overhead/unit    = resolved overhead policy's rate applied to this roll-up — see
-                    "Overhead allocation"; not summed from assembly_components rows
+labour/unit      = Σ (qty_per_work_unit × resource_rates rate)      -- wastage/multiplier
+plant/unit       = Σ (qty_per_work_unit × resource_rates rate)      -- never apply here
+subcontract/unit = Σ (rate_override)                                -- its only value
+overhead/unit    = resolved overhead policy's driver applied to the four direct costs above —
+                    see "Overhead allocation"; never summed from assembly_components rows
 
 cost/unit  = material + labour + plant + subcontract + overhead
 sell/unit  = margin_type = MARGIN
@@ -107,8 +118,36 @@ sell/unit  = margin_type = MARGIN
 line_total = sell/unit × qty
 ```
 
-Where a component has an `application_rate_id`, `qty_per_work_unit` is resolved from that rate
-using the document's dimension values rather than stored on the component.
+`item_cost` for a MATERIAL component resolves, in order: `rate_override` if set → the referenced
+`formulation_id`'s own ACTIVE version's `cost_per_output_unit` if set (an explicit, deliberate
+choice per component — not an automatic lookup the way a nested formulation *line* resolves one
+implicitly, since an assembly component has no implicit customer context to resolve against) →
+`IngredientCostResolver`'s AVCO cost otherwise. Where a component has an `application_rate_id`,
+`qty_per_work_unit` and the item are read live from that specific rate row instead of the
+component's own stored values — a live pointer, re-read on every roll-up, the same
+never-snapshotted-within-Phase-3 shape a nested formulation's own price already has.
+
+**The four direct costs are always computed before overhead, from components alone, and overhead
+is never folded back into them** — the same number can never be used as its own basis. Overhead's
+driver bases, spelled out explicitly since nothing else does:
+
+| Driver | Basis |
+|---|---|
+| `PCT_MATERIAL` / `PCT_LABOUR` | That one direct cost alone |
+| `PCT_DIRECT_COST` | `material + labour + plant + subcontract` — all four stored kinds; subcontract is a direct cost of producing this unit of work, same as the other three, not overhead |
+| `PER_LABOUR_HOUR` | Every LABOUR component's `qty_per_work_unit`, summed and converted to the company's base TIME-dimension UoM (by convention, hours) |
+| `PER_WORK_UNIT` | Exactly `1` — every figure here is already expressed "per unit" (this whole formula is `/unit`), so costing one work unit means the basis is `1`, not some document's line quantity, which doesn't exist in Phase 3 |
+
+A LABOUR/PLANT component's `qty_per_work_unit` UoM must be dimensionally convertible to its
+resolved `resource_rates` row's `rate_uom_id` (e.g. both TIME) before costing — an incompatible
+pair (say, a component quantified in `kg`) is a loud, rejected error, never a silent
+same-number-different-unit multiplication.
+
+**The breakdown is explainable, not just a total.** The cost-breakdown read returns which version
+was costed, each component's resolved quantity/unit-cost and where that unit cost came from (AVCO,
+a named formulation version, a resource rate as of a date, or a manual override), which overhead
+scope tier and driver resolved and the resulting amount, and the final cost/sell per unit —
+everything a later quotation, job-costing or audit screen needs without recomputing anything.
 
 ### Versioning
 
@@ -206,6 +245,7 @@ whole company being forced onto one.
 ## Related
 
 - [application-rates.md](application-rates.md) · [formulations.md](formulations.md)
+- [items.md](items.md#resource-rates) — `resource_rates`, the LABOUR/PLANT costing source
 - [sales-pipeline.md](sales-pipeline.md) — where assemblies become quotation lines
 - [job-costing.md](job-costing.md) — estimate vs actual
 - [ADR 0008](../decisions/0008-assembly-abstraction.md) — why assemblies have no output item

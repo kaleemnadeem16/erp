@@ -47,11 +47,19 @@ composite rates; Phase 4 is what snapshots them into an issued quotation, and Ph
   component kinds (material/labour/plant/subcontract; `OVERHEAD` is computed, not stored — see
   ADR 0049), cost roll-up including the computed overhead line, margin-vs-markup (explicit,
   never inferred), component builder UI
-- A read-only **assembly cost preview**: pick an assembly, quantity, dimension values and
-  optional customer; see the fully resolved breakdown (every component, which application rate
-  was selected and whether it fell back to a default, the overhead policy that resolved and from
-  which scope). This is the estimator-facing verification surface before Phase 4 wires assemblies
-  into a real quotation line.
+- `resource_rates` — the LABOUR/PLANT estimating-rate source Step 3 discovered was missing
+  (`items` itself has no rate column, and non-stocked items have no AVCO pool); an
+  effective-dated table shaped like `exchange_rates`, not full explored earlier here — see
+  [items.md](../domain/items.md#resource-rates)
+- A read-only **per-version cost breakdown**, shipped with Step 3: every component's resolved
+  quantity/unit-cost and source (AVCO, a named formulation, a resource rate as of a date, or a
+  manual override), which overhead scope tier and driver resolved, and the final cost/sell per
+  unit — see [assemblies.md#cost-roll-up](../domain/assemblies.md#cost-roll-up). The fuller,
+  originally-scoped **assembly cost preview** below — ad-hoc quantity/dimension-value/customer
+  selection with live application-rate default-fallback visibility — remains a distinct,
+  unshipped follow-up; Step 3's components reference one fixed, explicitly-chosen
+  `application_rate_id` per component rather than a dynamic per-request resolution, so there is
+  no "fell back to default" signal to surface yet.
 - Exclusion constraints preventing overlapping effective periods, for formulation, assembly and
   overhead-policy versions alike
   ([database.md](../architecture/database.md#exclusion-constraints-for-version-periods))
@@ -166,18 +174,31 @@ module-scoped demo data (`database/seeders/Demo/Estimating/`, per
       (ASSEMBLY_GROUP/ASSEMBLY) — built once, complete, against Step 1's real
       `assemblies`/`assembly_groups` rows — 2026-09-24
       ([ADR 0049](../decisions/0049-assembly-group-overhead-scope.md))
-- [ ] **Step 3 — Remaining Assembly slice** — `assembly_versions`/`assembly_components` in full
-      (four stored component kinds — material/labour/plant/subcontract, no `OVERHEAD` row), cost
-      roll-up with the computed overhead line, margin/markup, rate override, multiplier/wastage
-      handling, component-builder UI
+- [x] **Step 3 — Remaining Assembly slice** — `assembly_versions`/`assembly_components` in full
+      (four stored component kinds — material/labour/plant/subcontract, no `OVERHEAD` row; same
+      DRAFT/ACTIVE/SUPERSEDED + exclusion-constraint shape as `formulation_versions`), cost
+      roll-up (`ExplodeAssemblyVersion`) computing the four direct costs from components alone
+      before resolving/computing overhead from them — never the reverse, so overhead can never
+      land in its own base — margin/markup, `rate_override`, MATERIAL-only wastage/multiplier
+      (validated away for LABOUR/PLANT/SUBCONTRACT, not silently ignored), component-builder UI
+      with a full explainable cost-breakdown view. Discovered and closed a real gap along the way:
+      `resource_rates`, since nothing previously gave a LABOUR/PLANT item a dollar rate — see
+      [items.md#resource-rates](../domain/items.md#resource-rates). Demo data deliberately does
+      not reuse `demo-f-tinted-base` for a MATERIAL component's `formulation_id` — that
+      formulation's own delete-and-recreate demo-seeder idempotency would conflict with a real
+      `assembly_components` FK on every re-seed; that code path is covered by
+      `AssemblyCostRollUpTest` instead — 2026-09-25
 - [ ] **Assembly cost preview** — resolution across all four layers (application rate →
       formulation → overhead policy → roll-up), read-only inspection UI surfacing which rate/
-      policy was selected and any default-fallback warning
-- [ ] Exclusion-constraint pattern applied consistently across formulation (done),
-      overhead-policy (done) and assembly (Step 3) version tables. The recursive-CTE roll-up
-      originally proposed here was deliberately not used for formulations — see formulations.md's
-      "Nesting" — so this item now tracks the exclusion constraint only, not a CTE requirement for
-      every version table
+      policy was selected and any default-fallback warning. Step 3 shipped a narrower per-version
+      breakdown (material/labour/plant/subcontract/overhead, resolved tier/driver, cost/sell per
+      unit) — see [assemblies.md#cost-roll-up](../domain/assemblies.md#cost-roll-up) — but not
+      this item's ad-hoc quantity/dimension-value/customer selection or live application-rate
+      default-fallback visibility; still open
+- [x] Exclusion-constraint pattern applied consistently across formulation, overhead-policy and
+      assembly version tables. The recursive-CTE roll-up originally proposed here was
+      deliberately not used for formulations — see formulations.md's "Nesting" — so this item
+      tracked the exclusion constraint only, never a CTE requirement for every version table
 
 Tick these in the same commit as the work.
 
@@ -199,13 +220,17 @@ Tick these in the same commit as the work.
       version cannot be edited in place, and a small company that never creates an Assembly
       Group or an assembly-level override still gets a correct result from the company default
       alone
-- [ ] An assembly rolls up material, labour, plant, subcontract (stored components) and overhead
+- [x] An assembly rolls up material, labour, plant, subcontract (stored components) and overhead
       (computed via the policy resolver, never a stored `assembly_components` row) into a
       cost/unit and, given an explicit `margin_type`, a correct sell/unit — `MARGIN` and `MARKUP`
-      produce verifiably different numbers for the same inputs
+      produce verifiably different numbers for the same inputs — `AssemblyCostRollUpTest` hand-
+      verifies this against docs/domain/assemblies.md's own MARGIN-vs-MARKUP worked example
+      (cost 100, 20% → MARKUP 120, MARGIN 125)
 - [ ] The cost-preview screen shows a full breakdown for an assembly, including which application
       rate resolved (and whether that was a default fallback) and which overhead policy resolved
-      (and from which scope)
+      (and from which scope) — the overhead half of this is done (see Step 3 above); the
+      application-rate resolve/fallback half is not, since Step 3 didn't build ad-hoc
+      quantity/dimension-value/customer selection
 - [ ] Every new screen meets the same keyboard/focus/WCAG bar Phase 2's audit established
 
 ## Docs to update on completion
