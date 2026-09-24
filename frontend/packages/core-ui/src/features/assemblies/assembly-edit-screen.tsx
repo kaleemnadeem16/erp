@@ -9,6 +9,7 @@ import { DetailPageLayout } from '../../components/detail/detail-page-layout';
 import { applyApiErrorsToForm } from '../../lib/api-errors';
 import { OverheadPolicyPanel } from '../overhead-policies/overhead-policy-panel';
 import { ASSEMBLY_FORM_FIELDS, AssemblyForm, assemblyPayload, type AssemblyFormValues } from './assembly-form';
+import { AssemblyVersionsSection } from './assembly-versions-section';
 
 const RESOLUTION_LABELS: Record<string, string> = {
   ASSEMBLY: 'this assembly',
@@ -20,7 +21,7 @@ const RESOLUTION_LABELS: Record<string, string> = {
 export function AssemblyEditScreen() {
   const id = Number(useParams<{ id: string }>().id);
   const navigate = useNavigate();
-  const query = useAssembliesShow(id, { include: 'workUom,assemblyGroup' });
+  const query = useAssembliesShow(id, { include: 'workUom,assemblyGroup,versions,versions.components' });
   const row = query.data?.status === 200 ? query.data.data.data : undefined;
   const mutation = useAssembliesUpdate();
   const [error, setError] = useState<string | null>(null);
@@ -79,6 +80,7 @@ export function AssemblyEditScreen() {
           {resolution.method !== 'NONE' && ` (${resolution.policy?.rate} ${resolution.policy?.driver_type})`}.
         </p>
       )}
+      <AssemblyVersionsSection assemblyId={row.id} versions={row.versions ?? []} />
       <DetailPageLayout>
         <OverheadPolicyPanel scopeType={OverheadScopeType.ASSEMBLY} scopeId={row.id} />
       </DetailPageLayout>

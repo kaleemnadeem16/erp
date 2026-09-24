@@ -19,6 +19,9 @@ class ShowAssemblyRequest extends FormRequest
     /** @return array<string, mixed> */
     public function rules(): array
     {
-        return $this->includeRules(['workUom', 'assemblyGroup']);
+        return $this->includeRules([
+            'workUom', 'assemblyGroup', 'versions', 'versions.components',
+            'activeVersion', 'activeVersion.components',
+        ]);
     }
 }

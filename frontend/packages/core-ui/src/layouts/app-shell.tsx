@@ -29,6 +29,7 @@ import {
   Tags,
   User,
   Warehouse,
+  Wrench,
 } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router";
 import { useLogout } from "@erp/core-api";
@@ -114,6 +115,7 @@ const navGroups: NavGroup[] = [
       { to: "/formulations", label: "Formulations", icon: FlaskConical },
       { to: "/assembly-groups", label: "Assembly Groups", icon: Group },
       { to: "/assemblies", label: "Assemblies", icon: Component },
+      { to: "/resource-rates", label: "Resource Rates", icon: Wrench },
     ],
   },
 ];

@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Modules\Estimating\Support;
 
 /**
- * Mirrors FormulationStatus — DRAFT: not yet activated (no assembly_versions
- * exist until Step 3, so every assembly stays DRAFT through this slice).
- * ACTIVE and ARCHIVED gain their real transition mechanisms once versions
- * and components land.
+ * Mirrors FormulationStatus — DRAFT: no assembly_version has ever been
+ * activated yet. ACTIVE: ActivateAssemblyVersion has activated at least one
+ * version (mirrors ActivateFormulationVersion marking Formulation ACTIVE).
+ * ARCHIVED: ArchiveAssembly.
  */
 enum AssemblyStatus: string
 {

@@ -57,6 +57,7 @@ import {
   RecalculationRequestCreateScreen,
   RecalculationRequestDetailScreen,
   RecalculationRequestsListScreen,
+  ResourceRatesListScreen,
   StockLedgerScreen,
   StockMoveDetailScreen,
   WarehouseCreateScreen,
@@ -400,6 +401,16 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <AssemblyEditScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/resource-rates"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <ResourceRatesListScreen />
               </AppShell>
             </ProtectedRoute>
           }

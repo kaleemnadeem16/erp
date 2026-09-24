@@ -7,17 +7,18 @@ namespace App\Modules\Estimating\Models;
 use App\Models\Model;
 use App\Models\Uom;
 use App\Modules\Estimating\Support\AssemblyStatus;
+use App\Modules\Estimating\Support\AssemblyVersionStatus;
 use App\Modules\Estimating\Support\MarginType;
 use App\Support\Concerns\BelongsToCompany;
 use App\Support\Concerns\GuardsRelatedCompanyScope;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
- * Step 1 identity only — a sellable unit of work, priced per work_uom_id, no
- * output item (docs/decisions/0008-assembly-abstraction.md). Versions and
- * components (the actual recipe/cost roll-up) land in Step 3; this exists so
- * Step 2's overhead_policies has a real row to scope against. Unlike
- * Formulation's output_item_id/customer_id, assembly_group_id is a mutable
+ * A sellable unit of work, priced per work_uom_id, no output item
+ * (docs/decisions/0008-assembly-abstraction.md). Unlike Formulation's
+ * output_item_id/customer_id, assembly_group_id is a mutable
  * classification, not identity — expected to change over time, so no
  * repoint guard blocks it.
  *
@@ -72,5 +73,18 @@ class Assembly extends Model
     public function assemblyGroup(): BelongsTo
     {
         return $this->belongsTo(AssemblyGroup::class);
+    }
+
+    /** @return HasMany<AssemblyVersion, $this> */
+    public function versions(): HasMany
+    {
+        return $this->hasMany(AssemblyVersion::class)->orderByDesc('version_no');
+    }
+
+    /** @return HasOne<AssemblyVersion, $this> */
+    public function activeVersion(): HasOne
+    {
+        return $this->hasOne(AssemblyVersion::class)
+            ->where('status', AssemblyVersionStatus::Active);
     }
 }

@@ -34,6 +34,8 @@ class ControllerActionBoundaryTest extends TestCase
             'formulations' => ['app/Modules/Estimating/Http/Controllers/Api/V1/FormulationController.php'],
             'formulation versions' => ['app/Modules/Estimating/Http/Controllers/Api/V1/FormulationVersionController.php'],
             'overhead policies' => ['app/Modules/Estimating/Http/Controllers/Api/V1/OverheadPolicyController.php'],
+            'resource rates' => ['app/Modules/Estimating/Http/Controllers/Api/V1/ResourceRateController.php'],
+            'assembly versions' => ['app/Modules/Estimating/Http/Controllers/Api/V1/AssemblyVersionController.php'],
         ];
     }
 

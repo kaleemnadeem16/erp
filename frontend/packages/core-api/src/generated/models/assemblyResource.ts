@@ -8,6 +8,8 @@ import type { AssemblyResourceDescription } from "./assemblyResourceDescription"
 import type { AssemblyResourceAssemblyGroupId } from "./assemblyResourceAssemblyGroupId";
 import type { AssemblyResourceWorkUom } from "./assemblyResourceWorkUom";
 import type { AssemblyResourceAssemblyGroup } from "./assemblyResourceAssemblyGroup";
+import type { AssemblyVersionResource } from "./assemblyVersionResource";
+import type { AssemblyResourceActiveVersion } from "./assemblyResourceActiveVersion";
 import type { AssemblyResourceCreatedAt } from "./assemblyResourceCreatedAt";
 import type { AssemblyResourceUpdatedAt } from "./assemblyResourceUpdatedAt";
 
@@ -23,6 +25,8 @@ export interface AssemblyResource {
   status: string;
   work_uom?: AssemblyResourceWorkUom;
   assembly_group?: AssemblyResourceAssemblyGroup;
+  versions?: AssemblyVersionResource[];
+  active_version?: AssemblyResourceActiveVersion;
   created_at: AssemblyResourceCreatedAt;
   updated_at: AssemblyResourceUpdatedAt;
 }

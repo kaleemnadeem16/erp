@@ -39,3 +39,5 @@ export * from "./generated/formulation-version/formulation-version";
 export * from "./generated/assembly-group/assembly-group";
 export * from "./generated/assembly/assembly";
 export * from "./generated/overhead-policy/overhead-policy";
+export * from "./generated/resource-rate/resource-rate";
+export * from "./generated/assembly-version/assembly-version";

@@ -29,6 +29,8 @@ class AssemblyResource extends JsonResource
             'status' => $row->status->value,
             'work_uom' => $this->whenLoaded('workUom', fn () => ['id' => $row->workUom->id, 'code' => $row->workUom->code, 'name' => $row->workUom->name]),
             'assembly_group' => $this->whenLoaded('assemblyGroup', fn () => $row->assemblyGroup ? new AssemblyGroupResource($row->assemblyGroup) : null),
+            'versions' => $this->whenLoaded('versions', fn () => AssemblyVersionResource::collection($row->versions)),
+            'active_version' => $this->whenLoaded('activeVersion', fn () => $row->activeVersion ? new AssemblyVersionResource($row->activeVersion) : null),
             'created_at' => $row->created_at?->toIso8601String(),
             'updated_at' => $row->updated_at?->toIso8601String(),
         ];

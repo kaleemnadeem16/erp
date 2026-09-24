@@ -24,7 +24,11 @@ class AssemblyController extends Controller
 {
     use AppliesApiQuery;
 
-    private const INCLUDABLE = ['workUom' => 'workUom', 'assemblyGroup' => 'assemblyGroup'];
+    private const INCLUDABLE = [
+        'workUom' => 'workUom', 'assemblyGroup' => 'assemblyGroup',
+        'versions' => 'versions', 'versions.components' => 'versions.components',
+        'activeVersion' => 'activeVersion', 'activeVersion.components' => 'activeVersion.components',
+    ];
 
     private const SORTABLE = ['code' => 'code', 'created_at' => 'created_at'];
 

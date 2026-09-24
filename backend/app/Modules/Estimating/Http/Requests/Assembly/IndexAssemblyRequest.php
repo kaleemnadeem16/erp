@@ -24,6 +24,9 @@ class IndexAssemblyRequest extends FormRequest
             'filter.search' => ['sometimes', 'string', 'max:255'],
             'filter.assembly_group_id' => ['sometimes', 'integer'],
             'filter.status' => ['sometimes', 'string', 'in:DRAFT,ACTIVE,ARCHIVED'],
-        ], $this->listQueryRules(['code', 'created_at'], ['workUom', 'assemblyGroup']));
+        ], $this->listQueryRules(['code', 'created_at'], [
+            'workUom', 'assemblyGroup', 'versions', 'versions.components',
+            'activeVersion', 'activeVersion.components',
+        ]));
     }
 }
