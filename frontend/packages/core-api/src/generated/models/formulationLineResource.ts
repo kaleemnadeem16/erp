@@ -5,6 +5,7 @@
  * OpenAPI spec version: 0.0.1
  */
 import type { ItemResource } from "./itemResource";
+import type { FormulationLineResourceUom } from "./formulationLineResourceUom";
 
 export interface FormulationLineResource {
   id: number;
@@ -14,4 +15,5 @@ export interface FormulationLineResource {
   wastage_pct: string;
   sequence: number;
   input_item?: ItemResource;
+  uom?: FormulationLineResourceUom;
 }

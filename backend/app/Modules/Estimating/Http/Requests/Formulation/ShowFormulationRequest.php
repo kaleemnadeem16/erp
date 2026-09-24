@@ -19,6 +19,9 @@ class ShowFormulationRequest extends FormRequest
     /** @return array<string, mixed> */
     public function rules(): array
     {
-        return $this->includeRules(['outputItem', 'outputUom', 'customer', 'versions', 'versions.lines', 'activeVersion']);
+        return $this->includeRules([
+            'outputItem', 'outputUom', 'customer', 'versions', 'versions.lines',
+            'versions.lines.inputItem', 'versions.lines.uom', 'activeVersion',
+        ]);
     }
 }

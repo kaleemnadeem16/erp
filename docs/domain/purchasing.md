@@ -282,6 +282,12 @@ approval authority and matching status names remain Phase 6 decisions.
 Physical arrival, document, inspection, recorded-at, posting, due and reversal dates are distinct
 facts even when the UI initially defaults several to today.
 
+`purchase_orders.expected_delivery_date` is the common supplier promise and the useful date for
+order lists, summaries and an order whose lines arrive together. A line date is still required by
+the model because staggered deliveries are normal; in entry it is an optional override. On save,
+a blank line date inherits the header date and the resolved value is stored on the line, so issued
+planning snapshots never depend on later reinterpretation of a header default.
+
 Every quantity retains the document UoM, stock UoM and pinned conversion used when issued or
 posted. Changes to current UoM master data never recalculate historical documents. Conversion
 must remain within the same UoM dimension.

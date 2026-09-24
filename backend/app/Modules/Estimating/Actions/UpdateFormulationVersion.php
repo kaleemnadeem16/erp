@@ -7,6 +7,7 @@ namespace App\Modules\Estimating\Actions;
 use App\Exceptions\DomainInvariantException;
 use App\Modules\Estimating\Models\FormulationVersion;
 use App\Modules\Estimating\Support\FormulationCycleGuard;
+use App\Modules\Estimating\Support\FormulationUnitGuard;
 use App\Modules\Estimating\Support\FormulationVersionStatus;
 use Illuminate\Support\Facades\DB;
 
@@ -17,7 +18,10 @@ use Illuminate\Support\Facades\DB;
  */
 final class UpdateFormulationVersion
 {
-    public function __construct(private readonly FormulationCycleGuard $cycleGuard) {}
+    public function __construct(
+        private readonly FormulationCycleGuard $cycleGuard,
+        private readonly FormulationUnitGuard $unitGuard,
+    ) {}
 
     /** @param array<string, mixed> $attributes */
     public function __invoke(FormulationVersion $version, array $attributes): FormulationVersion
@@ -36,6 +40,11 @@ final class UpdateFormulationVersion
             ($this->cycleGuard)(
                 $version->formulation->output_item_id,
                 array_map(static fn (array $line): int => (int) $line['input_item_id'], $lines),
+            );
+            ($this->unitGuard)(
+                $version->formulation->output_item_id,
+                $version->formulation->output_uom_id,
+                $lines,
             );
         }
 

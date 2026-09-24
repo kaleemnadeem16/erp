@@ -7,6 +7,7 @@ namespace App\Modules\Estimating\Actions;
 use App\Modules\Estimating\Models\Formulation;
 use App\Modules\Estimating\Models\FormulationVersion;
 use App\Modules\Estimating\Support\FormulationCycleGuard;
+use App\Modules\Estimating\Support\FormulationUnitGuard;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -16,7 +17,10 @@ use Illuminate\Support\Facades\DB;
  */
 final class CreateFormulationVersion
 {
-    public function __construct(private readonly FormulationCycleGuard $cycleGuard) {}
+    public function __construct(
+        private readonly FormulationCycleGuard $cycleGuard,
+        private readonly FormulationUnitGuard $unitGuard,
+    ) {}
 
     /** @param array<string, mixed> $attributes */
     public function __invoke(Formulation $formulation, array $attributes): FormulationVersion
@@ -27,6 +31,11 @@ final class CreateFormulationVersion
         ($this->cycleGuard)(
             $formulation->output_item_id,
             array_map(static fn (array $line): int => (int) $line['input_item_id'], $lines),
+        );
+        ($this->unitGuard)(
+            $formulation->output_item_id,
+            $formulation->output_uom_id,
+            $lines,
         );
 
         return DB::transaction(function () use ($formulation, $attributes, $lines): FormulationVersion {

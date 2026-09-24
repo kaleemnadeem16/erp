@@ -28,7 +28,10 @@ class FormulationController extends Controller
 
     private const INCLUDABLE = [
         'outputItem' => 'outputItem', 'outputUom' => 'outputUom', 'customer' => 'customer',
-        'versions' => 'versions', 'versions.lines' => 'versions.lines', 'activeVersion' => 'activeVersion',
+        'versions' => 'versions', 'versions.lines' => 'versions.lines',
+        'versions.lines.inputItem' => 'versions.lines.inputItem',
+        'versions.lines.uom' => 'versions.lines.uom',
+        'activeVersion' => 'activeVersion',
     ];
 
     private const SORTABLE = ['code' => 'code', 'created_at' => 'created_at'];

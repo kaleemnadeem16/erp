@@ -3,7 +3,8 @@
 **Updated:** 2026-09-24
 **Current phase:** Phase 3 — Estimating core (in progress; two vertical slices shipped
 2026-09-23 — rate dimensions/application rates, then formulations with versioning, customer
-overrides and nested cost roll-up. Before starting Assemblies, a genericity review on
+overrides and nested cost roll-up, now followed by the 2026-09-24 draft-editing, human-readable
+history, unit-defaulting and item-navigation usability pass. Before starting Assemblies, a genericity review on
 2026-09-24 caught and corrected a real structural error in the overhead-policy design —
 [ADR 0049](decisions/0049-assembly-group-overhead-scope.md), superseding
 [ADR 0048](decisions/0048-configurable-hierarchical-overhead-allocation.md). Steps 1 and 2 of the

@@ -192,6 +192,13 @@ running the scenarios, not by reasoning about the algorithm on paper). Verify ea
 actually produces the outcome its comment claims — a demo seeder is real code and can be wrong in
 exactly the way this one initially was.
 
+Every demo record or tightly-related scenario must also make its **business purpose** obvious in
+the UI-facing name, description or notes (and in the seeder comment). State what the record is
+meant to demonstrate and how it relates to dependent demo records — for example, identify a
+semi-finished formulation as the base consumed by a named derived formulation. Codes such as
+`demo-...` establish ownership and idempotency; they do not explain the scenario to a person
+exploring the application.
+
 **File layout**: default to one flat `Demo/{Module}DemoSeeder.php`, matching
 Foundation/Accounting/Parties/Inventory/Purchasing/Stock above. Promote to a `Demo/{Module}/`
 folder with one seeder per business capability only once a module's demo data will span more

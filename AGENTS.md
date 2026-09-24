@@ -34,6 +34,7 @@ three relevant ones without pulling in the rest.
 | Start a phase | The matching file in [docs/phases/](docs/phases/) |
 | Change an existing decision | The relevant ADR in [docs/decisions/](docs/decisions/) |
 | Handle a per-customer difference | [extensibility.md](docs/architecture/extensibility.md) |
+| Add or change demo data | [environments.md](docs/architecture/environments.md#development-demo-data) |
 | Understand a term | [docs/GLOSSARY.md](docs/GLOSSARY.md) |
 
 Start at [docs/README.md](docs/README.md) if unsure — it is the map.

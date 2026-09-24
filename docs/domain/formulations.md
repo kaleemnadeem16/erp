@@ -66,6 +66,16 @@ formulation_lines
 
 One nullable column and one resolver. No special-casing anywhere else in the system.
 
+Most manufactured products use only the company-default formulation. The customer field exists
+solely for the exceptional case where the same output item is made differently for a particular
+customer (for example a private-label colour, allergen substitution or contract-specific mix).
+It is not ownership and it does not make an ordinary make-to-stock formulation customer-bound.
+
+The item detail screen lists every formulation that produces the item, including whether each is
+the company default or a customer override. This is operational navigation, not a new ownership
+relationship; normal authenticated item access is sufficient until the application introduces a
+dedicated formulation-view permission.
+
 ### Versioning and immutability
 
 **A formulation version is frozen the moment any document references it.** Changing a recipe
@@ -101,6 +111,10 @@ not tied to any warehouse or batch — should read; a never-purchased item retur
 instead, since "no cost known yet" is a legitimate state, not an error. A line specified in a
 different-but-convertible unit than its input item's stock UoM converts through the ordinary UoM
 system (`units-of-measure.md`) before pricing.
+
+The UI defaults the output unit from the output item's stock UoM and each line unit from the input
+item's stock UoM. Both remain editable because a real manufacturing batch or ingredient may be
+expressed in another compatible unit; conversion still fails loudly across different dimensions.
 
 ### Nesting
 

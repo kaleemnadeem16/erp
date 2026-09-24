@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router';
 import { Archive, ArchiveRestore, Pencil, ArrowLeft } from 'lucide-react';
-import { useItemsShow, useItemsUpdate, useUomsShow } from '@erp/core-api';
+import { useFormulationsIndex, useItemsShow, useItemsUpdate, useUomsShow } from '@erp/core-api';
 
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
@@ -21,8 +21,16 @@ export function ItemDetailScreen() {
   const itemQuery = useItemsShow(itemId, { include: 'category' });
   const item = itemQuery.data?.status === 200 ? itemQuery.data.data.data : undefined;
 
-  const uomQuery = useUomsShow(item?.stock_uom_id ?? 0, { query: { enabled: !!item } });
+  const uomQuery = useUomsShow(item?.stock_uom_id ?? 0, {
+    query: { enabled: !!item }
+  });
   const uom = uomQuery.data?.status === 200 ? uomQuery.data.data.data : undefined;
+  const formulationsQuery = useFormulationsIndex({
+    'filter[output_item_id]': itemId,
+    include: 'customer',
+    per_page: 100
+  });
+  const formulations = formulationsQuery.data?.status === 200 ? formulationsQuery.data.data.data : [];
 
   const updateStatus = useItemsUpdate();
 
@@ -32,11 +40,16 @@ export function ItemDetailScreen() {
     const nextStatus = item.status === 'ACTIVE' ? 'ARCHIVED' : 'ACTIVE';
     updateStatus.mutate(
       { item: itemId, data: { status: nextStatus } },
-      { onSuccess: () => itemQuery.refetch(), onError: (error) => setStatusError(getApiErrorMessage(error)) }
+      {
+        onSuccess: () => itemQuery.refetch(),
+        onError: (error) => setStatusError(getApiErrorMessage(error))
+      }
     );
   }
 
-  const { contentRef: printRef, print } = useQuickPrint({ documentTitle: item ? `Item ${item.code}` : 'Item' });
+  const { contentRef: printRef, print } = useQuickPrint({
+    documentTitle: item ? `Item ${item.code}` : 'Item'
+  });
 
   if (itemQuery.isLoading) {
     return (
@@ -68,21 +81,24 @@ export function ItemDetailScreen() {
         { label: 'Type', value: item.type },
         { label: 'Category', value: item.category?.name ?? '' },
         { label: 'Status', value: item.status },
-        { label: 'Description', value: item.description ?? '' },
-      ],
+        { label: 'Description', value: item.description ?? '' }
+      ]
     },
     {
       title: 'Stock & valuation',
       fields: [
-        { label: 'Stock unit of measure', value: uom ? `${uom.name} (${uom.code})` : '' },
+        {
+          label: 'Stock unit of measure',
+          value: uom ? `${uom.name} (${uom.code})` : ''
+        },
         { label: 'Tracking', value: item.tracking },
         { label: 'Valuation method', value: item.valuation_method },
         { label: 'AVCO pool scope', value: item.avco_pool_scope ?? '' },
         { label: 'Stocked', value: item.is_stocked ? 'Yes' : 'No' },
         { label: 'Purchasable', value: item.is_purchasable ? 'Yes' : 'No' },
-        { label: 'Sellable', value: item.is_sellable ? 'Yes' : 'No' },
-      ],
-    },
+        { label: 'Sellable', value: item.is_sellable ? 'Yes' : 'No' }
+      ]
+    }
   ];
 
   return (
@@ -95,12 +111,7 @@ export function ItemDetailScreen() {
         actions={
           <>
             <PrintTrigger onPrint={() => print()} />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleToggleStatus}
-              disabled={updateStatus.isPending}
-            >
+            <Button variant="outline" size="sm" onClick={handleToggleStatus} disabled={updateStatus.isPending}>
               {item.status === 'ACTIVE' ? (
                 <>
                   <Archive className="h-4 w-4" />
@@ -123,11 +134,7 @@ export function ItemDetailScreen() {
         }
       />
 
-      {statusError && (
-        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-          {statusError}
-        </div>
-      )}
+      {statusError && <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">{statusError}</div>}
 
       <DetailPageLayout>
         <DetailSection title="General">
@@ -154,6 +161,32 @@ export function ItemDetailScreen() {
           <DetailField label="Purchasable">{item.is_purchasable ? 'Yes' : 'No'}</DetailField>
           <DetailField label="Sellable">{item.is_sellable ? 'Yes' : 'No'}</DetailField>
         </DetailSection>
+
+        {formulations.length > 0 && (
+          <DetailSection
+            title="Formulations"
+            description="Recipes that produce this item. Customer-specific rows override the company default when resolving an estimate."
+            fullWidth
+          >
+            <div className="space-y-2 sm:col-span-2">
+              {formulations.map((formulation) => (
+                <Link
+                  key={formulation.id}
+                  to={`/formulations/${formulation.id}/edit`}
+                  className="flex items-center justify-between gap-3 rounded-md border p-3 hover:bg-accent"
+                >
+                  <span>
+                    <span className="font-medium">
+                      {formulation.code} — {formulation.name}
+                    </span>
+                    <span className="mt-0.5 block text-xs text-muted-foreground">{formulation.customer?.code ?? 'Company default'}</span>
+                  </span>
+                  <Badge variant={formulation.status === 'ACTIVE' ? 'success' : 'secondary'}>{formulation.status}</Badge>
+                </Link>
+              ))}
+            </div>
+          </DetailSection>
+        )}
       </DetailPageLayout>
 
       {/* Quick Print — a dedicated print-only layout, hidden until react-to-print clones it. */}

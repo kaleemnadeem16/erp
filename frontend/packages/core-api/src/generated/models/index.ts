@@ -228,6 +228,7 @@ export * from "./exchangeRatesStore201";
 export * from "./exchangeRatesUpdate200";
 export * from "./forgotPasswordRequest";
 export * from "./formulationLineResource";
+export * from "./formulationLineResourceUom";
 export * from "./formulationResource";
 export * from "./formulationResourceActiveVersion";
 export * from "./formulationResourceCreatedAt";

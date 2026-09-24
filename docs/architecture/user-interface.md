@@ -65,7 +65,8 @@ group on every screen, unless the user explicitly asks for something else for th
 screen.** Don't invent a bespoke inline show/hide control per screen.
 
 - **One toggle per page, not one per section.** A single "Advanced options" button lives in the
-  screen's own `PageHeader` `actions` (top-right, same row as the title) — not inside the section
+  screen's own `PageHeader` `actions` (top-right alongside the title on wide screens; aligned to
+  the right edge when the header stacks on mobile) — not inside the section
   it controls, and not a separate control per optional group. Opening it shows a menu of
   checkboxes, one per advanced option the page currently has. This scales to a page with several
   optional groups without the header accumulating several separate toggle buttons.

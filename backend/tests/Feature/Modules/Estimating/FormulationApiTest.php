@@ -69,6 +69,44 @@ class FormulationApiTest extends TestCase
             ->assertOk()->assertJsonCount(1, 'data');
     }
 
+    public function test_version_history_can_include_human_readable_item_and_unit_details(): void
+    {
+        $user = User::factory()->create();
+        $formulation = $this->actingAs($user)->postJson('/api/v1/formulations', [
+            'output_item_id' => $this->shade->id, 'code' => 'F-SHADE', 'name' => 'Shade #4471',
+            'output_uom_id' => $this->litre->id,
+            'lines' => [['input_item_id' => $this->pigment->id, 'qty' => '0.5', 'uom_id' => $this->kg->id]],
+        ])->json('data');
+
+        $this->getJson("/api/v1/formulations/{$formulation['id']}?include=versions.lines.inputItem,versions.lines.uom")
+            ->assertOk()
+            ->assertJsonPath('data.versions.0.lines.0.input_item.code', 'pigment')
+            ->assertJsonPath('data.versions.0.lines.0.input_item.name', 'Pigment')
+            ->assertJsonPath('data.versions.0.lines.0.uom.code', 'kg')
+            ->assertJsonPath('data.versions.0.lines.0.uom.name', 'Kilogram');
+    }
+
+    public function test_formulation_units_must_match_their_items_dimensions(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->postJson('/api/v1/formulations', [
+            'output_item_id' => $this->shade->id, 'code' => 'BAD-OUTPUT-UOM', 'name' => 'Bad output',
+            'output_uom_id' => $this->kg->id,
+        ])->assertUnprocessable()->assertJsonPath('errors.output_uom_id.0', "Output UoM must have the same dimension as the item's stock UoM.");
+
+        $response = $this->postJson('/api/v1/formulations', [
+            'output_item_id' => $this->shade->id, 'code' => 'BAD-LINE-UOM', 'name' => 'Bad line',
+            'output_uom_id' => $this->litre->id,
+            'lines' => [['input_item_id' => $this->pigment->id, 'qty' => '0.5', 'uom_id' => $this->litre->id]],
+        ])->assertUnprocessable()->assertJsonValidationErrors(['lines.0.uom_id']);
+
+        $this->assertSame(
+            "Ingredient UoM must have the same dimension as the item's stock UoM.",
+            $response->json('errors')['lines.0.uom_id'][0],
+        );
+    }
+
     public function test_a_version_can_be_activated_and_superseded_by_the_next(): void
     {
         $user = User::factory()->create();

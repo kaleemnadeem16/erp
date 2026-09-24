@@ -74,7 +74,8 @@ final class FormulationsDemoSeeder extends Seeder
         $tintedBase = Item::withTrashed()->updateOrCreate(
             ['code' => 'demo-tinted-base'],
             [
-                'name' => 'Tinted Base', 'description' => 'Semi-finished intermediate mixed separately, then tinted.',
+                'name' => 'Tinted Base',
+                'description' => 'Demo semi-finished base: mixed separately, then consumed by the White Enamel Paint formulations to demonstrate nested costing.',
                 'type' => ItemType::SemiFinished, 'stock_uom_id' => $litre->id, 'is_stocked' => true,
                 'is_purchasable' => false, 'is_sellable' => false, 'valuation_method' => ValuationMethod::Avco,
                 'avco_pool_scope' => AvcoPoolScope::CompanyItem, 'category_id' => $pigment->category_id,

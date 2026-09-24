@@ -32,6 +32,9 @@ versions/components (the actual cost roll-up) land in Step 3.
 - `FormulationCycleGuard` — direct or transitive self-consumption, re-checked on create, update
   *and* activation (two formulations built independently while both DRAFT can each look
   cycle-free and only complete a live cycle on the second activation)
+- `FormulationUnitGuard` — output and ingredient units may differ from their items' stock units,
+  but must remain in the same convertible dimension. The UI defaults from the item; this guard
+  enforces the rule for every API caller
 - `IngredientCostResolver` — leaf ingredient cost from stock valuation; supports exactly one
   configuration today (AVCO, company-wide `COMPANY_ITEM` pool scope) and fails loudly rather than
   guessing for FIFO/SPECIFIC items or a warehouse/batch-scoped pool

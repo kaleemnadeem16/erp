@@ -26,6 +26,11 @@ class FormulationLineResource extends JsonResource
             'wastage_pct' => $row->wastage_pct,
             'sequence' => $row->sequence,
             'input_item' => $this->whenLoaded('inputItem', fn () => new ItemResource($row->inputItem)),
+            'uom' => $this->whenLoaded('uom', fn () => [
+                'id' => $row->uom->id,
+                'code' => $row->uom->code,
+                'name' => $row->uom->name,
+            ]),
         ];
     }
 }

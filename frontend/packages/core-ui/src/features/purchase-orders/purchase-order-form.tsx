@@ -43,14 +43,19 @@ import {
 import { DetailSection } from "../../components/detail/detail-page-layout";
 import { DetailField } from "../../components/detail/detail-field";
 import { RecordSheetAside } from "../../components/page/record-sheet";
-import { WizardShell, type WizardStep } from "../../components/page/wizard-shell";
+import {
+  WizardShell,
+  type WizardStep,
+} from "../../components/page/wizard-shell";
 import { clearDraft, readDraft, writeDraft } from "../../lib/session-draft";
 import { PurchaseOrderSummary } from "./purchase-order-summary";
 import { SupplierSiteDialog } from "./supplier-site-form";
 
 // "CODE — City, ST" when there's an address to show; the name alone otherwise.
 const supplierSiteLabel = (site: SupplierSiteResource) => {
-  const place = [site.party_site.city, site.party_site.state].filter(Boolean).join(", ");
+  const place = [site.party_site.city, site.party_site.state]
+    .filter(Boolean)
+    .join(", ");
   return `${site.party_site.name}${place ? ` — ${place}` : ""}`;
 };
 
@@ -164,7 +169,12 @@ const isPristine = (values: PurchaseOrderFormValues) =>
 
 function readUnfinishedPurchaseOrder(): UnfinishedPurchaseOrder | null {
   const stored = readDraft<UnfinishedPurchaseOrder>(DRAFT_NAME)?.value;
-  if (!stored || typeof stored.step !== "number" || !Array.isArray(stored.values?.lines)) return null;
+  if (
+    !stored ||
+    typeof stored.step !== "number" ||
+    !Array.isArray(stored.values?.lines)
+  )
+    return null;
   const base = createDefaults();
   const values: PurchaseOrderFormValues = {
     ...base,
@@ -174,10 +184,14 @@ function readUnfinishedPurchaseOrder(): UnfinishedPurchaseOrder | null {
       : base.lines,
   };
   if (isPristine(values)) return null;
-  return { values, step: Math.min(Math.max(stored.step, 0), WIZARD_STEPS.length - 1) };
+  return {
+    values,
+    step: Math.min(Math.max(stored.step, 0), WIZARD_STEPS.length - 1),
+  };
 }
 
-export const hasUnfinishedPurchaseOrder = () => readUnfinishedPurchaseOrder() !== null;
+export const hasUnfinishedPurchaseOrder = () =>
+  readUnfinishedPurchaseOrder() !== null;
 export const clearUnfinishedPurchaseOrder = () => clearDraft(DRAFT_NAME);
 
 // The create flow only — an edit screen shows every section at once since
@@ -211,7 +225,9 @@ const WIZARD_STEP_FIELDS: FieldPath<PurchaseOrderFormValues>[][] = [
 export function toPurchaseOrderPayload(values: PurchaseOrderFormValues) {
   return {
     supplier_account_id: Number(values.supplier_account_id),
-    supplier_site_id: values.supplier_site_id ? Number(values.supplier_site_id) : null,
+    supplier_site_id: values.supplier_site_id
+      ? Number(values.supplier_site_id)
+      : null,
     currency_id: Number(values.currency_id),
     fx_policy: values.fx_policy,
     fx_rate: values.fx_rate,
@@ -230,7 +246,12 @@ export function toPurchaseOrderPayload(values: PurchaseOrderFormValues) {
       unit_price: line.unit_price,
       discount_amount: line.discount_amount,
       tax_amount: line.tax_amount,
-      expected_delivery_date: line.expected_delivery_date || null,
+      // The order-level date is the common promise; a line only needs its own
+      // value when that item is due on a different date. Persist the resolved
+      // date on every line so issued snapshots and later planning never have
+      // to reinterpret a mutable header default.
+      expected_delivery_date:
+        line.expected_delivery_date || values.expected_delivery_date || null,
       qa_required: line.qa_required,
     })),
   };
@@ -260,7 +281,9 @@ export function PurchaseOrderForm({
   onAdvancedOptionsChange?: (options: AdvancedOption[]) => void;
 }) {
   const isCreate = !defaultValues;
-  const [unfinished] = useState(() => (isCreate ? readUnfinishedPurchaseOrder() : null));
+  const [unfinished] = useState(() =>
+    isCreate ? readUnfinishedPurchaseOrder() : null,
+  );
   const [resumed, setResumed] = useState(unfinished !== null);
   // Wiping the form is the one thing on this screen that can't be taken back,
   // so it asks first — in place, not in a modal, and defaulting to "keep".
@@ -351,10 +374,17 @@ export function PurchaseOrderForm({
     [suppliers],
   );
   const supplierIdNumber = Number(form.watch("supplier_account_id")) || 0;
-  const sitesQuery = useSupplierAccountsSitesIndex(supplierIdNumber, { per_page: 100 });
-  const sites = sitesQuery.data?.status === 200 ? sitesQuery.data.data.data : [];
+  const sitesQuery = useSupplierAccountsSitesIndex(supplierIdNumber, {
+    per_page: 100,
+  });
+  const sites =
+    sitesQuery.data?.status === 200 ? sitesQuery.data.data.data : [];
   const siteOptions = useMemo(
-    () => sites.map((site) => ({ value: String(site.id), label: supplierSiteLabel(site) })),
+    () =>
+      sites.map((site) => ({
+        value: String(site.id),
+        label: supplierSiteLabel(site),
+      })),
     [sites],
   );
   const currenciesQuery = useCurrenciesIndex({ per_page: 100, sort: "code" });
@@ -451,9 +481,14 @@ export function PurchaseOrderForm({
     unit_price: "Unit price",
     discount_amount: "Discount",
     tax_amount: "Tax",
-    expected_delivery_date: "Expected date",
+    expected_delivery_date: "Line expected date (optional)",
   } as const;
-  const LINE_DECIMAL_FIELDS = ["ordered_qty", "unit_price", "discount_amount", "tax_amount"];
+  const LINE_DECIMAL_FIELDS = [
+    "ordered_qty",
+    "unit_price",
+    "discount_amount",
+    "tax_amount",
+  ];
   // One text/date input of a line. Declared in the order they should be
   // tabbed through — quantity beside its unit, then the money, then the date.
   function renderLineField(
@@ -478,7 +513,9 @@ export function PurchaseOrderForm({
               ) : (
                 <Input
                   type="text"
-                  inputMode={LINE_DECIMAL_FIELDS.includes(name) ? "decimal" : undefined}
+                  inputMode={
+                    LINE_DECIMAL_FIELDS.includes(name) ? "decimal" : undefined
+                  }
                   {...lineField}
                   value={String(lineField.value)}
                 />
@@ -530,7 +567,11 @@ export function PurchaseOrderForm({
                       onValueChange={field.onChange}
                       options={siteOptions}
                       disabled={!supplierIdNumber}
-                      placeholder={supplierIdNumber ? "Order from the supplier's default" : "Select a supplier first"}
+                      placeholder={
+                        supplierIdNumber
+                          ? "Order from the supplier's default"
+                          : "Select a supplier first"
+                      }
                       searchPlaceholder="Search sites…"
                       emptyText="No sites on file for this supplier yet."
                       className="flex-1"
@@ -559,7 +600,11 @@ export function PurchaseOrderForm({
               <FormItem>
                 <FormLabel>Order date</FormLabel>
                 <FormControl>
-                  <DateField value={field.value} onChange={field.onChange} onBlur={field.onBlur} />
+                  <DateField
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -572,7 +617,11 @@ export function PurchaseOrderForm({
               <FormItem>
                 <FormLabel>Expected delivery</FormLabel>
                 <FormControl>
-                  <DateField value={field.value} onChange={field.onChange} onBlur={field.onBlur} />
+                  <DateField
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -673,7 +722,11 @@ export function PurchaseOrderForm({
                     </FormLabel>
                     <FormControl>
                       {name === "fx_rate_date" ? (
-                        <DateField value={field.value} onChange={field.onChange} onBlur={field.onBlur} />
+                        <DateField
+                          value={field.value}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                        />
                       ) : (
                         <Input
                           type="text"
@@ -820,14 +873,23 @@ export function PurchaseOrderForm({
           description="Check the details below, then save the draft."
         >
           <DetailField label="Supplier">
-            {supplierOptions.find((option) => option.value === supplierId)?.label}
+            {
+              supplierOptions.find((option) => option.value === supplierId)
+                ?.label
+            }
           </DetailField>
-          <DetailField label="Order date">{form.watch("order_date") || undefined}</DetailField>
+          <DetailField label="Order date">
+            {form.watch("order_date") || undefined}
+          </DetailField>
           <DetailField label="Expected delivery">
             {form.watch("expected_delivery_date") || undefined}
           </DetailField>
           <DetailField label="Currency">
-            {currencyOptions.find((option) => option.value === form.watch("currency_id"))?.label}
+            {
+              currencyOptions.find(
+                (option) => option.value === form.watch("currency_id"),
+              )?.label
+            }
           </DetailField>
           <DetailField label="Notes" fullWidth>
             {form.watch("notes") || undefined}
@@ -836,7 +898,8 @@ export function PurchaseOrderForm({
             <ul className="space-y-1">
               {watchedLines.map((line, index) => (
                 <li key={index} className="text-sm">
-                  {itemOptions.find((option) => option.value === line.item_id)?.label ?? line.description}
+                  {itemOptions.find((option) => option.value === line.item_id)
+                    ?.label ?? line.description}
                   {" — "}
                   {line.ordered_qty} × {line.unit_price}
                 </li>
@@ -858,8 +921,16 @@ export function PurchaseOrderForm({
       >
         Back
       </Button>
-      <Button type="button" onClick={handleFooterAction} disabled={isSubmitting}>
-        {step < WIZARD_STEPS.length - 1 ? "Next" : isSubmitting ? "Saving…" : "Save draft"}
+      <Button
+        type="button"
+        onClick={handleFooterAction}
+        disabled={isSubmitting}
+      >
+        {step < WIZARD_STEPS.length - 1
+          ? "Next"
+          : isSubmitting
+            ? "Saving…"
+            : "Save draft"}
       </Button>
     </>
   );
@@ -899,7 +970,9 @@ export function PurchaseOrderForm({
               <History aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
               <div className="min-w-0 text-sm">
                 <p className="font-medium">
-                  {confirmingStartOver ? "Discard everything you've entered?" : "Continuing your unfinished purchase order"}
+                  {confirmingStartOver
+                    ? "Discard everything you've entered?"
+                    : "Continuing your unfinished purchase order"}
                 </p>
                 <p className="text-xs opacity-80">
                   {confirmingStartOver
@@ -910,16 +983,32 @@ export function PurchaseOrderForm({
             </div>
             {confirmingStartOver ? (
               <div className="flex items-center gap-2">
-                <Button type="button" size="sm" variant="destructive" onClick={startOver}>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="destructive"
+                  onClick={startOver}
+                >
                   <RotateCcw />
                   Yes, start over
                 </Button>
-                <Button type="button" size="sm" variant="outline" autoFocus onClick={() => setConfirmingStartOver(false)}>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  autoFocus
+                  onClick={() => setConfirmingStartOver(false)}
+                >
                   Keep it
                 </Button>
               </div>
             ) : (
-              <Button type="button" size="sm" variant="outline" onClick={() => setConfirmingStartOver(true)}>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setConfirmingStartOver(true)}
+              >
                 <RotateCcw />
                 Start over
               </Button>
@@ -927,7 +1016,11 @@ export function PurchaseOrderForm({
           </div>
         )}
         {isCreate ? (
-          <WizardShell steps={WIZARD_STEPS} activeIndex={step} footer={wizardFooter}>
+          <WizardShell
+            steps={WIZARD_STEPS}
+            activeIndex={step}
+            footer={wizardFooter}
+          >
             {sections}
           </WizardShell>
         ) : (
@@ -948,7 +1041,9 @@ export function PurchaseOrderForm({
           onOpenChange={setAddingSite}
           onCreated={(site) => {
             sitesQuery.refetch();
-            form.setValue("supplier_site_id", String(site.id), { shouldValidate: true });
+            form.setValue("supplier_site_id", String(site.id), {
+              shouldValidate: true,
+            });
           }}
         />
       )}
