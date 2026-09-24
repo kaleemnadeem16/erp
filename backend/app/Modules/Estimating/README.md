@@ -1,12 +1,16 @@
 # Estimating
 
-Owns Phase 3's costing layer: company-defined rate dimensions and application rates, and
-formulations with versioning, customer overrides and cost roll-up. Overhead policies and
-assemblies land here in later Phase 3 slices.
+Owns Phase 3's costing layer: company-defined rate dimensions and application rates,
+formulations with versioning, customer overrides and cost roll-up, and assemblies (a sellable
+unit of work). Assembly today is Step 1 identity only — code/name/work UoM/margin and an optional
+`AssemblyGroup` classification; its own versions/components and the overhead-policy resolver that
+scopes against `AssemblyGroup` land in Steps 2–3 of the same phase.
 
 **Governed by:** [application-rates.md](../../../../docs/domain/application-rates.md),
 [formulations.md](../../../../docs/domain/formulations.md),
-[ADR 0009](../../../../docs/decisions/0009-company-defined-rate-dimensions.md) and
+[assemblies.md](../../../../docs/domain/assemblies.md),
+[ADR 0009](../../../../docs/decisions/0009-company-defined-rate-dimensions.md),
+[ADR 0049](../../../../docs/decisions/0049-assembly-group-overhead-scope.md) and
 [phase-3-estimating-core.md](../../../../docs/phases/phase-3-estimating-core.md).
 
 ## Owns
@@ -31,6 +35,11 @@ assemblies land here in later Phase 3 slices.
 - `IngredientCostResolver` — leaf ingredient cost from stock valuation; supports exactly one
   configuration today (AVCO, company-wide `COMPANY_ITEM` pool scope) and fails loudly rather than
   guessing for FIFO/SPECIFIC items or a warehouse/batch-scoped pool
+- `Assembly`/`AssemblyGroup` — Step 1 identity only. Assembly has no output item (ADR 0008) and no
+  `assembly_versions`/`assembly_components` yet; every assembly stays DRAFT through this slice.
+  `AssemblyGroup` is flat, optional, company-defined classification (not the Inventory category
+  tree) that exists so Step 2's overhead-policy resolver has a real scope target
+  (`Assembly → AssemblyGroup → Company → none`, ADR 0049)
 
 ## Does not own
 
@@ -38,8 +47,9 @@ assemblies land here in later Phase 3 slices.
   references them (`App\Support\UomConversionService` handles a formulation line specified in a
   different-but-convertible unit than its input item's stock UoM or a nested formulation's output
   UoM)
-- Overhead policies, assemblies, full cost roll-up across all five component kinds — later Phase
-  3 slices, same module
+- Overhead policies (the resolver itself) and the remaining Assembly slice (versions, components,
+  full cost roll-up across all five component kinds) — Steps 2 and 3 of this same phase, same
+  module
 - Anything that issues a document or posts stock — Phase 4/5. Physically producing a
   `SEMI_FINISHED` item is Phase 5's `work_orders`, not this module
 
@@ -60,6 +70,14 @@ version's state; only `UpdateFormulationVersion` (DRAFT only) and `DeleteFormula
 (DRAFT only) touch a version's content. `ActivateFormulationVersion` is the sole place a
 version's status/effective dates change — it supersedes whatever was previously ACTIVE, closing
 its period the instant the new one opens.
+
+`CreateAssemblyGroup`/`UpdateAssemblyGroup`/`ArchiveAssemblyGroup` and
+`CreateAssembly`/`UpdateAssembly`/`ArchiveAssembly` are plain CRUD, same shape as the rate
+dimension actions. `assembly_group_id` is deliberately mutable — no repoint guard, unlike
+`Formulation`'s `output_item_id`/`customer_id` — since it is a classification, not identity.
+`ArchiveAssemblyGroup` hard-deletes (blocked by FK while any assembly still refers to it, same as
+`RateDimension`); `ArchiveAssembly` sets `status = ARCHIVED` (same as `ArchiveFormulation`) since
+Assembly already carries a status column ahead of Step 3's activation mechanism needing it.
 
 ## Events
 

@@ -137,13 +137,16 @@ module-scoped demo data (`database/seeders/Demo/Estimating/`, per
       calculation, management UI (create/edit, version list with activate/delete, nested-formulation
       breakdown showing wastage compounding per level), demo scenarios covering nesting,
       versioning and customer override — 2026-09-23
-- [ ] **Step 1 — Minimal Assembly foundation** — `assemblies` (identity, status) and
-      `assembly_groups` (flat, company-scoped, optional classification) with the optional
-      `assembly_group_id` relationship; company/tenant scoping and FK guards; `assembly_versions`
-      as an empty shell (no components yet — those are Step 3) so an assembly has a coherent
-      DRAFT→ACTIVE lifecycle to reference. Minimal Actions/API/UI/demo data to create and
-      reference these records — not the full costing feature. This exists specifically to give
-      overhead policies (Step 2) something real to scope against.
+- [x] **Step 1 — Minimal Assembly foundation** — `assemblies` (identity, status) and
+      `assembly_groups` (flat, company-scoped, optional classification) with the optional,
+      mutable `assembly_group_id` relationship (no repoint guard — a classification, not
+      identity); company/tenant scoping and FK guards. No `assembly_versions`/`assembly_components`
+      in this step — `overhead_policies.scope_id` (Step 2) points at `assemblies`/
+      `assembly_groups` rows directly, not at a version, so a version shell would have had no
+      referent yet; every assembly stays DRAFT through this slice. Minimal Actions/API/UI/demo
+      data (one grouped, one ungrouped assembly) to create and reference these records — not the
+      full costing feature. This exists specifically to give overhead policies (Step 2) something
+      real to scope against — 2026-09-24
 - [ ] **Step 2 — Overhead policies** — schema, the full v1 `Assembly → Assembly Group → Company →
       none` scope resolution (flat lookup at the group tier, no ancestor walk), five v1 drivers,
       version freeze-on-reference, mandatory-reason audit (`.policy-history.view`-style permission
