@@ -335,6 +335,8 @@ must not be forgotten once it does.
 
 ## Related
 
+- [material-resolution.md](material-resolution.md) — commercial packs versus lots, containers
+  and actual job consumption
 - [items.md](items.md) — what is stocked, and where `valuation_method` is chosen
 - [purchasing.md](purchasing.md) — which receipt documents originate purchase stock moves
 - [acquisition-costing.md](acquisition-costing.md) — provisional cost and later adjustments

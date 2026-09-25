@@ -110,6 +110,8 @@ practice and has no obvious default.
 
 ## Related
 
+- [material-resolution.md](material-resolution.md) — cost/price separation and planned material
+  snapshot boundary
 - [assemblies.md](assemblies.md) — what lines reference
 - [job-costing.md](job-costing.md) — what confirmation produces
 - [receivables.md](receivables.md) — invoicing against the job

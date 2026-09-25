@@ -27,6 +27,8 @@ Naming what's *out* prevents scope creep more effectively than naming what's in.
 
 - [ ] Task, small enough to finish in one sitting
 - [ ] …
+- [ ] Every new/changed action and screen has an explicit authorisation decision, registered
+      permissions, record/field scope and allowed/denied tests where applicable
 
 Tick these in the same commit as the work.
 

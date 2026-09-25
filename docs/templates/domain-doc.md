@@ -27,6 +27,12 @@ versions. Note nullable columns and their meaning — nullability usually encode
 Rules that aren't visible in the schema: resolution order, invariants, what happens on state
 change, what is immutable.
 
+## Authorisation and data scope
+
+Permissions for read/write/transition/override/history; which records and sensitive fields are
+visible; and any maker/checker or multi-stage approval requirements. Explicitly say when no
+separate permission is intended.
+
 ## Landmines
 
 Things that are easy to get wrong and expensive to fix. Be specific about the failure mode, not

@@ -110,13 +110,19 @@ tables and filters with no deploy.
 
 #### Config-driven workflow
 
+This is a planned extension-point sketch, not an implemented engine:
+
 ```
 workflow_states       entity_type, code, label, is_initial, is_terminal, sort_order
 workflow_transitions  from_state_id, to_state_id, required_permission, guard_class
 ```
 
-Statuses and permitted transitions are data, not a hardcoded enum. A customer needing an extra
-approval step configures it.
+Statuses and permitted transitions may eventually be data rather than a hardcoded enum. The two
+tables above are enough for a simple permitted transition, but **not** for maker/checker,
+multi-stage or multi-department approval: those also need versioned policies, steps, counts,
+routing inputs and immutable decisions. See
+[approval-workflows.md](approval-workflows.md); do not implement multiple approvals by putting
+more meaning into one `required_permission` column.
 
 ---
 
@@ -210,3 +216,4 @@ concrete until a real second customer creates real evidence. See
 - [code-structure.md](code-structure.md)
 - [ADR 0041](../decisions/0041-progressive-inventory-location-capabilities.md)
 - [ADR 0049](../decisions/0049-assembly-group-overhead-scope.md)
+- [Approval workflows](approval-workflows.md)

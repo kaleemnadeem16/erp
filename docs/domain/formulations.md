@@ -163,6 +163,8 @@ case, not by inspection.
 
 ## Related
 
+- [material-resolution.md](material-resolution.md) — keeps technical composition separate from
+  source and pack selection
 - [application-rates.md](application-rates.md) — the layer above
 - [stock.md](stock.md) — where ingredient cost comes from
 - [assemblies.md](assemblies.md) — how formulations enter a sellable price

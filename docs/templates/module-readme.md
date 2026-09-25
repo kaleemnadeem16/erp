@@ -23,6 +23,12 @@ This section prevents more wasted searching than the one above it.
 
 Not every action — the ones someone would look for.
 
+## Authorisation
+
+List capability permissions, record/data scope and any independent-actor or approval rules. State
+explicitly when authentication alone is intentional. Follow
+[authorization.md](../../../docs/architecture/authorization.md)'s per-feature checklist.
+
 ## Events
 
 **Emits**

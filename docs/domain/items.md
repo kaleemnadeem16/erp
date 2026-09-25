@@ -222,6 +222,8 @@ supplier-account and optional purchase-UoM references.
 
 ## Related
 
+- [material-resolution.md](material-resolution.md) — proposed item/UoM and commercial-package
+  boundaries pending decisions
 - [units-of-measure.md](units-of-measure.md)
 - [stock.md](stock.md) — valuation of stocked items
 - [formulations.md](formulations.md) — items as recipe inputs and outputs

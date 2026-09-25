@@ -44,6 +44,16 @@ validated `OPEN_PURCHASE_ORDER` staging rows, creates issued POs for remaining c
 marks those linked batches committed. It is permissioned and idempotent; Inventory remains the
 owner of cutover orchestration and finalisation.
 
+## Authorisation
+
+Purchasing policy management and policy-history viewing use separate permissions; cutover commit
+checks `purchasing.cutover.commit`. Ordinary item-supplier, PO, receipt and QA endpoints are
+currently authenticated but do not yet have a complete capability permission matrix. PO approval
+does not exist: DRAFT moves directly to ISSUED. Before adding it, follow
+[authorization.md](../../../../docs/architecture/authorization.md) and
+[approval-workflows.md](../../../../docs/architecture/approval-workflows.md); create/edit,
+submit, approve, issue, receive, inspect, reverse and history access must each be considered.
+
 ## Events
 
 No events emitted yet.
@@ -54,3 +64,4 @@ No events emitted yet.
 - [Inventory module](../Inventory/README.md)
 - [Parties module](../Parties/README.md)
 - [ADR 0042](../../../../docs/decisions/0042-immutable-item-supplier-identity.md)
+- [Approval workflows](../../../../docs/architecture/approval-workflows.md)

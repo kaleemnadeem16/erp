@@ -81,6 +81,8 @@ their own. Display UoM is a presentation preference, like display currency
 
 ## Related
 
+- [material-resolution.md](material-resolution.md) — item-specific conversion, pack and
+  quantity-policy gaps across later phases
 - [items.md](items.md) — each item has a stock UoM
 - [application-rates.md](application-rates.md) — cross-dimension consumption
 - [architecture/invariants.md](../architecture/invariants.md)

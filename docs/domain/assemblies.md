@@ -244,6 +244,8 @@ whole company being forced onto one.
 
 ## Related
 
+- [material-resolution.md](material-resolution.md) — the pending preview boundary from standard
+  requirement through plan, price and actual
 - [application-rates.md](application-rates.md) · [formulations.md](formulations.md)
 - [items.md](items.md#resource-rates) — `resource_rates`, the LABOUR/PLANT costing source
 - [sales-pipeline.md](sales-pipeline.md) — where assemblies become quotation lines

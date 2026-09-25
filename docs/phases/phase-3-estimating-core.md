@@ -194,7 +194,10 @@ module-scoped demo data (`database/seeders/Demo/Estimating/`, per
       breakdown (material/labour/plant/subcontract/overhead, resolved tier/driver, cost/sell per
       unit) — see [assemblies.md#cost-roll-up](../domain/assemblies.md#cost-roll-up) — but not
       this item's ad-hoc quantity/dimension-value/customer selection or live application-rate
-      default-fallback visibility; still open
+      default-fallback visibility; still open. Before implementation, resolve the Phase 3
+      boundary questions in [material-resolution.md](../domain/material-resolution.md) and
+      [Q17–Q21/Q25](../OPEN-QUESTIONS.md#q17--phase-3-source-and-pack-resolution-scope); the preview
+      must not accidentally absorb Purchasing, Sales pricing or Phase 5 inventory execution
 - [x] Exclusion-constraint pattern applied consistently across formulation, overhead-policy and
       assembly version tables. The recursive-CTE roll-up originally proposed here was
       deliberately not used for formulations — see formulations.md's "Nesting" — so this item
@@ -256,3 +259,5 @@ Tick these in the same commit as the work.
   versioned-immutability, both load-bearing throughout this phase
 - [job-costing.md](../domain/job-costing.md) — where this phase's output gets consumed physically
   (Phase 5)
+- [material-resolution.md](../domain/material-resolution.md) — cross-phase requirement, sourcing,
+  pack, cost, price and actual-consumption boundaries pending ADR decisions

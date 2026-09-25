@@ -177,6 +177,14 @@ line short-close endpoints. Issue allocates the gapless number and freezes item/
 quantity/UoM, monetary and FX snapshots. Company purchasing defaults use one typed settings row;
 reading that singleton initialises its database defaults through an Action when necessary.
 
+Purchase-order approval is **not implemented**: there is no `SUBMITTED`/`APPROVED` state,
+approval chain, issuing actor or approval policy, and ordinary PO endpoints are currently
+authenticated rather than capability-permissioned. Before operational use relies on issuance,
+resolve [Q28](../OPEN-QUESTIONS.md#q28--purchase-order-approval-policy) and apply the shared
+[approval-workflow boundary](../architecture/approval-workflows.md). Creating/editing, submitting,
+approving and issuing must be independently grantable powers; approval eligibility must not be
+inferred from access to the PO screen.
+
 ### User interface
 
 The Phase 2 operational purchasing UI is being delivered as one continuous PO→receipt→QA journey
@@ -336,6 +344,10 @@ corrections are governed by [ADR 0040](../decisions/0040-control-backdated-stock
 
 ## Related
 
+- [Material resolution](material-resolution.md) — supplier packaging/pricing ownership and its
+  read-only use by Estimating
+- [Approval workflows](../architecture/approval-workflows.md) — maker/checker and multi-stage PO
+  approval boundary
 - [Acquisition costing](acquisition-costing.md)
 - [Stock](stock.md)
 - [Parties](parties.md) · [Items](items.md)

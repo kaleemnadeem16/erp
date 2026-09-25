@@ -30,6 +30,8 @@ three relevant ones without pulling in the rest.
 | Find where something lives | The module `README.md`, then `docs/reference/` *(generated in Phase 0; does not exist yet)* |
 | Write a migration | [database.md](docs/architecture/database.md) + [multi-tenancy.md](docs/architecture/multi-tenancy.md) |
 | Add an API endpoint | [api-conventions.md](docs/architecture/api-conventions.md) |
+| Add/change any business action, endpoint or screen | [authorization.md](docs/architecture/authorization.md) — complete the checklist even when no new permission is needed |
+| Add an approval or controlled transition | [approval-workflows.md](docs/architecture/approval-workflows.md) |
 | Write backend code | [code-structure.md](docs/architecture/code-structure.md) |
 | Start a phase | The matching file in [docs/phases/](docs/phases/) |
 | Change an existing decision | The relevant ADR in [docs/decisions/](docs/decisions/) |

@@ -1,6 +1,6 @@
 # Project Status
 
-**Updated:** 2026-09-24
+**Updated:** 2026-09-25
 **Current phase:** Phase 3 — Estimating core (in progress; two vertical slices shipped
 2026-09-23 — rate dimensions/application rates, then formulations with versioning, customer
 overrides and nested cost roll-up, now followed by the 2026-09-24 draft-editing, human-readable
@@ -11,8 +11,10 @@ history, unit-defaulting and item-navigation usability pass. Before starting Ass
 the resulting Assembly plan — foundation, overhead resolver, then the remaining
 assembly_versions/assembly_components cost roll-up — are now shipped (2026-09-24/25); the
 originally-scoped ad-hoc **assembly cost preview** (live application-rate resolution with
-default-fallback visibility) remains open, tracked in
-[phase-3-estimating-core.md](phases/phase-3-estimating-core.md)). Phase 2's remaining
+default-fallback visibility) remains open. Its cross-module quantity/sourcing/pack/cost/price
+baseline is now recorded in [material-resolution.md](domain/material-resolution.md), with Q17–Q21
+and Q25 requiring product decisions before its ADR is finalised; see
+[phase-3-estimating-core.md](phases/phase-3-estimating-core.md). Phase 2's remaining
 acceptance criteria depend on later phases' correction-package work and are picked up alongside
 Phase 3; UI polish on existing Phase 1/2 screens continues in parallel. Phase 1 — Master data is
 complete. Phase 0 — Foundation is done, including production deployment (2026-09-22, ahead of
@@ -79,8 +81,8 @@ cross-team re-confirmation.
 
 ## Blocked / awaiting input
 
-Nothing blocking. Open questions: [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) — 0 blocking, 3
-non-blocking (second customer profile; cross-entity master data; movement posting actor).
+The Phase 3 Material Resolution / Assembly Preview ADR is awaiting Q17–Q21 and Q25. Open
+questions: [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) — 6 blocking, 9 non-blocking.
 
 ## Roadmap at a glance
 

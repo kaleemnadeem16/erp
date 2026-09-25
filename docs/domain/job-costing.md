@@ -129,5 +129,7 @@ execution for what was actually a scope change.
 
 ## Related
 
+- [material-resolution.md](material-resolution.md) — standard/planned/actual material states and
+  Phase 5 ownership
 - [sales-pipeline.md](sales-pipeline.md) · [assemblies.md](assemblies.md)
 - [stock.md](stock.md) · [receivables.md](receivables.md)

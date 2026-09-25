@@ -9,7 +9,12 @@ Questions do not linger once resolved.
 
 ## Blocking
 
-None. Q14 (backdated stock receipts) was resolved on 2026-09-01 and its final reviewed
+Q17–Q21 and Q25 block finalising the Phase 3 Material Resolution / Assembly Preview ADR. Their shared
+research baseline and cross-module context are recorded in
+[material-resolution.md](domain/material-resolution.md); answer them one by one rather than
+letting a paint/coatings example silently define the generic model.
+
+Q14 (backdated stock receipts) was resolved on 2026-09-01 and its final reviewed
 consolidation is
 [ADR 0040](decisions/0040-control-backdated-stock-recalculation-and-corrections.md), with AVCO pool
 scope remaining separately governed by ADR 0039.
@@ -18,6 +23,58 @@ Q1, Q2 and Q3 were resolved on 2026-08-10 — see
 [ADR 0023](decisions/0023-retention-retainage-enabled.md),
 [ADR 0024](decisions/0024-onboarding-base-currency-and-fiscal-year.md) and
 [ADR 0025](decisions/0025-configurable-tax-engine.md).
+
+### Q17 — Phase 3 source and pack resolution scope
+**Blocks:** The Material Resolution / Assembly Preview ADR and its final Phase 3 scope
+
+Should Phase 3 introduce item-specific conversions, commercial package definitions and enough
+Purchasing-owned supplier-pack/offer data to propose costed source allocations? Or should the
+preview stop at a standard/planned quantity and current internal cost until Phase 4/5?
+
+If included, the resolver may suggest cheapest, minimum-surplus or preferred allocations, but a
+suggestion remains ephemeral. Only a user-adopted plan or issued-document snapshot becomes a
+historical fact, and Phase 3 never reserves stock.
+
+### Q18 — Audit requirements for planned quantity adjustments
+**Blocks:** The standard → planned quantity contract in the preview and later quotation revision
+
+Must every transaction-specific departure from the calculated standard carry a reason and actor,
+or only adjustments above a threshold/policy? The system must preserve standard, planned and
+actual independently; this question decides the audit burden, not whether the values are kept.
+
+### Q19 — Default ranking for source and pack proposals
+**Blocks:** Deterministic proposal behaviour if Q17 includes proposals in Phase 3
+
+What is the default ranking: lowest estimated cost, least surplus, preferred supplier/package,
+earliest availability, or a configurable weighted policy? The result must expose why it won and
+allow a user selection without turning the rejected suggestions into history.
+
+### Q20 — Item divisibility and quantity increments
+**Blocks:** Item-specific conversion and allocation schema
+
+Should `COUNT` default to whole units, or should fraction/whole-unit behaviour always be an
+item-and-UoM rule? Credible cases include indivisible machines, fractional bulk pieces, tablets,
+sheets and measured remnants. The current receipt-only inference that every `COUNT` UoM is
+integral is not a coherent system-wide policy.
+
+### Q21 — Phase 4 selling-price strategy baseline
+**Blocks:** The boundary between Phase 3 cost output and Phase 4 customer price resolution
+
+Which strategies ship first: maintained fixed/customer price lists, cost + markup/margin,
+standard rate per work unit, manual override, or some ordered combination? Decide the default and
+fallback rules, when dynamic prices recalculate, when maintained prices remain fixed, and which
+price/quotation rounding policies apply. Internal cost must remain independent of customer price.
+
+### Q25 — Material-resolution permissions and sensitive fields
+**Blocks:** The Material Resolution / Assembly Preview ADR and preview API/UI contract
+
+Which capabilities need independent permissions in the first preview: viewing internal cost and
+supplier offers, running the preview, adjusting planned quantity, selecting a source/pack plan,
+overriding cost, overriding selling price and viewing resolution history? Decide which fields a
+basic estimator may see, whether cost/margin is restricted, and which adopted overrides require
+approval rather than permission alone. Candidate names in
+[material-resolution.md](domain/material-resolution.md#authorisation-impact) are illustrative
+until this is answered.
 
 ---
 
@@ -72,6 +129,55 @@ posted by a future endpoint would identify its actor only through its source doc
 conventions. Decide whether the movement boundary
 should stamp `posted_by` itself (one column, uniform trail) or whether source-document actors
 remain the single source of truth.
+
+### Q22 — Physical container granularity
+**Blocks:** Nothing in Phase 3; decide before Phase 5 implements reservations and job issues
+
+Must the first Phase 5 inventory-execution slice track individual opened drums, rolls, coils,
+cartons or returnable containers, or is partial quantity by lot/location sufficient initially?
+A commercial pack definition, a received traceability lot and a physical container are separate
+concepts even when one receipt happens to create one of each.
+
+### Q23 — Variable-content and catch-weight packages
+**Blocks:** Nothing in Phase 3 unless Q17 includes these packages in source proposals
+
+Do first-generation package records assume fixed contained quantity, or must receipt record an
+actual quantity per container (catch weight, variable-length rolls, partly filled drums)? The
+answer affects item packaging, receipt capture, labels and later container balances.
+
+### Q24 — Phase 5 material exceptions
+**Blocks:** Nothing in Phase 3; decide before job material issue/return/scrap design
+
+Which exceptions must ship in the first Phase 5 slice: customer-supplied/free-issue material,
+approved substitutes, recoverable scrap, reusable remnants and returnable containers? These must
+not be collapsed into ordinary purchased consumption because ownership, value and availability
+differ.
+
+### Q26 — Organisational and record-level access scope
+**Blocks:** Department/site/warehouse/assigned-record visibility and delegated administration
+
+What organisational structure should access follow: departments, branches, sites, warehouses,
+cost centres, project teams or a composable organisation-unit hierarchy? Define whether users may
+see own, assigned, unit or all-company records and whether one user can act in several units.
+Spatie Teams currently scopes assignments by `company_id`; it is groundwork, not this record-scope
+model. See [authorization.md](architecture/authorization.md#teams-and-organisational-scope).
+
+### Q27 — Shared approval workflow contract
+**Blocks:** The first configurable multi-stage approval implementation
+
+Should Purchase Orders provide the first concrete workflow and then extract a shared approval
+contract, or should a cross-module engine be built first? Decide the minimum shared semantics for
+sequential/parallel steps, distinct approver counts, thresholds, expiry, delegation, rejection,
+resubmission and policy-version snapshots. See
+[approval-workflows.md](architecture/approval-workflows.md).
+
+### Q28 — Purchase-order approval policy
+**Blocks:** Introducing PO submission/approval before operational purchasing relies on issuance
+
+Which PO approvals are required by amount, currency, department/site, supplier/category or other
+risk; may the creator submit, may an approver also issue, how many independent approvers are
+needed, and what happens on rejection or draft revision? Today any authenticated caller reaching
+the endpoint can create and issue a PO; DRAFT → ISSUED has no approval fact.
 
 ---
 
