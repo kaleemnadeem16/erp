@@ -29,14 +29,23 @@ customer selling price are separate results as well.
   `factor_to_base decimal(19,9)`. Conversion rounds to scale 9; stock transaction quantities are
   generally stored at scale 4, while estimating quantities use scale 6.
 - Fractional quantities are generally possible. Serial-controlled movements require quantity 1.
-  Receipt tolerance currently treats every `COUNT` UoM as integral, but there is no item-level
-  divisibility rule.
-- There is no sales UoM, item-specific conversion, quantity increment, commercial pack, or
-  physical-container model.
+- **[ADR 0050](../decisions/0050-item-specific-uom-conversion-and-divisibility.md) has decided,
+  but not yet implemented,** the item-specific conversion and divisibility model: an
+  `item_quantity_units` override table (checked before the global service, may cross UoM
+  dimensions) plus a `quantity_precision` field on the item's own stock UoM and on each override
+  row. Divisibility is always item(-and-UoM), never inferred from `dimension`. Until this is
+  implemented, `PostGoodsReceipt`'s ad hoc `dimension === 'COUNT'` floor on over-receipt tolerance
+  remains the only place quantity is treated as integral, and box/each-style purchase UoM
+  conversion (`item_suppliers.purchase_uom_id`) does not actually work — `BuildPurchaseOrderLineAttributes`
+  still only calls the global, dimension-locked `UomConversionService`.
+- There is no sales UoM, commercial pack, supplier-pack/offer pricing, or physical-container
+  model. Those remain [Q17](../OPEN-QUESTIONS.md#q17--phase-3-commercial-package-and-costed-source-proposal-scope)
+  and [Q23](../OPEN-QUESTIONS.md#q23--variable-content-and-catch-weight-packages)'s to decide.
 
 Global conversions correctly express litre↔millilitre, kilogram↔gram and metre↔millimetre.
 They must not be used for item-dependent relationships such as each↔box, tablet↔strip↔carton,
-metre↔roll, sheet↔m² or drum↔litre. Those depend on the item, variant or package.
+metre↔roll, sheet↔m² or drum↔litre. Those depend on the item, variant or package — ADR 0050
+covers exactly this set of cases.
 
 ### Purchasing and stock
 
@@ -108,12 +117,13 @@ meaning. Turning an advanced screen off must not reinterpret stored transactions
 
 ## Candidate domain shapes — not yet decisions
 
-```text
-item_quantity_units
-  id, company_id, item_id, uom_id
-  base_qty, base_uom_id
-  quantity_increment, allow_fraction
+The item-specific conversion table this section used to sketch here is now **decided** — see
+[ADR 0050](../decisions/0050-item-specific-uom-conversion-and-divisibility.md) for its final shape
+(`item_quantity_units` plus `items.quantity_precision`), which differs slightly from the earlier
+candidate. The shapes below remain undecided candidates, pending
+[Q17](../OPEN-QUESTIONS.md#q17--phase-3-commercial-package-and-costed-source-proposal-scope).
 
+```text
 item_packagings
   id, company_id, item_id
   code, name, contained_qty, contained_uom_id
@@ -196,7 +206,16 @@ rounding event must identify its policy and expose pre-/post-rounding values whe
 
 - Treating a pack as a global UoM corrupts conversion semantics across items.
 - Treating `COUNT` as synonymous with indivisible produces inconsistent behaviour; divisibility
-  belongs to the item/UoM relationship.
+  belongs to the item/UoM relationship — resolved by
+  [ADR 0050](../decisions/0050-item-specific-uom-conversion-and-divisibility.md), not yet
+  implemented.
+- Letting an item-specific conversion's cross-dimension allowance (ADR 0050) leak into the global
+  `UomConversionService` — the global service's same-dimension-only rule is unchanged; only
+  `item_quantity_units` may bridge dimensions, and only for one specific item.
+- Treating catch weight as "a pack conversion that happens to vary" and trying to extend
+  `item_quantity_units` to cover it — a fixed factor cannot represent a quantity that varies per
+  physical container; catch weight needs the structurally different dual-quantity mechanism
+  [Q23](../OPEN-QUESTIONS.md#q23--variable-content-and-catch-weight-packages) is still deciding.
 - Treating a batch as a physical container cannot distinguish two opened drums from one lot.
 - Letting formulation depend on supplier pack size mixes technical standards with sourcing.
 - Using Assembly margin fields as the entire price engine couples internal cost to customer
@@ -236,11 +255,34 @@ the ERP design:
 - [Odoo: sales price lists](https://www.odoo.com/documentation/18.0/applications/sales/sales/products_prices/prices/pricing.html)
 - [Dynamics 365: estimated and actual production consumption](https://learn.microsoft.com/en-us/dynamics365/supply-chain/production-control/production-floor-execution-use)
 
+Added researching [ADR 0050](../decisions/0050-item-specific-uom-conversion-and-divisibility.md)
+(Q20 — item-specific conversion and divisibility):
+
+- [Oracle EBS PIM — UOM classes, standard vs. item-specific conversions](https://docs.oracle.com/cd/E18727_01/doc.121/e13450/T291651T291797.htm)
+- [Oracle Fusion SCM — `INV_UOM_CLASS_CONVERSIONS`, keyed per item](https://docs.oracle.com/en/cloud/saas/supply-chain-and-manufacturing/25d/oedsc/invuomclassconversions-27557.html)
+- [Oracle Fusion SCM — Fixed Lot Multiple](https://docs.oracle.com/en/cloud/saas/supply-chain-and-manufacturing/25c/famml/how-specifying-the-fixed-lot-multiple-affects-min-max-planning.html)
+- [SAP Library — Material Master, alternative units of measure](https://help.sap.com/saphelp_470/helpdata/en/ff/515f4349d811d182b80000e829fbfe/content.htm)
+- [SAP Library — EAN/UPC assigned per unit of measure](https://help.sap.com/saphelp_me61/helpdata/en/98/15c453f57eb44ce10000000a174cb4/content.htm)
+- [SAP Library — Catch Weight Management](https://help.sap.com/saphelp_globext607_10/helpdata/en/e5/1f8cbba6844be6b43dd79e1fece31b/content.htm)
+- [SAP Library — Rounding Profile](https://help.sap.com/saphelp_SCM700_ehp02/helpdata/en/af/2fc95360267614e10000000a174cb4/content.htm)
+- [NetSuite — Setting Up Units of Measure](https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_N2212143.html)
+- [NetSuite — Assigning Units of Measure to Items](https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_N2212390.html)
+- [NetSuite — Serial and Lot Inventory with Multiple Units of Measure](https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_N2214525.html)
+- [NetSuite — Reorder Multiple](https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_1504284487.html)
+- [Microsoft Learn — Business Central, Item Units of Measure / Quantity Rounding Precision](https://learn.microsoft.com/en-us/dynamics365/business-central/inventory-how-setup-units-of-measure)
+- [GS1 — Variable Measure Trade Item definition](https://support.gs1.org/support/solutions/articles/43000734396-what-is-a-variable-measure-trade-item-)
+- [GS1 — GTIN rule 138, variable measure varies in total weight](https://www.gs1.org/1/gtinrules/en/rule/138/trade-item-sold-in-variable-measure-varies-in-total-weight)
+- [GS1 Healthcare — GTIN Allocation Rules Standard](https://www.gs1.org/standards/gs1-healthcare-gtin-allocation-rules-standard/current-standard)
+- [GS1 US — Packaging Levels (each/inner pack/case/pallet)](https://www.help.gs1us.org/packaging-level)
+
 ## Decisions still open
 
-The canonical questions are [Q17–Q28 in OPEN-QUESTIONS.md](../OPEN-QUESTIONS.md#q17--phase-3-source-and-pack-resolution-scope).
-They cover the Phase 3 supplier/pack and permission boundaries, planned-override audit, proposal
-ranking, divisibility, Sales pricing defaults, physical-container granularity, variable-content
+Q20 was resolved 2026-09-25 by
+[ADR 0050](../decisions/0050-item-specific-uom-conversion-and-divisibility.md), which also
+narrowed Q17. The remaining canonical questions are
+[Q17–Q19, Q21–Q28 in OPEN-QUESTIONS.md](../OPEN-QUESTIONS.md#q17--phase-3-commercial-package-and-costed-source-proposal-scope).
+They cover the Phase 3 commercial-package/supplier-offer and permission boundaries, planned-override
+audit, proposal ranking, Sales pricing defaults, physical-container granularity, variable-content
 packs, Phase 5 material exceptions, organisational record scope and approval workflows. Resolve
 them one by one through researched ADRs; do not silently promote the candidate shapes above into
 implementation.
@@ -252,4 +294,4 @@ implementation.
 - [Stock](stock.md) · [Job costing](job-costing.md)
 - [Phase 3](../phases/phase-3-estimating-core.md) · [Progressive capability modes](../architecture/extensibility.md#progressive-capability-modes)
 - [Authorisation](../architecture/authorization.md) · [Approval workflows](../architecture/approval-workflows.md)
-- [ADR 0033](../decisions/0033-item-suppliers-relationship.md) · [ADR 0041](../decisions/0041-progressive-inventory-location-capabilities.md)
+- [ADR 0033](../decisions/0033-item-suppliers-relationship.md) · [ADR 0041](../decisions/0041-progressive-inventory-location-capabilities.md) · [ADR 0050](../decisions/0050-item-specific-uom-conversion-and-divisibility.md)

@@ -9,8 +9,8 @@ Questions do not linger once resolved.
 
 ## Blocking
 
-Q17–Q21 and Q25 block finalising the Phase 3 Material Resolution / Assembly Preview ADR. Their shared
-research baseline and cross-module context are recorded in
+Q17–Q19, Q21 and Q25 block finalising the Phase 3 Material Resolution / Assembly Preview ADR. Their
+shared research baseline and cross-module context are recorded in
 [material-resolution.md](domain/material-resolution.md); answer them one by one rather than
 letting a paint/coatings example silently define the generic model.
 
@@ -19,17 +19,26 @@ consolidation is
 [ADR 0040](decisions/0040-control-backdated-stock-recalculation-and-corrections.md), with AVCO pool
 scope remaining separately governed by ADR 0039.
 
+Q20 (item divisibility and quantity increments) was resolved on 2026-09-25 — see
+[ADR 0050](decisions/0050-item-specific-uom-conversion-and-divisibility.md), which also narrowed
+Q17 to the commercial-package/costed-proposal question below.
+
 Q1, Q2 and Q3 were resolved on 2026-08-10 — see
 [ADR 0023](decisions/0023-retention-retainage-enabled.md),
 [ADR 0024](decisions/0024-onboarding-base-currency-and-fiscal-year.md) and
 [ADR 0025](decisions/0025-configurable-tax-engine.md).
 
-### Q17 — Phase 3 source and pack resolution scope
+### Q17 — Phase 3 commercial-package and costed source-proposal scope
 **Blocks:** The Material Resolution / Assembly Preview ADR and its final Phase 3 scope
 
-Should Phase 3 introduce item-specific conversions, commercial package definitions and enough
-Purchasing-owned supplier-pack/offer data to propose costed source allocations? Or should the
-preview stop at a standard/planned quantity and current internal cost until Phase 4/5?
+[ADR 0050](decisions/0050-item-specific-uom-conversion-and-divisibility.md) settled that
+item-specific UoM conversions belong in the model regardless of Phase 3's preview scope —
+Purchasing already needs them to price box/each-style pack purchasing correctly, independent of
+whether a preview ever proposes anything. What remains open is narrower: should Phase 3 also
+introduce named, barcoded commercial package definitions and enough Purchasing-owned
+supplier-pack/offer data to propose costed source allocations? Or should the preview stop at a
+standard/planned quantity and current internal cost, with commercial packaging and supplier
+offers deferred to Phase 4/5?
 
 If included, the resolver may suggest cheapest, minimum-surplus or preferred allocations, but a
 suggestion remains ephemeral. Only a user-adopted plan or issued-document snapshot becomes a
@@ -48,14 +57,6 @@ actual independently; this question decides the audit burden, not whether the va
 What is the default ranking: lowest estimated cost, least surplus, preferred supplier/package,
 earliest availability, or a configurable weighted policy? The result must expose why it won and
 allow a user selection without turning the rejected suggestions into history.
-
-### Q20 — Item divisibility and quantity increments
-**Blocks:** Item-specific conversion and allocation schema
-
-Should `COUNT` default to whole units, or should fraction/whole-unit behaviour always be an
-item-and-UoM rule? Credible cases include indivisible machines, fractional bulk pieces, tablets,
-sheets and measured remnants. The current receipt-only inference that every `COUNT` UoM is
-integral is not a coherent system-wide policy.
 
 ### Q21 — Phase 4 selling-price strategy baseline
 **Blocks:** The boundary between Phase 3 cost output and Phase 4 customer price resolution
@@ -144,6 +145,13 @@ concepts even when one receipt happens to create one of each.
 Do first-generation package records assume fixed contained quantity, or must receipt record an
 actual quantity per container (catch weight, variable-length rolls, partly filled drums)? The
 answer affects item packaging, receipt capture, labels and later container balances.
+
+[ADR 0050](decisions/0050-item-specific-uom-conversion-and-divisibility.md) deliberately does not
+answer this: its item-specific conversion factor is fixed by definition and cannot represent a
+quantity that varies per physical container. Industry practice (SAP Catch Weight Management)
+models catch weight as two independently-recorded quantities per transaction — a count/handling
+unit and an actually-measured weight/volume — rather than a smarter conversion factor. That is a
+different mechanism, not an extension of ADR 0050's table, and remains this question's to design.
 
 ### Q24 — Phase 5 material exceptions
 **Blocks:** Nothing in Phase 3; decide before job material issue/return/scrap design

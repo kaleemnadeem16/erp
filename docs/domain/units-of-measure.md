@@ -49,8 +49,33 @@ is what makes the model work across industries.
 |---|---|
 | How many sqft in 5 sqm? | UoM conversion — arithmetic, universal |
 | How many sqm does 5 L cover? | Application rate — contextual, company-specific |
+| How many EA in 1 BOX of *this* item? | Item-specific conversion — fixed catalog fact, but item-owned (below) |
 
 Collapsing these into one table is the most common way this kind of model goes wrong.
+
+### Item-specific conversions (decided, not yet implemented)
+
+This table's global `factor_to_base` correctly expresses litre↔millilitre, kilogram↔gram and
+metre↔millimetre — the same ratio for every item. It cannot correctly express each↔box,
+tablet↔strip↔carton, metre↔roll, sheet↔m² or drum↔litre, because those ratios depend on the
+specific item, not the unit pair: one item's box holds 12 each, another's holds 24.
+[ADR 0050](../decisions/0050-item-specific-uom-conversion-and-divisibility.md) decided the
+mechanism for this — a per-(item, UoM) `item_quantity_units` override, resolved *before* falling
+back to this global service, never instead of it:
+
+1. An `item_quantity_units` row for this item and UoM, if one exists.
+2. Otherwise, if the two UoMs share a `dimension`, this service.
+3. Otherwise, fail — there is no conversion between an unrelated UoM and this item.
+
+**An item-specific conversion may cross dimensions** (a roll is `COUNT`, its length is `LENGTH`;
+a sheet is `COUNT`, its area is `AREA`) — the one deliberate exception to this file's own
+same-dimension-only rule, scoped to that override table alone. This service's own refusal to
+convert across dimensions for every other caller is unchanged.
+
+Divisibility (can a fractional quantity exist) is decided the same way: never inferred from
+`dimension` — `COUNT` does not mean indivisible — always an explicit, item(-and-UoM) rounding
+precision, defaulting to unrestricted. See ADR 0050 for the full reasoning and schema; not yet
+implemented.
 
 ### Precision
 
@@ -81,8 +106,10 @@ their own. Display UoM is a presentation preference, like display currency
 
 ## Related
 
-- [material-resolution.md](material-resolution.md) — item-specific conversion, pack and
-  quantity-policy gaps across later phases
+- [ADR 0050](../decisions/0050-item-specific-uom-conversion-and-divisibility.md) — item-specific
+  conversion and divisibility decision, not yet implemented
+- [material-resolution.md](material-resolution.md) — cross-module research baseline; remaining
+  commercial-package and supplier-offer gaps across later phases
 - [items.md](items.md) — each item has a stock UoM
 - [application-rates.md](application-rates.md) — cross-dimension consumption
 - [architecture/invariants.md](../architecture/invariants.md)

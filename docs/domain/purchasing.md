@@ -167,7 +167,11 @@ Original ordered quantity is immutable. A line can be explicitly short-closed; i
 quantity then becomes zero and later receipt is blocked unless a future audited reopen/revision
 action makes it receivable again. V1 over-receipt is `BLOCK` or `ALLOW_WITHIN_TOLERANCE`, resolved
 from PO-line override then company default and snapshotted on issue. It is checked cumulatively in
-pinned stock UoM; indivisible-item limits are floored. Above-tolerance approval is deferred.
+pinned stock UoM; today the tolerance ceiling is floored whenever the stock UoM's *dimension* is
+`COUNT` — an ad hoc stand-in, not a real divisibility rule.
+[ADR 0050](../decisions/0050-item-specific-uom-conversion-and-divisibility.md) decided the real
+rule (an explicit, item-and-UoM rounding precision, not a dimension inference) but it is not yet
+implemented. Above-tolerance approval is deferred.
 
 A future quick/direct-purchase screen may atomically create a receipt and invoice for convenience.
 It does not create a special document that lets an invoice alter stock.
@@ -297,8 +301,13 @@ a blank line date inherits the header date and the resolved value is stored on t
 planning snapshots never depend on later reinterpretation of a header default.
 
 Every quantity retains the document UoM, stock UoM and pinned conversion used when issued or
-posted. Changes to current UoM master data never recalculate historical documents. Conversion
-must remain within the same UoM dimension.
+posted. Changes to current UoM master data never recalculate historical documents. Today
+conversion must remain within the same UoM dimension — `BuildPurchaseOrderLineAttributes` only
+calls the global `UomConversionService`, so a genuine pack purchase UoM (a box of eaches, a roll
+of metres) is not actually usable yet, despite `item_suppliers.purchase_uom_id` existing since
+ADR 0033. [ADR 0050](../decisions/0050-item-specific-uom-conversion-and-divisibility.md) decided
+an item-specific conversion path that may cross dimensions for one specific item, checked before
+falling back to this same-dimension rule; not yet implemented.
 
 Every monetary row stores transaction and base-currency amounts with its pinned FX rate and rate
 reference. PO, receipt, supplier invoice and landed-cost documents can legitimately use different
@@ -354,6 +363,8 @@ corrections are governed by [ADR 0040](../decisions/0040-control-backdated-stock
 - [Units of measure](units-of-measure.md) · [Multi-currency](multi-currency.md)
 - [ADR 0035](../decisions/0035-separate-purchasing-operational-and-financial-facts.md)
 - [ADR 0043](../decisions/0043-control-purchase-order-receipt-and-qa-posting.md)
+- [ADR 0050](../decisions/0050-item-specific-uom-conversion-and-divisibility.md) — item-specific
+  purchase-UoM conversion, decided, not yet implemented
 - [Inventory cutover](inventory-cutover.md)
 - [Phase 2](../phases/phase-2-purchasing-stock.md)
 - [User-interface delivery](../architecture/user-interface.md)

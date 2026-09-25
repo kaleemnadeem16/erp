@@ -190,7 +190,11 @@ the application before saving.** See [database.md](../architecture/database.md).
 quantity. Block it once any stock move or document line references the item.
 
 **Assuming purchase UoM equals stock UoM.** Pigment is bought in 25 kg drums and consumed in
-grams. Purchase UoM is a property of the purchase line, not the item.
+grams. Purchase UoM is a property of the purchase line, not the item. Today this only works when
+purchase and stock UoM share a global dimension — genuine pack purchasing (a box of eaches, a
+roll of metres) needs the item-specific conversion decided in
+[ADR 0050](../decisions/0050-item-specific-uom-conversion-and-divisibility.md) and not yet
+implemented.
 
 **Supplier sourcing.** Approved suppliers are represented by Purchasing's company-scoped
 `item_suppliers` relationship, not a single column on `items`. Each relationship may carry the
@@ -225,6 +229,8 @@ supplier-account and optional purchase-UoM references.
 - [material-resolution.md](material-resolution.md) — proposed item/UoM and commercial-package
   boundaries pending decisions
 - [units-of-measure.md](units-of-measure.md)
+- [ADR 0050](../decisions/0050-item-specific-uom-conversion-and-divisibility.md) — item-specific
+  purchase-UoM conversion and divisibility, decided, not yet implemented
 - [stock.md](stock.md) — valuation of stocked items
 - [formulations.md](formulations.md) — items as recipe inputs and outputs
 - [assemblies.md](assemblies.md#cost-roll-up) — where `resource_rates` (LABOUR/PLANT pricing) is
