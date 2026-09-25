@@ -27,8 +27,10 @@ final class PermissionRegistry
         'inventory.recalculation.request', 'inventory.recalculation.approve',
         'inventory.recalculation.approve-high-risk', 'inventory.recalculation.execute',
         'inventory.recalculation.review-regeneration',
-        'purchasing.over-receipt-policy.manage', 'purchasing.policy-history.view',
+        'purchasing.over-receipt-policy.manage', 'purchasing.policy-history.view', 'purchasing.cutover.commit',
         'inventory.location-policy.manage', 'inventory.valuation-policy.manage', 'inventory.policy-history.view',
+        'inventory.negative-stock-policy.manage', 'inventory.backdating-horizon-policy.manage',
+        'inventory.recalculation-policy.manage',
         'estimating.overhead-policy.manage', 'estimating.policy-history.view',
     ];
 

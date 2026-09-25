@@ -147,7 +147,12 @@ size but will become a merge hotspot as modules grow; move to module contributor
 
 Required automated controls:
 
-1. every literal permission checked by backend code exists in the registered vocabulary;
+1. every literal permission checked by backend code exists in the registered vocabulary—enforced
+   by `tests/Architecture/PermissionCheckRegistrationTest.php`, which scans `app/` for every
+   authorisation-sink call (`->can()`, `->authorize()`, `hasPermissionTo()`, `hasAnyPermission()`,
+   `hasAllPermissions()`, `Gate::*`), including the one-hop local-variable indirection used by
+   `RequestNegativeStockOverride`, and fails if any literal permission name it finds is not in
+   `PermissionRegistry`;
 2. every registered permission has an owner/module and is either exercised or deliberately
    reserved;
 3. protected Actions have allowed/denied tests and, where relevant, scope and same-actor tests;
@@ -155,18 +160,6 @@ Required automated controls:
 5. the authenticated-user response exposes effective permissions and any safe scope labels needed
    by the SPA—never confidential policy internals;
 6. generated UI/client code does not invent permission strings independently.
-
-Current audit found four enforced permissions missing from `PermissionRegistry`:
-
-```text
-inventory.negative-stock-policy.manage
-inventory.backdating-horizon-policy.manage
-inventory.recalculation-policy.manage
-purchasing.cutover.commit
-```
-
-Do not treat the registry as complete until those are reconciled and the static vocabulary test
-exists.
 
 ## Per-feature authorisation checklist
 
@@ -191,7 +184,8 @@ result of forgetting the question.
 ### Strong foundation already present
 
 - Namespaced permissions, roles, additive direct grants and company-scoped Teams plumbing.
-- Production-safe, idempotent permission registration.
+- Production-safe, idempotent permission registration, proven complete against every literal
+  permission check in `app/` by an architecture test.
 - Action-level checks for high-risk Inventory workflows.
 - Proven maker/checker separation for cutover, negative openings, negative-stock approval and
   physical-count posting.
@@ -211,8 +205,9 @@ result of forgetting the question.
 - No client-side permission introspection exists, so most navigation and controls cannot yet be
   tailored before the API returns 403.
 - No role/permission administration UI or full role catalogue exists.
-- The registry is central despite the accepted module-owned-registration direction, and has the
-  four gaps listed above.
+- The registry is central despite the accepted module-owned-registration direction; that is
+  workable at the current size (see "Registration and maintenance standard" above) but will
+  become a merge hotspot as modules grow.
 
 The answer is therefore: **the RBAC base is good and reusable, but it is not by itself enough for
 multi-stage approvals or restricted data visibility.** Those can be added without replacing
