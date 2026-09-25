@@ -71,6 +71,7 @@ Lead → Opportunity → Quotation (revisions) → Job → Work Order → Invoic
 | [application-rates.md](application-rates.md) | Consumption per work unit, rate dimensions |
 | [assemblies.md](assemblies.md) | The sellable unit, cost roll-up, margin |
 | [material-resolution.md](material-resolution.md) | Cross-phase quantity, sourcing, pack, cost and price boundaries |
+| [inventory-packages.md](inventory-packages.md) | Package definitions, progressive physical tracking and internal-stock selection |
 
 ### Operations
 

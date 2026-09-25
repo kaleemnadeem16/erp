@@ -1,226 +1,140 @@
-# 0051 — Generate default mixed-pack cost plans; keep them non-binding
+# 0051 — Use internal-inventory package proposals in Phase 3; keep Purchasing separate
 
-- **Status:** proposed
-- **Date:** 2026-09-25
-- **Affects:** Phase 3 material resolution and assembly preview, Purchasing supplier terms,
-  item-master commercial packaging, Phase 4 quotation snapshots
+- **Status:** accepted
+- **Date:** 2026-09-26
+- **Affects:** Phase 3 material resolution and assembly preview, item packaging, Inventory,
+  Phase 4 quotation snapshots
 
 ## Context
 
-[Q17](../OPEN-QUESTIONS.md#q17--phase-3-commercial-package-and-costed-source-proposal-scope)
-asks whether the Phase 3 preview should stop at standard/planned material quantity and current
-internal cost, or introduce enough commercial-package and supplier-offer data to calculate a
-costed way of covering the requirement.
+Phase 3 must turn a calculated material requirement into a useful plan. If a job requires 6.5 L,
+the company may have an open 3.5 L remnant, sealed 1 L and 5 L packs, or no usable stock at all.
+The preview should recommend a practical combination while allowing the estimator to choose a
+different one.
 
-[ADR 0050](0050-item-specific-uom-conversion-and-divisibility.md) removed one source of ambiguity:
-item-specific UoM conversion and quantity precision are required independently of preview. A
-`BOX` may equal 12 of one item and 24 of another, and Purchasing already needs that conversion.
-What remains here is commercial identity and cost: which named/barcoded package a supplier sells,
-on what effective-dated terms, and what a Phase 3 estimate may infer from those facts.
+Earlier discussion mixed this need with supplier selection and purchase-price optimisation. That
+is a different process. A supplier catalogue or price proves neither current supplier stock nor
+which physical packages the company already owns. Purchasing decides how to replenish a shortage;
+Phase 3 first explains how current internal inventory could cover the requirement.
 
-The current repository cannot answer that reliably:
+[ADR 0050](0050-item-specific-uom-conversion-and-divisibility.md) supplies the fixed item-specific
+quantity conversion beneath package definitions. The existing stock ledger records quantities and
+value, but it cannot infer physical packs from an aggregate balance: after receiving three 5 L
+packs and issuing 7 L, an 8 L balance does not reveal whether one sealed 5 L pack and a 3 L remnant
+remain. [ADR 0052](0052-progressive-inventory-package-tracking.md) therefore defines progressive
+package tracking, and [ADR 0053](0053-explainable-inventory-package-selection-presets.md) defines
+the recommendation policy.
 
-- `item_suppliers` owns supplier SKU, preference, lead-time override, MOQ and purchase UoM, but
-  no price, validity period, currency, quantity break, order multiple or package association;
-- PO lines accept a transactional unit price and snapshot it on issue, but an unissued future PO
-  is not a reusable supplier-price source;
-- Assembly material costing uses a manual override, a nested formulation, or current AVCO. A new
-  or not-yet-stocked purchased item can therefore have no meaningful internal cost;
-- stock can represent partial quantities in lots/layers, but there is no physical-container model
-  and Phase 3 has no reservation, requirement date or location-allocation contract.
+Industry systems make the same conceptual distinctions. [Odoo separates product packaging from
+physical packages](https://www.odoo.com/documentation/18.0/applications/inventory_and_mrp/inventory/product_management/configure.html),
+while SAP models a handling unit as an identifiable physical packaging unit with contents
+([SAP Handling Units](https://help.sap.com/docs/SAP_ERP/39d6d7a325d04826b95328b25fad91ab/eee9c353b677b44ce10000000a174cb4.html)).
 
-Primary-source research supports a narrow middle boundary:
+## Decision
 
-- [Odoo distinguishes](https://www.odoo.com/documentation/18.0/applications/inventory_and_mrp/inventory/product_management/configure.html)
-  a product-specific commercial packaging definition (name, contained quantity, purchase/sales
-  applicability and barcode) from an individually tracked physical package. A packaging barcode
-  identifies a packaging *type*, not one physical pallet or drum.
-- [Odoo vendor price lists](https://www.odoo.com/documentation/18.0/applications/inventory_and_mrp/purchase/products/pricelist.html)
-  hold supplier-owned minimum quantity, price, lead time and ordering sequence, and use those facts
-  to default an RFQ/PO.
-- [Dynamics 365 planned BOM costing](https://learn.microsoft.com/en-us/dynamics365/supply-chain/cost-management/bom-calculation-groups)
-  can read purchase-price trade agreements or inventory cost as explicit alternative cost sources,
-  with fallback/warning policy rather than pretending one is the other.
-- Dynamics 365 places [automatic vendor selection by lowest price or shortest lead time](https://learn.microsoft.com/en-us/dynamics365/supply-chain/master-planning/planning-optimization/purchase-trade-agreement)
-  in master planning. Oracle likewise applies [minimum quantity and fixed-lot-multiple rules](https://docs.oracle.com/en/cloud/saas/supply-chain-and-manufacturing/25c/faupc/item-attributes-and-order-modifiers-for-supply-planning.html)
-  while generating planned orders. Those are supply-planning decisions, not basic cost-roll-up
-  arithmetic.
+### 1. Phase 3 proposes from internal inventory
 
-## Proposed decision
+Phase 3 will calculate an advisory material-package proposal from usable on-hand inventory. It may
+combine package sizes and open remnants. For a 6.5 L requirement it might recommend a 3.5 L open
+remnant plus three sealed 1 L packs, or one 5 L pack plus two 1 L packs, depending on the selected
+policy and what is actually available.
 
-### 1. Include fixed commercial packages and Purchasing-owned offers in the Phase 3 foundation
+The preview must show:
 
-Add a named commercial-package layer on top of ADR 0050's item-owned quantity conversion:
+- the standard requirement and any explicit planned adjustment;
+- which internal stock/package records are usable as of a stated time;
+- the recommended mix, alternatives, covered quantity, shortage and expected residual;
+- the internal inventory cost evidence, separately from customer selling price;
+- why the recommendation won and any limitations caused by the current tracking mode.
+
+The user may replace the recommendation with another valid available mix. The recommendation is
+never silently treated as the user's decision.
+
+### 2. Package identity is item master data; package state is Inventory data
+
+A fixed package definition is layered on ADR 0050's item-specific quantity conversion:
 
 ```text
 item_packagings
-  id, company_id, item_id
-  item_quantity_unit_id            -- fixed contained quantity comes from ADR 0050's factor
-  code, name
-  usage                            -- PURCHASE | SALE | BOTH
-  barcode nullable
-  active
-
-item_supplier_packagings
-  id, company_id, item_supplier_id, item_packaging_id
-  supplier_item_code nullable
-  minimum_order_qty nullable       -- expressed in this package/offer's ordering UoM
-  order_multiple nullable          -- distinct from item/UoM quantity precision
-  is_preferred
-  active
-
-supplier_item_prices
-  id, company_id, item_supplier_id
-  item_supplier_packaging_id nullable
-  price_uom_id
-  min_qty
-  unit_price decimal(19,4), currency_id
-  valid_from, valid_to nullable
+  id, company_id, item_id, item_quantity_unit_id
+  code, name, barcode nullable, active
 ```
 
-These names are the proposed conceptual shape, not migration-ready DDL. Acceptance still requires
-checking keys, overlap constraints, archival rules and which supplier terms remain defaults on
-`item_suppliers` versus package-specific overrides.
+This is a named kind of package such as “5 L can”, not a physical can. Inventory package-balance
+or container records identify what the company owns and how much remains. Lot/batch identity,
+package definition and physical container identity remain separate facts.
 
-The boundaries are firm:
+First-generation definitions have fixed content. Variable-content/catch-weight packages remain
+[Q23](../OPEN-QUESTIONS.md#q23--variable-content-and-catch-weight-packages).
 
-- Item master owns fixed package identity, quantity and barcode.
-- Purchasing owns supplier/package relationships, commercial terms and prices.
-- Estimating reads those facts through a resolution service; it does not own or silently rewrite
-  them.
-- A package is not a physical container, lot, reservation or stock balance.
-- First-generation packages are fixed-content only. Catch-weight/variable-content receipt facts
-  remain [Q23](../OPEN-QUESTIONS.md#q23--variable-content-and-catch-weight-packages).
+### 3. Purchasing starts at the shortage boundary
 
-### 2. Phase 3 proposes an explainable mixed-pack plan and lets the user replace it
+If internal inventory cannot cover the requirement, Phase 3 reports the uncovered quantity and
+the unavailable package choices. It does not select a supplier, claim supplier availability,
+create a purchase order or optimise procurement cash outlay.
 
-Preview uses the standard/planned requirement, reliable internal-availability facts and applicable
-supplier offers to generate a default material plan. A plan may combine pack sizes and, when the
-policy permits, suppliers:
+Supplier/package offers, effective-dated purchase prices, order multiples and replenishment
+recommendations remain Purchasing capabilities. They may later consume the shortage produced by
+material resolution, without changing the meaning of the Phase 3 inventory proposal.
 
-```text
-technical/standard requirement
-  → explicit planned requirement
-  → non-binding internal-stock contribution
-  → uncovered requirement
-  → one or more supplier/package plan lines
-  → total coverage and expected surplus
-  → estimated internal consumption cost and procurement cash outlay
-```
+### 4. The proposal is advisory until an execution workflow reserves stock
 
-If 6.5 L is required and one supplier offers 1 L, 5 L and 10 L packs, a valid suggestion or user
-selection may be one 5 L pack plus two 1 L packs. The output keeps coverage, expected surplus,
-normalised unit cost, estimated consumption cost and procurement cash outlay separate. The job is
-not silently charged for every purchased litre merely because Purchasing must buy complete packs;
-a later explicit policy may treat non-reusable residual as job cost, but Phase 3 does not assume
-that.
+Running or changing a preview creates no reservation and posts no stock movement. Concurrent work
+may consume the same stock, so every preview carries an availability as-of time and warns that the
+result is advisory.
 
-The default is a suggestion, not an instruction. The user may add/remove plan lines, change pack
-counts, choose another supplier or replace the suggested combination. The resolver recalculates
-the consequences and validates effective dates, currencies, MOQ, order multiples and quantity
-coverage. [Q18](../OPEN-QUESTIONS.md#q18--audit-requirements-for-planned-quantity-adjustments)
-decides when that change needs a reason; [Q25](../OPEN-QUESTIONS.md#q25--material-resolution-permissions-and-sensitive-fields)
-decides who may see cost and change or adopt the plan.
+A user-adopted plan may be stored with a draft quotation revision. Issue or approval snapshots the
+selected package plan, recommendation policy/version, cost evidence and availability evidence so
+later master-data changes do not rewrite history. Phase 5 owns reservation, allocation, issue,
+return and scrap.
 
-The algorithm must explain why its default won. [Q19](../OPEN-QUESTIONS.md#q19--default-ranking-for-source-and-pack-proposals)
-remains a Phase 3 blocker and decides whether the default prioritises internal cost, procurement
-outlay, least surplus, preferred supplier/package, earliest known availability or a configurable
-ordered policy. The objective is always company/internal cost and material coverage, never the
-customer's selling price; Sales resolves that independently in Phase 4.
+### 5. Cost and price remain independent
 
-“Available” must identify which fact it means:
+The package proposal compares internal inventory cost using the applicable valuation evidence; it
+does not use customer selling price. A cheap package mix for the company does not dictate what the
+customer is charged. [Q21](../OPEN-QUESTIONS.md#q21--phase-4-selling-price-strategy-baseline)
+decides the Sales pricing baseline.
 
-- current internal availability is aggregate stock quantity by the inventory scopes the caller is
-  allowed to inspect, and is advisory because Phase 3 does not reserve it;
-- an active supplier offer proves a purchasable pack/price relationship, not that the supplier has
-  that quantity physically available now;
-- exact internal availability by unopened pack size is knowable only if later physical-container
-  tracking records those individual packs. Without it, the system must not infer “two unopened 5 L
-  cans” from an aggregate balance of 10 L.
-
-The Phase 3 resolver does **not**:
-
-- hide its ranking rationale or alternatives;
-- claim advisory on-hand quantity has been allocated;
-- claim a supplier has stock from price/lead-time data alone;
-- create a PO, reserve stock, choose a warehouse/location/lot/container, or post anything.
-
-### 3. Cost sources are explicit candidates; there is no silent fallback
-
-Current AVCO, formulation-derived cost, an applicable supplier offer and an authorised manual
-override are different evidence. Preview returns the chosen source, as-of date, currency/FX
-evidence and warnings. Missing AVCO is not presented as a reliable zero, and a supplier offer does
-not silently replace internal valuation.
-
-An estimator must explicitly select the intended cost basis, or a later accepted policy must name
-the default and fallback order. This proposal does not turn an estimated supplier purchase price
-into an inventory valuation or accounting fact.
-
-### 4. Persistence stays at the existing document boundaries
-
-- A preview suggestion is ephemeral.
-- A user-adopted material basis may be stored on a draft quotation revision with actor and source
-  provenance.
-- Issue/approval snapshots the selected quantities, package/offer facts, cost basis and FX evidence
-  so later master-data changes do not reinterpret the quotation.
-- Phase 5 owns reservation and actual issue/return/scrap.
-- Phase 6 owns final acquisition cost, invoice variance and accounting.
+Who may view costs, select a plan or override it remains
+[Q25](../OPEN-QUESTIONS.md#q25--material-resolution-permissions-and-sensitive-fields). Whether a
+changed planned quantity or package choice requires a reason remains
+[Q18](../OPEN-QUESTIONS.md#q18--audit-requirements-for-planned-quantity-adjustments).
 
 ## Consequences
 
-- **Positive:** New/unstocked purchased materials can be estimated from governed Purchasing facts
-  rather than a misleading zero or an unexplained manual rate.
-- **Positive:** A user can see both job-consumption economics and immediate purchasing cash need
-  without conflating them.
-- **Positive:** Every preview begins with a useful default while preserving human control over
-  mixed-pack and multi-supplier choices.
-- **Positive:** ADR 0050 remains the single conversion/divisibility mechanism; commercial package
-  identity adds meaning without duplicating its factor.
-- **Positive:** The design can later feed sourcing/planning without embedding a premature optimiser
-  in Estimating.
-- **Negative:** Phase 3 gains master-data and Purchasing foundation beyond the preview screen
-  itself, including effective-dated prices and package associations.
-- **Negative:** Even a bounded mixed-pack suggestion is an optimisation problem and needs a
-  deterministic Q19 objective, tie-breakers, limits and explainability tests.
-- **Requires:** Explicit permissions and API field filtering under Q25; supplier prices and
-  internal costs cannot become visible merely because a user can run a quantity preview.
-- **Requires:** Acceptance-time constraints for effective-date/quantity-break overlap, currency/FX
-  resolution, package archival, and deterministic scenario ordering.
+- A small company can use quantity-only stock and receive an explicitly approximate proposal.
+- A company tracking sealed/open balances or individual containers gets increasingly exact
+  choices without using a different inventory ledger.
+- Mixed package sizes and user selection are first-class behaviour.
+- Purchasing can later plan the reported shortage, but supplier data is not required to deliver
+  the Phase 3 inventory feature.
+- Internal cost, procurement outlay and customer price cannot be collapsed into one amount.
+- The proposal engine must tolerate concurrent inventory changes and revalidate before a later
+  reservation or issue.
 
 ## Alternatives considered
 
-**Stop Phase 3 at planned quantity plus AVCO** — rejected as the recommendation. It is the smallest
-slice, but a new or unstocked purchased material has no useful AVCO and would force zero-cost or
-manual estimates precisely where supplier evidence is most valuable.
+**Optimise supplier offers in Phase 3** — rejected. It combines an internal allocation question
+with replenishment and would imply supplier availability that the system does not know.
 
-**Show each pack/offer independently and prohibit combinations** — rejected. A real requirement may
-be covered most sensibly by one 5 L pack plus two 1 L packs, and forcing one pack size would make a
-human reproduce the missing combination outside the system.
+**Use aggregate quantity only for every company** — rejected. It cannot distinguish sealed packs
+from remnants and cannot truthfully recommend exact physical packages.
 
-**Build a full supply-planning optimiser in Phase 3** — rejected. The bounded preview optimiser
-uses known internal quantities and commercial offers to propose an estimate. Supplier live stock,
-dated supply/demand netting, firm allocation, reservations and PO generation remain later planning
-and execution responsibilities.
+**Require individual-container tracking for every company** — rejected. It imposes scanning and
+operational overhead that many small companies do not need; ADR 0052 provides progressive modes.
 
-**Put a current price directly on `item_suppliers`** — rejected, consistent with ADR 0033. One
-column cannot represent currencies, date ranges, quantity breaks or package-specific prices, and
-editing it would erase the evidence behind an older estimate.
+**Force one package size per requirement** — rejected. Valid stock may be split across sizes, and
+the user explicitly needs mixed-pack selection with a replaceable default.
 
-**Treat commercial packaging as the physical container model** — rejected. A named “5 L drum”
-and Drum #000123 with an actual remaining quantity are different facts with different lifecycles.
-The latter remains Phase 5/Q22–Q23 territory.
-
-**Charge the full purchased quantity to the estimate by default** — rejected. Reusable surplus is
-still an asset available to later work. Procurement outlay may exceed expected consumption cost;
-the preview should expose both rather than choose an accounting policy silently.
+**Treat a package as a global UoM or a lot** — rejected. Package quantity is item-specific, while
+a lot groups traceability and may contain multiple physical packages.
 
 ## Related
 
-- [ADR 0033](0033-item-suppliers-relationship.md) — supplier relationship and the earlier
-  deliberate deferral of standing price tables
-- [ADR 0050](0050-item-specific-uom-conversion-and-divisibility.md) — item-owned conversion and
-  quantity precision beneath commercial packaging
+- [ADR 0033](0033-item-suppliers-relationship.md) — supplier relationships, outside this proposal
+- [ADR 0050](0050-item-specific-uom-conversion-and-divisibility.md) — fixed item-specific quantity
+  conversion beneath package definitions
+- [ADR 0052](0052-progressive-inventory-package-tracking.md) — progressive package state
+- [ADR 0053](0053-explainable-inventory-package-selection-presets.md) — recommendation policies
+- [Inventory packages](../domain/inventory-packages.md)
 - [Material resolution](../domain/material-resolution.md)
-- [Purchasing](../domain/purchasing.md)
-- [Units of measure](../domain/units-of-measure.md)
-- [Q17–Q19 and Q25](../OPEN-QUESTIONS.md)

@@ -353,10 +353,12 @@ corrections are governed by [ADR 0040](../decisions/0040-control-backdated-stock
 
 ## Related
 
-- [Material resolution](material-resolution.md) — supplier packaging/pricing ownership and its
-  read-only use by Estimating
-- [Proposed ADR 0051](../decisions/0051-phase-3-commercial-packaging-and-supplier-cost-scenarios.md)
-  — fixed commercial packages and independent supplier-cost scenarios, pending review
+- [Material resolution](material-resolution.md) — Phase 3 reports internal-stock shortages;
+  Purchasing owns any later supplier replenishment
+- [Inventory packages](inventory-packages.md) — receipts create enabled package/container state,
+  while the stock ledger remains authoritative
+- [ADR 0051](../decisions/0051-phase-3-commercial-packaging-and-supplier-cost-scenarios.md)
+  — keeps internal-inventory proposals separate from supplier sourcing
 - [Approval workflows](../architecture/approval-workflows.md) — maker/checker and multi-stage PO
   approval boundary
 - [Acquisition costing](acquisition-costing.md)

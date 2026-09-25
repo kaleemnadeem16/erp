@@ -9,7 +9,7 @@ Questions do not linger once resolved.
 
 ## Blocking
 
-Q17–Q19, Q21 and Q25 block finalising the Phase 3 Material Resolution / Assembly Preview ADR. Their
+Q18, Q21 and Q25 block finalising the Phase 3 Material Resolution / Assembly Preview ADR. Their
 shared research baseline and cross-module context are recorded in
 [material-resolution.md](domain/material-resolution.md); answer them one by one rather than
 letting a paint/coatings example silently define the generic model.
@@ -20,37 +20,13 @@ consolidation is
 scope remaining separately governed by ADR 0039.
 
 Q20 (item divisibility and quantity increments) was resolved on 2026-09-25 — see
-[ADR 0050](decisions/0050-item-specific-uom-conversion-and-divisibility.md), which also narrowed
-Q17 to the commercial-package/costed-proposal question below.
+[ADR 0050](decisions/0050-item-specific-uom-conversion-and-divisibility.md). Its remaining package
+boundary was subsequently resolved with Q17/Q19/Q22 by ADRs 0051–0053.
 
 Q1, Q2 and Q3 were resolved on 2026-08-10 — see
 [ADR 0023](decisions/0023-retention-retainage-enabled.md),
 [ADR 0024](decisions/0024-onboarding-base-currency-and-fiscal-year.md) and
 [ADR 0025](decisions/0025-configurable-tax-engine.md).
-
-### Q17 — Phase 3 commercial-package and costed source-proposal scope
-**Blocks:** The Material Resolution / Assembly Preview ADR and its final Phase 3 scope
-
-[ADR 0050](decisions/0050-item-specific-uom-conversion-and-divisibility.md) settled that
-item-specific UoM conversions belong in the model regardless of Phase 3's preview scope —
-Purchasing already needs them to price box/each-style pack purchasing correctly, independent of
-whether a preview ever proposes anything. What remains open is narrower: should Phase 3 also
-introduce named, barcoded commercial package definitions and enough Purchasing-owned
-supplier-pack/offer data to propose costed source allocations? Or should the preview stop at a
-standard/planned quantity and current internal cost, with commercial packaging and supplier
-offers deferred to Phase 4/5?
-
-If included, the resolver may suggest cheapest, minimum-surplus or preferred allocations, but a
-suggestion remains ephemeral. Only a user-adopted plan or issued-document snapshot becomes a
-historical fact, and Phase 3 never reserves stock.
-
-Research now recommends the narrower middle option recorded as
-[proposed ADR 0051](decisions/0051-phase-3-commercial-packaging-and-supplier-cost-scenarios.md):
-include fixed commercial-package and Purchasing-owned supplier-offer facts, generate an
-explainable default that may mix pack sizes/suppliers, and let the user replace it. Keep expected
-consumption cost, procurement cash outlay and expected surplus separate; the objective is internal
-company cost, never customer selling price. This entry remains open until Q19 supplies the default
-ranking policy and the proposed decision is accepted.
 
 ### Q18 — Audit requirements for planned quantity adjustments
 **Blocks:** The standard → planned quantity contract in the preview and later quotation revision
@@ -58,17 +34,6 @@ ranking policy and the proposed decision is accepted.
 Must every transaction-specific departure from the calculated standard carry a reason and actor,
 or only adjustments above a threshold/policy? The system must preserve standard, planned and
 actual independently; this question decides the audit burden, not whether the values are kept.
-
-### Q19 — Default ranking for source and pack proposals
-**Blocks:** Deterministic proposal behaviour if Q17 includes proposals in Phase 3
-
-What is the default ranking: lowest estimated cost, least surplus, preferred supplier/package,
-earliest availability, or a configurable weighted policy? The result must expose why it won and
-allow a user selection without turning the rejected suggestions into history.
-
-The agreed Q17 direction now requires a default suggestion, including mixed pack sizes where
-useful, followed by user override. Q19 must therefore define its objective, tie-breakers,
-availability evidence and explanation contract before proposed ADR 0051 can be accepted.
 
 ### Q21 — Phase 4 selling-price strategy baseline
 **Blocks:** The boundary between Phase 3 cost output and Phase 4 customer price resolution
@@ -143,16 +108,8 @@ conventions. Decide whether the movement boundary
 should stamp `posted_by` itself (one column, uniform trail) or whether source-document actors
 remain the single source of truth.
 
-### Q22 — Physical container granularity
-**Blocks:** Nothing in Phase 3; decide before Phase 5 implements reservations and job issues
-
-Must the first Phase 5 inventory-execution slice track individual opened drums, rolls, coils,
-cartons or returnable containers, or is partial quantity by lot/location sufficient initially?
-A commercial pack definition, a received traceability lot and a physical container are separate
-concepts even when one receipt happens to create one of each.
-
 ### Q23 — Variable-content and catch-weight packages
-**Blocks:** Nothing in Phase 3 unless Q17 includes these packages in source proposals
+**Blocks:** Variable-content receipts and package/container tracking; not fixed-content Phase 3
 
 Do first-generation package records assume fixed contained quantity, or must receipt record an
 actual quantity per container (catch weight, variable-length rolls, partly filled drums)? The
@@ -205,3 +162,14 @@ the endpoint can create and issue a PO; DRAFT → ISSUED has no approval fact.
 
 Answered questions live in [decisions/](decisions/) as ADRs. See the
 [decision index](decisions/README.md) for the full list.
+
+<a id="q17--phase-3-commercial-package-and-costed-source-proposal-scope"></a>
+<a id="q19--default-ranking-for-source-and-pack-proposals"></a>
+<a id="q22--physical-container-granularity"></a>
+
+Q17, Q19 and Q22 were resolved on 2026-09-26 by
+[ADR 0051](decisions/0051-phase-3-commercial-packaging-and-supplier-cost-scenarios.md),
+[ADR 0052](decisions/0052-progressive-inventory-package-tracking.md) and
+[ADR 0053](decisions/0053-explainable-inventory-package-selection-presets.md): Phase 3 proposes
+mixed package use from internal inventory, physical tracking is progressive, and the first release
+ships three explainable selection presets. Supplier replenishment remains Purchasing-owned.

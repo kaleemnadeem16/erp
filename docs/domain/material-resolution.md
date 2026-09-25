@@ -1,301 +1,159 @@
 [← Domain index](README.md)
 
-# Material resolution across estimating, purchasing and execution
+# Material resolution across estimating, inventory and execution
 
-This note records the cross-module design baseline discovered before the Phase 3 assembly
-preview is finalised. It is a review and question register, not an accepted decision: proposed
-schema names are illustrative, and every unresolved choice must become an ADR before code relies
-on it.
+This is the cross-module boundary for turning technical material requirements into plans. Detailed
+package tracking and proposal rules live in [inventory-packages.md](inventory-packages.md).
 
-## Why this boundary exists
-
-The system must keep four concepts separate even when a simple company experiences them as one:
+## The quantities are different facts
 
 ```text
-technical requirement → transaction plan → commercial source/pack → physical execution
-        standard             planned              proposed                 actual
+technical requirement → transaction plan → inventory proposal → physical execution
+        standard             planned          recommended             actual
 ```
 
-A formulation may require 6.5 L. An estimator may plan 7 L, buy or nominate two 5 L packs, and
-the job may actually consume 6.8 L. None of those numbers replaces another. Internal cost and
-customer selling price are separate results as well.
+A formulation may require 6.5 L. An estimator may plan 7 L, select a mix that presents 8 L, and
+the job may consume 6.8 L. None of those values replaces another. Customer selling price is also
+independent from internal material cost.
 
-## Current baseline
+| State | Meaning | Persistence boundary |
+|---|---|---|
+| Standard requirement | Calculated from active technical master data | Reproducible preview; snapshot on document issue |
+| Planned adjustment | Transaction quantity deliberately chosen by the user | Draft/revision after adoption; Q18 decides reason burden |
+| Inventory proposal | Explainable default from currently usable internal stock | Ephemeral and advisory |
+| Selected material plan | User-adopted package/balance/container mix | Draft/revision; snapshot on issue/approval |
+| Reserved/issued/returned/scrapped | Physical execution against work | Phase 5 stock and job facts |
+| Actual consumption | Net physical consumption, with scrap separately visible | Derived auditable execution fact |
 
-### Quantity and UoM
+## Current foundations
 
-- Every item has one stock UoM. An item-supplier relationship may name a purchase UoM.
-- UoMs are company-scoped and convert globally inside one dimension through
-  `factor_to_base decimal(19,9)`. Conversion rounds to scale 9; stock transaction quantities are
-  generally stored at scale 4, while estimating quantities use scale 6.
-- Fractional quantities are generally possible. Serial-controlled movements require quantity 1.
-- **[ADR 0050](../decisions/0050-item-specific-uom-conversion-and-divisibility.md) has decided,
-  but not yet implemented,** the item-specific conversion and divisibility model: an
-  `item_quantity_units` override table (checked before the global service, may cross UoM
-  dimensions) plus a `quantity_precision` field on the item's own stock UoM and on each override
-  row. Divisibility is always item(-and-UoM), never inferred from `dimension`. Until this is
-  implemented, `PostGoodsReceipt`'s ad hoc `dimension === 'COUNT'` floor on over-receipt tolerance
-  remains the only place quantity is treated as integral, and box/each-style purchase UoM
-  conversion (`item_suppliers.purchase_uom_id`) does not actually work — `BuildPurchaseOrderLineAttributes`
-  still only calls the global, dimension-locked `UomConversionService`.
-- There is no sales UoM, commercial pack, supplier-pack/offer pricing, or physical-container
-  model. Those remain [Q17](../OPEN-QUESTIONS.md#q17--phase-3-commercial-package-and-costed-source-proposal-scope)
-  and [Q23](../OPEN-QUESTIONS.md#q23--variable-content-and-catch-weight-packages)'s to decide.
+- Every item has one stock UoM. [ADR 0050](../decisions/0050-item-specific-uom-conversion-and-divisibility.md)
+  defines fixed item-specific conversion and quantity precision but is not implemented yet.
+- Global UoM conversions handle litre↔millilitre or kilogram↔gram. Item-specific conversions handle
+  each↔box, drum↔litre, roll↔metre and similar relationships.
+- Stock owns on-hand quantity, warehouse/location, valuation, lots/batches and partial layer issue.
+- A lot is traceability identity, not an individual physical container.
+- Formulations determine technical composition. Package selection happens downstream and never
+  changes the formulation.
+- Assembly roll-up currently obtains material cost from supported valuation/formulation/manual
+  sources. FIFO/SPECIFIC and unsupported AVCO pool contexts fail rather than guess.
 
-Global conversions correctly express litre↔millilitre, kilogram↔gram and metre↔millimetre.
-They must not be used for item-dependent relationships such as each↔box, tablet↔strip↔carton,
-metre↔roll, sheet↔m² or drum↔litre. Those depend on the item, variant or package — ADR 0050
-covers exactly this set of cases.
+## Accepted Phase 3 boundary
 
-### Purchasing and stock
+[ADR 0051](../decisions/0051-phase-3-commercial-packaging-and-supplier-cost-scenarios.md)
+decides that Phase 3 proposes package use from the company's own inventory. It may mix open
+remnants and sealed package sizes and lets the user choose a valid alternative.
 
-- `item_suppliers` already owns supplier identity, supplier SKU, priority/preference, lead time,
-  MOQ and purchase UoM. Purchase-order issue snapshots supplier SKU.
-- Supplier prices, quantity breaks, validity periods, currency, order multiples and
-  supplier-pack associations do not exist. MOQ is descriptive today rather than an enforced
-  ordering constraint.
-- Stock owns on-hand quantity, warehouse/location, AVCO/FIFO/SPECIFIC valuation, lots/batches,
-  serials and partial layer issue. A partial quantity can remain in a lot/layer.
-- A lot/batch is traceability identity, not an individual drum, roll, carton or reusable
-  container. Container-level remaining quantity, expiry, reservation, job consumption, returns
-  and recoverable scrap are not yet modelled end to end.
+The preview calculates and explains:
 
-### Formulations and assemblies
+1. standard requirement and calculation provenance;
+2. explicit planned adjustment;
+3. usable internal inventory as of a stated time;
+4. the effective package-selection strategy and its rationale;
+5. recommended mix, useful alternatives, coverage, shortage and expected residual;
+6. estimated internal cost and its evidence;
+7. limitations caused by aggregate or incomplete tracking.
 
-- A formulation version records output quantity and standard ingredient quantities, supports
-  line wastage, nesting and customer-specific overrides, and has one output.
-- Explicit yield, substitutions, alternatives, co-products and by-products are absent.
-- Packaging must not alter technical composition. Pack/source selection consumes the resolved
-  requirement downstream of formulation/application-rate calculation.
-- Assembly roll-up currently resolves material from a manual override, nested formulation or
-  company-wide AVCO; labour and plant from effective-dated resource rates; subcontract from a
-  manual rate; and overhead from the resolved policy. FIFO/SPECIFIC and non-company AVCO pools
-  deliberately fail rather than guess.
-- Assembly margin/markup can currently derive a sell rate, but that is not a complete Sales
-  pricing system and must not become the only selling-price source.
+It does not reserve stock, select a supplier, claim supplier stock, create a purchase order, post a
+movement or calculate the customer's final selling price.
 
-### Sales and execution
+Purchasing begins with the uncovered shortage. It may later use supplier packages, prices, MOQ and
+order multiples to propose replenishment. That is not part of the Phase 3 inventory proposal.
 
-- Phase 4 plans quotation revisions and immutable cost/price snapshots, but customer price
-  lists, maintained prices, contract prices, quantity breaks, pack bases and final-price
-  rounding are not modelled yet.
-- Phase 5 owns material reservation/issue, return, scrap, actual consumption and estimate-versus-
-  actual job cost. Phase 3 must not post or reserve inventory.
-- Phase 6 owns final accounting/acquisition cost and GL consequences. Estimated source cost is
-  evidence for an estimate, not an inventory valuation fact.
+## Physical precision and selection policy
 
-## Required semantic states
+[ADR 0052](../decisions/0052-progressive-inventory-package-tracking.md) provides three progressive
+modes:
 
-| State | Meaning | Owner | Persistence boundary |
-|---|---|---|---|
-| Standard requirement | Quantity calculated from active master data | Estimating | Reproducible preview; snapshot when a document is issued |
-| Planned adjustment | Transaction quantity deliberately chosen by estimator/planner | Sales/Estimating, later Job planning | Persist value, reason and actor on the draft/revision once adopted |
-| Source/pack proposal | Explainable default combination of internal quantity and supplier packs | Resolution service using Inventory/Purchasing facts | Ephemeral; a proposal is not history |
-| Selected material plan | User-adopted source/pack basis and expected surplus | Quotation revision, later work plan | Snapshot on issue/approval; still no stock reservation in Phase 3/4 |
-| Purchased quantity | Quantity ordered/received | Purchasing | Existing PO/receipt facts, later extended for packs |
-| Issued/returned/scrapped quantity | Physical movements against a job | Inventory/Job Execution | Immutable stock movements and job-cost facts |
-| Actual consumption | Net issued less returned, with scrap reported separately | Job Execution | Derived/auditable operational fact |
+- `QUANTITY_ONLY` — aggregate quantity and approximate package equivalents;
+- `PACKAGE_BALANCE` — sealed package counts plus grouped open/loose quantity;
+- `CONTAINER_TRACKED` — each physical container and its remaining quantity/status.
 
-Never overwrite standard with planned or planned with actual. Variance needs all three.
+[ADR 0053](../decisions/0053-explainable-inventory-package-selection-presets.md) provides three
+initial strategies:
 
-## Capability ownership
+- `MINIMISE_WASTE` (company default);
+- `LOWEST_INTERNAL_COST`;
+- `FEWEST_PACKAGES`.
 
-| Capability | Owning module | Earliest phase | Domain support versus exposure |
-|---|---|---:|---|
-| Item-specific quantity conversions and divisibility | Item master | Before pack-aware preview | Backend foundation; simple UI may show only stock UoM |
-| Commercial package definitions and barcodes | Item master | Before pack-aware preview | Optional company capability |
-| Supplier pack association, order multiple and offers | Purchasing | 3 only if preview prices/suggests suppliers; otherwise 4/5 | Purchasing owns facts; Estimating only reads them |
-| Standard requirement and planned adjustment | Estimating/Sales draft | 3 | Core simple path |
-| Source/pack proposal engine | Estimating resolution service | 3 | Non-binding default; user may replace its mixed-pack plan |
-| Customer price lists/rules and manual overrides | Sales | 4 | Configurable pricing strategies |
-| Physical containers and remaining contents | Inventory | 5 | Advanced tracking mode only |
-| Reservation, issue, return, scrap and actual consumption | Inventory + Job Execution | 5 | Operational UI selected by capability |
-| Final acquisition cost and accounting variance | Purchasing + Finance | 6 | Accounting facts, never preview guesses |
+Company, category and item settings select the applicable behaviour. Details, conceptual state
+shapes, transition rules and deterministic tie-breakers are in
+[inventory-packages.md](inventory-packages.md).
 
-The schema remains capable; company settings control policy and UI exposure, not historical
-meaning. Turning an advanced screen off must not reinterpret stored transactions.
+## Cost, price and availability
 
-## Candidate domain shapes — Q17 proposal, not yet accepted
+- Internal inventory cost is evidence for estimating, not customer price.
+- Supplier purchase price and procurement cash outlay are Purchasing evidence, not substitutes for
+  current inventory valuation.
+- Missing cost is never presented as zero.
+- Availability is advisory in Phase 3. The response must state its as-of time.
+- An adopted plan can be stale before execution; Phase 5 revalidates and reserves it.
+- An issued quotation snapshots the adopted material/cost evidence so later policy or master-data
+  changes do not rewrite history.
 
-The item-specific conversion table this section used to sketch here is now **decided** — see
-[ADR 0050](../decisions/0050-item-specific-uom-conversion-and-divisibility.md) for its final shape
-(`item_quantity_units` plus `items.quantity_precision`), which differs slightly from the earlier
-candidate. [Proposed ADR 0051](../decisions/0051-phase-3-commercial-packaging-and-supplier-cost-scenarios.md)
-refines the remaining shapes, but they stay unaccepted while Q17 is open.
-
-```text
-item_packagings
-  id, company_id, item_id
-  item_quantity_unit_id             -- quantity/factor owned once by ADR 0050
-  code, name
-  usage                  PURCHASE | SALE | BOTH
-  barcode nullable, active
-
-item_supplier_packagings
-  id, company_id, item_supplier_id, item_packaging_id
-  supplier_item_code nullable, minimum_order_qty nullable
-  order_multiple nullable, is_preferred, active
-
-supplier_item_prices
-  id, company_id, item_supplier_id
-  item_supplier_packaging_id nullable, price_uom_id
-  min_qty, unit_price decimal(19,4), currency_id
-  valid_from, valid_to nullable
-```
-
-A later advanced Inventory capability may introduce `stock_containers` with received package,
-lot, location, original quantity, remaining quantity and lifecycle status. It must reference but
-not replace lot/batch identity. Variable-content/catch-weight packages may require actual
-contained quantity per received container rather than assuming the catalogue quantity.
-
-## Phase 3 preview boundary
-
-The preview should calculate and explain:
-
-1. standard requirement and all rate/formulation provenance;
-2. any explicit planned adjustment and its reason;
-3. estimated internal cost and cost-source provenance;
-4. an explainable default source/pack proposal, able to mix pack sizes/suppliers, plus alternatives;
-5. covered quantity, expected surplus or residual, and warnings/fallbacks;
-6. selling-price output only through an explicitly selected strategy, kept separate from cost.
-
-The preview must not reserve stock, create a purchase order, represent a proposal as a chosen
-historical fact, or claim an estimated supplier price is actual accounting cost. Persist only a
-user-adopted plan or an issued document snapshot.
-
-The default targets internal cost/coverage, never selling price; users may replace it, with Q19/Q18/Q25 deciding ranking, audit and permissions.
-On-hand is advisory; exact unopened-pack availability needs container tracking, and an offer does not prove supplier stock.
 ## Authorisation impact
 
-Material resolution contains capabilities and fields with different sensitivity. The final
-preview contract must decide permissions for at least:
+Material resolution has independently sensitive actions and fields. Q25 will decide the first
+registered vocabulary for running preview, viewing internal cost, changing planned quantity,
+selecting a package plan and overriding cost/price. Permission to edit is not approval, and
+organisational record scope remains Q26.
 
-```text
-estimating.assembly_preview.use
-estimating.material_plan.adjust
-estimating.source_proposal.view
-estimating.internal_cost.view
-estimating.cost.override
-sales.selling_price.override
-purchasing.supplier_offer.view
-purchasing.supplier_offer.manage
-```
-
-These names are candidates, not registered permissions. [Q25](../OPEN-QUESTIONS.md#q25--material-resolution-permissions-and-sensitive-fields)
-decides the first slice. A user who may run a quantity preview need not automatically see supplier
-cost, internal margin or another department's records. A permission to make an override also does
-not automatically approve it; material or selling-price exceptions may require a separate
-document-specific approval under [approval-workflows.md](../architecture/approval-workflows.md).
-
-Every implemented preview action must complete the
+Every implemented action must complete the
 [authorisation checklist](../architecture/authorization.md#per-feature-authorisation-checklist),
-including API field filtering and frontend capability exposure.
+including backend enforcement, field filtering, frontend exposure, registration and tests.
 
 ## Rounding boundaries
 
-These policies are distinct and must not share one generic field:
+These remain distinct policies:
 
-- conversion precision — exact stored factors and high-precision intermediate arithmetic;
+- conversion precision — stored factors and high-precision intermediate arithmetic;
 - quantity precision/divisibility — item/UoM rule;
-- pack/order rounding — supplier/package rule;
-- consumption rounding — operational measurement rule;
-- unit-cost precision — money/accounting rule (`decimal(19,4)` storage);
-- selling-price rounding — Sales price-rule output;
-- quotation-total rounding — document/currency policy.
+- package selection — whole sealed-pack counts plus measurable remnants;
+- supplier order rounding — future Purchasing package/order rule;
+- consumption measurement — execution rule;
+- unit-cost precision — accounting/money rule;
+- selling-price and document rounding — Sales/Finance rules.
 
-Intermediate requirement and cost calculations must not be rounded merely for display. Each
-rounding event must identify its policy and expose pre-/post-rounding values where material.
+Calculations must not round early merely for display. Each material rounding event identifies its
+policy and retains enough pre-/post-rounding evidence to explain the result.
 
-## Known conflicts and traps
+## Known traps
 
-- Treating a pack as a global UoM corrupts conversion semantics across items.
-- Treating `COUNT` as synonymous with indivisible produces inconsistent behaviour; divisibility
-  belongs to the item/UoM relationship — resolved by
-  [ADR 0050](../decisions/0050-item-specific-uom-conversion-and-divisibility.md), not yet
-  implemented.
-- Letting an item-specific conversion's cross-dimension allowance (ADR 0050) leak into the global
-  `UomConversionService` — the global service's same-dimension-only rule is unchanged; only
-  `item_quantity_units` may bridge dimensions, and only for one specific item.
-- Treating catch weight as "a pack conversion that happens to vary" and trying to extend
-  `item_quantity_units` to cover it — a fixed factor cannot represent a quantity that varies per
-  physical container; catch weight needs the structurally different dual-quantity mechanism
-  [Q23](../OPEN-QUESTIONS.md#q23--variable-content-and-catch-weight-packages) is still deciding.
-- Treating a batch as a physical container cannot distinguish two opened drums from one lot.
-- Letting formulation depend on supplier pack size mixes technical standards with sourcing.
-- Using Assembly margin fields as the entire price engine couples internal cost to customer
-  price and cannot represent maintained prices.
-- Current scale 9/6/4 quantity boundaries need one documented calculation-and-posting policy
-  before pack allocation is implemented.
-- The existing `PLANT` item type covers both cost resources and stocked capital assets; resolve
-  that ambiguity separately rather than encoding it into material resolution.
-- ADR 0033 remains valid for supplier identity, but its richer-price-list deferral may need a
-  superseding ADR if Phase 3 consumes supplier offers.
+- Treating a package as a global UoM corrupts item-specific conversion semantics.
+- Inferring sealed packages from aggregate stock invents physical facts.
+- Treating a batch as one container loses individual remnants.
+- Letting formulation depend on package size mixes technical standards with allocation.
+- Treating a package proposal as a reservation creates false availability confidence.
+- Using supplier prices for the inventory proposal mixes replenishment with internal allocation.
+- Coupling customer price to internal cost prevents independent Sales strategies.
+- Treating catch weight as a variable conversion cannot record actual per-container content; Q23
+  needs a separate dual-quantity design.
 
-## End-to-end target flow
+## Open decisions
 
-```text
-active technical standards
-  → standard material requirement
-  → transaction-specific planned adjustment
-  → optional source/pack proposals
-  → user-selected material plan
-  → independent selling-price resolution
-  → draft quotation revision
-  → issued immutable cost/price/material snapshot
-  → job/work plan and inventory reservations
-  → issues, returns and scrap
-  → actual job cost and accounting entries
-  → standard-vs-planned-vs-actual variance
-```
+- [Q18](../OPEN-QUESTIONS.md#q18--audit-requirements-for-planned-quantity-adjustments) — override
+  reason/audit burden.
+- [Q21](../OPEN-QUESTIONS.md#q21--phase-4-selling-price-strategy-baseline) — customer selling-price
+  strategies.
+- [Q25](../OPEN-QUESTIONS.md#q25--material-resolution-permissions-and-sensitive-fields) — action
+  permissions and sensitive fields.
+- Q23/Q24 — variable-content packages and execution exceptions.
+- Q26–Q28 — organisational scope and approval workflows.
 
 ## Research ledger
 
-External product documentation was used only to validate separation of concerns, not copied as
-the ERP design:
+Primary sources used to validate the boundaries:
 
-- [Odoo: units of measure, packaging and packages](https://www.odoo.com/documentation/18.0/applications/inventory_and_mrp/inventory/product_management/configure.html)
-- [Dynamics 365: product/variant-specific UoM conversions](https://learn.microsoft.com/en-us/dynamics365/supply-chain/pim/uom-conversion-per-product-variant)
-- [Odoo: vendor price lists](https://www.odoo.com/documentation/18.0/applications/inventory_and_mrp/purchase/products/pricelist.html)
-- [Odoo: sales price lists](https://www.odoo.com/documentation/18.0/applications/sales/sales/products_prices/prices/pricing.html)
-- [Dynamics 365: estimated and actual production consumption](https://learn.microsoft.com/en-us/dynamics365/supply-chain/production-control/production-floor-execution-use)
-
-Added researching [ADR 0050](../decisions/0050-item-specific-uom-conversion-and-divisibility.md)
-(Q20 — item-specific conversion and divisibility):
-
-- [Oracle EBS PIM — UOM classes, standard vs. item-specific conversions](https://docs.oracle.com/cd/E18727_01/doc.121/e13450/T291651T291797.htm)
-- [Oracle Fusion SCM — `INV_UOM_CLASS_CONVERSIONS`, keyed per item](https://docs.oracle.com/en/cloud/saas/supply-chain-and-manufacturing/25d/oedsc/invuomclassconversions-27557.html)
-- [Oracle Fusion SCM — Fixed Lot Multiple](https://docs.oracle.com/en/cloud/saas/supply-chain-and-manufacturing/25c/famml/how-specifying-the-fixed-lot-multiple-affects-min-max-planning.html)
-- [SAP Library — Material Master, alternative units of measure](https://help.sap.com/saphelp_470/helpdata/en/ff/515f4349d811d182b80000e829fbfe/content.htm)
-- [SAP Library — EAN/UPC assigned per unit of measure](https://help.sap.com/saphelp_me61/helpdata/en/98/15c453f57eb44ce10000000a174cb4/content.htm)
-- [SAP Library — Catch Weight Management](https://help.sap.com/saphelp_globext607_10/helpdata/en/e5/1f8cbba6844be6b43dd79e1fece31b/content.htm)
-- [SAP Library — Rounding Profile](https://help.sap.com/saphelp_SCM700_ehp02/helpdata/en/af/2fc95360267614e10000000a174cb4/content.htm)
-- [NetSuite — Setting Up Units of Measure](https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_N2212143.html)
-- [NetSuite — Assigning Units of Measure to Items](https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_N2212390.html)
-- [NetSuite — Serial and Lot Inventory with Multiple Units of Measure](https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_N2214525.html)
-- [NetSuite — Reorder Multiple](https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_1504284487.html)
-- [Microsoft Learn — Business Central, Item Units of Measure / Quantity Rounding Precision](https://learn.microsoft.com/en-us/dynamics365/business-central/inventory-how-setup-units-of-measure)
-- [GS1 — Variable Measure Trade Item definition](https://support.gs1.org/support/solutions/articles/43000734396-what-is-a-variable-measure-trade-item-)
-- [GS1 — GTIN rule 138, variable measure varies in total weight](https://www.gs1.org/1/gtinrules/en/rule/138/trade-item-sold-in-variable-measure-varies-in-total-weight)
-- [GS1 Healthcare — GTIN Allocation Rules Standard](https://www.gs1.org/standards/gs1-healthcare-gtin-allocation-rules-standard/current-standard)
-- [GS1 US — Packaging Levels (each/inner pack/case/pallet)](https://www.help.gs1us.org/packaging-level)
-
-## Decisions still open
-
-Q20 was resolved 2026-09-25 by
-[ADR 0050](../decisions/0050-item-specific-uom-conversion-and-divisibility.md), which also
-narrowed Q17. The remaining canonical questions are
-[Q17–Q19, Q21–Q28 in OPEN-QUESTIONS.md](../OPEN-QUESTIONS.md#q17--phase-3-commercial-package-and-costed-source-proposal-scope).
-They cover the Phase 3 commercial-package/supplier-offer and permission boundaries, planned-override
-audit, proposal ranking, Sales pricing defaults, physical-container granularity, variable-content
-packs, Phase 5 material exceptions, organisational record scope and approval workflows. Resolve
-them one by one through researched ADRs; do not silently promote the candidate shapes above into
-implementation.
+- [Odoo: UoM, packaging and physical packages](https://www.odoo.com/documentation/18.0/applications/inventory_and_mrp/inventory/product_management/configure.html)
+- [Odoo: removal strategies](https://www.odoo.com/documentation/18.0/applications/inventory_and_mrp/inventory/shipping_receiving/removal_strategies.html)
+- [SAP: Handling Units](https://help.sap.com/docs/SAP_ERP/39d6d7a325d04826b95328b25fad91ab/eee9c353b677b44ce10000000a174cb4.html)
+- [Dynamics 365: on-hand by inventory dimensions/license plate](https://learn.microsoft.com/en-us/dynamics365/supply-chain/inventory/inventory-on-hand-list)
+- [Dynamics 365: location directives](https://learn.microsoft.com/en-us/dynamics365/supply-chain/warehousing/create-location-directive)
+- [Oracle WMS: inventory by LPN](https://docs.oracle.com/en/cloud/saas/warehouse-management/25b/owmim/inventory-management-modules.html)
 
 ## Related
 
-- [Units of measure](units-of-measure.md) · [Items](items.md) · [Purchasing](purchasing.md)
-- [Formulations](formulations.md) · [Assemblies](assemblies.md) · [Sales pipeline](sales-pipeline.md)
-- [Stock](stock.md) · [Job costing](job-costing.md)
-- [Phase 3](../phases/phase-3-estimating-core.md) · [Progressive capability modes](../architecture/extensibility.md#progressive-capability-modes)
-- [Authorisation](../architecture/authorization.md) · [Approval workflows](../architecture/approval-workflows.md)
-- [ADR 0033](../decisions/0033-item-suppliers-relationship.md) · [ADR 0041](../decisions/0041-progressive-inventory-location-capabilities.md) · [ADR 0050](../decisions/0050-item-specific-uom-conversion-and-divisibility.md)
+- [Inventory packages](inventory-packages.md) · [Units of measure](units-of-measure.md)
+- [Items](items.md) · [Stock](stock.md) · [Purchasing](purchasing.md)
+- [Assemblies](assemblies.md) · [Sales pipeline](sales-pipeline.md) · [Job costing](job-costing.md)
+- [Phase 3](../phases/phase-3-estimating-core.md)

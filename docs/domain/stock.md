@@ -335,8 +335,10 @@ must not be forgotten once it does.
 
 ## Related
 
-- [material-resolution.md](material-resolution.md) — commercial packs versus lots, containers
-  and actual job consumption
+- [material-resolution.md](material-resolution.md) — planning boundary before reservation and
+  actual job consumption
+- [inventory-packages.md](inventory-packages.md) — package balances/containers reconcile to this
+  authoritative quantity and valuation ledger
 - [items.md](items.md) — what is stocked, and where `valuation_method` is chosen
 - [purchasing.md](purchasing.md) — which receipt documents originate purchase stock moves
 - [acquisition-costing.md](acquisition-costing.md) — provisional cost and later adjustments
@@ -358,5 +360,7 @@ must not be forgotten once it does.
   structured location modes
 - [ADR 0043](../decisions/0043-control-purchase-order-receipt-and-qa-posting.md) — purchase
   receipt, QA disposition and reversal posting contract
+- [ADR 0052](../decisions/0052-progressive-inventory-package-tracking.md) — quantity-only,
+  package-balance and container-tracked modes
 - [ADR 0045](../decisions/0045-avco-transfer-rate-final-not-provisional.md) — a transfer's rate
   from a frozen pool is final, never repaired

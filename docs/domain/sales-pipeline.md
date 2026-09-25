@@ -81,6 +81,12 @@ application rate was selected, and the FX rate.
 This is [invariant 1](../architecture/invariants.md#1-snapshot-on-issue) and the most important
 rule in the sales module. A `DRAFT` quotation recomputes live; an `ISSUED` one never does.
 
+When material resolution is package-aware, the snapshot also keeps the recommendation strategy
+and version, availability as-of time, generated suggestion, final user selection and internal-cost
+evidence. This preserves what the estimate assumed; it does **not** reserve those packages.
+Phase 5 revalidates and reserves physical stock. Customer selling price remains a separate Sales
+decision even when internal package cost informed the estimate.
+
 ### Confirmation
 
 Accepting a quotation creates a **job** ([job-costing.md](job-costing.md)), carrying the
@@ -112,6 +118,7 @@ practice and has no obvious default.
 
 - [material-resolution.md](material-resolution.md) — cost/price separation and planned material
   snapshot boundary
+- [inventory-packages.md](inventory-packages.md) — advisory package proposal and snapshot evidence
 - [assemblies.md](assemblies.md) — what lines reference
 - [job-costing.md](job-costing.md) — what confirmation produces
 - [receivables.md](receivables.md) — invoicing against the job

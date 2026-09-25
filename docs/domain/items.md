@@ -226,13 +226,17 @@ supplier-account and optional purchase-UoM references.
 
 ## Related
 
-- [material-resolution.md](material-resolution.md) — proposed item/UoM and commercial-package
-  boundaries pending decisions
-- [Proposed ADR 0051](../decisions/0051-phase-3-commercial-packaging-and-supplier-cost-scenarios.md)
-  — named package identity above ADR 0050's quantity conversion, pending review
+- [material-resolution.md](material-resolution.md) — accepted quantity, package, cost and phase
+  boundaries
+- [inventory-packages.md](inventory-packages.md) — named package identity above ADR 0050's
+  quantity conversion and company/category/item tracking defaults
+- [ADR 0051](../decisions/0051-phase-3-commercial-packaging-and-supplier-cost-scenarios.md)
+  — internal-inventory package proposals
 - [units-of-measure.md](units-of-measure.md)
 - [ADR 0050](../decisions/0050-item-specific-uom-conversion-and-divisibility.md) — item-specific
   purchase-UoM conversion and divisibility, decided, not yet implemented
+- [ADR 0052](../decisions/0052-progressive-inventory-package-tracking.md) — resolved package
+  tracking mode is persisted before first movement
 - [stock.md](stock.md) — valuation of stocked items
 - [formulations.md](formulations.md) — items as recipe inputs and outputs
 - [assemblies.md](assemblies.md#cost-roll-up) — where `resource_rates` (LABOUR/PLANT pricing) is
