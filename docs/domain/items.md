@@ -228,6 +228,8 @@ supplier-account and optional purchase-UoM references.
 
 - [material-resolution.md](material-resolution.md) — proposed item/UoM and commercial-package
   boundaries pending decisions
+- [Proposed ADR 0051](../decisions/0051-phase-3-commercial-packaging-and-supplier-cost-scenarios.md)
+  — named package identity above ADR 0050's quantity conversion, pending review
 - [units-of-measure.md](units-of-measure.md)
 - [ADR 0050](../decisions/0050-item-specific-uom-conversion-and-divisibility.md) — item-specific
   purchase-UoM conversion and divisibility, decided, not yet implemented

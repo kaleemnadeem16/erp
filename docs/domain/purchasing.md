@@ -355,6 +355,8 @@ corrections are governed by [ADR 0040](../decisions/0040-control-backdated-stock
 
 - [Material resolution](material-resolution.md) — supplier packaging/pricing ownership and its
   read-only use by Estimating
+- [Proposed ADR 0051](../decisions/0051-phase-3-commercial-packaging-and-supplier-cost-scenarios.md)
+  — fixed commercial packages and independent supplier-cost scenarios, pending review
 - [Approval workflows](../architecture/approval-workflows.md) — maker/checker and multi-stage PO
   approval boundary
 - [Acquisition costing](acquisition-costing.md)

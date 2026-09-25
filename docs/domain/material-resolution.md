@@ -90,7 +90,7 @@ covers exactly this set of cases.
 |---|---|---|---|
 | Standard requirement | Quantity calculated from active master data | Estimating | Reproducible preview; snapshot when a document is issued |
 | Planned adjustment | Transaction quantity deliberately chosen by estimator/planner | Sales/Estimating, later Job planning | Persist value, reason and actor on the draft/revision once adopted |
-| Source/pack proposal | Ranked way to cover planned quantity | Resolution service using Purchasing facts | Ephemeral; a suggestion is not history |
+| Source/pack scenario | Costed way one eligible offer could cover planned quantity | Resolution service using Purchasing facts | Ephemeral; a scenario is not history |
 | Selected material plan | User-adopted source/pack basis and expected surplus | Quotation revision, later work plan | Snapshot on issue/approval; still no stock reservation in Phase 3/4 |
 | Purchased quantity | Quantity ordered/received | Purchasing | Existing PO/receipt facts, later extended for packs |
 | Issued/returned/scrapped quantity | Physical movements against a job | Inventory/Job Execution | Immutable stock movements and job-cost facts |
@@ -106,7 +106,7 @@ Never overwrite standard with planned or planned with actual. Variance needs all
 | Commercial package definitions and barcodes | Item master | Before pack-aware preview | Optional company capability |
 | Supplier pack association, order multiple and offers | Purchasing | 3 only if preview prices/suggests suppliers; otherwise 4/5 | Purchasing owns facts; Estimating only reads them |
 | Standard requirement and planned adjustment | Estimating/Sales draft | 3 | Core simple path |
-| Source/pack proposal engine | Estimating resolution service | 3 optional | Advanced UI; non-binding output |
+| Source/pack scenario resolver | Estimating resolution service | 3 optional | Advanced UI; non-binding output |
 | Customer price lists/rules and manual overrides | Sales | 4 | Configurable pricing strategies |
 | Physical containers and remaining contents | Inventory | 5 | Advanced tracking mode only |
 | Reservation, issue, return, scrap and actual consumption | Inventory + Job Execution | 5 | Operational UI selected by capability |
@@ -115,28 +115,30 @@ Never overwrite standard with planned or planned with actual. Variance needs all
 The schema remains capable; company settings control policy and UI exposure, not historical
 meaning. Turning an advanced screen off must not reinterpret stored transactions.
 
-## Candidate domain shapes — not yet decisions
+## Candidate domain shapes — Q17 proposal, not yet accepted
 
 The item-specific conversion table this section used to sketch here is now **decided** — see
 [ADR 0050](../decisions/0050-item-specific-uom-conversion-and-divisibility.md) for its final shape
 (`item_quantity_units` plus `items.quantity_precision`), which differs slightly from the earlier
-candidate. The shapes below remain undecided candidates, pending
-[Q17](../OPEN-QUESTIONS.md#q17--phase-3-commercial-package-and-costed-source-proposal-scope).
+candidate. [Proposed ADR 0051](../decisions/0051-phase-3-commercial-packaging-and-supplier-cost-scenarios.md)
+refines the remaining shapes, but they stay unaccepted while Q17 is open.
 
 ```text
 item_packagings
   id, company_id, item_id
-  code, name, contained_qty, contained_uom_id
+  item_quantity_unit_id             -- quantity/factor owned once by ADR 0050
+  code, name
   usage                  PURCHASE | SALE | BOTH
   barcode nullable, active
 
 item_supplier_packagings
   id, company_id, item_supplier_id, item_packaging_id
-  supplier_sku nullable, order_multiple nullable, is_preferred
+  supplier_item_code nullable, minimum_order_qty nullable
+  order_multiple nullable, is_preferred, active
 
 supplier_item_prices
   id, company_id, item_supplier_id
-  item_packaging_id nullable, price_uom_id
+  item_supplier_packaging_id nullable, price_uom_id
   min_qty, unit_price decimal(19,4), currency_id
   valid_from, valid_to nullable
 ```
@@ -153,8 +155,8 @@ The preview should calculate and explain:
 1. standard requirement and all rate/formulation provenance;
 2. any explicit planned adjustment and its reason;
 3. estimated internal cost and cost-source provenance;
-4. optional source/pack proposals, ranked by a declared policy;
-5. available/covered quantity, expected surplus or residual, and warnings/fallbacks;
+4. optional source/pack cost/coverage scenarios, independently calculated and fully explained;
+5. covered quantity, expected surplus or residual, and warnings/fallbacks;
 6. selling-price output only through an explicitly selected strategy, kept separate from cost.
 
 The preview must not reserve stock, create a purchase order, represent a proposal as a chosen
