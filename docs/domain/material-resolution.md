@@ -90,7 +90,7 @@ covers exactly this set of cases.
 |---|---|---|---|
 | Standard requirement | Quantity calculated from active master data | Estimating | Reproducible preview; snapshot when a document is issued |
 | Planned adjustment | Transaction quantity deliberately chosen by estimator/planner | Sales/Estimating, later Job planning | Persist value, reason and actor on the draft/revision once adopted |
-| Source/pack scenario | Costed way one eligible offer could cover planned quantity | Resolution service using Purchasing facts | Ephemeral; a scenario is not history |
+| Source/pack proposal | Explainable default combination of internal quantity and supplier packs | Resolution service using Inventory/Purchasing facts | Ephemeral; a proposal is not history |
 | Selected material plan | User-adopted source/pack basis and expected surplus | Quotation revision, later work plan | Snapshot on issue/approval; still no stock reservation in Phase 3/4 |
 | Purchased quantity | Quantity ordered/received | Purchasing | Existing PO/receipt facts, later extended for packs |
 | Issued/returned/scrapped quantity | Physical movements against a job | Inventory/Job Execution | Immutable stock movements and job-cost facts |
@@ -106,7 +106,7 @@ Never overwrite standard with planned or planned with actual. Variance needs all
 | Commercial package definitions and barcodes | Item master | Before pack-aware preview | Optional company capability |
 | Supplier pack association, order multiple and offers | Purchasing | 3 only if preview prices/suggests suppliers; otherwise 4/5 | Purchasing owns facts; Estimating only reads them |
 | Standard requirement and planned adjustment | Estimating/Sales draft | 3 | Core simple path |
-| Source/pack scenario resolver | Estimating resolution service | 3 optional | Advanced UI; non-binding output |
+| Source/pack proposal engine | Estimating resolution service | 3 | Non-binding default; user may replace its mixed-pack plan |
 | Customer price lists/rules and manual overrides | Sales | 4 | Configurable pricing strategies |
 | Physical containers and remaining contents | Inventory | 5 | Advanced tracking mode only |
 | Reservation, issue, return, scrap and actual consumption | Inventory + Job Execution | 5 | Operational UI selected by capability |
@@ -155,7 +155,7 @@ The preview should calculate and explain:
 1. standard requirement and all rate/formulation provenance;
 2. any explicit planned adjustment and its reason;
 3. estimated internal cost and cost-source provenance;
-4. optional source/pack cost/coverage scenarios, independently calculated and fully explained;
+4. an explainable default source/pack proposal, able to mix pack sizes/suppliers, plus alternatives;
 5. covered quantity, expected surplus or residual, and warnings/fallbacks;
 6. selling-price output only through an explicitly selected strategy, kept separate from cost.
 
@@ -163,6 +163,8 @@ The preview must not reserve stock, create a purchase order, represent a proposa
 historical fact, or claim an estimated supplier price is actual accounting cost. Persist only a
 user-adopted plan or an issued document snapshot.
 
+The default targets internal cost/coverage, never selling price; users may replace it, with Q19/Q18/Q25 deciding ranking, audit and permissions.
+On-hand is advisory; exact unopened-pack availability needs container tracking, and an offer does not prove supplier stock.
 ## Authorisation impact
 
 Material resolution contains capabilities and fields with different sensitivity. The final

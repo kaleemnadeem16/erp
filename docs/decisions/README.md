@@ -63,7 +63,7 @@ in the same commit.
 | [0048](0048-configurable-hierarchical-overhead-allocation.md) | Configurable, hierarchical overhead allocation for assemblies | ~~superseded by [0049](0049-assembly-group-overhead-scope.md)~~ | 2026-09-23 |
 | [0049](0049-assembly-group-overhead-scope.md) | Scope overhead through Assembly Group, not item category; compute it, don't store it | accepted | 2026-09-24 |
 | [0050](0050-item-specific-uom-conversion-and-divisibility.md) | Item-specific UoM conversions; divisibility is an item-and-UoM rule | accepted | 2026-09-25 |
-| [0051](0051-phase-3-commercial-packaging-and-supplier-cost-scenarios.md) | Add transparent supplier-cost scenarios; defer sourcing optimisation | proposed | 2026-09-25 |
+| [0051](0051-phase-3-commercial-packaging-and-supplier-cost-scenarios.md) | Generate default mixed-pack cost plans; keep them non-binding | proposed | 2026-09-25 |
 
 **Next number: 0052**
 

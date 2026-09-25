@@ -46,10 +46,11 @@ historical fact, and Phase 3 never reserves stock.
 
 Research now recommends the narrower middle option recorded as
 [proposed ADR 0051](decisions/0051-phase-3-commercial-packaging-and-supplier-cost-scenarios.md):
-include fixed commercial-package and Purchasing-owned supplier-offer facts, but calculate each
-eligible offer as an independent, explainable cost/coverage scenario rather than ranking, mixing
-or allocating sources. Keep expected consumption cost, procurement cash outlay and expected
-surplus separate. This entry remains open until that proposed decision is reviewed and accepted.
+include fixed commercial-package and Purchasing-owned supplier-offer facts, generate an
+explainable default that may mix pack sizes/suppliers, and let the user replace it. Keep expected
+consumption cost, procurement cash outlay and expected surplus separate; the objective is internal
+company cost, never customer selling price. This entry remains open until Q19 supplies the default
+ranking policy and the proposed decision is accepted.
 
 ### Q18 — Audit requirements for planned quantity adjustments
 **Blocks:** The standard → planned quantity contract in the preview and later quotation revision
@@ -65,8 +66,9 @@ What is the default ranking: lowest estimated cost, least surplus, preferred sup
 earliest availability, or a configurable weighted policy? The result must expose why it won and
 allow a user selection without turning the rejected suggestions into history.
 
-If proposed ADR 0051 is accepted, Q19 stops blocking Phase 3 because that proposal deliberately
-does not rank a winner; Q19 remains required before a later supply-planning optimiser is built.
+The agreed Q17 direction now requires a default suggestion, including mixed pack sizes where
+useful, followed by user override. Q19 must therefore define its objective, tie-breakers,
+availability evidence and explanation contract before proposed ADR 0051 can be accepted.
 
 ### Q21 — Phase 4 selling-price strategy baseline
 **Blocks:** The boundary between Phase 3 cost output and Phase 4 customer price resolution

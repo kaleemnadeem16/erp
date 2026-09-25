@@ -1,4 +1,4 @@
-# 0051 — Add transparent supplier-cost scenarios; defer sourcing optimisation
+# 0051 — Generate default mixed-pack cost plans; keep them non-binding
 
 - **Status:** proposed
 - **Date:** 2026-09-25
@@ -92,39 +92,58 @@ The boundaries are firm:
 - First-generation packages are fixed-content only. Catch-weight/variable-content receipt facts
   remain [Q23](../OPEN-QUESTIONS.md#q23--variable-content-and-catch-weight-packages).
 
-### 2. Phase 3 calculates independent, explainable coverage scenarios, not an allocation plan
+### 2. Phase 3 proposes an explainable mixed-pack plan and lets the user replace it
 
-For each applicable offer independently, preview may calculate:
+Preview uses the standard/planned requirement, reliable internal-availability facts and applicable
+supplier offers to generate a default material plan. A plan may combine pack sizes and, when the
+policy permits, suppliers:
 
 ```text
 technical/standard requirement
   → explicit planned requirement
-  → supplier/package coverage quantity
-  → expected surplus
-  → normalised unit cost
-  → estimated consumption cost
-  → procurement cash outlay
+  → non-binding internal-stock contribution
+  → uncovered requirement
+  → one or more supplier/package plan lines
+  → total coverage and expected surplus
+  → estimated internal consumption cost and procurement cash outlay
 ```
 
-The output must keep these values separate. If 6.5 L is required and a supplier sells a 5 L pack,
-two packs cover 10 L and leave 3.5 L expected surplus. The estimate's material consumption cost is
-normally 6.5 L multiplied by the normalised unit cost; the procurement outlay is the price of two
-packs. The job is not silently charged for all 10 L merely because Purchasing must buy it. A later
-explicit policy may treat non-reusable residual as job cost, but Phase 3 must not assume that.
+If 6.5 L is required and one supplier offers 1 L, 5 L and 10 L packs, a valid suggestion or user
+selection may be one 5 L pack plus two 1 L packs. The output keeps coverage, expected surplus,
+normalised unit cost, estimated consumption cost and procurement cash outlay separate. The job is
+not silently charged for every purchased litre merely because Purchasing must buy complete packs;
+a later explicit policy may treat non-reusable residual as job cost, but Phase 3 does not assume
+that.
 
-The resolver lists eligible scenarios and their provenance/warnings. It may let the user inspect or
-select one scenario, but it does **not**:
+The default is a suggestion, not an instruction. The user may add/remove plan lines, change pack
+counts, choose another supplier or replace the suggested combination. The resolver recalculates
+the consequences and validates effective dates, currencies, MOQ, order multiples and quantity
+coverage. [Q18](../OPEN-QUESTIONS.md#q18--audit-requirements-for-planned-quantity-adjustments)
+decides when that change needs a reason; [Q25](../OPEN-QUESTIONS.md#q25--material-resolution-permissions-and-sensitive-fields)
+decides who may see cost and change or adopt the plan.
 
-- combine packages or split demand across suppliers;
-- rank a winner by a hidden weighted score;
-- subtract on-hand stock or open orders;
-- promise availability from lead time alone;
+The algorithm must explain why its default won. [Q19](../OPEN-QUESTIONS.md#q19--default-ranking-for-source-and-pack-proposals)
+remains a Phase 3 blocker and decides whether the default prioritises internal cost, procurement
+outlay, least surplus, preferred supplier/package, earliest known availability or a configurable
+ordered policy. The objective is always company/internal cost and material coverage, never the
+customer's selling price; Sales resolves that independently in Phase 4.
+
+“Available” must identify which fact it means:
+
+- current internal availability is aggregate stock quantity by the inventory scopes the caller is
+  allowed to inspect, and is advisory because Phase 3 does not reserve it;
+- an active supplier offer proves a purchasable pack/price relationship, not that the supplier has
+  that quantity physically available now;
+- exact internal availability by unopened pack size is knowable only if later physical-container
+  tracking records those individual packs. Without it, the system must not infer “two unopened 5 L
+  cans” from an aggregate balance of 10 L.
+
+The Phase 3 resolver does **not**:
+
+- hide its ranking rationale or alternatives;
+- claim advisory on-hand quantity has been allocated;
+- claim a supplier has stock from price/lead-time data alone;
 - create a PO, reserve stock, choose a warehouse/location/lot/container, or post anything.
-
-Therefore [Q19](../OPEN-QUESTIONS.md#q19--default-ranking-for-source-and-pack-proposals) is not a
-Phase 3 blocker under this proposal. It remains a later supply-planning decision for automatic
-ranking/optimisation. Phase 3 uses a deterministic display order only, never labels that order
-“best”.
 
 ### 3. Cost sources are explicit candidates; there is no silent fallback
 
@@ -153,14 +172,16 @@ into an inventory valuation or accounting fact.
   rather than a misleading zero or an unexplained manual rate.
 - **Positive:** A user can see both job-consumption economics and immediate purchasing cash need
   without conflating them.
+- **Positive:** Every preview begins with a useful default while preserving human control over
+  mixed-pack and multi-supplier choices.
 - **Positive:** ADR 0050 remains the single conversion/divisibility mechanism; commercial package
   identity adds meaning without duplicating its factor.
 - **Positive:** The design can later feed sourcing/planning without embedding a premature optimiser
   in Estimating.
 - **Negative:** Phase 3 gains master-data and Purchasing foundation beyond the preview screen
   itself, including effective-dated prices and package associations.
-- **Negative:** Users may see several valid scenarios without an automatic “best” answer until the
-  later Q19 policy is decided.
+- **Negative:** Even a bounded mixed-pack suggestion is an optimisation problem and needs a
+  deterministic Q19 objective, tie-breakers, limits and explainability tests.
 - **Requires:** Explicit permissions and API field filtering under Q25; supplier prices and
   internal costs cannot become visible merely because a user can run a quantity preview.
 - **Requires:** Acceptance-time constraints for effective-date/quantity-break overlap, currency/FX
@@ -172,10 +193,14 @@ into an inventory valuation or accounting fact.
 slice, but a new or unstocked purchased material has no useful AVCO and would force zero-cost or
 manual estimates precisely where supplier evidence is most valuable.
 
-**Build a full cheapest/least-surplus/fastest multi-source optimiser in Phase 3** — rejected. That
-requires a product policy for price versus surplus versus preference versus lead time, plus dated
-availability and stock/open-order netting. Mature products place that work in supply planning; it
-also crosses Phase 3's no-reservation boundary.
+**Show each pack/offer independently and prohibit combinations** — rejected. A real requirement may
+be covered most sensibly by one 5 L pack plus two 1 L packs, and forcing one pack size would make a
+human reproduce the missing combination outside the system.
+
+**Build a full supply-planning optimiser in Phase 3** — rejected. The bounded preview optimiser
+uses known internal quantities and commercial offers to propose an estimate. Supplier live stock,
+dated supply/demand netting, firm allocation, reservations and PO generation remain later planning
+and execution responsibilities.
 
 **Put a current price directly on `item_suppliers`** — rejected, consistent with ADR 0033. One
 column cannot represent currencies, date ranges, quantity breaks or package-specific prices, and
