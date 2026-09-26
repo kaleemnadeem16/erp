@@ -246,6 +246,10 @@ Spatie, provided they are modelled as policies/scopes and approval facts around 
 Existing authenticated-only features are **not grandfathered**. Module-owned registration changes
 where a capability is maintained; it does not retroactively add enforcement, field filtering or UI
 gating. The retrofit is an explicit implementation backlog:
+[authorization-retrofit.md](authorization-retrofit.md) tracks the audited, per-feature detail
+behind the summary row below — read/write permission per endpoint, missing filter UI, unprotected
+sensitive fields and a risk-ordered task checklist — for Items/Categories, Purchase
+Orders/Receipts and existing Estimating CRUD so far.
 
 | Area | Current boundary | Retrofit requirement |
 |---|---|---|
@@ -300,6 +304,8 @@ stored actors, not something a role assignment guarantees.
 
 ## Related
 
+- [Authorisation retrofit backlog](authorization-retrofit.md) — the tracked, per-feature audit and
+  task checklist behind "Incremental retrofit" above
 - [Approval workflows](approval-workflows.md)
 - [Extensibility](extensibility.md) — config-driven workflows and progressive capability modes
 - [Multi-tenancy](multi-tenancy.md) — company isolation is separate from record visibility
