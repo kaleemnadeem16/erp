@@ -199,6 +199,21 @@ module-scoped demo data (`database/seeders/Demo/Estimating/`, per
       the existing resolvers, initially allowed to be explicitly approximate `QUANTITY_ONLY`, with
       no Phase 3 draft/adoption table. It may propose mixed package use from internal inventory but
       must not absorb Purchasing, Sales pricing or Phase 5 reservation/execution
+      - [x] **Permission-registration foundation** — move the deployable vocabulary from one
+        central array to module-owned contributors and register ADR 0057's eight stable Estimating
+        capabilities. Effective permissions in `/user` and frontend gating remain a later vertical
+        slice so generated-client/UI changes land together rather than drifting
+      - [ ] **Technical preview slice** — selected Assembly/version + work quantity/UoM + optional
+        customer and dimension values, returning resolved application-rate/formulation/overhead
+        provenance and standard leaf-material quantities, with backend and a usable UI together
+      - [ ] **Inventory proposal slice** — permitted warehouse/location narrowing, consistent
+        quantity-only availability, strategy, deterministic recommendation/alternatives,
+        shortage/residual and every corresponding UI control/explanation
+      - [ ] **Variance and sensitive-field slice** — hypothetical planned adjustments and ADR 0054
+        outcome, independent availability/cost field filtering, effective-permission exposure and
+        frontend action/field gating
+      - [ ] **Completion slice** — stale fingerprint/warnings, accessibility and end-to-end tests,
+        Phase 3 product journey and final implementation-truth documentation
 - [x] Exclusion-constraint pattern applied consistently across formulation, overhead-policy and
       assembly version tables. The recursive-CTE roll-up originally proposed here was
       deliberately not used for formulations — see formulations.md's "Nesting" — so this item

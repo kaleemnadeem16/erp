@@ -169,13 +169,11 @@ checks them. The existing inventory approval Actions correctly follow this patte
 
 ## Registration and maintenance standard
 
-`PermissionRegistry` is currently the deployable vocabulary. `permission:register` creates rows
-idempotently for the current team, and tests prove fresh-install/admin registration.
-
-The target remains ADR 0028's module-owned registration: each module contributes its vocabulary
-to an application registry/manifest. The present single central array is workable at the current
-size but will become a merge hotspot as modules grow; move to module contributors before the Phase
-4 permission catalogue expands substantially.
+`PermissionRegistry` is the deployable aggregator. Each owning module contributes its vocabulary
+from its service provider; `permission:register` creates the combined rows idempotently for the
+current team. Tests prove module ownership, fresh-install/admin registration and duplicate-safe
+aggregation. This implements ADR 0028's module-owned-registration direction without making a
+central permission array a recurring merge hotspot.
 
 Required automated controls:
 
@@ -216,6 +214,7 @@ result of forgetting the question.
 ### Strong foundation already present
 
 - Namespaced permissions, roles, additive direct grants and company-scoped Teams plumbing.
+- Module-owned permission vocabularies aggregated by the production-safe registry.
 - Production-safe, idempotent permission registration, proven complete against every literal
   permission check in `app/` by an architecture test.
 - Action-level checks for high-risk Inventory workflows.
@@ -237,9 +236,6 @@ result of forgetting the question.
 - No client-side permission introspection exists, so most navigation and controls cannot yet be
   tailored before the API returns 403.
 - No role/permission administration UI or full role catalogue exists.
-- The registry is central despite the accepted module-owned-registration direction; that is
-  workable at the current size (see "Registration and maintenance standard" above) but will
-  become a merge hotspot as modules grow.
 
 The answer is therefore: **the RBAC base is good and reusable, but it is not by itself enough for
 multi-stage approvals or restricted data visibility.** Those can be added without replacing

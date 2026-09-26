@@ -1,0 +1,42 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Modules\Inventory\Support;
+
+/** Inventory-owned capabilities registered through the shared permission registry. */
+final class PermissionVocabulary
+{
+    /** @return list<string> */
+    public static function all(): array
+    {
+        return [
+            'inventory.physical_count.create',
+            'inventory.physical_count.count',
+            'inventory.physical_count.post',
+            'inventory.cutover.create',
+            'inventory.cutover.stage',
+            'inventory.cutover.validate',
+            'inventory.cutover.approve',
+            'inventory.cutover.commit',
+            'inventory.cutover.finalise',
+            'inventory.cutover.negative_opening.request',
+            'inventory.cutover.negative_opening.approve',
+            'inventory.negative-stock.request',
+            'inventory.negative-stock.override',
+            'inventory.negative-stock.approve',
+            'inventory.negative-stock.review',
+            'inventory.recalculation.request',
+            'inventory.recalculation.approve',
+            'inventory.recalculation.approve-high-risk',
+            'inventory.recalculation.execute',
+            'inventory.recalculation.review-regeneration',
+            'inventory.location-policy.manage',
+            'inventory.valuation-policy.manage',
+            'inventory.policy-history.view',
+            'inventory.negative-stock-policy.manage',
+            'inventory.backdating-horizon-policy.manage',
+            'inventory.recalculation-policy.manage',
+        ];
+    }
+}

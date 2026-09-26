@@ -3,7 +3,8 @@
 Owns Phase 3's costing layer: company-defined rate dimensions and application rates,
 formulations with versioning, customer overrides and cost roll-up, the overhead-policy resolver,
 and assemblies (a sellable unit of work) with their own versioned components and full five-part
-cost roll-up.
+cost roll-up. It also owns ADR 0058's read-only Material Resolution preview contract as the next
+implementation slice.
 
 **Governed by:** [application-rates.md](../../../../docs/domain/application-rates.md),
 [formulations.md](../../../../docs/domain/formulations.md),
@@ -72,8 +73,9 @@ cost roll-up.
 - Anything that issues a document or posts stock — Phase 4/5. Physically producing a
   `SEMI_FINISHED` item is Phase 5's `work_orders`, not this module
 - The fuller, ad-hoc **assembly cost preview** (quantity/dimension-value/customer selection with
-  live application-rate default-fallback visibility) — Step 3 shipped a narrower per-version
-  breakdown instead; see [phase-3-estimating-core.md](../../../../docs/phases/phase-3-estimating-core.md)
+  live application-rate default-fallback visibility) is not implemented yet — Step 3 shipped a
+  narrower per-version breakdown instead. ADR 0058 now fixes the preview boundary; see
+  [phase-3-estimating-core.md](../../../../docs/phases/phase-3-estimating-core.md)
 
 ## Key actions
 
@@ -125,6 +127,27 @@ needed here (unlike `FormulationCycleGuard`) — assembly components never refer
 assemblies, only items/formulations/application rates, and formulation-level cycles are already
 guarded entirely within `Formulation`'s own domain. `ExplodeAssemblyVersion` is read-only and
 reusable, called directly by the cost-breakdown endpoint.
+
+## Permissions
+
+Estimating contributes its own vocabulary to `PermissionRegistry`; the registry no longer owns a
+central cross-module list. Existing overhead permissions remain unchanged. ADR 0057 adds:
+
+```text
+estimating.material_preview.run
+estimating.inventory_availability.view
+estimating.internal_cost.view
+estimating.material_plan.adjust
+estimating.package_plan.adopt
+estimating.material_variance.request
+estimating.material_variance.approve
+estimating.material_resolution_history.view
+```
+
+The first three are consumed by the upcoming Phase 3 preview and its field-filtered response. The
+remaining five deliberately reserve stable Phase 4 transaction boundaries for draft
+adjustment/adoption, approval and history; Phase 3 does not invent a temporary persisted draft to
+exercise them.
 
 ## Events
 

@@ -6,6 +6,8 @@ namespace App\Modules\Purchasing;
 
 use App\Modules\Imports\Support\ImportTargetRegistry;
 use App\Modules\Purchasing\Imports\OpenPurchaseOrderImportTarget;
+use App\Modules\Purchasing\Support\PermissionVocabulary;
+use App\Support\PermissionRegistry;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
@@ -15,6 +17,10 @@ class PurchasingServiceProvider extends ServiceProvider
     {
         $this->app->afterResolving(ImportTargetRegistry::class, static function (ImportTargetRegistry $registry): void {
             $registry->register(new OpenPurchaseOrderImportTarget);
+        });
+
+        $this->app->afterResolving(PermissionRegistry::class, static function (PermissionRegistry $registry): void {
+            $registry->registerVocabulary('purchasing', PermissionVocabulary::all());
         });
     }
 
