@@ -154,6 +154,18 @@ automated release is still the verification point for this job.
     registry defensively, so a fresh database cannot silently produce an admin with zero
     permissions. The vocabulary is owned by `App\Support\PermissionRegistry`, not the demo
     seeder.
+
+    **`--permissions=all` is a one-time snapshot, not a standing wildcard** — it only grants the
+    names registered at that moment. Every deploy after this one that ships its own new
+    permissions (most do) leaves that administrator behind unless something re-grants the new
+    names; `permission:register` alone only creates the new `Permission` rows, it grants them to
+    nobody. Set the `ERP_ADMIN_EMAIL` repository variable to this administrator's email so the
+    deploy job's `erp:sync-admin-permissions` step (below) keeps them on the full vocabulary
+    automatically on every later release — see authorization.md's
+    [Safe rollout rule](authorization.md#safe-rollout-rule). Skipping this variable does not fail
+    the deploy, it just means the same drift found on 2026-09-26 (Material Preview's new
+    `estimating.*` permissions registered but never granted to the live admin) will recur with the
+    next feature slice.
 12. Seed data. Company 1 doubles as a demo/sandbox company on this live deployment (the
     user's own choice), so `demo:seed`'s dataset belongs here too, not just in dev — it
     populates currencies/UoMs/chart of accounts/parties/items/warehouses and a run of
@@ -178,7 +190,10 @@ Deployments do not run general seeders automatically. Use these boundaries:
 - **Migrations** change schema and perform deterministic, versioned data transformations that
   every environment must receive.
 - **Idempotent application commands** register runtime vocabulary such as permissions; the
-  deploy job runs `permission:register` on every release.
+  deploy job runs `permission:register` on every release, followed by `erp:sync-admin-permissions
+  $ERP_ADMIN_EMAIL` to keep the designated administrator granted every one of those registered
+  names — registering a permission and granting it are separate steps, and only the first
+  happened automatically before 2026-09-26.
 - **Seeders** are for demo/reference data or explicitly requested one-off provisioning. They can
   create duplicates, overwrite business data or grant access unexpectedly, so they require a
   deliberate operator action in production.

@@ -277,7 +277,17 @@ Adding a permission check is fail-closed: after enforcement, a user without the 
 capability loses access. Therefore a retrofit commit/deployment must include the permission
 vocabulary and an explicit assignment/backfill or administrator rollout procedure before relying
 on the check. Never assume an existing “admin” automatically receives permissions added after that
-user was created; `--permissions=all` describes creation-time grants, not a permanent wildcard.
+user was created; `--permissions=all` describes creation-time grants, not a permanent wildcard —
+confirmed as a real production gap on 2026-09-26, not just a theoretical one: the deploy job ran
+`permission:register` on every release (creating each new `Permission` row) but nothing granted
+those new names to the administrator created once, earlier, via `--permissions=all`, so the live
+admin fell further behind the vocabulary with every feature slice that shipped its own
+permissions. `erp:sync-admin-permissions {email}` closes this — it re-grants the full current
+vocabulary to a named administrator and is safe to re-run every deploy (see
+[deployment.md](deployment.md#first-deploy-runbook)); the deploy job runs it right after
+`permission:register` whenever the `ERP_ADMIN_EMAIL` repository variable is set. Local development
+never hit this gap because `StockDemoSeeder` already syncs the demo login to the full registry on
+every `demo:seed` run — the production path just had no equivalent.
 
 Registration without enforcement is allowed as a clearly documented foundation/reserved
 capability. Enforcement without assignment preparation, backend tests and usable UI is not. The
