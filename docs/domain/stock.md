@@ -327,11 +327,11 @@ valuation must agree. Build the reconciliation report early — discovering a di
 in is far worse than catching it in week one. `StockConservationPropertyTest` already asserts
 the feed, pool, layer and shortage states agree after arbitrary movement sequences.
 
-**Changing an item's `valuation_method` after it has stock moves.** Must be locked once any
-`stock_move` references the item — see [items.md](items.md#valuation-method) and
-[ADR 0032](../decisions/0032-per-item-valuation-method.md). This is the phase where that lock
-first has something real to check against; it isn't enforceable before `stock_moves` exists, and
-must not be forgotten once it does.
+**Changing an item's `valuation_method` after it has stock moves.** Locked once any `stock_move`
+references the item — `Item`'s `updating` hook, covering `valuation_method`, `avco_pool_scope`,
+`stock_uom_id` and `tracking` together, tested in `GoodsReceiptPostingTest`. See
+[items.md](items.md#valuation-method) and
+[ADR 0032](../decisions/0032-per-item-valuation-method.md).
 
 ## Related
 

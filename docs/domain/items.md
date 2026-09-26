@@ -127,17 +127,19 @@ later change to the category's default must not silently change an already-creat
 method. Every item ends up with exactly one method; unlike GL accounts, a chain that resolves to
 nothing is not tolerated here — item creation fails rather than leaving `valuation_method` unset.
 
-**Locked once the item has any inventory transaction** (Phase 2, once `stock_moves` exists — not
-enforceable yet, nothing to check against today). Changing an item's method after that point is a
-controlled conversion/revaluation, not a field edit.
+**Locked once the item has any inventory transaction.** `Item`'s `updating` hook rejects the
+change once a `stock_move` references the item
+(`GoodsReceiptPostingTest::test_item_valuation_policy_is_locked_after_receipt`). Changing an
+item's method after that point is a controlled conversion/revaluation, not a field edit.
 
 For an AVCO item, `avco_pool_scope` is resolved before its first movement from an explicit choice
 or the company's `COMPANY_ITEM` default, then persisted. Supported scopes are `COMPANY_ITEM`,
 `WAREHOUSE_ITEM` and `COMPANY_ITEM_BATCH`; the last requires `BATCH` tracking. Batch tracking does
 not itself choose batch valuation. Non-AVCO items leave the field null. Like valuation method,
-scope is locked after the first movement and never dynamically follows later company-default
-changes. A live change requires an effective-dated, approved valuation-policy migration with
-rebased pools and quantity/value reconciliation, per
+scope is locked after the first movement (same `updating` hook,
+`test_item_avco_pool_scope_is_locked_after_receipt`) and never dynamically follows later
+company-default changes. A live change requires an effective-dated, approved valuation-policy
+migration with rebased pools and quantity/value reconciliation, per
 [ADR 0039](../decisions/0039-configurable-avco-valuation-pools.md).
 
 **Three independent concepts — do not conflate them:** `valuation_method` (accounting cost basis),
