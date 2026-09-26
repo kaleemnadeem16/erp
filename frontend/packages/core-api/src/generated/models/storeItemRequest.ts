@@ -6,6 +6,7 @@
  */
 import type { StoreItemRequestDescription } from "./storeItemRequestDescription";
 import type { ItemType } from "./itemType";
+import type { StoreItemRequestQuantityPrecision } from "./storeItemRequestQuantityPrecision";
 import type { StoreItemRequestValuationMethod } from "./storeItemRequestValuationMethod";
 import type { StoreItemRequestAvcoPoolScope } from "./storeItemRequestAvcoPoolScope";
 import type { ItemTracking } from "./itemTracking";
@@ -22,6 +23,8 @@ export interface StoreItemRequest {
   description?: StoreItemRequestDescription;
   type: ItemType;
   stock_uom_id: number;
+  /** @maxLength 10000000000 */
+  quantity_precision?: StoreItemRequestQuantityPrecision;
   is_stocked?: boolean;
   is_purchasable?: boolean;
   is_sellable?: boolean;

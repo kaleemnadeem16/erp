@@ -5,6 +5,7 @@
  * OpenAPI spec version: 0.0.1
  */
 import type { ItemResourceDescription } from "./itemResourceDescription";
+import type { ItemResourceQuantityPrecision } from "./itemResourceQuantityPrecision";
 import type { ItemResourceAvcoPoolScope } from "./itemResourceAvcoPoolScope";
 import type { ItemResourceIncomeAccountId } from "./itemResourceIncomeAccountId";
 import type { ItemResourceExpenseAccountId } from "./itemResourceExpenseAccountId";
@@ -21,6 +22,7 @@ export interface ItemResource {
   description: ItemResourceDescription;
   type: string;
   stock_uom_id: number;
+  quantity_precision: ItemResourceQuantityPrecision;
   is_stocked: boolean;
   is_purchasable: boolean;
   is_sellable: boolean;

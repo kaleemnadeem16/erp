@@ -187,6 +187,29 @@ class PurchaseOrderApiTest extends PurchaseOrderFoundationTest
             ->assertJsonValidationErrors('purchase_uom_id');
     }
 
+    public function test_item_specific_pack_conversion_resolves_first_and_may_cross_uom_dimension(): void
+    {
+        // ADR 0050's own worked example: a roll (COUNT) is sold as a pack of
+        // an item stocked by the metre (LENGTH) — the global, dimension-locked
+        // service could never convert this; only an item_quantity_units
+        // override for this exact item can.
+        [$template] = $this->makeOrder();
+        $metre = Uom::create(['code' => 'm-pack', 'name' => 'Metre', 'dimension' => UomDimension::Length, 'factor_to_base' => '1']);
+        $roll = Uom::create(['code' => 'roll', 'name' => 'Roll', 'dimension' => UomDimension::Count, 'factor_to_base' => '1']);
+        $category = Category::create(['code' => 'fabric', 'name' => 'Fabric', 'default_valuation_method' => 'AVCO']);
+        $item = Item::create(['code' => 'roll-item', 'name' => 'Rolled fabric', 'type' => 'RAW', 'stock_uom_id' => $metre->id, 'category_id' => $category->id]);
+        $item->quantityUnits()->create(['uom_id' => $roll->id, 'factor' => '50']);
+
+        $payload = $this->payload($template, $item->id, $roll->id);
+        $payload['lines'][0]['ordered_qty'] = '2.0000';
+
+        $this->actingAs(User::factory()->create())->postJson('/api/v1/purchase-orders', $payload)
+            ->assertCreated()
+            ->assertJsonPath('data.lines.0.ordered_stock_qty', '100.0000')
+            ->assertJsonPath('data.lines.0.stock_uom_id', $metre->id)
+            ->assertJsonPath('data.lines.0.uom_factor', '50.000000000');
+    }
+
     public function test_base_line_amount_converts_the_rounded_transaction_line_total(): void
     {
         [$template, $item, $uom] = $this->makeOrder();

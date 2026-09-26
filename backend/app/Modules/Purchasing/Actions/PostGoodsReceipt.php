@@ -48,7 +48,7 @@ final class PostGoodsReceipt
                 PurchaseOrder::query()->lockForUpdate()->findOrFail($orderId);
             }
 
-            $poLines = PurchaseOrderLine::query()->with(['purchaseOrder', 'item.stockUom'])
+            $poLines = PurchaseOrderLine::query()->with(['purchaseOrder', 'item'])
                 ->whereKey($poLineIds)->orderBy('id')->lockForUpdate()->get()->keyBy('id');
             if ($poLines->count() !== $poLineIds->count()) {
                 throw new DomainInvariantException('Every receipt line must resolve to a visible PO line.', 'purchase_order_line_id');
@@ -81,8 +81,12 @@ final class PostGoodsReceipt
                     $maximum = $maximum->multipliedBy(BigDecimal::one()->plus(
                         BigDecimal::of($poLine->over_receipt_tolerance_percent ?? '0')->dividedBy(100, 9, RoundingMode::HALF_UP)
                     ));
-                    if ($poLine->item->stockUom->dimension->value === 'COUNT') {
-                        $maximum = $maximum->toScale(0, RoundingMode::FLOOR);
+                    // Divisibility is always an item(-and-UoM) rounding-precision rule,
+                    // never inferred from a UoM's dimension — ADR 0050. No precision
+                    // set means unrestricted, same as everywhere else this applies.
+                    if ($poLine->item->quantity_precision !== null) {
+                        $precision = BigDecimal::of($poLine->item->quantity_precision);
+                        $maximum = $maximum->dividedBy($precision, 0, RoundingMode::FLOOR)->multipliedBy($precision);
                     }
                 }
                 if ($cumulative->isGreaterThan($maximum)) {

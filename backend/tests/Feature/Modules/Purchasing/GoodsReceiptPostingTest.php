@@ -384,14 +384,14 @@ class GoodsReceiptPostingTest extends PurchaseOrderFoundationTest
     /**
      * ADR 0043's ALLOW_WITHIN_TOLERANCE arm had no posting test at all — only
      * the BLOCK arm above was covered, so neither the tolerance ceiling nor
-     * its whole-unit flooring was ever exercised.
+     * its precision-based flooring was ever exercised.
      */
-    private function tolerantOrder(string $orderedQty, string $tolerancePercent): array
+    private function tolerantOrder(string $orderedQty, string $tolerancePercent, ?string $quantityPrecision = null): array
     {
         [$order, $item, $uom] = $this->makeOrder();
         $item->update([
             'is_stocked' => true, 'valuation_method' => ValuationMethod::Avco, 'tracking' => ItemTracking::None,
-            'avco_pool_scope' => AvcoPoolScope::CompanyItem,
+            'avco_pool_scope' => AvcoPoolScope::CompanyItem, 'quantity_precision' => $quantityPrecision,
             'inventory_account_id' => $item->category->resolveInventoryAccountId() ?? ChartOfAccount::query()->firstOrFail()->id,
         ]);
         $order->lines()->create(array_merge($this->lineAttributes($order, $item, $uom), [
@@ -428,11 +428,12 @@ class GoodsReceiptPostingTest extends PurchaseOrderFoundationTest
         $this->assertDatabaseCount('stock_moves', 0);
     }
 
-    public function test_the_tolerance_ceiling_floors_to_a_whole_unit_for_a_countable_item(): void
+    public function test_the_tolerance_ceiling_floors_to_the_items_explicit_quantity_precision(): void
     {
-        // 10 + 15% is 11.5, but the stock UoM is COUNT — half a unit cannot be
-        // received, so the ceiling floors to 11 rather than rounding to 12.
-        [$order, $item, $uom] = $this->tolerantOrder('10.0000', '15.0000');
+        // 10 + 15% is 11.5; an explicit quantity_precision of 1 floors the
+        // ceiling to 11 rather than rounding to 12 — an item(-and-UoM) rule
+        // (ADR 0050), never inferred from the stock UoM's COUNT dimension.
+        [$order, $item, $uom] = $this->tolerantOrder('10.0000', '15.0000', '1');
         $locationId = $this->locationId();
 
         $rejected = $this->createReceipt(
@@ -443,6 +444,21 @@ class GoodsReceiptPostingTest extends PurchaseOrderFoundationTest
 
         $accepted = $this->createReceipt(
             $order->lines()->sole()->id, $item->id, $uom->id, $locationId, ['received_qty' => '11.0000'],
+        );
+        $this->postJson("/api/v1/goods-receipts/{$accepted}/post")->assertOk();
+    }
+
+    public function test_the_tolerance_ceiling_stays_fractional_for_a_countable_item_with_no_quantity_precision_set(): void
+    {
+        // Same 10 + 15% = 11.5 ceiling as above, but with no explicit
+        // quantity_precision — divisibility is never inferred from the stock
+        // UoM's COUNT dimension (ADR 0050), so the ceiling is not floored and
+        // a fractional receipt right at 11.5 is accepted.
+        [$order, $item, $uom] = $this->tolerantOrder('10.0000', '15.0000');
+        $locationId = $this->locationId();
+
+        $accepted = $this->createReceipt(
+            $order->lines()->sole()->id, $item->id, $uom->id, $locationId, ['received_qty' => '11.5000'],
         );
         $this->postJson("/api/v1/goods-receipts/{$accepted}/post")->assertOk();
     }

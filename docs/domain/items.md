@@ -236,7 +236,8 @@ supplier-account and optional purchase-UoM references.
   — internal-inventory package proposals
 - [units-of-measure.md](units-of-measure.md)
 - [ADR 0050](../decisions/0050-item-specific-uom-conversion-and-divisibility.md) — item-specific
-  purchase-UoM conversion and divisibility, decided, not yet implemented
+  purchase-UoM conversion and divisibility, implemented via `item_quantity_units`/
+  `quantity_precision`
 - [ADR 0052](../decisions/0052-progressive-inventory-package-tracking.md) — resolved package
   tracking mode is persisted before first movement
 - [stock.md](stock.md) — valuation of stocked items

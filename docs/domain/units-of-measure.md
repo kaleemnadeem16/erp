@@ -53,7 +53,7 @@ is what makes the model work across industries.
 
 Collapsing these into one table is the most common way this kind of model goes wrong.
 
-### Item-specific conversions (decided, not yet implemented)
+### Item-specific conversions
 
 This table's global `factor_to_base` correctly expresses litre↔millilitre, kilogram↔gram and
 metre↔millimetre — the same ratio for every item. It cannot correctly express each↔box,
@@ -61,11 +61,18 @@ tablet↔strip↔carton, metre↔roll, sheet↔m² or drum↔litre, because thos
 specific item, not the unit pair: one item's box holds 12 each, another's holds 24.
 [ADR 0050](../decisions/0050-item-specific-uom-conversion-and-divisibility.md) decided the
 mechanism for this — a per-(item, UoM) `item_quantity_units` override, resolved *before* falling
-back to this global service, never instead of it:
+back to this global service, never instead of it, implemented as
+`App\Modules\Inventory\Actions\ItemUomConversionService`:
 
 1. An `item_quantity_units` row for this item and UoM, if one exists.
 2. Otherwise, if the two UoMs share a `dimension`, this service.
 3. Otherwise, fail — there is no conversion between an unrelated UoM and this item.
+
+`item_quantity_units` is managed through its own CRUD endpoints (`/api/v1/item-quantity-units`,
+filterable by `item_id`); the (item, UoM) pair is create-only, matching `ItemSupplier`'s
+identity lock — repointing an override is delete-and-recreate, not an update.
+`BuildPurchaseOrderLineAttributes` is the first real caller, replacing its previous direct call to
+the global service.
 
 **An item-specific conversion may cross dimensions** (a roll is `COUNT`, its length is `LENGTH`;
 a sheet is `COUNT`, its area is `AREA`) — the one deliberate exception to this file's own
@@ -74,8 +81,11 @@ convert across dimensions for every other caller is unchanged.
 
 Divisibility (can a fractional quantity exist) is decided the same way: never inferred from
 `dimension` — `COUNT` does not mean indivisible — always an explicit, item(-and-UoM) rounding
-precision, defaulting to unrestricted. See ADR 0050 for the full reasoning and schema; not yet
-implemented.
+precision (`items.quantity_precision`, and per-override on `item_quantity_units`), defaulting to
+unrestricted. `PostGoodsReceipt`'s over-receipt tolerance ceiling is the first real consumer,
+replacing its previous ad hoc floor for any `COUNT`-dimension item — a `COUNT` item with no
+explicit `quantity_precision` now keeps a fractional ceiling instead of silently rounding down. See
+ADR 0050 for the full reasoning and schema.
 
 ### Precision
 
@@ -107,7 +117,7 @@ their own. Display UoM is a presentation preference, like display currency
 ## Related
 
 - [ADR 0050](../decisions/0050-item-specific-uom-conversion-and-divisibility.md) — item-specific
-  conversion and divisibility decision, not yet implemented
+  conversion and divisibility decision, implemented
 - [material-resolution.md](material-resolution.md) — cross-module research baseline; remaining
   commercial-package and supplier-offer gaps across later phases
 - [items.md](items.md) — each item has a stock UoM

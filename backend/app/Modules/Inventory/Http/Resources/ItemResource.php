@@ -28,6 +28,7 @@ class ItemResource extends JsonResource
             'description' => $item->description,
             'type' => $item->type->value,
             'stock_uom_id' => $item->stock_uom_id,
+            'quantity_precision' => $item->quantity_precision,
             'is_stocked' => $item->is_stocked,
             'is_purchasable' => $item->is_purchasable,
             'is_sellable' => $item->is_sellable,
