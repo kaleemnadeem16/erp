@@ -9,9 +9,9 @@ Questions do not linger once resolved.
 
 ## Blocking
 
-Q25 blocks finalising the Phase 3 Material Resolution / Assembly Preview ADR. Its cross-module
-context is recorded in [material-resolution.md](domain/material-resolution.md); answer it without
-letting a paint/coatings example silently define the generic model. Q21 is resolved by ADR 0055.
+No open question now blocks finalising the Phase 3 Material Resolution / Assembly Preview ADR.
+Q25 is resolved by ADR 0057; Q26–Q28 remain non-blocking follow-ups for organisation scope and
+reusable approvals rather than reasons to pretend those capabilities exist in Phase 3.
 
 Q14 (backdated stock receipts) was resolved on 2026-09-01 and its final reviewed
 consolidation is
@@ -26,17 +26,6 @@ Q1, Q2 and Q3 were resolved on 2026-08-10 — see
 [ADR 0023](decisions/0023-retention-retainage-enabled.md),
 [ADR 0024](decisions/0024-onboarding-base-currency-and-fiscal-year.md) and
 [ADR 0025](decisions/0025-configurable-tax-engine.md).
-
-### Q25 — Material-resolution permissions and sensitive fields
-**Blocks:** The Material Resolution / Assembly Preview ADR and preview API/UI contract
-
-Which capabilities need independent permissions in the first preview: running it, viewing scoped
-inventory/package availability, viewing internal cost, adjusting planned quantity, adopting a
-package plan, submitting a controlled variance and viewing resolution history? Decide which fields
-a basic estimator may see, whether cost/margin is restricted, and which actors may request or
-approve ADR 0054 exceptions. Supplier offers are no longer part of Phase 3, and selling-price
-override belongs to ADR 0055/Phase 4. The complete per-feature answer must be recorded in
-[material-resolution.md](domain/material-resolution.md#authorisation-impact).
 
 ---
 
@@ -120,6 +109,8 @@ differ.
 What organisational structure should access follow: departments, branches, sites, warehouses,
 cost centres, project teams or a composable organisation-unit hierarchy? Define whether users may
 see own, assigned, unit or all-company records and whether one user can act in several units.
+Define bounded delegated administration—what a department head may assign to subordinates—and
+routine cross-department assigned/task-scoped access without creating one role per department pair.
 Spatie Teams currently scopes assignments by `company_id`; it is groundwork, not this record-scope
 model. See [authorization.md](architecture/authorization.md#teams-and-organisational-scope).
 
@@ -152,6 +143,7 @@ Answered questions live in [decisions/](decisions/) as ADRs. See the
 <a id="q19--default-ranking-for-source-and-pack-proposals"></a>
 <a id="q21--phase-4-selling-price-strategy-baseline"></a>
 <a id="q22--physical-container-granularity"></a>
+<a id="q25--material-resolution-permissions-and-sensitive-fields"></a>
 
 Q17, Q19 and Q22 were resolved on 2026-09-26 by
 [ADR 0051](decisions/0051-phase-3-commercial-packaging-and-supplier-cost-scenarios.md),
@@ -169,3 +161,8 @@ Q21 was resolved on 2026-09-26 by
 [ADR 0055](decisions/0055-progressive-sales-pricing-and-controlled-formulas.md): Sales pricing is
 independent from internal cost and tax, uses progressive SIMPLE/MANAGED/ADVANCED capabilities,
 and advanced company formulas remain controlled, typed, versioned and explainable.
+
+Q25 was resolved on 2026-09-26 by
+[ADR 0057](decisions/0057-stable-material-resolution-capabilities-with-dynamic-assignment.md):
+Material Resolution has stable action/field capabilities with company-configured roles and direct
+grants; approval policy remains separate, while department and record scope remain Q26.

@@ -196,7 +196,8 @@ module-scoped demo data (`database/seeders/Demo/Estimating/`, per
       this item's ad-hoc quantity/dimension-value/customer selection or live application-rate
       default-fallback visibility; still open. Before implementation, resolve the Phase 3
       boundary in [material-resolution.md](../domain/material-resolution.md), accepted
-      [ADRs 0051–0055](../decisions/README.md), and remaining Q25; the preview proposes
+      [ADRs 0051–0055 and 0057](../decisions/README.md); all blocking boundary questions are now
+      resolved. The preview proposes
       mixed package use from internal inventory but must not absorb Purchasing, Sales pricing or
       Phase 5 reservation/execution
 - [x] Exclusion-constraint pattern applied consistently across formulation, overhead-policy and

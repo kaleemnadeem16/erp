@@ -70,6 +70,25 @@ Rules:
 - Wildcard permissions are disabled. Keep them disabled unless a later ADR defines safe admin
   semantics; `*` means all, not pattern discovery.
 
+## Stable capabilities, dynamic company configuration
+
+“Dynamic permissions” means companies dynamically configure assignments around a stable,
+application-owned capability vocabulary. The enforcement points themselves cannot be arbitrary
+company-created strings.
+
+| Stable application contract | Company-configurable data |
+|---|---|
+| Capability names and their backend enforcement points | Role names and permission bundles |
+| Which fields are sensitive | Role and direct-user assignments |
+| Tenant isolation and immutable workflow evidence | Approval-required/tolerance policy |
+| Supported record-scope kinds | Organisation memberships and scope grants |
+| Separation rules that a policy declares mandatory | Authority limits, approver counts and routing |
+
+This lets a small company give one Owner role every ordinary module capability and configure no
+approval for normal work. A larger company can distribute the same capabilities across entry,
+review and approval roles, constrain them to organisation units and activate multi-step policy.
+No module-specific “small company mode” or role-name checks are required.
+
 ## Roles and direct grants
 
 Roles are company-configurable bundles such as Buyer, Purchasing Approver or Storekeeper—not
@@ -79,6 +98,14 @@ hold several narrow roles.
 Direct grants are for exceptional additions, temporary cover or a genuinely unique duty. They
 must be visible in administration/audit UI. Avoid routine per-user permission matrices: they
 become impossible to review and do not provide deny semantics.
+
+### Delegated administration
+
+A future department/organisation-unit administrator may assign only an explicitly delegable
+subset inside units they administer. Delegation cannot cross companies, exceed the delegator's
+administration mandate or confer protected tenant/finance administration. Every grant, change and
+removal records actor, time, reason and optional expiry. Q26 owns the organisation model and
+delegated boundary; role assignment alone must not imply authority to administer other users.
 
 ## Teams and organisational scope
 
@@ -121,6 +148,11 @@ API resource; a hidden frontend column is not security.
 The scope decision must be applied consistently to list, count, search, export, lookup/select,
 show and mutation queries. Otherwise a “restricted” user leaks data through totals, autocomplete
 or an ID-based endpoint.
+
+Routine cross-department work should use organisation membership, assigned-record access or
+temporary task-scoped access rather than one role per pair of departments. “Write-only” is not a
+safe general access level: create/update must include the minimum read projection needed to perform
+and verify the work, while unrelated records and sensitive fields remain hidden.
 
 ## Where checks live
 

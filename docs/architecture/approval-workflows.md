@@ -139,6 +139,15 @@ capability (`purchasing.purchase_order.approve`) separate from configured author
 Changing a user's authority affects future decisions only. Historical decisions retain the
 authority snapshot that made the actor eligible at the time.
 
+## Small-company behaviour
+
+Approval is policy-driven, not forced merely because an `approve` capability exists. A small
+company may assign entry, submission, approval and issue capabilities to one broad Owner role and
+configure ordinary work for no approval. If a policy deliberately requires independent approval,
+the system still requires a distinct eligible actor; it must not turn a configured control into
+self-approval because the company has few users. Companies choose either a simpler policy or the
+additional actor with full awareness of that consequence.
+
 ## Department and same-department approvals
 
 “Two approvals from the same department” and “one approval from each of two departments” are

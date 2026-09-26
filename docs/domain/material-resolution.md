@@ -111,10 +111,30 @@ changes after approval are re-evaluated and cannot inherit an old decision.
 
 ## Authorisation impact
 
-Material resolution has independently sensitive actions and fields. Q25 will decide the first
-registered vocabulary for running preview, viewing internal cost, changing planned quantity,
-selecting a package plan and overriding cost/price. Permission to edit is not approval, and
-organisational record scope remains Q26.
+Material resolution uses the stable capabilities accepted by
+[ADR 0057](../decisions/0057-stable-material-resolution-capabilities-with-dynamic-assignment.md):
+
+| Permission | Protected boundary |
+|---|---|
+| `estimating.material_preview.run` | Technical standard/planned preview and non-sensitive provenance |
+| `estimating.inventory_availability.view` | Scoped inventory/package availability and alternatives |
+| `estimating.internal_cost.view` | Internal cost, valuation evidence and cost/waste consequences |
+| `estimating.material_plan.adjust` | Draft planned-quantity change and policy re-evaluation |
+| `estimating.package_plan.adopt` | Adopt a valid proposal/alternative without reserving stock |
+| `estimating.material_variance.request` | Submit the current immutable variance revision for approval |
+| `estimating.material_variance.approve` | Independently decide an eligible pending variance |
+| `estimating.material_resolution_history.view` | Adoption/evaluation/decision history, still field-filtered |
+
+`run` alone never leaks inventory balances or cost. API resources omit/mask availability and cost
+unless their own permission is effective, including history, exports, lookups, approval tasks and
+notifications. A cost-triggered approval routes only to an approver who can view internal cost.
+Selling price/margin and supplier offers remain outside this permission set.
+
+Roles and assignments are company-configurable. The first implementation is honestly
+company-scoped; Q26 later adds own/assigned/organisation-unit/task scopes without renaming these
+capabilities. ADR 0054 policy determines audit/reason/approval/block. Small companies may
+configure ordinary work without approval; whenever `APPROVAL_REQUIRED` is selected, requester and
+approver are distinct and `BLOCKED` has no permission bypass.
 
 Every implemented action must complete the
 [authorisation checklist](../architecture/authorization.md#per-feature-authorisation-checklist),
@@ -149,8 +169,6 @@ policy and retains enough pre-/post-rounding evidence to explain the result.
 
 ## Open decisions
 
-- [Q25](../OPEN-QUESTIONS.md#q25--material-resolution-permissions-and-sensitive-fields) — action
-  permissions and sensitive fields.
 - Q23/Q24 — variable-content packages and execution exceptions.
 - Q26–Q28 — organisational scope and approval workflows.
 
@@ -172,4 +190,4 @@ Primary sources used to validate the boundaries:
 - [Assemblies](assemblies.md) · [Sales pipeline](sales-pipeline.md) · [Job costing](job-costing.md)
 - [Sales pricing](sales-pricing.md) · [Tax](tax.md)
 - [Phase 3](../phases/phase-3-estimating-core.md)
-- [ADR 0054](../decisions/0054-risk-based-material-plan-variance-controls.md) · [ADR 0055](../decisions/0055-progressive-sales-pricing-and-controlled-formulas.md)
+- [ADR 0054](../decisions/0054-risk-based-material-plan-variance-controls.md) · [ADR 0055](../decisions/0055-progressive-sales-pricing-and-controlled-formulas.md) · [ADR 0057](../decisions/0057-stable-material-resolution-capabilities-with-dynamic-assignment.md)
