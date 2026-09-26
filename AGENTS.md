@@ -127,13 +127,16 @@ report costs more than an incomplete one.
 
 ## Conventions
 
-- **A feature isn't done until backend, UI, permissions and docs land together** — small,
-  coherent commits are fine (even one commit per vertical slice), but never a backend-only commit
-  that leaves the UI thinner than what just shipped. If an endpoint gained a filter, sort field or
-  include, the screen using it gains the control for it in the same pass, or the gap is written
-  down as deferred rather than left silent. See
-  [user-interface.md](docs/architecture/user-interface.md) ("not UI-complete merely because its
-  endpoints have generated hooks") and
+- **Backend ahead of UI is often correct, not a gap.** Read
+  [extensibility.md](docs/architecture/extensibility.md#progressive-capability-modes)'s
+  domain-capability / company-configuration / UI-exposure split before assuming an endpoint needs
+  a matching screen — shipping the mature backend capability first, with UI exposure a deliberate,
+  separate, sometimes-later packaging decision, is the established pattern here (ADR 0033's
+  `purchase_uom_id` sat shape-only for weeks; that was correct, not debt). The actual defect this
+  guards against is narrower: an **already-existing** screen silently missing a control for
+  something its own endpoint already validates (a status filter nobody wired up) — see
+  [user-interface.md](docs/architecture/user-interface.md). When new backend work does need
+  permissions or docs alongside it, land those in the same commit — see
   [authorization.md](docs/architecture/authorization.md#per-feature-authorisation-checklist).
 - New ADRs use [docs/templates/adr.md](docs/templates/adr.md), numbered sequentially
 - Domain docs use [docs/templates/domain-doc.md](docs/templates/domain-doc.md)

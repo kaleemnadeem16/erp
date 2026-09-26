@@ -37,12 +37,16 @@ for the stronger 44 by 44 target. References:
 
 - Lists answer an operational question, not merely expose a table. Show useful defaults and totals,
   preserve filters in the URL and provide a card/detail alternative on narrow screens.
-- A list screen exposes every filter, sort field and include its backend endpoint validates for
-  list queries — a control per accepted `filter.*`/`sort` value, not just whichever ones the first
-  draft happened to need. A backend "search API layer with multiple filter options" and a frontend
-  with no control for most of them is the same defect as a missing endpoint: the capability exists
-  but nobody can reach it. If a filter is deliberately deferred (rare, high-cardinality, admin-only),
-  say so in the screen's own comment rather than leaving the gap to be rediscovered later.
+- An **already-existing** list screen exposes the filters, sort fields and includes its own
+  backend endpoint validates for it — a control per accepted `filter.*`/`sort` value that
+  endpoint already offers this exact screen, not just whichever ones the first draft happened to
+  need. This is not "every backend capability needs a frontend" (see
+  [extensibility.md](extensibility.md#progressive-capability-modes) — backend ahead of UI is
+  often the right shape); it's narrower: a screen that already exists silently ignoring part of
+  its own endpoint's validated query surface. If a validated filter is deliberately left off for
+  now (rare, high-cardinality, admin-only, or genuinely gated behind a company/advanced mode —
+  `AdvancedOptionsMenu`/`OptionCards` for that), say so in the screen's own comment rather than
+  leaving the gap to be silently rediscovered.
 - Document detail is a workspace: identity and status first, lines and totals together, then audit
   history and secondary metadata. Available actions derive from server state and permission.
 - Draft line entry must support keyboard-efficient repeated work. Do not hide validation until the
