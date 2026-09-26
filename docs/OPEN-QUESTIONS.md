@@ -9,7 +9,7 @@ Questions do not linger once resolved.
 
 ## Blocking
 
-Q18, Q21 and Q25 block finalising the Phase 3 Material Resolution / Assembly Preview ADR. Their
+Q21 and Q25 block finalising the Phase 3 Material Resolution / Assembly Preview ADR. Their
 shared research baseline and cross-module context are recorded in
 [material-resolution.md](domain/material-resolution.md); answer them one by one rather than
 letting a paint/coatings example silently define the generic model.
@@ -28,13 +28,6 @@ Q1, Q2 and Q3 were resolved on 2026-08-10 — see
 [ADR 0024](decisions/0024-onboarding-base-currency-and-fiscal-year.md) and
 [ADR 0025](decisions/0025-configurable-tax-engine.md).
 
-### Q18 — Audit requirements for planned quantity adjustments
-**Blocks:** The standard → planned quantity contract in the preview and later quotation revision
-
-Must every transaction-specific departure from the calculated standard carry a reason and actor,
-or only adjustments above a threshold/policy? The system must preserve standard, planned and
-actual independently; this question decides the audit burden, not whether the values are kept.
-
 ### Q21 — Phase 4 selling-price strategy baseline
 **Blocks:** The boundary between Phase 3 cost output and Phase 4 customer price resolution
 
@@ -46,13 +39,13 @@ price/quotation rounding policies apply. Internal cost must remain independent o
 ### Q25 — Material-resolution permissions and sensitive fields
 **Blocks:** The Material Resolution / Assembly Preview ADR and preview API/UI contract
 
-Which capabilities need independent permissions in the first preview: viewing internal cost and
-supplier offers, running the preview, adjusting planned quantity, selecting a source/pack plan,
-overriding cost, overriding selling price and viewing resolution history? Decide which fields a
-basic estimator may see, whether cost/margin is restricted, and which adopted overrides require
-approval rather than permission alone. Candidate names in
-[material-resolution.md](domain/material-resolution.md#authorisation-impact) are illustrative
-until this is answered.
+Which capabilities need independent permissions in the first preview: running it, viewing scoped
+inventory/package availability, viewing internal cost, adjusting planned quantity, adopting a
+package plan, submitting a controlled variance and viewing resolution history? Decide which fields
+a basic estimator may see, whether cost/margin is restricted, and which actors may request or
+approve ADR 0054 exceptions. Supplier offers are no longer part of Phase 3, and selling-price
+override belongs to Q21/Phase 4. The complete per-feature answer must be recorded in
+[material-resolution.md](domain/material-resolution.md#authorisation-impact).
 
 ---
 
@@ -164,6 +157,7 @@ Answered questions live in [decisions/](decisions/) as ADRs. See the
 [decision index](decisions/README.md) for the full list.
 
 <a id="q17--phase-3-commercial-package-and-costed-source-proposal-scope"></a>
+<a id="q18--audit-requirements-for-planned-quantity-adjustments"></a>
 <a id="q19--default-ranking-for-source-and-pack-proposals"></a>
 <a id="q22--physical-container-granularity"></a>
 
@@ -173,3 +167,8 @@ Q17, Q19 and Q22 were resolved on 2026-09-26 by
 [ADR 0053](decisions/0053-explainable-inventory-package-selection-presets.md): Phase 3 proposes
 mixed package use from internal inventory, physical tracking is progressive, and the first release
 ships three explainable selection presets. Supplier replenishment remains Purchasing-owned.
+
+Q18 was resolved on 2026-09-26 by
+[ADR 0054](decisions/0054-risk-based-material-plan-variance-controls.md): every adopted variance
+is audited, while versioned company/category/item policy escalates it to explanation, independent
+approval or a hard block according to configured quantity, cost, waste and risk bands.

@@ -183,6 +183,7 @@ Before adding any approval transition, document and test:
   integration.
 - **Purchasing:** PO/receipt/supplier-invoice approval rules and state transitions.
 - **Sales:** quotation, discount and price-override approval.
+- **Estimating:** material-plan variance approval when ADR 0054's configured risk band requires it.
 - **Inventory/Job Execution:** movement, scrap, substitution and operational exception approval.
 - **Finance:** invoice/payment/journal approval and segregation of duties.
 
@@ -195,3 +196,5 @@ decisions; it must not become a generic service that mutates arbitrary module st
 - [Extensibility](extensibility.md#config-driven-workflow) — the earlier minimal workflow sketch
 - [Purchasing](../domain/purchasing.md) — first likely approval consumer
 - [ADR 0028](../decisions/0028-dynamic-namespaced-permissions.md)
+- [ADR 0054](../decisions/0054-risk-based-material-plan-variance-controls.md) — material-plan
+  variance controls consume this contract when approval is configured

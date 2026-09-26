@@ -19,7 +19,7 @@ independent from internal material cost.
 | State | Meaning | Persistence boundary |
 |---|---|---|
 | Standard requirement | Calculated from active technical master data | Reproducible preview; snapshot on document issue |
-| Planned adjustment | Transaction quantity deliberately chosen by the user | Draft/revision after adoption; Q18 decides reason burden |
+| Planned adjustment | Transaction quantity deliberately chosen by the user | Immutable adoption evaluation under ADR 0054; snapshot with the draft/revision |
 | Inventory proposal | Explainable default from currently usable internal stock | Ephemeral and advisory |
 | Selected material plan | User-adopted package/balance/container mix | Draft/revision; snapshot on issue/approval |
 | Reserved/issued/returned/scrapped | Physical execution against work | Phase 5 stock and job facts |
@@ -91,6 +91,21 @@ shapes, transition rules and deterministic tie-breakers are in
 - An issued quotation snapshots the adopted material/cost evidence so later policy or master-data
   changes do not rewrite history.
 
+## Planned-variance control
+
+[ADR 0054](../decisions/0054-risk-based-material-plan-variance-controls.md) audits every adopted
+standard-to-planned difference without recording every draft keystroke. Versioned policy resolves
+item → nearest category → company and applies the strongest matching effect:
+
+```text
+AUDIT_ONLY < REASON_REQUIRED < APPROVAL_REQUIRED < BLOCKED
+```
+
+Quantity, percentage, internal-cost, residual/waste and controlled-item conditions remain typed
+measures rather than one opaque score. A different valid package mix at the same planned quantity
+normally needs no reason unless its cost/waste consequence crosses a configured band. Material
+changes after approval are re-evaluated and cannot inherit an old decision.
+
 ## Authorisation impact
 
 Material resolution has independently sensitive actions and fields. Q25 will decide the first
@@ -131,8 +146,6 @@ policy and retains enough pre-/post-rounding evidence to explain the result.
 
 ## Open decisions
 
-- [Q18](../OPEN-QUESTIONS.md#q18--audit-requirements-for-planned-quantity-adjustments) — override
-  reason/audit burden.
 - [Q21](../OPEN-QUESTIONS.md#q21--phase-4-selling-price-strategy-baseline) — customer selling-price
   strategies.
 - [Q25](../OPEN-QUESTIONS.md#q25--material-resolution-permissions-and-sensitive-fields) — action
@@ -157,3 +170,4 @@ Primary sources used to validate the boundaries:
 - [Items](items.md) · [Stock](stock.md) · [Purchasing](purchasing.md)
 - [Assemblies](assemblies.md) · [Sales pipeline](sales-pipeline.md) · [Job costing](job-costing.md)
 - [Phase 3](../phases/phase-3-estimating-core.md)
+- [ADR 0054](../decisions/0054-risk-based-material-plan-variance-controls.md)

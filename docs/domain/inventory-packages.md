@@ -141,7 +141,9 @@ Output includes:
 - availability as-of time and a clear no-reservation warning.
 
 The user may choose another valid mix. The adopted plan retains both the generated recommendation
-and final selection. Q18 decides reason requirements and Q25 decides permissions/approval.
+and final selection. Under ADR 0054, that choice normally needs no reason while planned quantity
+is unchanged, unless its cost/waste consequence crosses a configured control band. Q25 decides
+permissions and field visibility.
 
 ## Inventory invariants
 
@@ -169,7 +171,7 @@ and final selection. Q18 decides reason requirements and Q25 decides permissions
   [Q23](../OPEN-QUESTIONS.md#q23--variable-content-and-catch-weight-packages).
 - Customer-supplied material, substitutions, recoverable scrap and returnable containers remain
   [Q24](../OPEN-QUESTIONS.md#q24--phase-5-material-exceptions).
-- Override audit and permissions remain Q18/Q25.
+- Planned-variance audit/escalation is decided by ADR 0054; permissions remain Q25.
 - A custom policy builder comes only after preset usage provides real requirements; its policies
   will be ordered, versioned and explainable rather than arbitrary code or opaque weights.
 
@@ -181,3 +183,4 @@ and final selection. Q18 decides reason requirements and Q25 decides permissions
 - [ADR 0051](../decisions/0051-phase-3-commercial-packaging-and-supplier-cost-scenarios.md)
 - [ADR 0052](../decisions/0052-progressive-inventory-package-tracking.md)
 - [ADR 0053](../decisions/0053-explainable-inventory-package-selection-presets.md)
+- [ADR 0054](../decisions/0054-risk-based-material-plan-variance-controls.md)

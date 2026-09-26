@@ -14,7 +14,7 @@ originally-scoped ad-hoc **assembly cost preview** (live application-rate resolu
 default-fallback visibility) remains open. Its cross-module quantity/sourcing/pack/cost/price
 baseline is now recorded in [material-resolution.md](domain/material-resolution.md). Q20 is
 resolved ([ADR 0050](decisions/0050-item-specific-uom-conversion-and-divisibility.md),
-2026-09-25); Q17/Q19/Q22 are resolved by accepted ADRs 0051–0053, leaving Q18, Q21 and Q25
+2026-09-25); Q17–Q19/Q22 are resolved by accepted ADRs 0051–0054, leaving Q21 and Q25
 before the preview ADR is finalised; see
 [phase-3-estimating-core.md](phases/phase-3-estimating-core.md). Phase 2's remaining
 acceptance criteria depend on later phases' correction-package work and are picked up alongside
@@ -43,7 +43,7 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 
 | Item | Date |
 |---|---|
-| **ADRs 0051–0053 — internal-inventory package proposals, progressive tracking and explainable presets** — Phase 3 may suggest mixed use of available remnants and sealed packs, but never suppliers or POs; quantity-only, package-balance and container-tracked modes serve small through advanced companies on one ledger. Company/category/item policy selects `MINIMISE_WASTE`, `LOWEST_INTERNAL_COST` or `FEWEST_PACKAGES`; the user can choose another valid mix, availability remains advisory until Phase 5 reservation, and selling price stays independent → [inventory-packages.md](domain/inventory-packages.md), [ADR 0051](decisions/0051-phase-3-commercial-packaging-and-supplier-cost-scenarios.md), [ADR 0052](decisions/0052-progressive-inventory-package-tracking.md), [ADR 0053](decisions/0053-explainable-inventory-package-selection-presets.md) | 2026-09-26 |
+| **ADRs 0051–0054 — internal-inventory package planning and risk-based variance control** — Phase 3 may suggest mixed use of available remnants and sealed packs, but never suppliers or POs; progressive tracking and three explainable presets serve small through advanced companies. Every adopted standard-to-planned variance is audited, while versioned company/category/item policy escalates configured quantity, cost, waste or controlled-item bands to reason, independent approval or block; ordinary alternative package selection stays frictionless unless its consequence crosses a band → [inventory-packages.md](domain/inventory-packages.md), [material-resolution.md](domain/material-resolution.md#planned-variance-control), [ADR 0054](decisions/0054-risk-based-material-plan-variance-controls.md) | 2026-09-26 |
 | **ADR 0050 — item-specific UoM conversions decided; Q20 resolved, Q17 narrowed** — researched how SAP, Oracle EBS/Fusion SCM, NetSuite, Business Central and GS1 model item-specific unit conversions, divisibility and catch weight, then locked down the parts the research made clear: divisibility is always an item-and-UoM rounding-precision rule, never inferred from `dimension`; item-specific pack conversions (`item_quantity_units`) resolve before falling back to the existing global `UomConversionService`, and may deliberately cross UoM dimensions (roll↔metre, sheet↔m²) where that service may not. Also surfaced a live Phase 2 gap this closes conceptually: `BuildPurchaseOrderLineAttributes` still only calls the global, dimension-locked service, so box/each-style purchase UoM conversion doesn't actually work today despite `item_suppliers.purchase_uom_id` existing since ADR 0033 — not yet implemented, shape only. Catch weight ([Q23](OPEN-QUESTIONS.md#q23--variable-content-and-catch-weight-packages)) stayed separate; the then-open commercial-package boundary is now resolved by ADRs 0051–0053 → [ADR 0050](decisions/0050-item-specific-uom-conversion-and-divisibility.md), [material-resolution.md](domain/material-resolution.md), [units-of-measure.md](domain/units-of-measure.md) | 2026-09-25 |
 | **Permission registry hardening closes the audited registration gap** — `PermissionRegistry` was missing four permissions already enforced in code (`inventory.negative-stock-policy.manage`, `inventory.backdating-horizon-policy.manage`, `inventory.recalculation-policy.manage`, `purchasing.cutover.commit`), silently denying everyone until `permission:register` happened to be re-run after a code change added the check. Now registered, and a new `tests/Architecture/PermissionCheckRegistrationTest.php` scans every `->can()`/`->authorize()`/`Gate::*` call site in `app/` (including the one local-variable indirection the codebase actually uses) and fails if any literal permission name it finds is unregistered, so the gap can't reopen silently → [authorization.md](architecture/authorization.md#registration-and-maintenance-standard) | 2026-09-25 |
 | **Full demo seeding is idempotent across live-stock drift** — `StockDemoSeeder` now recognises its create-once negative-stock override requests by natural source identity and never recalculates immutable historical payloads from current stock. A regression test posts a real intervening receipt, proves both request rows remain byte-identical across the next full `demo:seed`, and confirms the final Estimating demo seeder still runs → [environments.md](architecture/environments.md#immutable-transactional-demo-data-create-once-never-reconcile) | 2026-09-24 |
@@ -83,8 +83,8 @@ cross-team re-confirmation.
 
 ## Blocked / awaiting input
 
-The Phase 3 Material Resolution / Assembly Preview ADR is awaiting Q18, Q21 and Q25. Open
-questions: [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) — 3 blocking, 8 non-blocking.
+The Phase 3 Material Resolution / Assembly Preview ADR is awaiting Q21 and Q25. Open questions:
+[OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) — 2 blocking, 8 non-blocking.
 
 ## Roadmap at a glance
 
