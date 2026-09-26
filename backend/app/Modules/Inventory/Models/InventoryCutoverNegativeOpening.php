@@ -46,6 +46,12 @@ class InventoryCutoverNegativeOpening extends Model
 {
     use BelongsToCompany, GuardsRelatedCompanyScope;
 
+    // Every screen that shows a negative-opening exception needs its item and
+    // location identity, never just the raw foreign keys — so this is a
+    // default eager load, not a per-request include.
+    /** @var list<string> */
+    protected $with = ['item', 'location'];
+
     protected $guarded = ['id'];
 
     protected static function booted(): void
@@ -88,6 +94,12 @@ class InventoryCutoverNegativeOpening extends Model
     public function item(): BelongsTo
     {
         return $this->belongsTo(Item::class);
+    }
+
+    /** @return BelongsTo<Location, $this> */
+    public function location(): BelongsTo
+    {
+        return $this->belongsTo(Location::class);
     }
 
     /** @return HasOne<NegativeStockShortage, $this> */

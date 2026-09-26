@@ -23,6 +23,7 @@ class InventoryCutoverNegativeOpeningResource extends JsonResource
             'item_id' => $exception->item_id,
             'item' => $this->whenLoaded('item', fn () => new ItemResource($exception->item)),
             'location_id' => $exception->location_id,
+            'location' => $this->whenLoaded('location', fn () => new LocationResource($exception->location)),
             'batch_id' => $exception->batch_id,
             'source_valuation_method' => $exception->source_valuation_method->value,
             'source_quantity' => $exception->source_quantity,

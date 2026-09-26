@@ -130,12 +130,18 @@ class InventoryCutoverApiTest extends TestCase
         ])->assertCreated()->assertJsonPath('data.status', 'REQUESTED')->json('data.id');
 
         $this->actingAs($exceptionApprover)->postJson("/api/v1/inventory-cutover-negative-openings/{$exceptionId}/approve")
-            ->assertOk()->assertJsonPath('data.status', 'APPROVED');
+            ->assertOk()->assertJsonPath('data.status', 'APPROVED')
+            ->assertJsonPath('data.item.code', 'sku-neg')->assertJsonPath('data.location.code', 'stock');
 
         $this->actingAs($committer)->postJson("/api/v1/inventory-cutovers/{$cutoverId}/commit")
             ->assertOk()->assertJsonPath('data.batches.0.status', 'COMMITTED');
 
         $this->assertDatabaseHas('negative_stock_shortages', ['item_id' => $item->id, 'status' => 'OPEN_CUTOVER_SHORTAGE']);
+
+        $this->actingAs($committer)->getJson("/api/v1/inventory-cutovers/{$cutoverId}?include=negativeOpenings")
+            ->assertOk()
+            ->assertJsonPath('data.negative_openings.0.item.code', 'sku-neg')
+            ->assertJsonPath('data.negative_openings.0.location.code', 'stock');
     }
 
     public function test_store_validates_shape_and_rejects_an_unpermitted_actor(): void

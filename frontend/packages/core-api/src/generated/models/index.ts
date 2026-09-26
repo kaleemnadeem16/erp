@@ -360,6 +360,8 @@ export * from "./inventoryCutoverNegativeOpeningResourceBatchId";
 export * from "./inventoryCutoverNegativeOpeningResourceRequestedAt";
 export * from "./inventoryCutoverNegativeOpeningResourceTargetDateReason";
 export * from "./inventoryCutoverNegativeOpeningsApprove200";
+export * from "./inventoryCutoverNegativeOpeningsApprove200Data";
+export * from "./inventoryCutoverNegativeOpeningsApprove200DataAllOf";
 export * from "./inventoryCutoverPolicyTransitionResource";
 export * from "./inventoryCutoverPolicyTransitionResourceRevaluationBasis";
 export * from "./inventoryCutoverPolicyTransitionResourceSourceAvcoScope";
