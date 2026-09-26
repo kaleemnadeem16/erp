@@ -27,8 +27,8 @@ independent from internal material cost.
 
 ## Current foundations
 
-- Every item has one stock UoM. [ADR 0050](../decisions/0050-item-specific-uom-conversion-and-divisibility.md)
-  defines fixed item-specific conversion and quantity precision but is not implemented yet.
+- Every item has one stock UoM. [ADR 0050](../decisions/0050-item-specific-uom-conversion-and-divisibility.md)'s
+  fixed item-specific conversion and quantity precision are implemented.
 - Global UoM conversions handle litre↔millilitre or kilogram↔gram. Item-specific conversions handle
   each↔box, drum↔litre, roll↔metre and similar relationships.
 - Stock owns on-hand quantity, warehouse/location, valuation, lots/batches and partial layer issue.
@@ -59,6 +59,24 @@ movement or calculate the customer's final selling price.
 
 Purchasing begins with the uncovered shortage. It may later use supplier packages, prices, MOQ and
 order multiples to propose replenishment. That is not part of the Phase 3 inventory proposal.
+
+## Phase 3 preview contract
+
+[ADR 0058](../decisions/0058-phase-3-material-resolution-preview-contract.md) defines the remaining
+Phase 3 deliverable as a read-only, ephemeral Assembly preview. It accepts hypothetical work
+quantity, customer/dimension context, planned adjustments, inventory-scope narrowing and package
+selection, then composes the existing Assembly, rate, formulation, overhead, UoM, variance,
+availability and package-policy resolvers.
+
+The response preserves each source contribution before aggregating the same leaf item for
+inventory planning. It explains effective versions/fallbacks, standard versus planned quantity,
+hypothetical ADR 0054 outcome, permitted availability/package proposals, cost evidence and every
+precision limitation. It returns a stale-comparison fingerprint, not a reservation token.
+
+Phase 3 stores no adopted plan because no quotation revision owns one yet. Phase 4 reruns and
+revalidates the same resolver when a real draft adopts a plan; Phase 5 reserves stock. The first
+slice may be `QUANTITY_ONLY` and approximate, but must never infer sealed packs or containers from
+aggregate stock.
 
 ## Physical precision and selection policy
 
@@ -136,6 +154,11 @@ capabilities. ADR 0054 policy determines audit/reason/approval/block. Small comp
 configure ordinary work without approval; whenever `APPROVAL_REQUIRED` is selected, requester and
 approver are distinct and `BLOCKED` has no permission bypass.
 
+In the Phase 3 ad-hoc preview, adjustments and selections are hypothetical request inputs rather
+than persisted actions. `material_plan.adjust`, `package_plan.adopt`, variance request/approve and
+history become enforceable transaction boundaries when Phase 4 quotation revisions own those
+facts; they are not an excuse to create a temporary Phase 3 draft aggregate.
+
 Every implemented action must complete the
 [authorisation checklist](../architecture/authorization.md#per-feature-authorisation-checklist),
 including backend enforcement, field filtering, frontend exposure, registration and tests.
@@ -191,3 +214,4 @@ Primary sources used to validate the boundaries:
 - [Sales pricing](sales-pricing.md) · [Tax](tax.md)
 - [Phase 3](../phases/phase-3-estimating-core.md)
 - [ADR 0054](../decisions/0054-risk-based-material-plan-variance-controls.md) · [ADR 0055](../decisions/0055-progressive-sales-pricing-and-controlled-formulas.md) · [ADR 0057](../decisions/0057-stable-material-resolution-capabilities-with-dynamic-assignment.md)
+- [ADR 0058](../decisions/0058-phase-3-material-resolution-preview-contract.md)

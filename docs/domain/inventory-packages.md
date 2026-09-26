@@ -142,8 +142,9 @@ Output includes:
 
 The user may choose another valid mix. The adopted plan retains both the generated recommendation
 and final selection. Under ADR 0054, that choice normally needs no reason while planned quantity
-is unchanged, unless its cost/waste consequence crosses a configured control band. Q25 decides
-permissions and field visibility.
+is unchanged, unless its cost/waste consequence crosses a configured control band. ADR 0057
+decides permissions and field visibility. Phase 3 choices are hypothetical; ADR 0058
+defers persisted adoption until a Phase 4 quotation revision owns the plan.
 
 ## Inventory invariants
 
@@ -171,7 +172,7 @@ permissions and field visibility.
   [Q23](../OPEN-QUESTIONS.md#q23--variable-content-and-catch-weight-packages).
 - Customer-supplied material, substitutions, recoverable scrap and returnable containers remain
   [Q24](../OPEN-QUESTIONS.md#q24--phase-5-material-exceptions).
-- Planned-variance audit/escalation is decided by ADR 0054; permissions remain Q25.
+- Planned-variance audit/escalation is decided by ADR 0054 and permissions by ADR 0057.
 - A custom policy builder comes only after preset usage provides real requirements; its policies
   will be ordered, versioned and explainable rather than arbitrary code or opaque weights.
 
@@ -184,3 +185,5 @@ permissions and field visibility.
 - [ADR 0052](../decisions/0052-progressive-inventory-package-tracking.md)
 - [ADR 0053](../decisions/0053-explainable-inventory-package-selection-presets.md)
 - [ADR 0054](../decisions/0054-risk-based-material-plan-variance-controls.md)
+- [ADR 0057](../decisions/0057-stable-material-resolution-capabilities-with-dynamic-assignment.md)
+- [ADR 0058](../decisions/0058-phase-3-material-resolution-preview-contract.md)

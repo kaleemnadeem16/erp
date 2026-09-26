@@ -194,12 +194,11 @@ module-scoped demo data (`database/seeders/Demo/Estimating/`, per
       breakdown (material/labour/plant/subcontract/overhead, resolved tier/driver, cost/sell per
       unit) — see [assemblies.md#cost-roll-up](../domain/assemblies.md#cost-roll-up) — but not
       this item's ad-hoc quantity/dimension-value/customer selection or live application-rate
-      default-fallback visibility; still open. Before implementation, resolve the Phase 3
-      boundary in [material-resolution.md](../domain/material-resolution.md), accepted
-      [ADRs 0051–0055 and 0057](../decisions/README.md); all blocking boundary questions are now
-      resolved. The preview proposes
-      mixed package use from internal inventory but must not absorb Purchasing, Sales pricing or
-      Phase 5 reservation/execution
+      default-fallback visibility; still open. [ADR 0058](../decisions/0058-phase-3-material-resolution-preview-contract.md)
+      now provides the complete implementation contract: a read-only, ephemeral preview composing
+      the existing resolvers, initially allowed to be explicitly approximate `QUANTITY_ONLY`, with
+      no Phase 3 draft/adoption table. It may propose mixed package use from internal inventory but
+      must not absorb Purchasing, Sales pricing or Phase 5 reservation/execution
 - [x] Exclusion-constraint pattern applied consistently across formulation, overhead-policy and
       assembly version tables. The recursive-CTE roll-up originally proposed here was
       deliberately not used for formulations — see formulations.md's "Nesting" — so this item
