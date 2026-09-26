@@ -25,6 +25,7 @@ import {
   ScrollText,
   Settings,
   ShieldAlert,
+  Sigma,
   SlidersHorizontal,
   Sun,
   Tags,
@@ -118,6 +119,7 @@ const navGroups: NavGroup[] = [
       { to: "/assembly-groups", label: "Assembly Groups", icon: Group },
       { to: "/assemblies", label: "Assemblies", icon: Component },
       { to: "/resource-rates", label: "Resource Rates", icon: Wrench },
+      { to: "/material-preview", label: "Material Preview", icon: Sigma },
     ],
   },
 ];

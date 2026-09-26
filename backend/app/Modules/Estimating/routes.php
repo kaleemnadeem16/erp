@@ -6,6 +6,7 @@ use App\Modules\Estimating\Http\Controllers\Api\V1\AssemblyGroupController;
 use App\Modules\Estimating\Http\Controllers\Api\V1\AssemblyVersionController;
 use App\Modules\Estimating\Http\Controllers\Api\V1\FormulationController;
 use App\Modules\Estimating\Http\Controllers\Api\V1\FormulationVersionController;
+use App\Modules\Estimating\Http\Controllers\Api\V1\MaterialPreviewController;
 use App\Modules\Estimating\Http\Controllers\Api\V1\OverheadPolicyController;
 use App\Modules\Estimating\Http\Controllers\Api\V1\RateDimensionController;
 use App\Modules\Estimating\Http\Controllers\Api\V1\RateDimensionValueController;
@@ -17,6 +18,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('assembly-groups/{assembly_group}', [AssemblyGroupController::class, 'update'])->name('assembly-groups.update');
     Route::apiResource('assemblies', AssemblyController::class)->except('update');
     Route::patch('assemblies/{assembly}', [AssemblyController::class, 'update'])->name('assemblies.update');
+    Route::post('assemblies/{assembly}/material-preview', MaterialPreviewController::class)->name('assemblies.material-preview');
     Route::post('assemblies/{assembly}/versions', [AssemblyVersionController::class, 'store'])->name('assemblies.versions.store');
     Route::patch('assembly-versions/{assembly_version}', [AssemblyVersionController::class, 'update'])->name('assembly-versions.update');
     Route::delete('assembly-versions/{assembly_version}', [AssemblyVersionController::class, 'destroy'])->name('assembly-versions.destroy');

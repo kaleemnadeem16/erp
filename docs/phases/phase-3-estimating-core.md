@@ -203,9 +203,14 @@ module-scoped demo data (`database/seeders/Demo/Estimating/`, per
         central array to module-owned contributors and register ADR 0057's eight stable Estimating
         capabilities. Effective permissions in `/user` and frontend gating remain a later vertical
         slice so generated-client/UI changes land together rather than drifting
-      - [ ] **Technical preview slice** — selected Assembly/version + work quantity/UoM + optional
-        customer and dimension values, returning resolved application-rate/formulation/overhead
-        provenance and standard leaf-material quantities, with backend and a usable UI together
+      - [x] **Technical preview slice** — `POST /api/v1/assemblies/{assembly}/material-preview`
+        (`estimating.material_preview.run`) resolves the winning application-rate row (not just its
+        stored family anchor) against the supplied dimension/customer context, expands nested
+        formulations into leaf material requirements, and returns per-unit cost/sell only under the
+        separate `estimating.internal_cost.view`. `GET /api/v1/user` now exposes the caller's own
+        effective permissions (`UserResource`) and the `/material-preview` screen gates on it
+        client-side — the first screen in the app to do so. Read-only, proven with a no-side-effects
+        test. Reachable at `/material-preview` (Estimating nav) — 2026-09-26
       - [ ] **Inventory proposal slice** — permitted warehouse/location narrowing, consistent
         quantity-only availability, strategy, deterministic recommendation/alternatives,
         shortage/residual and every corresponding UI control/explanation

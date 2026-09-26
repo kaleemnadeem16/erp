@@ -175,6 +175,7 @@ export { AssemblyGroupEditScreen } from "./features/assembly-groups/assembly-gro
 export { AssembliesListScreen } from "./features/assemblies/assemblies-list-screen";
 export { AssemblyCreateScreen } from "./features/assemblies/assembly-create-screen";
 export { AssemblyEditScreen } from "./features/assemblies/assembly-edit-screen";
+export { MaterialPreviewScreen } from "./features/material-preview/material-preview-screen";
 export { EstimatingSettingsScreen } from "./features/settings/estimating-settings-screen";
 export { ResourceRatesListScreen } from "./features/resource-rates/resource-rates-list-screen";
 export { StockLedgerScreen } from "./features/stock-ledger/stock-ledger-screen";

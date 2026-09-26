@@ -36,6 +36,7 @@ import {
   ItemSuppliersListScreen,
   ItemsListScreen,
   LoginScreen,
+  MaterialPreviewScreen,
   NegativeStockOverrideCreateScreen,
   NegativeStockOverrideDetailScreen,
   NegativeStockOverridesListScreen,
@@ -422,6 +423,16 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <ResourceRatesListScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/material-preview"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <MaterialPreviewScreen />
               </AppShell>
             </ProtectedRoute>
           }
