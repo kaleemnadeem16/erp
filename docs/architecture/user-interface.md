@@ -37,6 +37,12 @@ for the stronger 44 by 44 target. References:
 
 - Lists answer an operational question, not merely expose a table. Show useful defaults and totals,
   preserve filters in the URL and provide a card/detail alternative on narrow screens.
+- A list screen exposes every filter, sort field and include its backend endpoint validates for
+  list queries — a control per accepted `filter.*`/`sort` value, not just whichever ones the first
+  draft happened to need. A backend "search API layer with multiple filter options" and a frontend
+  with no control for most of them is the same defect as a missing endpoint: the capability exists
+  but nobody can reach it. If a filter is deliberately deferred (rare, high-cardinality, admin-only),
+  say so in the screen's own comment rather than leaving the gap to be rediscovered later.
 - Document detail is a workspace: identity and status first, lines and totals together, then audit
   history and secondary metadata. Available actions derive from server state and permission.
 - Draft line entry must support keyboard-efficient repeated work. Do not hide validation until the

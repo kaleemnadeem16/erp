@@ -127,6 +127,14 @@ report costs more than an incomplete one.
 
 ## Conventions
 
+- **A feature isn't done until backend, UI, permissions and docs land together** — small,
+  coherent commits are fine (even one commit per vertical slice), but never a backend-only commit
+  that leaves the UI thinner than what just shipped. If an endpoint gained a filter, sort field or
+  include, the screen using it gains the control for it in the same pass, or the gap is written
+  down as deferred rather than left silent. See
+  [user-interface.md](docs/architecture/user-interface.md) ("not UI-complete merely because its
+  endpoints have generated hooks") and
+  [authorization.md](docs/architecture/authorization.md#per-feature-authorisation-checklist).
 - New ADRs use [docs/templates/adr.md](docs/templates/adr.md), numbered sequentially
 - Domain docs use [docs/templates/domain-doc.md](docs/templates/domain-doc.md)
 - Module READMEs use [docs/templates/module-readme.md](docs/templates/module-readme.md) — required
