@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
+  ArrowLeftRight,
   Boxes,
   Calculator,
   ClipboardList,
@@ -92,6 +93,7 @@ const navGroups: NavGroup[] = [
     label: "Inventory",
     items: [
       { to: "/items", label: "Items", icon: Package },
+      { to: "/item-quantity-units", label: "Pack Conversions", icon: ArrowLeftRight },
       { to: "/categories", label: "Categories", icon: Tags },
       { to: "/warehouses", label: "Warehouses", icon: Warehouse },
       { to: "/inventory-overview", label: "Inventory Overview", icon: Layers },

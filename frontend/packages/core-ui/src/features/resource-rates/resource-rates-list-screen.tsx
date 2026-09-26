@@ -55,7 +55,7 @@ export function ResourceRatesListScreen() {
   const columns = useMemo(() => toTanStackColumns(resourceRateColumns), []);
   const sorting: SortingState = apiSortToTableSorting(query.sort, resourceRateColumns);
 
-  const itemsResult = useItemsIndex({ per_page: 200, sort: 'name' });
+  const itemsResult = useItemsIndex({ per_page: 100, sort: 'name' });
   const items = itemsResult.data?.status === 200 ? itemsResult.data.data.data : [];
   const labourAndPlantItems = items.filter((i) => i.type === 'LABOUR' || i.type === 'PLANT');
   const uomsResult = useUomsIndex({ per_page: 100, sort: 'name' });

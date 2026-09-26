@@ -83,7 +83,7 @@ export function AssemblyComponentsFields<TFieldValues extends FieldValues & { co
     name: 'components',
   });
 
-  const itemsResult = useItemsIndex({ per_page: 200, sort: 'name' });
+  const itemsResult = useItemsIndex({ per_page: 100, sort: 'name' });
   const items = itemsResult.data?.status === 200 ? itemsResult.data.data.data : [];
   const uomsResult = useUomsIndex({ per_page: 100, sort: 'name' });
   const uoms = uomsResult.data?.status === 200 ? uomsResult.data.data.data : [];

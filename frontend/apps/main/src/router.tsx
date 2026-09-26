@@ -29,6 +29,7 @@ import {
   ItemCreateScreen,
   ItemDetailScreen,
   ItemEditScreen,
+  ItemQuantityUnitsListScreen,
   ItemSupplierCreateScreen,
   ItemSupplierDetailScreen,
   ItemSupplierEditScreen,
@@ -121,6 +122,16 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <ItemEditScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/item-quantity-units"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <ItemQuantityUnitsListScreen />
               </AppShell>
             </ProtectedRoute>
           }

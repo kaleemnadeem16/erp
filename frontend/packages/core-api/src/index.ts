@@ -41,3 +41,4 @@ export * from "./generated/assembly/assembly";
 export * from "./generated/overhead-policy/overhead-policy";
 export * from "./generated/resource-rate/resource-rate";
 export * from "./generated/assembly-version/assembly-version";
+export * from "./generated/item-quantity-unit/item-quantity-unit";

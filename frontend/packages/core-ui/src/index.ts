@@ -146,6 +146,7 @@ export { ItemsListScreen } from "./features/items/items-list-screen";
 export { ItemDetailScreen } from "./features/items/item-detail-screen";
 export { ItemCreateScreen } from "./features/items/item-create-screen";
 export { ItemEditScreen } from "./features/items/item-edit-screen";
+export { ItemQuantityUnitsListScreen } from "./features/item-quantity-units/item-quantity-units-list-screen";
 
 export { WarehousesListScreen } from "./features/warehouses/warehouses-list-screen";
 export { WarehouseDetailScreen } from "./features/warehouses/warehouse-detail-screen";
