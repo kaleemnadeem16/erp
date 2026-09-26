@@ -241,6 +241,44 @@ The answer is therefore: **the RBAC base is good and reusable, but it is not by 
 multi-stage approvals or restricted data visibility.** Those can be added without replacing
 Spatie, provided they are modelled as policies/scopes and approval facts around the RBAC core.
 
+## Incremental retrofit of already-built features
+
+Existing authenticated-only features are **not grandfathered**. Module-owned registration changes
+where a capability is maintained; it does not retroactively add enforcement, field filtering or UI
+gating. The retrofit is an explicit implementation backlog:
+
+| Area | Current boundary | Retrofit requirement |
+|---|---|---|
+| Foundation and master data | Most CRUD is authenticated-only | Review view/create/update/archive, lookup/export and sensitive fields |
+| Purchasing | Policy/history controls exist; ordinary PO/receipt CRUD is mostly authenticated-only | Add document capabilities now; submission/approval/issue separation follows Q27/Q28 |
+| Inventory | High-risk workflows are strongest; ordinary read/master surfaces vary | Audit every remaining endpoint, list/show scope and frontend action |
+| Estimating | Overhead policy controls and ADR 0057 vocabulary exist; most existing CRUD is authenticated-only | Retrofit each feature as its next vertical slice is touched |
+| Sales, Jobs and Finance | Not yet implemented | Start permission-complete; do not create an authenticated-only baseline to fix later |
+
+Work proceeds one feature slice at a time, not as one risky repository-wide switch:
+
+1. inventory every endpoint, Action, background entry point, screen, lookup, export and sensitive
+   field in the slice;
+2. choose the smallest meaningful stable capabilities—never generate CRUD names mechanically;
+3. register them in the owning module and prepare company role/direct assignments;
+4. enforce capability, record scope, field projection and workflow authority on the backend;
+5. expose effective capability safely and implement matching navigation, controls, disabled-state
+   explanations and every supported backend filter/sort/include in the UI;
+6. prove allowed, denied, cross-company, scope, sensitive-field and non-HTTP Action paths;
+7. update the module README, domain/phase docs, product journey and STATUS in the same commit.
+
+### Safe rollout rule
+
+Adding a permission check is fail-closed: after enforcement, a user without the newly assigned
+capability loses access. Therefore a retrofit commit/deployment must include the permission
+vocabulary and an explicit assignment/backfill or administrator rollout procedure before relying
+on the check. Never assume an existing “admin” automatically receives permissions added after that
+user was created; `--permissions=all` describes creation-time grants, not a permanent wildcard.
+
+Registration without enforcement is allowed as a clearly documented foundation/reserved
+capability. Enforcement without assignment preparation, backend tests and usable UI is not. The
+phase/module checklist must state which names are active now and which are deliberately reserved.
+
 ## Landmines
 
 **Permission equals approval.** A permission makes someone eligible; it does not prove a specific
