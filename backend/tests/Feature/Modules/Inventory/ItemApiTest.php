@@ -61,6 +61,21 @@ class ItemApiTest extends TestCase
         $this->getJson("/api/v1/items/{$id}")->assertOk()->assertJsonPath('data.name', 'Red pigment');
     }
 
+    public function test_quantity_precision_round_trips_and_defaults_to_unrestricted(): void
+    {
+        $user = User::factory()->create();
+
+        $unrestricted = $this->actingAs($user)->postJson('/api/v1/items', $this->payload(['code' => 'PIG-002']))
+            ->assertCreated()->json('data.id');
+        $this->getJson("/api/v1/items/{$unrestricted}")->assertOk()->assertJsonPath('data.quantity_precision', null);
+
+        $precise = $this->actingAs($user)->postJson('/api/v1/items', $this->payload(['code' => 'PIG-003', 'quantity_precision' => '0.5']))
+            ->assertCreated()->assertJsonPath('data.quantity_precision', '0.500000000')->json('data.id');
+
+        $this->patchJson("/api/v1/items/{$precise}", ['quantity_precision' => '0'])
+            ->assertUnprocessable()->assertJsonValidationErrors('quantity_precision');
+    }
+
     public function test_code_uniqueness_is_case_insensitive_because_the_model_lowercases_it(): void
     {
         $user = User::factory()->create();

@@ -167,7 +167,11 @@ Original ordered quantity is immutable. A line can be explicitly short-closed; i
 quantity then becomes zero and later receipt is blocked unless a future audited reopen/revision
 action makes it receivable again. V1 over-receipt is `BLOCK` or `ALLOW_WITHIN_TOLERANCE`, resolved
 from PO-line override then company default and snapshotted on issue. It is checked cumulatively in
-pinned stock UoM; indivisible-item limits are floored. Above-tolerance approval is deferred.
+pinned stock UoM; today the tolerance ceiling is floored whenever the stock UoM's *dimension* is
+`COUNT` — an ad hoc stand-in, not a real divisibility rule.
+[ADR 0050](../decisions/0050-item-specific-uom-conversion-and-divisibility.md) decided the real
+rule (an explicit, item-and-UoM rounding precision, not a dimension inference) but it is not yet
+implemented. Above-tolerance approval is deferred.
 
 A future quick/direct-purchase screen may atomically create a receipt and invoice for convenience.
 It does not create a special document that lets an invoice alter stock.
@@ -176,6 +180,14 @@ The V1 PO API supports validated list/show, nested draft create/update, issue, c
 line short-close endpoints. Issue allocates the gapless number and freezes item/supplier policy,
 quantity/UoM, monetary and FX snapshots. Company purchasing defaults use one typed settings row;
 reading that singleton initialises its database defaults through an Action when necessary.
+
+Purchase-order approval is **not implemented**: there is no `SUBMITTED`/`APPROVED` state,
+approval chain, issuing actor or approval policy, and ordinary PO endpoints are currently
+authenticated rather than capability-permissioned. Before operational use relies on issuance,
+resolve [Q28](../OPEN-QUESTIONS.md#q28--purchase-order-approval-policy) and apply the shared
+[approval-workflow boundary](../architecture/approval-workflows.md). Creating/editing, submitting,
+approving and issuing must be independently grantable powers; approval eligibility must not be
+inferred from access to the PO screen.
 
 ### User interface
 
@@ -282,9 +294,20 @@ approval authority and matching status names remain Phase 6 decisions.
 Physical arrival, document, inspection, recorded-at, posting, due and reversal dates are distinct
 facts even when the UI initially defaults several to today.
 
+`purchase_orders.expected_delivery_date` is the common supplier promise and the useful date for
+order lists, summaries and an order whose lines arrive together. A line date is still required by
+the model because staggered deliveries are normal; in entry it is an optional override. On save,
+a blank line date inherits the header date and the resolved value is stored on the line, so issued
+planning snapshots never depend on later reinterpretation of a header default.
+
 Every quantity retains the document UoM, stock UoM and pinned conversion used when issued or
-posted. Changes to current UoM master data never recalculate historical documents. Conversion
-must remain within the same UoM dimension.
+posted. Changes to current UoM master data never recalculate historical documents.
+`BuildPurchaseOrderLineAttributes` resolves an item-specific `item_quantity_units` override first
+— which may cross UoM dimension for that one item (a box of eaches, a roll of metres) — falling
+back to the global, dimension-locked `UomConversionService` only when no override exists, per
+[ADR 0050](../decisions/0050-item-specific-uom-conversion-and-divisibility.md). A genuine pack
+purchase UoM is now actually usable, closing the gap that left `item_suppliers.purchase_uom_id`
+(ADR 0033) shape-only since Phase 2 shipped.
 
 Every monetary row stores transaction and base-currency amounts with its pinned FX rate and rate
 reference. PO, receipt, supplier invoice and landed-cost documents can legitimately use different
@@ -330,12 +353,22 @@ corrections are governed by [ADR 0040](../decisions/0040-control-backdated-stock
 
 ## Related
 
+- [Material resolution](material-resolution.md) — Phase 3 reports internal-stock shortages;
+  Purchasing owns any later supplier replenishment
+- [Inventory packages](inventory-packages.md) — receipts create enabled package/container state,
+  while the stock ledger remains authoritative
+- [ADR 0051](../decisions/0051-phase-3-commercial-packaging-and-supplier-cost-scenarios.md)
+  — keeps internal-inventory proposals separate from supplier sourcing
+- [Approval workflows](../architecture/approval-workflows.md) — maker/checker and multi-stage PO
+  approval boundary
 - [Acquisition costing](acquisition-costing.md)
 - [Stock](stock.md)
 - [Parties](parties.md) · [Items](items.md)
 - [Units of measure](units-of-measure.md) · [Multi-currency](multi-currency.md)
 - [ADR 0035](../decisions/0035-separate-purchasing-operational-and-financial-facts.md)
 - [ADR 0043](../decisions/0043-control-purchase-order-receipt-and-qa-posting.md)
+- [ADR 0050](../decisions/0050-item-specific-uom-conversion-and-divisibility.md) — item-specific
+  purchase-UoM conversion, implemented via `ItemUomConversionService`
 - [Inventory cutover](inventory-cutover.md)
 - [Phase 2](../phases/phase-2-purchasing-stock.md)
 - [User-interface delivery](../architecture/user-interface.md)

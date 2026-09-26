@@ -30,6 +30,7 @@ use App\Modules\Inventory\Models\Category;
 use App\Modules\Inventory\Models\InventoryCutover;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Models\Location;
+use App\Modules\Inventory\Models\NegativeStockOverrideRequest;
 use App\Modules\Inventory\Models\PhysicalCount;
 use App\Modules\Inventory\Models\RecalculationRequest;
 use App\Modules\Inventory\Models\StockLayer;
@@ -181,34 +182,68 @@ final class StockDemoSeeder extends Seeder
      * policy between the two calls is what produces one of each — company
      * policy itself is left on IMMEDIATE_WITH_REVIEW afterwards, since
      * that's the more permissive mode to explore new requests under.
+     *
+     * negative_stock_override_requests is immutable at the database level
+     * (a BEFORE UPDATE OR DELETE trigger — see
+     * 2026_09_03_110000_create_negative_stock_override_workflow.php), so
+     * each request is created once, keyed by its natural
+     * (source_type, source_id) identity, and never touched again — see
+     * docs/architecture/environments.md "Immutable transactional demo
+     * data". Recomputing requested_qty/available_qty from *today's* live
+     * stock and handing them to an existing request would either no-op
+     * (figures still match) or throw (RequestNegativeStockOverride
+     * correctly refuses to silently rewrite history) — on a long-lived dev
+     * database, where stock drifts between demo:seed runs for reasons
+     * having nothing to do with this fixture, it would eventually always
+     * throw, and the seeder could only ever succeed once. Found while
+     * building Phase 3's Estimating demo data (2026-09-25).
      */
     private function seedNegativeStockOverrides(Location $location, User $requester): void
     {
         $item = Item::query()->where('code', 'demo-pig-blue')->firstOrFail();
         $company = Company::query()->findOrFail(1);
+        // A mutable company setting, not a transactional fact — safe (and
+        // desirable) to reconcile on every run regardless of whether either
+        // request row below still needs creating, unlike the immutable rows
+        // themselves.
         $company->update(['negative_stock_mode' => 'AUTHORISED_OVERRIDE']);
 
-        // The Action derives availability from live stock, so each demo
-        // request has to ask for genuinely more than is on hand — derived
-        // here rather than hardcoded so changing the seeded receipts above
-        // cannot silently make these requests impossible.
-        $onHand = (float) StockLayer::query()
-            ->where('item_id', $item->getKey())->where('location_id', $location->getKey())
-            ->whereNull('batch_id')->whereNull('serial_no')->sum('qty_remaining');
+        if (! NegativeStockOverrideRequest::query()->where('source_type', 'DEMO_JOB_ISSUE')->where('source_id', 1)->exists()) {
+            // The Action derives availability from live stock, so the demo
+            // request has to ask for genuinely more than is on hand —
+            // derived here rather than hardcoded so changing the seeded
+            // receipts above cannot silently make it impossible. Read only
+            // on this first-ever run for this natural key; a later run that
+            // already has the row never re-reads live stock at all.
+            $onHand = (float) StockLayer::query()
+                ->where('item_id', $item->getKey())->where('location_id', $location->getKey())
+                ->whereNull('batch_id')->whereNull('serial_no')->sum('qty_remaining');
 
-        $company->update(['negative_stock_authorisation_mode' => 'PRIOR_APPROVAL']);
-        app(RequestNegativeStockOverride::class)([
-            'item_id' => $item->getKey(), 'location_id' => $location->getKey(), 'movement_class' => 'MATERIAL_CONSUMPTION',
-            'requested_qty' => number_format($onHand + 30, 4, '.', ''), 'source_type' => 'DEMO_JOB_ISSUE', 'source_id' => 1,
-            'reason_code' => 'OPERATIONAL_EMERGENCY', 'explanation' => 'Urgent job material issue ahead of the delayed weekly delivery.',
-        ], $requester);
+            $company->update(['negative_stock_authorisation_mode' => 'PRIOR_APPROVAL']);
+            app(RequestNegativeStockOverride::class)([
+                'item_id' => $item->getKey(), 'location_id' => $location->getKey(), 'movement_class' => 'MATERIAL_CONSUMPTION',
+                'requested_qty' => number_format($onHand + 30, 4, '.', ''), 'source_type' => 'DEMO_JOB_ISSUE', 'source_id' => 1,
+                'reason_code' => 'OPERATIONAL_EMERGENCY', 'explanation' => 'Urgent job material issue ahead of the delayed weekly delivery.',
+            ], $requester);
+        }
 
+        if (! NegativeStockOverrideRequest::query()->where('source_type', 'DEMO_JOB_ISSUE')->where('source_id', 2)->exists()) {
+            $onHand = (float) StockLayer::query()
+                ->where('item_id', $item->getKey())->where('location_id', $location->getKey())
+                ->whereNull('batch_id')->whereNull('serial_no')->sum('qty_remaining');
+
+            $company->update(['negative_stock_authorisation_mode' => 'IMMEDIATE_WITH_REVIEW']);
+            app(RequestNegativeStockOverride::class)([
+                'item_id' => $item->getKey(), 'location_id' => $location->getKey(), 'movement_class' => 'MATERIAL_CONSUMPTION',
+                'requested_qty' => number_format($onHand + 15, 4, '.', ''), 'source_type' => 'DEMO_JOB_ISSUE', 'source_id' => 2,
+                'reason_code' => 'PAPERWORK_DELAY', 'explanation' => 'Supplier delivery note is delayed; stock physically received.',
+            ], $requester);
+        }
+
+        // The more permissive mode to explore new requests under, left as
+        // the resting company policy regardless of which branches above
+        // actually ran this time.
         $company->update(['negative_stock_authorisation_mode' => 'IMMEDIATE_WITH_REVIEW']);
-        app(RequestNegativeStockOverride::class)([
-            'item_id' => $item->getKey(), 'location_id' => $location->getKey(), 'movement_class' => 'MATERIAL_CONSUMPTION',
-            'requested_qty' => number_format($onHand + 15, 4, '.', ''), 'source_type' => 'DEMO_JOB_ISSUE', 'source_id' => 2,
-            'reason_code' => 'PAPERWORK_DELAY', 'explanation' => 'Supplier delivery note is delayed; stock physically received.',
-        ], $requester);
     }
 
     /**

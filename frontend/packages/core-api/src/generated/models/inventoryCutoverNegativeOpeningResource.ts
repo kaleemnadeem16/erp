@@ -5,6 +5,7 @@
  * OpenAPI spec version: 0.0.1
  */
 import type { ItemResource } from "./itemResource";
+import type { LocationResource } from "./locationResource";
 import type { InventoryCutoverNegativeOpeningResourceBatchId } from "./inventoryCutoverNegativeOpeningResourceBatchId";
 import type { InventoryCutoverNegativeOpeningResourceTargetDateReason } from "./inventoryCutoverNegativeOpeningResourceTargetDateReason";
 import type { InventoryCutoverNegativeOpeningResourceRequestedAt } from "./inventoryCutoverNegativeOpeningResourceRequestedAt";
@@ -17,6 +18,7 @@ export interface InventoryCutoverNegativeOpeningResource {
   item_id: number;
   item?: ItemResource;
   location_id: number;
+  location?: LocationResource;
   batch_id: InventoryCutoverNegativeOpeningResourceBatchId;
   source_valuation_method: string;
   source_quantity: string;

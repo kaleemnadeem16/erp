@@ -365,7 +365,7 @@ export function InventoryCutoverDetailScreen() {
                   negativeOpenings.map((exception) => (
                     <TableRow key={exception.id}>
                       <TableCell>{exception.item ? `${exception.item.code} — ${exception.item.name}` : exception.item_id}</TableCell>
-                      <TableCell>{exception.location_id}</TableCell>
+                      <TableCell>{exception.location ? exception.location.code : exception.location_id}</TableCell>
                       <TableCell className="text-right tabular-nums">{exception.source_quantity}</TableCell>
                       <TableCell className="text-right tabular-nums">{exception.provisional_unit_cost}</TableCell>
                       <TableCell>

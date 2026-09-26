@@ -1,14 +1,4 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-} from 'react';
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
 import { cn } from '../../lib/utils';
@@ -23,7 +13,7 @@ export type RecordSheetSize = 'md' | 'lg' | 'xl';
 const SIZE_CLASS: Record<RecordSheetSize, string> = {
   md: 'sm:w-[50vw] sm:min-w-[min(36rem,100vw)] sm:max-w-3xl',
   lg: 'sm:w-[60vw] sm:min-w-[min(40rem,100vw)] sm:max-w-5xl',
-  xl: 'sm:w-[80vw] sm:min-w-[min(48rem,100vw)] sm:max-w-7xl',
+  xl: 'sm:w-[80vw] sm:min-w-[min(48rem,100vw)] sm:max-w-7xl'
 };
 
 // Matches the exit animation in themes.css (240ms) — see beginClose.
@@ -85,17 +75,7 @@ export interface RecordSheetProps {
  * content can instead be rendered as a full page; see
  * docs/architecture/ui-building-blocks.md.
  */
-export function RecordSheet({
-  title,
-  description,
-  icon,
-  actions,
-  aside,
-  onClose,
-  size = 'lg',
-  dismissOnOutsideClick = true,
-  children,
-}: RecordSheetProps) {
+export function RecordSheet({ title, description, icon, actions, aside, onClose, size = 'lg', dismissOnOutsideClick = true, children }: RecordSheetProps) {
   const contentRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(true);
   const [asideElement, setAsideElement] = useState<HTMLElement | null>(null);
@@ -168,7 +148,7 @@ export function RecordSheet({
                     {description && <SheetDescription>{description}</SheetDescription>}
                   </div>
                 </div>
-                {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+                {actions && <div className="ml-auto flex flex-wrap items-center gap-2">{actions}</div>}
               </div>
             </SheetHeader>
             {/* The negative margin / matching padding gives focus rings and

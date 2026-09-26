@@ -47,6 +47,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null $description
  * @property ItemType $type
  * @property int $stock_uom_id
+ * @property string|null $quantity_precision
  * @property bool $is_stocked
  * @property bool $is_purchasable
  * @property bool $is_sellable
@@ -147,6 +148,7 @@ class Item extends Model
             'valuation_method' => ValuationMethod::class,
             'avco_pool_scope' => AvcoPoolScope::class,
             'tracking' => ItemTracking::class,
+            'quantity_precision' => 'decimal:9',
             'status' => Status::class,
         ];
     }
@@ -185,6 +187,12 @@ class Item extends Model
     public function suppliers(): HasMany
     {
         return $this->hasMany(ItemSupplier::class);
+    }
+
+    /** @return HasMany<ItemQuantityUnit, $this> */
+    public function quantityUnits(): HasMany
+    {
+        return $this->hasMany(ItemQuantityUnit::class);
     }
 
     public function resolveIncomeAccountId(): ?int

@@ -81,6 +81,18 @@ application rate was selected, and the FX rate.
 This is [invariant 1](../architecture/invariants.md#1-snapshot-on-issue) and the most important
 rule in the sales module. A `DRAFT` quotation recomputes live; an `ISSUED` one never does.
 
+When material resolution is package-aware, the snapshot also keeps the recommendation strategy
+and version, availability as-of time, generated suggestion, final user selection and internal-cost
+evidence. This preserves what the estimate assumed; it does **not** reserve those packages.
+Phase 5 revalidates and reserves physical stock. Customer selling price remains a separate Sales
+decision even when internal package cost informed the estimate. Its resolver and issued-document
+evidence are defined in [sales-pricing.md](sales-pricing.md): source/rule version, typed inputs and
+intermediate results, calculated and final prices, rounding and any authorised override.
+
+An adopted standard-to-planned material variance also snapshots ADR 0054's policy evaluation,
+actor and any required reason/approval. A material change re-evaluates the policy and cannot carry
+an approval from the earlier revision onto changed facts.
+
 ### Confirmation
 
 Accepting a quotation creates a **job** ([job-costing.md](job-costing.md)), carrying the
@@ -110,6 +122,13 @@ practice and has no obvious default.
 
 ## Related
 
+- [material-resolution.md](material-resolution.md) — cost/price separation and planned material
+  snapshot boundary
+- [sales-pricing.md](sales-pricing.md) — Phase 4 price resolution and quotation price snapshot
+- [tax.md](tax.md) — tax determination after net price
+- [inventory-packages.md](inventory-packages.md) — advisory package proposal and snapshot evidence
+- [ADR 0054](../decisions/0054-risk-based-material-plan-variance-controls.md) — adoption audit and
+  risk-based explanation/approval/blocking
 - [assemblies.md](assemblies.md) — what lines reference
 - [job-costing.md](job-costing.md) — what confirmation produces
 - [receivables.md](receivables.md) — invoicing against the job

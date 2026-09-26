@@ -66,6 +66,16 @@ formulation_lines
 
 One nullable column and one resolver. No special-casing anywhere else in the system.
 
+Most manufactured products use only the company-default formulation. The customer field exists
+solely for the exceptional case where the same output item is made differently for a particular
+customer (for example a private-label colour, allergen substitution or contract-specific mix).
+It is not ownership and it does not make an ordinary make-to-stock formulation customer-bound.
+
+The item detail screen lists every formulation that produces the item, including whether each is
+the company default or a customer override. This is operational navigation, not a new ownership
+relationship; normal authenticated item access is sufficient until the application introduces a
+dedicated formulation-view permission.
+
 ### Versioning and immutability
 
 **A formulation version is frozen the moment any document references it.** Changing a recipe
@@ -73,6 +83,16 @@ creates version N+1 with a new `effective_from`; the old version is marked `SUPE
 
 Documents pin to a `formulation_version_id`, so a job costed last March still reflects March's
 recipe. This is [invariant 4](../architecture/invariants.md#4-versioned-records-are-immutable-once-used).
+
+Phase 3 itself never creates that first document reference — assemblies (a later Phase 3 slice)
+are the first thing that will. Its own concrete boundary is simpler and self-contained: a version
+is editable only while `DRAFT`; `ACTIVATE` is the sole transition to `ACTIVE` (superseding
+whatever was previously active) and both `ACTIVE` and `SUPERSEDED` are frozen from that point on.
+The cycle guard is re-run at activation too, not only on save — two formulations built
+independently, each individually cycle-free while both are still `DRAFT` (the guard only ever
+walks *active* sub-formulations, since a draft recipe isn't real consumption yet), could
+otherwise each activate successfully and only complete a live cycle on the second activation,
+with nothing having ever rejected either save.
 
 ### Cost of one output unit
 
@@ -82,7 +102,19 @@ cost_per_output_unit = Σ (line.qty × (1 + line.wastage_pct) × input_item.avco
 ```
 
 Ingredient cost comes from [stock valuation](stock.md), not from a price list — it reflects what
-was actually paid.
+was actually paid. v1 supports exactly one configuration for a leaf ingredient: AVCO valuation
+with a company-wide (`COMPANY_ITEM`) pool, the only case with one unambiguous current cost. A
+FIFO/SPECIFIC item, or an AVCO item whose pool is scoped by warehouse or batch (see
+[items.md](items.md#valuation-method)'s multi-pool scopes), fails loudly rather than guessing
+which layer or which pool a pure recipe —
+not tied to any warehouse or batch — should read; a never-purchased item returns a real `0`
+instead, since "no cost known yet" is a legitimate state, not an error. A line specified in a
+different-but-convertible unit than its input item's stock UoM converts through the ordinary UoM
+system (`units-of-measure.md`) before pricing.
+
+The UI defaults the output unit from the output item's stock UoM and each line unit from the input
+item's stock UoM. Both remain editable because a real manufacturing batch or ingredient may be
+expressed in another compatible unit; conversion still fails loudly across different dimensions.
 
 ### Nesting
 
@@ -95,6 +127,13 @@ own output. Validate on save, not at roll-up time.
 Roll-up uses a **recursive CTE** rather than an N+1 loop in PHP — see
 [database.md](../architecture/database.md#recursive-ctes-for-formulation-explosion). Keep the
 depth guard regardless; it catches cycles that slipped past validation.
+
+`ExplodeFormulationVersion` implements this phase's roll-up as depth-capped PHP recursion
+instead, a deliberate deviation: it also builds the per-level breakdown the wastage-compounding
+landmine below requires, which a flat CTE result can't produce in one pass, and at this phase's
+usage pattern (a human previewing one formulation on demand, not a hot path across many
+assemblies) the bounded extra queries aren't a real concern. Reconsider the CTE if formulation
+costing ever runs at bulk/hot-path scale.
 
 ## Landmines
 
@@ -111,8 +150,21 @@ compounds visibly across a large job. Round only at presentation.
 **Unbounded recursion depth.** Nesting is legitimate but deep chains make roll-up slow and
 debugging hard. Cap depth and surface the limit clearly.
 
+**Scaling a nested formulation's rate by how much the parent needs.** A formulation's own
+`cost_per_output_unit` must be computed from its own recipe alone, at its own natural scale
+(`quantity_multiplier` of 1) — never pre-scaled by the quantity a parent formulation happens to
+need. A nested formulation is just another priced ingredient: the parent multiplies the quantity
+it needs by the child's (unscaled) `cost_per_output_unit`, exactly as it would multiply by a leaf
+ingredient's AVCO unit cost. Threading a running "fraction of the top-level batch" multiplier
+through the recursion and dividing by each level's own *unscaled* `output_qty` looks plausible
+but silently produces the wrong number — the two scalings don't cancel out. This was an actual
+bug in `ExplodeFormulationVersion`'s first implementation, caught by a two-level nesting test
+case, not by inspection.
+
 ## Related
 
+- [material-resolution.md](material-resolution.md) — keeps technical composition separate from
+  source and pack selection
 - [application-rates.md](application-rates.md) — the layer above
 - [stock.md](stock.md) — where ingredient cost comes from
 - [assemblies.md](assemblies.md) — how formulations enter a sellable price

@@ -9,10 +9,18 @@ Questions do not linger once resolved.
 
 ## Blocking
 
-None. Q14 (backdated stock receipts) was resolved on 2026-09-01 and its final reviewed
+No open question now blocks finalising the Phase 3 Material Resolution / Assembly Preview ADR.
+Q25 is resolved by ADR 0057; Q26–Q28 remain non-blocking follow-ups for organisation scope and
+reusable approvals rather than reasons to pretend those capabilities exist in Phase 3.
+
+Q14 (backdated stock receipts) was resolved on 2026-09-01 and its final reviewed
 consolidation is
 [ADR 0040](decisions/0040-control-backdated-stock-recalculation-and-corrections.md), with AVCO pool
 scope remaining separately governed by ADR 0039.
+
+Q20 (item divisibility and quantity increments) was resolved on 2026-09-25 — see
+[ADR 0050](decisions/0050-item-specific-uom-conversion-and-divisibility.md). Its remaining package
+boundary was subsequently resolved with Q17/Q19/Q22 by ADRs 0051–0053.
 
 Q1, Q2 and Q3 were resolved on 2026-08-10 — see
 [ADR 0023](decisions/0023-retention-retainage-enabled.md),
@@ -73,9 +81,88 @@ conventions. Decide whether the movement boundary
 should stamp `posted_by` itself (one column, uniform trail) or whether source-document actors
 remain the single source of truth.
 
+### Q23 — Variable-content and catch-weight packages
+**Blocks:** Variable-content receipts and package/container tracking; not fixed-content Phase 3
+
+Do first-generation package records assume fixed contained quantity, or must receipt record an
+actual quantity per container (catch weight, variable-length rolls, partly filled drums)? The
+answer affects item packaging, receipt capture, labels and later container balances.
+
+[ADR 0050](decisions/0050-item-specific-uom-conversion-and-divisibility.md) deliberately does not
+answer this: its item-specific conversion factor is fixed by definition and cannot represent a
+quantity that varies per physical container. Industry practice (SAP Catch Weight Management)
+models catch weight as two independently-recorded quantities per transaction — a count/handling
+unit and an actually-measured weight/volume — rather than a smarter conversion factor. That is a
+different mechanism, not an extension of ADR 0050's table, and remains this question's to design.
+
+### Q24 — Phase 5 material exceptions
+**Blocks:** Nothing in Phase 3; decide before job material issue/return/scrap design
+
+Which exceptions must ship in the first Phase 5 slice: customer-supplied/free-issue material,
+approved substitutes, recoverable scrap, reusable remnants and returnable containers? These must
+not be collapsed into ordinary purchased consumption because ownership, value and availability
+differ.
+
+### Q26 — Organisational and record-level access scope
+**Blocks:** Department/site/warehouse/assigned-record visibility and delegated administration
+
+What organisational structure should access follow: departments, branches, sites, warehouses,
+cost centres, project teams or a composable organisation-unit hierarchy? Define whether users may
+see own, assigned, unit or all-company records and whether one user can act in several units.
+Define bounded delegated administration—what a department head may assign to subordinates—and
+routine cross-department assigned/task-scoped access without creating one role per department pair.
+Spatie Teams currently scopes assignments by `company_id`; it is groundwork, not this record-scope
+model. See [authorization.md](architecture/authorization.md#teams-and-organisational-scope).
+
+### Q27 — Shared approval workflow contract
+**Blocks:** The first configurable multi-stage approval implementation
+
+Should Purchase Orders provide the first concrete workflow and then extract a shared approval
+contract, or should a cross-module engine be built first? Decide the minimum shared semantics for
+sequential/parallel steps, distinct approver counts, thresholds, expiry, delegation, rejection,
+resubmission and policy-version snapshots. See
+[approval-workflows.md](architecture/approval-workflows.md).
+
+### Q28 — Purchase-order approval policy
+**Blocks:** Introducing PO submission/approval before operational purchasing relies on issuance
+
+Which PO approvals are required by amount, currency, department/site, supplier/category or other
+risk; may the creator submit, may an approver also issue, how many independent approvers are
+needed, and what happens on rejection or draft revision? Today any authenticated caller reaching
+the endpoint can create and issue a PO; DRAFT → ISSUED has no approval fact.
+
 ---
 
 ## Answered
 
 Answered questions live in [decisions/](decisions/) as ADRs. See the
 [decision index](decisions/README.md) for the full list.
+
+<a id="q17--phase-3-commercial-package-and-costed-source-proposal-scope"></a>
+<a id="q18--audit-requirements-for-planned-quantity-adjustments"></a>
+<a id="q19--default-ranking-for-source-and-pack-proposals"></a>
+<a id="q21--phase-4-selling-price-strategy-baseline"></a>
+<a id="q22--physical-container-granularity"></a>
+<a id="q25--material-resolution-permissions-and-sensitive-fields"></a>
+
+Q17, Q19 and Q22 were resolved on 2026-09-26 by
+[ADR 0051](decisions/0051-phase-3-commercial-packaging-and-supplier-cost-scenarios.md),
+[ADR 0052](decisions/0052-progressive-inventory-package-tracking.md) and
+[ADR 0053](decisions/0053-explainable-inventory-package-selection-presets.md): Phase 3 proposes
+mixed package use from internal inventory, physical tracking is progressive, and the first release
+ships three explainable selection presets. Supplier replenishment remains Purchasing-owned.
+
+Q18 was resolved on 2026-09-26 by
+[ADR 0054](decisions/0054-risk-based-material-plan-variance-controls.md): every adopted variance
+is audited, while versioned company/category/item policy escalates it to explanation, independent
+approval or a hard block according to configured quantity, cost, waste and risk bands.
+
+Q21 was resolved on 2026-09-26 by
+[ADR 0055](decisions/0055-progressive-sales-pricing-and-controlled-formulas.md): Sales pricing is
+independent from internal cost and tax, uses progressive SIMPLE/MANAGED/ADVANCED capabilities,
+and advanced company formulas remain controlled, typed, versioned and explainable.
+
+Q25 was resolved on 2026-09-26 by
+[ADR 0057](decisions/0057-stable-material-resolution-capabilities-with-dynamic-assignment.md):
+Material Resolution has stable action/field capabilities with company-configured roles and direct
+grants; approval policy remains separate, while department and record scope remain Q26.

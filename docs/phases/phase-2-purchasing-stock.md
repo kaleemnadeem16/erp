@@ -408,9 +408,19 @@ purchasing and inventory operating UI; that remaining boundary is listed below:
       manage permission — a user who can edit a policy isn't automatically allowed to see who
       changed it before; both screens render "you don't have permission" rather than a misleading
       empty list when that permission is missing.
-- [ ] Replace temporary raw-ID controls in cutover screens when the required lookup endpoints exist
-      (e.g. `inventory-cutover-detail-screen.tsx` still renders a bare `location_id` for negative
-      opening exceptions instead of resolving it to a code/name).
+- [x] ~~Replace temporary raw-ID controls in cutover screens when the required lookup endpoints
+      exist~~ — done 2026-09-26. `inventory-cutover-detail-screen.tsx`'s negative-opening
+      exceptions table rendered a bare `location_id`; `item` resolution sat right next to it but
+      was equally dead, since neither `InventoryCutoverController::show()` nor
+      `InventoryCutoverNegativeOpening` eager-loaded either relation, so `whenLoaded()` always
+      omitted both from the response regardless of the frontend's `include` query. Added a
+      `location()` relation and, rather than special-casing the controller's `include` handling
+      (which trips Scramble into over-broadly marking the whole `negative_openings` array
+      required — checked via the generated OpenAPI diff), gave the model
+      `protected $with = ['item', 'location']`: every screen showing an exception needs its
+      identity, never just the foreign keys. Covered by
+      `InventoryCutoverApiTest`'s existing negative-opening workflow test, extended to assert both
+      fields on the approve response and on `GET .../inventory-cutovers/{id}?include=negativeOpenings`.
 - [ ] PO fields with no schema, API or UI yet, surfaced while building supplier sites
       (2026-09-22): a ship-to/deliver-to location on the PO (today only the supplier's own
       order-from/ship-from site is captured, see [parties.md](../domain/parties.md#shared-sites));

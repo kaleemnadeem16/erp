@@ -4,8 +4,8 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { InventoryCutoverNegativeOpeningResource } from "./inventoryCutoverNegativeOpeningResource";
+import type { InventoryCutoverNegativeOpeningsApprove200Data } from "./inventoryCutoverNegativeOpeningsApprove200Data";
 
 export type InventoryCutoverNegativeOpeningsApprove200 = {
-  data: InventoryCutoverNegativeOpeningResource;
+  data: InventoryCutoverNegativeOpeningsApprove200Data;
 };

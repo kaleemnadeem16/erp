@@ -1,11 +1,24 @@
 import { BrowserRouter, Routes, Route, Outlet } from "react-router";
 import {
   AppShell,
+  ApplicationRateCreateScreen,
+  ApplicationRateEditScreen,
+  ApplicationRatesListScreen,
+  AssemblyCreateScreen,
+  AssemblyEditScreen,
+  AssembliesListScreen,
+  AssemblyGroupCreateScreen,
+  AssemblyGroupEditScreen,
+  AssemblyGroupsListScreen,
   CategoriesListScreen,
   CategoryCreateScreen,
   CategoryDetailScreen,
   CategoryEditScreen,
   DashboardScreen,
+  EstimatingSettingsScreen,
+  FormulationCreateScreen,
+  FormulationEditScreen,
+  FormulationsListScreen,
   GoodsReceiptCreateScreen,
   GoodsReceiptDetailScreen,
   GoodsReceiptsListScreen,
@@ -16,12 +29,14 @@ import {
   ItemCreateScreen,
   ItemDetailScreen,
   ItemEditScreen,
+  ItemQuantityUnitsListScreen,
   ItemSupplierCreateScreen,
   ItemSupplierDetailScreen,
   ItemSupplierEditScreen,
   ItemSuppliersListScreen,
   ItemsListScreen,
   LoginScreen,
+  MaterialPreviewScreen,
   NegativeStockOverrideCreateScreen,
   NegativeStockOverrideDetailScreen,
   NegativeStockOverridesListScreen,
@@ -38,9 +53,13 @@ import {
   PrintingSettingsScreen,
   ProtectedRoute,
   PurchasingSettingsScreen,
+  RateDimensionCreateScreen,
+  RateDimensionEditScreen,
+  RateDimensionsListScreen,
   RecalculationRequestCreateScreen,
   RecalculationRequestDetailScreen,
   RecalculationRequestsListScreen,
+  ResourceRatesListScreen,
   StockLedgerScreen,
   StockMoveDetailScreen,
   WarehouseCreateScreen,
@@ -104,6 +123,16 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <ItemEditScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/item-quantity-units"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <ItemQuantityUnitsListScreen />
               </AppShell>
             </ProtectedRoute>
           }
@@ -234,6 +263,176 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <StockLedgerScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/rate-dimensions"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <RateDimensionsListScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/rate-dimensions/new"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <RateDimensionCreateScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/rate-dimensions/:id/edit"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <RateDimensionEditScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/application-rates"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <ApplicationRatesListScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/application-rates/new"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <ApplicationRateCreateScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/application-rates/:id/edit"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <ApplicationRateEditScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/formulations"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <FormulationsListScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/formulations/new"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <FormulationCreateScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/formulations/:id/edit"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <FormulationEditScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/assembly-groups"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <AssemblyGroupsListScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/assembly-groups/new"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <AssemblyGroupCreateScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/assembly-groups/:id/edit"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <AssemblyGroupEditScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/assemblies"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <AssembliesListScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/assemblies/new"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <AssemblyCreateScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/assemblies/:id/edit"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <AssemblyEditScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/resource-rates"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <ResourceRatesListScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/material-preview"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <MaterialPreviewScreen />
               </AppShell>
             </ProtectedRoute>
           }
@@ -499,6 +698,16 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <InventorySettingsScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings/estimating"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <EstimatingSettingsScreen />
               </AppShell>
             </ProtectedRoute>
           }

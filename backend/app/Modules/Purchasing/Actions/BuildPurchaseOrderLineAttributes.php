@@ -6,16 +6,16 @@ namespace App\Modules\Purchasing\Actions;
 
 use App\Exceptions\DomainInvariantException;
 use App\Models\Uom;
+use App\Modules\Inventory\Actions\ItemUomConversionService;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Purchasing\Models\PurchaseOrder;
-use App\Support\UomConversionService;
 use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
 use InvalidArgumentException;
 
 final class BuildPurchaseOrderLineAttributes
 {
-    public function __construct(private readonly UomConversionService $conversion) {}
+    public function __construct(private readonly ItemUomConversionService $conversion) {}
 
     /**
      * @param  array<string, mixed>  $input
@@ -25,10 +25,12 @@ final class BuildPurchaseOrderLineAttributes
     {
         $item = Item::query()->findOrFail($input['item_id']);
         $purchaseUom = Uom::query()->findOrFail($input['purchase_uom_id']);
-        $stockUom = Uom::query()->findOrFail($item->stock_uom_id);
         $qty = BigDecimal::of((string) $input['ordered_qty']);
         try {
-            $factor = $this->conversion->convert('1', $purchaseUom, $stockUom);
+            // Item-specific item_quantity_units resolves first (may cross UoM
+            // dimension), falling back to the global, dimension-locked service —
+            // see ADR 0050.
+            $factor = $this->conversion->stockUnitFactor($item, $purchaseUom);
         } catch (InvalidArgumentException) {
             throw new DomainInvariantException(
                 'Purchase UoM must have the same dimension as the item stock UoM.',
@@ -50,7 +52,7 @@ final class BuildPurchaseOrderLineAttributes
             'item_code' => null,
             'supplier_item_code' => null,
             'ordered_stock_qty' => (string) $stockQty,
-            'stock_uom_id' => $stockUom->id,
+            'stock_uom_id' => $item->stock_uom_id,
             'uom_factor' => (string) $factor,
             'line_amount' => (string) $lineAmount,
             'base_unit_price' => (string) $unitPrice->multipliedBy($fx)->toScale(4, RoundingMode::HALF_UP),

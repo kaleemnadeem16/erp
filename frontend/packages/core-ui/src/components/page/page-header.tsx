@@ -73,7 +73,7 @@ export function PageHeader({ title, description, breadcrumbs, backTo, actions, p
         {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
       </div>
       {(actions || primaryAction) && (
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 self-end items-center gap-2 sm:self-auto">
           {actions}
           {primaryAction &&
             (primaryAction.to ? (

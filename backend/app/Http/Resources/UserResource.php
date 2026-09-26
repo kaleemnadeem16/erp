@@ -22,6 +22,13 @@ class UserResource extends JsonResource
             'id' => $user->id,
             'name' => $user->name,
             'email' => $user->email,
+            // Navigation may use this as a convenience, but every endpoint
+            // still authorises server-side. Never expose another user's
+            // grants when this resource is nested in audit/history data.
+            'permissions' => $this->when(
+                $request->user()?->is($user) === true,
+                fn () => $user->getAllPermissions()->pluck('name')->sort()->values()->all(),
+            ),
         ];
     }
 }

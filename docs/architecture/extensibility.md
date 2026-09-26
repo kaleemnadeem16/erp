@@ -110,13 +110,19 @@ tables and filters with no deploy.
 
 #### Config-driven workflow
 
+This is a planned extension-point sketch, not an implemented engine:
+
 ```
 workflow_states       entity_type, code, label, is_initial, is_terminal, sort_order
 workflow_transitions  from_state_id, to_state_id, required_permission, guard_class
 ```
 
-Statuses and permitted transitions are data, not a hardcoded enum. A customer needing an extra
-approval step configures it.
+Statuses and permitted transitions may eventually be data rather than a hardcoded enum. The two
+tables above are enough for a simple permitted transition, but **not** for maker/checker,
+multi-stage or multi-department approval: those also need versioned policies, steps, counts,
+routing inputs and immutable decisions. See
+[approval-workflows.md](approval-workflows.md); do not implement multiple approvals by putting
+more meaning into one `required_permission` column.
 
 ---
 
@@ -128,7 +134,77 @@ superset, while Actions validate the selected mode and the UI reveals only relev
 Defaults must be safe and simple; enabling a mode may introduce conditional requirements for
 that company, and downgrade must be refused while incompatible data exists. Inventory locations
 are the first implementation of this pattern — see
-[ADR 0041](../decisions/0041-progressive-inventory-location-capabilities.md).
+[ADR 0041](../decisions/0041-progressive-inventory-location-capabilities.md). Assembly overhead
+policy is the second — see
+[ADR 0049](../decisions/0049-assembly-group-overhead-scope.md).
+
+Three concerns stay separate even though one feature touches all three:
+
+1. **Domain capability** — what the backend supports. Build this at the mature/general level
+   where a requirement is credible across company sizes, not scaled down because a small company
+   won't use most of it today.
+2. **Company configuration** — which parts of that capability a given company actually uses.
+   Usually just data: rows a company creates (or doesn't) in optional tables and optional
+   relationships, not a schema difference between "simple" and "advanced" companies.
+3. **UI exposure** — which of the supported capability a screen shows. A small company's settings
+   screen may expose one field; an advanced company's the full engine underneath it. Both read and
+   write through the same domain/policy code — never a simplified reimplementation for the small
+   case and a real one for the advanced case.
+
+*Which* mechanism eventually decides how much UI a given company sees — a company setting, a
+permission, a subscription/package tier, deployment configuration — is a packaging decision
+separate from the domain design, and doesn't need to be settled to ship the capability: as long as
+the advanced parts are optional relationships or optional rows, a company that never touches them
+carries no UI and no awareness of them for free.
+
+### Enablement vs. access: two separate axes, not one toggle
+
+When a capability's UI-exposure mechanism *is* being decided (an advanced section behind
+`AdvancedOptionsMenu`/`OptionCards`, not a one-off), keep two axes separate rather than reaching
+for a single flag. Primary-source research across SAP and Microsoft converges on the same shape:
+
+- **Enablement — company-wide, never per-user.** SAP's Switch Framework activates a Business
+  Function for the whole client, gated by a dedicated `S_SWITCH` authorization object distinct
+  from the ordinary roles that use the resulting functionality
+  ([SAP Help — Switching on Business Functions](https://help.sap.com/docs/ABAP_PLATFORM_NEW/1d51ac4c098042528cadb1d5bcb1ab23/de899442047b0831e10000000a1550b0.html)).
+  Dynamics 365 Business Central's Feature Management is explicit that this is the *only* shape it
+  offers: "Business Central doesn't let you turn on a feature for a single user or group of
+  users... [an] enabled feature applies to all users of an environment," and turning it on
+  requires its own admin-only permission set, separate from the permission sets governing daily
+  use of what gets enabled
+  ([Microsoft Learn — Enabling upcoming features ahead of time](https://learn.microsoft.com/en-us/dynamics365/business-central/dev-itpro/administration/feature-management)).
+  This repo already ships exactly this shape — reuse it rather than inventing another: a typed
+  company-scoped settings row (`PurchasingSetting`, `InventorySetting`), changed only by an actor
+  holding a dedicated `<module>.<policy>.manage` permission, with a mandatory reason and its own
+  `<module>.policy-history.view` audit-read permission, separate from `.manage`
+  (`purchasing.over-receipt-policy.manage` / `purchasing.policy-history.view` are the shipped
+  example — see [authorization.md](authorization.md)).
+- **Access, once enabled — the *existing* permission that already gates the base capability, by
+  default.** None of the researched systems layer a second, feature-specific permission on top of
+  an enabled feature merely to decide who encounters it; Business Central's own model is that an
+  enabled feature is simply "available," and the page/action permissions a user already has decide
+  what they can do with it. Add a genuinely new, narrower permission here only when the advanced
+  capability is more sensitive than the base one it extends (authorization.md's per-feature
+  checklist, question 4) — not by default, and not merely because the section is labelled
+  "advanced."
+
+**Company-wide is the only enablement scope this pattern covers today.** A narrower,
+delegated-to-a-department-head enablement authority is a real question — none of the systems
+researched above support it either, they only ever gate *who may flip the company-wide switch*,
+never a sub-company enablement scope — and it depends on
+[Q26](../OPEN-QUESTIONS.md#q26--organisational-and-record-level-access-scope)'s still-undecided
+organisational-unit model. Until Q26 resolves, treat enablement as company-scoped only, gated by
+whichever actor already manages other company-wide settings; do not build a department-scoped
+enablement mechanism speculatively ahead of that decision.
+
+**A UI/feature-visibility toggle must never itself be a historical fact.** Turning an advanced
+view on or off must not retroactively change, hide the effect of, or invalidate already-effective
+configuration underneath it — visibility and execution are different concerns, and only execution
+changes (posted facts, effective policies) need the
+[ADR 0040](../decisions/0040-control-backdated-stock-recalculation-and-corrections.md)-style
+correction-not-silent-rewrite discipline. A downgrade may be *refused* while it would orphan
+visible, in-use configuration (the same rule ADR 0041 already applies to location-mode downgrades)
+— it must never *silently discard or reinterpret* that configuration instead.
 
 Use a plugin only for genuinely customer-specific behaviour, not for a broadly useful capability
 that belongs in the core domain. Do not reserve speculative nullable columns for unknown needs;
@@ -179,3 +255,9 @@ concrete until a real second customer creates real evidence. See
 - [ADR 0009](../decisions/0009-company-defined-rate-dimensions.md)
 - [code-structure.md](code-structure.md)
 - [ADR 0041](../decisions/0041-progressive-inventory-location-capabilities.md)
+- [ADR 0049](../decisions/0049-assembly-group-overhead-scope.md)
+- [Approval workflows](approval-workflows.md)
+- [authorization.md](authorization.md) — the per-feature checklist and permission-registration
+  standard the access axis reuses
+- [Q26](../OPEN-QUESTIONS.md#q26--organisational-and-record-level-access-scope) — the undecided
+  organisational-unit model a future delegated enablement scope depends on

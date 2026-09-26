@@ -6,6 +6,8 @@ namespace App\Modules\Inventory;
 
 use App\Modules\Imports\Support\ImportTargetRegistry;
 use App\Modules\Inventory\Imports\OpeningStateImportTarget;
+use App\Modules\Inventory\Support\PermissionVocabulary;
+use App\Support\PermissionRegistry;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
@@ -20,6 +22,10 @@ class InventoryServiceProvider extends ServiceProvider
     {
         $this->app->afterResolving(ImportTargetRegistry::class, static function (ImportTargetRegistry $registry): void {
             $registry->register(new OpeningStateImportTarget);
+        });
+
+        $this->app->afterResolving(PermissionRegistry::class, static function (PermissionRegistry $registry): void {
+            $registry->registerVocabulary('inventory', PermissionVocabulary::all());
         });
     }
 

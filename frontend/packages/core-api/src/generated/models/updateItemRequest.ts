@@ -6,6 +6,7 @@
  */
 import type { UpdateItemRequestDescription } from "./updateItemRequestDescription";
 import type { ItemType } from "./itemType";
+import type { UpdateItemRequestQuantityPrecision } from "./updateItemRequestQuantityPrecision";
 import type { ValuationMethod } from "./valuationMethod";
 import type { UpdateItemRequestAvcoPoolScope } from "./updateItemRequestAvcoPoolScope";
 import type { ItemTracking } from "./itemTracking";
@@ -22,6 +23,8 @@ export interface UpdateItemRequest {
   description?: UpdateItemRequestDescription;
   type?: ItemType;
   stock_uom_id?: number;
+  /** @maxLength 10000000000 */
+  quantity_precision?: UpdateItemRequestQuantityPrecision;
   is_stocked?: boolean;
   is_purchasable?: boolean;
   is_sellable?: boolean;

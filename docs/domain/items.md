@@ -54,11 +54,40 @@ categories
 | `SEMI_FINISHED` | ✅ | Formulation output held in stock — a mixed shade |
 | `FINISHED` | ✅ | Sold as-is, no further work |
 | `SERVICE` | ❌ | Sold work — the output of an [assembly](assemblies.md) |
-| `LABOUR` | ❌ | A labour class with an hourly rate |
-| `PLANT` | ❌ | Equipment with an hourly rate |
+| `LABOUR` | ❌ | A labour class, priced via a resource rate (below) |
+| `PLANT` | ❌ | An hourly-rated piece of equipment, priced via a resource rate (below) |
 
-`LABOUR` and `PLANT` are items so that assembly components reference one thing uniformly, and
-their rates change over time through the same mechanism as material costs.
+`LABOUR` and `PLANT` are items so that assembly components reference one thing uniformly. Their
+rate is **not** a column on `items` and does not come from AVCO stock valuation the way `RAW`
+costs do — see "Resource rates" below for where it actually lives and why.
+
+### Resource rates
+
+`items` itself carries no rate/standard-cost column, and a non-stocked `LABOUR`/`PLANT` item has
+no AVCO pool to price it from either — `IngredientCostResolver` (formulations.md) only ever
+resolves from stock valuation. A separate, Estimating-owned `resource_rates` table is the actual
+source:
+
+```
+resource_rates
+  id, company_id
+  item_id            → items                 -- LABOUR or PLANT, enforced at the request layer
+  rate               decimal(19,6)            -- per rate_uom_id, company base currency
+  rate_uom_id        → uoms                   -- e.g. hour, day, shift — whatever the item is priced by
+  effective_from     date
+
+  unique(['company_id', 'item_id', 'effective_from'])
+```
+
+Shaped like `multi-currency.md`'s exchange-rate pattern deliberately, not like formulation/
+assembly/overhead-policy's heavier DRAFT/ACTIVE/SUPERSEDED lifecycle: a resource rate is a market
+fact (the same kind of thing an AVCO unit cost is), not a governed policy needing a reason or
+audit trail. Resolution is "the most recent row with `effective_from` on or before the costing
+date wins"; a correction is a new dated row, never an edit to an already-used historical one —
+there is deliberately no update endpoint. See
+[assemblies.md#cost-roll-up](assemblies.md#cost-roll-up) for how an assembly component resolves
+and uses this, including the UoM-compatibility check between a component's own quantity unit and
+the resolved rate's `rate_uom_id`.
 
 ### Stocked vs not
 
@@ -98,17 +127,19 @@ later change to the category's default must not silently change an already-creat
 method. Every item ends up with exactly one method; unlike GL accounts, a chain that resolves to
 nothing is not tolerated here — item creation fails rather than leaving `valuation_method` unset.
 
-**Locked once the item has any inventory transaction** (Phase 2, once `stock_moves` exists — not
-enforceable yet, nothing to check against today). Changing an item's method after that point is a
-controlled conversion/revaluation, not a field edit.
+**Locked once the item has any inventory transaction.** `Item`'s `updating` hook rejects the
+change once a `stock_move` references the item
+(`GoodsReceiptPostingTest::test_item_valuation_policy_is_locked_after_receipt`). Changing an
+item's method after that point is a controlled conversion/revaluation, not a field edit.
 
 For an AVCO item, `avco_pool_scope` is resolved before its first movement from an explicit choice
 or the company's `COMPANY_ITEM` default, then persisted. Supported scopes are `COMPANY_ITEM`,
 `WAREHOUSE_ITEM` and `COMPANY_ITEM_BATCH`; the last requires `BATCH` tracking. Batch tracking does
 not itself choose batch valuation. Non-AVCO items leave the field null. Like valuation method,
-scope is locked after the first movement and never dynamically follows later company-default
-changes. A live change requires an effective-dated, approved valuation-policy migration with
-rebased pools and quantity/value reconciliation, per
+scope is locked after the first movement (same `updating` hook,
+`test_item_avco_pool_scope_is_locked_after_receipt`) and never dynamically follows later
+company-default changes. A live change requires an effective-dated, approved valuation-policy
+migration with rebased pools and quantity/value reconciliation, per
 [ADR 0039](../decisions/0039-configurable-avco-valuation-pools.md).
 
 **Three independent concepts — do not conflate them:** `valuation_method` (accounting cost basis),
@@ -161,7 +192,11 @@ the application before saving.** See [database.md](../architecture/database.md).
 quantity. Block it once any stock move or document line references the item.
 
 **Assuming purchase UoM equals stock UoM.** Pigment is bought in 25 kg drums and consumed in
-grams. Purchase UoM is a property of the purchase line, not the item.
+grams. Purchase UoM is a property of the purchase line, not the item. Today this only works when
+purchase and stock UoM share a global dimension — genuine pack purchasing (a box of eaches, a
+roll of metres) needs the item-specific conversion decided in
+[ADR 0050](../decisions/0050-item-specific-uom-conversion-and-divisibility.md) and not yet
+implemented.
 
 **Supplier sourcing.** Approved suppliers are represented by Purchasing's company-scoped
 `item_suppliers` relationship, not a single column on `items`. Each relationship may carry the
@@ -178,6 +213,13 @@ the new parent chain and rejects any reparent that would revisit the category's 
 in `CategoryTest`. Category deletion is a real delete, not a soft archive; PostgreSQL foreign
 keys reject it while items or child categories still reference the row.
 
+**`PLANT` currently means two different things.** The demo dataset's `demo-spray-unit` is a
+stocked, serial-tracked, `SPECIFIC`-valued capital asset (owned equipment tracked by serial
+number) — a genuinely different concept from an hourly-rated `PLANT` *resource* priced via
+`resource_rates` (e.g. `demo-plant-scaffold`), even though both currently share the `PLANT` item
+type. Found while building resource rates (Phase 3 Step 3) and left as-is rather than fixed —
+changing the domain model to split them is a separate decision, not a demo-data correction.
+
 **Tenant-safe references.** Every company-scoped reference on `items` and `categories` is
 validated through the current company in the application. Composite PostgreSQL foreign keys
 also pair each referenced id with `company_id`, so raw SQL cannot attach an item to another
@@ -186,9 +228,23 @@ supplier-account and optional purchase-UoM references.
 
 ## Related
 
+- [material-resolution.md](material-resolution.md) — accepted quantity, package, cost and phase
+  boundaries
+- [inventory-packages.md](inventory-packages.md) — named package identity above ADR 0050's
+  quantity conversion and company/category/item tracking defaults
+- [ADR 0051](../decisions/0051-phase-3-commercial-packaging-and-supplier-cost-scenarios.md)
+  — internal-inventory package proposals
 - [units-of-measure.md](units-of-measure.md)
+- [ADR 0050](../decisions/0050-item-specific-uom-conversion-and-divisibility.md) — item-specific
+  purchase-UoM conversion and divisibility, implemented via `item_quantity_units`/
+  `quantity_precision`
+- [ADR 0052](../decisions/0052-progressive-inventory-package-tracking.md) — resolved package
+  tracking mode is persisted before first movement
 - [stock.md](stock.md) — valuation of stocked items
 - [formulations.md](formulations.md) — items as recipe inputs and outputs
+- [assemblies.md](assemblies.md#cost-roll-up) — where `resource_rates` (LABOUR/PLANT pricing) is
+  actually consumed
+- [multi-currency.md](multi-currency.md) — the exchange-rate pattern `resource_rates` mirrors
 - [parties.md](parties.md) — supplier accounts referenced by Phase 2's `item_suppliers` catalogue
 - [ADR 0033](../decisions/0033-item-suppliers-relationship.md) — approved supplier relationships
 - [stock.md](stock.md) — where `valuation_method` actually posts

@@ -40,8 +40,12 @@ export function applyApiErrorsToForm<TFieldValues extends FieldValues>(
 
   const unmatched: string[] = [];
   for (const [field, messages] of Object.entries(error.body.errors)) {
-    if ((knownFields as readonly string[]).includes(field)) {
-      setError(field as FieldPath<TFieldValues>, { type: 'server', message: messages[0] });
+    const rootField = field.split('.')[0] ?? field;
+    if ((knownFields as readonly string[]).includes(rootField)) {
+      setError(field as FieldPath<TFieldValues>, {
+        type: 'server',
+        message: messages[0]
+      });
     } else {
       unmatched.push(...messages);
     }

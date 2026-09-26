@@ -26,6 +26,16 @@ class ControllerActionBoundaryTest extends TestCase
             'goods receipts' => ['app/Modules/Purchasing/Http/Controllers/Api/V1/GoodsReceiptController.php'],
             'quality dispositions' => ['app/Modules/Purchasing/Http/Controllers/Api/V1/QualityDispositionController.php'],
             'purchasing settings' => ['app/Modules/Purchasing/Http/Controllers/Api/V1/PurchasingSettingsController.php'],
+            'assembly groups' => ['app/Modules/Estimating/Http/Controllers/Api/V1/AssemblyGroupController.php'],
+            'assemblies' => ['app/Modules/Estimating/Http/Controllers/Api/V1/AssemblyController.php'],
+            'rate dimensions' => ['app/Modules/Estimating/Http/Controllers/Api/V1/RateDimensionController.php'],
+            'rate dimension values' => ['app/Modules/Estimating/Http/Controllers/Api/V1/RateDimensionValueController.php'],
+            'application rates' => ['app/Modules/Estimating/Http/Controllers/Api/V1/ApplicationRateController.php'],
+            'formulations' => ['app/Modules/Estimating/Http/Controllers/Api/V1/FormulationController.php'],
+            'formulation versions' => ['app/Modules/Estimating/Http/Controllers/Api/V1/FormulationVersionController.php'],
+            'overhead policies' => ['app/Modules/Estimating/Http/Controllers/Api/V1/OverheadPolicyController.php'],
+            'resource rates' => ['app/Modules/Estimating/Http/Controllers/Api/V1/ResourceRateController.php'],
+            'assembly versions' => ['app/Modules/Estimating/Http/Controllers/Api/V1/AssemblyVersionController.php'],
         ];
     }
 

@@ -30,10 +30,13 @@ three relevant ones without pulling in the rest.
 | Find where something lives | The module `README.md`, then `docs/reference/` *(generated in Phase 0; does not exist yet)* |
 | Write a migration | [database.md](docs/architecture/database.md) + [multi-tenancy.md](docs/architecture/multi-tenancy.md) |
 | Add an API endpoint | [api-conventions.md](docs/architecture/api-conventions.md) |
+| Add/change any business action, endpoint or screen | [authorization.md](docs/architecture/authorization.md) — complete the checklist even when no new permission is needed |
+| Add an approval or controlled transition | [approval-workflows.md](docs/architecture/approval-workflows.md) |
 | Write backend code | [code-structure.md](docs/architecture/code-structure.md) |
 | Start a phase | The matching file in [docs/phases/](docs/phases/) |
 | Change an existing decision | The relevant ADR in [docs/decisions/](docs/decisions/) |
 | Handle a per-customer difference | [extensibility.md](docs/architecture/extensibility.md) |
+| Add or change demo data | [environments.md](docs/architecture/environments.md#development-demo-data) |
 | Understand a term | [docs/GLOSSARY.md](docs/GLOSSARY.md) |
 
 Start at [docs/README.md](docs/README.md) if unsure — it is the map.
@@ -124,6 +127,17 @@ report costs more than an incomplete one.
 
 ## Conventions
 
+- **Backend ahead of UI is often correct, not a gap.** Read
+  [extensibility.md](docs/architecture/extensibility.md#progressive-capability-modes)'s
+  domain-capability / company-configuration / UI-exposure split before assuming an endpoint needs
+  a matching screen — shipping the mature backend capability first, with UI exposure a deliberate,
+  separate, sometimes-later packaging decision, is the established pattern here (ADR 0033's
+  `purchase_uom_id` sat shape-only for weeks; that was correct, not debt). The actual defect this
+  guards against is narrower: an **already-existing** screen silently missing a control for
+  something its own endpoint already validates (a status filter nobody wired up) — see
+  [user-interface.md](docs/architecture/user-interface.md). When new backend work does need
+  permissions or docs alongside it, land those in the same commit — see
+  [authorization.md](docs/architecture/authorization.md#per-feature-authorisation-checklist).
 - New ADRs use [docs/templates/adr.md](docs/templates/adr.md), numbered sequentially
 - Domain docs use [docs/templates/domain-doc.md](docs/templates/domain-doc.md)
 - Module READMEs use [docs/templates/module-readme.md](docs/templates/module-readme.md) — required

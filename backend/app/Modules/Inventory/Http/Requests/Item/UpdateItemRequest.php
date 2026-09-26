@@ -45,6 +45,7 @@ class UpdateItemRequest extends FormRequest
             'description' => ['sometimes', 'nullable', 'string'],
             'type' => ['sometimes', Rule::enum(ItemType::class)],
             'stock_uom_id' => ['sometimes', 'integer', CompanyScoped::exists('uoms')],
+            'quantity_precision' => ['sometimes', 'nullable', 'decimal:0,9', 'gt:0', 'max:9999999999.999999999'],
             'is_stocked' => ['sometimes', 'boolean'],
             'is_purchasable' => ['sometimes', 'boolean'],
             'is_sellable' => ['sometimes', 'boolean'],

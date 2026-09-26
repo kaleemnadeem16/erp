@@ -4,8 +4,15 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Support;
 
+use App\Models\Currency;
 use App\Models\User;
+use App\Modules\Inventory\Actions\PostInventoryMovement;
+use App\Modules\Inventory\Models\Item;
+use App\Modules\Inventory\Models\Location;
+use App\Modules\Inventory\Models\StockLayer;
+use App\Modules\Inventory\Models\StockMove;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -45,6 +52,73 @@ final class DemoDataSeederTest extends TestCase
         foreach ($demoKeys as $table => $codes) {
             $this->assertSame($idsBeforeRerun[$table], $this->demoIds($table, $codes));
         }
+    }
+
+    public function test_rerun_preserves_immutable_override_requests_after_live_stock_changes(): void
+    {
+        $this->artisan('demo:seed')->assertSuccessful();
+
+        $requestsBeforeStockChange = DB::table('negative_stock_override_requests')
+            ->where('source_type', 'DEMO_JOB_ISSUE')
+            ->orderBy('source_id')
+            ->get()
+            ->map(fn (object $row): array => (array) $row)
+            ->all();
+        $this->assertCount(2, $requestsBeforeStockChange);
+
+        $item = Item::query()->where('code', 'demo-pig-blue')->firstOrFail();
+        $location = Location::query()
+            ->where('code', 'stock')
+            ->whereHas('warehouse', fn ($query) => $query->where('code', 'demo-main'))
+            ->firstOrFail();
+        $currency = Currency::query()->where('code', 'PKR')->firstOrFail();
+        $onHandBeforeStockChange = (float) StockLayer::query()
+            ->where('item_id', $item->getKey())
+            ->where('location_id', $location->getKey())
+            ->whereNull('batch_id')
+            ->whereNull('serial_no')
+            ->sum('qty_remaining');
+        $latestMovementAt = StockMove::query()
+            ->where('item_id', $item->getKey())
+            ->max('moved_at');
+
+        app(PostInventoryMovement::class)([
+            'item_id' => $item->getKey(),
+            'location_id' => $location->getKey(),
+            'qty' => '7.0000',
+            'uom_id' => $item->stock_uom_id,
+            'moved_at' => Carbon::parse($latestMovementAt)->addSecond(),
+            'source_type' => 'TEST_DEMO_STOCK_DRIFT',
+            'source_id' => 1,
+            'unit_cost' => '500.0000',
+            'currency_id' => $currency->getKey(),
+            'fx_rate' => '1.000000000',
+            'base_unit_cost' => '500.0000',
+        ]);
+
+        $onHandAfterStockChange = (float) StockLayer::query()
+            ->where('item_id', $item->getKey())
+            ->where('location_id', $location->getKey())
+            ->whereNull('batch_id')
+            ->whereNull('serial_no')
+            ->sum('qty_remaining');
+        $this->assertSame($onHandBeforeStockChange + 7.0, $onHandAfterStockChange);
+
+        $this->artisan('demo:seed')->assertSuccessful();
+
+        $requestsAfterRerun = DB::table('negative_stock_override_requests')
+            ->where('source_type', 'DEMO_JOB_ISSUE')
+            ->orderBy('source_id')
+            ->get()
+            ->map(fn (object $row): array => (array) $row)
+            ->all();
+        $this->assertSame($requestsBeforeStockChange, $requestsAfterRerun);
+
+        // AssemblyVersionsDemoSeeder is the final seeder in the full chain:
+        // reaching its component rows proves the stock fixture did not block
+        // any of the later Estimating demo data.
+        $this->assertDatabaseHas('assemblies', ['code' => 'demo-asm-wall-paint']);
+        $this->assertSame(5, DB::table('assembly_components')->count());
     }
 
     public function test_the_command_refuses_to_run_in_production(): void

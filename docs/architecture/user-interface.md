@@ -37,6 +37,16 @@ for the stronger 44 by 44 target. References:
 
 - Lists answer an operational question, not merely expose a table. Show useful defaults and totals,
   preserve filters in the URL and provide a card/detail alternative on narrow screens.
+- An **already-existing** list screen exposes the filters, sort fields and includes its own
+  backend endpoint validates for it — a control per accepted `filter.*`/`sort` value that
+  endpoint already offers this exact screen, not just whichever ones the first draft happened to
+  need. This is not "every backend capability needs a frontend" (see
+  [extensibility.md](extensibility.md#progressive-capability-modes) — backend ahead of UI is
+  often the right shape); it's narrower: a screen that already exists silently ignoring part of
+  its own endpoint's validated query surface. If a validated filter is deliberately left off for
+  now (rare, high-cardinality, admin-only, or genuinely gated behind a company/advanced mode —
+  `AdvancedOptionsMenu`/`OptionCards` for that), say so in the screen's own comment rather than
+  leaving the gap to be silently rediscovered.
 - Document detail is a workspace: identity and status first, lines and totals together, then audit
   history and secondary metadata. Available actions derive from server state and permission.
 - Draft line entry must support keyboard-efficient repeated work. Do not hide validation until the
@@ -65,7 +75,8 @@ group on every screen, unless the user explicitly asks for something else for th
 screen.** Don't invent a bespoke inline show/hide control per screen.
 
 - **One toggle per page, not one per section.** A single "Advanced options" button lives in the
-  screen's own `PageHeader` `actions` (top-right, same row as the title) — not inside the section
+  screen's own `PageHeader` `actions` (top-right alongside the title on wide screens; aligned to
+  the right edge when the header stacks on mobile) — not inside the section
   it controls, and not a separate control per optional group. Opening it shows a menu of
   checkboxes, one per advanced option the page currently has. This scales to a page with several
   optional groups without the header accumulating several separate toggle buttons.

@@ -4,6 +4,8 @@ namespace Tests\Feature\Auth;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class CurrentUserTest extends TestCase
@@ -12,13 +14,17 @@ class CurrentUserTest extends TestCase
 
     public function test_an_authenticated_user_can_fetch_their_own_record(): void
     {
+        app(PermissionRegistrar::class)->setPermissionsTeamId(1);
         $user = User::factory()->create();
+        $permission = Permission::findOrCreate('estimating.material_preview.run');
+        $user->givePermissionTo($permission);
 
         $response = $this->actingAs($user)->getJson('/api/v1/user');
 
         $response->assertOk();
         $response->assertJsonPath('data.id', $user->id);
         $response->assertJsonPath('data.email', $user->email);
+        $response->assertJsonPath('data.permissions.0', 'estimating.material_preview.run');
     }
 
     public function test_an_unauthenticated_request_gets_a_401(): void

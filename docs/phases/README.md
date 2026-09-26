@@ -10,7 +10,7 @@ Eight phases, each independently shippable. Current state is in
 | 0 | Foundation | In progress | [phase-0-foundation.md](phase-0-foundation.md) |
 | 1 | Master data | Complete | [phase-1-master-data.md](phase-1-master-data.md) |
 | 2 | Purchasing & stock | In progress | [phase-2-purchasing-stock.md](phase-2-purchasing-stock.md) |
-| 3 | Estimating core | Not started | *expanded when reached* |
+| 3 | Estimating core | In progress | [phase-3-estimating-core.md](phase-3-estimating-core.md) |
 | 4 | Sales pipeline | Not started | *expanded when reached* |
 | 5 | Job execution | Not started | *expanded when reached* |
 | 6 | Finance | Not started | *expanded when reached* |
@@ -65,13 +65,14 @@ controlled cutover/opening state without weakening live policy
 
 ### Phase 3 — Estimating core
 **The differentiator.** Formulations with versioning and customer overrides, rate dimensions,
-application rates, assemblies, cost roll-up.
-→ [formulations.md](../domain/formulations.md) · [application-rates.md](../domain/application-rates.md) · [assemblies.md](../domain/assemblies.md)
+application rates, assemblies, cost roll-up, and a configurable hierarchical overhead policy
+scoped through Assembly Groups ([ADR 0049](../decisions/0049-assembly-group-overhead-scope.md)).
+→ [phase-3-estimating-core.md](phase-3-estimating-core.md) · [formulations.md](../domain/formulations.md) · [application-rates.md](../domain/application-rates.md) · [assemblies.md](../domain/assemblies.md)
 
 ### Phase 4 — Sales pipeline
-Leads, opportunities, quotations with revisions, cost snapshotting, PDF output. First
-substantial UI work — mobile layout patterns should be settled before this. RTL is not
-needed — English only ([ADR 0026](../decisions/0026-english-only-no-rtl.md)).
+Leads, opportunities, quotations with revisions, cost snapshotting, PDF output. Mobile layout
+patterns should be settled before this. RTL is not needed — English only
+([ADR 0026](../decisions/0026-english-only-no-rtl.md)).
 
 **Owes [ADR 0040](../decisions/0040-control-backdated-stock-recalculation-and-corrections.md)'s
 multi-owner correction package**: once sold stock exists, a backdated-recalculation correction

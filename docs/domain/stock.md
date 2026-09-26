@@ -327,14 +327,18 @@ valuation must agree. Build the reconciliation report early — discovering a di
 in is far worse than catching it in week one. `StockConservationPropertyTest` already asserts
 the feed, pool, layer and shortage states agree after arbitrary movement sequences.
 
-**Changing an item's `valuation_method` after it has stock moves.** Must be locked once any
-`stock_move` references the item — see [items.md](items.md#valuation-method) and
-[ADR 0032](../decisions/0032-per-item-valuation-method.md). This is the phase where that lock
-first has something real to check against; it isn't enforceable before `stock_moves` exists, and
-must not be forgotten once it does.
+**Changing an item's `valuation_method` after it has stock moves.** Locked once any `stock_move`
+references the item — `Item`'s `updating` hook, covering `valuation_method`, `avco_pool_scope`,
+`stock_uom_id` and `tracking` together, tested in `GoodsReceiptPostingTest`. See
+[items.md](items.md#valuation-method) and
+[ADR 0032](../decisions/0032-per-item-valuation-method.md).
 
 ## Related
 
+- [material-resolution.md](material-resolution.md) — planning boundary before reservation and
+  actual job consumption
+- [inventory-packages.md](inventory-packages.md) — package balances/containers reconcile to this
+  authoritative quantity and valuation ledger
 - [items.md](items.md) — what is stocked, and where `valuation_method` is chosen
 - [purchasing.md](purchasing.md) — which receipt documents originate purchase stock moves
 - [acquisition-costing.md](acquisition-costing.md) — provisional cost and later adjustments
@@ -356,5 +360,7 @@ must not be forgotten once it does.
   structured location modes
 - [ADR 0043](../decisions/0043-control-purchase-order-receipt-and-qa-posting.md) — purchase
   receipt, QA disposition and reversal posting contract
+- [ADR 0052](../decisions/0052-progressive-inventory-package-tracking.md) — quantity-only,
+  package-balance and container-tracked modes
 - [ADR 0045](../decisions/0045-avco-transfer-rate-final-not-provisional.md) — a transfer's rate
   from a frozen pool is final, never repaired

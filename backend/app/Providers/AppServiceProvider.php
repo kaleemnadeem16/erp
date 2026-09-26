@@ -6,6 +6,7 @@ use App\Contracts\NumberingScheme;
 use App\Support\CompanyContext;
 use App\Support\DefaultNumberingScheme;
 use App\Support\OpenApi\DecimalAsStringRuleTransformer;
+use App\Support\PermissionRegistry;
 use Dedoc\Scramble\Scramble;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -26,6 +27,7 @@ class AppServiceProvider extends ServiceProvider
         }
 
         $this->app->singleton(CompanyContext::class);
+        $this->app->singleton(PermissionRegistry::class);
         $this->app->bind(NumberingScheme::class, DefaultNumberingScheme::class);
     }
 

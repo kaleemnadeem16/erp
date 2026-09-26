@@ -1,9 +1,13 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
+  ArrowLeftRight,
   Boxes,
   Calculator,
   ClipboardList,
+  Component,
   FileText,
+  FlaskConical,
+  Group,
   PackageCheck,
   History,
   Layers,
@@ -13,17 +17,21 @@ import {
   Moon,
   Package,
   Palette,
+  Percent,
   Pin,
   PinOff,
   Printer,
+  Ruler,
   ScrollText,
   Settings,
   ShieldAlert,
+  Sigma,
   SlidersHorizontal,
   Sun,
   Tags,
   User,
   Warehouse,
+  Wrench,
 } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router";
 import { useLogout } from "@erp/core-api";
@@ -86,6 +94,7 @@ const navGroups: NavGroup[] = [
     label: "Inventory",
     items: [
       { to: "/items", label: "Items", icon: Package },
+      { to: "/item-quantity-units", label: "Pack Conversions", icon: ArrowLeftRight },
       { to: "/categories", label: "Categories", icon: Tags },
       { to: "/warehouses", label: "Warehouses", icon: Warehouse },
       { to: "/inventory-overview", label: "Inventory Overview", icon: Layers },
@@ -101,6 +110,18 @@ const navGroups: NavGroup[] = [
       { to: "/recalculation-requests", label: "Stock Recalculation", icon: Calculator },
     ],
   },
+  {
+    label: "Estimating",
+    items: [
+      { to: "/rate-dimensions", label: "Rate Dimensions", icon: Ruler },
+      { to: "/application-rates", label: "Application Rates", icon: Percent },
+      { to: "/formulations", label: "Formulations", icon: FlaskConical },
+      { to: "/assembly-groups", label: "Assembly Groups", icon: Group },
+      { to: "/assemblies", label: "Assemblies", icon: Component },
+      { to: "/resource-rates", label: "Resource Rates", icon: Wrench },
+      { to: "/material-preview", label: "Material Preview", icon: Sigma },
+    ],
+  },
 ];
 
 // Not rendered in the desktop sidebar (see navGroups above) — it exists so
@@ -112,6 +133,7 @@ const settingsNavGroup: NavGroup = {
   items: [
     { to: "/settings/purchasing", label: "Purchasing Settings", icon: Settings },
     { to: "/settings/inventory", label: "Inventory Settings", icon: SlidersHorizontal },
+    { to: "/settings/estimating", label: "Estimating Settings", icon: Calculator },
     { to: "/settings/account", label: "Account", icon: User },
     { to: "/settings/appearance", label: "Appearance", icon: Palette },
     { to: "/settings/printing", label: "Printing", icon: Printer },
@@ -130,6 +152,7 @@ const SETTINGS_MENU: { label: string; items: NavItem[] }[] = [
     items: [
       { to: "/settings/purchasing", label: "Purchasing", icon: Settings },
       { to: "/settings/inventory", label: "Inventory", icon: SlidersHorizontal },
+      { to: "/settings/estimating", label: "Estimating", icon: Calculator },
       { to: "/settings/printing", label: "Printing", icon: Printer },
     ],
   },

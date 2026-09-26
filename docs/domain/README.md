@@ -70,6 +70,9 @@ Lead → Opportunity → Quotation (revisions) → Job → Work Order → Invoic
 | [formulations.md](formulations.md) | Recipes, versioning, customer overrides |
 | [application-rates.md](application-rates.md) | Consumption per work unit, rate dimensions |
 | [assemblies.md](assemblies.md) | The sellable unit, cost roll-up, margin |
+| [material-resolution.md](material-resolution.md) | Cross-phase quantity, sourcing, pack, cost and price boundaries |
+| [inventory-packages.md](inventory-packages.md) | Package definitions, progressive physical tracking and internal-stock selection |
+| [sales-pricing.md](sales-pricing.md) | Progressive customer-price resolution and controlled formulas |
 
 ### Operations
 
