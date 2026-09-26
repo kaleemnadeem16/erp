@@ -83,6 +83,9 @@ shapes, transition rules and deterministic tie-breakers are in
 ## Cost, price and availability
 
 - Internal inventory cost is evidence for estimating, not customer price.
+- [ADR 0055](../decisions/0055-progressive-sales-pricing-and-controlled-formulas.md) defines the
+  separate Phase 4 Sales-pricing resolver: progressive maintained, cost-derived, agreement and
+  controlled-formula pricing, with tax applied afterwards.
 - Supplier purchase price and procurement cash outlay are Purchasing evidence, not substitutes for
   current inventory valuation.
 - Missing cost is never presented as zero.
@@ -146,8 +149,6 @@ policy and retains enough pre-/post-rounding evidence to explain the result.
 
 ## Open decisions
 
-- [Q21](../OPEN-QUESTIONS.md#q21--phase-4-selling-price-strategy-baseline) — customer selling-price
-  strategies.
 - [Q25](../OPEN-QUESTIONS.md#q25--material-resolution-permissions-and-sensitive-fields) — action
   permissions and sensitive fields.
 - Q23/Q24 — variable-content packages and execution exceptions.
@@ -169,5 +170,6 @@ Primary sources used to validate the boundaries:
 - [Inventory packages](inventory-packages.md) · [Units of measure](units-of-measure.md)
 - [Items](items.md) · [Stock](stock.md) · [Purchasing](purchasing.md)
 - [Assemblies](assemblies.md) · [Sales pipeline](sales-pipeline.md) · [Job costing](job-costing.md)
+- [Sales pricing](sales-pricing.md) · [Tax](tax.md)
 - [Phase 3](../phases/phase-3-estimating-core.md)
-- [ADR 0054](../decisions/0054-risk-based-material-plan-variance-controls.md)
+- [ADR 0054](../decisions/0054-risk-based-material-plan-variance-controls.md) · [ADR 0055](../decisions/0055-progressive-sales-pricing-and-controlled-formulas.md)

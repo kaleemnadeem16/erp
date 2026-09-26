@@ -2,114 +2,175 @@
 
 # Tax
 
-Sales/output tax and purchase/input tax are modelled as company-configured data, not hardcoded
-regimes ([ADR 0025](../decisions/0025-configurable-tax-engine.md)). Rates, jurisdictions, and
-whether tax applies at all vary by country, by province, and by goods vs. services — and change
-on their own schedule, unrelated to application releases.
+Tax is a separate determination, accounting and reporting capability. It consumes a resolved net
+sales or purchase amount but is not part of the price formula. [ADR 0025](../decisions/0025-configurable-tax-engine.md)
+established configurable tax; [ADR 0056](../decisions/0056-progressive-tax-calculation-and-recovery.md)
+extends it with progressive calculation and explicit recovery distributions.
+
+## Problem statement
+
+Tax is not one percentage added to every document. Sales/output and purchase/input tax have
+different accounting; purchase tax may be fully, partly or not claimable; withholding happens at
+payment rather than changing invoice tax. Jurisdictions may require several components,
+inclusive prices, tax-on-tax, exemptions and reporting codes.
+
+Example — a $100 purchase plus $15 input tax:
+
+| Recovery | Tax credit | Added to inventory/asset/expense | Economic cost |
+|---|---:|---:|---:|
+| Full | $15 | $0 | $100 |
+| None | $0 | $15 | $115 |
+| 60% | $9 | $6 | $106 |
+
+The ERP must preserve these amounts separately; `is_recoverable = true/false` cannot represent
+the third case.
 
 ## Where it sits
 
-Applied on quotation and invoice lines ([sales-pipeline.md](sales-pipeline.md),
-[receivables.md](receivables.md)) and on purchase lines; posts to Output Tax / Input Tax accounts
-in [general-ledger.md](general-ledger.md). Tax codes are configured in
-[Phase 1](../phases/README.md) master data; applied to documents from Phase 4 onward.
+Tax is estimated on quotations and determined on invoices and purchase documents. Components
+post to Output Tax, recoverable Input Tax, non-recoverable acquisition cost/expense and relevant
+withholding accounts in [general-ledger.md](general-ledger.md). Configuration begins as master
+data; transactional use begins in Phase 4 and financial reporting in Phase 6.
 
-## Schema
+## Capability modes
 
+| Mode | Intended fit | Capabilities |
+|---|---|---|
+| `BASIC` | Straightforward small-company regime | Effective percentage, output/input direction, exclusive tax, full/no recovery, zero/exempt/not-applicable, optional withholding |
+| `LOCALISED` | Ordinary statutory localisation | Multiple components, tax classifications, party profiles, inclusive tax, partial recovery, jurisdictions, report grids, exemptions and withholding certificates |
+| `ADVANCED` | Complex or multi-jurisdiction operation | Compound/fixed/quantity taxes, tax-on-tax, reverse charge, self-assessment, intended-use recovery, restricted formulas and localisation/external providers |
+
+Tax mode is independent of Sales-pricing mode. Companies enable only the complexity they need;
+all modes use the same component snapshot and posting boundaries.
+
+## Conceptual data shape
+
+```text
+tax_regimes / tax_codes / tax_rule_versions
+  company, jurisdiction, direction, effective dates, status
+  calculation_method   PERCENTAGE | FIXED | QUANTITY | RESTRICTED_FORMULA
+  inclusive, sequence, base_includes_prior_components
+  report_code/grid, GL mappings
+
+tax_classifications
+  company, code, GOODS | SERVICES | BOTH, status
+
+party_tax_profiles
+  company, party, registrations, exemptions, jurisdiction facts
+
+tax_recovery_rules
+  company, tax code/component, intended-use facts
+  recovery_type, recovery_percentage, effective dates
+
+document_tax_components
+  document line, rule/rate version, method, base, rate/quantity, amount
+  direction, inclusive, jurisdiction, report tag
+  recovery_percentage, recoverable_amount, non_recoverable_amount
+  GL mappings and calculation evidence
+
+withholding_tax_codes / withholding_certificates
+  company, code, effective rate/rule, payment and certificate facts
 ```
-tax_codes
-  id, company_id
-  code, name
-  rate               decimal              -- percentage
-  applies_to         GOODS | SERVICES | BOTH
-  jurisdiction        NULLABLE             -- free text/region, company-defined
-  is_recoverable      bool                 -- input tax eligible for offset
-  is_active           bool
-  effective_from, effective_to   NULLABLE  -- rates change; history preserved
 
-withholding_tax_codes
-  id, company_id
-  code, name
-  rate               decimal
-  is_active          bool
+This supersedes the earlier conceptual `tax_codes.is_recoverable` boolean shape in this domain
+document; ADR 0025's principles remain accepted. Exact migrations and table boundaries belong to
+the implementing slices.
 
--- applied at line level
-invoice_lines.tax_code_id     -- see receivables.md
-purchase_lines.tax_code_id    -- mirror, purchasing module
+## Determination
 
--- applied at payment level
-receipts.withholding_tax_code_id   NULLABLE
-receipts.withholding_tax_amount    NULLABLE
+The resolver uses declared facts only:
+
+- company tax regime;
+- customer/supplier tax profile and registrations;
+- item or Assembly tax classification and goods/service nature;
+- ship-to, service or other configured tax location;
+- transaction and tax-point dates;
+- intended use for purchase-tax recovery.
+
+Tax classification is not an Inventory category. Categories may supply defaults:
+
+```text
+item explicit classification → nearest category default → company goods default
+assembly explicit classification → assembly-group default → company services default
 ```
 
-## Behaviour
+Persist the resolved classification before first use and snapshot it on issue/posting. A later
+category move must not rewrite historical tax.
 
-### Data-driven, not hardcoded
+## Calculation order
 
-No jurisdiction, rate, or regime is baked into application code. A finance-director/CFO-level
-role manages `tax_codes` directly, behind its own permission (e.g. `finance.tax.manage`), not a
-blanket admin permission. A country- or province-specific starting set of codes can ship as
-convenience seed data or a plugin, without changing core.
+```text
+pricing formula → rounded net unit price → line net
+  → determine tax components and explicit bases
+  → net + tax = gross
+```
 
-### Effective-dated rates
+Inclusive pricing back-calculates net and tax but still stores them separately. Component order
+and whether earlier tax forms part of a later base are explicit rule data, never inferred from UI
+order. Calculations retain high precision until configured component and document/currency
+rounding boundaries.
 
-`effective_from` / `effective_to` mean a historical document keeps the rate that applied when it
-was raised, even after the rate changes later — the same snapshot principle used for cost
-roll-ups (see **Snapshot** in [GLOSSARY.md](../GLOSSARY.md)). Which document date selects the
-rate (quotation date vs. invoice date) must be a defined, not assumed, rule — usually invoice
-date.
+## Recovery and postings
 
-### Goods vs. services
+Each input-tax component is distributed into recoverable and non-recoverable amounts; their sum
+must equal the component amount. Recoverable tax posts to a tax-credit asset. Non-recoverable tax
+is added to inventory/asset acquisition cost or expensed according to context. Output tax posts
+to a liability.
 
-`applies_to` lets a company (or a province-specific plugin) route goods and services to
-different tax codes, matching regimes like Pakistan's federal (goods) / provincial (services)
-split, without either being a core concept.
+For a $200 net sale with $30 output tax and $15 fully recoverable input tax, a simplified filing
+position is `$30 − $15 = $15 payable`. The ledger retains both $30 and $15 rather than storing
+only their net.
 
-### Withholding tax
+Withholding is separate. The invoice and its output tax remain unchanged; payment is lower and a
+tax credit/receivable or payable plus certificate is recorded separately.
 
-Modelled as a deduction applied at receipt/payment time via `receipts.withholding_tax_code_id`,
-kept **separate** from invoice/output tax — it is an advance against the seller's own tax
-liability, not sales tax. Conflating the two breaks reconciliation against tax-authority
-certificates.
+## Dates, snapshots and corrections
 
-### Input tax recovery
+Effective dates preserve changing rules. A quotation tax is an estimate from quotation context.
+Invoice issue resolves legal tax using the company's configured tax-point basis and invoice facts;
+quotation tax is not assumed to be final. Each issued document snapshots component, rule/rate,
+classification, recovery and posting evidence. Corrections use credit/debit notes or reversals,
+never edits to issued tax facts.
 
-Output tax (on sales) and input tax (on purchases) post to distinct GL accounts (see
-[general-ledger.md](general-ledger.md)'s posting table). `is_recoverable` marks which input tax
-can net against output tax at filing; non-recoverable input tax is a cost, not a credit.
+## Configuration, formulas and localisation
 
-### Inclusive vs. exclusive pricing
+No jurisdiction, rate or statute is hardcoded in core. Country/province packages can provide
+templates or localisation rules; an external provider may implement the same determination
+contract. Company configuration must be reviewed by a qualified local tax adviser.
 
-Amounts are stored **tax-exclusive** internally — line amount and tax amount are always separate
-columns, never blended. A tax-inclusive **display** is a presentation choice for quotes, not a
-storage difference (same transaction/base/display distinction used for currency, see
-[multi-currency.md](multi-currency.md)).
+Advanced formulas are versioned and restricted to allowlisted typed inputs and operations. They
+have validation, bounded execution, preview tests and intermediate evidence. Arbitrary PHP,
+JavaScript, SQL or application-function execution is forbidden.
 
-### No tax
+## Authorisation and data scope
 
-Tax is optional per company and per customer. A customer flagged tax-exempt routes to a 0%-rate
-tax code (still tracked, since exempt sales are often still reportable) — distinct from having no
-tax code at all, which means tax doesn't apply and isn't reported.
+Tax configuration, exemption override, recovery override and document approval require separate
+permissions. Each implementation slice must complete the
+[authorisation checklist](../architecture/authorization.md#per-feature-authorisation-checklist).
+All tax configuration and transactional facts are company-scoped. Access to a source document
+does not imply permission to change tax rules or recovery treatment.
 
 ## Landmines
 
-**Rate changes mid-document-lifecycle.** A quotation raised before a rate change, invoiced after
-— decide and document which date selects the rate (invoice date, not quotation date, is the
-usual rule) rather than leaving it implicit.
+- Exempt, zero-rated and not-applicable may produce the same amount but different reporting.
+- Goods/service and jurisdiction must be resolved from master/document facts, never guessed.
+- A quote date and invoice tax point can select different rules.
+- Netting withholding into invoice tax breaks certificate and customer-ledger reconciliation.
+- Treating all purchase tax as claimable overstates tax assets and understates inventory/expense.
+- Mixing tax into a price formula destroys independent statutory versioning and corrections.
 
-**Confusing exempt with not-applicable.** 0%-but-tracked and no-tax-code-at-all look the same on
-an invoice total but are not the same for reporting.
+## Research ledger
 
-**Misclassifying goods vs. services.** Changes which jurisdiction/authority applies. Gets its
-classification from the item master ([items.md](items.md)), not guessed per line.
-
-**Netting withholding tax into invoice tax.** They sit on different legs of the accounting
-(output tax at invoicing vs. an advance-tax asset at payment) — conflating them breaks
-reconciliation with withholding certificates issued by the customer.
+- [Odoo tax computation](https://www.odoo.com/documentation/18.0/applications/finance/accounting/taxes/tax_computation.html)
+- [Odoo tax-return grids](https://www.odoo.com/documentation/18.0/applications/finance/accounting/reporting/tax_returns.html)
+- [Oracle tax recovery](https://docs.oracle.com/en/cloud/saas/financials/25d/faitx/tax-recovery.html)
+- [Oracle tax recovery rates and controls](https://docs.oracle.com/en/cloud/saas/financials/25d/faitx/tax-recovery-rates-controls-and-defaults.html)
+- [Oracle tax rates and controls](https://docs.oracle.com/en/cloud/saas/financials/26a/faitx/tax-rates-controls-and-defaults.html)
+- [Oracle tax recovery distributions](https://docs.oracle.com/en/cloud/saas/financials/25d/fautx/tax-recovery-distributions.html)
 
 ## Related
 
-- [general-ledger.md](general-ledger.md) — Output Tax / Input Tax accounts
-- [receivables.md](receivables.md) — invoice line `tax_code_id`
-- [items.md](items.md) — goods vs. services classification
-- [ADR 0025 — Configurable tax engine](../decisions/0025-configurable-tax-engine.md)
+- [Sales pricing](sales-pricing.md) · [Sales pipeline](sales-pipeline.md)
+- [Receivables](receivables.md) · [General ledger](general-ledger.md)
+- [Items](items.md) · [Assemblies](assemblies.md)
+- [ADR 0025](../decisions/0025-configurable-tax-engine.md) · [ADR 0056](../decisions/0056-progressive-tax-calculation-and-recovery.md)

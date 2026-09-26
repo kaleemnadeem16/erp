@@ -112,11 +112,15 @@ overhead/unit    = resolved overhead policy's driver applied to the four direct 
                     see "Overhead allocation"; never summed from assembly_components rows
 
 cost/unit  = material + labour + plant + subcontract + overhead
-sell/unit  = margin_type = MARGIN
+simple cost-derived sell/unit = margin_type = MARGIN
                ? cost / (1 - margin_pct)
                : cost × (1 + margin_pct)
-line_total = sell/unit × qty
+line_total = simple cost-derived sell/unit × qty
 ```
+
+This `MARGIN`/`MARKUP` result is a Phase 3 cost-derived estimate and the transitional SIMPLE
+pricing path. It is not a maintained, contractual or final customer price. Phase 4 resolves that
+independently under [sales-pricing.md](sales-pricing.md) and [ADR 0055](../decisions/0055-progressive-sales-pricing-and-controlled-formulas.md).
 
 `item_cost` for a MATERIAL component resolves, in order: `rate_override` if set → the referenced
 `formulation_id`'s own ACTIVE version's `cost_per_output_unit` if set (an explicit, deliberate
@@ -249,6 +253,7 @@ whole company being forced onto one.
 - [application-rates.md](application-rates.md) · [formulations.md](formulations.md)
 - [items.md](items.md#resource-rates) — `resource_rates`, the LABOUR/PLANT costing source
 - [sales-pipeline.md](sales-pipeline.md) — where assemblies become quotation lines
+- [sales-pricing.md](sales-pricing.md) — how customer-facing price resolves in Phase 4
 - [job-costing.md](job-costing.md) — estimate vs actual
 - [ADR 0008](../decisions/0008-assembly-abstraction.md) — why assemblies have no output item
 - [ADR 0049](../decisions/0049-assembly-group-overhead-scope.md) — overhead allocation policy

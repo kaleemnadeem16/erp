@@ -9,10 +9,9 @@ Questions do not linger once resolved.
 
 ## Blocking
 
-Q21 and Q25 block finalising the Phase 3 Material Resolution / Assembly Preview ADR. Their
-shared research baseline and cross-module context are recorded in
-[material-resolution.md](domain/material-resolution.md); answer them one by one rather than
-letting a paint/coatings example silently define the generic model.
+Q25 blocks finalising the Phase 3 Material Resolution / Assembly Preview ADR. Its cross-module
+context is recorded in [material-resolution.md](domain/material-resolution.md); answer it without
+letting a paint/coatings example silently define the generic model. Q21 is resolved by ADR 0055.
 
 Q14 (backdated stock receipts) was resolved on 2026-09-01 and its final reviewed
 consolidation is
@@ -28,14 +27,6 @@ Q1, Q2 and Q3 were resolved on 2026-08-10 — see
 [ADR 0024](decisions/0024-onboarding-base-currency-and-fiscal-year.md) and
 [ADR 0025](decisions/0025-configurable-tax-engine.md).
 
-### Q21 — Phase 4 selling-price strategy baseline
-**Blocks:** The boundary between Phase 3 cost output and Phase 4 customer price resolution
-
-Which strategies ship first: maintained fixed/customer price lists, cost + markup/margin,
-standard rate per work unit, manual override, or some ordered combination? Decide the default and
-fallback rules, when dynamic prices recalculate, when maintained prices remain fixed, and which
-price/quotation rounding policies apply. Internal cost must remain independent of customer price.
-
 ### Q25 — Material-resolution permissions and sensitive fields
 **Blocks:** The Material Resolution / Assembly Preview ADR and preview API/UI contract
 
@@ -44,7 +35,7 @@ inventory/package availability, viewing internal cost, adjusting planned quantit
 package plan, submitting a controlled variance and viewing resolution history? Decide which fields
 a basic estimator may see, whether cost/margin is restricted, and which actors may request or
 approve ADR 0054 exceptions. Supplier offers are no longer part of Phase 3, and selling-price
-override belongs to Q21/Phase 4. The complete per-feature answer must be recorded in
+override belongs to ADR 0055/Phase 4. The complete per-feature answer must be recorded in
 [material-resolution.md](domain/material-resolution.md#authorisation-impact).
 
 ---
@@ -159,6 +150,7 @@ Answered questions live in [decisions/](decisions/) as ADRs. See the
 <a id="q17--phase-3-commercial-package-and-costed-source-proposal-scope"></a>
 <a id="q18--audit-requirements-for-planned-quantity-adjustments"></a>
 <a id="q19--default-ranking-for-source-and-pack-proposals"></a>
+<a id="q21--phase-4-selling-price-strategy-baseline"></a>
 <a id="q22--physical-container-granularity"></a>
 
 Q17, Q19 and Q22 were resolved on 2026-09-26 by
@@ -172,3 +164,8 @@ Q18 was resolved on 2026-09-26 by
 [ADR 0054](decisions/0054-risk-based-material-plan-variance-controls.md): every adopted variance
 is audited, while versioned company/category/item policy escalates it to explanation, independent
 approval or a hard block according to configured quantity, cost, waste and risk bands.
+
+Q21 was resolved on 2026-09-26 by
+[ADR 0055](decisions/0055-progressive-sales-pricing-and-controlled-formulas.md): Sales pricing is
+independent from internal cost and tax, uses progressive SIMPLE/MANAGED/ADVANCED capabilities,
+and advanced company formulas remain controlled, typed, versioned and explainable.
