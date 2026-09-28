@@ -27,6 +27,7 @@ use App\Modules\Purchasing\Actions\ReverseGoodsReceipt;
 use App\Modules\Purchasing\Models\GoodsReceipt;
 use App\Modules\Purchasing\Models\ItemSupplier;
 use App\Modules\Purchasing\Models\PurchaseOrder;
+use App\Support\PermissionRegistry;
 use Database\Seeders\Demo\Concerns\EnsuresDemoEnvironment;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
@@ -52,9 +53,16 @@ final class PurchasingDemoSeeder extends Seeder
 {
     use EnsuresDemoEnvironment;
 
+    private User $actor;
+
     public function run(): void
     {
         $this->ensureDemoEnvironment();
+
+        $permissions = app(PermissionRegistry::class);
+        $permissions->registerForTeam(1);
+        $this->actor = User::query()->where('email', config('demo.user.email'))->firstOrFail();
+        $this->actor->syncPermissions($permissions->all());
 
         $kg = Uom::query()->where('code', 'kg')->firstOrFail();
         $litre = Uom::query()->where('code', 'l')->firstOrFail();
@@ -141,7 +149,7 @@ final class PurchasingDemoSeeder extends Seeder
                     'ordered_qty' => $data['qty'], 'purchase_uom_id' => $item->stock_uom_id, 'unit_price' => $data['cost'],
                 ]],
             ]);
-            $order = app(IssuePurchaseOrder::class)($order);
+            $order = app(IssuePurchaseOrder::class)($order, $this->actor);
             $line = $order->lines->sole();
 
             $receipt = app(CreateGoodsReceipt::class)([
@@ -155,7 +163,7 @@ final class PurchasingDemoSeeder extends Seeder
                     'fx_rate_date' => $orderedAt, 'fx_rate_type' => 'SPOT', 'fx_rate_source' => 'manual',
                 ]],
             ], $data['key']);
-            app(PostGoodsReceipt::class)($receipt);
+            app(PostGoodsReceipt::class)($receipt, $this->actor);
         }
     }
 
@@ -185,7 +193,7 @@ final class PurchasingDemoSeeder extends Seeder
                 'ordered_qty' => '25.0000', 'purchase_uom_id' => $item->stock_uom_id, 'unit_price' => '345.0000',
             ]],
         ]);
-        $order = app(IssuePurchaseOrder::class)($order);
+        $order = app(IssuePurchaseOrder::class)($order, $this->actor);
         $line = $order->lines->sole();
 
         app(CreateGoodsReceipt::class)([
@@ -252,7 +260,7 @@ final class PurchasingDemoSeeder extends Seeder
                 'ordered_qty' => '10.0000', 'purchase_uom_id' => $item->stock_uom_id, 'unit_price' => '1180.0000',
             ]],
         ]);
-        $order = app(IssuePurchaseOrder::class)($order);
+        $order = app(IssuePurchaseOrder::class)($order, $this->actor);
         $line = $order->lines->sole();
 
         $receipt = app(CreateGoodsReceipt::class)([
@@ -267,7 +275,7 @@ final class PurchasingDemoSeeder extends Seeder
                 'batch_no' => 'PG-WRONGBATCH',
             ]],
         ], $key);
-        $receipt = app(PostGoodsReceipt::class)($receipt);
+        $receipt = app(PostGoodsReceipt::class)($receipt, $this->actor);
         app(ReverseGoodsReceipt::class)($receipt, 'Demo: wrong batch received — reversed and re-received separately.', $demoUser->getKey());
     }
 
@@ -315,7 +323,7 @@ final class PurchasingDemoSeeder extends Seeder
                 'ordered_qty' => $qty, 'purchase_uom_id' => $item->stock_uom_id, 'unit_price' => $cost,
             ]],
         ]);
-        $order = app(IssuePurchaseOrder::class)($order);
+        $order = app(IssuePurchaseOrder::class)($order, $this->actor);
         $line = $order->lines->sole();
 
         $receipt = app(CreateGoodsReceipt::class)([
@@ -330,7 +338,7 @@ final class PurchasingDemoSeeder extends Seeder
                 'batch_no' => $batchNo,
             ]],
         ], $idempotencyKey);
-        app(PostGoodsReceipt::class)($receipt);
+        app(PostGoodsReceipt::class)($receipt, $this->actor);
     }
 
     /** demo-spray-unit is SERIAL-tracked (and SPECIFIC-valued): each receipt line is exactly one unit with its own serial. */
@@ -357,7 +365,7 @@ final class PurchasingDemoSeeder extends Seeder
                     'ordered_qty' => '1.0000', 'purchase_uom_id' => $item->stock_uom_id, 'unit_price' => '45000.0000',
                 ]],
             ]);
-            $order = app(IssuePurchaseOrder::class)($order);
+            $order = app(IssuePurchaseOrder::class)($order, $this->actor);
             $line = $order->lines->sole();
 
             $receipt = app(CreateGoodsReceipt::class)([
@@ -372,7 +380,7 @@ final class PurchasingDemoSeeder extends Seeder
                     'serial_no' => $data['serial'],
                 ]],
             ], $data['key']);
-            app(PostGoodsReceipt::class)($receipt);
+            app(PostGoodsReceipt::class)($receipt, $this->actor);
         }
     }
 
@@ -403,7 +411,7 @@ final class PurchasingDemoSeeder extends Seeder
                 'qa_required' => true,
             ]],
         ]);
-        $order = app(IssuePurchaseOrder::class)($order);
+        $order = app(IssuePurchaseOrder::class)($order, $this->actor);
         $line = $order->lines->sole();
 
         $receipt = app(CreateGoodsReceipt::class)([
@@ -418,7 +426,7 @@ final class PurchasingDemoSeeder extends Seeder
                 'batch_no' => 'PR-QA-01',
             ]],
         ], $key);
-        app(PostGoodsReceipt::class)($receipt);
+        app(PostGoodsReceipt::class)($receipt, $this->actor);
 
         app(PostQualityDisposition::class)(
             $receipt->lines->sole(),
@@ -454,7 +462,7 @@ final class PurchasingDemoSeeder extends Seeder
                 'ordered_qty' => '75.0000', 'purchase_uom_id' => $item->stock_uom_id, 'unit_price' => '505.0000',
             ]],
         ]);
-        app(IssuePurchaseOrder::class)($order);
+        app(IssuePurchaseOrder::class)($order, $this->actor);
     }
 
     /**
@@ -500,7 +508,7 @@ final class PurchasingDemoSeeder extends Seeder
                 ],
             ],
         ]);
-        app(IssuePurchaseOrder::class)($order);
+        app(IssuePurchaseOrder::class)($order, $this->actor);
     }
 
     /** Never issued — every other demo PO is ISSUED or further along; this is the list's only DRAFT row. */
@@ -552,7 +560,7 @@ final class PurchasingDemoSeeder extends Seeder
                 'ordered_qty' => '15.0000', 'purchase_uom_id' => $item->stock_uom_id, 'unit_price' => '345.0000',
             ]],
         ]);
-        $order = app(IssuePurchaseOrder::class)($order);
-        app(CancelPurchaseOrder::class)($order, 'Demo: superseded by the combined multi-item order placed the same week.');
+        $order = app(IssuePurchaseOrder::class)($order, $this->actor);
+        app(CancelPurchaseOrder::class)($order, 'Demo: superseded by the combined multi-item order placed the same week.', $this->actor);
     }
 }

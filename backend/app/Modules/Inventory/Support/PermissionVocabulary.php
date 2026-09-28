@@ -11,6 +11,8 @@ final class PermissionVocabulary
     public static function all(): array
     {
         return [
+            'inventory.item.manage',
+            'inventory.category.manage',
             'inventory.physical_count.create',
             'inventory.physical_count.count',
             'inventory.physical_count.post',

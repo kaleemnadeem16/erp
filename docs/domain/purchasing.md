@@ -192,8 +192,11 @@ quantity/UoM, monetary and FX snapshots. Company purchasing defaults use one typ
 reading that singleton initialises its database defaults through an Action when necessary.
 
 Purchase-order approval is **not implemented**: there is no `SUBMITTED`/`APPROVED` state,
-approval chain, issuing actor or approval policy, and ordinary PO endpoints are currently
-authenticated rather than capability-permissioned. Before operational use relies on issuance,
+approval chain, issuing actor or approval policy. Draft create/update, issue, cancel and
+short-close have separate `purchasing.purchase-order.*` capabilities; receipt create/post/reverse,
+QA disposition posting and item-supplier maintenance likewise have distinct Purchasing-owned
+permissions. List/show remain authenticated reads because warehouse, QA and Finance users need
+the documents without necessarily holding write authority. Before operational use relies on issuance,
 resolve [Q28](../OPEN-QUESTIONS.md#q28--purchase-order-approval-policy) and apply the shared
 [approval-workflow boundary](../architecture/approval-workflows.md). Creating/editing, submitting,
 approving and issuing must be independently grantable powers; approval eligibility must not be

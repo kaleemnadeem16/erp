@@ -76,6 +76,12 @@ movement and valuation, built in Phase 2.
 future non-HTTP entry points. Model guards still enforce tenant, hierarchy and valuation
 invariants regardless of which Action invokes them.
 
+Item and Category reads remain available to every authenticated company user because they are
+shared reference data used by selectors throughout the ERP. Create, update, archive and activate
+require `inventory.item.manage` or `inventory.category.manage` respectively; the React screens
+hide those controls when the effective permission is absent. GL-account field visibility remains
+a separate Finance-owned decision and is not implied by either write capability.
+
 `CreateWarehouse` always creates its first location in the same transaction, so an active
 warehouse cannot enter normal use without an exact physical location. Warehouse and location
 updates/archiving use their corresponding Actions. `SIMPLE` mode keeps one plain location per

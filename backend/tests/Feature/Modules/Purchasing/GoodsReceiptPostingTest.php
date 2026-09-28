@@ -21,6 +21,7 @@ use App\Modules\Parties\Models\PartySite;
 use App\Modules\Parties\Models\SupplierAccount;
 use App\Modules\Parties\Models\SupplierSite;
 use App\Modules\Purchasing\Actions\IssuePurchaseOrder;
+use App\Modules\Purchasing\Models\GoodsReceiptLine;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Modules\Purchasing\Models\PurchaseOrderLine;
 use App\Modules\Purchasing\Support\OverReceiptMode;
@@ -30,6 +31,21 @@ use Illuminate\Support\Facades\DB;
 
 class GoodsReceiptPostingTest extends PurchaseOrderFoundationTest
 {
+    public function test_receipt_and_qa_writes_require_their_capabilities_but_reads_remain_available(): void
+    {
+        [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Avco, qaRequired: true);
+        $receiptId = $this->createReceipt($order->lines()->sole()->id, $item->id, $uom->id, $this->locationId());
+        $lineId = GoodsReceiptLine::query()->where('goods_receipt_id', $receiptId)->sole()->id;
+        $user = User::factory()->create();
+
+        $this->actingAsUnprivileged($user)->getJson('/api/v1/goods-receipts')->assertOk();
+        $this->getJson("/api/v1/goods-receipts/{$receiptId}")->assertOk();
+        $this->postJson('/api/v1/goods-receipts', [])->assertForbidden();
+        $this->postJson("/api/v1/goods-receipts/{$receiptId}/post")->assertForbidden();
+        $this->postJson("/api/v1/goods-receipts/{$receiptId}/reverse", ['reason' => 'Denied'])->assertForbidden();
+        $this->postJson("/api/v1/goods-receipt-lines/{$lineId}/quality-dispositions", [])->assertForbidden();
+    }
+
     public function test_avco_receipt_posts_move_layer_feed_and_locked_pool_atomically(): void
     {
         [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Avco);
@@ -399,7 +415,7 @@ class GoodsReceiptPostingTest extends PurchaseOrderFoundationTest
             'over_receipt_mode' => OverReceiptMode::AllowWithinTolerance,
             'over_receipt_tolerance_percent' => $tolerancePercent,
         ]));
-        app(IssuePurchaseOrder::class)($order);
+        app(IssuePurchaseOrder::class)($order, $this->purchasingActor());
 
         return [$order->refresh(), $item->refresh(), $uom];
     }
@@ -585,13 +601,17 @@ class GoodsReceiptPostingTest extends PurchaseOrderFoundationTest
         $order->lines()->create(array_merge($this->lineAttributes($order, $item, $uom), [
             'ordered_qty' => $qty, 'ordered_stock_qty' => $qty, 'line_amount' => (string) ((int) $qty * 10).'.0000',
         ]));
-        app(IssuePurchaseOrder::class)($order);
+        app(IssuePurchaseOrder::class)($order, $this->purchasingActor());
 
         return [$order->refresh(), $item->refresh(), $uom];
     }
 
-    private function issuedOrder(ValuationMethod $method, ItemTracking $tracking = ItemTracking::None, string $qty = '2.0000'): array
-    {
+    private function issuedOrder(
+        ValuationMethod $method,
+        ItemTracking $tracking = ItemTracking::None,
+        string $qty = '2.0000',
+        bool $qaRequired = false,
+    ): array {
         [$order, $item, $uom] = $this->makeOrder();
         $item->update([
             'is_stocked' => true, 'valuation_method' => $method, 'tracking' => $tracking,
@@ -603,8 +623,9 @@ class GoodsReceiptPostingTest extends PurchaseOrderFoundationTest
         }
         $order->lines()->create(array_merge($this->lineAttributes($order, $item, $uom), [
             'ordered_qty' => $qty, 'ordered_stock_qty' => $qty, 'line_amount' => (string) ((int) $qty * 10).'.0000',
+            'qa_required' => $qaRequired,
         ]));
-        app(IssuePurchaseOrder::class)($order);
+        app(IssuePurchaseOrder::class)($order, $this->purchasingActor());
 
         return [$order->refresh(), $item->refresh(), $uom];
     }

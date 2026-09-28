@@ -2,12 +2,14 @@
 
 namespace Tests\Feature\Modules\Purchasing;
 
+use App\Models\User;
 use App\Modules\Purchasing\Actions\PostGoodsReceipt;
 use App\Modules\Purchasing\Models\GoodsReceipt;
 use App\Support\CompanyContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PDO;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 /**
@@ -35,7 +37,7 @@ class GoodsReceiptConcurrencyTest extends TestCase
             $config['password'],
         );
         $suffix = bin2hex(random_bytes(4));
-        [$companyId, $itemId, $orderLineId, $firstReceiptId, $secondReceiptId] = $this->createRawFixture(
+        [$companyId, $itemId, $orderLineId, $firstReceiptId, $secondReceiptId, $actorId] = $this->createRawFixture(
             $pdo,
             "goods_receipt_concurrency_{$suffix}",
         );
@@ -49,6 +51,8 @@ class GoodsReceiptConcurrencyTest extends TestCase
                 return $this->companyId;
             }
         });
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        app(PermissionRegistrar::class)->setPermissionsTeamId($companyId);
 
         $resultPath = sys_get_temp_dir().'/goods_receipt_concurrency_'.getmypid().'.json';
         $startPath = sys_get_temp_dir().'/goods_receipt_concurrency_'.getmypid().'.start';
@@ -73,7 +77,7 @@ class GoodsReceiptConcurrencyTest extends TestCase
 
                 try {
                     $receipt = GoodsReceipt::query()->findOrFail($secondReceiptId);
-                    app(PostGoodsReceipt::class)($receipt);
+                    app(PostGoodsReceipt::class)($receipt, User::query()->findOrFail($actorId));
                     file_put_contents($resultPath, json_encode(['success' => true]));
                 } catch (\Throwable $e) {
                     file_put_contents($resultPath, json_encode(['success' => false, 'message' => $e->getMessage()]));
@@ -89,7 +93,7 @@ class GoodsReceiptConcurrencyTest extends TestCase
             file_put_contents($startPath, '1');
 
             try {
-                app(PostGoodsReceipt::class)($firstReceipt);
+                app(PostGoodsReceipt::class)($firstReceipt, User::query()->findOrFail($actorId));
                 $parentOutcome = ['success' => true];
             } catch (\Throwable $e) {
                 $parentOutcome = ['success' => false, 'message' => $e->getMessage()];
@@ -133,7 +137,7 @@ class GoodsReceiptConcurrencyTest extends TestCase
         }
     }
 
-    /** @return array{int, int, int, int, int} */
+    /** @return array{int, int, int, int, int, int} */
     private function createRawFixture(PDO $pdo, string $prefix): array
     {
         $companyId = (int) $pdo->query("insert into companies (name, created_at, updated_at) values ('{$prefix}', now(), now()) returning id")->fetchColumn();
@@ -148,6 +152,24 @@ class GoodsReceiptConcurrencyTest extends TestCase
         $locationId = (int) $pdo->query("insert into locations (warehouse_id, code, name, active, created_at, updated_at) values ({$warehouseId}, '{$prefix}_loc', '{$prefix} Location', true, now(), now()) returning id")->fetchColumn();
         $partyId = (int) $pdo->query("insert into parties (company_id, code, name, status, created_at, updated_at) values ({$companyId}, '{$prefix}_party', '{$prefix} Party', 'ACTIVE', now(), now()) returning id")->fetchColumn();
         $supplierId = (int) $pdo->query("insert into supplier_accounts (company_id, party_id, code, payment_terms_days, payable_account_id, status, created_at, updated_at) values ({$companyId}, {$partyId}, '{$prefix}_sup', 30, {$payableAccountId}, 'ACTIVE', now(), now()) returning id")->fetchColumn();
+        $actorId = (int) $pdo->query("insert into users (company_id, name, email, password, created_at, updated_at) values ({$companyId}, '{$prefix} User', '{$prefix}@example.com', 'x', now(), now()) returning id")->fetchColumn();
+        $permissionId = (int) $pdo->query(<<<'SQL'
+            insert into permissions (name, guard_name, created_at, updated_at)
+            values ('purchasing.goods-receipt.post', 'web', now(), now())
+            on conflict (name, guard_name) do update set updated_at = excluded.updated_at
+            returning id
+            SQL)->fetchColumn();
+        $grant = $pdo->prepare(<<<'SQL'
+            insert into model_has_permissions (permission_id, model_type, model_id, team_id)
+            values (:permission_id, :model_type, :model_id, :team_id)
+            on conflict do nothing
+            SQL);
+        $grant->execute([
+            'permission_id' => $permissionId,
+            'model_type' => User::class,
+            'model_id' => $actorId,
+            'team_id' => $companyId,
+        ]);
         $orderId = (int) $pdo->query("insert into purchase_orders (company_id, supplier_account_id, currency_id, fx_rate, fx_rate_date, fx_rate_type, fx_rate_source, order_date, created_at, updated_at) values ({$companyId}, {$supplierId}, {$currencyId}, 1, current_date, 'SPOT', 'manual', current_date, now(), now()) returning id")->fetchColumn();
         $orderLineId = (int) $pdo->query("insert into purchase_order_lines (company_id, purchase_order_id, line_number, item_id, description, ordered_qty, purchase_uom_id, ordered_stock_qty, stock_uom_id, uom_factor, unit_price, line_amount, base_unit_price, base_line_amount, qa_required, over_receipt_mode, created_at, updated_at) values ({$companyId}, {$orderId}, 1, {$itemId}, '{$prefix} line', 10, {$uomId}, 10, {$uomId}, 1, 10, 100, 10, 100, false, 'BLOCK', now(), now()) returning id")->fetchColumn();
         $pdo->exec("update purchase_orders set number = '{$prefix}_po', status = 'ISSUED', issued_at = now() where id = {$orderId}");
@@ -159,7 +181,7 @@ class GoodsReceiptConcurrencyTest extends TestCase
             $receiptIds[] = $receiptId;
         }
 
-        return [$companyId, $itemId, $orderLineId, $receiptIds[0], $receiptIds[1]];
+        return [$companyId, $itemId, $orderLineId, $receiptIds[0], $receiptIds[1], $actorId];
     }
 
     private function cleanUpRawFixture(PDO $pdo, int $companyId): void
@@ -202,6 +224,7 @@ class GoodsReceiptConcurrencyTest extends TestCase
 
         $pdo->exec("delete from sequences where company_id = {$companyId}");
         $pdo->exec("delete from activity_log where company_id = {$companyId}");
+        $pdo->exec("delete from users where company_id = {$companyId}");
         $pdo->exec("delete from supplier_accounts where company_id = {$companyId}");
         $pdo->exec("delete from parties where company_id = {$companyId}");
         $pdo->exec("delete from locations where warehouse_id in (select id from warehouses where company_id = {$companyId})");

@@ -42,6 +42,7 @@ import { Textarea } from "../../components/ui/textarea";
 import { getApiErrorMessage } from "../../lib/api-errors";
 import type { Presentation } from "../../lib/presentation";
 import { useFocusOnOpen } from "../../lib/use-focus-on-open";
+import { usePermission } from "../../hooks/use-permission";
 
 const STATUS_VARIANT: Record<
   string,
@@ -73,6 +74,10 @@ function siteAddressLine(site: NonNullable<PurchaseOrderResource["supplier_site"
  * purchase-order list, which stays mounted behind it.
  */
 export function PurchaseOrderDetailScreen({ presentation = "page" }: { presentation?: Presentation }) {
+  const mayEdit = usePermission("purchasing.purchase-order.create");
+  const mayIssue = usePermission("purchasing.purchase-order.issue");
+  const mayCancel = usePermission("purchasing.purchase-order.cancel");
+  const mayShortClose = usePermission("purchasing.purchase-order.short-close");
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { search } = useLocation();
@@ -301,7 +306,7 @@ export function PurchaseOrderDetailScreen({ presentation = "page" }: { presentat
   const actions = (
     <>
       <PrintTrigger onPrint={() => print()} />
-      {isDraft && (
+      {isDraft && mayEdit && (
         <Button
           variant="outline"
           onClick={() => navigate({ pathname: `/purchase-orders/${order.id}/edit`, search })}
@@ -309,7 +314,7 @@ export function PurchaseOrderDetailScreen({ presentation = "page" }: { presentat
           Edit draft
         </Button>
       )}
-      {isDraft && (
+      {isDraft && mayIssue && (
         <Button
           onClick={() => setShowIssueConfirmation(true)}
           disabled={issue.isPending}
@@ -317,7 +322,7 @@ export function PurchaseOrderDetailScreen({ presentation = "page" }: { presentat
           Issue purchase order
         </Button>
       )}
-      {isIssued && (
+      {isIssued && mayCancel && (
         <Button
           variant="outline"
           onClick={() => setShowCancel((value) => !value)}
@@ -550,7 +555,7 @@ export function PurchaseOrderDetailScreen({ presentation = "page" }: { presentat
                         {line.qa_required ? "Required" : "Not required"}
                       </TableCell>
                       <TableCell className="text-right">
-                        {isIssued && !closed && !fullyReceived && (
+                        {isIssued && !closed && !fullyReceived && mayShortClose && (
                           <Button
                             size="sm"
                             variant="outline"

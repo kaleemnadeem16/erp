@@ -19,6 +19,7 @@ use App\Modules\Purchasing\Models\GoodsReceipt;
 use App\Modules\Purchasing\Models\GoodsReceiptLine;
 use App\Modules\Purchasing\Models\PurchaseOrderLine;
 use Illuminate\Support\Facades\DB;
+use Tests\Support\PurchasingActor;
 
 class GoodsReceiptReversalTest extends PurchaseOrderFoundationTest
 {
@@ -211,7 +212,7 @@ class GoodsReceiptReversalTest extends PurchaseOrderFoundationTest
     {
         [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Avco);
         $receiptId = $this->postedReceipt($order->lines()->sole()->id, $item->id, $uom->id, $this->locationId());
-        $actorId = User::factory()->create()->id;
+        $actorId = PurchasingActor::make(['purchasing.goods-receipt.reverse'])->id;
 
         DB::flushQueryLog();
         DB::enableQueryLog();
@@ -243,7 +244,11 @@ class GoodsReceiptReversalTest extends PurchaseOrderFoundationTest
 
         $line = GoodsReceiptLine::query()->findOrFail($lineId);
         $this->expectException(DomainInvariantException::class);
-        app(PostQualityDisposition::class)($line, ['disposition' => 'PASS', 'qty' => '2.0000', 'reason' => 'ok'], User::factory()->create()->id);
+        app(PostQualityDisposition::class)(
+            $line,
+            ['disposition' => 'PASS', 'qty' => '2.0000', 'reason' => 'ok'],
+            PurchasingActor::make(['purchasing.quality-disposition.post'])->id,
+        );
     }
 
     private function issuedOrder(ValuationMethod $method, ItemTracking $tracking = ItemTracking::None, string $qty = '2.0000', bool $qaRequired = false): array
@@ -261,7 +266,7 @@ class GoodsReceiptReversalTest extends PurchaseOrderFoundationTest
             'ordered_qty' => $qty, 'ordered_stock_qty' => $qty, 'line_amount' => (string) ((int) $qty * 10).'.0000',
             'qa_required' => $qaRequired,
         ]));
-        app(IssuePurchaseOrder::class)($order);
+        app(IssuePurchaseOrder::class)($order, $this->purchasingActor());
 
         return [$order->refresh(), $item->refresh(), $uom];
     }

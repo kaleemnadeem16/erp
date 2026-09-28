@@ -26,6 +26,7 @@ use App\Support\CompanyContext;
 use App\Support\UomDimension;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Tests\Support\PurchasingActor;
 use Tests\TestCase;
 
 /**
@@ -162,7 +163,7 @@ class InventoryOverviewApiTest extends TestCase
             'ordered_qty' => '10.0000', 'ordered_stock_qty' => '10.0000', 'line_amount' => '100.0000',
             'qa_required' => true,
         ]));
-        app(IssuePurchaseOrder::class)($order);
+        app(IssuePurchaseOrder::class)($order, PurchasingActor::make(['purchasing.purchase-order.issue']));
 
         $locationId = $this->locationId();
         $receiptId = $this->createReceipt($line->id, $item->id, $uom->id, $locationId, ['received_qty' => '6.0000']);

@@ -6,6 +6,7 @@ namespace App\Modules\Purchasing\Actions;
 
 use App\Contracts\NumberingScheme;
 use App\Exceptions\DomainInvariantException;
+use App\Models\User;
 use App\Modules\Inventory\Actions\PostInventoryMovement;
 use App\Modules\Purchasing\Models\GoodsReceipt;
 use App\Modules\Purchasing\Models\GoodsReceiptLine;
@@ -23,8 +24,12 @@ final class PostGoodsReceipt
 {
     public function __construct(private readonly PostInventoryMovement $postMovement, private readonly NumberingScheme $numbers) {}
 
-    public function __invoke(GoodsReceipt $receipt): GoodsReceipt
+    public function __invoke(GoodsReceipt $receipt, User $actor): GoodsReceipt
     {
+        if (! $actor->can('purchasing.goods-receipt.post')) {
+            throw new DomainInvariantException('The actor is not permitted to post a goods receipt.', 'posted_by');
+        }
+
         return DB::transaction(function () use ($receipt): GoodsReceipt {
             $receipt = GoodsReceipt::query()->lockForUpdate()->findOrFail($receipt->id);
             if ($receipt->status === GoodsReceiptStatus::Posted) {

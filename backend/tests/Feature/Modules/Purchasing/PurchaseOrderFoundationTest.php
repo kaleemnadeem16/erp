@@ -5,6 +5,7 @@ namespace Tests\Feature\Modules\Purchasing;
 use App\Exceptions\DomainInvariantException;
 use App\Models\Currency;
 use App\Models\Uom;
+use App\Models\User;
 use App\Modules\Accounting\Models\ChartOfAccount;
 use App\Modules\Accounting\Support\AccountType;
 use App\Modules\Inventory\Models\Category;
@@ -20,13 +21,52 @@ use App\Modules\Purchasing\Support\OverReceiptMode;
 use App\Modules\Purchasing\Support\PurchaseOrderFxPolicy;
 use App\Modules\Purchasing\Support\PurchaseOrderStatus;
 use App\Support\UomDimension;
+use Illuminate\Contracts\Auth\Authenticatable as UserContract;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Support\PurchasingActor;
 use Tests\TestCase;
 
 class PurchaseOrderFoundationTest extends TestCase
 {
     use RefreshDatabase;
+
+    private const OPERATIONAL_PERMISSIONS = [
+        'inventory.item.manage',
+        'purchasing.purchase-order.create',
+        'purchasing.purchase-order.issue',
+        'purchasing.purchase-order.cancel',
+        'purchasing.purchase-order.short-close',
+        'purchasing.goods-receipt.create',
+        'purchasing.goods-receipt.post',
+        'purchasing.goods-receipt.reverse',
+        'purchasing.quality-disposition.post',
+        'purchasing.item-supplier.manage',
+    ];
+
+    /** Existing Purchasing feature tests exercise successful operational paths by default. */
+    public function actingAs(UserContract $user, $guard = null): static
+    {
+        PurchasingActor::grant($user, self::OPERATIONAL_PERMISSIONS);
+
+        return parent::actingAs($user, $guard);
+    }
+
+    protected function actingAsUnprivileged(UserContract $user, $guard = null): static
+    {
+        return parent::actingAs($user, $guard);
+    }
+
+    protected function purchasingActor(): User
+    {
+        $actor = auth()->user();
+        if (! $actor instanceof User) {
+            $actor = User::factory()->create();
+            $this->actingAs($actor);
+        }
+
+        return $actor;
+    }
 
     public function test_settings_defaults_and_enums_are_typed(): void
     {

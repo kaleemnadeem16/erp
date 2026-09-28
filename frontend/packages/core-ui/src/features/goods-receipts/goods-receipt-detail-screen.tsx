@@ -45,6 +45,7 @@ import { getApiErrorMessage } from "../../lib/api-errors";
 import { formatDateTime } from "../../lib/format-date";
 import { useFocusOnOpen } from "../../lib/use-focus-on-open";
 import { formatLocationOption } from "../../lib/format-location";
+import { usePermission } from "../../hooks/use-permission";
 
 const OUTCOMES = [
   "PASS",
@@ -70,6 +71,7 @@ function QualityPanel({
   enabled: boolean;
   onChanged: () => void;
 }) {
+  const mayPostDisposition = usePermission("purchasing.quality-disposition.post");
   const query = useQualityDispositionsIndex(
     line.id,
     { per_page: 100, sort: "disposed_at" },
@@ -141,7 +143,7 @@ function QualityPanel({
           ))}
         </div>
       )}
-      {line.qa_unresolved_qty !== "0.0000" && (
+      {line.qa_unresolved_qty !== "0.0000" && mayPostDisposition && (
         <div className="grid gap-3 rounded-md border p-3 md:grid-cols-4">
           <Select
             value={source}
@@ -239,6 +241,8 @@ function QualityPanel({
 }
 
 export function GoodsReceiptDetailScreen() {
+  const mayPost = usePermission("purchasing.goods-receipt.post");
+  const mayReverse = usePermission("purchasing.goods-receipt.reverse");
   const { id } = useParams<{ id: string }>();
   const receiptId = Number(id);
   const navigate = useNavigate();
@@ -378,10 +382,10 @@ export function GoodsReceiptDetailScreen() {
         actions={
           <>
             <PrintTrigger onPrint={() => print()} />
-            {receipt.status === "DRAFT" && (
+            {receipt.status === "DRAFT" && mayPost && (
               <Button onClick={() => setConfirmPost(true)}>Post receipt</Button>
             )}
-            {receipt.status === "POSTED" && (
+            {receipt.status === "POSTED" && mayReverse && (
               <div className="flex flex-col items-end gap-1">
                 <Button
                   variant="outline"

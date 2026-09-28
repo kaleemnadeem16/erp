@@ -25,6 +25,7 @@ import {
 import { useColumnVisibilityPreference } from '../../lib/use-column-visibility-preference';
 import { useListViewPreference } from '../../lib/use-view-preference';
 import { itemColumns } from './items-columns';
+import { usePermission } from '../../hooks/use-permission';
 
 interface ItemFilters {
   category_id: string;
@@ -37,6 +38,7 @@ interface ItemFilters {
 const ITEM_TYPES = ['RAW', 'SEMI_FINISHED', 'FINISHED', 'SERVICE', 'LABOUR', 'PLANT'] as const;
 
 export function ItemsListScreen() {
+  const mayManage = usePermission('inventory.item.manage');
   const navigate = useNavigate();
   const query = useListQueryState<ItemFilters>({ defaultSort: 'name', defaultPerPage: 25 });
   const [columnVisibility, setColumnVisibility] = useColumnVisibilityPreference(
@@ -97,6 +99,7 @@ export function ItemsListScreen() {
   }
 
   function renderRowActions(item: ItemResource) {
+    if (!mayManage) return null;
     const toggleLabel = item.status === 'ACTIVE' ? 'Archive' : 'Activate';
     return (
       <>
@@ -137,7 +140,7 @@ export function ItemsListScreen() {
       <PageHeader
         title="Items"
         description="Everything the company buys, holds, makes, consumes or sells."
-        primaryAction={{ label: 'New item', onClick: () => navigate('/items/new') }}
+        primaryAction={mayManage ? { label: 'New item', onClick: () => navigate('/items/new') } : undefined}
       />
 
       <div className="flex flex-wrap items-center gap-2">
@@ -216,7 +219,7 @@ export function ItemsListScreen() {
         view={view}
         onViewChange={setView}
         cardColumns={itemColumns}
-        rowActions={renderRowActions}
+        rowActions={mayManage ? renderRowActions : undefined}
       />
 
       {/* Quick Print — a dedicated print-only layout, hidden until react-to-print clones it. */}

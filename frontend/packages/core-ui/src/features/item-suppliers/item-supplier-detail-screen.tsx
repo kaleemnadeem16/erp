@@ -8,7 +8,9 @@ import { DetailField } from '../../components/detail/detail-field';
 import { DetailPageLayout, DetailSection } from '../../components/detail/detail-page-layout';
 import { PageHeader } from '../../components/page/page-header';
 import { DetailPrintLayout, PrintTrigger, useQuickPrint, type DetailPrintSection } from '../../components/print';
+import { usePermission } from '../../hooks/use-permission';
 export function ItemSupplierDetailScreen() {
+  const mayManage = usePermission('purchasing.item-supplier.manage');
   const id = Number(useParams<{ id: string }>().id);
   const navigate = useNavigate();
   const query = useItemSuppliersShow(id, { include: 'item,supplierAccount,purchaseUom' });
@@ -66,12 +68,12 @@ export function ItemSupplierDetailScreen() {
         actions={
           <>
             <PrintTrigger onPrint={print} />
-            <Button asChild size="sm">
+            {mayManage && <Button asChild size="sm">
               <Link to={`/item-suppliers/${id}/edit`}>
                 <Pencil className="h-4 w-4" />
                 Edit
               </Link>
-            </Button>
+            </Button>}
           </>
         }
       />

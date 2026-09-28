@@ -46,6 +46,7 @@ import {
 import { useColumnVisibilityPreference } from "../../lib/use-column-visibility-preference";
 import { useListViewPreference } from "../../lib/use-view-preference";
 import { goodsReceiptColumns } from "./goods-receipt-columns";
+import { usePermission } from "../../hooks/use-permission";
 
 interface ReceiptFilters {
   search: string;
@@ -57,6 +58,7 @@ interface ReceiptFilters {
 const STATUSES = ["DRAFT", "POSTED", "REVERSED"] as const;
 
 export function GoodsReceiptsListScreen() {
+  const mayCreate = usePermission("purchasing.goods-receipt.create");
   const navigate = useNavigate();
   const query = useListQueryState<ReceiptFilters>({
     defaultSort: "-created_at",
@@ -132,7 +134,7 @@ export function GoodsReceiptsListScreen() {
       <PageHeader
         title="Goods Receipts"
         description="Record physical arrivals, post stock and resolve inspection holds."
-        primaryAction={{ label: "New receipt", onClick: () => navigate("/goods-receipts/new") }}
+        primaryAction={mayCreate ? { label: "New receipt", onClick: () => navigate("/goods-receipts/new") } : undefined}
       />
       <div className="flex flex-wrap items-center gap-2">
         <Input

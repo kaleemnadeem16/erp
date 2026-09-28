@@ -2,7 +2,7 @@
 
 # Authorisation retrofit backlog
 
-- **Status:** audited, not started
+- **Status:** in progress — Items/Categories and Purchasing operational writes enforced; sensitive-field and Estimating work remains
 - **Depends on:** the Material Preview slice's effective-permissions endpoint (`GET
   /api/v1/user`) for every frontend-gating task below — do not build UI gating before it exists.
 - **Blocked by:** nothing for registration/field-filtering work; the Purchasing/Purchase-order
@@ -90,16 +90,16 @@ Finance/Accounting relationship rather than deciding unilaterally.
 
 ### Tasks
 
-- [ ] Register `inventory.item.manage`, `inventory.category.manage` (no enforcement yet)
+- [x] Register `inventory.item.manage`, `inventory.category.manage`
 - [ ] Decide (with Finance/Accounting) whether GL-account fields need their own permission, separate
       from general item/category editing
 - [ ] Field-level protection: hide GL account columns from `ItemResource`/`CategoryResource` for
       callers without the relevant permission
-- [ ] Assignment/backfill pass, then enforce `inventory.item.manage`/`inventory.category.manage` on
+- [x] Assignment/backfill pass, then enforce `inventory.item.manage`/`inventory.category.manage` on
       create/update/archive (index/show stay open)
-- [ ] Frontend action gating (Archive/Activate/Edit) once `/api/v1/user` effective permissions ship
-- [ ] Allowed/denied/field-filtering tests, `OverheadPolicyApiTest`-shaped
-- [ ] Update `app/Modules/Inventory/README.md` and [items.md](../domain/items.md)
+- [x] Frontend action gating (Archive/Activate/Edit) once `/api/v1/user` effective permissions ship
+- [x] Allowed/denied capability tests; field-filtering remains with the unresolved GL-account decision
+- [x] Update `app/Modules/Inventory/README.md` and [items.md](../domain/items.md)
 
 ## B. Purchase Orders, Receipts, Item Suppliers, Quality Dispositions (Purchasing)
 
@@ -132,19 +132,25 @@ issue.
 
 ### Tasks
 
-- [ ] Register all capabilities above (no enforcement yet)
+- [x] Register all capabilities above
 - [ ] Field-level protection: hide PO/receipt line cost fields from callers without a
       cost-visibility permission (name TBD — likely reuses whichever permission Q25's Material
       Preview work settles on for "view internal cost", rather than inventing a second one)
-- [ ] Confirm the missing `QualityDisposition` list screen stays an intentional non-gap
-- [ ] Assignment/backfill pass, then enforce `purchasing.item-supplier.manage`
-- [ ] Assignment/backfill pass, then enforce goods-receipt create/post/reverse
-- [ ] Assignment/backfill pass, then enforce purchase-order create/issue/cancel/short-close
+- [x] Confirm the missing `QualityDisposition` list screen stays an intentional non-gap
+- [x] Assignment/backfill pass, then enforce `purchasing.item-supplier.manage`
+- [x] Assignment/backfill pass, then enforce goods-receipt create/post/reverse
+- [x] Assignment/backfill pass, then enforce purchase-order create/issue/cancel/short-close
       (sequence last — highest daily-user volume, highest lockout risk in this whole backlog)
-- [ ] Frontend action gating (Issue/Cancel/Short-close/Post/Reverse buttons) once `/api/v1/user`
+- [x] Frontend action gating (Issue/Cancel/Short-close/Post/Reverse buttons) once `/api/v1/user`
       effective permissions ship
-- [ ] Allowed/denied/field-filtering tests, `OverheadPolicyApiTest`-shaped
-- [ ] Update `app/Modules/Purchasing/README.md` and [purchasing.md](../domain/purchasing.md)
+- [x] Allowed/denied API and non-HTTP Action tests; field-filtering remains with the cost-visibility decision
+- [x] Update `app/Modules/Purchasing/README.md` and [purchasing.md](../domain/purchasing.md)
+
+The rollout/backfill path is explicit: `permission:register` creates the names, the deploy-time
+`erp:sync-admin-permissions` step grants them to the configured administrator, and `demo:seed`
+syncs the local demo user before any newly protected Action is called. Before this branch is
+deployed, operational users or roles beyond that administrator must be granted their intended
+subset; registration alone grants nobody access.
 
 ## C. Existing Estimating CRUD
 

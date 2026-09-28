@@ -27,6 +27,7 @@ import {
 import { useColumnVisibilityPreference } from '../../lib/use-column-visibility-preference';
 import { useListViewPreference } from '../../lib/use-view-preference';
 import { itemSupplierColumns } from './item-suppliers-columns';
+import { usePermission } from '../../hooks/use-permission';
 interface Filters {
   search: string;
   item_id: string;
@@ -37,6 +38,7 @@ interface Filters {
 }
 
 export function ItemSuppliersListScreen() {
+  const mayManage = usePermission('purchasing.item-supplier.manage');
   const navigate = useNavigate();
   const query = useListQueryState<Filters>({ defaultSort: 'priority' });
   const [visibility, setVisibility] = useColumnVisibilityPreference(
@@ -93,7 +95,7 @@ export function ItemSuppliersListScreen() {
       <PageHeader
         title="Item suppliers"
         description="Approved supplier relationships and item-specific sourcing terms."
-        primaryAction={{ label: 'New relationship', onClick: () => navigate('/item-suppliers/new') }}
+        primaryAction={mayManage ? { label: 'New relationship', onClick: () => navigate('/item-suppliers/new') } : undefined}
       />
       <div className="flex flex-wrap items-center gap-2">
         <Input

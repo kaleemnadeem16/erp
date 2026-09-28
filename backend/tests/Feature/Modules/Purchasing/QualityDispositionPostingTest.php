@@ -31,6 +31,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
 use PDO;
 use PDOException;
+use Spatie\Permission\PermissionRegistrar;
 
 class QualityDispositionPostingTest extends PurchaseOrderFoundationTest
 {
@@ -383,6 +384,26 @@ class QualityDispositionPostingTest extends PurchaseOrderFoundationTest
         $companyId = $this->resolveIsolatedTestCompanyId($pdo);
         $suffix = bin2hex(random_bytes(4));
         [$lineId, $actorId] = $this->createRawFixture($pdo, $companyId, "qa_concurrency_test_{$suffix}", 'QAX', qaRequired: true, receiptStatus: 'POSTED');
+        $permission = $pdo->prepare(<<<'SQL'
+            INSERT INTO permissions (name, guard_name, created_at, updated_at)
+            VALUES ('purchasing.quality-disposition.post', 'web', NOW(), NOW())
+            ON CONFLICT (name, guard_name) DO UPDATE SET updated_at = EXCLUDED.updated_at
+            RETURNING id
+            SQL);
+        $permission->execute();
+        $permissionId = (int) $permission->fetchColumn();
+        $grant = $pdo->prepare(<<<'SQL'
+            INSERT INTO model_has_permissions (permission_id, model_type, model_id, team_id)
+            VALUES (:permission_id, :model_type, :model_id, :team_id)
+            ON CONFLICT DO NOTHING
+            SQL);
+        $grant->execute([
+            'permission_id' => $permissionId,
+            'model_type' => User::class,
+            'model_id' => $actorId,
+            'team_id' => $companyId,
+        ]);
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         // Every model involved resolves its tenant scope through CompanyContext, not
         // a raw column check — both processes need it pointed at the isolated
@@ -397,7 +418,7 @@ class QualityDispositionPostingTest extends PurchaseOrderFoundationTest
                 return $this->companyId;
             }
         });
-
+        app(PermissionRegistrar::class)->setPermissionsTeamId($companyId);
         $resultPath = sys_get_temp_dir().'/qa_disposition_concurrency_'.getmypid().'.json';
         $startPath = sys_get_temp_dir().'/qa_disposition_concurrency_'.getmypid().'.start';
         @unlink($resultPath);
@@ -601,7 +622,7 @@ class QualityDispositionPostingTest extends PurchaseOrderFoundationTest
             'line_amount' => (string) ((int) (float) $qty * 10).'.0000',
             'qa_required' => $qaRequired,
         ]));
-        app(IssuePurchaseOrder::class)($order);
+        app(IssuePurchaseOrder::class)($order, $this->purchasingActor());
 
         return [$order->refresh(), $item->refresh(), $uom];
     }
@@ -644,7 +665,7 @@ class QualityDispositionPostingTest extends PurchaseOrderFoundationTest
             'line_amount' => (string) ((int) (float) $qty * 10).'.0000',
             'qa_required' => $qaRequired,
         ]));
-        app(IssuePurchaseOrder::class)($order);
+        app(IssuePurchaseOrder::class)($order, $this->purchasingActor());
 
         return [$order->refresh(), $item->refresh(), $uom];
     }

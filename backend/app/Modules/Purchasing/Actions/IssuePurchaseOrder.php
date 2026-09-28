@@ -6,6 +6,7 @@ namespace App\Modules\Purchasing\Actions;
 
 use App\Contracts\NumberingScheme;
 use App\Exceptions\DomainInvariantException;
+use App\Models\User;
 use App\Modules\Purchasing\Models\ItemSupplier;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Modules\Purchasing\Support\PurchaseOrderStatus;
@@ -18,8 +19,15 @@ final class IssuePurchaseOrder
         private readonly ResolvePurchasingSettings $resolveSettings,
     ) {}
 
-    public function __invoke(PurchaseOrder $order): PurchaseOrder
+    public function __invoke(PurchaseOrder $order, User $actor): PurchaseOrder
     {
+        $canCommitCutoverOrder = $order->inventory_cutover_id !== null
+            && $actor->can('purchasing.cutover.commit');
+
+        if (! $actor->can('purchasing.purchase-order.issue') && ! $canCommitCutoverOrder) {
+            throw new DomainInvariantException('The actor is not permitted to issue a purchase order.', 'issued_by');
+        }
+
         return DB::transaction(function () use ($order): PurchaseOrder {
             $order = PurchaseOrder::query()->lockForUpdate()->findOrFail($order->id);
             if ($order->status !== PurchaseOrderStatus::Draft || ! $order->lines()->exists()) {

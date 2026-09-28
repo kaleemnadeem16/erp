@@ -19,7 +19,7 @@ class UpdateItemRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('inventory.item.manage') === true;
     }
 
     protected function prepareForValidation(): void

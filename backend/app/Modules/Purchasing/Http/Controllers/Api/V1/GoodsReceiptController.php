@@ -56,9 +56,10 @@ class GoodsReceiptController extends Controller
         return new GoodsReceiptResource($goodsReceipt->load(['lines' => fn ($query) => $query->withQaAggregates()]));
     }
 
-    public function post(GoodsReceipt $goodsReceipt, PostGoodsReceipt $post): GoodsReceiptResource
+    public function post(Request $request, GoodsReceipt $goodsReceipt, PostGoodsReceipt $post): GoodsReceiptResource
     {
-        $receipt = $post($goodsReceipt);
+        abort_unless($request->user()?->can('purchasing.goods-receipt.post'), 403);
+        $receipt = $post($goodsReceipt, $request->user());
         $receipt->load(['lines' => fn ($query) => $query->withQaAggregates()]);
 
         return new GoodsReceiptResource($receipt);
