@@ -46,7 +46,8 @@ use Illuminate\Database\Seeder;
  *
  * `demo-masking-tape` and `demo-sanding-disc` are also recorded as sold in their pack unit at
  * their supplier — see their item-supplier rows in PurchasingDemoSeeder, which is why this
- * seeder runs before it.
+ * seeder runs before it. A purchase order line for either item at Industrial Coatings Ltd starts
+ * on Roll / Box, because the form defaults a line's unit from that row.
  *
  * Idempotency: a pack conversion is mutable reference data keyed by its natural identity
  * (item + pack unit, unique in the table), so `updateOrCreate` reconciles factor and precision on

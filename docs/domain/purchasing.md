@@ -157,6 +157,16 @@ supplier are selected on creation and shown read-only on edit, while supplier it
 priority, lead-time override, minimum order quantity, purchase UoM and active state remain
 editable. List filters cover item, supplier, active state and preferred status.
 
+### Purchase unit default
+
+A purchase order line's **Purchase UoM** starts on the unit the PO's supplier sells that item in — the
+active `item_suppliers` row's `purchase_uom_id` — and on the item's stock unit when the supplier has no
+such row or the row names no unit. It is a default applied when the line's item is chosen, nothing more:
+the unit stays editable, changing the supplier afterwards does not rewrite lines already entered (a line
+of 10 rolls silently turning into 10 kg would change the stock quantity ordered), and the conversion to
+stock is still made by `BuildPurchaseOrderLineAttributes` from the unit the line ends up with. The form
+reads the supplier's first 100 active rows; an item beyond that simply starts on its stock unit.
+
 ### Normal and partial purchasing
 
 The default user journey is `Create PO → Receive → Enter invoice → Done`. One PO line may be

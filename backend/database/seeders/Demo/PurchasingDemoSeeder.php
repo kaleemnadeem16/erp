@@ -69,9 +69,8 @@ final class PurchasingDemoSeeder extends Seeder
             ['item' => 'demo-thinner', 'supplier' => 'sup-pakchem', 'supplier_code' => 'THN-200', 'priority' => 1, 'lead' => 6, 'moq' => '200.0000', 'uom' => $litre],
             ['item' => 'demo-spray-unit', 'supplier' => 'sup-coatings', 'supplier_code' => 'ASU-450', 'priority' => 1, 'lead' => 12, 'moq' => '1.0000', 'uom' => $each],
             // Sold by this supplier in a pack unit, which the item's pack conversion converts to its
-            // stock unit (PackConversionsDemoSeeder). The purchase order form does not yet default a
-            // line to the supplier's purchase unit — it starts on the item's stock unit — so pick
-            // Roll / Box on the line by hand.
+            // stock unit (PackConversionsDemoSeeder). A purchase order line for one of these items at
+            // this supplier therefore starts on Roll / Box rather than the stock unit.
             // Minimum orders are written in the purchase unit (10 rolls, 4 boxes); no consumer
             // defines or enforces the MOQ's unit yet, so this is a display convention only.
             ['item' => 'demo-masking-tape', 'supplier' => 'sup-coatings', 'supplier_code' => 'MSK-50M', 'priority' => 1, 'lead' => 3, 'moq' => '10.0000', 'uom' => $roll],

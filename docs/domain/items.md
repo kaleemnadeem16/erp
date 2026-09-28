@@ -192,11 +192,12 @@ the application before saving.** See [database.md](../architecture/database.md).
 quantity. Block it once any stock move or document line references the item.
 
 **Assuming purchase UoM equals stock UoM.** Pigment is bought in 25 kg drums and consumed in
-grams. Purchase UoM is a property of the purchase line, not the item. Today this only works when
-purchase and stock UoM share a global dimension — genuine pack purchasing (a box of eaches, a
-roll of metres) needs the item-specific conversion decided in
-[ADR 0050](../decisions/0050-item-specific-uom-conversion-and-divisibility.md) and not yet
-implemented.
+grams. Purchase UoM is a property of the purchase line, not the item. A pack unit that shares no
+dimension with the stock unit (a box of eaches, a roll of metres) converts through the item-specific
+conversion of
+[ADR 0050](../decisions/0050-item-specific-uom-conversion-and-divisibility.md), and a line's unit
+starts on whatever the chosen supplier sells the item in
+([purchasing.md](purchasing.md#purchase-unit-default)).
 
 **Supplier sourcing.** Approved suppliers are represented by Purchasing's company-scoped
 `item_suppliers` relationship, not a single column on `items`. Each relationship may carry the

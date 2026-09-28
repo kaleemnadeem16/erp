@@ -10,6 +10,7 @@ import { History, MapPin, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { z } from "zod";
 import {
   useCurrenciesIndex,
+  useItemSuppliersIndex,
   useItemsIndex,
   useSupplierAccountsIndex,
   useSupplierAccountsSitesIndex,
@@ -423,6 +424,23 @@ export function PurchaseOrderForm({
       })),
     [uoms],
   );
+  // The unit this supplier sells each item in (ADR 0033 keeps it on the item-supplier row, since it
+  // varies per item and supplier). Used only to default a line's Purchase UoM when its item is
+  // chosen; an item with no such row, or one that names no unit, starts on its stock unit.
+  const itemSuppliersQuery = useItemSuppliersIndex(
+    { "filter[supplier_account_id]": supplierIdNumber, "filter[active]": true, per_page: 100 },
+    { query: { enabled: supplierIdNumber > 0 } },
+  );
+  const purchaseUomIdByItem = useMemo(() => {
+    const rows =
+      itemSuppliersQuery.data?.status === 200 ? itemSuppliersQuery.data.data.data : [];
+
+    return new Map(
+      rows.flatMap((row) =>
+        row.purchase_uom_id === null ? [] : [[row.item_id, row.purchase_uom_id] as const],
+      ),
+    );
+  }, [itemSuppliersQuery.data]);
   const supplierId = form.watch("supplier_account_id");
   useEffect(() => {
     const supplier = suppliers.find(
@@ -783,7 +801,10 @@ export function PurchaseOrderForm({
                               );
                               form.setValue(
                                 `lines.${index}.purchase_uom_id`,
-                                String(item.stock_uom_id),
+                                String(
+                                  purchaseUomIdByItem.get(item.id) ??
+                                    item.stock_uom_id,
+                                ),
                               );
                             }
                           }}
