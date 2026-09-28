@@ -87,6 +87,18 @@ replacing its previous ad hoc floor for any `COUNT`-dimension item — a `COUNT`
 explicit `quantity_precision` now keeps a fractional ceiling instead of silently rounding down. See
 ADR 0050 for the full reasoning and schema.
 
+**Demo data.** `PackConversionsDemoSeeder` seeds one deliberate scenario per decision point of the
+lookup above, and `PackConversionsDemoSeederTest` proves each through the real purchase-order-line
+conversion: the same `bag` unit holding 25 kg of `demo-pig-blue` but 20 kg of `demo-pig-red`
+(the reason the conversion is item-owned); two pack levels on `demo-thinner` (can = 5 L,
+drum = 200 L), each stored directly against litres rather than chained; a roll of
+`demo-masking-tape` = 50 m crossing `COUNT` → `LENGTH`; and a box of `demo-sanding-disc` = 50 each,
+where box and each share `COUNT` so the override must beat the global 1:1. Thinner in millilitres
+exercises the global fallback with no row at all, and blue pigment in drums the loud rejection.
+The sanding discs carry an item-level `quantity_precision`, which `PostGoodsReceipt`'s
+over-receipt ceiling reads; the masking-tape roll's per-override precision is a stored, displayed
+fact that `BuildPurchaseOrderLineAttributes` does not apply.
+
 ### Precision
 
 `decimal(19,9)` for factors. Ingredient quantities are frequently small (0.00012 kg per unit),

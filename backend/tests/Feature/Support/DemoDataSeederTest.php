@@ -27,11 +27,11 @@ final class DemoDataSeederTest extends TestCase
 
         $demoKeys = [
             'currencies' => ['PKR', 'USD', 'AED'],
-            'uoms' => ['ea', 'kg', 'g', 'l', 'ml', 'm', 'sqm', 'hr'],
+            'uoms' => ['ea', 'kg', 'g', 'l', 'ml', 'm', 'sqm', 'hr', 'bag', 'can', 'drum', 'roll', 'box'],
             'chart_of_accounts' => ['1100', '1200', '2100', '4000', '5000', '5100'],
             'parties' => ['sup-punjab', 'sup-pakchem', 'sup-coatings', 'cus-alpha', 'cus-metro'],
             'categories' => ['demo-raw', 'demo-pigments', 'demo-solvents', 'demo-finished', 'demo-services', 'demo-equipment'],
-            'items' => ['demo-pig-blue', 'demo-pig-red', 'demo-thinner', 'demo-paint-white', 'demo-site-application', 'demo-painter-hour', 'demo-spray-unit'],
+            'items' => ['demo-pig-blue', 'demo-pig-red', 'demo-thinner', 'demo-paint-white', 'demo-site-application', 'demo-painter-hour', 'demo-spray-unit', 'demo-masking-tape', 'demo-sanding-disc'],
             'warehouses' => ['demo-main', 'demo-khi'],
         ];
 
@@ -42,7 +42,8 @@ final class DemoDataSeederTest extends TestCase
         }
         $this->assertSame(3, (int) DB::table('supplier_accounts')->whereIn('code', ['sup-punjab', 'sup-pakchem', 'sup-coatings'])->count());
         $this->assertSame(2, (int) DB::table('customer_accounts')->whereIn('code', ['cus-alpha', 'cus-metro'])->count());
-        $this->assertSame(5, (int) DB::table('item_suppliers')->whereIn('item_id', $idsBeforeRerun['items'])->count());
+        $this->assertSame(7, (int) DB::table('item_suppliers')->whereIn('item_id', $idsBeforeRerun['items'])->count());
+        $this->assertSame(6, (int) DB::table('item_quantity_units')->whereIn('item_id', $idsBeforeRerun['items'])->count());
 
         $user = User::query()->where('email', 'user@erp.x1techs.com')->firstOrFail();
         $this->assertTrue(Hash::check('!User@Erp@123', $user->password));

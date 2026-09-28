@@ -59,6 +59,8 @@ final class PurchasingDemoSeeder extends Seeder
         $kg = Uom::query()->where('code', 'kg')->firstOrFail();
         $litre = Uom::query()->where('code', 'l')->firstOrFail();
         $each = Uom::query()->where('code', 'ea')->firstOrFail();
+        $roll = Uom::query()->where('code', 'roll')->firstOrFail();
+        $box = Uom::query()->where('code', 'box')->firstOrFail();
 
         $relationships = [
             ['item' => 'demo-pig-blue', 'supplier' => 'sup-punjab', 'supplier_code' => 'PB-25KG', 'priority' => 1, 'lead' => 4, 'moq' => '25.0000', 'uom' => $kg],
@@ -66,6 +68,14 @@ final class PurchasingDemoSeeder extends Seeder
             ['item' => 'demo-pig-red', 'supplier' => 'sup-punjab', 'supplier_code' => 'IROX-RD', 'priority' => 1, 'lead' => 5, 'moq' => '25.0000', 'uom' => $kg],
             ['item' => 'demo-thinner', 'supplier' => 'sup-pakchem', 'supplier_code' => 'THN-200', 'priority' => 1, 'lead' => 6, 'moq' => '200.0000', 'uom' => $litre],
             ['item' => 'demo-spray-unit', 'supplier' => 'sup-coatings', 'supplier_code' => 'ASU-450', 'priority' => 1, 'lead' => 12, 'moq' => '1.0000', 'uom' => $each],
+            // Sold by this supplier in a pack unit, which the item's pack conversion converts to its
+            // stock unit (PackConversionsDemoSeeder). The purchase order form does not yet default a
+            // line to the supplier's purchase unit — it starts on the item's stock unit — so pick
+            // Roll / Box on the line by hand.
+            // Minimum orders are written in the purchase unit (10 rolls, 4 boxes); no consumer
+            // defines or enforces the MOQ's unit yet, so this is a display convention only.
+            ['item' => 'demo-masking-tape', 'supplier' => 'sup-coatings', 'supplier_code' => 'MSK-50M', 'priority' => 1, 'lead' => 3, 'moq' => '10.0000', 'uom' => $roll],
+            ['item' => 'demo-sanding-disc', 'supplier' => 'sup-coatings', 'supplier_code' => 'SND-BX50', 'priority' => 1, 'lead' => 3, 'moq' => '4.0000', 'uom' => $box],
         ];
 
         foreach ($relationships as $data) {
