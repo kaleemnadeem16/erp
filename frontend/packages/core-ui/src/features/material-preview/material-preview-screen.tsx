@@ -112,12 +112,15 @@ export function MaterialPreviewScreen() {
   const dimensionsQuery = useRateDimensionsIndex({ per_page: 100, sort: 'sort_order', include: 'values' });
   const dimensions = dimensionsQuery.data?.status === 200 ? dimensionsQuery.data.data.data : [];
   // Only the stock-scope pickers need these, so skip the requests for someone who cannot see availability.
-  // Not filter[active]=true: Laravel's boolean rule rejects the literal string "true" a query param
-  // always serialises to, so inactive rows are dropped here instead (same workaround as the physical
-  // count form).
-  const warehousesQuery = useWarehousesIndex({ per_page: 100, sort: 'code' }, { query: { enabled: mayViewAvailability } });
-  const warehouses = warehousesQuery.data?.status === 200 ? warehousesQuery.data.data.data.filter((row) => row.active) : [];
-  const locationsQuery = useLocationsIndex({ per_page: 100, sort: 'code' }, { query: { enabled: mayViewAvailability } });
+  const warehousesQuery = useWarehousesIndex(
+    { per_page: 100, sort: 'code', 'filter[active]': true },
+    { query: { enabled: mayViewAvailability } },
+  );
+  const warehouses = warehousesQuery.data?.status === 200 ? warehousesQuery.data.data.data : [];
+  const locationsQuery = useLocationsIndex(
+    { per_page: 100, sort: 'code', 'filter[active]': true },
+    { query: { enabled: mayViewAvailability } },
+  );
   const locations = locationsQuery.data?.status === 200 ? locationsQuery.data.data.data : [];
 
   const [assemblyId, setAssemblyId] = useState('');
@@ -141,7 +144,7 @@ export function MaterialPreviewScreen() {
   // A warehouse with a single stock location (the SIMPLE location mode) has nothing to narrow
   // below the warehouse, so the location picker only appears when there is a real choice.
   const warehouseLocations = useMemo(
-    () => locations.filter((location) => location.warehouse_id === Number(warehouseId) && location.allows_stock && location.active),
+    () => locations.filter((location) => location.warehouse_id === Number(warehouseId) && location.allows_stock),
     [locations, warehouseId],
   );
 

@@ -70,12 +70,8 @@ export function PhysicalCountDetailScreen() {
   const itemsQuery = useItemsIndex({ per_page: 100, sort: 'name', 'filter[status]': 'ACTIVE' });
   const items = itemsQuery.data?.status === 200 ? itemsQuery.data.data.data : [];
 
-  // Not filter[active]=true: Laravel's boolean rule rejects the literal
-  // string "true" a query param always serialises to (it only accepts
-  // '1'/'0'/1/0/true/false) — AddPhysicalCountLine itself already rejects an
-  // inactive location with a clear 422.
   const locationsQuery = useLocationsIndex(
-    { 'filter[warehouse_id]': count?.warehouse_id, per_page: 100, sort: 'code' },
+    { 'filter[warehouse_id]': count?.warehouse_id, 'filter[active]': true, per_page: 100, sort: 'code' },
     { query: { enabled: !!count } }
   );
   const locations = locationsQuery.data?.status === 200 ? locationsQuery.data.data.data : [];

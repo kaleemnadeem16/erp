@@ -119,6 +119,12 @@ unconditionally. Collection endpoints validate both parameters: `sort=field` is 
 being silently ignored. Resource updates use `PATCH`; `PUT` is reserved for a future endpoint
 that genuinely accepts a complete replacement representation.
 
+A boolean filter (`filter[active]=true`) accepts `true` / `false` as well as `1` / `0`: a query string
+is text, and the generated client serialises a boolean as `"true"`, which Laravel's own `boolean` rule
+rejects. `ValidatesListQuery` normalises any `filter.*` key its request declares `boolean`
+([ADR 0060](../decisions/0060-accept-true-and-false-for-boolean-list-filters.md)), so declare a new
+one that way rather than working around it in a screen.
+
 ## Money
 
 ```json

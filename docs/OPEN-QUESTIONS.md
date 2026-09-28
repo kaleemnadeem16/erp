@@ -131,16 +131,14 @@ risk; may the creator submit, may an approver also issue, how many independent a
 needed, and what happens on rejection or draft revision? Today any authenticated caller reaching
 the endpoint can create and issue a PO; DRAFT → ISSUED has no approval fact.
 
-### Q29 — Boolean query-string filters
-**Blocks:** Nothing; it is a recurring per-screen workaround
+### Q31 — A failed list request renders as an empty or stale list
+**Blocks:** Nothing; it is why a broken filter can go unnoticed
 
-The generated client serialises a boolean query parameter as the literal string `"true"`, which
-Laravel's `boolean` rule rejects with a 422 (it accepts only `1`/`0`/`true`/`false` as real
-booleans, not strings). The physical-count form, its detail screen and the Material Preview each
-drop `filter[active]=true` and filter inactive rows in the browser instead, so a screen that
-forgets shows an empty picker. Where should this be fixed once: a request-normalising middleware
-that maps `"true"`/`"false"` query strings to booleans on the API, or the client's query
-serialisation (which orval generates, so it cannot be hand-edited)?
+List screens compute their rows as `query.data?.status === 200 ? rows : []`, so a request that fails
+shows "0 records" with no sign anything went wrong — or, on some screens, keeps the previous rows. A
+rejected boolean filter (ADR 0060) sat like that across Warehouses and Item Suppliers; any 4xx or 5xx
+would look identical. Should the shared list layer (`DataTable` and the list-query state) own an error
+state that every list screen gets for free, or is each screen expected to handle it?
 
 ---
 
@@ -156,6 +154,7 @@ Answered questions live in [decisions/](decisions/) as ADRs. See the
 <a id="q22--physical-container-granularity"></a>
 <a id="q25--material-resolution-permissions-and-sensitive-fields"></a>
 <a id="q30--location-labels-are-ambiguous-across-warehouses"></a>
+<a id="q29--boolean-query-string-filters"></a>
 
 Q17, Q19 and Q22 were resolved on 2026-09-26 by
 [ADR 0051](decisions/0051-phase-3-commercial-packaging-and-supplier-cost-scenarios.md),
@@ -183,3 +182,8 @@ Q30 was resolved on 2026-09-28 by
 [ADR 0059](decisions/0059-name-a-location-as-warehouse-and-location.md): a location is named
 `warehouse / location` through one shared formatter, and the API always returns a location's
 warehouse; codes stay unique per warehouse only.
+
+Q29 was resolved on 2026-09-28 by
+[ADR 0060](decisions/0060-accept-true-and-false-for-boolean-list-filters.md): the shared list-query
+trait accepts `true` / `false` for any filter its request declares boolean, so the API no longer rejects
+what the generated client sends.
