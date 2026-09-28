@@ -146,6 +146,66 @@ is unchanged, unless its cost/waste consequence crosses a configured control ban
 decides permissions and field visibility. Phase 3 choices are hypothetical; ADR 0058
 defers persisted adoption until a Phase 4 quotation revision owns the plan.
 
+## First implementation: QUANTITY_ONLY availability and allocation
+
+Shipped with the Phase 3 Material Preview's inventory proposal slice
+(`POST /api/v1/assemblies/{assembly}/material-preview`, ADR 0058). Only the `QUANTITY_ONLY` mode
+exists, so this section is what "approximate, quantity per location" concretely means today.
+
+**Availability read.** Inventory's `QueryStockAvailability` reads every open `stock_layers` row of
+the requested items, grouped by item, location and batch, in one SQL statement — one consistent
+snapshot, no lock, no write. Layers are the only table carrying a location, and they stay current
+for AVCO items too, so quantity never comes from `avco_pools`. The caller's requested
+warehouse/location scope can only narrow the company-wide scope (department-limited availability
+waits on [Q26](../OPEN-QUESTIONS.md#q26--organisational-and-record-level-access-scope)); both
+filters together are an intersection.
+
+Each balance's `on_hand` is partitioned into three so a shortfall can be reconciled by eye:
+
+| Part | Meaning |
+|---|---|
+| `held` | Stock awaiting QA release: a QA-required receipt line holds `stock_qty` minus PASS/ACCEPT_WITH_CONCESSION releases, attributed to the layer that receipt created and capped at what the layer still holds |
+| `unusable_location` | Free stock in a location that cannot supply work: an inactive location/warehouse, or a type other than `STORAGE`/`RECEIVING` (`LocationType::holdsUsableStock()`) |
+| `usable` | The rest — the only stock a proposal may draw from |
+
+This mirrors the inventory overview's QA rule but is stricter in two deliberate ways: it is
+location-aware, and it does not subtract QA hold from stock already consumed out of a held layer
+(the overview's known over-subtraction). With no unusable location in play the two "available"
+figures agree — `QueryStockAvailabilityTest` asserts it. The location-type rule is a conservative
+first-generation policy: it may under-report usable stock, and says so, but never over-reports it.
+
+**Cost evidence** follows what a real issue would consider defensible, and is `null` — never zero —
+otherwise: AVCO uses the pool the movement engine would resolve for that location/batch
+(`COMPANY_ITEM`, `WAREHOUSE_ITEM` or `COMPANY_ITEM_BATCH`), only while it is `ACTIVE` with a positive
+average; FIFO and SPECIFIC use the remaining layers' weighted-average base cost.
+
+**Allocation** (`AllocateInventory`, a pure function, `RULES_VERSION` 1) applies the three presets
+lexicographically with the stable location/batch key as the final tie-breaker. Criteria that need
+evidence `QUANTITY_ONLY` does not have — open remnants, expiry, package surplus, newly opened
+packages — are reported per item as not applied, with the reason; the ordering continues on what
+can be evaluated, which is cost and physical picks:
+
+| Preset | Effective order today |
+|---|---|
+| `MINIMISE_WASTE`, `LOWEST_INTERNAL_COST` | cheapest balance first, larger balance first among equals (so fewest picks among minimum-cost plans) |
+| `FEWEST_PACKAGES` | fewest locations that can cover the requirement, then the cheapest fill among equally-sized sets; that set search is bounded and reports when the bound skips the cost tie-break |
+
+Because the two cost-first presets coincide here, the response lists the other two presets as
+alternatives and flags each `same_as_recommendation`. A balance without cost evidence ranks after
+every costed one and makes the plan's estimated cost unknown rather than partial.
+
+**Not yet built** — each is a deliberate boundary, not an oversight:
+
+- Stored strategy settings at item, category and company level. The effective strategy is the
+  built-in `MINIMISE_WASTE` default or a per-request what-if override; the response states which.
+- A hand-built package/location mix evaluated by the resolver. A user can compare the three
+  presets; choosing an arbitrary mix waits for the variance slice, where ADR 0054 decides what a
+  different mix at the same planned quantity costs in review.
+- `PACKAGE_BALANCE` and `CONTAINER_TRACKED` modes and the package definitions
+  (`item_packagings`), so no sealed-pack, remnant or container claim is ever made.
+- Package equivalents of a quantity draw ("about two 5 L cans"), which would be approximate in
+  `QUANTITY_ONLY` and are better delivered with `PACKAGE_BALANCE`.
+
 ## Inventory invariants
 
 - `stock_moves` and the established valuation records remain authoritative for quantity and value.

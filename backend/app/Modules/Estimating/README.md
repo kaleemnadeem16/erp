@@ -72,9 +72,10 @@ implementation slice.
   `ResourceRate`'s `rate_uom_id`)
 - Anything that issues a document or posts stock — Phase 4/5. Physically producing a
   `SEMI_FINISHED` item is Phase 5's `work_orders`, not this module
-- The fuller, ad-hoc **assembly cost preview** (quantity/dimension-value/customer selection with
-  live application-rate default-fallback visibility) is not implemented yet — Step 3 shipped a
-  narrower per-version breakdown instead. ADR 0058 now fixes the preview boundary; see
+- The remainder of the ad-hoc **material preview** (ADR 0058): planned-quantity adjustments, ADR
+  0054 variance evaluation, and the completion slice (stale-result handling, product journey).
+  The technical resolution, internal-cost gating and the `QUANTITY_ONLY` inventory proposal
+  already ship; see
   [phase-3-estimating-core.md](../../../../docs/phases/phase-3-estimating-core.md)
 
 ## Key actions
@@ -87,6 +88,18 @@ an exact duplicate combination for the same item+work unit — the resolution al
 "exact match" finds at most one candidate. `ResolveApplicationRate` is read-only and reusable:
 called directly from the preview endpoint today, and by the assembly cost roll-up once that
 slice lands.
+
+`PreviewAssemblyMaterials` is the read-only Material Preview (`POST
+/api/v1/assemblies/{assembly}/material-preview`, ADR 0058). For a caller holding
+`estimating.inventory_availability.view` it also runs `PreviewInventoryAvailability`: per leaf
+material it reads usable stock through Inventory's `QueryStockAvailability`, and
+`AllocateInventory` — a pure function — turns requirement plus balances into an ADR 0053 draw plan
+under the effective strategy (built-in company default `MINIMISE_WASTE`, or a per-request what-if
+override), with the other two presets as alternatives. Only `QUANTITY_ONLY` tracking exists, so
+open-remnant, expiry and package-surplus criteria are reported as not applied rather than faked.
+Neither action writes or reserves anything; `MaterialPreviewApiTest` and
+`QueryStockAvailabilityTest` each assert that no stock or valuation row changes. Details and the deliberate deferrals are in
+[inventory-packages.md](../../../../docs/domain/inventory-packages.md#first-implementation-quantity_only-availability-and-allocation).
 
 `CreateFormulation` creates the header together with its first DRAFT version and lines in one
 call. `CreateFormulationVersion` always creates N+1 as DRAFT regardless of the current ACTIVE
@@ -144,10 +157,15 @@ estimating.material_variance.approve
 estimating.material_resolution_history.view
 ```
 
-The first three are consumed by the upcoming Phase 3 preview and its field-filtered response. The
-remaining five deliberately reserve stable Phase 4 transaction boundaries for draft
-adjustment/adoption, approval and history; Phase 3 does not invent a temporary persisted draft to
-exercise them.
+The first three are enforced by the Material Preview and its field-filtered response, each
+independently: `run` alone returns the technical requirement; `inventory_availability.view` adds the
+`inventory` block and is also required to send `inventory_scope` or `selection_strategy` (without
+it those inputs are rejected with 422, never silently ignored, and no availability is queried);
+`internal_cost.view` adds every cost field — for a caller without it those fields are `null`, never
+zero, although cost still ranks balances internally. Scope narrowing can only reduce the
+company-wide scope; department-limited availability waits on Q26. The remaining five deliberately
+reserve stable Phase 4 transaction boundaries for draft adjustment/adoption, approval and history;
+Phase 3 does not invent a temporary persisted draft to exercise them.
 
 ## Events
 

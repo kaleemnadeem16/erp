@@ -211,9 +211,20 @@ module-scoped demo data (`database/seeders/Demo/Estimating/`, per
         effective permissions (`UserResource`) and the `/material-preview` screen gates on it
         client-side — the first screen in the app to do so. Read-only, proven with a no-side-effects
         test. Reachable at `/material-preview` (Estimating nav) — 2026-09-26
-      - [ ] **Inventory proposal slice** — permitted warehouse/location narrowing, consistent
+      - [x] **Inventory proposal slice** — permitted warehouse/location narrowing, consistent
         quantity-only availability, strategy, deterministic recommendation/alternatives,
-        shortage/residual and every corresponding UI control/explanation
+        shortage/residual and every corresponding UI control/explanation. The `inventory` block
+        is returned only under `estimating.inventory_availability.view` (its scope/strategy inputs
+        are refused without it) and is `QUANTITY_ONLY`: usable stock per location/batch from
+        `stock_layers` in one statement, QA hold attributed to its layer, unusable location types
+        reported not counted, and a lexicographic ADR 0053 plan per preset with the other two as
+        alternatives and unavailable criteria reported. Cost fields stay behind
+        `estimating.internal_cost.view`. `/material-preview` gained warehouse/location narrowing
+        (location only when the warehouse has a real choice) and the strategy under Advanced
+        options. Deliberately deferred and recorded in
+        [inventory-packages.md](../domain/inventory-packages.md#first-implementation-quantity_only-availability-and-allocation):
+        stored item/category/company strategy settings, hand-built package mixes, package
+        equivalents and the `PACKAGE_BALANCE`/`CONTAINER_TRACKED` modes — 2026-09-28
       - [ ] **Variance and sensitive-field slice** — hypothetical planned adjustments and ADR 0054
         outcome, independent availability/cost field filtering, effective-permission exposure and
         frontend action/field gating

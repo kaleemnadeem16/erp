@@ -13,6 +13,7 @@ use App\Modules\Estimating\Models\Formulation;
 use App\Modules\Estimating\Models\FormulationVersion;
 use App\Modules\Estimating\Support\AssemblyComponentKind;
 use App\Modules\Estimating\Support\IngredientCostResolver;
+use App\Modules\Estimating\Support\MaterialSelectionStrategy;
 use App\Modules\Estimating\Support\OverheadAmountCalculator;
 use App\Modules\Estimating\Support\OverheadCostBasis;
 use App\Modules\Estimating\Support\ResolutionMethod;
@@ -24,9 +25,11 @@ use Brick\Math\RoundingMode;
 use InvalidArgumentException;
 
 /**
- * The technical half of ADR 0058's read-only preview. It deliberately stops
- * before planned adjustments, inventory/package selection and variance
- * controls: those are later vertical slices over this same contract.
+ * ADR 0058's read-only preview: the technical resolution of an Assembly into
+ * leaf material requirements and, for an actor allowed to see availability,
+ * the advisory inventory proposal over them (PreviewInventoryAvailability).
+ * It deliberately stops before planned adjustments and variance controls:
+ * those are a later vertical slice over this same contract.
  *
  * The application-rate id stored on an Assembly component is the configured
  * family anchor (item + denominator work UoM). The preview resolves the
@@ -44,13 +47,14 @@ final class PreviewAssemblyMaterials
         private readonly IngredientCostResolver $ingredientCost,
         private readonly OverheadAmountCalculator $overheadCalculator,
         private readonly UomConversionService $uomConverter,
+        private readonly PreviewInventoryAvailability $inventoryPreview,
     ) {}
 
     /**
-     * @param  array{assembly_version_id?: int|null, work_quantity: string, work_uom_id: int, customer_id?: int|null, dimension_value_ids?: list<int>}  $input
+     * @param  array{assembly_version_id?: int|null, work_quantity: string, work_uom_id: int, customer_id?: int|null, dimension_value_ids?: list<int>, inventory_scope?: array{warehouse_ids?: list<int>, location_ids?: list<int>}, selection_strategy?: string|null}  $input
      * @return array<string, mixed>
      */
-    public function __invoke(Assembly $assembly, array $input, bool $includeCost): array
+    public function __invoke(Assembly $assembly, array $input, bool $includeCost, bool $includeInventory = false): array
     {
         $assembly->loadMissing('workUom');
         $version = $this->resolveVersion($assembly, $input['assembly_version_id'] ?? null);
@@ -113,6 +117,17 @@ final class PreviewAssemblyMaterials
             ? $this->costBreakdown($version, $assemblyWorkQuantity, $materialCost)
             : null;
 
+        $inventory = null;
+        $inventoryEvidence = null;
+        if ($includeInventory) {
+            ['data' => $inventory, 'evidence' => $inventoryEvidence] = ($this->inventoryPreview)(
+                $leafRows,
+                $input['inventory_scope'] ?? [],
+                isset($input['selection_strategy']) ? MaterialSelectionStrategy::from($input['selection_strategy']) : null,
+                $includeCost,
+            );
+        }
+
         $evidence = [
             'assembly_id' => $assembly->id,
             'version_id' => $version->id,
@@ -126,6 +141,11 @@ final class PreviewAssemblyMaterials
                 'uom_id' => $row['uom']['id'],
             ], $leafRows),
         ];
+        // Availability moves the fingerprint only for an actor who can see it; otherwise a
+        // changing fingerprint would leak stock movements to someone who may not see stock.
+        if ($inventoryEvidence !== null) {
+            $evidence['inventory'] = $inventoryEvidence;
+        }
 
         return [
             'calculated_at' => now()->toIso8601String(),
@@ -142,9 +162,10 @@ final class PreviewAssemblyMaterials
             'material_components' => $materialComponents,
             'leaf_requirements' => $leafRows,
             'cost_breakdown' => $costBreakdown,
+            'inventory' => $inventory,
             'warnings' => array_values(array_unique($warnings)),
             'limitations' => [
-                'Technical preview only: planned adjustments, inventory availability, package proposals and variance controls are not included yet.',
+                'Planned-quantity adjustments, variance controls and package-level proposals are not included yet: planned quantity equals the standard requirement.',
                 'Advisory only: this calculation does not reserve, allocate or post inventory.',
             ],
             'evidence_fingerprint' => hash('sha256', (string) json_encode($evidence, JSON_THROW_ON_ERROR)),

@@ -6,6 +6,8 @@
  */
 import type { PreviewMaterialRequestAssemblyVersionId } from "./previewMaterialRequestAssemblyVersionId";
 import type { PreviewMaterialRequestCustomerId } from "./previewMaterialRequestCustomerId";
+import type { PreviewMaterialRequestInventoryScope } from "./previewMaterialRequestInventoryScope";
+import type { PreviewMaterialRequestSelectionStrategy } from "./previewMaterialRequestSelectionStrategy";
 
 export interface PreviewMaterialRequest {
   assembly_version_id?: PreviewMaterialRequestAssemblyVersionId;
@@ -14,4 +16,7 @@ export interface PreviewMaterialRequest {
   work_uom_id: number;
   customer_id?: PreviewMaterialRequestCustomerId;
   dimension_value_ids?: number[];
+  /** Narrows, never widens, the stock the proposal may consider (ADR 0058). */
+  inventory_scope?: PreviewMaterialRequestInventoryScope;
+  selection_strategy?: PreviewMaterialRequestSelectionStrategy;
 }

@@ -22,6 +22,7 @@ class MaterialPreviewController extends Controller
                 $assembly,
                 $request->validated(),
                 $request->user()?->can('estimating.internal_cost.view') === true,
+                $request->user()?->can('estimating.inventory_availability.view') === true,
             ),
         ]);
     }

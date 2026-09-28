@@ -1,24 +1,40 @@
 import { useMemo, useState } from 'react';
 import {
+  MaterialSelectionStrategy,
   useAssembliesIndex,
   useAssembliesMaterialPreview,
   useCustomerAccountsIndex,
+  useLocationsIndex,
   useRateDimensionsIndex,
   useUomsIndex,
+  useWarehousesIndex,
+  type AssembliesMaterialPreview200DataInventory,
   type AssemblyResource,
 } from '@erp/core-api';
 import { AlertTriangle, Calculator } from 'lucide-react';
+import { AdvancedOptionSection } from '../../components/ui/advanced-option-section';
+import { AdvancedOptionsMenu } from '../../components/ui/advanced-options-menu';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Combobox } from '../../components/ui/combobox';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { PageHeader } from '../../components/page/page-header';
 import { getApiErrorMessage } from '../../lib/api-errors';
 import { useAuthStore } from '../../stores/auth-store';
+import { InventoryProposalPanel } from './inventory-proposal-panel';
 
 const NONE = 'NONE';
 const ACTIVE = 'ACTIVE';
+const COMPANY_DEFAULT = 'COMPANY_DEFAULT';
+
+const STRATEGY_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: COMPANY_DEFAULT, label: 'Company default' },
+  { value: MaterialSelectionStrategy.MINIMISE_WASTE, label: 'Minimise waste' },
+  { value: MaterialSelectionStrategy.LOWEST_INTERNAL_COST, label: 'Lowest internal cost' },
+  { value: MaterialSelectionStrategy.FEWEST_PACKAGES, label: 'Fewest packages' },
+];
 
 interface PreviewData {
   context: {
@@ -69,6 +85,7 @@ interface PreviewData {
       cost_source: string;
     }>;
   };
+  inventory: AssembliesMaterialPreview200DataInventory | null;
   warnings: string[];
   limitations: string[];
   evidence_fingerprint: string;
@@ -84,6 +101,8 @@ export function MaterialPreviewScreen() {
   const user = useAuthStore((state) => state.user);
   const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
   const mayRun = permissions.includes('estimating.material_preview.run');
+  const mayViewAvailability = permissions.includes('estimating.inventory_availability.view');
+  const mayViewCost = permissions.includes('estimating.internal_cost.view');
   const assembliesQuery = useAssembliesIndex({ per_page: 100, sort: 'code', include: 'workUom,versions' });
   const assemblies = assembliesQuery.data?.status === 200 ? assembliesQuery.data.data.data : [];
   const uomsQuery = useUomsIndex({ per_page: 100, sort: 'name' });
@@ -92,6 +111,14 @@ export function MaterialPreviewScreen() {
   const customers = customersQuery.data?.status === 200 ? customersQuery.data.data.data : [];
   const dimensionsQuery = useRateDimensionsIndex({ per_page: 100, sort: 'sort_order', include: 'values' });
   const dimensions = dimensionsQuery.data?.status === 200 ? dimensionsQuery.data.data.data : [];
+  // Only the stock-scope pickers need these, so skip the requests for someone who cannot see availability.
+  // Not filter[active]=true: Laravel's boolean rule rejects the literal string "true" a query param
+  // always serialises to, so inactive rows are dropped here instead (same workaround as the physical
+  // count form).
+  const warehousesQuery = useWarehousesIndex({ per_page: 100, sort: 'code' }, { query: { enabled: mayViewAvailability } });
+  const warehouses = warehousesQuery.data?.status === 200 ? warehousesQuery.data.data.data.filter((row) => row.active) : [];
+  const locationsQuery = useLocationsIndex({ per_page: 100, sort: 'code' }, { query: { enabled: mayViewAvailability } });
+  const locations = locationsQuery.data?.status === 200 ? locationsQuery.data.data.data : [];
 
   const [assemblyId, setAssemblyId] = useState('');
   const [versionId, setVersionId] = useState(ACTIVE);
@@ -99,6 +126,10 @@ export function MaterialPreviewScreen() {
   const [workUomId, setWorkUomId] = useState('');
   const [customerId, setCustomerId] = useState(NONE);
   const [dimensionValues, setDimensionValues] = useState<Record<number, string>>({});
+  const [warehouseId, setWarehouseId] = useState(NONE);
+  const [locationId, setLocationId] = useState(NONE);
+  const [strategy, setStrategy] = useState(COMPANY_DEFAULT);
+  const [showStrategy, setShowStrategy] = useState(false);
   const [preview, setPreview] = useState<PreviewData | null>(null);
   const mutation = useAssembliesMaterialPreview();
 
@@ -106,6 +137,19 @@ export function MaterialPreviewScreen() {
     () => assemblies.find((candidate) => candidate.id === Number(assemblyId)),
     [assemblies, assemblyId],
   );
+
+  // A warehouse with a single stock location (the SIMPLE location mode) has nothing to narrow
+  // below the warehouse, so the location picker only appears when there is a real choice.
+  const warehouseLocations = useMemo(
+    () => locations.filter((location) => location.warehouse_id === Number(warehouseId) && location.allows_stock && location.active),
+    [locations, warehouseId],
+  );
+
+  const selectWarehouse = (value: string) => {
+    setWarehouseId(value);
+    setLocationId(NONE);
+    setPreview(null);
+  };
 
   const selectAssembly = (value: string) => {
     setAssemblyId(value);
@@ -126,6 +170,16 @@ export function MaterialPreviewScreen() {
           work_uom_id: Number(workUomId),
           customer_id: customerId === NONE ? null : Number(customerId),
           dimension_value_ids: Object.values(dimensionValues).filter((value) => value !== NONE).map(Number),
+          // Sent only with the capability: the API rejects these inputs outright without it.
+          ...(mayViewAvailability
+            ? {
+                inventory_scope: {
+                  warehouse_ids: warehouseId === NONE ? [] : [Number(warehouseId)],
+                  location_ids: locationId === NONE ? [] : [Number(locationId)],
+                },
+                selection_strategy: strategy === COMPANY_DEFAULT ? null : (strategy as MaterialSelectionStrategy),
+              }
+            : {}),
         },
       },
       {
@@ -152,6 +206,24 @@ export function MaterialPreviewScreen() {
       <PageHeader
         title="Material Preview"
         description="See what an Assembly technically requires for a customer, quantity and rate context. This preview does not reserve stock."
+        actions={
+          mayViewAvailability ? (
+            <AdvancedOptionsMenu
+              options={[
+                {
+                  id: 'selection-strategy',
+                  label: 'Choose stock selection strategy',
+                  checked: showStrategy,
+                  onCheckedChange: (checked) => {
+                    setShowStrategy(checked);
+                    if (!checked) setStrategy(COMPANY_DEFAULT);
+                    setPreview(null);
+                  },
+                },
+              ]}
+            />
+          ) : undefined
+        }
       />
 
       <section className="space-y-4 rounded-lg border p-4" aria-labelledby="preview-inputs-heading">
@@ -234,6 +306,58 @@ export function MaterialPreviewScreen() {
             </Field>
           ))}
         </div>
+        {mayViewAvailability && (
+          <div className="space-y-4 border-t pt-4">
+            <div>
+              <h3 className="font-medium">Stock to consider</h3>
+              <p className="text-sm text-muted-foreground">Leave these alone to consider every warehouse. Narrowing only ever reduces the stock counted.</p>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <Field label="Warehouse (optional)">
+                <Combobox
+                  aria-label="Warehouse"
+                  value={warehouseId}
+                  onValueChange={selectWarehouse}
+                  options={[
+                    { value: NONE, label: 'All warehouses' },
+                    ...warehouses.map((row) => ({ value: String(row.id), label: `${row.code} — ${row.name}` })),
+                  ]}
+                  searchPlaceholder="Search warehouses…"
+                  emptyText="No warehouses found."
+                />
+              </Field>
+              {warehouseLocations.length > 1 && (
+                <Field label="Location (optional)">
+                  <Combobox
+                    aria-label="Location"
+                    value={locationId}
+                    onValueChange={(value) => { setLocationId(value); setPreview(null); }}
+                    options={[
+                      { value: NONE, label: 'Every location in the warehouse' },
+                      ...warehouseLocations.map((row) => ({ value: String(row.id), label: `${row.code} — ${row.name}` })),
+                    ]}
+                    searchPlaceholder="Search locations…"
+                    emptyText="No locations found."
+                  />
+                </Field>
+              )}
+              <AdvancedOptionSection expanded={showStrategy}>
+                <Field label="Selection strategy">
+                  <Select value={strategy} onValueChange={(value) => { setStrategy(value); setPreview(null); }}>
+                    <SelectTrigger aria-label="Selection strategy">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STRATEGY_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+              </AdvancedOptionSection>
+            </div>
+          </div>
+        )}
         <Button type="button" onClick={submit} disabled={!assembly || !workUomId || !workQuantity || mutation.isPending}>
           <Calculator className="size-4" />
           {mutation.isPending ? 'Calculating…' : 'Calculate preview'}
@@ -243,12 +367,12 @@ export function MaterialPreviewScreen() {
         )}
       </section>
 
-      {preview && <PreviewResult data={preview} />}
+      {preview && <PreviewResult data={preview} mayViewAvailability={mayViewAvailability} mayViewCost={mayViewCost} />}
     </div>
   );
 }
 
-function PreviewResult({ data }: { data: PreviewData }) {
+function PreviewResult({ data, mayViewAvailability, mayViewCost }: { data: PreviewData; mayViewAvailability: boolean; mayViewCost: boolean }) {
   return (
     <div className="space-y-5">
       <section className="rounded-lg border p-4">
@@ -285,6 +409,16 @@ function PreviewResult({ data }: { data: PreviewData }) {
           </div>
         ))}
       </section>
+
+      {data.inventory ? (
+        <InventoryProposalPanel inventory={data.inventory} mayViewCost={mayViewCost} />
+      ) : (
+        !mayViewAvailability && (
+          <section className="rounded-lg border p-4 text-sm text-muted-foreground">
+            Stock availability is hidden because your access does not include <code>estimating.inventory_availability.view</code>. Hidden availability is not treated as zero stock.
+          </section>
+        )
+      )}
 
       <section className="space-y-3 rounded-lg border p-4">
         <h2 className="font-semibold">Resolution evidence</h2>

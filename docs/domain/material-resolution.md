@@ -78,6 +78,12 @@ revalidates the same resolver when a real draft adopts a plan; Phase 5 reserves 
 slice may be `QUANTITY_ONLY` and approximate, but must never infer sealed packs or containers from
 aggregate stock.
 
+**Implemented so far:** technical resolution with separately gated internal cost (2026-09-26) and the
+`QUANTITY_ONLY` inventory proposal (2026-09-28 — permitted-scope availability, strategy,
+recommendation with alternatives, coverage and shortage; see
+[inventory-packages.md](inventory-packages.md#first-implementation-quantity_only-availability-and-allocation)).
+Planned adjustments, ADR 0054 variance evaluation and the completion slice remain.
+
 ## Physical precision and selection policy
 
 [ADR 0052](../decisions/0052-progressive-inventory-package-tracking.md) provides three progressive

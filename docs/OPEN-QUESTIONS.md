@@ -131,6 +131,17 @@ risk; may the creator submit, may an approver also issue, how many independent a
 needed, and what happens on rejection or draft revision? Today any authenticated caller reaching
 the endpoint can create and issue a PO; DRAFT → ISSUED has no approval fact.
 
+### Q29 — Boolean query-string filters
+**Blocks:** Nothing; it is a recurring per-screen workaround
+
+The generated client serialises a boolean query parameter as the literal string `"true"`, which
+Laravel's `boolean` rule rejects with a 422 (it accepts only `1`/`0`/`true`/`false` as real
+booleans, not strings). The physical-count form, its detail screen and the Material Preview each
+drop `filter[active]=true` and filter inactive rows in the browser instead, so a screen that
+forgets shows an empty picker. Where should this be fixed once: a request-normalising middleware
+that maps `"true"`/`"false"` query strings to booleans on the API, or the client's query
+serialisation (which orval generates, so it cannot be hand-edited)?
+
 ---
 
 ## Answered

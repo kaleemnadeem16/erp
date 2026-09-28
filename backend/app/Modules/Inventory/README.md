@@ -54,6 +54,11 @@ movement and valuation, built in Phase 2.
   exact version with its own expiry, executed at most once
 - `StockLayerConsumption` — permanent link from each layer allocation to the move it served, the
   FIFO/SPECIFIC replay foundation ADR 0040 depends on
+- `QueryStockAvailability` (with `StockBalance`, `StockAvailabilitySnapshot`, `InventoryScope`) — the
+  read-only, single-statement availability read model Estimating's inventory proposal consumes
+  (ADR 0058): open layers per item/location/batch, QA hold attributed to the layer it sits in,
+  location-type usability (`LocationType::holdsUsableStock()`), and defensible cost evidence. It
+  locks and posts nothing; see [inventory-packages.md](../../../../docs/domain/inventory-packages.md#first-implementation-quantity_only-availability-and-allocation)
 
 ## Does not own
 
