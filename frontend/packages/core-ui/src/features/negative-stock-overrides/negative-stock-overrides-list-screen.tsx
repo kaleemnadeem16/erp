@@ -54,7 +54,9 @@ export function NegativeStockOverridesListScreen() {
     'filter[authorisation_mode]': (query.filters.authorisation_mode as (typeof AUTHORISATION_MODES)[number] | undefined) || undefined,
     'filter[search]': query.filters.search || undefined,
     sort: query.sort as NegativeStockOverrideRequestsIndexSort | undefined,
-    include: 'item',
+    // approval/review are what the status column derives its label from (see overrideStatus): without
+    // them every request reads as pending, whatever has actually been decided or reviewed.
+    include: 'item,approval,review',
     per_page: query.perPage,
     page: query.page,
   });

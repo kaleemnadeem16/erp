@@ -161,9 +161,10 @@ docker compose exec app php artisan demo:seed
 The command is idempotent: stable codes (or, where a screen has no natural code, a marker like
 `GoodsReceipt.idempotency_key` or `PhysicalCount.reference`) update or skip the records owned by
 the demo dataset without deleting unrelated local records. Its orchestrator calls small seeders
-for Foundation, Accounting, Parties, Inventory, Pack Conversions, Purchasing, Stock and Estimating
-in dependency order (Pack Conversions before Purchasing because some item-supplier rows buy in a
-pack unit); a new module adds its own seeder to that list. Both the command and every module seeder
+for Foundation, Accounting, Parties, Inventory, Pack Conversions, Purchasing, Stock, the
+negative-stock lifecycle and Estimating in dependency order (Pack Conversions before Purchasing
+because some item-supplier rows buy in a pack unit; the lifecycle after Stock because it reuses
+that seeder's actors and resting policy); a new module adds its own seeder to that list. Both the command and every module seeder
 refuse to run unless Laravel's environment is `local` or `testing`, so a normal production
 `db:seed` cannot install demo data. The demo login defaults to `user@erp.x1techs.com` /
 `!User@Erp@123`; local environment variables `DEMO_USER_EMAIL`, `DEMO_USER_PASSWORD` and
