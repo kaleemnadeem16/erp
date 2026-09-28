@@ -17,6 +17,7 @@ use App\Modules\Inventory\Models\Item;
 use App\Support\Concerns\AppliesApiQuery;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -91,8 +92,9 @@ class ItemController extends Controller
         return new ItemResource($update($item, $request->validated()));
     }
 
-    public function destroy(Item $item, ArchiveItem $archive): Response
+    public function destroy(Request $request, Item $item, ArchiveItem $archive): Response
     {
+        abort_unless($request->user()?->can('inventory.item.manage'), 403);
         $archive($item);
 
         return response()->noContent();

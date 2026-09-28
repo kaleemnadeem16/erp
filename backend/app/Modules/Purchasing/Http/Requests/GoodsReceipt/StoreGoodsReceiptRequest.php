@@ -11,7 +11,7 @@ class StoreGoodsReceiptRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('purchasing.goods-receipt.create') === true;
     }
 
     /** @return array<string, mixed> */

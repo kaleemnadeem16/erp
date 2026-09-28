@@ -42,7 +42,7 @@ final class CommitInventoryCutoverOpenPurchaseOrders
             throw new DomainInvariantException('The actor is not permitted to commit cutover purchase orders.', 'status');
         }
 
-        return DB::transaction(function () use ($cutover): Collection {
+        return DB::transaction(function () use ($actor, $cutover): Collection {
             $cutover = InventoryCutover::query()->whereKey($cutover->id)->lockForUpdate()->firstOrFail();
             if ($cutover->status !== InventoryCutoverStatus::Approved) {
                 throw new DomainInvariantException('Only an approved cutover can materialise open purchase orders.', 'status');
@@ -120,7 +120,7 @@ final class CommitInventoryCutoverOpenPurchaseOrders
                         ];
                     })->all(),
                 ]);
-                ($this->issue)($order);
+                ($this->issue)($order, $actor);
             }
 
             foreach ($pending as $batch) {

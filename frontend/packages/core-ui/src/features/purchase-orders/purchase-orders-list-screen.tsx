@@ -48,6 +48,7 @@ import { useColumnVisibilityPreference } from "../../lib/use-column-visibility-p
 import { useListViewPreference } from "../../lib/use-view-preference";
 import { purchaseOrderColumns } from "./purchase-order-columns";
 import { hasUnfinishedPurchaseOrder } from "./purchase-order-form";
+import { usePermission } from "../../hooks/use-permission";
 
 interface PurchaseOrderFilters {
   search: string;
@@ -59,6 +60,7 @@ interface PurchaseOrderFilters {
 const STATUSES = ["DRAFT", "ISSUED", "CLOSED", "CANCELLED"] as const;
 
 export function PurchaseOrdersListScreen() {
+  const mayCreate = usePermission("purchasing.purchase-order.create");
   const navigate = useNavigate();
   const { search } = useLocation();
   const query = useListQueryState<PurchaseOrderFilters>({
@@ -146,14 +148,14 @@ export function PurchaseOrdersListScreen() {
       <PageHeader
         title="Purchase Orders"
         description="Raise supplier commitments, track their lifecycle and continue into receiving."
-        primaryAction={{
+        primaryAction={mayCreate ? {
           // Re-read on every render (closing the sheet navigates, which re-renders
           // this list) so the button reflects work left in the sheet.
           label: hasUnfinishedPurchaseOrder() ? "Continue new purchase order" : "New purchase order",
           // Keep the query string: the list stays mounted behind the create
           // sheet and reads its filters/search from the URL.
           onClick: () => navigate({ pathname: "/purchase-orders/new", search }),
-        }}
+        } : undefined}
       />
       <div className="flex flex-wrap items-center gap-2">
         <Input

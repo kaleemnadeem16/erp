@@ -91,19 +91,22 @@ class PurchaseOrderController extends Controller
         return new PurchaseOrderResource($update($purchaseOrder, $request->validated()));
     }
 
-    public function issue(PurchaseOrder $purchaseOrder, IssuePurchaseOrder $issue): PurchaseOrderResource
+    public function issue(Request $request, PurchaseOrder $purchaseOrder, IssuePurchaseOrder $issue): PurchaseOrderResource
     {
-        return new PurchaseOrderResource($issue($purchaseOrder));
+        abort_unless($request->user()?->can('purchasing.purchase-order.issue'), 403);
+
+        return new PurchaseOrderResource($issue($purchaseOrder, $request->user()));
     }
 
     public function cancel(CancelPurchaseOrderRequest $request, PurchaseOrder $purchaseOrder, CancelPurchaseOrder $cancel): PurchaseOrderResource
     {
-        return new PurchaseOrderResource($cancel($purchaseOrder, $request->string('reason')->toString()));
+        return new PurchaseOrderResource($cancel($purchaseOrder, $request->string('reason')->toString(), $request->user()));
     }
 
-    public function shortClose(PurchaseOrderLine $purchaseOrderLine, ShortClosePurchaseOrderLine $shortClose): PurchaseOrderLineResource
+    public function shortClose(Request $request, PurchaseOrderLine $purchaseOrderLine, ShortClosePurchaseOrderLine $shortClose): PurchaseOrderLineResource
     {
-        $line = $shortClose($purchaseOrderLine);
+        abort_unless($request->user()?->can('purchasing.purchase-order.short-close'), 403);
+        $line = $shortClose($purchaseOrderLine, $request->user());
 
         return new PurchaseOrderLineResource(PurchaseOrderLine::query()->withReceiptProgress()->findOrFail($line->id));
     }

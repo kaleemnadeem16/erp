@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Purchasing\Actions;
 
 use App\Exceptions\DomainInvariantException;
+use App\Models\User;
 use App\Modules\Purchasing\Models\GoodsReceiptLine;
 use App\Modules\Purchasing\Models\QualityDisposition;
 use App\Modules\Purchasing\Support\GoodsReceiptStatus;
@@ -17,6 +18,11 @@ final class PostQualityDisposition
     /** @param array{disposition:string, qty:string, reason:string, source_disposition_id?:int|null} $attributes */
     public function __invoke(GoodsReceiptLine $line, array $attributes, int $actorId, ?string $idempotencyKey = null): QualityDisposition
     {
+        $actor = User::withoutGlobalScopes()->findOrFail($actorId);
+        if (! $actor->can('purchasing.quality-disposition.post')) {
+            throw new DomainInvariantException('The actor is not permitted to post a quality disposition.', 'disposed_by');
+        }
+
         return DB::transaction(function () use ($line, $attributes, $actorId, $idempotencyKey): QualityDisposition {
             $sourceDispositionId = $attributes['source_disposition_id'] ?? null;
 

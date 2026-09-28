@@ -47,9 +47,12 @@ owner of cutover orchestration and finalisation.
 ## Authorisation
 
 Purchasing policy management and policy-history viewing use separate permissions; cutover commit
-checks `purchasing.cutover.commit`. Ordinary item-supplier, PO, receipt and QA endpoints are
-currently authenticated but do not yet have a complete capability permission matrix. PO approval
-does not exist: DRAFT moves directly to ISSUED. Before adding it, follow
+checks `purchasing.cutover.commit`. Operational writes are split into
+`purchasing.item-supplier.manage`, `purchasing.purchase-order.create` (draft create/update),
+`.issue`, `.cancel`, `.short-close`, `purchasing.goods-receipt.create`, `.post`, `.reverse`, and
+`purchasing.quality-disposition.post`. Index/show remain authenticated reference and operational
+reads; the SPA gates each matching write control, while consequential Actions repeat the check for
+non-HTTP callers. PO approval does not exist: DRAFT moves directly to ISSUED. Before adding it, follow
 [authorization.md](../../../../docs/architecture/authorization.md) and
 [approval-workflows.md](../../../../docs/architecture/approval-workflows.md); create/edit,
 submit, approve, issue, receive, inspect, reverse and history access must each be considered.

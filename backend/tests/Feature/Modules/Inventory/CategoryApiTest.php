@@ -7,17 +7,43 @@ use App\Models\User;
 use App\Modules\Inventory\Models\Category;
 use App\Modules\Inventory\Models\Item;
 use App\Support\CompanyContext;
+use Illuminate\Contracts\Auth\Authenticatable as UserContract;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Tests\Support\PermissionedActor;
 use Tests\TestCase;
 
 class CategoryApiTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function actingAs(UserContract $user, $guard = null): static
+    {
+        PermissionedActor::grant($user, ['inventory.category.manage']);
+
+        return parent::actingAs($user, $guard);
+    }
+
+    protected function actingAsUnprivileged(UserContract $user, $guard = null): static
+    {
+        return parent::actingAs($user, $guard);
+    }
+
     public function test_it_requires_authentication(): void
     {
         $this->getJson('/api/v1/categories')->assertUnauthorized();
+    }
+
+    public function test_category_writes_require_manage_permission_but_reads_remain_available(): void
+    {
+        $user = User::factory()->create();
+        $category = Category::create(['code' => 'READ', 'name' => 'Readable']);
+
+        $this->actingAsUnprivileged($user)->getJson('/api/v1/categories')->assertOk();
+        $this->getJson("/api/v1/categories/{$category->id}")->assertOk();
+        $this->postJson('/api/v1/categories', ['code' => 'DENIED', 'name' => 'Denied'])->assertForbidden();
+        $this->patchJson("/api/v1/categories/{$category->id}", ['name' => 'Denied'])->assertForbidden();
+        $this->deleteJson("/api/v1/categories/{$category->id}")->assertForbidden();
     }
 
     public function test_a_category_can_be_created_and_fetched(): void
