@@ -8,7 +8,7 @@ class CancelPurchaseOrderRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('purchasing.purchase-order.cancel') === true;
     }
 
     /** @return array<string, mixed> */

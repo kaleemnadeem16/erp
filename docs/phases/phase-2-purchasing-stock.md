@@ -408,6 +408,11 @@ purchasing and inventory operating UI; that remaining boundary is listed below:
       manage permission — a user who can edit a policy isn't automatically allowed to see who
       changed it before; both screens render "you don't have permission" rather than a misleading
       empty list when that permission is missing.
+- [x] Retrofit operational authorisation across Items/Categories and Purchasing: reference reads
+      stay available, while item/category maintenance, supplier relationships, PO draft/issue/
+      cancel/short-close, receipt create/post/reverse and QA disposition posting each use their
+      registered capability, matching SPA control gating and non-HTTP checks on consequential
+      Actions. Deployment must grant intended users/roles before enforcement goes live.
 - [x] ~~Replace temporary raw-ID controls in cutover screens when the required lookup endpoints
       exist~~ — done 2026-09-26. `inventory-cutover-detail-screen.tsx`'s negative-opening
       exceptions table rendered a bare `location_id`; `item` resolution sat right next to it but

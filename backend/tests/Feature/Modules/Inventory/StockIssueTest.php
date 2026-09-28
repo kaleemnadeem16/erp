@@ -417,7 +417,7 @@ class StockIssueTest extends PurchaseOrderFoundationTest
             'ordered_qty' => $qty, 'ordered_stock_qty' => $qty,
             'line_amount' => (string) ((int) $qty * 10).'.0000', 'qa_required' => $qaRequired,
         ]));
-        app(IssuePurchaseOrder::class)($order);
+        app(IssuePurchaseOrder::class)($order, $this->purchasingActor());
 
         return [$order->refresh(), $item->refresh(), $uom];
     }

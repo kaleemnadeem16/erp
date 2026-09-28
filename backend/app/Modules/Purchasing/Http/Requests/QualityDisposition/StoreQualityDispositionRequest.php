@@ -13,7 +13,7 @@ class StoreQualityDispositionRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('purchasing.quality-disposition.post') === true;
     }
 
     /** @return array<string, mixed> */

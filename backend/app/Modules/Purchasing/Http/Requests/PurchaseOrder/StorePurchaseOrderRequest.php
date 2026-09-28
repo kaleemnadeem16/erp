@@ -14,7 +14,7 @@ class StorePurchaseOrderRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('purchasing.purchase-order.create') === true;
     }
 
     /** @return array<string, mixed> */

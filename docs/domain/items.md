@@ -182,6 +182,12 @@ Item-supplier list/detail/create/edit screens expose the approved-supplier catal
 form deliberately locks `item_id` and `supplier_account_id`, matching the immutable relationship
 identity rule below, while allowing sourcing terms to change.
 
+Items and Categories are company-wide reference data: authenticated users may list and view them
+so cross-module selectors keep working. Write controls and endpoints require
+`inventory.item.manage` and `inventory.category.manage` respectively. These capabilities do not
+decide whether GL-account IDs should be visible; that field-level Finance boundary remains tracked
+separately in the authorisation retrofit backlog.
+
 ## Landmines
 
 **Codes and case sensitivity.** Postgres is case-sensitive, so `PIG-001` and `pig-001` are

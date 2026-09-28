@@ -14,7 +14,7 @@ class UpdateCategoryRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('inventory.category.manage') === true;
     }
 
     /**

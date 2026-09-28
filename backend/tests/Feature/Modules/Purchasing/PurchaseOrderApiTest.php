@@ -27,6 +27,21 @@ use Spatie\Permission\PermissionRegistrar;
 
 class PurchaseOrderApiTest extends PurchaseOrderFoundationTest
 {
+    public function test_purchase_order_writes_require_their_capabilities_but_reads_remain_available(): void
+    {
+        [$order, $item, $uom] = $this->makeOrder();
+        $line = $order->lines()->create($this->lineAttributes($order, $item, $uom));
+        $user = User::factory()->create();
+
+        $this->actingAsUnprivileged($user)->getJson('/api/v1/purchase-orders')->assertOk();
+        $this->getJson("/api/v1/purchase-orders/{$order->id}")->assertOk();
+        $this->postJson('/api/v1/purchase-orders', [])->assertForbidden();
+        $this->patchJson("/api/v1/purchase-orders/{$order->id}", [])->assertForbidden();
+        $this->postJson("/api/v1/purchase-orders/{$order->id}/issue")->assertForbidden();
+        $this->postJson("/api/v1/purchase-orders/{$order->id}/cancel", ['reason' => 'Denied'])->assertForbidden();
+        $this->postJson("/api/v1/purchase-order-lines/{$line->id}/short-close")->assertForbidden();
+    }
+
     public function test_purchasing_settings_are_configurable_and_purchase_order_queries_are_validated(): void
     {
         $user = User::factory()->create();

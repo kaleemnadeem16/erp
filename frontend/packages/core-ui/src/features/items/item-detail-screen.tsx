@@ -11,8 +11,10 @@ import { DetailPageLayout, DetailSection } from '../../components/detail/detail-
 import { DetailField } from '../../components/detail/detail-field';
 import { DetailPrintLayout, PrintTrigger, useQuickPrint, type DetailPrintSection } from '../../components/print';
 import { getApiErrorMessage } from '../../lib/api-errors';
+import { usePermission } from '../../hooks/use-permission';
 
 export function ItemDetailScreen() {
+  const mayManage = usePermission('inventory.item.manage');
   const params = useParams<{ id: string }>();
   const navigate = useNavigate();
   const itemId = Number(params.id);
@@ -111,7 +113,7 @@ export function ItemDetailScreen() {
         actions={
           <>
             <PrintTrigger onPrint={() => print()} />
-            <Button variant="outline" size="sm" onClick={handleToggleStatus} disabled={updateStatus.isPending}>
+            {mayManage && <Button variant="outline" size="sm" onClick={handleToggleStatus} disabled={updateStatus.isPending}>
               {item.status === 'ACTIVE' ? (
                 <>
                   <Archive className="h-4 w-4" />
@@ -123,13 +125,13 @@ export function ItemDetailScreen() {
                   Activate
                 </>
               )}
-            </Button>
-            <Button asChild size="sm">
+            </Button>}
+            {mayManage && <Button asChild size="sm">
               <Link to={`/items/${item.id}/edit`}>
                 <Pencil className="h-4 w-4" />
                 Edit
               </Link>
-            </Button>
+            </Button>}
           </>
         }
       />
