@@ -160,6 +160,16 @@ Every endpoint must produce a correct OpenAPI entry. Where Scramble cannot infer
 shape, add explicit types — do not leave it to guess. CI regenerates and fails on diff, so a
 missing type surfaces as a build failure rather than an `any` in the frontend.
 
+**The models barrel is rewritten after generation.** Orval writes `generated/models/index.ts` as one
+`export * from` line per schema — over a thousand. `export *` is a value re-export a browser cannot
+skip, so in dev (Vite serves each file as its own module) every cold page load fetched every schema
+file, although about 1,280 of them are pure types that compile to empty modules: roughly 1,500 requests
+per load, which made the dev app crawl whenever the disk was busy. `scripts/slim-models-barrel.mjs`
+(orval's `afterAllFilesWrite` hook) rewrites the barrel so pure-type schemas use `export type *` — erased
+at build time — and only the ~80 that export a runtime value (enum-like constants) keep `export *`.
+The names importable from `@erp/core-api` are unchanged; a cold dev load now makes ~350 requests, and
+the production build transforms ~1,270 fewer modules. Don't hand-edit the barrel: regenerate.
+
 ## Related
 
 - [code-structure.md](code-structure.md)

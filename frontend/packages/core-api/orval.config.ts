@@ -26,5 +26,10 @@ export default defineConfig({
         },
       },
     },
+    // The models barrel would otherwise `export *` over a thousand files and make dev load them all —
+    // see the script for why. Runs after prettier, so the rewrite is what ends up committed.
+    hooks: {
+      afterAllFilesWrite: 'node scripts/slim-models-barrel.mjs',
+    },
   },
 });
