@@ -9,6 +9,7 @@ import { PageHeader } from '../../components/page/page-header';
 import { DetailPageLayout, DetailSection } from '../../components/detail/detail-page-layout';
 import { DetailField } from '../../components/detail/detail-field';
 import { formatDateTime } from '../../lib/format-date';
+import { formatLocation } from '../../lib/format-location';
 
 export function StockMoveDetailScreen() {
   const params = useParams<{ id: string }>();
@@ -51,8 +52,8 @@ export function StockMoveDetailScreen() {
         <DetailSection title="Movement">
           <DetailField label="Moved at">{formatDateTime(move.moved_at)}</DetailField>
           <DetailField label="Source">{`${move.source_type} #${move.source_id}`}</DetailField>
-          <DetailField label="From location">{move.from_location?.code}</DetailField>
-          <DetailField label="To location">{move.to_location?.code}</DetailField>
+          <DetailField label="From location">{formatLocation(move.from_location)}</DetailField>
+          <DetailField label="To location">{formatLocation(move.to_location)}</DetailField>
           <DetailField label="Quantity">{move.qty}</DetailField>
           <DetailField label="Unit cost">{`${move.unit_cost} (fx ${move.fx_rate})`}</DetailField>
           <DetailField label="Batch">{move.batch?.code}</DetailField>

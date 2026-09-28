@@ -24,6 +24,7 @@ import {
   FormMessage,
 } from "../../components/ui/form";
 import { DetailSection } from "../../components/detail/detail-page-layout";
+import { formatLocationOption } from "../../lib/format-location";
 
 const decimal = z
   .string()
@@ -363,7 +364,7 @@ export function GoodsReceiptForm({
                           onValueChange={field.onChange}
                           options={locations.map((location) => ({
                             value: String(location.id),
-                            label: `${location.code} — ${location.name}`,
+                            label: formatLocationOption(location),
                           }))}
                           placeholder="Select location"
                           searchPlaceholder="Search locations…"

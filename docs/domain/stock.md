@@ -216,9 +216,9 @@ quantity, value and average do not), a cross-pool AVCO transfer (value leaves at
 average and the destination re-averages, company value conserved) and a FIFO transfer (a destination
 layer per source-cost component, each keeping its source layer's cost and receipt date). Serial
 (SPECIFIC) transfers are not seeded because the only serial item is shared with other scenarios. Seeing
-them also showed the ledger's From/To columns read "stock → stock", since both warehouses code their
-location `stock` and most screens label a location by its code alone — recorded as
-[Q30](../OPEN-QUESTIONS.md#q30--location-labels-are-ambiguous-across-warehouses).
+them also showed the ledger reading "stock → stock" (both warehouses code their location `stock`);
+locations are now named `warehouse / location` everywhere, per
+[ADR 0059](../decisions/0059-name-a-location-as-warehouse-and-location.md).
 
 ### Historical retention for replay
 

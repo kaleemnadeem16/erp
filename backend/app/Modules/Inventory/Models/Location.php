@@ -30,6 +30,17 @@ class Location extends Model
 
     protected $guarded = ['id'];
 
+    /**
+     * A location's code is unique only within its warehouse (two warehouses may both have a `stock`
+     * location), so a location can only be named unambiguously as warehouse + location. Always
+     * carrying the warehouse means every resource that embeds a location — moves, layers, counts,
+     * recalculations, overrides, cutover exceptions — can show that, in one extra eager-loaded
+     * query for a whole result set rather than one lazy query per row.
+     *
+     * @var list<string>
+     */
+    protected $with = ['warehouse'];
+
     protected static function booted(): void
     {
         static::saving(function (Location $location): void {

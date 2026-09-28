@@ -15,7 +15,9 @@ movement and valuation, built in Phase 2.
   discriminator (`RAW`/`SEMI_FINISHED`/`FINISHED`/`SERVICE`/`LABOUR`/`PLANT`) rather than
   separate product/service/resource tables ([Phase 1](../../../../docs/phases/phase-1-master-data.md))
 - `Warehouse`, hierarchical `Location`, and warehouse location roles — Phase 2 stock custody
-  foundations with SIMPLE/STRUCTURED company modes
+  foundations with SIMPLE/STRUCTURED company modes. A location code is unique only within its
+  warehouse, so `Location` always eager-loads its warehouse and every resource embedding one carries
+  it ([ADR 0059](../../../../docs/decisions/0059-name-a-location-as-warehouse-and-location.md))
 - `StockMove`, `StockLayer`, `StockBatch`, `AvcoPool` and `StockValuationEntry` — the immutable
   movement, traceability and valuation-feed foundation; receipts, issues, shortage settlement and
   physical transfers are live for AVCO/FIFO/SPECIFIC

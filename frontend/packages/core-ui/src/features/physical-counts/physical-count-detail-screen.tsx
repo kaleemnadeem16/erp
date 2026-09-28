@@ -26,6 +26,7 @@ import { getApiErrorMessage } from '../../lib/api-errors';
 import { formatDateTime } from '../../lib/format-date';
 import { cn } from '../../lib/utils';
 import { useAuthStore } from '../../stores/auth-store';
+import { formatLocation } from '../../lib/format-location';
 
 const STATUS_VARIANT: Record<string, 'secondary' | 'success' | 'destructive'> = {
   DRAFT: 'secondary',
@@ -241,7 +242,7 @@ export function PhysicalCountDetailScreen() {
                     return (
                       <TableRow key={line.id}>
                         <TableCell>{line.item ? `${line.item.code} — ${line.item.name}` : line.item_id}</TableCell>
-                        <TableCell>{line.location?.code ?? line.location_id}</TableCell>
+                        <TableCell>{formatLocation(line.location) ?? line.location_id}</TableCell>
                         <TableCell>{line.batch_id ? `Batch #${line.batch_id}` : (line.serial_no ?? '—')}</TableCell>
                         <TableCell className="text-right tabular-nums">{line.book_qty}</TableCell>
                         <TableCell className="text-right">
@@ -328,7 +329,7 @@ export function PhysicalCountDetailScreen() {
                   placeholder="Select a location"
                   searchPlaceholder="Search locations…"
                   emptyText="No locations found."
-                  options={locations.map((location) => ({ value: String(location.id), label: location.code }))}
+                  options={locations.map((location) => ({ value: String(location.id), label: formatLocation(location) }))}
                 />
               </div>
               <div className="flex flex-col gap-1">

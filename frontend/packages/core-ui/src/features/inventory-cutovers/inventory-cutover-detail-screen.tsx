@@ -29,6 +29,7 @@ import { DetailField } from '../../components/detail/detail-field';
 import { getApiErrorMessage } from '../../lib/api-errors';
 import { formatDateTime } from '../../lib/format-date';
 import { useAuthStore } from '../../stores/auth-store';
+import { formatLocation } from '../../lib/format-location';
 
 const STATUS_VARIANT: Record<string, 'secondary' | 'default' | 'success' | 'destructive'> = {
   DRAFT: 'secondary',
@@ -365,7 +366,7 @@ export function InventoryCutoverDetailScreen() {
                   negativeOpenings.map((exception) => (
                     <TableRow key={exception.id}>
                       <TableCell>{exception.item ? `${exception.item.code} — ${exception.item.name}` : exception.item_id}</TableCell>
-                      <TableCell>{exception.location ? exception.location.code : exception.location_id}</TableCell>
+                      <TableCell>{formatLocation(exception.location) ?? exception.location_id}</TableCell>
                       <TableCell className="text-right tabular-nums">{exception.source_quantity}</TableCell>
                       <TableCell className="text-right tabular-nums">{exception.provisional_unit_cost}</TableCell>
                       <TableCell>
@@ -414,7 +415,7 @@ export function InventoryCutoverDetailScreen() {
                   placeholder="Select a location"
                   searchPlaceholder="Search locations…"
                   emptyText="No locations found."
-                  options={locations.map((location) => ({ value: String(location.id), label: location.code }))}
+                  options={locations.map((location) => ({ value: String(location.id), label: formatLocation(location) }))}
                 />
               </div>
               <div className="flex flex-col gap-1">

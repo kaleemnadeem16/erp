@@ -21,6 +21,7 @@ import { getApiErrorMessage } from '../../lib/api-errors';
 import { formatDateTime } from '../../lib/format-date';
 import { currentVersion, latestVersion, recalculationStatus } from './recalculation-request-columns';
 import { useAuthStore } from '../../stores/auth-store';
+import { formatLocation } from '../../lib/format-location';
 
 const RISK_VARIANT: Record<string, 'secondary' | 'destructive'> = { NORMAL_RISK: 'secondary', HIGH_RISK: 'destructive' };
 
@@ -155,8 +156,8 @@ export function RecalculationRequestDetailScreen() {
             <Badge variant={status.variant}>{status.label}</Badge>
           </DetailField>
           <DetailField label="Movement kind">{request.movement_kind}</DetailField>
-          <DetailField label="Location">{request.location?.code ?? request.location_id}</DetailField>
-          <DetailField label="Destination">{request.destination_location?.code}</DetailField>
+          <DetailField label="Location">{formatLocation(request.location) ?? request.location_id}</DetailField>
+          <DetailField label="Destination">{formatLocation(request.destination_location)}</DetailField>
           <DetailField label="Quantity">{request.qty}</DetailField>
           <DetailField label="True historical date">{formatDateTime(request.moved_at)}</DetailField>
           <DetailField label="Horizon mode">{request.horizon_mode}</DetailField>

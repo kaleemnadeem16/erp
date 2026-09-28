@@ -44,6 +44,7 @@ import { Textarea } from "../../components/ui/textarea";
 import { getApiErrorMessage } from "../../lib/api-errors";
 import { formatDateTime } from "../../lib/format-date";
 import { useFocusOnOpen } from "../../lib/use-focus-on-open";
+import { formatLocationOption } from "../../lib/format-location";
 
 const OUTCOMES = [
   "PASS",
@@ -336,7 +337,7 @@ export function GoodsReceiptDetailScreen() {
       header: "Location",
       value: (line) => {
         const location = locations.find((candidate) => candidate.id === line.location_id);
-        return location ? `${location.code} — ${location.name}` : `Location #${line.location_id}`;
+        return location ? formatLocationOption(location) : `Location #${line.location_id}`;
       },
     },
     {
@@ -542,7 +543,7 @@ export function GoodsReceiptDetailScreen() {
                   <p className="text-sm text-muted-foreground">
                     PO line #{line.purchase_order_line_id} ·{" "}
                     {location
-                      ? `${location.code} — ${location.name}`
+                      ? formatLocationOption(location)
                       : `Location #${line.location_id}`}
                   </p>
                 </div>

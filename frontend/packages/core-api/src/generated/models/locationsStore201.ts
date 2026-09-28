@@ -4,8 +4,8 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { LocationResource } from "./locationResource";
+import type { LocationsStore201Data } from "./locationsStore201Data";
 
 export type LocationsStore201 = {
-  data: LocationResource;
+  data: LocationsStore201Data;
 };
