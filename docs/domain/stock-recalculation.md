@@ -374,6 +374,17 @@ replacement version) even when they go on to fail, so a 422 can still mean serve
 the `/recalculation-requests/:id` detail screen refetches the request after every action attempt,
 not just a successful one.
 
+**Demo data.** `StockDemoSeeder` leaves one request approved but unexecuted so the demo login can
+execute it live; `RecalculationLifecycleDemoSeeder` adds one request in each remaining state on
+dedicated items, through the same Actions: an AVCO request executed (the pool converged to the approved
+counterfactual with one valuation adjustment), a FIFO request executed (a cheaper layer proved to sit
+before the one a later issue consumed, so the issue is corrected by an append-only reversal and
+replacement rather than a pool adjustment), one rejected (and so never executable) and one awaiting its
+first decision. Not seeded: a HIGH_RISK request routed to two approvers and a regeneration paused for
+review, which need repeated ledger invalidations to construct. Approvals expire after the company TTL,
+so the older seeded request stops reading "Approved — ready to execute" and shows as pending review again
+once that window has passed; the executed and rejected scenarios are unaffected.
+
 ## Related
 
 - [stock.md](stock.md) — the core movement, layer and pool model

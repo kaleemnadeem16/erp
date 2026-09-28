@@ -6,27 +6,20 @@ namespace Database\Seeders\Demo;
 
 use App\Models\Company;
 use App\Models\Currency;
-use App\Models\Uom;
 use App\Models\User;
-use App\Modules\Accounting\Models\ChartOfAccount;
-use App\Modules\Accounting\Support\AccountType;
 use App\Modules\Inventory\Actions\DecideNegativeStockOverride;
 use App\Modules\Inventory\Actions\PostInventoryMovement;
 use App\Modules\Inventory\Actions\RequestNegativeStockOverride;
 use App\Modules\Inventory\Actions\ReviewNegativeStockOverride;
-use App\Modules\Inventory\Models\Category;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Models\Location;
 use App\Modules\Inventory\Models\NegativeStockOverrideRequest;
 use App\Modules\Inventory\Models\Warehouse;
-use App\Modules\Inventory\Support\AvcoPoolScope;
-use App\Modules\Inventory\Support\ItemTracking;
-use App\Modules\Inventory\Support\ItemType;
 use App\Modules\Inventory\Support\NegativeStockApprovalDecision;
 use App\Modules\Inventory\Support\NegativeStockReviewOutcome;
-use App\Modules\Inventory\Support\ValuationMethod;
 use App\Support\PermissionRegistry;
 use Database\Seeders\Demo\Concerns\EnsuresDemoEnvironment;
+use Database\Seeders\Demo\Concerns\SeedsDedicatedStockItems;
 use Illuminate\Database\Seeder;
 
 /**
@@ -68,6 +61,7 @@ use Illuminate\Database\Seeder;
 final class NegativeStockLifecycleDemoSeeder extends Seeder
 {
     use EnsuresDemoEnvironment;
+    use SeedsDedicatedStockItems;
 
     private const SOURCE = 'DEMO_NEG_STOCK';
 
@@ -195,32 +189,12 @@ final class NegativeStockLifecycleDemoSeeder extends Seeder
 
     private function item(string $code, string $name, bool $purchasable, string $description): Item
     {
-        $category = Category::query()->where('code', 'demo-solvents')->firstOrFail();
-        $item = Item::withTrashed()->updateOrCreate(
-            ['code' => $code],
-            [
-                'name' => $name, 'description' => $description, 'type' => ItemType::Raw,
-                'stock_uom_id' => Uom::query()->where('code', 'kg')->firstOrFail()->id, 'is_stocked' => true,
-                'is_purchasable' => $purchasable, 'is_sellable' => false,
-                'valuation_method' => ValuationMethod::Avco, 'avco_pool_scope' => AvcoPoolScope::CompanyItem,
-                'tracking' => ItemTracking::None, 'category_id' => $category->id, 'inventory_account_id' => null, 'custom_fields' => [],
-            ],
-        );
-        $item->restore();
-        if ($item->resolveInventoryAccountId() === null) {
-            $item->update(['inventory_account_id' => ChartOfAccount::query()->firstOr(fn () => ChartOfAccount::create(['code' => 'inv', 'name' => 'Inventory', 'type' => AccountType::Asset]))->id]);
-        }
-
-        return $item;
+        return $this->dedicatedStockItem($code, $name, $description, categoryCode: 'demo-solvents', purchasable: $purchasable);
     }
 
     private function receive(Item $item, string $qty, string $cost, int $sourceId): void
     {
-        app(PostInventoryMovement::class)([
-            'item_id' => $item->id, 'location_id' => $this->location->id, 'qty' => $qty, 'uom_id' => $item->stock_uom_id,
-            'moved_at' => now(), 'source_type' => 'DEMO_NEG_STOCK_RECEIPT', 'source_id' => $sourceId,
-            'unit_cost' => $cost, 'currency_id' => $this->currency->id, 'fx_rate' => '1.000000000', 'base_unit_cost' => $cost,
-        ]);
+        $this->postReceipt($item, $this->location, $this->currency, $qty, $cost, 'DEMO_NEG_STOCK_RECEIPT', $sourceId);
     }
 
     private function request(Item $item, int $sourceId, string $qty, string $reason, string $explanation): NegativeStockOverrideRequest

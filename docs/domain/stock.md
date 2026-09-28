@@ -210,6 +210,16 @@ repaired, per [ADR 0045](../decisions/0045-avco-transfer-rate-final-not-provisio
 [negative-stock.md](negative-stock.md#transfers-from-a-frozen-pool). Immutable transfer detail
 retains both pool identities for valuation and audit.
 
+**Demo data.** `StockTransfersDemoSeeder` moves stock between Main Stock and Karachi Stock, one
+dedicated item per way a transfer treats value: a same-pool AVCO transfer (custody changes, the pool's
+quantity, value and average do not), a cross-pool AVCO transfer (value leaves at the source pool's
+average and the destination re-averages, company value conserved) and a FIFO transfer (a destination
+layer per source-cost component, each keeping its source layer's cost and receipt date). Serial
+(SPECIFIC) transfers are not seeded because the only serial item is shared with other scenarios. Seeing
+them also showed the ledger's From/To columns read "stock → stock", since both warehouses code their
+location `stock` and most screens label a location by its code alone — recorded as
+[Q30](../OPEN-QUESTIONS.md#q30--location-labels-are-ambiguous-across-warehouses).
+
 ### Historical retention for replay
 
 The schema above retains enough to replay history under a *different* method than an item's

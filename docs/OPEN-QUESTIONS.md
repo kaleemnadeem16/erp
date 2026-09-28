@@ -142,6 +142,16 @@ forgets shows an empty picker. Where should this be fixed once: a request-normal
 that maps `"true"`/`"false"` query strings to booleans on the API, or the client's query
 serialisation (which orval generates, so it cannot be hand-edited)?
 
+### Q30 — Location labels are ambiguous across warehouses
+**Blocks:** Nothing; a stock transfer is unreadable in the ledger until it is decided
+
+A location's `code` is unique only within its warehouse, yet most screens label a location by that code
+alone (the stock ledger's From/To columns, the recalculation, negative-stock and cutover detail screens,
+physical-count lines). With two warehouses that each code a location `stock`, a transfer between them
+reads "stock → stock". Should the fix be a shared label helper (`warehouse / location`) plus the API
+returning the warehouse with an included location, or a schema rule making location codes unique across
+the company? Whichever it is, it belongs in one place rather than patched per screen.
+
 ---
 
 ## Answered
