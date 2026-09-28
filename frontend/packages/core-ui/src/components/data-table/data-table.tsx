@@ -16,6 +16,7 @@ import type { ListView } from '../../lib/use-view-preference';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Skeleton } from '../ui/skeleton';
 import { DataTableCards } from './data-table-cards';
+import { ListError } from './list-error';
 import { DataTablePagination } from './data-table-pagination';
 import { DataTableSortSelect } from './data-table-sort-select';
 import { DataTableViewOptions } from './data-table-view-options';
@@ -39,7 +40,12 @@ export interface DataTableProps<TRow> {
   onRowClick?: (row: TRow) => void;
   isLoading?: boolean;
   isError?: boolean;
+  /** The screen's own context for a failure, e.g. "Couldn't load warehouses." The cause is added from `error`. */
   errorMessage?: string;
+  /** The failed request's error, so the cause (no permission, bad filter, server fault, offline) can be said. */
+  error?: unknown;
+  /** Offers "Try again" in the error state. */
+  onRetry?: () => void;
   emptyMessage?: string;
   pageSizeOptions?: number[];
   /** Current table/cards rendering mode. Omit entirely to keep this table always table-only (today's behavior). */
@@ -84,6 +90,8 @@ export function DataTable<TRow>({
   isLoading,
   isError,
   errorMessage,
+  error,
+  onRetry,
   emptyMessage = 'No records found.',
   pageSizeOptions,
   view,
@@ -143,6 +151,8 @@ export function DataTable<TRow>({
           isLoading={isLoading}
           isError={isError}
           errorMessage={errorMessage}
+          error={error}
+          onRetry={onRetry}
           emptyMessage={emptyMessage}
           skeletonCount={Math.min(pagination.pageSize, 8)}
         />
@@ -178,8 +188,8 @@ export function DataTable<TRow>({
               ))
             ) : isError ? (
               <TableRow>
-                <TableCell colSpan={columnCount} className="h-24 text-center text-destructive">
-                  {errorMessage ?? 'Something went wrong loading this list.'}
+                <TableCell colSpan={columnCount}>
+                  <ListError message={errorMessage} error={error} onRetry={onRetry} />
                 </TableCell>
               </TableRow>
             ) : table.getRowModel().rows.length === 0 ? (
@@ -228,7 +238,8 @@ export function DataTable<TRow>({
       </div>
       )}
 
-      <DataTablePagination table={table} pageSizeOptions={pageSizeOptions} />
+      {/* A failed load has no count to show — "0 records" would read as "nothing found". */}
+      {!isError && <DataTablePagination table={table} pageSizeOptions={pageSizeOptions} />}
     </div>
   );
 }

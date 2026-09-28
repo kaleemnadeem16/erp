@@ -142,6 +142,8 @@ export function WarehousesListScreen() {
         onRowClick={(warehouse: WarehouseResource) => navigate(`/warehouses/${warehouse.id}`)}
         isLoading={warehousesQuery.isLoading}
         isError={warehousesQuery.isError}
+        error={warehousesQuery.error}
+        onRetry={() => void warehousesQuery.refetch()}
         errorMessage="Couldn't load warehouses."
         emptyMessage="No warehouses match these filters."
         view={view}

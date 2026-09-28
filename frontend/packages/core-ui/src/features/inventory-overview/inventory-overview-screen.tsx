@@ -229,6 +229,8 @@ export function InventoryOverviewScreen() {
         onRowClick={(row: InventoryOverviewResource) => navigate(`/items/${row.item_id}`)}
         isLoading={overviewQuery.isLoading}
         isError={overviewQuery.isError}
+        error={overviewQuery.error}
+        onRetry={() => void overviewQuery.refetch()}
         errorMessage="Couldn't load the inventory overview."
         emptyMessage="No stocked items match these filters."
         view={view}

@@ -48,6 +48,8 @@ export function AssemblyGroupsListScreen() {
         onRowClick={(row: AssemblyGroupResource) => navigate(`/assembly-groups/${row.id}/edit`)}
         isLoading={result.isLoading}
         isError={result.isError}
+        error={result.error}
+        onRetry={() => void result.refetch()}
         errorMessage="Couldn't load assembly groups."
         emptyMessage="No assembly groups yet."
       />

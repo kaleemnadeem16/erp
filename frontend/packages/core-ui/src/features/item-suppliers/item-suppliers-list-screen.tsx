@@ -164,6 +164,8 @@ export function ItemSuppliersListScreen() {
         onRowClick={(row: ItemSupplierResource) => navigate(`/item-suppliers/${row.id}`)}
         isLoading={result.isLoading}
         isError={result.isError}
+        error={result.error}
+        onRetry={() => void result.refetch()}
         errorMessage="Couldn't load item suppliers."
         emptyMessage="No relationships match these filters."
         view={view}

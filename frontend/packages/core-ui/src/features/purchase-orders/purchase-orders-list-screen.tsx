@@ -237,6 +237,8 @@ export function PurchaseOrdersListScreen() {
         }
         isLoading={ordersQuery.isLoading}
         isError={ordersQuery.isError}
+        error={ordersQuery.error}
+        onRetry={() => void ordersQuery.refetch()}
         errorMessage="Couldn't load purchase orders."
         emptyMessage="No purchase orders match these filters."
         view={view}

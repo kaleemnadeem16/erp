@@ -15,6 +15,7 @@ export { useColumnVisibilityPreference } from "./lib/use-column-visibility-prefe
 // Reusable list/detail/print foundation — see docs/architecture (frontend)
 // and features/items for the reference implementation.
 export * from "./lib/list-query-state";
+export { describeLoadError, isTransientFailure, shouldRetryQuery } from "./lib/api-errors";
 export * from "./components/data-table";
 export * from "./components/print";
 export {

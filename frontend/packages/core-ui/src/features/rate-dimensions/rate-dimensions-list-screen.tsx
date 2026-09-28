@@ -49,6 +49,8 @@ export function RateDimensionsListScreen() {
         onRowClick={(row: RateDimensionResource) => navigate(`/rate-dimensions/${row.id}/edit`)}
         isLoading={result.isLoading}
         isError={result.isError}
+        error={result.error}
+        onRetry={() => void result.refetch()}
         errorMessage="Couldn't load rate dimensions."
         emptyMessage="No rate dimensions yet."
       />

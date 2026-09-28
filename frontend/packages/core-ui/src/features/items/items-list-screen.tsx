@@ -209,6 +209,8 @@ export function ItemsListScreen() {
         onRowClick={(item: ItemResource) => navigate(`/items/${item.id}`)}
         isLoading={itemsQuery.isLoading}
         isError={itemsQuery.isError}
+        error={itemsQuery.error}
+        onRetry={() => void itemsQuery.refetch()}
         errorMessage="Couldn't load items."
         emptyMessage="No items match these filters."
         view={view}

@@ -131,14 +131,14 @@ risk; may the creator submit, may an approver also issue, how many independent a
 needed, and what happens on rejection or draft revision? Today any authenticated caller reaching
 the endpoint can create and issue a PO; DRAFT → ISSUED has no approval fact.
 
-### Q31 — A failed list request renders as an empty or stale list
-**Blocks:** Nothing; it is why a broken filter can go unnoticed
+### Q32 — Pickers and lookups that fail to load read as empty
+**Blocks:** Nothing; a failed lookup is indistinguishable from "no results"
 
-List screens compute their rows as `query.data?.status === 200 ? rows : []`, so a request that fails
-shows "0 records" with no sign anything went wrong — or, on some screens, keeps the previous rows. A
-rejected boolean filter (ADR 0060) sat like that across Warehouses and Item Suppliers; any 4xx or 5xx
-would look identical. Should the shared list layer (`DataTable` and the list-query state) own an error
-state that every list screen gets for free, or is each screen expected to handle it?
+List tables now say why a request failed (ADR 0061), but the pickers and lookups that feed forms do not:
+a `useXIndex` whose request fails falls back to `[]`, so a combobox offers "No items found." and a
+required field cannot be filled, with no sign that the request — not the data — is the problem. Should
+the shared `Combobox` accept an error and retry the way the table does, or should lookups fail loudly
+some other way?
 
 ---
 
@@ -154,6 +154,7 @@ Answered questions live in [decisions/](decisions/) as ADRs. See the
 <a id="q22--physical-container-granularity"></a>
 <a id="q25--material-resolution-permissions-and-sensitive-fields"></a>
 <a id="q30--location-labels-are-ambiguous-across-warehouses"></a>
+<a id="q31--a-failed-list-request-renders-as-an-empty-or-stale-list"></a>
 <a id="q29--boolean-query-string-filters"></a>
 
 Q17, Q19 and Q22 were resolved on 2026-09-26 by
@@ -187,3 +188,9 @@ Q29 was resolved on 2026-09-28 by
 [ADR 0060](decisions/0060-accept-true-and-false-for-boolean-list-filters.md): the shared list-query
 trait accepts `true` / `false` for any filter its request declares boolean, so the API no longer rejects
 what the generated client sends.
+
+Q31 was resolved on 2026-09-28 by
+[ADR 0061](decisions/0061-retry-only-transient-failures-and-say-why-a-list-failed.md): a list retries
+only transient failures, twice, and its error block names the cause and offers "Try again". The
+question's first wording ("invisible") was corrected by measurement: the error was late and vague, not
+absent.

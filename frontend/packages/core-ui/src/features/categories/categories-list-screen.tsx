@@ -123,6 +123,8 @@ export function CategoriesListScreen() {
         onRowClick={(row: CategoryResource) => navigate(`/categories/${row.id}`)}
         isLoading={result.isLoading}
         isError={result.isError}
+        error={result.error}
+        onRetry={() => void result.refetch()}
         errorMessage="Couldn't load categories."
         emptyMessage="No categories match these filters."
         view={view}

@@ -216,6 +216,8 @@ export function GoodsReceiptsListScreen() {
         }
         isLoading={receiptsQuery.isLoading}
         isError={receiptsQuery.isError}
+        error={receiptsQuery.error}
+        onRetry={() => void receiptsQuery.refetch()}
         errorMessage="Couldn't load goods receipts."
         emptyMessage="No goods receipts match these filters."
         view={view}

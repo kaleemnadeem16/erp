@@ -141,6 +141,8 @@ export function NegativeStockOverridesListScreen() {
         onRowClick={(override: NegativeStockOverrideRequestResource) => navigate(`/negative-stock-overrides/${override.id}`)}
         isLoading={overridesQuery.isLoading}
         isError={overridesQuery.isError}
+        error={overridesQuery.error}
+        onRetry={() => void overridesQuery.refetch()}
         errorMessage="Couldn't load negative-stock override requests."
         emptyMessage="No negative-stock override requests match these filters."
         view={view}

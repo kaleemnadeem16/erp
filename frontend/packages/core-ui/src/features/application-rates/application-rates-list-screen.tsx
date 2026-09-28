@@ -83,6 +83,8 @@ export function ApplicationRatesListScreen() {
         onRowClick={(row: ApplicationRateResource) => navigate(`/application-rates/${row.id}/edit`)}
         isLoading={result.isLoading}
         isError={result.isError}
+        error={result.error}
+        onRetry={() => void result.refetch()}
         errorMessage="Couldn't load application rates."
         emptyMessage="No application rates yet."
       />

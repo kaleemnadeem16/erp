@@ -4,6 +4,7 @@ export { DataTable, type DataTableProps } from './data-table';
 export { CursorDataTable, type CursorDataTableProps } from './cursor-data-table';
 export { DataTableCards, type DataTableCardsProps } from './data-table-cards';
 export { DataTablePagination } from './data-table-pagination';
+export { ListError, type ListErrorProps } from './list-error';
 export { DataTableViewOptions } from './data-table-view-options';
 export { DataTableViewToggle, type DataTableViewToggleProps } from './data-table-view-toggle';
 export { DataTableSortSelect, type DataTableSortSelectProps } from './data-table-sort-select';

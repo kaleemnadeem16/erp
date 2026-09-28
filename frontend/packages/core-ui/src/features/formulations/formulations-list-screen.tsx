@@ -49,6 +49,8 @@ export function FormulationsListScreen() {
         onRowClick={(row: FormulationResource) => navigate(`/formulations/${row.id}/edit`)}
         isLoading={result.isLoading}
         isError={result.isError}
+        error={result.error}
+        onRetry={() => void result.refetch()}
         errorMessage="Couldn't load formulations."
         emptyMessage="No formulations yet."
       />

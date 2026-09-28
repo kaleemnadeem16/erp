@@ -154,6 +154,8 @@ export function StockLedgerScreen() {
         onRowClick={(move: StockMoveResource) => navigate(`/stock-moves/${move.id}`)}
         isLoading={movesQuery.isLoading}
         isError={movesQuery.isError}
+        error={movesQuery.error}
+        onRetry={() => void movesQuery.refetch()}
         errorMessage="Couldn't load the stock ledger."
         emptyMessage="No stock movements match these filters."
         perPage={query.perPage}

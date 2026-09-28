@@ -110,6 +110,8 @@ export function InventoryCutoversListScreen() {
         onRowClick={(cutover: InventoryCutoverResource) => navigate(`/inventory-cutovers/${cutover.id}`)}
         isLoading={cutoversQuery.isLoading}
         isError={cutoversQuery.isError}
+        error={cutoversQuery.error}
+        onRetry={() => void cutoversQuery.refetch()}
         errorMessage="Couldn't load inventory cutovers."
         emptyMessage="No inventory cutovers match these filters."
         view={view}

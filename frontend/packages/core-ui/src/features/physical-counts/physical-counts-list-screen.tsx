@@ -135,6 +135,8 @@ export function PhysicalCountsListScreen() {
         onRowClick={(count: PhysicalCountResource) => navigate(`/physical-counts/${count.id}`)}
         isLoading={countsQuery.isLoading}
         isError={countsQuery.isError}
+        error={countsQuery.error}
+        onRetry={() => void countsQuery.refetch()}
         errorMessage="Couldn't load physical counts."
         emptyMessage="No physical counts match these filters."
         view={view}

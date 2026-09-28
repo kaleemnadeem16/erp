@@ -219,6 +219,8 @@ export function ResourceRatesListScreen() {
         rowActions={renderRowActions}
         isLoading={result.isLoading}
         isError={result.isError}
+        error={result.error}
+        onRetry={() => void result.refetch()}
         errorMessage={getApiErrorMessage(result.error) ?? "Couldn't load resource rates."}
         emptyMessage="No resource rates yet."
       />

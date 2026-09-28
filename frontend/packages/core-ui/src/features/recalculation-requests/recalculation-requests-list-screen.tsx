@@ -133,6 +133,8 @@ export function RecalculationRequestsListScreen() {
         onRowClick={(request: RecalculationRequestResource) => navigate(`/recalculation-requests/${request.id}`)}
         isLoading={requestsQuery.isLoading}
         isError={requestsQuery.isError}
+        error={requestsQuery.error}
+        onRetry={() => void requestsQuery.refetch()}
         errorMessage="Couldn't load stock recalculation requests."
         emptyMessage="No stock recalculation requests match these filters."
         view={view}

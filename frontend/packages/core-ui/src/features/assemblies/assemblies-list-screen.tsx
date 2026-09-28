@@ -49,6 +49,8 @@ export function AssembliesListScreen() {
         onRowClick={(row: AssemblyResource) => navigate(`/assemblies/${row.id}/edit`)}
         isLoading={result.isLoading}
         isError={result.isError}
+        error={result.error}
+        onRetry={() => void result.refetch()}
         errorMessage="Couldn't load assemblies."
         emptyMessage="No assemblies yet."
       />

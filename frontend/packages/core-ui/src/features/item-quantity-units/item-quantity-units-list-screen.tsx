@@ -300,6 +300,8 @@ export function ItemQuantityUnitsListScreen() {
         rowActions={renderRowActions}
         isLoading={result.isLoading}
         isError={result.isError}
+        error={result.error}
+        onRetry={() => void result.refetch()}
         errorMessage={getApiErrorMessage(result.error) ?? "Couldn't load pack conversions."}
         emptyMessage="No pack conversions yet."
       />

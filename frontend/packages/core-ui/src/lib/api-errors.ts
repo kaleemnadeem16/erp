@@ -21,6 +21,54 @@ export function getApiErrorMessage(error: unknown): string | null {
 }
 
 /**
+ * Whether asking again could plausibly give a different answer. A 4xx is the server's considered
+ * verdict on *this* request — no permission (403), not found (404), invalid (422) — and repeating it
+ * cannot change it, so it is definitive; a dropped connection, a server fault (5xx), a timeout (408)
+ * or a rate limit (429) may well clear up. A thrown error with no HTTP status is a network failure.
+ */
+export function isTransientFailure(error: unknown): boolean {
+  if (!isApiError(error)) return true;
+
+  return error.status === 408 || error.status === 429 || error.status >= 500;
+}
+
+/**
+ * The app-wide React Query retry rule. The library's default retries *every* failure three times with
+ * growing delays, so a definitive answer such as a 403 sat behind about ten seconds of loading
+ * skeletons — and four identical requests — before the screen admitted it had failed. Only a
+ * transient failure is retried, and only twice.
+ */
+export function shouldRetryQuery(failureCount: number, error: unknown): boolean {
+  return failureCount < 2 && isTransientFailure(error);
+}
+
+/**
+ * What to tell a person whose list or lookup failed to load. The cause decides the next step —
+ * sign in again, ask for access, change the filter, or just try again — so each gets its own words
+ * rather than one message for everything.
+ */
+export function describeLoadError(error: unknown): string {
+  if (!isApiError(error)) return "Can't reach the server. Check your connection and try again.";
+
+  switch (error.status) {
+    case 401:
+      return 'Your session has expired. Sign in again.';
+    case 403:
+      return "You don't have permission to view this.";
+    case 404:
+      return "This isn't available.";
+    case 422:
+      return `${error.body?.message ?? 'The request was not valid.'} Try changing or clearing the filters.`;
+    case 429:
+      return 'Too many requests. Wait a moment and try again.';
+    default:
+      return error.status >= 500
+        ? 'The server had a problem loading this. Try again in a moment.'
+        : (error.body?.message ?? 'This could not be loaded.');
+  }
+}
+
+/**
  * The shared create/edit form convention for handling a failed submit: field
  * errors from a 422 (`{ message, errors: { field: [...] } }` — every
  * validation/domain-invariant response in bootstrap/app.php uses this shape)
