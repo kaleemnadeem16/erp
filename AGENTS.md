@@ -27,6 +27,7 @@ three relevant ones without pulling in the rest.
 | I'm about to… | Read |
 |---|---|
 | Build a feature | The matching file in [docs/domain/](docs/domain/) + the module's own `README.md` |
+| Design a new feature or materially extend one | [research-and-design.md](docs/architecture/research-and-design.md), then reuse any research linked by the relevant domain doc/ADR |
 | Find where something lives | The module `README.md`, then `docs/reference/` *(generated in Phase 0; does not exist yet)* |
 | Write a migration | [database.md](docs/architecture/database.md) + [multi-tenancy.md](docs/architecture/multi-tenancy.md) |
 | Add an API endpoint | [api-conventions.md](docs/architecture/api-conventions.md) |
@@ -69,6 +70,12 @@ because they mislead.
 
 7. **Write down the alternatives you rejected.** The next person's first question is always
    "why not X?" Answer it once, in the ADR.
+
+8. **Research unfamiliar ERP behaviour before fixing its shape in code.** Follow
+   [research-and-design.md](docs/architecture/research-and-design.md). Reuse a current, relevant
+   research record instead of repeating it; when no sufficient record exists, compare a small set
+   of mature ERP approaches from primary sources and preserve the synthesis in the ADR/domain docs
+   before implementing. Research is a design input, not permission to copy another product.
 
 ---
 

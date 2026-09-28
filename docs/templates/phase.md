@@ -25,6 +25,9 @@ Naming what's *out* prevents scope creep more effectively than naming what's in.
 
 ## Tasks
 
+- [ ] For each new business capability, identify and link sufficient existing research or complete
+      the bounded primary-source comparison in
+      [research-and-design.md](../architecture/research-and-design.md) before fixing its model
 - [ ] Task, small enough to finish in one sitting
 - [ ] …
 - [ ] Every new/changed action and screen has an explicit authorisation decision, registered

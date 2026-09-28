@@ -8,6 +8,7 @@ these choices were made, see [decisions/](../decisions/).
 | Doc | Covers | Read before |
 |---|---|---|
 | [invariants.md](invariants.md) | Rules that must never be broken | **Every session** |
+| [research-and-design.md](research-and-design.md) | Research reuse, primary-source comparison and recording standard | Designing a new feature or materially changing its business model |
 | [environments.md](environments.md) | The actual VMs, versions, disk, what's already running | Deploying, choosing a version |
 | [ci-cd.md](ci-cd.md) | Pipeline, runners, image retention | Touching CI or deploy |
 | [ci-runner-setup.md](ci-runner-setup.md) | Step-by-step: registering the second self-hosted runner | Setting up the ERP CI runner |

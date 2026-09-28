@@ -11,6 +11,7 @@
 | [GLOSSARY.md](GLOSSARY.md) | Domain vocabulary | A term is unfamiliar |
 | [decisions/](decisions/) | ADRs — **why** things are the way they are | Before changing a decision |
 | [architecture/](architecture/) | **How** the system is built | Before writing code |
+| [architecture/research-and-design.md](architecture/research-and-design.md) | When existing research is enough and when new ERP comparison is required | Designing a new feature or workflow |
 | [domain/](domain/) | **What** the system models | Building a feature |
 | [phases/](phases/) | Build plan, scope and acceptance criteria | Starting a phase |
 | [journeys/](journeys/) | User-facing entry-to-exit workflows and training paths | Teaching or operating the app |
@@ -38,6 +39,9 @@ architecture document means nobody trusts either.
   whole folder. Files over ~300 lines get split.
 - **Dense linking.** Every file links to its index and to related topics. No orphans.
 - **Rejected alternatives are recorded.** "Why not X?" is answered once, in an ADR.
+- **Research is recorded once and reused.** New ERP behaviour is compared with mature products
+  when no adequate project research exists; later agents follow the recorded synthesis instead of
+  repeating searches or improvising a thinner feature.
 - **Schema as annotated pseudo-DDL**, not migration code — readable, and doesn't drift.
 - Product journeys are the canonical teaching/operating source; presentations and handouts are
   derived outputs and link back to the journey revision they came from.
