@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Models\Concerns\LogsActivityWithDefaults;
+use App\Modules\Administration\Support\MemberStatus;
 use App\Support\Concerns\BelongsToCompany;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -27,6 +28,11 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'status',
+        'invited_at',
+        'invited_by',
+        'suspended_at',
+        'suspended_by',
     ];
 
     /**
@@ -62,6 +68,9 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'status' => MemberStatus::class,
+            'invited_at' => 'datetime',
+            'suspended_at' => 'datetime',
         ];
     }
 }

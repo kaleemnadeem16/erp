@@ -30,6 +30,8 @@ import {
   Sun,
   Tags,
   User,
+  UserRoundCog,
+  Users,
   Warehouse,
   Wrench,
 } from "lucide-react";
@@ -66,6 +68,7 @@ interface NavItem {
   to: string;
   label: string;
   icon: typeof LayoutDashboard;
+  permission?: string;
 }
 
 interface NavGroup {
@@ -134,6 +137,8 @@ const settingsNavGroup: NavGroup = {
     { to: "/settings/purchasing", label: "Purchasing Settings", icon: Settings },
     { to: "/settings/inventory", label: "Inventory Settings", icon: SlidersHorizontal },
     { to: "/settings/estimating", label: "Estimating Settings", icon: Calculator },
+    { to: "/settings/members", label: "Members", icon: Users, permission: "administration.member.view" },
+    { to: "/settings/roles", label: "Roles & Permissions", icon: UserRoundCog, permission: "administration.role.view" },
     { to: "/settings/account", label: "Account", icon: User },
     { to: "/settings/appearance", label: "Appearance", icon: Palette },
     { to: "/settings/printing", label: "Printing", icon: Printer },
@@ -153,6 +158,8 @@ const SETTINGS_MENU: { label: string; items: NavItem[] }[] = [
       { to: "/settings/purchasing", label: "Purchasing", icon: Settings },
       { to: "/settings/inventory", label: "Inventory", icon: SlidersHorizontal },
       { to: "/settings/estimating", label: "Estimating", icon: Calculator },
+      { to: "/settings/members", label: "Members", icon: Users, permission: "administration.member.view" },
+      { to: "/settings/roles", label: "Roles & Permissions", icon: UserRoundCog, permission: "administration.role.view" },
       { to: "/settings/printing", label: "Printing", icon: Printer },
     ],
   },
@@ -213,6 +220,15 @@ export function AppShell({ children }: { children: ReactNode }) {
   const usagePrefs = useNavUsagePrefs(pathname);
   const isDark = useIsDarkMode();
   const setAppearance = useAppearanceStore((state) => state.setUser);
+  const permissions = new Set(
+    Array.isArray(user?.permissions)
+      ? user.permissions.filter((permission): permission is string => typeof permission === "string")
+      : [],
+  );
+
+  function mayUseNavItem(item: NavItem) {
+    return !item.permission || permissions.has(item.permission);
+  }
 
   // `<main>` (not `window`) is the actual scroll container — React Router
   // doesn't reset it on navigation, so without this a route opened while
@@ -237,6 +253,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const quickLinkPaths = usagePrefs.quickLinks(["/"], MAX_QUICK_LINKS);
 
   function renderNavItem(item: NavItem) {
+    if (!mayUseNavItem(item)) return null;
+
     return (
       <div key={item.to} className="group/navitem relative flex items-center">
         <NavLink to={item.to} end={item.to === "/"} className={SIDEBAR_LINK_CLASS}>
@@ -336,7 +354,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   <div key={group.label}>
                     {index > 0 && <DropdownMenuSeparator />}
                     <DropdownMenuLabel>{group.label}</DropdownMenuLabel>
-                    {group.items.map((item) => (
+                    {group.items.filter(mayUseNavItem).map((item) => (
                       <DropdownMenuItem key={item.to} asChild>
                         <NavLink to={item.to} className="cursor-pointer gap-2">
                           <item.icon className="size-4 text-muted-foreground" />
@@ -440,7 +458,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                     {group.label}
                   </div>
                 )}
-                {group.items.map((item) => (
+                {group.items.filter(mayUseNavItem).map((item) => (
                   <NavLink
                     key={item.to}
                     to={item.to}

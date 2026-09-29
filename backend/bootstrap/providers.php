@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\Accounting\AccountingServiceProvider;
+use App\Modules\Administration\AdministrationServiceProvider;
 use App\Modules\Estimating\EstimatingServiceProvider;
 use App\Modules\Imports\ImportsServiceProvider;
 use App\Modules\Inventory\InventoryServiceProvider;
@@ -20,6 +21,7 @@ return [
     InventoryServiceProvider::class,
     PartiesServiceProvider::class,
     AccountingServiceProvider::class,
+    AdministrationServiceProvider::class,
     PurchasingServiceProvider::class,
     EstimatingServiceProvider::class,
 ];

@@ -1,5 +1,6 @@
 export { AppShell } from "./layouts/app-shell";
 export { ProtectedRoute } from "./routes/protected-route";
+export { PermissionRoute } from "./routes/permission-route";
 export { LoginScreen } from "./features/auth/login-screen";
 export { DashboardScreen } from "./features/dashboard/dashboard-screen";
 export { useAuthStore } from "./stores/auth-store";
@@ -44,6 +45,7 @@ export {
 } from "./lib/appearance";
 export { useAppearanceStore, useAppearance, useIsDarkMode } from "./stores/appearance-store";
 export { AppearanceSettingsScreen } from "./features/settings/appearance-settings-screen";
+export { AcceptInvitationScreen } from "./features/auth/accept-invitation-screen";
 export { PrintingSettingsScreen } from "./features/settings/printing-settings-screen";
 export { AccountSettingsScreen } from "./features/settings/account-settings-screen";
 export {
