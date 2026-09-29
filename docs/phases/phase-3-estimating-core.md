@@ -294,8 +294,10 @@ item here in the same commit that delivers it; add new ones as they are found.
 Stock workflows without later-state demo data (see
 [environments.md](../architecture/environments.md#development-demo-data)):
 
-- [ ] Cutover negative-opening exception — only one non-failed cutover is allowed per company and the
-      existing one is already approved, so it could appear on a fresh database only.
+- [x] Cutover negative-opening exception — added 2026-09-29 to the demo cutover in `StockDemoSeeder`: an AVCO
+      shortage whose exception is approved by a second actor and a FIFO one left requested, so committing is refused
+      until the demo login approves it. Only one non-failed cutover is allowed per company and a database that
+      already holds the earlier demo cutover keeps it unchanged, so this appears on a fresh demo database.
 - [ ] A HIGH_RISK two-approver recalculation and a regeneration paused for review.
 - [ ] Serial (SPECIFIC) stock transfers — the only serial item is shared with other scenarios.
 - [ ] Typed locations (quarantine, receiving, multi-location warehouses) — needs the demo company in

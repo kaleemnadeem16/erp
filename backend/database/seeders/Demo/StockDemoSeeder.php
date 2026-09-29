@@ -19,6 +19,8 @@ use App\Modules\Inventory\Actions\ApproveInventoryCutover;
 use App\Modules\Inventory\Actions\AttachInventoryCutoverBatch;
 use App\Modules\Inventory\Actions\CreateInventoryCutover;
 use App\Modules\Inventory\Actions\CreatePhysicalCount;
+use App\Modules\Inventory\Actions\ApproveInventoryCutoverNegativeOpening;
+use App\Modules\Inventory\Actions\RequestInventoryCutoverNegativeOpening;
 use App\Modules\Inventory\Actions\DecideRecalculationApproval;
 use App\Modules\Inventory\Actions\PostInventoryMovement;
 use App\Modules\Inventory\Actions\PostPhysicalCount;
@@ -42,6 +44,7 @@ use App\Modules\Inventory\Support\RecalculationApprovalDecision;
 use App\Modules\Inventory\Support\ValuationMethod;
 use App\Support\PermissionRegistry;
 use Database\Seeders\Demo\Concerns\EnsuresDemoEnvironment;
+use Database\Seeders\Demo\Concerns\SeedsDedicatedStockItems;
 use Illuminate\Database\Seeder;
 
 /**
@@ -68,6 +71,7 @@ use Illuminate\Database\Seeder;
 final class StockDemoSeeder extends Seeder
 {
     use EnsuresDemoEnvironment;
+    use SeedsDedicatedStockItems;
 
     public function run(): void
     {
@@ -83,11 +87,12 @@ final class StockDemoSeeder extends Seeder
         $ops = $this->seedActor('demo-ops@erp.x1techs.com', 'Demo Ops Assistant', [
             'inventory.physical_count.create', 'inventory.physical_count.count',
             'inventory.cutover.create', 'inventory.cutover.stage', 'inventory.cutover.validate',
+            'inventory.cutover.negative_opening.request',
             'inventory.negative-stock.request', 'inventory.negative-stock.override',
             'inventory.recalculation.request',
         ]);
         $supervisor = $this->seedActor('demo-supervisor@erp.x1techs.com', 'Demo Inventory Supervisor', [
-            'inventory.cutover.approve', 'inventory.recalculation.approve',
+            'inventory.cutover.approve', 'inventory.cutover.negative_opening.approve', 'inventory.recalculation.approve',
         ]);
 
         $warehouse = Warehouse::query()->where('code', 'demo-main')->firstOrFail();
@@ -95,7 +100,7 @@ final class StockDemoSeeder extends Seeder
         $currency = Currency::query()->where('code', 'PKR')->firstOrFail();
 
         $this->seedPhysicalCounts($warehouse, $location, $ops, $demoUser);
-        $this->seedInventoryCutover($location, $currency, $ops, $supervisor);
+        $this->seedInventoryCutover($location, $currency, $ops, $supervisor, $demoUser);
         $this->seedNegativeStockOverrides($location, $ops);
         $this->seedRecalculationRequest($location, $currency, $ops, $supervisor);
     }
@@ -135,7 +140,7 @@ final class StockDemoSeeder extends Seeder
         }
     }
 
-    private function seedInventoryCutover(Location $location, Currency $currency, User $creator, User $approver): void
+    private function seedInventoryCutover(Location $location, Currency $currency, User $creator, User $approver, User $owner): void
     {
         if (InventoryCutover::query()->exists()) {
             return;
@@ -157,17 +162,58 @@ final class StockDemoSeeder extends Seeder
             'uom' => 'l', 'cost' => '350.0000', 'value' => '70000.0000', 'base_value' => '70000.0000',
             'currency' => $currency->code, 'fx' => '1.000000000', 'batch' => null, 'serial' => null, 'effective' => null,
         ];
-        $batch = app(StageImportBatch::class)($profile, ImportPurpose::InventoryCutover, 'demo-cutover-thinner-open', 'legacy_stock.csv', [$row], $creator);
+        // Two more facts the predecessor closed NEGATIVE (ADR 0037's cutover-shortage exception): its books
+        // let issues run ahead of receipts. Each is on its own dedicated item so nothing else is disturbed.
+        $avcoShort = $this->dedicatedStockItem(
+            'demo-cutover-avco-short', 'Epoxy Hardener (cutover shortage, AVCO)',
+            'Dedicated to the cutover negative-opening demo. The legacy system closed 25 kg NEGATIVE; the shortage is recorded and approved as an exception, and only opens as a live cutover shortage when the cutover is committed.',
+        );
+        $fifoShort = $this->dedicatedStockItem(
+            'demo-cutover-fifo-short', 'Gloss Thinner (cutover shortage, FIFO)',
+            'Dedicated to the cutover negative-opening demo. The legacy system closed 10 L NEGATIVE; its exception is requested but not yet approved, so committing the cutover is refused until someone approves it.',
+            method: ValuationMethod::Fifo, scope: null, uomCode: 'l',
+        );
+        $shortRows = [
+            [
+                'source_id' => 'LEGACY-HARDENER-NEG', 'sku' => $avcoShort->code, 'warehouse' => 'demo-main', 'location' => 'stock',
+                'method' => 'AVCO', 'scope' => 'COMPANY_ITEM', 'pool' => $avcoShort->code, 'qty' => '-25.0000',
+                'uom' => 'kg', 'cost' => '120.0000', 'value' => '-3000.0000', 'base_value' => '-3000.0000',
+                'currency' => $currency->code, 'fx' => '1.000000000', 'batch' => null, 'serial' => null, 'effective' => null,
+            ],
+            [
+                'source_id' => 'LEGACY-GLOSS-NEG', 'sku' => $fifoShort->code, 'warehouse' => 'demo-main', 'location' => 'stock',
+                'method' => 'FIFO', 'scope' => null, 'pool' => null, 'qty' => '-10.0000',
+                'uom' => 'l', 'cost' => '90.0000', 'value' => '-900.0000', 'base_value' => '-900.0000',
+                'currency' => $currency->code, 'fx' => '1.000000000', 'batch' => null, 'serial' => null, 'effective' => null,
+            ],
+        ];
+        $batch = app(StageImportBatch::class)($profile, ImportPurpose::InventoryCutover, 'demo-cutover-thinner-open', 'legacy_stock.csv', [$row, ...$shortRows], $creator);
         $batch = app(ValidateImportBatch::class)($batch);
 
         $cutover = app(CreateInventoryCutover::class)([
             'mode' => 'OPENING_STATE', 'cutover_at' => $cutoverAt->toIso8601String(),
             'source_system' => 'Legacy ERP (Demo)',
-            'target_valuation_policy' => [$item->code => ['method' => 'FIFO']],
-            'control_quantity' => '200.0000', 'control_value' => '70000.0000', 'base_control_value' => '70000.0000',
+            'target_valuation_policy' => [
+                $item->code => ['method' => 'FIFO'],
+                $avcoShort->code => ['method' => 'AVCO', 'scope' => 'COMPANY_ITEM'],
+                $fifoShort->code => ['method' => 'FIFO'],
+            ],
+            'control_quantity' => '165.0000', 'control_value' => '66100.0000', 'base_control_value' => '66100.0000',
         ], $creator);
         app(AttachInventoryCutoverBatch::class)($cutover, $batch, $creator);
         app(ValidateInventoryCutover::class)($cutover->refresh(), $creator);
+
+        // The AVCO shortage is requested by the operator and approved by a different actor; the FIFO one is
+        // left REQUESTED, so the demo login can approve it live — commit refuses until it does.
+        $cutover = $cutover->refresh();
+        $request = fn (Item $short, string $cost, string $reason, string $plan) => app(RequestInventoryCutoverNegativeOpening::class)($cutover, [
+            'item_id' => $short->id, 'location_id' => $location->id, 'batch_no' => null, 'provisional_unit_cost' => $cost,
+            'reason' => $reason, 'supporting_evidence' => ['document' => 'legacy-closing-stock-report.pdf', 'page' => 12],
+            'responsible_owner_id' => $owner->id, 'resolution_plan' => $plan,
+        ], $creator);
+        $avcoException = $request($avcoShort, '125.0000', 'The predecessor system closed this item 25 kg negative per its final approved stock report.', 'Receive the delayed hardener shipment already confirmed in transit.');
+        app(ApproveInventoryCutoverNegativeOpening::class)($avcoException, $approver);
+        $request($fifoShort, '95.0000', 'The predecessor system closed this item 10 L negative because issues were booked before the delivery note.', 'Book the outstanding supplier delivery note against this shortage.');
         // Left APPROVED — separation of duties needs a third actor for
         // Commit/Finalise no more than it needs one for this step, so the
         // demo login (already granted both permissions) can finish it live.
