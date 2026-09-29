@@ -21,6 +21,7 @@ export type AssembliesMaterialPreview200DataInventoryItemsItem = {
   item: AssembliesMaterialPreview200DataInventoryItemsItemItem;
   uom: AssembliesMaterialPreview200DataInventoryItemsItemUom;
   is_stocked: boolean;
+  standard_quantity: string;
   required_quantity: string;
   on_hand_quantity: AssembliesMaterialPreview200DataInventoryItemsItemOnHandQuantity;
   held_for_qa_quantity: AssembliesMaterialPreview200DataInventoryItemsItemHeldForQaQuantity;

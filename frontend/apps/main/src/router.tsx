@@ -17,6 +17,7 @@ import {
   CategoryEditScreen,
   DashboardScreen,
   EstimatingSettingsScreen,
+  MaterialVarianceSettingsScreen,
   FormulationCreateScreen,
   FormulationEditScreen,
   FormulationsListScreen,
@@ -743,6 +744,16 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <EstimatingSettingsScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings/material-variance"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <MaterialVarianceSettingsScreen />
               </AppShell>
             </ProtectedRoute>
           }

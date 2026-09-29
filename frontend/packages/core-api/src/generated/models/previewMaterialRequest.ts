@@ -6,6 +6,7 @@
  */
 import type { PreviewMaterialRequestAssemblyVersionId } from "./previewMaterialRequestAssemblyVersionId";
 import type { PreviewMaterialRequestCustomerId } from "./previewMaterialRequestCustomerId";
+import type { PreviewMaterialRequestPlannedAdjustmentsItem } from "./previewMaterialRequestPlannedAdjustmentsItem";
 import type { PreviewMaterialRequestInventoryScope } from "./previewMaterialRequestInventoryScope";
 import type { PreviewMaterialRequestSelectionStrategy } from "./previewMaterialRequestSelectionStrategy";
 
@@ -16,6 +17,13 @@ export interface PreviewMaterialRequest {
   work_uom_id: number;
   customer_id?: PreviewMaterialRequestCustomerId;
   dimension_value_ids?: number[];
+  /**
+   * Hypothetical what-if quantities (ADR 0058): judged against the standard, never saved. Which
+items the assembly actually requires is only known after resolution, so that check lives
+in PreviewMaterialVariance.
+   * @maxItems 100
+   */
+  planned_adjustments?: PreviewMaterialRequestPlannedAdjustmentsItem[];
   /** Narrows, never widens, the stock the proposal may consider (ADR 0058). */
   inventory_scope?: PreviewMaterialRequestInventoryScope;
   selection_strategy?: PreviewMaterialRequestSelectionStrategy;

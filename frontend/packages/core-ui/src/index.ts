@@ -194,6 +194,7 @@ export { AssemblyCreateScreen } from "./features/assemblies/assembly-create-scre
 export { AssemblyEditScreen } from "./features/assemblies/assembly-edit-screen";
 export { MaterialPreviewScreen } from "./features/material-preview/material-preview-screen";
 export { EstimatingSettingsScreen } from "./features/settings/estimating-settings-screen";
+export { MaterialVarianceSettingsScreen } from "./features/material-variance/material-variance-settings-screen";
 export { ResourceRatesListScreen } from "./features/resource-rates/resource-rates-list-screen";
 export { StockLedgerScreen } from "./features/stock-ledger/stock-ledger-screen";
 export { StockMoveDetailScreen } from "./features/stock-ledger/stock-move-detail-screen";

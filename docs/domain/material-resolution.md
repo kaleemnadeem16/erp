@@ -174,6 +174,18 @@ request and again in the Action: a quantity band needs a unit and no other measu
 non-negative and an under-plan percentage cannot exceed 100, and `APPROVAL_REQUIRED` cannot be chosen. All
 writes need `estimating.material_variance_policy.manage`.
 
+### Setup screen
+
+`/settings/material-variance` (Settings → Company → Material Variance, shown to holders of
+`estimating.material_variance_policy.manage`) is where a company configures all of this: its reason list
+(add, retire, reinstate — never delete) and, per scope (whole company, one category or one item), the rule
+sets — the version in force, drafts to edit, activate or delete, and the superseded history. A "Where rules
+are set" overview lists every active rule set with its version. The band editor offers only what a company
+may choose today: record only, reason required or blocked, over or under plan, measured as a quantity (with a
+unit), a percentage or an internal-cost impact. "Approval required" and waste bands are deliberately absent
+until the approval workflow and package-level tracking exist. Viewers without the manage permission see the
+same screen read-only (rules need `estimating.policy-history.view`; reasons need the preview permission).
+
 ### What-if adjustments in the preview
 
 `POST /api/v1/assemblies/{assembly}/material-preview` accepts `planned_adjustments[]`
