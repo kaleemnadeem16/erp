@@ -6,7 +6,9 @@
  */
 import type { MembersIssueTemporaryPassword403AnyOf } from "./membersIssueTemporaryPassword403AnyOf";
 import type { MembersIssueTemporaryPassword403AnyOfTwo } from "./membersIssueTemporaryPassword403AnyOfTwo";
+import type { MembersIssueTemporaryPassword403AnyOfThree } from "./membersIssueTemporaryPassword403AnyOfThree";
 
 export type MembersIssueTemporaryPassword403 =
   | MembersIssueTemporaryPassword403AnyOf
-  | MembersIssueTemporaryPassword403AnyOfTwo;
+  | MembersIssueTemporaryPassword403AnyOfTwo
+  | MembersIssueTemporaryPassword403AnyOfThree;

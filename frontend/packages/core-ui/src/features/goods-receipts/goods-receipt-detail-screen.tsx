@@ -46,6 +46,7 @@ import { formatDateTime } from "../../lib/format-date";
 import { useFocusOnOpen } from "../../lib/use-focus-on-open";
 import { formatLocationOption } from "../../lib/format-location";
 import { usePermission } from "../../hooks/use-permission";
+import { usePurchasingCommercialCost } from "../../hooks/use-purchasing-commercial-cost";
 
 const OUTCOMES = [
   "PASS",
@@ -71,7 +72,9 @@ function QualityPanel({
   enabled: boolean;
   onChanged: () => void;
 }) {
-  const mayPostDisposition = usePermission("purchasing.quality-disposition.post");
+  const mayPostDisposition = usePermission(
+    "purchasing.quality-disposition.post",
+  );
   const query = useQualityDispositionsIndex(
     line.id,
     { per_page: 100, sort: "disposed_at" },
@@ -241,6 +244,7 @@ function QualityPanel({
 }
 
 export function GoodsReceiptDetailScreen() {
+  const mayViewCommercialCost = usePurchasingCommercialCost();
   const mayPost = usePermission("purchasing.goods-receipt.post");
   const mayReverse = usePermission("purchasing.goods-receipt.reverse");
   const { id } = useParams<{ id: string }>();
@@ -277,7 +281,9 @@ export function GoodsReceiptDetailScreen() {
   const postHeadingRef = useFocusOnOpen<HTMLHeadingElement>(confirmPost);
   const reverseHeadingRef = useFocusOnOpen<HTMLHeadingElement>(showReverse);
   const { contentRef: printRef, print } = useQuickPrint({
-    documentTitle: receipt?.number ? `Goods Receipt ${receipt.number}` : `Draft Goods Receipt #${receiptId}`,
+    documentTitle: receipt?.number
+      ? `Goods Receipt ${receipt.number}`
+      : `Draft Goods Receipt #${receiptId}`,
   });
 
   if (query.isLoading)
@@ -321,7 +327,10 @@ export function GoodsReceiptDetailScreen() {
       fields: [
         { label: "Status", value: receipt.status },
         { label: "Supplier", value: supplierLabel },
-        { label: "Physical arrival", value: formatDateTime(receipt.physical_arrival_at) ?? "" },
+        {
+          label: "Physical arrival",
+          value: formatDateTime(receipt.physical_arrival_at) ?? "",
+        },
         { label: "Posting date", value: receipt.posting_date },
         { label: "Correction reason", value: receipt.correction_reason ?? "" },
       ],
@@ -340,29 +349,39 @@ export function GoodsReceiptDetailScreen() {
       key: "location",
       header: "Location",
       value: (line) => {
-        const location = locations.find((candidate) => candidate.id === line.location_id);
-        return location ? formatLocationOption(location) : `Location #${line.location_id}`;
+        const location = locations.find(
+          (candidate) => candidate.id === line.location_id,
+        );
+        return location
+          ? formatLocationOption(location)
+          : `Location #${line.location_id}`;
       },
     },
     {
       key: "received_qty",
       header: "Received",
-      value: (line) => `${line.received_qty} ${uoms.find((uom) => uom.id === line.received_uom_id)?.code ?? ""}`,
+      value: (line) =>
+        `${line.received_qty} ${uoms.find((uom) => uom.id === line.received_uom_id)?.code ?? ""}`,
       align: "right",
     },
     {
       key: "stock_qty",
       header: "Stock qty",
-      value: (line) => `${line.stock_qty} ${uoms.find((uom) => uom.id === line.stock_uom_id)?.code ?? ""}`,
-      align: "right",
-    },
-    {
-      key: "provisional_unit_cost",
-      header: "Provisional cost",
       value: (line) =>
-        `${line.provisional_unit_cost} ${currencies.find((currency) => currency.id === line.currency_id)?.code ?? ""}`,
+        `${line.stock_qty} ${uoms.find((uom) => uom.id === line.stock_uom_id)?.code ?? ""}`,
       align: "right",
     },
+    ...(mayViewCommercialCost
+      ? [
+          {
+            key: "provisional_unit_cost",
+            header: "Provisional cost",
+            value: (line) =>
+              `${line.provisional_unit_cost} ${currencies.find((currency) => currency.id === line.currency_id)?.code ?? ""}`,
+            align: "right",
+          } satisfies DataColumn<GoodsReceiptLineResource>,
+        ]
+      : []),
     {
       key: "identity",
       header: "Batch / Serial",
@@ -416,7 +435,11 @@ export function GoodsReceiptDetailScreen() {
       )}
       {confirmPost && receipt.status === "DRAFT" && (
         <section className="space-y-3 rounded-md border p-4">
-          <h2 ref={postHeadingRef} tabIndex={-1} className="font-medium outline-none">
+          <h2
+            ref={postHeadingRef}
+            tabIndex={-1}
+            className="font-medium outline-none"
+          >
             Post this physical receipt?
           </h2>
           <p className="text-sm text-muted-foreground">
@@ -450,7 +473,11 @@ export function GoodsReceiptDetailScreen() {
       )}
       {showReverse && receipt.status === "POSTED" && (
         <section className="space-y-3 rounded-md border border-destructive/40 p-4">
-          <h2 ref={reverseHeadingRef} tabIndex={-1} className="font-medium outline-none">
+          <h2
+            ref={reverseHeadingRef}
+            tabIndex={-1}
+            className="font-medium outline-none"
+          >
             Reverse this receipt?
           </h2>
           <p className="text-sm text-muted-foreground">
@@ -504,7 +531,9 @@ export function GoodsReceiptDetailScreen() {
             </Badge>
           </DetailField>
           <DetailField label="Supplier">{supplierLabel}</DetailField>
-          <DetailField label="Physical arrival">{formatDateTime(receipt.physical_arrival_at)}</DetailField>
+          <DetailField label="Physical arrival">
+            {formatDateTime(receipt.physical_arrival_at)}
+          </DetailField>
           <DetailField label="Posting date">{receipt.posting_date}</DetailField>
           {receipt.correction_reason && (
             <DetailField label="Correction reason">
@@ -572,18 +601,22 @@ export function GoodsReceiptDetailScreen() {
                     {line.stock_qty} {stockUom?.code}
                   </div>
                 </div>
-                <div>
-                  <span className="text-muted-foreground">
-                    Provisional cost
-                  </span>
-                  <div className="tabular-nums">
-                    {line.provisional_unit_cost} {currency?.code}
+                {mayViewCommercialCost && (
+                  <div>
+                    <span className="text-muted-foreground">
+                      Provisional cost
+                    </span>
+                    <div className="tabular-nums">
+                      {line.provisional_unit_cost} {currency?.code}
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">FX rate</span>
-                  <div className="tabular-nums">{line.fx_rate}</div>
-                </div>
+                )}
+                {mayViewCommercialCost && (
+                  <div>
+                    <span className="text-muted-foreground">FX rate</span>
+                    <div className="tabular-nums">{line.fx_rate}</div>
+                  </div>
+                )}
               </div>
               <QualityPanel
                 line={line}
@@ -599,11 +632,19 @@ export function GoodsReceiptDetailScreen() {
       <div className="hidden">
         <div ref={printRef}>
           <DetailPrintLayout
-            title={receipt.number ? `GOODS RECEIPT ${receipt.number}` : `DRAFT GOODS RECEIPT #${receipt.id}`}
+            title={
+              receipt.number
+                ? `GOODS RECEIPT ${receipt.number}`
+                : `DRAFT GOODS RECEIPT #${receipt.id}`
+            }
             printedAt={new Date()}
             sections={printSections}
           >
-            <PrintableTable columns={printLineColumns} rows={receipt.lines ?? []} getRowKey={(line) => line.id} />
+            <PrintableTable
+              columns={printLineColumns}
+              rows={receipt.lines ?? []}
+              getRowKey={(line) => line.id}
+            />
           </DetailPrintLayout>
         </div>
       </div>

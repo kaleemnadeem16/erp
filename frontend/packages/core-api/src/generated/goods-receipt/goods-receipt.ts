@@ -29,6 +29,7 @@ import type {
   GoodsReceiptsPost403,
   GoodsReceiptsReverse200,
   GoodsReceiptsShow200,
+  GoodsReceiptsShow403,
   GoodsReceiptsStore201,
   ModelNotFoundExceptionResponse,
   ReverseGoodsReceiptRequest,
@@ -50,6 +51,11 @@ export type goodsReceiptsIndexResponse401 = {
   status: 401;
 };
 
+export type goodsReceiptsIndexResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type goodsReceiptsIndexResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -60,7 +66,9 @@ export type goodsReceiptsIndexResponseSuccess =
     headers: Headers;
   };
 export type goodsReceiptsIndexResponseError = (
-  goodsReceiptsIndexResponse401 | goodsReceiptsIndexResponse422
+  | goodsReceiptsIndexResponse401
+  | goodsReceiptsIndexResponse403
+  | goodsReceiptsIndexResponse422
 ) & {
   headers: Headers;
 };
@@ -105,7 +113,10 @@ export const getGoodsReceiptsIndexQueryKey = (
 
 export const getGoodsReceiptsIndexQueryOptions = <
   TData = Awaited<ReturnType<typeof goodsReceiptsIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: GoodsReceiptsIndexParams,
   options?: {
@@ -139,11 +150,16 @@ export type GoodsReceiptsIndexQueryResult = NonNullable<
   Awaited<ReturnType<typeof goodsReceiptsIndex>>
 >;
 export type GoodsReceiptsIndexQueryError =
-  AuthenticationExceptionResponse | ValidationExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
 
 export function useGoodsReceiptsIndex<
   TData = Awaited<ReturnType<typeof goodsReceiptsIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params: undefined | GoodsReceiptsIndexParams,
   options: {
@@ -170,7 +186,10 @@ export function useGoodsReceiptsIndex<
 };
 export function useGoodsReceiptsIndex<
   TData = Awaited<ReturnType<typeof goodsReceiptsIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: GoodsReceiptsIndexParams,
   options?: {
@@ -197,7 +216,10 @@ export function useGoodsReceiptsIndex<
 };
 export function useGoodsReceiptsIndex<
   TData = Awaited<ReturnType<typeof goodsReceiptsIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: GoodsReceiptsIndexParams,
   options?: {
@@ -217,7 +239,10 @@ export function useGoodsReceiptsIndex<
 
 export function useGoodsReceiptsIndex<
   TData = Awaited<ReturnType<typeof goodsReceiptsIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: GoodsReceiptsIndexParams,
   options?: {
@@ -384,6 +409,11 @@ export type goodsReceiptsShowResponse401 = {
   status: 401;
 };
 
+export type goodsReceiptsShowResponse403 = {
+  data: GoodsReceiptsShow403;
+  status: 403;
+};
+
 export type goodsReceiptsShowResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -393,7 +423,9 @@ export type goodsReceiptsShowResponseSuccess = goodsReceiptsShowResponse200 & {
   headers: Headers;
 };
 export type goodsReceiptsShowResponseError = (
-  goodsReceiptsShowResponse401 | goodsReceiptsShowResponse404
+  | goodsReceiptsShowResponse401
+  | goodsReceiptsShowResponse403
+  | goodsReceiptsShowResponse404
 ) & {
   headers: Headers;
 };
@@ -424,7 +456,10 @@ export const getGoodsReceiptsShowQueryKey = (goodsReceipt?: number) => {
 
 export const getGoodsReceiptsShowQueryOptions = <
   TData = Awaited<ReturnType<typeof goodsReceiptsShow>>,
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | GoodsReceiptsShow403
+    | ModelNotFoundExceptionResponse,
 >(
   goodsReceipt: number,
   options?: {
@@ -463,11 +498,16 @@ export type GoodsReceiptsShowQueryResult = NonNullable<
   Awaited<ReturnType<typeof goodsReceiptsShow>>
 >;
 export type GoodsReceiptsShowQueryError =
-  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
+  | AuthenticationExceptionResponse
+  | GoodsReceiptsShow403
+  | ModelNotFoundExceptionResponse;
 
 export function useGoodsReceiptsShow<
   TData = Awaited<ReturnType<typeof goodsReceiptsShow>>,
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | GoodsReceiptsShow403
+    | ModelNotFoundExceptionResponse,
 >(
   goodsReceipt: number,
   options: {
@@ -494,7 +534,10 @@ export function useGoodsReceiptsShow<
 };
 export function useGoodsReceiptsShow<
   TData = Awaited<ReturnType<typeof goodsReceiptsShow>>,
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | GoodsReceiptsShow403
+    | ModelNotFoundExceptionResponse,
 >(
   goodsReceipt: number,
   options?: {
@@ -521,7 +564,10 @@ export function useGoodsReceiptsShow<
 };
 export function useGoodsReceiptsShow<
   TData = Awaited<ReturnType<typeof goodsReceiptsShow>>,
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | GoodsReceiptsShow403
+    | ModelNotFoundExceptionResponse,
 >(
   goodsReceipt: number,
   options?: {
@@ -541,7 +587,10 @@ export function useGoodsReceiptsShow<
 
 export function useGoodsReceiptsShow<
   TData = Awaited<ReturnType<typeof goodsReceiptsShow>>,
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | GoodsReceiptsShow403
+    | ModelNotFoundExceptionResponse,
 >(
   goodsReceipt: number,
   options?: {

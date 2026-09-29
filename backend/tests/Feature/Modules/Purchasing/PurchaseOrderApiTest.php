@@ -41,6 +41,32 @@ class PurchaseOrderApiTest extends PurchaseOrderFoundationTest
         $this->getJson('/api/v1/goods-receipts')->assertForbidden();
     }
 
+    public function test_document_view_does_not_reveal_commercial_values_or_monetary_sort(): void
+    {
+        [$order, $item, $uom] = $this->makeOrder();
+        $order->lines()->create($this->lineAttributes($order, $item, $uom));
+        $viewer = PurchasingActor::make(['purchasing.purchase-order.view']);
+
+        $hidden = $this->actingAsUnprivileged($viewer)
+            ->getJson("/api/v1/purchase-orders/{$order->id}?include=lines")
+            ->assertOk();
+        foreach (['fx_policy', 'fx_rate', 'total_amount', 'base_total_amount'] as $field) {
+            $hidden->assertJsonMissingPath("data.{$field}");
+        }
+        foreach (['unit_price', 'discount_amount', 'tax_amount', 'line_amount', 'base_unit_price', 'base_line_amount'] as $field) {
+            $hidden->assertJsonMissingPath("data.lines.0.{$field}");
+        }
+        $this->getJson('/api/v1/purchase-orders?include=lines&sort=total_amount')->assertForbidden();
+        $this->getJson('/api/v1/purchase-orders?include=lines')
+            ->assertOk()->assertJsonMissingPath('data.0.total_amount')
+            ->assertJsonMissingPath('data.0.lines.0.unit_price');
+
+        PurchasingActor::grant($viewer, ['purchasing.commercial-cost.view']);
+        $this->getJson("/api/v1/purchase-orders/{$order->id}?include=lines")
+            ->assertOk()->assertJsonPath('data.lines.0.unit_price', '10.0000');
+        $this->getJson('/api/v1/purchase-orders?include=lines&sort=total_amount')->assertOk();
+    }
+
     public function test_receiving_actor_can_read_purchase_orders_without_po_mutation(): void
     {
         $receiver = PurchasingActor::make(['purchasing.goods-receipt.create']);

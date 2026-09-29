@@ -32,6 +32,52 @@ use Tests\Support\PurchasingActor;
 
 class GoodsReceiptPostingTest extends PurchaseOrderFoundationTest
 {
+    public function test_receiver_can_create_from_issued_po_without_seeing_or_supplying_cost(): void
+    {
+        [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Avco);
+        $line = $order->lines()->sole();
+        $receiver = PurchasingActor::make(['purchasing.goods-receipt.create']);
+        $payload = [
+            'supplier_account_id' => $order->supplier_account_id,
+            'physical_arrival_at' => now()->toIso8601String(),
+            'posting_date' => now()->format('Y-m-d'),
+            'lines' => [[
+                'purchase_order_line_id' => $line->id,
+                'item_id' => $item->id,
+                'location_id' => $this->locationId(),
+                'received_qty' => '2.0000',
+                'received_uom_id' => $uom->id,
+            ]],
+        ];
+
+        $this->actingAsUnprivileged($receiver)
+            ->getJson("/api/v1/purchase-orders/{$order->id}?include=lines")
+            ->assertOk()->assertJsonMissingPath('data.lines.0.unit_price');
+        $this->postJson('/api/v1/goods-receipts', array_replace_recursive($payload, [
+            'lines' => [['provisional_unit_cost' => '0.0000']],
+        ]))->assertUnprocessable()->assertJsonValidationErrors('lines.0.provisional_unit_cost');
+
+        $created = $this->postJson('/api/v1/goods-receipts', $payload)->assertCreated()
+            ->assertJsonMissingPath('data.lines.0.provisional_unit_cost')
+            ->assertJsonMissingPath('data.lines.0.base_unit_cost')
+            ->assertJsonMissingPath('data.lines.0.fx_rate');
+        $receiptId = $created->json('data.id');
+        $this->assertDatabaseHas('goods_receipt_lines', [
+            'goods_receipt_id' => $receiptId,
+            'provisional_unit_cost' => $line->unit_price,
+            'currency_id' => $order->currency_id,
+            'fx_rate' => $order->fx_rate,
+        ]);
+        $this->getJson("/api/v1/goods-receipts/{$receiptId}")
+            ->assertOk()->assertJsonMissingPath('data.lines.0.provisional_unit_cost');
+        $this->getJson('/api/v1/goods-receipts?include=lines')
+            ->assertOk()->assertJsonMissingPath('data.0.lines.0.provisional_unit_cost');
+
+        PurchasingActor::grant($receiver, ['purchasing.commercial-cost.view']);
+        $this->getJson("/api/v1/goods-receipts/{$receiptId}")
+            ->assertOk()->assertJsonPath('data.lines.0.provisional_unit_cost', $line->unit_price);
+    }
+
     public function test_receipt_and_qa_reads_and_writes_require_capabilities(): void
     {
         [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Avco, qaRequired: true);

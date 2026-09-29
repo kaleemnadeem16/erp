@@ -14,6 +14,6 @@ export type InventoryCutoversOpenPurchaseOrdersCommit200DataItem =
       Pick<
         PurchaseOrderResource &
           InventoryCutoversOpenPurchaseOrdersCommit200DataItemAllOf,
-        "total_amount" | "base_total_amount" | "lines"
+        "lines"
       >
     >;

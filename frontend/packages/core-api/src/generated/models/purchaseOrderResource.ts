@@ -26,11 +26,11 @@ export interface PurchaseOrderResource {
   supplier_site?: PurchaseOrderResourceSupplierSite;
   status: string;
   currency_id: number;
-  fx_policy: string;
-  fx_rate: string;
-  fx_rate_date: string;
-  fx_rate_type: string;
-  fx_rate_source: string;
+  fx_policy?: string;
+  fx_rate?: string;
+  fx_rate_date?: string;
+  fx_rate_type?: string;
+  fx_rate_source?: string;
   order_date: string;
   expected_delivery_date: PurchaseOrderResourceExpectedDeliveryDate;
   notes: PurchaseOrderResourceNotes;

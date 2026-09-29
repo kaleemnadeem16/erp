@@ -57,7 +57,7 @@ final class CutoverNegativeOpeningDemoSeederTest extends TestCase
             $this->fail('Committing with an unapproved negative-opening exception must be refused.');
         } catch (DomainInvariantException) {
         }
-        $this->assertSame(0, NegativeStockShortage::query()->count());
+        $this->assertSame(0, NegativeStockShortage::query()->where('status', 'OPEN_CUTOVER_SHORTAGE')->count());
 
         // The demo login did not request it, so it may approve it — the live step this data leaves open.
         app(ApproveInventoryCutoverNegativeOpening::class)($this->exception('demo-cutover-fifo-short'), $demo);

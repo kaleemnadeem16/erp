@@ -25,7 +25,8 @@ import {
 } from "../../components/ui/form";
 import { DetailSection } from "../../components/detail/detail-page-layout";
 import { formatLocationOption } from "../../lib/format-location";
-import { lookupState } from '../../lib/api-errors';
+import { lookupState } from "../../lib/api-errors";
+import { usePurchasingCommercialCost } from "../../hooks/use-purchasing-commercial-cost";
 
 const decimal = z
   .string()
@@ -40,7 +41,7 @@ const lineSchema = z.object({
   location_id: z.string().min(1, "Select a stock location."),
   received_qty: positiveDecimal,
   received_uom_id: z.string().min(1, "Select a UoM."),
-  provisional_unit_cost: decimal,
+  provisional_unit_cost: z.union([decimal, z.literal("")]),
   batch_no: z.string(),
   serial_no: z.string(),
 });
@@ -96,6 +97,7 @@ export function GoodsReceiptForm({
   isSubmitting: boolean;
   formError?: string | null;
 }) {
+  const mayViewCommercialCost = usePurchasingCommercialCost();
   const now = new Date();
   const form = useForm<GoodsReceiptFormValues>({
     resolver: zodResolver(schema),
@@ -187,7 +189,7 @@ export function GoodsReceiptForm({
     );
     form.setValue(
       `lines.${index}.provisional_unit_cost`,
-      selected.line.unit_price,
+      mayViewCommercialCost ? (selected.line.unit_price ?? "") : "",
     );
   }
 
@@ -209,12 +211,26 @@ export function GoodsReceiptForm({
               location_id: Number(line.location_id),
               received_qty: line.received_qty,
               received_uom_id: Number(line.received_uom_id),
-              provisional_unit_cost: line.provisional_unit_cost,
-              currency_id: selected.order.currency_id,
-              fx_rate: selected.order.fx_rate,
-              fx_rate_date: selected.order.fx_rate_date,
-              fx_rate_type: selected.order.fx_rate_type,
-              fx_rate_source: selected.order.fx_rate_source,
+              ...(mayViewCommercialCost
+                ? {
+                    ...(line.provisional_unit_cost
+                      ? { provisional_unit_cost: line.provisional_unit_cost }
+                      : {}),
+                    currency_id: selected.order.currency_id,
+                    ...(selected.order.fx_rate
+                      ? { fx_rate: selected.order.fx_rate }
+                      : {}),
+                    ...(selected.order.fx_rate_date
+                      ? { fx_rate_date: selected.order.fx_rate_date }
+                      : {}),
+                    ...(selected.order.fx_rate_type
+                      ? { fx_rate_type: selected.order.fx_rate_type }
+                      : {}),
+                    ...(selected.order.fx_rate_source
+                      ? { fx_rate_source: selected.order.fx_rate_source }
+                      : {}),
+                  }
+                : {}),
               batch_no: line.batch_no || null,
               serial_no: line.serial_no || null,
             };
@@ -245,7 +261,8 @@ export function GoodsReceiptForm({
               <FormItem>
                 <FormLabel>Supplier</FormLabel>
                 <FormControl>
-                  <Combobox {...lookupState(suppliersQuery, 'suppliers')}
+                  <Combobox
+                    {...lookupState(suppliersQuery, "suppliers")}
                     ref={field.ref}
                     value={field.value}
                     onValueChange={(value) => {
@@ -282,7 +299,11 @@ export function GoodsReceiptForm({
               <FormItem>
                 <FormLabel>Posting date</FormLabel>
                 <FormControl>
-                  <DateField value={field.value} onChange={field.onChange} onBlur={field.onBlur} />
+                  <DateField
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -331,7 +352,8 @@ export function GoodsReceiptForm({
                     <FormItem className="md:col-span-2">
                       <FormLabel>Purchase-order line</FormLabel>
                       <FormControl>
-                        <Combobox {...lookupState(ordersQuery, 'purchase orders')}
+                        <Combobox
+                          {...lookupState(ordersQuery, "purchase orders")}
                           ref={field.ref}
                           value={field.value}
                           onValueChange={(value) => chooseLine(index, value)}
@@ -359,7 +381,8 @@ export function GoodsReceiptForm({
                     <FormItem>
                       <FormLabel>Put-away location</FormLabel>
                       <FormControl>
-                        <Combobox {...lookupState(locationsQuery, 'locations')}
+                        <Combobox
+                          {...lookupState(locationsQuery, "locations")}
                           ref={field.ref}
                           value={field.value}
                           onValueChange={field.onChange}
@@ -396,7 +419,8 @@ export function GoodsReceiptForm({
                     <FormItem>
                       <FormLabel>Received UoM</FormLabel>
                       <FormControl>
-                        <Combobox {...lookupState(uomsQuery, 'units')}
+                        <Combobox
+                          {...lookupState(uomsQuery, "units")}
                           ref={field.ref}
                           value={field.value}
                           onValueChange={field.onChange}
@@ -413,19 +437,27 @@ export function GoodsReceiptForm({
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name={`lines.${index}.provisional_unit_cost`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Provisional unit cost</FormLabel>
-                      <FormControl>
-                        <Input inputMode="decimal" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {mayViewCommercialCost && (
+                  <FormField
+                    control={form.control}
+                    name={`lines.${index}.provisional_unit_cost`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Provisional unit cost</FormLabel>
+                        <FormControl>
+                          <Input inputMode="decimal" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+                {!mayViewCommercialCost && (
+                  <p className="text-sm text-muted-foreground">
+                    Provisional valuation follows the issued purchase order;
+                    commercial amounts are not shown in this role.
+                  </p>
+                )}
                 {item?.tracking === "BATCH" && (
                   <FormField
                     control={form.control}

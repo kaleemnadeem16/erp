@@ -141,9 +141,13 @@ issue.
       reads, retaining the minimum action-dependent reads for Buyer/Receiving/QA. Existing
       company roles and direct grants require a pre-deploy review for read-only users →
       [ADR 0068](../decisions/0068-purchasing-document-read-capabilities.md)
-- [ ] Decide and implement a Purchasing commercial-cost field projection for PO/receipt reads.
-      Do not reuse `estimating.internal_cost.view`: ADR 0057 excludes supplier offers from it.
-      Until then, Purchasing `*.view` grants expose existing monetary fields.
+- [x] Purchasing commercial-cost field projection for PO/receipt reads (2026-09-29) — new
+      `purchasing.commercial-cost.view` (not `estimating.internal_cost.view`: ADR 0057 excludes supplier offers
+      from it); PO create carries the minimum read to draft a priced PO. Restricted keys are omitted, monetary
+      PO sort is refused without it, and a receipt creator without it submits no monetary field: the server
+      derives cost, currency and FX from the issued PO. SPA columns, detail sections and print views follow.
+      Demo: `demo-receiver@erp.x1techs.com` (Receiving Clerk, demo password) with a draft receipt.
+      → [ADR 0069](../decisions/0069-separate-purchasing-commercial-visibility-from-receiving.md)
 - [x] Confirm the missing `QualityDisposition` list screen stays an intentional non-gap
 - [x] Assignment/backfill pass, then enforce `purchasing.item-supplier.manage`
 - [x] Assignment/backfill pass, then enforce goods-receipt create/post/reverse
@@ -151,7 +155,7 @@ issue.
       (sequence last — highest daily-user volume, highest lockout risk in this whole backlog)
 - [x] Frontend action gating (Issue/Cancel/Short-close/Post/Reverse buttons) once `/api/v1/user`
       effective permissions ship
-- [x] Allowed/denied API and non-HTTP Action tests; field-filtering remains with the cost-visibility decision
+- [x] Allowed/denied API and non-HTTP Action tests, including both cost projections
 - [x] Update `app/Modules/Purchasing/README.md` and [purchasing.md](../domain/purchasing.md)
 
 The rollout/backfill path is explicit: `permission:register` creates the names, the deploy-time

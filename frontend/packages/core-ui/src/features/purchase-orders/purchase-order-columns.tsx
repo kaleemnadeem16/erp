@@ -16,6 +16,7 @@ const STATUS_VARIANT: Record<
 export function purchaseOrderColumns(
   suppliers: ReadonlyMap<number, string>,
   currencies: ReadonlyMap<number, string>,
+  mayViewCommercialCost: boolean,
 ): DataColumn<PurchaseOrderResource>[] {
   return [
     {
@@ -53,21 +54,25 @@ export function purchaseOrderColumns(
       value: (order) => order.lines?.length ?? null,
       align: "right",
     },
-    {
-      key: "total_amount",
-      header: "Total value",
-      value: (order) => order.total_amount ?? null,
-      cell: (order) =>
-        order.total_amount === undefined ? (
-          "—"
-        ) : (
-          <span className="tabular-nums">
-            {order.total_amount} {currencies.get(order.currency_id) ?? ""}
-          </span>
-        ),
-      align: "right",
-      sortable: true,
-    },
+    ...(mayViewCommercialCost
+      ? [
+          {
+            key: "total_amount",
+            header: "Total value",
+            value: (order) => order.total_amount ?? null,
+            cell: (order) =>
+              order.total_amount === undefined ? (
+                "—"
+              ) : (
+                <span className="tabular-nums">
+                  {order.total_amount} {currencies.get(order.currency_id) ?? ""}
+                </span>
+              ),
+            align: "right",
+            sortable: true,
+          } satisfies DataColumn<PurchaseOrderResource>,
+        ]
+      : []),
     {
       key: "status",
       header: "Status",

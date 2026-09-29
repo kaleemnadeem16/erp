@@ -8,6 +8,8 @@ import type { MemberResourceInvitedAt } from "./memberResourceInvitedAt";
 import type { MemberResourceSuspendedAt } from "./memberResourceSuspendedAt";
 import type { MemberResourceCreatedAt } from "./memberResourceCreatedAt";
 import type { MemberResourceUpdatedAt } from "./memberResourceUpdatedAt";
+import type { MemberResourceLastLoginAt } from "./memberResourceLastLoginAt";
+import type { MemberResourceAccessUpdatedAt } from "./memberResourceAccessUpdatedAt";
 import type { MemberResourceRolesItem } from "./memberResourceRolesItem";
 
 export interface MemberResource {
@@ -19,8 +21,8 @@ export interface MemberResource {
   suspended_at: MemberResourceSuspendedAt;
   created_at: MemberResourceCreatedAt;
   updated_at: MemberResourceUpdatedAt;
-  last_login_at: string;
-  access_updated_at: string;
+  last_login_at: MemberResourceLastLoginAt;
+  access_updated_at: MemberResourceAccessUpdatedAt;
   roles: MemberResourceRolesItem[];
   direct_permissions: unknown[];
   effective_permissions: unknown[];

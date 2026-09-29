@@ -81,8 +81,9 @@ in the same commit.
 | [0066](0066-capability-driven-screen-navigation.md) | Drive screen navigation from effective capabilities | accepted | 2026-09-29 |
 | [0067](0067-governed-per-location-usability-mark.md) | Let a company mark which locations count as usable stock, as a governed policy | accepted | 2026-09-29 |
 | [0068](0068-purchasing-document-read-capabilities.md) | Authorise Purchasing document reads separately from writes | accepted | 2026-09-29 |
+| [0069](0069-separate-purchasing-commercial-visibility-from-receiving.md) | Separate Purchasing commercial visibility from physical receiving | accepted | 2026-09-29 |
 
-**Next number: 0069**
+**Next number: 0070**
 
 ## By theme
 

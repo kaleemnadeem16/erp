@@ -200,8 +200,13 @@ receipt (including QA disposition) and item-supplier list/detail reads now requi
 respective `*.view` capability or an action capability whose workflow needs the read. Receiving
 and QA actions can read POs; PO creation can read item-supplier sourcing terms. Finance and other
 read-only users need explicit view grants rather than write power. These remain company-wide reads
-pending Q26 record scope. The existing monetary fields remain visible to document viewers pending
-a separate cost-field projection. Before operational use relies on issuance,
+pending Q26 record scope. Commercial amounts (PO prices, discount/tax/line and header totals, FX evidence; receipt provisional/base unit
+cost and FX evidence) are omitted from every projection, print view and monetary sort unless the caller holds
+`purchasing.commercial-cost.view` (or `purchasing.purchase-order.create`, which needs them to draft a priced PO)
+— [ADR 0069](../decisions/0069-separate-purchasing-commercial-visibility-from-receiving.md). A receipt creator
+without that capability submits quantity, unit, location and tracking identity only; the server derives the
+provisional cost, currency and FX evidence from the issued PO line and rejects any monetary override. That is a
+provisional valuation basis, not invoice matching or landed cost. Before operational use relies on issuance,
 resolve [Q28](../OPEN-QUESTIONS.md#q28--purchase-order-approval-policy) and apply the shared
 [approval-workflow boundary](../architecture/approval-workflows.md). Creating/editing, submitting,
 approving and issuing must be independently grantable powers; approval eligibility must not be

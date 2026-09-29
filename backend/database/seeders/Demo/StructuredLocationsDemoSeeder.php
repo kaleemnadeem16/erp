@@ -148,7 +148,7 @@ final class StructuredLocationsDemoSeeder extends Seeder
         $currency = Currency::query()->where('code', 'PKR')->firstOrFail();
         // Received at the pool's own average so the item's company-wide AVCO cost does not move.
         $pool = AvcoPool::query()->where('item_id', $item->id)->where('status', 'ACTIVE')->first();
-        $cost = number_format((float) ($pool?->base_avg_unit_cost ?? 100), 4, '.', '');
+        $cost = number_format((float) ($pool->base_avg_unit_cost ?? 100), 4, '.', '');
 
         $receipts = [1 => ['recv', '2.0000'], 2 => ['returns', '6.0000'], 3 => ['overflow', '4.0000'], 4 => ['quar', '3.0000'], 5 => ['bin-a1', '5.0000']];
         foreach ($receipts as $sourceId => [$code, $qty]) {

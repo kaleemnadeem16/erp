@@ -43,6 +43,7 @@ const STARTER_ROLES = [
     description: "Prepare purchase orders and maintain item suppliers.",
     permissions: [
       "purchasing.purchase-order.create",
+      "purchasing.commercial-cost.view",
       "purchasing.item-supplier.manage",
     ],
   },

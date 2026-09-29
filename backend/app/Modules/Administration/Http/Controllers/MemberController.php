@@ -115,7 +115,7 @@ class MemberController extends Controller
 
     public function issueTemporaryPassword(Request $request, User $member, IssueTemporaryMemberPassword $issue): JsonResponse
     {
-        abort_unless($request->user()?->can('administration.member.manage') && $request->user()?->can('administration.access.assign'), 403);
+        abort_unless($request->user()->can('administration.member.manage') && $request->user()->can('administration.access.assign'), 403);
         abort_if($request->user()->is($member), 403, 'You cannot reset your own password here.');
         abort_if($member->status === MemberStatus::Suspended, 422, 'Reactivate this user before issuing a password.');
         abort_unless($member->getAllPermissions()->pluck('name')->diff($request->user()->getAllPermissions()->pluck('name'))->isEmpty(), 403, 'You cannot issue credentials for a member with capabilities you do not hold.');

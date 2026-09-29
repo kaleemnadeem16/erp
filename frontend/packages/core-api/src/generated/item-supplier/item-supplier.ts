@@ -50,6 +50,11 @@ export type itemSuppliersIndexResponse401 = {
   status: 401;
 };
 
+export type itemSuppliersIndexResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type itemSuppliersIndexResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -60,7 +65,9 @@ export type itemSuppliersIndexResponseSuccess =
     headers: Headers;
   };
 export type itemSuppliersIndexResponseError = (
-  itemSuppliersIndexResponse401 | itemSuppliersIndexResponse422
+  | itemSuppliersIndexResponse401
+  | itemSuppliersIndexResponse403
+  | itemSuppliersIndexResponse422
 ) & {
   headers: Headers;
 };
@@ -105,7 +112,10 @@ export const getItemSuppliersIndexQueryKey = (
 
 export const getItemSuppliersIndexQueryOptions = <
   TData = Awaited<ReturnType<typeof itemSuppliersIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: ItemSuppliersIndexParams,
   options?: {
@@ -139,11 +149,16 @@ export type ItemSuppliersIndexQueryResult = NonNullable<
   Awaited<ReturnType<typeof itemSuppliersIndex>>
 >;
 export type ItemSuppliersIndexQueryError =
-  AuthenticationExceptionResponse | ValidationExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
 
 export function useItemSuppliersIndex<
   TData = Awaited<ReturnType<typeof itemSuppliersIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params: undefined | ItemSuppliersIndexParams,
   options: {
@@ -170,7 +185,10 @@ export function useItemSuppliersIndex<
 };
 export function useItemSuppliersIndex<
   TData = Awaited<ReturnType<typeof itemSuppliersIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: ItemSuppliersIndexParams,
   options?: {
@@ -197,7 +215,10 @@ export function useItemSuppliersIndex<
 };
 export function useItemSuppliersIndex<
   TData = Awaited<ReturnType<typeof itemSuppliersIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: ItemSuppliersIndexParams,
   options?: {
@@ -217,7 +238,10 @@ export function useItemSuppliersIndex<
 
 export function useItemSuppliersIndex<
   TData = Awaited<ReturnType<typeof itemSuppliersIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: ItemSuppliersIndexParams,
   options?: {
@@ -384,6 +408,11 @@ export type itemSuppliersShowResponse401 = {
   status: 401;
 };
 
+export type itemSuppliersShowResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type itemSuppliersShowResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -399,6 +428,7 @@ export type itemSuppliersShowResponseSuccess = itemSuppliersShowResponse200 & {
 };
 export type itemSuppliersShowResponseError = (
   | itemSuppliersShowResponse401
+  | itemSuppliersShowResponse403
   | itemSuppliersShowResponse404
   | itemSuppliersShowResponse422
 ) & {
@@ -455,6 +485,7 @@ export const getItemSuppliersShowQueryOptions = <
   TData = Awaited<ReturnType<typeof itemSuppliersShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -498,6 +529,7 @@ export type ItemSuppliersShowQueryResult = NonNullable<
 >;
 export type ItemSuppliersShowQueryError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
@@ -505,6 +537,7 @@ export function useItemSuppliersShow<
   TData = Awaited<ReturnType<typeof itemSuppliersShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -536,6 +569,7 @@ export function useItemSuppliersShow<
   TData = Awaited<ReturnType<typeof itemSuppliersShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -567,6 +601,7 @@ export function useItemSuppliersShow<
   TData = Awaited<ReturnType<typeof itemSuppliersShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -591,6 +626,7 @@ export function useItemSuppliersShow<
   TData = Awaited<ReturnType<typeof itemSuppliersShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(

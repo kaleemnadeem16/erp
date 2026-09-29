@@ -3,7 +3,10 @@ import { useLocation, useNavigate, useParams } from "react-router";
 import type { FieldPath, UseFormReturn } from "react-hook-form";
 import { usePurchaseOrdersShow, usePurchaseOrdersUpdate } from "@erp/core-api";
 
-import { AdvancedOptionsMenu, type AdvancedOption } from "../../components/ui/advanced-options-menu";
+import {
+  AdvancedOptionsMenu,
+  type AdvancedOption,
+} from "../../components/ui/advanced-options-menu";
 import { Button } from "../../components/ui/button";
 import { PageHeader } from "../../components/page/page-header";
 import { Skeleton } from "../../components/ui/skeleton";
@@ -36,7 +39,10 @@ export function PurchaseOrderEditScreen() {
       {
         onSuccess: (result) => {
           if (result.status === 200)
-            navigate({ pathname: `/purchase-orders/${result.data.data.id}`, search });
+            navigate({
+              pathname: `/purchase-orders/${result.data.data.id}`,
+              search,
+            });
         },
         onError: (error) => {
           if (isApiError(error) && error.body?.errors) {
@@ -89,16 +95,47 @@ export function PurchaseOrderEditScreen() {
       </div>
     );
   }
+  if (
+    [
+      order.fx_policy,
+      order.fx_rate,
+      order.fx_rate_date,
+      order.fx_rate_type,
+      order.fx_rate_source,
+    ].some((value) => value === undefined) ||
+    (order.lines ?? []).some((line) =>
+      [line.unit_price, line.discount_amount, line.tax_amount].some(
+        (value) => value === undefined,
+      ),
+    )
+  ) {
+    return (
+      <div className="space-y-4 p-6">
+        <p className="text-sm text-destructive">
+          Commercial fields are unavailable for this draft. Ask an administrator
+          to review your Purchasing access.
+        </p>
+        <Button
+          variant="outline"
+          onClick={() => navigate(`/purchase-orders/${order.id}`)}
+        >
+          View purchase order
+        </Button>
+      </div>
+    );
+  }
 
   const defaultValues: PurchaseOrderFormValues = {
     supplier_account_id: String(order.supplier_account_id),
-    supplier_site_id: order.supplier_site_id ? String(order.supplier_site_id) : "",
+    supplier_site_id: order.supplier_site_id
+      ? String(order.supplier_site_id)
+      : "",
     currency_id: String(order.currency_id),
-    fx_policy: order.fx_policy as "FIXED" | "FLOATING",
-    fx_rate: order.fx_rate,
-    fx_rate_date: order.fx_rate_date,
-    fx_rate_type: order.fx_rate_type,
-    fx_rate_source: order.fx_rate_source,
+    fx_policy: order.fx_policy! as "FIXED" | "FLOATING",
+    fx_rate: order.fx_rate!,
+    fx_rate_date: order.fx_rate_date!,
+    fx_rate_type: order.fx_rate_type!,
+    fx_rate_source: order.fx_rate_source!,
     order_date: order.order_date,
     expected_delivery_date: order.expected_delivery_date ?? "",
     notes: order.notes ?? "",
@@ -107,9 +144,9 @@ export function PurchaseOrderEditScreen() {
       description: line.description,
       ordered_qty: line.ordered_qty,
       purchase_uom_id: String(line.purchase_uom_id),
-      unit_price: line.unit_price,
-      discount_amount: line.discount_amount,
-      tax_amount: line.tax_amount,
+      unit_price: line.unit_price!,
+      discount_amount: line.discount_amount!,
+      tax_amount: line.tax_amount!,
       expected_delivery_date: line.expected_delivery_date ?? "",
       qa_required: line.qa_required,
     })),

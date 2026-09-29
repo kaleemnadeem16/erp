@@ -333,7 +333,7 @@ class InventoryOverviewApiTest extends TestCase
             ], $overrides)],
         ];
 
-        return $this->actingAs(PurchasingActor::make(['purchasing.goods-receipt.create']))->postJson('/api/v1/goods-receipts', $payload)
+        return $this->actingAs(PurchasingActor::make(['purchasing.goods-receipt.create', 'purchasing.commercial-cost.view']))->postJson('/api/v1/goods-receipts', $payload)
             ->assertCreated()->json('data.id');
     }
 }

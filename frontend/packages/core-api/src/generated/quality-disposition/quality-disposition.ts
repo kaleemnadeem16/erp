@@ -27,6 +27,7 @@ import type {
   QualityDispositionsIndex200,
   QualityDispositionsIndexParams,
   QualityDispositionsShow200,
+  QualityDispositionsShow403,
   QualityDispositionsStore201,
   StoreQualityDispositionRequest,
   ValidationExceptionResponse,
@@ -189,6 +190,11 @@ export type qualityDispositionsIndexResponse401 = {
   status: 401;
 };
 
+export type qualityDispositionsIndexResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type qualityDispositionsIndexResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -205,6 +211,7 @@ export type qualityDispositionsIndexResponseSuccess =
   };
 export type qualityDispositionsIndexResponseError = (
   | qualityDispositionsIndexResponse401
+  | qualityDispositionsIndexResponse403
   | qualityDispositionsIndexResponse404
   | qualityDispositionsIndexResponse422
 ) & {
@@ -262,6 +269,7 @@ export const getQualityDispositionsIndexQueryOptions = <
   TData = Awaited<ReturnType<typeof qualityDispositionsIndex>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -305,6 +313,7 @@ export type QualityDispositionsIndexQueryResult = NonNullable<
 >;
 export type QualityDispositionsIndexQueryError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
@@ -312,6 +321,7 @@ export function useQualityDispositionsIndex<
   TData = Awaited<ReturnType<typeof qualityDispositionsIndex>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -343,6 +353,7 @@ export function useQualityDispositionsIndex<
   TData = Awaited<ReturnType<typeof qualityDispositionsIndex>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -374,6 +385,7 @@ export function useQualityDispositionsIndex<
   TData = Awaited<ReturnType<typeof qualityDispositionsIndex>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -398,6 +410,7 @@ export function useQualityDispositionsIndex<
   TData = Awaited<ReturnType<typeof qualityDispositionsIndex>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -443,6 +456,11 @@ export type qualityDispositionsShowResponse401 = {
   status: 401;
 };
 
+export type qualityDispositionsShowResponse403 = {
+  data: QualityDispositionsShow403;
+  status: 403;
+};
+
 export type qualityDispositionsShowResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -453,7 +471,9 @@ export type qualityDispositionsShowResponseSuccess =
     headers: Headers;
   };
 export type qualityDispositionsShowResponseError = (
-  qualityDispositionsShowResponse401 | qualityDispositionsShowResponse404
+  | qualityDispositionsShowResponse401
+  | qualityDispositionsShowResponse403
+  | qualityDispositionsShowResponse404
 ) & {
   headers: Headers;
 };
@@ -486,7 +506,10 @@ export const getQualityDispositionsShowQueryKey = (
 
 export const getQualityDispositionsShowQueryOptions = <
   TData = Awaited<ReturnType<typeof qualityDispositionsShow>>,
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | QualityDispositionsShow403
+    | ModelNotFoundExceptionResponse,
 >(
   qualityDisposition: number,
   options?: {
@@ -526,11 +549,16 @@ export type QualityDispositionsShowQueryResult = NonNullable<
   Awaited<ReturnType<typeof qualityDispositionsShow>>
 >;
 export type QualityDispositionsShowQueryError =
-  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
+  | AuthenticationExceptionResponse
+  | QualityDispositionsShow403
+  | ModelNotFoundExceptionResponse;
 
 export function useQualityDispositionsShow<
   TData = Awaited<ReturnType<typeof qualityDispositionsShow>>,
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | QualityDispositionsShow403
+    | ModelNotFoundExceptionResponse,
 >(
   qualityDisposition: number,
   options: {
@@ -557,7 +585,10 @@ export function useQualityDispositionsShow<
 };
 export function useQualityDispositionsShow<
   TData = Awaited<ReturnType<typeof qualityDispositionsShow>>,
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | QualityDispositionsShow403
+    | ModelNotFoundExceptionResponse,
 >(
   qualityDisposition: number,
   options?: {
@@ -584,7 +615,10 @@ export function useQualityDispositionsShow<
 };
 export function useQualityDispositionsShow<
   TData = Awaited<ReturnType<typeof qualityDispositionsShow>>,
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | QualityDispositionsShow403
+    | ModelNotFoundExceptionResponse,
 >(
   qualityDisposition: number,
   options?: {
@@ -604,7 +638,10 @@ export function useQualityDispositionsShow<
 
 export function useQualityDispositionsShow<
   TData = Awaited<ReturnType<typeof qualityDispositionsShow>>,
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | QualityDispositionsShow403
+    | ModelNotFoundExceptionResponse,
 >(
   qualityDisposition: number,
   options?: {

@@ -57,8 +57,10 @@ dependency. QA disposition reads follow receipt access. The matrix is in `Purcha
 and [ADR 0068](../../../../docs/decisions/0068-purchasing-document-read-capabilities.md).
 Purchasing settings remain an authenticated reference read; policy history has its own capability.
 The SPA gates matching write controls, while consequential Actions repeat checks for non-HTTP
-callers. Commercial amount field protection is still separate; `view` currently exposes existing
-monetary fields. PO approval does not exist: DRAFT moves directly to ISSUED. Before adding it, follow
+callers. Commercial amounts are projected separately: PO prices/totals/FX and receipt costs/FX are omitted unless the
+caller holds `purchasing.commercial-cost.view` (or `purchasing.purchase-order.create`), and a receipt creator
+without it has cost, currency and FX derived from the issued PO
+([ADR 0069](../../../../docs/decisions/0069-separate-purchasing-commercial-visibility-from-receiving.md)). PO approval does not exist: DRAFT moves directly to ISSUED. Before adding it, follow
 [authorization.md](../../../../docs/architecture/authorization.md) and
 [approval-workflows.md](../../../../docs/architecture/approval-workflows.md); create/edit,
 submit, approve, issue, receive, inspect, reverse and history access must each be considered.

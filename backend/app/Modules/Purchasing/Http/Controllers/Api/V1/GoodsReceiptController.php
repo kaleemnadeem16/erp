@@ -46,7 +46,7 @@ class GoodsReceiptController extends Controller
 
     public function store(StoreGoodsReceiptRequest $request, CreateGoodsReceipt $create): JsonResponse
     {
-        $receipt = $create($request->validated(), $request->header('Idempotency-Key'));
+        $receipt = $create($request->validated(), $request->user(), $request->header('Idempotency-Key'));
         $receipt->load(['lines' => fn ($query) => $query->withQaAggregates()]);
 
         return (new GoodsReceiptResource($receipt))->response()->setStatusCode(201);

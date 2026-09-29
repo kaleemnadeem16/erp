@@ -56,6 +56,11 @@ export type purchaseOrdersIndexResponse401 = {
   status: 401;
 };
 
+export type purchaseOrdersIndexResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type purchaseOrdersIndexResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -66,7 +71,9 @@ export type purchaseOrdersIndexResponseSuccess =
     headers: Headers;
   };
 export type purchaseOrdersIndexResponseError = (
-  purchaseOrdersIndexResponse401 | purchaseOrdersIndexResponse422
+  | purchaseOrdersIndexResponse401
+  | purchaseOrdersIndexResponse403
+  | purchaseOrdersIndexResponse422
 ) & {
   headers: Headers;
 };
@@ -113,7 +120,10 @@ export const getPurchaseOrdersIndexQueryKey = (
 
 export const getPurchaseOrdersIndexQueryOptions = <
   TData = Awaited<ReturnType<typeof purchaseOrdersIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: PurchaseOrdersIndexParams,
   options?: {
@@ -147,11 +157,16 @@ export type PurchaseOrdersIndexQueryResult = NonNullable<
   Awaited<ReturnType<typeof purchaseOrdersIndex>>
 >;
 export type PurchaseOrdersIndexQueryError =
-  AuthenticationExceptionResponse | ValidationExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
 
 export function usePurchaseOrdersIndex<
   TData = Awaited<ReturnType<typeof purchaseOrdersIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params: undefined | PurchaseOrdersIndexParams,
   options: {
@@ -178,7 +193,10 @@ export function usePurchaseOrdersIndex<
 };
 export function usePurchaseOrdersIndex<
   TData = Awaited<ReturnType<typeof purchaseOrdersIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: PurchaseOrdersIndexParams,
   options?: {
@@ -205,7 +223,10 @@ export function usePurchaseOrdersIndex<
 };
 export function usePurchaseOrdersIndex<
   TData = Awaited<ReturnType<typeof purchaseOrdersIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: PurchaseOrdersIndexParams,
   options?: {
@@ -225,7 +246,10 @@ export function usePurchaseOrdersIndex<
 
 export function usePurchaseOrdersIndex<
   TData = Awaited<ReturnType<typeof purchaseOrdersIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: PurchaseOrdersIndexParams,
   options?: {
@@ -392,6 +416,11 @@ export type purchaseOrdersShowResponse401 = {
   status: 401;
 };
 
+export type purchaseOrdersShowResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type purchaseOrdersShowResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -408,6 +437,7 @@ export type purchaseOrdersShowResponseSuccess =
   };
 export type purchaseOrdersShowResponseError = (
   | purchaseOrdersShowResponse401
+  | purchaseOrdersShowResponse403
   | purchaseOrdersShowResponse404
   | purchaseOrdersShowResponse422
 ) & {
@@ -464,6 +494,7 @@ export const getPurchaseOrdersShowQueryOptions = <
   TData = Awaited<ReturnType<typeof purchaseOrdersShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -507,6 +538,7 @@ export type PurchaseOrdersShowQueryResult = NonNullable<
 >;
 export type PurchaseOrdersShowQueryError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
@@ -514,6 +546,7 @@ export function usePurchaseOrdersShow<
   TData = Awaited<ReturnType<typeof purchaseOrdersShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -545,6 +578,7 @@ export function usePurchaseOrdersShow<
   TData = Awaited<ReturnType<typeof purchaseOrdersShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -576,6 +610,7 @@ export function usePurchaseOrdersShow<
   TData = Awaited<ReturnType<typeof purchaseOrdersShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -600,6 +635,7 @@ export function usePurchaseOrdersShow<
   TData = Awaited<ReturnType<typeof purchaseOrdersShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(

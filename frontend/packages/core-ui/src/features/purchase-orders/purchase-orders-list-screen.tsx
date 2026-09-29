@@ -1,10 +1,7 @@
 import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { SlidersHorizontal } from "lucide-react";
-import type {
-  PaginationState,
-  SortingState,
-} from "@tanstack/react-table";
+import type { PaginationState, SortingState } from "@tanstack/react-table";
 import {
   useCurrenciesIndex,
   usePurchaseOrdersIndex,
@@ -37,7 +34,12 @@ import {
   isColumnVisibleByDefault,
   toTanStackColumns,
 } from "../../components/data-table";
-import { PrintLayout, PrintableTable, PrintTrigger, useQuickPrint } from "../../components/print";
+import {
+  PrintLayout,
+  PrintableTable,
+  PrintTrigger,
+  useQuickPrint,
+} from "../../components/print";
 import {
   apiSortToTableSorting,
   describeSort,
@@ -49,7 +51,8 @@ import { useListViewPreference } from "../../lib/use-view-preference";
 import { purchaseOrderColumns } from "./purchase-order-columns";
 import { hasUnfinishedPurchaseOrder } from "./purchase-order-form";
 import { usePermission } from "../../hooks/use-permission";
-import { lookupState, type LookupState } from '../../lib/api-errors';
+import { usePurchasingCommercialCost } from "../../hooks/use-purchasing-commercial-cost";
+import { lookupState, type LookupState } from "../../lib/api-errors";
 
 interface PurchaseOrderFilters {
   search: string;
@@ -62,6 +65,7 @@ const STATUSES = ["DRAFT", "ISSUED", "CLOSED", "CANCELLED"] as const;
 
 export function PurchaseOrdersListScreen() {
   const mayCreate = usePermission("purchasing.purchase-order.create");
+  const mayViewCommercialCost = usePurchasingCommercialCost();
   const navigate = useNavigate();
   const { search } = useLocation();
   const query = useListQueryState<PurchaseOrderFilters>({
@@ -102,8 +106,13 @@ export function PurchaseOrdersListScreen() {
     [currenciesQuery.data],
   );
   const columns = useMemo(
-    () => purchaseOrderColumns(supplierLabels, currencyLabels),
-    [supplierLabels, currencyLabels],
+    () =>
+      purchaseOrderColumns(
+        supplierLabels,
+        currencyLabels,
+        mayViewCommercialCost,
+      ),
+    [supplierLabels, currencyLabels, mayViewCommercialCost],
   );
   const [columnVisibility, setColumnVisibility] = useColumnVisibilityPreference(
     "purchase-orders-list",
@@ -120,7 +129,10 @@ export function PurchaseOrdersListScreen() {
     "filter[status]":
       (query.filters.status as (typeof STATUSES)[number] | undefined) ||
       undefined,
-    sort: query.sort as PurchaseOrdersIndexSort | undefined,
+    sort: (!mayViewCommercialCost &&
+    query.sort?.replace(/^-/, "") === "total_amount"
+      ? "-created_at"
+      : query.sort) as PurchaseOrdersIndexSort | undefined,
     include: "lines",
     per_page: query.perPage,
     page: query.page,
@@ -140,7 +152,9 @@ export function PurchaseOrdersListScreen() {
     query.filters.status,
   ].filter(Boolean).length;
   const activeFilterLines = describeFilters(query.filters, supplierLabels);
-  const { contentRef: printRef, print } = useQuickPrint({ documentTitle: "Purchase Order List" });
+  const { contentRef: printRef, print } = useQuickPrint({
+    documentTitle: "Purchase Order List",
+  });
 
   return (
     // Extra bottom padding below `md` clears the fixed MobileFab — see
@@ -149,14 +163,21 @@ export function PurchaseOrdersListScreen() {
       <PageHeader
         title="Purchase Orders"
         description="Raise supplier commitments, track their lifecycle and continue into receiving."
-        primaryAction={mayCreate ? {
-          // Re-read on every render (closing the sheet navigates, which re-renders
-          // this list) so the button reflects work left in the sheet.
-          label: hasUnfinishedPurchaseOrder() ? "Continue new purchase order" : "New purchase order",
-          // Keep the query string: the list stays mounted behind the create
-          // sheet and reads its filters/search from the URL.
-          onClick: () => navigate({ pathname: "/purchase-orders/new", search }),
-        } : undefined}
+        primaryAction={
+          mayCreate
+            ? {
+                // Re-read on every render (closing the sheet navigates, which re-renders
+                // this list) so the button reflects work left in the sheet.
+                label: hasUnfinishedPurchaseOrder()
+                  ? "Continue new purchase order"
+                  : "New purchase order",
+                // Keep the query string: the list stays mounted behind the create
+                // sheet and reads its filters/search from the URL.
+                onClick: () =>
+                  navigate({ pathname: "/purchase-orders/new", search }),
+              }
+            : undefined
+        }
       />
       <div className="flex flex-wrap items-center gap-2">
         <Input
@@ -168,7 +189,8 @@ export function PurchaseOrdersListScreen() {
           }
         />
         <div className="hidden items-center gap-2 md:flex md:flex-wrap">
-          <PurchaseOrderFilterControls suppliersLookup={lookupState(suppliersQuery, 'suppliers')}
+          <PurchaseOrderFilterControls
+            suppliersLookup={lookupState(suppliersQuery, "suppliers")}
             suppliers={suppliers}
             supplierLabels={supplierLabels}
             query={query}
@@ -185,7 +207,9 @@ export function PurchaseOrdersListScreen() {
         >
           <SlidersHorizontal className="h-4 w-4" />
           Filters
-          {activeFilterCount > 0 && <Badge className="ml-1">{activeFilterCount}</Badge>}
+          {activeFilterCount > 0 && (
+            <Badge className="ml-1">{activeFilterCount}</Badge>
+          )}
         </Button>
       </div>
 
@@ -195,18 +219,27 @@ export function PurchaseOrdersListScreen() {
             <SheetTitle>Filters</SheetTitle>
           </SheetHeader>
           <div className="flex flex-col gap-3 py-4">
-            <PurchaseOrderFilterControls suppliersLookup={lookupState(suppliersQuery, 'suppliers')}
+            <PurchaseOrderFilterControls
+              suppliersLookup={lookupState(suppliersQuery, "suppliers")}
               suppliers={suppliers}
               supplierLabels={supplierLabels}
               query={query}
               full
             />
-            <PrintTrigger onPrint={() => print()} className="w-full justify-center" />
+            <PrintTrigger
+              onPrint={() => print()}
+              className="w-full justify-center"
+            />
           </div>
           <SheetFooter>
             <Button
               variant="ghost"
-              onClick={() => query.setFilters({ supplier_account_id: undefined, status: undefined })}
+              onClick={() =>
+                query.setFilters({
+                  supplier_account_id: undefined,
+                  status: undefined,
+                })
+              }
             >
               Clear filters
             </Button>
@@ -257,11 +290,24 @@ export function PurchaseOrdersListScreen() {
             printedAt={new Date()}
             recordCount={orders.length}
             meta={[
-              ...(activeFilterLines.length > 0 ? [{ label: "Filters", value: activeFilterLines.join(", ") }] : []),
-              ...(query.sort ? [{ label: "Sort", value: describeSort(query.sort, columns) ?? query.sort }] : []),
+              ...(activeFilterLines.length > 0
+                ? [{ label: "Filters", value: activeFilterLines.join(", ") }]
+                : []),
+              ...(query.sort
+                ? [
+                    {
+                      label: "Sort",
+                      value: describeSort(query.sort, columns) ?? query.sort,
+                    },
+                  ]
+                : []),
             ]}
           >
-            <PrintableTable columns={columns} rows={orders} getRowKey={(order) => order.id} />
+            <PrintableTable
+              columns={columns}
+              rows={orders}
+              getRowKey={(order) => order.id}
+            />
           </PrintLayout>
         </div>
       </div>
@@ -275,7 +321,9 @@ function describeFilters(
 ): string[] {
   const lines: string[] = [];
   if (filters.supplier_account_id) {
-    lines.push(`Supplier = ${supplierLabels.get(Number(filters.supplier_account_id)) ?? filters.supplier_account_id}`);
+    lines.push(
+      `Supplier = ${supplierLabels.get(Number(filters.supplier_account_id)) ?? filters.supplier_account_id}`,
+    );
   }
   if (filters.status) lines.push(`Status = ${filters.status}`);
   if (filters.search) lines.push(`Search = "${filters.search}"`);
@@ -292,15 +340,25 @@ interface PurchaseOrderFilterControlsProps {
 }
 
 /** Supplier/Status selects — shared by the always-visible desktop row and the mobile Filters sheet. */
-function PurchaseOrderFilterControls({ suppliersLookup, suppliers, supplierLabels, query, full }: PurchaseOrderFilterControlsProps) {
+function PurchaseOrderFilterControls({
+  suppliersLookup,
+  suppliers,
+  supplierLabels,
+  query,
+  full,
+}: PurchaseOrderFilterControlsProps) {
   const supplierOptions = [
     { value: "all", label: "All suppliers" },
-    ...suppliers.map((supplier) => ({ value: String(supplier.id), label: supplierLabels.get(supplier.id) ?? `#${supplier.id}` })),
+    ...suppliers.map((supplier) => ({
+      value: String(supplier.id),
+      label: supplierLabels.get(supplier.id) ?? `#${supplier.id}`,
+    })),
   ];
 
   return (
     <>
-      <Combobox {...suppliersLookup}
+      <Combobox
+        {...suppliersLookup}
         value={query.filters.supplier_account_id ?? "all"}
         onValueChange={(value) =>
           query.setFilter(
@@ -321,7 +379,10 @@ function PurchaseOrderFilterControls({ suppliersLookup, suppliers, supplierLabel
           query.setFilter("status", value === "all" ? undefined : value)
         }
       >
-        <SelectTrigger className={full ? "h-9 w-full" : "h-9 w-40"} aria-label="Status">
+        <SelectTrigger
+          className={full ? "h-9 w-full" : "h-9 w-40"}
+          aria-label="Status"
+        >
           <SelectValue placeholder="Status" />
         </SelectTrigger>
         <SelectContent>

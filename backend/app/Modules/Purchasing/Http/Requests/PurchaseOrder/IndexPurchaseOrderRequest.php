@@ -6,6 +6,7 @@ namespace App\Modules\Purchasing\Http\Requests\PurchaseOrder;
 
 use App\Http\Requests\Concerns\ValidatesListQuery;
 use App\Modules\Purchasing\Support\PurchaseOrderStatus;
+use App\Modules\Purchasing\Support\PurchasingCommercialAccess;
 use App\Modules\Purchasing\Support\PurchasingReadAccess;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -16,7 +17,9 @@ class IndexPurchaseOrderRequest extends FormRequest
 
     public function authorize(): bool
     {
-        return PurchasingReadAccess::purchaseOrders($this->user());
+        return PurchasingReadAccess::purchaseOrders($this->user())
+            && (ltrim($this->string('sort')->toString(), '-') !== 'total_amount'
+                || PurchasingCommercialAccess::canView($this->user()));
     }
 
     /** @return array<string, mixed> */

@@ -22,10 +22,12 @@ import type {
 
 import type {
   AuthenticationExceptionResponse,
+  AuthorizationExceptionResponse,
   ModelNotFoundExceptionResponse,
   StoreWarehouseLocationAssignmentRequest,
   UpdateWarehouseLocationAssignmentRequest,
   ValidationExceptionResponse,
+  WarehouseLocationRolesDestroy403,
   WarehouseLocationRolesIndex200,
   WarehouseLocationRolesIndexParams,
   WarehouseLocationRolesShow200,
@@ -261,6 +263,11 @@ export type warehouseLocationRolesStoreResponse401 = {
   status: 401;
 };
 
+export type warehouseLocationRolesStoreResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type warehouseLocationRolesStoreResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -272,6 +279,7 @@ export type warehouseLocationRolesStoreResponseSuccess =
   };
 export type warehouseLocationRolesStoreResponseError = (
   | warehouseLocationRolesStoreResponse401
+  | warehouseLocationRolesStoreResponse403
   | warehouseLocationRolesStoreResponse422
 ) & {
   headers: Headers;
@@ -301,7 +309,10 @@ export const warehouseLocationRolesStore = async (
 };
 
 export const getWarehouseLocationRolesStoreMutationOptions = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -344,10 +355,15 @@ export type WarehouseLocationRolesStoreMutationResult = NonNullable<
 export type WarehouseLocationRolesStoreMutationBody =
   StoreWarehouseLocationAssignmentRequest;
 export type WarehouseLocationRolesStoreMutationError =
-  AuthenticationExceptionResponse | ValidationExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
 
 export const useWarehouseLocationRolesStore = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(
   options?: {
@@ -636,6 +652,11 @@ export type warehouseLocationRolesDestroyResponse401 = {
   status: 401;
 };
 
+export type warehouseLocationRolesDestroyResponse403 = {
+  data: WarehouseLocationRolesDestroy403;
+  status: 403;
+};
+
 export type warehouseLocationRolesDestroyResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -647,6 +668,7 @@ export type warehouseLocationRolesDestroyResponseSuccess =
   };
 export type warehouseLocationRolesDestroyResponseError = (
   | warehouseLocationRolesDestroyResponse401
+  | warehouseLocationRolesDestroyResponse403
   | warehouseLocationRolesDestroyResponse404
 ) & {
   headers: Headers;
@@ -676,7 +698,10 @@ export const warehouseLocationRolesDestroy = async (
 };
 
 export const getWarehouseLocationRolesDestroyMutationOptions = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | WarehouseLocationRolesDestroy403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -718,10 +743,15 @@ export type WarehouseLocationRolesDestroyMutationResult = NonNullable<
 >;
 
 export type WarehouseLocationRolesDestroyMutationError =
-  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
+  | AuthenticationExceptionResponse
+  | WarehouseLocationRolesDestroy403
+  | ModelNotFoundExceptionResponse;
 
 export const useWarehouseLocationRolesDestroy = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | WarehouseLocationRolesDestroy403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(
   options?: {
@@ -755,6 +785,11 @@ export type warehouseLocationRolesUpdateResponse401 = {
   status: 401;
 };
 
+export type warehouseLocationRolesUpdateResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type warehouseLocationRolesUpdateResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -771,6 +806,7 @@ export type warehouseLocationRolesUpdateResponseSuccess =
   };
 export type warehouseLocationRolesUpdateResponseError = (
   | warehouseLocationRolesUpdateResponse401
+  | warehouseLocationRolesUpdateResponse403
   | warehouseLocationRolesUpdateResponse404
   | warehouseLocationRolesUpdateResponse422
 ) & {
@@ -806,6 +842,7 @@ export const warehouseLocationRolesUpdate = async (
 export const getWarehouseLocationRolesUpdateMutationOptions = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -864,12 +901,14 @@ export type WarehouseLocationRolesUpdateMutationBody =
   UpdateWarehouseLocationAssignmentRequest;
 export type WarehouseLocationRolesUpdateMutationError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
 export const useWarehouseLocationRolesUpdate = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,

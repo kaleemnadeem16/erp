@@ -378,6 +378,7 @@ class QueryStockAvailabilityTest extends TestCase
         $user = PurchasingActor::make([
             'purchasing.purchase-order.issue',
             'purchasing.goods-receipt.create',
+            'purchasing.commercial-cost.view',
             'purchasing.goods-receipt.post',
             'purchasing.quality-disposition.post',
         ]);

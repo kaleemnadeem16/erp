@@ -11,6 +11,7 @@ final class PermissionVocabulary
     public static function all(): array
     {
         return [
+            'purchasing.commercial-cost.view',
             'purchasing.purchase-order.view',
             'purchasing.purchase-order.create',
             'purchasing.purchase-order.issue',

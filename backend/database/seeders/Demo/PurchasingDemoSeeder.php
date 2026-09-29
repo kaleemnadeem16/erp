@@ -109,6 +109,7 @@ final class PurchasingDemoSeeder extends Seeder
 
         $this->seedGoodsReceipts($location, $currency);
         $this->seedDraftGoodsReceipt($location, $currency);
+        $this->seedReceivingClerkDraftReceipt($location, $currency);
         $this->seedReversedGoodsReceipt($location, $currency, $demoUser);
         $this->seedInventoryOverviewDemoData($location, $currency, $demoUser);
         $this->seedMultiLinePurchaseOrder($currency);
@@ -162,7 +163,7 @@ final class PurchasingDemoSeeder extends Seeder
                     'currency_id' => $currency->getKey(), 'fx_rate' => '1.000000000',
                     'fx_rate_date' => $orderedAt, 'fx_rate_type' => 'SPOT', 'fx_rate_source' => 'manual',
                 ]],
-            ], $data['key']);
+            ], $this->actor, $data['key']);
             app(PostGoodsReceipt::class)($receipt, $this->actor);
         }
     }
@@ -206,7 +207,59 @@ final class PurchasingDemoSeeder extends Seeder
                 'currency_id' => $currency->getKey(), 'fx_rate' => '1.000000000',
                 'fx_rate_date' => $orderedAt, 'fx_rate_type' => 'SPOT', 'fx_rate_source' => 'manual',
             ]],
-        ], $key);
+        ], $this->actor, $key);
+        // Deliberately never posted.
+    }
+
+    /**
+     * A Receiving Clerk who may record what arrived but cannot see supplier economics (ADR 0069): the
+     * account holds view and create for receipts, view for purchase orders and QA disposition, and NOT
+     * `purchasing.commercial-cost.view`, so every price, cost and FX field is absent from what they see.
+     * They sign in with the demo password. Their draft receipt is submitted without any monetary field;
+     * the server derives the provisional cost, currency and FX evidence from the issued purchase order,
+     * which is what a person with commercial visibility then sees on it.
+     */
+    private function seedReceivingClerkDraftReceipt(Location $location, Currency $currency): void
+    {
+        $clerk = User::query()->updateOrCreate(
+            ['email' => 'demo-receiver@erp.x1techs.com'],
+            ['name' => 'Demo Receiving Clerk', 'password' => config('demo.user.password')],
+        );
+        $clerk->forceFill(['email_verified_at' => now()])->save();
+        $clerk->syncPermissions([
+            'purchasing.purchase-order.view', 'purchasing.goods-receipt.view', 'purchasing.goods-receipt.create',
+            'purchasing.quality-disposition.post',
+        ]);
+
+        $key = 'demo-receipt-thinner-clerk-draft';
+        if (GoodsReceipt::query()->where('idempotency_key', $key)->exists()) {
+            return;
+        }
+
+        $item = Item::query()->where('code', 'demo-thinner')->firstOrFail();
+        $supplier = SupplierAccount::query()->where('code', 'sup-pakchem')->firstOrFail();
+        $orderedAt = now()->subDay()->format('Y-m-d');
+
+        $order = app(CreatePurchaseOrder::class)([
+            'supplier_account_id' => $supplier->getKey(), 'currency_id' => $currency->getKey(),
+            'fx_rate' => '1.000000000', 'fx_rate_date' => $orderedAt, 'fx_rate_type' => 'SPOT', 'fx_rate_source' => 'manual',
+            'order_date' => $orderedAt,
+            'lines' => [[
+                'line_number' => 1, 'item_id' => $item->getKey(), 'description' => $item->name,
+                'ordered_qty' => '40.0000', 'purchase_uom_id' => $item->stock_uom_id, 'unit_price' => '348.0000',
+            ]],
+        ]);
+        $line = app(IssuePurchaseOrder::class)($order, $this->actor)->lines->sole();
+
+        app(CreateGoodsReceipt::class)([
+            'supplier_account_id' => $supplier->getKey(),
+            'physical_arrival_at' => now()->subDay()->toIso8601String(),
+            'posting_date' => $orderedAt,
+            'lines' => [[
+                'purchase_order_line_id' => $line->getKey(), 'item_id' => $item->getKey(), 'location_id' => $location->getKey(),
+                'received_qty' => '40.0000', 'received_uom_id' => $item->stock_uom_id,
+            ]],
+        ], $clerk, $key);
         // Deliberately never posted.
     }
 
@@ -274,7 +327,7 @@ final class PurchasingDemoSeeder extends Seeder
                 'fx_rate_date' => $orderedAt, 'fx_rate_type' => 'SPOT', 'fx_rate_source' => 'manual',
                 'batch_no' => 'PG-WRONGBATCH',
             ]],
-        ], $key);
+        ], $this->actor, $key);
         $receipt = app(PostGoodsReceipt::class)($receipt, $this->actor);
         app(ReverseGoodsReceipt::class)($receipt, 'Demo: wrong batch received — reversed and re-received separately.', $demoUser->getKey());
     }
@@ -337,7 +390,7 @@ final class PurchasingDemoSeeder extends Seeder
                 'fx_rate_date' => $orderedAt, 'fx_rate_type' => 'SPOT', 'fx_rate_source' => 'manual',
                 'batch_no' => $batchNo,
             ]],
-        ], $idempotencyKey);
+        ], $this->actor, $idempotencyKey);
         app(PostGoodsReceipt::class)($receipt, $this->actor);
     }
 
@@ -379,7 +432,7 @@ final class PurchasingDemoSeeder extends Seeder
                     'fx_rate_date' => $orderedAt, 'fx_rate_type' => 'SPOT', 'fx_rate_source' => 'manual',
                     'serial_no' => $data['serial'],
                 ]],
-            ], $data['key']);
+            ], $this->actor, $data['key']);
             app(PostGoodsReceipt::class)($receipt, $this->actor);
         }
     }
@@ -425,7 +478,7 @@ final class PurchasingDemoSeeder extends Seeder
                 'fx_rate_date' => $orderedAt, 'fx_rate_type' => 'SPOT', 'fx_rate_source' => 'manual',
                 'batch_no' => 'PR-QA-01',
             ]],
-        ], $key);
+        ], $this->actor, $key);
         app(PostGoodsReceipt::class)($receipt, $this->actor);
 
         app(PostQualityDisposition::class)(
