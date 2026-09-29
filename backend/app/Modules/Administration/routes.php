@@ -1,0 +1,15 @@
+<?php
+
+use App\Modules\Administration\Http\Controllers\MemberController;
+use App\Modules\Administration\Http\Controllers\RoleController;
+use Illuminate\Support\Facades\Route;
+
+Route::get('members', [MemberController::class, 'index'])->name('members.index');
+Route::post('members', [MemberController::class, 'store'])->name('members.store');
+Route::get('members/{member}', [MemberController::class, 'show'])->name('members.show');
+Route::post('members/{member}/access', [MemberController::class, 'access'])->name('members.access');
+Route::post('members/{member}/suspend', [MemberController::class, 'suspend'])->name('members.suspend');
+Route::post('members/{member}/reactivate', [MemberController::class, 'reactivate'])->name('members.reactivate');
+Route::post('members/{member}/resend-invitation', [MemberController::class, 'resend'])->name('members.resend-invitation');
+Route::get('permissions', [RoleController::class, 'permissions'])->name('permissions.index');
+Route::apiResource('roles', RoleController::class);

@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Outlet } from "react-router";
 import {
   AppShell,
+  AcceptInvitationScreen,
   ApplicationRateCreateScreen,
   ApplicationRateEditScreen,
   ApplicationRatesListScreen,
@@ -77,6 +78,7 @@ export function AppRouter() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginScreen />} />
+        <Route path="/accept-invitation" element={<AcceptInvitationScreen />} />
         <Route
           path="/"
           element={
