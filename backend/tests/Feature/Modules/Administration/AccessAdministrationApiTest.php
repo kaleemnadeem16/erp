@@ -36,6 +36,41 @@ class AccessAdministrationApiTest extends TestCase
         Notification::assertSentTo($member, MemberInvitation::class);
     }
 
+    public function test_inviting_with_access_requires_the_access_assignment_permission(): void
+    {
+        Notification::fake();
+        $actor = PermissionedActor::grant(User::factory()->create(), [
+            'administration.member.manage',
+            'inventory.item.manage',
+        ]);
+
+        $this->actingAs($actor)->postJson('/api/v1/members', [
+            'name' => 'New User',
+            'email' => 'new@example.com',
+            'direct_permissions' => ['inventory.item.manage'],
+            'reason' => 'Initial responsibility',
+        ])->assertUnprocessable();
+
+        $this->assertDatabaseMissing('users', ['email' => 'new@example.com']);
+    }
+
+    public function test_member_details_can_be_updated_without_changing_access(): void
+    {
+        $actor = PermissionedActor::grant(User::factory()->create(), ['administration.member.manage']);
+        $member = User::factory()->create(['name' => 'Old Name', 'email' => 'old@example.com']);
+
+        $this->actingAs($actor)->patchJson("/api/v1/members/{$member->id}", [
+            'name' => 'Updated Name',
+            'email' => 'updated@example.com',
+        ])->assertOk()->assertJsonPath('data.name', 'Updated Name');
+
+        $this->assertDatabaseHas('users', [
+            'id' => $member->id,
+            'name' => 'Updated Name',
+            'email' => 'updated@example.com',
+        ]);
+    }
+
     public function test_roles_bundle_registered_permissions_and_prevent_privilege_escalation(): void
     {
         $actor = PermissionedActor::grant(User::factory()->create(), ['administration.role.manage', 'administration.role.view', 'inventory.item.manage']);

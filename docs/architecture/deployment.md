@@ -166,6 +166,16 @@ automated release is still the verification point for this job.
     the deploy, it just means the same drift found on 2026-09-26 (Material Preview's new
     `estimating.*` permissions registered but never granted to the live admin) will recur with the
     next feature slice.
+
+    Before handing member onboarding to the Access Administration screens, configure
+    `FRONTEND_URL` to the public SPA origin (for example `https://erp.x1techs.com`) and a real
+    outbound Laravel mail transport. Invitation messages contain a time-limited, single-use link
+    to `${FRONTEND_URL}/accept-invitation`; the default/log mailer is suitable only for local
+    development. Confirm delivery and the link's public origin with a non-administrator test
+    mailbox. The designated administrator must already hold
+    `administration.member.view`, `administration.member.manage`, `administration.role.view`,
+    `administration.role.manage` and `administration.access.assign`; the full-vocabulary sync above
+    supplies them when `ERP_ADMIN_EMAIL` is configured.
 12. Seed data. Company 1 doubles as a demo/sandbox company on this live deployment (the
     user's own choice), so `demo:seed`'s dataset belongs here too, not just in dev — it
     populates currencies/UoMs/chart of accounts/parties/items/warehouses and a run of
@@ -197,8 +207,9 @@ Deployments do not run general seeders automatically. Use these boundaries:
 - **Seeders** are for demo/reference data or explicitly requested one-off provisioning. They can
   create duplicates, overwrite business data or grant access unexpectedly, so they require a
   deliberate operator action in production.
-- **Roles and user assignments** are tenant/business configuration, not release seed data. Create
-  or change them through an administrative API/UI when available, or a reviewed one-off command.
+- **Roles and member assignments** are tenant/business configuration, not release seed data. Create
+  or change them through the Access Administration API/UI; retain the reviewed one-off command
+  path only for bootstrap or recovery when no authorised administrator can sign in.
 
 **Verified working end-to-end** (2026-09-22): `https://erp.x1techs.com` (200, valid TLS),
 `https://api-erp.x1techs.com/api/v1/...` (401 unauthenticated as expected, not 500), and a

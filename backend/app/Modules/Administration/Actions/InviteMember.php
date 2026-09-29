@@ -22,6 +22,11 @@ final class InviteMember
         if (! $actor->can('administration.member.manage')) {
             throw new DomainInvariantException('The actor cannot invite members.', 'email');
         }
+        if (($attributes['role_ids'] ?? []) !== [] || ($attributes['direct_permissions'] ?? []) !== []) {
+            if (! $actor->can('administration.access.assign')) {
+                throw new DomainInvariantException('The actor cannot assign access.', 'role_ids');
+            }
+        }
         $access = $this->guard->validate($actor, $attributes['role_ids'] ?? [], $attributes['direct_permissions'] ?? []);
         $member = DB::transaction(function () use ($attributes, $actor, $access): User {
             $member = User::query()->create(['name' => $attributes['name'], 'email' => $attributes['email'], 'password' => Str::random(64), 'status' => MemberStatus::Invited, 'invited_at' => now(), 'invited_by' => $actor->id]);
