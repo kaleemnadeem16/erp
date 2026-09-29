@@ -133,6 +133,36 @@ measures rather than one opaque score. A different valid package mix at the same
 normally needs no reason unless its cost/waste consequence crosses a configured band. Material
 changes after approval are re-evaluated and cannot inherit an old decision.
 
+## Variance policy storage
+
+[ADR 0054](../decisions/0054-risk-based-material-plan-variance-controls.md)'s configurable control is
+stored in three company-scoped tables (migration `2026_09_29_090000`):
+
+```text
+material_variance_reasons          company-defined reason list; nothing is seeded (demo data only)
+  code (unique per company), name, description, active
+
+material_variance_policies         versioned, effective-dated; the row id is the version an evaluation snapshots
+  scope_type  COMPANY | CATEGORY | ITEM      scope_id NULL iff COMPANY (no FK; validated in the request)
+  minimum_effect  nullable floor: whatever the bands give, never lighter than this
+  reason (why this version), status DRAFT | ACTIVE | SUPERSEDED, effective_from/to, changed_by
+  one ACTIVE per scope; no overlapping periods (same constraints as overhead_policies)
+
+material_variance_policy_bands     the typed conditions of one policy
+  direction OVER | UNDER   measure QUANTITY | PERCENT | COST_AMOUNT | COST_PERCENT
+  threshold ≥ 0            uom_id iff QUANTITY (a quantity means nothing without a unit)
+  effect AUDIT_ONLY | REASON_REQUIRED | APPROVAL_REQUIRED | BLOCKED
+```
+
+Resolution is item → nearest category ancestor → company; the strongest matching effect wins
+(`BLOCKED > APPROVAL_REQUIRED > REASON_REQUIRED > AUDIT_ONLY`). A quantity band names its own unit and
+applies to every item whose stock unit converts to it; for any other item it is skipped and the
+evaluation says so, so a category-wide "over 2 L" works for every liquid without being wrong for a
+kilogram item. `APPROVAL_REQUIRED` is in the vocabulary so the shared approval workflow (Q27) can enable
+it without a schema change, but it is neither storable nor resolvable until then, and waste/residual is
+not a measure until package-level tracking exists — both tracked under
+[Phase 3 deferred work](../phases/phase-3-estimating-core.md#deferred-and-blocked-work).
+
 ## Authorisation impact
 
 Material resolution uses the stable capabilities accepted by
