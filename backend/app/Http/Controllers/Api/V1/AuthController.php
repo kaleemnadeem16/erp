@@ -10,6 +10,7 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\ResetPasswordRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use App\Modules\Administration\Support\MemberStatus;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -31,6 +32,7 @@ class AuthController extends Controller
         // docs/architecture/database.md.
         $credentials = $request->only('email', 'password');
         $credentials['email'] = strtolower($credentials['email']);
+        $credentials['status'] = MemberStatus::Active->value;
 
         if (! Auth::attempt($credentials)) {
             throw ValidationException::withMessages([
@@ -102,7 +104,11 @@ class AuthController extends Controller
                 'email' => strtolower($request->string('email')->toString()),
             ],
             function (User $user, string $password): void {
-                $user->forceFill(['password' => $password])->save();
+                $user->forceFill([
+                    'password' => $password,
+                    'status' => MemberStatus::Active,
+                    'email_verified_at' => $user->email_verified_at ?? now(),
+                ])->save();
             }
         );
 
