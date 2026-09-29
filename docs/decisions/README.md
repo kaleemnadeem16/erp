@@ -78,8 +78,9 @@ in the same commit.
 | [0063](0063-starter-roles-and-user-directory.md) | Offer reviewable starter roles and a user directory | ~~superseded by [0065](0065-role-first-member-access-and-manual-credential-recovery.md)~~ | 2026-09-29 |
 | [0064](0064-pickers-report-a-failed-lookup-and-offer-retry.md) | Pickers report a failed lookup and offer a retry | accepted | 2026-09-29 |
 | [0065](0065-role-first-member-access-and-manual-credential-recovery.md) | Keep member access role-first and permit controlled manual credential recovery | accepted | 2026-09-29 |
+| [0066](0066-capability-driven-screen-navigation.md) | Drive screen navigation from effective capabilities | accepted | 2026-09-29 |
 
-**Next number: 0066**
+**Next number: 0067**
 
 ## By theme
 

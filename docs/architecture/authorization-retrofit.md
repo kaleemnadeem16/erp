@@ -10,6 +10,8 @@
   for the submit/approve seam, though plain create/issue/cancel capabilities don't need to wait
   for that.
 
+The SPA navigation/direct-route presentation gap is closed by [ADR 0066](../decisions/0066-capability-driven-screen-navigation.md): existing effective capabilities now select visible screens. This does **not** complete the pending backend field projection, Estimating CRUD permissions or any future dedicated read/record-scope permission. The shared lookup reads remain deliberately open; do not count a hidden route as an API authorisation test.
+
 This is the concrete, per-feature version of
 [authorization.md](authorization.md#incremental-retrofit-of-already-built-features)'s "Incremental
 retrofit of already-built features" table, for the first three areas audited: Items & Categories,

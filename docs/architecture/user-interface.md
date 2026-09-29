@@ -35,6 +35,11 @@ for the stronger 44 by 44 target. References:
 
 ## Shared ERP interaction rules
 
+Screen navigation and direct routes use one capability-driven map; an inaccessible link is hidden
+and the same URL shows an access message if entered directly. `/` takes a restricted user to their
+first permitted work area rather than the placeholder Dashboard. This is a usability layer only;
+backend authorisation and shared lookup-read policy remain separate ([ADR 0066](../decisions/0066-capability-driven-screen-navigation.md)).
+
 - Lists answer an operational question, not merely expose a table. Show useful defaults and totals,
   preserve filters in the URL and provide a card/detail alternative on narrow screens.
 - An **already-existing** list screen exposes the filters, sort fields and includes its own
