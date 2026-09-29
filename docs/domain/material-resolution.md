@@ -205,6 +205,18 @@ returned only with `estimating.internal_cost.view`; without it that value is `nu
 cost counts as no evidence ("never received" is not "free"), so a cost band is reported skipped. Adjustments
 are part of the evidence fingerprint. Nothing is written.
 
+### What-if on the Material Preview screen
+
+Under each leaf material the screen offers a planned quantity, a unit (any unit that converts to the item's
+stock unit), a reason (the company's active reasons, readable with the preview permission) and a note.
+Typing a quantity changes nothing until the preview is calculated again; then the material shows the standard
+beside the plan, the difference, the effect, the reason status, the conditions that matched and those that
+were skipped (with why), and a headline says whether the whole plan could be adopted as it stands. The stock
+proposal draws for the planned amount and says "planned; the standard is …". Changing the assembly,
+version, customer or a rate dimension discards typed plans, because the materials required may differ.
+Cost observations in a matched condition are shown only with `estimating.internal_cost.view`. Component:
+`frontend/packages/core-ui/src/features/material-preview/variance-what-if.tsx`.
+
 ### How a planned quantity is judged
 
 `EvaluateMaterialVariance` compares a planned quantity with its standard (both in the item's stock unit)

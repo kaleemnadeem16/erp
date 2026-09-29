@@ -5,10 +5,14 @@ import {
   useAssembliesMaterialPreview,
   useCustomerAccountsIndex,
   useLocationsIndex,
+  useMaterialVarianceReasonsIndex,
   useRateDimensionsIndex,
   useUomsIndex,
   useWarehousesIndex,
   type AssembliesMaterialPreview200DataInventory,
+  type AssembliesMaterialPreview200DataVariance,
+  type MaterialVarianceReasonResource,
+  type UomResource,
   type AssemblyResource,
 } from '@erp/core-api';
 import { AlertTriangle, Calculator } from 'lucide-react';
@@ -24,6 +28,7 @@ import { PageHeader } from '../../components/page/page-header';
 import { getApiErrorMessage } from '../../lib/api-errors';
 import { useAuthStore } from '../../stores/auth-store';
 import { InventoryProposalPanel } from './inventory-proposal-panel';
+import { VarianceSummary, VarianceVerdict, WhatIfEditor, type WhatIfPlan } from './variance-what-if';
 
 const NONE = 'NONE';
 const ACTIVE = 'ACTIVE';
@@ -86,6 +91,7 @@ interface PreviewData {
     }>;
   };
   inventory: AssembliesMaterialPreview200DataInventory | null;
+  variance: AssembliesMaterialPreview200DataVariance;
   warnings: string[];
   limitations: string[];
   evidence_fingerprint: string;
@@ -134,7 +140,12 @@ export function MaterialPreviewScreen() {
   const [strategy, setStrategy] = useState(COMPANY_DEFAULT);
   const [showStrategy, setShowStrategy] = useState(false);
   const [preview, setPreview] = useState<PreviewData | null>(null);
+  // What-if planned quantities by item id. They belong to the assembly context they were typed under,
+  // so anything that can change which materials are required clears them (see resetContext).
+  const [plans, setPlans] = useState<Record<number, WhatIfPlan>>({});
   const mutation = useAssembliesMaterialPreview();
+  const reasonsQuery = useMaterialVarianceReasonsIndex({ per_page: 100, sort: 'name', 'filter[active]': true });
+  const reasons = reasonsQuery.data?.status === 200 ? reasonsQuery.data.data.data : [];
 
   const assembly = useMemo(
     () => assemblies.find((candidate) => candidate.id === Number(assemblyId)),
@@ -148,6 +159,13 @@ export function MaterialPreviewScreen() {
     [locations, warehouseId],
   );
 
+  // A change to which assembly, version, customer or rate dimension applies can change which materials
+  // are required, so a plan typed for the old answer must not be replayed against the new one.
+  const resetContext = () => {
+    setPreview(null);
+    setPlans({});
+  };
+
   const selectWarehouse = (value: string) => {
     setWarehouseId(value);
     setLocationId(NONE);
@@ -159,11 +177,20 @@ export function MaterialPreviewScreen() {
     setVersionId(ACTIVE);
     const selected = assemblies.find((candidate) => candidate.id === Number(value));
     setWorkUomId(selected ? String(selected.work_uom_id) : '');
-    setPreview(null);
+    resetContext();
   };
 
   const submit = () => {
     if (!assembly || !workUomId || !workQuantity) return;
+    const plannedAdjustments = Object.entries(plans)
+      .filter(([, plan]) => plan.quantity.trim() !== '')
+      .map(([itemId, plan]) => ({
+        item_id: Number(itemId),
+        planned_quantity: plan.quantity.trim(),
+        uom_id: Number(plan.uomId),
+        reason_id: plan.reasonId === 'NO_REASON' ? null : Number(plan.reasonId),
+        note: plan.note.trim() === '' ? null : plan.note.trim(),
+      }));
     mutation.mutate(
       {
         assembly: assembly.id,
@@ -173,6 +200,7 @@ export function MaterialPreviewScreen() {
           work_uom_id: Number(workUomId),
           customer_id: customerId === NONE ? null : Number(customerId),
           dimension_value_ids: Object.values(dimensionValues).filter((value) => value !== NONE).map(Number),
+          ...(plannedAdjustments.length > 0 ? { planned_adjustments: plannedAdjustments } : {}),
           // Sent only with the capability: the API rejects these inputs outright without it.
           ...(mayViewAvailability
             ? {
@@ -250,7 +278,7 @@ export function MaterialPreviewScreen() {
             <Combobox
               aria-label="Assembly version"
               value={versionId}
-              onValueChange={(value) => { setVersionId(value); setPreview(null); }}
+              onValueChange={(value) => { setVersionId(value); resetContext(); }}
               options={versionOptions(assembly)}
               placeholder="Effective active version"
               searchPlaceholder="Search versions…"
@@ -262,7 +290,7 @@ export function MaterialPreviewScreen() {
             <Combobox
               aria-label="Customer"
               value={customerId}
-              onValueChange={(value) => { setCustomerId(value); setPreview(null); }}
+              onValueChange={(value) => { setCustomerId(value); resetContext(); }}
               options={[
                 { value: NONE, label: 'Company-default formulation' },
                 ...customers.map((row) => ({ value: String(row.id), label: `${row.code} — ${row.party?.name ?? 'Customer'}` })),
@@ -297,7 +325,7 @@ export function MaterialPreviewScreen() {
                 value={dimensionValues[dimension.id] ?? NONE}
                 onValueChange={(value) => {
                   setDimensionValues((current) => ({ ...current, [dimension.id]: value }));
-                  setPreview(null);
+                  resetContext();
                 }}
                 options={[
                   { value: NONE, label: 'Not specified' },
@@ -370,12 +398,36 @@ export function MaterialPreviewScreen() {
         )}
       </section>
 
-      {preview && <PreviewResult data={preview} mayViewAvailability={mayViewAvailability} mayViewCost={mayViewCost} />}
+      {preview && (
+        <PreviewResult
+          data={preview}
+          mayViewAvailability={mayViewAvailability}
+          mayViewCost={mayViewCost}
+          plans={plans}
+          onPlanChange={(itemId, plan) => setPlans((current) => ({ ...current, [itemId]: plan }))}
+          uoms={uoms}
+          reasons={reasons}
+          isCalculating={mutation.isPending}
+        />
+      )}
     </div>
   );
 }
 
-function PreviewResult({ data, mayViewAvailability, mayViewCost }: { data: PreviewData; mayViewAvailability: boolean; mayViewCost: boolean }) {
+interface PreviewResultProps {
+  data: PreviewData;
+  mayViewAvailability: boolean;
+  mayViewCost: boolean;
+  plans: Record<number, WhatIfPlan>;
+  onPlanChange: (itemId: number, plan: WhatIfPlan) => void;
+  uoms: UomResource[];
+  reasons: MaterialVarianceReasonResource[];
+  isCalculating: boolean;
+}
+
+function PreviewResult({ data, mayViewAvailability, mayViewCost, plans, onPlanChange, uoms, reasons, isCalculating }: PreviewResultProps) {
+  const verdicts = new Map((data.variance?.items ?? []).map((verdict) => [verdict.item.id, verdict]));
+  const pendingEdits = Object.values(plans).some((plan) => plan.quantity.trim() !== '');
   return (
     <div className="space-y-5">
       <section className="rounded-lg border p-4">
@@ -396,7 +448,13 @@ function PreviewResult({ data, mayViewAvailability, mayViewCost }: { data: Previ
       </section>
 
       <section className="space-y-3 rounded-lg border p-4">
-        <h2 className="font-semibold">Leaf materials</h2>
+        <div>
+          <h2 className="font-semibold">Leaf materials</h2>
+          <p className="text-sm text-muted-foreground">
+            To ask “what if we plan a different amount?”, type a planned quantity for a material and calculate again. Nothing is saved or reserved.
+          </p>
+        </div>
+        {data.variance && <VarianceSummary variance={data.variance} />}
         {data.leaf_requirements.length === 0 && <p className="text-sm text-muted-foreground">This Assembly has no material requirement.</p>}
         {data.leaf_requirements.map((leaf) => (
           <div key={leaf.item.id} className="rounded-md border p-3">
@@ -409,8 +467,20 @@ function PreviewResult({ data, mayViewAvailability, mayViewCost }: { data: Previ
                 <p key={`${contribution.component_id}-${index}`}>{contribution.quantity} {leaf.uom.code} · {contribution.path.join(' → ')}</p>
               ))}
             </div>
+            {verdicts.get(leaf.item.id) && <VarianceVerdict item={verdicts.get(leaf.item.id)!} mayViewCost={mayViewCost} />}
+            <WhatIfEditor
+              itemCode={leaf.item.code}
+              standardUomId={leaf.uom.id}
+              plan={plans[leaf.item.id]}
+              onChange={(plan) => onPlanChange(leaf.item.id, { ...plan, uomId: plan.uomId || String(leaf.uom.id) })}
+              uoms={uoms}
+              reasons={reasons}
+            />
           </div>
         ))}
+        {pendingEdits && !isCalculating && (
+          <p className="text-sm text-muted-foreground">Calculate the preview again to judge the planned quantities you have entered.</p>
+        )}
       </section>
 
       {data.inventory ? (

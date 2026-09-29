@@ -90,13 +90,18 @@ function ItemStock({ item, mayViewCost }: { item: AssembliesMaterialPreview200Da
   const heldForQa = isPositive(item.held_for_qa_quantity);
   const inUnusableLocations = isPositive(item.unusable_location_quantity);
   const recommendation = item.recommendation;
+  // With a what-if plan the stock is drawn for the planned amount, so say so beside the standard.
+  const planned = Number(item.required_quantity) !== Number(item.standard_quantity);
 
   return (
     <div className="space-y-3 rounded-md border p-3" role="group" aria-label={heading}>
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <div className="font-medium">{heading}</div>
-          <div className="text-sm text-muted-foreground">Needs {qty(item.required_quantity)} {unit}</div>
+          <div className="text-sm text-muted-foreground">
+            Needs {qty(item.required_quantity)} {unit}
+            {planned && ` (planned; the standard is ${qty(item.standard_quantity)} ${unit})`}
+          </div>
         </div>
         {short ? (
           <Badge variant="warning">Short by {qty(item.shortage_quantity)} {unit}</Badge>

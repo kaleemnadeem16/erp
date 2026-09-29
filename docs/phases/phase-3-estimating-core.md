@@ -230,7 +230,8 @@ module-scoped demo data (`database/seeders/Demo/Estimating/`, per
         frontend action/field gating. Decided 2026-09-29 to deliver the *configurable* feature, not a
         built-in default only: company-defined variance reasons, versioned company/category/item
         policies of typed bands (strongest effect wins), an evaluator, management APIs and screens,
-        preview integration (planned quantity also drives the inventory proposal) and demo data. Its
+        preview integration (planned quantity also drives the inventory proposal), the what-if UI on
+        the Material Preview screen (done 2026-09-29) and demo data. Its
         deliberate limits are tracked under
         [Deferred and blocked work](#deferred-and-blocked-work) rather than left implicit
       - [ ] **Completion slice** — stale fingerprint/warnings, accessibility and end-to-end tests,
