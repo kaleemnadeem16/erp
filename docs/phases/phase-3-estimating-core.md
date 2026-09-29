@@ -227,7 +227,12 @@ module-scoped demo data (`database/seeders/Demo/Estimating/`, per
         equivalents and the `PACKAGE_BALANCE`/`CONTAINER_TRACKED` modes — 2026-09-28
       - [ ] **Variance and sensitive-field slice** — hypothetical planned adjustments and ADR 0054
         outcome, independent availability/cost field filtering, effective-permission exposure and
-        frontend action/field gating
+        frontend action/field gating. Decided 2026-09-29 to deliver the *configurable* feature, not a
+        built-in default only: company-defined variance reasons, versioned company/category/item
+        policies of typed bands (strongest effect wins), an evaluator, management APIs and screens,
+        preview integration (planned quantity also drives the inventory proposal) and demo data. Its
+        deliberate limits are tracked under
+        [Deferred and blocked work](#deferred-and-blocked-work) rather than left implicit
       - [ ] **Completion slice** — stale fingerprint/warnings, accessibility and end-to-end tests,
         Phase 3 product journey and final implementation-truth documentation
 - [x] Exclusion-constraint pattern applied consistently across formulation, overhead-policy and
@@ -236,6 +241,62 @@ module-scoped demo data (`database/seeders/Demo/Estimating/`, per
       tracked the exclusion constraint only, never a CTE requirement for every version table
 
 Tick these in the same commit as the work.
+
+## Deferred and blocked work
+
+Things this phase knowingly does not do, each with what it waits on, so none is forgotten. Tick an
+item here in the same commit that delivers it; add new ones as they are found.
+
+### Waiting on another feature
+
+- [ ] **`APPROVAL_REQUIRED` variance band** — [ADR 0054](../decisions/0054-risk-based-material-plan-variance-controls.md)
+      §7 forbids offering it before the shared approval contract exists, and forbids faking it with a
+      permission or text field. The effect is stored in the policy vocabulary but neither selectable nor
+      resolvable; a configuration that somehow resolves to it blocks, never degrades to a reason. Waits
+      on [Q27](../OPEN-QUESTIONS.md#q27--shared-approval-workflow-contract) (which also serves Q28's
+      purchase-order approval) and, for routing, on the users/roles/teams work in progress elsewhere.
+- [ ] **Waste/residual variance bands** — ADR 0054 lists expected package residual as a controlled
+      measure, but residual needs sealed-pack and remnant state that only `PACKAGE_BALANCE` /
+      `CONTAINER_TRACKED` tracking ([ADR 0052](../decisions/0052-progressive-inventory-package-tracking.md))
+      provides. Shown as "not available yet"; bands configured before it exists must keep working
+      unchanged when it does. Waits on those Inventory modes and `item_packagings`.
+- [ ] **Package-level proposals** — the `PACKAGE_BALANCE` / `CONTAINER_TRACKED` modes, package
+      definitions, package equivalents of a quantity ("about two 5 L cans") and open-remnant / expiry /
+      surplus criteria in the ADR 0053 presets. See
+      [inventory-packages.md](../domain/inventory-packages.md#first-implementation-quantity_only-availability-and-allocation).
+- [ ] **Stored strategy settings** — item, category and company selection strategy
+      (`MINIMISE_WASTE` etc.) resolves only to the built-in default or a per-request override today.
+- [ ] **Hand-built package/location mix** evaluated by the resolver (a user choosing an arbitrary draw
+      rather than comparing the three presets), and the ADR 0054 §4 rule that a different valid mix at
+      the same planned quantity needs no reason unless its cost/waste crosses a band.
+- [ ] **Department-limited availability** — company-wide only until
+      [Q26](../OPEN-QUESTIONS.md#q26--organisational-and-record-level-access-scope).
+- [ ] **Persisted adoption, approval and history** (`material_plan.adjust`, `package_plan.adopt`,
+      `material_variance.request/approve`, `material_resolution_history.view`) — registered but not
+      actionable; they belong to a Phase 4 quotation revision, not a temporary Phase 3 draft.
+
+### Open questions and gaps
+
+- [ ] **[Q32](../OPEN-QUESTIONS.md#q32--pickers-and-lookups-that-fail-to-load-read-as-empty)** —
+      pickers and lookups that fail to load read as "No items found".
+- [ ] **Usable-stock location rule** — only `STORAGE` and `RECEIVING` locations count as usable in the
+      availability read (conservative; may under-report). Awaiting the owner's confirmation.
+- [ ] **Variance reporting** (ADR 0054 §8) — distinguishing one-off justified exceptions from repeated
+      deviations that should trigger a standards review. Needs adopted history, so it follows Phase 4.
+
+### Demo-data gaps
+
+Stock workflows without later-state demo data (see
+[environments.md](../architecture/environments.md#development-demo-data)):
+
+- [ ] Cutover negative-opening exception — only one non-failed cutover is allowed per company and the
+      existing one is already approved, so it could appear on a fresh database only.
+- [ ] A HIGH_RISK two-approver recalculation and a regeneration paused for review.
+- [ ] Serial (SPECIFIC) stock transfers — the only serial item is shared with other scenarios.
+- [ ] Typed locations (quarantine, receiving, multi-location warehouses) — needs the demo company in
+      `STRUCTURED` location mode, which changes every warehouse screen, so it needs an explicit decision.
+- [ ] The older seeded recalculation's approval expires after the company TTL, so its "execute it live"
+      step lapses.
 
 ## Acceptance criteria
 
