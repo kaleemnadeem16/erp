@@ -17,4 +17,12 @@ class Role extends SpatieRole
     use LogsActivityWithDefaults;
 
     protected $fillable = ['team_id', 'name', 'guard_name', 'description'];
+
+    /** @param array<string, mixed> $attributes */
+    public function __construct(array $attributes = [])
+    {
+        $attributes['guard_name'] ??= 'web';
+
+        parent::__construct($attributes);
+    }
 }

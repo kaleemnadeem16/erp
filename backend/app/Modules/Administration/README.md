@@ -30,6 +30,9 @@ The backend is authoritative. The SPA gates navigation/actions for usability onl
 - Roles/direct permissions are additive.
 - An actor cannot grant a capability they do not hold or edit their own access.
 - Role and member queries remain inside the active company/team.
+- Roles use the `web` guard even when the request is authenticated through Sanctum. Keep the
+  model's default guard explicit: role-list member counts build the `users` relation on an
+  unhydrated model, and Sanctum has no user provider for that relation.
 - Access changes carry a reason and before/after audit evidence.
 
 ## Entry points

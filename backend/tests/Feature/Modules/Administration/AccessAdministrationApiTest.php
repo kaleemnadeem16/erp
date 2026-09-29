@@ -102,6 +102,19 @@ class AccessAdministrationApiTest extends TestCase
         $response->assertCreated()->assertJsonPath('data.name', 'Item Manager');
     }
 
+    public function test_roles_list_includes_assigned_member_counts_under_api_authentication(): void
+    {
+        $actor = PermissionedActor::grant(User::factory()->create(), ['administration.role.view']);
+        $role = Role::query()->create(['team_id' => 1, 'name' => 'Buyer', 'guard_name' => 'web']);
+        $member = User::factory()->create();
+        $member->assignRole($role);
+
+        $this->actingAs($actor)->getJson('/api/v1/roles')
+            ->assertOk()
+            ->assertJsonPath('data.0.name', 'Buyer')
+            ->assertJsonPath('data.0.members_count', 1);
+    }
+
     public function test_access_assignment_is_audited_and_cannot_target_self(): void
     {
         $actor = PermissionedActor::grant(User::factory()->create(), ['administration.access.assign', 'inventory.item.manage']);
