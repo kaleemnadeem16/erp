@@ -283,8 +283,9 @@ item here in the same commit that delivers it; add new ones as they are found.
       [ADR 0064](../decisions/0064-pickers-report-a-failed-lookup-and-offer-retry.md).
 - [x] **Usable-stock location rule** — resolved 2026-09-29 by
       [ADR 0067](../decisions/0067-governed-per-location-usability-mark.md): the type default stays, and a
-      STRUCTURED company can mark a location as counting or not, as a governed policy. Its demo data waits on
-      the typed-location demo decision (no demo location has a type or STRUCTURED mode yet).
+      STRUCTURED company can mark a location as counting or not, as a governed policy. Demo data: `StructuredLocationsDemoSeeder`
+      switches the demo company to STRUCTURED and gives the Main Warehouse a hierarchy, one location of each
+      type with its role, two governed marks and pigment stock placed to show every way a location counts.
 - [ ] **Variance reporting** (ADR 0054 §8) — distinguishing one-off justified exceptions from repeated
       deviations that should trigger a standards review. Needs adopted history, so it follows Phase 4.
 

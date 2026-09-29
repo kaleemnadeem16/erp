@@ -38,6 +38,8 @@ final class DemoDatabaseSeeder extends Seeder
                 NegativeStockLifecycleDemoSeeder::class,
                 RecalculationLifecycleDemoSeeder::class,
                 StockTransfersDemoSeeder::class,
+                // After the stock seeders: it switches the company to STRUCTURED and stocks the pigment in typed locations.
+                StructuredLocationsDemoSeeder::class,
                 RateDimensionsDemoSeeder::class,
                 ApplicationRatesDemoSeeder::class,
                 FormulationsDemoSeeder::class,
