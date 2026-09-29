@@ -2,7 +2,7 @@
 
 # 0062 — Administer company members through invitations and additive roles
 
-- **Status:** accepted
+- **Status:** superseded by [0065](0065-role-first-member-access-and-manual-credential-recovery.md) for optional reasons and manual temporary credentials
 - **Date:** 2026-09-28
 - **Affects:** Phase 0, authentication, administration UI, every capability-gated module
 

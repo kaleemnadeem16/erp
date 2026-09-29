@@ -32,13 +32,20 @@ export function PermissionSelection({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       {Object.entries(groups).map(([owner, permissions]) => (
-        <fieldset key={owner} className="rounded-md border border-border p-4">
-          <legend className="px-1 text-sm font-semibold">
-            {humanise(owner)}
-          </legend>
-          <div className="mt-1 grid gap-3 sm:grid-cols-2">
+        <details key={owner} className="group rounded-md border border-border">
+          <summary className="flex cursor-pointer items-center justify-between gap-3 p-4 text-sm font-semibold">
+            <span>{humanise(owner)}</span>
+            <span className="text-xs font-normal text-muted-foreground">
+              {
+                permissions.filter((permission) => selected.has(permission))
+                  .length
+              }{" "}
+              of {permissions.length} enabled
+            </span>
+          </summary>
+          <div className="grid gap-3 border-t p-4 sm:grid-cols-2">
             {permissions.map((permission) => {
               const id = `permission-${permission}`;
               const label = permission
@@ -70,7 +77,7 @@ export function PermissionSelection({
               );
             })}
           </div>
-        </fieldset>
+        </details>
       ))}
     </div>
   );

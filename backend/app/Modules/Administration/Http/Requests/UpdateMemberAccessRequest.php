@@ -19,7 +19,7 @@ class UpdateMemberAccessRequest extends FormRequest
         return [
             'role_ids' => ['present', 'array'], 'role_ids.*' => ['integer'],
             'direct_permissions' => ['present', 'array'], 'direct_permissions.*' => ['string'],
-            'reason' => ['required', 'string', 'max:1000'],
+            'reason' => ['sometimes', 'nullable', 'string', 'max:1000'],
         ];
     }
 }

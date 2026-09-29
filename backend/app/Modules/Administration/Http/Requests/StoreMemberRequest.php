@@ -24,7 +24,8 @@ class StoreMemberRequest extends FormRequest
             'role_ids.*' => ['integer'],
             'direct_permissions' => ['sometimes', 'array'],
             'direct_permissions.*' => ['string'],
-            'reason' => ['required_with:role_ids,direct_permissions', 'nullable', 'string', 'max:1000'],
+            'reason' => ['sometimes', 'nullable', 'string', 'max:1000'],
+            'send_invitation' => ['sometimes', 'boolean'],
         ];
     }
 }

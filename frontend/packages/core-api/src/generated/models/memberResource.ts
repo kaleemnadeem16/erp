@@ -19,6 +19,8 @@ export interface MemberResource {
   suspended_at: MemberResourceSuspendedAt;
   created_at: MemberResourceCreatedAt;
   updated_at: MemberResourceUpdatedAt;
+  last_login_at: string;
+  access_updated_at: string;
   roles: MemberResourceRolesItem[];
   direct_permissions: unknown[];
   effective_permissions: unknown[];

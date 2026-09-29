@@ -42,6 +42,8 @@ class AuthController extends Controller
 
         /** @var User $user */
         $user = Auth::guard('web')->user();
+        // A sign-in is not a profile/access edit; keep updated_at meaningful.
+        User::withoutTimestamps(fn () => $user->forceFill(['last_login_at' => now()])->save());
 
         if ($request->filled('device_name')) {
             $token = $user->createToken($request->string('device_name')->toString())->plainTextToken;
@@ -52,6 +54,7 @@ class AuthController extends Controller
         }
 
         $request->session()->regenerate();
+        $request->session()->put('credential_version', $user->credential_version);
 
         return (new UserResource($user))->response();
     }
@@ -108,7 +111,10 @@ class AuthController extends Controller
                     'password' => $password,
                     'status' => $user->status === MemberStatus::Invited ? MemberStatus::Active : $user->status,
                     'email_verified_at' => $user->email_verified_at ?? now(),
+                    'must_change_password' => false,
+                    'credential_version' => $user->credential_version + 1,
                 ])->save();
+                $user->tokens()->delete();
             }
         );
 

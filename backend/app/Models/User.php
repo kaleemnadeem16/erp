@@ -4,8 +4,8 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Models\Concerns\LogsActivityWithDefaults;
-use App\Modules\Administration\Support\MemberStatus;
 use App\Modules\Administration\Notifications\MemberPasswordReset;
+use App\Modules\Administration\Support\MemberStatus;
 use App\Support\Concerns\BelongsToCompany;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -78,6 +78,10 @@ class User extends Authenticatable
             'status' => MemberStatus::class,
             'invited_at' => 'datetime',
             'suspended_at' => 'datetime',
+            'last_login_at' => 'datetime',
+            'access_updated_at' => 'datetime',
+            'must_change_password' => 'boolean',
+            'credential_version' => 'integer',
         ];
     }
 }

@@ -74,11 +74,12 @@ in the same commit.
 | [0059](0059-name-a-location-as-warehouse-and-location.md) | Name a location as warehouse / location, and always return its warehouse | accepted | 2026-09-28 |
 | [0060](0060-accept-true-and-false-for-boolean-list-filters.md) | Accept "true" and "false" for boolean list filters, once, in the shared list-query trait | accepted | 2026-09-28 |
 | [0061](0061-retry-only-transient-failures-and-say-why-a-list-failed.md) | Retry only transient failures, and say why a list failed | accepted | 2026-09-28 |
-| [0062](0062-company-member-and-access-administration.md) | Administer company members through invitations and additive roles | accepted | 2026-09-28 |
-| [0063](0063-starter-roles-and-user-directory.md) | Offer reviewable starter roles and a user directory | accepted | 2026-09-29 |
+| [0062](0062-company-member-and-access-administration.md) | Administer company members through invitations and additive roles | ~~superseded by [0065](0065-role-first-member-access-and-manual-credential-recovery.md)~~ | 2026-09-28 |
+| [0063](0063-starter-roles-and-user-directory.md) | Offer reviewable starter roles and a user directory | ~~superseded by [0065](0065-role-first-member-access-and-manual-credential-recovery.md)~~ | 2026-09-29 |
 | [0064](0064-pickers-report-a-failed-lookup-and-offer-retry.md) | Pickers report a failed lookup and offer a retry | accepted | 2026-09-29 |
+| [0065](0065-role-first-member-access-and-manual-credential-recovery.md) | Keep member access role-first and permit controlled manual credential recovery | accepted | 2026-09-29 |
 
-**Next number: 0065**
+**Next number: 0066**
 
 ## By theme
 

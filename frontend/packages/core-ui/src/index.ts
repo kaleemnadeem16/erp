@@ -2,6 +2,7 @@ export { AppShell } from "./layouts/app-shell";
 export { ProtectedRoute } from "./routes/protected-route";
 export { PermissionRoute } from "./routes/permission-route";
 export { LoginScreen } from "./features/auth/login-screen";
+export { PasswordChangeRequiredScreen } from "./features/auth/password-change-required-screen";
 export { DashboardScreen } from "./features/dashboard/dashboard-screen";
 export { useAuthStore } from "./stores/auth-store";
 export { useSession } from "./hooks/use-session";

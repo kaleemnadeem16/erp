@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Modules\Administration\Actions\ChangeMemberStatus;
 use App\Modules\Administration\Actions\InviteMember;
+use App\Modules\Administration\Actions\IssueTemporaryMemberPassword;
 use App\Modules\Administration\Actions\SyncMemberAccess;
 use App\Modules\Administration\Actions\UpdateMember;
 use App\Modules\Administration\Http\Requests\StoreMemberRequest;
@@ -112,6 +113,20 @@ class MemberController extends Controller
         return response()->json(['message' => 'Password reset link sent.']);
     }
 
+    public function issueTemporaryPassword(Request $request, User $member, IssueTemporaryMemberPassword $issue): JsonResponse
+    {
+        abort_unless($request->user()?->can('administration.member.manage') && $request->user()?->can('administration.access.assign'), 403);
+        abort_if($request->user()->is($member), 403, 'You cannot reset your own password here.');
+        abort_if($member->status === MemberStatus::Suspended, 422, 'Reactivate this user before issuing a password.');
+        abort_unless($member->getAllPermissions()->pluck('name')->diff($request->user()->getAllPermissions()->pluck('name'))->isEmpty(), 403, 'You cannot issue credentials for a member with capabilities you do not hold.');
+
+        $password = $issue($member, $request->user());
+
+        return response()->json(['data' => ['temporary_password' => $password]])
+            ->header('Cache-Control', 'no-store, private')
+            ->header('Pragma', 'no-cache');
+    }
+
     public function history(Request $request, User $member): JsonResponse
     {
         abort_unless($request->user()?->can('administration.member.view'), 403);
@@ -121,8 +136,8 @@ class MemberController extends Controller
             ->where('subject_type', User::class)
             ->where('subject_id', $member->id)
             ->whereIn('description', [
-                'member invited', 'member invitation resent', 'member details changed', 'member access changed',
-                'member status changed', 'member password reset link sent',
+                'member created', 'member invited', 'member invitation resent', 'member details changed', 'member access changed',
+                'member status changed', 'member password reset link sent', 'member temporary password issued',
             ])
             ->with('causer')
             ->latest('id')

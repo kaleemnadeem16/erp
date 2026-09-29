@@ -2,7 +2,7 @@
 
 # 0063 — Offer reviewable starter roles and a user directory
 
-- **Status:** accepted
+- **Status:** superseded by [0065](0065-role-first-member-access-and-manual-credential-recovery.md) for manual temporary credentials and directory presentation
 - **Date:** 2026-09-29
 - **Affects:** Administration, authentication, role setup and member UI
 

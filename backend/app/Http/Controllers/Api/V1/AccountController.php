@@ -40,7 +40,11 @@ class AccountController extends Controller
     {
         /** @var User $user */
         $user = $request->user();
-        $user->forceFill(['password' => $request->validated('password')])->save();
+        $user->forceFill(['password' => $request->validated('password'), 'must_change_password' => false, 'credential_version' => $user->credential_version + 1])->save();
+        $user->tokens()->delete();
+        if ($request->hasSession()) {
+            $request->session()->put('credential_version', $user->credential_version);
+        }
 
         return response()->json(status: 204);
     }

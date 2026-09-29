@@ -4,10 +4,11 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
+import type { UpdateMemberAccessRequestReason } from "./updateMemberAccessRequestReason";
 
 export interface UpdateMemberAccessRequest {
   role_ids: number[];
   direct_permissions: string[];
   /** @maxLength 1000 */
-  reason: string;
+  reason?: UpdateMemberAccessRequestReason;
 }

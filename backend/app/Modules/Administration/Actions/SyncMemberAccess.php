@@ -28,8 +28,9 @@ final class SyncMemberAccess
             $before = ['roles' => $member->getRoleNames()->values(), 'direct_permissions' => $member->getDirectPermissions()->pluck('name')->values()];
             $member->syncRoles($access['roles']);
             $member->syncPermissions($access['permissions']);
+            $member->forceFill(['access_updated_at' => now()])->save();
             $after = ['roles' => $member->getRoleNames()->values(), 'direct_permissions' => $member->getDirectPermissions()->pluck('name')->values()];
-            activity()->performedOn($member)->causedBy($actor)->withProperties(['reason' => $attributes['reason'], 'before' => $before, 'after' => $after])->log('member access changed');
+            activity()->performedOn($member)->causedBy($actor)->withProperties(['reason' => $attributes['reason'] ?? null, 'before' => $before, 'after' => $after])->log('member access changed');
 
             return $member->refresh();
         });

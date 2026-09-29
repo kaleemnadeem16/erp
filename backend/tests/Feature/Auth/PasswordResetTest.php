@@ -64,6 +64,24 @@ class PasswordResetTest extends TestCase
         $this->assertFalse(Hash::check('old-password', $user->password));
     }
 
+    public function test_reset_link_replaces_a_temporary_password_and_revokes_old_tokens(): void
+    {
+        $user = User::factory()->create(['password' => 'temporary-password']);
+        $user->forceFill(['must_change_password' => true, 'credential_version' => 3])->save();
+        $oldToken = $user->createToken('old device');
+        $token = Password::createToken($user);
+
+        $this->postJson('/api/v1/reset-password', [
+            'token' => $token, 'email' => $user->email,
+            'password' => 'new-private-password', 'password_confirmation' => 'new-private-password',
+        ])->assertOk();
+
+        $this->assertFalse($user->refresh()->must_change_password);
+        $this->assertSame(4, $user->credential_version);
+        $this->assertTrue(Hash::check('new-private-password', $user->password));
+        $this->assertDatabaseMissing('personal_access_tokens', ['id' => $oldToken->accessToken->id]);
+    }
+
     public function test_reset_password_with_an_invalid_token_is_rejected(): void
     {
         $user = User::factory()->create(['password' => Hash::make('old-password')]);

@@ -29,6 +29,9 @@ import type {
   MembersIndex200,
   MembersIndex403,
   MembersIndexParams,
+  MembersIssueTemporaryPassword200,
+  MembersIssueTemporaryPassword403,
+  MembersIssueTemporaryPassword422,
   MembersReactivate200,
   MembersReactivate403,
   MembersReactivateBody,
@@ -1398,6 +1401,146 @@ export const useMembersSendPasswordReset = <
   TContext
 > => {
   const mutationOptions = getMembersSendPasswordResetMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+export type membersIssueTemporaryPasswordResponse200 = {
+  data: MembersIssueTemporaryPassword200;
+  status: 200;
+};
+
+export type membersIssueTemporaryPasswordResponse401 = {
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
+
+export type membersIssueTemporaryPasswordResponse403 = {
+  data: MembersIssueTemporaryPassword403;
+  status: 403;
+};
+
+export type membersIssueTemporaryPasswordResponse404 = {
+  data: ModelNotFoundExceptionResponse;
+  status: 404;
+};
+
+export type membersIssueTemporaryPasswordResponse422 = {
+  data: MembersIssueTemporaryPassword422;
+  status: 422;
+};
+
+export type membersIssueTemporaryPasswordResponseSuccess =
+  membersIssueTemporaryPasswordResponse200 & {
+    headers: Headers;
+  };
+export type membersIssueTemporaryPasswordResponseError = (
+  | membersIssueTemporaryPasswordResponse401
+  | membersIssueTemporaryPasswordResponse403
+  | membersIssueTemporaryPasswordResponse404
+  | membersIssueTemporaryPasswordResponse422
+) & {
+  headers: Headers;
+};
+
+export type membersIssueTemporaryPasswordResponse =
+  | membersIssueTemporaryPasswordResponseSuccess
+  | membersIssueTemporaryPasswordResponseError;
+
+export const getMembersIssueTemporaryPasswordUrl = (member: number) => {
+  return `/v1/members/${member}/issue-temporary-password`;
+};
+
+export const membersIssueTemporaryPassword = async (
+  member: number,
+  options?: RequestInit,
+): Promise<membersIssueTemporaryPasswordResponse> => {
+  return fetchClient<membersIssueTemporaryPasswordResponse>(
+    getMembersIssueTemporaryPasswordUrl(member),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
+
+export const getMembersIssueTemporaryPasswordMutationOptions = <
+  TError =
+    | AuthenticationExceptionResponse
+    | MembersIssueTemporaryPassword403
+    | ModelNotFoundExceptionResponse
+    | MembersIssueTemporaryPassword422,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof membersIssueTemporaryPassword>>,
+    TError,
+    { member: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof fetchClient>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof membersIssueTemporaryPassword>>,
+  TError,
+  { member: number },
+  TContext
+> => {
+  const mutationKey = ["membersIssueTemporaryPassword"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof membersIssueTemporaryPassword>>,
+    { member: number }
+  > = (props) => {
+    const { member } = props ?? {};
+
+    return membersIssueTemporaryPassword(member, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type MembersIssueTemporaryPasswordMutationResult = NonNullable<
+  Awaited<ReturnType<typeof membersIssueTemporaryPassword>>
+>;
+
+export type MembersIssueTemporaryPasswordMutationError =
+  | AuthenticationExceptionResponse
+  | MembersIssueTemporaryPassword403
+  | ModelNotFoundExceptionResponse
+  | MembersIssueTemporaryPassword422;
+
+export const useMembersIssueTemporaryPassword = <
+  TError =
+    | AuthenticationExceptionResponse
+    | MembersIssueTemporaryPassword403
+    | ModelNotFoundExceptionResponse
+    | MembersIssueTemporaryPassword422,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof membersIssueTemporaryPassword>>,
+      TError,
+      { member: number },
+      TContext
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof membersIssueTemporaryPassword>>,
+  TError,
+  { member: number },
+  TContext
+> => {
+  const mutationOptions =
+    getMembersIssueTemporaryPasswordMutationOptions(options);
 
   return useMutation(mutationOptions, queryClient);
 };

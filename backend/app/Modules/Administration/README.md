@@ -9,13 +9,14 @@ Company-scoped member lifecycle, role definitions and access assignments. See
 - Member invitation, suspension/reactivation and invitation resend.
 - Member profile maintenance and invitation acceptance through the shared authentication reset
   flow.
-- Member directory filtering, scoped administration history and link-only password recovery.
+- Member directory filtering, scoped administration history, email recovery and controlled
+  manual temporary-credential issuance.
 - Company role CRUD and registered-permission discovery.
 - Reviewable starter-role suggestions in the SPA; their names have no authorisation meaning.
 - Role and exceptional direct-permission assignment with anti-escalation checks.
 - The `administration.*` permission vocabulary.
 
-It does not own authentication sessions/password mechanics, organisation units, multi-company
+It does not own authentication session implementation or self-service password policy, organisation units, multi-company
 membership, approval workflows or business-module capability names.
 
 ## Permissions
@@ -35,7 +36,10 @@ The backend is authoritative. The SPA gates navigation/actions for usability onl
 - Roles use the `web` guard even when the request is authenticated through Sanctum. Keep the
   model's default guard explicit: role-list member counts build the `users` relation on an
   unhydrated model, and Sanctum has no user provider for that relation.
-- Access changes carry a reason and before/after audit evidence.
+- Member access changes carry before/after audit evidence; their reason is optional. Role-definition
+  and member-status changes still require a reason.
+- A manual temporary password requires both member-management and access-assignment permissions,
+  cannot target self or a suspended member, is shown once and forces a private password change.
 
 ## Entry points
 
@@ -52,4 +56,5 @@ The backend is authoritative. The SPA gates navigation/actions for usability onl
 - [`docs/domain/access-administration.md`](../../../../docs/domain/access-administration.md)
 - [ADR 0062](../../../../docs/decisions/0062-company-member-and-access-administration.md)
 - [ADR 0063](../../../../docs/decisions/0063-starter-roles-and-user-directory.md)
+- [ADR 0065](../../../../docs/decisions/0065-role-first-member-access-and-manual-credential-recovery.md)
 - [`docs/architecture/authorization.md`](../../../../docs/architecture/authorization.md)

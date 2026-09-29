@@ -43,6 +43,8 @@ class LoginTest extends TestCase
     public function test_a_user_can_log_in_with_valid_credentials_via_session_cookie(): void
     {
         $user = User::factory()->create(['password' => Hash::make('correct-password')]);
+        $originalUpdatedAt = $user->updated_at;
+        $this->travel(2)->minutes();
 
         $response = $this->postAsFrontend('/api/v1/login', [
             'email' => $user->email,
@@ -52,6 +54,8 @@ class LoginTest extends TestCase
         $response->assertOk();
         $response->assertJsonPath('data.email', $user->email);
         $this->assertAuthenticatedAs($user);
+        $this->assertNotNull($user->refresh()->last_login_at);
+        $this->assertTrue($originalUpdatedAt->equalTo($user->updated_at));
     }
 
     public function test_login_fails_with_a_422_for_wrong_credentials(): void

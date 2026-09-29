@@ -1,10 +1,10 @@
-import type { ReactNode } from 'react';
-import { Navigate } from 'react-router';
+import type { ReactNode } from "react";
+import { Navigate } from "react-router";
 
-import { useSession } from '../hooks/use-session';
+import { useSession } from "../hooks/use-session";
 
 export function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { isLoading, isAuthenticated } = useSession();
+  const { isLoading, isAuthenticated, user } = useSession();
 
   if (isLoading) {
     return (
@@ -16,6 +16,12 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (
+    (user as { must_change_password?: boolean } | null)?.must_change_password
+  ) {
+    return <Navigate to="/change-password" replace />;
   }
 
   return <>{children}</>;

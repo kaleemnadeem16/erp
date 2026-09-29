@@ -38,6 +38,7 @@ import {
   ItemSuppliersListScreen,
   ItemsListScreen,
   LoginScreen,
+  PasswordChangeRequiredScreen,
   MaterialPreviewScreen,
   MembersSettingsScreen,
   NegativeStockOverrideCreateScreen,
@@ -82,6 +83,10 @@ export function AppRouter() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginScreen />} />
+        <Route
+          path="/change-password"
+          element={<PasswordChangeRequiredScreen />}
+        />
         <Route path="/accept-invitation" element={<AcceptInvitationScreen />} />
         <Route
           path="/reset-password"

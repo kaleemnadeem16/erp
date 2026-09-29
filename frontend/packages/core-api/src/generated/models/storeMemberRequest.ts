@@ -15,4 +15,5 @@ export interface StoreMemberRequest {
   direct_permissions?: string[];
   /** @maxLength 1000 */
   reason?: StoreMemberRequestReason;
+  send_invitation?: boolean;
 }

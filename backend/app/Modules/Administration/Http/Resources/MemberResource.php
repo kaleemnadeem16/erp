@@ -22,6 +22,8 @@ class MemberResource extends JsonResource
             'suspended_at' => $member->suspended_at,
             'created_at' => $member->created_at,
             'updated_at' => $member->updated_at,
+            'last_login_at' => $member->last_login_at,
+            'access_updated_at' => $member->access_updated_at,
             'roles' => $member->roles->map(fn ($role) => ['id' => $role->getKey(), 'name' => $role->getAttribute('name')])->values(),
             'direct_permissions' => $member->getDirectPermissions()->pluck('name')->sort()->values(),
             'effective_permissions' => $member->getAllPermissions()->pluck('name')->sort()->values(),

@@ -29,15 +29,21 @@ final class InviteMember
             }
         }
         $access = $this->guard->validate($actor, $attributes['role_ids'] ?? [], $attributes['direct_permissions'] ?? []);
-        $member = DB::transaction(function () use ($attributes, $actor, $access): User {
+        $sendInvitation = $attributes['send_invitation'] ?? true;
+        $member = DB::transaction(function () use ($attributes, $actor, $access, $sendInvitation): User {
             $member = User::query()->create(['name' => $attributes['name'], 'email' => $attributes['email'], 'password' => Str::random(64), 'status' => MemberStatus::Invited, 'invited_at' => now(), 'invited_by' => $actor->id]);
             $member->syncRoles($access['roles']);
             $member->syncPermissions($access['permissions']);
-            activity()->performedOn($member)->causedBy($actor)->withProperties(['reason' => $attributes['reason'] ?? 'Initial invitation', 'roles' => collect($access['roles'])->pluck('name'), 'direct_permissions' => $access['permissions']])->log('member invited');
+            if ($access['roles'] !== [] || $access['permissions'] !== []) {
+                $member->forceFill(['access_updated_at' => now()])->save();
+            }
+            activity()->performedOn($member)->causedBy($actor)->withProperties(['reason' => $attributes['reason'] ?? null, 'roles' => collect($access['roles'])->pluck('name'), 'direct_permissions' => $access['permissions']])->log($sendInvitation ? 'member invited' : 'member created');
 
             return $member;
         });
-        $member->notify(new MemberInvitation(Password::broker()->createToken($member)));
+        if ($sendInvitation) {
+            $member->notify(new MemberInvitation(Password::broker()->createToken($member)));
+        }
 
         return $member->refresh();
     }

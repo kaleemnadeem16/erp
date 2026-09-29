@@ -13,6 +13,7 @@ import {
   useMembersUpdate,
   usePermissionsIndex,
   useRolesIndex,
+  membersIssueTemporaryPassword,
 } from "@erp/core-api";
 import { Button } from "../../components/ui/button";
 import { Checkbox } from "../../components/ui/checkbox";
@@ -37,6 +38,7 @@ import {
 import { PageHeader } from "../../components/page/page-header";
 import { Textarea } from "../../components/ui/textarea";
 import { getApiErrorMessage } from "../../lib/api-errors";
+import { useListViewPreference } from "../../lib/use-view-preference";
 import { usePermission } from "../../hooks/use-permission";
 import { useAuthStore } from "../../stores/auth-store";
 import { MemberStatusBadge } from "./member-status-badge";
@@ -55,6 +57,8 @@ interface Member {
   status: string;
   created_at?: string | null;
   updated_at?: string | null;
+  last_login_at?: string | null;
+  access_updated_at?: string | null;
   invited_at?: string | null;
   suspended_at?: string | null;
   roles: Role[];
@@ -126,6 +130,7 @@ export function MembersSettingsScreen() {
   const [status, setStatus] = useState("ALL");
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(25);
+  const { view, setView } = useListViewPreference("members-list");
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [editing, setEditing] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
@@ -190,8 +195,14 @@ export function MembersSettingsScreen() {
   >([]);
   const [createCustom, setCreateCustom] = useState(false);
   const [createReason, setCreateReason] = useState("");
+  const [createManual, setCreateManual] = useState(false);
   const [statusAction, setStatusAction] = useState<StatusAction | null>(null);
   const [statusReason, setStatusReason] = useState("");
+  const [issuingPassword, setIssuingPassword] = useState(false);
+  const [temporaryPassword, setTemporaryPassword] = useState<string | null>(
+    null,
+  );
+  const [passwordConfirmOpen, setPasswordConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (!selected) return;
@@ -199,7 +210,7 @@ export function MembersSettingsScreen() {
     setEmail(selected.email);
     setRoleIds(selected.roles.map((role) => role.id));
     setDirectPermissions(selected.direct_permissions);
-    setShowCustom(selected.direct_permissions.length > 0);
+    setShowCustom(false);
     setAccessReason("");
     setError(null);
   }, [selected?.id, selected?.name, selected?.email, selected?.updated_at]);
@@ -234,7 +245,16 @@ export function MembersSettingsScreen() {
         key: "created_at",
         header: "Created",
         value: (member) => dateTime(member.created_at),
-        screenVisible: false,
+      },
+      {
+        key: "last_login_at",
+        header: "Last sign-in",
+        value: (member) => dateTime(member.last_login_at),
+      },
+      {
+        key: "access_updated_at",
+        header: "Access changed",
+        value: (member) => dateTime(member.access_updated_at),
       },
     ],
     [],
@@ -247,6 +267,15 @@ export function MembersSettingsScreen() {
   const sorting: SortingState = [];
   const canEditAccess =
     mayAssign && selected?.id !== currentUser?.id && mayViewRoles;
+  const accessChanged = selected
+    ? [...roleIds].sort((a, b) => a - b).join(",") !==
+        selected.roles
+          .map((role) => role.id)
+          .sort((a, b) => a - b)
+          .join(",") ||
+      [...directPermissions].sort().join(",") !==
+        [...selected.direct_permissions].sort().join(",")
+    : false;
   const rolePermissionCount = new Set(
     roles
       .filter((role) => roleIds.includes(role.id))
@@ -275,6 +304,7 @@ export function MembersSettingsScreen() {
           email: createEmail.trim(),
           role_ids: createRoleIds,
           direct_permissions: createDirectPermissions,
+          send_invitation: !createManual,
           reason:
             createRoleIds.length || createDirectPermissions.length
               ? createReason
@@ -282,7 +312,8 @@ export function MembersSettingsScreen() {
         },
       },
       {
-        onSuccess: () => {
+        onSuccess: async (result) => {
+          const manual = createManual;
           setCreateOpen(false);
           setCreateName("");
           setCreateEmail("");
@@ -290,7 +321,26 @@ export function MembersSettingsScreen() {
           setCreateDirectPermissions([]);
           setCreateCustom(false);
           setCreateReason("");
-          setNotice("User created and activation link sent.");
+          setCreateManual(false);
+          if (manual) {
+            try {
+              const created = (result.data as { data: Member }).data;
+              const issued = await membersIssueTemporaryPassword(created.id);
+              if (issued.status !== 200)
+                throw new Error("Could not issue a temporary password.");
+              setTemporaryPassword(issued.data.data.temporary_password);
+              setNotice(
+                "User created. Share the temporary password privately.",
+              );
+            } catch (requestError) {
+              setError(getApiErrorMessage(requestError));
+              setNotice(
+                "User was created but still needs a password. Open their account and issue one.",
+              );
+            }
+          } else {
+            setNotice("User created and activation link sent.");
+          }
           refresh();
         },
         onError: fail,
@@ -350,6 +400,24 @@ export function MembersSettingsScreen() {
         onError: fail,
       },
     );
+  }
+  async function issuePassword() {
+    if (!selected) return;
+    setIssuingPassword(true);
+    setError(null);
+    try {
+      const response = await membersIssueTemporaryPassword(selected.id);
+      if (response.status !== 200)
+        throw new Error("Could not issue a temporary password.");
+      setPasswordConfirmOpen(false);
+      setTemporaryPassword(response.data.data.temporary_password);
+      setNotice("Temporary password issued. Share it privately with the user.");
+      refresh();
+    } catch (requestError) {
+      fail(requestError);
+    } finally {
+      setIssuingPassword(false);
+    }
   }
 
   return (
@@ -412,6 +480,9 @@ export function MembersSettingsScreen() {
         </select>
       </div>
       <DataTable
+        view={view}
+        onViewChange={setView}
+        cardColumns={columns}
         columns={tableColumns}
         data={members}
         rowCount={meta?.total ?? 0}
@@ -541,13 +612,22 @@ export function MembersSettingsScreen() {
                         onChange={setRoleIds}
                         disabled={!canEditAccess}
                       />
+                      {directPermissions.length > 0 && !showCustom && (
+                        <p className="text-xs text-muted-foreground">
+                          {directPermissions.length} existing custom
+                          permission(s); unchanged unless you open custom
+                          permissions.
+                        </p>
+                      )}
                       <label className="flex items-center gap-2 text-sm">
                         <Checkbox
                           checked={showCustom}
                           disabled={!canEditAccess}
-                          onCheckedChange={(checked) =>
-                            setShowCustom(checked === true)
-                          }
+                          onCheckedChange={(checked) => {
+                            if (checked !== true && selected)
+                              setDirectPermissions(selected.direct_permissions);
+                            setShowCustom(checked === true);
+                          }}
                         />
                         {directPermissions.length
                           ? "Show custom permissions"
@@ -574,7 +654,7 @@ export function MembersSettingsScreen() {
                       {canEditAccess && (
                         <div className="space-y-2">
                           <Label htmlFor="access-reason">
-                            Reason for access change
+                            Reason for access change (optional)
                           </Label>
                           <Textarea
                             id="access-reason"
@@ -584,9 +664,7 @@ export function MembersSettingsScreen() {
                             }
                           />
                           <Button
-                            disabled={
-                              !accessReason.trim() || updateAccess.isPending
-                            }
+                            disabled={!accessChanged || updateAccess.isPending}
                             onClick={submitAccess}
                           >
                             {updateAccess.isPending ? "Saving…" : "Save access"}
@@ -609,6 +687,10 @@ export function MembersSettingsScreen() {
                       <dd>{dateTime(selected.created_at)}</dd>
                       <dt className="text-muted-foreground">Last updated</dt>
                       <dd>{dateTime(selected.updated_at)}</dd>
+                      <dt className="text-muted-foreground">Last sign-in</dt>
+                      <dd>{dateTime(selected.last_login_at)}</dd>
+                      <dt className="text-muted-foreground">Access changed</dt>
+                      <dd>{dateTime(selected.access_updated_at)}</dd>
                       <dt className="text-muted-foreground">Invited</dt>
                       <dd>{dateTime(selected.invited_at)}</dd>
                       <dt className="text-muted-foreground">Suspended</dt>
@@ -715,6 +797,16 @@ export function MembersSettingsScreen() {
                         Send password reset link
                       </Button>
                     )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={issuingPassword || !mayAssign}
+                      onClick={() => setPasswordConfirmOpen(true)}
+                    >
+                      {issuingPassword
+                        ? "Issuing…"
+                        : "Issue temporary password"}
+                    </Button>
                     {selected.status === "SUSPENDED" ? (
                       <Button
                         variant="outline"
@@ -734,7 +826,8 @@ export function MembersSettingsScreen() {
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Administrators never see or choose another user’s password.
+                    A temporary password is shown once and must be changed at
+                    next sign-in. Use a trusted handoff channel.
                   </p>
                 </section>
               )}
@@ -742,6 +835,54 @@ export function MembersSettingsScreen() {
           )}
         </SheetContent>
       </Sheet>
+
+      <Dialog open={passwordConfirmOpen} onOpenChange={setPasswordConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Issue a temporary password?</DialogTitle>
+            <DialogDescription>
+              This immediately replaces the user's password and invalidates
+              existing sessions and device tokens. Verify their identity first.
+              The new password appears once and must be shared through a trusted
+              channel.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setPasswordConfirmOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button disabled={issuingPassword} onClick={issuePassword}>
+              {issuingPassword ? "Issuing…" : "Issue password"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={temporaryPassword !== null}
+        onOpenChange={(open) => {
+          if (!open) setTemporaryPassword(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Temporary password</DialogTitle>
+            <DialogDescription>
+              This is the only time it will be shown. Share it through a trusted
+              channel. The user must replace it at next sign-in.
+            </DialogDescription>
+          </DialogHeader>
+          <code className="break-all rounded-md border bg-muted p-3 text-sm select-all">
+            {temporaryPassword}
+          </code>
+          <DialogFooter>
+            <Button onClick={() => setTemporaryPassword(null)}>Done</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Sheet open={createOpen} onOpenChange={setCreateOpen}>
         <SheetContent
@@ -778,6 +919,21 @@ export function MembersSettingsScreen() {
                 onChange={(event) => setCreateEmail(event.target.value)}
               />
             </div>
+            <label className="flex items-center gap-2 text-sm">
+              <Checkbox
+                checked={createManual}
+                disabled={!mayAssign}
+                onCheckedChange={(checked) => setCreateManual(checked === true)}
+              />
+              Create without email; issue a temporary password
+            </label>
+            {createManual && (
+              <p className="text-xs text-muted-foreground">
+                Verify the user's identity and share the one-time displayed
+                password through a trusted channel. They must change it at first
+                sign-in.
+              </p>
+            )}
             {mayAssign && mayViewRoles && (
               <>
                 <div className="space-y-2">
@@ -791,9 +947,10 @@ export function MembersSettingsScreen() {
                 <label className="flex items-center gap-2 text-sm">
                   <Checkbox
                     checked={createCustom}
-                    onCheckedChange={(checked) =>
-                      setCreateCustom(checked === true)
-                    }
+                    onCheckedChange={(checked) => {
+                      if (checked !== true) setCreateDirectPermissions([]);
+                      setCreateCustom(checked === true);
+                    }}
                   />
                   Give custom permissions
                 </label>
@@ -810,7 +967,7 @@ export function MembersSettingsScreen() {
                   createDirectPermissions.length > 0) && (
                   <div className="space-y-1">
                     <Label htmlFor="create-reason">
-                      Reason for initial access
+                      Reason for initial access (optional)
                     </Label>
                     <Textarea
                       id="create-reason"
@@ -825,9 +982,6 @@ export function MembersSettingsScreen() {
               disabled={
                 !createName.trim() ||
                 !createEmail.trim() ||
-                ((createRoleIds.length > 0 ||
-                  createDirectPermissions.length > 0) &&
-                  !createReason.trim()) ||
                 createMember.isPending
               }
               onClick={submitCreate}
