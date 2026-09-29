@@ -163,6 +163,25 @@ it without a schema change, but it is neither storable nor resolvable until then
 not a measure until package-level tracking exists — both tracked under
 [Phase 3 deferred work](../phases/phase-3-estimating-core.md#deferred-and-blocked-work).
 
+### How a planned quantity is judged
+
+`EvaluateMaterialVariance` compares a planned quantity with its standard (both in the item's stock unit)
+and is deterministic, write-free and never rounds an intermediate value (percentages carry six
+decimals):
+
+- **planned = standard** — no adjustment, so no effect and nothing to explain.
+- **No policy resolved** — ADR 0054's built-in default: any non-zero difference needs a reason.
+- **A policy** — each band in the difference's direction is measured; a band matches at or beyond its
+  threshold; the strongest matching effect wins regardless of the order the bands were entered in. A
+  non-zero difference matching no band is recorded only, and the policy's `minimum_effect` is a floor.
+- **A band that cannot be measured is skipped and reported, never passed or read as zero**: a
+  percentage of a zero standard (absolute rules still apply), a cost band without cost evidence, or a
+  quantity band whose unit does not convert for that item.
+- **`APPROVAL_REQUIRED` resolves to `BLOCKED`** with a stated limitation, never to a reason.
+
+Worked example: a 6.5 L standard planned as 8 L is +1.5 L (+23.076923 %); at a cost of 20 per litre the
+impact is 30, which is 23.08 % of the 130 standard cost.
+
 ## Authorisation impact
 
 Material resolution uses the stable capabilities accepted by
