@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Models\Concerns\LogsActivityWithDefaults;
 use App\Modules\Administration\Support\MemberStatus;
+use App\Modules\Administration\Notifications\MemberPasswordReset;
 use App\Support\Concerns\BelongsToCompany;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -19,6 +20,11 @@ class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use BelongsToCompany, HasApiTokens, HasFactory, HasRoles, LogsActivityWithDefaults, Notifiable;
+
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new MemberPasswordReset($token));
+    }
 
     /**
      * The attributes that are mass assignable.

@@ -4,12 +4,14 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
+import type { MembersIndexStatus } from "./membersIndexStatus";
 
 export type MembersIndexParams = {
   /**
    * @maxLength 255
    */
   search?: string;
+  status?: MembersIndexStatus;
   /**
    * @minimum 1
    */

@@ -41,6 +41,9 @@ activity_log (existing)
 
 - Invitation reserves the globally unique login email, creates an `INVITED` user and sends a single-use,
   expiring set-password link through Laravel's password broker.
+- The UI calls this **Create user**: the account is created immediately with optional initial roles,
+  but cannot sign in until the recipient privately sets a password. An administrator cannot set or
+  read another user's password.
 - Accepting the invitation sets the password, verifies the email and transitions to `ACTIVE`.
 - `INVITED` and `SUSPENDED` accounts cannot authenticate. Suspension also invalidates stored API
   tokens and browser sessions; global API middleware rejects a session if status changed after it
@@ -50,6 +53,13 @@ activity_log (existing)
 - Members are never hard-deleted in V1. Historic actor identity remains intact.
 - Roles are company-scoped reusable bundles. Several roles and direct additions combine
   additively. There is no direct deny.
+- Optional, editable starter-role templates help companies begin with Buyer, Receiving Clerk,
+  Inventory Counter, Master Data Steward and Estimator. Saving is explicit and audited; templates
+  omit high-risk posting, approval, reversal and administration powers. No code checks a role name.
+- Member administration uses a server-paginated search/status directory and a detail/edit side
+  panel. The panel includes profile timestamps and recent, scoped administration events.
+- A member manager can email an `ACTIVE` user a password-reset link; an `INVITED` member instead
+  gets a resent activation invitation. Neither action exposes a token in the API response.
 - A role with assigned members cannot be deleted. Rename/permission changes apply to all assigned
   members and require a reason.
 - Access assignment requires a reason and records before/after snapshots. The actor may assign
@@ -85,6 +95,7 @@ password hashes, reset tokens or sessions.
 ## Related
 
 - [ADR 0062](../decisions/0062-company-member-and-access-administration.md)
+- [ADR 0063](../decisions/0063-starter-roles-and-user-directory.md)
 - [Authorisation](../architecture/authorization.md)
 - [Multi-tenancy](../architecture/multi-tenancy.md)
 - [Phase 0](../phases/phase-0-foundation.md)

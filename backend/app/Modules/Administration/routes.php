@@ -12,5 +12,7 @@ Route::post('members/{member}/access', [MemberController::class, 'access'])->nam
 Route::post('members/{member}/suspend', [MemberController::class, 'suspend'])->name('members.suspend');
 Route::post('members/{member}/reactivate', [MemberController::class, 'reactivate'])->name('members.reactivate');
 Route::post('members/{member}/resend-invitation', [MemberController::class, 'resend'])->name('members.resend-invitation');
+Route::post('members/{member}/send-password-reset', [MemberController::class, 'sendPasswordReset'])->name('members.send-password-reset');
+Route::get('members/{member}/history', [MemberController::class, 'history'])->name('members.history');
 Route::get('permissions', [RoleController::class, 'permissions'])->name('permissions.index');
 Route::apiResource('roles', RoleController::class);

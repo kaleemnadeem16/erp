@@ -24,6 +24,8 @@ import type {
   AuthenticationExceptionResponse,
   AuthorizationExceptionResponse,
   MembersAccess200,
+  MembersHistory200,
+  MembersHistory403,
   MembersIndex200,
   MembersIndex403,
   MembersIndexParams,
@@ -32,6 +34,9 @@ import type {
   MembersReactivateBody,
   MembersResendInvitation403,
   MembersResendInvitation422,
+  MembersSendPasswordReset200,
+  MembersSendPasswordReset403,
+  MembersSendPasswordReset422,
   MembersShow200,
   MembersShow403,
   MembersStore200,
@@ -1257,3 +1262,337 @@ export const useMembersResendInvitation = <
 
   return useMutation(mutationOptions, queryClient);
 };
+export type membersSendPasswordResetResponse200 = {
+  data: MembersSendPasswordReset200;
+  status: 200;
+};
+
+export type membersSendPasswordResetResponse401 = {
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
+
+export type membersSendPasswordResetResponse403 = {
+  data: MembersSendPasswordReset403;
+  status: 403;
+};
+
+export type membersSendPasswordResetResponse404 = {
+  data: ModelNotFoundExceptionResponse;
+  status: 404;
+};
+
+export type membersSendPasswordResetResponse422 = {
+  data: MembersSendPasswordReset422;
+  status: 422;
+};
+
+export type membersSendPasswordResetResponseSuccess =
+  membersSendPasswordResetResponse200 & {
+    headers: Headers;
+  };
+export type membersSendPasswordResetResponseError = (
+  | membersSendPasswordResetResponse401
+  | membersSendPasswordResetResponse403
+  | membersSendPasswordResetResponse404
+  | membersSendPasswordResetResponse422
+) & {
+  headers: Headers;
+};
+
+export type membersSendPasswordResetResponse =
+  | membersSendPasswordResetResponseSuccess
+  | membersSendPasswordResetResponseError;
+
+export const getMembersSendPasswordResetUrl = (member: number) => {
+  return `/v1/members/${member}/send-password-reset`;
+};
+
+export const membersSendPasswordReset = async (
+  member: number,
+  options?: RequestInit,
+): Promise<membersSendPasswordResetResponse> => {
+  return fetchClient<membersSendPasswordResetResponse>(
+    getMembersSendPasswordResetUrl(member),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
+
+export const getMembersSendPasswordResetMutationOptions = <
+  TError =
+    | AuthenticationExceptionResponse
+    | MembersSendPasswordReset403
+    | ModelNotFoundExceptionResponse
+    | MembersSendPasswordReset422,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof membersSendPasswordReset>>,
+    TError,
+    { member: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof fetchClient>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof membersSendPasswordReset>>,
+  TError,
+  { member: number },
+  TContext
+> => {
+  const mutationKey = ["membersSendPasswordReset"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof membersSendPasswordReset>>,
+    { member: number }
+  > = (props) => {
+    const { member } = props ?? {};
+
+    return membersSendPasswordReset(member, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type MembersSendPasswordResetMutationResult = NonNullable<
+  Awaited<ReturnType<typeof membersSendPasswordReset>>
+>;
+
+export type MembersSendPasswordResetMutationError =
+  | AuthenticationExceptionResponse
+  | MembersSendPasswordReset403
+  | ModelNotFoundExceptionResponse
+  | MembersSendPasswordReset422;
+
+export const useMembersSendPasswordReset = <
+  TError =
+    | AuthenticationExceptionResponse
+    | MembersSendPasswordReset403
+    | ModelNotFoundExceptionResponse
+    | MembersSendPasswordReset422,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof membersSendPasswordReset>>,
+      TError,
+      { member: number },
+      TContext
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof membersSendPasswordReset>>,
+  TError,
+  { member: number },
+  TContext
+> => {
+  const mutationOptions = getMembersSendPasswordResetMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+export type membersHistoryResponse200 = {
+  data: MembersHistory200;
+  status: 200;
+};
+
+export type membersHistoryResponse401 = {
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
+
+export type membersHistoryResponse403 = {
+  data: MembersHistory403;
+  status: 403;
+};
+
+export type membersHistoryResponse404 = {
+  data: ModelNotFoundExceptionResponse;
+  status: 404;
+};
+
+export type membersHistoryResponseSuccess = membersHistoryResponse200 & {
+  headers: Headers;
+};
+export type membersHistoryResponseError = (
+  | membersHistoryResponse401
+  | membersHistoryResponse403
+  | membersHistoryResponse404
+) & {
+  headers: Headers;
+};
+
+export type membersHistoryResponse =
+  membersHistoryResponseSuccess | membersHistoryResponseError;
+
+export const getMembersHistoryUrl = (member: number) => {
+  return `/v1/members/${member}/history`;
+};
+
+export const membersHistory = async (
+  member: number,
+  options?: RequestInit,
+): Promise<membersHistoryResponse> => {
+  return fetchClient<membersHistoryResponse>(getMembersHistoryUrl(member), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getMembersHistoryQueryKey = (member?: number) => {
+  return [`/v1/members/${member}/history`] as const;
+};
+
+export const getMembersHistoryQueryOptions = <
+  TData = Awaited<ReturnType<typeof membersHistory>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | MembersHistory403
+    | ModelNotFoundExceptionResponse,
+>(
+  member: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof membersHistory>>, TError, TData>
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getMembersHistoryQueryKey(member);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof membersHistory>>
+  > = () => membersHistory(member, requestOptions);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!member,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof membersHistory>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type MembersHistoryQueryResult = NonNullable<
+  Awaited<ReturnType<typeof membersHistory>>
+>;
+export type MembersHistoryQueryError =
+  | AuthenticationExceptionResponse
+  | MembersHistory403
+  | ModelNotFoundExceptionResponse;
+
+export function useMembersHistory<
+  TData = Awaited<ReturnType<typeof membersHistory>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | MembersHistory403
+    | ModelNotFoundExceptionResponse,
+>(
+  member: number,
+  options: {
+    query: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof membersHistory>>, TError, TData>
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof membersHistory>>,
+          TError,
+          Awaited<ReturnType<typeof membersHistory>>
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useMembersHistory<
+  TData = Awaited<ReturnType<typeof membersHistory>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | MembersHistory403
+    | ModelNotFoundExceptionResponse,
+>(
+  member: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof membersHistory>>, TError, TData>
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof membersHistory>>,
+          TError,
+          Awaited<ReturnType<typeof membersHistory>>
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useMembersHistory<
+  TData = Awaited<ReturnType<typeof membersHistory>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | MembersHistory403
+    | ModelNotFoundExceptionResponse,
+>(
+  member: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof membersHistory>>, TError, TData>
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+
+export function useMembersHistory<
+  TData = Awaited<ReturnType<typeof membersHistory>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | MembersHistory403
+    | ModelNotFoundExceptionResponse,
+>(
+  member: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof membersHistory>>, TError, TData>
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getMembersHistoryQueryOptions(member, options);
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}

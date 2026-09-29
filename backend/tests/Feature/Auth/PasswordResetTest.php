@@ -3,7 +3,7 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\User;
-use Illuminate\Auth\Notifications\ResetPassword;
+use App\Modules\Administration\Notifications\MemberPasswordReset;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\Hash;
@@ -32,7 +32,7 @@ class PasswordResetTest extends TestCase
         $response = $this->postJson('/api/v1/forgot-password', ['email' => $user->email]);
 
         $response->assertOk();
-        Notification::assertSentTo($user, ResetPassword::class);
+        Notification::assertSentTo($user, MemberPasswordReset::class);
     }
 
     public function test_forgot_password_returns_422_for_an_unknown_email(): void

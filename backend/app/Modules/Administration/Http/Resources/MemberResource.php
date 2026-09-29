@@ -20,6 +20,8 @@ class MemberResource extends JsonResource
             'id' => $member->id, 'name' => $member->name, 'email' => $member->email,
             'status' => $member->status->value, 'invited_at' => $member->invited_at,
             'suspended_at' => $member->suspended_at,
+            'created_at' => $member->created_at,
+            'updated_at' => $member->updated_at,
             'roles' => $member->roles->map(fn ($role) => ['id' => $role->getKey(), 'name' => $role->getAttribute('name')])->values(),
             'direct_permissions' => $member->getDirectPermissions()->pluck('name')->sort()->values(),
             'effective_permissions' => $member->getAllPermissions()->pluck('name')->sort()->values(),

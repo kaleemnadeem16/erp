@@ -5,6 +5,7 @@ namespace Tests\Feature\Modules\Administration;
 use App\Models\Role;
 use App\Models\User;
 use App\Modules\Administration\Notifications\MemberInvitation;
+use App\Modules\Administration\Notifications\MemberPasswordReset;
 use App\Modules\Administration\Support\MemberStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
@@ -45,6 +46,26 @@ class AccessAdministrationApiTest extends TestCase
         Notification::assertSentTo($member, MemberInvitation::class);
     }
 
+    public function test_a_new_user_can_be_created_with_an_initial_role(): void
+    {
+        Notification::fake();
+        $actor = PermissionedActor::grant(User::factory()->create(), [
+            'administration.member.manage', 'administration.access.assign', 'inventory.item.manage',
+        ]);
+        $role = Role::query()->create(['team_id' => 1, 'name' => 'Master Data Steward', 'guard_name' => 'web']);
+        $role->givePermissionTo('inventory.item.manage');
+
+        $this->actingAs($actor)->postJson('/api/v1/members', [
+            'name' => 'New Steward', 'email' => 'steward@example.com',
+            'role_ids' => [$role->id], 'direct_permissions' => [], 'reason' => 'Initial item maintenance duty',
+        ])->assertCreated()->assertJsonPath('data.status', 'INVITED')
+            ->assertJsonPath('data.roles.0.name', 'Master Data Steward');
+
+        $member = User::query()->where('email', 'steward@example.com')->sole();
+        $this->assertTrue($member->hasRole($role));
+        Notification::assertSentTo($member, MemberInvitation::class);
+    }
+
     public function test_member_search_and_pagination_reach_later_records(): void
     {
         $viewer = PermissionedActor::grant(User::factory()->create(), ['administration.member.view']);
@@ -56,6 +77,35 @@ class AccessAdministrationApiTest extends TestCase
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.name', 'Bob Example')
             ->assertJsonPath('meta.current_page', 2);
+    }
+
+    public function test_member_status_filter_and_timestamps_support_the_user_directory(): void
+    {
+        $viewer = PermissionedActor::grant(User::factory()->create(), ['administration.member.view']);
+        User::factory()->create(['name' => 'Invited Person', 'status' => MemberStatus::Invited]);
+        User::factory()->create(['name' => 'Active Person']);
+
+        $this->actingAs($viewer)->getJson('/api/v1/members?status=INVITED')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.name', 'Invited Person')
+            ->assertJsonStructure(['data' => [['created_at', 'updated_at']]]);
+    }
+
+    public function test_member_password_reset_link_and_history_are_permission_gated(): void
+    {
+        Notification::fake();
+        $member = User::factory()->create();
+        $viewer = PermissionedActor::grant(User::factory()->create(), ['administration.member.view']);
+        $manager = PermissionedActor::grant(User::factory()->create(), ['administration.member.manage', 'administration.member.view']);
+
+        $this->actingAs($viewer)->postJson("/api/v1/members/{$member->id}/send-password-reset")->assertForbidden();
+        $this->actingAs($manager)->postJson("/api/v1/members/{$member->id}/send-password-reset")->assertOk();
+        Notification::assertSentTo($member, MemberPasswordReset::class, fn (MemberPasswordReset $notification) =>
+            str_contains($notification->toMail($member)->actionUrl, '/reset-password?')
+        );
+        $this->actingAs($viewer)->getJson("/api/v1/members/{$member->id}/history")
+            ->assertOk()->assertJsonPath('data.0.description', 'member password reset link sent');
     }
 
     public function test_inviting_with_access_requires_the_access_assignment_permission(): void

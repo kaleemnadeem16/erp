@@ -84,6 +84,10 @@ export function AppRouter() {
         <Route path="/login" element={<LoginScreen />} />
         <Route path="/accept-invitation" element={<AcceptInvitationScreen />} />
         <Route
+          path="/reset-password"
+          element={<AcceptInvitationScreen mode="reset" />}
+        />
+        <Route
           path="/"
           element={
             <ProtectedRoute>

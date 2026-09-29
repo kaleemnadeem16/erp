@@ -28,7 +28,11 @@ const schema = z
   });
 type Values = z.infer<typeof schema>;
 
-export function AcceptInvitationScreen() {
+export function AcceptInvitationScreen({
+  mode = "invitation",
+}: {
+  mode?: "invitation" | "reset";
+}) {
   const [params] = useSearchParams();
   const token = params.get("token") ?? "";
   const email = params.get("email") ?? "";
@@ -61,14 +65,20 @@ export function AcceptInvitationScreen() {
     <main className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
       <section className="w-full max-w-md space-y-6 rounded-xl border bg-card p-6 shadow-sm">
         <div>
-          <h1 className="text-2xl font-semibold">Activate your account</h1>
+          <h1 className="text-2xl font-semibold">
+            {mode === "reset" ? "Reset your password" : "Activate your account"}
+          </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Set your password for {email || "this invitation"}.
+            Set your password for {email || "this account"}.
           </p>
         </div>
         {complete ? (
           <div className="space-y-4">
-            <p>Your account is active.</p>
+            <p>
+              {mode === "reset"
+                ? "Your password has been updated."
+                : "Your account is active."}
+            </p>
             <Button asChild className="w-full">
               <Link to="/login">Continue to sign in</Link>
             </Button>
@@ -78,7 +88,8 @@ export function AcceptInvitationScreen() {
             <form className="space-y-4" onSubmit={form.handleSubmit(submit)}>
               {(!token || !email) && (
                 <p className="text-sm text-destructive">
-                  This invitation link is incomplete.
+                  This {mode === "reset" ? "reset" : "invitation"} link is
+                  incomplete.
                 </p>
               )}
               {error && <p className="text-sm text-destructive">{error}</p>}
@@ -113,7 +124,11 @@ export function AcceptInvitationScreen() {
                 type="submit"
                 disabled={!token || !email || reset.isPending}
               >
-                {reset.isPending ? "Activating…" : "Activate account"}
+                {reset.isPending
+                  ? "Saving…"
+                  : mode === "reset"
+                    ? "Reset password"
+                    : "Activate account"}
               </Button>
             </form>
           </Form>

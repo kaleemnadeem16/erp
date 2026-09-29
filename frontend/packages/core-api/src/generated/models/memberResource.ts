@@ -6,6 +6,8 @@
  */
 import type { MemberResourceInvitedAt } from "./memberResourceInvitedAt";
 import type { MemberResourceSuspendedAt } from "./memberResourceSuspendedAt";
+import type { MemberResourceCreatedAt } from "./memberResourceCreatedAt";
+import type { MemberResourceUpdatedAt } from "./memberResourceUpdatedAt";
 import type { MemberResourceRolesItem } from "./memberResourceRolesItem";
 
 export interface MemberResource {
@@ -15,6 +17,8 @@ export interface MemberResource {
   status: string;
   invited_at: MemberResourceInvitedAt;
   suspended_at: MemberResourceSuspendedAt;
+  created_at: MemberResourceCreatedAt;
+  updated_at: MemberResourceUpdatedAt;
   roles: MemberResourceRolesItem[];
   direct_permissions: unknown[];
   effective_permissions: unknown[];

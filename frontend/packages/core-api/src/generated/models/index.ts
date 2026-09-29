@@ -3,7 +3,7 @@
  * Do not edit manually.
  *
  * Pure-type schemas are re-exported with `export type *` so a browser never requests them;
- * only the 93 schemas that export a runtime value use `export *`.
+ * only the 94 schemas that export a runtime value use `export *`.
  */
 export type * from "./accountShow200";
 export * from "./accountType";
@@ -746,10 +746,17 @@ export * from "./materialVarianceReasonsIndexSort";
 export type * from "./materialVarianceReasonsStore201";
 export type * from "./materialVarianceReasonsUpdate200";
 export type * from "./memberResource";
+export type * from "./memberResourceCreatedAt";
 export type * from "./memberResourceInvitedAt";
 export type * from "./memberResourceRolesItem";
 export type * from "./memberResourceSuspendedAt";
+export type * from "./memberResourceUpdatedAt";
 export type * from "./membersAccess200";
+export type * from "./membersHistory200";
+export type * from "./membersHistory200DataItem";
+export type * from "./membersHistory200DataItemCreatedAt";
+export type * from "./membersHistory200DataItemReason";
+export type * from "./membersHistory403";
 export type * from "./membersIndex200";
 export type * from "./membersIndex200Links";
 export type * from "./membersIndex200LinksFirst";
@@ -764,11 +771,17 @@ export type * from "./membersIndex200MetaPath";
 export type * from "./membersIndex200MetaTo";
 export type * from "./membersIndex403";
 export type * from "./membersIndexParams";
+export * from "./membersIndexStatus";
 export type * from "./membersReactivate200";
 export type * from "./membersReactivate403";
 export type * from "./membersReactivateBody";
 export type * from "./membersResendInvitation403";
 export type * from "./membersResendInvitation422";
+export type * from "./membersSendPasswordReset200";
+export type * from "./membersSendPasswordReset403";
+export type * from "./membersSendPasswordReset422";
+export type * from "./membersSendPasswordReset422AnyOf";
+export type * from "./membersSendPasswordReset422AnyOfTwo";
 export type * from "./membersShow200";
 export type * from "./membersShow403";
 export type * from "./membersStore200";

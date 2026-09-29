@@ -20,6 +20,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Password;
+use Spatie\Activitylog\Models\Activity;
 
 class MemberController extends Controller
 {
@@ -28,6 +29,7 @@ class MemberController extends Controller
         abort_unless($request->user()?->can('administration.member.view'), 403);
         $filters = $request->validate([
             'search' => ['sometimes', 'string', 'max:255'],
+            'status' => ['sometimes', 'in:INVITED,ACTIVE,SUSPENDED'],
             'page' => ['sometimes', 'integer', 'min:1'],
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
         ]);
@@ -36,6 +38,7 @@ class MemberController extends Controller
         return MemberResource::collection(
             User::query()
                 ->with('roles')
+                ->when(isset($filters['status']), fn ($query) => $query->where('status', $filters['status']))
                 ->when($search !== '', fn ($query) => $query->where(fn ($match) => $match
                     ->where('name', 'ilike', "%{$search}%")
                     ->orWhere('email', 'ilike', "%{$search}%")))
@@ -89,7 +92,50 @@ class MemberController extends Controller
         abort_unless($member->status === MemberStatus::Invited, 422);
         $member->forceFill(['invited_at' => now(), 'invited_by' => $request->user()->id])->save();
         $member->notify(new MemberInvitation(Password::broker()->createToken($member)));
+        activity()->performedOn($member)->causedBy($request->user())->log('member invitation resent');
 
         return response()->json(status: 204);
+    }
+
+    public function sendPasswordReset(Request $request, User $member): JsonResponse
+    {
+        abort_unless($request->user()?->can('administration.member.manage'), 403);
+        abort_unless($member->status === MemberStatus::Active, 422);
+
+        $status = Password::sendResetLink(['email' => $member->email]);
+        if ($status !== Password::RESET_LINK_SENT) {
+            return response()->json(['message' => __($status)], 422);
+        }
+
+        activity()->performedOn($member)->causedBy($request->user())->log('member password reset link sent');
+
+        return response()->json(['message' => 'Password reset link sent.']);
+    }
+
+    public function history(Request $request, User $member): JsonResponse
+    {
+        abort_unless($request->user()?->can('administration.member.view'), 403);
+
+        $entries = Activity::query()
+            ->where('company_id', $member->company_id)
+            ->where('subject_type', User::class)
+            ->where('subject_id', $member->id)
+            ->whereIn('description', [
+                'member invited', 'member invitation resent', 'member details changed', 'member access changed',
+                'member status changed', 'member password reset link sent',
+            ])
+            ->with('causer')
+            ->latest('id')
+            ->limit(50)
+            ->get()
+            ->map(fn (Activity $activity): array => [
+                'id' => $activity->id,
+                'description' => $activity->description,
+                'actor' => $activity->causer?->getAttribute('name'),
+                'reason' => $activity->properties->get('reason'),
+                'created_at' => $activity->created_at?->toISOString(),
+            ]);
+
+        return response()->json(['data' => $entries]);
     }
 }

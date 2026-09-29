@@ -1,19 +1,23 @@
 import { useEffect, useMemo, useState } from "react";
-import { MailPlus, RefreshCw, UserRoundCheck, UserRoundX } from "lucide-react";
+import { Pencil, Plus } from "lucide-react";
+import type { PaginationState, SortingState } from "@tanstack/react-table";
 import {
   useMembersAccess,
+  useMembersHistory,
   useMembersIndex,
   useMembersReactivate,
   useMembersResendInvitation,
+  useMembersSendPasswordReset,
   useMembersStore,
   useMembersSuspend,
   useMembersUpdate,
   usePermissionsIndex,
   useRolesIndex,
 } from "@erp/core-api";
-
 import { Button } from "../../components/ui/button";
 import { Checkbox } from "../../components/ui/checkbox";
+import { DataTable, toTanStackColumns } from "../../components/data-table";
+import type { DataColumn } from "../../components/data-table/types";
 import {
   Dialog,
   DialogContent,
@@ -24,52 +28,120 @@ import {
 } from "../../components/ui/dialog";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "../../components/ui/sheet";
 import { PageHeader } from "../../components/page/page-header";
-import { Skeleton } from "../../components/ui/skeleton";
 import { Textarea } from "../../components/ui/textarea";
 import { getApiErrorMessage } from "../../lib/api-errors";
-import { cn } from "../../lib/utils";
 import { usePermission } from "../../hooks/use-permission";
 import { useAuthStore } from "../../stores/auth-store";
 import { MemberStatusBadge } from "./member-status-badge";
 import { PermissionSelection } from "./permission-selection";
 
-interface RoleSummary {
+interface Role {
   id: number;
   name: string;
+  description?: string | null;
+  permissions: string[];
 }
-
 interface Member {
   id: number;
   name: string;
   email: string;
   status: string;
+  created_at?: string | null;
+  updated_at?: string | null;
   invited_at?: string | null;
   suspended_at?: string | null;
-  roles: RoleSummary[];
+  roles: Role[];
   direct_permissions: string[];
   effective_permissions: string[];
 }
-
-interface Role extends RoleSummary {
-  description?: string | null;
-  permissions: string[];
-  members_count?: number;
+interface HistoryEntry {
+  id: number;
+  description: string;
+  actor: string | null;
+  reason: string | null;
+  created_at: string | null;
 }
-
 type StatusAction = "suspend" | "reactivate";
+const dateTime = (value?: string | null) =>
+  value ? new Date(value).toLocaleString() : "—";
+
+function RoleChoices({
+  roles,
+  value,
+  onChange,
+  disabled = false,
+}: {
+  roles: Role[];
+  value: number[];
+  onChange: (ids: number[]) => void;
+  disabled?: boolean;
+}) {
+  return roles.length ? (
+    <div className="grid gap-2 sm:grid-cols-2">
+      {roles.map((role) => (
+        <label
+          key={role.id}
+          className="flex items-start gap-2 rounded-md border p-3 text-sm"
+        >
+          <Checkbox
+            checked={value.includes(role.id)}
+            disabled={disabled}
+            onCheckedChange={(checked) =>
+              onChange(
+                checked === true
+                  ? [...new Set([...value, role.id])]
+                  : value.filter((id) => id !== role.id),
+              )
+            }
+          />
+          <span>
+            <span className="block font-medium">{role.name}</span>
+            <span className="text-xs text-muted-foreground">
+              {role.description}
+            </span>
+          </span>
+        </label>
+      ))}
+    </div>
+  ) : (
+    <p className="text-sm text-muted-foreground">
+      No roles yet. Create one in Roles & Permissions first.
+    </p>
+  );
+}
 
 export function MembersSettingsScreen() {
   const currentUser = useAuthStore((state) => state.user);
   const mayManage = usePermission("administration.member.manage");
   const mayAssign = usePermission("administration.access.assign");
   const mayViewRoles = usePermission("administration.role.view");
-  const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("ALL");
   const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(25);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const membersQuery = useMembersIndex(
-    { search: search || undefined, page, per_page: 25 },
+    {
+      search: search || undefined,
+      status:
+        status === "ALL"
+          ? undefined
+          : (status as "ACTIVE" | "INVITED" | "SUSPENDED"),
+      page,
+      per_page: perPage,
+    },
     { query: { retry: false } },
   );
   const rolesQuery = useRolesIndex({
@@ -78,17 +150,21 @@ export function MembersSettingsScreen() {
   const permissionsQuery = usePermissionsIndex({
     query: { enabled: mayViewRoles, retry: false },
   });
-  const inviteMember = useMembersStore();
+  const historyQuery = useMembersHistory(selectedId ?? 0, {
+    query: { enabled: selectedId !== null, retry: false },
+  });
+  const createMember = useMembersStore();
   const updateMember = useMembersUpdate();
   const updateAccess = useMembersAccess();
   const suspendMember = useMembersSuspend();
   const reactivateMember = useMembersReactivate();
   const resendInvitation = useMembersResendInvitation();
+  const sendPasswordReset = useMembersSendPasswordReset();
 
   const members = (
     membersQuery.data?.status === 200 ? membersQuery.data.data.data : []
   ) as Member[];
-  const memberMeta =
+  const meta =
     membersQuery.data?.status === 200 ? membersQuery.data.data.meta : null;
   const roles = (
     rolesQuery.data?.status === 200 ? rolesQuery.data.data.data : []
@@ -96,100 +172,145 @@ export function MembersSettingsScreen() {
   const permissionGroups = (
     permissionsQuery.data?.status === 200 ? permissionsQuery.data.data.data : {}
   ) as Record<string, string[]>;
-
-  const [selectedId, setSelectedId] = useState<number | null>(null);
-  const selected =
-    members.find((member) => member.id === selectedId) ?? members[0];
-  const [inviteOpen, setInviteOpen] = useState(false);
-  const [inviteName, setInviteName] = useState("");
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRoleIds, setInviteRoleIds] = useState<number[]>([]);
-  const [inviteReason, setInviteReason] = useState("");
+  const history = (
+    historyQuery.data?.status === 200 ? historyQuery.data.data.data : []
+  ) as HistoryEntry[];
+  const selected = members.find((member) => member.id === selectedId);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [roleIds, setRoleIds] = useState<number[]>([]);
   const [directPermissions, setDirectPermissions] = useState<string[]>([]);
+  const [showCustom, setShowCustom] = useState(false);
   const [accessReason, setAccessReason] = useState("");
+  const [createName, setCreateName] = useState("");
+  const [createEmail, setCreateEmail] = useState("");
+  const [createRoleIds, setCreateRoleIds] = useState<number[]>([]);
+  const [createDirectPermissions, setCreateDirectPermissions] = useState<
+    string[]
+  >([]);
+  const [createCustom, setCreateCustom] = useState(false);
+  const [createReason, setCreateReason] = useState("");
   const [statusAction, setStatusAction] = useState<StatusAction | null>(null);
   const [statusReason, setStatusReason] = useState("");
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!selected) return;
-    setSelectedId(selected.id);
     setName(selected.name);
     setEmail(selected.email);
     setRoleIds(selected.roles.map((role) => role.id));
     setDirectPermissions(selected.direct_permissions);
+    setShowCustom(selected.direct_permissions.length > 0);
     setAccessReason("");
     setError(null);
-  }, [selected?.id, selected?.name, selected?.email]);
+  }, [selected?.id, selected?.name, selected?.email, selected?.updated_at]);
 
-  const effectiveFromRoles = useMemo(
-    () =>
-      new Set(
-        roles
-          .filter((role) => roleIds.includes(role.id))
-          .flatMap((role) => role.permissions),
-      ),
-    [roleIds, roles],
+  const columns = useMemo<DataColumn<Member>[]>(
+    () => [
+      {
+        key: "name",
+        header: "Name",
+        value: (member) => member.name,
+        cardRole: "title",
+      },
+      {
+        key: "email",
+        header: "Email",
+        value: (member) => member.email,
+        cardRole: "subtitle",
+      },
+      {
+        key: "roles",
+        header: "Roles",
+        value: (member) =>
+          member.roles.map((role) => role.name).join(", ") || "No role",
+      },
+      {
+        key: "status",
+        header: "Status",
+        value: (member) => member.status,
+        cell: (member) => <MemberStatusBadge status={member.status} />,
+      },
+      {
+        key: "created_at",
+        header: "Created",
+        value: (member) => dateTime(member.created_at),
+        screenVisible: false,
+      },
+    ],
+    [],
   );
-
+  const tableColumns = useMemo(() => toTanStackColumns(columns), [columns]);
+  const pagination: PaginationState = {
+    pageIndex: page - 1,
+    pageSize: perPage,
+  };
+  const sorting: SortingState = [];
+  const canEditAccess =
+    mayAssign && selected?.id !== currentUser?.id && mayViewRoles;
+  const rolePermissionCount = new Set(
+    roles
+      .filter((role) => roleIds.includes(role.id))
+      .flatMap((role) => role.permissions),
+  ).size;
   function refresh() {
-    membersQuery.refetch();
+    void membersQuery.refetch();
+    if (selectedId !== null) void historyQuery.refetch();
   }
-
-  function toggleRole(
-    id: number,
-    checked: boolean,
-    target: "invite" | "access",
-  ) {
-    const values = target === "invite" ? inviteRoleIds : roleIds;
-    const next = checked
-      ? [...new Set([...values, id])]
-      : values.filter((value) => value !== id);
-    if (target === "invite") setInviteRoleIds(next);
-    else setRoleIds(next);
+  function fail(requestError: unknown) {
+    setError(getApiErrorMessage(requestError));
+    setNotice(null);
   }
-
-  function submitInvite() {
+  function openMember(member: Member, edit = false) {
+    setSelectedId(member.id);
+    setEditing(edit);
     setError(null);
-    inviteMember.mutate(
+    setNotice(null);
+  }
+  function submitCreate() {
+    setError(null);
+    createMember.mutate(
       {
         data: {
-          name: inviteName,
-          email: inviteEmail,
-          role_ids: inviteRoleIds,
-          direct_permissions: [],
-          reason: inviteRoleIds.length > 0 ? inviteReason : null,
+          name: createName.trim(),
+          email: createEmail.trim(),
+          role_ids: createRoleIds,
+          direct_permissions: createDirectPermissions,
+          reason:
+            createRoleIds.length || createDirectPermissions.length
+              ? createReason
+              : null,
         },
       },
       {
         onSuccess: () => {
-          setInviteOpen(false);
-          setInviteName("");
-          setInviteEmail("");
-          setInviteRoleIds([]);
-          setInviteReason("");
+          setCreateOpen(false);
+          setCreateName("");
+          setCreateEmail("");
+          setCreateRoleIds([]);
+          setCreateDirectPermissions([]);
+          setCreateCustom(false);
+          setCreateReason("");
+          setNotice("User created and activation link sent.");
           refresh();
         },
-        onError: (requestError) => setError(getApiErrorMessage(requestError)),
+        onError: fail,
       },
     );
   }
-
-  function submitMetadata() {
+  function submitDetails() {
     if (!selected) return;
     setError(null);
     updateMember.mutate(
-      { member: selected.id, data: { name, email } },
+      { member: selected.id, data: { name: name.trim(), email: email.trim() } },
       {
-        onSuccess: refresh,
-        onError: (requestError) => setError(getApiErrorMessage(requestError)),
+        onSuccess: () => {
+          setNotice("User details saved.");
+          refresh();
+        },
+        onError: fail,
       },
     );
   }
-
   function submitAccess() {
     if (!selected) return;
     setError(null);
@@ -205,13 +326,13 @@ export function MembersSettingsScreen() {
       {
         onSuccess: () => {
           setAccessReason("");
+          setNotice("Access saved.");
           refresh();
         },
-        onError: (requestError) => setError(getApiErrorMessage(requestError)),
+        onError: fail,
       },
     );
   }
-
   function submitStatusAction() {
     if (!selected || !statusAction) return;
     const mutation =
@@ -223,143 +344,334 @@ export function MembersSettingsScreen() {
         onSuccess: () => {
           setStatusAction(null);
           setStatusReason("");
+          setNotice("User status updated.");
           refresh();
         },
-        onError: (requestError) => setError(getApiErrorMessage(requestError)),
+        onError: fail,
       },
     );
   }
 
-  if (membersQuery.isLoading) {
-    return (
-      <div className="space-y-4 p-4 md:p-6">
-        <Skeleton className="h-9 w-64" />
-        <Skeleton className="h-96 w-full" />
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-4 p-4 md:p-6">
+    <div className="space-y-4 p-4 pb-24 md:p-6">
       <PageHeader
         title="Members"
-        description="Invite people, maintain their account status, and control company access."
+        description="Create users, assign roles and manage company access."
         primaryAction={
           mayManage
             ? {
-                label: "Invite member",
-                icon: <MailPlus className="size-4" />,
-                onClick: () => setInviteOpen(true),
+                label: "Create user",
+                icon: <Plus className="size-4" />,
+                onClick: () => setCreateOpen(true),
               }
             : undefined
         }
       />
-
+      {notice && (
+        <div
+          role="status"
+          className="rounded-md border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-900"
+        >
+          {notice}
+        </div>
+      )}
       {error && (
-        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+        <div
+          role="alert"
+          className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive"
+        >
           {error}
         </div>
       )}
-      {membersQuery.isError && (
-        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-          Could not load members. {getApiErrorMessage(membersQuery.error)}
-          <Button variant="link" onClick={() => membersQuery.refetch()}>
-            Try again
-          </Button>
-        </div>
-      )}
-
-      <div className="grid gap-4 lg:grid-cols-[20rem_minmax(0,1fr)]">
-        <section className="overflow-hidden rounded-lg border border-border bg-card">
-          <div className="border-b border-border px-4 py-3 text-sm font-semibold">
-            Company members
-          </div>
-          <form
-            className="flex gap-2 border-b border-border p-3"
-            onSubmit={(event) => {
-              event.preventDefault();
-              setPage(1);
-              setSearch(searchInput.trim());
-            }}
-          >
-            <Input
-              aria-label="Search members by name or email"
-              placeholder="Search name or email"
-              value={searchInput}
-              onChange={(event) => setSearchInput(event.target.value)}
-            />
-            <Button type="submit" variant="outline">
-              Search
-            </Button>
-          </form>
-          {members.length === 0 ? (
-            <p className="p-6 text-center text-sm text-muted-foreground">
-              No members found.
-            </p>
-          ) : (
-            <div className="divide-y divide-border">
-              {members.map((member) => (
-                <button
-                  key={member.id}
-                  type="button"
-                  onClick={() => setSelectedId(member.id)}
-                  className={cn(
-                    "w-full p-4 text-left hover:bg-accent",
-                    selected?.id === member.id && "bg-accent",
-                  )}
+      <div className="flex flex-wrap gap-2">
+        <Input
+          className="max-w-sm"
+          aria-label="Search users by name or email"
+          placeholder="Search name or email"
+          value={search}
+          onChange={(event) => {
+            setSearch(event.target.value);
+            setPage(1);
+            setSelectedId(null);
+          }}
+        />
+        <select
+          aria-label="Filter users by status"
+          className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+          value={status}
+          onChange={(event) => {
+            setStatus(event.target.value);
+            setPage(1);
+            setSelectedId(null);
+          }}
+        >
+          <option value="ALL">All statuses</option>
+          <option value="ACTIVE">Active</option>
+          <option value="INVITED">Invited</option>
+          <option value="SUSPENDED">Suspended</option>
+        </select>
+      </div>
+      <DataTable
+        columns={tableColumns}
+        data={members}
+        rowCount={meta?.total ?? 0}
+        pagination={pagination}
+        onPaginationChange={(updater) => {
+          const next =
+            typeof updater === "function" ? updater(pagination) : updater;
+          setSelectedId(null);
+          if (next.pageSize !== perPage) {
+            setPerPage(next.pageSize);
+            setPage(1);
+          } else setPage(next.pageIndex + 1);
+        }}
+        sorting={sorting}
+        onSortingChange={() => {}}
+        onRowClick={(member) => openMember(member)}
+        rowActions={
+          mayManage
+            ? (member) => (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label={`Edit ${member.name}`}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    openMember(member, true);
+                  }}
                 >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="truncate text-sm font-medium">
-                      {member.name}
-                    </span>
-                    <MemberStatusBadge status={member.status} />
-                  </div>
-                  <div className="mt-1 truncate text-xs text-muted-foreground">
-                    {member.email}
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-          {memberMeta && memberMeta.last_page > 1 && (
-            <div className="flex items-center justify-between gap-2 border-t border-border p-3 text-sm">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page <= 1}
-                onClick={() => setPage(page - 1)}
-              >
-                Previous
-              </Button>
-              <span>
-                Page {memberMeta.current_page} of {memberMeta.last_page}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page >= memberMeta.last_page}
-                onClick={() => setPage(page + 1)}
-              >
-                Next
-              </Button>
-            </div>
-          )}
-        </section>
+                  <Pencil className="size-4" />
+                </Button>
+              )
+            : undefined
+        }
+        isLoading={membersQuery.isLoading}
+        isError={membersQuery.isError}
+        error={membersQuery.error}
+        onRetry={() => void membersQuery.refetch()}
+        errorMessage="Could not load users."
+        emptyMessage="No users match these filters."
+      />
 
-        {selected && (
-          <div className="space-y-4">
-            <section className="rounded-lg border border-border bg-card p-4">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="font-semibold">Member details</h2>
-                    <MemberStatusBadge status={selected.status} />
-                  </div>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Identity and invitation lifecycle for this company account.
-                  </p>
-                </div>
-                {mayManage && selected.id !== currentUser?.id && (
+      <Sheet
+        open={selectedId !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedId(null);
+            setEditing(false);
+          }
+        }}
+      >
+        <SheetContent
+          side="right"
+          className="w-full overflow-y-auto sm:max-w-2xl"
+        >
+          {selected && (
+            <div className="space-y-5 pb-6">
+              <SheetHeader>
+                <SheetTitle>
+                  {editing ? `Edit ${selected.name}` : selected.name}
+                </SheetTitle>
+                <p className="text-sm text-muted-foreground">
+                  {selected.email}
+                </p>
+              </SheetHeader>
+              <div className="flex flex-wrap items-center gap-2">
+                <MemberStatusBadge status={selected.status} />
+                {mayManage && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setEditing(!editing)}
+                  >
+                    {editing ? "View details" : "Edit user"}
+                  </Button>
+                )}
+              </div>
+              {notice && (
+                <p role="status" className="text-sm text-emerald-700">
+                  {notice}
+                </p>
+              )}
+              {error && (
+                <p role="alert" className="text-sm text-destructive">
+                  {error}
+                </p>
+              )}
+              {editing ? (
+                <>
+                  <section className="space-y-3 rounded-md border p-4">
+                    <h3 className="font-semibold">Profile</h3>
+                    <div className="space-y-1">
+                      <Label htmlFor="member-name">Name</Label>
+                      <Input
+                        id="member-name"
+                        value={name}
+                        onChange={(event) => setName(event.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="member-email">Email</Label>
+                      <Input
+                        id="member-email"
+                        type="email"
+                        value={email}
+                        onChange={(event) => setEmail(event.target.value)}
+                      />
+                    </div>
+                    <Button
+                      disabled={
+                        !name.trim() || !email.trim() || updateMember.isPending
+                      }
+                      onClick={submitDetails}
+                    >
+                      {updateMember.isPending ? "Saving…" : "Save profile"}
+                    </Button>
+                  </section>
+                  {mayViewRoles && (
+                    <section className="space-y-3 rounded-md border p-4">
+                      <h3 className="font-semibold">Roles</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Assign job-function roles first. Permissions from all
+                        selected roles add together.
+                      </p>
+                      <RoleChoices
+                        roles={roles}
+                        value={roleIds}
+                        onChange={setRoleIds}
+                        disabled={!canEditAccess}
+                      />
+                      <label className="flex items-center gap-2 text-sm">
+                        <Checkbox
+                          checked={showCustom}
+                          disabled={!canEditAccess}
+                          onCheckedChange={(checked) =>
+                            setShowCustom(checked === true)
+                          }
+                        />
+                        {directPermissions.length
+                          ? "Show custom permissions"
+                          : "Give custom permissions"}
+                      </label>
+                      {showCustom && (
+                        <div className="space-y-2 rounded-md border p-3">
+                          <p className="text-xs text-muted-foreground">
+                            Exceptional direct additions only. They cannot
+                            remove permissions granted by a role.
+                          </p>
+                          <PermissionSelection
+                            groups={permissionGroups}
+                            value={directPermissions}
+                            onChange={setDirectPermissions}
+                            disabled={!canEditAccess}
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Selected roles grant {rolePermissionCount}{" "}
+                            permissions.
+                          </p>
+                        </div>
+                      )}
+                      {canEditAccess && (
+                        <div className="space-y-2">
+                          <Label htmlFor="access-reason">
+                            Reason for access change
+                          </Label>
+                          <Textarea
+                            id="access-reason"
+                            value={accessReason}
+                            onChange={(event) =>
+                              setAccessReason(event.target.value)
+                            }
+                          />
+                          <Button
+                            disabled={
+                              !accessReason.trim() || updateAccess.isPending
+                            }
+                            onClick={submitAccess}
+                          >
+                            {updateAccess.isPending ? "Saving…" : "Save access"}
+                          </Button>
+                        </div>
+                      )}
+                    </section>
+                  )}
+                </>
+              ) : (
+                <>
+                  <section className="space-y-2 rounded-md border p-4">
+                    <h3 className="font-semibold">User details</h3>
+                    <dl className="grid grid-cols-[8rem_1fr] gap-2 text-sm">
+                      <dt className="text-muted-foreground">Name</dt>
+                      <dd>{selected.name}</dd>
+                      <dt className="text-muted-foreground">Email</dt>
+                      <dd>{selected.email}</dd>
+                      <dt className="text-muted-foreground">Created</dt>
+                      <dd>{dateTime(selected.created_at)}</dd>
+                      <dt className="text-muted-foreground">Last updated</dt>
+                      <dd>{dateTime(selected.updated_at)}</dd>
+                      <dt className="text-muted-foreground">Invited</dt>
+                      <dd>{dateTime(selected.invited_at)}</dd>
+                      <dt className="text-muted-foreground">Suspended</dt>
+                      <dd>{dateTime(selected.suspended_at)}</dd>
+                    </dl>
+                  </section>
+                  <section className="space-y-2 rounded-md border p-4">
+                    <h3 className="font-semibold">Access</h3>
+                    <p className="text-sm">
+                      {selected.roles.length
+                        ? selected.roles.map((role) => role.name).join(", ")
+                        : "No roles assigned"}
+                    </p>
+                    {selected.direct_permissions.length > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        {selected.direct_permissions.length} custom
+                        permission(s)
+                      </p>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      {selected.effective_permissions.length} effective
+                      permission(s)
+                    </p>
+                  </section>
+                  <section className="space-y-2 rounded-md border p-4">
+                    <h3 className="font-semibold">History</h3>
+                    {historyQuery.isLoading ? (
+                      <p className="text-sm text-muted-foreground">
+                        Loading history…
+                      </p>
+                    ) : historyQuery.isError ? (
+                      <p className="text-sm text-destructive">
+                        Could not load history.
+                      </p>
+                    ) : history.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        No account changes recorded yet.
+                      </p>
+                    ) : (
+                      <ol className="space-y-3">
+                        {history.map((entry) => (
+                          <li
+                            key={entry.id}
+                            className="border-l-2 pl-3 text-sm"
+                          >
+                            <span className="font-medium">
+                              {entry.description}
+                            </span>
+                            <div className="text-xs text-muted-foreground">
+                              {dateTime(entry.created_at)} ·{" "}
+                              {entry.actor ?? "System"}
+                            </div>
+                            {entry.reason && <p>{entry.reason}</p>}
+                          </li>
+                        ))}
+                      </ol>
+                    )}
+                  </section>
+                </>
+              )}
+              {mayManage && selected.id !== currentUser?.id && (
+                <section className="space-y-2 rounded-md border p-4">
+                  <h3 className="font-semibold">Account actions</h3>
                   <div className="flex flex-wrap gap-2">
                     {selected.status === "INVITED" && (
                       <Button
@@ -370,14 +682,37 @@ export function MembersSettingsScreen() {
                           resendInvitation.mutate(
                             { member: selected.id },
                             {
-                              onSuccess: refresh,
-                              onError: (requestError) =>
-                                setError(getApiErrorMessage(requestError)),
+                              onSuccess: () => {
+                                setNotice("Invitation sent again.");
+                                refresh();
+                              },
+                              onError: fail,
                             },
                           )
                         }
                       >
-                        <RefreshCw className="size-4" /> Resend invitation
+                        Resend invitation
+                      </Button>
+                    )}
+                    {selected.status === "ACTIVE" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={sendPasswordReset.isPending}
+                        onClick={() =>
+                          sendPasswordReset.mutate(
+                            { member: selected.id },
+                            {
+                              onSuccess: () => {
+                                setNotice("Password reset link sent.");
+                                refresh();
+                              },
+                              onError: fail,
+                            },
+                          )
+                        }
+                      >
+                        Send password reset link
                       </Button>
                     )}
                     {selected.status === "SUSPENDED" ? (
@@ -386,7 +721,7 @@ export function MembersSettingsScreen() {
                         size="sm"
                         onClick={() => setStatusAction("reactivate")}
                       >
-                        <UserRoundCheck className="size-4" /> Reactivate
+                        Reactivate
                       </Button>
                     ) : (
                       <Button
@@ -394,214 +729,116 @@ export function MembersSettingsScreen() {
                         size="sm"
                         onClick={() => setStatusAction("suspend")}
                       >
-                        <UserRoundX className="size-4" /> Suspend
+                        Suspend
                       </Button>
                     )}
                   </div>
-                )}
-              </div>
-              <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="member-name">Name</Label>
-                  <Input
-                    id="member-name"
-                    value={name}
-                    disabled={!mayManage}
-                    onChange={(event) => setName(event.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="member-email">Email</Label>
-                  <Input
-                    id="member-email"
-                    type="email"
-                    value={email}
-                    disabled={!mayManage}
-                    onChange={(event) => setEmail(event.target.value)}
-                  />
-                </div>
-              </div>
-              {mayManage && (
-                <div className="mt-4 flex justify-end">
-                  <Button
-                    disabled={
-                      !name.trim() || !email.trim() || updateMember.isPending
-                    }
-                    onClick={submitMetadata}
-                  >
-                    {updateMember.isPending ? "Saving…" : "Save member"}
-                  </Button>
-                </div>
+                  <p className="text-xs text-muted-foreground">
+                    Administrators never see or choose another user’s password.
+                  </p>
+                </section>
               )}
-            </section>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
 
-            <section className="rounded-lg border border-border bg-card p-4">
-              <h2 className="font-semibold">Access</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Roles are the normal assignment path. Direct permissions are
-                visible exceptions.
+      <Sheet open={createOpen} onOpenChange={setCreateOpen}>
+        <SheetContent
+          side="right"
+          className="w-full overflow-y-auto sm:max-w-2xl"
+        >
+          <SheetHeader>
+            <SheetTitle>Create user</SheetTitle>
+            <p className="text-sm text-muted-foreground">
+              Create the account and choose its initial roles. The user receives
+              a private activation link to set their password.
+            </p>
+          </SheetHeader>
+          <div className="space-y-4 pb-6">
+            {error && (
+              <p role="alert" className="text-sm text-destructive">
+                {error}
               </p>
-              <div className="mt-4 space-y-3">
-                <Label>Roles</Label>
-                {!mayViewRoles ? (
-                  <p className="text-sm text-muted-foreground">
-                    You do not have permission to inspect roles.
-                  </p>
-                ) : roles.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    No roles have been created.
-                  </p>
-                ) : (
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    {roles.map((role) => (
-                      <label
-                        key={role.id}
-                        className="flex items-start gap-2 rounded-md border border-border p-3"
-                      >
-                        <Checkbox
-                          checked={roleIds.includes(role.id)}
-                          disabled={
-                            !mayAssign || selected.id === currentUser?.id
-                          }
-                          onCheckedChange={(checked) =>
-                            toggleRole(role.id, checked === true, "access")
-                          }
-                        />
-                        <span>
-                          <span className="block text-sm font-medium">
-                            {role.name}
-                          </span>
-                          {role.description && (
-                            <span className="block text-xs text-muted-foreground">
-                              {role.description}
-                            </span>
-                          )}
-                        </span>
-                      </label>
-                    ))}
+            )}
+            <div className="space-y-1">
+              <Label htmlFor="create-name">Name</Label>
+              <Input
+                id="create-name"
+                value={createName}
+                onChange={(event) => setCreateName(event.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="create-email">Email</Label>
+              <Input
+                id="create-email"
+                type="email"
+                value={createEmail}
+                onChange={(event) => setCreateEmail(event.target.value)}
+              />
+            </div>
+            {mayAssign && mayViewRoles && (
+              <>
+                <div className="space-y-2">
+                  <Label>Initial roles</Label>
+                  <RoleChoices
+                    roles={roles}
+                    value={createRoleIds}
+                    onChange={setCreateRoleIds}
+                  />
+                </div>
+                <label className="flex items-center gap-2 text-sm">
+                  <Checkbox
+                    checked={createCustom}
+                    onCheckedChange={(checked) =>
+                      setCreateCustom(checked === true)
+                    }
+                  />
+                  Give custom permissions
+                </label>
+                {createCustom && (
+                  <div className="rounded-md border p-3">
+                    <PermissionSelection
+                      groups={permissionGroups}
+                      value={createDirectPermissions}
+                      onChange={setCreateDirectPermissions}
+                    />
                   </div>
                 )}
-              </div>
-              {mayViewRoles && Object.keys(permissionGroups).length > 0 && (
-                <div className="mt-5 space-y-2">
-                  <Label>Direct permissions</Label>
-                  <PermissionSelection
-                    groups={permissionGroups}
-                    value={directPermissions}
-                    onChange={setDirectPermissions}
-                    disabled={!mayAssign || selected.id === currentUser?.id}
-                  />
-                  {effectiveFromRoles.size > 0 && (
-                    <p className="text-xs text-muted-foreground">
-                      The selected roles also grant {effectiveFromRoles.size}{" "}
-                      permission{effectiveFromRoles.size === 1 ? "" : "s"}.
-                    </p>
-                  )}
-                </div>
-              )}
-              {mayAssign && selected.id !== currentUser?.id && (
-                <div className="mt-4 space-y-2">
-                  <Label htmlFor="access-reason">
-                    Reason for access change
-                  </Label>
-                  <Textarea
-                    id="access-reason"
-                    value={accessReason}
-                    onChange={(event) => setAccessReason(event.target.value)}
-                    placeholder="Why is this access needed?"
-                  />
-                  <div className="flex justify-end">
-                    <Button
-                      disabled={!accessReason.trim() || updateAccess.isPending}
-                      onClick={submitAccess}
-                    >
-                      {updateAccess.isPending ? "Saving…" : "Save access"}
-                    </Button>
+                {(createRoleIds.length > 0 ||
+                  createDirectPermissions.length > 0) && (
+                  <div className="space-y-1">
+                    <Label htmlFor="create-reason">
+                      Reason for initial access
+                    </Label>
+                    <Textarea
+                      id="create-reason"
+                      value={createReason}
+                      onChange={(event) => setCreateReason(event.target.value)}
+                    />
                   </div>
-                </div>
-              )}
-            </section>
-          </div>
-        )}
-      </div>
-
-      <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Invite member</DialogTitle>
-            <DialogDescription>
-              We’ll email a one-time link so the member can choose their own
-              password.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="invite-name">Name</Label>
-              <Input
-                id="invite-name"
-                value={inviteName}
-                onChange={(event) => setInviteName(event.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="invite-email">Email</Label>
-              <Input
-                id="invite-email"
-                type="email"
-                value={inviteEmail}
-                onChange={(event) => setInviteEmail(event.target.value)}
-              />
-            </div>
-            {mayAssign && mayViewRoles && roles.length > 0 && (
-              <div className="space-y-2">
-                <Label>Initial roles</Label>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {roles.map((role) => (
-                    <label
-                      key={role.id}
-                      className="flex items-center gap-2 rounded-md border border-border p-3 text-sm"
-                    >
-                      <Checkbox
-                        checked={inviteRoleIds.includes(role.id)}
-                        onCheckedChange={(checked) =>
-                          toggleRole(role.id, checked === true, "invite")
-                        }
-                      />
-                      {role.name}
-                    </label>
-                  ))}
-                </div>
-              </div>
+                )}
+              </>
             )}
-            {inviteRoleIds.length > 0 && (
-              <div className="space-y-2">
-                <Label htmlFor="invite-reason">Reason for initial access</Label>
-                <Textarea
-                  id="invite-reason"
-                  value={inviteReason}
-                  onChange={(event) => setInviteReason(event.target.value)}
-                />
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setInviteOpen(false)}>
-              Cancel
-            </Button>
             <Button
               disabled={
-                !inviteName.trim() ||
-                !inviteEmail.trim() ||
-                (inviteRoleIds.length > 0 && !inviteReason.trim()) ||
-                inviteMember.isPending
+                !createName.trim() ||
+                !createEmail.trim() ||
+                ((createRoleIds.length > 0 ||
+                  createDirectPermissions.length > 0) &&
+                  !createReason.trim()) ||
+                createMember.isPending
               }
-              onClick={submitInvite}
+              onClick={submitCreate}
             >
-              {inviteMember.isPending ? "Sending…" : "Send invitation"}
+              {createMember.isPending
+                ? "Creating…"
+                : "Create user & send activation link"}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       <Dialog
         open={statusAction !== null}
@@ -610,14 +847,12 @@ export function MembersSettingsScreen() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {statusAction === "suspend"
-                ? "Suspend member"
-                : "Reactivate member"}
+              {statusAction === "suspend" ? "Suspend user" : "Reactivate user"}
             </DialogTitle>
             <DialogDescription>
               {statusAction === "suspend"
-                ? "The member will immediately lose access. Their history is retained."
-                : "The member will be able to sign in again."}
+                ? "The user immediately loses access. Their history is retained."
+                : "The user can sign in again."}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">

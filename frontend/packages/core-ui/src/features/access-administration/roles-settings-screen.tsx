@@ -35,6 +35,47 @@ interface Role {
   members_count?: number;
 }
 
+// Editable starting points, not enforced role names. Omit issue/post/approve,
+// reversals and security administration so those duties require explicit review.
+const STARTER_ROLES = [
+  {
+    name: "Buyer",
+    description: "Prepare purchase orders and maintain item suppliers.",
+    permissions: [
+      "purchasing.purchase-order.create",
+      "purchasing.item-supplier.manage",
+    ],
+  },
+  {
+    name: "Receiving Clerk",
+    description: "Record incoming goods before a separate posting decision.",
+    permissions: ["purchasing.goods-receipt.create"],
+  },
+  {
+    name: "Inventory Counter",
+    description:
+      "Prepare and count physical inventory; cannot post adjustments.",
+    permissions: [
+      "inventory.physical_count.create",
+      "inventory.physical_count.count",
+    ],
+  },
+  {
+    name: "Master Data Steward",
+    description: "Maintain item and category master data.",
+    permissions: ["inventory.item.manage", "inventory.category.manage"],
+  },
+  {
+    name: "Estimator",
+    description: "Run material preview and inspect costs and availability.",
+    permissions: [
+      "estimating.material_preview.run",
+      "estimating.inventory_availability.view",
+      "estimating.internal_cost.view",
+    ],
+  },
+] as const;
+
 export function RolesSettingsScreen() {
   const mayManage = usePermission("administration.role.manage");
   const rolesQuery = useRolesIndex({ query: { retry: false } });
@@ -64,12 +105,19 @@ export function RolesSettingsScreen() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteReason, setDeleteReason] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [starterRole, setStarterRole] = useState("");
 
   useEffect(() => {
     if (isNew) {
-      setName("");
-      setDescription("");
-      setPermissions([]);
+      const starter = STARTER_ROLES.find((role) => role.name === starterRole);
+      const registered = new Set(Object.values(permissionGroups).flat());
+      setName(starter?.name ?? "");
+      setDescription(starter?.description ?? "");
+      setPermissions(
+        starter?.permissions.filter((permission) =>
+          registered.has(permission),
+        ) ?? [],
+      );
       setReason("");
       return;
     }
@@ -80,7 +128,14 @@ export function RolesSettingsScreen() {
     setPermissions(selected.permissions);
     setReason("");
     setError(null);
-  }, [isNew, selected?.id, selected?.name, selected?.description]);
+  }, [
+    isNew,
+    selected?.id,
+    selected?.name,
+    selected?.description,
+    starterRole,
+    permissionsQuery.data,
+  ]);
 
   function refresh() {
     rolesQuery.refetch();
@@ -142,7 +197,10 @@ export function RolesSettingsScreen() {
             ? {
                 label: "New role",
                 icon: <Plus className="size-4" />,
-                onClick: () => setSelectedId("new"),
+                onClick: () => {
+                  setStarterRole("");
+                  setSelectedId("new");
+                },
               }
             : undefined
         }
@@ -184,7 +242,10 @@ export function RolesSettingsScreen() {
                 <Button
                   className="mt-4"
                   size="sm"
-                  onClick={() => setSelectedId("new")}
+                  onClick={() => {
+                    setStarterRole("");
+                    setSelectedId("new");
+                  }}
                 >
                   <Plus className="size-4" /> Create first role
                 </Button>
@@ -239,6 +300,35 @@ export function RolesSettingsScreen() {
                 </Button>
               )}
             </div>
+
+            {isNew && mayManage && (
+              <div className="mt-4 space-y-2">
+                <Label htmlFor="starter-role">
+                  Start from a common job role (optional)
+                </Label>
+                <select
+                  id="starter-role"
+                  className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                  value={starterRole}
+                  onChange={(event) => setStarterRole(event.target.value)}
+                >
+                  <option value="">Blank role</option>
+                  {STARTER_ROLES.filter(
+                    (starter) =>
+                      !roles.some((role) => role.name === starter.name),
+                  ).map((starter) => (
+                    <option key={starter.name} value={starter.name}>
+                      {starter.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-muted-foreground">
+                  Templates are editable before saving and grant nobody access
+                  until assigned. High-risk posting, approval and administration
+                  are deliberately excluded.
+                </p>
+              </div>
+            )}
 
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
