@@ -165,14 +165,16 @@ Each balance's `on_hand` is partitioned into three so a shortfall can be reconci
 | Part | Meaning |
 |---|---|
 | `held` | Stock awaiting QA release: a QA-required receipt line holds `stock_qty` minus PASS/ACCEPT_WITH_CONCESSION releases, attributed to the layer that receipt created and capped at what the layer still holds |
-| `unusable_location` | Free stock in a location that cannot supply work: an inactive location/warehouse, or a type other than `STORAGE`/`RECEIVING` (`LocationType::holdsUsableStock()`) |
+| `unusable_location` | Free stock in a location that cannot supply work: an inactive location/warehouse, or a location that does not count as usable. A location counts by its own mark (`locations.counts_as_usable`) when the company set one, otherwise by its type — only `STORAGE`/`RECEIVING` (`LocationType::holdsUsableStock()`). See [ADR 0067](../decisions/0067-governed-per-location-usability-mark.md) |
 | `usable` | The rest — the only stock a proposal may draw from |
 
 This mirrors the inventory overview's QA rule but is stricter in two deliberate ways: it is
 location-aware, and it does not subtract QA hold from stock already consumed out of a held layer
 (the overview's known over-subtraction). With no unusable location in play the two "available"
-figures agree — `QueryStockAvailabilityTest` asserts it. The location-type rule is a conservative
-first-generation policy: it may under-report usable stock, and says so, but never over-reports it.
+figures agree — `QueryStockAvailabilityTest` asserts it. The location-type default is a conservative
+policy: it may under-report usable stock, and says so, but never over-reports it. A STRUCTURED-mode company can
+mark a location as counting or not counting (permission `inventory.location-policy.manage`, a reason, and an
+`inventory_policy_changes` entry); each balance reports `location_usable_source` (`TYPE` or `MARKED`).
 
 **Cost evidence** follows what a real issue would consider defensible, and is `null` — never zero —
 otherwise: AVCO uses the pool the movement engine would resolve for that location/batch

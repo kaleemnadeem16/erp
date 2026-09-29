@@ -13,8 +13,8 @@ use App\Modules\Estimating\Actions\ActivateFormulationVersion;
 use App\Modules\Estimating\Models\ApplicationRate;
 use App\Modules\Estimating\Models\Assembly;
 use App\Modules\Estimating\Models\Formulation;
-use App\Modules\Estimating\Models\MaterialVarianceReason;
 use App\Modules\Estimating\Models\MaterialVariancePolicy;
+use App\Modules\Estimating\Models\MaterialVarianceReason;
 use App\Modules\Estimating\Models\RateDimension;
 use App\Modules\Estimating\Support\FormulationCycleGuard;
 use App\Modules\Inventory\Actions\CreateWarehouse;
@@ -317,6 +317,22 @@ class MaterialPreviewApiTest extends TestCase
         $response->assertJsonPath('data.inventory.items.0.balances.0.location_usable', false);
         $response->assertJsonPath('data.inventory.items.0.recommendation.lines', []);
         $this->assertContains('QUARANTINE', $response->json('data.inventory.scope.excluded_location_types'));
+    }
+
+    public function test_a_marked_location_counts_and_the_balance_says_the_mark_not_the_type_decided(): void
+    {
+        $user = $this->userWith('estimating.inventory_availability.view');
+        $this->stockPigment('q', '4', LocationType::Quarantine);
+        $this->stockPigment('m', '3');
+        Location::query()->where('type', LocationType::Quarantine)->update(['counts_as_usable' => true]);
+
+        $response = $this->actingAs($user)->postJson("/api/v1/assemblies/{$this->assembly->id}/material-preview", $this->payload());
+
+        $response->assertOk();
+        $response->assertJsonPath('data.inventory.items.0.usable_quantity', '7.0000');
+        $response->assertJsonPath('data.inventory.items.0.unusable_location_quantity', '0.0000');
+        $sources = collect($response->json('data.inventory.items.0.balances'))->pluck('location_usable_source')->all();
+        $this->assertEqualsCanonicalizing(['MARKED', 'TYPE'], $sources);
     }
 
     public function test_internal_cost_evidence_needs_its_own_permission_even_with_availability(): void

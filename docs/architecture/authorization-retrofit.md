@@ -244,3 +244,12 @@ independently of this backlog's sequencing whenever wanted.
 - [Q27](../OPEN-QUESTIONS.md#q27--shared-approval-workflow-contract) /
   [Q28](../OPEN-QUESTIONS.md#q28--purchase-order-approval-policy) — the PO submit/approve seam this
   backlog's create/issue/cancel capabilities are built to not block on, and must not collide with
+
+## Later additions
+
+- [x] **Inventory locations** (2026-09-29, [ADR 0067](../decisions/0067-governed-per-location-usability-mark.md)) —
+      create/update/archive now need `inventory.location.manage`; marking a location as counting or not
+      counting as usable stock also needs `inventory.location-policy.manage`, a reason and STRUCTURED mode.
+      Allowed/denied tests: `LocationUsabilityOverrideTest`. No frontend action gating was needed: no screen
+      edits locations yet. Rollout needs the same administrator sync and explicit grants as the sections above.
+- [ ] **Warehouses and warehouse-location roles** — writes are still authenticated-only.

@@ -113,13 +113,13 @@ final class QueryStockAvailability
 
         $rows = $query
             ->selectRaw('sl.item_id, sl.location_id, sl.batch_id, sb.code AS batch_code')
-            ->selectRaw('loc.warehouse_id, loc.code AS location_code, loc.name AS location_name, loc.type AS location_type, loc.active AS location_active')
+            ->selectRaw('loc.warehouse_id, loc.code AS location_code, loc.name AS location_name, loc.type AS location_type, loc.active AS location_active, loc.counts_as_usable AS location_counts_as_usable')
             ->selectRaw('wh.code AS warehouse_code, wh.name AS warehouse_name, wh.active AS warehouse_active')
             ->selectRaw('it.valuation_method, ap.id AS pool_id, ap.status AS pool_status, ap.base_avg_unit_cost AS pool_unit_cost')
             ->selectRaw('SUM(sl.qty_remaining) AS on_hand_qty')
             ->selectRaw('SUM(LEAST(sl.qty_remaining, COALESCE(hold.held_qty, 0))) AS held_qty')
             ->selectRaw('SUM(sl.qty_remaining * sl.base_unit_cost) AS layer_value')
-            ->groupByRaw('sl.item_id, sl.location_id, sl.batch_id, sb.code, loc.warehouse_id, loc.code, loc.name, loc.type, loc.active, wh.code, wh.name, wh.active, it.valuation_method, ap.id, ap.status, ap.base_avg_unit_cost')
+            ->groupByRaw('sl.item_id, sl.location_id, sl.batch_id, sb.code, loc.warehouse_id, loc.code, loc.name, loc.type, loc.active, loc.counts_as_usable, wh.code, wh.name, wh.active, it.valuation_method, ap.id, ap.status, ap.base_avg_unit_cost')
             ->orderByRaw('sl.item_id, wh.code, loc.code, sl.batch_id')
             ->get();
 
@@ -133,7 +133,7 @@ final class QueryStockAvailability
             $free = $onHand->minus($heldQty);
             $locationUsable = (bool) $row->location_active
                 && (bool) $row->warehouse_active
-                && LocationType::from($row->location_type)->holdsUsableStock();
+                && ($row->location_counts_as_usable ?? LocationType::from($row->location_type)->holdsUsableStock());
             [$unitCost, $costMethod] = $this->unitCost($row, $onHand);
 
             $balances[(int) $row->item_id][] = new StockBalance(
@@ -154,6 +154,7 @@ final class QueryStockAvailability
                 usable: $locationUsable ? $free : $zero,
                 unitCost: $unitCost,
                 costMethod: $costMethod,
+                locationMarked: $row->location_counts_as_usable === null ? null : (bool) $row->location_counts_as_usable,
             );
         }
 

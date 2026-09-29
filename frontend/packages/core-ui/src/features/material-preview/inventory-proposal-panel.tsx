@@ -1,6 +1,7 @@
 import type {
   AssembliesMaterialPreview200DataInventory,
   AssembliesMaterialPreview200DataInventoryItemsItem,
+  AssembliesMaterialPreview200DataInventoryItemsItemBalancesItem,
   AssembliesMaterialPreview200DataInventoryItemsItemRecommendation,
 } from '@erp/core-api';
 import { AlertTriangle, Check, Minus } from 'lucide-react';
@@ -193,8 +194,8 @@ function ItemStock({ item, mayViewCost }: { item: AssembliesMaterialPreview200Da
                   <TableCell>{balance.warehouse.code}</TableCell>
                   <TableCell>
                     {balance.location.code}
-                    {!balance.location_usable && (
-                      <span className="ml-2 text-xs text-muted-foreground">({balance.location.type.toLowerCase()} — not counted)</span>
+                    {locationNote(balance) && (
+                      <span className="ml-2 text-xs text-muted-foreground">({locationNote(balance)})</span>
                     )}
                   </TableCell>
                   <TableCell>{balance.batch?.code ?? '—'}</TableCell>
@@ -253,6 +254,18 @@ function CostLine({ plan, mayViewCost }: { plan: Plan; mayViewCost: boolean }) {
         : 'Estimated internal cost is unavailable: some of this stock has no defensible cost evidence.'}
     </p>
   );
+}
+
+/**
+ * Why a location's stock is or is not counted, when that is not the plain default. A location the company
+ * marked says so — the mark, not the type, decided — so a planner is never left guessing why a returns bay
+ * counts, or an overflow shelf does not.
+ */
+function locationNote(balance: AssembliesMaterialPreview200DataInventoryItemsItemBalancesItem): string | null {
+  if (balance.location_usable_source === 'MARKED') {
+    return balance.location_usable ? 'marked by your company as counting' : 'marked by your company as not counting';
+  }
+  return balance.location_usable ? null : `${balance.location.type.toLowerCase()} — not counted`;
 }
 
 function Figure({ label, value }: { label: string; value: string }) {

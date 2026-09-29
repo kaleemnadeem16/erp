@@ -3,7 +3,7 @@
  * Do not edit manually.
  *
  * Pure-type schemas are re-exported with `export type *` so a browser never requests them;
- * only the 94 schemas that export a runtime value use `export *`.
+ * only the 95 schemas that export a runtime value use `export *`.
  */
 export type * from "./accountShow200";
 export * from "./accountType";
@@ -88,6 +88,7 @@ export type * from "./assembliesMaterialPreview200DataInventoryItemsItemBalances
 export type * from "./assembliesMaterialPreview200DataInventoryItemsItemBalancesItemBatchAnyOf";
 export type * from "./assembliesMaterialPreview200DataInventoryItemsItemBalancesItemBatchAnyOfId";
 export type * from "./assembliesMaterialPreview200DataInventoryItemsItemBalancesItemLocation";
+export * from "./assembliesMaterialPreview200DataInventoryItemsItemBalancesItemLocationUsableSource";
 export type * from "./assembliesMaterialPreview200DataInventoryItemsItemBalancesItemWarehouse";
 export type * from "./assembliesMaterialPreview200DataInventoryItemsItemCoveredQuantity";
 export type * from "./assembliesMaterialPreview200DataInventoryItemsItemHeldForQaQuantity";
@@ -650,11 +651,13 @@ export type * from "./itemsStore201";
 export type * from "./itemsUpdate200";
 export type * from "./locationResource";
 export type * from "./locationResourceBarcode";
+export type * from "./locationResourceCountsAsUsable";
 export type * from "./locationResourceCreatedAt";
 export type * from "./locationResourceParent";
 export type * from "./locationResourceParentId";
 export type * from "./locationResourceUpdatedAt";
 export * from "./locationType";
+export type * from "./locationsDestroy403";
 export type * from "./locationsIndex200";
 export type * from "./locationsIndex200DataItem";
 export type * from "./locationsIndex200DataItemAllOf";
@@ -1459,6 +1462,8 @@ export type * from "./updateItemSupplierRequestPurchaseUomId";
 export type * from "./updateItemSupplierRequestSupplierItemCode";
 export type * from "./updateLocationRequest";
 export type * from "./updateLocationRequestBarcode";
+export type * from "./updateLocationRequestCountsAsUsable";
+export type * from "./updateLocationRequestCountsAsUsableReason";
 export type * from "./updateLocationRequestParentId";
 export type * from "./updateMaterialVariancePolicyRequest";
 export type * from "./updateMaterialVariancePolicyRequestBandsItem";

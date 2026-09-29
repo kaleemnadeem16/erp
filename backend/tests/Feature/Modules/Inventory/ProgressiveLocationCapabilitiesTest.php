@@ -20,11 +20,13 @@ class ProgressiveLocationCapabilitiesTest extends TestCase
         parent::setUp();
         app(PermissionRegistrar::class)->setPermissionsTeamId(1);
         Permission::findOrCreate('inventory.location-policy.manage');
+        Permission::findOrCreate('inventory.location.manage');
     }
 
     public function test_simple_mode_is_the_default_and_hides_structured_writes(): void
     {
         $user = User::factory()->create();
+        $user->givePermissionTo('inventory.location.manage');
         $warehouse = Warehouse::create(['code' => 'main', 'name' => 'Main']);
         $warehouse->locations()->create(['code' => 'main', 'name' => 'Main']);
 
@@ -39,6 +41,7 @@ class ProgressiveLocationCapabilitiesTest extends TestCase
     public function test_structured_mode_supports_hierarchy_metadata_and_operational_roles(): void
     {
         $user = User::factory()->create();
+        $user->givePermissionTo('inventory.location.manage');
         $user->givePermissionTo('inventory.location-policy.manage');
         $warehouse = Warehouse::create(['code' => 'main', 'name' => 'Main']);
         $root = $warehouse->locations()->create(['code' => 'main', 'name' => 'Main']);
@@ -73,6 +76,7 @@ class ProgressiveLocationCapabilitiesTest extends TestCase
     public function test_structured_integrity_and_safe_downgrade_are_enforced(): void
     {
         $user = User::factory()->create();
+        $user->givePermissionTo('inventory.location.manage');
         $user->givePermissionTo('inventory.location-policy.manage');
         Company::query()->findOrFail(1)->update(['inventory_location_mode' => InventoryLocationMode::Structured]);
         $warehouse = Warehouse::create(['code' => 'main', 'name' => 'Main']);
@@ -100,6 +104,7 @@ class ProgressiveLocationCapabilitiesTest extends TestCase
     public function test_downgrade_succeeds_when_each_warehouse_only_has_its_plain_location(): void
     {
         $user = User::factory()->create();
+        $user->givePermissionTo('inventory.location.manage');
         $user->givePermissionTo('inventory.location-policy.manage');
         $company = Company::query()->findOrFail(1);
         $company->update(['inventory_location_mode' => InventoryLocationMode::Structured]);
@@ -115,6 +120,7 @@ class ProgressiveLocationCapabilitiesTest extends TestCase
     public function test_parent_and_barcode_are_scoped_to_the_warehouse(): void
     {
         $user = User::factory()->create();
+        $user->givePermissionTo('inventory.location.manage');
         Company::query()->findOrFail(1)->update(['inventory_location_mode' => InventoryLocationMode::Structured]);
         $one = Warehouse::create(['code' => 'one', 'name' => 'One']);
         $two = Warehouse::create(['code' => 'two', 'name' => 'Two']);
@@ -135,6 +141,7 @@ class ProgressiveLocationCapabilitiesTest extends TestCase
     public function test_location_role_queries_validate_filters_sort_includes_and_pagination(): void
     {
         $user = User::factory()->create();
+        $user->givePermissionTo('inventory.location.manage');
         Company::query()->findOrFail(1)->update(['inventory_location_mode' => InventoryLocationMode::Structured]);
         $warehouse = Warehouse::create(['code' => 'main', 'name' => 'Main']);
         $location = $warehouse->locations()->create(['code' => 'main', 'name' => 'Main']);

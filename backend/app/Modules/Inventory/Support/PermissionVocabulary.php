@@ -13,6 +13,7 @@ final class PermissionVocabulary
         return [
             'inventory.item.manage',
             'inventory.category.manage',
+            'inventory.location.manage',
             'inventory.physical_count.create',
             'inventory.physical_count.count',
             'inventory.physical_count.post',

@@ -100,7 +100,8 @@ final class UpdateInventorySettings
                 ->orWhere('type', '!=', 'STORAGE')
                 ->orWhereNotNull('barcode')
                 ->orWhere('sort_order', '!=', 0)
-                ->orWhere('allows_stock', false))
+                ->orWhere('allows_stock', false)
+                ->orWhereNotNull('counts_as_usable'))
             ->exists();
 
         if ($locationCount > $warehouseCount || $hasStructuredAttributes

@@ -7,12 +7,14 @@
 import type { AssembliesMaterialPreview200DataInventoryItemsItemBalancesItemWarehouse } from "./assembliesMaterialPreview200DataInventoryItemsItemBalancesItemWarehouse";
 import type { AssembliesMaterialPreview200DataInventoryItemsItemBalancesItemLocation } from "./assembliesMaterialPreview200DataInventoryItemsItemBalancesItemLocation";
 import type { AssembliesMaterialPreview200DataInventoryItemsItemBalancesItemBatch } from "./assembliesMaterialPreview200DataInventoryItemsItemBalancesItemBatch";
+import type { AssembliesMaterialPreview200DataInventoryItemsItemBalancesItemLocationUsableSource } from "./assembliesMaterialPreview200DataInventoryItemsItemBalancesItemLocationUsableSource";
 
 export type AssembliesMaterialPreview200DataInventoryItemsItemBalancesItem = {
   warehouse: AssembliesMaterialPreview200DataInventoryItemsItemBalancesItemWarehouse;
   location: AssembliesMaterialPreview200DataInventoryItemsItemBalancesItemLocation;
   batch: AssembliesMaterialPreview200DataInventoryItemsItemBalancesItemBatch;
   location_usable: boolean;
+  location_usable_source: AssembliesMaterialPreview200DataInventoryItemsItemBalancesItemLocationUsableSource;
   on_hand_quantity: string;
   held_for_qa_quantity: string;
   usable_quantity: string;

@@ -14,7 +14,7 @@ use Brick\Math\BigDecimal;
  *
  * The three quantities partition `onHand`: `held` is stock awaiting QA
  * release, `unusableLocation` is stock (not already held) sitting somewhere
- * `LocationType::holdsUsableStock()` refuses, and `usable` is the rest. That
+ * the location's own mark, or `LocationType::holdsUsableStock()` when unmarked, refuses, and `usable` is the rest. That
  * partition is what lets a user reconcile a shortfall against the inventory
  * overview's location-agnostic "available" figure.
  *
@@ -40,6 +40,8 @@ final class StockBalance
         public readonly BigDecimal $usable,
         public readonly ?BigDecimal $unitCost,
         public readonly ?string $costMethod,
+        /** The company's own usable/not-usable mark on the location, or null when it follows the location's type. */
+        public readonly ?bool $locationMarked = null,
     ) {}
 
     /** Stable identity used as the final, deterministic tie-breaker. */

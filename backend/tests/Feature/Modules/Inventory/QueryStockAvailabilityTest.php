@@ -130,6 +130,49 @@ class QueryStockAvailabilityTest extends TestCase
         $this->assertFalse($byLocation['old']->locationUsable);
     }
 
+    public function test_a_locations_own_mark_overrides_what_its_type_implies_in_both_directions(): void
+    {
+        $item = $this->item('paint');
+        $main = $this->warehouse('a');
+        $returns = Location::create(['warehouse_id' => $main->warehouse_id, 'code' => 'ret', 'name' => 'Returns', 'type' => LocationType::Returns]);
+        $overflow = Location::create(['warehouse_id' => $main->warehouse_id, 'code' => 'over', 'name' => 'Overflow']);
+        $quarantine = Location::create(['warehouse_id' => $main->warehouse_id, 'code' => 'quar', 'name' => 'Quarantine', 'type' => LocationType::Quarantine]);
+        foreach ([$main, $returns, $overflow, $quarantine] as $location) {
+            $this->receive($item, $location, '5', '10.0000');
+        }
+        // Good stock comes back through Returns; the overflow shelf holds damaged goods; quarantine is left to its type.
+        $returns->update(['counts_as_usable' => true]);
+        $overflow->update(['counts_as_usable' => false]);
+
+        $byLocation = collect($this->snapshot([$item->id])->balancesFor($item->id))->keyBy(fn (StockBalance $b): string => $b->locationCode);
+
+        $this->assertSame('5.0000', (string) $byLocation['ret']->usable);
+        $this->assertTrue($byLocation['ret']->locationUsable);
+        $this->assertTrue($byLocation['ret']->locationMarked);
+        $this->assertSame('0.0000', (string) $byLocation['over']->usable);
+        $this->assertSame('5.0000', (string) $byLocation['over']->unusableLocation);
+        $this->assertFalse($byLocation['over']->locationMarked);
+        $this->assertFalse($byLocation['quar']->locationUsable);
+        $this->assertNull($byLocation['quar']->locationMarked);
+        $this->assertNull($byLocation['main']->locationMarked);
+    }
+
+    public function test_a_mark_never_makes_an_inactive_location_usable(): void
+    {
+        $item = $this->item('paint');
+        $main = $this->warehouse('a');
+        $old = Location::create(['warehouse_id' => $main->warehouse_id, 'code' => 'old', 'name' => 'Old bin']);
+        $this->receive($item, $main, '5', '10.0000');
+        $this->receive($item, $old, '3', '10.0000');
+        $old->update(['counts_as_usable' => true]);
+        $old->update(['active' => false]);
+
+        $byLocation = collect($this->snapshot([$item->id])->balancesFor($item->id))->keyBy(fn (StockBalance $b): string => $b->locationCode);
+
+        $this->assertFalse($byLocation['old']->locationUsable);
+        $this->assertSame('0.0000', (string) $byLocation['old']->usable);
+    }
+
     public function test_avco_cost_follows_the_items_pool_scope(): void
     {
         $company = $this->item('company-pool', AvcoPoolScope::CompanyItem);

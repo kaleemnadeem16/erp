@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $barcode
  * @property int $sort_order
  * @property bool $allows_stock
+ * @property bool|null $counts_as_usable
  * @property-read Warehouse $warehouse
  */
 class Location extends Model
@@ -71,12 +72,22 @@ class Location extends Model
         });
     }
 
+    /**
+     * Whether stock here counts as usable for availability: the company's own mark when there is one,
+     * otherwise what the location's type implies (`LocationType::holdsUsableStock()`).
+     */
+    public function countsAsUsable(): bool
+    {
+        return $this->counts_as_usable ?? $this->type->holdsUsableStock();
+    }
+
     protected function casts(): array
     {
         return [
             'active' => 'bool',
             'type' => LocationType::class,
             'allows_stock' => 'bool',
+            'counts_as_usable' => 'bool',
         ];
     }
 

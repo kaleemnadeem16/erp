@@ -22,6 +22,8 @@ import type {
 
 import type {
   AuthenticationExceptionResponse,
+  AuthorizationExceptionResponse,
+  LocationsDestroy403,
   LocationsIndex200,
   LocationsIndexParams,
   LocationsShow200,
@@ -227,6 +229,11 @@ export type locationsStoreResponse401 = {
   status: 401;
 };
 
+export type locationsStoreResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type locationsStoreResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -236,7 +243,9 @@ export type locationsStoreResponseSuccess = locationsStoreResponse201 & {
   headers: Headers;
 };
 export type locationsStoreResponseError = (
-  locationsStoreResponse401 | locationsStoreResponse422
+  | locationsStoreResponse401
+  | locationsStoreResponse403
+  | locationsStoreResponse422
 ) & {
   headers: Headers;
 };
@@ -261,7 +270,10 @@ export const locationsStore = async (
 };
 
 export const getLocationsStoreMutationOptions = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -303,10 +315,15 @@ export type LocationsStoreMutationResult = NonNullable<
 >;
 export type LocationsStoreMutationBody = StoreLocationRequest;
 export type LocationsStoreMutationError =
-  AuthenticationExceptionResponse | ValidationExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
 
 export const useLocationsStore = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(
   options?: {
@@ -561,6 +578,11 @@ export type locationsDestroyResponse401 = {
   status: 401;
 };
 
+export type locationsDestroyResponse403 = {
+  data: LocationsDestroy403;
+  status: 403;
+};
+
 export type locationsDestroyResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -570,7 +592,9 @@ export type locationsDestroyResponseSuccess = locationsDestroyResponse204 & {
   headers: Headers;
 };
 export type locationsDestroyResponseError = (
-  locationsDestroyResponse401 | locationsDestroyResponse404
+  | locationsDestroyResponse401
+  | locationsDestroyResponse403
+  | locationsDestroyResponse404
 ) & {
   headers: Headers;
 };
@@ -596,7 +620,10 @@ export const locationsDestroy = async (
 };
 
 export const getLocationsDestroyMutationOptions = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | LocationsDestroy403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -638,10 +665,15 @@ export type LocationsDestroyMutationResult = NonNullable<
 >;
 
 export type LocationsDestroyMutationError =
-  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
+  | AuthenticationExceptionResponse
+  | LocationsDestroy403
+  | ModelNotFoundExceptionResponse;
 
 export const useLocationsDestroy = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | LocationsDestroy403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(
   options?: {
@@ -674,6 +706,11 @@ export type locationsUpdateResponse401 = {
   status: 401;
 };
 
+export type locationsUpdateResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type locationsUpdateResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -689,6 +726,7 @@ export type locationsUpdateResponseSuccess = locationsUpdateResponse200 & {
 };
 export type locationsUpdateResponseError = (
   | locationsUpdateResponse401
+  | locationsUpdateResponse403
   | locationsUpdateResponse404
   | locationsUpdateResponse422
 ) & {
@@ -718,6 +756,7 @@ export const locationsUpdate = async (
 export const getLocationsUpdateMutationOptions = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -762,12 +801,14 @@ export type LocationsUpdateMutationResult = NonNullable<
 export type LocationsUpdateMutationBody = UpdateLocationRequest;
 export type LocationsUpdateMutationError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
 export const useLocationsUpdate = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,

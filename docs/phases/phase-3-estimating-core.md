@@ -281,8 +281,10 @@ item here in the same commit that delivers it; add new ones as they are found.
 - [x] **[Q32](../OPEN-QUESTIONS.md#q32--pickers-and-lookups-that-fail-to-load-read-as-empty)** —
       pickers and lookups that fail to load read as "No items found". Resolved 2026-09-29 by
       [ADR 0064](../decisions/0064-pickers-report-a-failed-lookup-and-offer-retry.md).
-- [ ] **Usable-stock location rule** — only `STORAGE` and `RECEIVING` locations count as usable in the
-      availability read (conservative; may under-report). Awaiting the owner's confirmation.
+- [x] **Usable-stock location rule** — resolved 2026-09-29 by
+      [ADR 0067](../decisions/0067-governed-per-location-usability-mark.md): the type default stays, and a
+      STRUCTURED company can mark a location as counting or not, as a governed policy. Its demo data waits on
+      the typed-location demo decision (no demo location has a type or STRUCTURED mode yet).
 - [ ] **Variance reporting** (ADR 0054 §8) — distinguishing one-off justified exceptions from repeated
       deviations that should trigger a standards review. Needs adopted history, so it follows Phase 4.
 

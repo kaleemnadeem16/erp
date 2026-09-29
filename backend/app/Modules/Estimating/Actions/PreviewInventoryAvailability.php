@@ -122,6 +122,7 @@ final class PreviewInventoryAvailability
                     'location' => $this->locationRef($balance),
                     'batch' => $this->batchRef($balance),
                     'location_usable' => (bool) $balance->locationUsable,
+                    'location_usable_source' => $balance->locationMarked === null ? 'TYPE' : 'MARKED',
                     'on_hand_quantity' => (string) $balance->onHand,
                     'held_for_qa_quantity' => (string) $balance->held,
                     'usable_quantity' => (string) $balance->usable,
@@ -286,7 +287,7 @@ final class PreviewInventoryAvailability
         $limitations = [];
         $limitations[] = 'Stock is proposed as a quantity per location (QUANTITY_ONLY): no sealed-pack, open-remnant or container claims are made, and expiry is not considered.';
         $limitations[] = 'Availability is a snapshot as of the time shown. It can be out of date immediately and reserves nothing.';
-        $limitations[] = 'Stock held for QA release, and stock in quarantine, scrap, transit, returns, dispatch or production locations, is not counted as usable.';
+        $limitations[] = 'Stock held for QA release is not counted as usable. Neither is stock in a quarantine, scrap, transit, returns, dispatch or production location, unless the company has marked that location as counting (each balance says whether its location follows its type or was marked).';
         $limitations[] = 'The selection strategy is the built-in company default unless overridden here; item- and category-level strategy settings are not implemented yet.';
 
         return $limitations;

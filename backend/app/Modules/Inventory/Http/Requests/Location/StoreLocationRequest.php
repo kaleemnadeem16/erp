@@ -13,7 +13,7 @@ class StoreLocationRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('inventory.location.manage') === true;
     }
 
     protected function prepareForValidation(): void

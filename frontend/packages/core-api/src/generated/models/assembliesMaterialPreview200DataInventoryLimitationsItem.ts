@@ -14,8 +14,8 @@ export const AssembliesMaterialPreview200DataInventoryLimitationsItem = {
     "Stock is proposed as a quantity per location (QUANTITY_ONLY): no sealed-pack, open-remnant or container claims are made, and expiry is not considered.",
   Availability_is_a_snapshot_as_of_the_time_shown_It_can_be_out_of_date_immediately_and_reserves_nothing:
     "Availability is a snapshot as of the time shown. It can be out of date immediately and reserves nothing.",
-  "Stock_held_for_QA_release,_and_stock_in_quarantine,_scrap,_transit,_returns,_dispatch_or_production_locations,_is_not_counted_as_usable":
-    "Stock held for QA release, and stock in quarantine, scrap, transit, returns, dispatch or production locations, is not counted as usable.",
+  "Stock_held_for_QA_release_is_not_counted_as_usable_Neither_is_stock_in_a_quarantine,_scrap,_transit,_returns,_dispatch_or_production_location,_unless_the_company_has_marked_that_location_as_counting_(each_balance_says_whether_its_location_follows_its_type_or_was_marked)":
+    "Stock held for QA release is not counted as usable. Neither is stock in a quarantine, scrap, transit, returns, dispatch or production location, unless the company has marked that location as counting (each balance says whether its location follows its type or was marked).",
   "The_selection_strategy_is_the_built-in_company_default_unless_overridden_here;_item-_and_category-level_strategy_settings_are_not_implemented_yet":
     "The selection strategy is the built-in company default unless overridden here; item- and category-level strategy settings are not implemented yet.",
 } as const;

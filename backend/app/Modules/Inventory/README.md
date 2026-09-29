@@ -59,7 +59,7 @@ movement and valuation, built in Phase 2.
 - `QueryStockAvailability` (with `StockBalance`, `StockAvailabilitySnapshot`, `InventoryScope`) — the
   read-only, single-statement availability read model Estimating's inventory proposal consumes
   (ADR 0058): open layers per item/location/batch, QA hold attributed to the layer it sits in,
-  location-type usability (`LocationType::holdsUsableStock()`), and defensible cost evidence. It
+  location usability (the location's own `counts_as_usable` mark, else `LocationType::holdsUsableStock()`), and defensible cost evidence. It
   locks and posts nothing; see [inventory-packages.md](../../../../docs/domain/inventory-packages.md#first-implementation-quantity_only-availability-and-allocation)
 
 ## Does not own
@@ -79,7 +79,11 @@ invariants regardless of which Action invokes them.
 Item and Category reads remain available to every authenticated company user because they are
 shared reference data used by selectors throughout the ERP. Create, update, archive and activate
 require `inventory.item.manage` or `inventory.category.manage` respectively; the React screens
-hide those controls when the effective permission is absent. GL-account field visibility remains
+hide those controls when the effective permission is absent. Location create, update and archive
+require `inventory.location.manage`; marking a location as counting or not counting as usable stock also needs
+`inventory.location-policy.manage`, a reason and STRUCTURED mode, and is recorded in the inventory policy history
+([ADR 0067](../../../docs/decisions/0067-governed-per-location-usability-mark.md)). Warehouse and
+warehouse-location-role writes are still authenticated-only. GL-account field visibility remains
 a separate Finance-owned decision and is not implied by either write capability.
 
 `CreateWarehouse` always creates its first location in the same transaction, so an active

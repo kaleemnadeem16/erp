@@ -9,6 +9,8 @@ use App\Support\CompanyContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class WarehouseApiTest extends TestCase
@@ -41,6 +43,9 @@ class WarehouseApiTest extends TestCase
         $user = User::factory()->create();
         $warehouse = Warehouse::create(['code' => 'main', 'name' => 'Main']);
         $location = $warehouse->locations()->create(['code' => 'main', 'name' => 'Main']);
+        app(PermissionRegistrar::class)->setPermissionsTeamId(1);
+        Permission::findOrCreate('inventory.location.manage');
+        $user->givePermissionTo('inventory.location.manage');
         $this->actingAs($user)->deleteJson("/api/v1/locations/{$location->id}")
             ->assertUnprocessable()->assertJsonValidationErrors('active');
     }

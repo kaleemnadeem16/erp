@@ -6,6 +6,7 @@
  */
 import type { LocationResourceParentId } from "./locationResourceParentId";
 import type { LocationResourceBarcode } from "./locationResourceBarcode";
+import type { LocationResourceCountsAsUsable } from "./locationResourceCountsAsUsable";
 import type { WarehouseResource } from "./warehouseResource";
 import type { LocationResourceParent } from "./locationResourceParent";
 import type { LocationResourceCreatedAt } from "./locationResourceCreatedAt";
@@ -21,6 +22,8 @@ export interface LocationResource {
   barcode: LocationResourceBarcode;
   sort_order: number;
   allows_stock: boolean;
+  counts_as_usable: LocationResourceCountsAsUsable;
+  counts_as_usable_effective: boolean;
   active: boolean;
   warehouse?: WarehouseResource;
   parent?: LocationResourceParent;
