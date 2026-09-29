@@ -9,8 +9,10 @@ use App\Models\User;
 use App\Modules\Administration\Actions\ChangeMemberStatus;
 use App\Modules\Administration\Actions\InviteMember;
 use App\Modules\Administration\Actions\SyncMemberAccess;
+use App\Modules\Administration\Actions\UpdateMember;
 use App\Modules\Administration\Http\Requests\StoreMemberRequest;
 use App\Modules\Administration\Http\Requests\UpdateMemberAccessRequest;
+use App\Modules\Administration\Http\Requests\UpdateMemberRequest;
 use App\Modules\Administration\Http\Resources\MemberResource;
 use App\Modules\Administration\Notifications\MemberInvitation;
 use App\Modules\Administration\Support\MemberStatus;
@@ -37,6 +39,11 @@ class MemberController extends Controller
         abort_unless($request->user()?->can('administration.member.view'), 403);
 
         return new MemberResource($member->load('roles'));
+    }
+
+    public function update(UpdateMemberRequest $request, User $member, UpdateMember $update): MemberResource
+    {
+        return new MemberResource($update($member, $request->validated(), $request->user())->load('roles'));
     }
 
     public function access(UpdateMemberAccessRequest $request, User $member, SyncMemberAccess $sync): MemberResource

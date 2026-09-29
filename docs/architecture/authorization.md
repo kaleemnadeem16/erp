@@ -214,6 +214,9 @@ result of forgetting the question.
 ### Strong foundation already present
 
 - Namespaced permissions, roles, additive direct grants and company-scoped Teams plumbing.
+- Operable company member and role administration: invitation, suspension/reactivation, role CRUD,
+  role/direct assignment and effective-access inspection, protected by separate
+  `administration.*` capabilities and anti-escalation/self-lockout guards.
 - Module-owned permission vocabularies aggregated by the production-safe registry.
 - Production-safe, idempotent permission registration, proven complete against every literal
   permission check in `app/` by an architecture test.
@@ -233,9 +236,11 @@ result of forgetting the question.
   `extensibility.md` is not implemented and one `required_permission` cannot model multiple
   independent approvals.
 - No department/organisation-unit membership or record-level visibility system exists.
-- No client-side permission introspection exists, so most navigation and controls cannot yet be
-  tailored before the API returns 403.
-- No role/permission administration UI or full role catalogue exists.
+- The authenticated-user response exposes effective capabilities and permission-aware routing is
+  available, but many older feature screens still need the incremental gating retrofit below.
+- There is intentionally no hardcoded full role catalogue: application modules own stable
+  capability names, while each company builds reusable roles from the registered vocabulary in
+  Access Administration ([ADR 0062](../decisions/0062-company-member-and-access-administration.md)).
 
 The answer is therefore: **the RBAC base is good and reusable, but it is not by itself enough for
 multi-stage approvals or restricted data visibility.** Those can be added without replacing
@@ -321,3 +326,7 @@ stored actors, not something a role assignment guarantees.
 - [Multi-tenancy](multi-tenancy.md) — company isolation is separate from record visibility
 - [ADR 0028](../decisions/0028-dynamic-namespaced-permissions.md)
 - [Material resolution](../domain/material-resolution.md) — Phase 3 capability/field implications
+- [Access administration](../domain/access-administration.md) — operable member lifecycle, roles
+  and assignments
+- [ADR 0062](../decisions/0062-company-member-and-access-administration.md) — invitation and
+  additive-role decision

@@ -38,6 +38,7 @@ import {
   ItemsListScreen,
   LoginScreen,
   MaterialPreviewScreen,
+  MembersSettingsScreen,
   NegativeStockOverrideCreateScreen,
   NegativeStockOverrideDetailScreen,
   NegativeStockOverridesListScreen,
@@ -53,6 +54,7 @@ import {
   AppearanceSettingsScreen,
   PrintingSettingsScreen,
   ProtectedRoute,
+  PermissionRoute,
   PurchasingSettingsScreen,
   RateDimensionCreateScreen,
   RateDimensionEditScreen,
@@ -61,6 +63,7 @@ import {
   RecalculationRequestDetailScreen,
   RecalculationRequestsListScreen,
   ResourceRatesListScreen,
+  RolesSettingsScreen,
   StockLedgerScreen,
   StockMoveDetailScreen,
   WarehouseCreateScreen,
@@ -550,6 +553,30 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <AppearanceSettingsScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings/members"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <PermissionRoute permission="administration.member.view">
+                  <MembersSettingsScreen />
+                </PermissionRoute>
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings/roles"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <PermissionRoute permission="administration.role.view">
+                  <RolesSettingsScreen />
+                </PermissionRoute>
               </AppShell>
             </ProtectedRoute>
           }
