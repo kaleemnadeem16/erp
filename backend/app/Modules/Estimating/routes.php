@@ -7,6 +7,8 @@ use App\Modules\Estimating\Http\Controllers\Api\V1\AssemblyVersionController;
 use App\Modules\Estimating\Http\Controllers\Api\V1\FormulationController;
 use App\Modules\Estimating\Http\Controllers\Api\V1\FormulationVersionController;
 use App\Modules\Estimating\Http\Controllers\Api\V1\MaterialPreviewController;
+use App\Modules\Estimating\Http\Controllers\Api\V1\MaterialVariancePolicyController;
+use App\Modules\Estimating\Http\Controllers\Api\V1\MaterialVarianceReasonController;
 use App\Modules\Estimating\Http\Controllers\Api\V1\OverheadPolicyController;
 use App\Modules\Estimating\Http\Controllers\Api\V1\RateDimensionController;
 use App\Modules\Estimating\Http\Controllers\Api\V1\RateDimensionValueController;
@@ -55,6 +57,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('overhead-policies', OverheadPolicyController::class)->except('update');
     Route::patch('overhead-policies/{overhead_policy}', [OverheadPolicyController::class, 'update'])->name('overhead-policies.update');
     Route::post('overhead-policies/{overhead_policy}/activate', [OverheadPolicyController::class, 'activate'])->name('overhead-policies.activate');
+
+    Route::apiResource('material-variance-reasons', MaterialVarianceReasonController::class)->only(['index', 'store']);
+    Route::patch('material-variance-reasons/{material_variance_reason}', [MaterialVarianceReasonController::class, 'update'])->name('material-variance-reasons.update');
+    Route::apiResource('material-variance-policies', MaterialVariancePolicyController::class)->except('update');
+    Route::patch('material-variance-policies/{material_variance_policy}', [MaterialVariancePolicyController::class, 'update'])->name('material-variance-policies.update');
+    Route::post('material-variance-policies/{material_variance_policy}/activate', [MaterialVariancePolicyController::class, 'activate'])->name('material-variance-policies.activate');
 
     Route::apiResource('resource-rates', ResourceRateController::class)->except('update');
 });

@@ -105,7 +105,7 @@ return new class extends Migration
         // A quantity is only meaningful in a unit; the other measures carry none.
         DB::statement("ALTER TABLE material_variance_policy_bands ADD CONSTRAINT material_variance_policy_bands_uom_check CHECK ((measure = 'QUANTITY') = (uom_id IS NOT NULL))");
         DB::statement('ALTER TABLE material_variance_policy_bands ADD CONSTRAINT material_variance_policy_bands_policy_company_fk FOREIGN KEY (company_id, policy_id) REFERENCES material_variance_policies (company_id, id) ON DELETE CASCADE');
-        DB::statement('ALTER TABLE material_variance_policy_bands ADD CONSTRAINT material_variance_policy_bands_uom_fk FOREIGN KEY (uom_id) REFERENCES uoms (id)');
+        DB::statement('ALTER TABLE material_variance_policy_bands ADD CONSTRAINT material_variance_policy_bands_uom_company_fk FOREIGN KEY (company_id, uom_id) REFERENCES uoms (company_id, id)');
         DB::statement(<<<'SQL'
             CREATE UNIQUE INDEX material_variance_policy_bands_identity
             ON material_variance_policy_bands (policy_id, direction, measure, COALESCE(uom_id, 0), threshold)

@@ -157,7 +157,15 @@ estimating.material_variance.approve
 estimating.material_resolution_history.view
 ```
 
-The first three are enforced by the Material Preview and its field-filtered response, each
+`estimating.material_variance_policy.manage` (not in ADR 0057's list — added with the configurable variance
+policy) creates, edits, activates and deletes-while-draft variance policies and the company's reason
+list. Listing policies (audit detail: reason, actor, superseded versions) also needs
+`estimating.policy-history.view`, exactly like overhead policies; reading the reason list is open to
+anyone who can run a preview, since a previewer must be able to pick one. Reasons are retired, never
+deleted, and a reason's code is immutable. `APPROVAL_REQUIRED` is refused everywhere until the shared
+approval workflow exists (ADR 0054 §7).
+
+The first three of ADR 0057's capabilities are enforced by the Material Preview and its field-filtered response, each
 independently: `run` alone returns the technical requirement; `inventory_availability.view` adds the
 `inventory` block and is also required to send `inventory_scope` or `selection_strategy` (without
 it those inputs are rejected with 422, never silently ignored, and no availability is queried);

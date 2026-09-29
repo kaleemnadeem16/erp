@@ -12,6 +12,7 @@ final class PermissionVocabulary
     {
         return [
             'estimating.overhead-policy.manage',
+            'estimating.material_variance_policy.manage',
             'estimating.policy-history.view',
             'estimating.material_preview.run',
             'estimating.inventory_availability.view',

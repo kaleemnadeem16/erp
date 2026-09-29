@@ -163,6 +163,17 @@ it without a schema change, but it is neither storable nor resolvable until then
 not a measure until package-level tracking exists — both tracked under
 [Phase 3 deferred work](../phases/phase-3-estimating-core.md#deferred-and-blocked-work).
 
+### Managing reasons and policies
+
+`/api/v1/material-variance-reasons` (list, create, patch — never delete) and
+`/api/v1/material-variance-policies` (list, show, create, patch, delete-while-draft, `activate`) follow the
+overhead-policy lifecycle: a policy is created as a DRAFT with its bands, edited only while DRAFT (a `bands`
+array replaces the whole set), and activation supersedes the previous ACTIVE version for the scope and closes
+its period, so history is never rewritten. Scope cannot be edited. Band rules are enforced twice, in the
+request and again in the Action: a quantity band needs a unit and no other measure has one, thresholds are
+non-negative and an under-plan percentage cannot exceed 100, and `APPROVAL_REQUIRED` cannot be chosen. All
+writes need `estimating.material_variance_policy.manage`.
+
 ### How a planned quantity is judged
 
 `EvaluateMaterialVariance` compares a planned quantity with its standard (both in the item's stock unit)
