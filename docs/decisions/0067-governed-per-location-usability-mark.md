@@ -57,7 +57,9 @@ signed-in user and `destroy` checked nothing, so anyone could change what planne
   availability; a company that never opens location structure sees no change.
 - **Positive:** Who changed what counts as usable, when and why is recorded like every other inventory policy.
 - **Positive:** Editing a location is finally permissioned.
-- **Negative:** No screen edits locations yet, so the mark is set through the API until a location screen exists.
+- **Positive:** The warehouse detail screen shows the location hierarchy with each location's type and whether it
+  counts (and whether the mark or the type decided), and lets someone with the permissions add and edit locations
+  and change the rule with a reason. A SIMPLE company sees a plain list.
 - **Negative:** Warehouses and warehouse-location roles remain authenticated-only; they are the next gap.
 - **Requires:** Reservations, when built, refuse to change a mark while they depend on it.
 

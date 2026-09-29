@@ -256,6 +256,7 @@ independently of this backlog's sequencing whenever wanted.
 - [x] **Inventory locations** (2026-09-29, [ADR 0067](../decisions/0067-governed-per-location-usability-mark.md)) —
       create/update/archive now need `inventory.location.manage`; marking a location as counting or not
       counting as usable stock also needs `inventory.location-policy.manage`, a reason and STRUCTURED mode.
-      Allowed/denied tests: `LocationUsabilityOverrideTest`. No frontend action gating was needed: no screen
-      edits locations yet. Rollout needs the same administrator sync and explicit grants as the sections above.
+      Allowed/denied tests: `LocationUsabilityOverrideTest`. Frontend: the warehouse detail screen's Locations
+      panel hides Add/Edit without `inventory.location.manage` and the usable-stock control without
+      `inventory.location-policy.manage` (the `/warehouses` route itself is still behind the legacy setup gate). Rollout needs the same administrator sync and explicit grants as the sections above.
 - [ ] **Warehouses and warehouse-location roles** — writes are still authenticated-only.
