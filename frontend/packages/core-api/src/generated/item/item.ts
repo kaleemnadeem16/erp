@@ -22,6 +22,8 @@ import type {
 
 import type {
   AuthenticationExceptionResponse,
+  AuthorizationExceptionResponse,
+  ItemsDestroy403,
   ItemsIndex200,
   ItemsIndexParams,
   ItemsShow200,
@@ -226,6 +228,11 @@ export type itemsStoreResponse401 = {
   status: 401;
 };
 
+export type itemsStoreResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type itemsStoreResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -235,7 +242,7 @@ export type itemsStoreResponseSuccess = itemsStoreResponse201 & {
   headers: Headers;
 };
 export type itemsStoreResponseError = (
-  itemsStoreResponse401 | itemsStoreResponse422
+  itemsStoreResponse401 | itemsStoreResponse403 | itemsStoreResponse422
 ) & {
   headers: Headers;
 };
@@ -260,7 +267,10 @@ export const itemsStore = async (
 };
 
 export const getItemsStoreMutationOptions = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -302,10 +312,15 @@ export type ItemsStoreMutationResult = NonNullable<
 >;
 export type ItemsStoreMutationBody = StoreItemRequest;
 export type ItemsStoreMutationError =
-  AuthenticationExceptionResponse | ValidationExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
 
 export const useItemsStore = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(
   options?: {
@@ -550,6 +565,11 @@ export type itemsDestroyResponse401 = {
   status: 401;
 };
 
+export type itemsDestroyResponse403 = {
+  data: ItemsDestroy403;
+  status: 403;
+};
+
 export type itemsDestroyResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -559,7 +579,7 @@ export type itemsDestroyResponseSuccess = itemsDestroyResponse204 & {
   headers: Headers;
 };
 export type itemsDestroyResponseError = (
-  itemsDestroyResponse401 | itemsDestroyResponse404
+  itemsDestroyResponse401 | itemsDestroyResponse403 | itemsDestroyResponse404
 ) & {
   headers: Headers;
 };
@@ -582,7 +602,10 @@ export const itemsDestroy = async (
 };
 
 export const getItemsDestroyMutationOptions = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | ItemsDestroy403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -624,10 +647,15 @@ export type ItemsDestroyMutationResult = NonNullable<
 >;
 
 export type ItemsDestroyMutationError =
-  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
+  | AuthenticationExceptionResponse
+  | ItemsDestroy403
+  | ModelNotFoundExceptionResponse;
 
 export const useItemsDestroy = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | ItemsDestroy403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(
   options?: {
@@ -660,6 +688,11 @@ export type itemsUpdateResponse401 = {
   status: 401;
 };
 
+export type itemsUpdateResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type itemsUpdateResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -674,7 +707,10 @@ export type itemsUpdateResponseSuccess = itemsUpdateResponse200 & {
   headers: Headers;
 };
 export type itemsUpdateResponseError = (
-  itemsUpdateResponse401 | itemsUpdateResponse404 | itemsUpdateResponse422
+  | itemsUpdateResponse401
+  | itemsUpdateResponse403
+  | itemsUpdateResponse404
+  | itemsUpdateResponse422
 ) & {
   headers: Headers;
 };
@@ -702,6 +738,7 @@ export const itemsUpdate = async (
 export const getItemsUpdateMutationOptions = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -746,12 +783,14 @@ export type ItemsUpdateMutationResult = NonNullable<
 export type ItemsUpdateMutationBody = UpdateItemRequest;
 export type ItemsUpdateMutationError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
 export const useItemsUpdate = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,

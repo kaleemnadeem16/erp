@@ -43,3 +43,5 @@ export * from "./generated/resource-rate/resource-rate";
 export * from "./generated/assembly-version/assembly-version";
 export * from "./generated/material-preview/material-preview";
 export * from "./generated/item-quantity-unit/item-quantity-unit";
+export * from "./generated/member/member";
+export * from "./generated/role/role";

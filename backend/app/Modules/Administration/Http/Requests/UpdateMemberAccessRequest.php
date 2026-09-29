@@ -13,6 +13,7 @@ class UpdateMemberAccessRequest extends FormRequest
         return $this->user()?->can('administration.access.assign') === true;
     }
 
+    /** @return array<string, mixed> */
     public function rules(): array
     {
         return [

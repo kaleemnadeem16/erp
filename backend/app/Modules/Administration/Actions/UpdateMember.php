@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 
 final class UpdateMember
 {
+    /** @param array<string, mixed> $attributes */
     public function __invoke(User $member, array $attributes, User $actor): User
     {
         if (! $actor->can('administration.member.manage')) {

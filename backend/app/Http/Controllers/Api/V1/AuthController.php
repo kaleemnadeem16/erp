@@ -34,14 +34,14 @@ class AuthController extends Controller
         $credentials['email'] = strtolower($credentials['email']);
         $credentials['status'] = MemberStatus::Active->value;
 
-        if (! Auth::attempt($credentials)) {
+        if (! Auth::guard('web')->attempt($credentials)) {
             throw ValidationException::withMessages([
                 'email' => ['These credentials do not match our records.'],
             ]);
         }
 
         /** @var User $user */
-        $user = Auth::user();
+        $user = Auth::guard('web')->user();
 
         if ($request->filled('device_name')) {
             $token = $user->createToken($request->string('device_name')->toString())->plainTextToken;
@@ -106,7 +106,7 @@ class AuthController extends Controller
             function (User $user, string $password): void {
                 $user->forceFill([
                     'password' => $password,
-                    'status' => MemberStatus::Active,
+                    'status' => $user->status === MemberStatus::Invited ? MemberStatus::Active : $user->status,
                     'email_verified_at' => $user->email_verified_at ?? now(),
                 ])->save();
             }

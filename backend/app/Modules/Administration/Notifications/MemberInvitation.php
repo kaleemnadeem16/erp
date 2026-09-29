@@ -14,6 +14,7 @@ class MemberInvitation extends Notification
 
     public function __construct(private readonly string $token) {}
 
+    /** @return list<string> */
     public function via(object $notifiable): array
     {
         return ['mail'];

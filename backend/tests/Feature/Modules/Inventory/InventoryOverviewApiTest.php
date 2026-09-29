@@ -167,10 +167,11 @@ class InventoryOverviewApiTest extends TestCase
 
         $locationId = $this->locationId();
         $receiptId = $this->createReceipt($line->id, $item->id, $uom->id, $locationId, ['received_qty' => '6.0000']);
-        $this->postJson("/api/v1/goods-receipts/{$receiptId}/post")->assertOk();
+        $this->actingAs(PurchasingActor::make(['purchasing.goods-receipt.post']))
+            ->postJson("/api/v1/goods-receipts/{$receiptId}/post")->assertOk();
 
         $receiptLineId = DB::table('goods_receipt_lines')->where('item_id', $item->id)->value('id');
-        $this->actingAs(User::factory()->create())->postJson("/api/v1/goods-receipt-lines/{$receiptLineId}/quality-dispositions", [
+        $this->actingAs(PurchasingActor::make(['purchasing.quality-disposition.post']))->postJson("/api/v1/goods-receipt-lines/{$receiptLineId}/quality-dispositions", [
             'disposition' => 'PASS', 'qty' => '4.0000', 'reason' => 'Inspected and passed',
         ])->assertCreated();
 
@@ -332,7 +333,7 @@ class InventoryOverviewApiTest extends TestCase
             ], $overrides)],
         ];
 
-        return $this->actingAs(User::factory()->create())->postJson('/api/v1/goods-receipts', $payload)
+        return $this->actingAs(PurchasingActor::make(['purchasing.goods-receipt.create']))->postJson('/api/v1/goods-receipts', $payload)
             ->assertCreated()->json('data.id');
     }
 }

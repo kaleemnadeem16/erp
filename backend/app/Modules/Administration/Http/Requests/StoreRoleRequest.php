@@ -13,6 +13,7 @@ class StoreRoleRequest extends FormRequest
         return $this->user()?->can('administration.role.manage') === true;
     }
 
+    /** @return array<string, mixed> */
     public function rules(): array
     {
         return ['name' => ['required', 'string', 'max:255'], 'description' => ['nullable', 'string', 'max:2000'], 'permissions' => ['present', 'array'], 'permissions.*' => ['string'], 'reason' => ['required', 'string', 'max:1000']];

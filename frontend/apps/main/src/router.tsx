@@ -467,10 +467,16 @@ export function AppRouter() {
           }
         >
           {purchaseOrderCreateAsSheet && (
-            <Route path="new" element={<PurchaseOrderCreateScreen presentation="sheet" />} />
+            <Route
+              path="new"
+              element={<PurchaseOrderCreateScreen presentation="sheet" />}
+            />
           )}
           {purchaseOrderDetailAsSheet && (
-            <Route path=":id" element={<PurchaseOrderDetailScreen presentation="sheet" />} />
+            <Route
+              path=":id"
+              element={<PurchaseOrderDetailScreen presentation="sheet" />}
+            />
           )}
         </Route>
         {!purchaseOrderCreateAsSheet && (

@@ -13,6 +13,7 @@ final class SyncMemberAccess
 {
     public function __construct(private readonly AccessAssignmentGuard $guard) {}
 
+    /** @param array<string, mixed> $attributes */
     public function __invoke(User $member, array $attributes, User $actor): User
     {
         if (! $actor->can('administration.access.assign')) {

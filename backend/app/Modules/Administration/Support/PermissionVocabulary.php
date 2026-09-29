@@ -6,6 +6,7 @@ namespace App\Modules\Administration\Support;
 
 final class PermissionVocabulary
 {
+    /** @return list<string> */
     public static function all(): array
     {
         return [

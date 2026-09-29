@@ -39,7 +39,7 @@ activity_log (existing)
 
 ## Behaviour
 
-- Invitation reserves the company-local email, creates an `INVITED` user and sends a single-use,
+- Invitation reserves the globally unique login email, creates an `INVITED` user and sends a single-use,
   expiring set-password link through Laravel's password broker.
 - Accepting the invitation sets the password, verifies the email and transitions to `ACTIVE`.
 - `INVITED` and `SUSPENDED` accounts cannot authenticate. Suspension also invalidates stored API
@@ -55,7 +55,7 @@ activity_log (existing)
 - Access assignment requires a reason and records before/after snapshots. The actor may assign
   only permissions already present in their own effective set, including permissions contributed
   indirectly by a selected role.
-- Self-suspension and self access-editing are rejected. Server recovery remains documented for the
+- Self-suspension and self access-editing, including changing a role assigned to oneself, are rejected. Server recovery remains documented for the
   designated administrator.
 
 ## Authorisation and data scope

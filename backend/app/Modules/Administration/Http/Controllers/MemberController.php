@@ -18,15 +18,31 @@ use App\Modules\Administration\Notifications\MemberInvitation;
 use App\Modules\Administration\Support\MemberStatus;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Password;
 
 class MemberController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): AnonymousResourceCollection
     {
         abort_unless($request->user()?->can('administration.member.view'), 403);
+        $filters = $request->validate([
+            'search' => ['sometimes', 'string', 'max:255'],
+            'page' => ['sometimes', 'integer', 'min:1'],
+            'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
+        ]);
+        $search = trim($filters['search'] ?? '');
 
-        return MemberResource::collection(User::query()->with('roles')->orderBy('name')->paginate(25));
+        return MemberResource::collection(
+            User::query()
+                ->with('roles')
+                ->when($search !== '', fn ($query) => $query->where(fn ($match) => $match
+                    ->where('name', 'ilike', "%{$search}%")
+                    ->orWhere('email', 'ilike', "%{$search}%")))
+                ->orderBy('name')
+                ->orderBy('id')
+                ->paginate($filters['per_page'] ?? 25)
+        );
     }
 
     public function store(StoreMemberRequest $request, InviteMember $invite): MemberResource

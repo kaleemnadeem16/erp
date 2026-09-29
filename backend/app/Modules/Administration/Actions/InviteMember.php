@@ -17,6 +17,7 @@ final class InviteMember
 {
     public function __construct(private readonly AccessAssignmentGuard $guard) {}
 
+    /** @param array<string, mixed> $attributes */
     public function __invoke(array $attributes, User $actor): User
     {
         if (! $actor->can('administration.member.manage')) {

@@ -32,6 +32,7 @@ use Brick\Math\BigDecimal;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Tests\Support\PurchasingActor;
 use Tests\TestCase;
 
 /**
@@ -331,9 +332,14 @@ class QueryStockAvailabilityTest extends TestCase
             'unit_price' => '10.0000', 'line_amount' => '100.0000',
             'base_unit_price' => '10.0000', 'base_line_amount' => '100.0000', 'qa_required' => true,
         ]);
-        app(IssuePurchaseOrder::class)($order);
+        $user = PurchasingActor::make([
+            'purchasing.purchase-order.issue',
+            'purchasing.goods-receipt.create',
+            'purchasing.goods-receipt.post',
+            'purchasing.quality-disposition.post',
+        ]);
+        app(IssuePurchaseOrder::class)($order, $user);
 
-        $user = User::factory()->create();
         $receiptId = $this->actingAs($user)->postJson('/api/v1/goods-receipts', [
             'supplier_account_id' => $supplier->id,
             'physical_arrival_at' => now()->toIso8601String(), 'posting_date' => now()->format('Y-m-d'),

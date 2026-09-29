@@ -22,6 +22,8 @@ import type {
 
 import type {
   AuthenticationExceptionResponse,
+  AuthorizationExceptionResponse,
+  CategoriesDestroy403,
   CategoriesIndex200,
   CategoriesIndexParams,
   CategoriesShow200,
@@ -247,6 +249,11 @@ export type categoriesStoreResponse401 = {
   status: 401;
 };
 
+export type categoriesStoreResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type categoriesStoreResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -256,7 +263,9 @@ export type categoriesStoreResponseSuccess = categoriesStoreResponse201 & {
   headers: Headers;
 };
 export type categoriesStoreResponseError = (
-  categoriesStoreResponse401 | categoriesStoreResponse422
+  | categoriesStoreResponse401
+  | categoriesStoreResponse403
+  | categoriesStoreResponse422
 ) & {
   headers: Headers;
 };
@@ -281,7 +290,10 @@ export const categoriesStore = async (
 };
 
 export const getCategoriesStoreMutationOptions = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -323,10 +335,15 @@ export type CategoriesStoreMutationResult = NonNullable<
 >;
 export type CategoriesStoreMutationBody = StoreCategoryRequest;
 export type CategoriesStoreMutationError =
-  AuthenticationExceptionResponse | ValidationExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
 
 export const useCategoriesStore = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(
   options?: {
@@ -583,6 +600,11 @@ export type categoriesDestroyResponse401 = {
   status: 401;
 };
 
+export type categoriesDestroyResponse403 = {
+  data: CategoriesDestroy403;
+  status: 403;
+};
+
 export type categoriesDestroyResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -592,7 +614,9 @@ export type categoriesDestroyResponseSuccess = categoriesDestroyResponse204 & {
   headers: Headers;
 };
 export type categoriesDestroyResponseError = (
-  categoriesDestroyResponse401 | categoriesDestroyResponse404
+  | categoriesDestroyResponse401
+  | categoriesDestroyResponse403
+  | categoriesDestroyResponse404
 ) & {
   headers: Headers;
 };
@@ -618,7 +642,10 @@ export const categoriesDestroy = async (
 };
 
 export const getCategoriesDestroyMutationOptions = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | CategoriesDestroy403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -660,10 +687,15 @@ export type CategoriesDestroyMutationResult = NonNullable<
 >;
 
 export type CategoriesDestroyMutationError =
-  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
+  | AuthenticationExceptionResponse
+  | CategoriesDestroy403
+  | ModelNotFoundExceptionResponse;
 
 export const useCategoriesDestroy = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | CategoriesDestroy403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(
   options?: {
@@ -696,6 +728,11 @@ export type categoriesUpdateResponse401 = {
   status: 401;
 };
 
+export type categoriesUpdateResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type categoriesUpdateResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -711,6 +748,7 @@ export type categoriesUpdateResponseSuccess = categoriesUpdateResponse200 & {
 };
 export type categoriesUpdateResponseError = (
   | categoriesUpdateResponse401
+  | categoriesUpdateResponse403
   | categoriesUpdateResponse404
   | categoriesUpdateResponse422
 ) & {
@@ -743,6 +781,7 @@ export const categoriesUpdate = async (
 export const getCategoriesUpdateMutationOptions = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -787,12 +826,14 @@ export type CategoriesUpdateMutationResult = NonNullable<
 export type CategoriesUpdateMutationBody = UpdateCategoryRequest;
 export type CategoriesUpdateMutationError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
 export const useCategoriesUpdate = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,

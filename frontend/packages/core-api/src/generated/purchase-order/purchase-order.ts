@@ -22,14 +22,17 @@ import type {
 
 import type {
   AuthenticationExceptionResponse,
+  AuthorizationExceptionResponse,
   CancelPurchaseOrderRequest,
   InventoryCutoversOpenPurchaseOrdersCommit200,
   ModelNotFoundExceptionResponse,
   PurchaseOrderLinesShortClose200,
+  PurchaseOrderLinesShortClose403,
   PurchaseOrdersCancel200,
   PurchaseOrdersIndex200,
   PurchaseOrdersIndexParams,
   PurchaseOrdersIssue200,
+  PurchaseOrdersIssue403,
   PurchaseOrdersShow200,
   PurchaseOrdersShowParams,
   PurchaseOrdersStore201,
@@ -261,6 +264,11 @@ export type purchaseOrdersStoreResponse401 = {
   status: 401;
 };
 
+export type purchaseOrdersStoreResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type purchaseOrdersStoreResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -271,7 +279,9 @@ export type purchaseOrdersStoreResponseSuccess =
     headers: Headers;
   };
 export type purchaseOrdersStoreResponseError = (
-  purchaseOrdersStoreResponse401 | purchaseOrdersStoreResponse422
+  | purchaseOrdersStoreResponse401
+  | purchaseOrdersStoreResponse403
+  | purchaseOrdersStoreResponse422
 ) & {
   headers: Headers;
 };
@@ -296,7 +306,10 @@ export const purchaseOrdersStore = async (
 };
 
 export const getPurchaseOrdersStoreMutationOptions = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -338,10 +351,15 @@ export type PurchaseOrdersStoreMutationResult = NonNullable<
 >;
 export type PurchaseOrdersStoreMutationBody = StorePurchaseOrderRequest;
 export type PurchaseOrdersStoreMutationError =
-  AuthenticationExceptionResponse | ValidationExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
 
 export const usePurchaseOrdersStore = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(
   options?: {
@@ -627,6 +645,11 @@ export type purchaseOrdersUpdateResponse401 = {
   status: 401;
 };
 
+export type purchaseOrdersUpdateResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type purchaseOrdersUpdateResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -643,6 +666,7 @@ export type purchaseOrdersUpdateResponseSuccess =
   };
 export type purchaseOrdersUpdateResponseError = (
   | purchaseOrdersUpdateResponse401
+  | purchaseOrdersUpdateResponse403
   | purchaseOrdersUpdateResponse404
   | purchaseOrdersUpdateResponse422
 ) & {
@@ -675,6 +699,7 @@ export const purchaseOrdersUpdate = async (
 export const getPurchaseOrdersUpdateMutationOptions = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -719,12 +744,14 @@ export type PurchaseOrdersUpdateMutationResult = NonNullable<
 export type PurchaseOrdersUpdateMutationBody = UpdatePurchaseOrderRequest;
 export type PurchaseOrdersUpdateMutationError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
 export const usePurchaseOrdersUpdate = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -759,6 +786,11 @@ export type purchaseOrdersIssueResponse401 = {
   status: 401;
 };
 
+export type purchaseOrdersIssueResponse403 = {
+  data: PurchaseOrdersIssue403;
+  status: 403;
+};
+
 export type purchaseOrdersIssueResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -769,7 +801,9 @@ export type purchaseOrdersIssueResponseSuccess =
     headers: Headers;
   };
 export type purchaseOrdersIssueResponseError = (
-  purchaseOrdersIssueResponse401 | purchaseOrdersIssueResponse404
+  | purchaseOrdersIssueResponse401
+  | purchaseOrdersIssueResponse403
+  | purchaseOrdersIssueResponse404
 ) & {
   headers: Headers;
 };
@@ -795,7 +829,10 @@ export const purchaseOrdersIssue = async (
 };
 
 export const getPurchaseOrdersIssueMutationOptions = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | PurchaseOrdersIssue403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -837,10 +874,15 @@ export type PurchaseOrdersIssueMutationResult = NonNullable<
 >;
 
 export type PurchaseOrdersIssueMutationError =
-  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
+  | AuthenticationExceptionResponse
+  | PurchaseOrdersIssue403
+  | ModelNotFoundExceptionResponse;
 
 export const usePurchaseOrdersIssue = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | PurchaseOrdersIssue403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(
   options?: {
@@ -873,6 +915,11 @@ export type purchaseOrdersCancelResponse401 = {
   status: 401;
 };
 
+export type purchaseOrdersCancelResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type purchaseOrdersCancelResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -889,6 +936,7 @@ export type purchaseOrdersCancelResponseSuccess =
   };
 export type purchaseOrdersCancelResponseError = (
   | purchaseOrdersCancelResponse401
+  | purchaseOrdersCancelResponse403
   | purchaseOrdersCancelResponse404
   | purchaseOrdersCancelResponse422
 ) & {
@@ -921,6 +969,7 @@ export const purchaseOrdersCancel = async (
 export const getPurchaseOrdersCancelMutationOptions = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -965,12 +1014,14 @@ export type PurchaseOrdersCancelMutationResult = NonNullable<
 export type PurchaseOrdersCancelMutationBody = CancelPurchaseOrderRequest;
 export type PurchaseOrdersCancelMutationError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
 export const usePurchaseOrdersCancel = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -1005,6 +1056,11 @@ export type purchaseOrderLinesShortCloseResponse401 = {
   status: 401;
 };
 
+export type purchaseOrderLinesShortCloseResponse403 = {
+  data: PurchaseOrderLinesShortClose403;
+  status: 403;
+};
+
 export type purchaseOrderLinesShortCloseResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -1016,6 +1072,7 @@ export type purchaseOrderLinesShortCloseResponseSuccess =
   };
 export type purchaseOrderLinesShortCloseResponseError = (
   | purchaseOrderLinesShortCloseResponse401
+  | purchaseOrderLinesShortCloseResponse403
   | purchaseOrderLinesShortCloseResponse404
 ) & {
   headers: Headers;
@@ -1045,7 +1102,10 @@ export const purchaseOrderLinesShortClose = async (
 };
 
 export const getPurchaseOrderLinesShortCloseMutationOptions = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | PurchaseOrderLinesShortClose403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -1087,10 +1147,15 @@ export type PurchaseOrderLinesShortCloseMutationResult = NonNullable<
 >;
 
 export type PurchaseOrderLinesShortCloseMutationError =
-  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
+  | AuthenticationExceptionResponse
+  | PurchaseOrderLinesShortClose403
+  | ModelNotFoundExceptionResponse;
 
 export const usePurchaseOrderLinesShortClose = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | PurchaseOrderLinesShortClose403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(
   options?: {

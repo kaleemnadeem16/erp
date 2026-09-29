@@ -19,7 +19,8 @@ export function PermissionRoute({
           <ShieldAlert className="mx-auto size-10 text-muted-foreground" />
           <h1 className="mt-4 text-lg font-semibold">You don’t have access</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Ask an administrator for the required permission if you need to use this area.
+            Ask an administrator for the required permission if you need to use
+            this area.
           </p>
         </div>
       </div>

@@ -14,6 +14,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
+/** @property MemberStatus $status */
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */

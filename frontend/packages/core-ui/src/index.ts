@@ -16,7 +16,11 @@ export { useColumnVisibilityPreference } from "./lib/use-column-visibility-prefe
 // Reusable list/detail/print foundation — see docs/architecture (frontend)
 // and features/items for the reference implementation.
 export * from "./lib/list-query-state";
-export { describeLoadError, isTransientFailure, shouldRetryQuery } from "./lib/api-errors";
+export {
+  describeLoadError,
+  isTransientFailure,
+  shouldRetryQuery,
+} from "./lib/api-errors";
 export * from "./components/data-table";
 export * from "./components/print";
 export {
@@ -43,7 +47,11 @@ export {
   type ThemeId,
   type ThemeDefinition,
 } from "./lib/appearance";
-export { useAppearanceStore, useAppearance, useIsDarkMode } from "./stores/appearance-store";
+export {
+  useAppearanceStore,
+  useAppearance,
+  useIsDarkMode,
+} from "./stores/appearance-store";
 export { AppearanceSettingsScreen } from "./features/settings/appearance-settings-screen";
 export { AcceptInvitationScreen } from "./features/auth/accept-invitation-screen";
 export { PrintingSettingsScreen } from "./features/settings/printing-settings-screen";
@@ -55,7 +63,11 @@ export {
   DEFAULT_PRINT_SETTINGS,
   type PrintSettings,
 } from "./stores/print-settings-store";
-export { OptionCards, type OptionCard, type OptionCardsProps } from "./components/ui/option-cards";
+export {
+  OptionCards,
+  type OptionCard,
+  type OptionCardsProps,
+} from "./components/ui/option-cards";
 export {
   DetailPageLayout,
   DetailSection,

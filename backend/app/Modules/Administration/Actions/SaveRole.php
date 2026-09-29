@@ -15,10 +15,14 @@ final class SaveRole
 {
     public function __construct(private readonly AccessAssignmentGuard $guard, private readonly CompanyContext $company) {}
 
+    /** @param array<string, mixed> $attributes */
     public function __invoke(?Role $role, array $attributes, User $actor): Role
     {
         if (! $actor->can('administration.role.manage')) {
             throw new DomainInvariantException('The actor cannot manage roles.', 'name');
+        }
+        if ($role?->users()->whereKey($actor->id)->exists()) {
+            throw new DomainInvariantException('You cannot change a role assigned to your own account.', 'role');
         }
         $this->guard->validate($actor, [], $attributes['permissions']);
 

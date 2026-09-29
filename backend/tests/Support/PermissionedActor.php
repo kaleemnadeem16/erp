@@ -14,10 +14,9 @@ final class PermissionedActor
     public static function grant(User $actor, array $permissions, int $companyId = 1): User
     {
         app(PermissionRegistrar::class)->setPermissionsTeamId($companyId);
-        foreach ($permissions as $permission) {
-            Permission::findOrCreate($permission);
-        }
-        $actor->givePermissionTo($permissions);
+        $registered = array_map(fn (string $permission) => Permission::findOrCreate($permission, 'web'), $permissions);
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        $actor->givePermissionTo($registered);
 
         return $actor;
     }

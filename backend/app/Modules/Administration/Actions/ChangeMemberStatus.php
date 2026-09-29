@@ -22,6 +22,9 @@ final class ChangeMemberStatus
         if ($status === MemberStatus::Invited) {
             throw new DomainInvariantException('Invitation status is managed by the invitation workflow.', 'status');
         }
+        if ($status === MemberStatus::Active && $member->status !== MemberStatus::Suspended) {
+            throw new DomainInvariantException('Only suspended members can be reactivated.', 'status');
+        }
 
         return DB::transaction(function () use ($member, $status, $reason, $actor): User {
             $before = $member->status->value;

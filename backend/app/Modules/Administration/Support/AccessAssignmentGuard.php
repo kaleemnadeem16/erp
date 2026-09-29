@@ -14,7 +14,11 @@ final class AccessAssignmentGuard
 {
     public function __construct(private readonly PermissionRegistry $registry, private readonly CompanyContext $company) {}
 
-    /** @return array{roles:list<Role>, permissions:list<string>} */
+    /**
+     * @param  list<int>  $roleIds
+     * @param  list<string>  $directPermissions
+     * @return array{roles:list<Role>, permissions:list<string>}
+     */
     public function validate(User $actor, array $roleIds, array $directPermissions): array
     {
         $roles = Role::query()->where('team_id', $this->company->id())->whereIn('id', $roleIds)->with('permissions')->get();

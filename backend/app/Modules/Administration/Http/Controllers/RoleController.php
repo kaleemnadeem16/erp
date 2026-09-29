@@ -14,10 +14,11 @@ use App\Support\CompanyContext;
 use App\Support\PermissionRegistry;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class RoleController extends Controller
 {
-    public function index(Request $request, CompanyContext $company)
+    public function index(Request $request, CompanyContext $company): AnonymousResourceCollection
     {
         abort_unless($request->user()?->can('administration.role.view'), 403);
 

@@ -22,6 +22,7 @@ import type {
 
 import type {
   AuthenticationExceptionResponse,
+  AuthorizationExceptionResponse,
   ModelNotFoundExceptionResponse,
   QualityDispositionsIndex200,
   QualityDispositionsIndexParams,
@@ -45,6 +46,11 @@ export type qualityDispositionsStoreResponse401 = {
   status: 401;
 };
 
+export type qualityDispositionsStoreResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type qualityDispositionsStoreResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -61,6 +67,7 @@ export type qualityDispositionsStoreResponseSuccess =
   };
 export type qualityDispositionsStoreResponseError = (
   | qualityDispositionsStoreResponse401
+  | qualityDispositionsStoreResponse403
   | qualityDispositionsStoreResponse404
   | qualityDispositionsStoreResponse422
 ) & {
@@ -94,6 +101,7 @@ export const qualityDispositionsStore = async (
 export const getQualityDispositionsStoreMutationOptions = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -139,12 +147,14 @@ export type QualityDispositionsStoreMutationBody =
   StoreQualityDispositionRequest;
 export type QualityDispositionsStoreMutationError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
 export const useQualityDispositionsStore = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
