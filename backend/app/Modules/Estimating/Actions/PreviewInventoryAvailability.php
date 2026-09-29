@@ -51,9 +51,10 @@ final class PreviewInventoryAvailability
     /**
      * @param  list<array{item: array{id: int, code: string, name: string}, standard_quantity: string, uom: array{id: int, code: string, name: string}}>  $leafRows
      * @param  array{warehouse_ids?: list<int>, location_ids?: list<int>}  $scopeInput
+     * @param  array<int, string>  $plannedByItem  item id → what-if planned stock quantity; the proposal plans for it instead of the standard
      * @return array{data: array<string, mixed>, evidence: array<string, mixed>}
      */
-    public function __invoke(array $leafRows, array $scopeInput, ?MaterialSelectionStrategy $override, bool $includeCost): array
+    public function __invoke(array $leafRows, array $scopeInput, ?MaterialSelectionStrategy $override, bool $includeCost, array $plannedByItem = []): array
     {
         $strategy = $override ?? MaterialSelectionStrategy::companyDefault();
         $scope = new InventoryScope($scopeInput['warehouse_ids'] ?? [], $scopeInput['location_ids'] ?? []);
@@ -77,7 +78,7 @@ final class PreviewInventoryAvailability
 
             // A non-stocked item goes through the same literal below with every availability figure
             // null: "does not apply", never a zero or a shortage.
-            $required = BigDecimal::of($row['standard_quantity']);
+            $required = BigDecimal::of($plannedByItem[$itemId] ?? $row['standard_quantity']);
             $balances = $stocked ? $snapshot->balancesFor($itemId) : [];
             $recommendation = $stocked ? ($this->allocate)($required, $balances, $strategy) : null;
 
@@ -137,7 +138,8 @@ final class PreviewInventoryAvailability
                 'item' => $this->ref($itemId, $code, (string) $row['item']['name']),
                 'uom' => $this->ref((int) $row['uom']['id'], $uomCode, (string) $row['uom']['name']),
                 'is_stocked' => $stocked,
-                'required_quantity' => (string) $row['standard_quantity'],
+                'standard_quantity' => (string) $row['standard_quantity'],
+                'required_quantity' => (string) $required,
                 'on_hand_quantity' => $stocked ? (string) $onHand : null,
                 'held_for_qa_quantity' => $stocked ? (string) $held : null,
                 'unusable_location_quantity' => $stocked ? (string) $unusableLocation : null,

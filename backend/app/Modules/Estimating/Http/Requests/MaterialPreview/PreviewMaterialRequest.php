@@ -46,6 +46,15 @@ class PreviewMaterialRequest extends FormRequest
                     fn ($query) => $query->whereIn('rate_dimension_id', RateDimension::query()->select('id'))
                 ),
             ],
+            // Hypothetical what-if quantities (ADR 0058): judged against the standard, never saved. Which
+            // items the assembly actually requires is only known after resolution, so that check lives
+            // in PreviewMaterialVariance.
+            'planned_adjustments' => ['sometimes', 'array', 'max:100'],
+            'planned_adjustments.*.item_id' => ['required', 'integer', 'distinct', CompanyScoped::exists('items')],
+            'planned_adjustments.*.planned_quantity' => ['required', 'decimal:0,6', 'gte:0', 'max:999999999999.999999'],
+            'planned_adjustments.*.uom_id' => ['required', 'integer', CompanyScoped::exists('uoms')],
+            'planned_adjustments.*.reason_id' => ['sometimes', 'nullable', 'integer', CompanyScoped::exists('material_variance_reasons')],
+            'planned_adjustments.*.note' => ['sometimes', 'nullable', 'string', 'max:1000'],
             // Narrows, never widens, the stock the proposal may consider (ADR 0058).
             'inventory_scope' => [$inventoryInput, 'array:warehouse_ids,location_ids'],
             'inventory_scope.warehouse_ids' => ['sometimes', 'array', 'max:100'],

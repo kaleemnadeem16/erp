@@ -13,6 +13,8 @@ use App\Modules\Estimating\Actions\ActivateFormulationVersion;
 use App\Modules\Estimating\Models\ApplicationRate;
 use App\Modules\Estimating\Models\Assembly;
 use App\Modules\Estimating\Models\Formulation;
+use App\Modules\Estimating\Models\MaterialVarianceReason;
+use App\Modules\Estimating\Models\MaterialVariancePolicy;
 use App\Modules\Estimating\Models\RateDimension;
 use App\Modules\Estimating\Support\FormulationCycleGuard;
 use App\Modules\Inventory\Actions\CreateWarehouse;
@@ -387,6 +389,187 @@ class MaterialPreviewApiTest extends TestCase
         ])->assertOk();
 
         $this->assertSame($before, $counts());
+    }
+
+    // ---- planned adjustments and variance (ADR 0054 through ADR 0058) ----
+
+    public function test_without_adjustments_there_is_no_variance_block(): void
+    {
+        $this->actingAs($this->userWith())->postJson($this->url(), $this->payload())->assertOk()->assertJsonPath('data.variance', null);
+    }
+
+    public function test_with_no_policy_any_difference_needs_a_reason_and_the_reason_makes_it_adoptable(): void
+    {
+        $reason = MaterialVarianceReason::create(['code' => 'porous', 'name' => 'Porous surface']);
+        $user = $this->userWith();
+
+        $missing = $this->actingAs($user)->postJson($this->url(), $this->payload() + ['planned_adjustments' => [$this->adjust('5')]]);
+        $missing->assertOk();
+        $missing->assertJsonPath('data.variance.items.0.standard_quantity', '4.000000000');
+        $missing->assertJsonPath('data.variance.items.0.planned_quantity', '5.000000000');
+        $missing->assertJsonPath('data.variance.items.0.delta_percent', '25.000000');
+        $missing->assertJsonPath('data.variance.items.0.effect', 'REASON_REQUIRED');
+        $missing->assertJsonPath('data.variance.items.0.reason_status', 'MISSING');
+        $missing->assertJsonPath('data.variance.items.0.can_adopt', false);
+        $missing->assertJsonPath('data.variance.items.0.policy', null);
+        $missing->assertJsonPath('data.variance.summary', ['adjusted_count' => 1, 'needs_reason_count' => 1, 'blocked_count' => 0, 'can_adopt' => false]);
+
+        $given = $this->actingAs($user)->postJson($this->url(), $this->payload() + ['planned_adjustments' => [$this->adjust('5', ['reason_id' => $reason->id, 'note' => 'Bare plaster'])]]);
+        $given->assertJsonPath('data.variance.items.0.reason_status', 'PROVIDED');
+        $given->assertJsonPath('data.variance.items.0.reason.code', 'porous');
+        $given->assertJsonPath('data.variance.items.0.note', 'Bare plaster');
+        $given->assertJsonPath('data.variance.items.0.can_adopt', true);
+        $given->assertJsonPath('data.variance.summary.can_adopt', true);
+    }
+
+    public function test_an_unchanged_or_zero_plan_is_judged_correctly(): void
+    {
+        $user = $this->userWith();
+
+        $same = $this->actingAs($user)->postJson($this->url(), $this->payload() + ['planned_adjustments' => [$this->adjust('4')]]);
+        $same->assertJsonPath('data.variance.items.0.effect', null)->assertJsonPath('data.variance.items.0.can_adopt', true);
+        $same->assertJsonPath('data.variance.summary.adjusted_count', 0);
+
+        $zero = $this->actingAs($user)->postJson($this->url(), $this->payload() + ['planned_adjustments' => [$this->adjust('0')]]);
+        $zero->assertJsonPath('data.variance.items.0.delta_percent', '-100.000000')->assertJsonPath('data.variance.items.0.effect', 'REASON_REQUIRED');
+    }
+
+    public function test_the_resolved_policy_decides_and_a_blocked_plan_is_not_adoptable(): void
+    {
+        $this->activePolicy([['OVER', 'PERCENT', '50', null, 'BLOCKED']]);
+        $user = $this->userWith();
+
+        $small = $this->actingAs($user)->postJson($this->url(), $this->payload() + ['planned_adjustments' => [$this->adjust('5')]]);
+        $small->assertJsonPath('data.variance.items.0.effect', 'AUDIT_ONLY')->assertJsonPath('data.variance.items.0.can_adopt', true);
+        $small->assertJsonPath('data.variance.items.0.policy.scope_type', 'COMPANY')->assertJsonPath('data.variance.items.0.policy.method', 'COMPANY');
+
+        $big = $this->actingAs($user)->postJson($this->url(), $this->payload() + ['planned_adjustments' => [$this->adjust('7')]]);
+        $big->assertJsonPath('data.variance.items.0.effect', 'BLOCKED')->assertJsonPath('data.variance.items.0.reason_status', 'NOT_ACCEPTED');
+        $big->assertJsonPath('data.variance.items.0.can_adopt', false)->assertJsonPath('data.variance.summary.blocked_count', 1);
+        $big->assertJsonPath('data.variance.items.0.matched.0.observed', '75');
+    }
+
+    public function test_a_plan_may_be_entered_in_any_convertible_unit(): void
+    {
+        $gram = Uom::create(['code' => 'g', 'name' => 'Gram', 'dimension' => UomDimension::Mass, 'factor_to_base' => '0.001']);
+
+        $response = $this->actingAs($this->userWith())->postJson($this->url(), $this->payload() + ['planned_adjustments' => [$this->adjust('5000', ['uom_id' => $gram->id])]]);
+
+        $response->assertOk()->assertJsonPath('data.variance.items.0.planned_quantity', '5.000000000');
+        $response->assertJsonPath('data.variance.items.0.entered', ['quantity' => '5000', 'uom_code' => 'g']);
+    }
+
+    public function test_unusable_adjustments_fail_loudly_with_the_field_that_is_wrong(): void
+    {
+        $user = $this->userWith();
+        $retired = MaterialVarianceReason::create(['code' => 'old', 'name' => 'Old', 'active' => false]);
+        $stranger = Item::create(['code' => 'STRANGER', 'name' => 'Stranger', 'type' => ItemType::Raw, 'stock_uom_id' => $this->kg->id, 'category_id' => $this->pigment->category_id]);
+
+        $cases = [
+            'an item the assembly does not require' => [$this->adjust('5', ['item_id' => $stranger->id]), 'planned_adjustments.0.item_id'],
+            'a unit that does not convert' => [$this->adjust('5', ['uom_id' => $this->litre->id]), 'planned_adjustments.0.uom_id'],
+            'a retired reason' => [$this->adjust('5', ['reason_id' => $retired->id]), 'planned_adjustments.0.reason_id'],
+            'a negative quantity' => [$this->adjust('-1'), 'planned_adjustments.0.planned_quantity'],
+            'an unknown reason' => [$this->adjust('5', ['reason_id' => 99999]), 'planned_adjustments.0.reason_id'],
+        ];
+        foreach ($cases as $label => [$adjustment, $key]) {
+            $this->actingAs($user)->postJson($this->url(), $this->payload() + ['planned_adjustments' => [$adjustment]])
+                ->assertUnprocessable($label)->assertJsonValidationErrors($key);
+        }
+
+        $this->actingAs($user)->postJson($this->url(), $this->payload() + ['planned_adjustments' => [$this->adjust('5'), $this->adjust('6')]])
+            ->assertUnprocessable()->assertJsonValidationErrors('planned_adjustments.0.item_id');
+    }
+
+    public function test_quantity_precision_is_enforced_not_rounded(): void
+    {
+        $this->pigment->update(['quantity_precision' => '1.000000000']);
+
+        $this->actingAs($this->userWith())->postJson($this->url(), $this->payload() + ['planned_adjustments' => [$this->adjust('4.5')]])
+            ->assertUnprocessable()->assertJsonValidationErrors('planned_adjustments.0.planned_quantity');
+        $this->actingAs($this->userWith())->postJson($this->url(), $this->payload() + ['planned_adjustments' => [$this->adjust('5')]])->assertOk();
+    }
+
+    public function test_what_a_cost_band_observed_is_hidden_without_the_cost_capability(): void
+    {
+        // 1 kg over × 3 per kg = 3, at or beyond the band's 2.
+        $this->activePolicy([['OVER', 'COST_AMOUNT', '2', null, 'REASON_REQUIRED']]);
+
+        $blind = $this->actingAs($this->userWith())->postJson($this->url(), $this->payload() + ['planned_adjustments' => [$this->adjust('5')]]);
+        $sighted = $this->actingAs($this->userWith('estimating.internal_cost.view'))->postJson($this->url(), $this->payload() + ['planned_adjustments' => [$this->adjust('5')]]);
+
+        // The band still applies for both — cost decides the effect — but only one caller sees the amount.
+        $blind->assertJsonPath('data.variance.items.0.effect', 'REASON_REQUIRED')->assertJsonPath('data.variance.items.0.matched.0.observed', null);
+        $blind->assertJsonPath('data.variance.items.0.matched.0.measure', 'COST_AMOUNT');
+        $sighted->assertJsonPath('data.variance.items.0.effect', 'REASON_REQUIRED')->assertJsonPath('data.variance.items.0.matched.0.observed', '3');
+        $this->assertStringNotContainsString('"observed":"3"', $blind->getContent());
+    }
+
+    public function test_a_cost_band_without_cost_evidence_is_skipped_not_measured_against_zero(): void
+    {
+        $this->activePolicy([['OVER', 'COST_AMOUNT', '0.5', null, 'BLOCKED']]);
+        AvcoPool::query()->where('item_id', $this->pigment->id)->delete();
+
+        $response = $this->actingAs($this->userWith('estimating.internal_cost.view'))->postJson($this->url(), $this->payload() + ['planned_adjustments' => [$this->adjust('5')]]);
+
+        $response->assertJsonPath('data.variance.items.0.effect', 'AUDIT_ONLY')->assertJsonPath('data.variance.items.0.skipped.0.reason', 'There is no internal cost evidence for this item.');
+    }
+
+    public function test_the_inventory_proposal_plans_for_the_planned_quantity(): void
+    {
+        $this->stockPigment('a', '5');
+        $user = $this->userWith('estimating.inventory_availability.view');
+
+        $standard = $this->actingAs($user)->postJson($this->url(), $this->payload());
+        $planned = $this->actingAs($user)->postJson($this->url(), $this->payload() + ['planned_adjustments' => [$this->adjust('6')]]);
+
+        // 5 kg on hand covers the 4 kg standard, but not a 6 kg plan.
+        $this->assertEquals(0, (float) $standard->json('data.inventory.items.0.shortage_quantity'));
+        $this->assertEquals(4, (float) $planned->json('data.inventory.items.0.standard_quantity'));
+        $this->assertEquals(6, (float) $planned->json('data.inventory.items.0.required_quantity'));
+        $this->assertEquals(1, (float) $planned->json('data.inventory.items.0.shortage_quantity'));
+    }
+
+    public function test_adjustments_move_the_fingerprint_and_write_nothing(): void
+    {
+        $user = $this->userWith();
+        $tables = ['material_variance_reasons', 'material_variance_policies', 'material_variance_policy_bands', 'stock_moves', 'assemblies'];
+        $counts = fn (): array => array_map(fn (string $t): int => DB::table($t)->count(), $tables);
+        $before = $counts();
+
+        $plain = $this->actingAs($user)->postJson($this->url(), $this->payload())->json('data.evidence_fingerprint');
+        $five = $this->actingAs($user)->postJson($this->url(), $this->payload() + ['planned_adjustments' => [$this->adjust('5')]])->json('data.evidence_fingerprint');
+        $six = $this->actingAs($user)->postJson($this->url(), $this->payload() + ['planned_adjustments' => [$this->adjust('6')]])->json('data.evidence_fingerprint');
+
+        $this->assertCount(3, array_unique([$plain, $five, $six]));
+        $this->assertSame($before, $counts());
+    }
+
+    private function url(): string
+    {
+        return "/api/v1/assemblies/{$this->assembly->id}/material-preview";
+    }
+
+    /**
+     * @param  array<string, mixed>  $extra
+     * @return array<string, mixed>
+     */
+    private function adjust(string $quantity, array $extra = []): array
+    {
+        return array_merge(['item_id' => $this->pigment->id, 'planned_quantity' => $quantity, 'uom_id' => $this->kg->id], $extra);
+    }
+
+    /** @param list<array{0: string, 1: string, 2: string, 3: Uom|null, 4: string}> $bands */
+    private function activePolicy(array $bands): MaterialVariancePolicy
+    {
+        $policy = MaterialVariancePolicy::create([
+            'scope_type' => 'COMPANY', 'reason' => 'Test', 'status' => 'ACTIVE', 'effective_from' => now()->subMonth()->toDateString(), 'changed_by' => User::factory()->create()->id,
+        ]);
+        foreach ($bands as [$direction, $measure, $threshold, $uom, $effect]) {
+            $policy->bands()->create(['direction' => $direction, 'measure' => $measure, 'threshold' => $threshold, 'uom_id' => $uom?->id, 'effect' => $effect]);
+        }
+
+        return $policy;
     }
 
     private function userWith(string ...$permissions): User

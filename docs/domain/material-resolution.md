@@ -174,6 +174,25 @@ request and again in the Action: a quantity band needs a unit and no other measu
 non-negative and an under-plan percentage cannot exceed 100, and `APPROVAL_REQUIRED` cannot be chosen. All
 writes need `estimating.material_variance_policy.manage`.
 
+### What-if adjustments in the preview
+
+`POST /api/v1/assemblies/{assembly}/material-preview` accepts `planned_adjustments[]`
+(`item_id`, `planned_quantity`, `uom_id`, optional `reason_id` and `note`) from anyone who may run a preview —
+adjusting is hypothetical here, so it needs no separate permission (that boundary is Phase 4's). Each is
+converted to the item's stock unit, checked against its quantity precision (refused, never rounded), judged by
+the resolved policy, and returned under `variance` with the standard, planned, difference, effect, whether the
+reason is `NOT_NEEDED`, `PROVIDED`, `MISSING` or `NOT_ACCEPTED` (blocked), whether the plan could be adopted
+as it stands, the matched and skipped conditions, and the policy version used. The same planned quantity
+drives the inventory proposal, so shortage and coverage follow what the user plans; the standard is returned
+beside it (`standard_quantity`, `required_quantity`).
+
+An adjustment that cannot be used fails with the field that is wrong rather than being ignored: an item the
+assembly does not require, a unit that does not convert, a retired reason, an unknown reason, a negative
+quantity, a duplicate item. Internal cost still decides cost bands, but the amount a cost band observed is
+returned only with `estimating.internal_cost.view`; without it that value is `null`, never zero. A zero unit
+cost counts as no evidence ("never received" is not "free"), so a cost band is reported skipped. Adjustments
+are part of the evidence fingerprint. Nothing is written.
+
 ### How a planned quantity is judged
 
 `EvaluateMaterialVariance` compares a planned quantity with its standard (both in the item's stock unit)

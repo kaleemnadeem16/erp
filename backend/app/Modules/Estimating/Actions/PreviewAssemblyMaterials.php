@@ -28,8 +28,8 @@ use InvalidArgumentException;
  * ADR 0058's read-only preview: the technical resolution of an Assembly into
  * leaf material requirements and, for an actor allowed to see availability,
  * the advisory inventory proposal over them (PreviewInventoryAvailability).
- * It deliberately stops before planned adjustments and variance controls:
- * those are a later vertical slice over this same contract.
+ * Hypothetical planned quantities are judged by PreviewMaterialVariance and drive the inventory
+ * proposal; nothing is ever adopted here (Phase 4).
  *
  * The application-rate id stored on an Assembly component is the configured
  * family anchor (item + denominator work UoM). The preview resolves the
@@ -48,10 +48,11 @@ final class PreviewAssemblyMaterials
         private readonly OverheadAmountCalculator $overheadCalculator,
         private readonly UomConversionService $uomConverter,
         private readonly PreviewInventoryAvailability $inventoryPreview,
+        private readonly PreviewMaterialVariance $variancePreview,
     ) {}
 
     /**
-     * @param  array{assembly_version_id?: int|null, work_quantity: string, work_uom_id: int, customer_id?: int|null, dimension_value_ids?: list<int>, inventory_scope?: array{warehouse_ids?: list<int>, location_ids?: list<int>}, selection_strategy?: string|null}  $input
+     * @param  array{assembly_version_id?: int|null, work_quantity: string, work_uom_id: int, customer_id?: int|null, dimension_value_ids?: list<int>, inventory_scope?: array{warehouse_ids?: list<int>, location_ids?: list<int>}, selection_strategy?: string|null, planned_adjustments?: list<array{item_id: int, planned_quantity: string, uom_id: int, reason_id?: int|null, note?: string|null}>}  $input
      * @return array<string, mixed>
      */
     public function __invoke(Assembly $assembly, array $input, bool $includeCost, bool $includeInventory = false): array
@@ -117,6 +118,17 @@ final class PreviewAssemblyMaterials
             ? $this->costBreakdown($version, $assemblyWorkQuantity, $materialCost)
             : null;
 
+        // Initialised first, then destructured: Scramble types the response from this flow, and a
+        // destructuring that is the variable's first assignment reads as `string` in the OpenAPI schema.
+        $variance = null;
+        $plannedByItem = [];
+        $varianceEvidence = [];
+        [$variance, $plannedByItem, $varianceEvidence] = ($this->variancePreview)(
+            $leafRows,
+            $input['planned_adjustments'] ?? [],
+            $includeCost,
+        );
+
         $inventory = null;
         $inventoryEvidence = null;
         if ($includeInventory) {
@@ -125,6 +137,7 @@ final class PreviewAssemblyMaterials
                 $input['inventory_scope'] ?? [],
                 isset($input['selection_strategy']) ? MaterialSelectionStrategy::from($input['selection_strategy']) : null,
                 $includeCost,
+                $plannedByItem,
             );
         }
 
@@ -141,6 +154,9 @@ final class PreviewAssemblyMaterials
                 'uom_id' => $row['uom']['id'],
             ], $leafRows),
         ];
+        if ($varianceEvidence !== [] && ($input['planned_adjustments'] ?? []) !== []) {
+            $evidence['variance'] = $varianceEvidence;
+        }
         // Availability moves the fingerprint only for an actor who can see it; otherwise a
         // changing fingerprint would leak stock movements to someone who may not see stock.
         if ($inventoryEvidence !== null) {
@@ -162,10 +178,12 @@ final class PreviewAssemblyMaterials
             'material_components' => $materialComponents,
             'leaf_requirements' => $leafRows,
             'cost_breakdown' => $costBreakdown,
+            // No adjustments asked for → no block at all, rather than an empty one.
+            'variance' => ($input['planned_adjustments'] ?? []) === [] ? null : $variance,
             'inventory' => $inventory,
             'warnings' => array_values(array_unique($warnings)),
             'limitations' => [
-                'Planned-quantity adjustments, variance controls and package-level proposals are not included yet: planned quantity equals the standard requirement.',
+                'Package-level proposals are not included yet, and a planned quantity is only ever a what-if: it is not adopted or saved here.',
                 'Advisory only: this calculation does not reserve, allocate or post inventory.',
             ],
             'evidence_fingerprint' => hash('sha256', (string) json_encode($evidence, JSON_THROW_ON_ERROR)),
