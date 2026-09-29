@@ -139,7 +139,7 @@ changes after approval are re-evaluated and cannot inherit an old decision.
 stored in three company-scoped tables (migration `2026_09_29_090000`):
 
 ```text
-material_variance_reasons          company-defined reason list; nothing is seeded (demo data only)
+material_variance_reasons          company-defined reason list; nothing is seeded (demo data only: `MaterialVarianceDemoSeeder`)
   code (unique per company), name, description, active
 
 material_variance_policies         versioned, effective-dated; the row id is the version an evaluation snapshots

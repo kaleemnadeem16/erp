@@ -225,7 +225,7 @@ module-scoped demo data (`database/seeders/Demo/Estimating/`, per
         [inventory-packages.md](../domain/inventory-packages.md#first-implementation-quantity_only-availability-and-allocation):
         stored item/category/company strategy settings, hand-built package mixes, package
         equivalents and the `PACKAGE_BALANCE`/`CONTAINER_TRACKED` modes — 2026-09-28
-      - [ ] **Variance and sensitive-field slice** — hypothetical planned adjustments and ADR 0054
+      - [x] **Variance and sensitive-field slice** — hypothetical planned adjustments and ADR 0054
         outcome, independent availability/cost field filtering, effective-permission exposure and
         frontend action/field gating. Decided 2026-09-29 to deliver the *configurable* feature, not a
         built-in default only: company-defined variance reasons, versioned company/category/item

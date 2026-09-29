@@ -9,6 +9,7 @@ use Database\Seeders\Demo\Estimating\ApplicationRatesDemoSeeder;
 use Database\Seeders\Demo\Estimating\AssembliesDemoSeeder;
 use Database\Seeders\Demo\Estimating\AssemblyVersionsDemoSeeder;
 use Database\Seeders\Demo\Estimating\FormulationsDemoSeeder;
+use Database\Seeders\Demo\Estimating\MaterialVarianceDemoSeeder;
 use Database\Seeders\Demo\Estimating\OverheadPoliciesDemoSeeder;
 use Database\Seeders\Demo\Estimating\RateDimensionsDemoSeeder;
 use Database\Seeders\Demo\Estimating\ResourceRatesDemoSeeder;
@@ -44,6 +45,7 @@ final class DemoDatabaseSeeder extends Seeder
                 OverheadPoliciesDemoSeeder::class,
                 ResourceRatesDemoSeeder::class,
                 AssemblyVersionsDemoSeeder::class,
+                MaterialVarianceDemoSeeder::class,
             ]);
         });
     }
