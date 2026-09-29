@@ -76,7 +76,10 @@ const rules: readonly Rule[] = [
   { path: "/items", anyOf: ["inventory.item.manage"] },
   { path: "/item-quantity-units", anyOf: ["inventory.item.manage"] },
   { path: "/categories", anyOf: ["inventory.category.manage"] },
-  { path: "/warehouses", allOf: legacySetup },
+  {
+    path: "/warehouses",
+    anyOf: ["inventory.warehouse.manage", "inventory.location.manage"],
+  },
   { path: "/inventory-overview", anyOf: stockRead },
   { path: "/stock-moves", anyOf: stockRead },
   { path: "/physical-counts", anyOf: physicalCount },

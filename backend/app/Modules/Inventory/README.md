@@ -83,8 +83,8 @@ hide those controls when the effective permission is absent. Location create, up
 require `inventory.location.manage`; marking a location as counting or not counting as usable stock also needs
 `inventory.location-policy.manage`, a reason and STRUCTURED mode, and is recorded in the inventory policy history
 ([ADR 0067](../../../docs/decisions/0067-governed-per-location-usability-mark.md)). The warehouse detail screen's Locations
-panel edits them (structured companies only for hierarchy, type and the mark). Warehouse and
-warehouse-location-role writes are still authenticated-only. GL-account field visibility remains
+panel edits them (structured companies only for hierarchy, type and the mark). Warehouse create, update and archive require
+`inventory.warehouse.manage`; warehouse-location role writes require `inventory.location.manage`. GL-account field visibility remains
 a separate Finance-owned decision and is not implied by either write capability.
 
 `CreateWarehouse` always creates its first location in the same transaction, so an active

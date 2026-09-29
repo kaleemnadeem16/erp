@@ -60,7 +60,8 @@ signed-in user and `destroy` checked nothing, so anyone could change what planne
 - **Positive:** The warehouse detail screen shows the location hierarchy with each location's type and whether it
   counts (and whether the mark or the type decided), and lets someone with the permissions add and edit locations
   and change the rule with a reason. A SIMPLE company sees a plain list.
-- **Negative:** Warehouses and warehouse-location roles remain authenticated-only; they are the next gap.
+- **Follow-up done:** warehouse writes now need `inventory.warehouse.manage` and warehouse-location role writes need
+  `inventory.location.manage`, so the whole location structure is permissioned.
 - **Requires:** Reservations, when built, refuse to change a mark while they depend on it.
 
 ## Alternatives considered

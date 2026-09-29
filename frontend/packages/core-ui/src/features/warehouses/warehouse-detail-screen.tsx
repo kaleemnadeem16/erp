@@ -24,6 +24,7 @@ export function WarehouseDetailScreen() {
   const user = useAuthStore((state) => state.user);
   const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
   const mayManageLocations = permissions.includes('inventory.location.manage');
+  const mayManageWarehouse = permissions.includes('inventory.warehouse.manage');
   const mayMarkUsable = permissions.includes('inventory.location-policy.manage');
   const { contentRef: printRef, print } = useQuickPrint({
     documentTitle: warehouse ? `Warehouse ${warehouse.code}` : 'Warehouse',
@@ -77,12 +78,14 @@ export function WarehouseDetailScreen() {
         actions={
           <>
             <PrintTrigger onPrint={() => print()} />
+            {mayManageWarehouse && (
             <Button asChild size="sm">
               <Link to={`/warehouses/${warehouse.id}/edit`}>
                 <Pencil className="h-4 w-4" />
                 Edit
               </Link>
             </Button>
+            )}
           </>
         }
       />

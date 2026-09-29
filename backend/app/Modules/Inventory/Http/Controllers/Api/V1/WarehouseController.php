@@ -17,6 +17,7 @@ use App\Modules\Inventory\Models\Warehouse;
 use App\Support\Concerns\AppliesApiQuery;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -57,8 +58,9 @@ class WarehouseController extends Controller
         return new WarehouseResource($update($warehouse, $request->validated()));
     }
 
-    public function destroy(Warehouse $warehouse, ArchiveWarehouse $archive): Response
+    public function destroy(Request $request, Warehouse $warehouse, ArchiveWarehouse $archive): Response
     {
+        abort_unless($request->user()?->can('inventory.warehouse.manage'), 403);
         $archive($warehouse);
 
         return response()->noContent();

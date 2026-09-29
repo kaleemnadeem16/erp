@@ -259,4 +259,8 @@ independently of this backlog's sequencing whenever wanted.
       Allowed/denied tests: `LocationUsabilityOverrideTest`. Frontend: the warehouse detail screen's Locations
       panel hides Add/Edit without `inventory.location.manage` and the usable-stock control without
       `inventory.location-policy.manage` (the `/warehouses` route itself is still behind the legacy setup gate). Rollout needs the same administrator sync and explicit grants as the sections above.
-- [ ] **Warehouses and warehouse-location roles** — writes are still authenticated-only.
+- [x] **Warehouses and warehouse-location roles** (2026-09-29) — warehouse create/update/archive need the new
+      `inventory.warehouse.manage`; warehouse-location role writes need `inventory.location.manage`. Reads stay open
+      shared reference data. Allowed/denied tests: `WarehouseApiTest`. Frontend: the Warehouses list hides
+      "New warehouse" and the detail screen hides "Edit" without `inventory.warehouse.manage`, and the `/warehouses`
+      route now needs either capability instead of the legacy setup gate. No screen edits location roles yet.

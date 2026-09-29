@@ -14,6 +14,7 @@ final class PermissionVocabulary
             'inventory.item.manage',
             'inventory.category.manage',
             'inventory.location.manage',
+            'inventory.warehouse.manage',
             'inventory.physical_count.create',
             'inventory.physical_count.count',
             'inventory.physical_count.post',

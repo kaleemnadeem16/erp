@@ -21,6 +21,7 @@ import {
 import { useColumnVisibilityPreference } from '../../lib/use-column-visibility-preference';
 import { useListViewPreference } from '../../lib/use-view-preference';
 import { warehouseColumns } from './warehouses-columns';
+import { usePermission } from '../../hooks/use-permission';
 
 interface WarehouseFilters {
   active: string;
@@ -30,6 +31,7 @@ interface WarehouseFilters {
 
 export function WarehousesListScreen() {
   const navigate = useNavigate();
+  const mayManage = usePermission('inventory.warehouse.manage');
   const query = useListQueryState<WarehouseFilters>({
     defaultSort: 'name',
     defaultPerPage: 25,
@@ -83,7 +85,7 @@ export function WarehousesListScreen() {
       <PageHeader
         title="Warehouses"
         description="Places where the company receives, stores and dispatches stock."
-        primaryAction={{ label: 'New warehouse', onClick: () => navigate('/warehouses/new') }}
+        primaryAction={mayManage ? { label: 'New warehouse', onClick: () => navigate('/warehouses/new') } : undefined}
       />
 
       <div className="flex flex-wrap items-center gap-2">
