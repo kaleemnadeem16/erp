@@ -9,6 +9,7 @@ import { Input } from '../../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../components/ui/form';
 import { DIRECTION_LABELS, EFFECT_OPTIONS, MEASURE_LABELS } from './variance-labels';
+import { lookupState } from '../../lib/api-errors';
 
 const NO_FLOOR = 'NONE';
 const DECIMAL = /^\d{1,12}(\.\d{1,6})?$/;
@@ -126,7 +127,7 @@ export function VariancePolicyEditor({ initial, submitLabel, isSubmitting, formE
                   <FormField control={form.control} name={`bands.${index}.uom_id`} render={({ field }) => (
                     <FormItem>
                       <FormControl>
-                        <Combobox aria-label={`Band ${index + 1} unit`} value={field.value} onValueChange={field.onChange} options={uomOptions} placeholder="Unit" searchPlaceholder="Search units…" emptyText="No units found." />
+                        <Combobox {...lookupState(uomsQuery, 'units')} aria-label={`Band ${index + 1} unit`} value={field.value} onValueChange={field.onChange} options={uomOptions} placeholder="Unit" searchPlaceholder="Search units…" emptyText="No units found." />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

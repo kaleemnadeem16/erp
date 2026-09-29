@@ -28,6 +28,7 @@ import { useColumnVisibilityPreference } from '../../lib/use-column-visibility-p
 import { useListViewPreference } from '../../lib/use-view-preference';
 import { itemSupplierColumns } from './item-suppliers-columns';
 import { usePermission } from '../../hooks/use-permission';
+import { lookupState, type LookupState } from '../../lib/api-errors';
 interface Filters {
   search: string;
   item_id: string;
@@ -105,7 +106,7 @@ export function ItemSuppliersListScreen() {
           className="h-9 flex-1 md:w-56 md:flex-none"
         />
         <div className="hidden items-center gap-2 md:flex md:flex-wrap">
-          <ItemSupplierFilterControls items={items} suppliers={suppliers} query={query} filter={filter} />
+          <ItemSupplierFilterControls itemsLookup={lookupState(itemsResult, 'items')} suppliersLookup={lookupState(suppliersResult, 'suppliers')} items={items} suppliers={suppliers} query={query} filter={filter} />
           <PrintTrigger onPrint={print} />
         </div>
         <Button
@@ -126,7 +127,7 @@ export function ItemSuppliersListScreen() {
             <SheetTitle>Filters</SheetTitle>
           </SheetHeader>
           <div className="flex flex-col gap-3 py-4">
-            <ItemSupplierFilterControls items={items} suppliers={suppliers} query={query} filter={filter} full />
+            <ItemSupplierFilterControls itemsLookup={lookupState(itemsResult, 'items')} suppliersLookup={lookupState(suppliersResult, 'suppliers')} items={items} suppliers={suppliers} query={query} filter={filter} full />
             <PrintTrigger onPrint={print} className="w-full justify-center" />
           </div>
           <SheetFooter>
@@ -193,6 +194,8 @@ export function ItemSuppliersListScreen() {
 }
 
 interface ItemSupplierFilterControlsProps {
+  itemsLookup: LookupState;
+  suppliersLookup: LookupState;
   items: { id: number; code: string; name: string }[];
   suppliers: { id: number; code: string; party?: { name: string } | null }[];
   query: ReturnType<typeof useListQueryState<Filters>>;
@@ -201,10 +204,10 @@ interface ItemSupplierFilterControlsProps {
 }
 
 /** Item/Supplier/Status/Preferred selects — shared by the desktop row and the mobile Filters sheet. */
-function ItemSupplierFilterControls({ items, suppliers, query, filter, full }: ItemSupplierFilterControlsProps) {
+function ItemSupplierFilterControls({ itemsLookup, suppliersLookup, items, suppliers, query, filter, full }: ItemSupplierFilterControlsProps) {
   return (
     <>
-      <Combobox
+      <Combobox {...itemsLookup}
         className={full ? 'h-9 w-full' : 'h-9 w-48'}
         aria-label="Item"
         value={query.filters.item_id ?? 'all'}
@@ -217,7 +220,7 @@ function ItemSupplierFilterControls({ items, suppliers, query, filter, full }: I
           ...items.map((i) => ({ value: String(i.id), label: `${i.code} — ${i.name}` })),
         ]}
       />
-      <Combobox
+      <Combobox {...suppliersLookup}
         className={full ? 'h-9 w-full' : 'h-9 w-48'}
         aria-label="Supplier"
         value={query.filters.supplier_account_id ?? 'all'}

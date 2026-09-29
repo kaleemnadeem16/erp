@@ -47,6 +47,7 @@ import { useColumnVisibilityPreference } from "../../lib/use-column-visibility-p
 import { useListViewPreference } from "../../lib/use-view-preference";
 import { goodsReceiptColumns } from "./goods-receipt-columns";
 import { usePermission } from "../../hooks/use-permission";
+import { lookupState, type LookupState } from '../../lib/api-errors';
 
 interface ReceiptFilters {
   search: string;
@@ -146,7 +147,7 @@ export function GoodsReceiptsListScreen() {
           }
         />
         <div className="hidden items-center gap-2 md:flex md:flex-wrap">
-          <ReceiptFilterControls
+          <ReceiptFilterControls suppliersLookup={lookupState(suppliersQuery, 'suppliers')}
             suppliers={suppliers}
             supplierLabels={supplierLabels}
             query={query}
@@ -173,7 +174,7 @@ export function GoodsReceiptsListScreen() {
             <SheetTitle>Filters</SheetTitle>
           </SheetHeader>
           <div className="flex flex-col gap-3 py-4">
-            <ReceiptFilterControls
+            <ReceiptFilterControls suppliersLookup={lookupState(suppliersQuery, 'suppliers')}
               suppliers={suppliers}
               supplierLabels={supplierLabels}
               query={query}
@@ -262,6 +263,7 @@ function describeFilters(
 }
 
 interface ReceiptFilterControlsProps {
+  suppliersLookup: LookupState;
   suppliers: { id: number }[];
   supplierLabels: ReadonlyMap<number, string>;
   query: ReturnType<typeof useListQueryState<ReceiptFilters>>;
@@ -269,7 +271,7 @@ interface ReceiptFilterControlsProps {
 }
 
 /** Supplier/Status selects — shared by the always-visible desktop row and the mobile Filters sheet. */
-function ReceiptFilterControls({ suppliers, supplierLabels, query, full }: ReceiptFilterControlsProps) {
+function ReceiptFilterControls({ suppliersLookup, suppliers, supplierLabels, query, full }: ReceiptFilterControlsProps) {
   const supplierOptions = [
     { value: "all", label: "All suppliers" },
     ...suppliers.map((supplier) => ({ value: String(supplier.id), label: supplierLabels.get(supplier.id) ?? `#${supplier.id}` })),
@@ -277,7 +279,7 @@ function ReceiptFilterControls({ suppliers, supplierLabels, query, full }: Recei
 
   return (
     <>
-      <Combobox
+      <Combobox {...suppliersLookup}
         value={query.filters.supplier_account_id ?? "all"}
         onValueChange={(value) =>
           query.setFilter(

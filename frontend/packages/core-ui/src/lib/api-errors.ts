@@ -101,3 +101,21 @@ export function applyApiErrorsToForm<TFieldValues extends FieldValues>(
 
   return unmatched.length > 0 ? unmatched.join(' ') : null;
 }
+
+/**
+ * The loading and failure state of the query behind a picker, in the shape `Combobox` takes:
+ * `<Combobox {...lookupState(customersQuery, 'customers')} />`. Without it a failed lookup falls back
+ * to an empty list and reads as "no results", so a required field cannot be filled and nothing says why.
+ */
+export function lookupState(
+  query: { isLoading: boolean; isError: boolean; error: unknown; refetch: () => unknown },
+  noun: string
+) {
+  return {
+    loading: query.isLoading,
+    loadError: query.isError ? { error: query.error, onRetry: () => void query.refetch(), noun } : undefined,
+  };
+}
+
+/** What `lookupState` returns, for passing a picker's state down to a filter-controls component. */
+export type LookupState = ReturnType<typeof lookupState>;

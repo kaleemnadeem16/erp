@@ -8,6 +8,7 @@ import { Input } from '../../components/ui/input';
 import { Combobox } from '../../components/ui/combobox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../components/ui/form';
 import { DetailSection } from '../../components/detail/detail-page-layout';
+import { lookupState } from '../../lib/api-errors';
 
 const physicalCountFormSchema = z.object({
   warehouse_id: z.string().min(1, 'Warehouse is required'),
@@ -55,7 +56,7 @@ export function PhysicalCountForm({
               <FormItem>
                 <FormLabel>Warehouse</FormLabel>
                 <FormControl>
-                  <Combobox
+                  <Combobox {...lookupState(warehousesQuery, 'warehouses')}
                     ref={field.ref}
                     value={field.value}
                     onValueChange={field.onChange}

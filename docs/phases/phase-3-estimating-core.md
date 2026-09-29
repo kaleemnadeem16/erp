@@ -278,8 +278,9 @@ item here in the same commit that delivers it; add new ones as they are found.
 
 ### Open questions and gaps
 
-- [ ] **[Q32](../OPEN-QUESTIONS.md#q32--pickers-and-lookups-that-fail-to-load-read-as-empty)** —
-      pickers and lookups that fail to load read as "No items found".
+- [x] **[Q32](../OPEN-QUESTIONS.md#q32--pickers-and-lookups-that-fail-to-load-read-as-empty)** —
+      pickers and lookups that fail to load read as "No items found". Resolved 2026-09-29 by
+      [ADR 0064](../decisions/0064-pickers-report-a-failed-lookup-and-offer-retry.md).
 - [ ] **Usable-stock location rule** — only `STORAGE` and `RECEIVING` locations count as usable in the
       availability read (conservative; may under-report). Awaiting the owner's confirmation.
 - [ ] **Variance reporting** (ADR 0054 §8) — distinguishing one-off justified exceptions from repeated

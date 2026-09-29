@@ -30,6 +30,7 @@ import {
 import { useColumnVisibilityPreference } from '../../lib/use-column-visibility-preference';
 import { useListViewPreference } from '../../lib/use-view-preference';
 import { inventoryOverviewColumns } from './inventory-overview-columns';
+import { lookupState, type LookupState } from '../../lib/api-errors';
 
 interface InventoryOverviewFilters {
   category_id: string;
@@ -180,7 +181,7 @@ export function InventoryOverviewScreen() {
         />
 
         <div className="hidden items-center gap-2 md:flex">
-          <InventoryOverviewFilterControls categories={categories} query={query} />
+          <InventoryOverviewFilterControls categoriesLookup={lookupState(categoriesQuery, 'categories')} categories={categories} query={query} />
           <PrintTrigger onPrint={() => print()} />
         </div>
 
@@ -197,7 +198,7 @@ export function InventoryOverviewScreen() {
             <SheetTitle>Filters</SheetTitle>
           </SheetHeader>
           <div className="flex flex-col gap-3 py-4">
-            <InventoryOverviewFilterControls categories={categories} query={query} full />
+            <InventoryOverviewFilterControls categoriesLookup={lookupState(categoriesQuery, 'categories')} categories={categories} query={query} full />
             <PrintTrigger onPrint={() => print()} className="w-full justify-center" />
           </div>
           <SheetFooter>
@@ -261,14 +262,15 @@ export function InventoryOverviewScreen() {
 }
 
 interface InventoryOverviewFilterControlsProps {
+  categoriesLookup: LookupState;
   categories: { id: number; name: string }[];
   query: ReturnType<typeof useListQueryState<InventoryOverviewFilters>>;
   full?: boolean;
 }
 
-function InventoryOverviewFilterControls({ categories, query, full }: InventoryOverviewFilterControlsProps) {
+function InventoryOverviewFilterControls({ categoriesLookup, categories, query, full }: InventoryOverviewFilterControlsProps) {
   return (
-    <Combobox
+    <Combobox {...categoriesLookup}
       className={full ? 'h-9 w-full' : 'h-9 w-40'}
       aria-label="Category"
       value={query.filters.category_id ?? 'all'}

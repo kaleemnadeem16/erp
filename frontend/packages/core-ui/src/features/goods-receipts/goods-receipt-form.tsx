@@ -25,6 +25,7 @@ import {
 } from "../../components/ui/form";
 import { DetailSection } from "../../components/detail/detail-page-layout";
 import { formatLocationOption } from "../../lib/format-location";
+import { lookupState } from '../../lib/api-errors';
 
 const decimal = z
   .string()
@@ -244,7 +245,7 @@ export function GoodsReceiptForm({
               <FormItem>
                 <FormLabel>Supplier</FormLabel>
                 <FormControl>
-                  <Combobox
+                  <Combobox {...lookupState(suppliersQuery, 'suppliers')}
                     ref={field.ref}
                     value={field.value}
                     onValueChange={(value) => {
@@ -330,7 +331,7 @@ export function GoodsReceiptForm({
                     <FormItem className="md:col-span-2">
                       <FormLabel>Purchase-order line</FormLabel>
                       <FormControl>
-                        <Combobox
+                        <Combobox {...lookupState(ordersQuery, 'purchase orders')}
                           ref={field.ref}
                           value={field.value}
                           onValueChange={(value) => chooseLine(index, value)}
@@ -358,7 +359,7 @@ export function GoodsReceiptForm({
                     <FormItem>
                       <FormLabel>Put-away location</FormLabel>
                       <FormControl>
-                        <Combobox
+                        <Combobox {...lookupState(locationsQuery, 'locations')}
                           ref={field.ref}
                           value={field.value}
                           onValueChange={field.onChange}
@@ -395,7 +396,7 @@ export function GoodsReceiptForm({
                     <FormItem>
                       <FormLabel>Received UoM</FormLabel>
                       <FormControl>
-                        <Combobox
+                        <Combobox {...lookupState(uomsQuery, 'units')}
                           ref={field.ref}
                           value={field.value}
                           onValueChange={field.onChange}

@@ -51,6 +51,7 @@ import {
 import { clearDraft, readDraft, writeDraft } from "../../lib/session-draft";
 import { PurchaseOrderSummary } from "./purchase-order-summary";
 import { SupplierSiteDialog } from "./supplier-site-form";
+import { lookupState } from '../../lib/api-errors';
 
 // "CODE — City, ST" when there's an address to show; the name alone otherwise.
 const supplierSiteLabel = (site: SupplierSiteResource) => {
@@ -557,7 +558,7 @@ export function PurchaseOrderForm({
               <FormItem>
                 <FormLabel>Supplier</FormLabel>
                 <FormControl>
-                  <Combobox
+                  <Combobox {...lookupState(suppliersQuery, 'suppliers')}
                     ref={field.ref}
                     value={field.value}
                     onValueChange={field.onChange}
@@ -579,7 +580,7 @@ export function PurchaseOrderForm({
                 <FormLabel>Supplier site</FormLabel>
                 <div className="flex gap-1.5">
                   <FormControl>
-                    <Combobox
+                    <Combobox {...lookupState(sitesQuery, 'supplier sites')}
                       ref={field.ref}
                       value={field.value}
                       onValueChange={field.onChange}
@@ -652,7 +653,7 @@ export function PurchaseOrderForm({
               <FormItem>
                 <FormLabel>Currency</FormLabel>
                 <FormControl>
-                  <Combobox
+                  <Combobox {...lookupState(currenciesQuery, 'currencies')}
                     ref={field.ref}
                     value={field.value}
                     onValueChange={field.onChange}
@@ -786,7 +787,7 @@ export function PurchaseOrderForm({
                     <FormItem>
                       <FormLabel>Item</FormLabel>
                       <FormControl>
-                        <Combobox
+                        <Combobox {...lookupState(itemsQuery, 'items')}
                           ref={itemField.ref}
                           value={itemField.value}
                           onValueChange={(value) => {
@@ -827,7 +828,7 @@ export function PurchaseOrderForm({
                     <FormItem>
                       <FormLabel>Purchase UoM</FormLabel>
                       <FormControl>
-                        <Combobox
+                        <Combobox {...lookupState(uomsQuery, 'units')}
                           ref={uomField.ref}
                           value={uomField.value}
                           onValueChange={uomField.onChange}

@@ -26,7 +26,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { PageHeader } from '../../components/page/page-header';
 import { DetailPageLayout, DetailSection } from '../../components/detail/detail-page-layout';
 import { DetailField } from '../../components/detail/detail-field';
-import { getApiErrorMessage } from '../../lib/api-errors';
+import { getApiErrorMessage, lookupState } from '../../lib/api-errors';
 import { formatDateTime } from '../../lib/format-date';
 import { useAuthStore } from '../../stores/auth-store';
 import { formatLocation } from '../../lib/format-location';
@@ -396,7 +396,7 @@ export function InventoryCutoverDetailScreen() {
             <form onSubmit={handleRequestNegativeOpening} className="grid grid-cols-1 gap-3 border-t border-border pt-4 sm:col-span-2 sm:grid-cols-2">
               <div className="flex flex-col gap-1">
                 <span className="text-xs font-medium text-muted-foreground">Item</span>
-                <Combobox
+                <Combobox {...lookupState(itemsQuery, 'items')}
                   className="h-9"
                   value={negativeOpeningDraft.item_id}
                   onValueChange={(value) => setNegativeOpeningDraft((draft) => ({ ...draft, item_id: value }))}
@@ -408,7 +408,7 @@ export function InventoryCutoverDetailScreen() {
               </div>
               <div className="flex flex-col gap-1">
                 <span className="text-xs font-medium text-muted-foreground">Location</span>
-                <Combobox
+                <Combobox {...lookupState(locationsQuery, 'locations')}
                   className="h-9"
                   value={negativeOpeningDraft.location_id}
                   onValueChange={(value) => setNegativeOpeningDraft((draft) => ({ ...draft, location_id: value }))}

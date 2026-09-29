@@ -49,6 +49,7 @@ import { useListViewPreference } from "../../lib/use-view-preference";
 import { purchaseOrderColumns } from "./purchase-order-columns";
 import { hasUnfinishedPurchaseOrder } from "./purchase-order-form";
 import { usePermission } from "../../hooks/use-permission";
+import { lookupState, type LookupState } from '../../lib/api-errors';
 
 interface PurchaseOrderFilters {
   search: string;
@@ -167,7 +168,7 @@ export function PurchaseOrdersListScreen() {
           }
         />
         <div className="hidden items-center gap-2 md:flex md:flex-wrap">
-          <PurchaseOrderFilterControls
+          <PurchaseOrderFilterControls suppliersLookup={lookupState(suppliersQuery, 'suppliers')}
             suppliers={suppliers}
             supplierLabels={supplierLabels}
             query={query}
@@ -194,7 +195,7 @@ export function PurchaseOrdersListScreen() {
             <SheetTitle>Filters</SheetTitle>
           </SheetHeader>
           <div className="flex flex-col gap-3 py-4">
-            <PurchaseOrderFilterControls
+            <PurchaseOrderFilterControls suppliersLookup={lookupState(suppliersQuery, 'suppliers')}
               suppliers={suppliers}
               supplierLabels={supplierLabels}
               query={query}
@@ -283,6 +284,7 @@ function describeFilters(
 }
 
 interface PurchaseOrderFilterControlsProps {
+  suppliersLookup: LookupState;
   suppliers: { id: number }[];
   supplierLabels: ReadonlyMap<number, string>;
   query: ReturnType<typeof useListQueryState<PurchaseOrderFilters>>;
@@ -290,7 +292,7 @@ interface PurchaseOrderFilterControlsProps {
 }
 
 /** Supplier/Status selects — shared by the always-visible desktop row and the mobile Filters sheet. */
-function PurchaseOrderFilterControls({ suppliers, supplierLabels, query, full }: PurchaseOrderFilterControlsProps) {
+function PurchaseOrderFilterControls({ suppliersLookup, suppliers, supplierLabels, query, full }: PurchaseOrderFilterControlsProps) {
   const supplierOptions = [
     { value: "all", label: "All suppliers" },
     ...suppliers.map((supplier) => ({ value: String(supplier.id), label: supplierLabels.get(supplier.id) ?? `#${supplier.id}` })),
@@ -298,7 +300,7 @@ function PurchaseOrderFilterControls({ suppliers, supplierLabels, query, full }:
 
   return (
     <>
-      <Combobox
+      <Combobox {...suppliersLookup}
         value={query.filters.supplier_account_id ?? "all"}
         onValueChange={(value) =>
           query.setFilter(

@@ -5,6 +5,7 @@ import type {
   UomResource,
 } from '@erp/core-api';
 import { AlertTriangle, Check } from 'lucide-react';
+import { type LookupState } from '../../lib/api-errors';
 import { Badge } from '../../components/ui/badge';
 import { Combobox } from '../../components/ui/combobox';
 import { Input } from '../../components/ui/input';
@@ -29,6 +30,7 @@ interface WhatIfEditorProps {
   plan: WhatIfPlan | undefined;
   onChange: (plan: WhatIfPlan) => void;
   uoms: UomResource[];
+  unitsLookup: LookupState;
   reasons: MaterialVarianceReasonResource[];
 }
 
@@ -36,7 +38,7 @@ interface WhatIfEditorProps {
  * The "what if we plan a different amount" inputs for one material (ADR 0058). Nothing typed here is
  * saved; it only changes the question the next preview answers.
  */
-export function WhatIfEditor({ itemCode, standardUomId, plan, onChange, uoms, reasons }: WhatIfEditorProps) {
+export function WhatIfEditor({ itemCode, standardUomId, plan, onChange, uoms, unitsLookup, reasons }: WhatIfEditorProps) {
   const value = plan ?? EMPTY_PLAN;
   const set = (patch: Partial<WhatIfPlan>) => onChange({ ...value, ...patch });
 
@@ -55,6 +57,7 @@ export function WhatIfEditor({ itemCode, standardUomId, plan, onChange, uoms, re
       <div className="space-y-1 text-sm">
         <span className="font-medium">Planned unit</span>
         <Combobox
+          {...unitsLookup}
           aria-label={`Planned unit of ${itemCode}`}
           value={value.uomId || String(standardUomId)}
           onValueChange={(uomId) => set({ uomId })}

@@ -22,7 +22,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '../../components/ui/too
 import { PageHeader } from '../../components/page/page-header';
 import { DetailPageLayout, DetailSection } from '../../components/detail/detail-page-layout';
 import { DetailField } from '../../components/detail/detail-field';
-import { getApiErrorMessage } from '../../lib/api-errors';
+import { getApiErrorMessage, lookupState } from '../../lib/api-errors';
 import { formatDateTime } from '../../lib/format-date';
 import { cn } from '../../lib/utils';
 import { useAuthStore } from '../../stores/auth-store';
@@ -306,7 +306,7 @@ export function PhysicalCountDetailScreen() {
             <form onSubmit={handleAddLine} className="flex flex-wrap items-end gap-2 border-t border-border pt-4 sm:col-span-2">
               <div className="flex flex-col gap-1">
                 <span className="text-xs font-medium text-muted-foreground">Item</span>
-                <Combobox
+                <Combobox {...lookupState(itemsQuery, 'items')}
                   className="h-9 w-56"
                   value={newItemId}
                   onValueChange={setNewItemId}
@@ -318,7 +318,7 @@ export function PhysicalCountDetailScreen() {
               </div>
               <div className="flex flex-col gap-1">
                 <span className="text-xs font-medium text-muted-foreground">Location</span>
-                <Combobox
+                <Combobox {...lookupState(locationsQuery, 'locations')}
                   className="h-9 w-40"
                   value={newLocationId}
                   onValueChange={setNewLocationId}

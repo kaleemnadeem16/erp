@@ -16,6 +16,7 @@ import { apiSortToTableSorting, tableSortingToApiSort, useListQueryState } from 
 import { useColumnVisibilityPreference } from '../../lib/use-column-visibility-preference';
 import { useListViewPreference } from '../../lib/use-view-preference';
 import { physicalCountColumns } from './physical-count-columns';
+import { lookupState, type LookupState } from '../../lib/api-errors';
 
 interface PhysicalCountFilters {
   search: string;
@@ -84,7 +85,7 @@ export function PhysicalCountsListScreen() {
           className="h-9 flex-1 md:w-56 md:flex-none"
         />
         <div className="hidden items-center gap-2 md:flex">
-          <PhysicalCountFilterControls warehouses={warehouses} query={query} />
+          <PhysicalCountFilterControls warehousesLookup={lookupState(warehousesQuery, 'warehouses')} warehouses={warehouses} query={query} />
         </div>
         <Button
           variant="outline"
@@ -104,7 +105,7 @@ export function PhysicalCountsListScreen() {
             <SheetTitle>Filters</SheetTitle>
           </SheetHeader>
           <div className="flex flex-col gap-3 py-4">
-            <PhysicalCountFilterControls warehouses={warehouses} query={query} full />
+            <PhysicalCountFilterControls warehousesLookup={lookupState(warehousesQuery, 'warehouses')} warehouses={warehouses} query={query} full />
           </div>
           <SheetFooter>
             <Button variant="ghost" onClick={() => query.setFilters({ warehouse_id: undefined, status: undefined })}>
@@ -148,16 +149,17 @@ export function PhysicalCountsListScreen() {
 }
 
 interface PhysicalCountFilterControlsProps {
+  warehousesLookup: LookupState;
   warehouses: { id: number; name: string }[];
   query: ReturnType<typeof useListQueryState<PhysicalCountFilters>>;
   full?: boolean;
 }
 
 /** Warehouse/Status selects — shared by the always-visible desktop row and the mobile Filters sheet. */
-function PhysicalCountFilterControls({ warehouses, query, full }: PhysicalCountFilterControlsProps) {
+function PhysicalCountFilterControls({ warehousesLookup, warehouses, query, full }: PhysicalCountFilterControlsProps) {
   return (
     <>
-      <Combobox
+      <Combobox {...warehousesLookup}
         className={full ? 'h-9 w-full' : 'h-9 w-44'}
         aria-label="Warehouse"
         value={query.filters.warehouse_id ?? 'all'}

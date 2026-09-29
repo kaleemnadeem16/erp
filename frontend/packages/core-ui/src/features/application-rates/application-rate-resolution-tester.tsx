@@ -3,7 +3,7 @@ import { useApplicationRatesResolve, useItemsIndex, useRateDimensionsIndex, useU
 import { Button } from '../../components/ui/button';
 import { Combobox } from '../../components/ui/combobox';
 import { DetailSection } from '../../components/detail/detail-page-layout';
-import { getApiErrorMessage } from '../../lib/api-errors';
+import { getApiErrorMessage, lookupState } from '../../lib/api-errors';
 
 const NONE = 'NONE';
 
@@ -59,7 +59,7 @@ export function ApplicationRateResolutionTester() {
       description="Preview which rate wins for a given item, work unit and combination of dimension values, and how it was chosen."
     >
       <div className="grid gap-3 sm:grid-cols-2">
-        <Combobox
+        <Combobox {...lookupState(itemsResult, 'items')}
           aria-label="Item"
           value={itemId}
           onValueChange={setItemId}
@@ -68,7 +68,7 @@ export function ApplicationRateResolutionTester() {
           searchPlaceholder="Search items…"
           emptyText="No items found."
         />
-        <Combobox
+        <Combobox {...lookupState(uomsResult, 'units')}
           aria-label="Work unit"
           value={workUomId}
           onValueChange={setWorkUomId}
@@ -78,7 +78,7 @@ export function ApplicationRateResolutionTester() {
           emptyText="No units found."
         />
         {dimensions.map((dimension) => (
-          <Combobox
+          <Combobox {...lookupState(dimensionsResult, 'rate dimensions')}
             key={dimension.id}
             aria-label={dimension.name}
             value={dimensionValues[dimension.id] ?? NONE}

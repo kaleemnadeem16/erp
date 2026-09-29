@@ -6,6 +6,7 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Combobox } from '../../components/ui/combobox';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../components/ui/form';
+import { lookupState } from '../../lib/api-errors';
 
 export const formulationLineSchema = z.object({
   input_item_id: z.string().min(1, 'Item is required'),
@@ -97,7 +98,7 @@ export function FormulationLinesFields<TFieldValues extends FieldValues & { line
                 <FormItem className="lg:col-span-2">
                   <FormLabel>Item</FormLabel>
                   <FormControl>
-                    <Combobox
+                    <Combobox {...lookupState(itemsResult, 'items')}
                       ref={itemField.ref}
                       value={itemField.value}
                       onValueChange={(value) => {
@@ -135,7 +136,7 @@ export function FormulationLinesFields<TFieldValues extends FieldValues & { line
                 <FormItem>
                   <FormLabel>Unit</FormLabel>
                   <FormControl>
-                    <Combobox
+                    <Combobox {...lookupState(uomsResult, 'units')}
                       ref={uomField.ref}
                       value={uomField.value}
                       onValueChange={uomField.onChange}

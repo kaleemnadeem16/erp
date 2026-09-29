@@ -11,6 +11,7 @@ import { Combobox } from '../../components/ui/combobox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../components/ui/form';
 import { DetailSection } from '../../components/detail/detail-page-layout';
 import { formatLocation } from '../../lib/format-location';
+import { lookupState } from '../../lib/api-errors';
 
 const negativeStockOverrideFormSchema = z.object({
   item_id: z.string().min(1, 'Item is required'),
@@ -76,7 +77,7 @@ export function NegativeStockOverrideForm({
               <FormItem>
                 <FormLabel>Item</FormLabel>
                 <FormControl>
-                  <Combobox
+                  <Combobox {...lookupState(itemsQuery, 'items')}
                     ref={field.ref}
                     value={field.value}
                     onValueChange={field.onChange}
@@ -97,7 +98,7 @@ export function NegativeStockOverrideForm({
               <FormItem>
                 <FormLabel>Location</FormLabel>
                 <FormControl>
-                  <Combobox
+                  <Combobox {...lookupState(locationsQuery, 'locations')}
                     ref={field.ref}
                     value={field.value}
                     onValueChange={field.onChange}

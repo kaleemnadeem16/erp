@@ -17,6 +17,7 @@ import { apiSortToTableSorting, describeSort, tableSortingToApiSort, useCursorQu
 import { useColumnVisibilityPreference } from '../../lib/use-column-visibility-preference';
 import { useListViewPreference } from '../../lib/use-view-preference';
 import { stockMoveColumns } from './stock-moves-columns';
+import { lookupState, type LookupState } from '../../lib/api-errors';
 
 interface StockMoveFilters {
   search: string;
@@ -97,7 +98,7 @@ export function StockLedgerScreen() {
           className="h-9 flex-1 md:w-56 md:flex-none"
         />
         <div className="hidden items-center gap-2 md:flex md:flex-wrap">
-          <StockMoveFilterControls items={items} warehouses={warehouses} query={query} />
+          <StockMoveFilterControls itemsLookup={lookupState(itemsQuery, 'items')} warehousesLookup={lookupState(warehousesQuery, 'warehouses')} items={items} warehouses={warehouses} query={query} />
           <div className="ml-auto flex items-center gap-2">
             <PrintTrigger onPrint={() => print()} />
           </div>
@@ -120,7 +121,7 @@ export function StockLedgerScreen() {
             <SheetTitle>Filters</SheetTitle>
           </SheetHeader>
           <div className="flex flex-col gap-3 py-4">
-            <StockMoveFilterControls items={items} warehouses={warehouses} query={query} full />
+            <StockMoveFilterControls itemsLookup={lookupState(itemsQuery, 'items')} warehousesLookup={lookupState(warehousesQuery, 'warehouses')} items={items} warehouses={warehouses} query={query} full />
             <PrintTrigger onPrint={() => print()} className="w-full justify-center" />
           </div>
           <SheetFooter>
@@ -190,6 +191,8 @@ export function StockLedgerScreen() {
 }
 
 interface StockMoveFilterControlsProps {
+  itemsLookup: LookupState;
+  warehousesLookup: LookupState;
   items: { id: number; code: string; name: string }[];
   warehouses: { id: number; name: string }[];
   query: ReturnType<typeof useCursorQueryState<StockMoveFilters>>;
@@ -197,10 +200,10 @@ interface StockMoveFilterControlsProps {
 }
 
 /** Item/Warehouse/Source-type/date-range controls — shared by the desktop row and the mobile Filters sheet. */
-function StockMoveFilterControls({ items, warehouses, query, full }: StockMoveFilterControlsProps) {
+function StockMoveFilterControls({ itemsLookup, warehousesLookup, items, warehouses, query, full }: StockMoveFilterControlsProps) {
   return (
     <>
-      <Combobox
+      <Combobox {...itemsLookup}
         className={full ? 'h-9 w-full' : 'h-9 w-48'}
         aria-label="Item"
         value={query.filters.item_id ?? 'all'}
@@ -213,7 +216,7 @@ function StockMoveFilterControls({ items, warehouses, query, full }: StockMoveFi
           ...items.map((item) => ({ value: String(item.id), label: `${item.code} — ${item.name}` })),
         ]}
       />
-      <Combobox
+      <Combobox {...warehousesLookup}
         className={full ? 'h-9 w-full' : 'h-9 w-44'}
         aria-label="Warehouse"
         value={query.filters.warehouse_id ?? 'all'}

@@ -20,7 +20,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '../../components/ui/too
 import { Combobox } from '../../components/ui/combobox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../components/ui/form';
 import { DetailSection } from '../../components/detail/detail-page-layout';
-import { applyApiErrorsToForm, getApiErrorMessage } from '../../lib/api-errors';
+import { applyApiErrorsToForm, getApiErrorMessage, lookupState } from '../../lib/api-errors';
 import { apiSortToTableSorting, tableSortingToApiSort, useListQueryState } from '../../lib/list-query-state';
 import { resourceRateColumns } from './resource-rates-columns';
 
@@ -132,7 +132,7 @@ export function ResourceRatesListScreen() {
                 <FormItem>
                   <FormLabel>Item</FormLabel>
                   <FormControl>
-                    <Combobox
+                    <Combobox {...lookupState(itemsResult, 'items')}
                       ref={field.ref}
                       value={field.value}
                       onValueChange={field.onChange}
@@ -166,7 +166,7 @@ export function ResourceRatesListScreen() {
                 <FormItem>
                   <FormLabel>Per unit</FormLabel>
                   <FormControl>
-                    <Combobox
+                    <Combobox {...lookupState(uomsResult, 'units')}
                       ref={field.ref}
                       value={field.value}
                       onValueChange={field.onChange}

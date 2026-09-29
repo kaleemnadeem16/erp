@@ -25,7 +25,7 @@ import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { PageHeader } from '../../components/page/page-header';
-import { getApiErrorMessage } from '../../lib/api-errors';
+import { getApiErrorMessage, lookupState, type LookupState } from '../../lib/api-errors';
 import { useAuthStore } from '../../stores/auth-store';
 import { InventoryProposalPanel } from './inventory-proposal-panel';
 import { VarianceSummary, VarianceVerdict, WhatIfEditor, type WhatIfPlan } from './variance-what-if';
@@ -264,7 +264,7 @@ export function MaterialPreviewScreen() {
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Field label="Assembly">
-            <Combobox
+            <Combobox {...lookupState(assembliesQuery, 'assemblies')}
               aria-label="Assembly"
               value={assemblyId}
               onValueChange={selectAssembly}
@@ -287,7 +287,7 @@ export function MaterialPreviewScreen() {
             />
           </Field>
           <Field label="Customer (optional)">
-            <Combobox
+            <Combobox {...lookupState(customersQuery, 'customers')}
               aria-label="Customer"
               value={customerId}
               onValueChange={(value) => { setCustomerId(value); resetContext(); }}
@@ -308,7 +308,7 @@ export function MaterialPreviewScreen() {
             />
           </Field>
           <Field label="Work unit">
-            <Combobox
+            <Combobox {...lookupState(uomsQuery, 'units')}
               aria-label="Work unit"
               value={workUomId}
               onValueChange={(value) => { setWorkUomId(value); setPreview(null); }}
@@ -320,7 +320,7 @@ export function MaterialPreviewScreen() {
           </Field>
           {dimensions.map((dimension) => (
             <Field key={dimension.id} label={`${dimension.name}${dimension.is_required ? ' (required for a specific match)' : ' (optional)'}`}>
-              <Combobox
+              <Combobox {...lookupState(dimensionsQuery, 'rate dimensions')}
                 aria-label={dimension.name}
                 value={dimensionValues[dimension.id] ?? NONE}
                 onValueChange={(value) => {
@@ -345,7 +345,7 @@ export function MaterialPreviewScreen() {
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <Field label="Warehouse (optional)">
-                <Combobox
+                <Combobox {...lookupState(warehousesQuery, 'warehouses')}
                   aria-label="Warehouse"
                   value={warehouseId}
                   onValueChange={selectWarehouse}
@@ -359,7 +359,7 @@ export function MaterialPreviewScreen() {
               </Field>
               {warehouseLocations.length > 1 && (
                 <Field label="Location (optional)">
-                  <Combobox
+                  <Combobox {...lookupState(locationsQuery, 'locations')}
                     aria-label="Location"
                     value={locationId}
                     onValueChange={(value) => { setLocationId(value); setPreview(null); }}
@@ -406,6 +406,7 @@ export function MaterialPreviewScreen() {
           plans={plans}
           onPlanChange={(itemId, plan) => setPlans((current) => ({ ...current, [itemId]: plan }))}
           uoms={uoms}
+          unitsLookup={lookupState(uomsQuery, 'units')}
           reasons={reasons}
           isCalculating={mutation.isPending}
         />
@@ -421,11 +422,12 @@ interface PreviewResultProps {
   plans: Record<number, WhatIfPlan>;
   onPlanChange: (itemId: number, plan: WhatIfPlan) => void;
   uoms: UomResource[];
+  unitsLookup: LookupState;
   reasons: MaterialVarianceReasonResource[];
   isCalculating: boolean;
 }
 
-function PreviewResult({ data, mayViewAvailability, mayViewCost, plans, onPlanChange, uoms, reasons, isCalculating }: PreviewResultProps) {
+function PreviewResult({ data, mayViewAvailability, mayViewCost, plans, onPlanChange, uoms, unitsLookup, reasons, isCalculating }: PreviewResultProps) {
   const verdicts = new Map((data.variance?.items ?? []).map((verdict) => [verdict.item.id, verdict]));
   const pendingEdits = Object.values(plans).some((plan) => plan.quantity.trim() !== '');
   return (
@@ -474,6 +476,7 @@ function PreviewResult({ data, mayViewAvailability, mayViewCost, plans, onPlanCh
               plan={plans[leaf.item.id]}
               onChange={(plan) => onPlanChange(leaf.item.id, { ...plan, uomId: plan.uomId || String(leaf.uom.id) })}
               uoms={uoms}
+              unitsLookup={unitsLookup}
               reasons={reasons}
             />
           </div>

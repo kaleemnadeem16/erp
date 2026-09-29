@@ -76,8 +76,9 @@ in the same commit.
 | [0061](0061-retry-only-transient-failures-and-say-why-a-list-failed.md) | Retry only transient failures, and say why a list failed | accepted | 2026-09-28 |
 | [0062](0062-company-member-and-access-administration.md) | Administer company members through invitations and additive roles | accepted | 2026-09-28 |
 | [0063](0063-starter-roles-and-user-directory.md) | Offer reviewable starter roles and a user directory | accepted | 2026-09-29 |
+| [0064](0064-pickers-report-a-failed-lookup-and-offer-retry.md) | Pickers report a failed lookup and offer a retry | accepted | 2026-09-29 |
 
-**Next number: 0064**
+**Next number: 0065**
 
 ## By theme
 

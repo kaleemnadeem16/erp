@@ -8,6 +8,7 @@ import { Combobox } from '../../components/ui/combobox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../components/ui/form';
 import { DetailSection } from '../../components/detail/detail-page-layout';
 import { formulationLineSchema, formulationLinesPayload, FormulationLinesFields } from './formulation-lines-fields';
+import { lookupState } from '../../lib/api-errors';
 
 const NONE = 'NONE';
 
@@ -88,7 +89,7 @@ export function FormulationForm({
               <FormItem>
                 <FormLabel>Output item</FormLabel>
                 <FormControl>
-                  <Combobox
+                  <Combobox {...lookupState(itemsResult, 'items')}
                     ref={field.ref}
                     value={field.value}
                     onValueChange={(value) => {
@@ -155,7 +156,7 @@ export function FormulationForm({
               <FormItem>
                 <FormLabel>Output unit</FormLabel>
                 <FormControl>
-                  <Combobox
+                  <Combobox {...lookupState(uomsResult, 'units')}
                     ref={field.ref}
                     value={field.value}
                     onValueChange={field.onChange}
@@ -179,7 +180,7 @@ export function FormulationForm({
               <FormItem>
                 <FormLabel>Customer override</FormLabel>
                 <FormControl>
-                  <Combobox
+                  <Combobox {...lookupState(customersResult, 'customers')}
                     ref={field.ref}
                     value={field.value}
                     onValueChange={field.onChange}

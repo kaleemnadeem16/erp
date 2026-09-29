@@ -131,15 +131,6 @@ risk; may the creator submit, may an approver also issue, how many independent a
 needed, and what happens on rejection or draft revision? Today any authenticated caller reaching
 the endpoint can create and issue a PO; DRAFT → ISSUED has no approval fact.
 
-### Q32 — Pickers and lookups that fail to load read as empty
-**Blocks:** Nothing; a failed lookup is indistinguishable from "no results"
-
-List tables now say why a request failed (ADR 0061), but the pickers and lookups that feed forms do not:
-a `useXIndex` whose request fails falls back to `[]`, so a combobox offers "No items found." and a
-required field cannot be filled, with no sign that the request — not the data — is the problem. Should
-the shared `Combobox` accept an error and retry the way the table does, or should lookups fail loudly
-some other way?
-
 ---
 
 ## Answered
@@ -156,6 +147,7 @@ Answered questions live in [decisions/](decisions/) as ADRs. See the
 <a id="q30--location-labels-are-ambiguous-across-warehouses"></a>
 <a id="q31--a-failed-list-request-renders-as-an-empty-or-stale-list"></a>
 <a id="q29--boolean-query-string-filters"></a>
+<a id="q32--pickers-and-lookups-that-fail-to-load-read-as-empty"></a>
 
 Q17, Q19 and Q22 were resolved on 2026-09-26 by
 [ADR 0051](decisions/0051-phase-3-commercial-packaging-and-supplier-cost-scenarios.md),
@@ -194,3 +186,7 @@ Q31 was resolved on 2026-09-28 by
 only transient failures, twice, and its error block names the cause and offers "Try again". The
 question's first wording ("invisible") was corrected by measurement: the error was late and vague, not
 absent.
+
+Q32 was resolved on 2026-09-29 by
+[ADR 0064](decisions/0064-pickers-report-a-failed-lookup-and-offer-retry.md): a picker fed by a request
+says why it failed, in the tables' words, and offers "Try again" instead of reading as "no results".

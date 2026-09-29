@@ -9,6 +9,7 @@ import { Combobox } from '../../components/ui/combobox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../components/ui/form';
 import { DetailSection } from '../../components/detail/detail-page-layout';
+import { lookupState } from '../../lib/api-errors';
 
 const NONE = 'NONE';
 
@@ -134,7 +135,7 @@ export function AssemblyForm({
               <FormItem>
                 <FormLabel>Work unit</FormLabel>
                 <FormControl>
-                  <Combobox
+                  <Combobox {...lookupState(uomsResult, 'units')}
                     ref={field.ref}
                     value={field.value}
                     onValueChange={field.onChange}
@@ -155,7 +156,7 @@ export function AssemblyForm({
               <FormItem>
                 <FormLabel>Assembly group</FormLabel>
                 <FormControl>
-                  <Combobox
+                  <Combobox {...lookupState(groupsResult, 'assembly groups')}
                     ref={field.ref}
                     value={field.value}
                     onValueChange={field.onChange}

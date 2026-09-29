@@ -14,7 +14,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '../../components/ui/too
 import { PageHeader } from '../../components/page/page-header';
 import { DataTable, toTanStackColumns, isColumnVisibleByDefault } from '../../components/data-table';
 import { PrintLayout, PrintableTable, PrintTrigger, useQuickPrint } from '../../components/print';
-import { getApiErrorMessage } from '../../lib/api-errors';
+import { getApiErrorMessage, lookupState, type LookupState } from '../../lib/api-errors';
 import {
   apiSortToTableSorting,
   describeSort,
@@ -152,7 +152,7 @@ export function ItemsListScreen() {
         />
 
         <div className="hidden items-center gap-2 md:flex md:flex-wrap">
-          <ItemFilterControls categories={categories} query={query} />
+          <ItemFilterControls categoriesLookup={lookupState(categoriesQuery, 'categories')} categories={categories} query={query} />
           <div className="ml-auto flex items-center gap-2">
             <PrintTrigger onPrint={() => print()} />
           </div>
@@ -171,7 +171,7 @@ export function ItemsListScreen() {
             <SheetTitle>Filters</SheetTitle>
           </SheetHeader>
           <div className="flex flex-col gap-3 py-4">
-            <ItemFilterControls categories={categories} query={query} full />
+            <ItemFilterControls categoriesLookup={lookupState(categoriesQuery, 'categories')} categories={categories} query={query} full />
             <PrintTrigger onPrint={() => print()} className="w-full justify-center" />
           </div>
           <SheetFooter>
@@ -243,6 +243,7 @@ export function ItemsListScreen() {
 }
 
 interface ItemFilterControlsProps {
+  categoriesLookup: LookupState;
   categories: { id: number; name: string }[];
   query: ListQueryState<ItemFilters>;
   /** Full-width sizing for the mobile filter sheet, vs. the desktop row's fixed widths. */
@@ -250,10 +251,10 @@ interface ItemFilterControlsProps {
 }
 
 /** Category/Type/Status selects — shared by the always-visible desktop row and the mobile Filters sheet. */
-function ItemFilterControls({ categories, query, full }: ItemFilterControlsProps) {
+function ItemFilterControls({ categoriesLookup, categories, query, full }: ItemFilterControlsProps) {
   return (
     <>
-      <Combobox
+      <Combobox {...categoriesLookup}
         className={full ? 'h-9 w-full' : 'h-9 w-44'}
         aria-label="Category"
         value={query.filters.category_id ?? 'all'}

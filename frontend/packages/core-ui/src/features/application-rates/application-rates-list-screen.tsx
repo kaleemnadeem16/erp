@@ -14,6 +14,7 @@ import { DataTable, toTanStackColumns } from '../../components/data-table';
 import { apiSortToTableSorting, tableSortingToApiSort, useListQueryState } from '../../lib/list-query-state';
 import { applicationRateColumns } from './application-rates-columns';
 import { ApplicationRateResolutionTester } from './application-rate-resolution-tester';
+import { lookupState } from '../../lib/api-errors';
 
 interface Filters {
   item_id: string;
@@ -53,7 +54,7 @@ export function ApplicationRatesListScreen() {
       />
       {testerOpen && <ApplicationRateResolutionTester />}
       <div className="flex flex-wrap items-center gap-2">
-        <Combobox
+        <Combobox {...lookupState(itemsResult, 'items')}
           className="h-9 w-64"
           aria-label="Item"
           value={query.filters.item_id ?? 'all'}

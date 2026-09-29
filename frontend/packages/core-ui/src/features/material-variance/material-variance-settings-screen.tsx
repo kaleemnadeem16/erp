@@ -1,3 +1,4 @@
+import { lookupState } from '../../lib/api-errors';
 import { useMemo, useState } from 'react';
 import { useCategoriesIndex, useItemsIndex, useMaterialVariancePoliciesIndex, type VarianceScopeType } from '@erp/core-api';
 import { PageHeader } from '../../components/page/page-header';
@@ -113,6 +114,7 @@ export function MaterialVarianceSettingsScreen() {
                   <div className="space-y-2">
                     <Label>{scopeType === 'CATEGORY' ? 'Category' : 'Item'}</Label>
                     <Combobox
+                      {...lookupState(scopeType === 'CATEGORY' ? categories : items, scopeType === 'CATEGORY' ? 'categories' : 'items')}
                       aria-label={scopeType === 'CATEGORY' ? 'Category' : 'Item'}
                       value={scopeId}
                       onValueChange={setScopeId}

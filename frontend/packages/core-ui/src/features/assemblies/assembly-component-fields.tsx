@@ -7,6 +7,7 @@ import { Input } from '../../components/ui/input';
 import { Combobox } from '../../components/ui/combobox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../components/ui/form';
+import { lookupState } from '../../lib/api-errors';
 
 const NONE = 'NONE';
 
@@ -148,7 +149,7 @@ export function AssemblyComponentsFields<TFieldValues extends FieldValues & { co
                   <FormItem>
                     <FormLabel>Item</FormLabel>
                     <FormControl>
-                      <Combobox
+                      <Combobox {...lookupState(itemsResult, 'items')}
                         ref={itemField.ref}
                         value={itemField.value}
                         onValueChange={(value) => {
@@ -176,7 +177,7 @@ export function AssemblyComponentsFields<TFieldValues extends FieldValues & { co
                   <FormItem>
                     <FormLabel>Priced via formulation</FormLabel>
                     <FormControl>
-                      <Combobox
+                      <Combobox {...lookupState(formulationsResult, 'formulations')}
                         ref={formulationField.ref}
                         value={formulationField.value}
                         onValueChange={formulationField.onChange}
@@ -202,7 +203,7 @@ export function AssemblyComponentsFields<TFieldValues extends FieldValues & { co
                   <FormItem>
                     <FormLabel>Or, live quantity from an application rate</FormLabel>
                     <FormControl>
-                      <Combobox
+                      <Combobox {...lookupState(applicationRatesResult, 'application rates')}
                         ref={rateField.ref}
                         value={rateField.value}
                         onValueChange={rateField.onChange}
@@ -242,7 +243,7 @@ export function AssemblyComponentsFields<TFieldValues extends FieldValues & { co
                     <FormItem>
                       <FormLabel>Unit</FormLabel>
                       <FormControl>
-                        <Combobox
+                        <Combobox {...lookupState(uomsResult, 'units')}
                           ref={uomField.ref}
                           value={uomField.value}
                           onValueChange={uomField.onChange}
@@ -298,7 +299,7 @@ export function AssemblyComponentsFields<TFieldValues extends FieldValues & { co
                   <FormItem>
                     <FormLabel>Unit</FormLabel>
                     <FormControl>
-                      <Combobox
+                      <Combobox {...lookupState(uomsResult, 'units')}
                         ref={uomField.ref}
                         value={uomField.value}
                         onValueChange={(value) => {
