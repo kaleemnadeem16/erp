@@ -24,22 +24,51 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
+use Tests\Support\PurchasingActor;
 
 class PurchaseOrderApiTest extends PurchaseOrderFoundationTest
 {
-    public function test_purchase_order_writes_require_their_capabilities_but_reads_remain_available(): void
+    public function test_buyer_can_read_purchase_orders_and_sourcing_but_not_receipts(): void
+    {
+        $buyer = PurchasingActor::make([
+            'purchasing.purchase-order.create',
+            'purchasing.item-supplier.manage',
+        ]);
+
+        $this->actingAsUnprivileged($buyer)
+            ->getJson('/api/v1/purchase-orders')->assertOk();
+        $this->getJson('/api/v1/item-suppliers')->assertOk();
+        $this->getJson('/api/v1/goods-receipts')->assertForbidden();
+    }
+
+    public function test_receiving_actor_can_read_purchase_orders_without_po_mutation(): void
+    {
+        $receiver = PurchasingActor::make(['purchasing.goods-receipt.create']);
+
+        $this->actingAsUnprivileged($receiver)
+            ->getJson('/api/v1/purchase-orders')->assertOk();
+        $this->getJson('/api/v1/goods-receipts')->assertOk();
+        $this->postJson('/api/v1/purchase-orders', [])->assertForbidden();
+    }
+
+    public function test_purchase_order_reads_and_writes_require_capabilities(): void
     {
         [$order, $item, $uom] = $this->makeOrder();
         $line = $order->lines()->create($this->lineAttributes($order, $item, $uom));
         $user = User::factory()->create();
 
-        $this->actingAsUnprivileged($user)->getJson('/api/v1/purchase-orders')->assertOk();
-        $this->getJson("/api/v1/purchase-orders/{$order->id}")->assertOk();
+        $this->actingAsUnprivileged($user)->getJson('/api/v1/purchase-orders')->assertForbidden();
+        $this->getJson("/api/v1/purchase-orders/{$order->id}")->assertForbidden();
         $this->postJson('/api/v1/purchase-orders', [])->assertForbidden();
         $this->patchJson("/api/v1/purchase-orders/{$order->id}", [])->assertForbidden();
         $this->postJson("/api/v1/purchase-orders/{$order->id}/issue")->assertForbidden();
         $this->postJson("/api/v1/purchase-orders/{$order->id}/cancel", ['reason' => 'Denied'])->assertForbidden();
         $this->postJson("/api/v1/purchase-order-lines/{$line->id}/short-close")->assertForbidden();
+
+        PurchasingActor::grant($user, ['purchasing.purchase-order.view']);
+        $this->getJson('/api/v1/purchase-orders')->assertOk();
+        $this->getJson("/api/v1/purchase-orders/{$order->id}")->assertOk();
+        $this->postJson('/api/v1/purchase-orders', [])->assertForbidden();
     }
 
     public function test_purchasing_settings_are_configurable_and_purchase_order_queries_are_validated(): void

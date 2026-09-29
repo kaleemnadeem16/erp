@@ -13,6 +13,7 @@ use App\Modules\Purchasing\Http\Requests\GoodsReceipt\ReverseGoodsReceiptRequest
 use App\Modules\Purchasing\Http\Requests\GoodsReceipt\StoreGoodsReceiptRequest;
 use App\Modules\Purchasing\Http\Resources\GoodsReceiptResource;
 use App\Modules\Purchasing\Models\GoodsReceipt;
+use App\Modules\Purchasing\Support\PurchasingReadAccess;
 use App\Support\Concerns\AppliesApiQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -53,6 +54,8 @@ class GoodsReceiptController extends Controller
 
     public function show(Request $request, GoodsReceipt $goodsReceipt): GoodsReceiptResource
     {
+        abort_unless(PurchasingReadAccess::goodsReceipts($request->user()), 403);
+
         return new GoodsReceiptResource($goodsReceipt->load(['lines' => fn ($query) => $query->withQaAggregates()]));
     }
 

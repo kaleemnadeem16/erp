@@ -28,22 +28,30 @@ use App\Modules\Purchasing\Support\OverReceiptMode;
 use App\Support\UomDimension;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
+use Tests\Support\PurchasingActor;
 
 class GoodsReceiptPostingTest extends PurchaseOrderFoundationTest
 {
-    public function test_receipt_and_qa_writes_require_their_capabilities_but_reads_remain_available(): void
+    public function test_receipt_and_qa_reads_and_writes_require_capabilities(): void
     {
         [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Avco, qaRequired: true);
         $receiptId = $this->createReceipt($order->lines()->sole()->id, $item->id, $uom->id, $this->locationId());
         $lineId = GoodsReceiptLine::query()->where('goods_receipt_id', $receiptId)->sole()->id;
         $user = User::factory()->create();
 
-        $this->actingAsUnprivileged($user)->getJson('/api/v1/goods-receipts')->assertOk();
-        $this->getJson("/api/v1/goods-receipts/{$receiptId}")->assertOk();
+        $this->actingAsUnprivileged($user)->getJson('/api/v1/goods-receipts')->assertForbidden();
+        $this->getJson("/api/v1/goods-receipts/{$receiptId}")->assertForbidden();
+        $this->getJson("/api/v1/goods-receipt-lines/{$lineId}/quality-dispositions")->assertForbidden();
         $this->postJson('/api/v1/goods-receipts', [])->assertForbidden();
         $this->postJson("/api/v1/goods-receipts/{$receiptId}/post")->assertForbidden();
         $this->postJson("/api/v1/goods-receipts/{$receiptId}/reverse", ['reason' => 'Denied'])->assertForbidden();
         $this->postJson("/api/v1/goods-receipt-lines/{$lineId}/quality-dispositions", [])->assertForbidden();
+
+        PurchasingActor::grant($user, ['purchasing.goods-receipt.view']);
+        $this->getJson('/api/v1/goods-receipts')->assertOk();
+        $this->getJson("/api/v1/goods-receipts/{$receiptId}")->assertOk();
+        $this->getJson("/api/v1/goods-receipt-lines/{$lineId}/quality-dispositions")->assertOk();
+        $this->postJson('/api/v1/goods-receipts', [])->assertForbidden();
     }
 
     public function test_avco_receipt_posts_move_layer_feed_and_locked_pool_atomically(): void

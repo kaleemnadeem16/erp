@@ -50,9 +50,15 @@ Purchasing policy management and policy-history viewing use separate permissions
 checks `purchasing.cutover.commit`. Operational writes are split into
 `purchasing.item-supplier.manage`, `purchasing.purchase-order.create` (draft create/update),
 `.issue`, `.cancel`, `.short-close`, `purchasing.goods-receipt.create`, `.post`, `.reverse`, and
-`purchasing.quality-disposition.post`. Index/show remain authenticated reference and operational
-reads; the SPA gates each matching write control, while consequential Actions repeat the check for
-non-HTTP callers. PO approval does not exist: DRAFT moves directly to ISSUED. Before adding it, follow
+`purchasing.quality-disposition.post`. Document index/show require separate
+`purchasing.purchase-order.view`, `purchasing.goods-receipt.view` and
+`purchasing.item-supplier.view` capabilities or an action capability with a necessary read
+dependency. QA disposition reads follow receipt access. The matrix is in `PurchasingReadAccess`
+and [ADR 0068](../../../../docs/decisions/0068-purchasing-document-read-capabilities.md).
+Purchasing settings remain an authenticated reference read; policy history has its own capability.
+The SPA gates matching write controls, while consequential Actions repeat checks for non-HTTP
+callers. Commercial amount field protection is still separate; `view` currently exposes existing
+monetary fields. PO approval does not exist: DRAFT moves directly to ISSUED. Before adding it, follow
 [authorization.md](../../../../docs/architecture/authorization.md) and
 [approval-workflows.md](../../../../docs/architecture/approval-workflows.md); create/edit,
 submit, approve, issue, receive, inspect, reverse and history access must each be considered.

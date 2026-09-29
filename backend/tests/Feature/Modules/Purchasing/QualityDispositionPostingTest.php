@@ -32,9 +32,34 @@ use Illuminate\Testing\TestResponse;
 use PDO;
 use PDOException;
 use Spatie\Permission\PermissionRegistrar;
+use Tests\Support\PurchasingActor;
 
 class QualityDispositionPostingTest extends PurchaseOrderFoundationTest
 {
+    public function test_disposition_list_and_detail_require_receipt_read_access(): void
+    {
+        [$order, $item, $uom] = $this->issuedOrder(qaRequired: true);
+        $lineId = $this->postedLine($order->lines()->sole()->id, $item->id, $uom->id, $this->locationId());
+        $dispositionId = $this->postDisposition($lineId, [
+            'disposition' => 'PASS', 'qty' => '2.0000', 'reason' => 'inspected ok',
+        ])->assertCreated()->json('data.id');
+
+        $viewer = User::factory()->create();
+        $this->actingAsUnprivileged($viewer)
+            ->getJson("/api/v1/goods-receipt-lines/{$lineId}/quality-dispositions")
+            ->assertForbidden();
+        $this->getJson("/api/v1/quality-dispositions/{$dispositionId}")->assertForbidden();
+
+        PurchasingActor::grant($viewer, ['purchasing.goods-receipt.view']);
+        $this->getJson("/api/v1/goods-receipt-lines/{$lineId}/quality-dispositions")
+            ->assertOk()->assertJsonCount(1, 'data');
+        $this->getJson("/api/v1/quality-dispositions/{$dispositionId}")->assertOk();
+        $this->postJson("/api/v1/goods-receipt-lines/{$lineId}/quality-dispositions", [
+            'disposition' => 'PASS', 'qty' => '0.1000', 'reason' => 'not allowed',
+        ])
+            ->assertForbidden();
+    }
+
     public function test_full_quantity_pass_disposition_resolves_the_line(): void
     {
         [$order, $item, $uom] = $this->issuedOrder(qaRequired: true);

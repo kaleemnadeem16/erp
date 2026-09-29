@@ -228,8 +228,9 @@ result of forgetting the question.
 
 ### Not yet sufficient for full ERP access control
 
-- Most ordinary master-data and Purchasing/Estimating CRUD endpoints are authenticated only;
-  their Form Requests commonly return `true`.
+- Existing Estimating and some master-data CRUD still needs its capability retrofit. Purchasing
+  operational writes and document reads now have capability checks, but some shared reference
+  reads remain authenticated-only by design; see [authorisation retrofit](authorization-retrofit.md).
 - Purchase orders have DRAFT → ISSUED with no submit/approval state; issue records neither actor
   nor approval chain.
 - No generic approval-policy/step/decision schema exists; the `workflow_states` sketch in

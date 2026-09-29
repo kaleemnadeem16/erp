@@ -10,7 +10,7 @@
   for the submit/approve seam, though plain create/issue/cancel capabilities don't need to wait
   for that.
 
-The SPA navigation/direct-route presentation gap is closed by [ADR 0066](../decisions/0066-capability-driven-screen-navigation.md): existing effective capabilities now select visible screens. This does **not** complete the pending backend field projection, Estimating CRUD permissions or any future dedicated read/record-scope permission. The shared lookup reads remain deliberately open; do not count a hidden route as an API authorisation test.
+The SPA navigation/direct-route presentation gap is closed by [ADR 0066](../decisions/0066-capability-driven-screen-navigation.md): effective capabilities select visible screens. Purchasing document list/detail reads have since gained dedicated view capabilities and minimum action-read dependencies under [ADR 0068](../decisions/0068-purchasing-document-read-capabilities.md). This does **not** complete backend field projection, Estimating CRUD permissions, record scope, or deliberately open cross-module reference reads (Items, Categories and other pickers). Do not count a hidden route as an API authorisation test.
 
 This is the concrete, per-feature version of
 [authorization.md](authorization.md#incremental-retrofit-of-already-built-features)'s "Incremental
@@ -129,15 +129,21 @@ issue.
   its own risk tier elsewhere in this codebase (recalculation, negative-stock overrides)
 - `purchasing.quality-disposition.post`
 - `purchasing.item-supplier.manage`
-- None of the above on `index`/`show` (finding 3) — PO/receipt list and detail views are read
-  constantly by roles (QA, warehouse, finance) who will never hold the write capabilities
+- The earlier recommendation to leave document `index`/`show` authenticated-only has been
+  superseded by [ADR 0068](../decisions/0068-purchasing-document-read-capabilities.md): PO,
+  receipt and item-supplier reads now have dedicated `*.view` permissions plus minimum
+  action-read dependencies. Shared master-data picker reads remain open.
 
 ### Tasks
 
 - [x] Register all capabilities above
-- [ ] Field-level protection: hide PO/receipt line cost fields from callers without a
-      cost-visibility permission (name TBD — likely reuses whichever permission Q25's Material
-      Preview work settles on for "view internal cost", rather than inventing a second one)
+- [x] Register/enforce Purchasing document view capabilities on list/show and QA disposition
+      reads, retaining the minimum action-dependent reads for Buyer/Receiving/QA. Existing
+      company roles and direct grants require a pre-deploy review for read-only users →
+      [ADR 0068](../decisions/0068-purchasing-document-read-capabilities.md)
+- [ ] Decide and implement a Purchasing commercial-cost field projection for PO/receipt reads.
+      Do not reuse `estimating.internal_cost.view`: ADR 0057 excludes supplier offers from it.
+      Until then, Purchasing `*.view` grants expose existing monetary fields.
 - [x] Confirm the missing `QualityDisposition` list screen stays an intentional non-gap
 - [x] Assignment/backfill pass, then enforce `purchasing.item-supplier.manage`
 - [x] Assignment/backfill pass, then enforce goods-receipt create/post/reverse

@@ -11,8 +11,10 @@ use App\Modules\Purchasing\Http\Requests\QualityDisposition\StoreQualityDisposit
 use App\Modules\Purchasing\Http\Resources\QualityDispositionResource;
 use App\Modules\Purchasing\Models\GoodsReceiptLine;
 use App\Modules\Purchasing\Models\QualityDisposition;
+use App\Modules\Purchasing\Support\PurchasingReadAccess;
 use App\Support\Concerns\AppliesApiQuery;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class QualityDispositionController extends Controller
@@ -45,8 +47,10 @@ class QualityDispositionController extends Controller
         return QualityDispositionResource::collection($query->paginate($request->integer('per_page', 25)));
     }
 
-    public function show(QualityDisposition $qualityDisposition): QualityDispositionResource
+    public function show(Request $request, QualityDisposition $qualityDisposition): QualityDispositionResource
     {
+        abort_unless(PurchasingReadAccess::goodsReceipts($request->user()), 403);
+
         $qualityDisposition->loadSum('childDispositions as children_qty_sum', 'qty');
 
         return new QualityDispositionResource($qualityDisposition);

@@ -7,6 +7,7 @@ use App\Modules\Inventory\Actions\CreateWarehouse;
 use App\Modules\Inventory\Models\Warehouse;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Tests\Support\PermissionedActor;
 use Tests\TestCase;
 
 /**
@@ -36,6 +37,9 @@ class BooleanListFilterTest extends TestCase
     public function test_true_and_false_are_accepted_as_well_as_one_and_zero(string $url, string $filter): void
     {
         $user = User::factory()->create();
+        if ($url === '/api/v1/item-suppliers') {
+            PermissionedActor::grant($user, ['purchasing.item-supplier.view']);
+        }
 
         foreach (['true', 'false', 'TRUE', '1', '0'] as $value) {
             $this->actingAs($user)->getJson("{$url}?filter[{$filter}]={$value}")
@@ -46,7 +50,12 @@ class BooleanListFilterTest extends TestCase
     #[DataProvider('booleanFilters')]
     public function test_a_value_that_is_not_a_boolean_still_fails(string $url, string $filter): void
     {
-        $this->actingAs(User::factory()->create())->getJson("{$url}?filter[{$filter}]=yes")
+        $user = User::factory()->create();
+        if ($url === '/api/v1/item-suppliers') {
+            PermissionedActor::grant($user, ['purchasing.item-supplier.view']);
+        }
+
+        $this->actingAs($user)->getJson("{$url}?filter[{$filter}]=yes")
             ->assertUnprocessable()->assertJsonValidationErrors("filter.{$filter}");
     }
 

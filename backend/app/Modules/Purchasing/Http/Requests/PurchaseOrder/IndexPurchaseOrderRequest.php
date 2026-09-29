@@ -6,6 +6,7 @@ namespace App\Modules\Purchasing\Http\Requests\PurchaseOrder;
 
 use App\Http\Requests\Concerns\ValidatesListQuery;
 use App\Modules\Purchasing\Support\PurchaseOrderStatus;
+use App\Modules\Purchasing\Support\PurchasingReadAccess;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -15,7 +16,7 @@ class IndexPurchaseOrderRequest extends FormRequest
 
     public function authorize(): bool
     {
-        return true;
+        return PurchasingReadAccess::purchaseOrders($this->user());
     }
 
     /** @return array<string, mixed> */

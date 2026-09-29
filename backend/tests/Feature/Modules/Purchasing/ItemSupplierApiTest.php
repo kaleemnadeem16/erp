@@ -71,7 +71,7 @@ class ItemSupplierApiTest extends TestCase
         });
     }
 
-    public function test_item_supplier_writes_require_manage_permission_but_reads_remain_available(): void
+    public function test_item_supplier_reads_and_writes_require_capabilities(): void
     {
         $user = User::factory()->create();
         $supplier = $this->supplier('READ');
@@ -81,11 +81,16 @@ class ItemSupplierApiTest extends TestCase
             'priority' => 2,
         ]);
 
-        $this->actingAsUnprivileged($user)->getJson('/api/v1/item-suppliers')->assertOk();
-        $this->getJson("/api/v1/item-suppliers/{$relationship->id}")->assertOk();
+        $this->actingAsUnprivileged($user)->getJson('/api/v1/item-suppliers')->assertForbidden();
+        $this->getJson("/api/v1/item-suppliers/{$relationship->id}")->assertForbidden();
         $this->postJson('/api/v1/item-suppliers', [])->assertForbidden();
         $this->patchJson("/api/v1/item-suppliers/{$relationship->id}", ['priority' => 3])->assertForbidden();
         $this->deleteJson("/api/v1/item-suppliers/{$relationship->id}")->assertForbidden();
+
+        PurchasingActor::grant($user, ['purchasing.item-supplier.view']);
+        $this->getJson('/api/v1/item-suppliers')->assertOk();
+        $this->getJson("/api/v1/item-suppliers/{$relationship->id}")->assertOk();
+        $this->postJson('/api/v1/item-suppliers', [])->assertForbidden();
     }
 
     public function test_multiple_suppliers_and_sourcing_terms_round_trip(): void

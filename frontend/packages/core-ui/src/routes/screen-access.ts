@@ -15,12 +15,14 @@ const legacySetup = [
 ] as const;
 
 const purchaseOrder = [
+  "purchasing.purchase-order.view",
   "purchasing.purchase-order.create",
   "purchasing.purchase-order.issue",
   "purchasing.purchase-order.cancel",
   "purchasing.purchase-order.short-close",
 ] as const;
 const goodsReceipt = [
+  "purchasing.goods-receipt.view",
   "purchasing.goods-receipt.create",
   "purchasing.goods-receipt.post",
   "purchasing.goods-receipt.reverse",
@@ -67,7 +69,10 @@ const rules: readonly Rule[] = [
   { path: "/", allOf: legacySetup },
   { path: "/purchase-orders", anyOf: purchaseOrder },
   { path: "/goods-receipts", anyOf: goodsReceipt },
-  { path: "/item-suppliers", anyOf: ["purchasing.item-supplier.manage"] },
+  {
+    path: "/item-suppliers",
+    anyOf: ["purchasing.item-supplier.view", "purchasing.item-supplier.manage"],
+  },
   { path: "/items", anyOf: ["inventory.item.manage"] },
   { path: "/item-quantity-units", anyOf: ["inventory.item.manage"] },
   { path: "/categories", anyOf: ["inventory.category.manage"] },
@@ -129,6 +134,22 @@ export function canAccessScreen(
   pathname: string,
   permissions: ReadonlySet<string>,
 ): boolean {
+  // A view-only grant must not mount an edit form through a bookmarked URL.
+  if (
+    pathname === "/purchase-orders/new" ||
+    /^\/purchase-orders\/[^/]+\/edit$/.test(pathname)
+  ) {
+    return permissions.has("purchasing.purchase-order.create");
+  }
+  if (pathname === "/goods-receipts/new") {
+    return permissions.has("purchasing.goods-receipt.create");
+  }
+  if (
+    pathname === "/item-suppliers/new" ||
+    /^\/item-suppliers\/[^/]+\/edit$/.test(pathname)
+  ) {
+    return permissions.has("purchasing.item-supplier.manage");
+  }
   const rule = rules.find((candidate) => matches(pathname, candidate.path));
   if (!rule) return false;
   return (

@@ -11,14 +11,17 @@ final class PermissionVocabulary
     public static function all(): array
     {
         return [
+            'purchasing.purchase-order.view',
             'purchasing.purchase-order.create',
             'purchasing.purchase-order.issue',
             'purchasing.purchase-order.cancel',
             'purchasing.purchase-order.short-close',
+            'purchasing.goods-receipt.view',
             'purchasing.goods-receipt.create',
             'purchasing.goods-receipt.post',
             'purchasing.goods-receipt.reverse',
             'purchasing.quality-disposition.post',
+            'purchasing.item-supplier.view',
             'purchasing.item-supplier.manage',
             'purchasing.over-receipt-policy.manage',
             'purchasing.policy-history.view',
