@@ -73,11 +73,27 @@ final class StockTransfersDemoSeederTest extends TestCase
         $this->assertNull($detail->destination_avco_pool_id);
     }
 
+    public function test_a_serial_transfer_moves_the_identified_unit_at_its_own_cost(): void
+    {
+        $item = $this->item('demo-xfer-laser');
+        $move = DB::table('stock_moves')->where('item_id', $item->id)->where('source_type', 'DEMO_TRANSFER')->sole();
+        $this->assertSame('SN-LM-002', $move->serial_no);
+
+        $layers = DB::table('stock_layers as l')->join('locations as loc', 'loc.id', '=', 'l.location_id')->join('warehouses as w', 'w.id', '=', 'loc.warehouse_id')
+            ->where('l.item_id', $item->id)->where('l.qty_remaining', '>', 0)->orderBy('l.serial_no')
+            ->get(['l.serial_no', 'l.base_unit_cost', 'w.code as warehouse'])
+            ->map(fn (object $l): array => [$l->serial_no, $l->warehouse, $l->base_unit_cost])->all();
+
+        // Two units stay at Main; the moved one is at Karachi carrying exactly its own cost, not an average.
+        $this->assertSame([['SN-LM-001', 'demo-main', '400.0000'], ['SN-LM-002', 'demo-khi', '450.0000'], ['SN-LM-003', 'demo-main', '500.0000']], $layers);
+        $this->assertSame(['2.0000', '1.0000'], [$this->onHand($item, 'demo-main'), $this->onHand($item, 'demo-khi')]);
+    }
+
     public function test_the_transfers_are_real_between_location_moves(): void
     {
         $moves = DB::table('stock_moves')->where('source_type', 'DEMO_TRANSFER')->orderBy('source_id')->get();
 
-        $this->assertCount(3, $moves);
+        $this->assertCount(4, $moves);
         foreach ($moves as $move) {
             $this->assertNotNull($move->from_location_id);
             $this->assertNotNull($move->to_location_id);
@@ -91,7 +107,7 @@ final class StockTransfersDemoSeederTest extends TestCase
         $touched = DB::table('stock_moves as m')->join('items as i', 'i.id', '=', 'm.item_id')
             ->where('m.source_type', 'like', 'DEMO_TRANSFER%')->pluck('i.code')->unique()->sort()->values()->all();
 
-        $this->assertSame(['demo-xfer-emulsion', 'demo-xfer-lacquer', 'demo-xfer-varnish'], $touched);
+        $this->assertSame(['demo-xfer-emulsion', 'demo-xfer-lacquer', 'demo-xfer-laser', 'demo-xfer-varnish'], $touched);
     }
 
     public function test_a_rerun_after_live_drift_changes_nothing(): void

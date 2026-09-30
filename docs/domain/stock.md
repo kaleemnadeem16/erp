@@ -214,8 +214,9 @@ retains both pool identities for valuation and audit.
 dedicated item per way a transfer treats value: a same-pool AVCO transfer (custody changes, the pool's
 quantity, value and average do not), a cross-pool AVCO transfer (value leaves at the source pool's
 average and the destination re-averages, company value conserved) and a FIFO transfer (a destination
-layer per source-cost component, each keeping its source layer's cost and receipt date). Serial
-(SPECIFIC) transfers are not seeded because the only serial item is shared with other scenarios. Seeing
+layer per source-cost component, each keeping its source layer's cost and receipt date). A serial
+(SPECIFIC) transfer is seeded on its own item, `demo-xfer-laser`: three serial-numbered meters, one moved to
+Karachi as that exact unit at its own cost. Seeing
 them also showed the ledger reading "stock → stock" (both warehouses code their location `stock`);
 locations are now named `warehouse / location` everywhere, per
 [ADR 0059](../decisions/0059-name-a-location-as-warehouse-and-location.md).

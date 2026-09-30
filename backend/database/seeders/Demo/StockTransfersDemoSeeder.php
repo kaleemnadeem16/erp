@@ -11,6 +11,7 @@ use App\Modules\Inventory\Models\Location;
 use App\Modules\Inventory\Models\StockMove;
 use App\Modules\Inventory\Models\Warehouse;
 use App\Modules\Inventory\Support\AvcoPoolScope;
+use App\Modules\Inventory\Support\ItemTracking;
 use App\Modules\Inventory\Support\ValuationMethod;
 use Carbon\CarbonInterface;
 use Database\Seeders\Demo\Concerns\EnsuresDemoEnvironment;
@@ -35,8 +36,10 @@ use Illuminate\Database\Seeder;
  *      stock, so the destination gets one layer per source-cost component that keeps its
  *      original age.
  *
- * SPECIFIC (serial) transfers are not seeded: the only serial item is shared with other
- * seeded data, and moving one of its units would change stock those scenarios rely on.
+ *   D. `demo-xfer-laser` — SPECIFIC, serial-tracked, on its own item (the only other serial item is shared
+ *      with other seeded data, and moving one of its units would change stock those scenarios rely on).
+ *      Three meters are received at Main, each at its own cost; one serial is sent to Karachi and arrives
+ *      there as that exact unit at its own cost — a SPECIFIC transfer moves the identified unit, not an average.
  *
  * Idempotency: a transfer, like every stock move, is immutable, so each scenario is created
  * once and recognised-and-skipped by its transfer's natural key rather than recomputed from
@@ -68,6 +71,7 @@ final class StockTransfersDemoSeeder extends Seeder
         $this->seedSamePoolTransfer();
         $this->seedCrossPoolTransfer();
         $this->seedFifoTransfer();
+        $this->seedSerialTransfer();
     }
 
     /** A: 60 @80 at Main, 25 sent to Karachi — same pool, nothing about value changes. */
@@ -119,17 +123,36 @@ final class StockTransfersDemoSeeder extends Seeder
         $this->transfer($item, '15.0000', 3, now()->subDays(5));
     }
 
+    /** D: three serial-numbered meters at Main (400, 450, 500 each); the one costing 450 goes to Karachi. */
+    private function seedSerialTransfer(): void
+    {
+        if ($this->exists(4)) {
+            return;
+        }
+
+        $item = $this->dedicatedStockItem(
+            'demo-xfer-laser', 'Laser Distance Meter',
+            'Dedicated to the stock transfer demo. SPECIFIC valuation, tracked by serial number: SN-LM-002 (cost 450) was transferred from Main Stock to Karachi Stock and arrives as that exact unit at its own cost, while SN-LM-001 and SN-LM-003 stay at Main.',
+            categoryCode: 'demo-equipment', method: ValuationMethod::Specific, scope: null, uomCode: 'ea', tracking: ItemTracking::Serial,
+        );
+        foreach ([['SN-LM-001', '400.0000', 20, 6], ['SN-LM-002', '450.0000', 19, 7], ['SN-LM-003', '500.0000', 18, 8]] as [$serial, $cost, $daysAgo, $sourceId]) {
+            $this->postReceipt($item, $this->main, $this->currency, '1.0000', $cost, self::RECEIPT, $sourceId, now()->subDays($daysAgo), $serial);
+        }
+        $this->transfer($item, '1.0000', 4, now()->subDays(5), 'SN-LM-002');
+    }
+
     private function exists(int $sourceId): bool
     {
         return StockMove::query()->where('source_type', self::TRANSFER)->where('source_id', $sourceId)->exists();
     }
 
-    private function transfer(Item $item, string $qty, int $sourceId, CarbonInterface $movedAt): void
+    private function transfer(Item $item, string $qty, int $sourceId, CarbonInterface $movedAt, ?string $serialNo = null): void
     {
         app(PostInventoryMovement::class)->transfer([
             'item_id' => $item->id, 'from_location_id' => $this->main->id, 'to_location_id' => $this->karachi->id,
             'qty' => $qty, 'uom_id' => $item->stock_uom_id, 'moved_at' => $movedAt,
             'source_type' => self::TRANSFER, 'source_id' => $sourceId,
+            ...($serialNo === null ? [] : ['serial_no' => $serialNo]),
         ]);
     }
 }

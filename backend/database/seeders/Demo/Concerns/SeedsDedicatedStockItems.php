@@ -41,6 +41,7 @@ trait SeedsDedicatedStockItems
         ?AvcoPoolScope $scope = AvcoPoolScope::CompanyItem,
         bool $purchasable = false,
         string $uomCode = 'kg',
+        ItemTracking $tracking = ItemTracking::None,
     ): Item {
         $category = Category::query()->where('code', $categoryCode)->firstOrFail();
         $item = Item::withTrashed()->updateOrCreate(
@@ -50,7 +51,7 @@ trait SeedsDedicatedStockItems
                 'stock_uom_id' => Uom::query()->where('code', $uomCode)->firstOrFail()->id, 'is_stocked' => true,
                 'is_purchasable' => $purchasable, 'is_sellable' => false,
                 'valuation_method' => $method, 'avco_pool_scope' => $method === ValuationMethod::Avco ? $scope : null,
-                'tracking' => ItemTracking::None, 'category_id' => $category->id, 'inventory_account_id' => null, 'custom_fields' => [],
+                'tracking' => $tracking, 'category_id' => $category->id, 'inventory_account_id' => null, 'custom_fields' => [],
             ],
         );
         $item->restore();
@@ -70,11 +71,13 @@ trait SeedsDedicatedStockItems
         string $sourceType,
         int $sourceId,
         ?CarbonInterface $movedAt = null,
+        ?string $serialNo = null,
     ): void {
         app(PostInventoryMovement::class)([
             'item_id' => $item->id, 'location_id' => $location->id, 'qty' => $qty, 'uom_id' => $item->stock_uom_id,
             'moved_at' => $movedAt ?? now(), 'source_type' => $sourceType, 'source_id' => $sourceId,
             'unit_cost' => $cost, 'currency_id' => $currency->id, 'fx_rate' => '1.000000000', 'base_unit_cost' => $cost,
+            ...($serialNo === null ? [] : ['serial_no' => $serialNo]),
         ]);
     }
 }

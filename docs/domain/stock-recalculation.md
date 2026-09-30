@@ -380,10 +380,12 @@ dedicated items, through the same Actions: an AVCO request executed (the pool co
 counterfactual with one valuation adjustment), a FIFO request executed (a cheaper layer proved to sit
 before the one a later issue consumed, so the issue is corrected by an append-only reversal and
 replacement rather than a pool adjustment), one rejected (and so never executable) and one awaiting its
-first decision. Not seeded: a HIGH_RISK request routed to two approvers and a regeneration paused for
-review, which need repeated ledger invalidations to construct. Approvals expire after the company TTL,
-so the older seeded request stops reading "Approved — ready to execute" and shows as pending review again
-once that window has passed; the executed and rejected scenarios are unaffected.
+first decision. Two more: a HIGH_RISK request (its impact clears the company's high-risk threshold, set to 10,000 once if unset)
+with the first of two approvals given and the elevated second outstanding, and a request whose approvals were
+invalidated three times by later stock movements, so regeneration is paused for a reviewer to resume. Approvals
+expire after the company TTL; each `demo:seed` run renews the supervisor's lapsed approval on a live request
+(same-actor renewal), so the older seeded request and the high-risk one read "ready" again after re-seeding. The
+executed and rejected scenarios are unaffected.
 
 ## Related
 

@@ -299,12 +299,17 @@ Stock workflows without later-state demo data (see
       shortage whose exception is approved by a second actor and a FIFO one left requested, so committing is refused
       until the demo login approves it. Only one non-failed cutover is allowed per company and a database that
       already holds the earlier demo cutover keeps it unchanged, so this appears on a fresh demo database.
-- [ ] A HIGH_RISK two-approver recalculation and a regeneration paused for review.
-- [ ] Serial (SPECIFIC) stock transfers — the only serial item is shared with other scenarios.
-- [ ] Typed locations (quarantine, receiving, multi-location warehouses) — needs the demo company in
-      `STRUCTURED` location mode, which changes every warehouse screen, so it needs an explicit decision.
-- [ ] The older seeded recalculation's approval expires after the company TTL, so its "execute it live"
-      step lapses.
+- [x] A HIGH_RISK two-approver recalculation and a regeneration paused for review — `RecalculationLifecycleDemoSeeder`
+      scenarios E and F (2026-09-30): the company's high-risk threshold is set to 10,000 once (if unset); E has its first
+      approval and waits for an elevated second approver, F had three approvals invalidated by later stock movements and
+      waits for a reviewer to resume it.
+- [x] Serial (SPECIFIC) stock transfers — `demo-xfer-laser` (2026-09-30): three serial-numbered meters, one transferred
+      to Karachi as that exact unit at its own cost.
+- [x] Typed locations (quarantine, receiving, multi-location warehouses) — `StructuredLocationsDemoSeeder` (2026-09-29)
+      switched the demo company to `STRUCTURED` mode with the Main Warehouse's hierarchy, typed locations and roles.
+- [x] The older seeded recalculation's approval expires after the company TTL, so its "execute it live"
+      step lapses — each `demo:seed` run now renews the supervisor's lapsed approval on a live request (a same-actor
+      renewal, per ADR 0040), so re-seeding restores the step; a finished request is left alone.
 
 ## Acceptance criteria
 

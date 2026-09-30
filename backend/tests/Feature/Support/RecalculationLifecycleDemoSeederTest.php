@@ -8,11 +8,14 @@ use App\Exceptions\DomainInvariantException;
 use App\Models\User;
 use App\Modules\Inventory\Actions\DecideRecalculationApproval;
 use App\Modules\Inventory\Actions\ExecuteRecalculation;
+use App\Modules\Inventory\Actions\Recalculation\RegenerationLimit;
+use App\Modules\Inventory\Actions\ResumeRecalculationRegeneration;
 use App\Modules\Inventory\Actions\PostInventoryMovement;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Models\RecalculationImpactVersion;
 use App\Modules\Inventory\Models\RecalculationRequest;
 use App\Modules\Inventory\Support\RecalculationApprovalDecision;
+use Database\Seeders\Demo\RecalculationLifecycleDemoSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -149,7 +152,7 @@ final class RecalculationLifecycleDemoSeederTest extends TestCase
                 'stock_moves', 'stock_layers', 'stock_layer_consumptions', 'stock_valuation_entries', 'items'],
         );
         $before = $counts();
-        $this->assertSame([5, 5, 4, 2], array_slice($before, 0, 4));
+        $this->assertSame([7, 9, 8, 2], array_slice($before, 0, 4));
 
         $this->artisan('demo:seed')->assertSuccessful();
 
@@ -169,7 +172,75 @@ final class RecalculationLifecycleDemoSeederTest extends TestCase
 
         $this->artisan('demo:seed')->assertSuccessful();
 
-        $this->assertSame(5, RecalculationRequest::query()->count());
+        $this->assertSame(7, RecalculationRequest::query()->count());
+    }
+
+    public function test_a_high_risk_request_needs_a_second_elevated_approver_and_only_then_can_run(): void
+    {
+        $version = $this->request(15)->impactVersions->sole();
+        $this->assertSame('HIGH_RISK', $version->risk_classification->value);
+        $this->assertSame([$this->supervisor()->id], $version->approvedActorIds()->all());
+        $this->assertFalse($version->isFullyApproved());
+
+        // Neither an ordinary approver nor the requester can be the second approver.
+        $ordinary = User::factory()->create();
+        $ordinary->givePermissionTo('inventory.recalculation.approve');
+        try {
+            app(DecideRecalculationApproval::class)($version, RecalculationApprovalDecision::Approved, 'Also fine.', $ordinary);
+            $this->fail('A second approver without high-risk authority must be refused.');
+        } catch (DomainInvariantException) {
+        }
+
+        // The demo login holds every permission, including the high-risk one — what it does in the UI.
+        app(DecideRecalculationApproval::class)($version->fresh(), RecalculationApprovalDecision::Approved, 'Second, independent approval.', $this->demo());
+        $this->assertTrue($version->fresh()->isFullyApproved());
+        app(ExecuteRecalculation::class)($version->fresh(), $this->supervisor());
+        $this->assertNotNull($this->execution($this->request(15)));
+    }
+
+    public function test_a_request_whose_approvals_kept_being_invalidated_is_paused_until_a_reviewer_resumes_it(): void
+    {
+        $request = $this->request(16);
+        $limit = app(RegenerationLimit::class);
+
+        $this->assertSame(3, $limit->invalidations($request));
+        $this->assertNull($request->currentImpactVersion());
+        $this->assertSame('PRIORITY_REVIEW', $limit->pending($request)['escalation']);
+        $this->assertNull($this->execution($request));
+
+        $stale = $request->impactVersions()->latest('id')->firstOrFail();
+        $replacement = app(ResumeRecalculationRegeneration::class)($stale, 'Coordinated with the approvers: proceed on current figures.', $this->demo());
+        $this->assertSame(0, $replacement->approvals()->count());
+        $this->assertNotNull($request->fresh()->currentImpactVersion());
+        // Resuming is not approval and does not reset the history of invalidations.
+        $this->assertSame(3, $limit->invalidations($request));
+    }
+
+    public function test_a_lapsed_approval_on_a_live_request_is_renewed_on_the_next_seed(): void
+    {
+        $live = fn (int $id, string $type): int => RecalculationRequest::query()->where('source_type', $type)->where('source_id', $id)->sole()
+            ->currentImpactVersion()->unexpiredApprovedActorIds()->count();
+        $this->assertSame(1, $live(1, 'DEMO_RECALC_BACKDATED_RECEIPT'));
+
+        // Past the company's approval window every approval has lapsed. The approval rows are immutable, so the
+        // clock is moved on their side (the guard trigger and the expiry check both read the stored expiry).
+        DB::statement('ALTER TABLE recalculation_approvals DISABLE TRIGGER USER');
+        DB::table('recalculation_approvals')->where('decision', 'APPROVED')->update(['decided_at' => now()->subDays(3), 'expires_at' => now()->subDay()]);
+        DB::statement('ALTER TABLE recalculation_approvals ENABLE TRIGGER USER');
+        $this->assertSame(0, $live(1, 'DEMO_RECALC_BACKDATED_RECEIPT'));
+        $this->assertSame(0, $live(15, 'DEMO_RECALC_LIFECYCLE'));
+
+        $this->seed(RecalculationLifecycleDemoSeeder::class);
+
+        $this->assertSame(1, $live(1, 'DEMO_RECALC_BACKDATED_RECEIPT'));
+        $this->assertSame(1, $live(15, 'DEMO_RECALC_LIFECYCLE'));
+        // A finished request is left alone.
+        $this->assertSame(1, DB::table('recalculation_approvals')->whereIn('impact_version_id', $this->request(11)->impactVersions->pluck('id'))->count());
+    }
+
+    private function demo(): User
+    {
+        return User::query()->where('email', config('demo.user.email'))->firstOrFail();
     }
 
     private function request(int $sourceId): RecalculationRequest
