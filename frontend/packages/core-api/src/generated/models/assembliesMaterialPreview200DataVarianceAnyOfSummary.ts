@@ -4,10 +4,16 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
+import type { AssembliesMaterialPreview200DataVarianceAnyOfSummaryCostImpact } from "./assembliesMaterialPreview200DataVarianceAnyOfSummaryCostImpact";
+import type { AssembliesMaterialPreview200DataVarianceAnyOfSummaryCostEvidenceMissingCount } from "./assembliesMaterialPreview200DataVarianceAnyOfSummaryCostEvidenceMissingCount";
 
 export type AssembliesMaterialPreview200DataVarianceAnyOfSummary = {
   adjusted_count: number;
   needs_reason_count: number;
   blocked_count: number;
   can_adopt: boolean;
+  /** Estimated internal-cost effect of the whole plan: hidden (null) without the cost capability,
+and only over the materials that have cost evidence — never a zero standing in for "unknown". */
+  cost_impact: AssembliesMaterialPreview200DataVarianceAnyOfSummaryCostImpact;
+  cost_evidence_missing_count: AssembliesMaterialPreview200DataVarianceAnyOfSummaryCostEvidenceMissingCount;
 };

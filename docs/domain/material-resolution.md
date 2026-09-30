@@ -205,6 +205,13 @@ returned only with `estimating.internal_cost.view`; without it that value is `nu
 cost counts as no evidence ("never received" is not "free"), so a cost band is reported skipped. Adjustments
 are part of the evidence fingerprint. Nothing is written.
 
+With `estimating.internal_cost.view` each adjusted material also carries `cost` — the internal cost of the standard,
+of the plan and their signed difference, at the item's current AVCO company-pool unit cost — and the summary
+carries `cost_impact`, the plan's total cost effect over the materials that have evidence, with
+`cost_evidence_missing_count` for those that do not. Without the capability every amount is `null` and the status
+is `HIDDEN`; with it but no defensible unit cost (non-AVCO, no pool, zero average) the status is `NO_EVIDENCE` and
+the amounts are `null` — never zero. It is an estimate at today's cost, not a quotation price.
+
 ### What-if on the Material Preview screen
 
 Under each leaf material the screen offers a planned quantity, a unit (any unit that converts to the item's

@@ -78,7 +78,9 @@ Set up rules and reasons → open Material Preview → choose assembly, quantity
 - **System does:** judges the plan against the standard and returns, per material, the difference,
   the effect, the reason status (no reason needed, reason given, reason missing, not accepted), the
   conditions that matched and any it had to skip and why, plus a headline saying whether the whole
-  plan could be adopted as it stands. The stock proposal then draws for the planned amount.
+  plan could be adopted as it stands. With cost access it also shows what the plan would cost against the
+  standard, per material and in total, and says which materials have no cost evidence. The stock proposal then
+  draws for the planned amount.
 - **Next:** add the missing reason, or change the quantity when policy blocks it, and calculate again.
 
 ### 5. Check it is still current
@@ -108,7 +110,6 @@ Set up rules and reasons → open Material Preview → choose assembly, quantity
 - Adopting a plan on a quotation revision, approval, and audit of adopted variances — Phase 4.
 - Approval-required variance rules (shared approval workflow) and waste/residual rules (package tracking).
 - Package-level proposals and stored strategy settings; department-limited availability (Q26).
-- A planned-cost figure for a what-if quantity.
 
 ## Source of truth
 

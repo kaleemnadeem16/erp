@@ -108,6 +108,10 @@ test.describe('material preview what-if plan', () => {
     await expect(verdict).toBeVisible();
     await expect(verdict.getByText(/Standard .* · Planned 999/)).toBeVisible();
     await expect(verdict.getByText('Over plan by', { exact: false })).toBeVisible();
+    // Whoever may see internal cost sees what the plan would cost against the standard, signed.
+    await expect(verdict.getByText(/Internal cost: standard/)).toBeVisible();
+    await expect(verdict.getByText(/difference \+/)).toBeVisible();
+    await expect(page.getByText(/Estimated internal-cost effect of this plan: \+/)).toBeVisible();
 
     const stock = page.getByRole('group', { name: /demo-pig-blue —/ }).filter({ hasText: 'Needs 999' });
     await expect(stock.getByText(/planned; the standard is/)).toBeVisible();

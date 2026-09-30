@@ -62,6 +62,8 @@ final class PreviewMaterialVariance
         $planned = [];
         $evidence = [];
         $counts = ['needs_reason' => 0, 'blocked' => 0, 'adjusted' => 0, 'adoptable' => 0];
+        $costImpact = BigDecimal::zero();
+        $costEvidenceMissing = 0;
 
         foreach ($adjustments as $index => $adjustment) {
             $itemId = $adjustment['item_id'];
@@ -76,7 +78,10 @@ final class PreviewMaterialVariance
             $standard = BigDecimal::of($row['standard_quantity']);
 
             $resolution = ($this->resolvePolicy)($item);
-            $evaluation = ($this->evaluate)($item, $standard, $plannedStock, $resolution, $this->unitCostIfNeeded($item, $resolution));
+            // Cost decides a cost band and, for someone allowed to see it, the planned-cost figure; it is
+            // looked up once for whichever needs it.
+            $unitCost = $this->unitCostIfNeeded($item, $resolution, $includeCost);
+            $evaluation = ($this->evaluate)($item, $standard, $plannedStock, $resolution, $unitCost);
 
             $status = $this->reasonStatus($evaluation, $reason);
             $adoptable = $evaluation->effect === null || $status === 'NOT_NEEDED' || $status === 'PROVIDED';
@@ -86,7 +91,15 @@ final class PreviewMaterialVariance
             $counts['adoptable'] += $adoptable ? 1 : 0;
 
             $planned[$itemId] = (string) $plannedStock;
-            $rows[] = $this->row($item, $row, $adjustment, $evaluation, $resolution, $reason, $status, $adoptable, $includeCost);
+            $cost = $this->cost($standard, $plannedStock, $unitCost, $includeCost);
+            if ($includeCost) {
+                if ($cost['status'] === 'AVAILABLE') {
+                    $costImpact = $costImpact->plus($cost['delta']);
+                } else {
+                    $costEvidenceMissing++;
+                }
+            }
+            $rows[] = $this->row($item, $row, $adjustment, $evaluation, $resolution, $reason, $status, $adoptable, $includeCost, $cost);
             $evidence[] = [
                 'item_id' => $itemId, 'planned' => (string) $plannedStock, 'reason_id' => $reason?->id,
                 'policy_id' => $evaluation->policyId, 'effect' => $evaluation->effect?->value,
@@ -101,6 +114,10 @@ final class PreviewMaterialVariance
                     'needs_reason_count' => $counts['needs_reason'],
                     'blocked_count' => $counts['blocked'],
                     'can_adopt' => $counts['adoptable'] === count($rows),
+                    // Estimated internal-cost effect of the whole plan: hidden (null) without the cost capability,
+                    // and only over the materials that have cost evidence — never a zero standing in for "unknown".
+                    'cost_impact' => $includeCost ? (string) $costImpact->toScale(4, RoundingMode::HALF_UP) : null,
+                    'cost_evidence_missing_count' => $includeCost ? $costEvidenceMissing : null,
                 ],
                 'limitations' => $this->limitations(),
             ],
@@ -169,12 +186,12 @@ final class PreviewMaterialVariance
      * only and throws otherwise). No evidence — a non-AVCO item, or nothing ever received — is null,
      * so the cost band is reported skipped instead of measuring against a made-up zero.
      */
-    private function unitCostIfNeeded(Item $item, MaterialVariancePolicyResolution $resolution): ?BigDecimal
+    private function unitCostIfNeeded(Item $item, MaterialVariancePolicyResolution $resolution, bool $includeCost): ?BigDecimal
     {
         $hasCostBand = $resolution->policy !== null && $resolution->policy->bands->contains(
             fn ($band): bool => in_array($band->measure, [VarianceMeasure::CostAmount, VarianceMeasure::CostPercent], true),
         );
-        if (! $hasCostBand) {
+        if (! $hasCostBand && ! $includeCost) {
             return null;
         }
 
@@ -188,11 +205,33 @@ final class PreviewMaterialVariance
     }
 
     /**
+     * The internal cost of the standard and of the plan, in the item's stock unit at its current unit cost.
+     * `HIDDEN` without the cost capability and `NO_EVIDENCE` when the item has no defensible unit cost: in
+     * both the amounts are null — never zero — so a missing figure cannot read as "free".
+     *
+     * @return array{status: string, standard: ?BigDecimal, planned: ?BigDecimal, delta: ?BigDecimal}
+     */
+    private function cost(BigDecimal $standard, BigDecimal $planned, ?BigDecimal $unitCost, bool $includeCost): array
+    {
+        if (! $includeCost) {
+            return ['status' => 'HIDDEN', 'standard' => null, 'planned' => null, 'delta' => null];
+        }
+        if ($unitCost === null) {
+            return ['status' => 'NO_EVIDENCE', 'standard' => null, 'planned' => null, 'delta' => null];
+        }
+        $standardCost = $standard->multipliedBy($unitCost)->toScale(4, RoundingMode::HALF_UP);
+        $plannedCost = $planned->multipliedBy($unitCost)->toScale(4, RoundingMode::HALF_UP);
+
+        return ['status' => 'AVAILABLE', 'standard' => $standardCost, 'planned' => $plannedCost, 'delta' => $plannedCost->minus($standardCost)];
+    }
+
+    /**
      * @param  array{item: array{id: int, code: string, name: string}, standard_quantity: string, uom: array{id: int, code: string, name: string}}  $row
      * @param  array{planned_quantity: string, uom_id: int, note?: string|null}  $adjustment
+     * @param  array{status: string, standard: ?BigDecimal, planned: ?BigDecimal, delta: ?BigDecimal}  $cost
      * @return array<string, mixed>
      */
-    private function row(Item $item, array $row, array $adjustment, MaterialVarianceEvaluation $evaluation, MaterialVariancePolicyResolution $resolution, ?MaterialVarianceReason $reason, string $status, bool $adoptable, bool $includeCost): array
+    private function row(Item $item, array $row, array $adjustment, MaterialVarianceEvaluation $evaluation, MaterialVariancePolicyResolution $resolution, ?MaterialVarianceReason $reason, string $status, bool $adoptable, bool $includeCost, array $cost): array
     {
         $matched = [];
         foreach ($evaluation->matched as $condition) {
@@ -230,6 +269,12 @@ final class PreviewMaterialVariance
             'reason' => $reason === null ? null : ['id' => $reason->id, 'code' => $reason->code, 'name' => $reason->name],
             'note' => $adjustment['note'] ?? null,
             'can_adopt' => (bool) $adoptable,
+            'cost' => [
+                'status' => (string) $cost['status'],
+                'standard' => $cost['standard'] === null ? null : (string) $cost['standard'],
+                'planned' => $cost['planned'] === null ? null : (string) $cost['planned'],
+                'delta' => $cost['delta'] === null ? null : (string) $cost['delta'],
+            ],
             'policy' => $resolution->policy === null ? null : [
                 'id' => $resolution->policy->id, 'scope_type' => $resolution->policy->scope_type->value,
                 'scope_id' => $resolution->policy->scope_id, 'method' => $resolution->method->value,

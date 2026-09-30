@@ -110,6 +110,15 @@ export function VarianceSummary({ variance }: { variance: AssembliesMaterialPrev
       {summary.blocked_count > 0 && (
         <p>{summary.blocked_count} {summary.blocked_count === 1 ? 'material is' : 'materials are'} blocked by policy.</p>
       )}
+      {summary.cost_impact !== null && (
+        <p>
+          Estimated internal-cost effect of this plan:{' '}
+          <span className="font-medium">{signed(summary.cost_impact)}</span>
+          {summary.cost_evidence_missing_count ? (
+            <span className="text-muted-foreground"> — not counting {summary.cost_evidence_missing_count} {summary.cost_evidence_missing_count === 1 ? 'material' : 'materials'} with no cost evidence</span>
+          ) : null}
+        </p>
+      )}
       {variance.limitations.map((limitation) => <p key={limitation} className="text-muted-foreground">{limitation}</p>)}
     </div>
   );
@@ -144,6 +153,17 @@ export function VarianceVerdict({ item, mayViewCost }: { item: AssembliesMateria
         </div>
       </div>
 
+      {item.cost.status === 'AVAILABLE' && item.cost.standard !== null && item.cost.planned !== null && item.cost.delta !== null && (
+        <p>
+          Internal cost: standard <span className="font-medium">{trimZeros(item.cost.standard)}</span>
+          {' · '}planned <span className="font-medium">{trimZeros(item.cost.planned)}</span>
+          {' · '}difference <span className="font-medium">{signed(item.cost.delta)}</span>
+        </p>
+      )}
+      {item.cost.status === 'NO_EVIDENCE' && (
+        <p className="text-muted-foreground">Internal cost is unavailable for this material: there is no defensible cost evidence for it.</p>
+      )}
+
       {item.reason && <p>Reason: <span className="font-medium">{item.reason.name}</span>{item.note ? ` — ${item.note}` : ''}</p>}
       {!item.reason && item.note && <p>Note: {item.note}</p>}
 
@@ -169,6 +189,13 @@ export function VarianceVerdict({ item, mayViewCost }: { item: AssembliesMateria
       {item.limitations.map((limitation) => <p key={limitation} className="text-muted-foreground">{limitation}</p>)}
     </div>
   );
+}
+
+/** A cost difference with its sign spelled out: "+3", "-3", "0" — a saving must not read as a cost. */
+function signed(value: string): string {
+  const trimmed = trimZeros(value);
+  if (Number(value) > 0) return `+${trimmed}`;
+  return trimmed;
 }
 
 function conditionSentence(

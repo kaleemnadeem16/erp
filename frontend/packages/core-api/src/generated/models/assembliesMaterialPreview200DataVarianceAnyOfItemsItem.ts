@@ -14,6 +14,7 @@ import type { AssembliesMaterialPreview200DataVarianceAnyOfItemsItemEffectLabel 
 import type { AssembliesMaterialPreview200DataVarianceAnyOfItemsItemReasonStatus } from "./assembliesMaterialPreview200DataVarianceAnyOfItemsItemReasonStatus";
 import type { AssembliesMaterialPreview200DataVarianceAnyOfItemsItemReason } from "./assembliesMaterialPreview200DataVarianceAnyOfItemsItemReason";
 import type { AssembliesMaterialPreview200DataVarianceAnyOfItemsItemNote } from "./assembliesMaterialPreview200DataVarianceAnyOfItemsItemNote";
+import type { AssembliesMaterialPreview200DataVarianceAnyOfItemsItemCost } from "./assembliesMaterialPreview200DataVarianceAnyOfItemsItemCost";
 import type { AssembliesMaterialPreview200DataVarianceAnyOfItemsItemPolicy } from "./assembliesMaterialPreview200DataVarianceAnyOfItemsItemPolicy";
 import type { AssembliesMaterialPreview200DataVarianceAnyOfItemsItemMatchedItem } from "./assembliesMaterialPreview200DataVarianceAnyOfItemsItemMatchedItem";
 import type { AssembliesMaterialPreview200DataVarianceAnyOfItemsItemSkippedItem } from "./assembliesMaterialPreview200DataVarianceAnyOfItemsItemSkippedItem";
@@ -33,6 +34,7 @@ export type AssembliesMaterialPreview200DataVarianceAnyOfItemsItem = {
   reason: AssembliesMaterialPreview200DataVarianceAnyOfItemsItemReason;
   note: AssembliesMaterialPreview200DataVarianceAnyOfItemsItemNote;
   can_adopt: boolean;
+  cost: AssembliesMaterialPreview200DataVarianceAnyOfItemsItemCost;
   policy: AssembliesMaterialPreview200DataVarianceAnyOfItemsItemPolicy;
   matched: AssembliesMaterialPreview200DataVarianceAnyOfItemsItemMatchedItem[];
   skipped: AssembliesMaterialPreview200DataVarianceAnyOfItemsItemSkippedItem[];

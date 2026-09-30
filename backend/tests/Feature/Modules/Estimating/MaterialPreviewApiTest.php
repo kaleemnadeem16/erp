@@ -428,7 +428,7 @@ class MaterialPreviewApiTest extends TestCase
         $missing->assertJsonPath('data.variance.items.0.reason_status', 'MISSING');
         $missing->assertJsonPath('data.variance.items.0.can_adopt', false);
         $missing->assertJsonPath('data.variance.items.0.policy', null);
-        $missing->assertJsonPath('data.variance.summary', ['adjusted_count' => 1, 'needs_reason_count' => 1, 'blocked_count' => 0, 'can_adopt' => false]);
+        $missing->assertJsonPath('data.variance.summary', ['adjusted_count' => 1, 'needs_reason_count' => 1, 'blocked_count' => 0, 'can_adopt' => false, 'cost_impact' => null, 'cost_evidence_missing_count' => null]);
 
         $given = $this->actingAs($user)->postJson($this->url(), $this->payload() + ['planned_adjustments' => [$this->adjust('5', ['reason_id' => $reason->id, 'note' => 'Bare plaster'])]]);
         $given->assertJsonPath('data.variance.items.0.reason_status', 'PROVIDED');
@@ -519,6 +519,41 @@ class MaterialPreviewApiTest extends TestCase
         $blind->assertJsonPath('data.variance.items.0.matched.0.measure', 'COST_AMOUNT');
         $sighted->assertJsonPath('data.variance.items.0.effect', 'REASON_REQUIRED')->assertJsonPath('data.variance.items.0.matched.0.observed', '3');
         $this->assertStringNotContainsString('"observed":"3"', $blind->getContent());
+    }
+
+    public function test_a_plan_shows_what_it_would_cost_against_the_standard_only_with_the_cost_capability(): void
+    {
+        // 4 kg standard at 3 per kg = 12; planning 5 kg = 15; the plan costs 3 more.
+        $sighted = $this->actingAs($this->userWith('estimating.internal_cost.view'))->postJson($this->url(), $this->payload() + ['planned_adjustments' => [$this->adjust('5')]]);
+        $blind = $this->actingAs($this->userWith())->postJson($this->url(), $this->payload() + ['planned_adjustments' => [$this->adjust('5')]]);
+
+        $sighted->assertJsonPath('data.variance.items.0.cost.status', 'AVAILABLE');
+        $this->assertEquals(12, (float) $sighted->json('data.variance.items.0.cost.standard'));
+        $this->assertEquals(15, (float) $sighted->json('data.variance.items.0.cost.planned'));
+        $this->assertEquals(3, (float) $sighted->json('data.variance.items.0.cost.delta'));
+        $this->assertEquals(3, (float) $sighted->json('data.variance.summary.cost_impact'));
+        $sighted->assertJsonPath('data.variance.summary.cost_evidence_missing_count', 0);
+
+        // Hidden is hidden, not zero: every amount is null and the status says why.
+        $blind->assertJsonPath('data.variance.items.0.cost.status', 'HIDDEN')
+            ->assertJsonPath('data.variance.items.0.cost.planned', null)
+            ->assertJsonPath('data.variance.items.0.cost.delta', null)
+            ->assertJsonPath('data.variance.summary.cost_impact', null)
+            ->assertJsonPath('data.variance.summary.cost_evidence_missing_count', null);
+        $this->assertStringNotContainsString('15.0000', $blind->getContent());
+    }
+
+    public function test_a_material_without_cost_evidence_has_no_planned_cost_rather_than_a_zero_one(): void
+    {
+        AvcoPool::query()->where('item_id', $this->pigment->id)->delete();
+
+        $response = $this->actingAs($this->userWith('estimating.internal_cost.view'))->postJson($this->url(), $this->payload() + ['planned_adjustments' => [$this->adjust('5')]]);
+
+        $response->assertJsonPath('data.variance.items.0.cost.status', 'NO_EVIDENCE')
+            ->assertJsonPath('data.variance.items.0.cost.planned', null)
+            ->assertJsonPath('data.variance.items.0.cost.delta', null)
+            ->assertJsonPath('data.variance.summary.cost_evidence_missing_count', 1);
+        $this->assertEquals(0, (float) $response->json('data.variance.summary.cost_impact'));
     }
 
     public function test_a_cost_band_without_cost_evidence_is_skipped_not_measured_against_zero(): void
