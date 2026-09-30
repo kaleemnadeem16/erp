@@ -155,8 +155,11 @@ right now," not just whoever can manage or audit policies.
 
 `CreateResourceRate` inserts a new dated row; there is deliberately no `UpdateResourceRate` — a
 rate correction is always a new row with a later `effective_from`, never an edit to an
-already-used historical one. `DeleteResourceRate` is unrestricted, same as `ArchiveRateDimension`
-— no "in use" tracking exists at this level yet.
+already-used historical one. Create and delete require `estimating.resource-rate.manage` at
+HTTP and Action boundaries. Delete has no "in use" guard yet, but is not unrestricted by actor.
+Index/show remain authenticated company reads for lookups; the `rate` amount is omitted unless
+the caller can manage rates or has `estimating.internal_cost.view`. The SPA admits either
+capability to the list but shows the add/delete controls only to managers.
 
 `CreateAssemblyVersion`/`UpdateAssemblyVersion`/`DeleteAssemblyVersion`/`ActivateAssemblyVersion`
 mirror the `FormulationVersion` Action family exactly, including managing `components` as an
@@ -189,9 +192,9 @@ The existing Estimating CRUD retrofit also reserves six write capabilities:
 `estimating.rate-dimension.manage`, `estimating.application-rate.manage`,
 `estimating.formulation.manage`, `estimating.assembly-group.manage`, and
 `estimating.assembly.manage` are now enforced for their writes, with matching screen access and
-denied-path tests. `estimating.resource-rate.manage` alone remains registration-only; its
-assignment/backfill,
-backend enforcement, UI gating and denied-path tests are tracked in the
+denied-path tests. All six write capabilities are enforced. Existing operational maintainers
+still need explicit company-role or direct assignments before deployment; registry and
+administrator sync do not infer their roles. See the
 [authorisation retrofit](../../../../docs/architecture/authorization-retrofit.md#c-existing-estimating-crud).
 
 `estimating.material_variance_policy.manage` (not in ADR 0057's list — added with the configurable variance

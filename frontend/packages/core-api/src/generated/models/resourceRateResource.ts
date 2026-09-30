@@ -12,7 +12,7 @@ import type { ResourceRateResourceUpdatedAt } from "./resourceRateResourceUpdate
 export interface ResourceRateResource {
   id: number;
   item_id: number;
-  rate: string;
+  rate?: string;
   rate_uom_id: number;
   effective_from: string;
   item?: ResourceRateResourceItem;

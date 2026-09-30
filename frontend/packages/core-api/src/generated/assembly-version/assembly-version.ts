@@ -23,9 +23,13 @@ import type {
 import type {
   AssembliesVersionsStore201,
   AssemblyVersionsActivate200,
+  AssemblyVersionsActivate403,
   AssemblyVersionsCostBreakdown200,
+  AssemblyVersionsCostBreakdown403,
+  AssemblyVersionsDestroy403,
   AssemblyVersionsUpdate200,
   AuthenticationExceptionResponse,
+  AuthorizationExceptionResponse,
   ModelNotFoundExceptionResponse,
   StoreAssemblyVersionRequest,
   UpdateAssemblyVersionRequest,
@@ -46,6 +50,11 @@ export type assembliesVersionsStoreResponse401 = {
   status: 401;
 };
 
+export type assembliesVersionsStoreResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type assembliesVersionsStoreResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -62,6 +71,7 @@ export type assembliesVersionsStoreResponseSuccess =
   };
 export type assembliesVersionsStoreResponseError = (
   | assembliesVersionsStoreResponse401
+  | assembliesVersionsStoreResponse403
   | assembliesVersionsStoreResponse404
   | assembliesVersionsStoreResponse422
 ) & {
@@ -94,6 +104,7 @@ export const assembliesVersionsStore = async (
 export const getAssembliesVersionsStoreMutationOptions = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -138,12 +149,14 @@ export type AssembliesVersionsStoreMutationResult = NonNullable<
 export type AssembliesVersionsStoreMutationBody = StoreAssemblyVersionRequest;
 export type AssembliesVersionsStoreMutationError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
 export const useAssembliesVersionsStore = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -178,6 +191,11 @@ export type assemblyVersionsUpdateResponse401 = {
   status: 401;
 };
 
+export type assemblyVersionsUpdateResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type assemblyVersionsUpdateResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -194,6 +212,7 @@ export type assemblyVersionsUpdateResponseSuccess =
   };
 export type assemblyVersionsUpdateResponseError = (
   | assemblyVersionsUpdateResponse401
+  | assemblyVersionsUpdateResponse403
   | assemblyVersionsUpdateResponse404
   | assemblyVersionsUpdateResponse422
 ) & {
@@ -226,6 +245,7 @@ export const assemblyVersionsUpdate = async (
 export const getAssemblyVersionsUpdateMutationOptions = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -270,12 +290,14 @@ export type AssemblyVersionsUpdateMutationResult = NonNullable<
 export type AssemblyVersionsUpdateMutationBody = UpdateAssemblyVersionRequest;
 export type AssemblyVersionsUpdateMutationError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
 export const useAssemblyVersionsUpdate = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -310,6 +332,11 @@ export type assemblyVersionsDestroyResponse401 = {
   status: 401;
 };
 
+export type assemblyVersionsDestroyResponse403 = {
+  data: AssemblyVersionsDestroy403;
+  status: 403;
+};
+
 export type assemblyVersionsDestroyResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -320,7 +347,9 @@ export type assemblyVersionsDestroyResponseSuccess =
     headers: Headers;
   };
 export type assemblyVersionsDestroyResponseError = (
-  assemblyVersionsDestroyResponse401 | assemblyVersionsDestroyResponse404
+  | assemblyVersionsDestroyResponse401
+  | assemblyVersionsDestroyResponse403
+  | assemblyVersionsDestroyResponse404
 ) & {
   headers: Headers;
 };
@@ -346,7 +375,10 @@ export const assemblyVersionsDestroy = async (
 };
 
 export const getAssemblyVersionsDestroyMutationOptions = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AssemblyVersionsDestroy403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -388,10 +420,15 @@ export type AssemblyVersionsDestroyMutationResult = NonNullable<
 >;
 
 export type AssemblyVersionsDestroyMutationError =
-  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AssemblyVersionsDestroy403
+  | ModelNotFoundExceptionResponse;
 
 export const useAssemblyVersionsDestroy = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AssemblyVersionsDestroy403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(
   options?: {
@@ -424,6 +461,11 @@ export type assemblyVersionsActivateResponse401 = {
   status: 401;
 };
 
+export type assemblyVersionsActivateResponse403 = {
+  data: AssemblyVersionsActivate403;
+  status: 403;
+};
+
 export type assemblyVersionsActivateResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -434,7 +476,9 @@ export type assemblyVersionsActivateResponseSuccess =
     headers: Headers;
   };
 export type assemblyVersionsActivateResponseError = (
-  assemblyVersionsActivateResponse401 | assemblyVersionsActivateResponse404
+  | assemblyVersionsActivateResponse401
+  | assemblyVersionsActivateResponse403
+  | assemblyVersionsActivateResponse404
 ) & {
   headers: Headers;
 };
@@ -461,7 +505,10 @@ export const assemblyVersionsActivate = async (
 };
 
 export const getAssemblyVersionsActivateMutationOptions = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AssemblyVersionsActivate403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -503,10 +550,15 @@ export type AssemblyVersionsActivateMutationResult = NonNullable<
 >;
 
 export type AssemblyVersionsActivateMutationError =
-  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AssemblyVersionsActivate403
+  | ModelNotFoundExceptionResponse;
 
 export const useAssemblyVersionsActivate = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AssemblyVersionsActivate403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(
   options?: {
@@ -547,6 +599,11 @@ export type assemblyVersionsCostBreakdownResponse401 = {
   status: 401;
 };
 
+export type assemblyVersionsCostBreakdownResponse403 = {
+  data: AssemblyVersionsCostBreakdown403;
+  status: 403;
+};
+
 export type assemblyVersionsCostBreakdownResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -558,6 +615,7 @@ export type assemblyVersionsCostBreakdownResponseSuccess =
   };
 export type assemblyVersionsCostBreakdownResponseError = (
   | assemblyVersionsCostBreakdownResponse401
+  | assemblyVersionsCostBreakdownResponse403
   | assemblyVersionsCostBreakdownResponse404
 ) & {
   headers: Headers;
@@ -594,7 +652,10 @@ export const getAssemblyVersionsCostBreakdownQueryKey = (
 
 export const getAssemblyVersionsCostBreakdownQueryOptions = <
   TData = Awaited<ReturnType<typeof assemblyVersionsCostBreakdown>>,
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AssemblyVersionsCostBreakdown403
+    | ModelNotFoundExceptionResponse,
 >(
   assemblyVersion: number,
   options?: {
@@ -634,11 +695,16 @@ export type AssemblyVersionsCostBreakdownQueryResult = NonNullable<
   Awaited<ReturnType<typeof assemblyVersionsCostBreakdown>>
 >;
 export type AssemblyVersionsCostBreakdownQueryError =
-  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AssemblyVersionsCostBreakdown403
+  | ModelNotFoundExceptionResponse;
 
 export function useAssemblyVersionsCostBreakdown<
   TData = Awaited<ReturnType<typeof assemblyVersionsCostBreakdown>>,
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AssemblyVersionsCostBreakdown403
+    | ModelNotFoundExceptionResponse,
 >(
   assemblyVersion: number,
   options: {
@@ -665,7 +731,10 @@ export function useAssemblyVersionsCostBreakdown<
 };
 export function useAssemblyVersionsCostBreakdown<
   TData = Awaited<ReturnType<typeof assemblyVersionsCostBreakdown>>,
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AssemblyVersionsCostBreakdown403
+    | ModelNotFoundExceptionResponse,
 >(
   assemblyVersion: number,
   options?: {
@@ -692,7 +761,10 @@ export function useAssemblyVersionsCostBreakdown<
 };
 export function useAssemblyVersionsCostBreakdown<
   TData = Awaited<ReturnType<typeof assemblyVersionsCostBreakdown>>,
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AssemblyVersionsCostBreakdown403
+    | ModelNotFoundExceptionResponse,
 >(
   assemblyVersion: number,
   options?: {
@@ -720,7 +792,10 @@ job-costing or audit screen will eventually need
 
 export function useAssemblyVersionsCostBreakdown<
   TData = Awaited<ReturnType<typeof assemblyVersionsCostBreakdown>>,
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AssemblyVersionsCostBreakdown403
+    | ModelNotFoundExceptionResponse,
 >(
   assemblyVersion: number,
   options?: {

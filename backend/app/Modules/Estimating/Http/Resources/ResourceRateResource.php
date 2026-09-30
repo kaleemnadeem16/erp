@@ -20,7 +20,10 @@ class ResourceRateResource extends JsonResource
         return [
             'id' => $row->id,
             'item_id' => $row->item_id,
-            'rate' => $row->rate,
+            'rate' => $this->when(
+                $request->user()?->can('estimating.internal_cost.view') || $request->user()?->can('estimating.resource-rate.manage'),
+                $row->rate,
+            ),
             'rate_uom_id' => $row->rate_uom_id,
             'effective_from' => $row->effective_from->toDateString(),
             'item' => $this->whenLoaded('item', fn () => ['id' => $row->item->id, 'code' => $row->item->code, 'name' => $row->item->name]),

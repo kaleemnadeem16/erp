@@ -89,6 +89,14 @@ there is deliberately no update endpoint. See
 and uses this, including the UoM-compatibility check between a component's own quantity unit and
 the resolved rate's `rate_uom_id`.
 
+Creating or deleting a rate requires `estimating.resource-rate.manage` at both the API and Action
+boundary. Authenticated company users may list/show rate records as estimating lookups, but the
+numeric `rate` is omitted from those responses unless the caller can manage rates or has
+`estimating.internal_cost.view`. Managers need the amount to review and enter corrections;
+cost viewers may inspect it without write access. The UI admits either capability to the rate
+list and shows add/delete only to managers. No role name is hardcoded; existing maintainers need
+an explicit company-role or direct grant before deployment.
+
 ### Stocked vs not
 
 `is_stocked` determines whether stock moves and valuation apply. Services, labour and plant

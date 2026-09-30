@@ -15,7 +15,7 @@ class StoreResourceRateRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('estimating.resource-rate.manage') === true;
     }
 
     /** @return array<string, mixed> */

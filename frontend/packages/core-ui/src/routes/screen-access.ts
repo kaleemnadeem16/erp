@@ -94,7 +94,7 @@ const rules: readonly Rule[] = [
   { path: "/formulations", anyOf: ["estimating.formulation.manage"] },
   { path: "/assembly-groups", anyOf: ["estimating.assembly-group.manage"] },
   { path: "/assemblies", anyOf: ["estimating.assembly.manage"] },
-  { path: "/resource-rates", allOf: legacySetup },
+  { path: "/resource-rates", anyOf: ["estimating.resource-rate.manage", "estimating.internal_cost.view"] },
   { path: "/material-preview", anyOf: ["estimating.material_preview.run"] },
   {
     path: "/settings/purchasing",

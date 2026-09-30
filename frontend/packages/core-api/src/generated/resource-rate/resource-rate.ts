@@ -22,7 +22,9 @@ import type {
 
 import type {
   AuthenticationExceptionResponse,
+  AuthorizationExceptionResponse,
   ModelNotFoundExceptionResponse,
+  ResourceRatesDestroy403,
   ResourceRatesIndex200,
   ResourceRatesIndexParams,
   ResourceRatesShow200,
@@ -252,6 +254,11 @@ export type resourceRatesStoreResponse401 = {
   status: 401;
 };
 
+export type resourceRatesStoreResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type resourceRatesStoreResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -262,7 +269,9 @@ export type resourceRatesStoreResponseSuccess =
     headers: Headers;
   };
 export type resourceRatesStoreResponseError = (
-  resourceRatesStoreResponse401 | resourceRatesStoreResponse422
+  | resourceRatesStoreResponse401
+  | resourceRatesStoreResponse403
+  | resourceRatesStoreResponse422
 ) & {
   headers: Headers;
 };
@@ -287,7 +296,10 @@ export const resourceRatesStore = async (
 };
 
 export const getResourceRatesStoreMutationOptions = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -329,10 +341,15 @@ export type ResourceRatesStoreMutationResult = NonNullable<
 >;
 export type ResourceRatesStoreMutationBody = StoreResourceRateRequest;
 export type ResourceRatesStoreMutationError =
-  AuthenticationExceptionResponse | ValidationExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
 
 export const useResourceRatesStore = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(
   options?: {
@@ -617,6 +634,11 @@ export type resourceRatesDestroyResponse401 = {
   status: 401;
 };
 
+export type resourceRatesDestroyResponse403 = {
+  data: ResourceRatesDestroy403;
+  status: 403;
+};
+
 export type resourceRatesDestroyResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -627,7 +649,9 @@ export type resourceRatesDestroyResponseSuccess =
     headers: Headers;
   };
 export type resourceRatesDestroyResponseError = (
-  resourceRatesDestroyResponse401 | resourceRatesDestroyResponse404
+  | resourceRatesDestroyResponse401
+  | resourceRatesDestroyResponse403
+  | resourceRatesDestroyResponse404
 ) & {
   headers: Headers;
 };
@@ -653,7 +677,10 @@ export const resourceRatesDestroy = async (
 };
 
 export const getResourceRatesDestroyMutationOptions = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | ResourceRatesDestroy403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -695,10 +722,15 @@ export type ResourceRatesDestroyMutationResult = NonNullable<
 >;
 
 export type ResourceRatesDestroyMutationError =
-  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
+  | AuthenticationExceptionResponse
+  | ResourceRatesDestroy403
+  | ModelNotFoundExceptionResponse;
 
 export const useResourceRatesDestroy = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | ResourceRatesDestroy403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(
   options?: {
