@@ -7,6 +7,7 @@ namespace App\Modules\Estimating\Actions;
 use App\Modules\Estimating\Models\MaterialVariancePolicyBand;
 use App\Modules\Estimating\Support\MaterialVarianceEvaluation;
 use App\Modules\Estimating\Support\MaterialVariancePolicyResolution;
+use App\Modules\Estimating\Support\VarianceApprovalAvailability;
 use App\Modules\Estimating\Support\VarianceDirection;
 use App\Modules\Estimating\Support\VarianceEffect;
 use App\Modules\Estimating\Support\VarianceMeasure;
@@ -40,7 +41,10 @@ final class EvaluateMaterialVariance
 {
     private const SCALE = 6;
 
-    public function __construct(private readonly ItemUomConversionService $conversion) {}
+    public function __construct(
+        private readonly ItemUomConversionService $conversion,
+        private readonly VarianceApprovalAvailability $approvals,
+    ) {}
 
     public function __invoke(
         Item $item,
@@ -110,9 +114,11 @@ final class EvaluateMaterialVariance
             ];
         }
 
-        if ($effect === VarianceEffect::ApprovalRequired) {
+        // Approval is only real while the company has it switched on; a band stored earlier must not quietly turn into
+        // a mere reason (fail closed), so it blocks and says why.
+        if ($effect === VarianceEffect::ApprovalRequired && ! $this->approvals->enabled()) {
             $effect = VarianceEffect::Blocked;
-            $limitations[] = 'This difference falls in an approval-required band, but the shared approval workflow is not available yet, so it is blocked rather than downgraded.';
+            $limitations[] = 'This difference falls in an approval-required band, but the approval workflow is not available for material variance (it is switched off), so it is blocked rather than downgraded.';
         }
 
         return $this->result($standard, $planned, $delta, $percent, $direction, $effect, $resolution, $matched, $skipped, $limitations);

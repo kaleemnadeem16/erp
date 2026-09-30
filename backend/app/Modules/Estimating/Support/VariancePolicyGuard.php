@@ -24,9 +24,9 @@ final class VariancePolicyGuard
         }
 
         foreach ($effects as $effect) {
-            if (! VarianceEffect::from($effect)->isConfigurable()) {
+            if (! app(VarianceApprovalAvailability::class)->allows(VarianceEffect::from($effect))) {
                 throw new DomainInvariantException(
-                    'Approval-required cannot be chosen yet: it needs the shared approval workflow, which does not exist.',
+                    'Approval-required is available once approvals are switched on for material variance (Settings → Approvals).',
                     'bands',
                 );
             }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Estimating\Http\Requests\MaterialVariancePolicy;
 
+use App\Modules\Estimating\Support\VarianceApprovalAvailability;
 use App\Modules\Estimating\Support\VarianceDirection;
 use App\Modules\Estimating\Support\VarianceEffect;
 use App\Modules\Estimating\Support\VarianceMeasure;
@@ -17,7 +18,7 @@ trait ValidatesVarianceBands
     /** @return array<string, mixed> */
     protected function bandRules(): array
     {
-        $configurable = array_map(fn (VarianceEffect $e): string => $e->value, array_filter(VarianceEffect::cases(), fn (VarianceEffect $e): bool => $e->isConfigurable()));
+        $configurable = $this->configurableEffects();
 
         return [
             'bands' => ['sometimes', 'array', 'max:50'],
@@ -47,8 +48,8 @@ trait ValidatesVarianceBands
     protected function bandMessages(): array
     {
         return [
-            'bands.*.effect.in' => 'Approval-required cannot be chosen yet: it needs the shared approval workflow, which does not exist.',
-            'minimum_effect.in' => 'Approval-required cannot be chosen yet: it needs the shared approval workflow, which does not exist.',
+            'bands.*.effect.in' => 'Approval-required is available once approvals are switched on for material variance (Settings → Approvals).',
+            'minimum_effect.in' => 'Approval-required is available once approvals are switched on for material variance (Settings → Approvals).',
             'bands.*.uom_id.required_if' => 'A quantity band needs a unit.',
             'bands.*.uom_id.prohibited_unless' => 'Only a quantity band has a unit.',
         ];
@@ -57,6 +58,6 @@ trait ValidatesVarianceBands
     /** @return list<string> */
     protected function configurableEffects(): array
     {
-        return array_values(array_map(fn (VarianceEffect $e): string => $e->value, array_filter(VarianceEffect::cases(), fn (VarianceEffect $e): bool => $e->isConfigurable())));
+        return app(VarianceApprovalAvailability::class)->configurableEffects();
     }
 }

@@ -7,6 +7,7 @@ use App\Modules\Estimating\Http\Controllers\Api\V1\AssemblyVersionController;
 use App\Modules\Estimating\Http\Controllers\Api\V1\FormulationController;
 use App\Modules\Estimating\Http\Controllers\Api\V1\FormulationVersionController;
 use App\Modules\Estimating\Http\Controllers\Api\V1\MaterialPreviewController;
+use App\Modules\Estimating\Http\Controllers\Api\V1\MaterialVarianceCapabilitiesController;
 use App\Modules\Estimating\Http\Controllers\Api\V1\MaterialVariancePolicyController;
 use App\Modules\Estimating\Http\Controllers\Api\V1\MaterialVarianceReasonController;
 use App\Modules\Estimating\Http\Controllers\Api\V1\OverheadPolicyController;
@@ -58,6 +59,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('overhead-policies/{overhead_policy}', [OverheadPolicyController::class, 'update'])->name('overhead-policies.update');
     Route::post('overhead-policies/{overhead_policy}/activate', [OverheadPolicyController::class, 'activate'])->name('overhead-policies.activate');
 
+    Route::get('material-variance-capabilities', MaterialVarianceCapabilitiesController::class)->name('material-variance-capabilities');
     Route::apiResource('material-variance-reasons', MaterialVarianceReasonController::class)->only(['index', 'store']);
     Route::patch('material-variance-reasons/{material_variance_reason}', [MaterialVarianceReasonController::class, 'update'])->name('material-variance-reasons.update');
     Route::apiResource('material-variance-policies', MaterialVariancePolicyController::class)->except('update');

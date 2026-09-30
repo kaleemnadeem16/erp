@@ -31,16 +31,6 @@ enum VarianceEffect: string
         return $this->strength() > $other->strength();
     }
 
-    /**
-     * Whether a company may choose this effect today. ADR 0054 §7: an approval-requiring band cannot
-     * be offered until the shared approval workflow (Q27) exists — it is not simulated with a
-     * permission or a text field.
-     */
-    public function isConfigurable(): bool
-    {
-        return $this !== self::ApprovalRequired;
-    }
-
     public function label(): string
     {
         return match ($this) {

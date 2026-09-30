@@ -6,10 +6,13 @@ namespace App\Modules\Estimating\Actions;
 
 use App\Exceptions\DomainInvariantException;
 use App\Models\Uom;
+use App\Modules\Approvals\Actions\ResolveApprovalPolicy;
+use App\Modules\Approvals\Support\ApprovalRouting;
 use App\Modules\Estimating\Models\MaterialVarianceReason;
+use App\Modules\Estimating\Support\IngredientCostResolver;
+use App\Modules\Estimating\Support\MaterialVarianceApprovalSubject;
 use App\Modules\Estimating\Support\MaterialVarianceEvaluation;
 use App\Modules\Estimating\Support\MaterialVariancePolicyResolution;
-use App\Modules\Estimating\Support\IngredientCostResolver;
 use App\Modules\Estimating\Support\VarianceEffect;
 use App\Modules\Estimating\Support\VarianceMeasure;
 use App\Modules\Inventory\Actions\ItemUomConversionService;
@@ -42,6 +45,7 @@ final class PreviewMaterialVariance
         private readonly EvaluateMaterialVariance $evaluate,
         private readonly ItemUomConversionService $conversion,
         private readonly IngredientCostResolver $ingredientCost,
+        private readonly ResolveApprovalPolicy $resolveApproval,
     ) {}
 
     /**
@@ -62,6 +66,7 @@ final class PreviewMaterialVariance
         $planned = [];
         $evidence = [];
         $counts = ['needs_reason' => 0, 'blocked' => 0, 'adjusted' => 0, 'adoptable' => 0];
+        $counts['needs_approval'] = 0;
         $costImpact = BigDecimal::zero();
         $costEvidenceMissing = 0;
 
@@ -85,6 +90,7 @@ final class PreviewMaterialVariance
 
             $status = $this->reasonStatus($evaluation, $reason);
             $adoptable = $evaluation->effect === null || $status === 'NOT_NEEDED' || $status === 'PROVIDED';
+            $counts['needs_approval'] += $status === 'APPROVAL_NEEDED' ? 1 : 0;
             $counts['adjusted'] += $evaluation->isAdjusted() ? 1 : 0;
             $counts['needs_reason'] += $status === 'MISSING' ? 1 : 0;
             $counts['blocked'] += $evaluation->effect === VarianceEffect::Blocked ? 1 : 0;
@@ -99,7 +105,8 @@ final class PreviewMaterialVariance
                     $costEvidenceMissing++;
                 }
             }
-            $rows[] = $this->row($item, $row, $adjustment, $evaluation, $resolution, $reason, $status, $adoptable, $includeCost, $cost);
+            $approval = $evaluation->effect === VarianceEffect::ApprovalRequired ? $this->approvalPreview($item, $standard, $plannedStock, $unitCost) : null;
+            $rows[] = $this->row($item, $row, $adjustment, $evaluation, $resolution, $reason, $status, $adoptable, $includeCost, $cost, $approval);
             $evidence[] = [
                 'item_id' => $itemId, 'planned' => (string) $plannedStock, 'reason_id' => $reason?->id,
                 'policy_id' => $evaluation->policyId, 'effect' => $evaluation->effect?->value,
@@ -113,6 +120,7 @@ final class PreviewMaterialVariance
                     'adjusted_count' => $counts['adjusted'],
                     'needs_reason_count' => $counts['needs_reason'],
                     'blocked_count' => $counts['blocked'],
+                    'needs_approval_count' => $counts['needs_approval'],
                     'can_adopt' => $counts['adoptable'] === count($rows),
                     // Estimated internal-cost effect of the whole plan: hidden (null) without the cost capability,
                     // and only over the materials that have cost evidence — never a zero standing in for "unknown".
@@ -177,6 +185,7 @@ final class PreviewMaterialVariance
         return match ($evaluation->effect) {
             null, VarianceEffect::AuditOnly => 'NOT_NEEDED',
             VarianceEffect::ReasonRequired => $reason !== null ? 'PROVIDED' : 'MISSING',
+            VarianceEffect::ApprovalRequired => 'APPROVAL_NEEDED',
             default => 'NOT_ACCEPTED',
         };
     }
@@ -191,7 +200,10 @@ final class PreviewMaterialVariance
         $hasCostBand = $resolution->policy !== null && $resolution->policy->bands->contains(
             fn ($band): bool => in_array($band->measure, [VarianceMeasure::CostAmount, VarianceMeasure::CostPercent], true),
         );
-        if (! $hasCostBand && ! $includeCost) {
+        $hasApprovalBand = $resolution->policy !== null && ($resolution->policy->minimum_effect === VarianceEffect::ApprovalRequired
+            || $resolution->policy->bands->contains(fn ($band): bool => $band->effect === VarianceEffect::ApprovalRequired));
+        // An approval band routes on the cost impact, so cost is looked up for it even when the caller may not see it.
+        if (! $hasCostBand && ! $hasApprovalBand && ! $includeCost) {
             return null;
         }
 
@@ -202,6 +214,29 @@ final class PreviewMaterialVariance
         }
 
         return $cost->isGreaterThan(0) ? $cost : null;
+    }
+
+    /**
+     * Which approval a plan would need, if its difference falls in an approval-required band (ADR 0070 §11): the policy the
+     * engine would route it under and its steps. Read-only — a plan is hypothetical until Phase 4 adopts it, so nothing is
+     * submitted. With no matching policy it says so: an approval-required band never falls through to "not required".
+     *
+     * @return array{policy: array{id: int, code: string, version_no: int, name: string}|null, steps: list<array{name: string, stage: int, required_approvals: int, uses_authority_limit: bool}>, note: string|null}
+     */
+    private function approvalPreview(Item $item, BigDecimal $standard, BigDecimal $planned, ?BigDecimal $unitCost): array
+    {
+        $amount = $unitCost === null ? null : (string) $planned->minus($standard)->abs()->multipliedBy($unitCost)->toScale(4, RoundingMode::HALF_UP);
+        $routing = new ApprovalRouting(['item_id' => $item->id, 'category_id' => $item->category_id], $amount, [], []);
+        $policy = ($this->resolveApproval)(MaterialVarianceApprovalSubject::CODE, $routing);
+        if ($policy === null) {
+            return ['policy' => null, 'steps' => [], 'note' => 'No approval policy applies to this difference, so it cannot be adopted until one is configured.'];
+        }
+
+        return [
+            'policy' => ['id' => $policy->id, 'code' => $policy->code, 'version_no' => $policy->version_no, 'name' => $policy->name],
+            'steps' => $policy->steps->map(fn ($s): array => ['name' => $s->name, 'stage' => $s->stage, 'required_approvals' => $s->required_approvals, 'uses_authority_limit' => $s->use_authority_limit])->values()->all(),
+            'note' => $amount === null ? 'There is no cost evidence for this material, so amount-based approval conditions could not be applied.' : null,
+        ];
     }
 
     /**
@@ -229,9 +264,10 @@ final class PreviewMaterialVariance
      * @param  array{item: array{id: int, code: string, name: string}, standard_quantity: string, uom: array{id: int, code: string, name: string}}  $row
      * @param  array{planned_quantity: string, uom_id: int, note?: string|null}  $adjustment
      * @param  array{status: string, standard: ?BigDecimal, planned: ?BigDecimal, delta: ?BigDecimal}  $cost
+     * @param  array{policy: array{id: int, code: string, version_no: int, name: string}|null, steps: list<array{name: string, stage: int, required_approvals: int, uses_authority_limit: bool}>, note: string|null}|null  $approval
      * @return array<string, mixed>
      */
-    private function row(Item $item, array $row, array $adjustment, MaterialVarianceEvaluation $evaluation, MaterialVariancePolicyResolution $resolution, ?MaterialVarianceReason $reason, string $status, bool $adoptable, bool $includeCost, array $cost): array
+    private function row(Item $item, array $row, array $adjustment, MaterialVarianceEvaluation $evaluation, MaterialVariancePolicyResolution $resolution, ?MaterialVarianceReason $reason, string $status, bool $adoptable, bool $includeCost, array $cost, ?array $approval): array
     {
         $matched = [];
         foreach ($evaluation->matched as $condition) {
@@ -269,6 +305,11 @@ final class PreviewMaterialVariance
             'reason' => $reason === null ? null : ['id' => $reason->id, 'code' => $reason->code, 'name' => $reason->name],
             'note' => $adjustment['note'] ?? null,
             'can_adopt' => (bool) $adoptable,
+            'approval' => $approval === null ? null : [
+                'policy' => $approval['policy'] === null ? null : ['id' => (int) $approval['policy']['id'], 'code' => (string) $approval['policy']['code'], 'version_no' => (int) $approval['policy']['version_no'], 'name' => (string) $approval['policy']['name']],
+                'steps' => array_map(fn (array $step): array => ['name' => (string) $step['name'], 'stage' => (int) $step['stage'], 'required_approvals' => (int) $step['required_approvals'], 'uses_authority_limit' => (bool) $step['uses_authority_limit']], $approval['steps']),
+                'note' => $approval['note'] === null ? null : (string) $approval['note'],
+            ],
             'cost' => [
                 'status' => (string) $cost['status'],
                 'standard' => $cost['standard'] === null ? null : (string) $cost['standard'],

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Estimating;
 
+use App\Modules\Approvals\Support\ApprovalSubjectRegistry;
+use App\Modules\Estimating\Support\MaterialVarianceApprovalSubject;
 use App\Modules\Estimating\Support\PermissionVocabulary;
 use App\Support\PermissionRegistry;
 use Illuminate\Support\Facades\Route;
@@ -13,6 +15,10 @@ class EstimatingServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->app->afterResolving(ApprovalSubjectRegistry::class, static function (ApprovalSubjectRegistry $registry): void {
+            $registry->register(new MaterialVarianceApprovalSubject);
+        });
+
         $this->app->afterResolving(PermissionRegistry::class, static function (PermissionRegistry $registry): void {
             $registry->registerVocabulary('estimating', PermissionVocabulary::all());
         });
