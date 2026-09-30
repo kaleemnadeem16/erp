@@ -114,15 +114,6 @@ routine cross-department assigned/task-scoped access without creating one role p
 Spatie Teams currently scopes assignments by `company_id`; it is groundwork, not this record-scope
 model. See [authorization.md](architecture/authorization.md#teams-and-organisational-scope).
 
-### Q27 — Shared approval workflow contract
-**Blocks:** The first configurable multi-stage approval implementation
-
-Should Purchase Orders provide the first concrete workflow and then extract a shared approval
-contract, or should a cross-module engine be built first? Decide the minimum shared semantics for
-sequential/parallel steps, distinct approver counts, thresholds, expiry, delegation, rejection,
-resubmission and policy-version snapshots. See
-[approval-workflows.md](architecture/approval-workflows.md).
-
 ### Q28 — Purchase-order approval policy
 **Blocks:** Introducing PO submission/approval before operational purchasing relies on issuance
 
@@ -148,6 +139,7 @@ Answered questions live in [decisions/](decisions/) as ADRs. See the
 <a id="q31--a-failed-list-request-renders-as-an-empty-or-stale-list"></a>
 <a id="q29--boolean-query-string-filters"></a>
 <a id="q32--pickers-and-lookups-that-fail-to-load-read-as-empty"></a>
+<a id="q27--shared-approval-workflow-contract"></a>
 
 Q17, Q19 and Q22 were resolved on 2026-09-26 by
 [ADR 0051](decisions/0051-phase-3-commercial-packaging-and-supplier-cost-scenarios.md),
@@ -190,3 +182,9 @@ absent.
 Q32 was resolved on 2026-09-29 by
 [ADR 0064](decisions/0064-pickers-report-a-failed-lookup-and-offer-retry.md): a picker fed by a request
 says why it failed, in the tables' words, and offers "Try again" instead of reading as "no results".
+
+Q27 was resolved on 2026-09-30 by
+[ADR 0070](decisions/0070-shared-configurable-approval-engine.md): one shared, configurable engine — versioned
+policies with typed conditions, counted distinct approvers per step, per-person authority ceilings, delegation within
+the delegator's authority, pinned currency evidence and invalidation on change. Q28 keeps the company's own purchase-order
+policy content (amounts, currencies, departments); the mechanism is the engine.
