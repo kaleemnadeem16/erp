@@ -1,6 +1,6 @@
 # Project Status
 
-**Updated:** 2026-09-30
+**Updated:** 2026-10-01
 **Current phase:** Phase 3 — Estimating core (in progress; two vertical slices shipped
 2026-09-23 — rate dimensions/application rates, then formulations with versioning, customer
 overrides and nested cost roll-up, now followed by the 2026-09-24 draft-editing, human-readable
@@ -44,7 +44,7 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 
 | Item | Date |
 |---|---|
-| **Pipeline regression repairs** — CI browser traffic now uses the development API rate limit, stale seeded-number and receipt-quantity assertions follow current demo data, and searchable menus select options with ArrowDown and Enter. Variance request effects keep stable OpenAPI values while approval availability is checked at validation time; Pint drift and password-broker analysis errors are cleared → [CI/CD](architecture/ci-cd.md#tests), [material resolution](domain/material-resolution.md). | 2026-09-30 |
+| **Pipeline regression repairs** — CI browser traffic now uses the development API rate limit, stale seeded-number and receipt-quantity assertions follow current demo data, and searchable menus select options with ArrowDown and Enter. Variance request effects keep stable OpenAPI values while approval availability is checked at validation time; Pint drift, password-broker analysis errors and a random-email pagination test failure are cleared → [CI/CD](architecture/ci-cd.md#tests), [material resolution](domain/material-resolution.md). | 2026-10-01 |
 | **Inventory cutover economic records now require a cutover duty or valuation-read capability (ADR 0075)** — unrelated authenticated users cannot list/open the migration's control values, batch values, negative-opening costs or preview; cutover actors retain full reconciliation evidence and valuation-only users can audit without acting. UI actions and bookmarked New follow their specific permissions. Physical counts, negative-stock and export paths remain to audit → [inventory cutover](domain/inventory-cutover.md#user-interface), [retrofit](architecture/authorization-retrofit.md). | 2026-09-30 |
 | **Recalculation economic records now require a workflow duty or valuation-read capability (ADR 0074)** — unrelated authenticated users can no longer list or open the full cost/impact history. Requesters, approvers, executors and regeneration reviewers retain the economic evidence needed for their work; valuation-only readers can inspect but cannot act. The UI hides unavailable actions and blocks a bookmarked New form. Other Inventory workflow/export cost surfaces remain under audit → [stock recalculation](domain/stock-recalculation.md#user-interface), [retrofit](architecture/authorization-retrofit.md). | 2026-09-30 |
 | **Inventory operational reads now separate quantity from valuation (ADR 0073)** — stock moves, layers, AVCO pools and inventory overview keep quantity/identity visible, but monetary fields and included valuation entries require `inventory.valuation.view` in API, UI and print projections. Remaining Inventory workflow/export surfaces are explicitly tracked for review; this is not yet system-wide cost secrecy → [stock](domain/stock.md#user-interface), [retrofit](architecture/authorization-retrofit.md). | 2026-09-30 |

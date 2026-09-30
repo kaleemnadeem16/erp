@@ -94,7 +94,7 @@ class AccessAdministrationApiTest extends TestCase
 
     public function test_member_search_and_pagination_reach_later_records(): void
     {
-        $viewer = PermissionedActor::grant(User::factory()->create(), ['administration.member.view']);
+        $viewer = PermissionedActor::grant(User::factory()->create(['email' => 'viewer@other.test']), ['administration.member.view']);
         User::factory()->create(['name' => 'Alice Example', 'email' => 'alice@example.com']);
         User::factory()->create(['name' => 'Bob Example', 'email' => 'bob@example.com']);
 
