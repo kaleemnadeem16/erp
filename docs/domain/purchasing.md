@@ -191,8 +191,15 @@ line short-close endpoints. Issue allocates the gapless number and freezes item/
 quantity/UoM, monetary and FX snapshots. Company purchasing defaults use one typed settings row;
 reading that singleton initialises its database defaults through an Action when necessary.
 
-Purchase-order approval is **not implemented**: there is no `SUBMITTED`/`APPROVED` state,
-approval chain, issuing actor or approval policy. Draft create/update, issue, cancel and
+Purchase-order approval is **optional and company-configured** through the shared approval engine
+([ADR 0070](../decisions/0070-shared-configurable-approval-engine.md), [approvals.md](approvals.md)). The order keeps its
+`DRAFT`/`ISSUED` status; approval lives on a request beside it. With the company's approval mode for `PURCHASE_ORDER` at its
+default (`NONE`) nothing changes. Otherwise a buyer with `purchasing.purchase-order.submit` submits the draft
+(`POST /purchase-orders/{id}/submit`); it is routed by its total in base currency (at the order's own pinned rate) and the
+matching policy's stages and steps; the order is frozen while the request is pending (withdraw to edit); approvers hold
+`purchasing.purchase-order.approve` and, where a step uses limits, an amount ceiling; issuing asks the engine and is refused
+until the order is approved *as it now is* — any edit or cancel voids an earlier approval. Migrated cutover orders are not asked
+again. The order's `approval` block reports the state. Draft create/update, issue, cancel and
 short-close have separate `purchasing.purchase-order.*` capabilities; receipt create/post/reverse,
 QA disposition posting and item-supplier maintenance likewise have distinct Purchasing-owned
 permissions. Per [ADR 0068](../decisions/0068-purchasing-document-read-capabilities.md), PO,
@@ -206,10 +213,10 @@ cost and FX evidence) are omitted from every projection, print view and monetary
 — [ADR 0069](../decisions/0069-separate-purchasing-commercial-visibility-from-receiving.md). A receipt creator
 without that capability submits quantity, unit, location and tracking identity only; the server derives the
 provisional cost, currency and FX evidence from the issued PO line and rejects any monetary override. That is a
-provisional valuation basis, not invoice matching or landed cost. Before operational use relies on issuance,
-resolve [Q28](../OPEN-QUESTIONS.md#q28--purchase-order-approval-policy) and apply the shared
-[approval-workflow boundary](../architecture/approval-workflows.md). Creating/editing, submitting,
-approving and issuing must be independently grantable powers; approval eligibility must not be
+provisional valuation basis, not invoice matching or landed cost. Which orders need which approvals
+([Q28](../OPEN-QUESTIONS.md#q28--purchase-order-approval-policy): amounts, currencies, suppliers) is the company's own policy
+content, configured on Settings → Approvals; the [approval-workflow boundary](../architecture/approval-workflows.md) still
+applies. Creating/editing, submitting, approving and issuing are independently grantable powers; approval eligibility is never
 inferred from access to the PO screen.
 
 ### User interface

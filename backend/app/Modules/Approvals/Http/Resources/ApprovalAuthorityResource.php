@@ -22,7 +22,7 @@ class ApprovalAuthorityResource extends JsonResource
             'unlimited' => $row->unlimited, 'ceiling_base_amount' => $row->ceiling_base_amount,
             'valid_from' => $row->valid_from?->toDateString(), 'valid_to' => $row->valid_to?->toDateString(),
             'reason' => $row->reason, 'revoked_at' => $row->revoked_at?->toIso8601String(),
-            'in_force' => $row->revoked_at === null && ($row->valid_from === null || $row->valid_from->lte(today())) && ($row->valid_to === null || $row->valid_to->gte(today())),
+            'in_force' => (bool) ($row->revoked_at === null && ($row->valid_from === null || $row->valid_from->lte(today())) && ($row->valid_to === null || $row->valid_to->gte(today()))),
         ];
     }
 }

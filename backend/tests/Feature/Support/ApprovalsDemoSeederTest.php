@@ -1,0 +1,120 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Feature\Support;
+
+use App\Exceptions\DomainInvariantException;
+use App\Models\User;
+use App\Modules\Approvals\Actions\DecideApproval;
+use App\Modules\Approvals\Models\ApprovalDelegation;
+use App\Modules\Approvals\Models\ApprovalRequest;
+use App\Modules\Approvals\Support\ApprovalDecisionKind;
+use App\Modules\Approvals\Support\ApprovalInbox;
+use App\Modules\Estimating\Actions\PreviewMaterialVariance;
+use App\Modules\Inventory\Models\Item;
+use App\Modules\Purchasing\Actions\IssuePurchaseOrder;
+use App\Modules\Purchasing\Models\PurchaseOrder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\PermissionRegistrar;
+use Tests\TestCase;
+
+/**
+ * ApprovalsDemoSeeder claims a company configured with amount-banded policies, three personas and an order in every
+ * approval state. Each claim is proved by driving the real engine, not by reading the rows back.
+ */
+final class ApprovalsDemoSeederTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->artisan('demo:seed')->assertSuccessful();
+        app(PermissionRegistrar::class)->setPermissionsTeamId(1);
+    }
+
+    private function user(string $email): User
+    {
+        return User::query()->where('email', $email)->firstOrFail();
+    }
+
+    private function request(string $marker): ApprovalRequest
+    {
+        $order = PurchaseOrder::query()->where('notes', 'like', "%DEMO_APPROVAL_{$marker})%")->sole();
+
+        return ApprovalRequest::query()->where('subject_type', 'PURCHASE_ORDER')->where('subject_id', $order->id)->sole();
+    }
+
+    public function test_every_approval_state_is_represented_and_the_bands_route_by_amount(): void
+    {
+        $this->assertSame(
+            ['A' => 'PENDING', 'B' => 'PENDING', 'C' => 'APPROVED', 'D' => 'REJECTED', 'E' => 'WITHDRAWN'],
+            collect(['A', 'B', 'C', 'D', 'E'])->mapWithKeys(fn (string $m): array => [$m => $this->request($m)->status->value])->all(),
+        );
+        // Under 500,000 one manager step; from 500,000 a manager then two Finance approvals.
+        $this->assertSame('po-over-100k', $this->request('A')->policy->code);
+        $this->assertSame(1, $this->request('A')->steps()->count());
+        $this->assertSame('po-over-500k', $this->request('B')->policy->code);
+        $this->assertSame(2, $this->request('B')->steps()->count());
+        $this->assertSame(1, $this->request('B')->steps()->where('stage', 2)->sole()->decisions()->count());
+        $this->assertSame('PURCHASE_ORDER', $this->request('C')->subject_type);
+        $this->assertSame('ISSUED', PurchaseOrder::query()->findOrFail($this->request('C')->subject_id)->status->value);
+    }
+
+    public function test_the_manager_cannot_approve_beyond_their_limit_and_finance_can(): void
+    {
+        $manager = $this->user('demo-manager@erp.x1techs.com');
+        $inbox = app(ApprovalInbox::class);
+
+        $mine = $inbox->forUser($manager)->pluck('id')->all();
+        $this->assertContains($this->request('A')->id, $mine, '250,000 is within the 300,000 limit');
+        $this->assertNotContains($this->request('B')->id, $mine, 'the 650,000 order is beyond it');
+
+        // The demo login, who has no ceiling, can finish the pending steps live.
+        $admin = $this->user(config('demo.user.email'));
+        $approved = app(DecideApproval::class)($this->request('A'), $admin, ApprovalDecisionKind::Approved, 'Approved live.');
+        $this->assertSame('APPROVED', $approved->status->value);
+        $order = PurchaseOrder::query()->findOrFail($approved->subject_id);
+        $this->assertSame('ISSUED', app(IssuePurchaseOrder::class)($order, $admin)->status->value);
+    }
+
+    public function test_a_delegate_acts_as_the_manager_but_cannot_approve_what_they_submitted(): void
+    {
+        $manager = $this->user('demo-manager@erp.x1techs.com');
+        $buyer = $this->user('demo-buyer@erp.x1techs.com');
+        $this->assertTrue(ApprovalDelegation::query()->inForce()->where('delegator_id', $manager->id)->where('delegate_id', $buyer->id)->exists());
+
+        // The Buyer holds no approval capability of their own; the delegation would give the manager's — but the Buyer is the
+        // submitter of every demo order, so the step's maker/checker rule still refuses them.
+        try {
+            app(DecideApproval::class)($this->request('A'), $buyer, ApprovalDecisionKind::Approved);
+            $this->fail('A submitter must not approve their own submission, even as a delegate.');
+        } catch (DomainInvariantException $e) {
+            $this->assertStringContainsString('cannot approve this step', $e->getMessage());
+        }
+    }
+
+    public function test_the_pigment_variance_rule_now_routes_a_large_plan_to_approval(): void
+    {
+        $paint = Item::query()->where('code', 'demo-pig-blue')->firstOrFail();
+        $leaf = ['item' => ['id' => $paint->id, 'code' => $paint->code, 'name' => $paint->name], 'standard_quantity' => '10.0000', 'uom' => ['id' => $paint->stock_uom_id, 'code' => 'kg', 'name' => 'Kilogram']];
+
+        [$data] = app(PreviewMaterialVariance::class)([$leaf], [['item_id' => $paint->id, 'planned_quantity' => '25', 'uom_id' => $paint->stock_uom_id]], false);
+        $item = $data['items'][0];
+
+        $this->assertSame('APPROVAL_REQUIRED', $item['effect']);
+        $this->assertSame('Variance sign-off', $item['approval']['policy']['name']);
+        $this->assertFalse($item['can_adopt']);
+    }
+
+    public function test_reseeding_changes_nothing(): void
+    {
+        $counts = fn (): array => [ApprovalRequest::query()->count(), PurchaseOrder::query()->count(), ApprovalDelegation::query()->count(), \App\Modules\Approvals\Models\ApprovalPolicy::query()->count(), \App\Modules\Estimating\Models\MaterialVariancePolicy::query()->count()];
+        $before = $counts();
+
+        $this->artisan('demo:seed')->assertSuccessful();
+
+        $this->assertSame($before, $counts());
+    }
+}

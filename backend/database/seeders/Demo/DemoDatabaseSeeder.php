@@ -48,6 +48,8 @@ final class DemoDatabaseSeeder extends Seeder
                 ResourceRatesDemoSeeder::class,
                 AssemblyVersionsDemoSeeder::class,
                 MaterialVarianceDemoSeeder::class,
+                // Last: it uses the demo supplier and pigment, the demo variance rules and the personas' permissions.
+                ApprovalsDemoSeeder::class,
             ]);
         });
     }

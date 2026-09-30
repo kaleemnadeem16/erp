@@ -251,12 +251,12 @@ item here in the same commit that delivers it; add new ones as they are found.
 
 ### Waiting on another feature
 
-- [ ] **`APPROVAL_REQUIRED` variance band** — [ADR 0054](../decisions/0054-risk-based-material-plan-variance-controls.md)
-      §7 forbids offering it before the shared approval contract exists, and forbids faking it with a
-      permission or text field. The effect is stored in the policy vocabulary but neither selectable nor
-      resolvable; a configuration that somehow resolves to it blocks, never degrades to a reason. Waits
-      on [Q27](../OPEN-QUESTIONS.md#q27--shared-approval-workflow-contract) (which also serves Q28's
-      purchase-order approval) and, for routing, on the users/roles/teams work in progress elsewhere.
+- [x] **`APPROVAL_REQUIRED` variance band** — delivered 2026-09-30 through the shared approval engine
+      ([ADR 0070](../decisions/0070-shared-configurable-approval-engine.md), which resolves Q27). The effect is
+      selectable only while approvals are switched on for material variance, a stored band fails closed to
+      `BLOCKED` if they are switched off later, and the Material Preview names the approval a plan would need and
+      marks it not adoptable. *Submitting* a plan for that approval still waits for adoption on a quotation
+      revision (Phase 4), because a plan is hypothetical until then. See [approvals.md](../domain/approvals.md).
 - [ ] **Waste/residual variance bands** — ADR 0054 lists expected package residual as a controlled
       measure, but residual needs sealed-pack and remnant state that only `PACKAGE_BALANCE` /
       `CONTAINER_TRACKED` tracking ([ADR 0052](../decisions/0052-progressive-inventory-package-tracking.md))
