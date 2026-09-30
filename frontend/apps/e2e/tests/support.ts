@@ -23,7 +23,16 @@ export async function pickCombobox(
   // attribute picks out the open popover's box unambiguously.
   const input = page.locator('[cmdk-input]');
   await input.fill(searchText ?? (typeof optionText === 'string' ? optionText : ''));
-  await expect(page.getByRole('option', { name: optionText }).first()).toHaveAttribute('aria-selected', 'true');
+  const option = page.getByRole('option', { name: optionText }).first();
+  await expect(option).toBeVisible();
+  // cmdk does not always highlight the matching item (some callers pass a
+  // broader search term). Move the active option with the same keys a person
+  // uses, avoiding pointer clicks on results outside the viewport.
+  const optionCount = await page.locator('[cmdk-item]').count();
+  for (let step = 0; step <= optionCount && await option.getAttribute('aria-selected') !== 'true'; step += 1) {
+    await input.press('ArrowDown');
+  }
+  await expect(option).toHaveAttribute('aria-selected', 'true');
   await input.press('Enter');
 }
 
