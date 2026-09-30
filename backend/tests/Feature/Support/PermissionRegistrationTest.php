@@ -18,6 +18,16 @@ final class PermissionRegistrationTest extends TestCase
 
         $this->assertSame(['administration', 'estimating', 'inventory', 'purchasing'], array_keys($vocabularies));
         $this->assertContains('administration.access.assign', $vocabularies['administration']);
+        foreach ([
+            'estimating.rate-dimension.manage',
+            'estimating.application-rate.manage',
+            'estimating.formulation.manage',
+            'estimating.assembly-group.manage',
+            'estimating.assembly.manage',
+            'estimating.resource-rate.manage',
+        ] as $capability) {
+            $this->assertContains($capability, $vocabularies['estimating']);
+        }
         $this->assertContains('estimating.material_preview.run', $vocabularies['estimating']);
         $this->assertContains('estimating.inventory_availability.view', $vocabularies['estimating']);
         $this->assertContains('estimating.internal_cost.view', $vocabularies['estimating']);

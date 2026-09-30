@@ -197,7 +197,10 @@ independently of this backlog's sequencing whenever wanted.
 - [ ] Add missing filter UI: Formulations (`customer_id,output_item_id,search,status`), Assemblies
       (`assembly_group_id,search,status`), Rate Dimensions/Assembly Groups (`search`), Application
       Rates (`is_default,work_uom_id`) — no permission dependency, can land anytime
-- [ ] Register all capabilities above (no enforcement yet)
+- [x] Register all six capabilities above (2026-09-30, no enforcement yet). They are
+      reserved for the Estimating CRUD rollout: registration alone grants no operational user
+      access and must not be mistaken for a protected endpoint. Assignment/backfill, Action
+      checks, frontend gating and allowed/denied tests remain the next slice.
 - [ ] Assignment/backfill pass, then enforce (lower daily-write volume than Purchasing, so this can
       land before section B's enforcement steps)
 - [ ] Frontend action gating once `/api/v1/user` effective permissions ship

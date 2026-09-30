@@ -157,6 +157,14 @@ estimating.material_variance.approve
 estimating.material_resolution_history.view
 ```
 
+The existing Estimating CRUD retrofit also reserves six write capabilities:
+`estimating.rate-dimension.manage` (including values), `estimating.application-rate.manage`,
+`estimating.formulation.manage` (including versions), `estimating.assembly-group.manage`,
+`estimating.assembly.manage` (including versions), and `estimating.resource-rate.manage`.
+These names are registered only. CRUD endpoints and Actions are not yet gated by them; the
+assignment/backfill, backend enforcement, UI gating and denied-path tests are tracked in the
+[authorisation retrofit](../../../../docs/architecture/authorization-retrofit.md#c-existing-estimating-crud).
+
 `estimating.material_variance_policy.manage` (not in ADR 0057's list — added with the configurable variance
 policy) creates, edits, activates and deletes-while-draft variance policies and the company's reason
 list. Listing policies (audit detail: reason, actor, superseded versions) also needs
