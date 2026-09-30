@@ -25,6 +25,23 @@ ASSEMBLY ← you are here
 
 Built in [Phase 3](../phases/README.md); consumed by [sales-pipeline.md](sales-pipeline.md).
 
+## Assembly access
+
+Authenticated company users can list and inspect assemblies and their versions as shared
+estimating lookups. Creating, editing, archiving or activating an assembly or version requires
+`estimating.assembly.manage` at the API and non-HTTP Action boundary. The assembly setup screen
+uses the same effective capability, supplied by company roles or direct grants rather than a
+hardcoded role name. The version cost-breakdown endpoint exposes resolved internal costs and
+requires the separate `estimating.internal_cost.view` capability, even for a manager; its UI
+control is hidden otherwise. Existing maintainers need an explicit grant before deployment.
+
+This is a capability retrofit, not a redesign of assembly lifecycle or record scope. List/show
+remain company-scoped shared reads; later organisation-scoped visibility would need matching
+query and policy rules. Assembly header margin settings and component rate overrides remain
+visible to authenticated company readers in existing resources; the `internal_cost.view` gate
+protects resolved cost breakdowns, not every potentially commercial configuration field. A
+separate field-projection review is needed before claiming full estimating commercial secrecy.
+
 ## Assembly-group access
 
 Assembly groups are shared classification lookups for assembly and overhead-policy forms, so

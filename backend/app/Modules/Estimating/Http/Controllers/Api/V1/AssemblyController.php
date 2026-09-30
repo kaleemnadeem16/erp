@@ -17,6 +17,7 @@ use App\Modules\Estimating\Models\Assembly;
 use App\Support\Concerns\AppliesApiQuery;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -52,7 +53,7 @@ class AssemblyController extends Controller
 
     public function store(StoreAssemblyRequest $request, CreateAssembly $create): JsonResponse
     {
-        return (new AssemblyResource($create($request->validated())))->response()->setStatusCode(201);
+        return (new AssemblyResource($create($request->validated(), $request->user())))->response()->setStatusCode(201);
     }
 
     public function show(ShowAssemblyRequest $request, Assembly $assembly): AssemblyResource
@@ -62,12 +63,13 @@ class AssemblyController extends Controller
 
     public function update(UpdateAssemblyRequest $request, Assembly $assembly, UpdateAssembly $update): AssemblyResource
     {
-        return new AssemblyResource($update($assembly, $request->validated()));
+        return new AssemblyResource($update($assembly, $request->validated(), $request->user()));
     }
 
-    public function destroy(Assembly $assembly, ArchiveAssembly $archive): Response
+    public function destroy(Request $request, Assembly $assembly, ArchiveAssembly $archive): Response
     {
-        $archive($assembly);
+        abort_unless($request->user()?->can('estimating.assembly.manage'), 403);
+        $archive($assembly, $request->user());
 
         return response()->noContent();
     }

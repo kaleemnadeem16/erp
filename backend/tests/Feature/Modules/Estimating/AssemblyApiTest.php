@@ -2,14 +2,19 @@
 
 namespace Tests\Feature\Modules\Estimating;
 
+use App\Exceptions\DomainInvariantException;
 use App\Models\Uom;
 use App\Models\User;
+use App\Modules\Estimating\Actions\ArchiveAssembly;
+use App\Modules\Estimating\Actions\CreateAssembly;
+use App\Modules\Estimating\Actions\UpdateAssembly;
 use App\Modules\Estimating\Models\Assembly;
 use App\Modules\Estimating\Models\AssemblyGroup;
 use App\Support\CompanyContext;
 use App\Support\UomDimension;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Tests\Support\PermissionedActor;
 use Tests\TestCase;
 
 class AssemblyApiTest extends TestCase
@@ -52,7 +57,7 @@ class AssemblyApiTest extends TestCase
 
     public function test_an_ungrouped_assembly_can_be_created_and_is_draft_by_default(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.assembly.manage']);
 
         $response = $this->actingAs($user)->postJson('/api/v1/assemblies', [
             'code' => 'ASM-1', 'name' => 'Welded frame', 'work_uom_id' => $this->hour->id,
@@ -67,7 +72,7 @@ class AssemblyApiTest extends TestCase
 
     public function test_an_assembly_can_be_created_with_a_same_company_group(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.assembly.manage']);
 
         $response = $this->actingAs($user)->postJson('/api/v1/assemblies', [
             'code' => 'ASM-1', 'name' => 'Welded frame', 'work_uom_id' => $this->hour->id,
@@ -79,7 +84,7 @@ class AssemblyApiTest extends TestCase
 
     public function test_a_cross_company_group_is_rejected_with_a_422_not_a_500(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.assembly.manage']);
         $otherCompanyId = $this->otherCompanyId();
         $this->actingAsCompany($otherCompanyId);
         $otherGroup = AssemblyGroup::create(['code' => 'FABRICATION', 'name' => 'Fabrication']);
@@ -93,7 +98,7 @@ class AssemblyApiTest extends TestCase
 
     public function test_a_cross_company_work_uom_is_rejected_with_a_422_not_a_500(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.assembly.manage']);
         $otherCompanyId = $this->otherCompanyId();
         $this->actingAsCompany($otherCompanyId);
         $otherUom = Uom::create(['code' => 'HR', 'name' => 'Hour', 'dimension' => UomDimension::Time, 'factor_to_base' => '1']);
@@ -107,7 +112,7 @@ class AssemblyApiTest extends TestCase
 
     public function test_an_assemblys_group_can_be_changed_and_removed(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.assembly.manage']);
         $other = AssemblyGroup::create(['code' => 'INSTALL', 'name' => 'Installation']);
         $assembly = Assembly::create([
             'code' => 'ASM-1', 'name' => 'Welded frame', 'work_uom_id' => $this->hour->id,
@@ -125,7 +130,7 @@ class AssemblyApiTest extends TestCase
 
     public function test_code_must_be_unique_per_company(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.assembly.manage']);
         Assembly::create([
             'code' => 'ASM-1', 'name' => 'Welded frame', 'work_uom_id' => $this->hour->id,
             'margin_type' => 'MARGIN', 'margin_pct' => '25',
@@ -139,13 +144,14 @@ class AssemblyApiTest extends TestCase
 
     public function test_a_second_companys_assembly_with_the_same_code_is_allowed(): void
     {
-        $user = User::factory()->create();
         Assembly::create([
             'code' => 'ASM-1', 'name' => 'Welded frame', 'work_uom_id' => $this->hour->id,
             'margin_type' => 'MARGIN', 'margin_pct' => '25',
         ]);
 
-        $this->actingAsCompany($this->otherCompanyId());
+        $otherCompanyId = $this->otherCompanyId();
+        $this->actingAsCompany($otherCompanyId);
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.assembly.manage'], $otherCompanyId);
         $otherUom = Uom::create(['code' => 'HR', 'name' => 'Hour', 'dimension' => UomDimension::Time, 'factor_to_base' => '1']);
 
         $this->actingAs($user)->postJson('/api/v1/assemblies', [
@@ -165,7 +171,7 @@ class AssemblyApiTest extends TestCase
         ]);
         $this->actingAsCompany(1);
 
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.assembly.manage']);
 
         $this->actingAs($user)->getJson("/api/v1/assemblies/{$otherAssembly->id}")->assertNotFound();
     }
@@ -177,7 +183,7 @@ class AssemblyApiTest extends TestCase
      */
     public function test_deleting_an_assembly_archives_it_instead_of_removing_the_row(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.assembly.manage']);
         $assembly = Assembly::create([
             'code' => 'ASM-1', 'name' => 'Welded frame', 'work_uom_id' => $this->hour->id,
             'margin_type' => 'MARGIN', 'margin_pct' => '25',
@@ -190,7 +196,7 @@ class AssemblyApiTest extends TestCase
 
     public function test_an_archived_assembly_can_still_be_fetched_and_listed(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.assembly.manage']);
         $assembly = Assembly::create([
             'code' => 'ASM-1', 'name' => 'Welded frame', 'work_uom_id' => $this->hour->id,
             'margin_type' => 'MARGIN', 'margin_pct' => '25',
@@ -203,7 +209,7 @@ class AssemblyApiTest extends TestCase
 
     public function test_index_can_include_work_uom_and_assembly_group(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.assembly.manage']);
         Assembly::create([
             'code' => 'ASM-1', 'name' => 'Welded frame', 'work_uom_id' => $this->hour->id,
             'assembly_group_id' => $this->fabrication->id, 'margin_type' => 'MARGIN', 'margin_pct' => '25',
@@ -213,5 +219,53 @@ class AssemblyApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.0.work_uom.code', 'HR')
             ->assertJsonPath('data.0.assembly_group.code', 'FABRICATION');
+    }
+
+    public function test_writes_require_manage_while_list_and_show_remain_shared(): void
+    {
+        $user = User::factory()->create();
+        $assembly = Assembly::create([
+            'code' => 'ASM-1', 'name' => 'Welded frame', 'work_uom_id' => $this->hour->id,
+            'margin_type' => 'MARGIN', 'margin_pct' => '25',
+        ]);
+
+        $this->actingAs($user)->getJson('/api/v1/assemblies')->assertOk();
+        $this->getJson("/api/v1/assemblies/{$assembly->id}")->assertOk();
+        $this->postJson('/api/v1/assemblies', [
+            'code' => 'ASM-2', 'name' => 'Other', 'work_uom_id' => $this->hour->id,
+            'margin_type' => 'MARGIN', 'margin_pct' => '25',
+        ])->assertForbidden();
+        $this->patchJson("/api/v1/assemblies/{$assembly->id}", ['name' => 'Changed'])->assertForbidden();
+        $this->deleteJson("/api/v1/assemblies/{$assembly->id}")->assertForbidden();
+
+        $this->assertDatabaseHas('assemblies', ['id' => $assembly->id, 'name' => 'Welded frame', 'status' => 'DRAFT']);
+    }
+
+    public function test_header_actions_reject_non_http_unpermitted_actor(): void
+    {
+        $viewer = User::factory()->create();
+        $assembly = Assembly::create([
+            'code' => 'ASM-1', 'name' => 'Welded frame', 'work_uom_id' => $this->hour->id,
+            'margin_type' => 'MARGIN', 'margin_pct' => '25',
+        ]);
+
+        foreach ([
+            fn () => app(CreateAssembly::class)([
+                'code' => 'ASM-2', 'name' => 'Other', 'work_uom_id' => $this->hour->id,
+                'margin_type' => 'MARGIN', 'margin_pct' => '25',
+            ], $viewer),
+            fn () => app(UpdateAssembly::class)($assembly, ['name' => 'Changed'], $viewer),
+            fn () => app(ArchiveAssembly::class)($assembly, $viewer),
+        ] as $action) {
+            try {
+                $action();
+                $this->fail('Expected the action to reject an unpermitted actor.');
+            } catch (DomainInvariantException) {
+                // Permission must be checked before any mutation.
+            }
+        }
+
+        $this->assertDatabaseHas('assemblies', ['id' => $assembly->id, 'name' => 'Welded frame', 'status' => 'DRAFT']);
+        $this->assertDatabaseMissing('assemblies', ['code' => 'ASM-2']);
     }
 }

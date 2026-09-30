@@ -135,6 +135,12 @@ Action boundaries. Index/show remain authenticated shared lookups for assembly a
 forms. The SPA exposes its setup screen to managers only; grants are company-role or direct-user
 assignments, not hardcoded to an administrator or starter role.
 
+Assembly header and version/component create, update, archive/delete and activation require
+`estimating.assembly.manage` at HTTP and Action boundaries. List/show remain authenticated company
+reads for shared estimating lookups. The explainable version cost-breakdown endpoint separately
+requires `estimating.internal_cost.view`, even for an assembly manager; the SPA hides its control
+without that capability. Demo activation uses the permission-synchronised demo actor.
+
 `CreateOverheadPolicy` always creates a DRAFT — every row is a governed change (mandatory
 `reason` + `changed_by`), there is no "current settings" row this is a delta from, unlike
 `InventoryPolicyChange`/`PurchasingPolicyChange`'s singleton-plus-log shape. `UpdateOverheadPolicy`
@@ -181,9 +187,10 @@ The existing Estimating CRUD retrofit also reserves six write capabilities:
 `estimating.formulation.manage` (including versions), `estimating.assembly-group.manage`,
 `estimating.assembly.manage` (including versions), and `estimating.resource-rate.manage`.
 `estimating.rate-dimension.manage`, `estimating.application-rate.manage`,
-`estimating.formulation.manage`, and `estimating.assembly-group.manage` are now enforced for
-their writes, with matching screen access and denied-path tests. The other two remain
-registration-only; their assignment/backfill,
+`estimating.formulation.manage`, `estimating.assembly-group.manage`, and
+`estimating.assembly.manage` are now enforced for their writes, with matching screen access and
+denied-path tests. `estimating.resource-rate.manage` alone remains registration-only; its
+assignment/backfill,
 backend enforcement, UI gating and denied-path tests are tracked in the
 [authorisation retrofit](../../../../docs/architecture/authorization-retrofit.md#c-existing-estimating-crud).
 

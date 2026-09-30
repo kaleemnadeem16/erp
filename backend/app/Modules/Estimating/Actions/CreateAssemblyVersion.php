@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Estimating\Actions;
 
+use App\Exceptions\DomainInvariantException;
+use App\Models\User;
 use App\Modules\Estimating\Models\Assembly;
 use App\Modules\Estimating\Models\AssemblyVersion;
 use Illuminate\Support\Facades\DB;
@@ -21,8 +23,12 @@ use Illuminate\Support\Facades\DB;
 final class CreateAssemblyVersion
 {
     /** @param array<string, mixed> $attributes */
-    public function __invoke(Assembly $assembly, array $attributes): AssemblyVersion
+    public function __invoke(Assembly $assembly, array $attributes, User $actor): AssemblyVersion
     {
+        if (! $actor->can('estimating.assembly.manage')) {
+            throw new DomainInvariantException('The actor is not permitted to manage assemblies.');
+        }
+
         $components = $attributes['components'] ?? [];
         unset($attributes['components']);
 

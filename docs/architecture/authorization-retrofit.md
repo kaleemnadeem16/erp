@@ -198,8 +198,9 @@ independently of this backlog's sequencing whenever wanted.
       (`assembly_group_id,search,status`), Rate Dimensions/Assembly Groups (`search`), Application
       Rates (`is_default,work_uom_id`) — no permission dependency, can land anytime
 - [x] Register all six capabilities above (2026-09-30). Registration alone grants no
-      operational user access and must not be mistaken for a protected endpoint. Two remain
-      reserved after the rate-dimension, application-rate, formulation and assembly-group slices below.
+      operational user access and must not be mistaken for a protected endpoint. One remains
+      reserved after the rate-dimension, application-rate, formulation, assembly-group and
+      assembly slices below.
 - [x] Rate Dimensions and Values (2026-09-30): `estimating.rate-dimension.manage` gates create,
       update and delete at HTTP and non-HTTP Action boundaries. Index/show/value reads remain
       authenticated-only shared lookups. The SPA setup route and New action require the same
@@ -228,6 +229,13 @@ independently of this backlog's sequencing whenever wanted.
       allowed/denied API and Action tests cover the boundary. Grant existing group maintainers
       before deployment through company roles or direct assignments; the configured administrator
       receives it through normal sync.
+- [x] Assemblies and Versions (2026-09-30): `estimating.assembly.manage` gates header and
+      version/component create, update, archive/delete and activation at HTTP and non-HTTP Action
+      boundaries. List/show remain authenticated company lookups. The explainable version
+      cost-breakdown endpoint separately requires `estimating.internal_cost.view`, and the SPA
+      hides its control without it. Allowed/denied API and Action tests cover the writes and cost
+      endpoint. The demo seeder supplies its permission-synchronised actor to activation. Grant
+      existing assembly maintainers before deployment through company roles or direct grants.
 - [ ] Assignment/backfill pass, then enforce (lower daily-write volume than Purchasing, so this can
       land before section B's enforcement steps)
 - [ ] Frontend action gating once `/api/v1/user` effective permissions ship

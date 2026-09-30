@@ -126,7 +126,7 @@ class MaterialPreviewApiTest extends TestCase
             'qty_per_work_unit' => '1.000000', 'uom_id' => $this->litre->id,
             'sequence' => 0,
         ]);
-        (new ActivateAssemblyVersion)($version);
+        (new ActivateAssemblyVersion)($version, PermissionedActor::grant(User::factory()->create(), ['estimating.assembly.manage']));
     }
 
     public function test_preview_requires_the_run_permission(): void

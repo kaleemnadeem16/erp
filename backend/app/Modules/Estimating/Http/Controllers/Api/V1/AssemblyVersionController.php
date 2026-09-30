@@ -19,6 +19,7 @@ use App\Modules\Estimating\Models\AssemblyVersion;
 use App\Modules\Estimating\Support\AssemblyComponentBreakdown;
 use App\Modules\Estimating\Support\AssemblyCostBreakdown;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -31,24 +32,27 @@ class AssemblyVersionController extends Controller
 {
     public function store(StoreAssemblyVersionRequest $request, Assembly $assembly, CreateAssemblyVersion $create): JsonResponse
     {
-        return (new AssemblyVersionResource($create($assembly, $request->validated())))->response()->setStatusCode(201);
+        return (new AssemblyVersionResource($create($assembly, $request->validated(), $request->user())))->response()->setStatusCode(201);
     }
 
     public function update(UpdateAssemblyVersionRequest $request, AssemblyVersion $assembly_version, UpdateAssemblyVersion $update): AssemblyVersionResource
     {
-        return new AssemblyVersionResource($update($assembly_version, $request->validated()));
+        return new AssemblyVersionResource($update($assembly_version, $request->validated(), $request->user()));
     }
 
-    public function destroy(AssemblyVersion $assembly_version, DeleteAssemblyVersion $delete): Response
+    public function destroy(Request $request, AssemblyVersion $assembly_version, DeleteAssemblyVersion $delete): Response
     {
-        $delete($assembly_version);
+        abort_unless($request->user()?->can('estimating.assembly.manage'), 403);
+        $delete($assembly_version, $request->user());
 
         return response()->noContent();
     }
 
-    public function activate(AssemblyVersion $assembly_version, ActivateAssemblyVersion $activate): AssemblyVersionResource
+    public function activate(Request $request, AssemblyVersion $assembly_version, ActivateAssemblyVersion $activate): AssemblyVersionResource
     {
-        return new AssemblyVersionResource($activate($assembly_version));
+        abort_unless($request->user()?->can('estimating.assembly.manage'), 403);
+
+        return new AssemblyVersionResource($activate($assembly_version, $request->user()));
     }
 
     /**
@@ -59,8 +63,10 @@ class AssemblyVersionController extends Controller
      * was, and the final cost/sell per unit — everything a quotation,
      * job-costing or audit screen will eventually need.
      */
-    public function costBreakdown(AssemblyVersion $assembly_version, ExplodeAssemblyVersion $explode): JsonResponse
+    public function costBreakdown(Request $request, AssemblyVersion $assembly_version, ExplodeAssemblyVersion $explode): JsonResponse
     {
+        abort_unless($request->user()?->can('estimating.internal_cost.view'), 403);
+
         return response()->json(['data' => $this->serializeBreakdown($explode($assembly_version))]);
     }
 
