@@ -122,6 +122,19 @@ risk; may the creator submit, may an approver also issue, how many independent a
 needed, and what happens on rejection or draft revision? Today any authenticated caller reaching
 the endpoint can create and issue a PO; DRAFT → ISSUED has no approval fact.
 
+### Q33 — ERP-wide Notifications capability
+**Blocks:** Any user-facing notification: approval requests and decisions, assignments, overdue and escalation events, module events
+
+Notifications are a shared capability, not a feature of any one module, and are deliberately **not** built inside
+the approval engine ([ADR 0070](decisions/0070-shared-configurable-approval-engine.md)): its inbox is pull-only until
+this is decided. Before building it, research and record how mature ERPs handle in-app notifications; approvals and
+assignments; overdue and escalation events; module-raised events; per-user and per-company preferences; delivery
+channels (in-app, e-mail, mobile push, chat); grouping and de-duplication; deep links; permissions and company
+isolation (a notification must never leak a record its recipient may not see); audit and history; and immediate versus
+digest delivery. Those are prompts, not a predetermined architecture. Consumers waiting on it: approval requests and
+expiries, overdue steps and escalation capabilities, recalculation and negative-stock reviews past their SLA, and the
+purchase-order and quotation workflows.
+
 ---
 
 ## Answered

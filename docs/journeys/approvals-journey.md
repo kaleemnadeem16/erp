@@ -97,7 +97,8 @@ still cannot approve something they submitted.
 
 ## Not yet available
 
-- E-mail or push notifications for approvers; the inbox is pull-only.
+- Notifications for approvers (a request waiting, a step overdue): intentionally deferred to the ERP-wide Notifications
+  capability ([Q33](../OPEN-QUESTIONS.md#q33--erp-wide-notifications-capability)); until then the inbox is pull-only.
 - Approver eligibility by department or warehouse ([Q26](../OPEN-QUESTIONS.md#q26--organisational-and-record-level-access-scope)).
 - Adopting a material plan that needs variance approval (Phase 4).
 

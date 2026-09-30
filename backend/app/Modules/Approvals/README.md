@@ -32,4 +32,5 @@ now*; it never mutates another module's status and never issues or posts anythin
 
 ## Does not own
 
-Departments or record-level scope (Q26), notifications, or the documents being approved.
+Departments or record-level scope (Q26), notifications (deliberately deferred to the shared ERP-wide capability, Q33 — do not add
+approval-specific e-mail/push here), or the documents being approved.

@@ -75,7 +75,10 @@ decision history, and disables Issue/Edit with the reason rather than failing af
 
 - Department- or warehouse-scoped approver eligibility — waits on [Q26](../OPEN-QUESTIONS.md#q26--organisational-and-record-level-access-scope);
   policy conditions may use warehouse/category facts and ceilings are per person meanwhile.
-- Approval notifications and escalation by e-mail; the inbox is pull-only.
+- **Notifications** — intentionally deferred to the ERP-wide Notifications capability
+  ([Q33](../OPEN-QUESTIONS.md#q33--erp-wide-notifications-capability)), not unfinished approval work. The engine records everything
+  a notification would need (who is eligible, deadlines, overdue flags, decisions), and the inbox is pull-only until that
+  shared capability exists; the engine deliberately contains no e-mail, push or approval-specific alerting.
 - Submitting a material plan for approval (Phase 4 adoption).
 - Migrating recalculation, negative-stock and cutover approvals onto the engine.
 
