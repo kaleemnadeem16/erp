@@ -16,6 +16,8 @@ use App\Modules\Approvals\Actions\WithdrawApproval;
 use App\Modules\Approvals\Models\ApprovalAuthority;
 use App\Modules\Approvals\Models\ApprovalDelegation;
 use App\Modules\Approvals\Models\ApprovalPolicy;
+use App\Modules\Approvals\Models\ApprovalRequest;
+use App\Modules\Approvals\Support\ApprovalRequestStatus;
 use App\Modules\Approvals\Support\ApprovalDecisionKind;
 use App\Modules\Approvals\Support\ApprovalMode;
 use App\Modules\Approvals\Support\ApprovalPolicyStatus;
@@ -48,7 +50,8 @@ use Illuminate\Database\Seeder;
  * within the manager's authority, and, since the Buyer submitted the order, may not approve their own submission.
  *
  * Orders, each carrying its state through the app's own Actions on the demo supplier:
- *   A. 250,000 — submitted, waiting for the manager (the demo login can approve it live).
+ *   A. 250,000 — submitted, waiting for the manager (the demo login can approve it live). Once approved, re-seeding submits a
+ *      fresh one so the demo always has a request to decide.
  *   B. 650,000 — the Finance Controller approved the manager stage; the Finance stage has one of two approvals.
  *   C. 180,000 — approved, then issued.
  *   D. 120,000 — rejected, with the reason.
@@ -162,9 +165,11 @@ final class ApprovalsDemoSeeder extends Seeder
     {
         $decide = app(DecideApproval::class);
 
-        $this->order('A', '250000', function (PurchaseOrder $order): void {
+        $waiting = function (PurchaseOrder $order): void {
             app(SubmitPurchaseOrder::class)($order, $this->buyer);
-        });
+        };
+        $this->order('A', '250000', $waiting);
+        $this->keepOneOrderWaiting($waiting);
 
         $this->order('B', '650000', function (PurchaseOrder $order) use ($decide): void {
             $request = app(SubmitPurchaseOrder::class)($order, $this->buyer);
@@ -188,6 +193,24 @@ final class ApprovalsDemoSeeder extends Seeder
             $request = app(SubmitPurchaseOrder::class)($order, $this->buyer);
             app(WithdrawApproval::class)($request, $this->buyer, 'Quantity needs correcting before this is approved.');
         });
+    }
+
+    /**
+     * The demo promises an order waiting for the manager that the demo login can approve live. Approving it (which is the
+     * point of the demo) uses it up, so when none is waiting any more a fresh one — same amount, next marker — is
+     * submitted. While one is waiting nothing is created, so re-running changes nothing.
+     */
+    private function keepOneOrderWaiting(callable $scenario): void
+    {
+        $orders = PurchaseOrder::query()->where('notes', 'like', '%DEMO_APPROVAL_A%')->get();
+        $stillWaiting = ApprovalRequest::query()
+            ->where('subject_type', 'PURCHASE_ORDER')
+            ->whereIn('subject_id', $orders->modelKeys())
+            ->where('status', ApprovalRequestStatus::Pending)
+            ->exists();
+        if (! $stillWaiting) {
+            $this->order('A'.($orders->count() + 1), '250000', $scenario);
+        }
     }
 
     /** Creates one demo order worth `$amount` (one line: 1,000 units at amount / 1,000) and applies its scenario, once. */

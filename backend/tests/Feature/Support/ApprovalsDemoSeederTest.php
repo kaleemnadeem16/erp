@@ -108,6 +108,24 @@ final class ApprovalsDemoSeederTest extends TestCase
         $this->assertFalse($item['can_adopt']);
     }
 
+    public function test_using_up_the_waiting_order_makes_reseeding_submit_a_fresh_one_and_only_one(): void
+    {
+        $waiting = fn () => ApprovalRequest::query()->where('subject_type', 'PURCHASE_ORDER')->where('status', 'PENDING')->get()
+            ->filter(fn (ApprovalRequest $r) => str_contains((string) PurchaseOrder::query()->find($r->subject_id)?->notes, 'DEMO_APPROVAL_A'));
+        $this->assertCount(1, $waiting());
+
+        // The demo's point: someone approves it live. That uses it up.
+        app(DecideApproval::class)($this->request('A'), $this->user('demo-manager@erp.x1techs.com'), ApprovalDecisionKind::Approved, 'Approved live.');
+        $this->assertCount(0, $waiting());
+
+        $this->artisan('demo:seed')->assertSuccessful();
+        $this->assertCount(1, $waiting());
+        $this->assertSame('250000.0000', number_format((float) PurchaseOrder::query()->find($waiting()->first()->subject_id)->lines()->first()->unit_price * 1000, 4, '.', ''));
+
+        $this->artisan('demo:seed')->assertSuccessful();
+        $this->assertCount(1, $waiting(), 'a second re-seed must not add another while one is waiting');
+    }
+
     public function test_reseeding_changes_nothing(): void
     {
         $counts = fn (): array => [ApprovalRequest::query()->count(), PurchaseOrder::query()->count(), ApprovalDelegation::query()->count(), \App\Modules\Approvals\Models\ApprovalPolicy::query()->count(), \App\Modules\Estimating\Models\MaterialVariancePolicy::query()->count()];
