@@ -258,9 +258,9 @@ waits on something outside Phase 3:
 | Department-limited availability | Needs organisational scope | [Q26](../OPEN-QUESTIONS.md#q26--organisational-and-record-level-access-scope) |
 | Approval notifications | Shared, ERP-wide capability | [Q33](../OPEN-QUESTIONS.md#q33--erp-wide-notifications-capability) |
 
-Verified against the committed state at `18dd3f4` plus other work in progress in the tree: the full backend suite passes
-(1247 tests), the frontend type-checks, and the browser specs for the material preview, stored preferences, variance settings and
-approvals pass. The dev Postgres self-restart is a documented environment issue, not a product blocker
+Verified on a clean, fully committed tree (`73bd25c`, 2026-10-01): the full backend suite passes (1253 tests), the frontend
+type-checks, and the browser specs for the material preview, stored preferences, variance settings, approvals and picker errors
+pass (20). The dev Postgres self-restart is a documented environment issue, not a product blocker
 ([environments.md](../architecture/environments.md)).
 
 ## Deferred and blocked work
