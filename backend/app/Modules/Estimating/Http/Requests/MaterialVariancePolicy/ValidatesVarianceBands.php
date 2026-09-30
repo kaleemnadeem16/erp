@@ -18,8 +18,6 @@ trait ValidatesVarianceBands
     /** @return array<string, mixed> */
     protected function bandRules(): array
     {
-        $configurable = $this->configurableEffects();
-
         return [
             'bands' => ['sometimes', 'array', 'max:50'],
             'bands.*.direction' => ['required', Rule::enum(VarianceDirection::class)],
@@ -40,7 +38,7 @@ trait ValidatesVarianceBands
                 'required_if:bands.*.measure,'.VarianceMeasure::Quantity->value,
                 'prohibited_unless:bands.*.measure,'.VarianceMeasure::Quantity->value,
             ],
-            'bands.*.effect' => ['required', Rule::in($configurable)],
+            'bands.*.effect' => ['required', Rule::enum(VarianceEffect::class), $this->approvalAvailabilityRule()],
         ];
     }
 
@@ -55,9 +53,13 @@ trait ValidatesVarianceBands
         ];
     }
 
-    /** @return list<string> */
-    protected function configurableEffects(): array
+    /** Keep the OpenAPI enum independent of company configuration; enforce availability at validation time. */
+    protected function approvalAvailabilityRule(): Closure
     {
-        return app(VarianceApprovalAvailability::class)->configurableEffects();
+        return function (string $attribute, mixed $value, Closure $fail): void {
+            if ($value === VarianceEffect::ApprovalRequired->value && ! app(VarianceApprovalAvailability::class)->enabled()) {
+                $fail('Approval-required is available once approvals are switched on for material variance (Settings → Approvals).');
+            }
+        };
     }
 }

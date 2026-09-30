@@ -82,6 +82,11 @@ matrix is gone, roughly halving CI time.
 Postgres runs as a **service container**, never the dbvm instances. **CI never touches
 production databases.**
 
+The Playwright job sets `API_RATE_LIMIT_PER_MINUTE=10000`, as the development stack does.
+Its scripted page loads exceed the production limit of 120/min and otherwise make the
+identity endpoint return 429, redirecting valid browser sessions to sign-in. Production
+continues to use the default limit.
+
 What replaced the portability matrix as a discipline: migrations are reviewed for lock duration,
 and any query against a table expected to exceed ~100k rows gets an `EXPLAIN` in review — dbvm
 has 1 vCPU.

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Estimating\Http\Requests\MaterialVariancePolicy;
 
+use App\Modules\Estimating\Support\VarianceEffect;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -26,7 +27,7 @@ class UpdateMaterialVariancePolicyRequest extends FormRequest
     public function rules(): array
     {
         return array_merge([
-            'minimum_effect' => ['sometimes', 'nullable', Rule::in($this->configurableEffects())],
+            'minimum_effect' => ['sometimes', 'nullable', Rule::enum(VarianceEffect::class), $this->approvalAvailabilityRule()],
             'reason' => ['sometimes', 'string', 'max:1000'],
         ], $this->bandRules());
     }

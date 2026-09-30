@@ -1,8 +1,8 @@
 <?php
 
 use App\Exceptions\DomainInvariantException;
-use App\Http\Middleware\SetPermissionsTeam;
 use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\SetPermissionsTeam;
 use Illuminate\Database\QueryException;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Application;

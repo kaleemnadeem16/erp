@@ -8,10 +8,12 @@ use App\Exceptions\DomainInvariantException;
 use App\Models\User;
 use App\Modules\Approvals\Actions\DecideApproval;
 use App\Modules\Approvals\Models\ApprovalDelegation;
+use App\Modules\Approvals\Models\ApprovalPolicy;
 use App\Modules\Approvals\Models\ApprovalRequest;
 use App\Modules\Approvals\Support\ApprovalDecisionKind;
 use App\Modules\Approvals\Support\ApprovalInbox;
 use App\Modules\Estimating\Actions\PreviewMaterialVariance;
+use App\Modules\Estimating\Models\MaterialVariancePolicy;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Purchasing\Actions\IssuePurchaseOrder;
 use App\Modules\Purchasing\Models\PurchaseOrder;
@@ -128,7 +130,7 @@ final class ApprovalsDemoSeederTest extends TestCase
 
     public function test_reseeding_changes_nothing(): void
     {
-        $counts = fn (): array => [ApprovalRequest::query()->count(), PurchaseOrder::query()->count(), ApprovalDelegation::query()->count(), \App\Modules\Approvals\Models\ApprovalPolicy::query()->count(), \App\Modules\Estimating\Models\MaterialVariancePolicy::query()->count()];
+        $counts = fn (): array => [ApprovalRequest::query()->count(), PurchaseOrder::query()->count(), ApprovalDelegation::query()->count(), ApprovalPolicy::query()->count(), MaterialVariancePolicy::query()->count()];
         $before = $counts();
 
         $this->artisan('demo:seed')->assertSuccessful();

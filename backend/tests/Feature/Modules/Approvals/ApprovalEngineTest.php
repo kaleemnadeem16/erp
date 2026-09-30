@@ -19,6 +19,7 @@ use App\Modules\Approvals\Support\ApprovalDecisionKind;
 use App\Modules\Approvals\Support\ApprovalMode;
 use App\Modules\Approvals\Support\ApprovalPolicyStatus;
 use App\Modules\Approvals\Support\ApprovalSubjectRegistry;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
@@ -363,7 +364,7 @@ class ApprovalEngineTest extends TestCase
         $request = $this->decide($this->submit(), $this->person(true));
         $decision = $request->decisions()->sole();
 
-        $this->expectException(\Illuminate\Database\QueryException::class);
+        $this->expectException(QueryException::class);
         DB::table('approval_decisions')->where('id', $decision->id)->update(['reason' => 'edited']);
     }
 }

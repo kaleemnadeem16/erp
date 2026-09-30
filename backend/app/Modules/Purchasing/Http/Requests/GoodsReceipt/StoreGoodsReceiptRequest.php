@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Purchasing\Http\Requests\GoodsReceipt;
 
-use App\Rules\Support\CompanyScoped;
 use App\Modules\Purchasing\Support\PurchasingCommercialAccess;
+use App\Rules\Support\CompanyScoped;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreGoodsReceiptRequest extends FormRequest

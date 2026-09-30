@@ -11,10 +11,13 @@ use App\Modules\Approvals\Support\ApprovalMode;
 use App\Modules\Approvals\Support\ApprovalPolicyStatus;
 use App\Modules\Estimating\Actions\CreateMaterialVariancePolicy;
 use App\Modules\Estimating\Actions\PreviewMaterialVariance;
+use App\Modules\Estimating\Models\MaterialVariancePolicy;
 use App\Modules\Inventory\Models\Category;
 use App\Modules\Inventory\Models\Item;
 use App\Support\UomDimension;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 /**
@@ -51,7 +54,7 @@ class MaterialVarianceApprovalTest extends TestCase
             'scope_type' => 'COMPANY', 'scope_id' => null, 'reason' => 'Test',
             'bands' => [['direction' => 'OVER', 'measure' => 'PERCENT', 'threshold' => '20', 'uom_id' => null, 'effect' => $effect]],
         ], $this->user->id);
-        \App\Modules\Estimating\Models\MaterialVariancePolicy::query()->update(['status' => 'ACTIVE', 'effective_from' => now()->subDay()->toDateString()]);
+        MaterialVariancePolicy::query()->update(['status' => 'ACTIVE', 'effective_from' => now()->subDay()->toDateString()]);
     }
 
     private function approvalPolicy(): void
@@ -80,7 +83,7 @@ class MaterialVarianceApprovalTest extends TestCase
 
         $this->mode(ApprovalMode::Policy);
         $this->companyPolicy('APPROVAL_REQUIRED');
-        $this->assertSame(1, \App\Modules\Estimating\Models\MaterialVariancePolicy::query()->count());
+        $this->assertSame(1, MaterialVariancePolicy::query()->count());
     }
 
     public function test_a_stored_approval_band_fails_closed_if_approvals_are_switched_off_later(): void
@@ -142,8 +145,8 @@ class MaterialVarianceApprovalTest extends TestCase
 
     public function test_the_screens_can_ask_whether_the_approval_effect_is_offered(): void
     {
-        app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId(1);
-        \Spatie\Permission\Models\Permission::findOrCreate('estimating.material_preview.run');
+        app(PermissionRegistrar::class)->setPermissionsTeamId(1);
+        Permission::findOrCreate('estimating.material_preview.run');
         $runner = User::factory()->create();
         $runner->givePermissionTo('estimating.material_preview.run');
 

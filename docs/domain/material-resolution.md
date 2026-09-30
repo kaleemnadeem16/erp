@@ -158,7 +158,7 @@ Resolution is item → nearest category ancestor → company; the strongest matc
 (`BLOCKED > APPROVAL_REQUIRED > REASON_REQUIRED > AUDIT_ONLY`). A quantity band names its own unit and
 applies to every item whose stock unit converts to it; for any other item it is skipped and the
 evaluation says so, so a category-wide "over 2 L" works for every liquid without being wrong for a
-kilogram item. `APPROVAL_REQUIRED` is in the vocabulary so the shared approval workflow (Q27) can enable
+kilogram item. `APPROVAL_REQUIRED` is in the stable API vocabulary so the shared approval workflow (Q27) can enable
 it without a schema change, but it is neither storable nor resolvable until then, and waste/residual is
 not a measure until package-level tracking exists — both tracked under
 [Phase 3 deferred work](../phases/phase-3-estimating-core.md#deferred-and-blocked-work).

@@ -28,7 +28,10 @@ export async function pickCombobox(
 /** Opens a Radix Select by its FormLabel text and picks an option whose text matches. */
 export async function pickSelect(page: Page, label: string, optionText: string | RegExp) {
   await page.getByLabel(label, { exact: true }).click();
-  await page.getByRole('option', { name: optionText }).first().click();
+  // Radix can place an option outside the viewport in its scrollable portal.
+  // Keyboard activation follows the same accessible selection path without
+  // Playwright retrying a pointer click on an off-screen option indefinitely.
+  await page.getByRole('option', { name: optionText }).first().press('Enter');
 }
 
 /** Escapes regex metacharacters so a literal string (e.g. an order number) can be matched exactly. */

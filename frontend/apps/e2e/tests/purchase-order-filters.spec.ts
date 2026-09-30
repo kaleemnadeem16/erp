@@ -54,24 +54,26 @@ test.describe('Purchase Orders list search and advanced filters', () => {
     await expect(page).toHaveURL(/total_min=500000/);
     // Closed orders with 1000 PKR must disappear
     await expect(page.getByRole('cell', { name: '0040' })).toHaveCount(0);
-    // Draft #77 with 650000 PKR should be visible
-    await expect(page.getByRole('cell', { name: 'Draft #77' })).toBeVisible();
+    // The demo draft worth 650000 PKR should be visible. Its document number
+    // depends on the other seeded purchase orders and can change.
+    const filteredDraft = page.getByRole('row').filter({ hasText: '650000.0000 PKR' });
+    await expect(filteredDraft).toBeVisible();
 
     // 9. Refresh preserves filter in URL, count, and results
     await page.reload();
     await expect(page).toHaveURL(/total_min=500000/);
     await expect(desktopToolbar.getByRole('button', { name: /Filters/ })).toContainText('1');
-    await expect(page.getByRole('cell', { name: 'Draft #77' })).toBeVisible();
+    await expect(filteredDraft).toBeVisible();
     await expect(page.getByRole('cell', { name: '0040' })).toHaveCount(0);
 
     // 10. Click row to navigate to detail page
-    await page.getByRole('cell', { name: 'Draft #77' }).click();
+    await filteredDraft.click();
     await expect(page).toHaveURL(/\/purchase-orders\/\d+/);
 
     // 11. Test browser back navigation restores list with filters preserved
     await page.goBack();
     await expect(page).toHaveURL(/total_min=500000/);
-    await expect(page.getByRole('cell', { name: 'Draft #77' })).toBeVisible();
+    await expect(filteredDraft).toBeVisible();
     await expect(page.getByRole('cell', { name: '0040' })).toHaveCount(0);
     await expect(desktopToolbar.getByRole('button', { name: /Filters/ })).toContainText('1');
 

@@ -8,6 +8,7 @@ use App\Modules\Approvals\Models\ApprovalRequest;
 use App\Modules\Approvals\Models\ApprovalSubjectSetting;
 use App\Modules\Approvals\Support\ApprovalMode;
 use App\Modules\Approvals\Support\ApprovalPolicyStatus;
+use App\Modules\Approvals\Support\ApprovalSubjectRegistry;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use Tests\Support\PurchasingActor;
 
@@ -152,7 +153,7 @@ class PurchaseOrderApprovalTest extends PurchaseOrderFoundationTest
         $this->assertEquals(['original_amount' => '1000.0000', 'currency_code' => 'USD', 'fx_rate' => '280.000000000', 'fx_rate_source' => 'central-bank', 'base_amount' => '280000.0000'],
             array_intersect_key($request->facts['evidence'], array_flip(['original_amount', 'currency_code', 'fx_rate', 'fx_rate_source', 'base_amount'])));
         // The frozen hash still describes the order as routed; a later rate change makes the order differ from it.
-        $registry = app(\App\Modules\Approvals\Support\ApprovalSubjectRegistry::class)->get('PURCHASE_ORDER');
+        $registry = app(ApprovalSubjectRegistry::class)->get('PURCHASE_ORDER');
         $this->assertSame($request->facts_hash, $registry->routing($order->id)->hash());
         $order->lines()->update(['base_line_amount' => '290000.0000']);
         $this->assertNotSame($request->facts_hash, $registry->routing($order->id)->hash());

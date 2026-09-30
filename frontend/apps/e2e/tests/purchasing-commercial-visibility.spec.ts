@@ -3,8 +3,8 @@ import { expect, test } from '@playwright/test';
 /**
  * ADR 0069: a Receiving Clerk works with quantities and identity and never sees supplier economics, while
  * the administrator sees the same documents priced. The clerk signs in through the real login form in a
- * fresh browser context (no shared admin session); their draft receipt was created without any price and
- * carries the cost the server derived from the issued purchase order.
+ * fresh browser context (no shared admin session); demo draft receipts carry the cost the
+ * server derived from their issued purchase orders.
  */
 const CLERK = 'demo-receiver@erp.x1techs.com';
 const PASSWORD = process.env.E2E_USER_PASSWORD ?? '!User@Erp@123';
@@ -30,7 +30,7 @@ test.describe('a Receiving Clerk', () => {
     await expect(page.getByRole('heading', { name: 'Goods Receipts' })).toBeVisible();
     await page.getByRole('row').filter({ hasText: /Draft|DRAFT/ }).first().click();
     await expect(page.getByRole('heading', { name: /demo-thinner/ })).toBeVisible();
-    await expect(page.getByText('40.0000 l').first()).toBeVisible();
+    await expect(page.getByText(/Received \d+\.0000 l/).first()).toBeVisible();
     await expect(page.getByText('Provisional cost')).toHaveCount(0);
     await expect(page.getByText('FX rate')).toHaveCount(0);
   });
