@@ -17,6 +17,7 @@ use App\Modules\Inventory\Actions\RequestInventoryCutoverNegativeOpening;
 use App\Modules\Inventory\Actions\ValidateInventoryCutover;
 use App\Modules\Inventory\Http\Requests\InventoryCutover\AttachInventoryCutoverBatchRequest;
 use App\Modules\Inventory\Http\Requests\InventoryCutover\IndexInventoryCutoverRequest;
+use App\Modules\Inventory\Http\Requests\InventoryCutover\PreviewInventoryCutoverRequest;
 use App\Modules\Inventory\Http\Requests\InventoryCutover\RequestInventoryCutoverNegativeOpeningRequest;
 use App\Modules\Inventory\Http\Requests\InventoryCutover\ShowInventoryCutoverRequest;
 use App\Modules\Inventory\Http\Requests\InventoryCutover\StoreInventoryCutoverRequest;
@@ -100,7 +101,7 @@ class InventoryCutoverController extends Controller
         return new InventoryCutoverResource($validate($inventoryCutover, $request->user()));
     }
 
-    public function preview(InventoryCutover $inventoryCutover, PreviewInventoryCutover $preview): JsonResponse
+    public function preview(PreviewInventoryCutoverRequest $request, InventoryCutover $inventoryCutover, PreviewInventoryCutover $preview): JsonResponse
     {
         return response()->json(['data' => $preview($inventoryCutover)]);
     }

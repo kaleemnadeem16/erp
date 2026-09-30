@@ -175,6 +175,11 @@ history and permission details live in
 
 ## Inventory cutover
 
+Inventory cutover list/show and preview expose source/control valuation and negative-opening
+evidence only to cutover workflow-duty holders or `inventory.valuation.view` readers (ADR 0075).
+The former need full economic evidence for reconciliation and approval; the latter can audit
+without lifecycle authority. Unrelated authenticated users cannot read the migration record.
+
 `CreateInventoryCutover`, `AttachInventoryCutoverBatch`, `ValidateInventoryCutover`,
 `ApproveInventoryCutover`, `CommitInventoryCutoverOpeningState` and `FinaliseInventoryCutover` own
 the orchestration states. Each step uses its own `inventory.cutover.*` permission; approval is

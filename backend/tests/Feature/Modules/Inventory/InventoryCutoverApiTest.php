@@ -53,6 +53,7 @@ class InventoryCutoverApiTest extends TestCase
             'inventory.cutover.create', 'inventory.cutover.stage', 'inventory.cutover.validate',
             'inventory.cutover.approve', 'inventory.cutover.commit', 'inventory.cutover.finalise',
             'inventory.cutover.negative_opening.request', 'inventory.cutover.negative_opening.approve',
+            'inventory.valuation.view',
         ] as $permission) {
             Permission::findOrCreate($permission);
         }
@@ -62,6 +63,32 @@ class InventoryCutoverApiTest extends TestCase
     public function test_it_requires_authentication(): void
     {
         $this->getJson('/api/v1/inventory-cutovers')->assertUnauthorized();
+    }
+
+    public function test_cutover_economic_reads_require_a_cutover_duty_or_valuation_visibility(): void
+    {
+        $creator = $this->permittedUser('inventory.cutover.create');
+        $cutoverId = $this->actingAs($creator)
+            ->postJson('/api/v1/inventory-cutovers', $this->cutoverInput())
+            ->assertCreated()->json('data.id');
+
+        $this->actingAs(User::factory()->create())
+            ->getJson('/api/v1/inventory-cutovers?include=batches,negativeOpenings')
+            ->assertForbidden();
+        $this->getJson("/api/v1/inventory-cutovers/{$cutoverId}?include=batches,negativeOpenings")
+            ->assertForbidden();
+        $this->getJson("/api/v1/inventory-cutovers/{$cutoverId}/preview")
+            ->assertForbidden();
+
+        foreach (['inventory.cutover.stage', 'inventory.cutover.validate', 'inventory.cutover.approve', 'inventory.cutover.commit', 'inventory.cutover.finalise', 'inventory.cutover.negative_opening.request', 'inventory.cutover.negative_opening.approve', 'inventory.valuation.view'] as $capability) {
+            $reader = $this->permittedUser($capability);
+            $this->actingAs($reader)->getJson('/api/v1/inventory-cutovers')
+                ->assertOk()->assertJsonPath('data.0.id', $cutoverId);
+            $this->getJson("/api/v1/inventory-cutovers/{$cutoverId}")
+                ->assertOk()->assertJsonPath('data.control_value', '50.0000');
+            $this->getJson("/api/v1/inventory-cutovers/{$cutoverId}/preview")
+                ->assertOk()->assertJsonPath('data.control_value', '50.0000');
+        }
     }
 
     public function test_full_workflow_create_attach_validate_preview_approve_commit_finalise(): void
@@ -196,7 +223,7 @@ class InventoryCutoverApiTest extends TestCase
             }
         });
 
-        $this->actingAs(User::factory()->create())->getJson("/api/v1/inventory-cutovers/{$cutoverId}")->assertNotFound();
+        $this->actingAs($this->permittedUser('inventory.cutover.create'))->getJson("/api/v1/inventory-cutovers/{$cutoverId}")->assertNotFound();
     }
 
     /** @param  array<int, array<string, mixed>>  $rows */

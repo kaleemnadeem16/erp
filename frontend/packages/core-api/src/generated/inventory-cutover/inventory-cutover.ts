@@ -23,6 +23,7 @@ import type {
 import type {
   AttachInventoryCutoverBatchRequest,
   AuthenticationExceptionResponse,
+  AuthorizationExceptionResponse,
   InventoryCutoverNegativeOpeningsApprove200,
   InventoryCutoversApprove200,
   InventoryCutoversBatchesStore201,
@@ -56,6 +57,11 @@ export type inventoryCutoversIndexResponse401 = {
   status: 401;
 };
 
+export type inventoryCutoversIndexResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type inventoryCutoversIndexResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -66,7 +72,9 @@ export type inventoryCutoversIndexResponseSuccess =
     headers: Headers;
   };
 export type inventoryCutoversIndexResponseError = (
-  inventoryCutoversIndexResponse401 | inventoryCutoversIndexResponse422
+  | inventoryCutoversIndexResponse401
+  | inventoryCutoversIndexResponse403
+  | inventoryCutoversIndexResponse422
 ) & {
   headers: Headers;
 };
@@ -113,7 +121,10 @@ export const getInventoryCutoversIndexQueryKey = (
 
 export const getInventoryCutoversIndexQueryOptions = <
   TData = Awaited<ReturnType<typeof inventoryCutoversIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: InventoryCutoversIndexParams,
   options?: {
@@ -147,11 +158,16 @@ export type InventoryCutoversIndexQueryResult = NonNullable<
   Awaited<ReturnType<typeof inventoryCutoversIndex>>
 >;
 export type InventoryCutoversIndexQueryError =
-  AuthenticationExceptionResponse | ValidationExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
 
 export function useInventoryCutoversIndex<
   TData = Awaited<ReturnType<typeof inventoryCutoversIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params: undefined | InventoryCutoversIndexParams,
   options: {
@@ -178,7 +194,10 @@ export function useInventoryCutoversIndex<
 };
 export function useInventoryCutoversIndex<
   TData = Awaited<ReturnType<typeof inventoryCutoversIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: InventoryCutoversIndexParams,
   options?: {
@@ -205,7 +224,10 @@ export function useInventoryCutoversIndex<
 };
 export function useInventoryCutoversIndex<
   TData = Awaited<ReturnType<typeof inventoryCutoversIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: InventoryCutoversIndexParams,
   options?: {
@@ -225,7 +247,10 @@ export function useInventoryCutoversIndex<
 
 export function useInventoryCutoversIndex<
   TData = Awaited<ReturnType<typeof inventoryCutoversIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: InventoryCutoversIndexParams,
   options?: {
@@ -380,6 +405,11 @@ export type inventoryCutoversShowResponse401 = {
   status: 401;
 };
 
+export type inventoryCutoversShowResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type inventoryCutoversShowResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -396,6 +426,7 @@ export type inventoryCutoversShowResponseSuccess =
   };
 export type inventoryCutoversShowResponseError = (
   | inventoryCutoversShowResponse401
+  | inventoryCutoversShowResponse403
   | inventoryCutoversShowResponse404
   | inventoryCutoversShowResponse422
 ) & {
@@ -452,6 +483,7 @@ export const getInventoryCutoversShowQueryOptions = <
   TData = Awaited<ReturnType<typeof inventoryCutoversShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -495,6 +527,7 @@ export type InventoryCutoversShowQueryResult = NonNullable<
 >;
 export type InventoryCutoversShowQueryError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
@@ -502,6 +535,7 @@ export function useInventoryCutoversShow<
   TData = Awaited<ReturnType<typeof inventoryCutoversShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -533,6 +567,7 @@ export function useInventoryCutoversShow<
   TData = Awaited<ReturnType<typeof inventoryCutoversShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -564,6 +599,7 @@ export function useInventoryCutoversShow<
   TData = Awaited<ReturnType<typeof inventoryCutoversShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -588,6 +624,7 @@ export function useInventoryCutoversShow<
   TData = Awaited<ReturnType<typeof inventoryCutoversShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -889,6 +926,11 @@ export type inventoryCutoversPreviewResponse401 = {
   status: 401;
 };
 
+export type inventoryCutoversPreviewResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type inventoryCutoversPreviewResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -899,7 +941,9 @@ export type inventoryCutoversPreviewResponseSuccess =
     headers: Headers;
   };
 export type inventoryCutoversPreviewResponseError = (
-  inventoryCutoversPreviewResponse401 | inventoryCutoversPreviewResponse404
+  | inventoryCutoversPreviewResponse401
+  | inventoryCutoversPreviewResponse403
+  | inventoryCutoversPreviewResponse404
 ) & {
   headers: Headers;
 };
@@ -933,7 +977,10 @@ export const getInventoryCutoversPreviewQueryKey = (
 
 export const getInventoryCutoversPreviewQueryOptions = <
   TData = Awaited<ReturnType<typeof inventoryCutoversPreview>>,
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse,
 >(
   inventoryCutover: number,
   options?: {
@@ -973,11 +1020,16 @@ export type InventoryCutoversPreviewQueryResult = NonNullable<
   Awaited<ReturnType<typeof inventoryCutoversPreview>>
 >;
 export type InventoryCutoversPreviewQueryError =
-  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ModelNotFoundExceptionResponse;
 
 export function useInventoryCutoversPreview<
   TData = Awaited<ReturnType<typeof inventoryCutoversPreview>>,
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse,
 >(
   inventoryCutover: number,
   options: {
@@ -1004,7 +1056,10 @@ export function useInventoryCutoversPreview<
 };
 export function useInventoryCutoversPreview<
   TData = Awaited<ReturnType<typeof inventoryCutoversPreview>>,
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse,
 >(
   inventoryCutover: number,
   options?: {
@@ -1031,7 +1086,10 @@ export function useInventoryCutoversPreview<
 };
 export function useInventoryCutoversPreview<
   TData = Awaited<ReturnType<typeof inventoryCutoversPreview>>,
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse,
 >(
   inventoryCutover: number,
   options?: {
@@ -1051,7 +1109,10 @@ export function useInventoryCutoversPreview<
 
 export function useInventoryCutoversPreview<
   TData = Awaited<ReturnType<typeof inventoryCutoversPreview>>,
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse,
 >(
   inventoryCutover: number,
   options?: {

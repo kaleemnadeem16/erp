@@ -34,6 +34,7 @@ const physicalCount = [
   "inventory.physical_count.post",
 ] as const;
 const cutover = [
+  "inventory.valuation.view",
   "inventory.cutover.create",
   "inventory.cutover.stage",
   "inventory.cutover.validate",
@@ -169,6 +170,9 @@ export function canAccessScreen(
   }
   if (pathname === "/recalculation-requests/new") {
     return permissions.has("inventory.recalculation.request");
+  }
+  if (pathname === "/inventory-cutovers/new") {
+    return permissions.has("inventory.cutover.create");
   }
   if (
     pathname === "/item-suppliers/new" ||

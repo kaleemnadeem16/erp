@@ -87,8 +87,9 @@ in the same commit.
 | [0072](0072-hand-built-stock-mix-in-base-quantity.md) | Let a person build the stock draw by hand, in base quantity, validated and priced by the server | accepted | 2026-10-01 |
 | [0073](0073-separate-inventory-valuation-visibility-from-stock-operations.md) | Separate Inventory valuation visibility from stock operations | accepted | 2026-09-30 |
 | [0074](0074-authorise-recalculation-economic-record-reads-by-workflow-duty.md) | Authorise recalculation economic-record reads by workflow duty | accepted | 2026-09-30 |
+| [0075](0075-authorise-inventory-cutover-economic-record-reads.md) | Authorise Inventory cutover economic-record reads | accepted | 2026-09-30 |
 
-**Next number: 0075**
+**Next number: 0076**
 
 ## By theme
 

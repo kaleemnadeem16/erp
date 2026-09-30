@@ -154,8 +154,7 @@ issue.
       valuation entries), stock layers, AVCO pools and inventory-overview rows/summary; the
       quantity view remains available. Ledger/overview screens and print views follow the API
       projection → [ADR 0073](../decisions/0073-separate-inventory-valuation-visibility-from-stock-operations.md).
-- [ ] Inventory valuation visibility, remaining workflow/export audit — review cutover
-      source facts/negative openings/previews, physical
+- [ ] Inventory valuation visibility, remaining workflow/export audit — review physical
       counts and found costs, negative-stock/settlement responses, policy settings/history,
       and any CSV/print/export path. Decide per workflow which monetary inputs authorised
       operators must supply and which can be server-derived; do not blanket-hide required
@@ -165,6 +164,11 @@ issue.
       economic evidence their decisions require, while valuation-only readers cannot act.
       The SPA hides unauthorised create/decision/execute/resume controls and gates bookmarked
       New → [ADR 0074](../decisions/0074-authorise-recalculation-economic-record-reads-by-workflow-duty.md).
+- [x] Inventory cutover economic-record read boundary (2026-09-30) — list/show/preview now
+      require a cutover duty or `inventory.valuation.view`; cutover actors retain complete
+      source/control value evidence, while valuation-only readers cannot act. The SPA gates
+      New, attachment, lifecycle and negative-opening controls by specific capability →
+      [ADR 0075](../decisions/0075-authorise-inventory-cutover-economic-record-reads.md).
 - [x] Confirm the missing `QualityDisposition` list screen stays an intentional non-gap
 - [x] Assignment/backfill pass, then enforce `purchasing.item-supplier.manage`
 - [x] Assignment/backfill pass, then enforce goods-receipt create/post/reverse

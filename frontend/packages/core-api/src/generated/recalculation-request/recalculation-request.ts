@@ -22,6 +22,7 @@ import type {
 
 import type {
   AuthenticationExceptionResponse,
+  AuthorizationExceptionResponse,
   DecideRecalculationRequestRequest,
   ModelNotFoundExceptionResponse,
   RecalculationImpactVersionsDecide200,
@@ -51,6 +52,11 @@ export type recalculationRequestsIndexResponse401 = {
   status: 401;
 };
 
+export type recalculationRequestsIndexResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type recalculationRequestsIndexResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -61,7 +67,9 @@ export type recalculationRequestsIndexResponseSuccess =
     headers: Headers;
   };
 export type recalculationRequestsIndexResponseError = (
-  recalculationRequestsIndexResponse401 | recalculationRequestsIndexResponse422
+  | recalculationRequestsIndexResponse401
+  | recalculationRequestsIndexResponse403
+  | recalculationRequestsIndexResponse422
 ) & {
   headers: Headers;
 };
@@ -109,7 +117,10 @@ export const getRecalculationRequestsIndexQueryKey = (
 
 export const getRecalculationRequestsIndexQueryOptions = <
   TData = Awaited<ReturnType<typeof recalculationRequestsIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: RecalculationRequestsIndexParams,
   options?: {
@@ -143,11 +154,16 @@ export type RecalculationRequestsIndexQueryResult = NonNullable<
   Awaited<ReturnType<typeof recalculationRequestsIndex>>
 >;
 export type RecalculationRequestsIndexQueryError =
-  AuthenticationExceptionResponse | ValidationExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
 
 export function useRecalculationRequestsIndex<
   TData = Awaited<ReturnType<typeof recalculationRequestsIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params: undefined | RecalculationRequestsIndexParams,
   options: {
@@ -174,7 +190,10 @@ export function useRecalculationRequestsIndex<
 };
 export function useRecalculationRequestsIndex<
   TData = Awaited<ReturnType<typeof recalculationRequestsIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: RecalculationRequestsIndexParams,
   options?: {
@@ -201,7 +220,10 @@ export function useRecalculationRequestsIndex<
 };
 export function useRecalculationRequestsIndex<
   TData = Awaited<ReturnType<typeof recalculationRequestsIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: RecalculationRequestsIndexParams,
   options?: {
@@ -221,7 +243,10 @@ export function useRecalculationRequestsIndex<
 
 export function useRecalculationRequestsIndex<
   TData = Awaited<ReturnType<typeof recalculationRequestsIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: RecalculationRequestsIndexParams,
   options?: {
@@ -381,6 +406,11 @@ export type recalculationRequestsShowResponse401 = {
   status: 401;
 };
 
+export type recalculationRequestsShowResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type recalculationRequestsShowResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -397,6 +427,7 @@ export type recalculationRequestsShowResponseSuccess =
   };
 export type recalculationRequestsShowResponseError = (
   | recalculationRequestsShowResponse401
+  | recalculationRequestsShowResponse403
   | recalculationRequestsShowResponse404
   | recalculationRequestsShowResponse422
 ) & {
@@ -454,6 +485,7 @@ export const getRecalculationRequestsShowQueryOptions = <
   TData = Awaited<ReturnType<typeof recalculationRequestsShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -498,6 +530,7 @@ export type RecalculationRequestsShowQueryResult = NonNullable<
 >;
 export type RecalculationRequestsShowQueryError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
@@ -505,6 +538,7 @@ export function useRecalculationRequestsShow<
   TData = Awaited<ReturnType<typeof recalculationRequestsShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -536,6 +570,7 @@ export function useRecalculationRequestsShow<
   TData = Awaited<ReturnType<typeof recalculationRequestsShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -567,6 +602,7 @@ export function useRecalculationRequestsShow<
   TData = Awaited<ReturnType<typeof recalculationRequestsShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -591,6 +627,7 @@ export function useRecalculationRequestsShow<
   TData = Awaited<ReturnType<typeof recalculationRequestsShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
