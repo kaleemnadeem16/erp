@@ -198,8 +198,8 @@ independently of this backlog's sequencing whenever wanted.
       (`assembly_group_id,search,status`), Rate Dimensions/Assembly Groups (`search`), Application
       Rates (`is_default,work_uom_id`) — no permission dependency, can land anytime
 - [x] Register all six capabilities above (2026-09-30). Registration alone grants no
-      operational user access and must not be mistaken for a protected endpoint. Three remain
-      reserved after the rate-dimension, application-rate and formulation slices below.
+      operational user access and must not be mistaken for a protected endpoint. Two remain
+      reserved after the rate-dimension, application-rate, formulation and assembly-group slices below.
 - [x] Rate Dimensions and Values (2026-09-30): `estimating.rate-dimension.manage` gates create,
       update and delete at HTTP and non-HTTP Action boundaries. Index/show/value reads remain
       authenticated-only shared lookups. The SPA setup route and New action require the same
@@ -222,6 +222,12 @@ independently of this backlog's sequencing whenever wanted.
       boundary and cost projection. The demo seeder supplies its permission-synchronised actor
       to activation. Grant existing formulation maintainers before deployment; company role and
       direct assignments remain dynamic.
+- [x] Assembly Groups (2026-09-30): `estimating.assembly-group.manage` gates create, update
+      and delete at HTTP and non-HTTP Action boundaries. Index/show remain authenticated shared
+      lookups for assembly and overhead forms. The SPA setup route follows the capability, and
+      allowed/denied API and Action tests cover the boundary. Grant existing group maintainers
+      before deployment through company roles or direct assignments; the configured administrator
+      receives it through normal sync.
 - [ ] Assignment/backfill pass, then enforce (lower daily-write volume than Purchasing, so this can
       land before section B's enforcement steps)
 - [ ] Frontend action gating once `/api/v1/user` effective permissions ship

@@ -25,6 +25,15 @@ ASSEMBLY ← you are here
 
 Built in [Phase 3](../phases/README.md); consumed by [sales-pipeline.md](sales-pipeline.md).
 
+## Assembly-group access
+
+Assembly groups are shared classification lookups for assembly and overhead-policy forms, so
+authenticated company members may list and inspect them. Creating, changing or deleting a group
+requires `estimating.assembly-group.manage` at both the API and Action boundary. The setup screen
+uses the same effective capability, assigned dynamically through company roles or direct grants.
+Deletion remains blocked while an assembly refers to the group. Before deployment, existing
+maintainers need an explicit grant; registration alone does not grant operational users access.
+
 ## Schema
 
 ```

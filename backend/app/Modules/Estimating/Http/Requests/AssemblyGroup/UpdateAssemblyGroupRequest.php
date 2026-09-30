@@ -12,7 +12,7 @@ class UpdateAssemblyGroupRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('estimating.assembly-group.manage') === true;
     }
 
     /** @return array<string, mixed> */

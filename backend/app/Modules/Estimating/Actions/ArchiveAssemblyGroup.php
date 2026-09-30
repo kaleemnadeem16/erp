@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Estimating\Actions;
 
+use App\Exceptions\DomainInvariantException;
+use App\Models\User;
 use App\Modules\Estimating\Models\AssemblyGroup;
 use Illuminate\Support\Facades\DB;
 
@@ -15,8 +17,12 @@ use Illuminate\Support\Facades\DB;
  */
 final class ArchiveAssemblyGroup
 {
-    public function __invoke(AssemblyGroup $assemblyGroup): void
+    public function __invoke(AssemblyGroup $assemblyGroup, User $actor): void
     {
+        if (! $actor->can('estimating.assembly-group.manage')) {
+            throw new DomainInvariantException('The actor is not permitted to manage assembly groups.');
+        }
+
         DB::transaction(fn () => $assemblyGroup->delete());
     }
 }

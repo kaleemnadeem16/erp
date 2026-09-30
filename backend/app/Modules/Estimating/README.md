@@ -130,6 +130,11 @@ dimension actions. `assembly_group_id` is deliberately mutable — no repoint gu
 `RateDimension`); `ArchiveAssembly` sets `status = ARCHIVED` (same as `ArchiveFormulation`) since
 Assembly already carries a status column ahead of Step 3's activation mechanism needing it.
 
+Assembly-group create/update/delete require `estimating.assembly-group.manage` at HTTP and
+Action boundaries. Index/show remain authenticated shared lookups for assembly and overhead
+forms. The SPA exposes its setup screen to managers only; grants are company-role or direct-user
+assignments, not hardcoded to an administrator or starter role.
+
 `CreateOverheadPolicy` always creates a DRAFT — every row is a governed change (mandatory
 `reason` + `changed_by`), there is no "current settings" row this is a delta from, unlike
 `InventoryPolicyChange`/`PurchasingPolicyChange`'s singleton-plus-log shape. `UpdateOverheadPolicy`
@@ -175,9 +180,10 @@ The existing Estimating CRUD retrofit also reserves six write capabilities:
 `estimating.rate-dimension.manage` (including values), `estimating.application-rate.manage`,
 `estimating.formulation.manage` (including versions), `estimating.assembly-group.manage`,
 `estimating.assembly.manage` (including versions), and `estimating.resource-rate.manage`.
-`estimating.rate-dimension.manage`, `estimating.application-rate.manage`, and
-`estimating.formulation.manage` are now enforced for their writes, with matching screen access
-and denied-path tests. The other three remain registration-only; their assignment/backfill,
+`estimating.rate-dimension.manage`, `estimating.application-rate.manage`,
+`estimating.formulation.manage`, and `estimating.assembly-group.manage` are now enforced for
+their writes, with matching screen access and denied-path tests. The other two remain
+registration-only; their assignment/backfill,
 backend enforcement, UI gating and denied-path tests are tracked in the
 [authorisation retrofit](../../../../docs/architecture/authorization-retrofit.md#c-existing-estimating-crud).
 

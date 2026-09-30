@@ -17,6 +17,7 @@ use App\Modules\Estimating\Models\AssemblyGroup;
 use App\Support\Concerns\AppliesApiQuery;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -43,7 +44,7 @@ class AssemblyGroupController extends Controller
 
     public function store(StoreAssemblyGroupRequest $request, CreateAssemblyGroup $create): JsonResponse
     {
-        return (new AssemblyGroupResource($create($request->validated())))->response()->setStatusCode(201);
+        return (new AssemblyGroupResource($create($request->validated(), $request->user())))->response()->setStatusCode(201);
     }
 
     public function show(ShowAssemblyGroupRequest $request, AssemblyGroup $assembly_group): AssemblyGroupResource
@@ -53,12 +54,13 @@ class AssemblyGroupController extends Controller
 
     public function update(UpdateAssemblyGroupRequest $request, AssemblyGroup $assembly_group, UpdateAssemblyGroup $update): AssemblyGroupResource
     {
-        return new AssemblyGroupResource($update($assembly_group, $request->validated()));
+        return new AssemblyGroupResource($update($assembly_group, $request->validated(), $request->user()));
     }
 
-    public function destroy(AssemblyGroup $assembly_group, ArchiveAssemblyGroup $archive): Response
+    public function destroy(Request $request, AssemblyGroup $assembly_group, ArchiveAssemblyGroup $archive): Response
     {
-        $archive($assembly_group);
+        abort_unless($request->user()?->can('estimating.assembly-group.manage'), 403);
+        $archive($assembly_group, $request->user());
 
         return response()->noContent();
     }
