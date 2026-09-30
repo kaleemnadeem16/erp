@@ -1,14 +1,14 @@
 import { useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useUomsIndex } from '@erp/core-api';
+import { useUomsIndex, useMaterialVarianceCapabilities } from '@erp/core-api';
 import { Plus, Trash2 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Combobox } from '../../components/ui/combobox';
 import { Input } from '../../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../components/ui/form';
-import { DIRECTION_LABELS, EFFECT_OPTIONS, MEASURE_LABELS } from './variance-labels';
+import { APPROVAL_OPTION, DIRECTION_LABELS, EFFECT_OPTIONS, MEASURE_LABELS } from './variance-labels';
 import { lookupState } from '../../lib/api-errors';
 
 const NO_FLOOR = 'NONE';
@@ -55,12 +55,16 @@ interface EditorProps {
 
 /**
  * One draft rule set: why this version exists, an optional floor ("at least this much control for anything
- * that changes"), and the bands. Approval-required and waste bands are not offered: they need the shared
- * approval workflow and package-level stock tracking, neither of which exists yet (ADR 0054).
+ * that changes"), and the bands. Approval-required is offered once the company switches approvals on for material
+ * variance (ADR 0070); waste bands are not offered: they need package-level stock tracking, which does not exist yet.
  */
 export function VariancePolicyEditor({ initial, submitLabel, isSubmitting, formError, onSubmit, onCancel }: EditorProps) {
   const form = useForm<VariancePolicyFormValues>({ resolver: zodResolver(schema), defaultValues: initial });
   const bands = useFieldArray({ control: form.control, name: 'bands' });
+  // Approval-required is only offered while approvals are switched on for material variance; the server enforces the same rule.
+  const capabilities = useMaterialVarianceCapabilities();
+  const approvalOffered = capabilities.data?.status === 200 && capabilities.data.data.data.approval_required_available;
+  const effectOptions = approvalOffered ? [...EFFECT_OPTIONS, APPROVAL_OPTION] : EFFECT_OPTIONS;
   const uomsQuery = useUomsIndex({ per_page: 100, sort: 'name' });
   const uoms = uomsQuery.data?.status === 200 ? uomsQuery.data.data.data : [];
   const uomOptions = uoms.map((uom) => ({ value: String(uom.id), label: `${uom.name} (${uom.code})` }));
@@ -81,7 +85,7 @@ export function VariancePolicyEditor({ initial, submitLabel, isSubmitting, formE
               <FormControl><SelectTrigger aria-label="Minimum control for any change"><SelectValue /></SelectTrigger></FormControl>
               <SelectContent>
                 <SelectItem value={NO_FLOOR}>None — only the bands below decide</SelectItem>
-                {EFFECT_OPTIONS.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
+                {effectOptions.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
               </SelectContent>
             </Select>
             <FormMessage />
@@ -139,7 +143,7 @@ export function VariancePolicyEditor({ initial, submitLabel, isSubmitting, formE
                   <FormItem>
                     <Select value={field.value} onValueChange={field.onChange}>
                       <FormControl><SelectTrigger aria-label={`Band ${index + 1} effect`}><SelectValue /></SelectTrigger></FormControl>
-                      <SelectContent>{EFFECT_OPTIONS.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent>
+                      <SelectContent>{effectOptions.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent>
                     </Select>
                   </FormItem>
                 )} />
@@ -150,7 +154,7 @@ export function VariancePolicyEditor({ initial, submitLabel, isSubmitting, formE
             );
           })}
           <p className="text-xs text-muted-foreground">
-            “Approval required” and waste bands will appear here once the approval workflow and package-level stock tracking exist.
+            {approvalOffered ? 'Waste bands will appear here once package-level stock tracking exists.' : '“Approval required” appears here once approvals are switched on for material variance (Settings → Approvals); waste bands need package-level stock tracking.'}
           </p>
         </div>
 

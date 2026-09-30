@@ -110,6 +110,9 @@ export function VarianceSummary({ variance }: { variance: AssembliesMaterialPrev
       {summary.blocked_count > 0 && (
         <p>{summary.blocked_count} {summary.blocked_count === 1 ? 'material is' : 'materials are'} blocked by policy.</p>
       )}
+      {summary.needs_approval_count > 0 && (
+        <p>{summary.needs_approval_count} {summary.needs_approval_count === 1 ? 'material needs' : 'materials need'} approval before the plan can be adopted.</p>
+      )}
       {summary.cost_impact !== null && (
         <p>
           Estimated internal-cost effect of this plan:{' '}
@@ -164,6 +167,22 @@ export function VarianceVerdict({ item, mayViewCost }: { item: AssembliesMateria
         <p className="text-muted-foreground">Internal cost is unavailable for this material: there is no defensible cost evidence for it.</p>
       )}
 
+      {item.approval && (
+        <div className="space-y-1">
+          <p className="font-medium">
+            {item.approval.policy ? `Needs approval — ${item.approval.policy.name} (v${item.approval.policy.version_no})` : 'Needs approval'}
+          </p>
+          {(item.approval.steps as Array<{ name: string; stage: number; required_approvals: number; uses_authority_limit: boolean }>).length > 0 && (
+            <ol className="list-decimal pl-5 text-muted-foreground">
+              {(item.approval.steps as Array<{ name: string; stage: number; required_approvals: number; uses_authority_limit: boolean }>).map((step) => (
+                <li key={`${step.stage}-${step.name}`}>{step.name} — {step.required_approvals} {step.required_approvals === 1 ? 'approval' : 'approvals'}{step.uses_authority_limit ? ', within each approver’s limit' : ''}</li>
+              ))}
+            </ol>
+          )}
+          {item.approval.note && <p className="text-muted-foreground">{item.approval.note}</p>}
+          <p className="text-muted-foreground">A plan is only hypothetical here; it is submitted for this approval when it is adopted on a quotation.</p>
+        </div>
+      )}
       {item.reason && <p>Reason: <span className="font-medium">{item.reason.name}</span>{item.note ? ` — ${item.note}` : ''}</p>}
       {!item.reason && item.note && <p>Note: {item.note}</p>}
 

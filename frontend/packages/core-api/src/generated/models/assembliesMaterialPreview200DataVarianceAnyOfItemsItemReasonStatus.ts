@@ -14,5 +14,6 @@ export const AssembliesMaterialPreview200DataVarianceAnyOfItemsItemReasonStatus 
     NOT_NEEDED: "NOT_NEEDED",
     PROVIDED: "PROVIDED",
     MISSING: "MISSING",
+    APPROVAL_NEEDED: "APPROVAL_NEEDED",
     NOT_ACCEPTED: "NOT_ACCEPTED",
   } as const;

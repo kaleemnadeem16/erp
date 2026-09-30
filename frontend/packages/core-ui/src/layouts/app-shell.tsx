@@ -23,6 +23,8 @@ import {
   Printer,
   Ruler,
   Scale,
+  ClipboardCheck,
+  ShieldCheck,
   ScrollText,
   Settings,
   ShieldAlert,
@@ -93,7 +95,10 @@ interface NavGroup {
 const navGroups: NavGroup[] = [
   {
     label: null,
-    items: [{ to: "/", label: "Dashboard", icon: LayoutDashboard }],
+    items: [
+      { to: "/", label: "Dashboard", icon: LayoutDashboard },
+      { to: "/approvals", label: "Approvals", icon: ClipboardCheck },
+    ],
   },
   {
     label: "Purchasing",
@@ -178,6 +183,12 @@ const settingsNavGroup: NavGroup = {
       permission: "estimating.material_variance_policy.manage",
     },
     {
+      to: "/settings/approvals",
+      label: "Approvals",
+      icon: ShieldCheck,
+      permission: "approvals.policy.manage",
+    },
+    {
       to: "/settings/members",
       label: "Members",
       icon: Users,
@@ -217,6 +228,12 @@ const SETTINGS_MENU: { label: string; items: NavItem[] }[] = [
         label: "Material Variance",
         icon: Scale,
         permission: "estimating.material_variance_policy.manage",
+      },
+      {
+        to: "/settings/approvals",
+        label: "Approvals",
+        icon: ShieldCheck,
+        permission: "approvals.policy.manage",
       },
       {
         to: "/settings/members",

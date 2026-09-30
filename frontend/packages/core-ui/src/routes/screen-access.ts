@@ -125,6 +125,18 @@ const rules: readonly Rule[] = [
     path: "/settings/material-variance",
     anyOf: ["estimating.material_variance_policy.manage"],
   },
+  // Anyone signed in: an empty approvals inbox is the honest answer, and delegation is open to all.
+  { path: "/approvals" },
+  {
+    path: "/settings/approvals",
+    anyOf: [
+      "approvals.policy.manage",
+      "approvals.settings.manage",
+      "approvals.authority.manage",
+      "approvals.delegation.manage",
+      "approvals.history.view",
+    ],
+  },
   { path: "/settings/members", anyOf: ["administration.member.view"] },
   { path: "/settings/roles", anyOf: ["administration.role.view"] },
   { path: "/settings/account" },

@@ -36,6 +36,8 @@ import type {
   PurchaseOrdersShow200,
   PurchaseOrdersShowParams,
   PurchaseOrdersStore201,
+  PurchaseOrdersSubmit200,
+  PurchaseOrdersSubmit403,
   PurchaseOrdersUpdate200,
   StorePurchaseOrderRequest,
   UpdatePurchaseOrderRequest,
@@ -809,6 +811,141 @@ export const usePurchaseOrdersUpdate = <
   TContext
 > => {
   const mutationOptions = getPurchaseOrdersUpdateMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary Sends a draft for approval. When the company's approval mode says none is needed the order is returned unchanged
+ */
+export type purchaseOrdersSubmitResponse200 = {
+  data: PurchaseOrdersSubmit200;
+  status: 200;
+};
+
+export type purchaseOrdersSubmitResponse401 = {
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
+
+export type purchaseOrdersSubmitResponse403 = {
+  data: PurchaseOrdersSubmit403;
+  status: 403;
+};
+
+export type purchaseOrdersSubmitResponse404 = {
+  data: ModelNotFoundExceptionResponse;
+  status: 404;
+};
+
+export type purchaseOrdersSubmitResponseSuccess =
+  purchaseOrdersSubmitResponse200 & {
+    headers: Headers;
+  };
+export type purchaseOrdersSubmitResponseError = (
+  | purchaseOrdersSubmitResponse401
+  | purchaseOrdersSubmitResponse403
+  | purchaseOrdersSubmitResponse404
+) & {
+  headers: Headers;
+};
+
+export type purchaseOrdersSubmitResponse =
+  purchaseOrdersSubmitResponseSuccess | purchaseOrdersSubmitResponseError;
+
+export const getPurchaseOrdersSubmitUrl = (purchaseOrder: number) => {
+  return `/v1/purchase-orders/${purchaseOrder}/submit`;
+};
+
+export const purchaseOrdersSubmit = async (
+  purchaseOrder: number,
+  options?: RequestInit,
+): Promise<purchaseOrdersSubmitResponse> => {
+  return fetchClient<purchaseOrdersSubmitResponse>(
+    getPurchaseOrdersSubmitUrl(purchaseOrder),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
+
+export const getPurchaseOrdersSubmitMutationOptions = <
+  TError =
+    | AuthenticationExceptionResponse
+    | PurchaseOrdersSubmit403
+    | ModelNotFoundExceptionResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof purchaseOrdersSubmit>>,
+    TError,
+    { purchaseOrder: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof fetchClient>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof purchaseOrdersSubmit>>,
+  TError,
+  { purchaseOrder: number },
+  TContext
+> => {
+  const mutationKey = ["purchaseOrdersSubmit"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof purchaseOrdersSubmit>>,
+    { purchaseOrder: number }
+  > = (props) => {
+    const { purchaseOrder } = props ?? {};
+
+    return purchaseOrdersSubmit(purchaseOrder, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PurchaseOrdersSubmitMutationResult = NonNullable<
+  Awaited<ReturnType<typeof purchaseOrdersSubmit>>
+>;
+
+export type PurchaseOrdersSubmitMutationError =
+  | AuthenticationExceptionResponse
+  | PurchaseOrdersSubmit403
+  | ModelNotFoundExceptionResponse;
+
+/**
+ * @summary Sends a draft for approval. When the company's approval mode says none is needed the order is returned unchanged
+ */
+export const usePurchaseOrdersSubmit = <
+  TError =
+    | AuthenticationExceptionResponse
+    | PurchaseOrdersSubmit403
+    | ModelNotFoundExceptionResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof purchaseOrdersSubmit>>,
+      TError,
+      { purchaseOrder: number },
+      TContext
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof purchaseOrdersSubmit>>,
+  TError,
+  { purchaseOrder: number },
+  TContext
+> => {
+  const mutationOptions = getPurchaseOrdersSubmitMutationOptions(options);
 
   return useMutation(mutationOptions, queryClient);
 };

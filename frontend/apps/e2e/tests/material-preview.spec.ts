@@ -108,6 +108,11 @@ test.describe('material preview what-if plan', () => {
     await expect(verdict).toBeVisible();
     await expect(verdict.getByText(/Standard .* · Planned 999/)).toBeVisible();
     await expect(verdict.getByText('Over plan by', { exact: false })).toBeVisible();
+    // Planning far more than double the standard falls in the pigment's approval-required band (ADR 0070): the verdict names the
+    // approval it would need and says the plan cannot be adopted yet.
+    await expect(verdict.getByText(/Needs approval — Variance sign-off/)).toBeVisible();
+    await expect(verdict.getByText(/Estimating lead — 1 approval/)).toBeVisible();
+    await expect(page.getByText('This plan cannot be adopted yet.')).toBeVisible();
     // Whoever may see internal cost sees what the plan would cost against the standard, signed.
     await expect(verdict.getByText(/Internal cost: standard/)).toBeVisible();
     await expect(verdict.getByText(/difference \+/)).toBeVisible();

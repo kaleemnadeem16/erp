@@ -17,6 +17,8 @@ import {
   CategoryEditScreen,
   DashboardScreen,
   EstimatingSettingsScreen,
+  ApprovalsInboxScreen,
+  ApprovalsSettingsScreen,
   MaterialVarianceSettingsScreen,
   FormulationCreateScreen,
   FormulationEditScreen,
@@ -763,6 +765,26 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <MaterialVarianceSettingsScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings/approvals"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <ApprovalsSettingsScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/approvals"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <ApprovalsInboxScreen />
               </AppShell>
             </ProtectedRoute>
           }

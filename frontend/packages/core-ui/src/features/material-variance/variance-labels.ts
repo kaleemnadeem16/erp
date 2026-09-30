@@ -13,12 +13,14 @@ export const MEASURE_LABELS: Record<string, string> = {
   COST_PERCENT: '% of the standard cost',
 };
 
-/** The effects a company may choose today. "Approval required" is not offered until the shared approval workflow exists. */
+/** The effects always on offer. "Approval required" joins them only while the company has approvals switched on for material variance (ADR 0070). */
 export const EFFECT_OPTIONS = [
   { value: 'AUDIT_ONLY', label: 'Record only' },
   { value: 'REASON_REQUIRED', label: 'Reason required' },
   { value: 'BLOCKED', label: 'Blocked' },
 ] as const;
+
+export const APPROVAL_OPTION = { value: 'APPROVAL_REQUIRED', label: 'Approval required' } as const;
 
 export const EFFECT_LABELS: Record<string, string> = {
   AUDIT_ONLY: 'Record only',
@@ -32,6 +34,7 @@ export const REASON_STATUS_LABELS: Record<string, string> = {
   PROVIDED: 'Reason given',
   MISSING: 'Reason missing',
   NOT_ACCEPTED: 'Not accepted',
+  APPROVAL_NEEDED: 'Needs approval',
 };
 
 /** "Over plan by 2 L or more → Reason required" — one band, in a sentence. */

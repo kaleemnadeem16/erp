@@ -40,6 +40,8 @@ export interface PurchaseOrderResource {
   total_amount?: string;
   base_total_amount?: string;
   lines?: PurchaseOrderLineResource[];
+  /** Where the order stands with the approval engine; only on the screens that act on one order. */
+  approval?: string;
   issued_at: PurchaseOrderResourceIssuedAt;
   closed_at: PurchaseOrderResourceClosedAt;
   cancelled_at: PurchaseOrderResourceCancelledAt;

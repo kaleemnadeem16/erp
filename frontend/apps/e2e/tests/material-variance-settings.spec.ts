@@ -48,7 +48,7 @@ test('a reason can be added, retired and reinstated, never deleted', async ({ pa
   await expect(row.getByText('Retired')).toHaveCount(0);
 });
 
-test('the band editor refuses what the rules forbid and offers no approval or waste option', async ({ page }) => {
+test('the band editor refuses what the rules forbid, offers approval only because approvals are on, and never offers a waste option', async ({ page }) => {
   await open(page);
   await chooseItemScope(page);
   await page.getByRole('button', { name: /Set up rules|Start a new version/ }).click();
@@ -69,7 +69,8 @@ test('the band editor refuses what the rules forbid and offers no approval or wa
 
   // Only what a company may choose today is offered.
   await page.getByLabel('Band 1 effect').click();
-  await expect(page.getByRole('option')).toHaveText(['Record only', 'Reason required', 'Blocked']);
+  // The demo company has approvals switched on for material variance (ADR 0070), so that effect is on offer; it is not otherwise.
+  await expect(page.getByRole('option')).toHaveText(['Record only', 'Reason required', 'Blocked', 'Approval required']);
   await page.keyboard.press('Escape');
   await page.getByLabel('Band 1 measure').click();
   await expect(page.getByRole('option')).toHaveCount(4);

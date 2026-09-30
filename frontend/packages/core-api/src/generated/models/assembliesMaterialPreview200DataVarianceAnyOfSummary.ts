@@ -11,6 +11,7 @@ export type AssembliesMaterialPreview200DataVarianceAnyOfSummary = {
   adjusted_count: number;
   needs_reason_count: number;
   blocked_count: number;
+  needs_approval_count: number;
   can_adopt: boolean;
   /** Estimated internal-cost effect of the whole plan: hidden (null) without the cost capability,
 and only over the materials that have cost evidence — never a zero standing in for "unknown". */

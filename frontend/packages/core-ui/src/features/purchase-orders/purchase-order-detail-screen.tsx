@@ -46,6 +46,7 @@ import { getApiErrorMessage } from "../../lib/api-errors";
 import type { Presentation } from "../../lib/presentation";
 import { useFocusOnOpen } from "../../lib/use-focus-on-open";
 import { usePermission } from "../../hooks/use-permission";
+import { PurchaseOrderApprovalSection, type PurchaseOrderApproval } from "./purchase-order-approval-section";
 import { usePurchasingCommercialCost } from "../../hooks/use-purchasing-commercial-cost";
 
 const STATUS_VARIANT: Record<
@@ -101,6 +102,7 @@ export function PurchaseOrderDetailScreen({
   const mayIssue = usePermission("purchasing.purchase-order.issue");
   const mayCancel = usePermission("purchasing.purchase-order.cancel");
   const mayShortClose = usePermission("purchasing.purchase-order.short-close");
+  const maySubmit = usePermission("purchasing.purchase-order.submit");
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { search } = useLocation();
@@ -269,6 +271,10 @@ export function PurchaseOrderDetailScreen({
     uomLabels.get(uomId) ?? `UoM #${uomId}`;
   const isDraft = order.status === "DRAFT";
   const isIssued = order.status === "ISSUED";
+  const approval = (order as unknown as { approval?: PurchaseOrderApproval }).approval;
+  // The server enforces both; the buttons just say so instead of failing after a click.
+  const awaitingApproval = approval?.status === "PENDING";
+  const needsApprovalFirst = !!approval?.required && approval.status !== "APPROVED";
   const supplierLabel = supplier
     ? `${supplier.code}${supplier.party?.name ? ` — ${supplier.party.name}` : ""}`
     : `Supplier #${order.supplier_account_id}`;
@@ -418,6 +424,8 @@ export function PurchaseOrderDetailScreen({
       {isDraft && mayEdit && (
         <Button
           variant="outline"
+          disabled={awaitingApproval}
+          title={awaitingApproval ? "Withdraw the approval request to edit this order" : undefined}
           onClick={() =>
             navigate({ pathname: `/purchase-orders/${order.id}/edit`, search })
           }
@@ -428,7 +436,8 @@ export function PurchaseOrderDetailScreen({
       {isDraft && mayIssue && (
         <Button
           onClick={() => setShowIssueConfirmation(true)}
-          disabled={issue.isPending}
+          disabled={issue.isPending || needsApprovalFirst}
+          title={needsApprovalFirst ? "This order needs approval before it can be issued" : undefined}
         >
           Issue purchase order
         </Button>
@@ -451,6 +460,7 @@ export function PurchaseOrderDetailScreen({
           {actionError}
         </div>
       )}
+      <PurchaseOrderApprovalSection orderId={order.id} approval={approval} isDraft={isDraft} maySubmit={maySubmit} onChanged={refetch} />
       {showIssueConfirmation && isDraft && (
         <section
           className="space-y-3 rounded-md border p-4"
