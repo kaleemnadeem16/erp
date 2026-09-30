@@ -30,7 +30,7 @@ test.describe('a Receiving Clerk', () => {
     await expect(page.getByRole('heading', { name: 'Goods Receipts' })).toBeVisible();
     await page.getByRole('row').filter({ hasText: /Draft|DRAFT/ }).first().click();
     await expect(page.getByRole('heading', { name: /demo-thinner/ })).toBeVisible();
-    await expect(page.getByText(/Received \d+\.0000 l/).first()).toBeVisible();
+    await expect(page.getByText(/^\d+\.0000 l$/).first()).toBeVisible();
     await expect(page.getByText('Provisional cost')).toHaveCount(0);
     await expect(page.getByText('FX rate')).toHaveCount(0);
   });

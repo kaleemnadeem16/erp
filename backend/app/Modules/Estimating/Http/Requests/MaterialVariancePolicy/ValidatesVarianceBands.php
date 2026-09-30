@@ -38,7 +38,7 @@ trait ValidatesVarianceBands
                 'required_if:bands.*.measure,'.VarianceMeasure::Quantity->value,
                 'prohibited_unless:bands.*.measure,'.VarianceMeasure::Quantity->value,
             ],
-            'bands.*.effect' => ['required', Rule::enum(VarianceEffect::class), $this->approvalAvailabilityRule()],
+            'bands.*.effect' => ['required', Rule::in($this->effectValues()), $this->approvalAvailabilityRule()],
         ];
     }
 
@@ -51,6 +51,12 @@ trait ValidatesVarianceBands
             'bands.*.uom_id.required_if' => 'A quantity band needs a unit.',
             'bands.*.uom_id.prohibited_unless' => 'Only a quantity band has a unit.',
         ];
+    }
+
+    /** @return list<string> */
+    protected function effectValues(): array
+    {
+        return array_map(fn (VarianceEffect $effect): string => $effect->value, VarianceEffect::cases());
     }
 
     /** Keep the OpenAPI enum independent of company configuration; enforce availability at validation time. */

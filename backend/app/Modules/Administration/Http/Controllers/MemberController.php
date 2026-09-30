@@ -17,6 +17,7 @@ use App\Modules\Administration\Http\Requests\UpdateMemberRequest;
 use App\Modules\Administration\Http\Resources\MemberResource;
 use App\Modules\Administration\Notifications\MemberInvitation;
 use App\Modules\Administration\Support\MemberStatus;
+use Illuminate\Auth\Passwords\PasswordBroker;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -92,7 +93,9 @@ class MemberController extends Controller
         abort_unless($request->user()?->can('administration.member.manage'), 403);
         abort_unless($member->status === MemberStatus::Invited, 422);
         $member->forceFill(['invited_at' => now(), 'invited_by' => $request->user()->id])->save();
-        $member->notify(new MemberInvitation(Password::broker()->createToken($member)));
+        /** @var PasswordBroker $broker */
+        $broker = Password::broker();
+        $member->notify(new MemberInvitation($broker->createToken($member)));
         activity()->performedOn($member)->causedBy($request->user())->log('member invitation resent');
 
         return response()->json(status: 204);

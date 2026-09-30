@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Modules\Administration\Notifications\MemberInvitation;
 use App\Modules\Administration\Support\AccessAssignmentGuard;
 use App\Modules\Administration\Support\MemberStatus;
+use Illuminate\Auth\Passwords\PasswordBroker;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
@@ -42,7 +43,9 @@ final class InviteMember
             return $member;
         });
         if ($sendInvitation) {
-            $member->notify(new MemberInvitation(Password::broker()->createToken($member)));
+            /** @var PasswordBroker $broker */
+            $broker = Password::broker();
+            $member->notify(new MemberInvitation($broker->createToken($member)));
         }
 
         return $member->refresh();

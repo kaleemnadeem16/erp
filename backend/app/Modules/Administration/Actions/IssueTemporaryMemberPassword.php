@@ -7,6 +7,7 @@ namespace App\Modules\Administration\Actions;
 use App\Exceptions\DomainInvariantException;
 use App\Models\User;
 use App\Modules\Administration\Support\MemberStatus;
+use Illuminate\Auth\Passwords\PasswordBroker;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
@@ -39,7 +40,9 @@ final class IssueTemporaryMemberPassword
                 'credential_version' => $member->credential_version + 1,
             ])->save();
             $member->tokens()->delete();
-            Password::broker()->deleteToken($member);
+            /** @var PasswordBroker $broker */
+            $broker = Password::broker();
+            $broker->deleteToken($member);
             activity()->performedOn($member)->causedBy($actor)->log('member temporary password issued');
 
             return $password;

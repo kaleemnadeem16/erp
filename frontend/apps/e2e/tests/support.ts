@@ -1,4 +1,4 @@
-import type { Locator, Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 /**
  * Opens a Combobox (searchable popover, e.g. Supplier) by its FormLabel text,
@@ -21,8 +21,10 @@ export async function pickCombobox(
   // The popover is portalled to <body>, outside any dialog its trigger is in,
   // and the page behind can have its own "Search…" inputs — cmdk's own
   // attribute picks out the open popover's box unambiguously.
-  await page.locator('[cmdk-input]').fill(searchText ?? (typeof optionText === 'string' ? optionText : ''));
-  await page.getByRole('option', { name: optionText }).first().click();
+  const input = page.locator('[cmdk-input]');
+  await input.fill(searchText ?? (typeof optionText === 'string' ? optionText : ''));
+  await expect(page.getByRole('option', { name: optionText }).first()).toHaveAttribute('aria-selected', 'true');
+  await input.press('Enter');
 }
 
 /** Opens a Radix Select by its FormLabel text and picks an option whose text matches. */
