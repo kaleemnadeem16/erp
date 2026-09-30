@@ -29,6 +29,7 @@ import { PageHeader } from '../../components/page/page-header';
 import { getApiErrorMessage, lookupState, type LookupState } from '../../lib/api-errors';
 import { useAuthStore } from '../../stores/auth-store';
 import { InventoryProposalPanel } from './inventory-proposal-panel';
+import { type MixDraft } from './stock-mix-editor';
 import { VarianceSummary, VarianceVerdict, WhatIfEditor, type WhatIfPlan } from './variance-what-if';
 
 const NONE = 'NONE';
@@ -149,6 +150,8 @@ export function MaterialPreviewScreen() {
   const [calculatedAt, setCalculatedAt] = useState<Date | null>(null);
   const [recheck, setRecheck] = useState<{ at: Date; changed: boolean } | null>(null);
   const [plans, setPlans] = useState<Record<number, WhatIfPlan>>({});
+  // Hand-built stock mixes by item id (ADR 0072): they too belong to the materials the context resolved to.
+  const [mixes, setMixes] = useState<Record<number, MixDraft>>({});
   const mutation = useAssembliesMaterialPreview();
   const reasonsQuery = useMaterialVarianceReasonsIndex({ per_page: 100, sort: 'name', 'filter[active]': true });
   const reasons = reasonsQuery.data?.status === 200 ? reasonsQuery.data.data.data : [];
@@ -170,6 +173,7 @@ export function MaterialPreviewScreen() {
   const resetContext = () => {
     setPreview(null);
     setPlans({});
+    setMixes({});
   };
 
   const selectWarehouse = (value: string) => {
@@ -197,6 +201,14 @@ export function MaterialPreviewScreen() {
         reason_id: plan.reasonId === 'NO_REASON' ? null : Number(plan.reasonId),
         note: plan.note.trim() === '' ? null : plan.note.trim(),
       }));
+    const stockMix = Object.entries(mixes).flatMap(([itemId, mix]) => mix.enabled
+      ? Object.entries(mix.quantities)
+        .filter(([, quantity]) => quantity.trim() !== '')
+        .map(([key, quantity]) => {
+          const [locationId = 0, batchId = 0] = key.split(':').map(Number);
+          return { item_id: Number(itemId), location_id: locationId, batch_id: batchId === 0 ? null : batchId, quantity: quantity.trim(), uom_id: Number(mix.uomId) };
+        })
+      : []);
     run({
       assembly: assembly.id,
       data: {
@@ -214,6 +226,7 @@ export function MaterialPreviewScreen() {
                   location_ids: locationId === NONE ? [] : [Number(locationId)],
                 },
                 selection_strategy: strategy === COMPANY_DEFAULT ? null : (strategy as MaterialSelectionStrategy),
+                ...(stockMix.length > 0 ? { stock_mix: stockMix } : {}),
               }
             : {}),
       },
@@ -418,6 +431,9 @@ export function MaterialPreviewScreen() {
           mayViewCost={mayViewCost}
           plans={plans}
           onPlanChange={(itemId, plan) => setPlans((current) => ({ ...current, [itemId]: plan }))}
+          mixes={mixes}
+          onMixChange={(itemId, draft) => setMixes((current) => ({ ...current, [itemId]: draft }))}
+          onCalculate={submit}
           uoms={uoms}
           unitsLookup={lookupState(uomsQuery, 'units')}
           reasons={reasons}
@@ -437,6 +453,9 @@ interface PreviewResultProps {
   mayViewCost: boolean;
   plans: Record<number, WhatIfPlan>;
   onPlanChange: (itemId: number, plan: WhatIfPlan) => void;
+  mixes: Record<number, MixDraft>;
+  onMixChange: (itemId: number, draft: MixDraft) => void;
+  onCalculate: () => void;
   uoms: UomResource[];
   unitsLookup: LookupState;
   reasons: MaterialVarianceReasonResource[];
@@ -446,7 +465,7 @@ interface PreviewResultProps {
   onRecheck?: () => void;
 }
 
-function PreviewResult({ data, mayViewAvailability, mayViewCost, plans, onPlanChange, uoms, unitsLookup, reasons, isCalculating, calculatedAt, recheck, onRecheck }: PreviewResultProps) {
+function PreviewResult({ data, mayViewAvailability, mayViewCost, plans, onPlanChange, mixes, onMixChange, onCalculate, uoms, unitsLookup, reasons, isCalculating, calculatedAt, recheck, onRecheck }: PreviewResultProps) {
   const verdicts = new Map((data.variance?.items ?? []).map((verdict) => [verdict.item.id, verdict]));
   const pendingEdits = Object.values(plans).some((plan) => plan.quantity.trim() !== '');
   return (
@@ -526,7 +545,7 @@ function PreviewResult({ data, mayViewAvailability, mayViewCost, plans, onPlanCh
       </section>
 
       {data.inventory ? (
-        <InventoryProposalPanel inventory={data.inventory} mayViewCost={mayViewCost} />
+        <InventoryProposalPanel inventory={data.inventory} mayViewCost={mayViewCost} mixes={mixes} onMixChange={onMixChange} uoms={uoms} unitsLookup={unitsLookup} onCalculate={onCalculate} isCalculating={isCalculating} />
       ) : (
         !mayViewAvailability && (
           <section className="rounded-lg border p-4 text-sm text-muted-foreground">

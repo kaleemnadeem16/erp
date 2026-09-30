@@ -84,6 +84,7 @@ in the same commit.
 | [0069](0069-separate-purchasing-commercial-visibility-from-receiving.md) | Separate Purchasing commercial visibility from physical receiving | accepted | 2026-09-29 |
 | [0070](0070-shared-configurable-approval-engine.md) | One shared, configurable approval engine | accepted | 2026-09-30 |
 | [0071](0071-stored-material-selection-strategy-as-governed-history.md) | Store the material selection strategy as governed, versioned history | accepted | 2026-10-01 |
+| [0072](0072-hand-built-stock-mix-in-base-quantity.md) | Let a person build the stock draw by hand, in base quantity, validated and priced by the server | accepted | 2026-10-01 |
 
 **Next number: 0071**
 

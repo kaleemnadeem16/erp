@@ -52,7 +52,7 @@ final class PreviewAssemblyMaterials
     ) {}
 
     /**
-     * @param  array{assembly_version_id?: int|null, work_quantity: string, work_uom_id: int, customer_id?: int|null, dimension_value_ids?: list<int>, inventory_scope?: array{warehouse_ids?: list<int>, location_ids?: list<int>}, selection_strategy?: string|null, planned_adjustments?: list<array{item_id: int, planned_quantity: string, uom_id: int, reason_id?: int|null, note?: string|null}>}  $input
+     * @param  array{assembly_version_id?: int|null, work_quantity: string, work_uom_id: int, customer_id?: int|null, dimension_value_ids?: list<int>, inventory_scope?: array{warehouse_ids?: list<int>, location_ids?: list<int>}, selection_strategy?: string|null, stock_mix?: list<array{item_id: int, location_id: int, batch_id?: int|null, quantity: string, uom_id: int}>, planned_adjustments?: list<array{item_id: int, planned_quantity: string, uom_id: int, reason_id?: int|null, note?: string|null}>}  $input
      * @return array<string, mixed>
      */
     public function __invoke(Assembly $assembly, array $input, bool $includeCost, bool $includeInventory = false): array
@@ -138,6 +138,7 @@ final class PreviewAssemblyMaterials
                 isset($input['selection_strategy']) ? MaterialSelectionStrategy::from($input['selection_strategy']) : null,
                 $includeCost,
                 $plannedByItem,
+                $input['stock_mix'] ?? [],
             );
         }
 

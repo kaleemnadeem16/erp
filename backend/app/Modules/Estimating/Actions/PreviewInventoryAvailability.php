@@ -4,15 +4,19 @@ declare(strict_types=1);
 
 namespace App\Modules\Estimating\Actions;
 
+use App\Exceptions\DomainInvariantException;
 use App\Modules\Estimating\Support\InventoryAllocation;
 use App\Modules\Estimating\Support\MaterialSelectionStrategy;
 use App\Modules\Estimating\Support\ResolvedSelectionStrategy;
+use App\Modules\Estimating\Support\StockMix;
 use App\Modules\Inventory\Actions\QueryStockAvailability;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Support\InventoryScope;
 use App\Modules\Inventory\Support\LocationType;
 use App\Modules\Inventory\Support\StockBalance;
 use Brick\Math\BigDecimal;
+use Brick\Math\RoundingMode;
+use Illuminate\Support\Collection;
 
 /**
  * The inventory half of ADR 0058's preview: for each leaf material, what
@@ -48,15 +52,17 @@ final class PreviewInventoryAvailability
         private readonly QueryStockAvailability $availability,
         private readonly AllocateInventory $allocate,
         private readonly ResolveMaterialSelectionStrategies $resolveStrategies,
+        private readonly PriceStockMix $priceMix,
     ) {}
 
     /**
      * @param  list<array{item: array{id: int, code: string, name: string}, standard_quantity: string, uom: array{id: int, code: string, name: string}}>  $leafRows
      * @param  array{warehouse_ids?: list<int>, location_ids?: list<int>}  $scopeInput
      * @param  array<int, string>  $plannedByItem  item id → what-if planned stock quantity; the proposal plans for it instead of the standard
+     * @param  list<array{item_id: int, location_id: int, batch_id?: int|null, quantity: string, uom_id: int}>  $stockMix  hand-built draw lines (ADR 0072), validated and priced here
      * @return array{data: array<string, mixed>, evidence: array<string, mixed>}
      */
-    public function __invoke(array $leafRows, array $scopeInput, ?MaterialSelectionStrategy $override, bool $includeCost, array $plannedByItem = []): array
+    public function __invoke(array $leafRows, array $scopeInput, ?MaterialSelectionStrategy $override, bool $includeCost, array $plannedByItem = [], array $stockMix = []): array
     {
         $headline = ($this->resolveStrategies)->companyLevel($override);
         $resolved = ($this->resolveStrategies)(array_map(fn (array $row): int => $row['item']['id'], $leafRows), $override);
@@ -68,6 +74,8 @@ final class PreviewInventoryAvailability
             ->keyBy('id');
         $stockedIds = $items->filter(fn (Item $item): bool => $item->is_stocked)->keys()->map(fn ($id): int => (int) $id)->all();
         $snapshot = ($this->availability)($stockedIds, $scope);
+
+        $mixLinesByItem = $this->groupMixLines($stockMix, $leafRows, $items);
 
         $warnings = [];
         $itemBlocks = [];
@@ -86,6 +94,10 @@ final class PreviewInventoryAvailability
             $required = BigDecimal::of($plannedByItem[$itemId] ?? $row['standard_quantity']);
             $balances = $stocked ? $snapshot->balancesFor($itemId) : [];
             $recommendation = $stocked ? ($this->allocate)($required, $balances, $strategy) : null;
+
+            $mix = $recommendation === null || ! isset($mixLinesByItem[$itemId])
+                ? null
+                : ($this->priceMix)($items->get($itemId), $required, $balances, $mixLinesByItem[$itemId]);
 
             $otherStrategies = $recommendation === null
                 ? []
@@ -109,6 +121,13 @@ final class PreviewInventoryAvailability
                 if ($includeCost && $recommendation->lines !== [] && $recommendation->estimatedCost === null) {
                     $warnings[] = "Some recommended stock of {$code} has no defensible cost evidence, so its estimated cost is unavailable.";
                 }
+            }
+
+            if ($mix !== null && ! $mix->isComplete()) {
+                $warnings[] = "The stock you chose for {$code} leaves {$mix->shortage->stripTrailingZeros()} {$uomCode} of the requirement uncovered.";
+            }
+            if ($mix !== null && $includeCost && $mix->estimatedCost === null) {
+                $warnings[] = "Some stock you chose for {$code} has no defensible cost evidence, so the cost of your mix is unavailable.";
             }
 
             $onHand = BigDecimal::zero()->toScale(4);
@@ -156,9 +175,10 @@ final class PreviewInventoryAvailability
                 'remaining_after_use_quantity' => $recommendation === null ? null : (string) $usable->minus($recommendation->covered),
                 'recommendation' => $recommendation === null ? null : $this->plan($recommendation, $includeCost),
                 'alternatives' => $alternatives,
+                'selected_mix' => $mix === null ? null : $this->mix($mix, $recommendation, $required, $usable, $includeCost),
                 'balances' => $balanceRows,
             ];
-            $itemEvidence[] = ['item_id' => $itemId, 'strategy' => $strategy->value, 'strategy_policy_id' => $itemStrategy->policyId, 'balances' => $balanceEvidence];
+            $itemEvidence[] = ['item_id' => $itemId, 'strategy' => $strategy->value, 'strategy_policy_id' => $itemStrategy->policyId, 'mix' => $mix === null ? null : $this->mixEvidence($mix), 'balances' => $balanceEvidence];
         }
 
         return [
@@ -235,6 +255,126 @@ final class PreviewInventoryAvailability
             'criteria' => $criteria,
             'limitations' => $plan->limitations,
         ];
+    }
+
+    /**
+     * Groups the flat request lines by item and refuses lines for a material the assembly does not need or that is
+     * not stocked — before anything is priced. The line's position in the request is kept so an error names it.
+     *
+     * @param  list<array{item_id: int, location_id: int, batch_id?: int|null, quantity: string, uom_id: int}>  $stockMix
+     * @param  list<array{item: array{id: int, code: string, name: string}, standard_quantity: string, uom: array{id: int, code: string, name: string}}>  $leafRows
+     * @param  Collection<int, Item>  $items
+     * @return array<int, list<array{index: int, location_id: int, batch_id: int|null, quantity: string, uom_id: int}>>
+     */
+    private function groupMixLines(array $stockMix, array $leafRows, $items): array
+    {
+        $required = [];
+        foreach ($leafRows as $row) {
+            $required[(int) $row['item']['id']] = true;
+        }
+        $grouped = [];
+        foreach ($stockMix as $index => $line) {
+            $itemId = (int) $line['item_id'];
+            if (! isset($required[$itemId])) {
+                throw new DomainInvariantException('This assembly does not require that material, so there is nothing to draw.', "stock_mix.{$index}.item_id");
+            }
+            if (! (bool) $items->get($itemId)?->is_stocked) {
+                throw new DomainInvariantException('That material is not a stocked item, so there is no stock to choose from.', "stock_mix.{$index}.item_id");
+            }
+            $grouped[$itemId][] = [
+                'index' => $index,
+                'location_id' => (int) $line['location_id'],
+                'batch_id' => isset($line['batch_id']) ? (int) $line['batch_id'] : null,
+                'quantity' => (string) $line['quantity'],
+                'uom_id' => (int) $line['uom_id'],
+            ];
+        }
+
+        return $grouped;
+    }
+
+    /**
+     * @return array{
+     *     lines: list<array{warehouse: array{id: int, code: string, name: string}, location: array{id: int, code: string, name: string, type: string}, batch: array{id: int, code: string}|null, entered_quantity: string, entered_uom: array{id: int, code: string, name: string}, stock_unit_factor: string, quantity: string, usable_before_quantity: string, remaining_after_quantity: string, unit_cost: string|null, cost_method: string|null, line_cost: string|null}>,
+     *     pick_count: int,
+     *     required_quantity: string,
+     *     covered_quantity: string,
+     *     shortage_quantity: string,
+     *     is_complete: bool,
+     *     remaining_after_use_quantity: string,
+     *     estimated_cost: string|null,
+     *     same_as_recommendation: bool,
+     *     recommendation_estimated_cost: string|null,
+     *     cost_difference: string|null,
+     *     cost_difference_percent: string|null,
+     *     limitations: list<string>
+     * }
+     */
+    private function mix(StockMix $mix, InventoryAllocation $recommendation, BigDecimal $required, BigDecimal $usable, bool $includeCost): array
+    {
+        $lines = [];
+        foreach ($mix->lines as $line) {
+            $lines[] = [
+                'warehouse' => $this->warehouseRef($line->balance),
+                'location' => $this->locationRef($line->balance),
+                'batch' => $this->batchRef($line->balance),
+                'entered_quantity' => (string) BigDecimal::of($line->enteredQuantity)->stripTrailingZeros(),
+                'entered_uom' => $this->ref($line->enteredUom->id, $line->enteredUom->code, $line->enteredUom->name),
+                'stock_unit_factor' => (string) $line->stockUnitFactor->stripTrailingZeros(),
+                'quantity' => (string) $line->quantity,
+                'usable_before_quantity' => (string) $line->balance->usable,
+                'remaining_after_quantity' => (string) $line->remainingAfter,
+                'unit_cost' => $includeCost && $line->balance->unitCost !== null ? (string) $line->balance->unitCost : null,
+                'cost_method' => $includeCost ? $line->balance->costMethod : null,
+                'line_cost' => $includeCost && $line->lineCost !== null ? (string) $line->lineCost : null,
+            ];
+        }
+
+        // How the mix compares with what the strategy recommended: information for the person choosing, never a
+        // rule. A cost consequence that should escalate is a separate decision (ADR 0072); cost stays hidden without
+        // the cost capability.
+        $known = $includeCost && $mix->estimatedCost !== null && $recommendation->estimatedCost !== null;
+        $difference = $known ? $mix->estimatedCost->minus($recommendation->estimatedCost)->toScale(4, RoundingMode::HALF_UP) : null;
+        $percent = $known && $recommendation->estimatedCost->isGreaterThan(0)
+            ? $difference->multipliedBy(100)->dividedBy($recommendation->estimatedCost, 2, RoundingMode::HALF_UP)
+            : null;
+
+        return [
+            'lines' => $lines,
+            'pick_count' => count($mix->lines),
+            'required_quantity' => (string) $required,
+            'covered_quantity' => (string) $mix->covered,
+            'shortage_quantity' => (string) $mix->shortage,
+            'is_complete' => $mix->isComplete(),
+            'remaining_after_use_quantity' => (string) $usable->minus($mix->covered),
+            'estimated_cost' => $includeCost && $mix->estimatedCost !== null ? (string) $mix->estimatedCost : null,
+            'same_as_recommendation' => $mix->signature() === $recommendation->signature(),
+            'recommendation_estimated_cost' => $includeCost && $recommendation->estimatedCost !== null ? (string) $recommendation->estimatedCost : null,
+            'cost_difference' => $difference === null ? null : (string) $difference,
+            'cost_difference_percent' => $percent === null ? null : (string) $percent,
+            'limitations' => $this->mixLimitations(),
+        ];
+    }
+
+    /** @return list<array{location_id: int, batch_id: int|null, quantity: string}> */
+    private function mixEvidence(StockMix $mix): array
+    {
+        $evidence = [];
+        foreach ($mix->lines as $line) {
+            $evidence[] = ['location_id' => $line->balance->locationId, 'batch_id' => $line->balance->batchId, 'quantity' => (string) $line->quantity];
+        }
+
+        return $evidence;
+    }
+
+    /** @return list<string> */
+    private function mixLimitations(): array
+    {
+        $limitations = [];
+        $limitations[] = 'A chosen mix is a quantity per location and batch (QUANTITY_ONLY). It makes no claim about sealed or opened packages, and reserves nothing.';
+        $limitations[] = 'Drawing more than the plan needs is not a mix choice: change the planned quantity so the variance rules apply.';
+
+        return $limitations;
     }
 
     /** @return array{id: int, code: string, name: string} */

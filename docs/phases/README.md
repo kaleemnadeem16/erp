@@ -90,6 +90,14 @@ delta touching it needs a Sales/COGS correction line — see
 Jobs, work orders, material issue, timesheets, unified job cost entries, estimate-vs-actual
 variance reporting. This is where the system starts paying for itself.
 
+**Owes an Inventory package-tracking design** (proposed, not yet scheduled) before material issue is designed:
+`item_packagings`, the `PACKAGE_BALANCE` / `CONTAINER_TRACKED` modes, sealed/opened package state and remnants,
+package-aware proposals, and the waste/residual variance bands that need them
+([ADR 0052](../decisions/0052-progressive-inventory-package-tracking.md); the hand-built stock mix it must extend is
+[ADR 0072](../decisions/0072-hand-built-stock-mix-in-base-quantity.md); variable-content packages stay
+[Q23](../OPEN-QUESTIONS.md#q23--variable-content-and-catch-weight-packages), alongside
+[Q24](../OPEN-QUESTIONS.md#q24--phase-5-material-exceptions)).
+
 **Owes [ADR 0040](../decisions/0040-control-backdated-stock-recalculation-and-corrections.md)'s
 multi-owner correction package**: once job-consumed stock exists, a correction delta touching it
 needs a Job Execution job-cost correction line — see

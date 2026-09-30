@@ -203,11 +203,19 @@ Because the two cost-first presets coincide here, the response lists the other t
 alternatives and flags each `same_as_recommendation`. A balance without cost evidence ranks after
 every costed one and makes the plan's estimated cost unknown rather than partial.
 
+**Hand-built mix** ([ADR 0072](../decisions/0072-hand-built-stock-mix-in-base-quantity.md)): a person may instead choose the quantity to take from
+each location/batch. The canonical line is `(item, location, batch, quantity in the item's stock unit)` — the same shape as an automatic
+proposal — typed in any unit that converts through the item's conversion (0.75 of a 2 kg drum is 1.5 kg; a part-used pack is just a
+smaller quantity). The server refuses, rather than warns about, stock that is not a usable balance in scope (absent, held for QA, in a
+location that does not count, exhausted), a draw above a balance, a repeated location/batch, a quantity that breaks the item's
+precision, and an unconvertible unit. Lines adding up to *more than the plan* are refused too — using more is a planned-quantity change
+the variance rules must judge — while adding up to less is reported as a shortage. Pricing uses the proposal's cost evidence (never a
+zero) and the result names, per line, the source, entered quantity and factor, usable before and remaining after, and how the cost
+compares with the proposal's. Package tracking will add facts about these lines (a package identity, sealed or open); it does not
+replace them.
+
 **Not yet built** — each is a deliberate boundary, not an oversight:
 
-- A hand-built package/location mix evaluated by the resolver. A user can compare the three
-  presets; choosing an arbitrary mix waits for the variance slice, where ADR 0054 decides what a
-  different mix at the same planned quantity costs in review.
 - `PACKAGE_BALANCE` and `CONTAINER_TRACKED` modes and the package definitions
   (`item_packagings`), so no sealed-pack, remnant or container claim is ever made.
 - Package equivalents of a quantity draw ("about two 5 L cans"), which would be approximate in

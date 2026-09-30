@@ -67,6 +67,19 @@ class PreviewMaterialRequest extends FormRequest
                 ),
             ],
             'selection_strategy' => [$inventoryInput, 'nullable', Rule::enum(MaterialSelectionStrategy::class)],
+            // A hand-built draw (ADR 0072): the quantity to take from each location/batch, in any unit that
+            // converts to the item's stock unit. Validated against the real usable balances in PriceStockMix.
+            'stock_mix' => [$inventoryInput, 'array', 'max:200'],
+            'stock_mix.*.item_id' => ['required', 'integer', CompanyScoped::exists('items')],
+            'stock_mix.*.location_id' => [
+                'required', 'integer',
+                Rule::exists('locations', 'id')->where(
+                    fn ($query) => $query->whereIn('warehouse_id', Warehouse::query()->select('id'))
+                ),
+            ],
+            'stock_mix.*.batch_id' => ['sometimes', 'nullable', 'integer', CompanyScoped::exists('stock_batches')],
+            'stock_mix.*.quantity' => ['required', 'decimal:0,6', 'gt:0', 'max:999999999999.999999'],
+            'stock_mix.*.uom_id' => ['required', 'integer', CompanyScoped::exists('uoms')],
         ];
     }
 
@@ -75,6 +88,7 @@ class PreviewMaterialRequest extends FormRequest
     {
         return [
             'inventory_scope.prohibited' => 'You do not have permission to narrow inventory availability.',
+            'stock_mix.prohibited' => 'You do not have permission to choose stock for a material plan.',
             'selection_strategy.prohibited' => 'You do not have permission to choose a stock selection strategy.',
         ];
     }

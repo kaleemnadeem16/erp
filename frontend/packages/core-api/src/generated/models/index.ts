@@ -3,7 +3,7 @@
  * Do not edit manually.
  *
  * Pure-type schemas are re-exported with `export type *` so a browser never requests them;
- * only the 111 schemas that export a runtime value use `export *`.
+ * only the 112 schemas that export a runtime value use `export *`.
  */
 export type * from "./accountShow200";
 export * from "./accountType";
@@ -203,6 +203,23 @@ export type * from "./assembliesMaterialPreview200DataInventoryItemsItemRecommen
 export type * from "./assembliesMaterialPreview200DataInventoryItemsItemRecommendationAnyOfStrategy";
 export * from "./assembliesMaterialPreview200DataInventoryItemsItemRecommendationAnyOfStrategyLabel";
 export type * from "./assembliesMaterialPreview200DataInventoryItemsItemRemainingAfterUseQuantity";
+export type * from "./assembliesMaterialPreview200DataInventoryItemsItemSelectedMix";
+export type * from "./assembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOf";
+export type * from "./assembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfCostDifference";
+export type * from "./assembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfCostDifferencePercent";
+export type * from "./assembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfEstimatedCost";
+export * from "./assembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfLimitationsItem";
+export type * from "./assembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfLinesItem";
+export type * from "./assembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfLinesItemBatch";
+export type * from "./assembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfLinesItemBatchAnyOf";
+export type * from "./assembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfLinesItemBatchAnyOfId";
+export type * from "./assembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfLinesItemCostMethod";
+export type * from "./assembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfLinesItemEnteredUom";
+export type * from "./assembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfLinesItemLineCost";
+export type * from "./assembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfLinesItemLocation";
+export type * from "./assembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfLinesItemUnitCost";
+export type * from "./assembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfLinesItemWarehouse";
+export type * from "./assembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfRecommendationEstimatedCost";
 export type * from "./assembliesMaterialPreview200DataInventoryItemsItemShortageQuantity";
 export type * from "./assembliesMaterialPreview200DataInventoryItemsItemStrategy";
 export * from "./assembliesMaterialPreview200DataInventoryItemsItemStrategyLabel";
@@ -1107,6 +1124,8 @@ export type * from "./previewMaterialRequestPlannedAdjustmentsItem";
 export type * from "./previewMaterialRequestPlannedAdjustmentsItemNote";
 export type * from "./previewMaterialRequestPlannedAdjustmentsItemReasonId";
 export type * from "./previewMaterialRequestSelectionStrategy";
+export type * from "./previewMaterialRequestStockMixItem";
+export type * from "./previewMaterialRequestStockMixItemBatchId";
 export * from "./purchaseOrderFxPolicy";
 export type * from "./purchaseOrderLineResource";
 export type * from "./purchaseOrderLineResourceExpectedDeliveryDate";

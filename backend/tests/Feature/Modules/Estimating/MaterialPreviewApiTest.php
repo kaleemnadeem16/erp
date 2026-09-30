@@ -25,6 +25,7 @@ use App\Modules\Inventory\Actions\PostInventoryMovement;
 use App\Modules\Inventory\Models\AvcoPool;
 use App\Modules\Inventory\Models\Category;
 use App\Modules\Inventory\Models\Item;
+use App\Modules\Inventory\Models\ItemQuantityUnit;
 use App\Modules\Inventory\Models\Location;
 use App\Modules\Inventory\Support\AvcoPoolScope;
 use App\Modules\Inventory\Support\AvcoPoolStatus;
@@ -643,6 +644,242 @@ class MaterialPreviewApiTest extends TestCase
         $this->assertNotSame($before, $after);
         $set(MaterialSelectionScope::Item, $this->pigment->id, MaterialSelectionStrategy::FewestPackages, 'Same again', $actor);
         $this->assertSame($after, $print());
+    }
+
+    // ---- hand-built stock mix (ADR 0072) ----
+
+    /**
+     * @param  list<array<string, mixed>>  $lines
+     * @return array<string, mixed>
+     */
+    private function mixPayload(array $lines): array
+    {
+        return $this->payload() + ['stock_mix' => $lines];
+    }
+
+    /** @return array<string, mixed> */
+    private function draw(string $warehouseCode, string $quantity, ?Uom $uom = null, ?int $batchId = null): array
+    {
+        return [
+            'item_id' => $this->pigment->id, 'location_id' => $this->location($warehouseCode)->id,
+            'batch_id' => $batchId, 'quantity' => $quantity, 'uom_id' => ($uom ?? $this->kg)->id,
+        ];
+    }
+
+    private function stockTwoWarehouses(): void
+    {
+        $this->stockPigment('a', '3');
+        $this->stockPigment('b', '2');
+    }
+
+    public function test_a_complete_mix_reports_where_each_quantity_and_cost_came_from(): void
+    {
+        $user = $this->userWith('estimating.inventory_availability.view', 'estimating.internal_cost.view');
+        $this->stockTwoWarehouses();
+
+        $response = $this->actingAs($user)->postJson($this->url(), $this->mixPayload([$this->draw('a', '2'), $this->draw('b', '2')]));
+
+        $response->assertOk();
+        $mix = 'data.inventory.items.0.selected_mix';
+        $response->assertJsonPath("{$mix}.is_complete", true);
+        $response->assertJsonPath("{$mix}.required_quantity", '4.000000000');
+        $response->assertJsonPath("{$mix}.covered_quantity", '4.0000');
+        $response->assertJsonPath("{$mix}.shortage_quantity", '0.0000');
+        $response->assertJsonPath("{$mix}.pick_count", 2);
+        $response->assertJsonPath("{$mix}.lines.0.quantity", '2.000000000');
+        $response->assertJsonPath("{$mix}.lines.0.usable_before_quantity", '3.0000');
+        $response->assertJsonPath("{$mix}.lines.0.remaining_after_quantity", '1.000000000');
+        $response->assertJsonPath("{$mix}.lines.1.remaining_after_quantity", '0.000000000');
+        $response->assertJsonPath("{$mix}.lines.0.unit_cost", '3.0000');
+        $response->assertJsonPath("{$mix}.lines.0.line_cost", '6.0000');
+        $response->assertJsonPath("{$mix}.estimated_cost", '12.0000');
+        $response->assertJsonPath("{$mix}.remaining_after_use_quantity", '1.0000');
+        // The recommendation drew 3 + 1; this mix is different, and at one AVCO cost costs the same.
+        $response->assertJsonPath("{$mix}.same_as_recommendation", false);
+        $response->assertJsonPath("{$mix}.cost_difference", '0.0000');
+        // The recommendation itself is untouched by the user's choice.
+        $response->assertJsonPath('data.inventory.items.0.recommendation.covered_quantity', '4.000000000');
+    }
+
+    public function test_a_mix_that_covers_only_part_of_the_requirement_is_reported_as_a_shortage_not_hidden(): void
+    {
+        $user = $this->userWith('estimating.inventory_availability.view');
+        $this->stockTwoWarehouses();
+
+        $response = $this->actingAs($user)->postJson($this->url(), $this->mixPayload([$this->draw('a', '1')]));
+
+        $response->assertOk();
+        $response->assertJsonPath('data.inventory.items.0.selected_mix.is_complete', false);
+        $response->assertJsonPath('data.inventory.items.0.selected_mix.shortage_quantity', '3.0000');
+        $this->assertStringContainsString('leaves 3 kg', implode(' ', $response->json('data.inventory.warnings')));
+    }
+
+    public function test_a_mix_that_exceeds_a_usable_balance_is_refused_and_says_how_much_is_usable(): void
+    {
+        $user = $this->userWith('estimating.inventory_availability.view');
+        $this->stockTwoWarehouses();
+
+        $response = $this->actingAs($user)->postJson($this->url(), $this->mixPayload([$this->draw('a', '3.5')]));
+
+        $response->assertUnprocessable()->assertJsonValidationErrors('stock_mix.0.quantity');
+        $this->assertStringContainsString('Only 3 kg', $response->json('errors')['stock_mix.0.quantity'][0]);
+    }
+
+    public function test_a_mix_that_draws_more_than_the_plan_is_refused_so_it_cannot_bypass_the_variance_rules(): void
+    {
+        $user = $this->userWith('estimating.inventory_availability.view');
+        $this->stockTwoWarehouses();
+
+        $response = $this->actingAs($user)->postJson($this->url(), $this->mixPayload([$this->draw('a', '3'), $this->draw('b', '2')]));
+
+        $response->assertUnprocessable()->assertJsonValidationErrors('stock_mix.0.quantity');
+        $this->assertStringContainsString('change the planned quantity', $response->json('errors')['stock_mix.0.quantity'][0]);
+    }
+
+    public function test_a_planned_adjustment_changes_what_a_mix_must_cover_and_the_variance_rules_still_apply(): void
+    {
+        $user = $this->userWith('estimating.inventory_availability.view');
+        $this->stockTwoWarehouses();
+
+        $response = $this->actingAs($user)->postJson($this->url(), $this->payload() + [
+            'planned_adjustments' => [$this->adjust('5')],
+            'stock_mix' => [$this->draw('a', '3'), $this->draw('b', '2')],
+        ]);
+
+        $response->assertOk();
+        // The mix covers the planned 5 kg exactly — and choosing it by hand did nothing to the variance verdict.
+        $response->assertJsonPath('data.inventory.items.0.selected_mix.required_quantity', '5.000000000');
+        $response->assertJsonPath('data.inventory.items.0.selected_mix.is_complete', true);
+        $response->assertJsonPath('data.variance.items.0.effect', 'REASON_REQUIRED');
+        $response->assertJsonPath('data.variance.items.0.can_adopt', false);
+        $response->assertJsonPath('data.variance.summary.needs_reason_count', 1);
+    }
+
+    public function test_stock_that_cannot_be_drawn_is_refused_with_the_reason(): void
+    {
+        $user = $this->userWith('estimating.inventory_availability.view');
+        $this->stockPigment('a', '3');
+        $this->stockPigment('q', '2', LocationType::Quarantine);
+        $this->location('empty'); // a real location holding none of this item
+
+        $quarantine = $this->actingAs($user)->postJson($this->url(), $this->mixPayload([$this->draw('q', '1')]));
+        $quarantine->assertUnprocessable()->assertJsonValidationErrors('stock_mix.0.location_id');
+        $this->assertStringContainsString('does not count as usable', $quarantine->json('errors')['stock_mix.0.location_id'][0]);
+
+        $none = $this->actingAs($user)->postJson($this->url(), $this->mixPayload([$this->draw('empty', '1')]));
+        $none->assertUnprocessable()->assertJsonValidationErrors('stock_mix.0.location_id');
+        $this->assertStringContainsString('No stock of pigment is held', $none->json('errors')['stock_mix.0.location_id'][0]);
+    }
+
+    public function test_a_location_outside_the_narrowed_scope_is_refused(): void
+    {
+        $user = $this->userWith('estimating.inventory_availability.view');
+        $this->stockTwoWarehouses();
+
+        $response = $this->actingAs($user)->postJson($this->url(), $this->mixPayload([$this->draw('b', '1')]) + [
+            'inventory_scope' => ['location_ids' => [$this->location('a')->id]],
+        ]);
+
+        $response->assertUnprocessable()->assertJsonValidationErrors('stock_mix.0.location_id');
+    }
+
+    public function test_the_same_stock_listed_twice_a_foreign_material_and_a_missing_line_field_are_refused(): void
+    {
+        $user = $this->userWith('estimating.inventory_availability.view');
+        $this->stockTwoWarehouses();
+
+        $this->actingAs($user)->postJson($this->url(), $this->mixPayload([$this->draw('a', '1'), $this->draw('a', '1')]))
+            ->assertUnprocessable()->assertJsonValidationErrors('stock_mix.1.location_id');
+        $this->actingAs($user)->postJson($this->url(), $this->mixPayload([['item_id' => $this->paint->id] + $this->draw('a', '1')]))
+            ->assertUnprocessable()->assertJsonValidationErrors('stock_mix.0.item_id');
+        $this->actingAs($user)->postJson($this->url(), $this->mixPayload([['location_id' => $this->location('a')->id]]))
+            ->assertUnprocessable()->assertJsonValidationErrors(['stock_mix.0.item_id', 'stock_mix.0.quantity', 'stock_mix.0.uom_id']);
+        $this->actingAs($user)->postJson($this->url(), $this->mixPayload([$this->draw('a', '0')]))
+            ->assertUnprocessable()->assertJsonValidationErrors('stock_mix.0.quantity');
+    }
+
+    public function test_quantities_may_be_entered_in_another_unit_and_a_part_of_a_pack_is_just_a_smaller_quantity(): void
+    {
+        $user = $this->userWith('estimating.inventory_availability.view');
+        $this->stockTwoWarehouses();
+        $gram = Uom::create(['code' => 'g', 'name' => 'Gram', 'dimension' => UomDimension::Mass, 'factor_to_base' => '0.001', 'is_base' => false]);
+        $drum = Uom::create(['code' => 'drum', 'name' => 'Drum', 'dimension' => UomDimension::Count, 'factor_to_base' => '1', 'is_base' => true]);
+        ItemQuantityUnit::create(['item_id' => $this->pigment->id, 'uom_id' => $drum->id, 'factor' => '2']); // one drum holds 2 kg
+
+        $response = $this->actingAs($user)->postJson($this->url(), $this->mixPayload([
+            $this->draw('a', '1500', $gram), // 1.5 kg
+            $this->draw('b', '1.25', $drum), // 0.6 ... 1.25 drums = 2.5 kg is more than b holds; use 1 drum below
+        ]));
+        $response->assertUnprocessable()->assertJsonValidationErrors('stock_mix.1.quantity');
+
+        $ok = $this->actingAs($user)->postJson($this->url(), $this->mixPayload([
+            $this->draw('a', '2000', $gram),  // 2 kg
+            $this->draw('b', '1', $drum),     // 1 whole drum = 2 kg
+        ]));
+        $ok->assertOk();
+        $ok->assertJsonPath('data.inventory.items.0.selected_mix.lines.0.quantity', '2.000000000');
+        $ok->assertJsonPath('data.inventory.items.0.selected_mix.lines.0.entered_uom.code', 'g');
+        $ok->assertJsonPath('data.inventory.items.0.selected_mix.lines.1.entered_quantity', '1');
+        $ok->assertJsonPath('data.inventory.items.0.selected_mix.lines.1.stock_unit_factor', '2');
+
+        // A fraction of a drum is a stock quantity like any other: 0.75 drum = 1.5 kg, leaving 0.5 kg at b.
+        $part = $this->actingAs($user)->postJson($this->url(), $this->mixPayload([$this->draw('a', '2.5'), $this->draw('b', '0.75', $drum)]));
+        $part->assertOk();
+        $part->assertJsonPath('data.inventory.items.0.selected_mix.lines.1.quantity', '1.500000000');
+        $part->assertJsonPath('data.inventory.items.0.selected_mix.lines.1.remaining_after_quantity', '0.500000000');
+
+        // A unit that does not convert to the item is refused.
+        $sqm = $this->sqm;
+        $this->actingAs($user)->postJson($this->url(), $this->mixPayload([$this->draw('a', '1', $sqm)]))
+            ->assertUnprocessable()->assertJsonValidationErrors('stock_mix.0.uom_id');
+    }
+
+    public function test_an_item_that_only_moves_in_whole_units_refuses_a_fractional_draw(): void
+    {
+        $user = $this->userWith('estimating.inventory_availability.view');
+        $this->stockTwoWarehouses();
+        $this->pigment->update(['quantity_precision' => '1']);
+
+        $this->actingAs($user)->postJson($this->url(), $this->mixPayload([$this->draw('a', '2.5'), $this->draw('b', '1.5')]))
+            ->assertUnprocessable()->assertJsonValidationErrors('stock_mix.0.quantity');
+    }
+
+    public function test_choosing_stock_needs_the_availability_capability(): void
+    {
+        $this->stockTwoWarehouses();
+
+        $this->actingAs($this->userWith())->postJson($this->url(), $this->mixPayload([$this->draw('a', '1')]))
+            ->assertUnprocessable()->assertJsonValidationErrors('stock_mix');
+    }
+
+    public function test_cost_of_a_mix_is_hidden_without_the_cost_capability_and_a_mix_moves_the_fingerprint(): void
+    {
+        $blind = $this->userWith('estimating.inventory_availability.view');
+        $this->stockTwoWarehouses();
+
+        $response = $this->actingAs($blind)->postJson($this->url(), $this->mixPayload([$this->draw('a', '2'), $this->draw('b', '2')]));
+        $response->assertOk();
+        $response->assertJsonPath('data.inventory.items.0.selected_mix.estimated_cost', null);
+        $response->assertJsonPath('data.inventory.items.0.selected_mix.lines.0.unit_cost', null);
+        $response->assertJsonPath('data.inventory.items.0.selected_mix.cost_difference', null);
+
+        $plain = $this->actingAs($blind)->postJson($this->url(), $this->payload())->json('data.evidence_fingerprint');
+        $this->assertNotSame($plain, $response->json('data.evidence_fingerprint'));
+    }
+
+    public function test_choosing_a_mix_reserves_and_posts_nothing(): void
+    {
+        $user = $this->userWith('estimating.inventory_availability.view');
+        $this->stockTwoWarehouses();
+        $counts = fn (): array => array_map(
+            fn (string $table): int => DB::table($table)->count(),
+            ['stock_moves', 'stock_layers', 'avco_pools', 'stock_valuation_entries', 'negative_stock_shortages', 'stock_batches'],
+        );
+        $before = $counts();
+
+        $this->actingAs($user)->postJson($this->url(), $this->mixPayload([$this->draw('a', '2'), $this->draw('b', '2')]))->assertOk();
+
+        $this->assertSame($before, $counts());
     }
 
     private function url(): string

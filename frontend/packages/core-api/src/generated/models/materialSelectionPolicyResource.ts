@@ -11,7 +11,7 @@ import type { MaterialSelectionPolicyResourceEffectiveTo } from "./materialSelec
 import type { MaterialSelectionPolicyResourceChangedByUser } from "./materialSelectionPolicyResourceChangedByUser";
 
 export interface MaterialSelectionPolicyResource {
-  id: string;
+  id: number;
   scope_type: string;
   scope_id: MaterialSelectionPolicyResourceScopeId;
   scope_name: MaterialSelectionPolicyResourceScopeName;

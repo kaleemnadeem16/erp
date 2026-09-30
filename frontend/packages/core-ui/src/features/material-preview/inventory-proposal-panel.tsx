@@ -16,6 +16,9 @@ import {
   TableRow,
 } from '../../components/ui/table';
 import { formatDateTime } from '../../lib/format-date';
+import { type LookupState } from '../../lib/api-errors';
+import type { UomResource } from '@erp/core-api';
+import { StockMixEditor, type MixDraft } from './stock-mix-editor';
 
 /** A drawn plan for one item, whichever strategy produced it — the recommendation or an alternative. */
 type Plan = NonNullable<AssembliesMaterialPreview200DataInventoryItemsItemRecommendation>;
@@ -24,6 +27,13 @@ interface InventoryProposalPanelProps {
   inventory: AssembliesMaterialPreview200DataInventory;
   /** Whether the caller holds `estimating.internal_cost.view`; without it every cost field arrives null. */
   mayViewCost: boolean;
+  /** The hand-built mixes typed so far, by item id (ADR 0072). */
+  mixes?: Record<number, MixDraft>;
+  onMixChange?: (itemId: number, draft: MixDraft) => void;
+  uoms?: UomResource[];
+  unitsLookup?: LookupState;
+  onCalculate?: () => void;
+  isCalculating?: boolean;
 }
 
 const STRATEGY_SOURCE_TEXT: Record<string, string> = {
@@ -40,7 +50,7 @@ const STRATEGY_SOURCE_TEXT: Record<string, string> = {
  * offers to reserve. Cost columns appear only for a caller who may see cost;
  * for anyone else a null cost is hidden evidence, not a zero.
  */
-export function InventoryProposalPanel({ inventory, mayViewCost }: InventoryProposalPanelProps) {
+export function InventoryProposalPanel({ inventory, mayViewCost, mixes, onMixChange, uoms, unitsLookup, onCalculate, isCalculating }: InventoryProposalPanelProps) {
   return (
     <section className="space-y-4 rounded-lg border p-4" aria-labelledby="available-stock-heading">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -70,7 +80,12 @@ export function InventoryProposalPanel({ inventory, mayViewCost }: InventoryProp
 
       {inventory.items.length === 0 && <p className="text-sm text-muted-foreground">This Assembly has no material requirement.</p>}
       {inventory.items.map((item) => (
-        <ItemStock key={item.item.id} item={item} mayViewCost={mayViewCost} />
+        <ItemStock
+          key={item.item.id}
+          item={item}
+          mayViewCost={mayViewCost}
+          mix={onMixChange && uoms && unitsLookup ? { draft: mixes?.[item.item.id], onChange: (draft) => onMixChange(item.item.id, draft), uoms, unitsLookup, onCalculate, isCalculating } : undefined}
+        />
       ))}
 
       <div className="space-y-1 rounded-md border border-dashed p-3 text-sm text-muted-foreground">
@@ -80,7 +95,16 @@ export function InventoryProposalPanel({ inventory, mayViewCost }: InventoryProp
   );
 }
 
-function ItemStock({ item, mayViewCost }: { item: AssembliesMaterialPreview200DataInventoryItemsItem; mayViewCost: boolean }) {
+interface ItemMixProps {
+  draft: MixDraft | undefined;
+  onChange: (draft: MixDraft) => void;
+  uoms: UomResource[];
+  unitsLookup: LookupState;
+  onCalculate?: () => void;
+  isCalculating?: boolean;
+}
+
+function ItemStock({ item, mayViewCost, mix }: { item: AssembliesMaterialPreview200DataInventoryItemsItem; mayViewCost: boolean; mix?: ItemMixProps }) {
   const unit = item.uom.code;
   const heading = `${item.item.code} — ${item.item.name}`;
 
@@ -182,6 +206,19 @@ function ItemStock({ item, mayViewCost }: { item: AssembliesMaterialPreview200Da
           ))}
         </div>
       </details>
+
+      {mix && (
+        <StockMixEditor
+          item={item}
+          draft={mix.draft}
+          onChange={mix.onChange}
+          uoms={mix.uoms}
+          unitsLookup={mix.unitsLookup}
+          mayViewCost={mayViewCost}
+          onCalculate={mix.onCalculate}
+          isCalculating={mix.isCalculating}
+        />
+      )}
 
       <details className="text-sm">
         <summary className="cursor-pointer font-medium">Stock by location</summary>

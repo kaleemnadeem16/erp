@@ -16,6 +16,7 @@ import type { AssembliesMaterialPreview200DataInventoryItemsItemShortageQuantity
 import type { AssembliesMaterialPreview200DataInventoryItemsItemRemainingAfterUseQuantity } from "./assembliesMaterialPreview200DataInventoryItemsItemRemainingAfterUseQuantity";
 import type { AssembliesMaterialPreview200DataInventoryItemsItemRecommendation } from "./assembliesMaterialPreview200DataInventoryItemsItemRecommendation";
 import type { AssembliesMaterialPreview200DataInventoryItemsItemAlternativesItem } from "./assembliesMaterialPreview200DataInventoryItemsItemAlternativesItem";
+import type { AssembliesMaterialPreview200DataInventoryItemsItemSelectedMix } from "./assembliesMaterialPreview200DataInventoryItemsItemSelectedMix";
 import type { AssembliesMaterialPreview200DataInventoryItemsItemBalancesItem } from "./assembliesMaterialPreview200DataInventoryItemsItemBalancesItem";
 
 export type AssembliesMaterialPreview200DataInventoryItemsItem = {
@@ -34,5 +35,6 @@ export type AssembliesMaterialPreview200DataInventoryItemsItem = {
   remaining_after_use_quantity: AssembliesMaterialPreview200DataInventoryItemsItemRemainingAfterUseQuantity;
   recommendation: AssembliesMaterialPreview200DataInventoryItemsItemRecommendation;
   alternatives: AssembliesMaterialPreview200DataInventoryItemsItemAlternativesItem[];
+  selected_mix: AssembliesMaterialPreview200DataInventoryItemsItemSelectedMix;
   balances: AssembliesMaterialPreview200DataInventoryItemsItemBalancesItem[];
 };

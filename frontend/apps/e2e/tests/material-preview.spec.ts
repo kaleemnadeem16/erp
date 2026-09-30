@@ -194,3 +194,47 @@ test.describe('material preview freshness', () => {
     expect(serious, JSON.stringify(serious, null, 2)).toEqual([]);
   });
 });
+
+/**
+ * The hand-built mix (ADR 0072): someone chooses how much to take from each stock location, the server validates
+ * it against the real usable balances and prices it, and an impossible mix is refused with the reason rather than
+ * shown as a warning. Quantities are figures the spec reads from the screen, so it does not lean on how much the
+ * demo happens to stock.
+ */
+test.describe('material preview hand-built stock mix', () => {
+  test('a chosen mix is priced by the server, explained line by line, and an impossible one is refused', async ({ page }) => {
+    await page.goto('/material-preview');
+    await pickCombobox(page, 'Assembly', /demo-asm-wall-paint/);
+    await page.getByLabel('Work quantity', { exact: true }).fill('10');
+    await page.getByRole('button', { name: 'Calculate preview' }).click();
+
+    const panel = page.locator('section[aria-labelledby="available-stock-heading"]');
+    const material = panel.getByRole('group', { name: /^demo-pig-blue/ });
+    await material.getByRole('button', { name: 'Choose the stock yourself' }).click();
+    const mix = material.getByRole('group', { name: 'Your own mix for demo-pig-blue' });
+
+    // Take a small part of the first usable location: a partial mix is allowed and reported as a shortage.
+    const firstInput = mix.getByLabel(/^Take from /).first();
+    await firstInput.fill('0.5');
+    await mix.getByRole('button', { name: 'Calculate with my mix' }).click();
+    await expect(mix.getByRole('status')).toContainText('Your mix covers 0.5 of');
+    await expect(mix.getByRole('status')).toContainText('uncovered');
+    await expect(mix.getByRole('table', { name: 'Where each quantity of your mix comes from' })).toBeVisible();
+    await expect(mix.getByText(/reserves nothing/)).toBeVisible();
+
+    const results = await new AxeBuilder({ page }).analyze();
+    const serious = results.violations.filter((violation) => violation.impact === 'critical' || violation.impact === 'serious');
+    expect(serious, JSON.stringify(serious, null, 2)).toEqual([]);
+
+    // More than the location holds is an invalid plan, refused with the reason.
+    await firstInput.fill('999999');
+    await mix.getByRole('button', { name: 'Calculate with my mix' }).click();
+    await expect(page.getByText(/is usable there/)).toBeVisible();
+
+    // Going back to the proposal removes the chosen mix from the next question.
+    await mix.getByRole('button', { name: 'Use the proposal instead' }).click();
+    await page.getByRole('button', { name: 'Calculate preview' }).click();
+    await expect(page.getByText(/is usable there/)).toHaveCount(0);
+    await expect(panel.getByRole('table', { name: /Recommended draw of demo-pig-blue/ })).toBeVisible();
+  });
+});

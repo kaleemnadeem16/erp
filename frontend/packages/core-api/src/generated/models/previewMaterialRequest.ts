@@ -9,6 +9,7 @@ import type { PreviewMaterialRequestCustomerId } from "./previewMaterialRequestC
 import type { PreviewMaterialRequestPlannedAdjustmentsItem } from "./previewMaterialRequestPlannedAdjustmentsItem";
 import type { PreviewMaterialRequestInventoryScope } from "./previewMaterialRequestInventoryScope";
 import type { PreviewMaterialRequestSelectionStrategy } from "./previewMaterialRequestSelectionStrategy";
+import type { PreviewMaterialRequestStockMixItem } from "./previewMaterialRequestStockMixItem";
 
 export interface PreviewMaterialRequest {
   assembly_version_id?: PreviewMaterialRequestAssemblyVersionId;
@@ -27,4 +28,10 @@ in PreviewMaterialVariance.
   /** Narrows, never widens, the stock the proposal may consider (ADR 0058). */
   inventory_scope?: PreviewMaterialRequestInventoryScope;
   selection_strategy?: PreviewMaterialRequestSelectionStrategy;
+  /**
+   * A hand-built draw (ADR 0072): the quantity to take from each location/batch, in any unit that
+converts to the item's stock unit. Validated against the real usable balances in PriceStockMix.
+   * @maxItems 200
+   */
+  stock_mix?: PreviewMaterialRequestStockMixItem[];
 }

@@ -174,6 +174,15 @@ request and again in the Action: a quantity band needs a unit and no other measu
 non-negative and an under-plan percentage cannot exceed 100, and `APPROVAL_REQUIRED` cannot be chosen. All
 writes need `estimating.material_variance_policy.manage`.
 
+### Hand-built stock mix (ADR 0072)
+
+A person may choose the draw themselves instead of a preset's proposal: `stock_mix` lines of `(item, location, batch, quantity, unit)`,
+held as a quantity in the item's stock unit. The server refuses an unusable or exhausted source, a draw above a balance, a repeated
+source, a quantity off the item's precision, an unconvertible unit, and a total above the planned quantity (more use is a planned-quantity
+change, judged by the variance rules — so a mix can never bypass reasons, blocks or approval). A total below the requirement is a reported shortage.
+The mix is priced from the proposal's cost evidence and compared with it; the comparison is information, not a rule (see
+[ADR 0072](../decisions/0072-hand-built-stock-mix-in-base-quantity.md) for why the variance bands do not carry it).
+
 ### Stock-selection preference (ADR 0071)
 
 Which stock the proposal draws first follows a stored preference, item → category → company → built-in, set on

@@ -270,9 +270,18 @@ item here in the same commit that delivers it; add new ones as they are found.
       ([ADR 0071](../decisions/0071-stored-material-selection-strategy-as-governed-history.md)): item → nearest category → company →
       built-in, each change a governed row with a reason, effective from the next preview only; Settings → Material selection and
       demo data (`MaterialSelectionDemoSeeder`).
-- [ ] **Hand-built package/location mix** evaluated by the resolver (a user choosing an arbitrary draw
-      rather than comparing the three presets), and the ADR 0054 §4 rule that a different valid mix at
-      the same planned quantity needs no reason unless its cost/waste crosses a band.
+- [x] **Hand-built stock mix, quantity-only** — delivered 2026-10-01
+      ([ADR 0072](../decisions/0072-hand-built-stock-mix-in-base-quantity.md)): a quantity per location/batch in the item's
+      stock unit, typed in any convertible unit, validated and priced by the server (an impossible mix is refused; a mix cannot
+      draw more than the plan, so it cannot bypass the variance rules). The cost/waste *escalation* half of ADR 0054 §4 is
+      deliberately not built: the variance bands measure planned-vs-standard quantity, not the cost of a draw against the
+      proposal, so reusing them would distort them — a separate owner decision (see the ADR).
+- [ ] **Package tracking and everything that needs it** — `item_packagings`, `PACKAGE_BALANCE` / `CONTAINER_TRACKED`, sealed/opened
+      package state and remnants, package-aware proposals and equivalents, expiry/remnant/surplus criteria, waste/residual
+      variance bands, per-unit precision. All extend the base-quantity mix; none needs it redesigned. Dependency and the
+      proposed owner (an Inventory package-tracking design before Phase 5 material issue) are in
+      [ADR 0072](../decisions/0072-hand-built-stock-mix-in-base-quantity.md#deferred-with-what-each-depends-on) and
+      [phases/README.md](README.md). Variable-content packages: [Q23](../OPEN-QUESTIONS.md#q23--variable-content-and-catch-weight-packages).
 - [ ] **Department-limited availability** — company-wide only until
       [Q26](../OPEN-QUESTIONS.md#q26--organisational-and-record-level-access-scope).
 - [ ] **Persisted adoption, approval and history** (`material_plan.adjust`, `package_plan.adopt`,
