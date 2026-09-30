@@ -12,10 +12,11 @@ import {
   type AssembliesMaterialPreview200DataInventory,
   type AssembliesMaterialPreview200DataVariance,
   type MaterialVarianceReasonResource,
+  type PreviewMaterialRequest as PreviewRequestData,
   type UomResource,
   type AssemblyResource,
 } from '@erp/core-api';
-import { AlertTriangle, Calculator } from 'lucide-react';
+import { AlertTriangle, Calculator, RefreshCw } from 'lucide-react';
 import { AdvancedOptionSection } from '../../components/ui/advanced-option-section';
 import { AdvancedOptionsMenu } from '../../components/ui/advanced-options-menu';
 import { Badge } from '../../components/ui/badge';
@@ -142,6 +143,11 @@ export function MaterialPreviewScreen() {
   const [preview, setPreview] = useState<PreviewData | null>(null);
   // What-if planned quantities by item id. They belong to the assembly context they were typed under,
   // so anything that can change which materials are required clears them (see resetContext).
+  // The exact request behind the result on screen, so "Check if still current" repeats that question and
+  // not whatever the form says now, plus when it was answered and what the last check found.
+  const [lastRequest, setLastRequest] = useState<{ assembly: number; data: PreviewRequestData } | null>(null);
+  const [calculatedAt, setCalculatedAt] = useState<Date | null>(null);
+  const [recheck, setRecheck] = useState<{ at: Date; changed: boolean } | null>(null);
   const [plans, setPlans] = useState<Record<number, WhatIfPlan>>({});
   const mutation = useAssembliesMaterialPreview();
   const reasonsQuery = useMaterialVarianceReasonsIndex({ per_page: 100, sort: 'name', 'filter[active]': true });
@@ -191,10 +197,9 @@ export function MaterialPreviewScreen() {
         reason_id: plan.reasonId === 'NO_REASON' ? null : Number(plan.reasonId),
         note: plan.note.trim() === '' ? null : plan.note.trim(),
       }));
-    mutation.mutate(
-      {
-        assembly: assembly.id,
-        data: {
+    run({
+      assembly: assembly.id,
+      data: {
           assembly_version_id: versionId === ACTIVE ? null : Number(versionId),
           work_quantity: workQuantity,
           work_uom_id: Number(workUomId),
@@ -211,14 +216,22 @@ export function MaterialPreviewScreen() {
                 selection_strategy: strategy === COMPANY_DEFAULT ? null : (strategy as MaterialSelectionStrategy),
               }
             : {}),
-        },
       },
-      {
-        onSuccess: (response) => {
-          if (response.status === 200) setPreview(response.data.data as unknown as PreviewData);
-        },
+    });
+  };
+
+  /** Runs a request. With `comparing`, the answer is compared with the one on screen by evidence fingerprint. */
+  const run = (request: { assembly: number; data: PreviewRequestData }, comparing?: PreviewData) => {
+    mutation.mutate(request, {
+      onSuccess: (response) => {
+        if (response.status !== 200) return;
+        const next = response.data.data as unknown as PreviewData;
+        setPreview(next);
+        setLastRequest(request);
+        setCalculatedAt(new Date());
+        setRecheck(comparing ? { at: new Date(), changed: comparing.evidence_fingerprint !== next.evidence_fingerprint } : null);
       },
-    );
+    });
   };
 
   if (!mayRun) {
@@ -409,6 +422,9 @@ export function MaterialPreviewScreen() {
           unitsLookup={lookupState(uomsQuery, 'units')}
           reasons={reasons}
           isCalculating={mutation.isPending}
+          calculatedAt={calculatedAt}
+          recheck={recheck}
+          onRecheck={lastRequest ? () => run(lastRequest, preview) : undefined}
         />
       )}
     </div>
@@ -425,9 +441,12 @@ interface PreviewResultProps {
   unitsLookup: LookupState;
   reasons: MaterialVarianceReasonResource[];
   isCalculating: boolean;
+  calculatedAt: Date | null;
+  recheck: { at: Date; changed: boolean } | null;
+  onRecheck?: () => void;
 }
 
-function PreviewResult({ data, mayViewAvailability, mayViewCost, plans, onPlanChange, uoms, unitsLookup, reasons, isCalculating }: PreviewResultProps) {
+function PreviewResult({ data, mayViewAvailability, mayViewCost, plans, onPlanChange, uoms, unitsLookup, reasons, isCalculating, calculatedAt, recheck, onRecheck }: PreviewResultProps) {
   const verdicts = new Map((data.variance?.items ?? []).map((verdict) => [verdict.item.id, verdict]));
   const pendingEdits = Object.values(plans).some((plan) => plan.quantity.trim() !== '');
   return (
@@ -440,8 +459,28 @@ function PreviewResult({ data, mayViewAvailability, mayViewCost, plans, onPlanCh
               {data.context.resolved_work_quantity} {data.context.assembly_work_uom.code} using Assembly version {data.context.assembly_version.version_no}
             </p>
           </div>
-          <Badge variant="secondary">Advisory — not reserved</Badge>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="secondary">Advisory — not reserved</Badge>
+            {calculatedAt && <Badge variant="outline">Calculated {formatTime(calculatedAt)}</Badge>}
+            {onRecheck && (
+              <Button type="button" size="sm" variant="outline" onClick={onRecheck} disabled={isCalculating}>
+                <RefreshCw className="size-4" />
+                {isCalculating ? 'Checking…' : 'Check if still current'}
+              </Button>
+            )}
+          </div>
         </div>
+        <p className="mt-2 text-xs text-muted-foreground">
+          Stock, rates and policies can change at any moment, so this answer can be out of date as soon as it is shown. Checking asks the
+          same question again and compares what it rests on.
+        </p>
+        {recheck && (
+          <p role="status" className={`mt-2 rounded-md border p-2 text-sm ${recheck.changed ? 'border-amber-500/40 bg-amber-500/10' : 'border-emerald-500/40 bg-emerald-500/10'}`}>
+            {recheck.changed
+              ? `Something this preview rests on changed since it was first calculated; the figures below were refreshed at ${formatTime(recheck.at)}.`
+              : `Still current at ${formatTime(recheck.at)}: nothing this preview rests on has changed.`}
+          </p>
+        )}
         {data.warnings.length > 0 && (
           <div className="mt-4 space-y-1 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
             {data.warnings.map((warning) => <p key={warning}><AlertTriangle className="mr-1 inline size-4" />{warning}</p>)}
@@ -535,6 +574,10 @@ function PreviewResult({ data, mayViewAvailability, mayViewCost, plans, onPlanCh
       </section>
     </div>
   );
+}
+
+function formatTime(value: Date): string {
+  return value.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
 function versionOptions(assembly?: AssemblyResource) {

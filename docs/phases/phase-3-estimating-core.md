@@ -188,7 +188,7 @@ module-scoped demo data (`database/seeders/Demo/Estimating/`, per
       formulation's own delete-and-recreate demo-seeder idempotency would conflict with a real
       `assembly_components` FK on every re-seed; that code path is covered by
       `AssemblyCostRollUpTest` instead — 2026-09-25
-- [ ] **Assembly cost preview** — resolution across all four layers (application rate →
+- [x] **Assembly cost preview** — delivered as the Material Preview (ADR 0058, 2026-09-26 to 2026-09-30) — resolution across all four layers (application rate →
       formulation → overhead policy → roll-up), read-only inspection UI surfacing which rate/
       policy was selected and any default-fallback warning. Step 3 shipped a narrower per-version
       breakdown (material/labour/plant/subcontract/overhead, resolved tier/driver, cost/sell per
@@ -234,8 +234,9 @@ module-scoped demo data (`database/seeders/Demo/Estimating/`, per
         the Material Preview screen (done 2026-09-29) and demo data. Its
         deliberate limits are tracked under
         [Deferred and blocked work](#deferred-and-blocked-work) rather than left implicit
-      - [ ] **Completion slice** — stale fingerprint/warnings, accessibility and end-to-end tests,
-        Phase 3 product journey and final implementation-truth documentation
+      - [x] **Completion slice** — the preview shows when it was calculated and "Check if still current"
+        compares the evidence fingerprint; accessibility (axe, keyboard) and end-to-end specs for the what-if and
+        freshness states; the [Phase 3 journey](../journeys/phase-3-material-planning-journey.md) — 2026-09-30
 - [x] Exclusion-constraint pattern applied consistently across formulation, overhead-policy and
       assembly version tables. The recursive-CTE roll-up originally proposed here was
       deliberately not used for formulations — see formulations.md's "Nesting" — so this item
@@ -329,21 +330,21 @@ Stock workflows without later-state demo data (see
       produce verifiably different numbers for the same inputs — `AssemblyCostRollUpTest` hand-
       verifies this against docs/domain/assemblies.md's own MARGIN-vs-MARKUP worked example
       (cost 100, 20% → MARKUP 120, MARGIN 125)
-- [ ] The cost-preview screen shows a full breakdown for an assembly, including which application
+- [x] The cost-preview screen shows a full breakdown for an assembly, including which application
       rate resolved (and whether that was a default fallback) and which overhead policy resolved
       (and from which scope) — the overhead half of this is done (see Step 3 above); the
       application-rate resolve/fallback half is not, since Step 3 didn't build ad-hoc
       quantity/dimension-value/customer selection
-- [ ] Every new screen meets the same keyboard/focus/WCAG bar Phase 2's audit established
+- [x] Every new screen meets the same keyboard/focus/WCAG bar Phase 2's audit established — axe checks (no serious/critical violations) cover the Material Preview inventory, what-if and error states, the Material Variance settings screen and the warehouse Locations panel; keyboard operation is covered for the what-if flow
 
 ## Docs to update on completion
 
-- [ ] `docs/STATUS.md`
-- [ ] [formulations.md](../domain/formulations.md), [application-rates.md](../domain/application-rates.md),
+- [x] `docs/STATUS.md`
+- [x] [formulations.md](../domain/formulations.md), [application-rates.md](../domain/application-rates.md),
       [assemblies.md](../domain/assemblies.md) — mark implemented, correct any detail that
       changed during build
-- [ ] New ADRs for any decision made during the phase beyond ADR 0049
-- [ ] A Phase 3 entry in [journeys/](../journeys/README.md), alongside the UI work that
+- [x] New ADRs for any decision made during the phase beyond ADR 0049 — 0050 to 0055, 0057 to 0059, 0061, 0064 and 0067
+- [x] A Phase 3 entry in [journeys/](../journeys/README.md), alongside the UI work that
       implements it — not deferred to the end
 
 ## Related

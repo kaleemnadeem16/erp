@@ -217,6 +217,13 @@ version, customer or a rate dimension discards typed plans, because the material
 Cost observations in a matched condition are shown only with `estimating.internal_cost.view`. Component:
 `frontend/packages/core-ui/src/features/material-preview/variance-what-if.tsx`.
 
+### Freshness on the Material Preview screen
+
+The result shows when it was calculated and a **Check if still current** button. It repeats the exact request
+behind the result on screen (not whatever the form says now) and compares the returned `evidence_fingerprint`
+with the earlier one: equal means "still current", different means something the preview rests on changed and
+the figures are refreshed. The fingerprint is a stale-comparison aid, never a reservation token.
+
 ### How a planned quantity is judged
 
 `EvaluateMaterialVariance` compares a planned quantity with its standard (both in the item's stock unit)

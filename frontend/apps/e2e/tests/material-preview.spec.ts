@@ -139,3 +139,49 @@ test.describe('material preview what-if plan', () => {
     await expect(page.getByRole('group', { name: /Variance verdict/ })).toHaveCount(0);
   });
 });
+
+/**
+ * A preview reserves nothing and can be out of date the moment it is shown (ADR 0058), so the screen says
+ * when it was calculated and can ask the same question again, comparing the evidence fingerprint.
+ */
+test.describe('material preview freshness', () => {
+  async function calculate(page: import('@playwright/test').Page) {
+    await page.goto('/material-preview');
+    await pickCombobox(page, 'Assembly', /demo-asm-wall-paint/);
+    await page.getByLabel('Work quantity', { exact: true }).fill('10');
+    await page.getByRole('button', { name: 'Calculate preview' }).click();
+    await expect(page.getByText(/^Calculated /)).toBeVisible();
+  }
+
+  test('asking again when nothing changed says the preview is still current', async ({ page }) => {
+    await calculate(page);
+    await page.getByRole('button', { name: 'Check if still current' }).click();
+    await expect(page.getByRole('status').filter({ hasText: /Still current at/ })).toBeVisible();
+  });
+
+  test('a changed answer is called out and the figures are refreshed', async ({ page }) => {
+    await calculate(page);
+    // The second answer comes back with different evidence, as if stock or a rate had moved meanwhile.
+    await page.route(/\/material-preview$/, async (route) => {
+      const response = await route.fetch();
+      const body = await response.json();
+      body.data.evidence_fingerprint = 'changed-'.concat(String(body.data.evidence_fingerprint));
+      await route.fulfill({ response, json: body });
+    });
+    await page.getByRole('button', { name: 'Check if still current' }).click();
+    await expect(page.getByRole('status').filter({ hasText: /changed since it was first calculated/ })).toBeVisible();
+  });
+
+  test('the what-if state has no serious accessibility violations and works by keyboard', async ({ page }) => {
+    await calculate(page);
+    const planned = page.getByLabel('Planned quantity of demo-pig-blue');
+    await planned.focus();
+    await page.keyboard.type('12');
+    await page.getByRole('button', { name: 'Calculate preview' }).press('Enter');
+    await expect(page.getByRole('group', { name: 'Variance verdict for demo-pig-blue' })).toBeVisible();
+
+    const results = await new AxeBuilder({ page }).analyze();
+    const serious = results.violations.filter((violation) => violation.impact === 'critical' || violation.impact === 'serious');
+    expect(serious, JSON.stringify(serious, null, 2)).toEqual([]);
+  });
+});

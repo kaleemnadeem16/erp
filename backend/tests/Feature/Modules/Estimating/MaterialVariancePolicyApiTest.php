@@ -2,16 +2,19 @@
 
 namespace Tests\Feature\Modules\Estimating;
 
+use App\Exceptions\DomainInvariantException;
 use App\Models\Uom;
 use App\Models\User;
+use App\Modules\Estimating\Actions\CreateMaterialVariancePolicy;
 use App\Modules\Estimating\Actions\ResolveMaterialVariancePolicy;
-use App\Modules\Estimating\Models\MaterialVarianceReason;
 use App\Modules\Estimating\Models\MaterialVariancePolicy;
+use App\Modules\Estimating\Models\MaterialVarianceReason;
 use App\Modules\Estimating\Support\VarianceResolutionMethod;
 use App\Modules\Inventory\Models\Category;
 use App\Modules\Inventory\Models\Item;
 use App\Support\UomDimension;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
@@ -115,9 +118,9 @@ class MaterialVariancePolicyApiTest extends TestCase
 
     public function test_the_action_refuses_approval_required_even_when_called_without_the_http_layer(): void
     {
-        $this->expectException(\App\Exceptions\DomainInvariantException::class);
+        $this->expectException(DomainInvariantException::class);
 
-        app(\App\Modules\Estimating\Actions\CreateMaterialVariancePolicy::class)(
+        app(CreateMaterialVariancePolicy::class)(
             ['scope_type' => 'COMPANY', 'reason' => 'x', 'bands' => [['direction' => 'OVER', 'measure' => 'PERCENT', 'threshold' => '10', 'effect' => 'APPROVAL_REQUIRED']]],
             $this->manager->id,
         );
@@ -216,7 +219,7 @@ class MaterialVariancePolicyApiTest extends TestCase
         $draft = $this->draft();
         $this->actingAs($this->manager)->deleteJson("/api/v1/material-variance-policies/{$draft->id}")->assertNoContent();
         $this->assertNull(MaterialVariancePolicy::query()->find($draft->id));
-        $this->assertSame(0, \Illuminate\Support\Facades\DB::table('material_variance_policy_bands')->where('policy_id', $draft->id)->count());
+        $this->assertSame(0, DB::table('material_variance_policy_bands')->where('policy_id', $draft->id)->count());
     }
 
     public function test_listing_is_audit_detail_gated_like_overhead_history(): void

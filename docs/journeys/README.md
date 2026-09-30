@@ -21,7 +21,8 @@ They sit beside the existing documentation rather than replacing it:
 | Journey | Audience | Coverage |
 |---|---|---|
 | [Phase 2 operational journey](phase-2-operational-journey.md) | New operator, buyer, receiver/QA operator, inventory controller | Implemented entry-to-exit flow from login and setup through purchasing, receiving, QA, stock visibility and control work |
-| Future Phase 3–7 journeys | To be added when each phase starts | Estimating, sales, job execution, finance, mobile and integrations |
+| [Phase 3 material-planning journey](phase-3-material-planning-journey.md) | Estimator, planning lead, administrator | Implemented rules setup, Material Preview, stock proposal, what-if variance verdicts and the freshness check |
+| Future Phase 4–7 journeys | To be added when each phase starts | Sales, job execution, finance, mobile and integrations |
 
 ## How to maintain journeys
 
