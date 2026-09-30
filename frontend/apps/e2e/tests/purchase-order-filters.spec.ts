@@ -43,6 +43,13 @@ test.describe('Purchase Orders list search and advanced filters', () => {
     await page.getByLabel('Min total value').fill('500000');
     // Active filter count updates on button
     await expect(filtersBtn).toContainText('1');
+
+    // 8a. Test close and re-open animation transition
+    await page.getByRole('button', { name: 'Close filters' }).click();
+    await expect(page.locator('div[aria-hidden="true"]')).toHaveClass(/grid-rows-\[0fr\]/);
+    await filtersBtn.click();
+    await expect(page.locator('div[aria-hidden="false"]')).toHaveClass(/grid-rows-\[1fr\]/);
+
     // URL query state updated
     await expect(page).toHaveURL(/total_min=500000/);
     // Closed orders with 1000 PKR must disappear
@@ -83,11 +90,12 @@ test.describe('Purchase Orders list search and advanced filters', () => {
     await expect(mobileFiltersBtn).toBeVisible();
     await mobileFiltersBtn.click();
 
-    // Bottom sheet header
-    await expect(page.getByRole('heading', { name: 'Filters' })).toBeVisible();
-    await expect(page.getByLabel('Contains item')).toBeVisible();
-    await expect(page.getByLabel('Order date from')).toBeVisible();
-    await expect(page.getByLabel('Min total value')).toBeVisible();
+    // Bottom sheet header and controls
+    const sheet = page.locator('[role="dialog"]');
+    await expect(sheet.getByRole('heading', { name: 'Filters' })).toBeVisible();
+    await expect(sheet.getByLabel('Contains item')).toBeVisible();
+    await expect(sheet.getByLabel('Order date from')).toBeVisible();
+    await expect(sheet.getByLabel('Min total value')).toBeVisible();
 
     // Take screenshot of mobile sheet
     await page.screenshot({ path: 'frontend/apps/e2e/test-results/mobile-filters.png' });

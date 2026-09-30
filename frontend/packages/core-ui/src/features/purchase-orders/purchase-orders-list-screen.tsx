@@ -366,47 +366,58 @@ export function PurchaseOrdersListScreen() {
         </Button>
       </div>
 
-      {advancedOpen && (
-        <div className="hidden rounded-lg border bg-card p-4 text-card-foreground shadow-xs md:block">
-          <div className="mb-3 flex items-center justify-between">
-            <span className="text-xs font-semibold tracking-wide uppercase text-muted-foreground">
-              Advanced Filters
-            </span>
-            <div className="flex items-center gap-2">
-              {advancedFilterCount > 0 && (
+      <div
+        className={cn(
+          "hidden md:grid transition-[grid-template-rows,opacity,transform] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none",
+          advancedOpen
+            ? "grid-rows-[1fr] opacity-100 translate-y-0"
+            : "grid-rows-[0fr] opacity-0 -translate-y-2 pointer-events-none",
+        )}
+        aria-hidden={!advancedOpen}
+        inert={!advancedOpen}
+      >
+        <div className="overflow-hidden">
+          <div className="rounded-lg border bg-card p-4 text-card-foreground shadow-xs">
+            <div className="mb-3 flex items-center justify-between">
+              <span className="text-xs font-semibold tracking-wide uppercase text-muted-foreground">
+                Advanced Filters
+              </span>
+              <div className="flex items-center gap-2">
+                {advancedFilterCount > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs text-muted-foreground hover:text-foreground"
+                    onClick={clearAdvancedFilters}
+                  >
+                    Reset filters
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-7 text-xs text-muted-foreground hover:text-foreground"
-                  onClick={clearAdvancedFilters}
+                  className="h-7 w-7 p-0"
+                  onClick={() => setAdvancedOpen(false)}
+                  aria-label="Close filters"
                 >
-                  Reset filters
+                  <X className="h-4 w-4" />
                 </Button>
-              )}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 w-7 p-0"
-                onClick={() => setAdvancedOpen(false)}
-                aria-label="Close filters"
-              >
-                <X className="h-4 w-4" />
-              </Button>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <AdvancedFilterFields
+                query={query}
+                itemsLookup={lookupState(itemsQuery, "items")}
+                items={items}
+                selectedSupplierId={selectedSupplierId}
+                sites={sites}
+                currencies={currencies}
+                mayViewCommercialCost={mayViewCommercialCost}
+              />
             </div>
           </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <AdvancedFilterFields
-              query={query}
-              itemsLookup={lookupState(itemsQuery, "items")}
-              items={items}
-              selectedSupplierId={selectedSupplierId}
-              sites={sites}
-              currencies={currencies}
-              mayViewCommercialCost={mayViewCommercialCost}
-            />
-          </div>
         </div>
-      )}
+      </div>
 
       <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
         <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto md:hidden">
