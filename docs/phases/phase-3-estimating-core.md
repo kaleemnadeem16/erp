@@ -244,6 +244,25 @@ module-scoped demo data (`database/seeders/Demo/Estimating/`, per
 
 Tick these in the same commit as the work.
 
+## Reconciliation — 2026-10-01
+
+Everything Phase 3 set out to deliver is built and verified. What remains open below is deliberately deferred, and each item
+waits on something outside Phase 3:
+
+| Open item | Why it is legitimately outside Phase 3 | Waits on |
+|---|---|---|
+| Persisted adoption, approval submission and history | A plan is only hypothetical until a quotation revision adopts it | Phase 4 |
+| Variance reporting (ADR 0054 §8) | Needs adopted plans to report on | Phase 4 |
+| Package-level proposals, package tracking, waste/residual bands, package-aware mixes | Need sealed/opened package state that does not exist | An Inventory package-tracking design ([ADR 0072](../decisions/0072-hand-built-stock-mix-in-base-quantity.md), [phases/README.md](README.md)) |
+| Cost consequence of a hand-built mix | Not a variance-band question ([ADR 0072](../decisions/0072-hand-built-stock-mix-in-base-quantity.md)) | An owner decision |
+| Department-limited availability | Needs organisational scope | [Q26](../OPEN-QUESTIONS.md#q26--organisational-and-record-level-access-scope) |
+| Approval notifications | Shared, ERP-wide capability | [Q33](../OPEN-QUESTIONS.md#q33--erp-wide-notifications-capability) |
+
+Verified against the committed state at `18dd3f4` plus other work in progress in the tree: the full backend suite passes
+(1247 tests), the frontend type-checks, and the browser specs for the material preview, stored preferences, variance settings and
+approvals pass. The dev Postgres self-restart is a documented environment issue, not a product blocker
+([environments.md](../architecture/environments.md)).
+
 ## Deferred and blocked work
 
 Things this phase knowingly does not do, each with what it waits on, so none is forgotten. Tick an
