@@ -22,6 +22,7 @@ import { formatDateTime } from '../../lib/format-date';
 import { currentVersion, latestVersion, recalculationStatus } from './recalculation-request-columns';
 import { useAuthStore } from '../../stores/auth-store';
 import { formatLocation } from '../../lib/format-location';
+import { usePermission } from '../../hooks/use-permission';
 
 const RISK_VARIANT: Record<string, 'secondary' | 'destructive'> = { NORMAL_RISK: 'secondary', HIGH_RISK: 'destructive' };
 
@@ -40,6 +41,9 @@ const RISK_VARIANT: Record<string, 'secondary' | 'destructive'> = { NORMAL_RISK:
 export function RecalculationRequestDetailScreen() {
   const params = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const mayDecide = usePermission('inventory.recalculation.approve');
+  const mayExecute = usePermission('inventory.recalculation.execute');
+  const mayResume = usePermission('inventory.recalculation.review-regeneration');
   const requestId = Number(params.id);
 
   const requestQuery = useRecalculationRequestsShow(requestId, { include: 'item,location,destinationLocation,batch' });
@@ -250,13 +254,13 @@ export function RecalculationRequestDetailScreen() {
                   {current.execution.stock_move_id}
                 </p>
               </div>
-            ) : current.has_unexpired_full_approval ? (
+            ) : current.has_unexpired_full_approval && mayExecute ? (
               <div className="flex justify-end sm:col-span-2 border-t border-border pt-4">
                 <Button onClick={() => handleExecute(current.id)} disabled={execute.isPending}>
                   {execute.isPending ? 'Executing…' : 'Execute'}
                 </Button>
               </div>
-            ) : !current.is_decided ? (
+            ) : !current.is_decided && mayDecide ? (
               <form
                 onSubmit={(event) => {
                   event.preventDefault();
@@ -293,15 +297,15 @@ export function RecalculationRequestDetailScreen() {
                   )}
                 </div>
               </form>
-            ) : (
+            ) : current.is_rejected ? (
               <p className="text-sm text-muted-foreground sm:col-span-2 border-t border-border pt-4">
                 Rejected — no further decisions are accepted on this version.
               </p>
-            )}
+            ) : null}
           </DetailSection>
         )}
 
-        {paused && latest && (
+        {paused && latest && mayResume && (
           <DetailSection title="Regeneration paused" description="Automatic regeneration hit its cap after repeated ledger changes — manual coordination is required before a replacement version is computed.">
             <form
               onSubmit={(event) => {

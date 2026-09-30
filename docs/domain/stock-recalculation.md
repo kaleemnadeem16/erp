@@ -368,7 +368,18 @@ exception's own route prefix.
 (`required_approval_count`, `is_rejected`, `is_fully_approved`, `has_unexpired_full_approval`,
 `is_decided`) straight from the model's own methods, rather than pushing the expiry-comparison and
 distinct-approver-counting logic onto the frontend the way every earlier derived-status screen
-could safely do — this domain's approval state is genuinely more involved. `decide` and `execute`
+could safely do — this domain's approval state is genuinely more involved.
+
+Per [ADR 0074](../decisions/0074-authorise-recalculation-economic-record-reads-by-workflow-duty.md),
+list/show are economic-review reads, not open stock lookups. A caller needs a recalculation
+request/approve/high-risk-approve/execute/regeneration-review capability or
+`inventory.valuation.view`; unrelated authenticated users receive 403. Workflow-duty holders
+see the full cost and impact evidence they must submit or judge. Valuation-only readers can audit
+but cannot act; the SPA hides unavailable controls and blocks a bookmarked New form. Company-wide
+record scope remains subject to Q26. This does not grant workflow actors generic Inventory
+valuation visibility on the stock ledger or overview.
+
+`decide` and `execute`
 both revalidate the ledger immediately before acting and can commit a stale-flip (and usually a
 replacement version) even when they go on to fail, so a 422 can still mean server state changed;
 the `/recalculation-requests/:id` detail screen refetches the request after every action attempt,

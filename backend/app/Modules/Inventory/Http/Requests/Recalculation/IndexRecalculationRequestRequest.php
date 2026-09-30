@@ -6,6 +6,7 @@ namespace App\Modules\Inventory\Http\Requests\Recalculation;
 
 use App\Http\Requests\Concerns\ValidatesListQuery;
 use App\Modules\Inventory\Support\RecalculationMovementKind;
+use App\Modules\Inventory\Support\RecalculationReadAccess;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -15,7 +16,7 @@ class IndexRecalculationRequestRequest extends FormRequest
 
     public function authorize(): bool
     {
-        return true;
+        return RecalculationReadAccess::allows($this->user());
     }
 
     /** @return array<string, mixed> */

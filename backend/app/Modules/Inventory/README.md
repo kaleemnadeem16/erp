@@ -131,6 +131,12 @@ movement.
 
 ## Recalculation review
 
+Recalculation list/show expose full economic impact only to a recalculation workflow-duty holder
+or an `inventory.valuation.view` reader (ADR 0074). The former needs the evidence to request,
+approve, execute or coordinate a correction; the latter may audit but has no workflow authority.
+Unrelated authenticated users cannot read the document. This does not grant recalculation actors
+the generic stock-ledger monetary projection.
+
 Inventory also owns backdated receipt/issue/transfer requests, immutable impact/approval records,
 layer-consumption ledger and regeneration coordination reviews. `RequestStockRecalculation`
 builds the preview; issues/transfers reconstruct connected history, derive outbound costs and

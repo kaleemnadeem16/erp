@@ -154,12 +154,17 @@ issue.
       valuation entries), stock layers, AVCO pools and inventory-overview rows/summary; the
       quantity view remains available. Ledger/overview screens and print views follow the API
       projection → [ADR 0073](../decisions/0073-separate-inventory-valuation-visibility-from-stock-operations.md).
-- [ ] Inventory valuation visibility, remaining workflow/export audit — review recalculation
-      requests and impact versions, cutover source facts/negative openings/previews, physical
+- [ ] Inventory valuation visibility, remaining workflow/export audit — review cutover
+      source facts/negative openings/previews, physical
       counts and found costs, negative-stock/settlement responses, policy settings/history,
       and any CSV/print/export path. Decide per workflow which monetary inputs authorised
       operators must supply and which can be server-derived; do not blanket-hide required
       controls. Until this closes, do not claim system-wide Inventory cost secrecy.
+- [x] Recalculation economic-record read boundary (2026-09-30) — list/show now require a
+      recalculation duty or `inventory.valuation.view`; workflow actors retain the complete
+      economic evidence their decisions require, while valuation-only readers cannot act.
+      The SPA hides unauthorised create/decision/execute/resume controls and gates bookmarked
+      New → [ADR 0074](../decisions/0074-authorise-recalculation-economic-record-reads-by-workflow-duty.md).
 - [x] Confirm the missing `QualityDisposition` list screen stays an intentional non-gap
 - [x] Assignment/backfill pass, then enforce `purchasing.item-supplier.manage`
 - [x] Assignment/backfill pass, then enforce goods-receipt create/post/reverse

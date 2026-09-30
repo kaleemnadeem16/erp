@@ -50,6 +50,7 @@ const negativeStock = [
   "inventory.negative-stock.review",
 ] as const;
 const recalculation = [
+  "inventory.valuation.view",
   "inventory.recalculation.request",
   "inventory.recalculation.approve",
   "inventory.recalculation.approve-high-risk",
@@ -165,6 +166,9 @@ export function canAccessScreen(
   }
   if (pathname === "/goods-receipts/new") {
     return permissions.has("purchasing.goods-receipt.create");
+  }
+  if (pathname === "/recalculation-requests/new") {
+    return permissions.has("inventory.recalculation.request");
   }
   if (
     pathname === "/item-suppliers/new" ||
