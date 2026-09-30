@@ -332,7 +332,9 @@ class MaterialPreviewApiTest extends TestCase
         $response->assertOk();
         $response->assertJsonPath('data.inventory.items.0.usable_quantity', '7.0000');
         $response->assertJsonPath('data.inventory.items.0.unusable_location_quantity', '0.0000');
-        $sources = collect($response->json('data.inventory.items.0.balances'))->pluck('location_usable_source')->all();
+        /** @var list<array{location_usable_source: string}> $balances */
+        $balances = $response->json('data.inventory.items.0.balances');
+        $sources = array_column($balances, 'location_usable_source');
         $this->assertEqualsCanonicalizing(['MARKED', 'TYPE'], $sources);
     }
 
@@ -429,7 +431,7 @@ class MaterialPreviewApiTest extends TestCase
         $missing->assertJsonPath('data.variance.items.0.reason_status', 'MISSING');
         $missing->assertJsonPath('data.variance.items.0.can_adopt', false);
         $missing->assertJsonPath('data.variance.items.0.policy', null);
-        $missing->assertJsonPath('data.variance.summary', ['adjusted_count' => 1, 'needs_reason_count' => 1, 'blocked_count' => 0, 'can_adopt' => false, 'cost_impact' => null, 'cost_evidence_missing_count' => null]);
+        $missing->assertJsonPath('data.variance.summary', ['adjusted_count' => 1, 'needs_reason_count' => 1, 'blocked_count' => 0, 'needs_approval_count' => 0, 'can_adopt' => false, 'cost_impact' => null, 'cost_evidence_missing_count' => null]);
 
         $given = $this->actingAs($user)->postJson($this->url(), $this->payload() + ['planned_adjustments' => [$this->adjust('5', ['reason_id' => $reason->id, 'note' => 'Bare plaster'])]]);
         $given->assertJsonPath('data.variance.items.0.reason_status', 'PROVIDED');
@@ -489,9 +491,9 @@ class MaterialPreviewApiTest extends TestCase
             'a negative quantity' => [$this->adjust('-1'), 'planned_adjustments.0.planned_quantity'],
             'an unknown reason' => [$this->adjust('5', ['reason_id' => 99999]), 'planned_adjustments.0.reason_id'],
         ];
-        foreach ($cases as $label => [$adjustment, $key]) {
+        foreach ($cases as [$adjustment, $key]) {
             $this->actingAs($user)->postJson($this->url(), $this->payload() + ['planned_adjustments' => [$adjustment]])
-                ->assertUnprocessable($label)->assertJsonValidationErrors($key);
+                ->assertUnprocessable()->assertJsonValidationErrors($key);
         }
 
         $this->actingAs($user)->postJson($this->url(), $this->payload() + ['planned_adjustments' => [$this->adjust('5'), $this->adjust('6')]])

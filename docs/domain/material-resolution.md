@@ -271,6 +271,11 @@ unless their own permission is effective, including history, exports, lookups, a
 notifications. A cost-triggered approval routes only to an approver who can view internal cost.
 Selling price/margin and supplier offers remain outside this permission set.
 
+The Phase 3 what-if variance summary includes `needs_approval_count` alongside reason and block
+counts, including `0` when no approval is needed. It reports an approval requirement for planning
+only; it does not submit a request or adopt the plan. The corresponding no-policy preview test
+asserts the full response shape so this additive contract stays visible.
+
 Roles and assignments are company-configurable. The first implementation is honestly
 company-scoped; Q26 later adds own/assigned/organisation-unit/task scopes without renaming these
 capabilities. ADR 0054 policy determines audit/reason/approval/block. Small companies may
