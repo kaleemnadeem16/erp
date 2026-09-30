@@ -91,6 +91,11 @@ an exact duplicate combination for the same item+work unit — the resolution al
 called directly from the preview endpoint today, and by the assembly cost roll-up once that
 slice lands.
 
+Application-rate create/update/delete require `estimating.application-rate.manage` at both
+HTTP and Action boundaries. List/show/resolve remain authenticated company reads, including
+the resolution tester for preview users. The SPA hides New/edit routes from users without the
+write capability, while a preview user can inspect rates and test resolution.
+
 `PreviewAssemblyMaterials` is the read-only Material Preview (`POST
 /api/v1/assemblies/{assembly}/material-preview`, ADR 0058). For a caller holding
 `estimating.inventory_availability.view` it also runs `PreviewInventoryAvailability`: per leaf
@@ -163,9 +168,10 @@ The existing Estimating CRUD retrofit also reserves six write capabilities:
 `estimating.rate-dimension.manage` (including values), `estimating.application-rate.manage`,
 `estimating.formulation.manage` (including versions), `estimating.assembly-group.manage`,
 `estimating.assembly.manage` (including versions), and `estimating.resource-rate.manage`.
-Only `estimating.rate-dimension.manage` is now enforced for its parent/value writes, with matching
-screen access and denied-path tests. The other five remain registration-only; their
-assignment/backfill, backend enforcement, UI gating and denied-path tests are tracked in the
+`estimating.rate-dimension.manage` and `estimating.application-rate.manage` are now enforced for
+their writes, with matching screen access and denied-path tests. The other four remain
+registration-only; their assignment/backfill, backend enforcement, UI gating and denied-path
+tests are tracked in the
 [authorisation retrofit](../../../../docs/architecture/authorization-retrofit.md#c-existing-estimating-crud).
 
 `estimating.material_variance_policy.manage` (not in ADR 0057's list — added with the configurable variance

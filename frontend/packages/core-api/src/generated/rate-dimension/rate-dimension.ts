@@ -22,7 +22,9 @@ import type {
 
 import type {
   AuthenticationExceptionResponse,
+  AuthorizationExceptionResponse,
   ModelNotFoundExceptionResponse,
+  RateDimensionsDestroy403,
   RateDimensionsIndex200,
   RateDimensionsIndexParams,
   RateDimensionsShow200,
@@ -256,6 +258,11 @@ export type rateDimensionsStoreResponse401 = {
   status: 401;
 };
 
+export type rateDimensionsStoreResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type rateDimensionsStoreResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -266,7 +273,9 @@ export type rateDimensionsStoreResponseSuccess =
     headers: Headers;
   };
 export type rateDimensionsStoreResponseError = (
-  rateDimensionsStoreResponse401 | rateDimensionsStoreResponse422
+  | rateDimensionsStoreResponse401
+  | rateDimensionsStoreResponse403
+  | rateDimensionsStoreResponse422
 ) & {
   headers: Headers;
 };
@@ -291,7 +300,10 @@ export const rateDimensionsStore = async (
 };
 
 export const getRateDimensionsStoreMutationOptions = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -333,10 +345,15 @@ export type RateDimensionsStoreMutationResult = NonNullable<
 >;
 export type RateDimensionsStoreMutationBody = StoreRateDimensionRequest;
 export type RateDimensionsStoreMutationError =
-  AuthenticationExceptionResponse | ValidationExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
 
 export const useRateDimensionsStore = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(
   options?: {
@@ -622,6 +639,11 @@ export type rateDimensionsDestroyResponse401 = {
   status: 401;
 };
 
+export type rateDimensionsDestroyResponse403 = {
+  data: RateDimensionsDestroy403;
+  status: 403;
+};
+
 export type rateDimensionsDestroyResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -632,7 +654,9 @@ export type rateDimensionsDestroyResponseSuccess =
     headers: Headers;
   };
 export type rateDimensionsDestroyResponseError = (
-  rateDimensionsDestroyResponse401 | rateDimensionsDestroyResponse404
+  | rateDimensionsDestroyResponse401
+  | rateDimensionsDestroyResponse403
+  | rateDimensionsDestroyResponse404
 ) & {
   headers: Headers;
 };
@@ -658,7 +682,10 @@ export const rateDimensionsDestroy = async (
 };
 
 export const getRateDimensionsDestroyMutationOptions = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | RateDimensionsDestroy403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -700,10 +727,15 @@ export type RateDimensionsDestroyMutationResult = NonNullable<
 >;
 
 export type RateDimensionsDestroyMutationError =
-  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
+  | AuthenticationExceptionResponse
+  | RateDimensionsDestroy403
+  | ModelNotFoundExceptionResponse;
 
 export const useRateDimensionsDestroy = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | RateDimensionsDestroy403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(
   options?: {
@@ -736,6 +768,11 @@ export type rateDimensionsUpdateResponse401 = {
   status: 401;
 };
 
+export type rateDimensionsUpdateResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type rateDimensionsUpdateResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -752,6 +789,7 @@ export type rateDimensionsUpdateResponseSuccess =
   };
 export type rateDimensionsUpdateResponseError = (
   | rateDimensionsUpdateResponse401
+  | rateDimensionsUpdateResponse403
   | rateDimensionsUpdateResponse404
   | rateDimensionsUpdateResponse422
 ) & {
@@ -784,6 +822,7 @@ export const rateDimensionsUpdate = async (
 export const getRateDimensionsUpdateMutationOptions = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -828,12 +867,14 @@ export type RateDimensionsUpdateMutationResult = NonNullable<
 export type RateDimensionsUpdateMutationBody = UpdateRateDimensionRequest;
 export type RateDimensionsUpdateMutationError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
 export const useRateDimensionsUpdate = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,

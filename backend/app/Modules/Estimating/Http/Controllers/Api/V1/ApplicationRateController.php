@@ -18,6 +18,7 @@ use App\Modules\Estimating\Http\Resources\ApplicationRateResource;
 use App\Modules\Estimating\Models\ApplicationRate;
 use App\Support\Concerns\AppliesApiQuery;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -45,7 +46,7 @@ class ApplicationRateController extends Controller
 
     public function store(StoreApplicationRateRequest $request, CreateApplicationRate $create): JsonResponse
     {
-        return (new ApplicationRateResource($create($request->validated())))->response()->setStatusCode(201);
+        return (new ApplicationRateResource($create($request->validated(), $request->user())))->response()->setStatusCode(201);
     }
 
     public function show(ShowApplicationRateRequest $request, ApplicationRate $application_rate): ApplicationRateResource
@@ -57,12 +58,13 @@ class ApplicationRateController extends Controller
 
     public function update(UpdateApplicationRateRequest $request, ApplicationRate $application_rate, UpdateApplicationRate $update): ApplicationRateResource
     {
-        return new ApplicationRateResource($update($application_rate, $request->validated()));
+        return new ApplicationRateResource($update($application_rate, $request->validated(), $request->user()));
     }
 
-    public function destroy(ApplicationRate $application_rate, ArchiveApplicationRate $archive): Response
+    public function destroy(Request $request, ApplicationRate $application_rate, ArchiveApplicationRate $archive): Response
     {
-        $archive($application_rate);
+        abort_unless($request->user()?->can('estimating.application-rate.manage'), 403);
+        $archive($application_rate, $request->user());
 
         return response()->noContent();
     }

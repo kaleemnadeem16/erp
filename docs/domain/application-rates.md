@@ -112,6 +112,17 @@ capability; no read-only detail screen exists yet. The permission is additive an
 not tied to a hardcoded role name. Administrators must grant it to existing roles or members who
 maintain dimensions before deploying this gate; registration by itself does not assign it.
 
+### Access to application rates
+
+Creating, changing or deleting an application rate requires `estimating.application-rate.manage`
+at both the HTTP and Action boundaries. Listing, showing and resolving rates remain authenticated
+company reads, because estimators need to inspect and test the consumption rule without gaining
+authority to alter it. In the SPA, a material-preview user can reach the rate list and resolution
+tester but not the New/edit forms; managers can use both. Existing maintainers need an explicit
+role or direct grant before deployment. The configured administrator receives new capabilities
+through normal deploy-time permission sync; no other role gains one simply because it is named
+Estimator or Master Data Steward.
+
 ## Landmines
 
 **Confusing this with UoM conversion.** Litres → sqm is *not* arithmetic; it depends on surface,

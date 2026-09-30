@@ -15,6 +15,7 @@ import { apiSortToTableSorting, tableSortingToApiSort, useListQueryState } from 
 import { applicationRateColumns } from './application-rates-columns';
 import { ApplicationRateResolutionTester } from './application-rate-resolution-tester';
 import { lookupState } from '../../lib/api-errors';
+import { usePermission } from '../../hooks/use-permission';
 
 interface Filters {
   item_id: string;
@@ -22,6 +23,7 @@ interface Filters {
 }
 
 export function ApplicationRatesListScreen() {
+  const mayManage = usePermission('estimating.application-rate.manage');
   const navigate = useNavigate();
   const query = useListQueryState<Filters>({ defaultSort: 'created_at' });
   const [testerOpen, setTesterOpen] = useState(false);
@@ -45,7 +47,7 @@ export function ApplicationRatesListScreen() {
       <PageHeader
         title="Application rates"
         description="How much of an item is consumed per one unit of work, by context."
-        primaryAction={{ label: 'New rate', onClick: () => navigate('/application-rates/new') }}
+        primaryAction={mayManage ? { label: 'New rate', onClick: () => navigate('/application-rates/new') } : undefined}
         actions={
           <Button type="button" variant="outline" onClick={() => setTesterOpen((v) => !v)}>
             {testerOpen ? 'Hide resolution tester' : 'Test resolution'}
@@ -81,7 +83,7 @@ export function ApplicationRatesListScreen() {
         onSortingChange={(u) =>
           query.setSort(tableSortingToApiSort(typeof u === 'function' ? u(sorting) : u, applicationRateColumns))
         }
-        onRowClick={(row: ApplicationRateResource) => navigate(`/application-rates/${row.id}/edit`)}
+        onRowClick={mayManage ? (row: ApplicationRateResource) => navigate(`/application-rates/${row.id}/edit`) : undefined}
         isLoading={result.isLoading}
         isError={result.isError}
         error={result.error}

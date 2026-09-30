@@ -87,7 +87,10 @@ const rules: readonly Rule[] = [
   { path: "/negative-stock-overrides", anyOf: negativeStock },
   { path: "/recalculation-requests", anyOf: recalculation },
   { path: "/rate-dimensions", anyOf: ["estimating.rate-dimension.manage"] },
-  { path: "/application-rates", allOf: legacySetup },
+  {
+    path: "/application-rates",
+    anyOf: ["estimating.application-rate.manage", "estimating.material_preview.run"],
+  },
   { path: "/formulations", allOf: legacySetup },
   { path: "/assembly-groups", allOf: legacySetup },
   { path: "/assemblies", allOf: legacySetup },
@@ -152,6 +155,12 @@ export function canAccessScreen(
     /^\/item-suppliers\/[^/]+\/edit$/.test(pathname)
   ) {
     return permissions.has("purchasing.item-supplier.manage");
+  }
+  if (
+    pathname === "/application-rates/new" ||
+    /^\/application-rates\/[^/]+\/edit$/.test(pathname)
+  ) {
+    return permissions.has("estimating.application-rate.manage");
   }
   const rule = rules.find((candidate) => matches(pathname, candidate.path));
   if (!rule) return false;

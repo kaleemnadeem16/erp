@@ -198,8 +198,8 @@ independently of this backlog's sequencing whenever wanted.
       (`assembly_group_id,search,status`), Rate Dimensions/Assembly Groups (`search`), Application
       Rates (`is_default,work_uom_id`) — no permission dependency, can land anytime
 - [x] Register all six capabilities above (2026-09-30). Registration alone grants no
-      operational user access and must not be mistaken for a protected endpoint. Five remain
-      reserved after the rate-dimension slice below.
+      operational user access and must not be mistaken for a protected endpoint. Four remain
+      reserved after the rate-dimension and application-rate slices below.
 - [x] Rate Dimensions and Values (2026-09-30): `estimating.rate-dimension.manage` gates create,
       update and delete at HTTP and non-HTTP Action boundaries. Index/show/value reads remain
       authenticated-only shared lookups. The SPA setup route and New action require the same
@@ -207,6 +207,13 @@ independently of this backlog's sequencing whenever wanted.
       grant it explicitly to existing dimension maintainers through a company role or direct
       assignment; the configured administrator receives it through the normal sync. No
       production-role assignment is inferred from a starter-role name.
+- [x] Application Rates (2026-09-30): `estimating.application-rate.manage` gates create,
+      update and delete at HTTP and non-HTTP Action boundaries. List/show/resolve remain
+      authenticated company reads. The SPA permits preview users to inspect rates and run the
+      resolution tester but restricts New/edit routes to managers. Allowed/denied API and Action
+      tests cover the boundary. Before deployment, explicitly grant existing rate maintainers
+      through company roles or direct assignments; administrator sync is not a grant to every
+      operational role.
 - [ ] Assignment/backfill pass, then enforce (lower daily-write volume than Purchasing, so this can
       land before section B's enforcement steps)
 - [ ] Frontend action gating once `/api/v1/user` effective permissions ship
