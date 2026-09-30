@@ -20,8 +20,8 @@ export interface AssemblyResource {
   description: AssemblyResourceDescription;
   work_uom_id: number;
   assembly_group_id: AssemblyResourceAssemblyGroupId;
-  margin_type: string;
-  margin_pct: string;
+  margin_type?: string;
+  margin_pct?: string;
   status: string;
   work_uom?: AssemblyResourceWorkUom;
   assembly_group?: AssemblyResourceAssemblyGroup;

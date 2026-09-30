@@ -140,6 +140,9 @@ Assembly header and version/component create, update, archive/delete and activat
 reads for shared estimating lookups. The explainable version cost-breakdown endpoint separately
 requires `estimating.internal_cost.view`, even for an assembly manager; the SPA hides its control
 without that capability. Demo activation uses the permission-synchronised demo actor.
+Shared assembly list/show responses omit margin settings and nested component rate overrides
+unless the caller can manage assemblies or view internal costs. This gives editors the values
+needed for correction without disclosing commercial configuration to unrelated readers.
 
 `CreateOverheadPolicy` always creates a DRAFT — every row is a governed change (mandatory
 `reason` + `changed_by`), there is no "current settings" row this is a delta from, unlike

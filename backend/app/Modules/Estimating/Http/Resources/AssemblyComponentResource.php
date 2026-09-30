@@ -27,7 +27,10 @@ class AssemblyComponentResource extends JsonResource
             'uom_id' => $row->uom_id,
             'wastage_pct' => $row->wastage_pct,
             'multiplier' => $row->multiplier,
-            'rate_override' => $row->rate_override,
+            'rate_override' => $this->when(
+                $request->user()?->can('estimating.assembly.manage') || $request->user()?->can('estimating.internal_cost.view'),
+                $row->rate_override,
+            ),
             'sequence' => $row->sequence,
             'item' => $this->whenLoaded('item', fn () => $row->item === null ? null : [
                 'id' => $row->item->id, 'code' => $row->item->code, 'name' => $row->item->name,

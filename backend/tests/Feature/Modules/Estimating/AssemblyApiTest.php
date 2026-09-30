@@ -221,6 +221,27 @@ class AssemblyApiTest extends TestCase
             ->assertJsonPath('data.0.assembly_group.code', 'FABRICATION');
     }
 
+    public function test_margin_settings_are_visible_only_to_managers_or_internal_cost_viewers(): void
+    {
+        $assembly = Assembly::create([
+            'code' => 'ASM-1', 'name' => 'Welded frame', 'work_uom_id' => $this->hour->id,
+            'margin_type' => 'MARGIN', 'margin_pct' => '25',
+        ]);
+        $viewer = User::factory()->create();
+        $this->actingAs($viewer)->getJson('/api/v1/assemblies')->assertOk()
+            ->assertJsonMissingPath('data.0.margin_type')->assertJsonMissingPath('data.0.margin_pct');
+        $this->getJson("/api/v1/assemblies/{$assembly->id}")->assertOk()
+            ->assertJsonMissingPath('data.margin_type')->assertJsonMissingPath('data.margin_pct');
+
+        $costViewer = PermissionedActor::grant(User::factory()->create(), ['estimating.internal_cost.view']);
+        $this->actingAs($costViewer)->getJson("/api/v1/assemblies/{$assembly->id}")->assertOk()
+            ->assertJsonPath('data.margin_type', 'MARGIN')->assertJsonPath('data.margin_pct', '25.0000');
+
+        $manager = PermissionedActor::grant(User::factory()->create(), ['estimating.assembly.manage']);
+        $this->actingAs($manager)->getJson("/api/v1/assemblies/{$assembly->id}")->assertOk()
+            ->assertJsonPath('data.margin_type', 'MARGIN')->assertJsonPath('data.margin_pct', '25.0000');
+    }
+
     public function test_writes_require_manage_while_list_and_show_remain_shared(): void
     {
         $user = User::factory()->create();

@@ -52,6 +52,9 @@ export function AssemblyEditScreen() {
       </div>
     );
 
+  if (row.margin_type == null || row.margin_pct == null)
+    return <div className="p-6 text-sm text-destructive">You cannot edit this assembly without access to its margin settings.</div>;
+
   return (
     <div className="space-y-4 p-6">
       <PageHeader

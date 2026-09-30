@@ -200,6 +200,28 @@ class AssemblyVersionApiTest extends TestCase
             ->assertJsonCount(1, 'data.active_version.components');
     }
 
+    public function test_nested_component_rate_override_is_hidden_without_commercial_access(): void
+    {
+        $version = $this->assembly->versions()->create(['version_no' => 1]);
+        $version->components()->create([
+            'kind' => 'SUBCONTRACT', 'qty_per_work_unit' => '1', 'uom_id' => $this->sqm->id,
+            'rate_override' => '15.0000', 'sequence' => 0,
+        ]);
+        $viewer = User::factory()->create();
+        $url = "/api/v1/assemblies/{$this->assembly->id}?include=versions,versions.components";
+
+        $this->actingAs($viewer)->getJson($url)->assertOk()
+            ->assertJsonMissingPath('data.versions.0.components.0.rate_override');
+
+        $manager = PermissionedActor::grant(User::factory()->create(), ['estimating.assembly.manage']);
+        $this->actingAs($manager)->getJson($url)->assertOk()
+            ->assertJsonPath('data.versions.0.components.0.rate_override', '15.0000');
+
+        $costViewer = PermissionedActor::grant(User::factory()->create(), ['estimating.internal_cost.view']);
+        $this->actingAs($costViewer)->getJson($url)->assertOk()
+            ->assertJsonPath('data.versions.0.components.0.rate_override', '15.0000');
+    }
+
     public function test_version_writes_require_assembly_manage(): void
     {
         $manager = PermissionedActor::grant(User::factory()->create(), ['estimating.assembly.manage']);

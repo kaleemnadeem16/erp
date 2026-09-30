@@ -37,10 +37,13 @@ control is hidden otherwise. Existing maintainers need an explicit grant before 
 
 This is a capability retrofit, not a redesign of assembly lifecycle or record scope. List/show
 remain company-scoped shared reads; later organisation-scoped visibility would need matching
-query and policy rules. Assembly header margin settings and component rate overrides remain
-visible to authenticated company readers in existing resources; the `internal_cost.view` gate
-protects resolved cost breakdowns, not every potentially commercial configuration field. A
-separate field-projection review is needed before claiming full estimating commercial secrecy.
+query and policy rules. Header `margin_type`/`margin_pct` and nested component `rate_override`
+are omitted from list/show responses unless the caller can manage assemblies or has
+`estimating.internal_cost.view`. Managers need those settings to edit the assembly; cost viewers
+may inspect them without write access. The version cost-breakdown remains separately gated by
+`estimating.internal_cost.view`, including for assembly managers. This protects these direct
+commercial fields, but does not claim system-wide estimating cost secrecy; other resources and
+indirect inference paths require their own review.
 
 ## Assembly-group access
 
