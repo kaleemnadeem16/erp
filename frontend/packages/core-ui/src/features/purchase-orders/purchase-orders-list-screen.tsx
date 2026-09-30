@@ -13,6 +13,7 @@ import {
   type SupplierSiteResource,
 } from "@erp/core-api";
 
+import { cn } from "../../lib/utils";
 import { Badge } from "../../components/ui/badge";
 import { Combobox } from "../../components/ui/combobox";
 import { DateField } from "../../components/ui/date-field";
@@ -89,7 +90,21 @@ export function PurchaseOrdersListScreen() {
     defaultPerPage: 25,
   });
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(() =>
+    Boolean(
+      query.filters.order_date_from ||
+        query.filters.order_date_to ||
+        query.filters.expected_delivery_from ||
+        query.filters.expected_delivery_to ||
+        query.filters.issued_from ||
+        query.filters.issued_to ||
+        query.filters.item_id ||
+        query.filters.supplier_site_id ||
+        query.filters.currency_id ||
+        query.filters.total_min ||
+        query.filters.total_max,
+    ),
+  );
   const { view, setView } = useListViewPreference("purchase-orders-list");
 
   const suppliersQuery = useSupplierAccountsIndex({
@@ -379,7 +394,7 @@ export function PurchaseOrdersListScreen() {
               </Button>
             </div>
           </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <AdvancedFilterFields
               query={query}
               itemsLookup={lookupState(itemsQuery, "items")}
@@ -657,7 +672,7 @@ function AdvancedFilterFields({
 
   return (
     <>
-      <div className="space-y-1.5">
+      <div className={cn("space-y-1.5", !full && "sm:col-span-2")}>
         <Label className="text-xs font-medium text-muted-foreground">
           Order date range
         </Label>
@@ -678,7 +693,7 @@ function AdvancedFilterFields({
         </div>
       </div>
 
-      <div className="space-y-1.5">
+      <div className={cn("space-y-1.5", !full && "sm:col-span-2")}>
         <Label className="text-xs font-medium text-muted-foreground">
           Expected delivery range
         </Label>
@@ -703,7 +718,28 @@ function AdvancedFilterFields({
         </div>
       </div>
 
-      <div className="space-y-1.5">
+      <div className={cn("space-y-1.5", !full && "sm:col-span-2")}>
+        <Label className="text-xs font-medium text-muted-foreground">
+          Issued date range
+        </Label>
+        <div className="flex items-center gap-1.5">
+          <DateField
+            aria-label="Issued date from"
+            value={query.filters.issued_from ?? ""}
+            onChange={(val) => query.setFilter("issued_from", val || undefined)}
+            className="w-full"
+          />
+          <span className="text-xs text-muted-foreground">–</span>
+          <DateField
+            aria-label="Issued date to"
+            value={query.filters.issued_to ?? ""}
+            onChange={(val) => query.setFilter("issued_to", val || undefined)}
+            className="w-full"
+          />
+        </div>
+      </div>
+
+      <div className={cn("space-y-1.5", !full && "sm:col-span-1")}>
         <Label className="text-xs font-medium text-muted-foreground">
           Contains item
         </Label>
@@ -718,11 +754,11 @@ function AdvancedFilterFields({
           aria-label="Contains item"
           searchPlaceholder="Search items…"
           emptyText="No items found."
-          className={full ? "h-9 w-full" : "h-9 w-full"}
+          className="h-9 w-full"
         />
       </div>
 
-      <div className="space-y-1.5">
+      <div className={cn("space-y-1.5", !full && "sm:col-span-1")}>
         <Label className="text-xs font-medium text-muted-foreground">
           Supplier site
         </Label>
@@ -737,7 +773,7 @@ function AdvancedFilterFields({
             }
           >
             <SelectTrigger
-              className={full ? "h-9 w-full" : "h-9 w-full"}
+              className="h-9 w-full"
               aria-label="Supplier site"
             >
               <SelectValue placeholder="All sites" />
@@ -759,30 +795,9 @@ function AdvancedFilterFields({
         )}
       </div>
 
-      <div className="space-y-1.5">
-        <Label className="text-xs font-medium text-muted-foreground">
-          Issued date range
-        </Label>
-        <div className="flex items-center gap-1.5">
-          <DateField
-            aria-label="Issued date from"
-            value={query.filters.issued_from ?? ""}
-            onChange={(val) => query.setFilter("issued_from", val || undefined)}
-            className="w-full"
-          />
-          <span className="text-xs text-muted-foreground">–</span>
-          <DateField
-            aria-label="Issued date to"
-            value={query.filters.issued_to ?? ""}
-            onChange={(val) => query.setFilter("issued_to", val || undefined)}
-            className="w-full"
-          />
-        </div>
-      </div>
-
       {mayViewCommercialCost && (
         <>
-          <div className="space-y-1.5">
+          <div className={cn("space-y-1.5", !full && "sm:col-span-2")}>
             <Label className="text-xs font-medium text-muted-foreground">
               Total value range
             </Label>
@@ -811,7 +826,7 @@ function AdvancedFilterFields({
             </div>
           </div>
 
-          <div className="space-y-1.5">
+          <div className={cn("space-y-1.5", !full && "sm:col-span-2")}>
             <Label className="text-xs font-medium text-muted-foreground">
               Currency
             </Label>
@@ -822,7 +837,7 @@ function AdvancedFilterFields({
               }
             >
               <SelectTrigger
-                className={full ? "h-9 w-full" : "h-9 w-full"}
+                className="h-9 w-full"
                 aria-label="Currency"
               >
                 <SelectValue placeholder="All currencies" />
