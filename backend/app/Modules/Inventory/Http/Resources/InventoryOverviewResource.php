@@ -54,8 +54,8 @@ class InventoryOverviewResource extends JsonResource
             // on_hand_qty in SQL, and Postgres NUMERIC division doesn't preserve a
             // fixed scale — rounding here is the norm, not the exception, for that
             // one (mirrors InventoryOverviewSummaryResource's identical asymmetry).
-            'on_hand_value' => (string) BigDecimal::of((string) $item->getAttribute('on_hand_value'))->toScale(4),
-            'available_value' => (string) BigDecimal::of((string) $item->getAttribute('available_value'))->toScale(4, RoundingMode::HALF_UP),
+            'on_hand_value' => $this->when($request->user()?->can('inventory.valuation.view'), fn () => (string) BigDecimal::of((string) $item->getAttribute('on_hand_value'))->toScale(4)),
+            'available_value' => $this->when($request->user()?->can('inventory.valuation.view'), fn () => (string) BigDecimal::of((string) $item->getAttribute('available_value'))->toScale(4, RoundingMode::HALF_UP)),
         ];
     }
 }

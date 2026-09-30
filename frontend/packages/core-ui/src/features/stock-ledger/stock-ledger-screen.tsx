@@ -18,6 +18,7 @@ import { useColumnVisibilityPreference } from '../../lib/use-column-visibility-p
 import { useListViewPreference } from '../../lib/use-view-preference';
 import { stockMoveColumns } from './stock-moves-columns';
 import { lookupState, type LookupState } from '../../lib/api-errors';
+import { usePermission } from '../../hooks/use-permission';
 
 interface StockMoveFilters {
   search: string;
@@ -31,10 +32,12 @@ interface StockMoveFilters {
 
 export function StockLedgerScreen() {
   const navigate = useNavigate();
+  const mayViewValuation = usePermission('inventory.valuation.view');
+  const columns = useMemo(() => stockMoveColumns.filter((column) => mayViewValuation || column.key !== 'unit_cost'), [mayViewValuation]);
   const query = useCursorQueryState<StockMoveFilters>({ defaultSort: '-moved_at', defaultPerPage: 25 });
   const [columnVisibility, setColumnVisibility] = useColumnVisibilityPreference(
     'stock-ledger',
-    Object.fromEntries(stockMoveColumns.map((column) => [column.key, isColumnVisibleByDefault(column)]))
+    Object.fromEntries(columns.map((column) => [column.key, isColumnVisibleByDefault(column)]))
   );
   const [filtersOpen, setFiltersOpen] = useState(false);
   const { view, setView } = useListViewPreference('stock-ledger');
@@ -70,8 +73,8 @@ export function StockLedgerScreen() {
   const moves = movesQuery.data?.status === 200 ? movesQuery.data.data.data : [];
   const meta = movesQuery.data?.status === 200 ? movesQuery.data.data.meta : undefined;
 
-  const tanStackColumns = useMemo(() => toTanStackColumns(stockMoveColumns), []);
-  const sorting: SortingState = apiSortToTableSorting(query.sort, stockMoveColumns);
+  const tanStackColumns = useMemo(() => toTanStackColumns(columns), [columns]);
+  const sorting: SortingState = apiSortToTableSorting(query.sort, columns);
 
   const activeFilterLines = describeFilters(query.filters, items, warehouses);
   const { contentRef: printRef, print } = useQuickPrint({ documentTitle: 'Stock Ledger' });
@@ -148,7 +151,7 @@ export function StockLedgerScreen() {
         sorting={sorting}
         onSortingChange={(updater) => {
           const next = typeof updater === 'function' ? updater(sorting) : updater;
-          query.setSort(tableSortingToApiSort(next, stockMoveColumns));
+          query.setSort(tableSortingToApiSort(next, columns));
         }}
         columnVisibility={columnVisibility}
         onColumnVisibilityChange={setColumnVisibility}
@@ -167,7 +170,7 @@ export function StockLedgerScreen() {
         onNext={() => query.goToNextCursor(meta?.next_cursor)}
         view={view}
         onViewChange={setView}
-        cardColumns={stockMoveColumns}
+        cardColumns={columns}
       />
 
       {/* Quick Print — a dedicated print-only layout, hidden until react-to-print clones it. Prints the currently loaded page only, per the cursor ledger's own pagination model. */}
@@ -179,10 +182,10 @@ export function StockLedgerScreen() {
             recordCount={moves.length}
             meta={[
               ...(activeFilterLines.length > 0 ? [{ label: 'Filters', value: activeFilterLines.join(', ') }] : []),
-              ...(query.sort ? [{ label: 'Sort', value: describeSort(query.sort, stockMoveColumns) ?? query.sort }] : []),
+              ...(query.sort ? [{ label: 'Sort', value: describeSort(query.sort, columns) ?? query.sort }] : []),
             ]}
           >
-            <PrintableTable columns={stockMoveColumns} rows={moves} getRowKey={(move) => move.id} />
+            <PrintableTable columns={columns} rows={moves} getRowKey={(move) => move.id} />
           </PrintLayout>
         </div>
       </div>

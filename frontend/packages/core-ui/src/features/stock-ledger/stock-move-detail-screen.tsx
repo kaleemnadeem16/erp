@@ -10,13 +10,19 @@ import { DetailPageLayout, DetailSection } from '../../components/detail/detail-
 import { DetailField } from '../../components/detail/detail-field';
 import { formatDateTime } from '../../lib/format-date';
 import { formatLocation } from '../../lib/format-location';
+import { usePermission } from '../../hooks/use-permission';
 
 export function StockMoveDetailScreen() {
   const params = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const mayViewValuation = usePermission('inventory.valuation.view');
   const moveId = Number(params.id);
 
-  const moveQuery = useStockMovesShow(moveId, { include: 'item,from_location,to_location,batch,valuation_entries' });
+  const moveQuery = useStockMovesShow(moveId, {
+    include: mayViewValuation
+      ? 'item,from_location,to_location,batch,valuation_entries'
+      : 'item,from_location,to_location,batch',
+  });
   const move = moveQuery.data?.status === 200 ? moveQuery.data.data.data : undefined;
 
   if (moveQuery.isLoading) {
@@ -55,12 +61,15 @@ export function StockMoveDetailScreen() {
           <DetailField label="From location">{formatLocation(move.from_location)}</DetailField>
           <DetailField label="To location">{formatLocation(move.to_location)}</DetailField>
           <DetailField label="Quantity">{move.qty}</DetailField>
-          <DetailField label="Unit cost">{`${move.unit_cost} (fx ${move.fx_rate})`}</DetailField>
+          {mayViewValuation && move.unit_cost != null && (
+            <DetailField label="Unit cost">{`${move.unit_cost} (fx ${move.fx_rate})`}</DetailField>
+          )}
           <DetailField label="Batch">{move.batch?.code}</DetailField>
           <DetailField label="Serial">{move.serial_no}</DetailField>
         </DetailSection>
 
-        <DetailSection title="Valuation entries" description="The cost impact this movement posted to the ledger." fullWidth>
+        {mayViewValuation && (
+          <DetailSection title="Valuation entries" description="The cost impact this movement posted to the ledger." fullWidth>
           <div className="sm:col-span-2 overflow-x-auto rounded-md border border-border">
             <Table>
               <TableHeader>
@@ -95,7 +104,8 @@ export function StockMoveDetailScreen() {
               </TableBody>
             </Table>
           </div>
-        </DetailSection>
+          </DetailSection>
+        )}
       </DetailPageLayout>
     </div>
   );

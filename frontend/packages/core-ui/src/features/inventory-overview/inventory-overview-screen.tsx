@@ -31,6 +31,7 @@ import { useColumnVisibilityPreference } from '../../lib/use-column-visibility-p
 import { useListViewPreference } from '../../lib/use-view-preference';
 import { inventoryOverviewColumns } from './inventory-overview-columns';
 import { lookupState, type LookupState } from '../../lib/api-errors';
+import { usePermission } from '../../hooks/use-permission';
 
 interface InventoryOverviewFilters {
   category_id: string;
@@ -51,6 +52,7 @@ function formatMoney(value: string): string {
  */
 export function InventoryOverviewScreen() {
   const navigate = useNavigate();
+  const mayViewValuation = usePermission('inventory.valuation.view');
   const query = useListQueryState<InventoryOverviewFilters>({ defaultSort: 'name', defaultPerPage: 25 });
   const uomsQuery = useUomsIndex({ per_page: 100, sort: 'name' });
   const uomLabels = useMemo(
@@ -60,7 +62,10 @@ export function InventoryOverviewScreen() {
       ),
     [uomsQuery.data],
   );
-  const overviewColumns = useMemo(() => inventoryOverviewColumns(uomLabels), [uomLabels]);
+  const overviewColumns = useMemo(
+    () => inventoryOverviewColumns(uomLabels).filter((column) => mayViewValuation || (column.key !== 'on_hand_value' && column.key !== 'available_value')),
+    [uomLabels, mayViewValuation],
+  );
   const [columnVisibility, setColumnVisibility] = useColumnVisibilityPreference(
     'inventory-overview-list',
     Object.fromEntries(overviewColumns.map((column) => [column.key, isColumnVisibleByDefault(column)]))
@@ -144,18 +149,22 @@ export function InventoryOverviewScreen() {
           a fixed 2-up grid keeps every card wide enough to show the full
           figure instead. */}
       <div className="grid grid-cols-2 gap-3 md:flex md:flex-wrap">
-        <StatCard
-          label="On-hand value"
-          value={summary ? formatMoney(summary.on_hand_value) : '—'}
-          tone="info"
-          isLoading={summaryQuery.isLoading}
-        />
-        <StatCard
-          label="Available value"
-          value={summary ? formatMoney(summary.available_value) : '—'}
-          tone="success"
-          isLoading={summaryQuery.isLoading}
-        />
+        {mayViewValuation && (
+          <StatCard
+            label="On-hand value"
+            value={summary?.on_hand_value != null ? formatMoney(summary.on_hand_value) : '—'}
+            tone="info"
+            isLoading={summaryQuery.isLoading}
+          />
+        )}
+        {mayViewValuation && (
+          <StatCard
+            label="Available value"
+            value={summary?.available_value != null ? formatMoney(summary.available_value) : '—'}
+            tone="success"
+            isLoading={summaryQuery.isLoading}
+          />
+        )}
         <StatCard
           label="Items with shortage"
           value={summary?.shortage_item_count ?? '—'}

@@ -148,6 +148,18 @@ issue.
       derives cost, currency and FX from the issued PO. SPA columns, detail sections and print views follow.
       Demo: `demo-receiver@erp.x1techs.com` (Receiving Clerk, demo password) with a draft receipt.
       → [ADR 0069](../decisions/0069-separate-purchasing-commercial-visibility-from-receiving.md)
+
+- [x] Inventory operational read projection, first slice (2026-09-30) —
+      `inventory.valuation.view` gates monetary fields in stock moves (including requested
+      valuation entries), stock layers, AVCO pools and inventory-overview rows/summary; the
+      quantity view remains available. Ledger/overview screens and print views follow the API
+      projection → [ADR 0073](../decisions/0073-separate-inventory-valuation-visibility-from-stock-operations.md).
+- [ ] Inventory valuation visibility, remaining workflow/export audit — review recalculation
+      requests and impact versions, cutover source facts/negative openings/previews, physical
+      counts and found costs, negative-stock/settlement responses, policy settings/history,
+      and any CSV/print/export path. Decide per workflow which monetary inputs authorised
+      operators must supply and which can be server-derived; do not blanket-hide required
+      controls. Until this closes, do not claim system-wide Inventory cost secrecy.
 - [x] Confirm the missing `QualityDisposition` list screen stays an intentional non-gap
 - [x] Assignment/backfill pass, then enforce `purchasing.item-supplier.manage`
 - [x] Assignment/backfill pass, then enforce goods-receipt create/post/reverse

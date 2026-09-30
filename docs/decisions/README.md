@@ -85,8 +85,9 @@ in the same commit.
 | [0070](0070-shared-configurable-approval-engine.md) | One shared, configurable approval engine | accepted | 2026-09-30 |
 | [0071](0071-stored-material-selection-strategy-as-governed-history.md) | Store the material selection strategy as governed, versioned history | accepted | 2026-10-01 |
 | [0072](0072-hand-built-stock-mix-in-base-quantity.md) | Let a person build the stock draw by hand, in base quantity, validated and priced by the server | accepted | 2026-10-01 |
+| [0073](0073-separate-inventory-valuation-visibility-from-stock-operations.md) | Separate Inventory valuation visibility from stock operations | accepted | 2026-09-30 |
 
-**Next number: 0071**
+**Next number: 0074**
 
 ## By theme
 

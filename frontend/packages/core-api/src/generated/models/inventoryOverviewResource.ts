@@ -26,6 +26,6 @@ export interface InventoryOverviewResource {
 on_hand_qty in SQL, and Postgres NUMERIC division doesn't preserve a
 fixed scale — rounding here is the norm, not the exception, for that
 one (mirrors InventoryOverviewSummaryResource's identical asymmetry). */
-  on_hand_value: string;
-  available_value: string;
+  on_hand_value?: string;
+  available_value?: string;
 }

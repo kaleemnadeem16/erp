@@ -26,6 +26,7 @@ use App\Support\CompanyContext;
 use App\Support\UomDimension;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Tests\Support\PermissionedActor;
 use Tests\Support\PurchasingActor;
 use Tests\TestCase;
 
@@ -63,6 +64,24 @@ class InventoryOverviewApiTest extends TestCase
         $response->assertJsonPath('data.0.shortage_qty', '3.0000');
     }
 
+    public function test_operational_reader_sees_quantities_and_counts_without_inventory_values(): void
+    {
+        $item = $this->seedFullScenario();
+        $this->actingAs(User::factory()->create());
+
+        $this->getJson('/api/v1/inventory-overview?filter[search]='.$item->code)
+            ->assertOk()
+            ->assertJsonPath('data.0.on_hand_qty', '6.0000')
+            ->assertJsonMissingPath('data.0.on_hand_value')
+            ->assertJsonMissingPath('data.0.available_value');
+
+        $this->getJson('/api/v1/inventory-overview/summary?filter[search]='.$item->code)
+            ->assertOk()
+            ->assertJsonPath('data.item_count', 1)
+            ->assertJsonMissingPath('data.on_hand_value')
+            ->assertJsonMissingPath('data.available_value');
+    }
+
     /**
      * Regression test: on_hand_value/available_value were exposed per-row for
      * the first time alongside type/stock_uom_id, and available_value's
@@ -75,6 +94,7 @@ class InventoryOverviewApiTest extends TestCase
     {
         $item = $this->seedFullScenario();
         DB::table('avco_pools')->where('item_id', $item->id)->update(['inventory_value' => '61.0000']);
+        $this->actingAs(PermissionedActor::grant(User::factory()->create(), ['inventory.valuation.view']));
 
         $response = $this->getJson('/api/v1/inventory-overview?filter[search]='.$item->code);
 
@@ -89,6 +109,7 @@ class InventoryOverviewApiTest extends TestCase
     public function test_summary_computes_value_and_counts_across_the_filtered_set(): void
     {
         $item = $this->seedFullScenario();
+        $this->actingAs(PermissionedActor::grant(User::factory()->create(), ['inventory.valuation.view']));
 
         $response = $this->getJson('/api/v1/inventory-overview/summary?filter[search]='.$item->code);
 
@@ -111,6 +132,7 @@ class InventoryOverviewApiTest extends TestCase
         // available_qty / on_hand_qty came back with more than 4 decimal digits, and the default
         // `toScale(4)` (RoundingMode::UNNECESSARY) threw instead of rounding. 61 isn't a multiple of 6.
         DB::table('avco_pools')->where('item_id', $item->id)->update(['inventory_value' => '61.0000']);
+        $this->actingAs(PermissionedActor::grant(User::factory()->create(), ['inventory.valuation.view']));
 
         $response = $this->getJson('/api/v1/inventory-overview/summary?filter[search]='.$item->code);
 
@@ -133,7 +155,7 @@ class InventoryOverviewApiTest extends TestCase
             'category_id' => $category->id, 'is_stocked' => true,
         ]);
 
-        $response = $this->actingAs(User::factory()->create())->getJson('/api/v1/inventory-overview/summary?filter[search]=idle');
+        $response = $this->actingAs(PermissionedActor::grant(User::factory()->create(), ['inventory.valuation.view']))->getJson('/api/v1/inventory-overview/summary?filter[search]=idle');
 
         $response->assertOk();
         $response->assertJsonPath('data.on_hand_value', '0.0000');

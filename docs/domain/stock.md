@@ -291,6 +291,15 @@ path. `item`/`from_location`/`to_location`/`batch`/`valuation_entries` are all o
 "page-based elsewhere, cursor for large/frequently-appended lists" split — this ledger has no
 `total`/page-jump UI, only Previous/Next against the API's opaque cursor.
 
+Per [ADR 0073](../decisions/0073-separate-inventory-valuation-visibility-from-stock-operations.md),
+ordinary authenticated readers see movement and quantity facts but not Inventory's monetary
+valuation. `inventory.valuation.view` is required for move cost/FX and valuation entries, layer
+cost/FX, AVCO pool value/rates, and inventory-overview row/summary values. The API omits restricted
+keys, including a requested `valuation_entries` include; ledger/overview columns, details, cards
+and quick-print content follow the same capability. Purchasing supplier-price and Estimating
+preview access remain independent. Recalculation, cutover, count and exception responses are a
+separate review; this is not yet a system-wide cost secrecy claim.
+
 `stock_layers` and `avco_pools` each have their own read endpoint too now, closing the last gap
 on this close-out item: a cursor-paginated `GET /api/v1/stock-layers` (`filter[open]` for an
 item's still-open FIFO/SPECIFIC layers — `stock_layers_open_fifo` exists specifically to serve

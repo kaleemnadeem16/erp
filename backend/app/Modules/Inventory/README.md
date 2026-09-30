@@ -87,6 +87,12 @@ panel edits them (structured companies only for hierarchy, type and the mark). W
 `inventory.warehouse.manage`; warehouse-location role writes require `inventory.location.manage`. GL-account field visibility remains
 a separate Finance-owned decision and is not implied by either write capability.
 
+Operational stock ledger, layer, pool and overview reads remain quantity-visible to authenticated
+company users. Their monetary fields and included valuation entries require the separate
+`inventory.valuation.view` capability (ADR 0073); Purchasing commercial and Estimating internal
+cost permissions do not imply it. Other Inventory workflow responses remain on the valuation
+visibility audit list.
+
 `CreateWarehouse` always creates its first location in the same transaction, so an active
 warehouse cannot enter normal use without an exact physical location. Warehouse and location
 updates/archiving use their corresponding Actions. `SIMPLE` mode keeps one plain location per
