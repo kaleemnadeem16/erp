@@ -263,6 +263,31 @@ Traefik on `proxy-net` with `Host()` routing rules and an HTTPS-redirect middlew
 GHCR tagged by commit SHA; Compose project per app. Consistency with the existing nine projects
 is worth more than any improvement we might invent.
 
+## Known local issue: the dev Postgres restarts itself
+
+Observed 2026-09-04 to 2026-09-30 on the WSL2/Docker dev stack (not production). Every so often the Postgres postmaster logs
+`server process (PID n) exited with exit code 2` (or `terminated by signal 13`), then `terminating any other active server
+processes`, `all server processes terminated; reinitializing` and `automatic recovery in progress`. Every open connection is
+dropped, so a running test suite fails in bulk and passes on rerun.
+
+What the evidence says, and does not say:
+
+- **Not memory.** The container's `OOMKilled` is false, its restart count is 0, and the WSL host has free memory.
+- **Not a data problem.** Recovery completes in seconds and no committed data was lost; the exit-code-2 lines are preceded by no
+  SQL error from our code. One crash (2026-09-30 02:36) happened overnight with no test or job running.
+- **The disk is stalling.** Checkpoints normally sync in 0.1–0.5 s. Around the crashes they take 12–66 s, with one at 397 s
+  (2026-09-29 12:52), while the checkpoint write phase alone stays around 100 s.
+  That points at the WSL2/Docker volume (or the VM being paused and resumed), not at our queries.
+- **Not proven.** Postgres logs no cause for exit code 2, so a Postgres-side fault is not excluded; it is the least likely reading.
+  Nothing in the ERP code can cause it: production runs on dedicated VMs ([dbvm](#dbvm--data-tier)) and has not shown it.
+
+Consequences: it does not block Phase 3. A red run that shows `SQLSTATE[08006]`/"recovery mode" or a mass of unrelated failures
+should simply be rerun. Two concurrent test runs against `erp_testing` (two agents) also deadlock each other on schema drops.
+
+**Proposed separately, not done:** run the test database as its own throwaway Postgres service on `tmpfs` with `fsync=off`. That
+removes the disk from the test path and isolates test runs from the dev database. It is infrastructure work and should not be
+mixed with product changes.
+
 ## Related
 
 - [deployment.md](deployment.md) · [ci-cd.md](ci-cd.md)
