@@ -150,8 +150,8 @@ integration and webhook consumers, where retries are routine.
 
 | Scope | Limit |
 |---|---|
-| Authenticated | 120/min |
-| Login | 5/min per IP |
+| Authenticated | 120/min per user (`API_RATE_LIMIT_PER_MINUTE`, `config/api.php`; production keeps the default) |
+| Login | 5/min per IP (keyed on the address, so repeated scripted sign-ins exhaust it too) |
 | Integrations | Per-token, configurable |
 
 ## Generated client
