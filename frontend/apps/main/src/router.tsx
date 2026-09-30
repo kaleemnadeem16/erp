@@ -19,6 +19,7 @@ import {
   EstimatingSettingsScreen,
   ApprovalsInboxScreen,
   ApprovalsSettingsScreen,
+  MaterialSelectionSettingsScreen,
   MaterialVarianceSettingsScreen,
   FormulationCreateScreen,
   FormulationEditScreen,
@@ -755,6 +756,16 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <EstimatingSettingsScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings/material-selection"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <MaterialSelectionSettingsScreen />
               </AppShell>
             </ProtectedRoute>
           }

@@ -4,11 +4,11 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { AssembliesMaterialPreview200DataInventoryStrategySource } from "./assembliesMaterialPreview200DataInventoryStrategySource";
+import type { AssembliesMaterialPreview200DataInventoryStrategyLabel } from "./assembliesMaterialPreview200DataInventoryStrategyLabel";
 
 export type AssembliesMaterialPreview200DataInventoryStrategy = {
   code: string;
-  label: string;
-  source: AssembliesMaterialPreview200DataInventoryStrategySource;
+  label: AssembliesMaterialPreview200DataInventoryStrategyLabel;
+  source: string;
   rules_version: 1;
 };

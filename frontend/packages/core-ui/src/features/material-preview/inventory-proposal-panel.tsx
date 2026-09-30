@@ -26,6 +26,14 @@ interface InventoryProposalPanelProps {
   mayViewCost: boolean;
 }
 
+const STRATEGY_SOURCE_TEXT: Record<string, string> = {
+  REQUEST_OVERRIDE: 'chosen for this preview',
+  ITEM: 'set for this item',
+  ITEM_CATEGORY: "set for this item's category",
+  COMPANY: 'the company setting',
+  BUILT_IN_DEFAULT: 'the built-in default',
+};
+
 /**
  * The "what could we use from our own stock" half of the material preview
  * (ADR 0058). Everything here is advisory — the panel says so and never
@@ -39,8 +47,9 @@ export function InventoryProposalPanel({ inventory, mayViewCost }: InventoryProp
         <div>
           <h2 id="available-stock-heading" className="font-semibold">Available stock</h2>
           <p className="text-sm text-muted-foreground">
-            Proposed by {inventory.strategy.label.toLowerCase()}
-            {inventory.strategy.source === 'REQUEST_OVERRIDE' ? ' (chosen for this preview)' : ' (company default)'}
+            {inventory.strategy.source === 'REQUEST_OVERRIDE'
+              ? `Proposed by ${inventory.strategy.label.toLowerCase()} (chosen for this preview)`
+              : 'Each material is proposed by its own selection preference (shown under it)'}
             {' · '}
             {inventory.scope.narrowed ? 'limited to the stock scope you selected' : 'all warehouses and locations'}
           </p>
@@ -102,6 +111,9 @@ function ItemStock({ item, mayViewCost }: { item: AssembliesMaterialPreview200Da
           <div className="text-sm text-muted-foreground">
             Needs {qty(item.required_quantity)} {unit}
             {planned && ` (planned; the standard is ${qty(item.standard_quantity)} ${unit})`}
+          </div>
+          <div className="text-xs text-muted-foreground">
+            Selection: {String(item.strategy.label).toLowerCase()} — {STRATEGY_SOURCE_TEXT[item.strategy.source] ?? item.strategy.source}
           </div>
         </div>
         {short ? (

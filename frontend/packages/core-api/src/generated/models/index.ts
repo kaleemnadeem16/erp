@@ -3,7 +3,7 @@
  * Do not edit manually.
  *
  * Pure-type schemas are re-exported with `export type *` so a browser never requests them;
- * only the 107 schemas that export a runtime value use `export *`.
+ * only the 111 schemas that export a runtime value use `export *`.
  */
 export type * from "./accountShow200";
 export * from "./accountType";
@@ -204,13 +204,16 @@ export type * from "./assembliesMaterialPreview200DataInventoryItemsItemRecommen
 export * from "./assembliesMaterialPreview200DataInventoryItemsItemRecommendationAnyOfStrategyLabel";
 export type * from "./assembliesMaterialPreview200DataInventoryItemsItemRemainingAfterUseQuantity";
 export type * from "./assembliesMaterialPreview200DataInventoryItemsItemShortageQuantity";
+export type * from "./assembliesMaterialPreview200DataInventoryItemsItemStrategy";
+export * from "./assembliesMaterialPreview200DataInventoryItemsItemStrategyLabel";
+export type * from "./assembliesMaterialPreview200DataInventoryItemsItemStrategyScopeId";
 export type * from "./assembliesMaterialPreview200DataInventoryItemsItemUnusableLocationQuantity";
 export type * from "./assembliesMaterialPreview200DataInventoryItemsItemUom";
 export type * from "./assembliesMaterialPreview200DataInventoryItemsItemUsableQuantity";
 export * from "./assembliesMaterialPreview200DataInventoryLimitationsItem";
 export type * from "./assembliesMaterialPreview200DataInventoryScope";
 export type * from "./assembliesMaterialPreview200DataInventoryStrategy";
-export * from "./assembliesMaterialPreview200DataInventoryStrategySource";
+export * from "./assembliesMaterialPreview200DataInventoryStrategyLabel";
 export type * from "./assembliesMaterialPreview200DataMaterialComponentsItem";
 export type * from "./assembliesMaterialPreview200DataMaterialComponentsItemApplicationRate";
 export type * from "./assembliesMaterialPreview200DataMaterialComponentsItemApplicationRateQuantityUom";
@@ -802,6 +805,32 @@ export type * from "./login200AnyOfTwo";
 export type * from "./login200AnyOfTwoMeta";
 export type * from "./loginRequest";
 export * from "./marginType";
+export type * from "./materialSelectionPoliciesIndex200";
+export type * from "./materialSelectionPoliciesIndex200Links";
+export type * from "./materialSelectionPoliciesIndex200LinksFirst";
+export type * from "./materialSelectionPoliciesIndex200LinksLast";
+export type * from "./materialSelectionPoliciesIndex200LinksNext";
+export type * from "./materialSelectionPoliciesIndex200LinksPrev";
+export type * from "./materialSelectionPoliciesIndex200Meta";
+export type * from "./materialSelectionPoliciesIndex200MetaFrom";
+export type * from "./materialSelectionPoliciesIndex200MetaLinksItem";
+export type * from "./materialSelectionPoliciesIndex200MetaLinksItemUrl";
+export type * from "./materialSelectionPoliciesIndex200MetaPath";
+export type * from "./materialSelectionPoliciesIndex200MetaTo";
+export type * from "./materialSelectionPoliciesIndexParams";
+export * from "./materialSelectionPoliciesIndexSort";
+export type * from "./materialSelectionPoliciesStore201";
+export type * from "./materialSelectionPoliciesStore201Data";
+export type * from "./materialSelectionPoliciesStore201DataAllOf";
+export type * from "./materialSelectionPolicyResource";
+export type * from "./materialSelectionPolicyResourceChangedByUser";
+export type * from "./materialSelectionPolicyResourceEffectiveTo";
+export type * from "./materialSelectionPolicyResourceScopeId";
+export type * from "./materialSelectionPolicyResourceScopeName";
+export type * from "./materialSelectionPolicyResourceStrategy";
+export type * from "./materialSelectionPolicyResourceStrategyAnyOf";
+export * from "./materialSelectionPolicyStatus";
+export * from "./materialSelectionScope";
 export * from "./materialSelectionStrategy";
 export type * from "./materialVarianceCapabilities200";
 export type * from "./materialVarianceCapabilities200Data";
@@ -1436,6 +1465,8 @@ export type * from "./storeItemSupplierRequestSupplierItemCode";
 export type * from "./storeLocationRequest";
 export type * from "./storeLocationRequestBarcode";
 export type * from "./storeLocationRequestParentId";
+export type * from "./storeMaterialSelectionPolicyRequest";
+export type * from "./storeMaterialSelectionPolicyRequestStrategy";
 export type * from "./storeMaterialVariancePolicyRequest";
 export type * from "./storeMaterialVariancePolicyRequestBandsItem";
 export * from "./storeMaterialVariancePolicyRequestBandsItemEffect";

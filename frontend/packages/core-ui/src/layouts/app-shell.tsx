@@ -22,6 +22,7 @@ import {
   PinOff,
   Printer,
   Ruler,
+  ListChecks,
   Scale,
   ClipboardCheck,
   ShieldCheck,
@@ -177,6 +178,12 @@ const settingsNavGroup: NavGroup = {
       icon: Calculator,
     },
     {
+      to: "/settings/material-selection",
+      label: "Material Selection",
+      icon: ListChecks,
+      permission: "estimating.selection-policy.manage",
+    },
+    {
       to: "/settings/material-variance",
       label: "Material Variance",
       icon: Scale,
@@ -223,6 +230,12 @@ const SETTINGS_MENU: { label: string; items: NavItem[] }[] = [
         icon: SlidersHorizontal,
       },
       { to: "/settings/estimating", label: "Estimating", icon: Calculator },
+      {
+        to: "/settings/material-selection",
+        label: "Material Selection",
+        icon: ListChecks,
+        permission: "estimating.selection-policy.manage",
+      },
       {
         to: "/settings/material-variance",
         label: "Material Variance",

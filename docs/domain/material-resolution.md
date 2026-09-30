@@ -174,6 +174,13 @@ request and again in the Action: a quantity band needs a unit and no other measu
 non-negative and an under-plan percentage cannot exceed 100, and `APPROVAL_REQUIRED` cannot be chosen. All
 writes need `estimating.material_variance_policy.manage`.
 
+### Stock-selection preference (ADR 0071)
+
+Which stock the proposal draws first follows a stored preference, item → category → company → built-in, set on
+`/settings/material-selection` (holders of `estimating.selection-policy.manage`; history readable with
+`estimating.policy-history.view`). It is a governed setting — a reason for every change, kept as history — and separate from
+the variance rules below. Each material in the preview names the level its preset came from.
+
 ### Setup screen
 
 `/settings/material-variance` (Settings → Company → Material Variance, shown to holders of

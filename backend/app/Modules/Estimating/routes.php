@@ -10,6 +10,7 @@ use App\Modules\Estimating\Http\Controllers\Api\V1\MaterialPreviewController;
 use App\Modules\Estimating\Http\Controllers\Api\V1\MaterialVarianceCapabilitiesController;
 use App\Modules\Estimating\Http\Controllers\Api\V1\MaterialVariancePolicyController;
 use App\Modules\Estimating\Http\Controllers\Api\V1\MaterialVarianceReasonController;
+use App\Modules\Estimating\Http\Controllers\Api\V1\MaterialSelectionPolicyController;
 use App\Modules\Estimating\Http\Controllers\Api\V1\OverheadPolicyController;
 use App\Modules\Estimating\Http\Controllers\Api\V1\RateDimensionController;
 use App\Modules\Estimating\Http\Controllers\Api\V1\RateDimensionValueController;
@@ -54,6 +55,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Registered before the apiResource below so "resolve" isn't swallowed by
     // the {overhead_policy} show route.
+    Route::get('material-selection-policies', [MaterialSelectionPolicyController::class, 'index'])->name('material-selection-policies.index');
+    Route::post('material-selection-policies', [MaterialSelectionPolicyController::class, 'store'])->name('material-selection-policies.store');
     Route::get('overhead-policies/resolve', [OverheadPolicyController::class, 'resolve'])->name('overhead-policies.resolve');
     Route::apiResource('overhead-policies', OverheadPolicyController::class)->except('update');
     Route::patch('overhead-policies/{overhead_policy}', [OverheadPolicyController::class, 'update'])->name('overhead-policies.update');

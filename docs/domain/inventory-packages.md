@@ -181,6 +181,13 @@ otherwise: AVCO uses the pool the movement engine would resolve for that locatio
 (`COMPANY_ITEM`, `WAREHOUSE_ITEM` or `COMPANY_ITEM_BATCH`), only while it is `ACTIVE` with a positive
 average; FIFO and SPECIFIC use the remaining layers' weighted-average base cost.
 
+**Stored strategy** ([ADR 0071](../decisions/0071-stored-material-selection-strategy-as-governed-history.md)): each material's preset resolves
+item → nearest category ancestor → company → the built-in `MINIMISE_WASTE`, and a strategy chosen for one preview overrides all of
+them and stores nothing. Each item block names the level that answered (`ITEM`, `ITEM_CATEGORY`, `COMPANY`, `BUILT_IN_DEFAULT`,
+`REQUEST_OVERRIDE`). A setting is a row per change with a required reason and actor, never edited (clearing is a row with no
+strategy); it affects only later previews, and the evidence fingerprint includes it. Changing needs
+`estimating.selection-policy.manage` (Settings → Material selection); reading it needs that or `estimating.policy-history.view`.
+
 **Allocation** (`AllocateInventory`, a pure function, `RULES_VERSION` 1) applies the three presets
 lexicographically with the stable location/batch key as the final tie-breaker. Criteria that need
 evidence `QUANTITY_ONLY` does not have — open remnants, expiry, package surplus, newly opened
@@ -198,8 +205,6 @@ every costed one and makes the plan's estimated cost unknown rather than partial
 
 **Not yet built** — each is a deliberate boundary, not an oversight:
 
-- Stored strategy settings at item, category and company level. The effective strategy is the
-  built-in `MINIMISE_WASTE` default or a per-request what-if override; the response states which.
 - A hand-built package/location mix evaluated by the resolver. A user can compare the three
   presets; choosing an arbitrary mix waits for the variance slice, where ADR 0054 decides what a
   different mix at the same planned quantity costs in review.

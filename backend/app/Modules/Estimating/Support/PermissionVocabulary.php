@@ -19,6 +19,7 @@ final class PermissionVocabulary
             'estimating.resource-rate.manage',
             'estimating.overhead-policy.manage',
             'estimating.material_variance_policy.manage',
+            'estimating.selection-policy.manage',
             'estimating.policy-history.view',
             'estimating.material_preview.run',
             'estimating.inventory_availability.view',

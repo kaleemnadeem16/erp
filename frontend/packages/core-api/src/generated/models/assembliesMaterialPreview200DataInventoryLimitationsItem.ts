@@ -16,6 +16,6 @@ export const AssembliesMaterialPreview200DataInventoryLimitationsItem = {
     "Availability is a snapshot as of the time shown. It can be out of date immediately and reserves nothing.",
   "Stock_held_for_QA_release_is_not_counted_as_usable_Neither_is_stock_in_a_quarantine,_scrap,_transit,_returns,_dispatch_or_production_location,_unless_the_company_has_marked_that_location_as_counting_(each_balance_says_whether_its_location_follows_its_type_or_was_marked)":
     "Stock held for QA release is not counted as usable. Neither is stock in a quarantine, scrap, transit, returns, dispatch or production location, unless the company has marked that location as counting (each balance says whether its location follows its type or was marked).",
-  "The_selection_strategy_is_the_built-in_company_default_unless_overridden_here;_item-_and_category-level_strategy_settings_are_not_implemented_yet":
-    "The selection strategy is the built-in company default unless overridden here; item- and category-level strategy settings are not implemented yet.",
+  "Each_material_follows_its_own_stored_selection_strategy,_else_its_category’s,_else_the_company’s,_else_the_built-in_default;_a_strategy_chosen_for_this_preview_overrides_all_of_them_and_changes_nothing_stored":
+    "Each material follows its own stored selection strategy, else its category’s, else the company’s, else the built-in default; a strategy chosen for this preview overrides all of them and changes nothing stored.",
 } as const;

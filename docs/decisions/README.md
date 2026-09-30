@@ -83,6 +83,7 @@ in the same commit.
 | [0068](0068-purchasing-document-read-capabilities.md) | Authorise Purchasing document reads separately from writes | accepted | 2026-09-29 |
 | [0069](0069-separate-purchasing-commercial-visibility-from-receiving.md) | Separate Purchasing commercial visibility from physical receiving | accepted | 2026-09-29 |
 | [0070](0070-shared-configurable-approval-engine.md) | One shared, configurable approval engine | accepted | 2026-09-30 |
+| [0071](0071-stored-material-selection-strategy-as-governed-history.md) | Store the material selection strategy as governed, versioned history | accepted | 2026-10-01 |
 
 **Next number: 0071**
 

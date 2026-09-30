@@ -36,7 +36,7 @@ const ACTIVE = 'ACTIVE';
 const COMPANY_DEFAULT = 'COMPANY_DEFAULT';
 
 const STRATEGY_OPTIONS: Array<{ value: string; label: string }> = [
-  { value: COMPANY_DEFAULT, label: 'Company default' },
+  { value: COMPANY_DEFAULT, label: 'Stored preference (item, category or company)' },
   { value: MaterialSelectionStrategy.MINIMISE_WASTE, label: 'Minimise waste' },
   { value: MaterialSelectionStrategy.LOWEST_INTERNAL_COST, label: 'Lowest internal cost' },
   { value: MaterialSelectionStrategy.FEWEST_PACKAGES, label: 'Fewest packages' },

@@ -9,11 +9,11 @@ namespace App\Modules\Estimating\Support;
  * criteria are compared lexicographically — the first that differs decides,
  * the next only breaks a tie — never as a weighted score.
  *
- * The effective strategy is meant to resolve item → nearest category → company
- * (docs/domain/inventory-packages.md). No stored setting exists at any of
- * those levels yet, so today it resolves only to the built-in company default,
- * or to a per-request what-if override; the response says which
- * (`COMPANY_DEFAULT` vs `REQUEST_OVERRIDE`).
+ * The effective strategy for an item resolves item → nearest item-category
+ * ancestor → company → the built-in default (ADR 0053 §2, stored by ADR 0071),
+ * unless a per-request what-if override replaces it; the response says which
+ * level supplied it (`BUILT_IN_DEFAULT`, `COMPANY`, `ITEM_CATEGORY`, `ITEM` or
+ * `REQUEST_OVERRIDE`).
  */
 enum MaterialSelectionStrategy: string
 {

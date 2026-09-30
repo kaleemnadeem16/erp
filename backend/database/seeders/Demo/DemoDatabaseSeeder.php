@@ -9,6 +9,7 @@ use Database\Seeders\Demo\Estimating\ApplicationRatesDemoSeeder;
 use Database\Seeders\Demo\Estimating\AssembliesDemoSeeder;
 use Database\Seeders\Demo\Estimating\AssemblyVersionsDemoSeeder;
 use Database\Seeders\Demo\Estimating\FormulationsDemoSeeder;
+use Database\Seeders\Demo\Estimating\MaterialSelectionDemoSeeder;
 use Database\Seeders\Demo\Estimating\MaterialVarianceDemoSeeder;
 use Database\Seeders\Demo\Estimating\OverheadPoliciesDemoSeeder;
 use Database\Seeders\Demo\Estimating\RateDimensionsDemoSeeder;
@@ -48,6 +49,7 @@ final class DemoDatabaseSeeder extends Seeder
                 ResourceRatesDemoSeeder::class,
                 AssemblyVersionsDemoSeeder::class,
                 MaterialVarianceDemoSeeder::class,
+                MaterialSelectionDemoSeeder::class,
                 // Last: it uses the demo supplier and pigment, the demo variance rules and the personas' permissions.
                 ApprovalsDemoSeeder::class,
             ]);

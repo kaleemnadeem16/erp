@@ -6,6 +6,7 @@
  */
 import type { AssembliesMaterialPreview200DataInventoryItemsItemItem } from "./assembliesMaterialPreview200DataInventoryItemsItemItem";
 import type { AssembliesMaterialPreview200DataInventoryItemsItemUom } from "./assembliesMaterialPreview200DataInventoryItemsItemUom";
+import type { AssembliesMaterialPreview200DataInventoryItemsItemStrategy } from "./assembliesMaterialPreview200DataInventoryItemsItemStrategy";
 import type { AssembliesMaterialPreview200DataInventoryItemsItemOnHandQuantity } from "./assembliesMaterialPreview200DataInventoryItemsItemOnHandQuantity";
 import type { AssembliesMaterialPreview200DataInventoryItemsItemHeldForQaQuantity } from "./assembliesMaterialPreview200DataInventoryItemsItemHeldForQaQuantity";
 import type { AssembliesMaterialPreview200DataInventoryItemsItemUnusableLocationQuantity } from "./assembliesMaterialPreview200DataInventoryItemsItemUnusableLocationQuantity";
@@ -21,6 +22,7 @@ export type AssembliesMaterialPreview200DataInventoryItemsItem = {
   item: AssembliesMaterialPreview200DataInventoryItemsItemItem;
   uom: AssembliesMaterialPreview200DataInventoryItemsItemUom;
   is_stocked: boolean;
+  strategy: AssembliesMaterialPreview200DataInventoryItemsItemStrategy;
   standard_quantity: string;
   required_quantity: string;
   on_hand_quantity: AssembliesMaterialPreview200DataInventoryItemsItemOnHandQuantity;

@@ -45,6 +45,7 @@ export * from "./generated/approval-policy/approval-policy";
 export * from "./generated/approval-request/approval-request";
 export * from "./generated/approval-subject-type/approval-subject-type";
 export * from "./generated/material-variance-capabilities/material-variance-capabilities";
+export * from "./generated/material-selection-policy/material-selection-policy";
 export * from "./generated/material-variance-policy/material-variance-policy";
 export * from "./generated/material-variance-reason/material-variance-reason";
 export * from "./generated/resource-rate/resource-rate";

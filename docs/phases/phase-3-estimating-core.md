@@ -266,8 +266,10 @@ item here in the same commit that delivers it; add new ones as they are found.
       definitions, package equivalents of a quantity ("about two 5 L cans") and open-remnant / expiry /
       surplus criteria in the ADR 0053 presets. See
       [inventory-packages.md](../domain/inventory-packages.md#first-implementation-quantity_only-availability-and-allocation).
-- [ ] **Stored strategy settings** — item, category and company selection strategy
-      (`MINIMISE_WASTE` etc.) resolves only to the built-in default or a per-request override today.
+- [x] **Stored strategy settings** — delivered 2026-10-01
+      ([ADR 0071](../decisions/0071-stored-material-selection-strategy-as-governed-history.md)): item → nearest category → company →
+      built-in, each change a governed row with a reason, effective from the next preview only; Settings → Material selection and
+      demo data (`MaterialSelectionDemoSeeder`).
 - [ ] **Hand-built package/location mix** evaluated by the resolver (a user choosing an arbitrary draw
       rather than comparing the three presets), and the ADR 0054 §4 rule that a different valid mix at
       the same planned quantity needs no reason unless its cost/waste crosses a band.

@@ -10,6 +10,7 @@ use App\Modules\Accounting\Models\ChartOfAccount;
 use App\Modules\Accounting\Support\AccountType;
 use App\Modules\Estimating\Actions\ActivateAssemblyVersion;
 use App\Modules\Estimating\Actions\ActivateFormulationVersion;
+use App\Modules\Estimating\Actions\SetMaterialSelectionPolicy;
 use App\Modules\Estimating\Models\ApplicationRate;
 use App\Modules\Estimating\Models\Assembly;
 use App\Modules\Estimating\Models\Formulation;
@@ -17,6 +18,8 @@ use App\Modules\Estimating\Models\MaterialVariancePolicy;
 use App\Modules\Estimating\Models\MaterialVarianceReason;
 use App\Modules\Estimating\Models\RateDimension;
 use App\Modules\Estimating\Support\FormulationCycleGuard;
+use App\Modules\Estimating\Support\MaterialSelectionScope;
+use App\Modules\Estimating\Support\MaterialSelectionStrategy;
 use App\Modules\Inventory\Actions\CreateWarehouse;
 use App\Modules\Inventory\Actions\PostInventoryMovement;
 use App\Modules\Inventory\Models\AvcoPool;
@@ -230,7 +233,7 @@ class MaterialPreviewApiTest extends TestCase
         $response->assertOk();
         $response->assertJsonPath('data.inventory.tracking_mode', 'QUANTITY_ONLY');
         $response->assertJsonPath('data.inventory.strategy.code', 'MINIMISE_WASTE');
-        $response->assertJsonPath('data.inventory.strategy.source', 'COMPANY_DEFAULT');
+        $response->assertJsonPath('data.inventory.strategy.source', 'BUILT_IN_DEFAULT');
         $response->assertJsonPath('data.inventory.scope.narrowed', false);
         $response->assertJsonPath('data.inventory.items.0.item.code', 'pigment');
         // 10 sqm × 0.2 L/sqm × 2 kg/L = 4 kg needed; 3 + 2 kg usable across two warehouses.
@@ -597,6 +600,49 @@ class MaterialPreviewApiTest extends TestCase
 
         $this->assertCount(3, array_unique([$plain, $five, $six]));
         $this->assertSame($before, $counts());
+    }
+
+    public function test_a_stored_strategy_drives_the_proposal_and_says_which_level_supplied_it(): void
+    {
+        $user = $this->userWith('estimating.inventory_availability.view');
+        $this->stockPigment('a', '3');
+        $this->stockPigment('b', '2');
+        $actor = User::factory()->create()->id;
+        $set = app(SetMaterialSelectionPolicy::class);
+
+        $set(MaterialSelectionScope::Company, null, MaterialSelectionStrategy::LowestInternalCost, 'Company prefers cost', $actor);
+        $company = $this->actingAs($user)->postJson($this->url(), $this->payload());
+        $company->assertJsonPath('data.inventory.strategy.code', 'LOWEST_INTERNAL_COST');
+        $company->assertJsonPath('data.inventory.strategy.source', 'COMPANY');
+        $company->assertJsonPath('data.inventory.items.0.strategy.source', 'COMPANY');
+
+        $set(MaterialSelectionScope::Item, $this->pigment->id, MaterialSelectionStrategy::FewestPackages, 'Pigment is fiddly to open', $actor);
+        $item = $this->actingAs($user)->postJson($this->url(), $this->payload());
+        $item->assertJsonPath('data.inventory.items.0.strategy.code', 'FEWEST_PACKAGES');
+        $item->assertJsonPath('data.inventory.items.0.strategy.source', 'ITEM');
+        $item->assertJsonPath('data.inventory.items.0.recommendation.strategy.code', 'FEWEST_PACKAGES');
+        $this->assertNotContains('FEWEST_PACKAGES', array_column($item->json('data.inventory.items.0.alternatives.*.strategy'), 'code'));
+
+        $override = $this->actingAs($user)->postJson($this->url(), $this->payload() + ['selection_strategy' => 'MINIMISE_WASTE']);
+        $override->assertJsonPath('data.inventory.items.0.strategy.source', 'REQUEST_OVERRIDE');
+        $override->assertJsonPath('data.inventory.strategy.source', 'REQUEST_OVERRIDE');
+    }
+
+    public function test_changing_a_stored_strategy_changes_the_fingerprint_but_not_a_repeat_of_the_same_choice(): void
+    {
+        $user = $this->userWith('estimating.inventory_availability.view');
+        $this->stockPigment('a', '3');
+        $actor = User::factory()->create()->id;
+        $set = app(SetMaterialSelectionPolicy::class);
+        $print = fn () => $this->actingAs($user)->postJson($this->url(), $this->payload())->json('data.evidence_fingerprint');
+
+        $before = $print();
+        $this->assertSame($before, $print());
+        $set(MaterialSelectionScope::Item, $this->pigment->id, MaterialSelectionStrategy::FewestPackages, 'Change one', $actor);
+        $after = $print();
+        $this->assertNotSame($before, $after);
+        $set(MaterialSelectionScope::Item, $this->pigment->id, MaterialSelectionStrategy::FewestPackages, 'Same again', $actor);
+        $this->assertSame($after, $print());
     }
 
     private function url(): string

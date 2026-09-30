@@ -6,6 +6,7 @@ namespace App\Modules\Estimating\Actions;
 
 use App\Modules\Estimating\Support\InventoryAllocation;
 use App\Modules\Estimating\Support\MaterialSelectionStrategy;
+use App\Modules\Estimating\Support\ResolvedSelectionStrategy;
 use App\Modules\Inventory\Actions\QueryStockAvailability;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Support\InventoryScope;
@@ -46,6 +47,7 @@ final class PreviewInventoryAvailability
     public function __construct(
         private readonly QueryStockAvailability $availability,
         private readonly AllocateInventory $allocate,
+        private readonly ResolveMaterialSelectionStrategies $resolveStrategies,
     ) {}
 
     /**
@@ -56,7 +58,8 @@ final class PreviewInventoryAvailability
      */
     public function __invoke(array $leafRows, array $scopeInput, ?MaterialSelectionStrategy $override, bool $includeCost, array $plannedByItem = []): array
     {
-        $strategy = $override ?? MaterialSelectionStrategy::companyDefault();
+        $headline = ($this->resolveStrategies)->companyLevel($override);
+        $resolved = ($this->resolveStrategies)(array_map(fn (array $row): int => $row['item']['id'], $leafRows), $override);
         $scope = new InventoryScope($scopeInput['warehouse_ids'] ?? [], $scopeInput['location_ids'] ?? []);
 
         $items = Item::query()
@@ -78,6 +81,8 @@ final class PreviewInventoryAvailability
 
             // A non-stocked item goes through the same literal below with every availability figure
             // null: "does not apply", never a zero or a shortage.
+            $itemStrategy = $resolved[$itemId];
+            $strategy = $itemStrategy->strategy;
             $required = BigDecimal::of($plannedByItem[$itemId] ?? $row['standard_quantity']);
             $balances = $stocked ? $snapshot->balancesFor($itemId) : [];
             $recommendation = $stocked ? ($this->allocate)($required, $balances, $strategy) : null;
@@ -139,6 +144,7 @@ final class PreviewInventoryAvailability
                 'item' => $this->ref($itemId, $code, (string) $row['item']['name']),
                 'uom' => $this->ref((int) $row['uom']['id'], $uomCode, (string) $row['uom']['name']),
                 'is_stocked' => $stocked,
+                'strategy' => $this->resolvedRef($itemStrategy),
                 'standard_quantity' => (string) $row['standard_quantity'],
                 'required_quantity' => (string) $required,
                 'on_hand_quantity' => $stocked ? (string) $onHand : null,
@@ -152,7 +158,7 @@ final class PreviewInventoryAvailability
                 'alternatives' => $alternatives,
                 'balances' => $balanceRows,
             ];
-            $itemEvidence[] = ['item_id' => $itemId, 'balances' => $balanceEvidence];
+            $itemEvidence[] = ['item_id' => $itemId, 'strategy' => $strategy->value, 'strategy_policy_id' => $itemStrategy->policyId, 'balances' => $balanceEvidence];
         }
 
         return [
@@ -166,9 +172,9 @@ final class PreviewInventoryAvailability
                     'excluded_location_types' => $this->excludedLocationTypes(),
                 ],
                 'strategy' => [
-                    'code' => $strategy->value,
-                    'label' => $strategy->label(),
-                    'source' => $override === null ? 'COMPANY_DEFAULT' : 'REQUEST_OVERRIDE',
+                    'code' => $headline->strategy->value,
+                    'label' => $headline->strategy->label(),
+                    'source' => $headline->source->value,
                     'rules_version' => AllocateInventory::RULES_VERSION,
                 ],
                 'items' => $itemBlocks,
@@ -176,7 +182,6 @@ final class PreviewInventoryAvailability
                 'limitations' => $this->limitations(),
             ],
             'evidence' => [
-                'strategy' => $strategy->value,
                 'rules_version' => AllocateInventory::RULES_VERSION,
                 'scope' => ['warehouse_ids' => $scope->warehouseIds, 'location_ids' => $scope->locationIds],
                 'items' => $itemEvidence,
@@ -256,6 +261,12 @@ final class PreviewInventoryAvailability
         return $balance->batchId === null ? null : ['id' => $balance->batchId, 'code' => (string) $balance->batchCode];
     }
 
+    /** @return array{code: string, label: string, source: string, scope_id: int|null} */
+    private function resolvedRef(ResolvedSelectionStrategy $resolved): array
+    {
+        return ['code' => $resolved->strategy->value, 'label' => $resolved->strategy->label(), 'source' => $resolved->source->value, 'scope_id' => $resolved->scopeId];
+    }
+
     /** @return array{code: string, label: string} */
     private function strategyRef(MaterialSelectionStrategy $strategy): array
     {
@@ -288,7 +299,7 @@ final class PreviewInventoryAvailability
         $limitations[] = 'Stock is proposed as a quantity per location (QUANTITY_ONLY): no sealed-pack, open-remnant or container claims are made, and expiry is not considered.';
         $limitations[] = 'Availability is a snapshot as of the time shown. It can be out of date immediately and reserves nothing.';
         $limitations[] = 'Stock held for QA release is not counted as usable. Neither is stock in a quarantine, scrap, transit, returns, dispatch or production location, unless the company has marked that location as counting (each balance says whether its location follows its type or was marked).';
-        $limitations[] = 'The selection strategy is the built-in company default unless overridden here; item- and category-level strategy settings are not implemented yet.';
+        $limitations[] = 'Each material follows its own stored selection strategy, else its category’s, else the company’s, else the built-in default; a strategy chosen for this preview overrides all of them and changes nothing stored.';
 
         return $limitations;
     }
