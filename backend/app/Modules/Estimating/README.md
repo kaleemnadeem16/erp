@@ -154,7 +154,9 @@ policy (`index`/`show`) requires `estimating.policy-history.view`; writing one r
 `estimating.overhead-policy.manage` — deliberately separate permissions, same split
 `InventoryPolicyChange` uses. `ResolveOverheadPolicy`'s read is unrestricted (ordinary auth only,
 same as `ResolveApplicationRate`/`ResolveFormulation`) since every estimator needs "what applies
-right now," not just whoever can manage or audit policies.
+right now," not just whoever can manage or audit policies. Its monetary policy rate and computed
+overhead amount are projected only to policy managers, policy-history viewers or internal-cost
+viewers; an ordinary resolver caller still sees the winning tier without a cost side channel.
 
 `CreateResourceRate` inserts a new dated row; there is deliberately no `UpdateResourceRate` — a
 rate correction is always a new row with a later `effective_from`, never an edit to an

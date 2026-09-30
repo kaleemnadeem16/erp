@@ -5,9 +5,10 @@
  * OpenAPI spec version: 0.0.1
  */
 import type { OverheadPoliciesResolve200DataPolicy } from "./overheadPoliciesResolve200DataPolicy";
+import type { OverheadPoliciesResolve200DataOverheadAmount } from "./overheadPoliciesResolve200DataOverheadAmount";
 
 export type OverheadPoliciesResolve200Data = {
   method: string;
   policy: OverheadPoliciesResolve200DataPolicy;
-  overhead_amount: string;
+  overhead_amount: OverheadPoliciesResolve200DataOverheadAmount;
 };

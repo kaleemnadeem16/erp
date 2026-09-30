@@ -22,7 +22,12 @@ class OverheadPolicyResource extends JsonResource
             'scope_type' => $row->scope_type->value,
             'scope_id' => $row->scope_id,
             'driver_type' => $row->driver_type->value,
-            'rate' => $row->rate,
+            'rate' => $this->when(
+                $request->user()?->can('estimating.overhead-policy.manage')
+                    || $request->user()?->can('estimating.policy-history.view')
+                    || $request->user()?->can('estimating.internal_cost.view'),
+                $row->rate,
+            ),
             'reason' => $row->reason,
             'status' => $row->status->value,
             'effective_from' => $row->effective_from?->toDateString(),

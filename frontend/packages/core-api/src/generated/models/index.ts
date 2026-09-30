@@ -1022,6 +1022,7 @@ export type * from "./overheadPoliciesIndexParams";
 export * from "./overheadPoliciesIndexSort";
 export type * from "./overheadPoliciesResolve200";
 export type * from "./overheadPoliciesResolve200Data";
+export type * from "./overheadPoliciesResolve200DataOverheadAmount";
 export type * from "./overheadPoliciesResolve200DataPolicy";
 export type * from "./overheadPoliciesResolveParams";
 export type * from "./overheadPoliciesShow200";

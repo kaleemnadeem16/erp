@@ -80,7 +80,7 @@ export function AssemblyEditScreen() {
       {resolution && (
         <p className="text-sm text-muted-foreground">
           Effective overhead: resolved from {RESOLUTION_LABELS[resolution.method] ?? resolution.method}
-          {resolution.method !== 'NONE' && ` (${resolution.policy?.rate} ${resolution.policy?.driver_type})`}.
+          {resolution.method !== 'NONE' && resolution.policy?.rate != null && ` (${resolution.policy.rate} ${resolution.policy.driver_type})`}.
         </p>
       )}
       <AssemblyVersionsSection assemblyId={row.id} versions={row.versions ?? []} />

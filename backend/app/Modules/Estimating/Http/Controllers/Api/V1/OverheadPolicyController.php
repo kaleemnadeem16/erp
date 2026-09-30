@@ -87,14 +87,17 @@ class OverheadPolicyController extends Controller
 
     /**
      * Read-only preview of ADR 0049's resolution — which policy wins for an
-     * assembly, and (given optional basis figures) the overhead amount it
-     * produces. No special permission, same as ApplicationRate/Formulation's
-     * resolve endpoints — see ResolveOverheadPolicyRequest.
+     * assembly. Monetary policy values and the computed amount require
+     * policy-management, policy-history or internal-cost access; otherwise
+     * arbitrary basis inputs could reveal the configured rate.
      */
     public function resolve(ResolveOverheadPolicyRequest $request, ResolveOverheadPolicy $resolve, OverheadAmountCalculator $calculate): JsonResponse
     {
         $assembly = Assembly::query()->findOrFail($request->integer('assembly_id'));
         $resolution = $resolve($assembly);
+        $maySeeRate = $request->user()?->can('estimating.overhead-policy.manage')
+            || $request->user()?->can('estimating.policy-history.view')
+            || $request->user()?->can('estimating.internal_cost.view');
 
         $basis = new OverheadCostBasis(
             materialCost: $request->input('material_cost', '0'),
@@ -109,9 +112,11 @@ class OverheadPolicyController extends Controller
             'data' => [
                 'method' => $resolution->method->value,
                 'policy' => $resolution->policy === null ? null : new OverheadPolicyResource($resolution->policy),
-                'overhead_amount' => $resolution->policy === null
-                    ? '0.0000'
-                    : (string) $calculate($resolution->policy->driver_type, $resolution->policy->rate, $basis),
+                'overhead_amount' => $maySeeRate
+                    ? ($resolution->policy === null
+                        ? '0.0000'
+                        : (string) $calculate($resolution->policy->driver_type, $resolution->policy->rate, $basis))
+                    : null,
             ],
         ]);
     }

@@ -16,7 +16,7 @@ export interface OverheadPolicyResource {
   scope_type: string;
   scope_id: OverheadPolicyResourceScopeId;
   driver_type: string;
-  rate: string;
+  rate?: string;
   reason: string;
   status: string;
   effective_from: OverheadPolicyResourceEffectiveFrom;

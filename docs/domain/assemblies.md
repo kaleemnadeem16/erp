@@ -271,6 +271,13 @@ and assembly-level tiers only exist for companies that create rows there. Which 
 group/assembly-level tiers is a separate, later decision — see
 [extensibility.md](../architecture/extensibility.md#progressive-capability-modes).
 
+The authenticated resolver still reveals which tier and policy wins for an assembly, so forms
+can explain the source. Its policy `rate` and calculated `overhead_amount` are commercial
+information, however: they are visible only with `estimating.overhead-policy.manage`,
+`estimating.policy-history.view` or `estimating.internal_cost.view`. Supplying an arbitrary basis
+to the resolver cannot bypass that projection. Policy list/show are already gated by the history
+permission; management responses retain the rate for editing.
+
 An unexamined overhead rule quietly makes every job look profitable — this configurability
 doesn't remove the need to actually pick a sensible one per assembly/group, it just stops the
 whole company being forced onto one.

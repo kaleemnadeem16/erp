@@ -13,6 +13,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
+use Tests\Support\PermissionedActor;
 use Tests\TestCase;
 
 class OverheadPolicyApiTest extends TestCase
@@ -289,6 +290,15 @@ class OverheadPolicyApiTest extends TestCase
         $this->actingAs($user)
             ->getJson("/api/v1/overhead-policies/resolve?assembly_id={$this->assembly->id}&labour_cost=100")
             ->assertOk()
+            ->assertJsonPath('data.method', 'ASSEMBLY')
+            ->assertJsonMissingPath('data.policy.rate')
+            ->assertJsonPath('data.overhead_amount', null);
+
+        $costViewer = PermissionedActor::grant(User::factory()->create(), ['estimating.internal_cost.view']);
+        $this->actingAs($costViewer)
+            ->getJson("/api/v1/overhead-policies/resolve?assembly_id={$this->assembly->id}&labour_cost=100")
+            ->assertOk()
+            ->assertJsonPath('data.policy.rate', '20.000000')
             ->assertJsonPath('data.overhead_amount', '20.0000');
     }
 
