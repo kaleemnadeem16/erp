@@ -354,6 +354,23 @@ controlled future exception requiring explicit provisional cost/currency/FX; it 
 stock path. Physical goods use receipt, while service/non-stock lines remain compatible with a
 future acceptance or direct-invoice workflow.
 
+### Search and filtering
+
+Purchase orders provide multi-attribute search and structured filters:
+- **Global search (`filter[search]`)**: Matches across PO number, legacy cutover/import source
+  reference (`source_record_id`), supplier account code and party name, line item code and
+  description, and line supplier SKU (`supplier_item_code`). Order-level notes are excluded to
+  ensure search results remain predictable.
+- **Advanced filters**:
+  - Date ranges: `filter[order_date_from]`, `filter[order_date_to]`, `filter[expected_delivery_from]`,
+    `filter[expected_delivery_to]`, `filter[issued_from]`, `filter[issued_to]`.
+  - Relationships: `filter[item_id]` (orders containing line item), `filter[supplier_account_id]`,
+    `filter[supplier_site_id]`, `filter[currency_id]`.
+  - Lifecycle: `filter[status]` (`DRAFT`, `ISSUED`, `CLOSED`, `CANCELLED`).
+  - Commercial value: `filter[total_min]`, `filter[total_max]` (gated by
+    `purchasing.commercial-cost.view`).
+
+
 ## Landmines
 
 **Invoice quantity is not physical quantity.** An invoice for 1,100 after a receipt of 1,000

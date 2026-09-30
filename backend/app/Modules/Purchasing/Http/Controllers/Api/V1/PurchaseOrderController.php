@@ -23,6 +23,7 @@ use App\Modules\Purchasing\Http\Resources\PurchaseOrderResource;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Modules\Purchasing\Models\PurchaseOrderLine;
 use App\Support\Concerns\AppliesApiQuery;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -42,13 +43,62 @@ class PurchaseOrderController extends Controller
         if (in_array('lines', $this->requestedIncludes($request, self::INCLUDABLE), true)) {
             $query->with(['lines' => fn ($lines) => $lines->withReceiptProgress()]);
         }
-        foreach (['supplier_account_id', 'status'] as $field) {
+        foreach (['supplier_account_id', 'supplier_site_id', 'status', 'currency_id'] as $field) {
             if ($request->filled("filter.{$field}")) {
                 $query->where($field, $request->input("filter.{$field}"));
             }
         }
+        if ($request->filled('filter.order_date_from')) {
+            $query->where('order_date', '>=', $request->date('filter.order_date_from')->toDateString());
+        }
+        if ($request->filled('filter.order_date_to')) {
+            $query->where('order_date', '<=', $request->date('filter.order_date_to')->toDateString());
+        }
+        if ($request->filled('filter.expected_delivery_from')) {
+            $query->where('expected_delivery_date', '>=', $request->date('filter.expected_delivery_from')->toDateString());
+        }
+        if ($request->filled('filter.expected_delivery_to')) {
+            $query->where('expected_delivery_date', '<=', $request->date('filter.expected_delivery_to')->toDateString());
+        }
+        if ($request->filled('filter.issued_from')) {
+            $query->where('issued_at', '>=', $request->date('filter.issued_from'));
+        }
+        if ($request->filled('filter.issued_to')) {
+            $query->where('issued_at', '<=', $request->date('filter.issued_to')->endOfDay());
+        }
+        if ($request->filled('filter.total_min')) {
+            $query->whereRaw(
+                '(SELECT COALESCE(SUM(line_amount), 0) FROM purchase_order_lines WHERE purchase_order_lines.purchase_order_id = purchase_orders.id) >= ?',
+                [$request->input('filter.total_min')]
+            );
+        }
+        if ($request->filled('filter.total_max')) {
+            $query->whereRaw(
+                '(SELECT COALESCE(SUM(line_amount), 0) FROM purchase_order_lines WHERE purchase_order_lines.purchase_order_id = purchase_orders.id) <= ?',
+                [$request->input('filter.total_max')]
+            );
+        }
+        if ($request->filled('filter.item_id')) {
+            $query->whereHas('lines', function (Builder $line) use ($request): void {
+                $line->where('item_id', $request->integer('filter.item_id'));
+            });
+        }
         if ($request->filled('filter.search')) {
-            $query->where('number', 'ilike', '%'.$request->string('filter.search')->toString().'%');
+            $search = $request->string('filter.search')->toString();
+            $term = '%'.$search.'%';
+            $query->where(function (Builder $q) use ($term): void {
+                $q->where('number', 'ilike', $term)
+                    ->orWhere('source_record_id', 'ilike', $term)
+                    ->orWhereHas('supplierAccount', function (Builder $sq) use ($term): void {
+                        $sq->where('code', 'ilike', $term)
+                            ->orWhereHas('party', fn (Builder $pq) => $pq->where('name', 'ilike', $term));
+                    })
+                    ->orWhereHas('lines', function (Builder $lq) use ($term): void {
+                        $lq->where('item_code', 'ilike', $term)
+                            ->orWhere('description', 'ilike', $term)
+                            ->orWhere('supplier_item_code', 'ilike', $term);
+                    });
+            });
         }
         $sort = $request->string('sort', 'created_at')->toString();
         if (ltrim($sort, '-') === 'total_amount') {

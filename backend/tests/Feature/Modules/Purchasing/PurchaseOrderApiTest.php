@@ -375,4 +375,140 @@ class PurchaseOrderApiTest extends PurchaseOrderFoundationTest
     {
         return ['supplier_account_id' => $order->supplier_account_id, 'supplier_site_id' => $order->supplier_site_id, 'currency_id' => $order->currency_id, 'fx_rate' => '1.000000000', 'fx_rate_date' => '2026-09-02', 'fx_rate_type' => 'SPOT', 'fx_rate_source' => 'manual', 'order_date' => '2026-09-02', 'lines' => [['line_number' => 1, 'item_id' => $itemId, 'description' => 'Item', 'ordered_qty' => '2.0000', 'purchase_uom_id' => $uomId, 'unit_price' => '10.0000']]];
     }
+
+    public function test_search_matches_supplier_party_item_sku_and_source_record_but_not_notes(): void
+    {
+        [$orderA, $itemA, $uomA] = $this->makeOrder();
+        $orderA->update([
+            'notes' => 'SecretSpecialRemark',
+        ]);
+        $orderA->lines()->create(array_merge($this->lineAttributes($orderA, $itemA, $uomA), [
+            'item_code' => 'PIG-BLUE',
+            'description' => 'Blue Phthalo Pigment',
+            'supplier_item_code' => 'SKU-777',
+        ]));
+
+        [$orderB, $itemB, $uomB] = $this->makeOrderB();
+        $orderB->lines()->create(array_merge($this->lineAttributes($orderB, $itemB, $uomB), [
+            'item_code' => 'RESIN-CLEAR',
+            'description' => 'Clear Epoxy Resin',
+        ]));
+
+        $buyer = PurchasingActor::make([
+            'purchasing.purchase-order.create',
+            'purchasing.purchase-order.view',
+        ]);
+
+        // 1. Match by supplier account code
+        $this->actingAsUnprivileged($buyer)
+            ->getJson('/api/v1/purchase-orders?filter[search]=SUP2')
+            ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $orderB->id);
+
+        // 2. Match by supplier party name
+        $orderB->supplierAccount->party->update(['name' => 'Acme Chemicals International']);
+        $this->getJson('/api/v1/purchase-orders?filter[search]=Acme+Chemicals')
+            ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $orderB->id);
+
+        // 3. Match by line item code
+        $this->getJson('/api/v1/purchase-orders?filter[search]=PIG-BLUE')
+            ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $orderA->id);
+
+        // 4. Match by line description
+        $this->getJson('/api/v1/purchase-orders?filter[search]=Phthalo')
+            ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $orderA->id);
+
+        // 5. Match by supplier item SKU
+        $this->getJson('/api/v1/purchase-orders?filter[search]=SKU-777')
+            ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $orderA->id);
+
+        // 6. Notes are deliberately excluded from global search for predictability
+        $this->getJson('/api/v1/purchase-orders?filter[search]=SecretSpecialRemark')
+            ->assertOk()->assertJsonCount(0, 'data');
+    }
+
+    public function test_advanced_filters_for_dates_item_site_currency_and_value_ranges(): void
+    {
+        [$orderA, $itemA, $uomA] = $this->makeOrder();
+        $orderA->update([
+            'order_date' => '2026-09-05',
+            'expected_delivery_date' => '2026-09-15',
+        ]);
+        $orderA->lines()->create(array_merge($this->lineAttributes($orderA, $itemA, $uomA), [
+            'ordered_qty' => '10.0000',
+            'unit_price' => '100.0000',
+            'line_amount' => '1000.0000',
+        ]));
+
+        [$orderB, $itemB, $uomB] = $this->makeOrderB();
+        $orderB->update([
+            'order_date' => '2026-09-20',
+            'expected_delivery_date' => '2026-09-25',
+        ]);
+        $orderB->lines()->create(array_merge($this->lineAttributes($orderB, $itemB, $uomB), [
+            'ordered_qty' => '50.0000',
+            'unit_price' => '100.0000',
+            'line_amount' => '5000.0000',
+        ]));
+
+        $buyer = PurchasingActor::make([
+            'purchasing.purchase-order.create',
+            'purchasing.purchase-order.view',
+            'purchasing.commercial-cost.view',
+        ]);
+
+        // Order date range
+        $this->actingAsUnprivileged($buyer)
+            ->getJson('/api/v1/purchase-orders?filter[order_date_from]=2026-09-01&filter[order_date_to]=2026-09-10')
+            ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $orderA->id);
+
+        // Expected delivery range
+        $this->getJson('/api/v1/purchase-orders?filter[expected_delivery_from]=2026-09-20&filter[expected_delivery_to]=2026-09-30')
+            ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $orderB->id);
+
+        // Validation rejects order_date_to before order_date_from
+        $this->getJson('/api/v1/purchase-orders?filter[order_date_from]=2026-09-20&filter[order_date_to]=2026-09-10')
+            ->assertUnprocessable();
+
+        // Item filter
+        $this->getJson("/api/v1/purchase-orders?filter[item_id]={$itemA->id}")
+            ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $orderA->id);
+        $this->getJson("/api/v1/purchase-orders?filter[item_id]={$itemB->id}")
+            ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $orderB->id);
+
+        // Supplier site filter
+        $this->getJson("/api/v1/purchase-orders?filter[supplier_site_id]={$orderA->supplier_site_id}")
+            ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $orderA->id);
+
+        // Total amount min/max range
+        $this->getJson('/api/v1/purchase-orders?filter[total_min]=2000&filter[total_max]=6000')
+            ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $orderB->id);
+        $this->getJson('/api/v1/purchase-orders?filter[total_max]=1500')
+            ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $orderA->id);
+
+        // Validation rejects total_max less than total_min
+        $this->getJson('/api/v1/purchase-orders?filter[total_min]=5000&filter[total_max]=1000')
+            ->assertUnprocessable();
+    }
+
+    public function test_total_amount_filters_require_commercial_cost_permission(): void
+    {
+        [$order, $item, $uom] = $this->makeOrder();
+        $order->lines()->create($this->lineAttributes($order, $item, $uom));
+
+        // Viewer with only purchase-order.view capability (no commercial cost access)
+        $viewer = PurchasingActor::make(['purchasing.purchase-order.view']);
+
+        $this->actingAsUnprivileged($viewer)
+            ->getJson('/api/v1/purchase-orders?filter[total_min]=100')
+            ->assertForbidden();
+
+        $this->getJson('/api/v1/purchase-orders?filter[total_max]=500')
+            ->assertForbidden();
+
+        // Grant commercial cost capability
+        PurchasingActor::grant($viewer, ['purchasing.commercial-cost.view']);
+
+        $this->getJson('/api/v1/purchase-orders?filter[total_min]=100')
+            ->assertOk();
+    }
 }
