@@ -12,7 +12,7 @@ class UpdateRateDimensionValueRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('estimating.rate-dimension.manage') === true;
     }
 
     /** @return array<string, mixed> */

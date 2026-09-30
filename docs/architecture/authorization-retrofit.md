@@ -197,10 +197,16 @@ independently of this backlog's sequencing whenever wanted.
 - [ ] Add missing filter UI: Formulations (`customer_id,output_item_id,search,status`), Assemblies
       (`assembly_group_id,search,status`), Rate Dimensions/Assembly Groups (`search`), Application
       Rates (`is_default,work_uom_id`) — no permission dependency, can land anytime
-- [x] Register all six capabilities above (2026-09-30, no enforcement yet). They are
-      reserved for the Estimating CRUD rollout: registration alone grants no operational user
-      access and must not be mistaken for a protected endpoint. Assignment/backfill, Action
-      checks, frontend gating and allowed/denied tests remain the next slice.
+- [x] Register all six capabilities above (2026-09-30). Registration alone grants no
+      operational user access and must not be mistaken for a protected endpoint. Five remain
+      reserved after the rate-dimension slice below.
+- [x] Rate Dimensions and Values (2026-09-30): `estimating.rate-dimension.manage` gates create,
+      update and delete at HTTP and non-HTTP Action boundaries. Index/show/value reads remain
+      authenticated-only shared lookups. The SPA setup route and New action require the same
+      capability; allowed/denied API and Action tests cover every write. Before deployment,
+      grant it explicitly to existing dimension maintainers through a company role or direct
+      assignment; the configured administrator receives it through the normal sync. No
+      production-role assignment is inferred from a starter-role name.
 - [ ] Assignment/backfill pass, then enforce (lower daily-write volume than Purchasing, so this can
       land before section B's enforcement steps)
 - [ ] Frontend action gating once `/api/v1/user` effective permissions ship

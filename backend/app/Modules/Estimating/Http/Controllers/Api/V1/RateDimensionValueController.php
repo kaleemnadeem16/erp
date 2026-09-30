@@ -15,6 +15,7 @@ use App\Modules\Estimating\Http\Resources\RateDimensionValueResource;
 use App\Modules\Estimating\Models\RateDimension;
 use App\Modules\Estimating\Models\RateDimensionValue;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -34,17 +35,18 @@ class RateDimensionValueController extends Controller
 
     public function store(StoreRateDimensionValueRequest $request, RateDimension $rate_dimension, CreateRateDimensionValue $create): JsonResponse
     {
-        return (new RateDimensionValueResource($create($rate_dimension, $request->validated())))->response()->setStatusCode(201);
+        return (new RateDimensionValueResource($create($rate_dimension, $request->validated(), $request->user())))->response()->setStatusCode(201);
     }
 
     public function update(UpdateRateDimensionValueRequest $request, RateDimensionValue $rate_dimension_value, UpdateRateDimensionValue $update): RateDimensionValueResource
     {
-        return new RateDimensionValueResource($update($rate_dimension_value, $request->validated()));
+        return new RateDimensionValueResource($update($rate_dimension_value, $request->validated(), $request->user()));
     }
 
-    public function destroy(RateDimensionValue $rate_dimension_value, DeleteRateDimensionValue $delete): Response
+    public function destroy(Request $request, RateDimensionValue $rate_dimension_value, DeleteRateDimensionValue $delete): Response
     {
-        $delete($rate_dimension_value);
+        abort_unless($request->user()?->can('estimating.rate-dimension.manage'), 403);
+        $delete($rate_dimension_value, $request->user());
 
         return response()->noContent();
     }

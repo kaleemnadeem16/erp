@@ -82,7 +82,9 @@ implementation slice.
 
 `CreateRateDimension`/`UpdateRateDimension`/`ArchiveRateDimension` and
 `CreateRateDimensionValue`/`UpdateRateDimensionValue`/`DeleteRateDimensionValue` are plain
-master-data CRUD. `CreateApplicationRate`/`UpdateApplicationRate` additionally sync the rate's
+master-data CRUD. Each write requires `estimating.rate-dimension.manage` at both HTTP and Action
+boundaries; list/show/value reads stay authenticated-only because other estimating forms use them
+as lookups. `CreateApplicationRate`/`UpdateApplicationRate` additionally sync the rate's
 dimension-value combination and run it through `ApplicationRateCombinationGuard`, which rejects
 an exact duplicate combination for the same item+work unit — the resolution algorithm assumes
 "exact match" finds at most one candidate. `ResolveApplicationRate` is read-only and reusable:
@@ -161,7 +163,8 @@ The existing Estimating CRUD retrofit also reserves six write capabilities:
 `estimating.rate-dimension.manage` (including values), `estimating.application-rate.manage`,
 `estimating.formulation.manage` (including versions), `estimating.assembly-group.manage`,
 `estimating.assembly.manage` (including versions), and `estimating.resource-rate.manage`.
-These names are registered only. CRUD endpoints and Actions are not yet gated by them; the
+Only `estimating.rate-dimension.manage` is now enforced for its parent/value writes, with matching
+screen access and denied-path tests. The other five remain registration-only; their
 assignment/backfill, backend enforcement, UI gating and denied-path tests are tracked in the
 [authorisation retrofit](../../../../docs/architecture/authorization-retrofit.md#c-existing-estimating-crud).
 

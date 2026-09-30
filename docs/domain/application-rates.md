@@ -101,6 +101,17 @@ division-by-zero and keeps roll-up arithmetic uniform.
 
 The UI should accept either and convert.
 
+### Access to dimension setup
+
+Creating, changing or deleting a rate dimension or one of its values requires
+`estimating.rate-dimension.manage`. The API checks both the HTTP request and the underlying
+Action, so a job or other non-HTTP caller cannot bypass it. Listing dimensions and values remains
+available to authenticated company users because application-rate and assembly forms need them
+as shared lookups. The Rate Dimensions setup screen is shown only to holders of the manage
+capability; no read-only detail screen exists yet. The permission is additive and company-scoped,
+not tied to a hardcoded role name. Administrators must grant it to existing roles or members who
+maintain dimensions before deploying this gate; registration by itself does not assign it.
+
 ## Landmines
 
 **Confusing this with UoM conversion.** Litres → sqm is *not* arithmetic; it depends on surface,

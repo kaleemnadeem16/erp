@@ -17,6 +17,7 @@ use App\Modules\Estimating\Models\RateDimension;
 use App\Support\Concerns\AppliesApiQuery;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -43,7 +44,7 @@ class RateDimensionController extends Controller
 
     public function store(StoreRateDimensionRequest $request, CreateRateDimension $create): JsonResponse
     {
-        return (new RateDimensionResource($create($request->validated())))->response()->setStatusCode(201);
+        return (new RateDimensionResource($create($request->validated(), $request->user())))->response()->setStatusCode(201);
     }
 
     public function show(ShowRateDimensionRequest $request, RateDimension $rate_dimension): RateDimensionResource
@@ -53,12 +54,13 @@ class RateDimensionController extends Controller
 
     public function update(UpdateRateDimensionRequest $request, RateDimension $rate_dimension, UpdateRateDimension $update): RateDimensionResource
     {
-        return new RateDimensionResource($update($rate_dimension, $request->validated()));
+        return new RateDimensionResource($update($rate_dimension, $request->validated(), $request->user()));
     }
 
-    public function destroy(RateDimension $rate_dimension, ArchiveRateDimension $archive): Response
+    public function destroy(Request $request, RateDimension $rate_dimension, ArchiveRateDimension $archive): Response
     {
-        $archive($rate_dimension);
+        abort_unless($request->user()?->can('estimating.rate-dimension.manage'), 403);
+        $archive($rate_dimension, $request->user());
 
         return response()->noContent();
     }

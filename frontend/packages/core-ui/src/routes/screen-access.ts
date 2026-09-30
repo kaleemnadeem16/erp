@@ -86,7 +86,7 @@ const rules: readonly Rule[] = [
   { path: "/inventory-cutovers", anyOf: cutover },
   { path: "/negative-stock-overrides", anyOf: negativeStock },
   { path: "/recalculation-requests", anyOf: recalculation },
-  { path: "/rate-dimensions", allOf: legacySetup },
+  { path: "/rate-dimensions", anyOf: ["estimating.rate-dimension.manage"] },
   { path: "/application-rates", allOf: legacySetup },
   { path: "/formulations", allOf: legacySetup },
   { path: "/assembly-groups", allOf: legacySetup },
