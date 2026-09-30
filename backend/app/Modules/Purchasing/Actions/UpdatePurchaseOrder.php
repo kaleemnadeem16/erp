@@ -5,7 +5,11 @@ declare(strict_types=1);
 namespace App\Modules\Purchasing\Actions;
 
 use App\Exceptions\DomainInvariantException;
+use App\Modules\Approvals\Actions\InvalidateApprovals;
+use App\Modules\Approvals\Models\ApprovalRequest;
+use App\Modules\Approvals\Support\ApprovalRequestStatus;
 use App\Modules\Purchasing\Models\PurchaseOrder;
+use App\Modules\Purchasing\Support\PurchaseOrderApprovalSubject;
 use App\Modules\Purchasing\Support\PurchaseOrderStatus;
 use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
@@ -14,7 +18,10 @@ use Illuminate\Support\Facades\DB;
 
 final class UpdatePurchaseOrder
 {
-    public function __construct(private readonly BuildPurchaseOrderLineAttributes $buildLine) {}
+    public function __construct(
+        private readonly BuildPurchaseOrderLineAttributes $buildLine,
+        private readonly InvalidateApprovals $invalidateApprovals,
+    ) {}
 
     /** @param array<string, mixed> $attributes */
     public function __invoke(PurchaseOrder $order, array $attributes): PurchaseOrder
@@ -24,6 +31,12 @@ final class UpdatePurchaseOrder
             if ($order->status !== PurchaseOrderStatus::Draft) {
                 throw new DomainInvariantException('Only a draft purchase order can be edited.', 'status');
             }
+            if (ApprovalRequest::query()->where('subject_type', PurchaseOrderApprovalSubject::CODE)->where('subject_id', $order->id)
+                ->where('status', ApprovalRequestStatus::Pending)->exists()) {
+                throw new DomainInvariantException('This order is waiting for approval and cannot be edited. Withdraw the approval request first.', 'approval');
+            }
+            // Whatever was approved was approved for the order as it was; any edit means it is approved again or not at all.
+            $this->invalidateApprovals->forSubject(PurchaseOrderApprovalSubject::CODE, $order->id, 'The order was edited after it was approved.');
             $lines = Arr::pull($attributes, 'lines');
             $order->fill($attributes);
             $baseAmountsChanged = $order->isDirty(['currency_id', 'fx_rate']);

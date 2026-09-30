@@ -14,6 +14,8 @@ final class PermissionVocabulary
             'purchasing.commercial-cost.view',
             'purchasing.purchase-order.view',
             'purchasing.purchase-order.create',
+            'purchasing.purchase-order.submit',
+            'purchasing.purchase-order.approve',
             'purchasing.purchase-order.issue',
             'purchasing.purchase-order.cancel',
             'purchasing.purchase-order.short-close',

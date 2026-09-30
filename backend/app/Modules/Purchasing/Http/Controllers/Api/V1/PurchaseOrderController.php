@@ -11,6 +11,7 @@ use App\Modules\Purchasing\Actions\CommitInventoryCutoverOpenPurchaseOrders;
 use App\Modules\Purchasing\Actions\CreatePurchaseOrder;
 use App\Modules\Purchasing\Actions\IssuePurchaseOrder;
 use App\Modules\Purchasing\Actions\ShortClosePurchaseOrderLine;
+use App\Modules\Purchasing\Actions\SubmitPurchaseOrder;
 use App\Modules\Purchasing\Actions\UpdatePurchaseOrder;
 use App\Modules\Purchasing\Http\Requests\PurchaseOrder\CancelPurchaseOrderRequest;
 use App\Modules\Purchasing\Http\Requests\PurchaseOrder\IndexPurchaseOrderRequest;
@@ -96,6 +97,15 @@ class PurchaseOrderController extends Controller
         abort_unless($request->user()?->can('purchasing.purchase-order.issue'), 403);
 
         return new PurchaseOrderResource($issue($purchaseOrder, $request->user()));
+    }
+
+    /** Sends a draft for approval. When the company's approval mode says none is needed the order is returned unchanged. */
+    public function submit(Request $request, PurchaseOrder $purchaseOrder, SubmitPurchaseOrder $submit): PurchaseOrderResource
+    {
+        abort_unless($request->user()?->can('purchasing.purchase-order.submit'), 403);
+        $submit($purchaseOrder, $request->user());
+
+        return new PurchaseOrderResource($purchaseOrder->refresh()->load('lines'));
     }
 
     public function cancel(CancelPurchaseOrderRequest $request, PurchaseOrder $purchaseOrder, CancelPurchaseOrder $cancel): PurchaseOrderResource

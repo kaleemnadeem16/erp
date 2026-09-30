@@ -4,6 +4,7 @@ namespace App\Modules\Purchasing\Http\Resources;
 
 use App\Modules\Parties\Http\Resources\SupplierSiteResource;
 use App\Modules\Purchasing\Models\PurchaseOrder;
+use App\Modules\Purchasing\Support\PurchaseOrderApprovalState;
 use App\Modules\Purchasing\Support\PurchasingCommercialAccess;
 use Brick\Math\BigDecimal;
 use Illuminate\Http\Request;
@@ -34,6 +35,8 @@ class PurchaseOrderResource extends JsonResource
             'total_amount' => $this->when($commercial && $this->relationLoaded('lines'), fn () => $this->sumLines('line_amount')),
             'base_total_amount' => $this->when($commercial && $this->relationLoaded('lines'), fn () => $this->sumLines('base_line_amount')),
             'lines' => PurchaseOrderLineResource::collection($this->whenLoaded('lines')),
+            // Where the order stands with the approval engine; only on the screens that act on one order.
+            'approval' => $this->when($request->routeIs('purchase-orders.show', 'purchase-orders.store', 'purchase-orders.update', 'purchase-orders.submit', 'purchase-orders.issue', 'purchase-orders.cancel'), fn () => app(PurchaseOrderApprovalState::class)->for($this->resource)),
             'issued_at' => $this->issued_at?->toIso8601String(), 'closed_at' => $this->closed_at?->toIso8601String(),
             'cancelled_at' => $this->cancelled_at?->toIso8601String(), 'cancellation_reason' => $this->cancellation_reason,
         ];

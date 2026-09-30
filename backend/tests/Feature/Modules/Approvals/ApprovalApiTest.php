@@ -97,7 +97,9 @@ class ApprovalApiTest extends TestCase
         $this->putJson('/api/v1/approval-subject-types/TEST_DOCUMENT/mode', ['mode' => 'SOMETIMES'])->assertUnprocessable();
         $this->putJson('/api/v1/approval-subject-types/NOPE/mode', ['mode' => 'POLICY'])->assertUnprocessable();
 
-        $types = $this->actingAs($this->user('approvals.history.view'))->getJson('/api/v1/approval-subject-types')->assertOk()->json('data.0');
+        $all = $this->actingAs($this->user('approvals.history.view'))->getJson('/api/v1/approval-subject-types')->assertOk()->json('data');
+        $types = collect($all)->firstWhere('code', 'TEST_DOCUMENT');
+        $this->assertContains('PURCHASE_ORDER', array_column($all, 'code'));
         $this->assertSame('TEST_DOCUMENT', $types['code']);
         $this->assertSame('REQUIRED', $types['mode']);
         $this->assertEqualsCanonicalizing(['GTE', 'GT', 'LTE', 'LT', 'EQ', 'NEQ', 'IN'], array_column($types['facts'][0]['operators'], 'value'));
