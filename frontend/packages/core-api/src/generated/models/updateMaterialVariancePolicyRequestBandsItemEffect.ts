@@ -12,5 +12,6 @@ export type UpdateMaterialVariancePolicyRequestBandsItemEffect =
 export const UpdateMaterialVariancePolicyRequestBandsItemEffect = {
   AUDIT_ONLY: "AUDIT_ONLY",
   REASON_REQUIRED: "REASON_REQUIRED",
+  APPROVAL_REQUIRED: "APPROVAL_REQUIRED",
   BLOCKED: "BLOCKED",
 } as const;

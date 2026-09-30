@@ -39,6 +39,7 @@ class PurchaseOrderResource extends JsonResource
             'approval' => $this->when($request->routeIs('purchase-orders.show', 'purchase-orders.store', 'purchase-orders.update', 'purchase-orders.submit', 'purchase-orders.issue', 'purchase-orders.cancel'), fn () => app(PurchaseOrderApprovalState::class)->for($this->resource)),
             'issued_at' => $this->issued_at?->toIso8601String(), 'closed_at' => $this->closed_at?->toIso8601String(),
             'cancelled_at' => $this->cancelled_at?->toIso8601String(), 'cancellation_reason' => $this->cancellation_reason,
+            'created_at' => $this->created_at?->toIso8601String(),
         ];
     }
 

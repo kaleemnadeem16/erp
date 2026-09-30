@@ -17,6 +17,7 @@ import type { PurchaseOrderResourceIssuedAt } from "./purchaseOrderResourceIssue
 import type { PurchaseOrderResourceClosedAt } from "./purchaseOrderResourceClosedAt";
 import type { PurchaseOrderResourceCancelledAt } from "./purchaseOrderResourceCancelledAt";
 import type { PurchaseOrderResourceCancellationReason } from "./purchaseOrderResourceCancellationReason";
+import type { PurchaseOrderResourceCreatedAt } from "./purchaseOrderResourceCreatedAt";
 
 export interface PurchaseOrderResource {
   id: number;
@@ -46,4 +47,5 @@ export interface PurchaseOrderResource {
   closed_at: PurchaseOrderResourceClosedAt;
   cancelled_at: PurchaseOrderResourceCancelledAt;
   cancellation_reason: PurchaseOrderResourceCancellationReason;
+  created_at: PurchaseOrderResourceCreatedAt;
 }

@@ -2,6 +2,7 @@ import type { PurchaseOrderResource } from "@erp/core-api";
 
 import { Badge } from "../../components/ui/badge";
 import type { DataColumn } from "../../components/data-table/types";
+import { formatDate } from "../../lib/format-date";
 
 const STATUS_VARIANT: Record<
   string,
@@ -85,9 +86,15 @@ export function purchaseOrderColumns(
       filterable: true,
     },
     {
+      key: "issued_at",
+      header: "Issued",
+      value: (order) => formatDate(order.issued_at) ?? null,
+      screenVisible: false,
+    },
+    {
       key: "created_at",
       header: "Created",
-      value: (order) => `#${order.id}`,
+      value: (order) => formatDate(order.created_at) ?? null,
       sortable: true,
       screenVisible: false,
     },

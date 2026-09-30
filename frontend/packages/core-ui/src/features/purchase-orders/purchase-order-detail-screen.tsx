@@ -43,6 +43,7 @@ import {
 } from "../../components/ui/table";
 import { Textarea } from "../../components/ui/textarea";
 import { getApiErrorMessage } from "../../lib/api-errors";
+import { formatDateTime } from "../../lib/format-date";
 import type { Presentation } from "../../lib/presentation";
 import { useFocusOnOpen } from "../../lib/use-focus-on-open";
 import { usePermission } from "../../hooks/use-permission";
@@ -269,6 +270,8 @@ export function PurchaseOrderDetailScreen({
   const compact = presentation === "sheet";
   const purchaseUomLabel = (uomId: number) =>
     uomLabels.get(uomId) ?? `UoM #${uomId}`;
+  const uomCode = (uomId: number) =>
+    uomLabels.get(uomId)?.split(" — ")[0] ?? `UoM #${uomId}`;
   const isDraft = order.status === "DRAFT";
   const isIssued = order.status === "ISSUED";
   const approval = (order as unknown as { approval?: PurchaseOrderApproval }).approval;
@@ -283,12 +286,25 @@ export function PurchaseOrderDetailScreen({
     {
       title: "Order",
       fields: [
+        { label: "PO number", value: order.number ?? `Draft #${order.id}` },
         { label: "Status", value: order.status },
         { label: "Order date", value: order.order_date },
         {
           label: "Expected delivery",
           value: order.expected_delivery_date ?? "",
         },
+        ...(order.issued_at
+          ? [{ label: "Issued at", value: formatDateTime(order.issued_at) ?? "" }]
+          : []),
+        ...(order.closed_at
+          ? [{ label: "Closed at", value: formatDateTime(order.closed_at) ?? "" }]
+          : []),
+        ...(order.cancelled_at
+          ? [{ label: "Cancelled at", value: formatDateTime(order.cancelled_at) ?? "" }]
+          : []),
+        ...(order.cancellation_reason
+          ? [{ label: "Cancellation reason", value: order.cancellation_reason }]
+          : []),
         {
           label: "Currency",
           value: currency
@@ -340,6 +356,21 @@ export function PurchaseOrderDetailScreen({
         },
       ],
     },
+    {
+      title: "Record information",
+      fields: [
+        { label: "Created at", value: formatDateTime(order.created_at) ?? "" },
+        ...(order.inventory_cutover_id
+          ? [{ label: "Cutover origin", value: "Opening inventory commitment" }]
+          : []),
+        ...(order.source_system
+          ? [{ label: "Source system", value: order.source_system }]
+          : []),
+        ...(order.source_record_id
+          ? [{ label: "Legacy reference", value: order.source_record_id }]
+          : []),
+      ],
+    },
     ...(order.notes
       ? [
           {
@@ -361,6 +392,16 @@ export function PurchaseOrderDetailScreen({
       key: "item",
       header: "Item",
       value: (line) => line.item_code ?? `#${line.item_id}`,
+      cell: (line) => (
+        <div>
+          <div>{line.item_code ?? `#${line.item_id}`}</div>
+          {line.supplier_item_code && (
+            <div className="text-[9px] text-black/60">
+              SKU: {line.supplier_item_code}
+            </div>
+          )}
+        </div>
+      ),
     },
     {
       key: "description",
@@ -371,7 +412,19 @@ export function PurchaseOrderDetailScreen({
       key: "ordered_qty",
       header: "Ordered",
       value: (line) =>
-        `${line.ordered_qty} ${uomLabels.get(line.purchase_uom_id)?.split(" — ")[0] ?? ""}`,
+        `${line.ordered_qty} ${uomCode(line.purchase_uom_id)}`,
+      cell: (line) => (
+        <div>
+          <div>
+            {line.ordered_qty} {uomCode(line.purchase_uom_id)}
+          </div>
+          {line.purchase_uom_id !== line.stock_uom_id && (
+            <div className="text-[9px] text-black/60">
+              = {line.ordered_stock_qty} {uomCode(line.stock_uom_id)}
+            </div>
+          )}
+        </div>
+      ),
       align: "right",
     },
     ...(mayViewCommercialCost
@@ -569,6 +622,11 @@ export function PurchaseOrderDetailScreen({
       )}
       <DetailPageLayout>
         <DetailSection title="Order">
+          <DetailField label="PO number">
+            <span className="font-semibold">
+              {order.number ?? `Draft #${order.id}`}
+            </span>
+          </DetailField>
           <DetailField label="Status">
             <Badge variant={STATUS_VARIANT[order.status] ?? "secondary"}>
               {order.status}
@@ -578,14 +636,29 @@ export function PurchaseOrderDetailScreen({
           <DetailField label="Expected delivery">
             {order.expected_delivery_date ?? "Not set"}
           </DetailField>
-          {order.notes && (
-            <DetailField label="Notes" fullWidth>
-              {order.notes}
+          {order.issued_at && (
+            <DetailField label="Issued at">
+              {formatDateTime(order.issued_at)}
+            </DetailField>
+          )}
+          {order.closed_at && (
+            <DetailField label="Closed at">
+              {formatDateTime(order.closed_at)}
+            </DetailField>
+          )}
+          {order.cancelled_at && (
+            <DetailField label="Cancelled at">
+              {formatDateTime(order.cancelled_at)}
             </DetailField>
           )}
           {order.cancellation_reason && (
-            <DetailField label="Cancellation reason">
+            <DetailField label="Cancellation reason" fullWidth>
               {order.cancellation_reason}
+            </DetailField>
+          )}
+          {order.notes && (
+            <DetailField label="Notes" fullWidth>
+              {order.notes}
             </DetailField>
           )}
         </DetailSection>
@@ -631,7 +704,14 @@ export function PurchaseOrderDetailScreen({
                 : `Currency #${order.currency_id}`}
             </DetailField>
             <DetailField label="FX policy">{order.fx_policy}</DetailField>
-            <DetailField label="FX rate">{order.fx_rate}</DetailField>
+            <DetailField label="FX rate">
+              {order.fx_rate}
+              {order.fx_rate_date && (
+                <span className="ml-1 text-xs text-muted-foreground">
+                  ({order.fx_rate_date}{order.fx_rate_source ? `, ${order.fx_rate_source}` : ""})
+                </span>
+              )}
+            </DetailField>
             <DetailField label="Order total">
               {order.total_amount ?? "—"} {currency?.code ?? ""}
             </DetailField>
@@ -640,6 +720,26 @@ export function PurchaseOrderDetailScreen({
             </DetailField>
           </DetailSection>
         )}
+        <DetailSection title="Record information">
+          <DetailField label="Created at">
+            {formatDateTime(order.created_at)}
+          </DetailField>
+          {order.inventory_cutover_id && (
+            <DetailField label="Cutover origin">
+              Opening inventory commitment
+            </DetailField>
+          )}
+          {order.source_system && (
+            <DetailField label="Source system">
+              {order.source_system}
+            </DetailField>
+          )}
+          {order.source_record_id && (
+            <DetailField label="Legacy reference">
+              {order.source_record_id}
+            </DetailField>
+          )}
+        </DetailSection>
         <DetailSection
           title="Lines"
           description={
@@ -670,43 +770,98 @@ export function PurchaseOrderDetailScreen({
                 {(order.lines ?? []).map((line) => {
                   const closed = Number(line.short_closed_stock_qty) > 0;
                   const fullyReceived = Number(line.outstanding_stock_qty) <= 0;
+                  const purchaseCode = uomCode(line.purchase_uom_id);
+                  const stockCode = uomCode(line.stock_uom_id);
+                  const hasUomConversion = line.purchase_uom_id !== line.stock_uom_id;
+                  const hasLineDelivery = Boolean(
+                    line.expected_delivery_date &&
+                    line.expected_delivery_date !== order.expected_delivery_date,
+                  );
+                  const hasDiscount = Number(line.discount_amount) > 0;
+                  const hasTax = Number(line.tax_amount) > 0;
+
                   return (
                     <TableRow key={line.id}>
                       <TableCell>{line.line_number}</TableCell>
                       <TableCell>
-                        {line.item_code ?? `#${line.item_id}`}
+                        <div className="font-medium">
+                          {line.item_code ?? `#${line.item_id}`}
+                        </div>
+                        {line.supplier_item_code && (
+                          <div className="text-xs text-muted-foreground">
+                            SKU: {line.supplier_item_code}
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell
                         className={compact ? "whitespace-normal" : undefined}
                       >
-                        {line.description}
+                        <div>{line.description}</div>
+                        {hasLineDelivery && (
+                          <div className="text-xs text-muted-foreground">
+                            Expected: {line.expected_delivery_date}
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
-                        {line.ordered_qty}{" "}
-                        <span
-                          className="text-muted-foreground"
-                          title={purchaseUomLabel(line.purchase_uom_id)}
-                        >
-                          {compact
-                            ? purchaseUomLabel(line.purchase_uom_id).split(
-                                " — ",
-                              )[0]
-                            : purchaseUomLabel(line.purchase_uom_id)}
-                        </span>
+                        <div>
+                          {line.ordered_qty}{" "}
+                          <span
+                            className="text-muted-foreground"
+                            title={purchaseUomLabel(line.purchase_uom_id)}
+                          >
+                            {purchaseCode}
+                          </span>
+                        </div>
+                        {hasUomConversion && (
+                          <div className="text-xs text-muted-foreground">
+                            = {line.ordered_stock_qty} {stockCode} (1 {purchaseCode} = {line.uom_factor} {stockCode})
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
-                        {line.received_stock_qty}{" "}
-                        {uomLabels.get(line.stock_uom_id)?.split(" — ")[0] ??
-                          ""}
+                        <div>
+                          {line.received_stock_qty}{" "}
+                          <span
+                            className="text-muted-foreground"
+                            title={uomLabels.get(line.stock_uom_id)}
+                          >
+                            {stockCode}
+                          </span>
+                        </div>
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
-                        {line.outstanding_stock_qty}{" "}
-                        {uomLabels.get(line.stock_uom_id)?.split(" — ")[0] ??
-                          ""}
+                        <div>
+                          {line.outstanding_stock_qty}{" "}
+                          <span
+                            className="text-muted-foreground"
+                            title={uomLabels.get(line.stock_uom_id)}
+                          >
+                            {stockCode}
+                          </span>
+                        </div>
+                        {closed && (
+                          <div className="text-xs text-muted-foreground">
+                            Short-closed: {line.short_closed_stock_qty} {stockCode}
+                          </div>
+                        )}
                       </TableCell>
                       {mayViewCommercialCost && (
                         <TableCell className="text-right tabular-nums">
-                          {line.line_amount} {currency?.code ?? ""}
+                          <div className="font-medium">
+                            {line.line_amount} {currency?.code ?? ""}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            <span>
+                              {line.unit_price} {currency?.code ?? ""} / {purchaseCode}
+                            </span>
+                            {hasDiscount && (
+                              <span> · Discount {line.discount_amount} {currency?.code ?? ""}</span>
+                            )}
+                            {hasTax && (
+                              <span> · Tax {line.tax_amount} {currency?.code ?? ""}</span>
+                            )}
+                          </div>
                         </TableCell>
                       )}
                       <TableCell>
@@ -729,7 +884,12 @@ export function PurchaseOrderDetailScreen({
                             </Button>
                           )}
                         {closed && (
-                          <Badge variant="secondary">Short-closed</Badge>
+                          <div className="flex flex-col items-end gap-0.5">
+                            <Badge variant="secondary">Short-closed</Badge>
+                            <span className="text-[11px] text-muted-foreground">
+                              {line.short_closed_stock_qty} {stockCode}
+                            </span>
+                          </div>
                         )}
                       </TableCell>
                     </TableRow>

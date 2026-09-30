@@ -1092,6 +1092,7 @@ export type * from "./purchaseOrderResource";
 export type * from "./purchaseOrderResourceCancellationReason";
 export type * from "./purchaseOrderResourceCancelledAt";
 export type * from "./purchaseOrderResourceClosedAt";
+export type * from "./purchaseOrderResourceCreatedAt";
 export type * from "./purchaseOrderResourceExpectedDeliveryDate";
 export type * from "./purchaseOrderResourceInventoryCutoverId";
 export type * from "./purchaseOrderResourceIssuedAt";

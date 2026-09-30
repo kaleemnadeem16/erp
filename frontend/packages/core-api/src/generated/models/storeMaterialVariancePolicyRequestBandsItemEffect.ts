@@ -12,5 +12,6 @@ export type StoreMaterialVariancePolicyRequestBandsItemEffect =
 export const StoreMaterialVariancePolicyRequestBandsItemEffect = {
   AUDIT_ONLY: "AUDIT_ONLY",
   REASON_REQUIRED: "REASON_REQUIRED",
+  APPROVAL_REQUIRED: "APPROVAL_REQUIRED",
   BLOCKED: "BLOCKED",
 } as const;

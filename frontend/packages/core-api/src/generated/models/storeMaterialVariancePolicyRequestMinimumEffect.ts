@@ -6,4 +6,4 @@
  */
 
 export type StoreMaterialVariancePolicyRequestMinimumEffect =
-  "AUDIT_ONLY" | "REASON_REQUIRED" | "BLOCKED" | null;
+  "AUDIT_ONLY" | "REASON_REQUIRED" | "APPROVAL_REQUIRED" | "BLOCKED" | null;
