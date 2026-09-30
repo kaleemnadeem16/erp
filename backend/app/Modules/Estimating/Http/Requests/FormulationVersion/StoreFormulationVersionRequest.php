@@ -11,7 +11,7 @@ class StoreFormulationVersionRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('estimating.formulation.manage') === true;
     }
 
     /** @return array<string, mixed> */

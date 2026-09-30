@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Estimating\Actions;
 
+use App\Exceptions\DomainInvariantException;
+use App\Models\User;
 use App\Modules\Estimating\Models\Formulation;
 use App\Modules\Estimating\Models\FormulationVersion;
 use App\Modules\Estimating\Support\FormulationCycleGuard;
@@ -23,8 +25,12 @@ final class CreateFormulationVersion
     ) {}
 
     /** @param array<string, mixed> $attributes */
-    public function __invoke(Formulation $formulation, array $attributes): FormulationVersion
+    public function __invoke(Formulation $formulation, array $attributes, User $actor): FormulationVersion
     {
+        if (! $actor->can('estimating.formulation.manage')) {
+            throw new DomainInvariantException('The actor is not permitted to manage formulation versions.');
+        }
+
         $lines = $attributes['lines'] ?? [];
         unset($attributes['lines']);
 

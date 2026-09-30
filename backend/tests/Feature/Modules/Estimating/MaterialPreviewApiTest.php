@@ -34,6 +34,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
+use Tests\Support\PermissionedActor;
 use Tests\TestCase;
 
 class MaterialPreviewApiTest extends TestCase
@@ -685,7 +686,10 @@ class MaterialPreviewApiTest extends TestCase
             'uom_id' => $this->kg->id,
             'sequence' => 0,
         ]);
-        (new ActivateFormulationVersion(new FormulationCycleGuard))($version);
+        (new ActivateFormulationVersion(new FormulationCycleGuard))(
+            $version,
+            PermissionedActor::grant(User::factory()->create(), ['estimating.formulation.manage']),
+        );
 
         return $formulation->refresh();
     }

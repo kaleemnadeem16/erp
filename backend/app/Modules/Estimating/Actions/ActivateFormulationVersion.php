@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Estimating\Actions;
 
 use App\Exceptions\DomainInvariantException;
+use App\Models\User;
 use App\Modules\Estimating\Models\FormulationVersion;
 use App\Modules\Estimating\Support\FormulationCycleGuard;
 use App\Modules\Estimating\Support\FormulationStatus;
@@ -31,8 +32,12 @@ final class ActivateFormulationVersion
 {
     public function __construct(private readonly FormulationCycleGuard $cycleGuard) {}
 
-    public function __invoke(FormulationVersion $version): FormulationVersion
+    public function __invoke(FormulationVersion $version, User $actor): FormulationVersion
     {
+        if (! $actor->can('estimating.formulation.manage')) {
+            throw new DomainInvariantException('The actor is not permitted to manage formulation versions.');
+        }
+
         if ($version->status !== FormulationVersionStatus::Draft) {
             throw new DomainInvariantException(
                 'Only a DRAFT formulation version can be activated.',

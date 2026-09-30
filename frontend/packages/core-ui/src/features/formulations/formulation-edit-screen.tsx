@@ -23,6 +23,7 @@ import { DetailSection } from '../../components/detail/detail-page-layout';
 import { applyApiErrorsToForm, getApiErrorMessage } from '../../lib/api-errors';
 import { formulationLineSchema, formulationLinesPayload, FormulationLinesFields } from './formulation-lines-fields';
 import { FormulationCostBreakdown } from './formulation-cost-breakdown';
+import { usePermission } from '../../hooks/use-permission';
 
 const headerSchema = z.object({
   code: z.string().min(1, 'Code is required').max(255),
@@ -157,6 +158,7 @@ function FormulationVersions({
   versions: FormulationVersionResource[];
   onChanged: () => void;
 }) {
+  const mayViewInternalCost = usePermission('estimating.internal_cost.view');
   const [revising, setRevising] = useState(false);
   const [editingVersionId, setEditingVersionId] = useState<number | null>(null);
   const [breakdownVersionId, setBreakdownVersionId] = useState<number | null>(null);
@@ -224,7 +226,7 @@ function FormulationVersions({
                     </Button>
                   </>
                 )}
-                {version.status === 'ACTIVE' && (
+                {version.status === 'ACTIVE' && mayViewInternalCost && (
                   <Button type="button" variant="outline" size="sm" onClick={() => setBreakdownVersionId((v) => (v === version.id ? null : version.id))}>
                     {breakdownVersionId === version.id ? 'Hide cost breakdown' : 'View cost breakdown'}
                   </Button>

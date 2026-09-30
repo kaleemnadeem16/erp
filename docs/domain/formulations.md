@@ -135,6 +135,22 @@ usage pattern (a human previewing one formulation on demand, not a hot path acro
 assemblies) the bounded extra queries aren't a real concern. Reconsider the CTE if formulation
 costing ever runs at bulk/hot-path scale.
 
+## Access
+
+`estimating.formulation.manage` permits creating and editing formulation headers and versions,
+deleting drafts, archiving headers, and activating a draft. It is checked in the request and the
+underlying Action; a background caller must supply an authorised actor. Listing, showing and
+resolving technical recipes remain authenticated company reads because they serve other
+Estimating lookups. The Formulations setup screen requires the manage capability and does not
+offer a read-only detail mode yet.
+
+The `cost-breakdown` endpoint is a separate sensitive projection: it requires
+`estimating.internal_cost.view`. Managing a recipe does not automatically disclose AVCO-derived
+unit costs. The edit screen hides the breakdown control without that capability. The two grants
+are additive and dynamically assigned through company roles or direct exceptions, not hardcoded
+role names. Existing formulation maintainers need the manage grant before deployment; only the
+configured administrator is synchronised automatically.
+
 ## Landmines
 
 **Editing a version in place.** Silently rewrites the cost basis of every historical job that

@@ -19,6 +19,7 @@ use App\Modules\Estimating\Models\Formulation;
 use App\Support\Concerns\AppliesApiQuery;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -56,7 +57,7 @@ class FormulationController extends Controller
 
     public function store(StoreFormulationRequest $request, CreateFormulation $create): JsonResponse
     {
-        return (new FormulationResource($create($request->validated())))->response()->setStatusCode(201);
+        return (new FormulationResource($create($request->validated(), $request->user())))->response()->setStatusCode(201);
     }
 
     public function show(ShowFormulationRequest $request, Formulation $formulation): FormulationResource
@@ -66,12 +67,13 @@ class FormulationController extends Controller
 
     public function update(UpdateFormulationRequest $request, Formulation $formulation, UpdateFormulation $update): FormulationResource
     {
-        return new FormulationResource($update($formulation, $request->validated()));
+        return new FormulationResource($update($formulation, $request->validated(), $request->user()));
     }
 
-    public function destroy(Formulation $formulation, ArchiveFormulation $archive): Response
+    public function destroy(Request $request, Formulation $formulation, ArchiveFormulation $archive): Response
     {
-        $archive($formulation);
+        abort_unless($request->user()?->can('estimating.formulation.manage'), 403);
+        $archive($formulation, $request->user());
 
         return response()->noContent();
     }

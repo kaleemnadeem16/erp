@@ -91,7 +91,7 @@ const rules: readonly Rule[] = [
     path: "/application-rates",
     anyOf: ["estimating.application-rate.manage", "estimating.material_preview.run"],
   },
-  { path: "/formulations", allOf: legacySetup },
+  { path: "/formulations", anyOf: ["estimating.formulation.manage"] },
   { path: "/assembly-groups", allOf: legacySetup },
   { path: "/assemblies", allOf: legacySetup },
   { path: "/resource-rates", allOf: legacySetup },

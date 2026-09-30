@@ -22,8 +22,12 @@ import type {
 
 import type {
   AuthenticationExceptionResponse,
+  AuthorizationExceptionResponse,
   FormulationVersionsActivate200,
+  FormulationVersionsActivate403,
   FormulationVersionsCostBreakdown200,
+  FormulationVersionsCostBreakdown403,
+  FormulationVersionsDestroy403,
   FormulationVersionsUpdate200,
   FormulationsVersionsStore201,
   ModelNotFoundExceptionResponse,
@@ -46,6 +50,11 @@ export type formulationsVersionsStoreResponse401 = {
   status: 401;
 };
 
+export type formulationsVersionsStoreResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type formulationsVersionsStoreResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -62,6 +71,7 @@ export type formulationsVersionsStoreResponseSuccess =
   };
 export type formulationsVersionsStoreResponseError = (
   | formulationsVersionsStoreResponse401
+  | formulationsVersionsStoreResponse403
   | formulationsVersionsStoreResponse404
   | formulationsVersionsStoreResponse422
 ) & {
@@ -95,6 +105,7 @@ export const formulationsVersionsStore = async (
 export const getFormulationsVersionsStoreMutationOptions = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -140,12 +151,14 @@ export type FormulationsVersionsStoreMutationBody =
   StoreFormulationVersionRequest;
 export type FormulationsVersionsStoreMutationError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
 export const useFormulationsVersionsStore = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -180,6 +193,11 @@ export type formulationVersionsUpdateResponse401 = {
   status: 401;
 };
 
+export type formulationVersionsUpdateResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type formulationVersionsUpdateResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -196,6 +214,7 @@ export type formulationVersionsUpdateResponseSuccess =
   };
 export type formulationVersionsUpdateResponseError = (
   | formulationVersionsUpdateResponse401
+  | formulationVersionsUpdateResponse403
   | formulationVersionsUpdateResponse404
   | formulationVersionsUpdateResponse422
 ) & {
@@ -229,6 +248,7 @@ export const formulationVersionsUpdate = async (
 export const getFormulationVersionsUpdateMutationOptions = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -274,12 +294,14 @@ export type FormulationVersionsUpdateMutationBody =
   UpdateFormulationVersionRequest;
 export type FormulationVersionsUpdateMutationError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
 export const useFormulationVersionsUpdate = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -314,6 +336,11 @@ export type formulationVersionsDestroyResponse401 = {
   status: 401;
 };
 
+export type formulationVersionsDestroyResponse403 = {
+  data: FormulationVersionsDestroy403;
+  status: 403;
+};
+
 export type formulationVersionsDestroyResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -324,7 +351,9 @@ export type formulationVersionsDestroyResponseSuccess =
     headers: Headers;
   };
 export type formulationVersionsDestroyResponseError = (
-  formulationVersionsDestroyResponse401 | formulationVersionsDestroyResponse404
+  | formulationVersionsDestroyResponse401
+  | formulationVersionsDestroyResponse403
+  | formulationVersionsDestroyResponse404
 ) & {
   headers: Headers;
 };
@@ -353,7 +382,10 @@ export const formulationVersionsDestroy = async (
 };
 
 export const getFormulationVersionsDestroyMutationOptions = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | FormulationVersionsDestroy403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -395,10 +427,15 @@ export type FormulationVersionsDestroyMutationResult = NonNullable<
 >;
 
 export type FormulationVersionsDestroyMutationError =
-  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
+  | AuthenticationExceptionResponse
+  | FormulationVersionsDestroy403
+  | ModelNotFoundExceptionResponse;
 
 export const useFormulationVersionsDestroy = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | FormulationVersionsDestroy403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(
   options?: {
@@ -431,6 +468,11 @@ export type formulationVersionsActivateResponse401 = {
   status: 401;
 };
 
+export type formulationVersionsActivateResponse403 = {
+  data: FormulationVersionsActivate403;
+  status: 403;
+};
+
 export type formulationVersionsActivateResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -442,6 +484,7 @@ export type formulationVersionsActivateResponseSuccess =
   };
 export type formulationVersionsActivateResponseError = (
   | formulationVersionsActivateResponse401
+  | formulationVersionsActivateResponse403
   | formulationVersionsActivateResponse404
 ) & {
   headers: Headers;
@@ -471,7 +514,10 @@ export const formulationVersionsActivate = async (
 };
 
 export const getFormulationVersionsActivateMutationOptions = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | FormulationVersionsActivate403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -513,10 +559,15 @@ export type FormulationVersionsActivateMutationResult = NonNullable<
 >;
 
 export type FormulationVersionsActivateMutationError =
-  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
+  | AuthenticationExceptionResponse
+  | FormulationVersionsActivate403
+  | ModelNotFoundExceptionResponse;
 
 export const useFormulationVersionsActivate = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | FormulationVersionsActivate403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(
   options?: {
@@ -558,6 +609,11 @@ export type formulationVersionsCostBreakdownResponse401 = {
   status: 401;
 };
 
+export type formulationVersionsCostBreakdownResponse403 = {
+  data: FormulationVersionsCostBreakdown403;
+  status: 403;
+};
+
 export type formulationVersionsCostBreakdownResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -569,6 +625,7 @@ export type formulationVersionsCostBreakdownResponseSuccess =
   };
 export type formulationVersionsCostBreakdownResponseError = (
   | formulationVersionsCostBreakdownResponse401
+  | formulationVersionsCostBreakdownResponse403
   | formulationVersionsCostBreakdownResponse404
 ) & {
   headers: Headers;
@@ -607,7 +664,10 @@ export const getFormulationVersionsCostBreakdownQueryKey = (
 
 export const getFormulationVersionsCostBreakdownQueryOptions = <
   TData = Awaited<ReturnType<typeof formulationVersionsCostBreakdown>>,
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | FormulationVersionsCostBreakdown403
+    | ModelNotFoundExceptionResponse,
 >(
   formulationVersion: number,
   options?: {
@@ -648,11 +708,16 @@ export type FormulationVersionsCostBreakdownQueryResult = NonNullable<
   Awaited<ReturnType<typeof formulationVersionsCostBreakdown>>
 >;
 export type FormulationVersionsCostBreakdownQueryError =
-  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
+  | AuthenticationExceptionResponse
+  | FormulationVersionsCostBreakdown403
+  | ModelNotFoundExceptionResponse;
 
 export function useFormulationVersionsCostBreakdown<
   TData = Awaited<ReturnType<typeof formulationVersionsCostBreakdown>>,
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | FormulationVersionsCostBreakdown403
+    | ModelNotFoundExceptionResponse,
 >(
   formulationVersion: number,
   options: {
@@ -679,7 +744,10 @@ export function useFormulationVersionsCostBreakdown<
 };
 export function useFormulationVersionsCostBreakdown<
   TData = Awaited<ReturnType<typeof formulationVersionsCostBreakdown>>,
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | FormulationVersionsCostBreakdown403
+    | ModelNotFoundExceptionResponse,
 >(
   formulationVersion: number,
   options?: {
@@ -706,7 +774,10 @@ export function useFormulationVersionsCostBreakdown<
 };
 export function useFormulationVersionsCostBreakdown<
   TData = Awaited<ReturnType<typeof formulationVersionsCostBreakdown>>,
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | FormulationVersionsCostBreakdown403
+    | ModelNotFoundExceptionResponse,
 >(
   formulationVersion: number,
   options?: {
@@ -734,7 +805,10 @@ compounding per level rather than only the total (that doc's own
 
 export function useFormulationVersionsCostBreakdown<
   TData = Awaited<ReturnType<typeof formulationVersionsCostBreakdown>>,
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | FormulationVersionsCostBreakdown403
+    | ModelNotFoundExceptionResponse,
 >(
   formulationVersion: number,
   options?: {

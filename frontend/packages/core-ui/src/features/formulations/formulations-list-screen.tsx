@@ -6,12 +6,14 @@ import { PageHeader } from '../../components/page/page-header';
 import { DataTable, toTanStackColumns } from '../../components/data-table';
 import { apiSortToTableSorting, tableSortingToApiSort, useListQueryState } from '../../lib/list-query-state';
 import { formulationColumns } from './formulations-columns';
+import { usePermission } from '../../hooks/use-permission';
 
 interface Filters {
   [key: string]: string;
 }
 
 export function FormulationsListScreen() {
+  const mayManage = usePermission('estimating.formulation.manage');
   const navigate = useNavigate();
   const query = useListQueryState<Filters>({ defaultSort: 'code' });
   const result = useFormulationsIndex({
@@ -31,7 +33,7 @@ export function FormulationsListScreen() {
       <PageHeader
         title="Formulations"
         description="Recipes: the inputs required to produce one unit of an output item."
-        primaryAction={{ label: 'New formulation', onClick: () => navigate('/formulations/new') }}
+        primaryAction={mayManage ? { label: 'New formulation', onClick: () => navigate('/formulations/new') } : undefined}
       />
       <DataTable
         columns={columns}
@@ -46,7 +48,7 @@ export function FormulationsListScreen() {
         onSortingChange={(u) =>
           query.setSort(tableSortingToApiSort(typeof u === 'function' ? u(sorting) : u, formulationColumns))
         }
-        onRowClick={(row: FormulationResource) => navigate(`/formulations/${row.id}/edit`)}
+        onRowClick={mayManage ? (row: FormulationResource) => navigate(`/formulations/${row.id}/edit`) : undefined}
         isLoading={result.isLoading}
         isError={result.isError}
         error={result.error}

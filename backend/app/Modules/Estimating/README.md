@@ -115,6 +115,13 @@ version's state; only `UpdateFormulationVersion` (DRAFT only) and `DeleteFormula
 version's status/effective dates change — it supersedes whatever was previously ACTIVE, closing
 its period the instant the new one opens.
 
+Formulation header and version create/update/delete/activate require
+`estimating.formulation.manage` at both HTTP and Action boundaries. List/show/resolve remain
+authenticated company reads for shared lookups. The version cost-breakdown response is separate:
+it requires `estimating.internal_cost.view` even for someone who can maintain formulations; the
+SPA hides its control without that capability. The demo seeder activates versions as the
+permission-synchronised demo actor rather than bypassing the Action check.
+
 `CreateAssemblyGroup`/`UpdateAssemblyGroup`/`ArchiveAssemblyGroup` and
 `CreateAssembly`/`UpdateAssembly`/`ArchiveAssembly` are plain CRUD, same shape as the rate
 dimension actions. `assembly_group_id` is deliberately mutable — no repoint guard, unlike
@@ -168,10 +175,10 @@ The existing Estimating CRUD retrofit also reserves six write capabilities:
 `estimating.rate-dimension.manage` (including values), `estimating.application-rate.manage`,
 `estimating.formulation.manage` (including versions), `estimating.assembly-group.manage`,
 `estimating.assembly.manage` (including versions), and `estimating.resource-rate.manage`.
-`estimating.rate-dimension.manage` and `estimating.application-rate.manage` are now enforced for
-their writes, with matching screen access and denied-path tests. The other four remain
-registration-only; their assignment/backfill, backend enforcement, UI gating and denied-path
-tests are tracked in the
+`estimating.rate-dimension.manage`, `estimating.application-rate.manage`, and
+`estimating.formulation.manage` are now enforced for their writes, with matching screen access
+and denied-path tests. The other three remain registration-only; their assignment/backfill,
+backend enforcement, UI gating and denied-path tests are tracked in the
 [authorisation retrofit](../../../../docs/architecture/authorization-retrofit.md#c-existing-estimating-crud).
 
 `estimating.material_variance_policy.manage` (not in ADR 0057's list — added with the configurable variance

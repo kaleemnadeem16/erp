@@ -1,6 +1,6 @@
 # Project Status
 
-**Updated:** 2026-09-29
+**Updated:** 2026-09-30
 **Current phase:** Phase 3 — Estimating core (in progress; two vertical slices shipped
 2026-09-23 — rate dimensions/application rates, then formulations with versioning, customer
 overrides and nested cost roll-up, now followed by the 2026-09-24 draft-editing, human-readable
@@ -44,6 +44,7 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 
 | Item | Date |
 |---|---|
+| **Formulation and version writes now require a capability** — `estimating.formulation.manage` protects header/version create, update, delete and activation at HTTP and Action boundaries; shared list/show/resolve reads remain. Cost breakdown now separately requires `estimating.internal_cost.view`, so recipe editing does not disclose AVCO-derived costs. The setup screen and cost control match those checks, and the demo seeder passes an authorised actor. Existing maintainers need an explicit grant before deployment; three Estimating CRUD capabilities remain registration-only → [authorisation retrofit](architecture/authorization-retrofit.md#c-existing-estimating-crud), [formulations](domain/formulations.md#access). | 2026-09-30 |
 | **Application-rate writes now require a capability** — `estimating.application-rate.manage` protects create/update/delete at HTTP and non-HTTP Action boundaries. List/show/resolve remain available to authenticated users; the SPA lets preview users inspect and test resolution while reserving New/edit for managers. Existing maintainers need an explicit grant before deployment; four other Estimating CRUD capabilities remain registration-only → [authorisation retrofit](architecture/authorization-retrofit.md#c-existing-estimating-crud), [application rates](domain/application-rates.md#access-to-application-rates). | 2026-09-30 |
 | **Rate Dimension writes now require a capability** — `estimating.rate-dimension.manage` protects dimensions and values at HTTP and non-HTTP Action boundaries; their reads remain shared authenticated lookups. The setup route and New action follow the same permission, and allowed/denied tests cover each write. Existing dimension maintainers need an explicit role/direct grant before deployment; the configured administrator gets it through normal sync. The other five Estimating CRUD capabilities remain registration-only → [authorisation retrofit](architecture/authorization-retrofit.md#c-existing-estimating-crud), [application rates](domain/application-rates.md#access-to-dimension-setup). | 2026-09-30 |
 | **Estimating CRUD capability names registered, enforcement pending** — six module-owned `*.manage` permissions now exist for rate dimensions/values, application rates, formulations/versions, assembly groups, assemblies/versions and resource rates. This is a reversible vocabulary step only: registration does not assign operational users or protect those endpoints. Assignment/backfill, backend Action and API checks, UI gating and tests remain tracked in the [authorisation retrofit](architecture/authorization-retrofit.md#c-existing-estimating-crud). | 2026-09-30 |
