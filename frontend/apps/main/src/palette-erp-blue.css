@@ -370,7 +370,7 @@
   box-shadow: 0 1px 3px 0 var(--erp-blue-shadow-color);
 }
 :root:not(.dark) .po-screen .po-filter-panel-title {
-  color: var(--po-text-secondary);
+  color: var(--po-text-primary);
 }
 
 /* Form Controls (Inputs, Select Triggers, Combobox Buttons, DateFields) */
@@ -519,6 +519,90 @@
   color: var(--po-text-disabled);
   border-color: var(--po-border-disabled);
   background-color: var(--po-bg-surface-sunken);
+}
+
+/* Decorative icons inside fields (search, supplier, status, ranges, currency) */
+:root:not(.dark) .po-screen .po-field-icon {
+  color: var(--po-text-tertiary);
+}
+
+/* Quick "Order date" range in the toolbar: one bordered field with an icon, a small label and two typed dates */
+:root:not(.dark) .po-screen .po-range-field {
+  background-color: var(--po-field-bg);
+  border-color: var(--po-field-border);
+  box-shadow: 0 1px 2px 0 var(--erp-blue-shadow-color);
+  transition: border-color 150ms ease-in-out, background-color 150ms ease-in-out, box-shadow 150ms ease-in-out;
+}
+:root:not(.dark) .po-screen .po-range-field:hover {
+  background-color: var(--po-field-bg-hover);
+  border-color: var(--po-field-border-hover);
+}
+:root:not(.dark) .po-screen .po-range-field:focus-within {
+  border-color: var(--po-field-border-focus);
+  box-shadow: 0 0 0 2px var(--po-focus-ring-offset), 0 0 0 4px var(--po-focus-ring);
+}
+:root:not(.dark) .po-screen .po-range-label {
+  color: var(--po-field-label);
+}
+/* The inner date fields draw no chrome of their own: the group above carries border, hover and focus */
+:root:not(.dark) .po-screen .po-range-input,
+:root:not(.dark) .po-screen .po-range-input:focus-within {
+  box-shadow: none;
+}
+
+/* "Select supplier above" placeholder: visibly unavailable, not an empty gap */
+:root:not(.dark) .po-screen .po-field-disabled {
+  background-color: var(--po-field-bg-disabled);
+  border-color: var(--po-border-disabled);
+  color: var(--po-text-tertiary);
+}
+
+/* Subtle text-link action ("Clear all") */
+:root:not(.dark) .po-screen .po-link-action {
+  color: var(--po-text-link);
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 4px;
+  padding: 0 0.25rem;
+  transition: color 150ms ease-in-out;
+}
+:root:not(.dark) .po-screen .po-link-action:hover {
+  color: var(--po-text-link-hover);
+  text-decoration: underline;
+}
+:root:not(.dark) .po-screen .po-link-action:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--po-focus-ring-offset), 0 0 0 4px var(--po-focus-ring);
+}
+
+/* Bulk action bar shown while rows are ticked */
+:root:not(.dark) .po-screen .po-bulk-bar {
+  background-color: var(--po-bg-selected);
+  border-color: var(--po-chip-active-border);
+  color: var(--po-brand-text);
+}
+
+/* Current page marker in the numbered pagination */
+:root:not(.dark) .po-screen [aria-current="page"] {
+  background-color: var(--po-brand-subtle);
+  border-color: var(--po-brand-primary);
+  color: var(--po-brand-text);
+}
+
+/* Row actions (kebab) */
+:root:not(.dark) .po-screen tbody button[aria-label^="Actions for"] {
+  color: var(--po-text-secondary);
+}
+:root:not(.dark) .po-screen tbody button[aria-label^="Actions for"]:hover {
+  background-color: var(--po-control-hover);
+  color: var(--po-text-primary);
+}
+:root:not(.dark) .po-screen tbody button[aria-label^="Actions for"]:active {
+  background-color: var(--po-control-pressed);
+}
+:root:not(.dark) .po-screen tbody button[aria-label^="Actions for"]:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--po-focus-ring-offset), 0 0 0 4px var(--po-focus-ring);
 }
 
 /* ==========================================================================

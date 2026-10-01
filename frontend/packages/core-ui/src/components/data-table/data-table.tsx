@@ -62,6 +62,12 @@ export interface DataTableProps<TRow> {
    */
   /** Optional class name to attach to the Columns dropdown content */
   viewOptionsMenuClassName?: string;
+  /** Opt-in content for the left of the toolbar row, opposite the Columns button (e.g. active-filter chips). */
+  toolbarStart?: ReactNode;
+  /** Opt-in: name the records in the footer count, e.g. "purchase orders" -> "1–6 of 6 purchase orders". */
+  recordNoun?: string;
+  /** Opt-in: show the current page as a numbered button instead of "Page 1 of N". */
+  numberedPagination?: boolean;
   rowActions?: (row: TRow) => ReactNode;
 }
 
@@ -100,6 +106,9 @@ export function DataTable<TRow>({
   onViewChange,
   cardColumns,
   viewOptionsMenuClassName,
+  toolbarStart,
+  recordNoun,
+  numberedPagination,
   rowActions,
 }: DataTableProps<TRow>) {
   const table = useReactTable({
@@ -124,7 +133,7 @@ export function DataTable<TRow>({
 
   return (
     <div className="space-y-3">
-      {(onColumnVisibilityChange || onViewChange) && (
+      {(onColumnVisibilityChange || onViewChange || toolbarStart) && (
         <div className="flex items-center gap-2">
           {onViewChange && (
             <div className="md:hidden">
@@ -136,6 +145,7 @@ export function DataTable<TRow>({
               <DataTableSortSelect columns={cardColumns} sorting={sorting} onSortingChange={onSortingChange} />
             </div>
           )}
+          {toolbarStart && <div className="min-w-0 flex-1">{toolbarStart}</div>}
           {onColumnVisibilityChange && (
             <div className="ml-auto">
               <DataTableViewOptions table={table} contentClassName={viewOptionsMenuClassName} />
@@ -242,7 +252,7 @@ export function DataTable<TRow>({
       )}
 
       {/* A failed load has no count to show — "0 records" would read as "nothing found". */}
-      {!isError && <DataTablePagination table={table} pageSizeOptions={pageSizeOptions} />}
+      {!isError && <DataTablePagination table={table} pageSizeOptions={pageSizeOptions} recordNoun={recordNoun} numbered={numberedPagination} />}
     </div>
   );
 }

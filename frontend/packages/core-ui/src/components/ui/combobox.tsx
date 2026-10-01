@@ -1,4 +1,4 @@
-import { forwardRef, useState, type ButtonHTMLAttributes } from 'react';
+import { forwardRef, useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { Check, ChevronsUpDown } from 'lucide-react';
 
 import { describeLoadError } from '../../lib/api-errors';
@@ -33,6 +33,8 @@ export interface ComboboxProps extends Omit<ButtonHTMLAttributes<HTMLButtonEleme
   loading?: boolean;
   /** Optional class name to attach to the portaled PopoverContent */
   popoverClassName?: string;
+  /** Optional decorative icon shown at the start of the trigger. */
+  icon?: ReactNode;
 }
 
 /**
@@ -47,7 +49,7 @@ export interface ComboboxProps extends Omit<ButtonHTMLAttributes<HTMLButtonEleme
  * `FormControl` onto whatever single child it wraps).
  */
 export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(function Combobox(
-  { value, onValueChange, options, placeholder = 'Select…', searchPlaceholder = 'Search…', emptyText = 'No results found.', loadError, loading, popoverClassName, className, disabled, ...triggerProps },
+  { value, onValueChange, options, placeholder = 'Select…', searchPlaceholder = 'Search…', emptyText = 'No results found.', loadError, loading, popoverClassName, icon, className, disabled, ...triggerProps },
   ref
 ) {
   const [open, setOpen] = useState(false);
@@ -69,8 +71,11 @@ export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(function Co
           )}
           {...triggerProps}
         >
-          <span className={cn('truncate text-left', !selected && 'text-muted-foreground')}>
-            {selected ? selected.label : loadError ? `Couldn't load ${loadError.noun}` : loading ? 'Loading…' : placeholder}
+          <span className="flex min-w-0 items-center">
+            {icon && <span aria-hidden="true" className="mr-2 flex shrink-0 items-center">{icon}</span>}
+            <span className={cn('truncate text-left', !selected && 'text-muted-foreground')}>
+              {selected ? selected.label : loadError ? `Couldn't load ${loadError.noun}` : loading ? 'Loading…' : placeholder}
+            </span>
           </span>
           <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
         </button>

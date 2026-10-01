@@ -167,6 +167,56 @@ test.describe('Purchase Orders Light Palette Theme Audit', () => {
     await expect(chip).toHaveCount(0);
   });
 
+  test('rows can be ticked for bulk actions, and the selection stays honest', async ({ page }) => {
+    await page.goto('/purchase-orders');
+    await expect(page.getByRole('heading', { name: 'Purchase Orders' })).toBeVisible();
+    // The hidden print layouts hold tables too, so count only the visible rows that carry a tick box
+    const rows = page.getByRole('row').filter({ has: page.getByRole('checkbox', { name: 'Select row' }) });
+    await expect(rows.first()).toBeVisible();
+
+    // Nothing ticked: no bulk bar
+    await expect(page.getByRole('region', { name: 'Bulk actions' })).toHaveCount(0);
+
+    // Ticking a row selects it (surface + edge, not just the box) and offers bulk actions
+    await page.getByRole('checkbox', { name: 'Select row' }).first().check();
+    const bar = page.getByRole('region', { name: 'Bulk actions' });
+    await expect(bar).toContainText('1 selected');
+    await expect(bar.getByRole('button', { name: 'Print selected' })).toBeVisible();
+    const selected = page.locator('.po-screen tbody tr[data-state="selected"]');
+    await expect(selected).toHaveCount(1);
+    await page.mouse.move(0, 0);
+    await page.waitForTimeout(250);
+    expect(await selected.evaluate((el) => window.getComputedStyle(el).backgroundColor)).toBe('rgb(239, 246, 255)'); // #EFF6FF
+    // Ticking a row must not open the detail sheet
+    await expect(page).toHaveURL(/\/purchase-orders(\?.*)?$/);
+
+    // Select all on the page, then clear
+    await page.getByRole('checkbox', { name: 'Select all' }).click();
+    const rowCount = await rows.count();
+    await expect(bar).toContainText(`${rowCount} selected`);
+    await bar.getByRole('button', { name: 'Clear selection' }).click();
+    await expect(page.getByRole('region', { name: 'Bulk actions' })).toHaveCount(0);
+
+    // Changing the filters starts a fresh selection
+    await page.getByRole('checkbox', { name: 'Select row' }).first().check();
+    await expect(page.getByRole('region', { name: 'Bulk actions' })).toBeVisible();
+    await page.getByRole('combobox', { name: 'Status' }).click();
+    await page.getByRole('option', { name: 'ISSUED' }).click();
+    await expect(page.getByRole('region', { name: 'Bulk actions' })).toHaveCount(0);
+  });
+
+  test('each row has an actions menu, and the footer names the records', async ({ page }) => {
+    await page.goto('/purchase-orders');
+    await expect(page.getByRole('heading', { name: 'Purchase Orders' })).toBeVisible();
+    await expect(page.getByText(/\d+–\d+ of \d+ purchase orders/)).toBeVisible();
+    await expect(page.locator('.po-screen [aria-current="page"]')).toHaveText('1');
+
+    await page.getByRole('button', { name: /^Actions for/ }).first().click();
+    await expect(page.getByRole('menuitem', { name: 'Open order' })).toBeVisible();
+    await page.getByRole('menuitem', { name: 'Open order' }).click();
+    await expect(page).toHaveURL(/\/purchase-orders\/\d+/);
+  });
+
   test('verifies other screens (Items) are completely untouched by po-screen styles', async ({ page }) => {
     await page.goto('/items');
     await expect(page.getByRole('heading', { name: 'Items' })).toBeVisible();

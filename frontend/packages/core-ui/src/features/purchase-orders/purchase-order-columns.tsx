@@ -26,6 +26,18 @@ const STATUS_CLASS: Record<string, string> = {
   REJECTED: "po-status-danger",
 };
 
+/**
+ * "PKR 250,000.00": thousands separators and at least two decimals, but never fewer digits than the
+ * stored value needs (totals carry up to four), so a figure is grouped for reading and not rounded.
+ */
+function formatAmount(amount: string | number, currencyCode: string | undefined): string {
+  const number = Number(amount);
+  const text = Number.isFinite(number)
+    ? number.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 4 })
+    : String(amount);
+  return currencyCode ? `${currencyCode} ${text}` : text;
+}
+
 export function purchaseOrderColumns(
   suppliers: ReadonlyMap<number, string>,
   currencies: ReadonlyMap<number, string>,
@@ -83,7 +95,7 @@ export function purchaseOrderColumns(
                 "—"
               ) : (
                 <span className="tabular-nums font-medium text-[var(--po-text-primary)]">
-                  {order.total_amount} {currencies.get(order.currency_id) ?? ""}
+                  {formatAmount(order.total_amount, currencies.get(order.currency_id))}
                 </span>
               ),
             align: "right",
@@ -112,14 +124,12 @@ export function purchaseOrderColumns(
       key: "issued_at",
       header: "Issued",
       value: (order) => formatDate(order.issued_at) ?? null,
-      screenVisible: false,
     },
     {
       key: "created_at",
       header: "Created",
       value: (order) => formatDate(order.created_at) ?? null,
       sortable: true,
-      screenVisible: false,
     },
   ];
 }

@@ -56,7 +56,7 @@ test.describe('Purchase Orders list search and advanced filters', () => {
     await expect(page.getByRole('cell', { name: '0040' })).toHaveCount(0);
     // The demo draft worth 650000 PKR should be visible. Its document number
     // depends on the other seeded purchase orders and can change.
-    const filteredDraft = page.getByRole('row').filter({ hasText: '650000.0000 PKR' });
+    const filteredDraft = page.getByRole('row').filter({ hasText: 'PKR 650,000.00' });
     await expect(filteredDraft).toBeVisible();
 
     // 9. Refresh preserves filter in URL, count, and results

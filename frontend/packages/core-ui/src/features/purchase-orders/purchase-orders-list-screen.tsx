@@ -1,7 +1,18 @@
-import { useMemo, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router";
-import { SlidersHorizontal, X } from "lucide-react";
-import type { PaginationState, SortingState } from "@tanstack/react-table";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useLocation, useNavigate } from "react-router";
+import {
+  Building2,
+  CalendarDays,
+  ChevronUp,
+  CircleDollarSign,
+  Database,
+  EllipsisVertical,
+  Search,
+  SlidersHorizontal,
+  Tag,
+  X,
+} from "lucide-react";
+import type { PaginationState, RowSelectionState, SortingState } from "@tanstack/react-table";
 import {
   useCurrenciesIndex,
   useItemsIndex,
@@ -38,8 +49,15 @@ import { PageHeader } from "../../components/page/page-header";
 import {
   DataTable,
   isColumnVisibleByDefault,
+  selectionColumn,
   toTanStackColumns,
 } from "../../components/data-table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../../components/ui/dropdown-menu";
 import {
   PrintLayout,
   PrintableTable,
@@ -223,7 +241,17 @@ export function PurchaseOrdersListScreen() {
     ordersQuery.data?.status === 200 ? ordersQuery.data.data.data : [];
   const meta =
     ordersQuery.data?.status === 200 ? ordersQuery.data.data.meta : undefined;
-  const tanStackColumns = useMemo(() => toTanStackColumns(columns), [columns]);
+  const tanStackColumns = useMemo(
+    () => [selectionColumn<PurchaseOrderResource>(), ...toTanStackColumns(columns)],
+    [columns],
+  );
+  // Ticked rows are for bulk actions on the page in view, so any change of page, sort or filters starts a new selection.
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  useEffect(() => setRowSelection({}), [search]);
+  const selectedOrders = useMemo(
+    () => orders.filter((order) => rowSelection[String(order.id)]),
+    [orders, rowSelection],
+  );
   const sorting: SortingState = apiSortToTableSorting(query.sort, columns);
   const pagination: PaginationState = {
     pageIndex: query.page - 1,
@@ -297,16 +325,19 @@ export function PurchaseOrdersListScreen() {
     documentTitle: "Purchase Order List",
   });
 
-  const { id: activeId } = useParams<{ id?: string }>();
+  const { contentRef: selectedPrintRef, print: printSelected } = useQuickPrint({
+    documentTitle: "Selected Purchase Orders",
+  });
 
   const activeChips = useMemo(() => {
-    const chips: { id: string; label: string; onRemove: () => void }[] = [];
+    const chips: { id: string; label: string; icon: ReactNode; onRemove: () => void }[] = [];
     if (query.filters.supplier_account_id) {
       const name =
         supplierLabels.get(Number(query.filters.supplier_account_id)) ??
         `#${query.filters.supplier_account_id}`;
       chips.push({
         id: "supplier",
+        icon: <Building2 className="h-3.5 w-3.5" />,
         label: `Supplier: ${name}`,
         onRemove: () =>
           query.setFilters({
@@ -318,6 +349,7 @@ export function PurchaseOrdersListScreen() {
     if (query.filters.status) {
       chips.push({
         id: "status",
+        icon: <Tag className="h-3.5 w-3.5" />,
         label: `Status: ${query.filters.status.replace(/_/g, " ")}`,
         onRemove: () => query.setFilter("status", undefined),
       });
@@ -325,7 +357,8 @@ export function PurchaseOrdersListScreen() {
     if (query.filters.order_date_from || query.filters.order_date_to) {
       chips.push({
         id: "order_date",
-        label: `Order: ${query.filters.order_date_from ?? "…"} to ${query.filters.order_date_to ?? "…"}`,
+        icon: <CalendarDays className="h-3.5 w-3.5" />,
+        label: `Order date: ${query.filters.order_date_from ?? "…"} – ${query.filters.order_date_to ?? "…"}`,
         onRemove: () =>
           query.setFilters({
             order_date_from: undefined,
@@ -339,7 +372,8 @@ export function PurchaseOrdersListScreen() {
     ) {
       chips.push({
         id: "expected_delivery",
-        label: `Expected: ${query.filters.expected_delivery_from ?? "…"} to ${query.filters.expected_delivery_to ?? "…"}`,
+        icon: <CalendarDays className="h-3.5 w-3.5" />,
+        label: `Expected: ${query.filters.expected_delivery_from ?? "…"} – ${query.filters.expected_delivery_to ?? "…"}`,
         onRemove: () =>
           query.setFilters({
             expected_delivery_from: undefined,
@@ -350,7 +384,8 @@ export function PurchaseOrdersListScreen() {
     if (query.filters.issued_from || query.filters.issued_to) {
       chips.push({
         id: "issued",
-        label: `Issued: ${query.filters.issued_from ?? "…"} to ${query.filters.issued_to ?? "…"}`,
+        icon: <CalendarDays className="h-3.5 w-3.5" />,
+        label: `Issued: ${query.filters.issued_from ?? "…"} – ${query.filters.issued_to ?? "…"}`,
         onRemove: () =>
           query.setFilters({
             issued_from: undefined,
@@ -364,6 +399,7 @@ export function PurchaseOrdersListScreen() {
         `#${query.filters.item_id}`;
       chips.push({
         id: "item",
+        icon: <Search className="h-3.5 w-3.5" />,
         label: `Item: ${name}`,
         onRemove: () => query.setFilter("item_id", undefined),
       });
@@ -371,6 +407,7 @@ export function PurchaseOrdersListScreen() {
     if (query.filters.supplier_site_id) {
       chips.push({
         id: "site",
+        icon: <Building2 className="h-3.5 w-3.5" />,
         label: `Site: #${query.filters.supplier_site_id}`,
         onRemove: () => query.setFilter("supplier_site_id", undefined),
       });
@@ -381,6 +418,7 @@ export function PurchaseOrdersListScreen() {
         `#${query.filters.currency_id}`;
       chips.push({
         id: "currency",
+        icon: <Database className="h-3.5 w-3.5" />,
         label: `Currency: ${code}`,
         onRemove: () => query.setFilter("currency_id", undefined),
       });
@@ -391,7 +429,8 @@ export function PurchaseOrdersListScreen() {
     ) {
       chips.push({
         id: "total",
-        label: `Value: ${query.filters.total_min ?? "0"} to ${query.filters.total_max ?? "…"}`,
+        icon: <CircleDollarSign className="h-3.5 w-3.5" />,
+        label: `Value: ${query.filters.total_min ?? "0"} – ${query.filters.total_max ?? "…"}`,
         onRemove: () =>
           query.setFilters({
             total_min: undefined,
@@ -433,14 +472,20 @@ export function PurchaseOrdersListScreen() {
         }
       />
       <div className="flex flex-wrap items-center gap-2">
-        <Input
-          className="h-9 flex-1 md:w-64 md:flex-none"
-          placeholder="Search orders, suppliers, items…"
-          value={query.filters.search ?? ""}
-          onChange={(event) =>
-            query.setFilter("search", event.target.value || undefined)
-          }
-        />
+        <div className="relative flex-1 md:w-64 md:flex-none">
+          <Search
+            aria-hidden="true"
+            className="po-field-icon pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2"
+          />
+          <Input
+            className="h-9 w-full pl-9"
+            placeholder="Search orders, suppliers, items…"
+            value={query.filters.search ?? ""}
+            onChange={(event) =>
+              query.setFilter("search", event.target.value || undefined)
+            }
+          />
+        </div>
         <div className="hidden items-center gap-2 md:flex md:flex-wrap">
           <PurchaseOrderFilterControls
             suppliersLookup={lookupState(suppliersQuery, "suppliers")}
@@ -448,6 +493,33 @@ export function PurchaseOrdersListScreen() {
             supplierLabels={supplierLabels}
             query={query}
           />
+          <div
+            role="group"
+            aria-label="Order date quick filter"
+            className="po-range-field flex h-10 items-center gap-2 rounded-md border px-3"
+          >
+            <CalendarDays aria-hidden="true" className="po-field-icon h-4 w-4 shrink-0" />
+            <div className="flex flex-col justify-center leading-none">
+              <span className="po-range-label text-[11px] font-medium">Order date</span>
+              <div className="flex items-center gap-1">
+                <DateField
+                  hidePicker
+                  aria-label="Quick filter: ordered on or after"
+                  value={query.filters.order_date_from ?? ""}
+                  onChange={(val) => query.setFilter("order_date_from", val || undefined)}
+                  className="po-range-input !h-5 !w-auto border-0 bg-transparent p-0 shadow-none"
+                />
+                <span aria-hidden="true" className="po-field-icon text-xs">–</span>
+                <DateField
+                  hidePicker
+                  aria-label="Quick filter: ordered on or before"
+                  value={query.filters.order_date_to ?? ""}
+                  onChange={(val) => query.setFilter("order_date_to", val || undefined)}
+                  className="po-range-input !h-5 !w-auto border-0 bg-transparent p-0 shadow-none"
+                />
+              </div>
+            </div>
+          </div>
           <Button
             variant={advancedOpen || advancedFilterCount > 0 ? "secondary" : "outline"}
             size="sm"
@@ -462,9 +534,7 @@ export function PurchaseOrdersListScreen() {
               </Badge>
             )}
           </Button>
-          <div className="ml-auto flex items-center gap-2">
-            <PrintTrigger onPrint={() => print()} />
-          </div>
+          <PrintTrigger onPrint={() => print()} />
         </div>
         <Button
           variant="outline"
@@ -492,9 +562,10 @@ export function PurchaseOrdersListScreen() {
       >
         <div className="overflow-hidden">
           <div className="rounded-lg border bg-card p-4 text-card-foreground shadow-xs po-filter-panel">
-            <div className="mb-3 flex items-center justify-between">
-              <span className="text-xs font-semibold tracking-wide uppercase text-muted-foreground po-filter-panel-title">
-                Advanced Filters
+            <div className="mb-4 flex items-center justify-between">
+              <span className="po-filter-panel-title flex items-center gap-2 text-sm font-semibold">
+                <SlidersHorizontal aria-hidden="true" className="h-4 w-4" />
+                Advanced filters
               </span>
               <div className="flex items-center gap-2">
                 {advancedFilterCount > 0 && (
@@ -510,15 +581,16 @@ export function PurchaseOrdersListScreen() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-7 w-7 p-0"
+                  className="h-7 gap-1 px-2 text-xs"
                   onClick={() => setAdvancedOpen(false)}
                   aria-label="Close filters"
                 >
-                  <X className="h-4 w-4" />
+                  Hide filters
+                  <ChevronUp aria-hidden="true" className="h-4 w-4" />
                 </Button>
               </div>
             </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <AdvancedFilterFields
                 query={query}
                 itemsLookup={lookupState(itemsQuery, "items")}
@@ -580,30 +652,25 @@ export function PurchaseOrdersListScreen() {
         </SheetContent>
       </Sheet>
 
-      {activeChips.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 pt-1">
-          <span className="text-xs font-medium text-[var(--po-text-tertiary)]">
-            Active filters:
-          </span>
-          {activeChips.map((chip) => (
-            <span key={chip.id} className="po-chip-active">
-              <span>{chip.label}</span>
-              <button
-                type="button"
-                aria-label={`Remove filter ${chip.label}`}
-                onClick={chip.onRemove}
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </span>
-          ))}
+      {selectedOrders.length > 0 && (
+        <div
+          role="region"
+          aria-label="Bulk actions"
+          className="po-bulk-bar flex flex-wrap items-center gap-3 rounded-md border px-3 py-2 text-sm"
+        >
+          <span className="font-medium">{selectedOrders.length} selected</span>
+          <PrintTrigger
+            onPrint={() => printSelected()}
+            label="Print selected"
+            className="h-8"
+          />
           <Button
             variant="ghost"
             size="sm"
-            className="h-6 px-2 text-xs text-[var(--po-text-secondary)] hover:text-[var(--po-text-primary)]"
-            onClick={clearAllFilters}
+            className="h-8"
+            onClick={() => setRowSelection({})}
           >
-            Clear all
+            Clear selection
           </Button>
         </div>
       )}
@@ -628,7 +695,8 @@ export function PurchaseOrdersListScreen() {
         }}
         columnVisibility={columnVisibility}
         onColumnVisibilityChange={setColumnVisibility}
-        rowSelection={activeId ? { [activeId]: true } : undefined}
+        rowSelection={rowSelection}
+        onRowSelectionChange={setRowSelection}
         getRowId={(row) => String(row.id)}
         onRowClick={(order: PurchaseOrderResource) =>
           navigate({ pathname: `/purchase-orders/${order.id}`, search })
@@ -643,7 +711,82 @@ export function PurchaseOrdersListScreen() {
         onViewChange={setView}
         cardColumns={columns}
         viewOptionsMenuClassName="po-dropdown-content"
+        recordNoun="purchase orders"
+        numberedPagination
+        toolbarStart={
+          activeChips.length > 0 ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-medium text-[var(--po-text-secondary)]">
+                Active filters
+              </span>
+              {activeChips.map((chip) => (
+                <span key={chip.id} className="po-chip-active">
+                  {chip.icon}
+                  <span>{chip.label}</span>
+                  <button
+                    type="button"
+                    aria-label={`Remove filter ${chip.label}`}
+                    onClick={chip.onRemove}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+              <button type="button" className="po-link-action" onClick={clearAllFilters}>
+                Clear all
+              </button>
+            </div>
+          ) : undefined
+        }
+        rowActions={(order: PurchaseOrderResource) => (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                aria-label={`Actions for ${order.number ?? `draft ${order.id}`}`}
+              >
+                <EllipsisVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="po-dropdown-content">
+              <DropdownMenuItem
+                onSelect={() =>
+                  navigate({ pathname: `/purchase-orders/${order.id}`, search })
+                }
+              >
+                Open order
+              </DropdownMenuItem>
+              {order.number && (
+                <DropdownMenuItem
+                  onSelect={() => void navigator.clipboard?.writeText(order.number ?? "")}
+                >
+                  Copy order number
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       />
+
+      {/* Print selected — the same layout, limited to the ticked rows. */}
+      <div className="hidden">
+        <div ref={selectedPrintRef}>
+          <PrintLayout
+            title="PURCHASE ORDER LIST"
+            printedAt={new Date()}
+            recordCount={selectedOrders.length}
+            meta={[{ label: "Selection", value: `${selectedOrders.length} selected purchase orders` }]}
+          >
+            <PrintableTable
+              columns={columns}
+              rows={selectedOrders}
+              getRowKey={(order) => order.id}
+            />
+          </PrintLayout>
+        </div>
+      </div>
 
       {/* Quick Print — a dedicated print-only layout, hidden until react-to-print clones it. */}
       <div className="hidden">
@@ -772,6 +915,7 @@ function PurchaseOrderFilterControls({
         emptyText="No suppliers found."
         className={full ? "h-9 w-full" : "h-9 w-56"}
         popoverClassName="po-popover-content"
+        icon={full ? undefined : <Building2 className="po-field-icon h-4 w-4" />}
       />
       <Select
         value={query.filters.status ?? "all"}
@@ -783,7 +927,10 @@ function PurchaseOrderFilterControls({
           className={full ? "h-9 w-full" : "h-9 w-40"}
           aria-label="Status"
         >
-          <SelectValue placeholder="Status" />
+          <div className="flex min-w-0 items-center gap-2">
+            {!full && <Tag aria-hidden="true" className="po-field-icon h-4 w-4 shrink-0" />}
+            <SelectValue placeholder="Status" />
+          </div>
         </SelectTrigger>
         <SelectContent className="po-select-content">
           <SelectItem value="all">All statuses</SelectItem>
@@ -829,7 +976,7 @@ function AdvancedFilterFields({
 
   return (
     <>
-      <div className={cn("space-y-1.5", !full && "sm:col-span-2")}>
+      <div className="space-y-1.5">
         <Label className="text-xs font-medium text-muted-foreground">
           Order date range
         </Label>
@@ -840,6 +987,7 @@ function AdvancedFilterFields({
             onChange={(val) => query.setFilter("order_date_from", val || undefined)}
             className="w-full"
             popoverClassName="po-popover-content"
+            pickerPosition={full ? "end" : "start"}
           />
           <span className="text-xs text-muted-foreground">–</span>
           <DateField
@@ -848,11 +996,12 @@ function AdvancedFilterFields({
             onChange={(val) => query.setFilter("order_date_to", val || undefined)}
             className="w-full"
             popoverClassName="po-popover-content"
+            pickerPosition={full ? "end" : "start"}
           />
         </div>
       </div>
 
-      <div className={cn("space-y-1.5", !full && "sm:col-span-2")}>
+      <div className="space-y-1.5">
         <Label className="text-xs font-medium text-muted-foreground">
           Expected delivery range
         </Label>
@@ -865,6 +1014,7 @@ function AdvancedFilterFields({
             }
             className="w-full"
             popoverClassName="po-popover-content"
+            pickerPosition={full ? "end" : "start"}
           />
           <span className="text-xs text-muted-foreground">–</span>
           <DateField
@@ -875,11 +1025,12 @@ function AdvancedFilterFields({
             }
             className="w-full"
             popoverClassName="po-popover-content"
+            pickerPosition={full ? "end" : "start"}
           />
         </div>
       </div>
 
-      <div className={cn("space-y-1.5", !full && "sm:col-span-2")}>
+      <div className="space-y-1.5">
         <Label className="text-xs font-medium text-muted-foreground">
           Issued date range
         </Label>
@@ -890,6 +1041,7 @@ function AdvancedFilterFields({
             onChange={(val) => query.setFilter("issued_from", val || undefined)}
             className="w-full"
             popoverClassName="po-popover-content"
+            pickerPosition={full ? "end" : "start"}
           />
           <span className="text-xs text-muted-foreground">–</span>
           <DateField
@@ -898,11 +1050,12 @@ function AdvancedFilterFields({
             onChange={(val) => query.setFilter("issued_to", val || undefined)}
             className="w-full"
             popoverClassName="po-popover-content"
+            pickerPosition={full ? "end" : "start"}
           />
         </div>
       </div>
 
-      <div className={cn("space-y-1.5", !full && "sm:col-span-1")}>
+      <div className="space-y-1.5">
         <Label className="text-xs font-medium text-muted-foreground">
           Contains item
         </Label>
@@ -919,10 +1072,11 @@ function AdvancedFilterFields({
           emptyText="No items found."
           className="h-9 w-full"
           popoverClassName="po-popover-content"
+          icon={full ? undefined : <Search className="po-field-icon h-4 w-4" />}
         />
       </div>
 
-      <div className={cn("space-y-1.5", !full && "sm:col-span-1")}>
+      <div className="space-y-1.5">
         <Label className="text-xs font-medium text-muted-foreground">
           Supplier site
         </Label>
@@ -940,7 +1094,10 @@ function AdvancedFilterFields({
               className="h-9 w-full"
               aria-label="Supplier site"
             >
-              <SelectValue placeholder="All sites" />
+              <div className="flex min-w-0 items-center gap-2">
+                {!full && <Building2 aria-hidden="true" className="po-field-icon h-4 w-4 shrink-0" />}
+                <SelectValue placeholder="All sites" />
+              </div>
             </SelectTrigger>
             <SelectContent className="po-select-content">
               <SelectItem value="all">All sites</SelectItem>
@@ -953,7 +1110,8 @@ function AdvancedFilterFields({
             </SelectContent>
           </Select>
         ) : (
-          <div className="flex h-9 items-center rounded-md border border-dashed px-3 text-xs text-muted-foreground">
+          <div className="po-field-disabled flex h-9 items-center gap-2 rounded-md border border-dashed px-3 text-xs text-muted-foreground">
+            {!full && <Building2 aria-hidden="true" className="h-4 w-4 shrink-0" />}
             Select supplier above
           </div>
         )}
@@ -961,7 +1119,7 @@ function AdvancedFilterFields({
 
       {mayViewCommercialCost && (
         <>
-          <div className={cn("space-y-1.5", !full && "sm:col-span-2")}>
+          <div className="space-y-1.5">
             <Label className="text-xs font-medium text-muted-foreground">
               Total value range
             </Label>
@@ -990,7 +1148,7 @@ function AdvancedFilterFields({
             </div>
           </div>
 
-          <div className={cn("space-y-1.5", !full && "sm:col-span-2")}>
+          <div className="space-y-1.5">
             <Label className="text-xs font-medium text-muted-foreground">
               Currency
             </Label>
@@ -1004,7 +1162,10 @@ function AdvancedFilterFields({
                 className="h-9 w-full"
                 aria-label="Currency"
               >
-                <SelectValue placeholder="All currencies" />
+                <div className="flex min-w-0 items-center gap-2">
+                  {!full && <Database aria-hidden="true" className="po-field-icon h-4 w-4 shrink-0" />}
+                  <SelectValue placeholder="All currencies" />
+                </div>
               </SelectTrigger>
               <SelectContent className="po-select-content">
                 <SelectItem value="all">All currencies</SelectItem>
