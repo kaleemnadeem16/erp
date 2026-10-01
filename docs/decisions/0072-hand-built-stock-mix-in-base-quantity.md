@@ -33,7 +33,7 @@ separate capability that is not built ([ADR 0052](0052-progressive-inventory-pac
 4. **A mix may not draw more than the plan.** The requirement is the planned quantity (the standard, or a what-if adjustment).
    Lines adding up to more than it are refused with the instruction to change the planned quantity instead, so *the variance
    rules — reasons, blocks, approval — always judge how much is used, and a hand-built mix is never a way around them.*
-   Lines adding up to less are accepted and reported as a shortage, exactly as an automatic proposal reports one.
+   Lines adding up to less are accepted and reported as a shortage, exactly as an automatic proposal reports one. *(Confirmed by the owner 2026-10-01: a short mix stays accepted; a shortage is information, not an error.)*
 5. **Same costing and evidence.** Lines are priced from the same balances and cost evidence as a proposal (missing cost is
    `null`, never zero; a mix with any uncosted line has no estimated cost), and cost stays behind
    `estimating.internal_cost.view`. Each line says its source, entered quantity, factor, usable before, remaining after and unit
@@ -112,7 +112,7 @@ adopted cost snapshot as the baseline rather than the preset's proposal.
 | Per-unit quantity precision (a drum only in whole drums) | A rule on `item_quantity_units.quantity_precision`, which is stored but not enforced anywhere today | The package-tracking slice, or sooner if a company needs it |
 | Escalation of a mix's cost consequence | — | Decided: [ADR 0076](0076-company-control-over-hand-chosen-stock.md); enforcement at adoption waits for Phase 4 |
 
-**The package-tracking slice** has no scheduled phase yet. It is proposed as a dedicated Inventory design (its own ADR) settled
+**The package-tracking slice** has no scheduled phase yet. It is a dedicated Inventory design (its own ADR; owner confirmed 2026-10-01) settled
 *before Phase 5 material issue*, because that is where reservations and real consumption of sealed/opened stock start
 ([ADR 0052](0052-progressive-inventory-package-tracking.md) §3: availability stays advisory until then), and
 [Q24](../OPEN-QUESTIONS.md#q24--phase-5-material-exceptions) (Phase 5 material exceptions) sits beside it. It is recorded in

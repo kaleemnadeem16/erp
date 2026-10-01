@@ -297,10 +297,11 @@ item here in the same commit that delivers it; add new ones as they are found.
       proposal, so reusing them would distort them. Decided instead by [ADR 0076](../decisions/0076-company-control-over-hand-chosen-stock.md) (2026-10-01):
       a company-managed control — not allowed / show the cost / reason above X% / approval above X% — company-wide now, shaped for
       category and item scope later, plus a `stock_mix.choose` capability; enforcement waits for Phase 4 adoption.
+- [x] **Short mix** — decided 2026-10-01: a mix covering less than the requirement stays accepted and is reported as a shortage.
 - [ ] **Package tracking and everything that needs it** — `item_packagings`, `PACKAGE_BALANCE` / `CONTAINER_TRACKED`, sealed/opened
       package state and remnants, package-aware proposals and equivalents, expiry/remnant/surplus criteria, waste/residual
       variance bands, per-unit precision. All extend the base-quantity mix; none needs it redesigned. Dependency and the
-      proposed owner (an Inventory package-tracking design before Phase 5 material issue) are in
+      owner (confirmed 2026-10-01: an Inventory package-tracking design before Phase 5 material issue) are in
       [ADR 0072](../decisions/0072-hand-built-stock-mix-in-base-quantity.md#deferred-with-what-each-depends-on) and
       [phases/README.md](README.md). Variable-content packages: [Q23](../OPEN-QUESTIONS.md#q23--variable-content-and-catch-weight-packages).
 - [ ] **Generic material cost resolution (FIFO, SPECIFIC, warehouse-scoped AVCO in assembly costing)** — designed, not built, by

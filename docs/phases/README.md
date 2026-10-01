@@ -90,7 +90,7 @@ delta touching it needs a Sales/COGS correction line — see
 Jobs, work orders, material issue, timesheets, unified job cost entries, estimate-vs-actual
 variance reporting. This is where the system starts paying for itself.
 
-**Owes an Inventory package-tracking design** (proposed, not yet scheduled) before material issue is designed:
+**Owes an Inventory package-tracking design** (owner confirmed 2026-10-01; its own ADR, not yet scheduled) before material issue is designed:
 `item_packagings`, the `PACKAGE_BALANCE` / `CONTAINER_TRACKED` modes, sealed/opened package state and remnants,
 package-aware proposals, and the waste/residual variance bands that need them
 ([ADR 0052](../decisions/0052-progressive-inventory-package-tracking.md); the hand-built stock mix it must extend is
