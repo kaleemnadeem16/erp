@@ -92,6 +92,10 @@ company users. Their monetary fields and included valuation entries require the 
 `inventory.valuation.view` capability (ADR 0073); Purchasing commercial and Estimating internal
 cost permissions do not imply it. Other Inventory workflow responses remain on the valuation
 visibility audit list.
+The shared settings response omits the recalculation high-risk amount threshold except for
+`inventory.recalculation-policy.manage` and `inventory.policy-history.view`; policy-change
+history is already restricted to the latter. It is a governance threshold, not a stock
+value, so the valuation-read permission alone does not reveal it.
 
 `CreateWarehouse` always creates its first location in the same transaction, so an active
 warehouse cannot enter normal use without an exact physical location. Warehouse and location

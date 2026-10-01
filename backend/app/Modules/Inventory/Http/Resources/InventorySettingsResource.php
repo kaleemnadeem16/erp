@@ -36,7 +36,10 @@ class InventorySettingsResource extends JsonResource
             'authorised_forward_recalculation_enabled' => $company->authorised_forward_recalculation_enabled,
             'recalculation_review_sla_hours' => $company->recalculation_review_sla_hours,
             'recalculation_approval_ttl_hours' => $company->recalculation_approval_ttl_hours,
-            'recalculation_high_risk_threshold_base_amount' => $company->recalculation_high_risk_threshold_base_amount,
+            'recalculation_high_risk_threshold_base_amount' => $this->when(
+                $request->user()?->can('inventory.recalculation-policy.manage') || $request->user()?->can('inventory.policy-history.view'),
+                $company->recalculation_high_risk_threshold_base_amount,
+            ),
         ];
     }
 }

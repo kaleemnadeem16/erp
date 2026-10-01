@@ -28,5 +28,5 @@ export interface InventorySettingsResource {
   authorised_forward_recalculation_enabled: boolean;
   recalculation_review_sla_hours: number;
   recalculation_approval_ttl_hours: number;
-  recalculation_high_risk_threshold_base_amount: InventorySettingsResourceRecalculationHighRiskThresholdBaseAmount;
+  recalculation_high_risk_threshold_base_amount?: InventorySettingsResourceRecalculationHighRiskThresholdBaseAmount;
 }

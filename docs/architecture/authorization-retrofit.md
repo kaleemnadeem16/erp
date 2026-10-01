@@ -155,10 +155,15 @@ issue.
       quantity view remains available. Ledger/overview screens and print views follow the API
       projection → [ADR 0073](../decisions/0073-separate-inventory-valuation-visibility-from-stock-operations.md).
 - [ ] Inventory valuation visibility, remaining workflow/export audit — review
-      policy settings/history,
-      and any CSV/print/export path. Decide per workflow which monetary inputs authorised
+      any CSV/print/export path. Decide per workflow which monetary inputs authorised
       operators must supply and which can be server-derived; do not blanket-hide required
       controls. Until this closes, do not claim system-wide Inventory cost secrecy.
+- [x] Inventory policy settings/history cost audit (2026-10-01) — the shared
+      settings read now omits the recalculation high-risk amount threshold without
+      `inventory.recalculation-policy.manage` or `inventory.policy-history.view`;
+      the policy-history endpoint already requires the latter and may carry old/new
+      thresholds. No stock cost is returned by the other settings →
+      [stock recalculation](../domain/stock-recalculation.md#review-staleness-and-risk-routing).
 - [x] Negative-stock/settlement HTTP cost audit (2026-10-01) — override
       list/show/action resources expose shortage quantities and decisions but no costs;
       shortage and settlement tables have no direct HTTP read route. Economic effects

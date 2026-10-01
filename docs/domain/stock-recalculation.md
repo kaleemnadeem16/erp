@@ -296,6 +296,17 @@ defined non-disableable governance conditions are hard high-risk triggers requir
 independent approver. Optional bounded company thresholds use base/functional currency and may
 strengthen, never disable, hard routing.
 
+The current `recalculation_high_risk_threshold_base_amount` is a governed routing
+policy, not an operational stock value. The shared `GET /api/v1/inventory-settings`
+omits it unless the caller has `inventory.recalculation-policy.manage` or
+`inventory.policy-history.view`; other settings remain available for their existing
+consumers. Policy-history rows can contain old/new threshold values, and their entire
+endpoint already requires `inventory.policy-history.view`. Requesters and approvers
+receive the classified risk and required authority on the impact version; they do not
+need the exact policy threshold to perform their step. This is the settings/history
+read audit under [ADR 0073](../decisions/0073-separate-inventory-valuation-visibility-from-stock-operations.md),
+not a change to risk classification or permission assignment.
+
 Final revalidation/execution serialises overlapping recalculations and locks the complete Q14.2
 economic closure: affected configured AVCO pools plus cross-pool dependencies; FIFO layers,
 allocations and downstream graph; the exact SPECIFIC serial/unit chain; and affected shortage
