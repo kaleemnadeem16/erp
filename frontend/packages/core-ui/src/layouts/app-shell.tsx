@@ -181,7 +181,6 @@ const settingsNavGroup: NavGroup = {
       to: "/settings/material-selection",
       label: "Material Selection",
       icon: ListChecks,
-      permission: "estimating.selection-policy.manage",
     },
     {
       to: "/settings/material-variance",
@@ -234,7 +233,6 @@ const SETTINGS_MENU: { label: string; items: NavItem[] }[] = [
         to: "/settings/material-selection",
         label: "Material Selection",
         icon: ListChecks,
-        permission: "estimating.selection-policy.manage",
       },
       {
         to: "/settings/material-variance",
