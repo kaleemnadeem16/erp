@@ -303,6 +303,11 @@ item here in the same commit that delivers it; add new ones as they are found.
       proposed owner (an Inventory package-tracking design before Phase 5 material issue) are in
       [ADR 0072](../decisions/0072-hand-built-stock-mix-in-base-quantity.md#deferred-with-what-each-depends-on) and
       [phases/README.md](README.md). Variable-content packages: [Q23](../OPEN-QUESTIONS.md#q23--variable-content-and-catch-weight-packages).
+- [ ] **Generic material cost resolution (FIFO, SPECIFIC, warehouse-scoped AVCO in assembly costing)** — designed, not built, by
+      [ADR 0077](../decisions/0077-generic-material-cost-resolution-with-a-configurable-costing-scope.md) (2026-10-01): strategies per
+      valuation method behind one contract, a configurable costing scope (chosen stock → document → company default → unknown),
+      a snapshot-ready result, `unknown` never zero. The runtime stays AVCO-only and fails loudly until the Phase 4 adoption design
+      uses it. Owner of the build: the Phase 4 adoption work.
 - [ ] **Department-limited availability** — company-wide only until
       [Q26](../OPEN-QUESTIONS.md#q26--organisational-and-record-level-access-scope).
 - [ ] **Persisted adoption, approval and history** (`material_plan.adjust`, `package_plan.adopt`,

@@ -108,7 +108,9 @@ FIFO/SPECIFIC item, or an AVCO item whose pool is scoped by warehouse or batch (
 [items.md](items.md#valuation-method)'s multi-pool scopes), fails loudly rather than guessing
 which layer or which pool a pure recipe —
 not tied to any warehouse or batch — should read; a never-purchased item returns a real `0`
-instead, since "no cost known yet" is a legitimate state, not an error. A line specified in a
+instead, since "no cost known yet" is a legitimate state, not an error. This is the *current* behaviour only: [ADR 0077](../decisions/0077-generic-material-cost-resolution-with-a-configurable-costing-scope.md)
+designs the generic replacement (strategies per valuation method, a configurable costing scope, an evidence-carrying result that
+Phase 4 snapshots, and `unknown` instead of `0`), adopted when Phase 4 plan adoption is built. A line specified in a
 different-but-convertible unit than its input item's stock UoM converts through the ordinary UoM
 system (`units-of-measure.md`) before pricing.
 

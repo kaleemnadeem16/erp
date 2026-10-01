@@ -89,8 +89,9 @@ in the same commit.
 | [0074](0074-authorise-recalculation-economic-record-reads-by-workflow-duty.md) | Authorise recalculation economic-record reads by workflow duty | accepted | 2026-09-30 |
 | [0075](0075-authorise-inventory-cutover-economic-record-reads.md) | Authorise Inventory cutover economic-record reads | accepted | 2026-09-30 |
 | [0076](0076-company-control-over-hand-chosen-stock.md) | Let each company choose how tightly hand-chosen stock is controlled | accepted | 2026-10-01 |
+| [0077](0077-generic-material-cost-resolution-with-a-configurable-costing-scope.md) | Resolve material cost through one generic contract, with a configurable costing scope | accepted (design only) | 2026-10-01 |
 
-**Next number: 0077**
+**Next number: 0078**
 
 ## By theme
 
