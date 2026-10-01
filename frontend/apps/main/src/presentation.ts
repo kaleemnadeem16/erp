@@ -9,7 +9,9 @@ import type { Presentation } from "@erp/core-ui";
 export const presentation: {
   purchaseOrderCreate: Presentation;
   purchaseOrderDetail: Presentation;
+  purchaseOrderEdit: Presentation;
 } = {
   purchaseOrderCreate: "sheet",
   purchaseOrderDetail: "sheet",
+  purchaseOrderEdit: "sheet",
 };

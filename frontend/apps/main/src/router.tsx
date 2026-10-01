@@ -80,6 +80,7 @@ import { presentation } from "./presentation";
 
 const purchaseOrderCreateAsSheet = presentation.purchaseOrderCreate === "sheet";
 const purchaseOrderDetailAsSheet = presentation.purchaseOrderDetail === "sheet";
+const purchaseOrderEditAsSheet = presentation.purchaseOrderEdit === "sheet";
 
 export function AppRouter() {
   return (
@@ -491,6 +492,12 @@ export function AppRouter() {
               element={<PurchaseOrderDetailScreen presentation="sheet" />}
             />
           )}
+          {purchaseOrderEditAsSheet && (
+            <Route
+              path=":id/edit"
+              element={<PurchaseOrderEditScreen presentation="sheet" />}
+            />
+          )}
         </Route>
         {!purchaseOrderCreateAsSheet && (
           <Route
@@ -546,16 +553,18 @@ export function AppRouter() {
             }
           />
         )}
-        <Route
-          path="/purchase-orders/:id/edit"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <PurchaseOrderEditScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
+        {!purchaseOrderEditAsSheet && (
+          <Route
+            path="/purchase-orders/:id/edit"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <PurchaseOrderEditScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
         <Route
           path="/settings/account"
           element={

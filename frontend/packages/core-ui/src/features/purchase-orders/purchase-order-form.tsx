@@ -27,6 +27,7 @@ import { Checkbox } from "../../components/ui/checkbox";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -376,6 +377,7 @@ export function PurchaseOrderForm({
     [suppliers],
   );
   const supplierIdNumber = Number(form.watch("supplier_account_id")) || 0;
+  const chosenSupplier = suppliers.find((supplier) => supplier.id === supplierIdNumber);
   const sitesQuery = useSupplierAccountsSitesIndex(supplierIdNumber, {
     per_page: 100,
   });
@@ -498,10 +500,17 @@ export function PurchaseOrderForm({
     description: "Description",
     ordered_qty: "Quantity",
     unit_price: "Unit price",
-    discount_amount: "Discount",
-    tax_amount: "Tax",
+    discount_amount: "Line discount (amount)",
+    tax_amount: "Line tax (amount)",
     expected_delivery_date: "Line expected date (optional)",
   } as const;
+  // What a money field means, said on the form itself: discount and tax are fixed amounts for the whole line —
+  // not a percentage and not per unit — and the price is for one purchase unit.
+  const LINE_FIELD_HINT: Partial<Record<keyof typeof LINE_FIELD_LABEL, string>> = {
+    unit_price: "Price for one purchase unit.",
+    discount_amount: "A fixed amount off this whole line — not a percentage, not per unit.",
+    tax_amount: "A fixed tax amount for this whole line — not a percentage, not per unit.",
+  };
   const LINE_DECIMAL_FIELDS = [
     "ordered_qty",
     "unit_price",
@@ -540,6 +549,7 @@ export function PurchaseOrderForm({
                 />
               )}
             </FormControl>
+            {LINE_FIELD_HINT[name] && <FormDescription>{LINE_FIELD_HINT[name]}</FormDescription>}
             <FormMessage />
           </FormItem>
         )}
@@ -924,6 +934,8 @@ export function PurchaseOrderForm({
                     ?.label ?? line.description}
                   {" — "}
                   {line.ordered_qty} × {line.unit_price}
+                  {Number(line.discount_amount) > 0 && <> · line discount −{line.discount_amount}</>}
+                  {Number(line.tax_amount) > 0 && <> · line tax +{line.tax_amount}</>}
                 </li>
               ))}
             </ul>
@@ -966,18 +978,18 @@ export function PurchaseOrderForm({
         className="@container space-y-6"
         onSubmit={form.handleSubmit((values) => onSubmit(values, form))}
       >
-        {isCreate && (
-          <RecordSheetAside>
-            <PurchaseOrderSummary
-              control={form.control}
-              supplierOptions={supplierOptions}
-              siteOptions={siteOptions}
-              currencyOptions={currencyOptions}
-              itemOptions={itemOptions}
-              uomOptions={uomOptions}
-            />
-          </RecordSheetAside>
-        )}
+        <RecordSheetAside>
+          <PurchaseOrderSummary
+            control={form.control}
+            supplierOptions={supplierOptions}
+            siteOptions={siteOptions}
+            currencyOptions={currencyOptions}
+            itemOptions={itemOptions}
+            uomOptions={uomOptions}
+            paymentTermsDays={chosenSupplier?.payment_terms_days}
+            leadTimeDays={chosenSupplier?.lead_time_days}
+          />
+        </RecordSheetAside>
         {formError && (
           <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
             {formError}

@@ -1,8 +1,8 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { configureCoreApi } from '@erp/core-api';
-import { AppearanceProvider, shouldRetryQuery } from '@erp/core-ui';
+import { AppearanceProvider, createAppQueryClient } from '@erp/core-ui';
 
 import { AppRouter } from './router';
 import './index.css';
@@ -16,9 +16,8 @@ configureCoreApi({
   baseUrl: import.meta.env.VITE_API_BASE_URL ?? `http://${window.location.hostname}:8090/api`,
 });
 
-// Retrying only helps a failure that may clear up; a 403 or 422 is a definitive answer, and the library
-// default (three retries for everything) hid it behind ~10s of loading skeletons — see shouldRetryQuery.
-const queryClient = new QueryClient({ defaultOptions: { queries: { retry: shouldRetryQuery } } });
+// Retry rules and "refresh what is on screen after any saved change" live in createAppQueryClient.
+const queryClient = createAppQueryClient();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

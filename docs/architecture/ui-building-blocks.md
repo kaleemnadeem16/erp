@@ -74,7 +74,7 @@ named switch; everything else is already wired.
 |---|---|---|
 | Purchase order — create | Side-sheet wizard (current) · the same wizard on a full page | `presentation.purchaseOrderCreate` |
 | Purchase order — detail | Side sheet (current) · full page | `presentation.purchaseOrderDetail` |
-| Purchase order — edit | Full page only (flat form, every section at once) | — |
+| Purchase order — edit | Side sheet (current; the flat form, every section at once, with the order summary beside it) · full page | `presentation.purchaseOrderEdit` |
 | Date entry | `DateField` (current) · native `<input type="date">` via `Input` (still available; its Tab walks the browser's own segments) | swap the component at the call site |
 
 ### Making another screen a sheet-or-page

@@ -227,3 +227,4 @@ export { PurchasingSettingsScreen } from "./features/settings/purchasing-setting
 export { InventorySettingsScreen } from "./features/settings/inventory-settings-screen";
 
 export { InventoryOverviewScreen } from "./features/inventory-overview/inventory-overview-screen";
+export { createAppQueryClient } from './lib/query-client';

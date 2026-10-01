@@ -746,7 +746,7 @@ export function PurchaseOrderDetailScreen({
           title="Lines"
           description={
             mayViewCommercialCost
-              ? "Ordered quantities and commercial values are immutable after issue."
+              ? "Ordered quantities and commercial values are immutable after issue. Line amount = quantity × unit price − line discount + line tax (discount and tax are fixed amounts for the line)."
               : "Ordered quantities are immutable after issue."
           }
           fullWidth
@@ -858,10 +858,10 @@ export function PurchaseOrderDetailScreen({
                               {line.unit_price} {currency?.code ?? ""} / {purchaseCode}
                             </span>
                             {hasDiscount && (
-                              <span> · Discount {line.discount_amount} {currency?.code ?? ""}</span>
+                              <span> · Line discount −{line.discount_amount} {currency?.code ?? ""}</span>
                             )}
                             {hasTax && (
-                              <span> · Tax {line.tax_amount} {currency?.code ?? ""}</span>
+                              <span> · Line tax +{line.tax_amount} {currency?.code ?? ""}</span>
                             )}
                           </div>
                         </TableCell>

@@ -27,7 +27,7 @@ Every dependency and why it's here. Adding one means adding a row.
 |---|---|---|
 | React 19 + TypeScript | UI | |
 | Vite | Build | |
-| `@tanstack/react-query` | Server state | Replaces Redux for ~90% of the app |
+| `@tanstack/react-query` | Server state | Replaces Redux for ~90% of the app. One client (`createAppQueryClient`) refetches everything on screen after any saved change, so a list kept open behind a side sheet cannot show stale status; only mutations that merely compute an answer (a preview) are exempt |
 | `zustand` | Client state | Small: auth user, UI prefs, active company |
 | `@tanstack/react-table` | Data grids | ERP is mostly tables |
 | `react-hook-form` + `zod` | Forms and validation | |

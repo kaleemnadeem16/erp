@@ -610,8 +610,12 @@
   font-weight: 700;
   letter-spacing: -0.01em;
 }
-:root:not(.dark) :is(.po-screen, .po-detail) p.text-muted-foreground {
+:root:not(.dark) :is(.po-screen, .po-detail) h1 + p.text-muted-foreground {
   font-size: 0.9375rem;
+}
+/* Helper text under a field: small and quiet */
+:root:not(.dark) :is(.po-screen, .po-detail) p.text-muted-foreground:not(h1 + p) {
+  font-size: 0.8125rem;
 }
 :root:not(.dark) :is(.po-screen, .po-detail) label {
   font-size: 0.875rem;
