@@ -120,3 +120,19 @@ test('application rate filters and cards work on mobile', async ({ page }) => {
   await page.getByRole('option', { name: 'Default only' }).click();
   await expect(page).toHaveURL(/filter.is_default=true/);
 });
+
+test('application rate item lookup searches the server and keeps its selected label', async ({ page }) => {
+  await page.goto('/application-rates');
+  await page.getByLabel('Item', { exact: true }).first().click();
+  const searched = page.waitForResponse((response) =>
+    response.url().includes('/api/v1/items') &&
+    new URL(response.url()).searchParams.get('filter[search]') === 'demo-paint-white' &&
+    response.status() === 200,
+  );
+  await page.locator('[cmdk-input]').fill('demo-paint-white');
+  await searched;
+  await page.getByRole('option', { name: /demo-paint-white/ }).first().click();
+  await expect(page.getByLabel('Item', { exact: true }).first()).toContainText('demo-paint-white');
+  await page.reload();
+  await expect(page.getByLabel('Item', { exact: true }).first()).toContainText('demo-paint-white');
+});

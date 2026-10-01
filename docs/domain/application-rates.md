@@ -127,8 +127,11 @@ Estimator or Master Data Steward.
 The list exposes the API's item, work-unit and default-status filters as URL-backed
 controls. On mobile, filters sit in a bottom sheet and the list defaults to cards.
 The `is_default=false` choice explicitly selects context-specific rates rather
-than clearing the filter. Item and unit selectors currently use the shared
-100-option lookup pattern; server-searchable selectors remain a scale follow-up.
+than clearing the filter. The Item filter searches the Items API as the user types,
+so an item beyond the first 100 results can still be selected; an ID-based show
+read preserves its label on a bookmarked URL. The work-unit selector still uses
+the shared 100-option lookup pattern, and other Estimating pickers need the same
+scale treatment in later slices.
 
 ## Landmines
 

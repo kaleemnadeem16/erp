@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { SlidersHorizontal } from 'lucide-react';
 import type { PaginationState, SortingState } from '@tanstack/react-table';
 import {
   useApplicationRatesIndex,
   useItemsIndex,
+  useItemsShow,
   useUomsIndex,
   type ApplicationRateResource,
   type ApplicationRatesIndexSort,
@@ -12,6 +13,7 @@ import {
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { Combobox } from '../../components/ui/combobox';
+import { RemoteLookupCombobox } from '../../components/ui/remote-lookup-combobox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '../../components/ui/sheet';
 import { PageHeader } from '../../components/page/page-header';
@@ -42,8 +44,21 @@ export function ApplicationRatesListScreen() {
   const [testerOpen, setTesterOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const { view, setView } = useListViewPreference('application-rates-list');
-  const itemsResult = useItemsIndex({ per_page: 100, sort: 'name' });
+  const [itemSearch, setItemSearch] = useState('');
+  const [debouncedItemSearch, setDebouncedItemSearch] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedItemSearch(itemSearch), 300);
+    return () => clearTimeout(timer);
+  }, [itemSearch]);
+  const itemsResult = useItemsIndex({
+    'filter[search]': debouncedItemSearch || undefined,
+    per_page: 100,
+    sort: 'name',
+  });
   const items = itemsResult.data?.status === 200 ? itemsResult.data.data.data : [];
+  const selectedItemId = Number(query.filters.item_id ?? 0);
+  const selectedItemResult = useItemsShow(selectedItemId, undefined, { query: { enabled: selectedItemId > 0 } });
+  const selectedItem = selectedItemResult.data?.status === 200 ? selectedItemResult.data.data.data : undefined;
   const uomsResult = useUomsIndex({ per_page: 100, sort: 'name' });
   const uoms = uomsResult.data?.status === 200 ? uomsResult.data.data.data : [];
   const result = useApplicationRatesIndex({
@@ -81,9 +96,15 @@ export function ApplicationRatesListScreen() {
         <div className="hidden items-center gap-2 md:flex">
           <ApplicationRateFilters
             query={query}
-            items={items}
+            items={itemSearch === debouncedItemSearch ? items : []}
+            itemSearch={itemSearch}
+            onItemSearchChange={setItemSearch}
+            selectedItemLabel={selectedItem ? `${selectedItem.code} — ${selectedItem.name}` : undefined}
             uoms={uoms}
-            itemsLookup={lookupState(itemsResult, 'items')}
+            itemsLookup={{
+              ...lookupState(itemsResult, 'items'),
+              loading: itemsResult.isLoading || itemSearch !== debouncedItemSearch,
+            }}
             uomsLookup={lookupState(uomsResult, 'units')}
           />
         </div>
@@ -101,9 +122,15 @@ export function ApplicationRatesListScreen() {
           <div className="flex flex-col gap-3 py-4">
             <ApplicationRateFilters
               query={query}
-              items={items}
+              items={itemSearch === debouncedItemSearch ? items : []}
+              itemSearch={itemSearch}
+              onItemSearchChange={setItemSearch}
+              selectedItemLabel={selectedItem ? `${selectedItem.code} — ${selectedItem.name}` : undefined}
               uoms={uoms}
-              itemsLookup={lookupState(itemsResult, 'items')}
+              itemsLookup={{
+                ...lookupState(itemsResult, 'items'),
+                loading: itemsResult.isLoading || itemSearch !== debouncedItemSearch,
+              }}
               uomsLookup={lookupState(uomsResult, 'units')}
               full
             />
@@ -152,6 +179,9 @@ export function ApplicationRatesListScreen() {
 function ApplicationRateFilters({
   query,
   items,
+  itemSearch,
+  onItemSearchChange,
+  selectedItemLabel,
   uoms,
   itemsLookup,
   uomsLookup,
@@ -159,6 +189,9 @@ function ApplicationRateFilters({
 }: {
   query: ListQueryState<Filters>;
   items: { id: number; code: string; name: string }[];
+  itemSearch: string;
+  onItemSearchChange: (search: string) => void;
+  selectedItemLabel?: string;
   uoms: { id: number; code: string; name: string }[];
   itemsLookup: LookupState;
   uomsLookup: LookupState;
@@ -166,19 +199,17 @@ function ApplicationRateFilters({
 }) {
   return (
     <>
-      <Combobox
+      <RemoteLookupCombobox
         {...itemsLookup}
         className={full ? 'w-full' : 'h-9 w-64'}
-        aria-label="Item"
+        label="Item"
+        allLabel="All items"
         value={query.filters.item_id ?? 'all'}
+        selectedLabel={selectedItemLabel}
         onValueChange={(value) => query.setFilter('item_id', value === 'all' ? undefined : value)}
-        placeholder="Item"
-        searchPlaceholder="Search items…"
-        emptyText="No items found."
-        options={[
-          { value: 'all', label: 'All items' },
-          ...items.map((item) => ({ value: String(item.id), label: `${item.code} — ${item.name}` })),
-        ]}
+        search={itemSearch}
+        onSearchChange={onItemSearchChange}
+        options={items.map((item) => ({ value: String(item.id), label: `${item.code} — ${item.name}` }))}
       />
       <Combobox
         {...uomsLookup}
