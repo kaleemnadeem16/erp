@@ -48,6 +48,8 @@
   --erp-blue-color-border-selected: #2563EB;
   --erp-blue-color-border-focus: #2563EB;
   --erp-blue-color-border-disabled: #E2E8F0;
+  /* Cards, panels, tables and row dividers: lighter than the field borders above, so containers recede and controls stand out */
+  --erp-blue-color-border-hairline: #E9EEF4;
 
   /* ==========================================================================
      4. Brand / Interaction Colors
@@ -82,6 +84,8 @@
      ========================================================================== */
   --erp-blue-color-focus-ring: #2563EB;
   --erp-blue-color-focus-ring-offset: #FFFFFF;
+  /* Soft halo around a focused field; the border itself turns brand blue, which carries the 3:1 requirement */
+  --erp-blue-color-focus-halo: rgba(37, 99, 235, 0.18);
 
   /* ==========================================================================
      7. Table-Specific Tokens
@@ -91,7 +95,7 @@
   --erp-blue-color-table-header-text: #475569;
 
   --erp-blue-color-table-row-text: #0F172A;
-  --erp-blue-color-table-row-border: #E2E8F0;
+  --erp-blue-color-table-row-border: #E9EEF4;
 
   --erp-blue-color-table-row-hover-bg: #F8FAFC;
   --erp-blue-color-table-row-selected-bg: #EFF6FF;
@@ -102,7 +106,7 @@
      8. Advanced Filters Panel
      ========================================================================== */
   --erp-blue-color-filter-panel-bg: #FFFFFF;
-  --erp-blue-color-filter-panel-border: #E2E8F0;
+  --erp-blue-color-filter-panel-border: #E9EEF4;
 
   /* ==========================================================================
      9. Active Filter Chips
@@ -178,7 +182,7 @@
 /* ==========================================================================
    Purchase Orders Screen Scope (Light Mode Only)
    ========================================================================== */
-:root:not(.dark) .po-screen {
+:root:not(.dark) :is(.po-screen, .po-detail) {
   /* Mapping erp-blue palette to local semantic tokens */
   --po-bg-canvas: var(--erp-blue-color-bg-canvas);
   --po-bg-surface: var(--erp-blue-color-bg-surface);
@@ -207,6 +211,7 @@
   --po-border-selected: var(--erp-blue-color-border-selected);
   --po-border-focus: var(--erp-blue-color-border-focus);
   --po-border-disabled: var(--erp-blue-color-border-disabled);
+  --po-border-hairline: var(--erp-blue-color-border-hairline);
 
   --po-brand-primary: var(--erp-blue-color-brand-primary);
   --po-brand-hover: var(--erp-blue-color-brand-hover);
@@ -228,6 +233,7 @@
 
   --po-focus-ring: var(--erp-blue-color-focus-ring);
   --po-focus-ring-offset: var(--erp-blue-color-focus-ring-offset);
+  --po-focus-halo: var(--erp-blue-color-focus-halo);
 
   --po-table-bg: var(--erp-blue-color-table-bg);
   --po-table-header-bg: var(--erp-blue-color-table-header-bg);
@@ -255,7 +261,7 @@
   --foreground: var(--po-text-primary);
   --card: var(--po-bg-surface);
   --card-foreground: var(--po-text-primary);
-  --border: var(--po-border-subtle);
+  --border: var(--po-border-hairline);
   --input: var(--po-field-border);
   --ring: var(--po-focus-ring);
   --muted: var(--po-bg-surface-sunken);
@@ -268,76 +274,78 @@
 }
 
 /* Page header within PO screen */
-:root:not(.dark) .po-screen h1 {
+:root:not(.dark) :is(.po-screen, .po-detail) h1 {
   color: var(--po-text-primary);
 }
 
-:root:not(.dark) .po-screen p.text-muted-foreground {
+:root:not(.dark) :is(.po-screen, .po-detail) p.text-muted-foreground {
   color: var(--po-text-secondary);
 }
 
 /* Primary CTA button (e.g. "New purchase order") */
-:root:not(.dark) .po-screen button.bg-primary {
+:root:not(.dark) :is(.po-screen, .po-detail) button.bg-primary {
   background-color: var(--po-brand-primary);
   color: var(--po-text-inverse);
   box-shadow: none;
   transition: background-color 150ms ease-in-out, box-shadow 150ms ease-in-out;
 }
-:root:not(.dark) .po-screen button.bg-primary:hover {
+:root:not(.dark) :is(.po-screen, .po-detail) button.bg-primary:hover {
   background-color: var(--po-brand-hover);
 }
-:root:not(.dark) .po-screen button.bg-primary:active {
+:root:not(.dark) :is(.po-screen, .po-detail) button.bg-primary:active {
   background-color: var(--po-brand-pressed);
 }
-:root:not(.dark) .po-screen button.bg-primary:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--po-focus-ring-offset), 0 0 0 4px var(--po-focus-ring);
+:root:not(.dark) :is(.po-screen, .po-detail) button.bg-primary:focus-visible {
+  outline: 2px solid var(--po-focus-ring);
+  outline-offset: 2px;
+  box-shadow: none;
 }
 
 /* Secondary toolbar & table action buttons (Print, Columns, inactive Filters) */
-:root:not(.dark) .po-screen button.border-input,
-:root:not(.dark) .po-screen button.variant-outline {
+:root:not(.dark) :is(.po-screen, .po-detail) button.border-input,
+:root:not(.dark) :is(.po-screen, .po-detail) button.variant-outline {
   background-color: var(--po-bg-surface);
   color: var(--po-text-primary);
   border-color: var(--po-border-default);
   box-shadow: none;
   transition: background-color 150ms ease-in-out, border-color 150ms ease-in-out, color 150ms ease-in-out;
 }
-:root:not(.dark) .po-screen button.border-input:hover,
-:root:not(.dark) .po-screen button.variant-outline:hover {
+:root:not(.dark) :is(.po-screen, .po-detail) button.border-input:hover,
+:root:not(.dark) :is(.po-screen, .po-detail) button.variant-outline:hover {
   background-color: var(--po-bg-hover);
   color: var(--po-text-primary);
   border-color: var(--po-border-strong);
 }
-:root:not(.dark) .po-screen button.border-input:active,
-:root:not(.dark) .po-screen button.variant-outline:active {
+:root:not(.dark) :is(.po-screen, .po-detail) button.border-input:active,
+:root:not(.dark) :is(.po-screen, .po-detail) button.variant-outline:active {
   background-color: var(--po-bg-pressed);
 }
-:root:not(.dark) .po-screen button.border-input:focus-visible,
-:root:not(.dark) .po-screen button.variant-outline:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--po-focus-ring-offset), 0 0 0 4px var(--po-focus-ring);
+:root:not(.dark) :is(.po-screen, .po-detail) button.border-input:focus-visible,
+:root:not(.dark) :is(.po-screen, .po-detail) button.variant-outline:focus-visible {
+  outline: 2px solid var(--po-focus-ring);
+  outline-offset: 2px;
+  box-shadow: none;
 }
 
 /* Active Filters button subtle blue state */
-:root:not(.dark) .po-screen .po-btn-filters-active {
+:root:not(.dark) :is(.po-screen, .po-detail) .po-btn-filters-active {
   background-color: var(--po-brand-subtle) !important;
   color: var(--po-brand-text) !important;
   border: 1px solid var(--po-chip-active-border) !important;
 }
-:root:not(.dark) .po-screen .po-btn-filters-active:hover {
+:root:not(.dark) :is(.po-screen, .po-detail) .po-btn-filters-active:hover {
   background-color: var(--po-brand-subtle-hover) !important;
 }
-:root:not(.dark) .po-screen .po-btn-filters-active svg {
+:root:not(.dark) :is(.po-screen, .po-detail) .po-btn-filters-active svg {
   color: var(--po-brand-icon);
 }
-:root:not(.dark) .po-screen .po-btn-filters-active .po-filter-badge {
+:root:not(.dark) :is(.po-screen, .po-detail) .po-btn-filters-active .po-filter-badge {
   background-color: var(--po-brand-primary);
   color: var(--po-text-inverse);
 }
 
 /* Active Filter Chips */
-:root:not(.dark) .po-screen .po-chip-active {
+:root:not(.dark) :is(.po-screen, .po-detail) .po-chip-active {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
@@ -350,7 +358,7 @@
   color: var(--po-chip-active-text);
   border: 1px solid var(--po-chip-active-border);
 }
-:root:not(.dark) .po-screen .po-chip-active button {
+:root:not(.dark) :is(.po-screen, .po-detail) .po-chip-active button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -359,27 +367,27 @@
   color: var(--po-chip-active-text);
   transition: background-color 150ms ease-in-out, opacity 150ms ease-in-out;
 }
-:root:not(.dark) .po-screen .po-chip-active button:hover {
+:root:not(.dark) :is(.po-screen, .po-detail) .po-chip-active button:hover {
   background-color: var(--po-brand-subtle-hover);
 }
 
 /* Advanced filters collapsible card panel */
-:root:not(.dark) .po-screen .po-filter-panel {
+:root:not(.dark) :is(.po-screen, .po-detail) .po-filter-panel {
   background-color: var(--po-filter-panel-bg);
   border-color: var(--po-filter-panel-border);
   box-shadow: none;
 }
-:root:not(.dark) .po-screen .po-filter-panel-title {
+:root:not(.dark) :is(.po-screen, .po-detail) .po-filter-panel-title {
   color: var(--po-text-primary);
 }
 
 /* Form Controls (Inputs, Select Triggers, Combobox Buttons, DateFields) */
-:root:not(.dark) .po-screen input[type="text"],
-:root:not(.dark) .po-screen input[type="number"],
-:root:not(.dark) .po-screen input:not([type]),
-:root:not(.dark) .po-screen button[role="combobox"],
-:root:not(.dark) .po-screen button[data-slot="select-trigger"],
-:root:not(.dark) .po-screen [data-slot="combobox-trigger"] {
+:root:not(.dark) :is(.po-screen, .po-detail) input[type="text"],
+:root:not(.dark) :is(.po-screen, .po-detail) input[type="number"],
+:root:not(.dark) :is(.po-screen, .po-detail) input:not([type]),
+:root:not(.dark) :is(.po-screen, .po-detail) button[role="combobox"],
+:root:not(.dark) :is(.po-screen, .po-detail) button[data-slot="select-trigger"],
+:root:not(.dark) :is(.po-screen, .po-detail) [data-slot="combobox-trigger"] {
   background-color: var(--po-field-bg);
   color: var(--po-field-text);
   border-color: var(--po-field-border);
@@ -388,106 +396,107 @@
   transition: border-color 150ms ease-in-out, background-color 150ms ease-in-out, box-shadow 150ms ease-in-out;
 }
 
-:root:not(.dark) .po-screen input::placeholder {
+:root:not(.dark) :is(.po-screen, .po-detail) input::placeholder {
   color: var(--po-field-placeholder);
 }
 
-:root:not(.dark) .po-screen input:hover:not(:disabled),
-:root:not(.dark) .po-screen button[role="combobox"]:hover:not(:disabled),
-:root:not(.dark) .po-screen button[data-slot="select-trigger"]:hover:not(:disabled) {
+:root:not(.dark) :is(.po-screen, .po-detail) input:hover:not(:disabled),
+:root:not(.dark) :is(.po-screen, .po-detail) button[role="combobox"]:hover:not(:disabled),
+:root:not(.dark) :is(.po-screen, .po-detail) button[data-slot="select-trigger"]:hover:not(:disabled) {
   background-color: var(--po-field-bg-hover);
   border-color: var(--po-field-border-hover);
 }
 
-:root:not(.dark) .po-screen input:focus-visible,
-:root:not(.dark) .po-screen input:focus,
-:root:not(.dark) .po-screen button[role="combobox"]:focus-visible,
-:root:not(.dark) .po-screen button[data-slot="select-trigger"]:focus-visible {
+:root:not(.dark) :is(.po-screen, .po-detail) input:focus-visible,
+:root:not(.dark) :is(.po-screen, .po-detail) input:focus,
+:root:not(.dark) :is(.po-screen, .po-detail) button[role="combobox"]:focus-visible,
+:root:not(.dark) :is(.po-screen, .po-detail) button[data-slot="select-trigger"]:focus-visible {
   outline: none;
   border-color: var(--po-field-border-focus);
-  box-shadow: 0 0 0 2px var(--po-focus-ring-offset), 0 0 0 4px var(--po-focus-ring);
+  box-shadow: 0 0 0 3px var(--po-focus-halo);
 }
 
-:root:not(.dark) .po-screen input:disabled,
-:root:not(.dark) .po-screen button[role="combobox"]:disabled,
-:root:not(.dark) .po-screen button[data-slot="select-trigger"]:disabled {
+:root:not(.dark) :is(.po-screen, .po-detail) input:disabled,
+:root:not(.dark) :is(.po-screen, .po-detail) button[role="combobox"]:disabled,
+:root:not(.dark) :is(.po-screen, .po-detail) button[data-slot="select-trigger"]:disabled {
   background-color: var(--po-field-bg-disabled);
   color: var(--po-text-disabled);
   border-color: var(--po-border-disabled);
   cursor: not-allowed;
 }
 
-:root:not(.dark) .po-screen label {
+:root:not(.dark) :is(.po-screen, .po-detail) label {
   color: var(--po-field-label);
   font-weight: 500;
 }
 
 /* Checkbox within PO screen */
-:root:not(.dark) .po-screen input[type="checkbox"],
-:root:not(.dark) .po-screen button[role="checkbox"] {
+:root:not(.dark) :is(.po-screen, .po-detail) input[type="checkbox"],
+:root:not(.dark) :is(.po-screen, .po-detail) button[role="checkbox"] {
   border-color: var(--po-border-default);
   border-radius: 4px;
   transition: all 150ms ease-in-out;
 }
-:root:not(.dark) .po-screen input[type="checkbox"]:focus-visible,
-:root:not(.dark) .po-screen button[role="checkbox"]:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--po-focus-ring-offset), 0 0 0 4px var(--po-focus-ring);
+:root:not(.dark) :is(.po-screen, .po-detail) input[type="checkbox"]:focus-visible,
+:root:not(.dark) :is(.po-screen, .po-detail) button[role="checkbox"]:focus-visible {
+  outline: 2px solid var(--po-focus-ring);
+  outline-offset: 2px;
+  box-shadow: none;
 }
-:root:not(.dark) .po-screen input[type="checkbox"]:checked,
-:root:not(.dark) .po-screen button[role="checkbox"][data-state="checked"] {
+:root:not(.dark) :is(.po-screen, .po-detail) input[type="checkbox"]:checked,
+:root:not(.dark) :is(.po-screen, .po-detail) button[role="checkbox"][data-state="checked"] {
   background-color: var(--po-brand-primary);
   border-color: var(--po-brand-primary);
   color: var(--po-text-inverse);
 }
 
 /* Table surface & structure */
-:root:not(.dark) .po-screen div.rounded-md.border.border-border:has(table) {
+:root:not(.dark) :is(.po-screen, .po-detail) div.rounded-md.border.border-border:has(table) {
   background-color: var(--po-table-bg);
   border-color: var(--po-table-row-border);
   box-shadow: none;
 }
 
 /* Table header */
-:root:not(.dark) .po-screen thead tr {
+:root:not(.dark) :is(.po-screen, .po-detail) thead tr {
   background-color: var(--po-table-header-bg);
   border-bottom: 1px solid var(--po-table-row-border);
 }
 
-:root:not(.dark) .po-screen thead th {
+:root:not(.dark) :is(.po-screen, .po-detail) thead th {
   color: var(--po-table-header-text);
   font-weight: 600;
   font-size: 0.8125rem;
   padding-top: 0.5rem;
   padding-bottom: 0.5rem;
 }
-:root:not(.dark) .po-screen thead th button {
+:root:not(.dark) :is(.po-screen, .po-detail) thead th button {
   color: inherit;
   font-weight: inherit;
 }
 
 /* Table rows */
-:root:not(.dark) .po-screen tbody tr {
+:root:not(.dark) :is(.po-screen, .po-detail) tbody tr {
   background-color: var(--po-table-bg);
   border-bottom: 1px solid var(--po-table-row-border);
   color: var(--po-table-row-text);
   transition: background-color 150ms ease-in-out;
 }
 
-:root:not(.dark) .po-screen tbody tr:hover {
+:root:not(.dark) :is(.po-screen, .po-detail) tbody tr:hover {
   background-color: var(--po-table-row-hover-bg);
 }
 
-:root:not(.dark) .po-screen tbody tr[data-state="selected"] {
+:root:not(.dark) :is(.po-screen, .po-detail) tbody tr[data-state="selected"] {
   background-color: var(--po-table-row-selected-bg) !important;
   border-left: 3px solid var(--po-table-row-selected-edge);
 }
 
-:root:not(.dark) .po-screen tbody tr[data-state="selected"]:hover {
+:root:not(.dark) :is(.po-screen, .po-detail) tbody tr[data-state="selected"]:hover {
   background-color: var(--po-table-row-selected-hover-bg) !important;
 }
 
-:root:not(.dark) .po-screen tbody td {
+:root:not(.dark) :is(.po-screen, .po-detail) tbody td {
   color: var(--po-table-row-text);
   font-size: 0.875rem;
   padding-top: 0.5rem;
@@ -495,55 +504,56 @@
 }
 
 /* PO Number Link styling */
-:root:not(.dark) .po-screen .po-order-link {
+:root:not(.dark) :is(.po-screen, .po-detail) .po-order-link {
   color: var(--po-text-link);
   font-weight: 600;
   text-decoration: underline;
   text-underline-offset: 3px;
   transition: color 150ms ease-in-out;
 }
-:root:not(.dark) .po-screen .po-order-link:hover {
+:root:not(.dark) :is(.po-screen, .po-detail) .po-order-link:hover {
   color: var(--po-text-link-hover);
 }
 
 /* Pagination controls */
-:root:not(.dark) .po-screen button[aria-label="Previous page"],
-:root:not(.dark) .po-screen button[aria-label="Next page"],
-:root:not(.dark) .po-screen button[aria-label="First page"],
-:root:not(.dark) .po-screen button[aria-label="Last page"] {
+:root:not(.dark) :is(.po-screen, .po-detail) button[aria-label="Previous page"],
+:root:not(.dark) :is(.po-screen, .po-detail) button[aria-label="Next page"],
+:root:not(.dark) :is(.po-screen, .po-detail) button[aria-label="First page"],
+:root:not(.dark) :is(.po-screen, .po-detail) button[aria-label="Last page"] {
   background-color: var(--po-bg-surface);
   border-color: var(--po-border-default);
   color: var(--po-text-secondary);
 }
-:root:not(.dark) .po-screen button[aria-label="Previous page"]:hover:not(:disabled),
-:root:not(.dark) .po-screen button[aria-label="Next page"]:hover:not(:disabled),
-:root:not(.dark) .po-screen button[aria-label="First page"]:hover:not(:disabled),
-:root:not(.dark) .po-screen button[aria-label="Last page"]:hover:not(:disabled) {
+:root:not(.dark) :is(.po-screen, .po-detail) button[aria-label="Previous page"]:hover:not(:disabled),
+:root:not(.dark) :is(.po-screen, .po-detail) button[aria-label="Next page"]:hover:not(:disabled),
+:root:not(.dark) :is(.po-screen, .po-detail) button[aria-label="First page"]:hover:not(:disabled),
+:root:not(.dark) :is(.po-screen, .po-detail) button[aria-label="Last page"]:hover:not(:disabled) {
   background-color: var(--po-bg-hover);
   color: var(--po-text-primary);
   border-color: var(--po-border-strong);
 }
-:root:not(.dark) .po-screen button:disabled {
+:root:not(.dark) :is(.po-screen, .po-detail) button.border-input:disabled,
+:root:not(.dark) :is(.po-screen, .po-detail) button[aria-label$=" page"]:disabled {
   color: var(--po-text-disabled);
   border-color: var(--po-border-disabled);
   background-color: var(--po-bg-surface-sunken);
 }
 
 /* Decorative icons inside fields (search, supplier, status, ranges, currency) */
-:root:not(.dark) .po-screen .po-field-icon {
+:root:not(.dark) :is(.po-screen, .po-detail) .po-field-icon {
   color: var(--po-text-secondary);
   stroke-width: 2;
 }
 
 /* "Select supplier above" placeholder: visibly unavailable, not an empty gap */
-:root:not(.dark) .po-screen .po-field-disabled {
+:root:not(.dark) :is(.po-screen, .po-detail) .po-field-disabled {
   background-color: var(--po-field-bg-disabled);
   border-color: var(--po-border-disabled);
   color: var(--po-text-tertiary);
 }
 
 /* Subtle text-link action ("Clear all") */
-:root:not(.dark) .po-screen .po-link-action {
+:root:not(.dark) :is(.po-screen, .po-detail) .po-link-action {
   color: var(--po-text-link);
   font-size: 0.875rem;
   font-weight: 500;
@@ -553,101 +563,172 @@
   padding: 0 0.25rem;
   transition: color 150ms ease-in-out;
 }
-:root:not(.dark) .po-screen .po-link-action:hover {
+:root:not(.dark) :is(.po-screen, .po-detail) .po-link-action:hover {
   color: var(--po-text-link-hover);
 }
-:root:not(.dark) .po-screen .po-link-action:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--po-focus-ring-offset), 0 0 0 4px var(--po-focus-ring);
+:root:not(.dark) :is(.po-screen, .po-detail) .po-link-action:focus-visible {
+  outline: 2px solid var(--po-focus-ring);
+  outline-offset: 2px;
+  box-shadow: none;
 }
 
 /* Bulk action bar shown while rows are ticked */
-:root:not(.dark) .po-screen .po-bulk-bar {
+:root:not(.dark) :is(.po-screen, .po-detail) .po-bulk-bar {
   background-color: var(--po-bg-selected);
   border-color: var(--po-chip-active-border);
   color: var(--po-brand-text);
 }
 
 /* Current page marker in the numbered pagination */
-:root:not(.dark) .po-screen [aria-current="page"] {
+:root:not(.dark) :is(.po-screen, .po-detail) [aria-current="page"] {
   background-color: var(--po-brand-subtle);
   border-color: var(--po-brand-primary);
   color: var(--po-brand-text);
 }
 
 /* Row actions (kebab) */
-:root:not(.dark) .po-screen tbody button[aria-label^="Actions for"] {
+:root:not(.dark) :is(.po-screen, .po-detail) tbody button[aria-label^="Actions for"] {
   color: var(--po-text-secondary);
 }
-:root:not(.dark) .po-screen tbody button[aria-label^="Actions for"]:hover {
+:root:not(.dark) :is(.po-screen, .po-detail) tbody button[aria-label^="Actions for"]:hover {
   background-color: var(--po-control-hover);
   color: var(--po-text-primary);
 }
-:root:not(.dark) .po-screen tbody button[aria-label^="Actions for"]:active {
+:root:not(.dark) :is(.po-screen, .po-detail) tbody button[aria-label^="Actions for"]:active {
   background-color: var(--po-control-pressed);
 }
-:root:not(.dark) .po-screen tbody button[aria-label^="Actions for"]:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--po-focus-ring-offset), 0 0 0 4px var(--po-focus-ring);
+:root:not(.dark) :is(.po-screen, .po-detail) tbody button[aria-label^="Actions for"]:focus-visible {
+  outline: 2px solid var(--po-focus-ring);
+  outline-offset: 2px;
+  box-shadow: none;
 }
 
 /* Type scale for the PO screen: heavier, darker type like the approved mockup */
-:root:not(.dark) .po-screen h1 {
+:root:not(.dark) :is(.po-screen, .po-detail) h1 {
   font-size: 1.875rem;
   line-height: 2.25rem;
   font-weight: 700;
   letter-spacing: -0.01em;
 }
-:root:not(.dark) .po-screen p.text-muted-foreground {
+:root:not(.dark) :is(.po-screen, .po-detail) p.text-muted-foreground {
   font-size: 0.9375rem;
 }
-:root:not(.dark) .po-screen label {
+:root:not(.dark) :is(.po-screen, .po-detail) label {
   font-size: 0.875rem;
 }
-:root:not(.dark) .po-screen button {
+:root:not(.dark) :is(.po-screen, .po-detail) button {
   font-weight: 600;
 }
-:root:not(.dark) .po-screen thead th button,
-:root:not(.dark) .po-screen tbody button[aria-label^="Actions for"],
-:root:not(.dark) .po-screen button[role="checkbox"],
-:root:not(.dark) .po-screen button[role="combobox"],
-:root:not(.dark) .po-screen button[data-slot="select-trigger"] {
+:root:not(.dark) :is(.po-screen, .po-detail) thead th button,
+:root:not(.dark) :is(.po-screen, .po-detail) tbody button[aria-label^="Actions for"],
+:root:not(.dark) :is(.po-screen, .po-detail) button[role="checkbox"],
+:root:not(.dark) :is(.po-screen, .po-detail) button[role="combobox"],
+:root:not(.dark) :is(.po-screen, .po-detail) button[data-slot="select-trigger"] {
   font-weight: inherit;
 }
-:root:not(.dark) .po-screen button[role="combobox"],
-:root:not(.dark) .po-screen button[data-slot="select-trigger"] {
+:root:not(.dark) :is(.po-screen, .po-detail) button[role="combobox"],
+:root:not(.dark) :is(.po-screen, .po-detail) button[data-slot="select-trigger"] {
   font-weight: 500;
 }
-:root:not(.dark) .po-screen .po-filter-panel-title {
+:root:not(.dark) :is(.po-screen, .po-detail) .po-filter-panel-title {
   font-size: 0.9375rem;
   font-weight: 600;
 }
-:root:not(.dark) .po-screen .po-chip-active {
+:root:not(.dark) :is(.po-screen, .po-detail) .po-chip-active {
   font-size: 0.8125rem;
   font-weight: 500;
   padding: 0.375rem 0.75rem;
 }
-:root:not(.dark) .po-screen .po-chip-active svg {
+:root:not(.dark) :is(.po-screen, .po-detail) .po-chip-active svg {
   stroke-width: 2;
 }
-:root:not(.dark) .po-screen button[role="checkbox"] {
+:root:not(.dark) :is(.po-screen, .po-detail) button[role="checkbox"] {
   width: 1.125rem;
   height: 1.125rem;
 }
 /* Footer: roomier controls and readable counts */
-:root:not(.dark) .po-screen button[aria-label$=" page"],
-:root:not(.dark) .po-screen button[aria-label="Rows per page"] {
+:root:not(.dark) :is(.po-screen, .po-detail) button[aria-label$=" page"],
+:root:not(.dark) :is(.po-screen, .po-detail) button[aria-label="Rows per page"] {
   height: 2.25rem;
 }
-:root:not(.dark) .po-screen button[aria-label$=" page"] {
+:root:not(.dark) :is(.po-screen, .po-detail) button[aria-label$=" page"] {
   width: 2.25rem;
 }
-:root:not(.dark) .po-screen [aria-current="page"] {
+:root:not(.dark) :is(.po-screen, .po-detail) [aria-current="page"] {
   height: 2.25rem;
   min-width: 2.25rem;
 }
-:root:not(.dark) .po-screen .text-sm.text-muted-foreground {
+:root:not(.dark) :is(.po-screen, .po-detail) .text-sm.text-muted-foreground {
   color: var(--po-text-secondary);
+}
+
+/* DateField is a bordered group of segments: focus it like any other field */
+:root:not(.dark) :is(.po-screen, .po-detail) div[role="group"]:focus-within {
+  border-color: var(--po-field-border-focus);
+  box-shadow: 0 0 0 3px var(--po-focus-halo);
+}
+
+/* ==========================================================================
+   Record side panel (order detail, create and edit) — same system as the list
+   ========================================================================== */
+:root:not(.dark) .po-detail .record-sheet-title {
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  color: var(--po-text-primary);
+}
+:root:not(.dark) .po-detail .record-sheet-description {
+  font-size: 0.875rem;
+  color: var(--po-text-secondary);
+}
+
+/* Section cards: white surfaces on the canvas, hairline border, a titled header with a divider */
+:root:not(.dark) .po-detail section.rounded-lg {
+  background-color: var(--po-bg-surface);
+  border-color: var(--po-border-hairline);
+  border-radius: 0.625rem;
+  box-shadow: none;
+}
+:root:not(.dark) .po-detail section.rounded-lg > div.mb-3 {
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--po-border-hairline);
+}
+:root:not(.dark) .po-detail section.rounded-lg > div.mb-3 h2 {
+  font-size: 0.9375rem;
+  line-height: 1.375rem;
+  font-weight: 700;
+  color: var(--po-text-primary);
+}
+:root:not(.dark) .po-detail section.rounded-lg > div.mb-3 p {
+  font-size: 0.8125rem;
+  color: var(--po-text-secondary);
+}
+/* Confirmation panels that open inside the order (issue, cancel, short-close) */
+:root:not(.dark) .po-detail section.rounded-md {
+  background-color: var(--po-bg-surface);
+}
+
+/* Label / value pairs: a quiet label above a clear value */
+:root:not(.dark) .po-detail section div.text-xs.font-medium.text-muted-foreground {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--po-text-secondary);
+}
+:root:not(.dark) .po-detail section div.text-sm {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--po-text-primary);
+}
+:root:not(.dark) .po-detail section div.text-sm .text-muted-foreground {
+  font-weight: 400;
+}
+
+/* Lines table inside the order */
+:root:not(.dark) .po-detail .po-detail-table {
+  background-color: var(--po-table-bg);
+  border-color: var(--po-table-row-border);
 }
 
 /* ==========================================================================
@@ -677,7 +758,7 @@
    The badge keeps its normal shared-Badge variant, so dark mode and every other
    screen look exactly as before; these rules only restyle it inside the light PO screen.
    ========================================================================== */
-:root:not(.dark) .po-screen .po-status-badge {
+:root:not(.dark) :is(.po-screen, .po-detail) .po-status-badge {
   display: inline-flex;
   align-items: center;
   padding: 0.125rem 0.5rem;
@@ -693,42 +774,42 @@
 }
 
 /* DRAFT -> Draft */
-:root:not(.dark) .po-screen .po-status-badge.po-status-draft {
+:root:not(.dark) :is(.po-screen, .po-detail) .po-status-badge.po-status-draft {
   background-color: var(--erp-blue-status-draft-bg);
   color: var(--erp-blue-status-draft-text);
   border-color: var(--erp-blue-color-border-subtle);
 }
 
 /* WAITING APPROVAL -> Pending */
-:root:not(.dark) .po-screen .po-status-badge.po-status-pending {
+:root:not(.dark) :is(.po-screen, .po-detail) .po-status-badge.po-status-pending {
   background-color: var(--erp-blue-status-pending-bg);
   color: var(--erp-blue-status-pending-text);
   border-color: var(--erp-blue-color-warning-border);
 }
 
 /* ISSUED -> Active */
-:root:not(.dark) .po-screen .po-status-badge.po-status-active {
+:root:not(.dark) :is(.po-screen, .po-detail) .po-status-badge.po-status-active {
   background-color: var(--erp-blue-status-active-bg);
   color: var(--erp-blue-status-active-text);
   border-color: var(--erp-blue-color-info-border);
 }
 
 /* PARTIALLY RECEIVED -> Progress */
-:root:not(.dark) .po-screen .po-status-badge.po-status-progress {
+:root:not(.dark) :is(.po-screen, .po-detail) .po-status-badge.po-status-progress {
   background-color: var(--erp-blue-status-progress-bg);
   color: var(--erp-blue-status-progress-text);
   border-color: var(--erp-blue-status-progress-border);
 }
 
 /* CLOSED -> Success */
-:root:not(.dark) .po-screen .po-status-badge.po-status-success {
+:root:not(.dark) :is(.po-screen, .po-detail) .po-status-badge.po-status-success {
   background-color: var(--erp-blue-status-success-bg);
   color: var(--erp-blue-status-success-text);
   border-color: var(--erp-blue-color-success-border);
 }
 
 /* CANCELLED / REJECTED -> Danger */
-:root:not(.dark) .po-screen .po-status-badge.po-status-danger {
+:root:not(.dark) :is(.po-screen, .po-detail) .po-status-badge.po-status-danger {
   background-color: var(--erp-blue-status-danger-bg);
   color: var(--erp-blue-status-danger-text);
   border-color: var(--erp-blue-color-danger-border);

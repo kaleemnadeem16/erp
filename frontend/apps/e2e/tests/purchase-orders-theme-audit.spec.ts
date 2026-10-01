@@ -114,7 +114,7 @@ test.describe('Purchase Orders Light Palette Theme Audit', () => {
     const panelBg = await filterPanel.evaluate((el) => window.getComputedStyle(el).backgroundColor);
     const panelBorder = await filterPanel.evaluate((el) => window.getComputedStyle(el).borderColor);
     expect(panelBg).toBe('rgb(255, 255, 255)'); // #FFFFFF
-    expect(panelBorder).toBe('rgb(226, 232, 240)'); // #E2E8F0
+    expect(panelBorder).toBe('rgb(233, 238, 244)'); // #E9EEF4 hairline: lighter than the field borders
 
     // Helper for subtle blue background check (#EFF6FF with float/OKLCH round-trip tolerance)
     const expectSubtleBlue = (rgb: string) => {
@@ -243,6 +243,36 @@ test.describe('Purchase Orders Light Palette Theme Audit', () => {
     await page.getByRole('menuitem', { name: /^Cancel order/ }).click();
     await expect(page.getByRole('heading', { name: 'Cancel this issued order' })).toBeVisible();
     await expect(page.getByText('ISSUED', { exact: true }).first()).toBeVisible();
+  });
+
+  test('a focused field gets a brand border and a soft halo, not a heavy double ring', async ({ page }) => {
+    await page.goto('/purchase-orders');
+    const search = page.getByPlaceholder('Search orders, suppliers, items…');
+    await search.focus();
+    await page.waitForTimeout(250);
+    expect(await search.evaluate((el) => window.getComputedStyle(el).borderColor)).toBe('rgb(37, 99, 235)'); // #2563EB
+    const shadow = await search.evaluate((el) => window.getComputedStyle(el).boxShadow);
+    expect(shadow).toContain('rgba(37, 99, 235, 0.18)');
+    expect(shadow).not.toContain('rgb(255, 255, 255)'); // no white offset ring
+  });
+
+  test('the order side panel uses the same system, and boxes sharing a row are the same height', async ({ page }) => {
+    await page.goto('/purchase-orders');
+    await page.getByRole('row').filter({ has: page.getByText('CLOSED', { exact: true }) }).first().click();
+    const panel = page.locator('.po-detail');
+    await expect(panel.locator('.record-sheet-title')).toBeVisible();
+    expect(await panel.locator('.record-sheet-title').evaluate((el) => window.getComputedStyle(el).fontWeight)).toBe('700');
+
+    // The status uses the PO palette here too (CLOSED -> success tokens)
+    const badge = panel.locator('.po-status-badge.po-status-success');
+    await expect(badge).toBeVisible();
+    expect(await badge.evaluate((el) => window.getComputedStyle(el).backgroundColor)).toBe('rgb(220, 252, 231)'); // #DCFCE7
+
+    // Order | Supplier share a row, Commercial | Record information share the next: each pair has equal height
+    const heights = async (title: string) =>
+      panel.locator('section', { has: page.getByRole('heading', { name: title, exact: true }) }).evaluate((el) => Math.round(el.getBoundingClientRect().height));
+    expect(await heights('Order')).toBe(await heights('Supplier'));
+    expect(await heights('Commercial')).toBe(await heights('Record information'));
   });
 
   test('verifies other screens (Items) are completely untouched by po-screen styles', async ({ page }) => {

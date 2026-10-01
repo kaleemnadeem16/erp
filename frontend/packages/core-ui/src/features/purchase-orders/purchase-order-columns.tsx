@@ -38,6 +38,18 @@ function formatAmount(amount: string | number, currencyCode: string | undefined)
   return currencyCode ? `${currencyCode} ${text}` : text;
 }
 
+/** One status pill for every Purchase Orders view (list and order screen), so the two cannot drift apart. */
+export function PurchaseOrderStatusBadge({ status }: { status: string }) {
+  return (
+    <Badge
+      variant={STATUS_VARIANT[status] ?? "secondary"}
+      className={`po-status-badge ${STATUS_CLASS[status] ?? "po-status-draft"}`}
+    >
+      {status.replace(/_/g, " ")}
+    </Badge>
+  );
+}
+
 export function purchaseOrderColumns(
   suppliers: ReadonlyMap<number, string>,
   currencies: ReadonlyMap<number, string>,
@@ -107,17 +119,7 @@ export function purchaseOrderColumns(
       key: "status",
       header: "Status",
       value: (order) => order.status,
-      cell: (order) => {
-        const statusClass = STATUS_CLASS[order.status] ?? "po-status-draft";
-        return (
-          <Badge
-            variant={STATUS_VARIANT[order.status] ?? "secondary"}
-            className={`po-status-badge ${statusClass}`}
-          >
-            {order.status.replace(/_/g, " ")}
-          </Badge>
-        );
-      },
+      cell: (order) => <PurchaseOrderStatusBadge status={order.status} />,
       filterable: true,
     },
     {

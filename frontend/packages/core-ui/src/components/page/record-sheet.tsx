@@ -57,6 +57,8 @@ export interface RecordSheetProps {
   /** Called once the sheet has finished closing; typically navigates back to the list. */
   onClose: () => void;
   size?: RecordSheetSize;
+  /** Extra classes for the sheet itself — an opt-in hook for a screen that scopes its own look (e.g. a palette). */
+  className?: string;
   /**
    * Whether a click on the dimmed area behind the sheet closes it. Leave on for
    * read-only views; turn off for forms, where a stray click would throw away
@@ -75,7 +77,7 @@ export interface RecordSheetProps {
  * content can instead be rendered as a full page; see
  * docs/architecture/ui-building-blocks.md.
  */
-export function RecordSheet({ title, description, icon, actions, aside, onClose, size = 'lg', dismissOnOutsideClick = true, children }: RecordSheetProps) {
+export function RecordSheet({ title, description, icon, actions, aside, onClose, size = 'lg', className, dismissOnOutsideClick = true, children }: RecordSheetProps) {
   const contentRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(true);
   const [asideElement, setAsideElement] = useState<HTMLElement | null>(null);
@@ -117,7 +119,7 @@ export function RecordSheet({ title, description, icon, actions, aside, onClose,
         <SheetContent
           ref={contentRef}
           side="right"
-          className={cn('@container flex w-full flex-row gap-0 p-0 outline-none', SIZE_CLASS[size])}
+          className={cn('@container flex w-full flex-row gap-0 p-0 outline-none', SIZE_CLASS[size], className)}
           onAnimationEnd={(event) => {
             if (!open && event.target === event.currentTarget) finishClose();
           }}
@@ -135,7 +137,7 @@ export function RecordSheet({ title, description, icon, actions, aside, onClose,
           {/* A container of its own, so what's inside sizes to this column rather
               than to the whole sheet — the side column takes a share of that. */}
           <div className="@container flex min-w-0 flex-1 flex-col p-4">
-            <SheetHeader className="shrink-0 border-b border-border pb-4">
+            <SheetHeader className="record-sheet-header shrink-0 border-b border-border pb-4">
               <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
                 <div className="flex min-w-0 items-start gap-3">
                   {icon && (
@@ -144,8 +146,8 @@ export function RecordSheet({ title, description, icon, actions, aside, onClose,
                     </div>
                   )}
                   <div className="min-w-0">
-                    <SheetTitle>{title}</SheetTitle>
-                    {description && <SheetDescription>{description}</SheetDescription>}
+                    <SheetTitle className="record-sheet-title">{title}</SheetTitle>
+                    {description && <SheetDescription className="record-sheet-description">{description}</SheetDescription>}
                   </div>
                 </div>
                 {actions && <div className="ml-auto flex flex-wrap items-center gap-2">{actions}</div>}

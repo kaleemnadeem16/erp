@@ -49,16 +49,7 @@ import { useFocusOnOpen } from "../../lib/use-focus-on-open";
 import { usePermission } from "../../hooks/use-permission";
 import { PurchaseOrderApprovalSection, type PurchaseOrderApproval } from "./purchase-order-approval-section";
 import { usePurchasingCommercialCost } from "../../hooks/use-purchasing-commercial-cost";
-
-const STATUS_VARIANT: Record<
-  string,
-  "secondary" | "default" | "success" | "destructive"
-> = {
-  DRAFT: "secondary",
-  ISSUED: "default",
-  CLOSED: "success",
-  CANCELLED: "destructive",
-};
+import { PurchaseOrderStatusBadge } from "./purchase-order-columns";
 
 const SITE_ROLE_LABEL: Record<string, string> = {
   ORDER_FROM: "Ordering from",
@@ -233,6 +224,7 @@ export function PurchaseOrderDetailScreen({
           description={header?.description}
           actions={header?.actions}
           size="xl"
+          className="po-detail"
           onClose={() => navigate({ pathname: "/purchase-orders", search })}
         >
           <div className="space-y-4 pb-4">{content}</div>
@@ -240,7 +232,7 @@ export function PurchaseOrderDetailScreen({
       );
     }
     return (
-      <div className="space-y-4 p-6">
+      <div className="po-detail space-y-4 p-6">
         {header && (
           <PageHeader
             title={header.title}
@@ -632,7 +624,7 @@ export function PurchaseOrderDetailScreen({
           </div>
         </section>
       )}
-      <DetailPageLayout>
+      <DetailPageLayout equalHeight>
         <DetailSection title="Order">
           <DetailField label="PO number">
             <span className="font-semibold">
@@ -640,9 +632,7 @@ export function PurchaseOrderDetailScreen({
             </span>
           </DetailField>
           <DetailField label="Status">
-            <Badge variant={STATUS_VARIANT[order.status] ?? "secondary"}>
-              {order.status}
-            </Badge>
+            <PurchaseOrderStatusBadge status={order.status} />
           </DetailField>
           <DetailField label="Order date">{order.order_date}</DetailField>
           <DetailField label="Expected delivery">
@@ -761,7 +751,7 @@ export function PurchaseOrderDetailScreen({
           }
           fullWidth
         >
-          <div className="overflow-hidden rounded-md border sm:col-span-2">
+          <div className="po-detail-table overflow-hidden rounded-md border sm:col-span-2">
             <Table scrollRegionLabel="Order lines">
               <TableHeader>
                 <TableRow>
