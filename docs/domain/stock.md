@@ -297,8 +297,20 @@ valuation. `inventory.valuation.view` is required for move cost/FX and valuation
 cost/FX, AVCO pool value/rates, and inventory-overview row/summary values. The API omits restricted
 keys, including a requested `valuation_entries` include; ledger/overview columns, details, cards
 and quick-print content follow the same capability. Purchasing supplier-price and Estimating
-preview access remain independent. Recalculation, cutover, count and exception responses are a
-separate review; this is not yet a system-wide cost secrecy claim.
+preview access remain independent. The later recalculation, cutover, physical-count,
+negative-stock/settlement and policy-settings audits are recorded in the
+[authorisation retrofit](../architecture/authorization-retrofit.md).
+
+The current Inventory print/export audit found no Inventory CSV, spreadsheet, PDF-download or
+other export endpoint in the backend or client. The only Inventory quick-print tables are Stock
+Ledger and Inventory Overview. Both receive the same permission-filtered column arrays as their
+screens and the same API-projected rows; a browser regression checks their print-only tables
+with and without `inventory.valuation.view`. Other Inventory document screens do not offer a
+print/export action today. A future export must enforce the server-side valuation boundary and
+filter monetary columns by effective capability before serialising; the generic column
+definitions' `exportable` defaults are not an authorisation decision. This closes the audit for
+currently implemented Inventory HTTP/UI surfaces, not for future exports or separate Purchasing,
+Estimating and Finance cost domains.
 
 `stock_layers` and `avco_pools` each have their own read endpoint too now, closing the last gap
 on this close-out item: a cursor-paginated `GET /api/v1/stock-layers` (`filter[open]` for an

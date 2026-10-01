@@ -90,8 +90,9 @@ a separate Finance-owned decision and is not implied by either write capability.
 Operational stock ledger, layer, pool and overview reads remain quantity-visible to authenticated
 company users. Their monetary fields and included valuation entries require the separate
 `inventory.valuation.view` capability (ADR 0073); Purchasing commercial and Estimating internal
-cost permissions do not imply it. Other Inventory workflow responses remain on the valuation
-visibility audit list.
+cost permissions do not imply it. Current Inventory workflow responses and print/export paths
+have completed their separate valuation-visibility audit; no Inventory CSV/download endpoint
+exists yet. New exports must preserve the same server-side monetary projection.
 The shared settings response omits the recalculation high-risk amount threshold except for
 `inventory.recalculation-policy.manage` and `inventory.policy-history.view`; policy-change
 history is already restricted to the latter. It is a governance threshold, not a stock

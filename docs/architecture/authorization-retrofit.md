@@ -154,10 +154,13 @@ issue.
       valuation entries), stock layers, AVCO pools and inventory-overview rows/summary; the
       quantity view remains available. Ledger/overview screens and print views follow the API
       projection → [ADR 0073](../decisions/0073-separate-inventory-valuation-visibility-from-stock-operations.md).
-- [ ] Inventory valuation visibility, remaining workflow/export audit — review
-      any CSV/print/export path. Decide per workflow which monetary inputs authorised
-      operators must supply and which can be server-derived; do not blanket-hide required
-      controls. Until this closes, do not claim system-wide Inventory cost secrecy.
+- [x] Inventory valuation visibility, current workflow/export audit complete
+      (2026-10-01) — the only Inventory print tables, Stock Ledger and Inventory
+      Overview, reuse permission-filtered columns and API-projected rows; browser
+      coverage checks both permission states. No Inventory CSV/download/export
+      endpoint currently exists. Future exports must reapply the backend valuation
+      boundary; this sign-off covers current Inventory surfaces, not other modules'
+      commercial data or future features → [stock](../domain/stock.md#user-interface).
 - [x] Inventory policy settings/history cost audit (2026-10-01) — the shared
       settings read now omits the recalculation high-risk amount threshold without
       `inventory.recalculation-policy.manage` or `inventory.policy-history.view`;
