@@ -280,7 +280,7 @@
 :root:not(.dark) .po-screen button.bg-primary {
   background-color: var(--po-brand-primary);
   color: var(--po-text-inverse);
-  box-shadow: 0 1px 2px 0 var(--erp-blue-shadow-color-brand);
+  box-shadow: none;
   transition: background-color 150ms ease-in-out, box-shadow 150ms ease-in-out;
 }
 :root:not(.dark) .po-screen button.bg-primary:hover {
@@ -300,7 +300,7 @@
   background-color: var(--po-bg-surface);
   color: var(--po-text-primary);
   border-color: var(--po-border-default);
-  box-shadow: 0 1px 2px 0 var(--erp-blue-shadow-color);
+  box-shadow: none;
   transition: background-color 150ms ease-in-out, border-color 150ms ease-in-out, color 150ms ease-in-out;
 }
 :root:not(.dark) .po-screen button.border-input:hover,
@@ -367,7 +367,7 @@
 :root:not(.dark) .po-screen .po-filter-panel {
   background-color: var(--po-filter-panel-bg);
   border-color: var(--po-filter-panel-border);
-  box-shadow: 0 1px 3px 0 var(--erp-blue-shadow-color);
+  box-shadow: none;
 }
 :root:not(.dark) .po-screen .po-filter-panel-title {
   color: var(--po-text-primary);
@@ -383,6 +383,8 @@
   background-color: var(--po-field-bg);
   color: var(--po-field-text);
   border-color: var(--po-field-border);
+  box-shadow: none;
+  font-weight: 500;
   transition: border-color 150ms ease-in-out, background-color 150ms ease-in-out, box-shadow 150ms ease-in-out;
 }
 
@@ -443,7 +445,7 @@
 :root:not(.dark) .po-screen div.rounded-md.border.border-border:has(table) {
   background-color: var(--po-table-bg);
   border-color: var(--po-table-row-border);
-  box-shadow: 0 1px 3px 0 var(--erp-blue-shadow-color);
+  box-shadow: none;
 }
 
 /* Table header */
@@ -454,11 +456,14 @@
 
 :root:not(.dark) .po-screen thead th {
   color: var(--po-table-header-text);
-  font-weight: 500;
-  font-size: 0.75rem;
-  letter-spacing: 0.025em;
-  padding-top: 0.75rem;
-  padding-bottom: 0.75rem;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+:root:not(.dark) .po-screen thead th button {
+  color: inherit;
+  font-weight: inherit;
 }
 
 /* Table rows */
@@ -484,18 +489,21 @@
 
 :root:not(.dark) .po-screen tbody td {
   color: var(--po-table-row-text);
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
 }
 
 /* PO Number Link styling */
 :root:not(.dark) .po-screen .po-order-link {
   color: var(--po-text-link);
-  font-weight: 500;
-  transition: color 150ms ease-in-out, text-decoration 150ms ease-in-out;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 150ms ease-in-out;
 }
 :root:not(.dark) .po-screen .po-order-link:hover {
   color: var(--po-text-link-hover);
-  text-decoration: underline;
 }
 
 /* Pagination controls */
@@ -523,31 +531,8 @@
 
 /* Decorative icons inside fields (search, supplier, status, ranges, currency) */
 :root:not(.dark) .po-screen .po-field-icon {
-  color: var(--po-text-tertiary);
-}
-
-/* Quick "Order date" range in the toolbar: one bordered field with an icon, a small label and two typed dates */
-:root:not(.dark) .po-screen .po-range-field {
-  background-color: var(--po-field-bg);
-  border-color: var(--po-field-border);
-  box-shadow: 0 1px 2px 0 var(--erp-blue-shadow-color);
-  transition: border-color 150ms ease-in-out, background-color 150ms ease-in-out, box-shadow 150ms ease-in-out;
-}
-:root:not(.dark) .po-screen .po-range-field:hover {
-  background-color: var(--po-field-bg-hover);
-  border-color: var(--po-field-border-hover);
-}
-:root:not(.dark) .po-screen .po-range-field:focus-within {
-  border-color: var(--po-field-border-focus);
-  box-shadow: 0 0 0 2px var(--po-focus-ring-offset), 0 0 0 4px var(--po-focus-ring);
-}
-:root:not(.dark) .po-screen .po-range-label {
-  color: var(--po-field-label);
-}
-/* The inner date fields draw no chrome of their own: the group above carries border, hover and focus */
-:root:not(.dark) .po-screen .po-range-input,
-:root:not(.dark) .po-screen .po-range-input:focus-within {
-  box-shadow: none;
+  color: var(--po-text-secondary);
+  stroke-width: 2;
 }
 
 /* "Select supplier above" placeholder: visibly unavailable, not an empty gap */
@@ -562,13 +547,14 @@
   color: var(--po-text-link);
   font-size: 0.875rem;
   font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 3px;
   border-radius: 4px;
   padding: 0 0.25rem;
   transition: color 150ms ease-in-out;
 }
 :root:not(.dark) .po-screen .po-link-action:hover {
   color: var(--po-text-link-hover);
-  text-decoration: underline;
 }
 :root:not(.dark) .po-screen .po-link-action:focus-visible {
   outline: none;
@@ -603,6 +589,65 @@
 :root:not(.dark) .po-screen tbody button[aria-label^="Actions for"]:focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px var(--po-focus-ring-offset), 0 0 0 4px var(--po-focus-ring);
+}
+
+/* Type scale for the PO screen: heavier, darker type like the approved mockup */
+:root:not(.dark) .po-screen h1 {
+  font-size: 1.875rem;
+  line-height: 2.25rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+:root:not(.dark) .po-screen p.text-muted-foreground {
+  font-size: 0.9375rem;
+}
+:root:not(.dark) .po-screen label {
+  font-size: 0.875rem;
+}
+:root:not(.dark) .po-screen button {
+  font-weight: 600;
+}
+:root:not(.dark) .po-screen thead th button,
+:root:not(.dark) .po-screen tbody button[aria-label^="Actions for"],
+:root:not(.dark) .po-screen button[role="checkbox"],
+:root:not(.dark) .po-screen button[role="combobox"],
+:root:not(.dark) .po-screen button[data-slot="select-trigger"] {
+  font-weight: inherit;
+}
+:root:not(.dark) .po-screen button[role="combobox"],
+:root:not(.dark) .po-screen button[data-slot="select-trigger"] {
+  font-weight: 500;
+}
+:root:not(.dark) .po-screen .po-filter-panel-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+:root:not(.dark) .po-screen .po-chip-active {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  padding: 0.375rem 0.75rem;
+}
+:root:not(.dark) .po-screen .po-chip-active svg {
+  stroke-width: 2;
+}
+:root:not(.dark) .po-screen button[role="checkbox"] {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+/* Footer: roomier controls and readable counts */
+:root:not(.dark) .po-screen button[aria-label$=" page"],
+:root:not(.dark) .po-screen button[aria-label="Rows per page"] {
+  height: 2.25rem;
+}
+:root:not(.dark) .po-screen button[aria-label$=" page"] {
+  width: 2.25rem;
+}
+:root:not(.dark) .po-screen [aria-current="page"] {
+  height: 2.25rem;
+  min-width: 2.25rem;
+}
+:root:not(.dark) .po-screen .text-sm.text-muted-foreground {
+  color: var(--po-text-secondary);
 }
 
 /* ==========================================================================

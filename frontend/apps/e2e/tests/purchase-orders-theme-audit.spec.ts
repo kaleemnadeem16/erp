@@ -217,6 +217,34 @@ test.describe('Purchase Orders Light Palette Theme Audit', () => {
     await expect(page).toHaveURL(/\/purchase-orders\/\d+/);
   });
 
+  test('the row menu offers only the quick actions that fit the order, and hands issue over to the order screen', async ({ page }) => {
+    await page.goto('/purchase-orders');
+    await expect(page.getByRole('heading', { name: 'Purchase Orders' })).toBeVisible();
+
+    // A draft: open, edit, issue — never cancel
+    const draftRow = page.getByRole('row').filter({ has: page.getByText('DRAFT', { exact: true }) }).first();
+    await draftRow.getByRole('button', { name: /^Actions for/ }).click();
+    await expect(page.getByRole('menuitem', { name: 'Open order' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Edit draft' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: /^Issue order/ })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: /^Cancel order/ })).toHaveCount(0);
+    await page.keyboard.press('Escape');
+
+    // An issued order: open and cancel — never edit or issue
+    const issuedRow = page.getByRole('row').filter({ has: page.getByText('ISSUED', { exact: true }) }).first();
+    await issuedRow.getByRole('button', { name: /^Actions for/ }).click();
+    await expect(page.getByRole('menuitem', { name: /^Cancel order/ })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Edit draft' })).toHaveCount(0);
+    await expect(page.getByRole('menuitem', { name: /^Issue order/ })).toHaveCount(0);
+    await page.keyboard.press('Escape');
+
+    // Choosing "Cancel order…" opens that order with the cancel confirmation already showing (nothing is cancelled yet)
+    await issuedRow.getByRole('button', { name: /^Actions for/ }).click();
+    await page.getByRole('menuitem', { name: /^Cancel order/ }).click();
+    await expect(page.getByRole('heading', { name: 'Cancel this issued order' })).toBeVisible();
+    await expect(page.getByText('ISSUED', { exact: true }).first()).toBeVisible();
+  });
+
   test('verifies other screens (Items) are completely untouched by po-screen styles', async ({ page }) => {
     await page.goto('/items');
     await expect(page.getByRole('heading', { name: 'Items' })).toBeVisible();

@@ -68,6 +68,12 @@ export interface DataTableProps<TRow> {
   recordNoun?: string;
   /** Opt-in: show the current page as a numbered button instead of "Page 1 of N". */
   numberedPagination?: boolean;
+  /** Opt-in: replaces the default icon on the Columns button. */
+  viewOptionsIcon?: ReactNode;
+  /** Opt-in: extra classes for the Columns button (e.g. a taller control). */
+  viewOptionsTriggerClassName?: string;
+  /** Opt-in: show this text as the (right-aligned) heading of the row-actions column instead of hiding it. */
+  actionsHeader?: string;
   rowActions?: (row: TRow) => ReactNode;
 }
 
@@ -109,6 +115,9 @@ export function DataTable<TRow>({
   toolbarStart,
   recordNoun,
   numberedPagination,
+  viewOptionsIcon,
+  viewOptionsTriggerClassName,
+  actionsHeader,
   rowActions,
 }: DataTableProps<TRow>) {
   const table = useReactTable({
@@ -148,7 +157,7 @@ export function DataTable<TRow>({
           {toolbarStart && <div className="min-w-0 flex-1">{toolbarStart}</div>}
           {onColumnVisibilityChange && (
             <div className="ml-auto">
-              <DataTableViewOptions table={table} contentClassName={viewOptionsMenuClassName} />
+              <DataTableViewOptions table={table} contentClassName={viewOptionsMenuClassName} icon={viewOptionsIcon} triggerClassName={viewOptionsTriggerClassName} />
             </div>
           )}
         </div>
@@ -181,8 +190,8 @@ export function DataTable<TRow>({
                   </TableHead>
                 ))}
                 {rowActions && (
-                  <TableHead className="w-px">
-                    <span className="sr-only">Actions</span>
+                  <TableHead className={actionsHeader ? 'text-right' : 'w-px'}>
+                    <span className={actionsHeader ? undefined : 'sr-only'}>{actionsHeader ?? 'Actions'}</span>
                   </TableHead>
                 )}
               </TableRow>

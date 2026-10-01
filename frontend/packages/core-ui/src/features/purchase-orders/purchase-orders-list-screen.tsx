@@ -5,6 +5,7 @@ import {
   CalendarDays,
   ChevronUp,
   CircleDollarSign,
+  Columns3,
   Database,
   EllipsisVertical,
   Search,
@@ -100,6 +101,8 @@ const STATUSES = ["DRAFT", "ISSUED", "CLOSED", "CANCELLED"] as const;
 
 export function PurchaseOrdersListScreen() {
   const mayCreate = usePermission("purchasing.purchase-order.create");
+  const mayIssue = usePermission("purchasing.purchase-order.issue");
+  const mayCancel = usePermission("purchasing.purchase-order.cancel");
   const mayViewCommercialCost = usePurchasingCommercialCost();
   const navigate = useNavigate();
   const { search } = useLocation();
@@ -472,13 +475,13 @@ export function PurchaseOrdersListScreen() {
         }
       />
       <div className="flex flex-wrap items-center gap-2">
-        <div className="relative flex-1 md:w-64 md:flex-none">
+        <div className="relative flex-1 md:w-80 md:flex-none">
           <Search
             aria-hidden="true"
             className="po-field-icon pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2"
           />
           <Input
-            className="h-9 w-full pl-9"
+            className="h-10 w-full pl-10"
             placeholder="Search orders, suppliers, items…"
             value={query.filters.search ?? ""}
             onChange={(event) =>
@@ -493,48 +496,21 @@ export function PurchaseOrdersListScreen() {
             supplierLabels={supplierLabels}
             query={query}
           />
-          <div
-            role="group"
-            aria-label="Order date quick filter"
-            className="po-range-field flex h-10 items-center gap-2 rounded-md border px-3"
-          >
-            <CalendarDays aria-hidden="true" className="po-field-icon h-4 w-4 shrink-0" />
-            <div className="flex flex-col justify-center leading-none">
-              <span className="po-range-label text-[11px] font-medium">Order date</span>
-              <div className="flex items-center gap-1">
-                <DateField
-                  hidePicker
-                  aria-label="Quick filter: ordered on or after"
-                  value={query.filters.order_date_from ?? ""}
-                  onChange={(val) => query.setFilter("order_date_from", val || undefined)}
-                  className="po-range-input !h-5 !w-auto border-0 bg-transparent p-0 shadow-none"
-                />
-                <span aria-hidden="true" className="po-field-icon text-xs">–</span>
-                <DateField
-                  hidePicker
-                  aria-label="Quick filter: ordered on or before"
-                  value={query.filters.order_date_to ?? ""}
-                  onChange={(val) => query.setFilter("order_date_to", val || undefined)}
-                  className="po-range-input !h-5 !w-auto border-0 bg-transparent p-0 shadow-none"
-                />
-              </div>
-            </div>
-          </div>
           <Button
             variant={advancedOpen || advancedFilterCount > 0 ? "secondary" : "outline"}
             size="sm"
-            className={cn("h-9", (advancedOpen || advancedFilterCount > 0) && "po-btn-filters-active")}
+            className={cn("relative h-10 px-4", (advancedOpen || advancedFilterCount > 0) && "po-btn-filters-active")}
             onClick={() => setAdvancedOpen((open) => !open)}
           >
-            <SlidersHorizontal className="mr-1.5 h-4 w-4" />
+            <SlidersHorizontal className="mr-1.5 h-[18px] w-[18px]" />
             Filters
             {advancedFilterCount > 0 && (
-              <Badge className={cn("ml-1.5", (advancedOpen || advancedFilterCount > 0) && "po-filter-badge")}>
+              <Badge className={cn("absolute -right-2 -top-2 h-5 min-w-5 justify-center rounded-full px-1 text-[11px]", (advancedOpen || advancedFilterCount > 0) && "po-filter-badge")}>
                 {advancedFilterCount}
               </Badge>
             )}
           </Button>
-          <PrintTrigger onPrint={() => print()} />
+          <PrintTrigger onPrint={() => print()} className="h-10 px-4" />
         </div>
         <Button
           variant="outline"
@@ -712,6 +688,9 @@ export function PurchaseOrdersListScreen() {
         cardColumns={columns}
         viewOptionsMenuClassName="po-dropdown-content"
         recordNoun="purchase orders"
+        viewOptionsIcon={<Columns3 className="h-[18px] w-[18px]" />}
+        viewOptionsTriggerClassName="h-10 px-4"
+        actionsHeader="Actions"
         numberedPagination
         toolbarStart={
           activeChips.length > 0 ? (
@@ -758,6 +737,41 @@ export function PurchaseOrdersListScreen() {
               >
                 Open order
               </DropdownMenuItem>
+              {/* Quick actions only: each opens where the work is done, with the confirmation (and any
+                  approval rule) the order screen already enforces — nothing is changed from the list itself. */}
+              {order.status === "DRAFT" && mayCreate && (
+                <DropdownMenuItem
+                  onSelect={() =>
+                    navigate({ pathname: `/purchase-orders/${order.id}/edit`, search })
+                  }
+                >
+                  Edit draft
+                </DropdownMenuItem>
+              )}
+              {order.status === "DRAFT" && mayIssue && (
+                <DropdownMenuItem
+                  onSelect={() =>
+                    navigate(
+                      { pathname: `/purchase-orders/${order.id}`, search },
+                      { state: { quickAction: "issue" } },
+                    )
+                  }
+                >
+                  Issue order…
+                </DropdownMenuItem>
+              )}
+              {order.status === "ISSUED" && mayCancel && (
+                <DropdownMenuItem
+                  onSelect={() =>
+                    navigate(
+                      { pathname: `/purchase-orders/${order.id}`, search },
+                      { state: { quickAction: "cancel" } },
+                    )
+                  }
+                >
+                  Cancel order…
+                </DropdownMenuItem>
+              )}
               {order.number && (
                 <DropdownMenuItem
                   onSelect={() => void navigator.clipboard?.writeText(order.number ?? "")}
@@ -913,9 +927,9 @@ function PurchaseOrderFilterControls({
         aria-label="Supplier"
         searchPlaceholder="Search suppliers…"
         emptyText="No suppliers found."
-        className={full ? "h-9 w-full" : "h-9 w-56"}
+        className={full ? "h-9 w-full" : "h-10 w-56"}
         popoverClassName="po-popover-content"
-        icon={full ? undefined : <Building2 className="po-field-icon h-4 w-4" />}
+        icon={full ? undefined : <Building2 className="po-field-icon h-[18px] w-[18px]" />}
       />
       <Select
         value={query.filters.status ?? "all"}
@@ -924,11 +938,11 @@ function PurchaseOrderFilterControls({
         }
       >
         <SelectTrigger
-          className={full ? "h-9 w-full" : "h-9 w-40"}
+          className={full ? "h-9 w-full" : "h-10 w-44"}
           aria-label="Status"
         >
           <div className="flex min-w-0 items-center gap-2">
-            {!full && <Tag aria-hidden="true" className="po-field-icon h-4 w-4 shrink-0" />}
+            {!full && <Tag aria-hidden="true" className="po-field-icon h-[18px] w-[18px] shrink-0" />}
             <SelectValue placeholder="Status" />
           </div>
         </SelectTrigger>
@@ -966,6 +980,7 @@ function AdvancedFilterFields({
   mayViewCommercialCost,
   full,
 }: AdvancedFilterFieldsProps) {
+  const fieldH = full ? "h-9" : "h-10";
   const itemOptions = [
     { value: "all", label: "All items" },
     ...items.map((item) => ({
@@ -977,7 +992,7 @@ function AdvancedFilterFields({
   return (
     <>
       <div className="space-y-1.5">
-        <Label className="text-xs font-medium text-muted-foreground">
+        <Label className="text-sm font-medium">
           Order date range
         </Label>
         <div className="flex items-center gap-1.5">
@@ -985,7 +1000,7 @@ function AdvancedFilterFields({
             aria-label="Order date from"
             value={query.filters.order_date_from ?? ""}
             onChange={(val) => query.setFilter("order_date_from", val || undefined)}
-            className="w-full"
+            className={cn(fieldH, "w-full")}
             popoverClassName="po-popover-content"
             pickerPosition={full ? "end" : "start"}
           />
@@ -994,7 +1009,7 @@ function AdvancedFilterFields({
             aria-label="Order date to"
             value={query.filters.order_date_to ?? ""}
             onChange={(val) => query.setFilter("order_date_to", val || undefined)}
-            className="w-full"
+            className={cn(fieldH, "w-full")}
             popoverClassName="po-popover-content"
             pickerPosition={full ? "end" : "start"}
           />
@@ -1002,7 +1017,7 @@ function AdvancedFilterFields({
       </div>
 
       <div className="space-y-1.5">
-        <Label className="text-xs font-medium text-muted-foreground">
+        <Label className="text-sm font-medium">
           Expected delivery range
         </Label>
         <div className="flex items-center gap-1.5">
@@ -1012,7 +1027,7 @@ function AdvancedFilterFields({
             onChange={(val) =>
               query.setFilter("expected_delivery_from", val || undefined)
             }
-            className="w-full"
+            className={cn(fieldH, "w-full")}
             popoverClassName="po-popover-content"
             pickerPosition={full ? "end" : "start"}
           />
@@ -1023,7 +1038,7 @@ function AdvancedFilterFields({
             onChange={(val) =>
               query.setFilter("expected_delivery_to", val || undefined)
             }
-            className="w-full"
+            className={cn(fieldH, "w-full")}
             popoverClassName="po-popover-content"
             pickerPosition={full ? "end" : "start"}
           />
@@ -1031,7 +1046,7 @@ function AdvancedFilterFields({
       </div>
 
       <div className="space-y-1.5">
-        <Label className="text-xs font-medium text-muted-foreground">
+        <Label className="text-sm font-medium">
           Issued date range
         </Label>
         <div className="flex items-center gap-1.5">
@@ -1039,7 +1054,7 @@ function AdvancedFilterFields({
             aria-label="Issued date from"
             value={query.filters.issued_from ?? ""}
             onChange={(val) => query.setFilter("issued_from", val || undefined)}
-            className="w-full"
+            className={cn(fieldH, "w-full")}
             popoverClassName="po-popover-content"
             pickerPosition={full ? "end" : "start"}
           />
@@ -1048,7 +1063,7 @@ function AdvancedFilterFields({
             aria-label="Issued date to"
             value={query.filters.issued_to ?? ""}
             onChange={(val) => query.setFilter("issued_to", val || undefined)}
-            className="w-full"
+            className={cn(fieldH, "w-full")}
             popoverClassName="po-popover-content"
             pickerPosition={full ? "end" : "start"}
           />
@@ -1056,7 +1071,7 @@ function AdvancedFilterFields({
       </div>
 
       <div className="space-y-1.5">
-        <Label className="text-xs font-medium text-muted-foreground">
+        <Label className="text-sm font-medium">
           Contains item
         </Label>
         <Combobox
@@ -1070,14 +1085,14 @@ function AdvancedFilterFields({
           aria-label="Contains item"
           searchPlaceholder="Search items…"
           emptyText="No items found."
-          className="h-9 w-full"
+          className={cn(fieldH, "w-full")}
           popoverClassName="po-popover-content"
-          icon={full ? undefined : <Search className="po-field-icon h-4 w-4" />}
+          icon={full ? undefined : <Search className="po-field-icon h-[18px] w-[18px]" />}
         />
       </div>
 
       <div className="space-y-1.5">
-        <Label className="text-xs font-medium text-muted-foreground">
+        <Label className="text-sm font-medium">
           Supplier site
         </Label>
         {selectedSupplierId ? (
@@ -1091,11 +1106,11 @@ function AdvancedFilterFields({
             }
           >
             <SelectTrigger
-              className="h-9 w-full"
+              className={cn(fieldH, "w-full")}
               aria-label="Supplier site"
             >
               <div className="flex min-w-0 items-center gap-2">
-                {!full && <Building2 aria-hidden="true" className="po-field-icon h-4 w-4 shrink-0" />}
+                {!full && <Building2 aria-hidden="true" className="po-field-icon h-[18px] w-[18px] shrink-0" />}
                 <SelectValue placeholder="All sites" />
               </div>
             </SelectTrigger>
@@ -1110,7 +1125,7 @@ function AdvancedFilterFields({
             </SelectContent>
           </Select>
         ) : (
-          <div className="po-field-disabled flex h-9 items-center gap-2 rounded-md border border-dashed px-3 text-xs text-muted-foreground">
+          <div className={cn("po-field-disabled flex items-center gap-2 rounded-md border border-dashed px-3 text-sm text-muted-foreground", fieldH)}>
             {!full && <Building2 aria-hidden="true" className="h-4 w-4 shrink-0" />}
             Select supplier above
           </div>
@@ -1120,7 +1135,7 @@ function AdvancedFilterFields({
       {mayViewCommercialCost && (
         <>
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-muted-foreground">
+            <Label className="text-sm font-medium">
               Total value range
             </Label>
             <div className="flex items-center gap-1.5">
@@ -1132,7 +1147,7 @@ function AdvancedFilterFields({
                 onChange={(e) =>
                   query.setFilter("total_min", e.target.value || undefined)
                 }
-                className="h-9 w-full"
+                className={cn(fieldH, "w-full")}
               />
               <span className="text-xs text-muted-foreground">–</span>
               <Input
@@ -1143,13 +1158,13 @@ function AdvancedFilterFields({
                 onChange={(e) =>
                   query.setFilter("total_max", e.target.value || undefined)
                 }
-                className="h-9 w-full"
+                className={cn(fieldH, "w-full")}
               />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-muted-foreground">
+            <Label className="text-sm font-medium">
               Currency
             </Label>
             <Select
@@ -1159,11 +1174,11 @@ function AdvancedFilterFields({
               }
             >
               <SelectTrigger
-                className="h-9 w-full"
+                className={cn(fieldH, "w-full")}
                 aria-label="Currency"
               >
                 <div className="flex min-w-0 items-center gap-2">
-                  {!full && <Database aria-hidden="true" className="po-field-icon h-4 w-4 shrink-0" />}
+                  {!full && <Database aria-hidden="true" className="po-field-icon h-[18px] w-[18px] shrink-0" />}
                   <SelectValue placeholder="All currencies" />
                 </div>
               </SelectTrigger>

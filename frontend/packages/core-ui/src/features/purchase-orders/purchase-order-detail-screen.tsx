@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useLocation, useNavigate, useParams } from "react-router";
 import {
   usePurchaseOrderLinesShortClose,
@@ -155,6 +155,18 @@ export function PurchaseOrderDetailScreen({
     pendingShortCloseLineId !== null,
   );
   const refetch = () => orderQuery.refetch();
+  // The list's row menu can hand over "issue" or "cancel": open that confirmation here, where the approval rules
+  // and the confirmation already live, but only when it is currently allowed — and only once.
+  const { pathname: currentPath, state: navigationState } = useLocation();
+  const quickAction = (navigationState as { quickAction?: string } | null)?.quickAction;
+  useEffect(() => {
+    if (!quickAction || !order) return;
+    const approvalState = (order as unknown as { approval?: PurchaseOrderApproval }).approval;
+    const needsApproval = !!approvalState?.required && approvalState.status !== "APPROVED";
+    if (quickAction === "issue" && order.status === "DRAFT" && mayIssue && !needsApproval) setShowIssueConfirmation(true);
+    if (quickAction === "cancel" && order.status === "ISSUED" && mayCancel) setShowCancel(true);
+    navigate({ pathname: currentPath, search }, { replace: true, state: null });
+  }, [quickAction, order, mayIssue, mayCancel, navigate, currentPath, search]);
   const fail = (error: unknown) => setActionError(getApiErrorMessage(error));
   const { contentRef: printRef, print } = useQuickPrint({
     documentTitle: order?.number
