@@ -61,8 +61,43 @@ meaning without distortion, so no escalation is built and nothing here invents a
 
 What ships instead is *information*: the mix's cost, the proposal's cost and the difference. The choice of whether a costly
 mix should ever need a reason or approval — and, if so, whether it is a new kind of band ("cost of the draw over the proposal"),
-a reuse with an explicit baseline, or nothing — is left to a separate decision with the owner. Until then a mix can never lower
+a reuse with an explicit baseline, or nothing — is left to a separate decision with the owner; the research below recommends nothing for now. Until then a mix can never lower
 or raise how much is used, so no variance or approval rule can be bypassed by choosing one.
+
+## Research basis — does any mature ERP gate the cost consequence of choosing stock by hand?
+
+Accessed 2026-10-01. **Question:** when a person overrides the system's suggested source, location or lot, how do mature ERPs
+control the *cost* consequence of that choice, if at all? Existing research (ADR 0053's picking strategies, ADR 0054's
+quantity variance) did not answer it, so this is fresh.
+
+| System | What it allows | What controls it | Cost consequence |
+|---|---|---|---|
+| Oracle (E-Business Suite) | At pick confirmation, change the lot, serial, locator or subinventory from the suggestion ([Pick Release](https://docs.oracle.com/cd/E18727_01/doc.121/e13431/T414830T414840.htm)) | None documented beyond feasibility; the suggested serials are marked so they cannot serve another order | None documented |
+| Dynamics 365 Supply Chain | *Change location* on a work line overrides the location directive ([Work line details](https://learn.microsoft.com/en-us/dynamics365/supply-chain/warehousing/work-line-details)); a worker may override a pick location only if *Allow pick location override* is on ([mobile device user accounts](https://learn.microsoft.com/en-us/dynamics365/supply-chain/warehousing/mobile-device-work-users), found through search, summary only) | **A per-person permission**, plus feasibility: the new location must hold enough inventory | Handled by the valuation model; under FIFO the user may deliberately *mark* an issue to a specific receipt so the margin reflects that cost ([FIFO with marking](https://learn.microsoft.com/en-us/dynamics365/supply-chain/cost-management/fifo-physical-value-marking)) — a deliberate action, not a threshold-triggered approval |
+| SAP | Manual batch selection overriding batch determination ([Batch Determination](https://help.sap.com/docs/SAP_S4HANA_ON-PREMISE/34de0103497c4b80a7c7fbf6952ff971/5702b753128eb44ce10000000a174cb4.html)) | Customising and authorisation; no cost threshold found | Moving-average price is per material, so the choice of batch does not change cost; with *split valuation* each batch or origin carries its own price, so the batch chosen sets the issue cost ([Split Valuation](https://help.sap.com/docs/SAP_S4HANA_ON-PREMISE/f132c385e0234fe68ae9ff35b2da178c/016afa5572ca692de10000000a4450e5.html), search summary only) |
+| Odoo | Add lot/serial lines by hand in *Detailed Operations*, quantities taken per lot ([Lot numbers](https://www.odoo.com/documentation/18.0/applications/inventory_and_mrp/inventory/product_management/product_tracking/lots.html), search summary only) | Not established from the pages read | Not established |
+
+**Common pattern.** (1) Choosing stock by hand is ordinary operational flexibility, checked for *feasibility* (enough usable stock,
+valid location), not for cost. (2) Where a control exists it is **who may override** (Dynamics' per-worker setting), not how
+costly the override is. (3) Cost follows from the valuation model: with a company-wide average (SAP moving average, our default
+AVCO pool) the choice does not change cost at all; only where cost is held per layer, batch or marked receipt (FIFO, split
+valuation, SPECIFIC) does it, and then it is *recorded as data on the transaction*. (4) The quantity side is controlled separately
+(Dynamics has dedicated over-picking rules) — the same split this ADR makes: more than the plan is a quantity matter, not a mix matter.
+
+**Differences and uncertainty.** None of the sources read documents an approval triggered by the cost difference between a chosen
+and a suggested source; absence in documentation is not proof that none exists in a configured installation. The Oracle and SAP
+sources are older or summarised; Odoo's cost handling of manual lot choice was not established. SAP's authorisation objects for
+batch override were not found.
+
+**Applicability here.** Our default AVCO items already cost the same from any location (the preview tests show it); the
+difference exists only for FIFO and SPECIFIC items. A preview commits nothing — cost is *committed* when a plan is adopted on a
+quotation (cost snapshot, Phase 4) or stock is issued to a job (Phase 5). That is where a cost deviation should be judged, against
+the adopted snapshot, as Dynamics' marking example does with margin.
+
+**Recommendation (not yet accepted).** Do not add a cost-consequence band to the preview. Keep the information. Optionally let a
+company decide *who* may build a mix by giving it its own capability (today it rides on `estimating.inventory_availability.view`),
+which is the one control the evidence supports. Revisit cost escalation when Phase 4 adoption records the chosen mix, using the
+adopted cost snapshot as the baseline rather than the preset's proposal.
 
 ## Deferred, with what each depends on
 
