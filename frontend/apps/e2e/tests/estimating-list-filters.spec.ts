@@ -136,3 +136,19 @@ test('application rate item lookup searches the server and keeps its selected la
   await page.reload();
   await expect(page.getByLabel('Item', { exact: true }).first()).toContainText('demo-paint-white');
 });
+
+test('application rate work-unit lookup searches the server and keeps its selected label', async ({ page }) => {
+  await page.goto('/application-rates');
+  await page.getByLabel('Work unit', { exact: true }).first().click();
+  const searched = page.waitForResponse((response) =>
+    response.url().includes('/api/v1/uoms') &&
+    new URL(response.url()).searchParams.get('filter[search]') === 'Square metre' &&
+    response.status() === 200,
+  );
+  await page.locator('[cmdk-input]').fill('Square metre');
+  await searched;
+  await page.getByRole('option', { name: /Square metre/ }).first().click();
+  await expect(page.getByLabel('Work unit', { exact: true }).first()).toContainText('Square metre');
+  await page.reload();
+  await expect(page.getByLabel('Work unit', { exact: true }).first()).toContainText('Square metre');
+});

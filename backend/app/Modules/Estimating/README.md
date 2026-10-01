@@ -131,8 +131,9 @@ affordances follow its manage capability; server-side enforcement remains author
 The Application Rates list exposes its existing item, work-unit and default-status
 filters as URL-backed controls, with a mobile filter sheet and cards. Boolean
 `false` is preserved to select context-specific rates; no API contract changes.
-Its Item filter now queries the existing Items search endpoint as the user types
-and resolves a selected ID separately, rather than relying on the first 100 items.
+Its Item and work-unit filters now query the existing Items and UoMs search
+endpoints as the user types and resolve selected IDs separately, rather than
+relying on the first 100 results.
 
 `CreateAssemblyGroup`/`UpdateAssemblyGroup`/`ArchiveAssemblyGroup` and
 `CreateAssembly`/`UpdateAssembly`/`ArchiveAssembly` are plain CRUD, same shape as the rate

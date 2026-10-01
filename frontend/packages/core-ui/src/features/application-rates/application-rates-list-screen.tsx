@@ -7,12 +7,12 @@ import {
   useItemsIndex,
   useItemsShow,
   useUomsIndex,
+  useUomsShow,
   type ApplicationRateResource,
   type ApplicationRatesIndexSort,
 } from '@erp/core-api';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
-import { Combobox } from '../../components/ui/combobox';
 import { RemoteLookupCombobox } from '../../components/ui/remote-lookup-combobox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '../../components/ui/sheet';
@@ -59,8 +59,17 @@ export function ApplicationRatesListScreen() {
   const selectedItemId = Number(query.filters.item_id ?? 0);
   const selectedItemResult = useItemsShow(selectedItemId, undefined, { query: { enabled: selectedItemId > 0 } });
   const selectedItem = selectedItemResult.data?.status === 200 ? selectedItemResult.data.data.data : undefined;
-  const uomsResult = useUomsIndex({ per_page: 100, sort: 'name' });
+  const [uomSearch, setUomSearch] = useState('');
+  const [debouncedUomSearch, setDebouncedUomSearch] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedUomSearch(uomSearch), 300);
+    return () => clearTimeout(timer);
+  }, [uomSearch]);
+  const uomsResult = useUomsIndex({ 'filter[search]': debouncedUomSearch || undefined, per_page: 100, sort: 'name' });
   const uoms = uomsResult.data?.status === 200 ? uomsResult.data.data.data : [];
+  const selectedUomId = Number(query.filters.work_uom_id ?? 0);
+  const selectedUomResult = useUomsShow(selectedUomId, { query: { enabled: selectedUomId > 0 } });
+  const selectedUom = selectedUomResult.data?.status === 200 ? selectedUomResult.data.data.data : undefined;
   const result = useApplicationRatesIndex({
     'filter[item_id]': query.filters.item_id ? Number(query.filters.item_id) : undefined,
     'filter[work_uom_id]': query.filters.work_uom_id ? Number(query.filters.work_uom_id) : undefined,
@@ -100,12 +109,18 @@ export function ApplicationRatesListScreen() {
             itemSearch={itemSearch}
             onItemSearchChange={setItemSearch}
             selectedItemLabel={selectedItem ? `${selectedItem.code} — ${selectedItem.name}` : undefined}
-            uoms={uoms}
+            uoms={uomSearch === debouncedUomSearch ? uoms : []}
+            uomSearch={uomSearch}
+            onUomSearchChange={setUomSearch}
+            selectedUomLabel={selectedUom ? `${selectedUom.name} (${selectedUom.code})` : undefined}
             itemsLookup={{
               ...lookupState(itemsResult, 'items'),
               loading: itemsResult.isLoading || itemSearch !== debouncedItemSearch,
             }}
-            uomsLookup={lookupState(uomsResult, 'units')}
+            uomsLookup={{
+              ...lookupState(uomsResult, 'units'),
+              loading: uomsResult.isLoading || uomSearch !== debouncedUomSearch,
+            }}
           />
         </div>
         <Button variant="outline" size="sm" className="h-9 shrink-0 md:hidden" onClick={() => setFiltersOpen(true)}>
@@ -126,12 +141,18 @@ export function ApplicationRatesListScreen() {
               itemSearch={itemSearch}
               onItemSearchChange={setItemSearch}
               selectedItemLabel={selectedItem ? `${selectedItem.code} — ${selectedItem.name}` : undefined}
-              uoms={uoms}
+              uoms={uomSearch === debouncedUomSearch ? uoms : []}
+              uomSearch={uomSearch}
+              onUomSearchChange={setUomSearch}
+              selectedUomLabel={selectedUom ? `${selectedUom.name} (${selectedUom.code})` : undefined}
               itemsLookup={{
                 ...lookupState(itemsResult, 'items'),
                 loading: itemsResult.isLoading || itemSearch !== debouncedItemSearch,
               }}
-              uomsLookup={lookupState(uomsResult, 'units')}
+              uomsLookup={{
+                ...lookupState(uomsResult, 'units'),
+                loading: uomsResult.isLoading || uomSearch !== debouncedUomSearch,
+              }}
               full
             />
           </div>
@@ -183,6 +204,9 @@ function ApplicationRateFilters({
   onItemSearchChange,
   selectedItemLabel,
   uoms,
+  uomSearch,
+  onUomSearchChange,
+  selectedUomLabel,
   itemsLookup,
   uomsLookup,
   full = false,
@@ -193,6 +217,9 @@ function ApplicationRateFilters({
   onItemSearchChange: (search: string) => void;
   selectedItemLabel?: string;
   uoms: { id: number; code: string; name: string }[];
+  uomSearch: string;
+  onUomSearchChange: (search: string) => void;
+  selectedUomLabel?: string;
   itemsLookup: LookupState;
   uomsLookup: LookupState;
   full?: boolean;
@@ -211,19 +238,17 @@ function ApplicationRateFilters({
         onSearchChange={onItemSearchChange}
         options={items.map((item) => ({ value: String(item.id), label: `${item.code} — ${item.name}` }))}
       />
-      <Combobox
+      <RemoteLookupCombobox
         {...uomsLookup}
         className={full ? 'w-full' : 'h-9 w-52'}
-        aria-label="Work unit"
+        label="Work unit"
+        allLabel="All work units"
         value={query.filters.work_uom_id ?? 'all'}
+        selectedLabel={selectedUomLabel}
         onValueChange={(value) => query.setFilter('work_uom_id', value === 'all' ? undefined : value)}
-        placeholder="Work unit"
-        searchPlaceholder="Search units…"
-        emptyText="No units found."
-        options={[
-          { value: 'all', label: 'All work units' },
-          ...uoms.map((uom) => ({ value: String(uom.id), label: `${uom.name} (${uom.code})` })),
-        ]}
+        search={uomSearch}
+        onSearchChange={onUomSearchChange}
+        options={uoms.map((uom) => ({ value: String(uom.id), label: `${uom.name} (${uom.code})` }))}
       />
       <Select
         value={query.filters.is_default ?? 'all'}
