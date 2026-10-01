@@ -185,6 +185,15 @@ same "refetch after every mutation, no optimistic state" rule as physical counts
 queue produces the `override_request_id` an issue's own posting call already knows how to consume
 (see "Authorised outbound posting" above) — the screen itself never posts a movement.
 
+The request, approval and review API projections contain shortage quantities, identity,
+reasons and decisions but no unit costs, valuation adjustments or settlement rows. The
+`negative_stock_shortages` and `negative_stock_settlements` tables have no HTTP read endpoint.
+Their economic effect is visible through stock movements/valuation entries and inventory
+overview, whose monetary fields already require `inventory.valuation.view` under
+[ADR 0073](../decisions/0073-separate-inventory-valuation-visibility-from-stock-operations.md).
+This is an audit of existing response boundaries, not a new grant or a claim that policy
+settings and exports have been fully reviewed.
+
 **Demo data.** `StockDemoSeeder` leaves its two requests undecided on purpose, so the demo login can
 take the next step itself; `NegativeStockLifecycleDemoSeeder` adds one record in each remaining
 state on dedicated items, all through the same Actions: a prior-approval item with one request

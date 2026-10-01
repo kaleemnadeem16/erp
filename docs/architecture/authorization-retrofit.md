@@ -155,10 +155,15 @@ issue.
       quantity view remains available. Ledger/overview screens and print views follow the API
       projection → [ADR 0073](../decisions/0073-separate-inventory-valuation-visibility-from-stock-operations.md).
 - [ ] Inventory valuation visibility, remaining workflow/export audit — review
-      negative-stock/settlement responses, policy settings/history,
+      policy settings/history,
       and any CSV/print/export path. Decide per workflow which monetary inputs authorised
       operators must supply and which can be server-derived; do not blanket-hide required
       controls. Until this closes, do not claim system-wide Inventory cost secrecy.
+- [x] Negative-stock/settlement HTTP cost audit (2026-10-01) — override
+      list/show/action resources expose shortage quantities and decisions but no costs;
+      shortage and settlement tables have no direct HTTP read route. Economic effects
+      flow through stock-move valuation entries and overview value fields already gated
+      by `inventory.valuation.view` → [negative stock](../domain/negative-stock.md#user-interface).
 - [x] Physical-count found-cost projection (2026-10-01) — quantity-only company reads
       omit `found_unit_cost`; a poster or `inventory.valuation.view` reader sees it in
       list/show and post responses. The poster continues to supply positive-variance cost

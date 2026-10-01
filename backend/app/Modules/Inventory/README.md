@@ -104,6 +104,9 @@ itself permit a negative movement; authorisation, posting and settlement are sep
 `RequestNegativeStockOverride` snapshots the exact shortage and current authorisation policy;
 `DecideNegativeStockOverride` and `ReviewNegativeStockOverride` enforce their distinct modes,
 permissions and independent-user rules without mutating the request.
+Override request/approval/review HTTP resources contain no costs or settlement values;
+shortages and settlements have no direct HTTP read route. Their economic effect is read
+through already valuation-gated stock moves and inventory overview (ADR 0073).
 `PostInventoryMovement` is the sole quantity/valuation write boundary — a four-method facade
 whose per-movement logic lives in the internal `Actions/Movements/` collaborators (receipt,
 issue, transfer, pool state, layer allocation, settlement); nothing else may call those. Inbound
