@@ -228,17 +228,19 @@ result of forgetting the question.
 
 ### Not yet sufficient for full ERP access control
 
-- Existing Estimating and some master-data CRUD still needs its capability retrofit. Purchasing
-  operational writes and document reads now have capability checks, but some shared reference
-  reads remain authenticated-only by design; see [authorisation retrofit](authorization-retrofit.md).
+- Existing Estimating CRUD, Items/Categories and Purchasing operational writes now have
+  capability checks. Shared reference reads remain authenticated-only by design; the
+  Item/Category GL-account field boundary still needs a Finance decision. See
+  [authorisation retrofit](authorization-retrofit.md).
 - Purchase orders have DRAFT → ISSUED with no submit/approval state; issue records neither actor
   nor approval chain.
 - No generic approval-policy/step/decision schema exists; the `workflow_states` sketch in
   `extensibility.md` is not implemented and one `required_permission` cannot model multiple
   independent approvals.
 - No department/organisation-unit membership or record-level visibility system exists.
-- The authenticated-user response exposes effective capabilities and permission-aware routing is
-  available, but many older feature screens still need the incremental gating retrofit below.
+- The authenticated-user response exposes effective capabilities and permission-aware routing;
+  capability-gated operational controls have landed for the retrofit slices below. Future
+  screens must keep API and UI authority aligned.
 - There is intentionally no hardcoded full role catalogue: application modules own stable
   capability names, while each company builds reusable roles from the registered vocabulary in
   Access Administration ([ADR 0062](../decisions/0062-company-member-and-access-administration.md)).
@@ -259,10 +261,10 @@ Orders/Receipts and existing Estimating CRUD so far.
 
 | Area | Current boundary | Retrofit requirement |
 |---|---|---|
-| Foundation and master data | Most CRUD is authenticated-only | Review view/create/update/archive, lookup/export and sensitive fields |
-| Purchasing | Policy/history controls exist; ordinary PO/receipt CRUD is mostly authenticated-only | Add document capabilities now; submission/approval/issue separation follows Q27/Q28 |
-| Inventory | High-risk workflows are strongest; ordinary read/master surfaces vary | Audit every remaining endpoint, list/show scope and frontend action |
-| Estimating | Overhead policy controls and ADR 0057 vocabulary exist; most existing CRUD is authenticated-only | Retrofit each feature as its next vertical slice is touched |
+| Foundation and master data | Item/Category writes capability-gated; reference reads shared | Decide and project GL-account fields; review future lookup/export surfaces |
+| Purchasing | PO/receipt writes and document reads capability-gated; commercial fields projected | Submission/approval/issue separation follows Q27/Q28 |
+| Inventory | High-risk workflows and valuation reads have capability boundaries | Reapply valuation boundary to future exports and review new endpoints |
+| Estimating | Existing CRUD writes capability-gated; list filters exposed | Scale 100-option lookup selectors and review new cost surfaces as added |
 | Sales, Jobs and Finance | Not yet implemented | Start permission-complete; do not create an authenticated-only baseline to fix later |
 
 Work proceeds one feature slice at a time, not as one risky repository-wide switch:

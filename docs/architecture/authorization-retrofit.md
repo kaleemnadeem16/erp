@@ -2,7 +2,7 @@
 
 # Authorisation retrofit backlog
 
-- **Status:** in progress — Items/Categories and Purchasing operational writes enforced; sensitive-field and Estimating work remains
+- **Status:** operational-write, Purchasing commercial-field, Inventory valuation and Estimating filter retrofits complete; Item/Category GL-field policy awaits a Finance decision
 - **Depends on:** the Material Preview slice's effective-permissions endpoint (`GET
   /api/v1/user`) for every frontend-gating task below — do not build UI gating before it exists.
 - **Blocked by:** nothing for registration/field-filtering work; the Purchasing/Purchase-order
@@ -10,7 +10,7 @@
   for the submit/approve seam, though plain create/issue/cancel capabilities don't need to wait
   for that.
 
-The SPA navigation/direct-route presentation gap is closed by [ADR 0066](../decisions/0066-capability-driven-screen-navigation.md): effective capabilities select visible screens. Purchasing document list/detail reads have since gained dedicated view capabilities and minimum action-read dependencies under [ADR 0068](../decisions/0068-purchasing-document-read-capabilities.md). This does **not** complete backend field projection, Estimating CRUD permissions, record scope, or deliberately open cross-module reference reads (Items, Categories and other pickers). Do not count a hidden route as an API authorisation test.
+The SPA navigation/direct-route presentation gap is closed by [ADR 0066](../decisions/0066-capability-driven-screen-navigation.md): effective capabilities select visible screens. Purchasing document list/detail reads have dedicated view capabilities and minimum action-read dependencies under [ADR 0068](../decisions/0068-purchasing-document-read-capabilities.md). Purchasing commercial fields, Inventory valuation fields and Estimating CRUD writes have since been protected as recorded below. This does **not** decide GL-account field policy, organisation/record scope, or deliberately open cross-module reference reads (Items, Categories and other pickers). Do not count a hidden route as an API authorisation test.
 
 This is the concrete, per-feature version of
 [authorization.md](authorization.md#incremental-retrofit-of-already-built-features)'s "Incremental
@@ -52,7 +52,10 @@ fields with no separate protection; the whole frontend grepped for any client-si
 check at all. No repository files were changed by the audit itself — this document is the first
 commit that follows from it.
 
-## Cross-cutting findings
+## Cross-cutting findings from the 2026-09-26 baseline audit
+
+The findings below describe the initial audit, **not the current implementation**. The task
+checkboxes and current-boundary table later in this document track subsequent fixes.
 
 1. **No client-side permission gating exists anywhere in the frontend today** — confirmed by
    `grep -rl ".can(\|hasPermission\|effective_permissions" frontend/packages/core-ui/src/features`
@@ -82,8 +85,8 @@ commit that follows from it.
 
 | Resource | List filters (backend) | UI coverage | Write permission | Read permission | Sensitive fields |
 |---|---|---|---|---|---|
-| Item | `category_id,search,status,type` | Full (4/4) | None | None (authenticated only) | GL account columns |
-| Category | `parent_id,search` | Full (2/2) | None | None | GL account columns |
+| Item | `category_id,search,status,type` | Full (4/4) | `inventory.item.manage` | Shared authenticated lookup | GL account columns — decision open |
+| Category | `parent_id,search` | Full (2/2) | `inventory.category.manage` | Shared authenticated lookup | GL account columns — decision open |
 
 **Recommended capabilities:** `inventory.item.manage`, `inventory.category.manage` — write only,
 per finding 3. Whether GL-account assignment needs its own finer permission, split from general
@@ -107,16 +110,15 @@ Finance/Accounting relationship rather than deciding unilaterally.
 
 | Resource | List filters (backend) | UI coverage | Write permission | Read permission | Sensitive fields |
 |---|---|---|---|---|---|
-| PurchaseOrder | `search,status,supplier_account_id` | Full (3/3) | None on create/update/issue/cancel/short-close | None | Line cost fields |
-| GoodsReceipt | `search,status,supplier_account_id` | Full (3/3) | None on create/post/reverse | None | Line cost fields |
-| QualityDisposition | `disposition` | No standalone screen — resolved inline in `goods-receipt-detail-screen.tsx` from server-derived balances; not a gap, confirm it stays intentional | None on post | — | — |
-| ItemSupplier | `active,item_id,preferred,search,supplier_account_id` | Full (5/5) | None | None | `minimum_order_qty` (mild) |
+| PurchaseOrder | `search,status,supplier_account_id` | Full (3/3); advanced filters added later | Create/issue/cancel/short-close capabilities | View or minimum action-read capability | Commercial fields projected by `purchasing.commercial-cost.view` (creator draft-read exception) |
+| GoodsReceipt | `search,status,supplier_account_id` | Full (3/3) | Create/post/reverse capabilities | View or minimum action-read capability | Cost fields projected by `purchasing.commercial-cost.view` |
+| QualityDisposition | `disposition` | No standalone screen — resolved inline in `goods-receipt-detail-screen.tsx` from server-derived balances | `purchasing.quality-disposition.post` | Minimum receipt read | — |
+| ItemSupplier | `active,item_id,preferred,search,supplier_account_id` | Full (5/5) | `purchasing.item-supplier.manage` | View or minimum action-read capability | `minimum_order_qty` (mild) |
 | PurchasingSetting/PurchasingPolicyChange | — | n/a (settings, not a list) | Already correct — `purchasing.over-receipt-policy.manage` / `.policy-history.view` | — | — |
 
-This confirms, at finer grain, what [Q28](../OPEN-QUESTIONS.md#q28--purchase-order-approval-policy)
-already names ("today any authenticated caller reaching the endpoint can create and issue a PO") —
-and finds the same gap across cancel, short-close and the entire goods-receipt lifecycle, not only
-issue.
+At audit time, [Q28](../OPEN-QUESTIONS.md#q28--purchase-order-approval-policy)
+identified authenticated-only PO issue; the same gap applied to cancel, short-close and
+receipt lifecycle actions. The capabilities above now close those operational-write gaps.
 
 **Recommended capabilities:**
 
@@ -207,23 +209,23 @@ subset; registration alone grants nobody access.
 
 | Resource | List filters (backend) | UI coverage | Write permission | Read permission |
 |---|---|---|---|---|
-| RateDimension | `search` | Full (1/1) | None | None |
-| RateDimensionValue | n/a, nested | n/a — managed inline in the rate-dimension edit screen | None | None |
-| ApplicationRate | `is_default,item_id,work_uom_id` | Full (3/3) | None | None |
-| Formulation | `customer_id,output_item_id,search,status` | Full (4/4) | None | None |
-| FormulationVersion | n/a | n/a — managed inline in the formulation edit screen | None | None |
-| AssemblyGroup | `search` | Full (1/1) | None | None |
-| Assembly | `assembly_group_id,search,status` | Full (3/3) | None | None |
-| AssemblyVersion | n/a | n/a — managed inline (`assembly-versions-section.tsx`) | None | None |
-| ResourceRate | `item_id` | Full (1/1) | None (append-only, no update endpoint by design; `Destroy` also unchecked) | None |
+| RateDimension | `search` | Full (1/1) | `estimating.rate-dimension.manage` | Shared authenticated lookup |
+| RateDimensionValue | n/a, nested | n/a — managed inline in the rate-dimension edit screen | `estimating.rate-dimension.manage` | Shared authenticated lookup |
+| ApplicationRate | `is_default,item_id,work_uom_id` | Full (3/3) | `estimating.application-rate.manage` | Shared authenticated lookup |
+| Formulation | `customer_id,output_item_id,search,status` | Full (4/4) | `estimating.formulation.manage` | Shared authenticated lookup |
+| FormulationVersion | n/a | n/a — managed inline in the formulation edit screen | `estimating.formulation.manage` | Shared authenticated lookup; cost breakdown separately gated |
+| AssemblyGroup | `search` | Full (1/1) | `estimating.assembly-group.manage` | Shared authenticated lookup |
+| Assembly | `assembly_group_id,search,status` | Full (3/3) | `estimating.assembly.manage` | Shared authenticated lookup; commercial fields projected |
+| AssemblyVersion | n/a | n/a — managed inline (`assembly-versions-section.tsx`) | `estimating.assembly.manage` | Shared authenticated lookup; cost breakdown separately gated |
+| ResourceRate | `item_id` | Full (1/1) | `estimating.resource-rate.manage` (append-only create/delete) | Shared authenticated lookup; numeric rate projected |
 | **OverheadPolicy** | `scope_id,scope_type,status` | n/a — scope-bound panel by design | **`estimating.overhead-policy.manage`** ✓ | **`estimating.policy-history.view`** ✓ |
 
 `OverheadPolicy` already has the full target shape end to end — separate manage/history-view
 permissions, reason capture, audit trail, tests. **Use it as the literal template**, not a new
 shape, for every capability below.
 
-The Formulations/Assemblies missing filter UI has **zero permission dependency** and can land
-independently of this backlog's sequencing whenever wanted.
+All validated Estimating list filters now have controls. The shared lookup selectors still
+fetch at most 100 options; server-side search/pagination is a separate scale follow-up.
 
 **Recommended capabilities**, matching `OverheadPolicy`'s naming shape: `estimating.rate-dimension.manage`,
 `estimating.application-rate.manage`, `estimating.formulation.manage` (covers `FormulationVersion`
@@ -287,13 +289,18 @@ independently of this backlog's sequencing whenever wanted.
       the SPA allows cost-only viewers to inspect rates and hides add/delete from them. API and
       Action denied-path tests cover both writes and the field projection. Grant existing rate
       maintainers before deployment through company roles or direct assignments.
-- [ ] Assignment/backfill pass, then enforce (lower daily-write volume than Purchasing, so this can
-      land before section B's enforcement steps)
-- [ ] Frontend action gating once `/api/v1/user` effective permissions ship
-- [ ] Allowed/denied tests, `OverheadPolicyApiTest`-shaped
-- [ ] Update `app/Modules/Estimating/README.md`
+- [x] Assignment/backfill procedure documented; all six write capabilities enforced. The
+      configured administrator syncs on deploy; other existing maintainers need explicit
+      company-role/direct grants before production rollout (not an automatic backfill).
+- [x] Frontend route and action gating uses `/api/v1/user` effective permissions.
+- [x] Allowed/denied API and non-HTTP Action tests landed with each capability slice.
+- [x] `app/Modules/Estimating/README.md` and matching domain docs updated per slice.
 
 ## Recommended sequence across all three areas, by risk (lowest first)
+
+Historical rollout order from the baseline audit; operational enforcement steps 2, 4–7
+have landed. Step 3 remains open only for the Item/Category GL-account decision and
+its resulting field treatment.
 
 1. Formulations/Assemblies filter UI (section C) — zero risk, no permission dependency
 2. Register every capability listed above, everywhere — zero risk, registration without
@@ -316,18 +323,19 @@ independently of this backlog's sequencing whenever wanted.
       has an assignment/backfill procedure that ran before enforcement went live
 - [ ] Every sensitive field in finding 2 is protected or explicitly accepted as non-sensitive with
       a recorded reason
-- [ ] Every list screen in section C exposes every filter its endpoint validates
-- [ ] Every enforced capability has allowed/denied/field-filtering tests
-- [ ] No enforcement step shipped without frontend action gating landing in the same or an
+- [x] Every list screen in section C exposes every filter its endpoint validates
+- [x] Every enforced capability has allowed/denied tests; sensitive-field projection tests
+      cover Purchasing costs, Inventory valuation and Estimating rate/cost fields.
+- [x] No enforcement step shipped without frontend action gating landing in the same or an
       immediately following commit
 
 ## Docs to update as tasks land
 
-- [ ] `docs/STATUS.md` — tick progress in the same commit as each task
-- [ ] This file — tick tasks in the same commit as the work, per the phase-doc convention it borrows
-- [ ] `authorization.md` — once every capability here is enforced, fold the "Not yet sufficient"
-      bullets this backlog resolves back into "Strong foundation already present"
-- [ ] Module READMEs and domain docs named per section above
+- [x] `docs/STATUS.md` — progress recorded with each shipped slice
+- [x] This file — per-slice tasks reconciled with implementation
+- [x] `authorization.md` — implementation assessment and boundaries refreshed
+- [x] Module READMEs and domain docs named per section above updated with their slices;
+      the unresolved GL-account policy will need its own documentation
 
 ## Related
 
