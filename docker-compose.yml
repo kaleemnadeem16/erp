@@ -130,6 +130,28 @@ services:
       timeout: 3s
       retries: 5
 
+  # Optional throwaway database for the backend test suite (opt-in: `--profile test-db`, normally started by
+  # docker/backend/run-tests-tmpfs.sh). Its data directory is RAM, and fsync is off: a restart loses everything,
+  # which is fine because the suite builds its own data, and the test path no longer touches the disk or the
+  # dev database. See docs/architecture/environments.md "Test database on tmpfs".
+  postgres-test:
+    profiles: ["test-db"]
+    image: postgres:16
+    command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off", "-c", "max_connections=200"]
+    environment:
+      POSTGRES_DB: erp_testing
+      POSTGRES_USER: erp
+      POSTGRES_PASSWORD: secret
+    tmpfs:
+      - /var/lib/postgresql/data:size=768m
+    networks:
+      - erp-dev
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U erp -d erp_testing"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
   redis:
     image: redis:7-bookworm
     ports:

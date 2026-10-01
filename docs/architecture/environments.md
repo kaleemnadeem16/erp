@@ -284,9 +284,31 @@ What the evidence says, and does not say:
 Consequences: it does not block Phase 3. A red run that shows `SQLSTATE[08006]`/"recovery mode" or a mass of unrelated failures
 should simply be rerun. Two concurrent test runs against `erp_testing` (two agents) also deadlock each other on schema drops.
 
-**Proposed separately, not done:** run the test database as its own throwaway Postgres service on `tmpfs` with `fsync=off`. That
-removes the disk from the test path and isolates test runs from the dev database. It is infrastructure work and should not be
-mixed with product changes.
+**Done (2026-10-01): a throwaway test database on tmpfs** — see below.
+
+## Test database on tmpfs
+
+A second Postgres service, `postgres-test`, keeps its data directory in RAM (`tmpfs`, 768 MB) with `fsync`, `synchronous_commit`
+and `full_page_writes` off. It is opt-in (compose profile `test-db`), so a plain `docker compose up` is unchanged. Nothing it
+holds survives a stop, which is fine: the suite builds its own data and the schema is rebuilt on each run.
+
+```
+docker/backend/run-tests-tmpfs.sh                          # whole suite
+docker/backend/run-tests-tmpfs.sh --filter=Estimating      # arguments go to `php artisan test`
+TEST_DB_NAME=erp_testing_b docker/backend/run-tests-tmpfs.sh   # a private database for a second person or agent
+```
+
+The script starts the service, creates the named database if needed, migrates it, and runs the tests with `TEST_DB_HOST`,
+`TEST_DB_PORT` and `TEST_DB_DATABASE` pointing at it. Those three variables are the only change to `config/database.php`'s
+`testing` connection; unset (CI, and the default `docker compose exec app php artisan test`), behaviour is exactly as before.
+
+- **Why:** the disk is out of the test path (the dev server's slow checkpoints and self-restarts no longer touch a run), the dev
+  database is never involved, and two runs on two database names cannot deadlock on schema drops.
+- **Parity check:** the full suite, 1274 tests, passes against it in about 4 minutes; two runs at once on `erp_testing_a` and
+  `erp_testing_b` both passed.
+- **Cost:** a few hundred MB of RAM while it runs (`docker compose --profile test-db stop postgres-test` frees it). It cannot
+  reveal problems that depend on real disk behaviour; the pipeline still runs on a real Postgres service.
+- **Not changed:** CI, the dev entrypoint's migration of `erp_testing`, and the dev `postgres` service.
 
 ## Related
 
