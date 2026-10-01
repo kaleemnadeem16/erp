@@ -29,6 +29,7 @@ const goodsReceipt = [
   "purchasing.quality-disposition.post",
 ] as const;
 const physicalCount = [
+  "inventory.valuation.view",
   "inventory.physical_count.create",
   "inventory.physical_count.count",
   "inventory.physical_count.post",
@@ -173,6 +174,9 @@ export function canAccessScreen(
   }
   if (pathname === "/inventory-cutovers/new") {
     return permissions.has("inventory.cutover.create");
+  }
+  if (pathname === "/physical-counts/new") {
+    return permissions.has("inventory.physical_count.create");
   }
   if (
     pathname === "/item-suppliers/new" ||

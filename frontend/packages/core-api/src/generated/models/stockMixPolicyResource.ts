@@ -12,7 +12,7 @@ import type { StockMixPolicyResourceEffectiveTo } from "./stockMixPolicyResource
 import type { StockMixPolicyResourceChangedByUser } from "./stockMixPolicyResourceChangedByUser";
 
 export interface StockMixPolicyResource {
-  id: string;
+  id: number;
   scope_type: string;
   scope_id: StockMixPolicyResourceScopeId;
   scope_name: StockMixPolicyResourceScopeName;

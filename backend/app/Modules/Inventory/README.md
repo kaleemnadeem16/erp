@@ -233,6 +233,10 @@ always needs an explicit reviewer-supplied `found_unit_cost`, never inferred fro
 or any other source; a negative variance posts as an ordinary issue with no override authority,
 relying on `IssuePoster`'s own insufficient-stock guard for the rare race where something else
 moved the same identity after the count. `CancelPhysicalCount` abandons a draft with no postings.
+`PhysicalCountLineResource` keeps quantities visible to company readers but omits the
+posted `found_unit_cost` without `inventory.physical_count.post` or
+`inventory.valuation.view`; the poster still supplies that cost explicitly and the
+SPA gates each workflow control by its own capability.
 
 ## Events
 

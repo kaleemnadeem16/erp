@@ -17,6 +17,7 @@ import { useColumnVisibilityPreference } from '../../lib/use-column-visibility-p
 import { useListViewPreference } from '../../lib/use-view-preference';
 import { physicalCountColumns } from './physical-count-columns';
 import { lookupState, type LookupState } from '../../lib/api-errors';
+import { usePermission } from '../../hooks/use-permission';
 
 interface PhysicalCountFilters {
   search: string;
@@ -29,6 +30,7 @@ const STATUSES = ['DRAFT', 'POSTED', 'CANCELLED'] as const;
 
 export function PhysicalCountsListScreen() {
   const navigate = useNavigate();
+  const mayCreate = usePermission('inventory.physical_count.create');
   const query = useListQueryState<PhysicalCountFilters>({ defaultSort: '-created_at', defaultPerPage: 25 });
   const [columnVisibility, setColumnVisibility] = useColumnVisibilityPreference(
     'physical-counts-list',
@@ -74,7 +76,7 @@ export function PhysicalCountsListScreen() {
       <PageHeader
         title="Physical Counts"
         description="Reconcile recorded stock against what's physically on hand, and post the difference as an auditable correction."
-        primaryAction={{ label: 'New count', onClick: () => navigate('/physical-counts/new') }}
+        primaryAction={mayCreate ? { label: 'New count', onClick: () => navigate('/physical-counts/new') } : undefined}
       />
 
       <div className="flex flex-wrap items-center gap-2">

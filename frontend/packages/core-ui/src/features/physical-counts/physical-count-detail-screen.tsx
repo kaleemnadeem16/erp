@@ -27,6 +27,7 @@ import { formatDateTime } from '../../lib/format-date';
 import { cn } from '../../lib/utils';
 import { useAuthStore } from '../../stores/auth-store';
 import { formatLocation } from '../../lib/format-location';
+import { usePermission } from '../../hooks/use-permission';
 
 const STATUS_VARIANT: Record<string, 'secondary' | 'success' | 'destructive'> = {
   DRAFT: 'secondary',
@@ -49,6 +50,11 @@ function lineVariance(line: PhysicalCountLineResource): number | null {
 export function PhysicalCountDetailScreen() {
   const params = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const mayCreate = usePermission('inventory.physical_count.create');
+  const mayCount = usePermission('inventory.physical_count.count');
+  const mayPost = usePermission('inventory.physical_count.post');
+  const mayViewValuation = usePermission('inventory.valuation.view');
+  const maySeeFoundCost = mayPost || mayViewValuation;
   const countId = Number(params.id);
 
   const countQuery = usePhysicalCountsShow(countId, { include: 'warehouse,lines,lines.item,lines.location' });
@@ -171,12 +177,12 @@ export function PhysicalCountDetailScreen() {
         description={count.reference ?? undefined}
         breadcrumbs={[{ label: 'Physical Counts', to: '/physical-counts' }, { label: `#${count.id}` }]}
         actions={
-          isDraft && (
+          isDraft && (mayCreate || mayPost) && (
             <>
-              <Button variant="outline" onClick={handleCancel} disabled={cancelCount.isPending}>
+              {mayCreate && <Button variant="outline" onClick={handleCancel} disabled={cancelCount.isPending}>
                 Cancel count
-              </Button>
-              <div className="flex flex-col items-end gap-1">
+              </Button>}
+              {mayPost && <div className="flex flex-col items-end gap-1">
                 <Button
                   onClick={handlePost}
                   disabled={!everyLineCounted || postCount.isPending || isOwnCount}
@@ -187,7 +193,7 @@ export function PhysicalCountDetailScreen() {
                 {isOwnCount && (
                   <span className="text-xs text-muted-foreground">You can't post your own count</span>
                 )}
-              </div>
+              </div>}
             </>
           )
         }
@@ -220,13 +226,13 @@ export function PhysicalCountDetailScreen() {
                   <TableHead className="text-right">Book qty</TableHead>
                   <TableHead className="text-right">Counted qty</TableHead>
                   <TableHead className="text-right">Variance</TableHead>
-                  <TableHead className="text-right">Found cost</TableHead>
+                  {maySeeFoundCost && <TableHead className="text-right">Found cost</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {lines.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="h-16 text-center text-muted-foreground">
+                    <TableCell colSpan={maySeeFoundCost ? 7 : 6} className="h-16 text-center text-muted-foreground">
                       No lines yet.
                     </TableCell>
                   </TableRow>
@@ -242,7 +248,7 @@ export function PhysicalCountDetailScreen() {
                         <TableCell>{line.batch_id ? `Batch #${line.batch_id}` : (line.serial_no ?? '—')}</TableCell>
                         <TableCell className="text-right tabular-nums">{line.book_qty}</TableCell>
                         <TableCell className="text-right">
-                          {isDraft ? (
+                          {isDraft && mayCount ? (
                             <div className="flex items-center justify-end gap-1">
                               <Input
                                 type="number"
@@ -281,8 +287,8 @@ export function PhysicalCountDetailScreen() {
                         >
                           {varianceValue === null ? '—' : varianceValue.toFixed(4)}
                         </TableCell>
-                        <TableCell className="text-right">
-                          {needsFoundCost ? (
+                        {maySeeFoundCost && <TableCell className="text-right">
+                          {needsFoundCost && mayPost ? (
                             <Input
                               type="number"
                               step="0.0001"
@@ -293,7 +299,7 @@ export function PhysicalCountDetailScreen() {
                           ) : (
                             <span className="tabular-nums">{line.found_unit_cost ?? '—'}</span>
                           )}
-                        </TableCell>
+                        </TableCell>}
                       </TableRow>
                     );
                   })
@@ -302,7 +308,7 @@ export function PhysicalCountDetailScreen() {
             </Table>
           </div>
 
-          {isDraft && (
+          {isDraft && mayCreate && (
             <form onSubmit={handleAddLine} className="flex flex-wrap items-end gap-2 border-t border-border pt-4 sm:col-span-2">
               <div className="flex flex-col gap-1">
                 <span className="text-xs font-medium text-muted-foreground">Item</span>

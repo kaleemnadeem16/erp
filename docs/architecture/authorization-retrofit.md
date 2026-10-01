@@ -154,11 +154,16 @@ issue.
       valuation entries), stock layers, AVCO pools and inventory-overview rows/summary; the
       quantity view remains available. Ledger/overview screens and print views follow the API
       projection → [ADR 0073](../decisions/0073-separate-inventory-valuation-visibility-from-stock-operations.md).
-- [ ] Inventory valuation visibility, remaining workflow/export audit — review physical
-      counts and found costs, negative-stock/settlement responses, policy settings/history,
+- [ ] Inventory valuation visibility, remaining workflow/export audit — review
+      negative-stock/settlement responses, policy settings/history,
       and any CSV/print/export path. Decide per workflow which monetary inputs authorised
       operators must supply and which can be server-derived; do not blanket-hide required
       controls. Until this closes, do not claim system-wide Inventory cost secrecy.
+- [x] Physical-count found-cost projection (2026-10-01) — quantity-only company reads
+      omit `found_unit_cost`; a poster or `inventory.valuation.view` reader sees it in
+      list/show and post responses. The poster continues to supply positive-variance cost
+      explicitly; the SPA gates create/count/post and cost controls by capability →
+      [physical count](../domain/physical-count.md#user-interface).
 - [x] Recalculation economic-record read boundary (2026-09-30) — list/show now require a
       recalculation duty or `inventory.valuation.view`; workflow actors retain the complete
       economic evidence their decisions require, while valuation-only readers cannot act.

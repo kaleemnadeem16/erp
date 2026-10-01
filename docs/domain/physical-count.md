@@ -108,6 +108,17 @@ supply a found cost for anything counted higher than book, then post or cancel â
 mutation refetches the count rather than patching local state, since variance and "is every line
 counted" are always derived server-side.
 
+Count reads remain available as a quantity-only company record. `found_unit_cost` is omitted
+from included lines unless the reader can post a physical count or has
+`inventory.valuation.view`, including after posting and in list responses. The poster needs
+that economic evidence to supply and verify the explicit positive-variance cost; a counter
+only records quantity. The detail screen follows the same projection: create can add/cancel,
+count can record/recount, post can supply found costs and post (subject to the distinct-actor
+rule), and a valuation viewer can inspect the cost without gaining a posting action. The New
+route requires create even when a user can otherwise read counts. This applies the existing
+[valuation visibility decision](../decisions/0073-separate-inventory-valuation-visibility-from-stock-operations.md)
+to the physical-count workflow; it does not change how the found cost is chosen.
+
 ## Related
 
 - [stock.md](stock.md) â€” the movement/valuation model this posts into
