@@ -209,7 +209,7 @@ subset; registration alone grants nobody access.
 |---|---|---|---|---|
 | RateDimension | `search` | Full (1/1) | None | None |
 | RateDimensionValue | n/a, nested | n/a — managed inline in the rate-dimension edit screen | None | None |
-| ApplicationRate | `is_default,item_id,work_uom_id` | Partial (1/3) — only `item_id` | None | None |
+| ApplicationRate | `is_default,item_id,work_uom_id` | Full (3/3) | None | None |
 | Formulation | `customer_id,output_item_id,search,status` | Full (4/4) | None | None |
 | FormulationVersion | n/a | n/a — managed inline in the formulation edit screen | None | None |
 | AssemblyGroup | `search` | Full (1/1) | None | None |
@@ -240,8 +240,9 @@ independently of this backlog's sequencing whenever wanted.
       fetch up to 100 options; server-searchable pickers remain a scale follow-up.
 - [x] Rate Dimensions and Assembly Groups search (2026-10-01) — URL-backed search
       controls and mobile cards, with browser coverage; no change to read authority.
-- [ ] Add remaining Application Rates filter UI (`is_default,work_uom_id`) — no
-      permission dependency.
+- [x] Application Rates filters (2026-10-01) — item, work unit and default
+      status use URL-backed controls, including a mobile filter sheet and cards.
+      Browser tests cover default and context-specific rates.
 - [x] Register all six capabilities above (2026-09-30). Registration alone grants no
       operational user access and must not be mistaken for a protected endpoint. All six are
       enforced after the resource-rate slice below.

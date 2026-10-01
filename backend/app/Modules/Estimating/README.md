@@ -128,6 +128,9 @@ and card views. This changes no read or write authority.
 Rate Dimension and Assembly Group lists likewise expose their existing code/name
 search as URL-backed controls and offer mobile cards. The Assembly Group New/edit
 affordances follow its manage capability; server-side enforcement remains authoritative.
+The Application Rates list exposes its existing item, work-unit and default-status
+filters as URL-backed controls, with a mobile filter sheet and cards. Boolean
+`false` is preserved to select context-specific rates; no API contract changes.
 
 `CreateAssemblyGroup`/`UpdateAssemblyGroup`/`ArchiveAssemblyGroup` and
 `CreateAssembly`/`UpdateAssembly`/`ArchiveAssembly` are plain CRUD, same shape as the rate

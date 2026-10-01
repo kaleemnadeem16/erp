@@ -82,3 +82,41 @@ test('rate dimensions and assembly groups default to cards on mobile', async ({ 
     await expect(page.getByRole('button', { name: 'Card view' })).toHaveAttribute('aria-pressed', 'true');
   }
 });
+
+test('application rates filter by item, work unit and default status', async ({ page }) => {
+  await page.goto('/application-rates');
+  await expect(page.getByRole('heading', { name: 'Application rates' })).toBeVisible();
+
+  await page.getByLabel('Item', { exact: true }).first().click();
+  await page.locator('[cmdk-input]').fill('demo-paint-white');
+  await page.getByRole('option', { name: /demo-paint-white/ }).first().click();
+  await expect(page).toHaveURL(/filter.item_id=\d+/);
+
+  await page.getByLabel('Work unit', { exact: true }).first().click();
+  await page.locator('[cmdk-input]').fill('Square metre');
+  await page.getByRole('option', { name: /Square metre/ }).first().click();
+  await expect(page).toHaveURL(/filter.work_uom_id=\d+/);
+
+  await page.getByLabel('Default status', { exact: true }).first().click();
+  await page.getByRole('option', { name: 'Default only' }).click();
+  await expect(page).toHaveURL(/filter.is_default=true/);
+  await expect(page.getByRole('row', { name: /demo-paint-white/ })).toHaveCount(1);
+
+  await page.getByLabel('Default status', { exact: true }).first().click();
+  await page.getByRole('option', { name: 'Context-specific only' }).click();
+  await expect(page).toHaveURL(/filter.is_default=false/);
+  await expect(page.getByRole('row', { name: /demo-paint-white/ })).toHaveCount(4);
+});
+
+test('application rate filters and cards work on mobile', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/application-rates');
+  await expect(page.getByRole('button', { name: 'Card view' })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'Filters' }).click();
+  const sheet = page.getByRole('dialog', { name: 'Filters' });
+  await expect(sheet.getByLabel('Item')).toBeVisible();
+  await expect(sheet.getByLabel('Work unit')).toBeVisible();
+  await sheet.getByLabel('Default status').click();
+  await page.getByRole('option', { name: 'Default only' }).click();
+  await expect(page).toHaveURL(/filter.is_default=true/);
+});

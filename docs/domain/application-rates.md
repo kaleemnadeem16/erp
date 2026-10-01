@@ -124,6 +124,11 @@ tester but not the New/edit forms; managers can use both. Existing maintainers n
 role or direct grant before deployment. The configured administrator receives new capabilities
 through normal deploy-time permission sync; no other role gains one simply because it is named
 Estimator or Master Data Steward.
+The list exposes the API's item, work-unit and default-status filters as URL-backed
+controls. On mobile, filters sit in a bottom sheet and the list defaults to cards.
+The `is_default=false` choice explicitly selects context-specific rates rather
+than clearing the filter. Item and unit selectors currently use the shared
+100-option lookup pattern; server-searchable selectors remain a scale follow-up.
 
 ## Landmines
 

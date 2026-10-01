@@ -1,24 +1,37 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
+import { SlidersHorizontal } from 'lucide-react';
 import type { PaginationState, SortingState } from '@tanstack/react-table';
 import {
   useApplicationRatesIndex,
   useItemsIndex,
+  useUomsIndex,
   type ApplicationRateResource,
   type ApplicationRatesIndexSort,
 } from '@erp/core-api';
 import { Button } from '../../components/ui/button';
+import { Badge } from '../../components/ui/badge';
 import { Combobox } from '../../components/ui/combobox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '../../components/ui/sheet';
 import { PageHeader } from '../../components/page/page-header';
 import { DataTable, toTanStackColumns } from '../../components/data-table';
-import { apiSortToTableSorting, tableSortingToApiSort, useListQueryState } from '../../lib/list-query-state';
+import {
+  apiSortToTableSorting,
+  tableSortingToApiSort,
+  useListQueryState,
+  type ListQueryState,
+} from '../../lib/list-query-state';
+import { useListViewPreference } from '../../lib/use-view-preference';
 import { applicationRateColumns } from './application-rates-columns';
 import { ApplicationRateResolutionTester } from './application-rate-resolution-tester';
-import { lookupState } from '../../lib/api-errors';
+import { lookupState, type LookupState } from '../../lib/api-errors';
 import { usePermission } from '../../hooks/use-permission';
 
 interface Filters {
   item_id: string;
+  work_uom_id: string;
+  is_default: string;
   [key: string]: string;
 }
 
@@ -27,10 +40,16 @@ export function ApplicationRatesListScreen() {
   const navigate = useNavigate();
   const query = useListQueryState<Filters>({ defaultSort: 'created_at' });
   const [testerOpen, setTesterOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const { view, setView } = useListViewPreference('application-rates-list');
   const itemsResult = useItemsIndex({ per_page: 100, sort: 'name' });
   const items = itemsResult.data?.status === 200 ? itemsResult.data.data.data : [];
+  const uomsResult = useUomsIndex({ per_page: 100, sort: 'name' });
+  const uoms = uomsResult.data?.status === 200 ? uomsResult.data.data.data : [];
   const result = useApplicationRatesIndex({
     'filter[item_id]': query.filters.item_id ? Number(query.filters.item_id) : undefined,
+    'filter[work_uom_id]': query.filters.work_uom_id ? Number(query.filters.work_uom_id) : undefined,
+    'filter[is_default]': query.filters.is_default ? query.filters.is_default === 'true' : undefined,
     include: 'item,workUom,uom',
     sort: query.sort as ApplicationRatesIndexSort | undefined,
     per_page: query.perPage,
@@ -41,6 +60,9 @@ export function ApplicationRatesListScreen() {
   const columns = useMemo(() => toTanStackColumns(applicationRateColumns), []);
   const sorting: SortingState = apiSortToTableSorting(query.sort, applicationRateColumns);
   const pagination: PaginationState = { pageIndex: query.page - 1, pageSize: query.perPage };
+  const activeFilterCount = [query.filters.item_id, query.filters.work_uom_id, query.filters.is_default].filter(
+    Boolean,
+  ).length;
 
   return (
     <div className="space-y-4 p-4 pb-24 md:p-6">
@@ -56,20 +78,47 @@ export function ApplicationRatesListScreen() {
       />
       {testerOpen && <ApplicationRateResolutionTester />}
       <div className="flex flex-wrap items-center gap-2">
-        <Combobox {...lookupState(itemsResult, 'items')}
-          className="h-9 w-64"
-          aria-label="Item"
-          value={query.filters.item_id ?? 'all'}
-          onValueChange={(v) => query.setFilter('item_id', v === 'all' ? undefined : v)}
-          placeholder="Item"
-          searchPlaceholder="Search items…"
-          emptyText="No items found."
-          options={[
-            { value: 'all', label: 'All items' },
-            ...items.map((i) => ({ value: String(i.id), label: `${i.code} — ${i.name}` })),
-          ]}
-        />
+        <div className="hidden items-center gap-2 md:flex">
+          <ApplicationRateFilters
+            query={query}
+            items={items}
+            uoms={uoms}
+            itemsLookup={lookupState(itemsResult, 'items')}
+            uomsLookup={lookupState(uomsResult, 'units')}
+          />
+        </div>
+        <Button variant="outline" size="sm" className="h-9 shrink-0 md:hidden" onClick={() => setFiltersOpen(true)}>
+          <SlidersHorizontal className="h-4 w-4" />
+          Filters
+          {activeFilterCount > 0 && <Badge className="ml-1">{activeFilterCount}</Badge>}
+        </Button>
       </div>
+      <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
+        <SheetContent side="bottom" className="md:hidden">
+          <SheetHeader>
+            <SheetTitle>Filters</SheetTitle>
+          </SheetHeader>
+          <div className="flex flex-col gap-3 py-4">
+            <ApplicationRateFilters
+              query={query}
+              items={items}
+              uoms={uoms}
+              itemsLookup={lookupState(itemsResult, 'items')}
+              uomsLookup={lookupState(uomsResult, 'units')}
+              full
+            />
+          </div>
+          <SheetFooter>
+            <Button
+              variant="ghost"
+              onClick={() => query.setFilters({ item_id: undefined, work_uom_id: undefined, is_default: undefined })}
+            >
+              Clear filters
+            </Button>
+            <Button onClick={() => setFiltersOpen(false)}>Done</Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
       <DataTable
         columns={columns}
         data={rows}
@@ -83,14 +132,81 @@ export function ApplicationRatesListScreen() {
         onSortingChange={(u) =>
           query.setSort(tableSortingToApiSort(typeof u === 'function' ? u(sorting) : u, applicationRateColumns))
         }
-        onRowClick={mayManage ? (row: ApplicationRateResource) => navigate(`/application-rates/${row.id}/edit`) : undefined}
+        onRowClick={
+          mayManage ? (row: ApplicationRateResource) => navigate(`/application-rates/${row.id}/edit`) : undefined
+        }
         isLoading={result.isLoading}
         isError={result.isError}
         error={result.error}
         onRetry={() => void result.refetch()}
         errorMessage="Couldn't load application rates."
         emptyMessage="No application rates yet."
+        view={view}
+        onViewChange={setView}
+        cardColumns={applicationRateColumns}
       />
     </div>
+  );
+}
+
+function ApplicationRateFilters({
+  query,
+  items,
+  uoms,
+  itemsLookup,
+  uomsLookup,
+  full = false,
+}: {
+  query: ListQueryState<Filters>;
+  items: { id: number; code: string; name: string }[];
+  uoms: { id: number; code: string; name: string }[];
+  itemsLookup: LookupState;
+  uomsLookup: LookupState;
+  full?: boolean;
+}) {
+  return (
+    <>
+      <Combobox
+        {...itemsLookup}
+        className={full ? 'w-full' : 'h-9 w-64'}
+        aria-label="Item"
+        value={query.filters.item_id ?? 'all'}
+        onValueChange={(value) => query.setFilter('item_id', value === 'all' ? undefined : value)}
+        placeholder="Item"
+        searchPlaceholder="Search items…"
+        emptyText="No items found."
+        options={[
+          { value: 'all', label: 'All items' },
+          ...items.map((item) => ({ value: String(item.id), label: `${item.code} — ${item.name}` })),
+        ]}
+      />
+      <Combobox
+        {...uomsLookup}
+        className={full ? 'w-full' : 'h-9 w-52'}
+        aria-label="Work unit"
+        value={query.filters.work_uom_id ?? 'all'}
+        onValueChange={(value) => query.setFilter('work_uom_id', value === 'all' ? undefined : value)}
+        placeholder="Work unit"
+        searchPlaceholder="Search units…"
+        emptyText="No units found."
+        options={[
+          { value: 'all', label: 'All work units' },
+          ...uoms.map((uom) => ({ value: String(uom.id), label: `${uom.name} (${uom.code})` })),
+        ]}
+      />
+      <Select
+        value={query.filters.is_default ?? 'all'}
+        onValueChange={(value) => query.setFilter('is_default', value === 'all' ? undefined : value)}
+      >
+        <SelectTrigger aria-label="Default status" className={full ? 'h-9 w-full' : 'h-9 w-40'}>
+          <SelectValue placeholder="Default status" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All rates</SelectItem>
+          <SelectItem value="true">Default only</SelectItem>
+          <SelectItem value="false">Context-specific only</SelectItem>
+        </SelectContent>
+      </Select>
+    </>
   );
 }
