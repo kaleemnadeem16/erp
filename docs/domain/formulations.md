@@ -146,6 +146,12 @@ resolving technical recipes remain authenticated company reads because they serv
 Estimating lookups. The Formulations setup screen requires the manage capability and does not
 offer a read-only detail mode yet.
 
+The existing Formulations list exposes its API's code/name search, output-item,
+customer and status filters. They are URL-backed, so a filtered list survives refresh
+and shared links; on narrow screens the non-search filters live in a bottom sheet and
+the records can be viewed as cards. Item/customer pickers currently use the shared
+100-option lookup pattern, so a server-searchable picker is a separate scale follow-up.
+
 The `cost-breakdown` endpoint is a separate sensitive projection: it requires
 `estimating.internal_cost.view`. Managing a recipe does not automatically disclose AVCO-derived
 unit costs. The edit screen hides the breakdown control without that capability. The two grants

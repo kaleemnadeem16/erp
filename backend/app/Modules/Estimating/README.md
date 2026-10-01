@@ -121,6 +121,10 @@ authenticated company reads for shared lookups. The version cost-breakdown respo
 it requires `estimating.internal_cost.view` even for someone who can maintain formulations; the
 SPA hides its control without that capability. The demo seeder activates versions as the
 permission-synchronised demo actor rather than bypassing the Action check.
+Formulation list search/status/output-item/customer filters and assembly list
+search/status/group filters are already supported by their Index requests; their
+React lists now expose all seven as URL-backed controls with mobile filter sheets
+and card views. This changes no read or write authority.
 
 `CreateAssemblyGroup`/`UpdateAssemblyGroup`/`ArchiveAssemblyGroup` and
 `CreateAssembly`/`UpdateAssembly`/`ArchiveAssembly` are plain CRUD, same shape as the rate

@@ -34,6 +34,10 @@ uses the same effective capability, supplied by company roles or direct grants r
 hardcoded role name. The version cost-breakdown endpoint exposes resolved internal costs and
 requires the separate `estimating.internal_cost.view` capability, even for a manager; its UI
 control is hidden otherwise. Existing maintainers need an explicit grant before deployment.
+The Assemblies list exposes the API's code/name search, group and status filters as
+URL-backed controls; non-search filters move into a bottom sheet on mobile, where the
+list also offers cards. Group selection currently uses the shared 100-option lookup
+pattern, with server-searchable lookup left as a scale follow-up.
 
 This is a capability retrofit, not a redesign of assembly lifecycle or record scope. List/show
 remain company-scoped shared reads; later organisation-scoped visibility would need matching
