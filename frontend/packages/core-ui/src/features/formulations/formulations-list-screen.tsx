@@ -4,8 +4,10 @@ import { SlidersHorizontal } from 'lucide-react';
 import type { PaginationState, SortingState } from '@tanstack/react-table';
 import {
   useCustomerAccountsIndex,
+  useCustomerAccountsShow,
   useFormulationsIndex,
   useItemsIndex,
+  useItemsShow,
   type FormulationResource,
   type FormulationsIndexSort,
 } from '@erp/core-api';
@@ -13,7 +15,7 @@ import { PageHeader } from '../../components/page/page-header';
 import { DataTable, toTanStackColumns } from '../../components/data-table';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
-import { Combobox } from '../../components/ui/combobox';
+import { RemoteLookupCombobox } from '../../components/ui/remote-lookup-combobox';
 import { Input } from '../../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '../../components/ui/sheet';
@@ -53,13 +55,45 @@ export function FormulationsListScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchInput]);
 
-  const itemsQuery = useItemsIndex({ per_page: 100, sort: 'name' });
+  const [itemSearch, setItemSearch] = useState('');
+  const [debouncedItemSearch, setDebouncedItemSearch] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedItemSearch(itemSearch), 300);
+    return () => clearTimeout(timer);
+  }, [itemSearch]);
+  const itemsQuery = useItemsIndex({ 'filter[search]': debouncedItemSearch || undefined, per_page: 100, sort: 'name' });
   const items = itemsQuery.data?.status === 200 ? itemsQuery.data.data.data : [];
+  const selectedItemId = Number(query.filters.output_item_id ?? 0);
+  const selectedItemQuery = useItemsShow(selectedItemId, undefined, { query: { enabled: selectedItemId > 0 } });
+  const selectedItem = selectedItemQuery.data?.status === 200 ? selectedItemQuery.data.data.data : undefined;
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [debouncedCustomerSearch, setDebouncedCustomerSearch] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedCustomerSearch(customerSearch), 300);
+    return () => clearTimeout(timer);
+  }, [customerSearch]);
   const customersQuery = useCustomerAccountsIndex({
+    'filter[search]': debouncedCustomerSearch || undefined,
     per_page: 100,
     sort: 'code',
   });
   const customers = customersQuery.data?.status === 200 ? customersQuery.data.data.data : [];
+  const selectedCustomerId = Number(query.filters.customer_id ?? 0);
+  const selectedCustomerQuery = useCustomerAccountsShow(selectedCustomerId, undefined, {
+    query: { enabled: selectedCustomerId > 0 },
+  });
+  const selectedCustomer =
+    selectedCustomerQuery.data?.status === 200 ? selectedCustomerQuery.data.data.data : undefined;
+  const itemOptions = itemSearch === debouncedItemSearch ? items : [];
+  const customerOptions = customerSearch === debouncedCustomerSearch ? customers : [];
+  const itemsLookup = {
+    ...lookupState(itemsQuery, 'items'),
+    loading: itemsQuery.isLoading || itemSearch !== debouncedItemSearch,
+  };
+  const customersLookup = {
+    ...lookupState(customersQuery, 'customers'),
+    loading: customersQuery.isLoading || customerSearch !== debouncedCustomerSearch,
+  };
   const result = useFormulationsIndex({
     'filter[search]': query.filters.search || undefined,
     'filter[status]': query.filters.status || undefined,
@@ -107,10 +141,16 @@ export function FormulationsListScreen() {
         <div className="hidden items-center gap-2 md:flex">
           <FormulationFilters
             query={query}
-            items={items}
-            itemsLookup={lookupState(itemsQuery, 'items')}
-            customers={customers}
-            customersLookup={lookupState(customersQuery, 'customers')}
+            items={itemOptions}
+            itemsLookup={itemsLookup}
+            itemSearch={itemSearch}
+            onItemSearchChange={setItemSearch}
+            selectedItemLabel={selectedItem ? `${selectedItem.code} — ${selectedItem.name}` : undefined}
+            customers={customerOptions}
+            customersLookup={customersLookup}
+            customerSearch={customerSearch}
+            onCustomerSearchChange={setCustomerSearch}
+            selectedCustomerLabel={selectedCustomer?.code}
           />
         </div>
         <Button variant="outline" size="sm" className="h-9 shrink-0 md:hidden" onClick={() => setFiltersOpen(true)}>
@@ -127,10 +167,16 @@ export function FormulationsListScreen() {
           <div className="flex flex-col gap-3 py-4">
             <FormulationFilters
               query={query}
-              items={items}
-              itemsLookup={lookupState(itemsQuery, 'items')}
-              customers={customers}
-              customersLookup={lookupState(customersQuery, 'customers')}
+              items={itemOptions}
+              itemsLookup={itemsLookup}
+              itemSearch={itemSearch}
+              onItemSearchChange={setItemSearch}
+              selectedItemLabel={selectedItem ? `${selectedItem.code} — ${selectedItem.name}` : undefined}
+              customers={customerOptions}
+              customersLookup={customersLookup}
+              customerSearch={customerSearch}
+              onCustomerSearchChange={setCustomerSearch}
+              selectedCustomerLabel={selectedCustomer?.code}
               full
             />
           </div>
@@ -183,52 +229,54 @@ function FormulationFilters({
   query,
   items,
   itemsLookup,
+  itemSearch,
+  onItemSearchChange,
+  selectedItemLabel,
   customers,
   customersLookup,
+  customerSearch,
+  onCustomerSearchChange,
+  selectedCustomerLabel,
   full = false,
 }: {
   query: ListQueryState<Filters>;
   items: { id: number; code: string; name: string }[];
   itemsLookup: LookupState;
+  itemSearch: string;
+  onItemSearchChange: (search: string) => void;
+  selectedItemLabel?: string;
   customers: { id: number; code: string }[];
   customersLookup: LookupState;
+  customerSearch: string;
+  onCustomerSearchChange: (search: string) => void;
+  selectedCustomerLabel?: string;
   full?: boolean;
 }) {
   return (
     <>
-      <Combobox
+      <RemoteLookupCombobox
         {...itemsLookup}
-        aria-label="Output item"
+        label="Output item"
+        allLabel="All output items"
         className={full ? 'w-full' : 'w-48'}
         value={query.filters.output_item_id ?? 'all'}
+        selectedLabel={selectedItemLabel}
         onValueChange={(value) => query.setFilter('output_item_id', value === 'all' ? undefined : value)}
-        placeholder="Output item"
-        searchPlaceholder="Search items…"
-        emptyText="No items found."
-        options={[
-          { value: 'all', label: 'All output items' },
-          ...items.map((item) => ({
-            value: String(item.id),
-            label: `${item.code} — ${item.name}`,
-          })),
-        ]}
+        search={itemSearch}
+        onSearchChange={onItemSearchChange}
+        options={items.map((item) => ({ value: String(item.id), label: `${item.code} — ${item.name}` }))}
       />
-      <Combobox
+      <RemoteLookupCombobox
         {...customersLookup}
-        aria-label="Customer"
+        label="Customer"
+        allLabel="All customers"
         className={full ? 'w-full' : 'w-44'}
         value={query.filters.customer_id ?? 'all'}
+        selectedLabel={selectedCustomerLabel}
         onValueChange={(value) => query.setFilter('customer_id', value === 'all' ? undefined : value)}
-        placeholder="Customer"
-        searchPlaceholder="Search customers…"
-        emptyText="No customers found."
-        options={[
-          { value: 'all', label: 'All customers' },
-          ...customers.map((customer) => ({
-            value: String(customer.id),
-            label: customer.code,
-          })),
-        ]}
+        search={customerSearch}
+        onSearchChange={onCustomerSearchChange}
+        options={customers.map((customer) => ({ value: String(customer.id), label: customer.code }))}
       />
       <Select
         value={query.filters.status ?? 'all'}

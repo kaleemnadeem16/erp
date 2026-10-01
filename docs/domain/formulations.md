@@ -149,8 +149,10 @@ offer a read-only detail mode yet.
 The existing Formulations list exposes its API's code/name search, output-item,
 customer and status filters. They are URL-backed, so a filtered list survives refresh
 and shared links; on narrow screens the non-search filters live in a bottom sheet and
-the records can be viewed as cards. Item/customer pickers currently use the shared
-100-option lookup pattern, so a server-searchable picker is a separate scale follow-up.
+the records can be viewed as cards. The output-item and customer filters search
+their APIs as the user types and resolve selected IDs for bookmarked URLs, so
+choices beyond the first 100 results remain available. Other Estimating form
+pickers still need a separate scale pass.
 
 The `cost-breakdown` endpoint is a separate sensitive projection: it requires
 `estimating.internal_cost.view`. Managing a recipe does not automatically disclose AVCO-derived

@@ -168,3 +168,25 @@ test('assembly group filter searches the server and keeps its selected label', a
   await page.reload();
   await expect(page.getByLabel('Assembly group', { exact: true }).first()).toContainText('demo-labour');
 });
+
+test('formulation item and customer filters search the server and survive reload', async ({ page }) => {
+  await page.goto('/formulations');
+  for (const { label, path, term } of [
+    { label: 'Output item', path: '/v1/items', term: 'demo-paint-white' },
+    { label: 'Customer', path: '/v1/customer-accounts', term: 'cus-alpha' },
+  ]) {
+    await page.getByLabel(label, { exact: true }).first().click();
+    const searched = page.waitForResponse((response) =>
+      response.url().includes(path) &&
+      new URL(response.url()).searchParams.get('filter[search]') === term &&
+      response.status() === 200,
+    );
+    await page.locator('[cmdk-input]').fill(term);
+    await searched;
+    await page.getByRole('option', { name: new RegExp(term) }).first().click();
+    await expect(page.getByLabel(label, { exact: true }).first()).toContainText(term);
+  }
+  await page.reload();
+  await expect(page.getByLabel('Output item', { exact: true }).first()).toContainText('demo-paint-white');
+  await expect(page.getByLabel('Customer', { exact: true }).first()).toContainText('cus-alpha');
+});
