@@ -4,6 +4,8 @@ import { Badge } from "../../components/ui/badge";
 import type { DataColumn } from "../../components/data-table/types";
 import { formatDate } from "../../lib/format-date";
 
+// The shared Badge variant is the base look (dark mode and anywhere the PO palette is not active);
+// the po-status-* class restyles it from the erp-blue status tokens inside the light PO screen.
 const STATUS_VARIANT: Record<
   string,
   "secondary" | "default" | "success" | "destructive"
@@ -12,6 +14,16 @@ const STATUS_VARIANT: Record<
   ISSUED: "default",
   CLOSED: "success",
   CANCELLED: "destructive",
+};
+
+const STATUS_CLASS: Record<string, string> = {
+  DRAFT: "po-status-draft",
+  WAITING_APPROVAL: "po-status-pending",
+  ISSUED: "po-status-active",
+  PARTIALLY_RECEIVED: "po-status-progress",
+  CLOSED: "po-status-success",
+  CANCELLED: "po-status-danger",
+  REJECTED: "po-status-danger",
 };
 
 export function purchaseOrderColumns(
@@ -24,6 +36,11 @@ export function purchaseOrderColumns(
       key: "number",
       header: "Order",
       value: (order) => order.number ?? `Draft #${order.id}`,
+      cell: (order) => (
+        <span className="po-order-link cursor-pointer">
+          {order.number ?? `Draft #${order.id}`}
+        </span>
+      ),
       sortable: true,
       cardRole: "title",
     },
@@ -65,7 +82,7 @@ export function purchaseOrderColumns(
               order.total_amount === undefined ? (
                 "—"
               ) : (
-                <span className="tabular-nums">
+                <span className="tabular-nums font-medium text-[var(--po-text-primary)]">
                   {order.total_amount} {currencies.get(order.currency_id) ?? ""}
                 </span>
               ),
@@ -78,11 +95,17 @@ export function purchaseOrderColumns(
       key: "status",
       header: "Status",
       value: (order) => order.status,
-      cell: (order) => (
-        <Badge variant={STATUS_VARIANT[order.status] ?? "secondary"}>
-          {order.status}
-        </Badge>
-      ),
+      cell: (order) => {
+        const statusClass = STATUS_CLASS[order.status] ?? "po-status-draft";
+        return (
+          <Badge
+            variant={STATUS_VARIANT[order.status] ?? "secondary"}
+            className={`po-status-badge ${statusClass}`}
+          >
+            {order.status.replace(/_/g, " ")}
+          </Badge>
+        );
+      },
       filterable: true,
     },
     {

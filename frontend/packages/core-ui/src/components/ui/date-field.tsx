@@ -18,6 +18,8 @@ export interface DateFieldProps {
   'aria-labelledby'?: string;
   /** For standalone uses with no associated `FormLabel` (e.g. a list-screen filter). */
   'aria-label'?: string;
+  /** Optional class name to attach to the portaled PopoverContent */
+  popoverClassName?: string;
 }
 
 interface Segments {
@@ -87,6 +89,7 @@ export const DateField = React.forwardRef<HTMLInputElement, DateFieldProps>(func
     'aria-invalid': ariaInvalid,
     'aria-labelledby': ariaLabelledBy,
     'aria-label': ariaLabel,
+    popoverClassName,
   },
   forwardedRef
 ) {
@@ -280,7 +283,7 @@ export const DateField = React.forwardRef<HTMLInputElement, DateFieldProps>(func
             <CalendarIcon className="size-4" />
           </button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="end">
+        <PopoverContent className={cn("w-auto p-0", popoverClassName)} align="end">
           <Calendar
             value={toIso(segments)}
             onSelect={(iso) => {

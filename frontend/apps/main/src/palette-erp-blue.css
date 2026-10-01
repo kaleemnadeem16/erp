@@ -1,0 +1,606 @@
+/**
+ * ERP Blue Palette & Theme Isolation
+ *
+ * This palette defines primitive tokens prefixed with --erp-blue-* so that
+ * future palettes (e.g. emerald, violet) can coexist safely without namespace collisions.
+ *
+ * All local component styling is scoped strictly to `.po-screen` and its
+ * associated opt-in portal classes so NO OTHER SCREEN or global component is affected.
+ */
+
+:root {
+  /* ==========================================================================
+     1. Backgrounds and Surfaces
+     ========================================================================== */
+  --erp-blue-color-bg-canvas: #F8FAFC;
+  --erp-blue-color-bg-surface: #FFFFFF;
+  --erp-blue-color-bg-surface-subtle: #F8FAFC;
+  --erp-blue-color-bg-surface-sunken: #F1F5F9;
+
+  --erp-blue-color-bg-hover: #F8FAFC;
+  --erp-blue-color-bg-pressed: #F1F5F9;
+
+  --erp-blue-color-bg-selected: #EFF6FF;
+  --erp-blue-color-bg-selected-hover: #DBEAFE;
+
+  --erp-blue-color-bg-overlay: rgba(15, 23, 42, 0.45);
+
+  /* ==========================================================================
+     2. Text Hierarchy
+     ========================================================================== */
+  --erp-blue-color-text-primary: #0F172A;
+  --erp-blue-color-text-secondary: #475569;
+  --erp-blue-color-text-tertiary: #64748B;
+  --erp-blue-color-text-placeholder: #64748B;
+  --erp-blue-color-text-disabled: #94A3B8;
+  --erp-blue-color-text-inverse: #FFFFFF;
+
+  --erp-blue-color-text-link: #1D4ED8;
+  --erp-blue-color-text-link-hover: #1E40AF;
+
+  /* ==========================================================================
+     3. Borders
+     ========================================================================== */
+  --erp-blue-color-border-subtle: #E2E8F0;
+  --erp-blue-color-border-default: #CBD5E1;
+  --erp-blue-color-border-strong: #94A3B8;
+
+  --erp-blue-color-border-selected: #2563EB;
+  --erp-blue-color-border-focus: #2563EB;
+  --erp-blue-color-border-disabled: #E2E8F0;
+
+  /* ==========================================================================
+     4. Brand / Interaction Colors
+     ========================================================================== */
+  --erp-blue-color-brand-primary: #2563EB;
+  --erp-blue-color-brand-hover: #1D4ED8;
+  --erp-blue-color-brand-pressed: #1E40AF;
+
+  --erp-blue-color-brand-subtle: #EFF6FF;
+  --erp-blue-color-brand-subtle-hover: #DBEAFE;
+
+  --erp-blue-color-brand-text: #1D4ED8;
+  --erp-blue-color-brand-icon: #2563EB;
+
+  /* ==========================================================================
+     5. Form Controls
+     ========================================================================== */
+  --erp-blue-color-field-bg: #FFFFFF;
+  --erp-blue-color-field-bg-hover: #F8FAFC;
+  --erp-blue-color-field-bg-disabled: #F1F5F9;
+
+  --erp-blue-color-field-border: #CBD5E1;
+  --erp-blue-color-field-border-hover: #94A3B8;
+  --erp-blue-color-field-border-focus: #2563EB;
+
+  --erp-blue-color-field-text: #0F172A;
+  --erp-blue-color-field-placeholder: #64748B;
+  --erp-blue-color-field-label: #334155;
+
+  /* ==========================================================================
+     6. Focus State
+     ========================================================================== */
+  --erp-blue-color-focus-ring: #2563EB;
+  --erp-blue-color-focus-ring-offset: #FFFFFF;
+
+  /* ==========================================================================
+     7. Table-Specific Tokens
+     ========================================================================== */
+  --erp-blue-color-table-bg: #FFFFFF;
+  --erp-blue-color-table-header-bg: #F8FAFC;
+  --erp-blue-color-table-header-text: #475569;
+
+  --erp-blue-color-table-row-text: #0F172A;
+  --erp-blue-color-table-row-border: #E2E8F0;
+
+  --erp-blue-color-table-row-hover-bg: #F8FAFC;
+  --erp-blue-color-table-row-selected-bg: #EFF6FF;
+  --erp-blue-color-table-row-selected-hover-bg: #DBEAFE;
+  --erp-blue-color-table-row-selected-edge: #2563EB;
+
+  /* ==========================================================================
+     8. Advanced Filters Panel
+     ========================================================================== */
+  --erp-blue-color-filter-panel-bg: #FFFFFF;
+  --erp-blue-color-filter-panel-border: #E2E8F0;
+
+  /* ==========================================================================
+     9. Active Filter Chips
+     ========================================================================== */
+  --erp-blue-color-chip-active-bg: #EFF6FF;
+  --erp-blue-color-chip-active-text: #1D4ED8;
+  --erp-blue-color-chip-active-border: #DBEAFE;
+
+  /* ==========================================================================
+     10. Semantic Colors
+     ========================================================================== */
+  --erp-blue-color-info: #2563EB;
+  --erp-blue-color-info-text: #1E40AF;
+  --erp-blue-color-info-bg: #DBEAFE;
+  --erp-blue-color-info-border: #93C5FD;
+
+  --erp-blue-color-success: #16A34A;
+  --erp-blue-color-success-text: #166534;
+  --erp-blue-color-success-bg: #DCFCE7;
+  --erp-blue-color-success-border: #86EFAC;
+
+  --erp-blue-color-warning: #D97706;
+  --erp-blue-color-warning-text: #92400E;
+  --erp-blue-color-warning-bg: #FEF3C7;
+  --erp-blue-color-warning-border: #FCD34D;
+
+  --erp-blue-color-danger: #DC2626;
+  --erp-blue-color-danger-text: #991B1B;
+  --erp-blue-color-danger-bg: #FEE2E2;
+  --erp-blue-color-danger-border: #FCA5A5;
+
+  /* ==========================================================================
+     11. PO Workflow Status Colors
+     ========================================================================== */
+  --erp-blue-status-draft-bg: #F1F5F9;
+  --erp-blue-status-draft-text: #475569;
+
+  --erp-blue-status-pending-bg: #FEF3C7;
+  --erp-blue-status-pending-text: #92400E;
+
+  --erp-blue-status-active-bg: #DBEAFE;
+  --erp-blue-status-active-text: #1E40AF;
+
+  --erp-blue-status-progress-bg: #EDE9FE;
+  --erp-blue-status-progress-text: #6D28D9;
+  --erp-blue-status-progress-border: #DDD6FE;
+
+  --erp-blue-status-success-bg: #DCFCE7;
+  --erp-blue-status-success-text: #166534;
+
+  --erp-blue-status-danger-bg: #FEE2E2;
+  --erp-blue-status-danger-text: #991B1B;
+
+  /* ==========================================================================
+     12. Interaction States
+     ========================================================================== */
+  --erp-blue-color-control-hover: #F1F5F9;
+  --erp-blue-color-control-pressed: #E2E8F0;
+
+  --erp-blue-color-selection: #DBEAFE;
+
+  --erp-blue-color-skeleton: #E2E8F0;
+  --erp-blue-color-skeleton-highlight: #F1F5F9;
+
+  /* ==========================================================================
+     13. Elevation (shadow colours are palette tokens too, so a dark palette can change them)
+     ========================================================================== */
+  --erp-blue-shadow-color: rgba(15, 23, 42, 0.05);
+  --erp-blue-shadow-color-raised: rgba(15, 23, 42, 0.08);
+  --erp-blue-shadow-color-brand: rgba(37, 99, 235, 0.2);
+}
+
+/* ==========================================================================
+   Purchase Orders Screen Scope (Light Mode Only)
+   ========================================================================== */
+:root:not(.dark) .po-screen {
+  /* Mapping erp-blue palette to local semantic tokens */
+  --po-bg-canvas: var(--erp-blue-color-bg-canvas);
+  --po-bg-surface: var(--erp-blue-color-bg-surface);
+  --po-bg-surface-subtle: var(--erp-blue-color-bg-surface-subtle);
+  --po-bg-surface-sunken: var(--erp-blue-color-bg-surface-sunken);
+
+  --po-bg-hover: var(--erp-blue-color-bg-hover);
+  --po-bg-pressed: var(--erp-blue-color-bg-pressed);
+  --po-bg-selected: var(--erp-blue-color-bg-selected);
+  --po-bg-selected-hover: var(--erp-blue-color-bg-selected-hover);
+  --po-bg-overlay: var(--erp-blue-color-bg-overlay);
+
+  --po-text-primary: var(--erp-blue-color-text-primary);
+  --po-text-secondary: var(--erp-blue-color-text-secondary);
+  --po-text-tertiary: var(--erp-blue-color-text-tertiary);
+  --po-text-placeholder: var(--erp-blue-color-text-placeholder);
+  --po-text-disabled: var(--erp-blue-color-text-disabled);
+  --po-text-inverse: var(--erp-blue-color-text-inverse);
+
+  --po-text-link: var(--erp-blue-color-text-link);
+  --po-text-link-hover: var(--erp-blue-color-text-link-hover);
+
+  --po-border-subtle: var(--erp-blue-color-border-subtle);
+  --po-border-default: var(--erp-blue-color-border-default);
+  --po-border-strong: var(--erp-blue-color-border-strong);
+  --po-border-selected: var(--erp-blue-color-border-selected);
+  --po-border-focus: var(--erp-blue-color-border-focus);
+  --po-border-disabled: var(--erp-blue-color-border-disabled);
+
+  --po-brand-primary: var(--erp-blue-color-brand-primary);
+  --po-brand-hover: var(--erp-blue-color-brand-hover);
+  --po-brand-pressed: var(--erp-blue-color-brand-pressed);
+  --po-brand-subtle: var(--erp-blue-color-brand-subtle);
+  --po-brand-subtle-hover: var(--erp-blue-color-brand-subtle-hover);
+  --po-brand-text: var(--erp-blue-color-brand-text);
+  --po-brand-icon: var(--erp-blue-color-brand-icon);
+
+  --po-field-bg: var(--erp-blue-color-field-bg);
+  --po-field-bg-hover: var(--erp-blue-color-field-bg-hover);
+  --po-field-bg-disabled: var(--erp-blue-color-field-bg-disabled);
+  --po-field-border: var(--erp-blue-color-field-border);
+  --po-field-border-hover: var(--erp-blue-color-field-border-hover);
+  --po-field-border-focus: var(--erp-blue-color-field-border-focus);
+  --po-field-text: var(--erp-blue-color-field-text);
+  --po-field-placeholder: var(--erp-blue-color-field-placeholder);
+  --po-field-label: var(--erp-blue-color-field-label);
+
+  --po-focus-ring: var(--erp-blue-color-focus-ring);
+  --po-focus-ring-offset: var(--erp-blue-color-focus-ring-offset);
+
+  --po-table-bg: var(--erp-blue-color-table-bg);
+  --po-table-header-bg: var(--erp-blue-color-table-header-bg);
+  --po-table-header-text: var(--erp-blue-color-table-header-text);
+  --po-table-row-text: var(--erp-blue-color-table-row-text);
+  --po-table-row-border: var(--erp-blue-color-table-row-border);
+  --po-table-row-hover-bg: var(--erp-blue-color-table-row-hover-bg);
+  --po-table-row-selected-bg: var(--erp-blue-color-table-row-selected-bg);
+  --po-table-row-selected-hover-bg: var(--erp-blue-color-table-row-selected-hover-bg);
+  --po-table-row-selected-edge: var(--erp-blue-color-table-row-selected-edge);
+
+  --po-filter-panel-bg: var(--erp-blue-color-filter-panel-bg);
+  --po-filter-panel-border: var(--erp-blue-color-filter-panel-border);
+
+  --po-chip-active-bg: var(--erp-blue-color-chip-active-bg);
+  --po-chip-active-text: var(--erp-blue-color-chip-active-text);
+  --po-chip-active-border: var(--erp-blue-color-chip-active-border);
+
+  --po-control-hover: var(--erp-blue-color-control-hover);
+  --po-control-pressed: var(--erp-blue-color-control-pressed);
+  --po-selection: var(--erp-blue-color-selection);
+
+  /* Override local Tailwind utility tokens within PO screen */
+  --background: var(--po-bg-canvas);
+  --foreground: var(--po-text-primary);
+  --card: var(--po-bg-surface);
+  --card-foreground: var(--po-text-primary);
+  --border: var(--po-border-subtle);
+  --input: var(--po-field-border);
+  --ring: var(--po-focus-ring);
+  --muted: var(--po-bg-surface-sunken);
+  --muted-foreground: var(--po-text-secondary);
+  --primary: var(--po-brand-primary);
+  --primary-foreground: var(--po-text-inverse);
+
+  background-color: var(--po-bg-canvas);
+  color: var(--po-text-primary);
+}
+
+/* Page header within PO screen */
+:root:not(.dark) .po-screen h1 {
+  color: var(--po-text-primary);
+}
+
+:root:not(.dark) .po-screen p.text-muted-foreground {
+  color: var(--po-text-secondary);
+}
+
+/* Primary CTA button (e.g. "New purchase order") */
+:root:not(.dark) .po-screen button.bg-primary {
+  background-color: var(--po-brand-primary);
+  color: var(--po-text-inverse);
+  box-shadow: 0 1px 2px 0 var(--erp-blue-shadow-color-brand);
+  transition: background-color 150ms ease-in-out, box-shadow 150ms ease-in-out;
+}
+:root:not(.dark) .po-screen button.bg-primary:hover {
+  background-color: var(--po-brand-hover);
+}
+:root:not(.dark) .po-screen button.bg-primary:active {
+  background-color: var(--po-brand-pressed);
+}
+:root:not(.dark) .po-screen button.bg-primary:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--po-focus-ring-offset), 0 0 0 4px var(--po-focus-ring);
+}
+
+/* Secondary toolbar & table action buttons (Print, Columns, inactive Filters) */
+:root:not(.dark) .po-screen button.border-input,
+:root:not(.dark) .po-screen button.variant-outline {
+  background-color: var(--po-bg-surface);
+  color: var(--po-text-primary);
+  border-color: var(--po-border-default);
+  box-shadow: 0 1px 2px 0 var(--erp-blue-shadow-color);
+  transition: background-color 150ms ease-in-out, border-color 150ms ease-in-out, color 150ms ease-in-out;
+}
+:root:not(.dark) .po-screen button.border-input:hover,
+:root:not(.dark) .po-screen button.variant-outline:hover {
+  background-color: var(--po-bg-hover);
+  color: var(--po-text-primary);
+  border-color: var(--po-border-strong);
+}
+:root:not(.dark) .po-screen button.border-input:active,
+:root:not(.dark) .po-screen button.variant-outline:active {
+  background-color: var(--po-bg-pressed);
+}
+:root:not(.dark) .po-screen button.border-input:focus-visible,
+:root:not(.dark) .po-screen button.variant-outline:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--po-focus-ring-offset), 0 0 0 4px var(--po-focus-ring);
+}
+
+/* Active Filters button subtle blue state */
+:root:not(.dark) .po-screen .po-btn-filters-active {
+  background-color: var(--po-brand-subtle) !important;
+  color: var(--po-brand-text) !important;
+  border: 1px solid var(--po-chip-active-border) !important;
+}
+:root:not(.dark) .po-screen .po-btn-filters-active:hover {
+  background-color: var(--po-brand-subtle-hover) !important;
+}
+:root:not(.dark) .po-screen .po-btn-filters-active svg {
+  color: var(--po-brand-icon);
+}
+:root:not(.dark) .po-screen .po-btn-filters-active .po-filter-badge {
+  background-color: var(--po-brand-primary);
+  color: var(--po-text-inverse);
+}
+
+/* Active Filter Chips */
+:root:not(.dark) .po-screen .po-chip-active {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 500;
+  border-radius: 9999px;
+  background-color: var(--po-chip-active-bg);
+  color: var(--po-chip-active-text);
+  border: 1px solid var(--po-chip-active-border);
+}
+:root:not(.dark) .po-screen .po-chip-active button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  padding: 0.125rem;
+  color: var(--po-chip-active-text);
+  transition: background-color 150ms ease-in-out, opacity 150ms ease-in-out;
+}
+:root:not(.dark) .po-screen .po-chip-active button:hover {
+  background-color: var(--po-brand-subtle-hover);
+}
+
+/* Advanced filters collapsible card panel */
+:root:not(.dark) .po-screen .po-filter-panel {
+  background-color: var(--po-filter-panel-bg);
+  border-color: var(--po-filter-panel-border);
+  box-shadow: 0 1px 3px 0 var(--erp-blue-shadow-color);
+}
+:root:not(.dark) .po-screen .po-filter-panel-title {
+  color: var(--po-text-secondary);
+}
+
+/* Form Controls (Inputs, Select Triggers, Combobox Buttons, DateFields) */
+:root:not(.dark) .po-screen input[type="text"],
+:root:not(.dark) .po-screen input[type="number"],
+:root:not(.dark) .po-screen input:not([type]),
+:root:not(.dark) .po-screen button[role="combobox"],
+:root:not(.dark) .po-screen button[data-slot="select-trigger"],
+:root:not(.dark) .po-screen [data-slot="combobox-trigger"] {
+  background-color: var(--po-field-bg);
+  color: var(--po-field-text);
+  border-color: var(--po-field-border);
+  transition: border-color 150ms ease-in-out, background-color 150ms ease-in-out, box-shadow 150ms ease-in-out;
+}
+
+:root:not(.dark) .po-screen input::placeholder {
+  color: var(--po-field-placeholder);
+}
+
+:root:not(.dark) .po-screen input:hover:not(:disabled),
+:root:not(.dark) .po-screen button[role="combobox"]:hover:not(:disabled),
+:root:not(.dark) .po-screen button[data-slot="select-trigger"]:hover:not(:disabled) {
+  background-color: var(--po-field-bg-hover);
+  border-color: var(--po-field-border-hover);
+}
+
+:root:not(.dark) .po-screen input:focus-visible,
+:root:not(.dark) .po-screen input:focus,
+:root:not(.dark) .po-screen button[role="combobox"]:focus-visible,
+:root:not(.dark) .po-screen button[data-slot="select-trigger"]:focus-visible {
+  outline: none;
+  border-color: var(--po-field-border-focus);
+  box-shadow: 0 0 0 2px var(--po-focus-ring-offset), 0 0 0 4px var(--po-focus-ring);
+}
+
+:root:not(.dark) .po-screen input:disabled,
+:root:not(.dark) .po-screen button[role="combobox"]:disabled,
+:root:not(.dark) .po-screen button[data-slot="select-trigger"]:disabled {
+  background-color: var(--po-field-bg-disabled);
+  color: var(--po-text-disabled);
+  border-color: var(--po-border-disabled);
+  cursor: not-allowed;
+}
+
+:root:not(.dark) .po-screen label {
+  color: var(--po-field-label);
+  font-weight: 500;
+}
+
+/* Checkbox within PO screen */
+:root:not(.dark) .po-screen input[type="checkbox"],
+:root:not(.dark) .po-screen button[role="checkbox"] {
+  border-color: var(--po-border-default);
+  border-radius: 4px;
+  transition: all 150ms ease-in-out;
+}
+:root:not(.dark) .po-screen input[type="checkbox"]:focus-visible,
+:root:not(.dark) .po-screen button[role="checkbox"]:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--po-focus-ring-offset), 0 0 0 4px var(--po-focus-ring);
+}
+:root:not(.dark) .po-screen input[type="checkbox"]:checked,
+:root:not(.dark) .po-screen button[role="checkbox"][data-state="checked"] {
+  background-color: var(--po-brand-primary);
+  border-color: var(--po-brand-primary);
+  color: var(--po-text-inverse);
+}
+
+/* Table surface & structure */
+:root:not(.dark) .po-screen div.rounded-md.border.border-border:has(table) {
+  background-color: var(--po-table-bg);
+  border-color: var(--po-table-row-border);
+  box-shadow: 0 1px 3px 0 var(--erp-blue-shadow-color);
+}
+
+/* Table header */
+:root:not(.dark) .po-screen thead tr {
+  background-color: var(--po-table-header-bg);
+  border-bottom: 1px solid var(--po-table-row-border);
+}
+
+:root:not(.dark) .po-screen thead th {
+  color: var(--po-table-header-text);
+  font-weight: 500;
+  font-size: 0.75rem;
+  letter-spacing: 0.025em;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+/* Table rows */
+:root:not(.dark) .po-screen tbody tr {
+  background-color: var(--po-table-bg);
+  border-bottom: 1px solid var(--po-table-row-border);
+  color: var(--po-table-row-text);
+  transition: background-color 150ms ease-in-out;
+}
+
+:root:not(.dark) .po-screen tbody tr:hover {
+  background-color: var(--po-table-row-hover-bg);
+}
+
+:root:not(.dark) .po-screen tbody tr[data-state="selected"] {
+  background-color: var(--po-table-row-selected-bg) !important;
+  border-left: 3px solid var(--po-table-row-selected-edge);
+}
+
+:root:not(.dark) .po-screen tbody tr[data-state="selected"]:hover {
+  background-color: var(--po-table-row-selected-hover-bg) !important;
+}
+
+:root:not(.dark) .po-screen tbody td {
+  color: var(--po-table-row-text);
+  font-size: 0.8125rem;
+}
+
+/* PO Number Link styling */
+:root:not(.dark) .po-screen .po-order-link {
+  color: var(--po-text-link);
+  font-weight: 500;
+  transition: color 150ms ease-in-out, text-decoration 150ms ease-in-out;
+}
+:root:not(.dark) .po-screen .po-order-link:hover {
+  color: var(--po-text-link-hover);
+  text-decoration: underline;
+}
+
+/* Pagination controls */
+:root:not(.dark) .po-screen button[aria-label="Previous page"],
+:root:not(.dark) .po-screen button[aria-label="Next page"],
+:root:not(.dark) .po-screen button[aria-label="First page"],
+:root:not(.dark) .po-screen button[aria-label="Last page"] {
+  background-color: var(--po-bg-surface);
+  border-color: var(--po-border-default);
+  color: var(--po-text-secondary);
+}
+:root:not(.dark) .po-screen button[aria-label="Previous page"]:hover:not(:disabled),
+:root:not(.dark) .po-screen button[aria-label="Next page"]:hover:not(:disabled),
+:root:not(.dark) .po-screen button[aria-label="First page"]:hover:not(:disabled),
+:root:not(.dark) .po-screen button[aria-label="Last page"]:hover:not(:disabled) {
+  background-color: var(--po-bg-hover);
+  color: var(--po-text-primary);
+  border-color: var(--po-border-strong);
+}
+:root:not(.dark) .po-screen button:disabled {
+  color: var(--po-text-disabled);
+  border-color: var(--po-border-disabled);
+  background-color: var(--po-bg-surface-sunken);
+}
+
+/* ==========================================================================
+   Portaled Dropdowns & Popovers Opened from PO Screen
+   (Radix portals render into document.body outside of .po-screen)
+   ========================================================================== */
+:root:not(.dark) .po-popover-content,
+:root:not(.dark) .po-select-content,
+:root:not(.dark) .po-dropdown-content {
+  background-color: var(--erp-blue-color-bg-surface);
+  border-color: var(--erp-blue-color-border-subtle);
+  color: var(--erp-blue-color-text-primary);
+  box-shadow: 0 4px 6px -1px var(--erp-blue-shadow-color-raised), 0 2px 4px -2px var(--erp-blue-shadow-color);
+}
+
+:root:not(.dark) .po-select-content [data-slot="select-item"]:hover,
+:root:not(.dark) .po-select-content [data-slot="select-item"]:focus,
+:root:not(.dark) .po-dropdown-content [data-slot="dropdown-item"]:hover,
+:root:not(.dark) .po-dropdown-content [data-slot="dropdown-item"]:focus,
+:root:not(.dark) .po-popover-content [cmdk-item][data-selected="true"] {
+  background-color: var(--erp-blue-color-bg-selected);
+  color: var(--erp-blue-color-brand-text);
+}
+
+/* ==========================================================================
+   PO Status Badges (Domain Semantic Mapping)
+   The badge keeps its normal shared-Badge variant, so dark mode and every other
+   screen look exactly as before; these rules only restyle it inside the light PO screen.
+   ========================================================================== */
+:root:not(.dark) .po-screen .po-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  box-shadow: none;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1rem;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* DRAFT -> Draft */
+:root:not(.dark) .po-screen .po-status-badge.po-status-draft {
+  background-color: var(--erp-blue-status-draft-bg);
+  color: var(--erp-blue-status-draft-text);
+  border-color: var(--erp-blue-color-border-subtle);
+}
+
+/* WAITING APPROVAL -> Pending */
+:root:not(.dark) .po-screen .po-status-badge.po-status-pending {
+  background-color: var(--erp-blue-status-pending-bg);
+  color: var(--erp-blue-status-pending-text);
+  border-color: var(--erp-blue-color-warning-border);
+}
+
+/* ISSUED -> Active */
+:root:not(.dark) .po-screen .po-status-badge.po-status-active {
+  background-color: var(--erp-blue-status-active-bg);
+  color: var(--erp-blue-status-active-text);
+  border-color: var(--erp-blue-color-info-border);
+}
+
+/* PARTIALLY RECEIVED -> Progress */
+:root:not(.dark) .po-screen .po-status-badge.po-status-progress {
+  background-color: var(--erp-blue-status-progress-bg);
+  color: var(--erp-blue-status-progress-text);
+  border-color: var(--erp-blue-status-progress-border);
+}
+
+/* CLOSED -> Success */
+:root:not(.dark) .po-screen .po-status-badge.po-status-success {
+  background-color: var(--erp-blue-status-success-bg);
+  color: var(--erp-blue-status-success-text);
+  border-color: var(--erp-blue-color-success-border);
+}
+
+/* CANCELLED / REJECTED -> Danger */
+:root:not(.dark) .po-screen .po-status-badge.po-status-danger {
+  background-color: var(--erp-blue-status-danger-bg);
+  color: var(--erp-blue-status-danger-text);
+  border-color: var(--erp-blue-color-danger-border);
+}

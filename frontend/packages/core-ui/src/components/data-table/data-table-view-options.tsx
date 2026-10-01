@@ -2,6 +2,7 @@ import type { Table } from '@tanstack/react-table';
 import { SlidersHorizontal } from 'lucide-react';
 
 import { Button } from '../ui/button';
+import { cn } from '../../lib/utils';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -12,7 +13,13 @@ import {
 } from '../ui/dropdown-menu';
 
 /** Column-visibility toggle for a DataTable's toolbar. Hides `enableHiding: false` columns (selection, actions). */
-export function DataTableViewOptions<TRow>({ table }: { table: Table<TRow> }) {
+export function DataTableViewOptions<TRow>({
+  table,
+  contentClassName,
+}: {
+  table: Table<TRow>;
+  contentClassName?: string;
+}) {
   const columns = table.getAllColumns().filter((column) => column.getCanHide());
 
   return (
@@ -23,7 +30,7 @@ export function DataTableViewOptions<TRow>({ table }: { table: Table<TRow> }) {
           Columns
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-48">
+      <DropdownMenuContent align="end" className={cn("w-48", contentClassName)}>
         <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {columns.map((column) => (

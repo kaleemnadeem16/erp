@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "./themes.css";
+@import "./palette-erp-blue.css";
 
 /* Tailwind's auto content detection stops at package boundaries, so classes used
    inside the @erp/core-ui workspace package (a sibling package, not a subdirectory

@@ -60,6 +60,8 @@ export interface DataTableProps<TRow> {
    * both. The base component only owns placement/layout; which actions exist
    * is entirely up to the screen passing this prop.
    */
+  /** Optional class name to attach to the Columns dropdown content */
+  viewOptionsMenuClassName?: string;
   rowActions?: (row: TRow) => ReactNode;
 }
 
@@ -97,6 +99,7 @@ export function DataTable<TRow>({
   view,
   onViewChange,
   cardColumns,
+  viewOptionsMenuClassName,
   rowActions,
 }: DataTableProps<TRow>) {
   const table = useReactTable({
@@ -135,7 +138,7 @@ export function DataTable<TRow>({
           )}
           {onColumnVisibilityChange && (
             <div className="ml-auto">
-              <DataTableViewOptions table={table} />
+              <DataTableViewOptions table={table} contentClassName={viewOptionsMenuClassName} />
             </div>
           )}
         </div>

@@ -31,6 +31,8 @@ export interface ComboboxProps extends Omit<ButtonHTMLAttributes<HTMLButtonEleme
   loadError?: ComboboxLoadError;
   /** Set while that request is still running, so an empty list is not mistaken for "no results". */
   loading?: boolean;
+  /** Optional class name to attach to the portaled PopoverContent */
+  popoverClassName?: string;
 }
 
 /**
@@ -45,7 +47,7 @@ export interface ComboboxProps extends Omit<ButtonHTMLAttributes<HTMLButtonEleme
  * `FormControl` onto whatever single child it wraps).
  */
 export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(function Combobox(
-  { value, onValueChange, options, placeholder = 'Select…', searchPlaceholder = 'Search…', emptyText = 'No results found.', loadError, loading, className, disabled, ...triggerProps },
+  { value, onValueChange, options, placeholder = 'Select…', searchPlaceholder = 'Search…', emptyText = 'No results found.', loadError, loading, popoverClassName, className, disabled, ...triggerProps },
   ref
 ) {
   const [open, setOpen] = useState(false);
@@ -73,7 +75,7 @@ export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(function Co
           <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+      <PopoverContent className={cn("w-[--radix-popover-trigger-width] p-0", popoverClassName)} align="start">
         {loadError ? (
           <div role="alert" className="flex flex-col items-center gap-2 p-4 text-center">
             <p className="text-sm font-medium text-destructive">Couldn't load {loadError.noun}.</p>

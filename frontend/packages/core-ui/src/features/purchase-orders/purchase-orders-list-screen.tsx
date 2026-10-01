@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router";
+import { useLocation, useNavigate, useParams } from "react-router";
 import { SlidersHorizontal, X } from "lucide-react";
 import type { PaginationState, SortingState } from "@tanstack/react-table";
 import {
@@ -297,10 +297,122 @@ export function PurchaseOrdersListScreen() {
     documentTitle: "Purchase Order List",
   });
 
+  const { id: activeId } = useParams<{ id?: string }>();
+
+  const activeChips = useMemo(() => {
+    const chips: { id: string; label: string; onRemove: () => void }[] = [];
+    if (query.filters.supplier_account_id) {
+      const name =
+        supplierLabels.get(Number(query.filters.supplier_account_id)) ??
+        `#${query.filters.supplier_account_id}`;
+      chips.push({
+        id: "supplier",
+        label: `Supplier: ${name}`,
+        onRemove: () =>
+          query.setFilters({
+            supplier_account_id: undefined,
+            supplier_site_id: undefined,
+          }),
+      });
+    }
+    if (query.filters.status) {
+      chips.push({
+        id: "status",
+        label: `Status: ${query.filters.status.replace(/_/g, " ")}`,
+        onRemove: () => query.setFilter("status", undefined),
+      });
+    }
+    if (query.filters.order_date_from || query.filters.order_date_to) {
+      chips.push({
+        id: "order_date",
+        label: `Order: ${query.filters.order_date_from ?? "…"} to ${query.filters.order_date_to ?? "…"}`,
+        onRemove: () =>
+          query.setFilters({
+            order_date_from: undefined,
+            order_date_to: undefined,
+          }),
+      });
+    }
+    if (
+      query.filters.expected_delivery_from ||
+      query.filters.expected_delivery_to
+    ) {
+      chips.push({
+        id: "expected_delivery",
+        label: `Expected: ${query.filters.expected_delivery_from ?? "…"} to ${query.filters.expected_delivery_to ?? "…"}`,
+        onRemove: () =>
+          query.setFilters({
+            expected_delivery_from: undefined,
+            expected_delivery_to: undefined,
+          }),
+      });
+    }
+    if (query.filters.issued_from || query.filters.issued_to) {
+      chips.push({
+        id: "issued",
+        label: `Issued: ${query.filters.issued_from ?? "…"} to ${query.filters.issued_to ?? "…"}`,
+        onRemove: () =>
+          query.setFilters({
+            issued_from: undefined,
+            issued_to: undefined,
+          }),
+      });
+    }
+    if (query.filters.item_id) {
+      const name =
+        itemLabels.get(Number(query.filters.item_id)) ??
+        `#${query.filters.item_id}`;
+      chips.push({
+        id: "item",
+        label: `Item: ${name}`,
+        onRemove: () => query.setFilter("item_id", undefined),
+      });
+    }
+    if (query.filters.supplier_site_id) {
+      chips.push({
+        id: "site",
+        label: `Site: #${query.filters.supplier_site_id}`,
+        onRemove: () => query.setFilter("supplier_site_id", undefined),
+      });
+    }
+    if (query.filters.currency_id) {
+      const code =
+        currencyLabels.get(Number(query.filters.currency_id)) ??
+        `#${query.filters.currency_id}`;
+      chips.push({
+        id: "currency",
+        label: `Currency: ${code}`,
+        onRemove: () => query.setFilter("currency_id", undefined),
+      });
+    }
+    if (
+      mayViewCommercialCost &&
+      (query.filters.total_min || query.filters.total_max)
+    ) {
+      chips.push({
+        id: "total",
+        label: `Value: ${query.filters.total_min ?? "0"} to ${query.filters.total_max ?? "…"}`,
+        onRemove: () =>
+          query.setFilters({
+            total_min: undefined,
+            total_max: undefined,
+          }),
+      });
+    }
+    return chips;
+  }, [
+    query.filters,
+    supplierLabels,
+    currencyLabels,
+    itemLabels,
+    mayViewCommercialCost,
+    query,
+  ]);
+
   return (
     // Extra bottom padding below `md` clears the fixed MobileFab — see
     // PageHeader's `primaryAction` note in docs/architecture/user-interface.md.
-    <div className="space-y-4 p-4 pb-24 md:p-6">
+    <div className="po-screen min-h-full space-y-4 p-4 pb-24 md:p-6 bg-[var(--po-bg-canvas)] text-[var(--po-text-primary)]">
       <PageHeader
         title="Purchase Orders"
         description="Raise supplier commitments, track their lifecycle and continue into receiving."
@@ -339,13 +451,15 @@ export function PurchaseOrdersListScreen() {
           <Button
             variant={advancedOpen || advancedFilterCount > 0 ? "secondary" : "outline"}
             size="sm"
-            className="h-9"
+            className={cn("h-9", (advancedOpen || advancedFilterCount > 0) && "po-btn-filters-active")}
             onClick={() => setAdvancedOpen((open) => !open)}
           >
             <SlidersHorizontal className="mr-1.5 h-4 w-4" />
             Filters
             {advancedFilterCount > 0 && (
-              <Badge className="ml-1.5">{advancedFilterCount}</Badge>
+              <Badge className={cn("ml-1.5", (advancedOpen || advancedFilterCount > 0) && "po-filter-badge")}>
+                {advancedFilterCount}
+              </Badge>
             )}
           </Button>
           <div className="ml-auto flex items-center gap-2">
@@ -377,9 +491,9 @@ export function PurchaseOrdersListScreen() {
         inert={!advancedOpen}
       >
         <div className="overflow-hidden">
-          <div className="rounded-lg border bg-card p-4 text-card-foreground shadow-xs">
+          <div className="rounded-lg border bg-card p-4 text-card-foreground shadow-xs po-filter-panel">
             <div className="mb-3 flex items-center justify-between">
-              <span className="text-xs font-semibold tracking-wide uppercase text-muted-foreground">
+              <span className="text-xs font-semibold tracking-wide uppercase text-muted-foreground po-filter-panel-title">
                 Advanced Filters
               </span>
               <div className="flex items-center gap-2">
@@ -466,6 +580,34 @@ export function PurchaseOrdersListScreen() {
         </SheetContent>
       </Sheet>
 
+      {activeChips.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          <span className="text-xs font-medium text-[var(--po-text-tertiary)]">
+            Active filters:
+          </span>
+          {activeChips.map((chip) => (
+            <span key={chip.id} className="po-chip-active">
+              <span>{chip.label}</span>
+              <button
+                type="button"
+                aria-label={`Remove filter ${chip.label}`}
+                onClick={chip.onRemove}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          ))}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-xs text-[var(--po-text-secondary)] hover:text-[var(--po-text-primary)]"
+            onClick={clearAllFilters}
+          >
+            Clear all
+          </Button>
+        </div>
+      )}
+
       <DataTable
         columns={tanStackColumns}
         data={orders}
@@ -486,6 +628,8 @@ export function PurchaseOrdersListScreen() {
         }}
         columnVisibility={columnVisibility}
         onColumnVisibilityChange={setColumnVisibility}
+        rowSelection={activeId ? { [activeId]: true } : undefined}
+        getRowId={(row) => String(row.id)}
         onRowClick={(order: PurchaseOrderResource) =>
           navigate({ pathname: `/purchase-orders/${order.id}`, search })
         }
@@ -498,6 +642,7 @@ export function PurchaseOrdersListScreen() {
         view={view}
         onViewChange={setView}
         cardColumns={columns}
+        viewOptionsMenuClassName="po-dropdown-content"
       />
 
       {/* Quick Print — a dedicated print-only layout, hidden until react-to-print clones it. */}
@@ -626,6 +771,7 @@ function PurchaseOrderFilterControls({
         searchPlaceholder="Search suppliers…"
         emptyText="No suppliers found."
         className={full ? "h-9 w-full" : "h-9 w-56"}
+        popoverClassName="po-popover-content"
       />
       <Select
         value={query.filters.status ?? "all"}
@@ -639,7 +785,7 @@ function PurchaseOrderFilterControls({
         >
           <SelectValue placeholder="Status" />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="po-select-content">
           <SelectItem value="all">All statuses</SelectItem>
           {STATUSES.map((status) => (
             <SelectItem key={status} value={status}>
@@ -693,6 +839,7 @@ function AdvancedFilterFields({
             value={query.filters.order_date_from ?? ""}
             onChange={(val) => query.setFilter("order_date_from", val || undefined)}
             className="w-full"
+            popoverClassName="po-popover-content"
           />
           <span className="text-xs text-muted-foreground">–</span>
           <DateField
@@ -700,6 +847,7 @@ function AdvancedFilterFields({
             value={query.filters.order_date_to ?? ""}
             onChange={(val) => query.setFilter("order_date_to", val || undefined)}
             className="w-full"
+            popoverClassName="po-popover-content"
           />
         </div>
       </div>
@@ -716,6 +864,7 @@ function AdvancedFilterFields({
               query.setFilter("expected_delivery_from", val || undefined)
             }
             className="w-full"
+            popoverClassName="po-popover-content"
           />
           <span className="text-xs text-muted-foreground">–</span>
           <DateField
@@ -725,6 +874,7 @@ function AdvancedFilterFields({
               query.setFilter("expected_delivery_to", val || undefined)
             }
             className="w-full"
+            popoverClassName="po-popover-content"
           />
         </div>
       </div>
@@ -739,6 +889,7 @@ function AdvancedFilterFields({
             value={query.filters.issued_from ?? ""}
             onChange={(val) => query.setFilter("issued_from", val || undefined)}
             className="w-full"
+            popoverClassName="po-popover-content"
           />
           <span className="text-xs text-muted-foreground">–</span>
           <DateField
@@ -746,6 +897,7 @@ function AdvancedFilterFields({
             value={query.filters.issued_to ?? ""}
             onChange={(val) => query.setFilter("issued_to", val || undefined)}
             className="w-full"
+            popoverClassName="po-popover-content"
           />
         </div>
       </div>
@@ -766,6 +918,7 @@ function AdvancedFilterFields({
           searchPlaceholder="Search items…"
           emptyText="No items found."
           className="h-9 w-full"
+          popoverClassName="po-popover-content"
         />
       </div>
 
@@ -789,7 +942,7 @@ function AdvancedFilterFields({
             >
               <SelectValue placeholder="All sites" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="po-select-content">
               <SelectItem value="all">All sites</SelectItem>
               {sites.map((site) => (
                 <SelectItem key={site.id} value={String(site.id)}>
@@ -853,7 +1006,7 @@ function AdvancedFilterFields({
               >
                 <SelectValue placeholder="All currencies" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="po-select-content">
                 <SelectItem value="all">All currencies</SelectItem>
                 {currencies.map((currency) => (
                   <SelectItem key={currency.id} value={String(currency.id)}>
