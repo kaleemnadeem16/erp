@@ -226,8 +226,8 @@ shape, for every capability below.
 
 All validated Estimating list filters now have controls. The shared lookup selectors still
 fetch at most 100 options; server-side search/pagination is a separate scale follow-up.
-Application Rates Item and work-unit filters are server-searchable; other
-Estimating lookup filters remain on the 100-option pattern.
+Application Rates Item/work-unit and Assemblies group filters are server-searchable;
+Formulations and other Estimating lookup filters remain on the 100-option pattern.
 
 **Recommended capabilities**, matching `OverheadPolicy`'s naming shape: `estimating.rate-dimension.manage`,
 `estimating.application-rate.manage`, `estimating.formulation.manage` (covers `FormulationVersion`

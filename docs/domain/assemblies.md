@@ -36,8 +36,9 @@ requires the separate `estimating.internal_cost.view` capability, even for a man
 control is hidden otherwise. Existing maintainers need an explicit grant before deployment.
 The Assemblies list exposes the API's code/name search, group and status filters as
 URL-backed controls; non-search filters move into a bottom sheet on mobile, where the
-list also offers cards. Group selection currently uses the shared 100-option lookup
-pattern, with server-searchable lookup left as a scale follow-up.
+list also offers cards. The group filter searches the Assembly Groups API and
+resolves a bookmarked selected group by ID; other forms still use the shared
+100-option lookup pattern.
 
 This is a capability retrofit, not a redesign of assembly lifecycle or record scope. List/show
 remain company-scoped shared reads; later organisation-scoped visibility would need matching

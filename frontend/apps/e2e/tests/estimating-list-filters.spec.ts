@@ -152,3 +152,19 @@ test('application rate work-unit lookup searches the server and keeps its select
   await page.reload();
   await expect(page.getByLabel('Work unit', { exact: true }).first()).toContainText('Square metre');
 });
+
+test('assembly group filter searches the server and keeps its selected label', async ({ page }) => {
+  await page.goto('/assemblies');
+  await page.getByLabel('Assembly group', { exact: true }).first().click();
+  const searched = page.waitForResponse((response) =>
+    response.url().includes('/api/v1/assembly-groups') &&
+    new URL(response.url()).searchParams.get('filter[search]') === 'demo-labour' &&
+    response.status() === 200,
+  );
+  await page.locator('[cmdk-input]').fill('demo-labour');
+  await searched;
+  await page.getByRole('option', { name: /demo-labour/ }).first().click();
+  await expect(page.getByLabel('Assembly group', { exact: true }).first()).toContainText('demo-labour');
+  await page.reload();
+  await expect(page.getByLabel('Assembly group', { exact: true }).first()).toContainText('demo-labour');
+});

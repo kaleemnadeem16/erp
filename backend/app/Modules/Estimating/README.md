@@ -125,6 +125,8 @@ Formulation list search/status/output-item/customer filters and assembly list
 search/status/group filters are already supported by their Index requests; their
 React lists now expose all seven as URL-backed controls with mobile filter sheets
 and card views. This changes no read or write authority.
+The Assemblies list group filter searches the Assembly Groups API as the user types
+and resolves a selected ID for bookmarked URLs, rather than relying on the first 100 groups.
 Rate Dimension and Assembly Group lists likewise expose their existing code/name
 search as URL-backed controls and offer mobile cards. The Assembly Group New/edit
 affordances follow its manage capability; server-side enforcement remains authoritative.

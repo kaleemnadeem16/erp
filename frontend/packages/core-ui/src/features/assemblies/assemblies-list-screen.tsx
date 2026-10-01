@@ -5,6 +5,7 @@ import type { PaginationState, SortingState } from '@tanstack/react-table';
 import {
   useAssembliesIndex,
   useAssemblyGroupsIndex,
+  useAssemblyGroupsShow,
   type AssemblyResource,
   type AssembliesIndexSort,
   type AssembliesIndexFilterStatus,
@@ -13,7 +14,7 @@ import { PageHeader } from '../../components/page/page-header';
 import { DataTable, toTanStackColumns } from '../../components/data-table';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
-import { Combobox } from '../../components/ui/combobox';
+import { RemoteLookupCombobox } from '../../components/ui/remote-lookup-combobox';
 import { Input } from '../../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '../../components/ui/sheet';
@@ -52,8 +53,26 @@ export function AssembliesListScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchInput]);
 
-  const groupsQuery = useAssemblyGroupsIndex({ per_page: 100, sort: 'code' });
+  const [groupSearch, setGroupSearch] = useState('');
+  const [debouncedGroupSearch, setDebouncedGroupSearch] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedGroupSearch(groupSearch), 300);
+    return () => clearTimeout(timer);
+  }, [groupSearch]);
+  const groupsQuery = useAssemblyGroupsIndex({
+    'filter[search]': debouncedGroupSearch || undefined,
+    per_page: 100,
+    sort: 'code',
+  });
   const groups = groupsQuery.data?.status === 200 ? groupsQuery.data.data.data : [];
+  const selectedGroupId = Number(query.filters.assembly_group_id ?? 0);
+  const selectedGroupResult = useAssemblyGroupsShow(selectedGroupId, undefined, { query: { enabled: selectedGroupId > 0 } });
+  const selectedGroup = selectedGroupResult.data?.status === 200 ? selectedGroupResult.data.data.data : undefined;
+  const groupOptions = groupSearch === debouncedGroupSearch ? groups : [];
+  const groupsLookup = {
+    ...lookupState(groupsQuery, 'assembly groups'),
+    loading: groupsQuery.isLoading || groupSearch !== debouncedGroupSearch,
+  };
   const result = useAssembliesIndex({
     'filter[search]': query.filters.search || undefined,
     'filter[assembly_group_id]': query.filters.assembly_group_id ? Number(query.filters.assembly_group_id) : undefined,
@@ -96,7 +115,14 @@ export function AssembliesListScreen() {
           className="h-9 flex-1 md:w-56 md:flex-none"
         />
         <div className="hidden items-center gap-2 md:flex">
-          <AssemblyFilters query={query} groups={groups} groupsLookup={lookupState(groupsQuery, 'assembly groups')} />
+          <AssemblyFilters
+            query={query}
+            groups={groupOptions}
+            groupsLookup={groupsLookup}
+            groupSearch={groupSearch}
+            onGroupSearchChange={setGroupSearch}
+            selectedGroupLabel={selectedGroup ? `${selectedGroup.code} — ${selectedGroup.name}` : undefined}
+          />
         </div>
         <Button variant="outline" size="sm" className="h-9 shrink-0 md:hidden" onClick={() => setFiltersOpen(true)}>
           <SlidersHorizontal className="h-4 w-4" />
@@ -112,8 +138,11 @@ export function AssembliesListScreen() {
           <div className="flex flex-col gap-3 py-4">
             <AssemblyFilters
               query={query}
-              groups={groups}
-              groupsLookup={lookupState(groupsQuery, 'assembly groups')}
+              groups={groupOptions}
+              groupsLookup={groupsLookup}
+              groupSearch={groupSearch}
+              onGroupSearchChange={setGroupSearch}
+              selectedGroupLabel={selectedGroup ? `${selectedGroup.code} — ${selectedGroup.name}` : undefined}
               full
             />
           </div>
@@ -165,31 +194,32 @@ function AssemblyFilters({
   query,
   groups,
   groupsLookup,
+  groupSearch,
+  onGroupSearchChange,
+  selectedGroupLabel,
   full = false,
 }: {
   query: ListQueryState<Filters>;
   groups: { id: number; code: string; name: string }[];
   groupsLookup: LookupState;
+  groupSearch: string;
+  onGroupSearchChange: (search: string) => void;
+  selectedGroupLabel?: string;
   full?: boolean;
 }) {
   return (
     <>
-      <Combobox
+      <RemoteLookupCombobox
         {...groupsLookup}
-        aria-label="Assembly group"
+        label="Assembly group"
+        allLabel="All groups"
         className={full ? 'w-full' : 'w-48'}
         value={query.filters.assembly_group_id ?? 'all'}
+        selectedLabel={selectedGroupLabel}
         onValueChange={(value) => query.setFilter('assembly_group_id', value === 'all' ? undefined : value)}
-        placeholder="Assembly group"
-        searchPlaceholder="Search groups…"
-        emptyText="No groups found."
-        options={[
-          { value: 'all', label: 'All groups' },
-          ...groups.map((group) => ({
-            value: String(group.id),
-            label: `${group.code} — ${group.name}`,
-          })),
-        ]}
+        search={groupSearch}
+        onSearchChange={onGroupSearchChange}
+        options={groups.map((group) => ({ value: String(group.id), label: `${group.code} — ${group.name}` }))}
       />
       <Select
         value={query.filters.status ?? 'all'}
