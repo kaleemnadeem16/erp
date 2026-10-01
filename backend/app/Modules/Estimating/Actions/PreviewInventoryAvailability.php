@@ -8,7 +8,10 @@ use App\Exceptions\DomainInvariantException;
 use App\Modules\Estimating\Support\InventoryAllocation;
 use App\Modules\Estimating\Support\MaterialSelectionStrategy;
 use App\Modules\Estimating\Support\ResolvedSelectionStrategy;
+use App\Modules\Estimating\Support\ResolvedStockMixControl;
 use App\Modules\Estimating\Support\StockMix;
+use App\Modules\Estimating\Support\StockMixLevel;
+use App\Modules\Estimating\Support\StockMixVerdict;
 use App\Modules\Inventory\Actions\QueryStockAvailability;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Support\InventoryScope;
@@ -53,6 +56,8 @@ final class PreviewInventoryAvailability
         private readonly AllocateInventory $allocate,
         private readonly ResolveMaterialSelectionStrategies $resolveStrategies,
         private readonly PriceStockMix $priceMix,
+        private readonly ResolveStockMixControls $resolveMixControls,
+        private readonly JudgeStockMix $judgeMix,
     ) {}
 
     /**
@@ -60,9 +65,10 @@ final class PreviewInventoryAvailability
      * @param  array{warehouse_ids?: list<int>, location_ids?: list<int>}  $scopeInput
      * @param  array<int, string>  $plannedByItem  item id → what-if planned stock quantity; the proposal plans for it instead of the standard
      * @param  list<array{item_id: int, location_id: int, batch_id?: int|null, quantity: string, uom_id: int}>  $stockMix  hand-built draw lines (ADR 0072), validated and priced here
+     * @param  list<array{item_id: int, note: string|null}>  $stockMixNotes  the reason given for a mix, where the company's control asks for one (ADR 0076)
      * @return array{data: array<string, mixed>, evidence: array<string, mixed>}
      */
-    public function __invoke(array $leafRows, array $scopeInput, ?MaterialSelectionStrategy $override, bool $includeCost, array $plannedByItem = [], array $stockMix = []): array
+    public function __invoke(array $leafRows, array $scopeInput, ?MaterialSelectionStrategy $override, bool $includeCost, array $plannedByItem = [], array $stockMix = [], array $stockMixNotes = []): array
     {
         $headline = ($this->resolveStrategies)->companyLevel($override);
         $resolved = ($this->resolveStrategies)(array_map(fn (array $row): int => $row['item']['id'], $leafRows), $override);
@@ -75,7 +81,12 @@ final class PreviewInventoryAvailability
         $stockedIds = $items->filter(fn (Item $item): bool => $item->is_stocked)->keys()->map(fn ($id): int => (int) $id)->all();
         $snapshot = ($this->availability)($stockedIds, $scope);
 
-        $mixLinesByItem = $this->groupMixLines($stockMix, $leafRows, $items);
+        $mixControls = ($this->resolveMixControls)(array_map(fn (array $row): int => $row['item']['id'], $leafRows));
+        $mixLinesByItem = $this->groupMixLines($stockMix, $leafRows, $items, $mixControls);
+        $mixNotes = [];
+        foreach ($stockMixNotes as $entry) {
+            $mixNotes[(int) $entry['item_id']] = $entry['note'] ?? null;
+        }
 
         $warnings = [];
         $itemBlocks = [];
@@ -98,6 +109,9 @@ final class PreviewInventoryAvailability
             $mix = $recommendation === null || ! isset($mixLinesByItem[$itemId])
                 ? null
                 : ($this->priceMix)($items->get($itemId), $required, $balances, $mixLinesByItem[$itemId]);
+            $verdict = $mix === null
+                ? null
+                : ($this->judgeMix)($items->get($itemId), $mixControls[$itemId], $mix, $recommendation, $mixNotes[$itemId] ?? null);
 
             $otherStrategies = $recommendation === null
                 ? []
@@ -164,6 +178,7 @@ final class PreviewInventoryAvailability
                 'uom' => $this->ref((int) $row['uom']['id'], $uomCode, (string) $row['uom']['name']),
                 'is_stocked' => $stocked,
                 'strategy' => $this->resolvedRef($itemStrategy),
+                'mix_control' => $this->controlRef($mixControls[$itemId]),
                 'standard_quantity' => (string) $row['standard_quantity'],
                 'required_quantity' => (string) $required,
                 'on_hand_quantity' => $stocked ? (string) $onHand : null,
@@ -175,10 +190,10 @@ final class PreviewInventoryAvailability
                 'remaining_after_use_quantity' => $recommendation === null ? null : (string) $usable->minus($recommendation->covered),
                 'recommendation' => $recommendation === null ? null : $this->plan($recommendation, $includeCost),
                 'alternatives' => $alternatives,
-                'selected_mix' => $mix === null ? null : $this->mix($mix, $recommendation, $required, $usable, $includeCost),
+                'selected_mix' => $mix === null || $verdict === null ? null : $this->mix($mix, $recommendation, $required, $usable, $includeCost, $verdict, $mixControls[$itemId], $mixNotes[$itemId] ?? null),
                 'balances' => $balanceRows,
             ];
-            $itemEvidence[] = ['item_id' => $itemId, 'strategy' => $strategy->value, 'strategy_policy_id' => $itemStrategy->policyId, 'mix' => $mix === null ? null : $this->mixEvidence($mix), 'balances' => $balanceEvidence];
+            $itemEvidence[] = ['item_id' => $itemId, 'strategy' => $strategy->value, 'strategy_policy_id' => $itemStrategy->policyId, 'mix' => $mix === null ? null : $this->mixEvidence($mix), 'mix_control' => [$mixControls[$itemId]->level->value, $mixControls[$itemId]->thresholdPercent, $mixControls[$itemId]->policyId], 'mix_note' => $mix === null ? null : ($mixNotes[$itemId] ?? null), 'balances' => $balanceEvidence];
         }
 
         return [
@@ -264,9 +279,10 @@ final class PreviewInventoryAvailability
      * @param  list<array{item_id: int, location_id: int, batch_id?: int|null, quantity: string, uom_id: int}>  $stockMix
      * @param  list<array{item: array{id: int, code: string, name: string}, standard_quantity: string, uom: array{id: int, code: string, name: string}}>  $leafRows
      * @param  Collection<int, Item>  $items
+     * @param  array<int, ResolvedStockMixControl>  $controls
      * @return array<int, list<array{index: int, location_id: int, batch_id: int|null, quantity: string, uom_id: int}>>
      */
-    private function groupMixLines(array $stockMix, array $leafRows, $items): array
+    private function groupMixLines(array $stockMix, array $leafRows, $items, array $controls): array
     {
         $required = [];
         foreach ($leafRows as $row) {
@@ -280,6 +296,9 @@ final class PreviewInventoryAvailability
             }
             if (! (bool) $items->get($itemId)?->is_stocked) {
                 throw new DomainInvariantException('That material is not a stocked item, so there is no stock to choose from.', "stock_mix.{$index}.item_id");
+            }
+            if ($controls[$itemId]->level === StockMixLevel::NotAllowed) {
+                throw new DomainInvariantException('Your company does not allow choosing stock by hand for this material; follow the proposal.', "stock_mix.{$index}.item_id");
             }
             $grouped[$itemId][] = [
                 'index' => $index,
@@ -307,10 +326,11 @@ final class PreviewInventoryAvailability
      *     recommendation_estimated_cost: string|null,
      *     cost_difference: string|null,
      *     cost_difference_percent: string|null,
+     *     control: array{level: array{code: string, label: string}, threshold_percent: string|null, status: string, observed_percent: string|null, extra_cost: string|null, can_adopt: bool, note: string|null, approval: array{policy: array{id: int, code: string, version_no: int, name: string}|null, steps: list<array{name: string, stage: int, required_approvals: int, uses_authority_limit: bool}>, note: string|null}|null, limitations: list<string>},
      *     limitations: list<string>
      * }
      */
-    private function mix(StockMix $mix, InventoryAllocation $recommendation, BigDecimal $required, BigDecimal $usable, bool $includeCost): array
+    private function mix(StockMix $mix, InventoryAllocation $recommendation, BigDecimal $required, BigDecimal $usable, bool $includeCost, StockMixVerdict $verdict, ResolvedStockMixControl $control, ?string $note): array
     {
         $lines = [];
         foreach ($mix->lines as $line) {
@@ -352,6 +372,18 @@ final class PreviewInventoryAvailability
             'recommendation_estimated_cost' => $includeCost && $recommendation->estimatedCost !== null ? (string) $recommendation->estimatedCost : null,
             'cost_difference' => $difference === null ? null : (string) $difference,
             'cost_difference_percent' => $percent === null ? null : (string) $percent,
+            'control' => [
+                'level' => ['code' => $control->level->value, 'label' => (string) $control->level->label()],
+                'threshold_percent' => $control->thresholdPercent === null ? null : (string) BigDecimal::of($control->thresholdPercent)->stripTrailingZeros(),
+                'status' => $verdict->status,
+                // Cost figures follow the cost capability: the judgement is the same for everyone, the numbers are hidden (never zero).
+                'observed_percent' => $includeCost && $verdict->observedPercent !== null ? (string) $verdict->observedPercent : null,
+                'extra_cost' => $includeCost && $verdict->extraCost !== null ? (string) $verdict->extraCost : null,
+                'can_adopt' => $verdict->canAdopt(),
+                'note' => $note === null || trim($note) === '' ? null : trim($note),
+                'approval' => $verdict->approval,
+                'limitations' => $verdict->limitations,
+            ],
             'limitations' => $this->mixLimitations(),
         ];
     }
@@ -393,6 +425,17 @@ final class PreviewInventoryAvailability
     private function locationRef(StockBalance $balance): array
     {
         return ['id' => $balance->locationId, 'code' => $balance->locationCode, 'name' => $balance->locationName, 'type' => $balance->locationType->value];
+    }
+
+    /** @return array{level: array{code: string, label: string}, threshold_percent: string|null, source: string, scope_id: int|null} */
+    private function controlRef(ResolvedStockMixControl $control): array
+    {
+        return [
+            'level' => ['code' => $control->level->value, 'label' => (string) $control->level->label()],
+            'threshold_percent' => $control->thresholdPercent === null ? null : (string) BigDecimal::of($control->thresholdPercent)->stripTrailingZeros(),
+            'source' => $control->source->value,
+            'scope_id' => $control->scopeId,
+        ];
     }
 
     /** @return array{id: int, code: string}|null */

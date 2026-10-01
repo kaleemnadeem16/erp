@@ -2,7 +2,7 @@
 
 # 0072 — Let a person build the stock draw by hand, in base quantity, validated and priced by the server
 
-- **Status:** accepted (escalation of a mix's *cost consequence* is deliberately not decided here — see "Not decided")
+- **Status:** accepted. The cost-consequence question it left open is decided in [ADR 0076](0076-company-control-over-hand-chosen-stock.md): each company chooses its own level of control.
 - **Date:** 2026-10-01
 - **Affects:** Estimating's Material Preview stock proposal, [inventory-packages.md](../domain/inventory-packages.md),
   [ADR 0053](0053-explainable-inventory-package-selection-presets.md) §3, [ADR 0054](0054-risk-based-material-plan-variance-controls.md) §4
@@ -61,7 +61,7 @@ meaning without distortion, so no escalation is built and nothing here invents a
 
 What ships instead is *information*: the mix's cost, the proposal's cost and the difference. The choice of whether a costly
 mix should ever need a reason or approval — and, if so, whether it is a new kind of band ("cost of the draw over the proposal"),
-a reuse with an explicit baseline, or nothing — is left to a separate decision with the owner; the research below recommends nothing for now. Until then a mix can never lower
+a reuse with an explicit baseline, or nothing — was left to the owner and is now decided by [ADR 0076](0076-company-control-over-hand-chosen-stock.md): a company-managed control with its own levels and percentage, not the variance bands. Until then a mix can never lower
 or raise how much is used, so no variance or approval rule can be bypassed by choosing one.
 
 ## Research basis — does any mature ERP gate the cost consequence of choosing stock by hand?
@@ -110,7 +110,7 @@ adopted cost snapshot as the baseline rather than the preset's proposal.
 | Waste/residual variance bands (ADR 0054) | Sealed-pack and remnant state | The package-tracking slice |
 | Variable-content / catch-weight packages | [Q23](../OPEN-QUESTIONS.md#q23--variable-content-and-catch-weight-packages) — dual recorded quantities | Its own design, after Q23 |
 | Per-unit quantity precision (a drum only in whole drums) | A rule on `item_quantity_units.quantity_precision`, which is stored but not enforced anywhere today | The package-tracking slice, or sooner if a company needs it |
-| Escalation of a mix's cost consequence | Owner decision above | A separate decision |
+| Escalation of a mix's cost consequence | — | Decided: [ADR 0076](0076-company-control-over-hand-chosen-stock.md); enforcement at adoption waits for Phase 4 |
 
 **The package-tracking slice** has no scheduled phase yet. It is proposed as a dedicated Inventory design (its own ADR) settled
 *before Phase 5 material issue*, because that is where reservations and real consumption of sealed/opened stock start

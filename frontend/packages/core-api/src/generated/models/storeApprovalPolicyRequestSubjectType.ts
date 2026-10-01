@@ -12,4 +12,5 @@ export type StoreApprovalPolicyRequestSubjectType =
 export const StoreApprovalPolicyRequestSubjectType = {
   PURCHASE_ORDER: "PURCHASE_ORDER",
   MATERIAL_VARIANCE: "MATERIAL_VARIANCE",
+  STOCK_MIX: "STOCK_MIX",
 } as const;

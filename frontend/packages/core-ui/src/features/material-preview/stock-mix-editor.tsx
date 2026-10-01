@@ -8,6 +8,7 @@ import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Combobox } from '../../components/ui/combobox';
 import { Input } from '../../components/ui/input';
+import { Textarea } from '../../components/ui/textarea';
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 
 /** What someone has typed for one material's hand-built mix: a quantity per location/batch, all in one unit. */
@@ -15,9 +16,11 @@ export interface MixDraft {
   enabled: boolean;
   uomId: string;
   quantities: Record<string, string>;
+  /** Why this mix was chosen, where the company's control asks for a reason (ADR 0076). */
+  note: string;
 }
 
-export const EMPTY_MIX: MixDraft = { enabled: false, uomId: '', quantities: {} };
+export const EMPTY_MIX: MixDraft = { enabled: false, uomId: '', quantities: {}, note: '' };
 
 /** The identity of one stock source in a mix: a location and, for a batch-tracked item, a batch. */
 export function mixKey(locationId: number, batchId: number | null | undefined): string {
@@ -33,6 +36,8 @@ interface StockMixEditorProps {
   uoms: UomResource[];
   unitsLookup: LookupState;
   mayViewCost: boolean;
+  /** Whether the caller holds `estimating.stock_mix.choose`; without it the control is not offered. */
+  mayChoose: boolean;
   onCalculate?: () => void;
   isCalculating?: boolean;
 }
@@ -42,13 +47,23 @@ interface StockMixEditorProps {
  * quantity per location/batch; the server validates it against the real usable balances, prices it with the same cost
  * evidence as a proposal and answers below. Any figure shown before that answer is guidance only. Nothing is reserved.
  */
-export function StockMixEditor({ item, draft, onChange, uoms, unitsLookup, mayViewCost, onCalculate, isCalculating }: StockMixEditorProps) {
+export function StockMixEditor({ item, draft, onChange, uoms, unitsLookup, mayViewCost, mayChoose, onCalculate, isCalculating }: StockMixEditorProps) {
   const value = draft ?? EMPTY_MIX;
   const set = (patch: Partial<MixDraft>) => onChange({ ...value, ...patch });
   const stockUnit = item.uom.code;
   const uomId = value.uomId || String(item.uom.id);
   const usable = item.balances.filter((balance) => Number(balance.usable_quantity) > 0);
   const mix = item.selected_mix;
+  const control = item.mix_control;
+  const levelCode = String(control.level.code);
+  const threshold = control.threshold_percent === null ? null : trimNumber(String(control.threshold_percent));
+
+  if (levelCode === 'NOT_ALLOWED') {
+    return <p className="border-t pt-3 text-sm text-muted-foreground">Your company asks you to follow the proposal for this material, so choosing stock by hand is not offered.</p>;
+  }
+  if (!mayChoose) {
+    return <p className="border-t pt-3 text-sm text-muted-foreground">Choosing stock by hand needs the <code>estimating.stock_mix.choose</code> capability, which your access does not include.</p>;
+  }
 
   if (!value.enabled) {
     return (
@@ -76,7 +91,7 @@ export function StockMixEditor({ item, draft, onChange, uoms, unitsLookup, mayVi
             The total can be less than the requirement (the rest stays uncovered), but never more: to use more than planned, change the planned quantity.
           </p>
         </div>
-        <Button type="button" size="sm" variant="ghost" onClick={() => onChange({ enabled: false, uomId: '', quantities: {} })}>
+        <Button type="button" size="sm" variant="ghost" onClick={() => onChange({ enabled: false, uomId: '', quantities: {}, note: '' })}>
           Use the proposal instead
         </Button>
       </div>
@@ -129,6 +144,19 @@ export function StockMixEditor({ item, draft, onChange, uoms, unitsLookup, mayVi
             })}
           </TableBody>
         </Table>
+      )}
+
+      {(levelCode === 'REASON_REQUIRED' || levelCode === 'APPROVAL_REQUIRED') && threshold !== null && (
+        <label className="block space-y-1 text-sm">
+          <span className="font-medium">Reason for choosing this mix</span>
+          <Textarea
+            value={value.note}
+            onChange={(event) => set({ note: event.target.value })}
+            rows={2}
+            aria-label={`Reason for the mix of ${item.item.code}`}
+            placeholder={`Needed if the mix costs ${threshold}% or more above the proposal`}
+          />
+        </label>
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
@@ -202,11 +230,63 @@ export function StockMixEditor({ item, draft, onChange, uoms, unitsLookup, mayVi
               )}
             </p>
           )}
+          <MixVerdict control={mix.control} mayViewCost={mayViewCost} />
           {mix.limitations.map((limitation) => <p key={limitation} className="text-muted-foreground">{limitation}</p>)}
         </div>
       )}
     </div>
   );
+}
+
+type Control = NonNullable<Item['selected_mix']>['control'];
+
+const VERDICT_TEXT: Record<string, string> = {
+  WITHIN_LIMIT: 'Within your company’s limit.',
+  NOT_JUDGED: 'Could not be compared with the proposal’s cost, so the company’s limit was not applied.',
+  REASON_MISSING: 'This mix costs more than your company’s limit allows without a reason. Give one above, then calculate again.',
+  REASON_PROVIDED: 'Costs more than the limit, and a reason has been given.',
+  APPROVAL_NEEDED: 'Costs more than the limit: this mix would need approval before the plan could be adopted.',
+  BLOCKED: 'Costs more than the limit and needs approval, but approval is not switched on, so it is blocked.',
+};
+
+/** What the company's control says about this mix (ADR 0076), and the approval it would need. A preview commits nothing. */
+function MixVerdict({ control, mayViewCost }: { control: Control; mayViewCost: boolean }) {
+  const status = String(control.status);
+  if (status === 'NOT_CONTROLLED') return null;
+  const ok = status === 'WITHIN_LIMIT' || status === 'REASON_PROVIDED';
+  const steps = (control.approval?.steps ?? []) as Array<{ name: string; stage: number; required_approvals: number; uses_authority_limit: boolean }>;
+
+  return (
+    <div className={`space-y-1 rounded-md border p-2 ${ok ? 'border-emerald-500/40 bg-emerald-500/10' : 'border-amber-500/40 bg-amber-500/10'}`} role="group" aria-label="Company control on this mix">
+      <p className="font-medium">
+        {ok ? <Check className="mr-1 inline size-4" aria-hidden="true" /> : <AlertTriangle className="mr-1 inline size-4" aria-hidden="true" />}
+        {VERDICT_TEXT[status] ?? status}
+      </p>
+      <p className="text-muted-foreground">
+        Company rule: {String(control.level.label).toLowerCase()}{control.threshold_percent !== null ? ` — ${qty(String(control.threshold_percent))}%` : ''}
+        {mayViewCost && control.observed_percent !== null ? `. This mix: ${qty(String(control.observed_percent))}% above the proposal per unit` : ''}
+        {mayViewCost && control.extra_cost !== null ? ` (${qty(String(control.extra_cost))} extra)` : ''}.
+      </p>
+      {control.note && <p>Reason given: <span className="font-medium">{String(control.note)}</span></p>}
+      {control.approval && (
+        <div>
+          <p className="font-medium">{control.approval.policy ? `Needs approval — ${String(control.approval.policy.name)}` : 'Needs approval'}</p>
+          {steps.length > 0 && (
+            <ol className="list-decimal pl-5 text-muted-foreground">
+              {steps.map((step) => <li key={`${step.stage}-${step.name}`}>{step.name} — {step.required_approvals} {step.required_approvals === 1 ? 'approval' : 'approvals'}</li>)}
+            </ol>
+          )}
+          {control.approval.note && <p className="text-muted-foreground">{String(control.approval.note)}</p>}
+          <p className="text-muted-foreground">A mix is only hypothetical here; it is submitted for approval when its plan is adopted.</p>
+        </div>
+      )}
+      {control.limitations.map((limitation) => <p key={String(limitation)} className="text-muted-foreground">{String(limitation)}</p>)}
+    </div>
+  );
+}
+
+function trimNumber(value: string): string {
+  return qty(value);
 }
 
 function qty(value: string): string {

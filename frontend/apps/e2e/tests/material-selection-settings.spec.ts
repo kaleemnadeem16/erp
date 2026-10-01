@@ -68,3 +68,61 @@ test('the settings screen has no accessibility violations', async ({ page }) => 
   const serious = (await new AxeBuilder({ page }).analyze()).violations.filter((v) => v.impact === 'critical' || v.impact === 'serious');
   expect(serious).toEqual([]);
 });
+
+/**
+ * The company's control over hand-chosen stock (ADR 0076). It is company-wide, so the spec changes the one real rule and
+ * always puts it back to the demo's value (reason needed above 10%) before finishing — and starts by doing the same, so
+ * an interrupted earlier run leaves nothing behind. Its reasons are unique to the run because every change is history.
+ */
+test.describe('stock-choice control', () => {
+  async function setLevel(page: Page, level: string | RegExp, threshold: string | null, reason: string) {
+    await pickSelect(page, 'Stock choice level', level);
+    if (threshold !== null) await page.getByLabel('Percentage above the proposal').fill(threshold);
+    await page.getByLabel('Reason for the stock choice change').fill(reason);
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+  }
+
+  async function restoreDemoRule(page: Page, run: number) {
+    await page.goto('/settings/material-selection');
+    await expect(page.getByRole('heading', { name: 'Choosing stock by hand' })).toBeVisible();
+    await expect(page.getByText(/^Currently: /)).toBeVisible();
+    if (!(await page.getByText('Currently: Reason needed when it costs much more — 10% above the proposal.').count())) {
+      await setLevel(page, /Reason needed/, '10', `Back to the demo rule (${run})`);
+    }
+    await expect(page.getByText('Currently: Reason needed when it costs much more — 10% above the proposal.')).toBeVisible();
+  }
+
+  test('a level needs a reason and a percentage, is kept as history, and decides what the preview offers', async ({ page }) => {
+    const run = Date.now();
+    await restoreDemoRule(page, run);
+
+    // The two stricter levels act on a percentage: refused before anything is sent.
+    await pickSelect(page, 'Stock choice level', /Reason needed/);
+    await page.getByLabel('Percentage above the proposal').fill('');
+    await page.getByLabel('Reason for the stock choice change').fill('Check the percentage is required');
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(page.getByText('Enter a percentage above zero')).toBeVisible();
+
+    // "Not allowed" takes the control away from the preview.
+    await setLevel(page, 'Not allowed', null, `Follow the proposal for now (${run})`);
+    await expect(page.getByText('Currently: Not allowed.')).toBeVisible();
+    await expect(page.locator('li', { hasText: `Follow the proposal for now (${run})` })).toContainText('in force');
+
+    await page.goto('/material-preview');
+    await pickCombobox(page, 'Assembly', /demo-asm-wall-paint/);
+    await page.getByLabel('Work quantity', { exact: true }).fill('10');
+    await page.getByRole('button', { name: 'Calculate preview' }).click();
+    const panel = page.locator('section[aria-labelledby="available-stock-heading"]');
+    await expect(panel.getByText(/choosing stock by hand is not offered/)).toBeVisible();
+    await expect(panel.getByRole('button', { name: 'Choose the stock yourself' })).toHaveCount(0);
+
+    // Back to the demo rule: the reason box appears with the control.
+    await restoreDemoRule(page, run);
+    await page.goto('/material-preview');
+    await pickCombobox(page, 'Assembly', /demo-asm-wall-paint/);
+    await page.getByLabel('Work quantity', { exact: true }).fill('10');
+    await page.getByRole('button', { name: 'Calculate preview' }).click();
+    await panel.getByRole('button', { name: 'Choose the stock yourself' }).first().click();
+    await expect(panel.getByLabel(/^Reason for the mix of /).first()).toBeVisible();
+  });
+});

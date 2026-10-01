@@ -75,6 +75,7 @@ class MaterialPreviewApiTest extends TestCase
         Permission::findOrCreate('estimating.material_preview.run');
         Permission::findOrCreate('estimating.internal_cost.view');
         Permission::findOrCreate('estimating.inventory_availability.view');
+        Permission::findOrCreate('estimating.stock_mix.choose');
 
         $this->sqm = Uom::create(['code' => 'sqm', 'name' => 'Square metre', 'dimension' => UomDimension::Area, 'factor_to_base' => '1', 'is_base' => true]);
         $this->litre = Uom::create(['code' => 'L', 'name' => 'Litre', 'dimension' => UomDimension::Volume, 'factor_to_base' => '1', 'is_base' => true]);
@@ -674,7 +675,7 @@ class MaterialPreviewApiTest extends TestCase
 
     public function test_a_complete_mix_reports_where_each_quantity_and_cost_came_from(): void
     {
-        $user = $this->userWith('estimating.inventory_availability.view', 'estimating.internal_cost.view');
+        $user = $this->userWith('estimating.inventory_availability.view', 'estimating.stock_mix.choose', 'estimating.internal_cost.view');
         $this->stockTwoWarehouses();
 
         $response = $this->actingAs($user)->postJson($this->url(), $this->mixPayload([$this->draw('a', '2'), $this->draw('b', '2')]));
@@ -703,7 +704,7 @@ class MaterialPreviewApiTest extends TestCase
 
     public function test_a_mix_that_covers_only_part_of_the_requirement_is_reported_as_a_shortage_not_hidden(): void
     {
-        $user = $this->userWith('estimating.inventory_availability.view');
+        $user = $this->userWith('estimating.inventory_availability.view', 'estimating.stock_mix.choose');
         $this->stockTwoWarehouses();
 
         $response = $this->actingAs($user)->postJson($this->url(), $this->mixPayload([$this->draw('a', '1')]));
@@ -716,7 +717,7 @@ class MaterialPreviewApiTest extends TestCase
 
     public function test_a_mix_that_exceeds_a_usable_balance_is_refused_and_says_how_much_is_usable(): void
     {
-        $user = $this->userWith('estimating.inventory_availability.view');
+        $user = $this->userWith('estimating.inventory_availability.view', 'estimating.stock_mix.choose');
         $this->stockTwoWarehouses();
 
         $response = $this->actingAs($user)->postJson($this->url(), $this->mixPayload([$this->draw('a', '3.5')]));
@@ -727,7 +728,7 @@ class MaterialPreviewApiTest extends TestCase
 
     public function test_a_mix_that_draws_more_than_the_plan_is_refused_so_it_cannot_bypass_the_variance_rules(): void
     {
-        $user = $this->userWith('estimating.inventory_availability.view');
+        $user = $this->userWith('estimating.inventory_availability.view', 'estimating.stock_mix.choose');
         $this->stockTwoWarehouses();
 
         $response = $this->actingAs($user)->postJson($this->url(), $this->mixPayload([$this->draw('a', '3'), $this->draw('b', '2')]));
@@ -738,7 +739,7 @@ class MaterialPreviewApiTest extends TestCase
 
     public function test_a_planned_adjustment_changes_what_a_mix_must_cover_and_the_variance_rules_still_apply(): void
     {
-        $user = $this->userWith('estimating.inventory_availability.view');
+        $user = $this->userWith('estimating.inventory_availability.view', 'estimating.stock_mix.choose');
         $this->stockTwoWarehouses();
 
         $response = $this->actingAs($user)->postJson($this->url(), $this->payload() + [
@@ -757,7 +758,7 @@ class MaterialPreviewApiTest extends TestCase
 
     public function test_stock_that_cannot_be_drawn_is_refused_with_the_reason(): void
     {
-        $user = $this->userWith('estimating.inventory_availability.view');
+        $user = $this->userWith('estimating.inventory_availability.view', 'estimating.stock_mix.choose');
         $this->stockPigment('a', '3');
         $this->stockPigment('q', '2', LocationType::Quarantine);
         $this->location('empty'); // a real location holding none of this item
@@ -773,7 +774,7 @@ class MaterialPreviewApiTest extends TestCase
 
     public function test_a_location_outside_the_narrowed_scope_is_refused(): void
     {
-        $user = $this->userWith('estimating.inventory_availability.view');
+        $user = $this->userWith('estimating.inventory_availability.view', 'estimating.stock_mix.choose');
         $this->stockTwoWarehouses();
 
         $response = $this->actingAs($user)->postJson($this->url(), $this->mixPayload([$this->draw('b', '1')]) + [
@@ -785,7 +786,7 @@ class MaterialPreviewApiTest extends TestCase
 
     public function test_the_same_stock_listed_twice_a_foreign_material_and_a_missing_line_field_are_refused(): void
     {
-        $user = $this->userWith('estimating.inventory_availability.view');
+        $user = $this->userWith('estimating.inventory_availability.view', 'estimating.stock_mix.choose');
         $this->stockTwoWarehouses();
 
         $this->actingAs($user)->postJson($this->url(), $this->mixPayload([$this->draw('a', '1'), $this->draw('a', '1')]))
@@ -800,7 +801,7 @@ class MaterialPreviewApiTest extends TestCase
 
     public function test_quantities_may_be_entered_in_another_unit_and_a_part_of_a_pack_is_just_a_smaller_quantity(): void
     {
-        $user = $this->userWith('estimating.inventory_availability.view');
+        $user = $this->userWith('estimating.inventory_availability.view', 'estimating.stock_mix.choose');
         $this->stockTwoWarehouses();
         $gram = Uom::create(['code' => 'g', 'name' => 'Gram', 'dimension' => UomDimension::Mass, 'factor_to_base' => '0.001', 'is_base' => false]);
         $drum = Uom::create(['code' => 'drum', 'name' => 'Drum', 'dimension' => UomDimension::Count, 'factor_to_base' => '1', 'is_base' => true]);
@@ -836,7 +837,7 @@ class MaterialPreviewApiTest extends TestCase
 
     public function test_an_item_that_only_moves_in_whole_units_refuses_a_fractional_draw(): void
     {
-        $user = $this->userWith('estimating.inventory_availability.view');
+        $user = $this->userWith('estimating.inventory_availability.view', 'estimating.stock_mix.choose');
         $this->stockTwoWarehouses();
         $this->pigment->update(['quantity_precision' => '1']);
 
@@ -844,17 +845,20 @@ class MaterialPreviewApiTest extends TestCase
             ->assertUnprocessable()->assertJsonValidationErrors('stock_mix.0.quantity');
     }
 
-    public function test_choosing_stock_needs_the_availability_capability(): void
+    public function test_choosing_stock_needs_both_the_availability_and_the_choose_capability(): void
     {
         $this->stockTwoWarehouses();
 
         $this->actingAs($this->userWith())->postJson($this->url(), $this->mixPayload([$this->draw('a', '1')]))
             ->assertUnprocessable()->assertJsonValidationErrors('stock_mix');
+        // Seeing availability is not enough: choosing by hand is its own capability (ADR 0076).
+        $this->actingAs($this->userWith('estimating.inventory_availability.view'))->postJson($this->url(), $this->mixPayload([$this->draw('a', '1')]))
+            ->assertUnprocessable()->assertJsonValidationErrors('stock_mix');
     }
 
     public function test_cost_of_a_mix_is_hidden_without_the_cost_capability_and_a_mix_moves_the_fingerprint(): void
     {
-        $blind = $this->userWith('estimating.inventory_availability.view');
+        $blind = $this->userWith('estimating.inventory_availability.view', 'estimating.stock_mix.choose');
         $this->stockTwoWarehouses();
 
         $response = $this->actingAs($blind)->postJson($this->url(), $this->mixPayload([$this->draw('a', '2'), $this->draw('b', '2')]));
@@ -869,7 +873,7 @@ class MaterialPreviewApiTest extends TestCase
 
     public function test_choosing_a_mix_reserves_and_posts_nothing(): void
     {
-        $user = $this->userWith('estimating.inventory_availability.view');
+        $user = $this->userWith('estimating.inventory_availability.view', 'estimating.stock_mix.choose');
         $this->stockTwoWarehouses();
         $counts = fn (): array => array_map(
             fn (string $table): int => DB::table($table)->count(),

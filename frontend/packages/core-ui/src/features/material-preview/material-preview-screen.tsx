@@ -110,6 +110,7 @@ export function MaterialPreviewScreen() {
   const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
   const mayRun = permissions.includes('estimating.material_preview.run');
   const mayViewAvailability = permissions.includes('estimating.inventory_availability.view');
+  const mayChooseMix = mayViewAvailability && permissions.includes('estimating.stock_mix.choose');
   const mayViewCost = permissions.includes('estimating.internal_cost.view');
   const assembliesQuery = useAssembliesIndex({ per_page: 100, sort: 'code', include: 'workUom,versions' });
   const assemblies = assembliesQuery.data?.status === 200 ? assembliesQuery.data.data.data : [];
@@ -201,6 +202,9 @@ export function MaterialPreviewScreen() {
         reason_id: plan.reasonId === 'NO_REASON' ? null : Number(plan.reasonId),
         note: plan.note.trim() === '' ? null : plan.note.trim(),
       }));
+    const stockMixNotes = Object.entries(mixes)
+      .filter(([, mix]) => mix.enabled && mix.note.trim() !== '' && Object.values(mix.quantities).some((quantity) => quantity.trim() !== ''))
+      .map(([itemId, mix]) => ({ item_id: Number(itemId), note: mix.note.trim() }));
     const stockMix = Object.entries(mixes).flatMap(([itemId, mix]) => mix.enabled
       ? Object.entries(mix.quantities)
         .filter(([, quantity]) => quantity.trim() !== '')
@@ -227,6 +231,7 @@ export function MaterialPreviewScreen() {
                 },
                 selection_strategy: strategy === COMPANY_DEFAULT ? null : (strategy as MaterialSelectionStrategy),
                 ...(stockMix.length > 0 ? { stock_mix: stockMix } : {}),
+                ...(stockMix.length > 0 && stockMixNotes.length > 0 ? { stock_mix_notes: stockMixNotes } : {}),
               }
             : {}),
       },
@@ -428,6 +433,7 @@ export function MaterialPreviewScreen() {
         <PreviewResult
           data={preview}
           mayViewAvailability={mayViewAvailability}
+          mayChooseMix={mayChooseMix}
           mayViewCost={mayViewCost}
           plans={plans}
           onPlanChange={(itemId, plan) => setPlans((current) => ({ ...current, [itemId]: plan }))}
@@ -450,6 +456,7 @@ export function MaterialPreviewScreen() {
 interface PreviewResultProps {
   data: PreviewData;
   mayViewAvailability: boolean;
+  mayChooseMix: boolean;
   mayViewCost: boolean;
   plans: Record<number, WhatIfPlan>;
   onPlanChange: (itemId: number, plan: WhatIfPlan) => void;
@@ -465,7 +472,7 @@ interface PreviewResultProps {
   onRecheck?: () => void;
 }
 
-function PreviewResult({ data, mayViewAvailability, mayViewCost, plans, onPlanChange, mixes, onMixChange, onCalculate, uoms, unitsLookup, reasons, isCalculating, calculatedAt, recheck, onRecheck }: PreviewResultProps) {
+function PreviewResult({ data, mayViewAvailability, mayChooseMix, mayViewCost, plans, onPlanChange, mixes, onMixChange, onCalculate, uoms, unitsLookup, reasons, isCalculating, calculatedAt, recheck, onRecheck }: PreviewResultProps) {
   const verdicts = new Map((data.variance?.items ?? []).map((verdict) => [verdict.item.id, verdict]));
   const pendingEdits = Object.values(plans).some((plan) => plan.quantity.trim() !== '');
   return (
@@ -545,7 +552,7 @@ function PreviewResult({ data, mayViewAvailability, mayViewCost, plans, onPlanCh
       </section>
 
       {data.inventory ? (
-        <InventoryProposalPanel inventory={data.inventory} mayViewCost={mayViewCost} mixes={mixes} onMixChange={onMixChange} uoms={uoms} unitsLookup={unitsLookup} onCalculate={onCalculate} isCalculating={isCalculating} />
+        <InventoryProposalPanel inventory={data.inventory} mayViewCost={mayViewCost} mixes={mixes} onMixChange={onMixChange} uoms={uoms} unitsLookup={unitsLookup} mayChooseMix={mayChooseMix} onCalculate={onCalculate} isCalculating={isCalculating} />
       ) : (
         !mayViewAvailability && (
           <section className="rounded-lg border p-4 text-sm text-muted-foreground">

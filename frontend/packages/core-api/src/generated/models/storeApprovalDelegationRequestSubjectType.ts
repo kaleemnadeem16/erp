@@ -6,4 +6,4 @@
  */
 
 export type StoreApprovalDelegationRequestSubjectType =
-  "PURCHASE_ORDER" | "MATERIAL_VARIANCE" | null;
+  "PURCHASE_ORDER" | "MATERIAL_VARIANCE" | "STOCK_MIX" | null;

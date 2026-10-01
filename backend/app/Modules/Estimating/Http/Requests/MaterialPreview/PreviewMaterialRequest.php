@@ -28,6 +28,8 @@ class PreviewMaterialRequest extends FormRequest
         // (ADR 0057). Rejecting them outright, rather than ignoring them, means a caller without
         // it never gets a silently different question answered.
         $inventoryInput = $this->user()?->can('estimating.inventory_availability.view') === true ? 'sometimes' : 'prohibited';
+        // Choosing stock by hand is its own capability on top of seeing availability (ADR 0076).
+        $mixInput = $this->user()?->can('estimating.inventory_availability.view') === true && $this->user()->can('estimating.stock_mix.choose') ? 'sometimes' : 'prohibited';
 
         return [
             'assembly_version_id' => [
@@ -69,7 +71,7 @@ class PreviewMaterialRequest extends FormRequest
             'selection_strategy' => [$inventoryInput, 'nullable', Rule::enum(MaterialSelectionStrategy::class)],
             // A hand-built draw (ADR 0072): the quantity to take from each location/batch, in any unit that
             // converts to the item's stock unit. Validated against the real usable balances in PriceStockMix.
-            'stock_mix' => [$inventoryInput, 'array', 'max:200'],
+            'stock_mix' => [$mixInput, 'array', 'max:200'],
             'stock_mix.*.item_id' => ['required', 'integer', CompanyScoped::exists('items')],
             'stock_mix.*.location_id' => [
                 'required', 'integer',
@@ -80,6 +82,10 @@ class PreviewMaterialRequest extends FormRequest
             'stock_mix.*.batch_id' => ['sometimes', 'nullable', 'integer', CompanyScoped::exists('stock_batches')],
             'stock_mix.*.quantity' => ['required', 'decimal:0,6', 'gt:0', 'max:999999999999.999999'],
             'stock_mix.*.uom_id' => ['required', 'integer', CompanyScoped::exists('uoms')],
+            // The reason for a mix, where the company's control asks for one (ADR 0076).
+            'stock_mix_notes' => [$mixInput, 'array', 'max:100'],
+            'stock_mix_notes.*.item_id' => ['required', 'integer', 'distinct', CompanyScoped::exists('items')],
+            'stock_mix_notes.*.note' => ['sometimes', 'nullable', 'string', 'max:1000'],
         ];
     }
 
@@ -89,6 +95,7 @@ class PreviewMaterialRequest extends FormRequest
         return [
             'inventory_scope.prohibited' => 'You do not have permission to narrow inventory availability.',
             'stock_mix.prohibited' => 'You do not have permission to choose stock for a material plan.',
+            'stock_mix_notes.prohibited' => 'You do not have permission to choose stock for a material plan.',
             'selection_strategy.prohibited' => 'You do not have permission to choose a stock selection strategy.',
         ];
     }

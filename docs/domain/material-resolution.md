@@ -180,8 +180,16 @@ A person may choose the draw themselves instead of a preset's proposal: `stock_m
 held as a quantity in the item's stock unit. The server refuses an unusable or exhausted source, a draw above a balance, a repeated
 source, a quantity off the item's precision, an unconvertible unit, and a total above the planned quantity (more use is a planned-quantity
 change, judged by the variance rules — so a mix can never bypass reasons, blocks or approval). A total below the requirement is a reported shortage.
-The mix is priced from the proposal's cost evidence and compared with it; the comparison is information, not a rule (see
-[ADR 0072](../decisions/0072-hand-built-stock-mix-in-base-quantity.md) for why the variance bands do not carry it).
+The mix is priced from the proposal's cost evidence and compared with it. What that comparison *means* is the company's choice
+([ADR 0076](../decisions/0076-company-control-over-hand-chosen-stock.md); not the variance bands, see
+[ADR 0072](../decisions/0072-hand-built-stock-mix-in-base-quantity.md)): `NOT_ALLOWED` (mixes refused), `INFORMATION` (default: cost shown),
+`REASON_REQUIRED` or `APPROVAL_REQUIRED` at a percentage above the proposal's *average unit cost* (so a part-covering mix is not
+mistaken for a cheap one). A cheaper mix never triggers; a mix that cannot be costed is `NOT_JUDGED`, never passed; a stored approval level
+fails closed (`BLOCKED`) if approvals are later switched off. Resolved item → category → company → built-in, but only the company scope can be
+set today; the judgement is the same for everyone and its numbers follow `estimating.internal_cost.view`. Choosing stock by hand needs
+`estimating.stock_mix.choose` on top of `estimating.inventory_availability.view`; the rule is set on `/settings/material-selection` with
+`estimating.stock_mix_policy.manage` (reason and history, like ADR 0071). The approval level is a `STOCK_MIX` subject on the shared engine
+(`estimating.stock_mix.approve`); in a preview it only names the approval a mix would need — submission waits for plan adoption (Phase 4).
 
 ### Stock-selection preference (ADR 0071)
 

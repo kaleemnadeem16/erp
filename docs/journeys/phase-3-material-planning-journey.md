@@ -96,6 +96,8 @@ Set up rules and reasons → open Material Preview → choose assembly, quantity
   as uncovered.
 - **Example:** 20 L is usable at Karachi; taking 7.5 L there leaves 12.5 L. The plan needs 10 L, so the other 2.5 L comes from
   Lahore. Typing "0.75 drum" of a 2 kg drum means 1.5 kg.
+- **The company's control:** each company decides how tightly hand-chosen stock is controlled (Settings → Material selection → *Choosing stock by hand*): not allowed, allowed with the cost shown, a reason needed when the mix costs more than a set percentage above the proposal (per unit), or approval needed above it. A reason box appears when a reason can be required; the result says whether the mix is within the limit, needs a reason, or would need which approval. It only matters for materials costed per delivery or batch — with an average cost every source costs the same.
+- **Who:** choosing stock by hand needs `estimating.stock_mix.choose` as well as seeing availability.
 - **Next:** to use *more* than the plan, change the planned quantity (step 4) so the variance rules judge it — a mix never bypasses them.
 
 ### 6. Check it is still current
@@ -126,7 +128,7 @@ Set up rules and reasons → open Material Preview → choose assembly, quantity
 - Approval-required variance rules (shared approval workflow) and waste/residual rules (package tracking).
 - Package-level proposals (sealed/opened packages, "about two 5 L cans"), waste rules and package-aware mixes — the package-tracking
   design proposed before Phase 5 ([ADR 0072](../decisions/0072-hand-built-stock-mix-in-base-quantity.md)).
-- Whether a costly hand-built mix should ever need a reason or approval — an open owner decision (ADR 0072).
+- Enforcing the company's stock-choice control (reason or approval) — it is judged in the preview now and enforced when a plan is adopted (Phase 4, ADR 0076).
 - Department-limited availability (Q26).
 
 ## Source of truth

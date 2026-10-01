@@ -15,6 +15,7 @@ use App\Modules\Estimating\Http\Controllers\Api\V1\OverheadPolicyController;
 use App\Modules\Estimating\Http\Controllers\Api\V1\RateDimensionController;
 use App\Modules\Estimating\Http\Controllers\Api\V1\RateDimensionValueController;
 use App\Modules\Estimating\Http\Controllers\Api\V1\ResourceRateController;
+use App\Modules\Estimating\Http\Controllers\Api\V1\StockMixPolicyController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -57,6 +58,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // the {overhead_policy} show route.
     Route::get('material-selection-policies', [MaterialSelectionPolicyController::class, 'index'])->name('material-selection-policies.index');
     Route::post('material-selection-policies', [MaterialSelectionPolicyController::class, 'store'])->name('material-selection-policies.store');
+    Route::get('stock-mix-policies', [StockMixPolicyController::class, 'index'])->name('stock-mix-policies.index');
+    Route::post('stock-mix-policies', [StockMixPolicyController::class, 'store'])->name('stock-mix-policies.store');
     Route::get('overhead-policies/resolve', [OverheadPolicyController::class, 'resolve'])->name('overhead-policies.resolve');
     Route::apiResource('overhead-policies', OverheadPolicyController::class)->except('update');
     Route::patch('overhead-policies/{overhead_policy}', [OverheadPolicyController::class, 'update'])->name('overhead-policies.update');

@@ -12,7 +12,7 @@ design baseline and per-workflow checklist are in
 
 | Concept | Meaning |
 |---|---|
-| **Subject type** | A kind of document a module registers (`PURCHASE_ORDER`, `MATERIAL_VARIANCE`): its label, its approve capability and the *facts* a policy may route on, each typed (decimal, string, id). |
+| **Subject type** | A kind of document a module registers (`PURCHASE_ORDER`, `MATERIAL_VARIANCE`, `STOCK_MIX`): its label, its approve capability and the *facts* a policy may route on, each typed (decimal, string, id). |
 | **Approval mode** | Per company and subject type: `NONE` (never asked — the default), `POLICY` (asked only when an active policy matches) or `REQUIRED` (a matching policy must exist; with none, the document cannot proceed). A missing policy is never read as "approved". |
 | **Policy** | A named rule set. Each row is one *version* (`DRAFT` → `ACTIVE` → `SUPERSEDED`); an active version is never edited — a new version is created and activated. Among active policies whose conditions all match, the highest priority wins. |
 | **Condition** | `fact operator value`, with bounded operators (`>=`, `>`, `<=`, `<`, `=`, `<>`, `in`) over the subject's declared facts. No expressions or code. |
@@ -47,6 +47,7 @@ design baseline and per-workflow checklist are in
 |---|---|---|
 | `PURCHASE_ORDER` | order total in base currency, supplier, currency | Optional submit → approve → issue. `POST /purchase-orders/{id}/submit`; issuing calls `RequireApproval` (migrated cutover orders excepted); the order is frozen while a request is pending; editing or cancelling voids an earlier approval. The order response carries an `approval` block. |
 | `MATERIAL_VARIANCE` | cost impact in base currency, material, material category | Makes the `APPROVAL_REQUIRED` variance effect selectable (only while the mode is not `NONE`). The Material Preview names the approval a plan *would* need (policy and steps) and marks it not adoptable; with no matching policy it is never treated as "not required". A stored approval band fails closed to `BLOCKED` if approvals are later switched off. A plan is only hypothetical until Phase 4 adopts it, so nothing is submitted yet. |
+| `STOCK_MIX` | extra cost over the proposal in base currency, the percentage above it, material, material category | Makes the `APPROVAL_REQUIRED` level of the company's stock-choice control ([ADR 0076](../decisions/0076-company-control-over-hand-chosen-stock.md)) selectable (only while the mode is not `NONE`). The Material Preview names the approval a hand-chosen mix *would* need; a stored approval level fails closed to `BLOCKED` if approvals are later switched off. Nothing is submitted until plan adoption (Phase 4). Approve capability: `estimating.stock_mix.approve`. |
 
 Recalculation, negative-stock and cutover approvals keep their own module-specific rules and migrate later, one at a time.
 

@@ -24,6 +24,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { applyApiErrorsToForm, lookupState } from '../../lib/api-errors';
 import { formatDateTime } from '../../lib/format-date';
 import { useAuthStore } from '../../stores/auth-store';
+import { StockMixControlPanel } from './stock-mix-control-panel';
 
 const SCOPE_LABELS: Record<string, string> = { COMPANY: 'Whole company', ITEM_CATEGORY: 'A category', ITEM: 'One item' };
 const STRATEGY_LABELS: Record<string, string> = {
@@ -55,6 +56,8 @@ export function MaterialSelectionSettingsScreen() {
   const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
   const mayManage = permissions.includes('estimating.selection-policy.manage');
   const mayView = mayManage || permissions.includes('estimating.policy-history.view');
+  const mayManageMix = permissions.includes('estimating.stock_mix_policy.manage');
+  const mayViewMix = mayManageMix || permissions.includes('estimating.policy-history.view');
 
   const [scopeType, setScopeType] = useState<string>(MaterialSelectionScope.COMPANY);
   const [scopeId, setScopeId] = useState('');
@@ -73,7 +76,7 @@ export function MaterialSelectionSettingsScreen() {
   }, [scopeType, scopeId, options]);
   const chosen = scopeType === 'COMPANY' || scopeId !== '';
 
-  if (!mayView) {
+  if (!mayView && !mayViewMix) {
     return (
       <div className="space-y-4 p-4 md:p-6">
         <PageHeader title="Material selection" description="Which stock the Material Preview proposes first." />
@@ -88,9 +91,10 @@ export function MaterialSelectionSettingsScreen() {
     <div className="space-y-4 p-4 md:p-6">
       <PageHeader
         title="Material selection"
-        description="Which of the three selection presets the Material Preview proposes first for a material. Set it for the whole company, a category or one item; the most specific setting wins."
+        description="Which of the three selection presets the Material Preview proposes first for a material (company, category or item), and how tightly the company controls stock chosen by hand."
       />
       <DetailPageLayout>
+        {mayView && (<>
         <DetailSection title="Where a preference is set" description="Every setting in force. Materials with none use Minimise waste." fullWidth>
           <div className="space-y-2 text-sm sm:col-span-2">
             {active.isError ? (
@@ -152,6 +156,8 @@ export function MaterialSelectionSettingsScreen() {
             onChanged={() => void active.refetch()}
           />
         )}
+        </>)}
+        {mayViewMix && <StockMixControlPanel mayManage={mayManageMix} />}
       </DetailPageLayout>
     </div>
   );

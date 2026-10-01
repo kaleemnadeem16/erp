@@ -50,6 +50,8 @@ final class DemoDatabaseSeeder extends Seeder
                 AssemblyVersionsDemoSeeder::class,
                 MaterialVarianceDemoSeeder::class,
                 MaterialSelectionDemoSeeder::class,
+                // After the assemblies and the stock seeders: a FIFO material in two depots, and the company's stock-choice rule.
+                StockMixControlDemoSeeder::class,
                 // Last: it uses the demo supplier and pigment, the demo variance rules and the personas' permissions.
                 ApprovalsDemoSeeder::class,
             ]);

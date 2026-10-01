@@ -254,7 +254,7 @@ waits on something outside Phase 3:
 | Persisted adoption, approval submission and history | A plan is only hypothetical until a quotation revision adopts it | Phase 4 |
 | Variance reporting (ADR 0054 §8) | Needs adopted plans to report on | Phase 4 |
 | Package-level proposals, package tracking, waste/residual bands, package-aware mixes | Need sealed/opened package state that does not exist | An Inventory package-tracking design ([ADR 0072](../decisions/0072-hand-built-stock-mix-in-base-quantity.md), [phases/README.md](README.md)) |
-| Cost consequence of a hand-built mix | Not a variance-band question ([ADR 0072](../decisions/0072-hand-built-stock-mix-in-base-quantity.md)) | An owner decision |
+| Enforcing the company's stock-choice control (reason/approval) | Judged in the preview now; enforced when a plan is adopted ([ADR 0076](../decisions/0076-company-control-over-hand-chosen-stock.md)) | Phase 4 |
 | Department-limited availability | Needs organisational scope | [Q26](../OPEN-QUESTIONS.md#q26--organisational-and-record-level-access-scope) |
 | Approval notifications | Shared, ERP-wide capability | [Q33](../OPEN-QUESTIONS.md#q33--erp-wide-notifications-capability) |
 
@@ -294,7 +294,9 @@ item here in the same commit that delivers it; add new ones as they are found.
       stock unit, typed in any convertible unit, validated and priced by the server (an impossible mix is refused; a mix cannot
       draw more than the plan, so it cannot bypass the variance rules). The cost/waste *escalation* half of ADR 0054 §4 is
       deliberately not built: the variance bands measure planned-vs-standard quantity, not the cost of a draw against the
-      proposal, so reusing them would distort them — a separate owner decision (see the ADR).
+      proposal, so reusing them would distort them. Decided instead by [ADR 0076](../decisions/0076-company-control-over-hand-chosen-stock.md) (2026-10-01):
+      a company-managed control — not allowed / show the cost / reason above X% / approval above X% — company-wide now, shaped for
+      category and item scope later, plus a `stock_mix.choose` capability; enforcement waits for Phase 4 adoption.
 - [ ] **Package tracking and everything that needs it** — `item_packagings`, `PACKAGE_BALANCE` / `CONTAINER_TRACKED`, sealed/opened
       package state and remnants, package-aware proposals and equivalents, expiry/remnant/surplus criteria, waste/residual
       variance bands, per-unit precision. All extend the base-quantity mix; none needs it redesigned. Dependency and the

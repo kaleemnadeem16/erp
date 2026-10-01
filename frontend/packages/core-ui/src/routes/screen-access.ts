@@ -125,7 +125,7 @@ const rules: readonly Rule[] = [
   },
   {
     path: "/settings/material-selection",
-    anyOf: ["estimating.selection-policy.manage", "estimating.policy-history.view"],
+    anyOf: ["estimating.selection-policy.manage", "estimating.stock_mix_policy.manage", "estimating.policy-history.view"],
   },
   {
     path: "/settings/material-variance",

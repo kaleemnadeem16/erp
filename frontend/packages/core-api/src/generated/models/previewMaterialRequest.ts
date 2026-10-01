@@ -10,6 +10,7 @@ import type { PreviewMaterialRequestPlannedAdjustmentsItem } from "./previewMate
 import type { PreviewMaterialRequestInventoryScope } from "./previewMaterialRequestInventoryScope";
 import type { PreviewMaterialRequestSelectionStrategy } from "./previewMaterialRequestSelectionStrategy";
 import type { PreviewMaterialRequestStockMixItem } from "./previewMaterialRequestStockMixItem";
+import type { PreviewMaterialRequestStockMixNotesItem } from "./previewMaterialRequestStockMixNotesItem";
 
 export interface PreviewMaterialRequest {
   assembly_version_id?: PreviewMaterialRequestAssemblyVersionId;
@@ -34,4 +35,9 @@ converts to the item's stock unit. Validated against the real usable balances in
    * @maxItems 200
    */
   stock_mix?: PreviewMaterialRequestStockMixItem[];
+  /**
+   * The reason for a mix, where the company's control asks for one (ADR 0076).
+   * @maxItems 100
+   */
+  stock_mix_notes?: PreviewMaterialRequestStockMixNotesItem[];
 }

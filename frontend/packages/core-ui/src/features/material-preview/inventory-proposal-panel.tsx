@@ -32,6 +32,7 @@ interface InventoryProposalPanelProps {
   onMixChange?: (itemId: number, draft: MixDraft) => void;
   uoms?: UomResource[];
   unitsLookup?: LookupState;
+  mayChooseMix?: boolean;
   onCalculate?: () => void;
   isCalculating?: boolean;
 }
@@ -50,7 +51,7 @@ const STRATEGY_SOURCE_TEXT: Record<string, string> = {
  * offers to reserve. Cost columns appear only for a caller who may see cost;
  * for anyone else a null cost is hidden evidence, not a zero.
  */
-export function InventoryProposalPanel({ inventory, mayViewCost, mixes, onMixChange, uoms, unitsLookup, onCalculate, isCalculating }: InventoryProposalPanelProps) {
+export function InventoryProposalPanel({ inventory, mayViewCost, mixes, onMixChange, uoms, unitsLookup, mayChooseMix, onCalculate, isCalculating }: InventoryProposalPanelProps) {
   return (
     <section className="space-y-4 rounded-lg border p-4" aria-labelledby="available-stock-heading">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -84,7 +85,7 @@ export function InventoryProposalPanel({ inventory, mayViewCost, mixes, onMixCha
           key={item.item.id}
           item={item}
           mayViewCost={mayViewCost}
-          mix={onMixChange && uoms && unitsLookup ? { draft: mixes?.[item.item.id], onChange: (draft) => onMixChange(item.item.id, draft), uoms, unitsLookup, onCalculate, isCalculating } : undefined}
+          mix={onMixChange && uoms && unitsLookup ? { draft: mixes?.[item.item.id], onChange: (draft) => onMixChange(item.item.id, draft), uoms, unitsLookup, mayChoose: mayChooseMix === true, onCalculate, isCalculating } : undefined}
         />
       ))}
 
@@ -100,6 +101,7 @@ interface ItemMixProps {
   onChange: (draft: MixDraft) => void;
   uoms: UomResource[];
   unitsLookup: LookupState;
+  mayChoose: boolean;
   onCalculate?: () => void;
   isCalculating?: boolean;
 }
@@ -215,6 +217,7 @@ function ItemStock({ item, mayViewCost, mix }: { item: AssembliesMaterialPreview
           uoms={mix.uoms}
           unitsLookup={mix.unitsLookup}
           mayViewCost={mayViewCost}
+          mayChoose={mix.mayChoose}
           onCalculate={mix.onCalculate}
           isCalculating={mix.isCalculating}
         />
