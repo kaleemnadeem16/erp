@@ -62,3 +62,23 @@ test('estimating lists offer mobile cards and a filter sheet', async ({ page }) 
     await page.getByRole('button', { name: 'Done' }).click();
   }
 });
+
+test('rate dimensions and assembly groups search through URL-backed filters', async ({ page }) => {
+  for (const { path, label, term } of [
+    { path: '/rate-dimensions', label: 'Search rate dimensions', term: 'demo-surface-type' },
+    { path: '/assembly-groups', label: 'Search assembly groups', term: 'demo-labour' },
+  ]) {
+    await page.goto(path);
+    await page.getByLabel(label).fill(term);
+    await expect(page).toHaveURL(new RegExp(`filter.search=${term}`));
+    await expect(page.getByRole('row', { name: new RegExp(term) })).toBeVisible();
+  }
+});
+
+test('rate dimensions and assembly groups default to cards on mobile', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  for (const path of ['/rate-dimensions', '/assembly-groups']) {
+    await page.goto(path);
+    await expect(page.getByRole('button', { name: 'Card view' })).toHaveAttribute('aria-pressed', 'true');
+  }
+});

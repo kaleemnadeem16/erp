@@ -207,12 +207,12 @@ subset; registration alone grants nobody access.
 
 | Resource | List filters (backend) | UI coverage | Write permission | Read permission |
 |---|---|---|---|---|
-| RateDimension | `search` | Missing — no search box | None | None |
+| RateDimension | `search` | Full (1/1) | None | None |
 | RateDimensionValue | n/a, nested | n/a — managed inline in the rate-dimension edit screen | None | None |
 | ApplicationRate | `is_default,item_id,work_uom_id` | Partial (1/3) — only `item_id` | None | None |
 | Formulation | `customer_id,output_item_id,search,status` | Full (4/4) | None | None |
 | FormulationVersion | n/a | n/a — managed inline in the formulation edit screen | None | None |
-| AssemblyGroup | `search` | Missing — no search box | None | None |
+| AssemblyGroup | `search` | Full (1/1) | None | None |
 | Assembly | `assembly_group_id,search,status` | Full (3/3) | None | None |
 | AssemblyVersion | n/a | n/a — managed inline (`assembly-versions-section.tsx`) | None | None |
 | ResourceRate | `item_id` | Full (1/1) | None (append-only, no update endpoint by design; `Destroy` also unchecked) | None |
@@ -238,8 +238,10 @@ independently of this backlog's sequencing whenever wanted.
       other filters use a mobile bottom sheet, and both lists offer mobile cards.
       Browser tests exercise the controls. The shared lookup pickers currently
       fetch up to 100 options; server-searchable pickers remain a scale follow-up.
-- [ ] Add remaining filter UI: Rate Dimensions/Assembly Groups (`search`),
-      Application Rates (`is_default,work_uom_id`) — no permission dependency.
+- [x] Rate Dimensions and Assembly Groups search (2026-10-01) — URL-backed search
+      controls and mobile cards, with browser coverage; no change to read authority.
+- [ ] Add remaining Application Rates filter UI (`is_default,work_uom_id`) — no
+      permission dependency.
 - [x] Register all six capabilities above (2026-09-30). Registration alone grants no
       operational user access and must not be mistaken for a protected endpoint. All six are
       enforced after the resource-rate slice below.

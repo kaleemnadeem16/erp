@@ -57,6 +57,9 @@ requires `estimating.assembly-group.manage` at both the API and Action boundary.
 uses the same effective capability, assigned dynamically through company roles or direct grants.
 Deletion remains blocked while an assembly refers to the group. Before deployment, existing
 maintainers need an explicit grant; registration alone does not grant operational users access.
+The Assembly Groups list exposes URL-backed code/name search and mobile cards. Its New
+and row-edit affordances follow the effective manage capability; API and Action checks
+remain authoritative.
 
 ## Schema
 

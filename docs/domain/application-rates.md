@@ -111,6 +111,8 @@ as shared lookups. The Rate Dimensions setup screen is shown only to holders of 
 capability; no read-only detail screen exists yet. The permission is additive and company-scoped,
 not tied to a hardcoded role name. Administrators must grant it to existing roles or members who
 maintain dimensions before deploying this gate; registration by itself does not assign it.
+The Rate Dimensions list exposes its API code/name search through URL-backed state and
+offers a card view on mobile; this does not alter the shared lookup read authority.
 
 ### Access to application rates
 
