@@ -18,6 +18,7 @@ use App\Modules\Estimating\Models\FormulationVersion;
 use App\Modules\Estimating\Support\FormulationExplosion;
 use App\Modules\Estimating\Support\FormulationLineBreakdown;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -30,24 +31,27 @@ class FormulationVersionController extends Controller
 {
     public function store(StoreFormulationVersionRequest $request, Formulation $formulation, CreateFormulationVersion $create): JsonResponse
     {
-        return (new FormulationVersionResource($create($formulation, $request->validated())))->response()->setStatusCode(201);
+        return (new FormulationVersionResource($create($formulation, $request->validated(), $request->user())))->response()->setStatusCode(201);
     }
 
     public function update(UpdateFormulationVersionRequest $request, FormulationVersion $formulation_version, UpdateFormulationVersion $update): FormulationVersionResource
     {
-        return new FormulationVersionResource($update($formulation_version, $request->validated()));
+        return new FormulationVersionResource($update($formulation_version, $request->validated(), $request->user()));
     }
 
-    public function destroy(FormulationVersion $formulation_version, DeleteFormulationVersion $delete): Response
+    public function destroy(Request $request, FormulationVersion $formulation_version, DeleteFormulationVersion $delete): Response
     {
-        $delete($formulation_version);
+        abort_unless($request->user()?->can('estimating.formulation.manage'), 403);
+        $delete($formulation_version, $request->user());
 
         return response()->noContent();
     }
 
-    public function activate(FormulationVersion $formulation_version, ActivateFormulationVersion $activate): FormulationVersionResource
+    public function activate(Request $request, FormulationVersion $formulation_version, ActivateFormulationVersion $activate): FormulationVersionResource
     {
-        return new FormulationVersionResource($activate($formulation_version));
+        abort_unless($request->user()?->can('estimating.formulation.manage'), 403);
+
+        return new FormulationVersionResource($activate($formulation_version, $request->user()));
     }
 
     /**
@@ -58,8 +62,10 @@ class FormulationVersionController extends Controller
      * compounding per level rather than only the total (that doc's own
      * "Landmines").
      */
-    public function costBreakdown(FormulationVersion $formulation_version, ExplodeFormulationVersion $explode): JsonResponse
+    public function costBreakdown(Request $request, FormulationVersion $formulation_version, ExplodeFormulationVersion $explode): JsonResponse
     {
+        abort_unless($request->user()?->can('estimating.internal_cost.view'), 403);
+
         return response()->json(['data' => $this->serializeExplosion($explode($formulation_version))]);
     }
 

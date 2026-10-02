@@ -3,6 +3,7 @@
 namespace App\Modules\Purchasing\Http\Requests\PurchaseOrder;
 
 use App\Http\Requests\Concerns\ValidatesIncludes;
+use App\Modules\Purchasing\Support\PurchasingReadAccess;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ShowPurchaseOrderRequest extends FormRequest
@@ -11,7 +12,7 @@ class ShowPurchaseOrderRequest extends FormRequest
 
     public function authorize(): bool
     {
-        return true;
+        return PurchasingReadAccess::purchaseOrders($this->user());
     }
 
     /** @return array<string, mixed> */

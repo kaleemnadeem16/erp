@@ -1,6 +1,8 @@
 export { AppShell } from "./layouts/app-shell";
 export { ProtectedRoute } from "./routes/protected-route";
+export { PermissionRoute } from "./routes/permission-route";
 export { LoginScreen } from "./features/auth/login-screen";
+export { PasswordChangeRequiredScreen } from "./features/auth/password-change-required-screen";
 export { DashboardScreen } from "./features/dashboard/dashboard-screen";
 export { useAuthStore } from "./stores/auth-store";
 export { useSession } from "./hooks/use-session";
@@ -15,6 +17,11 @@ export { useColumnVisibilityPreference } from "./lib/use-column-visibility-prefe
 // Reusable list/detail/print foundation — see docs/architecture (frontend)
 // and features/items for the reference implementation.
 export * from "./lib/list-query-state";
+export {
+  describeLoadError,
+  isTransientFailure,
+  shouldRetryQuery,
+} from "./lib/api-errors";
 export * from "./components/data-table";
 export * from "./components/print";
 export {
@@ -41,16 +48,27 @@ export {
   type ThemeId,
   type ThemeDefinition,
 } from "./lib/appearance";
-export { useAppearanceStore, useAppearance, useIsDarkMode } from "./stores/appearance-store";
+export {
+  useAppearanceStore,
+  useAppearance,
+  useIsDarkMode,
+} from "./stores/appearance-store";
 export { AppearanceSettingsScreen } from "./features/settings/appearance-settings-screen";
+export { AcceptInvitationScreen } from "./features/auth/accept-invitation-screen";
 export { PrintingSettingsScreen } from "./features/settings/printing-settings-screen";
 export { AccountSettingsScreen } from "./features/settings/account-settings-screen";
+export { MembersSettingsScreen } from "./features/access-administration/members-settings-screen";
+export { RolesSettingsScreen } from "./features/access-administration/roles-settings-screen";
 export {
   usePrintSettingsStore,
   DEFAULT_PRINT_SETTINGS,
   type PrintSettings,
 } from "./stores/print-settings-store";
-export { OptionCards, type OptionCard, type OptionCardsProps } from "./components/ui/option-cards";
+export {
+  OptionCards,
+  type OptionCard,
+  type OptionCardsProps,
+} from "./components/ui/option-cards";
 export {
   DetailPageLayout,
   DetailSection,
@@ -177,6 +195,10 @@ export { AssemblyCreateScreen } from "./features/assemblies/assembly-create-scre
 export { AssemblyEditScreen } from "./features/assemblies/assembly-edit-screen";
 export { MaterialPreviewScreen } from "./features/material-preview/material-preview-screen";
 export { EstimatingSettingsScreen } from "./features/settings/estimating-settings-screen";
+export { ApprovalsInboxScreen } from "./features/approvals/approvals-inbox-screen";
+export { ApprovalsSettingsScreen } from "./features/approvals/approvals-settings-screen";
+export { MaterialVarianceSettingsScreen } from "./features/material-variance/material-variance-settings-screen";
+export { MaterialSelectionSettingsScreen } from "./features/material-selection/material-selection-settings-screen";
 export { ResourceRatesListScreen } from "./features/resource-rates/resource-rates-list-screen";
 export { StockLedgerScreen } from "./features/stock-ledger/stock-ledger-screen";
 export { StockMoveDetailScreen } from "./features/stock-ledger/stock-move-detail-screen";
@@ -205,3 +227,4 @@ export { PurchasingSettingsScreen } from "./features/settings/purchasing-setting
 export { InventorySettingsScreen } from "./features/settings/inventory-settings-screen";
 
 export { InventoryOverviewScreen } from "./features/inventory-overview/inventory-overview-screen";
+export { createAppQueryClient } from './lib/query-client';

@@ -6,9 +6,14 @@ Approval is a document-specific, auditable process layered on top of permissions
 eligible to approve purchase orders without every purchase order being approved, and without that
 user being eligible for every amount, department or stage.
 
-This is a design baseline, not an accepted generic-engine ADR. Existing Inventory workflows are
-implemented module-specifically; the open decisions are tracked as
-[Q27–Q28](../OPEN-QUESTIONS.md#q27--shared-approval-workflow-contract).
+The shared engine described below is decided in
+[ADR 0070](../decisions/0070-shared-configurable-approval-engine.md) and implemented in the `Approvals` module
+(implemented behaviour: [approvals.md](../domain/approvals.md)). Purchase orders and the material-variance
+`APPROVAL_REQUIRED` effect are its first consumers. Existing Inventory workflows (recalculation, negative stock,
+cutover) are still implemented module-specifically and migrate later; Q28's company-specific purchase-order policy content
+remains the company's to configure. Where this page's sketch and the ADR differ, the ADR and the domain page win: for
+example, steps are ordered *stages* (steps sharing a stage run in parallel), eligibility is a capability plus an authority
+ceiling, and maker/checker is a per-step setting rather than a universal rule.
 
 ## Permission, eligibility and decision are different
 

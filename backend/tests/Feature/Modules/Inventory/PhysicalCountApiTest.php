@@ -45,7 +45,7 @@ class PhysicalCountApiTest extends TestCase
     {
         parent::setUp();
         app(PermissionRegistrar::class)->setPermissionsTeamId(1);
-        foreach (['inventory.physical_count.create', 'inventory.physical_count.count', 'inventory.physical_count.post'] as $permission) {
+        foreach (['inventory.physical_count.create', 'inventory.physical_count.count', 'inventory.physical_count.post', 'inventory.valuation.view'] as $permission) {
             Permission::findOrCreate($permission);
         }
 
@@ -131,6 +131,37 @@ class PhysicalCountApiTest extends TestCase
 
         $this->assertSame('6.0000', $this->getJson("/api/v1/physical-counts/{$countId}?include=lines")
             ->json('data.lines.0.found_unit_cost'));
+    }
+
+    public function test_found_cost_is_hidden_from_quantity_readers_but_visible_to_posters_and_valuation_auditors(): void
+    {
+        $creator = $this->permittedUser('inventory.physical_count.create');
+        $counter = $this->permittedUser('inventory.physical_count.count');
+        $poster = $this->permittedUser('inventory.physical_count.post');
+        $auditor = $this->permittedUser('inventory.valuation.view');
+
+        $countId = $this->actingAs($creator)->postJson('/api/v1/physical-counts', ['warehouse_id' => $this->warehouseId])->json('data.id');
+        $lineId = $this->actingAs($creator)->postJson("/api/v1/physical-counts/{$countId}/lines", [
+            'item_id' => $this->item->id, 'location_id' => $this->locationId,
+        ])->json('data.id');
+        $this->actingAs($counter)->postJson("/api/v1/physical-count-lines/{$lineId}/count", ['counted_qty' => '12.0000'])->assertOk();
+
+        $this->actingAs($poster)->postJson("/api/v1/physical-counts/{$countId}/post", [
+            'found_costs' => [['physical_count_line_id' => $lineId, 'unit_cost' => '6.0000']],
+        ])->assertOk()->assertJsonPath('data.lines.0.found_unit_cost', '6.0000');
+
+        foreach ([$creator, $counter, User::factory()->create()] as $reader) {
+            $this->actingAs($reader)->getJson("/api/v1/physical-counts/{$countId}?include=lines")
+                ->assertOk()->assertJsonPath('data.lines.0.counted_qty', '12.0000')
+                ->assertJsonMissingPath('data.lines.0.found_unit_cost');
+            $this->actingAs($reader)->getJson('/api/v1/physical-counts?include=lines')
+                ->assertOk()->assertJsonMissingPath('data.0.lines.0.found_unit_cost');
+        }
+
+        foreach ([$poster, $auditor] as $reader) {
+            $this->actingAs($reader)->getJson("/api/v1/physical-counts/{$countId}?include=lines")
+                ->assertOk()->assertJsonPath('data.lines.0.found_unit_cost', '6.0000');
+        }
     }
 
     public function test_poster_cannot_be_the_creator(): void

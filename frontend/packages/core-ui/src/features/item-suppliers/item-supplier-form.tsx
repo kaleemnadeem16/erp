@@ -8,6 +8,7 @@ import { Input } from '../../components/ui/input';
 import { Combobox } from '../../components/ui/combobox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../components/ui/form';
 import { DetailSection } from '../../components/detail/detail-page-layout';
+import { lookupState, type LookupState } from '../../lib/api-errors';
 const NONE = 'NONE';
 const schema = z.object({
   item_id: z.string().min(1, 'Item is required'),
@@ -85,7 +86,7 @@ export function ItemSupplierForm({
   const suppliers = suppliersResult.data?.status === 200 ? suppliersResult.data.data.data : [];
   const uomsResult = useUomsIndex({ per_page: 100, sort: 'name' });
   const uoms = uomsResult.data?.status === 200 ? uomsResult.data.data.data : [];
-  const select = (name: 'item_id' | 'supplier_account_id', label: string, options: { id: number; label: string }[]) => (
+  const select = (name: 'item_id' | 'supplier_account_id', label: string, options: { id: number; label: string }[], lookup: LookupState) => (
     <FormField
       control={form.control}
       name={name}
@@ -94,6 +95,7 @@ export function ItemSupplierForm({
           <FormLabel>{label}</FormLabel>
           <FormControl>
             <Combobox
+              {...lookup}
               ref={field.ref}
               disabled={mode === 'edit'}
               value={field.value}
@@ -128,12 +130,14 @@ export function ItemSupplierForm({
           {select(
             'item_id',
             'Item',
-            items.map((i) => ({ id: i.id, label: `${i.code} — ${i.name}` }))
+            items.map((i) => ({ id: i.id, label: `${i.code} — ${i.name}` })),
+            lookupState(itemsResult, 'items')
           )}
           {select(
             'supplier_account_id',
             'Supplier',
-            suppliers.map((s) => ({ id: s.id, label: `${s.code}${s.party?.name ? ` — ${s.party.name}` : ''}` }))
+            suppliers.map((s) => ({ id: s.id, label: `${s.code}${s.party?.name ? ` — ${s.party.name}` : ''}` })),
+            lookupState(suppliersResult, 'suppliers')
           )}
           <FormField
             control={form.control}
@@ -196,7 +200,7 @@ export function ItemSupplierForm({
               <FormItem>
                 <FormLabel>Purchase unit</FormLabel>
                 <FormControl>
-                  <Combobox
+                  <Combobox {...lookupState(uomsResult, 'units')}
                     ref={field.ref}
                     value={field.value}
                     onValueChange={field.onChange}

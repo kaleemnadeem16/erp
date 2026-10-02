@@ -101,6 +101,37 @@ division-by-zero and keeps roll-up arithmetic uniform.
 
 The UI should accept either and convert.
 
+### Access to dimension setup
+
+Creating, changing or deleting a rate dimension or one of its values requires
+`estimating.rate-dimension.manage`. The API checks both the HTTP request and the underlying
+Action, so a job or other non-HTTP caller cannot bypass it. Listing dimensions and values remains
+available to authenticated company users because application-rate and assembly forms need them
+as shared lookups. The Rate Dimensions setup screen is shown only to holders of the manage
+capability; no read-only detail screen exists yet. The permission is additive and company-scoped,
+not tied to a hardcoded role name. Administrators must grant it to existing roles or members who
+maintain dimensions before deploying this gate; registration by itself does not assign it.
+The Rate Dimensions list exposes its API code/name search through URL-backed state and
+offers a card view on mobile; this does not alter the shared lookup read authority.
+
+### Access to application rates
+
+Creating, changing or deleting an application rate requires `estimating.application-rate.manage`
+at both the HTTP and Action boundaries. Listing, showing and resolving rates remain authenticated
+company reads, because estimators need to inspect and test the consumption rule without gaining
+authority to alter it. In the SPA, a material-preview user can reach the rate list and resolution
+tester but not the New/edit forms; managers can use both. Existing maintainers need an explicit
+role or direct grant before deployment. The configured administrator receives new capabilities
+through normal deploy-time permission sync; no other role gains one simply because it is named
+Estimator or Master Data Steward.
+The list exposes the API's item, work-unit and default-status filters as URL-backed
+controls. On mobile, filters sit in a bottom sheet and the list defaults to cards.
+The `is_default=false` choice explicitly selects context-specific rates rather
+than clearing the filter. The Item and work-unit filters search their respective
+APIs as the user types, so choices beyond the first 100 results can still be
+selected; ID-based show reads preserve their labels on bookmarked URLs. Other
+Estimating pickers need the same scale treatment in later slices.
+
 ## Landmines
 
 **Confusing this with UoM conversion.** Litres → sqm is *not* arithmetic; it depends on surface,

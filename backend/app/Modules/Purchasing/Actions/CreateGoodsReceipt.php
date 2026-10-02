@@ -6,11 +6,13 @@ namespace App\Modules\Purchasing\Actions;
 
 use App\Exceptions\DomainInvariantException;
 use App\Models\Uom;
+use App\Models\User;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Purchasing\Models\GoodsReceipt;
 use App\Modules\Purchasing\Models\PurchaseOrderLine;
 use App\Modules\Purchasing\Support\PurchaseOrderFxPolicy;
 use App\Modules\Purchasing\Support\PurchaseOrderStatus;
+use App\Modules\Purchasing\Support\PurchasingCommercialAccess;
 use App\Support\UomConversionService;
 use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
@@ -20,11 +22,28 @@ use InvalidArgumentException;
 
 final class CreateGoodsReceipt
 {
+    private const COMMERCIAL_FIELDS = [
+        'provisional_unit_cost', 'currency_id', 'fx_rate', 'fx_rate_date', 'fx_rate_type', 'fx_rate_source',
+    ];
+
     public function __construct(private readonly UomConversionService $conversion) {}
 
     /** @param array<string, mixed> $attributes */
-    public function __invoke(array $attributes, ?string $idempotencyKey = null): GoodsReceipt
+    public function __invoke(array $attributes, User $actor, ?string $idempotencyKey = null): GoodsReceipt
     {
+        if (! $actor->can('purchasing.goods-receipt.create')) {
+            throw new DomainInvariantException('The actor is not permitted to create a goods receipt.');
+        }
+        if (! PurchasingCommercialAccess::canView($actor)) {
+            foreach ($attributes['lines'] ?? [] as $line) {
+                foreach (self::COMMERCIAL_FIELDS as $field) {
+                    if (array_key_exists($field, $line)) {
+                        throw new DomainInvariantException('The actor is not permitted to override receipt commercial values.', $field);
+                    }
+                }
+            }
+        }
+
         return DB::transaction(function () use ($attributes, $idempotencyKey): GoodsReceipt {
             if ($idempotencyKey !== null) {
                 $existing = GoodsReceipt::query()->where('idempotency_key', $idempotencyKey)->first();
@@ -45,6 +64,15 @@ final class CreateGoodsReceipt
                     || $poLine->purchaseOrder->supplier_account_id !== $receipt->supplier_account_id) {
                     throw new DomainInvariantException('Receipt lines require an issued PO line for the same supplier.', 'purchase_order_line_id');
                 }
+                $input = array_merge([
+                    'provisional_unit_cost' => $poLine->unit_price,
+                    'currency_id' => $poLine->purchaseOrder->currency_id,
+                    'fx_rate' => $poLine->purchaseOrder->fx_rate,
+                    'fx_rate_date' => $poLine->purchaseOrder->fx_rate_date->format('Y-m-d'),
+                    'fx_rate_type' => $poLine->purchaseOrder->fx_rate_type,
+                    'fx_rate_source' => $poLine->purchaseOrder->fx_rate_source,
+                ], $input);
+
                 if ($input['item_id'] !== $poLine->item_id || $input['currency_id'] !== $poLine->purchaseOrder->currency_id) {
                     throw new DomainInvariantException('Receipt item and currency must match the issued PO line.', 'purchase_order_line_id');
                 }

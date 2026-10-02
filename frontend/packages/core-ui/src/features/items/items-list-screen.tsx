@@ -14,7 +14,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '../../components/ui/too
 import { PageHeader } from '../../components/page/page-header';
 import { DataTable, toTanStackColumns, isColumnVisibleByDefault } from '../../components/data-table';
 import { PrintLayout, PrintableTable, PrintTrigger, useQuickPrint } from '../../components/print';
-import { getApiErrorMessage } from '../../lib/api-errors';
+import { getApiErrorMessage, lookupState, type LookupState } from '../../lib/api-errors';
 import {
   apiSortToTableSorting,
   describeSort,
@@ -25,6 +25,7 @@ import {
 import { useColumnVisibilityPreference } from '../../lib/use-column-visibility-preference';
 import { useListViewPreference } from '../../lib/use-view-preference';
 import { itemColumns } from './items-columns';
+import { usePermission } from '../../hooks/use-permission';
 
 interface ItemFilters {
   category_id: string;
@@ -37,6 +38,7 @@ interface ItemFilters {
 const ITEM_TYPES = ['RAW', 'SEMI_FINISHED', 'FINISHED', 'SERVICE', 'LABOUR', 'PLANT'] as const;
 
 export function ItemsListScreen() {
+  const mayManage = usePermission('inventory.item.manage');
   const navigate = useNavigate();
   const query = useListQueryState<ItemFilters>({ defaultSort: 'name', defaultPerPage: 25 });
   const [columnVisibility, setColumnVisibility] = useColumnVisibilityPreference(
@@ -97,6 +99,7 @@ export function ItemsListScreen() {
   }
 
   function renderRowActions(item: ItemResource) {
+    if (!mayManage) return null;
     const toggleLabel = item.status === 'ACTIVE' ? 'Archive' : 'Activate';
     return (
       <>
@@ -137,7 +140,7 @@ export function ItemsListScreen() {
       <PageHeader
         title="Items"
         description="Everything the company buys, holds, makes, consumes or sells."
-        primaryAction={{ label: 'New item', onClick: () => navigate('/items/new') }}
+        primaryAction={mayManage ? { label: 'New item', onClick: () => navigate('/items/new') } : undefined}
       />
 
       <div className="flex flex-wrap items-center gap-2">
@@ -149,7 +152,7 @@ export function ItemsListScreen() {
         />
 
         <div className="hidden items-center gap-2 md:flex md:flex-wrap">
-          <ItemFilterControls categories={categories} query={query} />
+          <ItemFilterControls categoriesLookup={lookupState(categoriesQuery, 'categories')} categories={categories} query={query} />
           <div className="ml-auto flex items-center gap-2">
             <PrintTrigger onPrint={() => print()} />
           </div>
@@ -168,7 +171,7 @@ export function ItemsListScreen() {
             <SheetTitle>Filters</SheetTitle>
           </SheetHeader>
           <div className="flex flex-col gap-3 py-4">
-            <ItemFilterControls categories={categories} query={query} full />
+            <ItemFilterControls categoriesLookup={lookupState(categoriesQuery, 'categories')} categories={categories} query={query} full />
             <PrintTrigger onPrint={() => print()} className="w-full justify-center" />
           </div>
           <SheetFooter>
@@ -209,12 +212,14 @@ export function ItemsListScreen() {
         onRowClick={(item: ItemResource) => navigate(`/items/${item.id}`)}
         isLoading={itemsQuery.isLoading}
         isError={itemsQuery.isError}
+        error={itemsQuery.error}
+        onRetry={() => void itemsQuery.refetch()}
         errorMessage="Couldn't load items."
         emptyMessage="No items match these filters."
         view={view}
         onViewChange={setView}
         cardColumns={itemColumns}
-        rowActions={renderRowActions}
+        rowActions={mayManage ? renderRowActions : undefined}
       />
 
       {/* Quick Print — a dedicated print-only layout, hidden until react-to-print clones it. */}
@@ -238,6 +243,7 @@ export function ItemsListScreen() {
 }
 
 interface ItemFilterControlsProps {
+  categoriesLookup: LookupState;
   categories: { id: number; name: string }[];
   query: ListQueryState<ItemFilters>;
   /** Full-width sizing for the mobile filter sheet, vs. the desktop row's fixed widths. */
@@ -245,10 +251,10 @@ interface ItemFilterControlsProps {
 }
 
 /** Category/Type/Status selects — shared by the always-visible desktop row and the mobile Filters sheet. */
-function ItemFilterControls({ categories, query, full }: ItemFilterControlsProps) {
+function ItemFilterControls({ categoriesLookup, categories, query, full }: ItemFilterControlsProps) {
   return (
     <>
-      <Combobox
+      <Combobox {...categoriesLookup}
         className={full ? 'h-9 w-full' : 'h-9 w-44'}
         aria-label="Category"
         value={query.filters.category_id ?? 'all'}

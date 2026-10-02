@@ -210,6 +210,17 @@ repaired, per [ADR 0045](../decisions/0045-avco-transfer-rate-final-not-provisio
 [negative-stock.md](negative-stock.md#transfers-from-a-frozen-pool). Immutable transfer detail
 retains both pool identities for valuation and audit.
 
+**Demo data.** `StockTransfersDemoSeeder` moves stock between Main Stock and Karachi Stock, one
+dedicated item per way a transfer treats value: a same-pool AVCO transfer (custody changes, the pool's
+quantity, value and average do not), a cross-pool AVCO transfer (value leaves at the source pool's
+average and the destination re-averages, company value conserved) and a FIFO transfer (a destination
+layer per source-cost component, each keeping its source layer's cost and receipt date). A serial
+(SPECIFIC) transfer is seeded on its own item, `demo-xfer-laser`: three serial-numbered meters, one moved to
+Karachi as that exact unit at its own cost. Seeing
+them also showed the ledger reading "stock → stock" (both warehouses code their location `stock`);
+locations are now named `warehouse / location` everywhere, per
+[ADR 0059](../decisions/0059-name-a-location-as-warehouse-and-location.md).
+
 ### Historical retention for replay
 
 The schema above retains enough to replay history under a *different* method than an item's
@@ -279,6 +290,27 @@ path. `item`/`from_location`/`to_location`/`batch`/`valuation_entries` are all o
 (`CursorDataTable`/`useCursorQueryState`), matching [api-conventions.md](../architecture/api-conventions.md#pagination)'s
 "page-based elsewhere, cursor for large/frequently-appended lists" split — this ledger has no
 `total`/page-jump UI, only Previous/Next against the API's opaque cursor.
+
+Per [ADR 0073](../decisions/0073-separate-inventory-valuation-visibility-from-stock-operations.md),
+ordinary authenticated readers see movement and quantity facts but not Inventory's monetary
+valuation. `inventory.valuation.view` is required for move cost/FX and valuation entries, layer
+cost/FX, AVCO pool value/rates, and inventory-overview row/summary values. The API omits restricted
+keys, including a requested `valuation_entries` include; ledger/overview columns, details, cards
+and quick-print content follow the same capability. Purchasing supplier-price and Estimating
+preview access remain independent. The later recalculation, cutover, physical-count,
+negative-stock/settlement and policy-settings audits are recorded in the
+[authorisation retrofit](../architecture/authorization-retrofit.md).
+
+The current Inventory print/export audit found no Inventory CSV, spreadsheet, PDF-download or
+other export endpoint in the backend or client. The only Inventory quick-print tables are Stock
+Ledger and Inventory Overview. Both receive the same permission-filtered column arrays as their
+screens and the same API-projected rows; a browser regression checks their print-only tables
+with and without `inventory.valuation.view`. Other Inventory document screens do not offer a
+print/export action today. A future export must enforce the server-side valuation boundary and
+filter monetary columns by effective capability before serialising; the generic column
+definitions' `exportable` defaults are not an authorisation decision. This closes the audit for
+currently implemented Inventory HTTP/UI surfaces, not for future exports or separate Purchasing,
+Estimating and Finance cost domains.
 
 `stock_layers` and `avco_pools` each have their own read endpoint too now, closing the last gap
 on this close-out item: a cursor-paginated `GET /api/v1/stock-layers` (`filter[open]` for an

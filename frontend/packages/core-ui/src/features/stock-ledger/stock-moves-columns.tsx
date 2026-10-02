@@ -2,6 +2,7 @@ import type { StockMoveResource } from '@erp/core-api';
 
 import type { DataColumn } from '../../components/data-table/types';
 import { formatDateTime } from '../../lib/format-date';
+import { formatLocation } from '../../lib/format-location';
 
 /**
  * The single source of truth for what a stock ledger row "is" on screen and
@@ -26,12 +27,12 @@ export const stockMoveColumns: DataColumn<StockMoveResource>[] = [
   {
     key: 'from_location',
     header: 'From',
-    value: (move) => move.from_location?.code ?? null,
+    value: (move) => formatLocation(move.from_location) ?? null,
   },
   {
     key: 'to_location',
     header: 'To',
-    value: (move) => move.to_location?.code ?? null,
+    value: (move) => formatLocation(move.to_location) ?? null,
   },
   {
     key: 'qty',

@@ -4,6 +4,7 @@ namespace Tests\Feature\Modules\Estimating;
 
 use App\Exceptions\DomainInvariantException;
 use App\Models\Uom;
+use App\Models\User;
 use App\Modules\Estimating\Actions\ActivateFormulationVersion;
 use App\Modules\Estimating\Actions\ExplodeFormulationVersion;
 use App\Modules\Estimating\Models\Formulation;
@@ -22,6 +23,7 @@ use App\Modules\Inventory\Support\ValuationMethod;
 use App\Support\UomConversionService;
 use App\Support\UomDimension;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Support\PermissionedActor;
 use Tests\TestCase;
 
 /**
@@ -48,9 +50,13 @@ class FormulationExplosionTest extends TestCase
 
     private Item $shade;
 
+    private User $formulationActor;
+
     protected function setUp(): void
     {
         parent::setUp();
+
+        $this->formulationActor = PermissionedActor::grant(User::factory()->create(), ['estimating.formulation.manage']);
 
         $this->kg = Uom::create(['code' => 'kg', 'name' => 'Kilogram', 'dimension' => UomDimension::Mass, 'factor_to_base' => '1']);
         $this->litre = Uom::create(['code' => 'L', 'name' => 'Litre', 'dimension' => UomDimension::Volume, 'factor_to_base' => '1']);
@@ -88,7 +94,7 @@ class FormulationExplosionTest extends TestCase
         foreach ($lines as $sequence => $line) {
             $version->lines()->create([...$line, 'sequence' => $sequence]);
         }
-        (new ActivateFormulationVersion(new FormulationCycleGuard))($version);
+        (new ActivateFormulationVersion(new FormulationCycleGuard))($version, $this->formulationActor);
 
         return $formulation->refresh();
     }
@@ -232,11 +238,11 @@ class FormulationExplosionTest extends TestCase
         $shadeVersion = $shadeFormulation->versions()->create(['version_no' => 1])->refresh();
         $shadeVersion->lines()->create(['input_item_id' => $this->tintedBase->id, 'qty' => '1', 'uom_id' => $this->litre->id, 'sequence' => 0]);
 
-        (new ActivateFormulationVersion(new FormulationCycleGuard))($tintedBaseVersion);
+        (new ActivateFormulationVersion(new FormulationCycleGuard))($tintedBaseVersion, $this->formulationActor);
 
         $this->expectException(DomainInvariantException::class);
 
-        (new ActivateFormulationVersion(new FormulationCycleGuard))($shadeVersion);
+        (new ActivateFormulationVersion(new FormulationCycleGuard))($shadeVersion, $this->formulationActor);
     }
 
     private function explode(Formulation $formulation): FormulationExplosion

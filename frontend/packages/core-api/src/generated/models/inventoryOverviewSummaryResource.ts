@@ -10,8 +10,8 @@ export interface InventoryOverviewSummaryResource {
 (no rounding ever needed); available_value additionally divides by
 on_hand_qty, and Postgres NUMERIC division doesn't preserve a fixed
 scale — rounding here is the norm, not the exception, for that one. */
-  on_hand_value: string;
-  available_value: string;
+  on_hand_value?: string;
+  available_value?: string;
   item_count: number;
   shortage_item_count: number;
   qa_held_item_count: number;

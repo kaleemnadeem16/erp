@@ -16,6 +16,8 @@ import { apiSortToTableSorting, tableSortingToApiSort, useListQueryState } from 
 import { useColumnVisibilityPreference } from '../../lib/use-column-visibility-preference';
 import { useListViewPreference } from '../../lib/use-view-preference';
 import { physicalCountColumns } from './physical-count-columns';
+import { lookupState, type LookupState } from '../../lib/api-errors';
+import { usePermission } from '../../hooks/use-permission';
 
 interface PhysicalCountFilters {
   search: string;
@@ -28,6 +30,7 @@ const STATUSES = ['DRAFT', 'POSTED', 'CANCELLED'] as const;
 
 export function PhysicalCountsListScreen() {
   const navigate = useNavigate();
+  const mayCreate = usePermission('inventory.physical_count.create');
   const query = useListQueryState<PhysicalCountFilters>({ defaultSort: '-created_at', defaultPerPage: 25 });
   const [columnVisibility, setColumnVisibility] = useColumnVisibilityPreference(
     'physical-counts-list',
@@ -73,7 +76,7 @@ export function PhysicalCountsListScreen() {
       <PageHeader
         title="Physical Counts"
         description="Reconcile recorded stock against what's physically on hand, and post the difference as an auditable correction."
-        primaryAction={{ label: 'New count', onClick: () => navigate('/physical-counts/new') }}
+        primaryAction={mayCreate ? { label: 'New count', onClick: () => navigate('/physical-counts/new') } : undefined}
       />
 
       <div className="flex flex-wrap items-center gap-2">
@@ -84,7 +87,7 @@ export function PhysicalCountsListScreen() {
           className="h-9 flex-1 md:w-56 md:flex-none"
         />
         <div className="hidden items-center gap-2 md:flex">
-          <PhysicalCountFilterControls warehouses={warehouses} query={query} />
+          <PhysicalCountFilterControls warehousesLookup={lookupState(warehousesQuery, 'warehouses')} warehouses={warehouses} query={query} />
         </div>
         <Button
           variant="outline"
@@ -104,7 +107,7 @@ export function PhysicalCountsListScreen() {
             <SheetTitle>Filters</SheetTitle>
           </SheetHeader>
           <div className="flex flex-col gap-3 py-4">
-            <PhysicalCountFilterControls warehouses={warehouses} query={query} full />
+            <PhysicalCountFilterControls warehousesLookup={lookupState(warehousesQuery, 'warehouses')} warehouses={warehouses} query={query} full />
           </div>
           <SheetFooter>
             <Button variant="ghost" onClick={() => query.setFilters({ warehouse_id: undefined, status: undefined })}>
@@ -135,6 +138,8 @@ export function PhysicalCountsListScreen() {
         onRowClick={(count: PhysicalCountResource) => navigate(`/physical-counts/${count.id}`)}
         isLoading={countsQuery.isLoading}
         isError={countsQuery.isError}
+        error={countsQuery.error}
+        onRetry={() => void countsQuery.refetch()}
         errorMessage="Couldn't load physical counts."
         emptyMessage="No physical counts match these filters."
         view={view}
@@ -146,16 +151,17 @@ export function PhysicalCountsListScreen() {
 }
 
 interface PhysicalCountFilterControlsProps {
+  warehousesLookup: LookupState;
   warehouses: { id: number; name: string }[];
   query: ReturnType<typeof useListQueryState<PhysicalCountFilters>>;
   full?: boolean;
 }
 
 /** Warehouse/Status selects — shared by the always-visible desktop row and the mobile Filters sheet. */
-function PhysicalCountFilterControls({ warehouses, query, full }: PhysicalCountFilterControlsProps) {
+function PhysicalCountFilterControls({ warehousesLookup, warehouses, query, full }: PhysicalCountFilterControlsProps) {
   return (
     <>
-      <Combobox
+      <Combobox {...warehousesLookup}
         className={full ? 'h-9 w-full' : 'h-9 w-44'}
         aria-label="Warehouse"
         value={query.filters.warehouse_id ?? 'all'}

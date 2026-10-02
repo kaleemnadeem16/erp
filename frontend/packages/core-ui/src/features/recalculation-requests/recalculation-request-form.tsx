@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Combobox } from '../../components/ui/combobox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../components/ui/form';
 import { DetailSection } from '../../components/detail/detail-page-layout';
+import { formatLocation } from '../../lib/format-location';
+import { lookupState } from '../../lib/api-errors';
 
 const recalculationRequestFormSchema = z.object({
   item_id: z.string().min(1, 'Item is required'),
@@ -106,7 +108,7 @@ export function RecalculationRequestForm({
               <FormItem>
                 <FormLabel>Item</FormLabel>
                 <FormControl>
-                  <Combobox
+                  <Combobox {...lookupState(itemsQuery, 'items')}
                     ref={field.ref}
                     value={field.value}
                     onValueChange={field.onChange}
@@ -127,11 +129,11 @@ export function RecalculationRequestForm({
               <FormItem>
                 <FormLabel>Location</FormLabel>
                 <FormControl>
-                  <Combobox
+                  <Combobox {...lookupState(locationsQuery, 'locations')}
                     ref={field.ref}
                     value={field.value}
                     onValueChange={field.onChange}
-                    options={locations.map((location) => ({ value: String(location.id), label: location.code }))}
+                    options={locations.map((location) => ({ value: String(location.id), label: formatLocation(location) }))}
                     placeholder="Select a location"
                     searchPlaceholder="Search locations…"
                     emptyText="No locations found."
@@ -149,11 +151,11 @@ export function RecalculationRequestForm({
                 <FormItem>
                   <FormLabel>Destination location</FormLabel>
                   <FormControl>
-                    <Combobox
+                    <Combobox {...lookupState(locationsQuery, 'locations')}
                       ref={field.ref}
                       value={field.value}
                       onValueChange={field.onChange}
-                      options={locations.map((location) => ({ value: String(location.id), label: location.code }))}
+                      options={locations.map((location) => ({ value: String(location.id), label: formatLocation(location) }))}
                       placeholder="Select a destination"
                       searchPlaceholder="Search locations…"
                       emptyText="No locations found."

@@ -18,6 +18,12 @@ export interface DateFieldProps {
   'aria-labelledby'?: string;
   /** For standalone uses with no associated `FormLabel` (e.g. a list-screen filter). */
   'aria-label'?: string;
+  /** Optional class name to attach to the portaled PopoverContent */
+  popoverClassName?: string;
+  /** Where the calendar button sits. Default `end` (today's look); `start` puts it before the segments. */
+  pickerPosition?: 'start' | 'end';
+  /** Omit the calendar button — for a compact quick-entry field whose full picker lives elsewhere. */
+  hidePicker?: boolean;
 }
 
 interface Segments {
@@ -87,6 +93,9 @@ export const DateField = React.forwardRef<HTMLInputElement, DateFieldProps>(func
     'aria-invalid': ariaInvalid,
     'aria-labelledby': ariaLabelledBy,
     'aria-label': ariaLabel,
+    popoverClassName,
+    pickerPosition = 'end',
+    hidePicker = false,
   },
   forwardedRef
 ) {
@@ -192,6 +201,30 @@ export const DateField = React.forwardRef<HTMLInputElement, DateFieldProps>(func
     focusSegment('year', false);
   }
 
+  const picker = (
+    <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            disabled={disabled}
+            aria-label="Choose date"
+            className="flex size-7 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:pointer-events-none disabled:opacity-50"
+          >
+            <CalendarIcon className="size-4" />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent className={cn("w-auto p-0", popoverClassName)} align="end">
+          <Calendar
+            value={toIso(segments)}
+            onSelect={(iso) => {
+              commit(parseIso(iso));
+              setCalendarOpen(false);
+            }}
+          />
+        </PopoverContent>
+    </Popover>
+  );
+
   return (
     <div
       id={id}
@@ -203,7 +236,8 @@ export const DateField = React.forwardRef<HTMLInputElement, DateFieldProps>(func
       className={cn(
         // `min-w-fit`: the field never gets narrower than the date it has to show,
         // so a tight grid cell can crowd its neighbour but never clip the date.
-        'flex h-9 w-full min-w-fit items-center justify-between rounded-md border border-input bg-transparent pl-3 pr-1 text-sm shadow-sm ring-offset-background focus-within:ring-1 focus-within:ring-ring',
+        'flex h-9 w-full min-w-fit items-center justify-between rounded-md border border-input bg-transparent text-sm shadow-sm ring-offset-background focus-within:ring-1 focus-within:ring-ring',
+        pickerPosition === 'start' && !hidePicker ? 'justify-start gap-1 pl-1 pr-3' : 'pl-3 pr-1',
         disabled && 'cursor-not-allowed opacity-50',
         className
       )}
@@ -216,6 +250,7 @@ export const DateField = React.forwardRef<HTMLInputElement, DateFieldProps>(func
         onBlur?.();
       }}
     >
+      {!hidePicker && pickerPosition === 'start' && picker}
       <div className="flex items-center gap-0.5">
         {SEGMENT_ORDER.map((name, index) => (
           <React.Fragment key={name}>
@@ -269,27 +304,7 @@ export const DateField = React.forwardRef<HTMLInputElement, DateFieldProps>(func
           </React.Fragment>
         ))}
       </div>
-      <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-        <PopoverTrigger asChild>
-          <button
-            type="button"
-            disabled={disabled}
-            aria-label="Choose date"
-            className="flex size-7 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:pointer-events-none disabled:opacity-50"
-          >
-            <CalendarIcon className="size-4" />
-          </button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="end">
-          <Calendar
-            value={toIso(segments)}
-            onSelect={(iso) => {
-              commit(parseIso(iso));
-              setCalendarOpen(false);
-            }}
-          />
-        </PopoverContent>
-      </Popover>
+      {!hidePicker && pickerPosition === 'end' && picker}
     </div>
   );
 });

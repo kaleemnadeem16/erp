@@ -22,6 +22,7 @@ class UserResource extends JsonResource
             'id' => $user->id,
             'name' => $user->name,
             'email' => $user->email,
+            'must_change_password' => (bool) $user->must_change_password,
             // Navigation may use this as a convenience, but every endpoint
             // still authorises server-side. Never expose another user's
             // grants when this resource is nested in audit/history data.

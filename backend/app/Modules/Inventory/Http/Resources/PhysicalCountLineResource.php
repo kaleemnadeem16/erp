@@ -30,7 +30,10 @@ class PhysicalCountLineResource extends JsonResource
             'counted_qty' => $line->counted_qty,
             'counted_by' => $line->counted_by,
             'counted_at' => $line->counted_at?->toIso8601String(),
-            'found_unit_cost' => $line->found_unit_cost,
+            'found_unit_cost' => $this->when(
+                $request->user()?->can('inventory.physical_count.post') || $request->user()?->can('inventory.valuation.view'),
+                $line->found_unit_cost,
+            ),
             'posted_stock_move_id' => $line->posted_stock_move_id,
             'entries' => PhysicalCountLineEntryResource::collection($this->whenLoaded('entries')),
         ];

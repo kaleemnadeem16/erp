@@ -1,24 +1,47 @@
 import { useMemo, useState } from 'react';
 import {
+  MaterialSelectionStrategy,
   useAssembliesIndex,
   useAssembliesMaterialPreview,
   useCustomerAccountsIndex,
+  useLocationsIndex,
+  useMaterialVarianceReasonsIndex,
   useRateDimensionsIndex,
   useUomsIndex,
+  useWarehousesIndex,
+  type AssembliesMaterialPreview200DataInventory,
+  type AssembliesMaterialPreview200DataVariance,
+  type MaterialVarianceReasonResource,
+  type PreviewMaterialRequest as PreviewRequestData,
+  type UomResource,
   type AssemblyResource,
 } from '@erp/core-api';
-import { AlertTriangle, Calculator } from 'lucide-react';
+import { AlertTriangle, Calculator, RefreshCw } from 'lucide-react';
+import { AdvancedOptionSection } from '../../components/ui/advanced-option-section';
+import { AdvancedOptionsMenu } from '../../components/ui/advanced-options-menu';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Combobox } from '../../components/ui/combobox';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { PageHeader } from '../../components/page/page-header';
-import { getApiErrorMessage } from '../../lib/api-errors';
+import { getApiErrorMessage, lookupState, type LookupState } from '../../lib/api-errors';
 import { useAuthStore } from '../../stores/auth-store';
+import { InventoryProposalPanel } from './inventory-proposal-panel';
+import { type MixDraft } from './stock-mix-editor';
+import { VarianceSummary, VarianceVerdict, WhatIfEditor, type WhatIfPlan } from './variance-what-if';
 
 const NONE = 'NONE';
 const ACTIVE = 'ACTIVE';
+const COMPANY_DEFAULT = 'COMPANY_DEFAULT';
+
+const STRATEGY_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: COMPANY_DEFAULT, label: 'Stored preference (item, category or company)' },
+  { value: MaterialSelectionStrategy.MINIMISE_WASTE, label: 'Minimise waste' },
+  { value: MaterialSelectionStrategy.LOWEST_INTERNAL_COST, label: 'Lowest internal cost' },
+  { value: MaterialSelectionStrategy.FEWEST_PACKAGES, label: 'Fewest packages' },
+];
 
 interface PreviewData {
   context: {
@@ -69,6 +92,8 @@ interface PreviewData {
       cost_source: string;
     }>;
   };
+  inventory: AssembliesMaterialPreview200DataInventory | null;
+  variance: AssembliesMaterialPreview200DataVariance;
   warnings: string[];
   limitations: string[];
   evidence_fingerprint: string;
@@ -84,6 +109,9 @@ export function MaterialPreviewScreen() {
   const user = useAuthStore((state) => state.user);
   const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
   const mayRun = permissions.includes('estimating.material_preview.run');
+  const mayViewAvailability = permissions.includes('estimating.inventory_availability.view');
+  const mayChooseMix = mayViewAvailability && permissions.includes('estimating.stock_mix.choose');
+  const mayViewCost = permissions.includes('estimating.internal_cost.view');
   const assembliesQuery = useAssembliesIndex({ per_page: 100, sort: 'code', include: 'workUom,versions' });
   const assemblies = assembliesQuery.data?.status === 200 ? assembliesQuery.data.data.data : [];
   const uomsQuery = useUomsIndex({ per_page: 100, sort: 'name' });
@@ -92,6 +120,17 @@ export function MaterialPreviewScreen() {
   const customers = customersQuery.data?.status === 200 ? customersQuery.data.data.data : [];
   const dimensionsQuery = useRateDimensionsIndex({ per_page: 100, sort: 'sort_order', include: 'values' });
   const dimensions = dimensionsQuery.data?.status === 200 ? dimensionsQuery.data.data.data : [];
+  // Only the stock-scope pickers need these, so skip the requests for someone who cannot see availability.
+  const warehousesQuery = useWarehousesIndex(
+    { per_page: 100, sort: 'code', 'filter[active]': true },
+    { query: { enabled: mayViewAvailability } },
+  );
+  const warehouses = warehousesQuery.data?.status === 200 ? warehousesQuery.data.data.data : [];
+  const locationsQuery = useLocationsIndex(
+    { per_page: 100, sort: 'code', 'filter[active]': true },
+    { query: { enabled: mayViewAvailability } },
+  );
+  const locations = locationsQuery.data?.status === 200 ? locationsQuery.data.data.data : [];
 
   const [assemblyId, setAssemblyId] = useState('');
   const [versionId, setVersionId] = useState(ACTIVE);
@@ -99,41 +138,118 @@ export function MaterialPreviewScreen() {
   const [workUomId, setWorkUomId] = useState('');
   const [customerId, setCustomerId] = useState(NONE);
   const [dimensionValues, setDimensionValues] = useState<Record<number, string>>({});
+  const [warehouseId, setWarehouseId] = useState(NONE);
+  const [locationId, setLocationId] = useState(NONE);
+  const [strategy, setStrategy] = useState(COMPANY_DEFAULT);
+  const [showStrategy, setShowStrategy] = useState(false);
   const [preview, setPreview] = useState<PreviewData | null>(null);
+  // What-if planned quantities by item id. They belong to the assembly context they were typed under,
+  // so anything that can change which materials are required clears them (see resetContext).
+  // The exact request behind the result on screen, so "Check if still current" repeats that question and
+  // not whatever the form says now, plus when it was answered and what the last check found.
+  const [lastRequest, setLastRequest] = useState<{ assembly: number; data: PreviewRequestData } | null>(null);
+  const [calculatedAt, setCalculatedAt] = useState<Date | null>(null);
+  const [recheck, setRecheck] = useState<{ at: Date; changed: boolean } | null>(null);
+  const [plans, setPlans] = useState<Record<number, WhatIfPlan>>({});
+  // Hand-built stock mixes by item id (ADR 0072): they too belong to the materials the context resolved to.
+  const [mixes, setMixes] = useState<Record<number, MixDraft>>({});
   const mutation = useAssembliesMaterialPreview();
+  const reasonsQuery = useMaterialVarianceReasonsIndex({ per_page: 100, sort: 'name', 'filter[active]': true });
+  const reasons = reasonsQuery.data?.status === 200 ? reasonsQuery.data.data.data : [];
 
   const assembly = useMemo(
     () => assemblies.find((candidate) => candidate.id === Number(assemblyId)),
     [assemblies, assemblyId],
   );
 
+  // A warehouse with a single stock location (the SIMPLE location mode) has nothing to narrow
+  // below the warehouse, so the location picker only appears when there is a real choice.
+  const warehouseLocations = useMemo(
+    () => locations.filter((location) => location.warehouse_id === Number(warehouseId) && location.allows_stock),
+    [locations, warehouseId],
+  );
+
+  // A change to which assembly, version, customer or rate dimension applies can change which materials
+  // are required, so a plan typed for the old answer must not be replayed against the new one.
+  const resetContext = () => {
+    setPreview(null);
+    setPlans({});
+    setMixes({});
+  };
+
+  const selectWarehouse = (value: string) => {
+    setWarehouseId(value);
+    setLocationId(NONE);
+    setPreview(null);
+  };
+
   const selectAssembly = (value: string) => {
     setAssemblyId(value);
     setVersionId(ACTIVE);
     const selected = assemblies.find((candidate) => candidate.id === Number(value));
     setWorkUomId(selected ? String(selected.work_uom_id) : '');
-    setPreview(null);
+    resetContext();
   };
 
   const submit = () => {
     if (!assembly || !workUomId || !workQuantity) return;
-    mutation.mutate(
-      {
-        assembly: assembly.id,
-        data: {
+    const plannedAdjustments = Object.entries(plans)
+      .filter(([, plan]) => plan.quantity.trim() !== '')
+      .map(([itemId, plan]) => ({
+        item_id: Number(itemId),
+        planned_quantity: plan.quantity.trim(),
+        uom_id: Number(plan.uomId),
+        reason_id: plan.reasonId === 'NO_REASON' ? null : Number(plan.reasonId),
+        note: plan.note.trim() === '' ? null : plan.note.trim(),
+      }));
+    const stockMixNotes = Object.entries(mixes)
+      .filter(([, mix]) => mix.enabled && mix.note.trim() !== '' && Object.values(mix.quantities).some((quantity) => quantity.trim() !== ''))
+      .map(([itemId, mix]) => ({ item_id: Number(itemId), note: mix.note.trim() }));
+    const stockMix = Object.entries(mixes).flatMap(([itemId, mix]) => mix.enabled
+      ? Object.entries(mix.quantities)
+        .filter(([, quantity]) => quantity.trim() !== '')
+        .map(([key, quantity]) => {
+          const [locationId = 0, batchId = 0] = key.split(':').map(Number);
+          return { item_id: Number(itemId), location_id: locationId, batch_id: batchId === 0 ? null : batchId, quantity: quantity.trim(), uom_id: Number(mix.uomId) };
+        })
+      : []);
+    run({
+      assembly: assembly.id,
+      data: {
           assembly_version_id: versionId === ACTIVE ? null : Number(versionId),
           work_quantity: workQuantity,
           work_uom_id: Number(workUomId),
           customer_id: customerId === NONE ? null : Number(customerId),
           dimension_value_ids: Object.values(dimensionValues).filter((value) => value !== NONE).map(Number),
-        },
+          ...(plannedAdjustments.length > 0 ? { planned_adjustments: plannedAdjustments } : {}),
+          // Sent only with the capability: the API rejects these inputs outright without it.
+          ...(mayViewAvailability
+            ? {
+                inventory_scope: {
+                  warehouse_ids: warehouseId === NONE ? [] : [Number(warehouseId)],
+                  location_ids: locationId === NONE ? [] : [Number(locationId)],
+                },
+                selection_strategy: strategy === COMPANY_DEFAULT ? null : (strategy as MaterialSelectionStrategy),
+                ...(stockMix.length > 0 ? { stock_mix: stockMix } : {}),
+                ...(stockMix.length > 0 && stockMixNotes.length > 0 ? { stock_mix_notes: stockMixNotes } : {}),
+              }
+            : {}),
       },
-      {
-        onSuccess: (response) => {
-          if (response.status === 200) setPreview(response.data.data as unknown as PreviewData);
-        },
+    });
+  };
+
+  /** Runs a request. With `comparing`, the answer is compared with the one on screen by evidence fingerprint. */
+  const run = (request: { assembly: number; data: PreviewRequestData }, comparing?: PreviewData) => {
+    mutation.mutate(request, {
+      onSuccess: (response) => {
+        if (response.status !== 200) return;
+        const next = response.data.data as unknown as PreviewData;
+        setPreview(next);
+        setLastRequest(request);
+        setCalculatedAt(new Date());
+        setRecheck(comparing ? { at: new Date(), changed: comparing.evidence_fingerprint !== next.evidence_fingerprint } : null);
       },
-    );
+    });
   };
 
   if (!mayRun) {
@@ -152,6 +268,24 @@ export function MaterialPreviewScreen() {
       <PageHeader
         title="Material Preview"
         description="See what an Assembly technically requires for a customer, quantity and rate context. This preview does not reserve stock."
+        actions={
+          mayViewAvailability ? (
+            <AdvancedOptionsMenu
+              options={[
+                {
+                  id: 'selection-strategy',
+                  label: 'Choose stock selection strategy',
+                  checked: showStrategy,
+                  onCheckedChange: (checked) => {
+                    setShowStrategy(checked);
+                    if (!checked) setStrategy(COMPANY_DEFAULT);
+                    setPreview(null);
+                  },
+                },
+              ]}
+            />
+          ) : undefined
+        }
       />
 
       <section className="space-y-4 rounded-lg border p-4" aria-labelledby="preview-inputs-heading">
@@ -161,7 +295,7 @@ export function MaterialPreviewScreen() {
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Field label="Assembly">
-            <Combobox
+            <Combobox {...lookupState(assembliesQuery, 'assemblies')}
               aria-label="Assembly"
               value={assemblyId}
               onValueChange={selectAssembly}
@@ -175,7 +309,7 @@ export function MaterialPreviewScreen() {
             <Combobox
               aria-label="Assembly version"
               value={versionId}
-              onValueChange={(value) => { setVersionId(value); setPreview(null); }}
+              onValueChange={(value) => { setVersionId(value); resetContext(); }}
               options={versionOptions(assembly)}
               placeholder="Effective active version"
               searchPlaceholder="Search versions…"
@@ -184,10 +318,10 @@ export function MaterialPreviewScreen() {
             />
           </Field>
           <Field label="Customer (optional)">
-            <Combobox
+            <Combobox {...lookupState(customersQuery, 'customers')}
               aria-label="Customer"
               value={customerId}
-              onValueChange={(value) => { setCustomerId(value); setPreview(null); }}
+              onValueChange={(value) => { setCustomerId(value); resetContext(); }}
               options={[
                 { value: NONE, label: 'Company-default formulation' },
                 ...customers.map((row) => ({ value: String(row.id), label: `${row.code} — ${row.party?.name ?? 'Customer'}` })),
@@ -205,7 +339,7 @@ export function MaterialPreviewScreen() {
             />
           </Field>
           <Field label="Work unit">
-            <Combobox
+            <Combobox {...lookupState(uomsQuery, 'units')}
               aria-label="Work unit"
               value={workUomId}
               onValueChange={(value) => { setWorkUomId(value); setPreview(null); }}
@@ -217,12 +351,12 @@ export function MaterialPreviewScreen() {
           </Field>
           {dimensions.map((dimension) => (
             <Field key={dimension.id} label={`${dimension.name}${dimension.is_required ? ' (required for a specific match)' : ' (optional)'}`}>
-              <Combobox
+              <Combobox {...lookupState(dimensionsQuery, 'rate dimensions')}
                 aria-label={dimension.name}
                 value={dimensionValues[dimension.id] ?? NONE}
                 onValueChange={(value) => {
                   setDimensionValues((current) => ({ ...current, [dimension.id]: value }));
-                  setPreview(null);
+                  resetContext();
                 }}
                 options={[
                   { value: NONE, label: 'Not specified' },
@@ -234,6 +368,58 @@ export function MaterialPreviewScreen() {
             </Field>
           ))}
         </div>
+        {mayViewAvailability && (
+          <div className="space-y-4 border-t pt-4">
+            <div>
+              <h3 className="font-medium">Stock to consider</h3>
+              <p className="text-sm text-muted-foreground">Leave these alone to consider every warehouse. Narrowing only ever reduces the stock counted.</p>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <Field label="Warehouse (optional)">
+                <Combobox {...lookupState(warehousesQuery, 'warehouses')}
+                  aria-label="Warehouse"
+                  value={warehouseId}
+                  onValueChange={selectWarehouse}
+                  options={[
+                    { value: NONE, label: 'All warehouses' },
+                    ...warehouses.map((row) => ({ value: String(row.id), label: `${row.code} — ${row.name}` })),
+                  ]}
+                  searchPlaceholder="Search warehouses…"
+                  emptyText="No warehouses found."
+                />
+              </Field>
+              {warehouseLocations.length > 1 && (
+                <Field label="Location (optional)">
+                  <Combobox {...lookupState(locationsQuery, 'locations')}
+                    aria-label="Location"
+                    value={locationId}
+                    onValueChange={(value) => { setLocationId(value); setPreview(null); }}
+                    options={[
+                      { value: NONE, label: 'Every location in the warehouse' },
+                      ...warehouseLocations.map((row) => ({ value: String(row.id), label: `${row.code} — ${row.name}` })),
+                    ]}
+                    searchPlaceholder="Search locations…"
+                    emptyText="No locations found."
+                  />
+                </Field>
+              )}
+              <AdvancedOptionSection expanded={showStrategy}>
+                <Field label="Selection strategy">
+                  <Select value={strategy} onValueChange={(value) => { setStrategy(value); setPreview(null); }}>
+                    <SelectTrigger aria-label="Selection strategy">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STRATEGY_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+              </AdvancedOptionSection>
+            </div>
+          </div>
+        )}
         <Button type="button" onClick={submit} disabled={!assembly || !workUomId || !workQuantity || mutation.isPending}>
           <Calculator className="size-4" />
           {mutation.isPending ? 'Calculating…' : 'Calculate preview'}
@@ -243,12 +429,52 @@ export function MaterialPreviewScreen() {
         )}
       </section>
 
-      {preview && <PreviewResult data={preview} />}
+      {preview && (
+        <PreviewResult
+          data={preview}
+          mayViewAvailability={mayViewAvailability}
+          mayChooseMix={mayChooseMix}
+          mayViewCost={mayViewCost}
+          plans={plans}
+          onPlanChange={(itemId, plan) => setPlans((current) => ({ ...current, [itemId]: plan }))}
+          mixes={mixes}
+          onMixChange={(itemId, draft) => setMixes((current) => ({ ...current, [itemId]: draft }))}
+          onCalculate={submit}
+          uoms={uoms}
+          unitsLookup={lookupState(uomsQuery, 'units')}
+          reasons={reasons}
+          isCalculating={mutation.isPending}
+          calculatedAt={calculatedAt}
+          recheck={recheck}
+          onRecheck={lastRequest ? () => run(lastRequest, preview) : undefined}
+        />
+      )}
     </div>
   );
 }
 
-function PreviewResult({ data }: { data: PreviewData }) {
+interface PreviewResultProps {
+  data: PreviewData;
+  mayViewAvailability: boolean;
+  mayChooseMix: boolean;
+  mayViewCost: boolean;
+  plans: Record<number, WhatIfPlan>;
+  onPlanChange: (itemId: number, plan: WhatIfPlan) => void;
+  mixes: Record<number, MixDraft>;
+  onMixChange: (itemId: number, draft: MixDraft) => void;
+  onCalculate: () => void;
+  uoms: UomResource[];
+  unitsLookup: LookupState;
+  reasons: MaterialVarianceReasonResource[];
+  isCalculating: boolean;
+  calculatedAt: Date | null;
+  recheck: { at: Date; changed: boolean } | null;
+  onRecheck?: () => void;
+}
+
+function PreviewResult({ data, mayViewAvailability, mayChooseMix, mayViewCost, plans, onPlanChange, mixes, onMixChange, onCalculate, uoms, unitsLookup, reasons, isCalculating, calculatedAt, recheck, onRecheck }: PreviewResultProps) {
+  const verdicts = new Map((data.variance?.items ?? []).map((verdict) => [verdict.item.id, verdict]));
+  const pendingEdits = Object.values(plans).some((plan) => plan.quantity.trim() !== '');
   return (
     <div className="space-y-5">
       <section className="rounded-lg border p-4">
@@ -259,8 +485,28 @@ function PreviewResult({ data }: { data: PreviewData }) {
               {data.context.resolved_work_quantity} {data.context.assembly_work_uom.code} using Assembly version {data.context.assembly_version.version_no}
             </p>
           </div>
-          <Badge variant="secondary">Advisory — not reserved</Badge>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="secondary">Advisory — not reserved</Badge>
+            {calculatedAt && <Badge variant="outline">Calculated {formatTime(calculatedAt)}</Badge>}
+            {onRecheck && (
+              <Button type="button" size="sm" variant="outline" onClick={onRecheck} disabled={isCalculating}>
+                <RefreshCw className="size-4" />
+                {isCalculating ? 'Checking…' : 'Check if still current'}
+              </Button>
+            )}
+          </div>
         </div>
+        <p className="mt-2 text-xs text-muted-foreground">
+          Stock, rates and policies can change at any moment, so this answer can be out of date as soon as it is shown. Checking asks the
+          same question again and compares what it rests on.
+        </p>
+        {recheck && (
+          <p role="status" className={`mt-2 rounded-md border p-2 text-sm ${recheck.changed ? 'border-amber-500/40 bg-amber-500/10' : 'border-emerald-500/40 bg-emerald-500/10'}`}>
+            {recheck.changed
+              ? `Something this preview rests on changed since it was first calculated; the figures below were refreshed at ${formatTime(recheck.at)}.`
+              : `Still current at ${formatTime(recheck.at)}: nothing this preview rests on has changed.`}
+          </p>
+        )}
         {data.warnings.length > 0 && (
           <div className="mt-4 space-y-1 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
             {data.warnings.map((warning) => <p key={warning}><AlertTriangle className="mr-1 inline size-4" />{warning}</p>)}
@@ -269,7 +515,13 @@ function PreviewResult({ data }: { data: PreviewData }) {
       </section>
 
       <section className="space-y-3 rounded-lg border p-4">
-        <h2 className="font-semibold">Leaf materials</h2>
+        <div>
+          <h2 className="font-semibold">Leaf materials</h2>
+          <p className="text-sm text-muted-foreground">
+            To ask “what if we plan a different amount?”, type a planned quantity for a material and calculate again. Nothing is saved or reserved.
+          </p>
+        </div>
+        {data.variance && <VarianceSummary variance={data.variance} />}
         {data.leaf_requirements.length === 0 && <p className="text-sm text-muted-foreground">This Assembly has no material requirement.</p>}
         {data.leaf_requirements.map((leaf) => (
           <div key={leaf.item.id} className="rounded-md border p-3">
@@ -282,9 +534,32 @@ function PreviewResult({ data }: { data: PreviewData }) {
                 <p key={`${contribution.component_id}-${index}`}>{contribution.quantity} {leaf.uom.code} · {contribution.path.join(' → ')}</p>
               ))}
             </div>
+            {verdicts.get(leaf.item.id) && <VarianceVerdict item={verdicts.get(leaf.item.id)!} mayViewCost={mayViewCost} />}
+            <WhatIfEditor
+              itemCode={leaf.item.code}
+              standardUomId={leaf.uom.id}
+              plan={plans[leaf.item.id]}
+              onChange={(plan) => onPlanChange(leaf.item.id, { ...plan, uomId: plan.uomId || String(leaf.uom.id) })}
+              uoms={uoms}
+              unitsLookup={unitsLookup}
+              reasons={reasons}
+            />
           </div>
         ))}
+        {pendingEdits && !isCalculating && (
+          <p className="text-sm text-muted-foreground">Calculate the preview again to judge the planned quantities you have entered.</p>
+        )}
       </section>
+
+      {data.inventory ? (
+        <InventoryProposalPanel inventory={data.inventory} mayViewCost={mayViewCost} mixes={mixes} onMixChange={onMixChange} uoms={uoms} unitsLookup={unitsLookup} mayChooseMix={mayChooseMix} onCalculate={onCalculate} isCalculating={isCalculating} />
+      ) : (
+        !mayViewAvailability && (
+          <section className="rounded-lg border p-4 text-sm text-muted-foreground">
+            Stock availability is hidden because your access does not include <code>estimating.inventory_availability.view</code>. Hidden availability is not treated as zero stock.
+          </section>
+        )
+      )}
 
       <section className="space-y-3 rounded-lg border p-4">
         <h2 className="font-semibold">Resolution evidence</h2>
@@ -325,6 +600,10 @@ function PreviewResult({ data }: { data: PreviewData }) {
       </section>
     </div>
   );
+}
+
+function formatTime(value: Date): string {
+  return value.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
 function versionOptions(assembly?: AssemblyResource) {

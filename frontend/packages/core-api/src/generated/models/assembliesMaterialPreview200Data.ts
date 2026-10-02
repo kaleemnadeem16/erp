@@ -7,6 +7,8 @@
 import type { AssembliesMaterialPreview200DataContext } from "./assembliesMaterialPreview200DataContext";
 import type { AssembliesMaterialPreview200DataMaterialComponentsItem } from "./assembliesMaterialPreview200DataMaterialComponentsItem";
 import type { AssembliesMaterialPreview200DataCostBreakdown } from "./assembliesMaterialPreview200DataCostBreakdown";
+import type { AssembliesMaterialPreview200DataVariance } from "./assembliesMaterialPreview200DataVariance";
+import type { AssembliesMaterialPreview200DataInventory } from "./assembliesMaterialPreview200DataInventory";
 
 export type AssembliesMaterialPreview200Data = {
   calculated_at: string;
@@ -14,13 +16,16 @@ export type AssembliesMaterialPreview200Data = {
   material_components: AssembliesMaterialPreview200DataMaterialComponentsItem[];
   leaf_requirements: unknown[];
   cost_breakdown: AssembliesMaterialPreview200DataCostBreakdown;
+  /** No adjustments asked for → no block at all, rather than an empty one. */
+  variance: AssembliesMaterialPreview200DataVariance;
+  inventory: AssembliesMaterialPreview200DataInventory;
   warnings: unknown[];
   /**
    * @minItems 2
    * @maxItems 2
    */
   limitations: [
-    "Technical preview only: planned adjustments, inventory availability, package proposals and variance controls are not included yet.",
+    "Package-level proposals are not included yet, and a planned quantity is only ever a what-if: it is not adopted or saved here.",
     "Advisory only: this calculation does not reserve, allocate or post inventory.",
   ];
   evidence_fingerprint: string;

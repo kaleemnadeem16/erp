@@ -119,6 +119,12 @@ unconditionally. Collection endpoints validate both parameters: `sort=field` is 
 being silently ignored. Resource updates use `PATCH`; `PUT` is reserved for a future endpoint
 that genuinely accepts a complete replacement representation.
 
+A boolean filter (`filter[active]=true`) accepts `true` / `false` as well as `1` / `0`: a query string
+is text, and the generated client serialises a boolean as `"true"`, which Laravel's own `boolean` rule
+rejects. `ValidatesListQuery` normalises any `filter.*` key its request declares `boolean`
+([ADR 0060](../decisions/0060-accept-true-and-false-for-boolean-list-filters.md)), so declare a new
+one that way rather than working around it in a screen.
+
 ## Money
 
 ```json
@@ -144,8 +150,8 @@ integration and webhook consumers, where retries are routine.
 
 | Scope | Limit |
 |---|---|
-| Authenticated | 120/min |
-| Login | 5/min per IP |
+| Authenticated | 120/min per user (`API_RATE_LIMIT_PER_MINUTE`, `config/api.php`; production keeps the default) |
+| Login | 5/min per IP (keyed on the address, so repeated scripted sign-ins exhaust it too) |
 | Integrations | Per-token, configurable |
 
 ## Generated client
@@ -153,6 +159,16 @@ integration and webhook consumers, where retries are routine.
 Every endpoint must produce a correct OpenAPI entry. Where Scramble cannot infer a response
 shape, add explicit types — do not leave it to guess. CI regenerates and fails on diff, so a
 missing type surfaces as a build failure rather than an `any` in the frontend.
+
+**The models barrel is rewritten after generation.** Orval writes `generated/models/index.ts` as one
+`export * from` line per schema — over a thousand. `export *` is a value re-export a browser cannot
+skip, so in dev (Vite serves each file as its own module) every cold page load fetched every schema
+file, although about 1,280 of them are pure types that compile to empty modules: roughly 1,500 requests
+per load, which made the dev app crawl whenever the disk was busy. `scripts/slim-models-barrel.mjs`
+(orval's `afterAllFilesWrite` hook) rewrites the barrel so pure-type schemas use `export type *` — erased
+at build time — and only the ~80 that export a runtime value (enum-like constants) keep `export *`.
+The names importable from `@erp/core-api` are unchanged; a cold dev load now makes ~350 requests, and
+the production build transforms ~1,270 fewer modules. Don't hand-edit the barrel: regenerate.
 
 ## Related
 

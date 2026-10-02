@@ -1,13 +1,23 @@
-import { forwardRef, useState, type ButtonHTMLAttributes } from 'react';
+import { forwardRef, useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { Check, ChevronsUpDown } from 'lucide-react';
 
+import { describeLoadError } from '../../lib/api-errors';
 import { cn } from '../../lib/utils';
+import { Button } from './button';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './command';
 import { Popover, PopoverContent, PopoverTrigger } from './popover';
 
 export interface ComboboxOption {
   value: string;
   label: string;
+}
+
+/** Why the options could not be loaded, and how to ask again. Built by `lookupState` from the query that feeds the options. */
+export interface ComboboxLoadError {
+  error: unknown;
+  onRetry: () => void;
+  /** What was being loaded, in plain words: "customers". */
+  noun: string;
 }
 
 export interface ComboboxProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'value' | 'onChange'> {
@@ -17,6 +27,14 @@ export interface ComboboxProps extends Omit<ButtonHTMLAttributes<HTMLButtonEleme
   placeholder?: string;
   searchPlaceholder?: string;
   emptyText?: string;
+  /** Set when the request that feeds `options` failed: the list says why instead of reading as "no results". */
+  loadError?: ComboboxLoadError;
+  /** Set while that request is still running, so an empty list is not mistaken for "no results". */
+  loading?: boolean;
+  /** Optional class name to attach to the portaled PopoverContent */
+  popoverClassName?: string;
+  /** Optional decorative icon shown at the start of the trigger. */
+  icon?: ReactNode;
 }
 
 /**
@@ -31,7 +49,7 @@ export interface ComboboxProps extends Omit<ButtonHTMLAttributes<HTMLButtonEleme
  * `FormControl` onto whatever single child it wraps).
  */
 export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(function Combobox(
-  { value, onValueChange, options, placeholder = 'Select…', searchPlaceholder = 'Search…', emptyText = 'No results found.', className, disabled, ...triggerProps },
+  { value, onValueChange, options, placeholder = 'Select…', searchPlaceholder = 'Search…', emptyText = 'No results found.', loadError, loading, popoverClassName, icon, className, disabled, ...triggerProps },
   ref
 ) {
   const [open, setOpen] = useState(false);
@@ -45,6 +63,7 @@ export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(function Co
           type="button"
           role="combobox"
           aria-expanded={open}
+          aria-invalid={loadError ? true : undefined}
           disabled={disabled}
           className={cn(
             'flex h-9 min-w-0 w-full items-center justify-between whitespace-nowrap rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
@@ -52,17 +71,29 @@ export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(function Co
           )}
           {...triggerProps}
         >
-          <span className={cn('truncate text-left', !selected && 'text-muted-foreground')}>
-            {selected ? selected.label : placeholder}
+          <span className="flex min-w-0 items-center">
+            {icon && <span aria-hidden="true" className="mr-2 flex shrink-0 items-center">{icon}</span>}
+            <span className={cn('truncate text-left', !selected && 'text-muted-foreground')}>
+              {selected ? selected.label : loadError ? `Couldn't load ${loadError.noun}` : loading ? 'Loading…' : placeholder}
+            </span>
           </span>
           <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+      <PopoverContent className={cn("w-[--radix-popover-trigger-width] p-0", popoverClassName)} align="start">
+        {loadError ? (
+          <div role="alert" className="flex flex-col items-center gap-2 p-4 text-center">
+            <p className="text-sm font-medium text-destructive">Couldn't load {loadError.noun}.</p>
+            <p className="text-sm text-muted-foreground">{describeLoadError(loadError.error)}</p>
+            <Button type="button" variant="outline" size="sm" onClick={loadError.onRetry}>
+              Try again
+            </Button>
+          </div>
+        ) : (
         <Command>
           <CommandInput placeholder={searchPlaceholder} />
           <CommandList>
-            <CommandEmpty>{emptyText}</CommandEmpty>
+            <CommandEmpty>{loading ? 'Loading…' : emptyText}</CommandEmpty>
             <CommandGroup>
               {options.map((option) => (
                 <CommandItem
@@ -81,6 +112,7 @@ export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(function Co
             </CommandGroup>
           </CommandList>
         </Command>
+        )}
       </PopoverContent>
     </Popover>
   );

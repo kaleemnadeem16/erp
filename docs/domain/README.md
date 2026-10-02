@@ -61,6 +61,12 @@ Lead → Opportunity → Quotation (revisions) → Job → Work Order → Invoic
 
 ## Files
 
+### Platform administration
+
+| Doc | Covers |
+|---|---|
+| [access-administration.md](access-administration.md) | Member invitations and lifecycle, company roles, direct grants and effective access |
+
 ### Estimating & costing
 
 | Doc | Covers |

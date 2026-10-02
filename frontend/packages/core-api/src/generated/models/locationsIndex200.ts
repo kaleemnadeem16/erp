@@ -4,12 +4,12 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { LocationResource } from "./locationResource";
+import type { LocationsIndex200DataItem } from "./locationsIndex200DataItem";
 import type { LocationsIndex200Links } from "./locationsIndex200Links";
 import type { LocationsIndex200Meta } from "./locationsIndex200Meta";
 
 export type LocationsIndex200 = {
-  data: LocationResource[];
+  data: LocationsIndex200DataItem[];
   links: LocationsIndex200Links;
   meta: LocationsIndex200Meta;
 };

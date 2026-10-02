@@ -185,6 +185,26 @@ same "refetch after every mutation, no optimistic state" rule as physical counts
 queue produces the `override_request_id` an issue's own posting call already knows how to consume
 (see "Authorised outbound posting" above) — the screen itself never posts a movement.
 
+The request, approval and review API projections contain shortage quantities, identity,
+reasons and decisions but no unit costs, valuation adjustments or settlement rows. The
+`negative_stock_shortages` and `negative_stock_settlements` tables have no HTTP read endpoint.
+Their economic effect is visible through stock movements/valuation entries and inventory
+overview, whose monetary fields already require `inventory.valuation.view` under
+[ADR 0073](../decisions/0073-separate-inventory-valuation-visibility-from-stock-operations.md).
+This is an audit of existing response boundaries, not a new grant or a claim that policy
+settings and exports have been fully reviewed.
+
+**Demo data.** `StockDemoSeeder` leaves its two requests undecided on purpose, so the demo login can
+take the next step itself; `NegativeStockLifecycleDemoSeeder` adds one record in each remaining
+state on dedicated items, all through the same Actions: a prior-approval item with one request
+rejected and one approved and posted (an `OPEN` shortage, left for a receipt to settle), an immediate
+override reviewed `JUSTIFIED` and `PARTIALLY_SETTLED` at a higher actual cost (so the settlement
+carries a valuation adjustment), and one reviewed `FLAGGED` and fully `SETTLED` with the excess inbound
+kept as stock. Each scenario is created once and skipped by its request's natural key, since every
+row is immutable. Building it exposed a real screen defect the empty data had hidden: the list asked
+the API for `item` only, so its derived status column read every request as pending — it now also
+requests `approval` and `review`, pinned by an e2e spec.
+
 ## Related
 
 - [stock.md](stock.md) — the core movement, layer and pool model

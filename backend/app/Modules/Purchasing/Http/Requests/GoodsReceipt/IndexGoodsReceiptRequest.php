@@ -6,6 +6,7 @@ namespace App\Modules\Purchasing\Http\Requests\GoodsReceipt;
 
 use App\Http\Requests\Concerns\ValidatesListQuery;
 use App\Modules\Purchasing\Support\GoodsReceiptStatus;
+use App\Modules\Purchasing\Support\PurchasingReadAccess;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -15,7 +16,7 @@ class IndexGoodsReceiptRequest extends FormRequest
 
     public function authorize(): bool
     {
-        return true;
+        return PurchasingReadAccess::goodsReceipts($this->user());
     }
 
     /** @return array<string, mixed> */

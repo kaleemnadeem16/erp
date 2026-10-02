@@ -22,10 +22,10 @@ export interface StockLayerResource {
   serial_no: StockLayerResourceSerialNo;
   qty_received: string;
   qty_remaining: string;
-  unit_cost: string;
-  currency_id: number;
-  fx_rate: string;
-  base_unit_cost: string;
+  unit_cost?: string;
+  currency_id?: number;
+  fx_rate?: string;
+  base_unit_cost?: string;
   received_at: string;
   source_type: string;
   source_id: number;

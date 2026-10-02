@@ -7,10 +7,15 @@ use App\Modules\Estimating\Http\Controllers\Api\V1\AssemblyVersionController;
 use App\Modules\Estimating\Http\Controllers\Api\V1\FormulationController;
 use App\Modules\Estimating\Http\Controllers\Api\V1\FormulationVersionController;
 use App\Modules\Estimating\Http\Controllers\Api\V1\MaterialPreviewController;
+use App\Modules\Estimating\Http\Controllers\Api\V1\MaterialSelectionPolicyController;
+use App\Modules\Estimating\Http\Controllers\Api\V1\MaterialVarianceCapabilitiesController;
+use App\Modules\Estimating\Http\Controllers\Api\V1\MaterialVariancePolicyController;
+use App\Modules\Estimating\Http\Controllers\Api\V1\MaterialVarianceReasonController;
 use App\Modules\Estimating\Http\Controllers\Api\V1\OverheadPolicyController;
 use App\Modules\Estimating\Http\Controllers\Api\V1\RateDimensionController;
 use App\Modules\Estimating\Http\Controllers\Api\V1\RateDimensionValueController;
 use App\Modules\Estimating\Http\Controllers\Api\V1\ResourceRateController;
+use App\Modules\Estimating\Http\Controllers\Api\V1\StockMixPolicyController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -51,10 +56,21 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Registered before the apiResource below so "resolve" isn't swallowed by
     // the {overhead_policy} show route.
+    Route::get('material-selection-policies', [MaterialSelectionPolicyController::class, 'index'])->name('material-selection-policies.index');
+    Route::post('material-selection-policies', [MaterialSelectionPolicyController::class, 'store'])->name('material-selection-policies.store');
+    Route::get('stock-mix-policies', [StockMixPolicyController::class, 'index'])->name('stock-mix-policies.index');
+    Route::post('stock-mix-policies', [StockMixPolicyController::class, 'store'])->name('stock-mix-policies.store');
     Route::get('overhead-policies/resolve', [OverheadPolicyController::class, 'resolve'])->name('overhead-policies.resolve');
     Route::apiResource('overhead-policies', OverheadPolicyController::class)->except('update');
     Route::patch('overhead-policies/{overhead_policy}', [OverheadPolicyController::class, 'update'])->name('overhead-policies.update');
     Route::post('overhead-policies/{overhead_policy}/activate', [OverheadPolicyController::class, 'activate'])->name('overhead-policies.activate');
+
+    Route::get('material-variance-capabilities', MaterialVarianceCapabilitiesController::class)->name('material-variance-capabilities');
+    Route::apiResource('material-variance-reasons', MaterialVarianceReasonController::class)->only(['index', 'store']);
+    Route::patch('material-variance-reasons/{material_variance_reason}', [MaterialVarianceReasonController::class, 'update'])->name('material-variance-reasons.update');
+    Route::apiResource('material-variance-policies', MaterialVariancePolicyController::class)->except('update');
+    Route::patch('material-variance-policies/{material_variance_policy}', [MaterialVariancePolicyController::class, 'update'])->name('material-variance-policies.update');
+    Route::post('material-variance-policies/{material_variance_policy}/activate', [MaterialVariancePolicyController::class, 'activate'])->name('material-variance-policies.activate');
 
     Route::apiResource('resource-rates', ResourceRateController::class)->except('update');
 });

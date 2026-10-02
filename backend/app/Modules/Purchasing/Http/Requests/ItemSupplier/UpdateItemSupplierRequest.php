@@ -11,7 +11,7 @@ class UpdateItemSupplierRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('purchasing.item-supplier.manage') === true;
     }
 
     /** @return array<string, mixed> */

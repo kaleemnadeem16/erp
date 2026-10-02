@@ -7,6 +7,8 @@
 import type { UpdateLocationRequestParentId } from "./updateLocationRequestParentId";
 import type { LocationType } from "./locationType";
 import type { UpdateLocationRequestBarcode } from "./updateLocationRequestBarcode";
+import type { UpdateLocationRequestCountsAsUsable } from "./updateLocationRequestCountsAsUsable";
+import type { UpdateLocationRequestCountsAsUsableReason } from "./updateLocationRequestCountsAsUsableReason";
 
 export interface UpdateLocationRequest {
   parent_id?: UpdateLocationRequestParentId;
@@ -23,5 +25,10 @@ export interface UpdateLocationRequest {
    */
   sort_order?: number;
   allows_stock?: boolean;
+  /** null clears the mark (follow the type again). Changing what counts as usable changes what
+planners see, so it is a governed policy change: it needs the policy permission and a reason. */
+  counts_as_usable?: UpdateLocationRequestCountsAsUsable;
+  /** @maxLength 1000 */
+  counts_as_usable_reason?: UpdateLocationRequestCountsAsUsableReason;
   active?: boolean;
 }

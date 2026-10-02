@@ -108,7 +108,9 @@ FIFO/SPECIFIC item, or an AVCO item whose pool is scoped by warehouse or batch (
 [items.md](items.md#valuation-method)'s multi-pool scopes), fails loudly rather than guessing
 which layer or which pool a pure recipe —
 not tied to any warehouse or batch — should read; a never-purchased item returns a real `0`
-instead, since "no cost known yet" is a legitimate state, not an error. A line specified in a
+instead, since "no cost known yet" is a legitimate state, not an error. This is the *current* behaviour only: [ADR 0077](../decisions/0077-generic-material-cost-resolution-with-a-configurable-costing-scope.md)
+designs the generic replacement (strategies per valuation method, a configurable costing scope, an evidence-carrying result that
+Phase 4 snapshots, and `unknown` instead of `0`), adopted when Phase 4 plan adoption is built. A line specified in a
 different-but-convertible unit than its input item's stock UoM converts through the ordinary UoM
 system (`units-of-measure.md`) before pricing.
 
@@ -134,6 +136,30 @@ landmine below requires, which a flat CTE result can't produce in one pass, and 
 usage pattern (a human previewing one formulation on demand, not a hot path across many
 assemblies) the bounded extra queries aren't a real concern. Reconsider the CTE if formulation
 costing ever runs at bulk/hot-path scale.
+
+## Access
+
+`estimating.formulation.manage` permits creating and editing formulation headers and versions,
+deleting drafts, archiving headers, and activating a draft. It is checked in the request and the
+underlying Action; a background caller must supply an authorised actor. Listing, showing and
+resolving technical recipes remain authenticated company reads because they serve other
+Estimating lookups. The Formulations setup screen requires the manage capability and does not
+offer a read-only detail mode yet.
+
+The existing Formulations list exposes its API's code/name search, output-item,
+customer and status filters. They are URL-backed, so a filtered list survives refresh
+and shared links; on narrow screens the non-search filters live in a bottom sheet and
+the records can be viewed as cards. The output-item and customer filters search
+their APIs as the user types and resolve selected IDs for bookmarked URLs, so
+choices beyond the first 100 results remain available. Other Estimating form
+pickers still need a separate scale pass.
+
+The `cost-breakdown` endpoint is a separate sensitive projection: it requires
+`estimating.internal_cost.view`. Managing a recipe does not automatically disclose AVCO-derived
+unit costs. The edit screen hides the breakdown control without that capability. The two grants
+are additive and dynamically assigned through company roles or direct exceptions, not hardcoded
+role names. Existing formulation maintainers need the manage grant before deployment; only the
+configured administrator is synchronised automatically.
 
 ## Landmines
 

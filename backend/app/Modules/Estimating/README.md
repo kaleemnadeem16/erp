@@ -72,21 +72,41 @@ implementation slice.
   `ResourceRate`'s `rate_uom_id`)
 - Anything that issues a document or posts stock — Phase 4/5. Physically producing a
   `SEMI_FINISHED` item is Phase 5's `work_orders`, not this module
-- The fuller, ad-hoc **assembly cost preview** (quantity/dimension-value/customer selection with
-  live application-rate default-fallback visibility) is not implemented yet — Step 3 shipped a
-  narrower per-version breakdown instead. ADR 0058 now fixes the preview boundary; see
+- The remainder of the ad-hoc **material preview** (ADR 0058): planned-quantity adjustments, ADR
+  0054 variance evaluation, and the completion slice (stale-result handling, product journey).
+  The technical resolution, internal-cost gating and the `QUANTITY_ONLY` inventory proposal
+  already ship; see
   [phase-3-estimating-core.md](../../../../docs/phases/phase-3-estimating-core.md)
 
 ## Key actions
 
 `CreateRateDimension`/`UpdateRateDimension`/`ArchiveRateDimension` and
 `CreateRateDimensionValue`/`UpdateRateDimensionValue`/`DeleteRateDimensionValue` are plain
-master-data CRUD. `CreateApplicationRate`/`UpdateApplicationRate` additionally sync the rate's
+master-data CRUD. Each write requires `estimating.rate-dimension.manage` at both HTTP and Action
+boundaries; list/show/value reads stay authenticated-only because other estimating forms use them
+as lookups. `CreateApplicationRate`/`UpdateApplicationRate` additionally sync the rate's
 dimension-value combination and run it through `ApplicationRateCombinationGuard`, which rejects
 an exact duplicate combination for the same item+work unit — the resolution algorithm assumes
 "exact match" finds at most one candidate. `ResolveApplicationRate` is read-only and reusable:
 called directly from the preview endpoint today, and by the assembly cost roll-up once that
 slice lands.
+
+Application-rate create/update/delete require `estimating.application-rate.manage` at both
+HTTP and Action boundaries. List/show/resolve remain authenticated company reads, including
+the resolution tester for preview users. The SPA hides New/edit routes from users without the
+write capability, while a preview user can inspect rates and test resolution.
+
+`PreviewAssemblyMaterials` is the read-only Material Preview (`POST
+/api/v1/assemblies/{assembly}/material-preview`, ADR 0058). For a caller holding
+`estimating.inventory_availability.view` it also runs `PreviewInventoryAvailability`: per leaf
+material it reads usable stock through Inventory's `QueryStockAvailability`, and
+`AllocateInventory` — a pure function — turns requirement plus balances into an ADR 0053 draw plan
+under the effective strategy (built-in company default `MINIMISE_WASTE`, or a per-request what-if
+override), with the other two presets as alternatives. Only `QUANTITY_ONLY` tracking exists, so
+open-remnant, expiry and package-surplus criteria are reported as not applied rather than faked.
+Neither action writes or reserves anything; `MaterialPreviewApiTest` and
+`QueryStockAvailabilityTest` each assert that no stock or valuation row changes. Details and the deliberate deferrals are in
+[inventory-packages.md](../../../../docs/domain/inventory-packages.md#first-implementation-quantity_only-availability-and-allocation).
 
 `CreateFormulation` creates the header together with its first DRAFT version and lines in one
 call. `CreateFormulationVersion` always creates N+1 as DRAFT regardless of the current ACTIVE
@@ -95,6 +115,31 @@ version's state; only `UpdateFormulationVersion` (DRAFT only) and `DeleteFormula
 version's status/effective dates change — it supersedes whatever was previously ACTIVE, closing
 its period the instant the new one opens.
 
+Formulation header and version create/update/delete/activate require
+`estimating.formulation.manage` at both HTTP and Action boundaries. List/show/resolve remain
+authenticated company reads for shared lookups. The version cost-breakdown response is separate:
+it requires `estimating.internal_cost.view` even for someone who can maintain formulations; the
+SPA hides its control without that capability. The demo seeder activates versions as the
+permission-synchronised demo actor rather than bypassing the Action check.
+Formulation list search/status/output-item/customer filters and assembly list
+search/status/group filters are already supported by their Index requests; their
+React lists now expose all seven as URL-backed controls with mobile filter sheets
+and card views. This changes no read or write authority.
+The Formulations output-item and customer filters search their respective APIs
+as the user types and resolve selected IDs for bookmarked URLs, rather than
+relying on the first 100 lookup rows.
+The Assemblies list group filter searches the Assembly Groups API as the user types
+and resolves a selected ID for bookmarked URLs, rather than relying on the first 100 groups.
+Rate Dimension and Assembly Group lists likewise expose their existing code/name
+search as URL-backed controls and offer mobile cards. The Assembly Group New/edit
+affordances follow its manage capability; server-side enforcement remains authoritative.
+The Application Rates list exposes its existing item, work-unit and default-status
+filters as URL-backed controls, with a mobile filter sheet and cards. Boolean
+`false` is preserved to select context-specific rates; no API contract changes.
+Its Item and work-unit filters now query the existing Items and UoMs search
+endpoints as the user types and resolve selected IDs separately, rather than
+relying on the first 100 results.
+
 `CreateAssemblyGroup`/`UpdateAssemblyGroup`/`ArchiveAssemblyGroup` and
 `CreateAssembly`/`UpdateAssembly`/`ArchiveAssembly` are plain CRUD, same shape as the rate
 dimension actions. `assembly_group_id` is deliberately mutable — no repoint guard, unlike
@@ -102,6 +147,20 @@ dimension actions. `assembly_group_id` is deliberately mutable — no repoint gu
 `ArchiveAssemblyGroup` hard-deletes (blocked by FK while any assembly still refers to it, same as
 `RateDimension`); `ArchiveAssembly` sets `status = ARCHIVED` (same as `ArchiveFormulation`) since
 Assembly already carries a status column ahead of Step 3's activation mechanism needing it.
+
+Assembly-group create/update/delete require `estimating.assembly-group.manage` at HTTP and
+Action boundaries. Index/show remain authenticated shared lookups for assembly and overhead
+forms. The SPA exposes its setup screen to managers only; grants are company-role or direct-user
+assignments, not hardcoded to an administrator or starter role.
+
+Assembly header and version/component create, update, archive/delete and activation require
+`estimating.assembly.manage` at HTTP and Action boundaries. List/show remain authenticated company
+reads for shared estimating lookups. The explainable version cost-breakdown endpoint separately
+requires `estimating.internal_cost.view`, even for an assembly manager; the SPA hides its control
+without that capability. Demo activation uses the permission-synchronised demo actor.
+Shared assembly list/show responses omit margin settings and nested component rate overrides
+unless the caller can manage assemblies or view internal costs. This gives editors the values
+needed for correction without disclosing commercial configuration to unrelated readers.
 
 `CreateOverheadPolicy` always creates a DRAFT — every row is a governed change (mandatory
 `reason` + `changed_by`), there is no "current settings" row this is a delta from, unlike
@@ -113,12 +172,17 @@ policy (`index`/`show`) requires `estimating.policy-history.view`; writing one r
 `estimating.overhead-policy.manage` — deliberately separate permissions, same split
 `InventoryPolicyChange` uses. `ResolveOverheadPolicy`'s read is unrestricted (ordinary auth only,
 same as `ResolveApplicationRate`/`ResolveFormulation`) since every estimator needs "what applies
-right now," not just whoever can manage or audit policies.
+right now," not just whoever can manage or audit policies. Its monetary policy rate and computed
+overhead amount are projected only to policy managers, policy-history viewers or internal-cost
+viewers; an ordinary resolver caller still sees the winning tier without a cost side channel.
 
 `CreateResourceRate` inserts a new dated row; there is deliberately no `UpdateResourceRate` — a
 rate correction is always a new row with a later `effective_from`, never an edit to an
-already-used historical one. `DeleteResourceRate` is unrestricted, same as `ArchiveRateDimension`
-— no "in use" tracking exists at this level yet.
+already-used historical one. Create and delete require `estimating.resource-rate.manage` at
+HTTP and Action boundaries. Delete has no "in use" guard yet, but is not unrestricted by actor.
+Index/show remain authenticated company reads for lookups; the `rate` amount is omitted unless
+the caller can manage rates or has `estimating.internal_cost.view`. The SPA admits either
+capability to the list but shows the add/delete controls only to managers.
 
 `CreateAssemblyVersion`/`UpdateAssemblyVersion`/`DeleteAssemblyVersion`/`ActivateAssemblyVersion`
 mirror the `FormulationVersion` Action family exactly, including managing `components` as an
@@ -144,10 +208,35 @@ estimating.material_variance.approve
 estimating.material_resolution_history.view
 ```
 
-The first three are consumed by the upcoming Phase 3 preview and its field-filtered response. The
-remaining five deliberately reserve stable Phase 4 transaction boundaries for draft
-adjustment/adoption, approval and history; Phase 3 does not invent a temporary persisted draft to
-exercise them.
+The existing Estimating CRUD retrofit also reserves six write capabilities:
+`estimating.rate-dimension.manage` (including values), `estimating.application-rate.manage`,
+`estimating.formulation.manage` (including versions), `estimating.assembly-group.manage`,
+`estimating.assembly.manage` (including versions), and `estimating.resource-rate.manage`.
+`estimating.rate-dimension.manage`, `estimating.application-rate.manage`,
+`estimating.formulation.manage`, `estimating.assembly-group.manage`, and
+`estimating.assembly.manage` are now enforced for their writes, with matching screen access and
+denied-path tests. All six write capabilities are enforced. Existing operational maintainers
+still need explicit company-role or direct assignments before deployment; registry and
+administrator sync do not infer their roles. See the
+[authorisation retrofit](../../../../docs/architecture/authorization-retrofit.md#c-existing-estimating-crud).
+
+`estimating.material_variance_policy.manage` (not in ADR 0057's list — added with the configurable variance
+policy) creates, edits, activates and deletes-while-draft variance policies and the company's reason
+list. Listing policies (audit detail: reason, actor, superseded versions) also needs
+`estimating.policy-history.view`, exactly like overhead policies; reading the reason list is open to
+anyone who can run a preview, since a previewer must be able to pick one. Reasons are retired, never
+deleted, and a reason's code is immutable. `APPROVAL_REQUIRED` is refused everywhere until the shared
+approval workflow exists (ADR 0054 §7).
+
+The first three of ADR 0057's capabilities are enforced by the Material Preview and its field-filtered response, each
+independently: `run` alone returns the technical requirement; `inventory_availability.view` adds the
+`inventory` block and is also required to send `inventory_scope` or `selection_strategy` (without
+it those inputs are rejected with 422, never silently ignored, and no availability is queried);
+`internal_cost.view` adds every cost field — for a caller without it those fields are `null`, never
+zero, although cost still ranks balances internally. Scope narrowing can only reduce the
+company-wide scope; department-limited availability waits on Q26. The remaining five deliberately
+reserve stable Phase 4 transaction boundaries for draft adjustment/adoption, approval and history;
+Phase 3 does not invent a temporary persisted draft to exercise them.
 
 ## Events
 

@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Combobox } from '../../components/ui/combobox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../components/ui/form';
 import { DetailSection } from '../../components/detail/detail-page-layout';
+import { lookupState } from '../../lib/api-errors';
 
 const ITEM_TYPE_OPTIONS = Object.values(ItemType);
 const TRACKING_OPTIONS = Object.values(ItemTracking);
@@ -216,7 +217,7 @@ export function ItemForm({ mode, defaultValues, onSubmit, onCancel, isSubmitting
               <FormItem>
                 <FormLabel>Category</FormLabel>
                 <FormControl>
-                  <Combobox
+                  <Combobox {...lookupState(categoriesQuery, 'categories')}
                     ref={field.ref}
                     value={field.value}
                     onValueChange={field.onChange}
@@ -253,7 +254,7 @@ export function ItemForm({ mode, defaultValues, onSubmit, onCancel, isSubmitting
               <FormItem>
                 <FormLabel>Stock unit of measure</FormLabel>
                 <FormControl>
-                  <Combobox
+                  <Combobox {...lookupState(uomsQuery, 'units')}
                     ref={field.ref}
                     value={field.value}
                     onValueChange={field.onChange}

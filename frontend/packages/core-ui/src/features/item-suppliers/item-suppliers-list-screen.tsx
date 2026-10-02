@@ -27,6 +27,8 @@ import {
 import { useColumnVisibilityPreference } from '../../lib/use-column-visibility-preference';
 import { useListViewPreference } from '../../lib/use-view-preference';
 import { itemSupplierColumns } from './item-suppliers-columns';
+import { usePermission } from '../../hooks/use-permission';
+import { lookupState, type LookupState } from '../../lib/api-errors';
 interface Filters {
   search: string;
   item_id: string;
@@ -37,6 +39,7 @@ interface Filters {
 }
 
 export function ItemSuppliersListScreen() {
+  const mayManage = usePermission('purchasing.item-supplier.manage');
   const navigate = useNavigate();
   const query = useListQueryState<Filters>({ defaultSort: 'priority' });
   const [visibility, setVisibility] = useColumnVisibilityPreference(
@@ -93,7 +96,7 @@ export function ItemSuppliersListScreen() {
       <PageHeader
         title="Item suppliers"
         description="Approved supplier relationships and item-specific sourcing terms."
-        primaryAction={{ label: 'New relationship', onClick: () => navigate('/item-suppliers/new') }}
+        primaryAction={mayManage ? { label: 'New relationship', onClick: () => navigate('/item-suppliers/new') } : undefined}
       />
       <div className="flex flex-wrap items-center gap-2">
         <Input
@@ -103,7 +106,7 @@ export function ItemSuppliersListScreen() {
           className="h-9 flex-1 md:w-56 md:flex-none"
         />
         <div className="hidden items-center gap-2 md:flex md:flex-wrap">
-          <ItemSupplierFilterControls items={items} suppliers={suppliers} query={query} filter={filter} />
+          <ItemSupplierFilterControls itemsLookup={lookupState(itemsResult, 'items')} suppliersLookup={lookupState(suppliersResult, 'suppliers')} items={items} suppliers={suppliers} query={query} filter={filter} />
           <PrintTrigger onPrint={print} />
         </div>
         <Button
@@ -124,7 +127,7 @@ export function ItemSuppliersListScreen() {
             <SheetTitle>Filters</SheetTitle>
           </SheetHeader>
           <div className="flex flex-col gap-3 py-4">
-            <ItemSupplierFilterControls items={items} suppliers={suppliers} query={query} filter={filter} full />
+            <ItemSupplierFilterControls itemsLookup={lookupState(itemsResult, 'items')} suppliersLookup={lookupState(suppliersResult, 'suppliers')} items={items} suppliers={suppliers} query={query} filter={filter} full />
             <PrintTrigger onPrint={print} className="w-full justify-center" />
           </div>
           <SheetFooter>
@@ -164,6 +167,8 @@ export function ItemSuppliersListScreen() {
         onRowClick={(row: ItemSupplierResource) => navigate(`/item-suppliers/${row.id}`)}
         isLoading={result.isLoading}
         isError={result.isError}
+        error={result.error}
+        onRetry={() => void result.refetch()}
         errorMessage="Couldn't load item suppliers."
         emptyMessage="No relationships match these filters."
         view={view}
@@ -189,6 +194,8 @@ export function ItemSuppliersListScreen() {
 }
 
 interface ItemSupplierFilterControlsProps {
+  itemsLookup: LookupState;
+  suppliersLookup: LookupState;
   items: { id: number; code: string; name: string }[];
   suppliers: { id: number; code: string; party?: { name: string } | null }[];
   query: ReturnType<typeof useListQueryState<Filters>>;
@@ -197,10 +204,10 @@ interface ItemSupplierFilterControlsProps {
 }
 
 /** Item/Supplier/Status/Preferred selects — shared by the desktop row and the mobile Filters sheet. */
-function ItemSupplierFilterControls({ items, suppliers, query, filter, full }: ItemSupplierFilterControlsProps) {
+function ItemSupplierFilterControls({ itemsLookup, suppliersLookup, items, suppliers, query, filter, full }: ItemSupplierFilterControlsProps) {
   return (
     <>
-      <Combobox
+      <Combobox {...itemsLookup}
         className={full ? 'h-9 w-full' : 'h-9 w-48'}
         aria-label="Item"
         value={query.filters.item_id ?? 'all'}
@@ -213,7 +220,7 @@ function ItemSupplierFilterControls({ items, suppliers, query, filter, full }: I
           ...items.map((i) => ({ value: String(i.id), label: `${i.code} — ${i.name}` })),
         ]}
       />
-      <Combobox
+      <Combobox {...suppliersLookup}
         className={full ? 'h-9 w-full' : 'h-9 w-48'}
         aria-label="Supplier"
         value={query.filters.supplier_account_id ?? 'all'}

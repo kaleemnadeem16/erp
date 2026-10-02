@@ -20,9 +20,9 @@ export interface AvcoPoolResource {
   batch_id: AvcoPoolResourceBatchId;
   batch?: AvcoPoolResourceBatch;
   qty_on_hand: string;
-  inventory_value: string;
-  avg_unit_cost: string;
-  base_avg_unit_cost: string;
-  last_valid_avg_unit_cost: string;
+  inventory_value?: string;
+  avg_unit_cost?: string;
+  base_avg_unit_cost?: string;
+  last_valid_avg_unit_cost?: string;
   status: string;
 }

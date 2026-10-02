@@ -17,6 +17,7 @@ use App\Modules\Inventory\Models\Category;
 use App\Support\Concerns\AppliesApiQuery;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -72,8 +73,9 @@ class CategoryController extends Controller
         return new CategoryResource($update($category, $request->validated()));
     }
 
-    public function destroy(Category $category, ArchiveCategory $archive): Response
+    public function destroy(Request $request, Category $category, ArchiveCategory $archive): Response
     {
+        abort_unless($request->user()?->can('inventory.category.manage'), 403);
         $archive($category);
 
         return response()->noContent();

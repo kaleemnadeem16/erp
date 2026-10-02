@@ -46,6 +46,7 @@ class RecalculationRequestApiTest extends TestCase
             'inventory.recalculation.request', 'inventory.recalculation.approve',
             'inventory.recalculation.approve-high-risk', 'inventory.recalculation.execute',
             'inventory.recalculation.review-regeneration',
+            'inventory.valuation.view',
         ] as $permission) {
             Permission::findOrCreate($permission);
         }
@@ -61,6 +62,28 @@ class RecalculationRequestApiTest extends TestCase
     public function test_it_requires_authentication(): void
     {
         $this->getJson('/api/v1/recalculation-requests')->assertUnauthorized();
+    }
+
+    public function test_recalculation_reads_require_a_workflow_duty_or_valuation_visibility(): void
+    {
+        [$item, $uom, $location] = $this->makeAvcoItem();
+        $this->conflictingHistory($item, $uom, $location, 9);
+        $requester = $this->permittedUser('inventory.recalculation.request');
+        $requestId = $this->actingAs($requester)
+            ->postJson('/api/v1/recalculation-requests', $this->input($item, $uom, $location, 9))
+            ->assertCreated()->json('data.id');
+
+        $unrelated = User::factory()->create();
+        $this->actingAs($unrelated)->getJson('/api/v1/recalculation-requests')->assertForbidden();
+        $this->getJson("/api/v1/recalculation-requests/{$requestId}")->assertForbidden();
+
+        foreach (['inventory.recalculation.approve', 'inventory.recalculation.approve-high-risk', 'inventory.recalculation.execute', 'inventory.recalculation.review-regeneration', 'inventory.valuation.view'] as $capability) {
+            $reader = $this->permittedUser($capability);
+            $this->actingAs($reader)->getJson('/api/v1/recalculation-requests')
+                ->assertOk()->assertJsonPath('data.0.id', $requestId);
+            $this->getJson("/api/v1/recalculation-requests/{$requestId}")
+                ->assertOk()->assertJsonStructure(['data' => ['impact_versions' => [['id']]]]);
+        }
     }
 
     public function test_normal_risk_lifecycle_request_decide_execute(): void
@@ -152,7 +175,7 @@ class RecalculationRequestApiTest extends TestCase
 
     public function test_index_filter_validation(): void
     {
-        $this->actingAs(User::factory()->create())->getJson('/api/v1/recalculation-requests?filter[movement_kind]=BOGUS')
+        $this->actingAs($this->permittedUser('inventory.recalculation.request'))->getJson('/api/v1/recalculation-requests?filter[movement_kind]=BOGUS')
             ->assertUnprocessable()->assertJsonValidationErrors('filter.movement_kind');
     }
 
@@ -174,7 +197,7 @@ class RecalculationRequestApiTest extends TestCase
             }
         });
 
-        $this->actingAs(User::factory()->create())->getJson("/api/v1/recalculation-requests/{$requestId}")->assertNotFound();
+        $this->actingAs($this->permittedUser('inventory.recalculation.request'))->getJson("/api/v1/recalculation-requests/{$requestId}")->assertNotFound();
     }
 
     /** @return array{0: Item, 1: Uom, 2: Location} */

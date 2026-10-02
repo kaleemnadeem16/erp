@@ -22,7 +22,7 @@ export interface AssemblyComponentResource {
   uom_id: number;
   wastage_pct: string;
   multiplier: string;
-  rate_override: AssemblyComponentResourceRateOverride;
+  rate_override?: AssemblyComponentResourceRateOverride;
   sequence: number;
   item?: AssemblyComponentResourceItem;
   formulation?: AssemblyComponentResourceFormulation;

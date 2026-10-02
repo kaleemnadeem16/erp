@@ -21,6 +21,7 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  AssemblyGroupsDestroy403,
   AssemblyGroupsIndex200,
   AssemblyGroupsIndexParams,
   AssemblyGroupsShow200,
@@ -28,6 +29,7 @@ import type {
   AssemblyGroupsStore201,
   AssemblyGroupsUpdate200,
   AuthenticationExceptionResponse,
+  AuthorizationExceptionResponse,
   ModelNotFoundExceptionResponse,
   StoreAssemblyGroupRequest,
   UpdateAssemblyGroupRequest,
@@ -256,6 +258,11 @@ export type assemblyGroupsStoreResponse401 = {
   status: 401;
 };
 
+export type assemblyGroupsStoreResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type assemblyGroupsStoreResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -266,7 +273,9 @@ export type assemblyGroupsStoreResponseSuccess =
     headers: Headers;
   };
 export type assemblyGroupsStoreResponseError = (
-  assemblyGroupsStoreResponse401 | assemblyGroupsStoreResponse422
+  | assemblyGroupsStoreResponse401
+  | assemblyGroupsStoreResponse403
+  | assemblyGroupsStoreResponse422
 ) & {
   headers: Headers;
 };
@@ -291,7 +300,10 @@ export const assemblyGroupsStore = async (
 };
 
 export const getAssemblyGroupsStoreMutationOptions = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -333,10 +345,15 @@ export type AssemblyGroupsStoreMutationResult = NonNullable<
 >;
 export type AssemblyGroupsStoreMutationBody = StoreAssemblyGroupRequest;
 export type AssemblyGroupsStoreMutationError =
-  AuthenticationExceptionResponse | ValidationExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
 
 export const useAssemblyGroupsStore = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(
   options?: {
@@ -622,6 +639,11 @@ export type assemblyGroupsDestroyResponse401 = {
   status: 401;
 };
 
+export type assemblyGroupsDestroyResponse403 = {
+  data: AssemblyGroupsDestroy403;
+  status: 403;
+};
+
 export type assemblyGroupsDestroyResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -632,7 +654,9 @@ export type assemblyGroupsDestroyResponseSuccess =
     headers: Headers;
   };
 export type assemblyGroupsDestroyResponseError = (
-  assemblyGroupsDestroyResponse401 | assemblyGroupsDestroyResponse404
+  | assemblyGroupsDestroyResponse401
+  | assemblyGroupsDestroyResponse403
+  | assemblyGroupsDestroyResponse404
 ) & {
   headers: Headers;
 };
@@ -658,7 +682,10 @@ export const assemblyGroupsDestroy = async (
 };
 
 export const getAssemblyGroupsDestroyMutationOptions = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AssemblyGroupsDestroy403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -700,10 +727,15 @@ export type AssemblyGroupsDestroyMutationResult = NonNullable<
 >;
 
 export type AssemblyGroupsDestroyMutationError =
-  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AssemblyGroupsDestroy403
+  | ModelNotFoundExceptionResponse;
 
 export const useAssemblyGroupsDestroy = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AssemblyGroupsDestroy403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(
   options?: {
@@ -736,6 +768,11 @@ export type assemblyGroupsUpdateResponse401 = {
   status: 401;
 };
 
+export type assemblyGroupsUpdateResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type assemblyGroupsUpdateResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -752,6 +789,7 @@ export type assemblyGroupsUpdateResponseSuccess =
   };
 export type assemblyGroupsUpdateResponseError = (
   | assemblyGroupsUpdateResponse401
+  | assemblyGroupsUpdateResponse403
   | assemblyGroupsUpdateResponse404
   | assemblyGroupsUpdateResponse422
 ) & {
@@ -784,6 +822,7 @@ export const assemblyGroupsUpdate = async (
 export const getAssemblyGroupsUpdateMutationOptions = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -828,12 +867,14 @@ export type AssemblyGroupsUpdateMutationResult = NonNullable<
 export type AssemblyGroupsUpdateMutationBody = UpdateAssemblyGroupRequest;
 export type AssemblyGroupsUpdateMutationError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
 export const useAssemblyGroupsUpdate = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,

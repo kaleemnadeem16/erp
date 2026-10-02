@@ -1,4 +1,4 @@
-import type { Locator, Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 /**
  * Opens a Combobox (searchable popover, e.g. Supplier) by its FormLabel text,
@@ -21,14 +21,28 @@ export async function pickCombobox(
   // The popover is portalled to <body>, outside any dialog its trigger is in,
   // and the page behind can have its own "Search…" inputs — cmdk's own
   // attribute picks out the open popover's box unambiguously.
-  await page.locator('[cmdk-input]').fill(searchText ?? (typeof optionText === 'string' ? optionText : ''));
-  await page.getByRole('option', { name: optionText }).first().click();
+  const input = page.locator('[cmdk-input]');
+  await input.fill(searchText ?? (typeof optionText === 'string' ? optionText : ''));
+  const option = page.getByRole('option', { name: optionText }).first();
+  await expect(option).toBeVisible();
+  // cmdk does not always highlight the matching item (some callers pass a
+  // broader search term). Move the active option with the same keys a person
+  // uses, avoiding pointer clicks on results outside the viewport.
+  const optionCount = await page.locator('[cmdk-item]').count();
+  for (let step = 0; step <= optionCount && await option.getAttribute('aria-selected') !== 'true'; step += 1) {
+    await input.press('ArrowDown');
+  }
+  await expect(option).toHaveAttribute('aria-selected', 'true');
+  await input.press('Enter');
 }
 
 /** Opens a Radix Select by its FormLabel text and picks an option whose text matches. */
 export async function pickSelect(page: Page, label: string, optionText: string | RegExp) {
   await page.getByLabel(label, { exact: true }).click();
-  await page.getByRole('option', { name: optionText }).first().click();
+  // Radix can place an option outside the viewport in its scrollable portal.
+  // Keyboard activation follows the same accessible selection path without
+  // Playwright retrying a pointer click on an off-screen option indefinitely.
+  await page.getByRole('option', { name: optionText }).first().press('Enter');
 }
 
 /** Escapes regex metacharacters so a literal string (e.g. an order number) can be matched exactly. */

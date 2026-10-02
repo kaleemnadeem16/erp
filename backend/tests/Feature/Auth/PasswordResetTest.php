@@ -3,7 +3,7 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\User;
-use Illuminate\Auth\Notifications\ResetPassword;
+use App\Modules\Administration\Notifications\MemberPasswordReset;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\Hash;
@@ -32,7 +32,7 @@ class PasswordResetTest extends TestCase
         $response = $this->postJson('/api/v1/forgot-password', ['email' => $user->email]);
 
         $response->assertOk();
-        Notification::assertSentTo($user, ResetPassword::class);
+        Notification::assertSentTo($user, MemberPasswordReset::class);
     }
 
     public function test_forgot_password_returns_422_for_an_unknown_email(): void
@@ -62,6 +62,24 @@ class PasswordResetTest extends TestCase
         $user->refresh();
         $this->assertTrue(Hash::check('new-password', $user->password));
         $this->assertFalse(Hash::check('old-password', $user->password));
+    }
+
+    public function test_reset_link_replaces_a_temporary_password_and_revokes_old_tokens(): void
+    {
+        $user = User::factory()->create(['password' => 'temporary-password']);
+        $user->forceFill(['must_change_password' => true, 'credential_version' => 3])->save();
+        $oldToken = $user->createToken('old device');
+        $token = Password::createToken($user);
+
+        $this->postJson('/api/v1/reset-password', [
+            'token' => $token, 'email' => $user->email,
+            'password' => 'new-private-password', 'password_confirmation' => 'new-private-password',
+        ])->assertOk();
+
+        $this->assertFalse($user->refresh()->must_change_password);
+        $this->assertSame(4, $user->credential_version);
+        $this->assertTrue(Hash::check('new-private-password', $user->password));
+        $this->assertDatabaseMissing('personal_access_tokens', ['id' => $oldToken->accessToken->id]);
     }
 
     public function test_reset_password_with_an_invalid_token_is_rejected(): void

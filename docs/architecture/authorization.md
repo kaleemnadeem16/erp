@@ -214,6 +214,9 @@ result of forgetting the question.
 ### Strong foundation already present
 
 - Namespaced permissions, roles, additive direct grants and company-scoped Teams plumbing.
+- Operable company member and role administration: invitation, suspension/reactivation, role CRUD,
+  role/direct assignment and effective-access inspection, protected by separate
+  `administration.*` capabilities and anti-escalation/self-lockout guards.
 - Module-owned permission vocabularies aggregated by the production-safe registry.
 - Production-safe, idempotent permission registration, proven complete against every literal
   permission check in `app/` by an architecture test.
@@ -225,17 +228,22 @@ result of forgetting the question.
 
 ### Not yet sufficient for full ERP access control
 
-- Most ordinary master-data and Purchasing/Estimating CRUD endpoints are authenticated only;
-  their Form Requests commonly return `true`.
+- Existing Estimating CRUD, Items/Categories and Purchasing operational writes now have
+  capability checks. Shared reference reads remain authenticated-only by design; the
+  Item/Category GL-account field boundary still needs a Finance decision. See
+  [authorisation retrofit](authorization-retrofit.md).
 - Purchase orders have DRAFT → ISSUED with no submit/approval state; issue records neither actor
   nor approval chain.
 - No generic approval-policy/step/decision schema exists; the `workflow_states` sketch in
   `extensibility.md` is not implemented and one `required_permission` cannot model multiple
   independent approvals.
 - No department/organisation-unit membership or record-level visibility system exists.
-- No client-side permission introspection exists, so most navigation and controls cannot yet be
-  tailored before the API returns 403.
-- No role/permission administration UI or full role catalogue exists.
+- The authenticated-user response exposes effective capabilities and permission-aware routing;
+  capability-gated operational controls have landed for the retrofit slices below. Future
+  screens must keep API and UI authority aligned.
+- There is intentionally no hardcoded full role catalogue: application modules own stable
+  capability names, while each company builds reusable roles from the registered vocabulary in
+  Access Administration ([ADR 0062](../decisions/0062-company-member-and-access-administration.md)).
 
 The answer is therefore: **the RBAC base is good and reusable, but it is not by itself enough for
 multi-stage approvals or restricted data visibility.** Those can be added without replacing
@@ -253,10 +261,10 @@ Orders/Receipts and existing Estimating CRUD so far.
 
 | Area | Current boundary | Retrofit requirement |
 |---|---|---|
-| Foundation and master data | Most CRUD is authenticated-only | Review view/create/update/archive, lookup/export and sensitive fields |
-| Purchasing | Policy/history controls exist; ordinary PO/receipt CRUD is mostly authenticated-only | Add document capabilities now; submission/approval/issue separation follows Q27/Q28 |
-| Inventory | High-risk workflows are strongest; ordinary read/master surfaces vary | Audit every remaining endpoint, list/show scope and frontend action |
-| Estimating | Overhead policy controls and ADR 0057 vocabulary exist; most existing CRUD is authenticated-only | Retrofit each feature as its next vertical slice is touched |
+| Foundation and master data | Item/Category writes capability-gated; reference reads shared | Decide and project GL-account fields; review future lookup/export surfaces |
+| Purchasing | PO/receipt writes and document reads capability-gated; commercial fields projected | Submission/approval/issue separation follows Q27/Q28 |
+| Inventory | High-risk workflows and valuation reads have capability boundaries | Reapply valuation boundary to future exports and review new endpoints |
+| Estimating | Existing CRUD writes capability-gated; list filters exposed | Scale 100-option lookup selectors and review new cost surfaces as added |
 | Sales, Jobs and Finance | Not yet implemented | Start permission-complete; do not create an authenticated-only baseline to fix later |
 
 Work proceeds one feature slice at a time, not as one risky repository-wide switch:
@@ -277,7 +285,17 @@ Adding a permission check is fail-closed: after enforcement, a user without the 
 capability loses access. Therefore a retrofit commit/deployment must include the permission
 vocabulary and an explicit assignment/backfill or administrator rollout procedure before relying
 on the check. Never assume an existing “admin” automatically receives permissions added after that
-user was created; `--permissions=all` describes creation-time grants, not a permanent wildcard.
+user was created; `--permissions=all` describes creation-time grants, not a permanent wildcard —
+confirmed as a real production gap on 2026-09-26, not just a theoretical one: the deploy job ran
+`permission:register` on every release (creating each new `Permission` row) but nothing granted
+those new names to the administrator created once, earlier, via `--permissions=all`, so the live
+admin fell further behind the vocabulary with every feature slice that shipped its own
+permissions. `erp:sync-admin-permissions {email}` closes this — it re-grants the full current
+vocabulary to a named administrator and is safe to re-run every deploy (see
+[deployment.md](deployment.md#first-deploy-runbook)); the deploy job runs it right after
+`permission:register` whenever the `ERP_ADMIN_EMAIL` repository variable is set. Local development
+never hit this gap because `StockDemoSeeder` already syncs the demo login to the full registry on
+every `demo:seed` run — the production path just had no equivalent.
 
 Registration without enforcement is allowed as a clearly documented foundation/reserved
 capability. Enforcement without assignment preparation, backend tests and usable UI is not. The
@@ -311,3 +329,7 @@ stored actors, not something a role assignment guarantees.
 - [Multi-tenancy](multi-tenancy.md) — company isolation is separate from record visibility
 - [ADR 0028](../decisions/0028-dynamic-namespaced-permissions.md)
 - [Material resolution](../domain/material-resolution.md) — Phase 3 capability/field implications
+- [Access administration](../domain/access-administration.md) — operable member lifecycle, roles
+  and assignments
+- [ADR 0062](../decisions/0062-company-member-and-access-administration.md) — invitation and
+  additive-role decision

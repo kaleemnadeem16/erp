@@ -17,6 +17,7 @@ use App\Modules\Purchasing\Models\ItemSupplier;
 use App\Support\Concerns\AppliesApiQuery;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -68,8 +69,9 @@ class ItemSupplierController extends Controller
         return new ItemSupplierResource($update($item_supplier, $request->validated()));
     }
 
-    public function destroy(ItemSupplier $item_supplier, ArchiveItemSupplier $archive): Response
+    public function destroy(Request $request, ItemSupplier $item_supplier, ArchiveItemSupplier $archive): Response
     {
+        abort_unless($request->user()?->can('purchasing.item-supplier.manage'), 403);
         $archive($item_supplier);
 
         return response()->noContent();

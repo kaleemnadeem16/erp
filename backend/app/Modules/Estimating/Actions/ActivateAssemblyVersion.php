@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Estimating\Actions;
 
 use App\Exceptions\DomainInvariantException;
+use App\Models\User;
 use App\Modules\Estimating\Models\AssemblyVersion;
 use App\Modules\Estimating\Support\AssemblyStatus;
 use App\Modules\Estimating\Support\AssemblyVersionStatus;
@@ -24,8 +25,12 @@ use Illuminate\Support\Facades\DB;
  */
 final class ActivateAssemblyVersion
 {
-    public function __invoke(AssemblyVersion $version): AssemblyVersion
+    public function __invoke(AssemblyVersion $version, User $actor): AssemblyVersion
     {
+        if (! $actor->can('estimating.assembly.manage')) {
+            throw new DomainInvariantException('The actor is not permitted to manage assemblies.');
+        }
+
         if ($version->status !== AssemblyVersionStatus::Draft) {
             throw new DomainInvariantException(
                 'Only a DRAFT assembly version can be activated.',

@@ -89,6 +89,14 @@ there is deliberately no update endpoint. See
 and uses this, including the UoM-compatibility check between a component's own quantity unit and
 the resolved rate's `rate_uom_id`.
 
+Creating or deleting a rate requires `estimating.resource-rate.manage` at both the API and Action
+boundary. Authenticated company users may list/show rate records as estimating lookups, but the
+numeric `rate` is omitted from those responses unless the caller can manage rates or has
+`estimating.internal_cost.view`. Managers need the amount to review and enter corrections;
+cost viewers may inspect it without write access. The UI admits either capability to the rate
+list and shows add/delete only to managers. No role name is hardcoded; existing maintainers need
+an explicit company-role or direct grant before deployment.
+
 ### Stocked vs not
 
 `is_stocked` determines whether stock moves and valuation apply. Services, labour and plant
@@ -182,6 +190,12 @@ Item-supplier list/detail/create/edit screens expose the approved-supplier catal
 form deliberately locks `item_id` and `supplier_account_id`, matching the immutable relationship
 identity rule below, while allowing sourcing terms to change.
 
+Items and Categories are company-wide reference data: authenticated users may list and view them
+so cross-module selectors keep working. Write controls and endpoints require
+`inventory.item.manage` and `inventory.category.manage` respectively. These capabilities do not
+decide whether GL-account IDs should be visible; that field-level Finance boundary remains tracked
+separately in the authorisation retrofit backlog.
+
 ## Landmines
 
 **Codes and case sensitivity.** Postgres is case-sensitive, so `PIG-001` and `pig-001` are
@@ -192,11 +206,12 @@ the application before saving.** See [database.md](../architecture/database.md).
 quantity. Block it once any stock move or document line references the item.
 
 **Assuming purchase UoM equals stock UoM.** Pigment is bought in 25 kg drums and consumed in
-grams. Purchase UoM is a property of the purchase line, not the item. Today this only works when
-purchase and stock UoM share a global dimension — genuine pack purchasing (a box of eaches, a
-roll of metres) needs the item-specific conversion decided in
-[ADR 0050](../decisions/0050-item-specific-uom-conversion-and-divisibility.md) and not yet
-implemented.
+grams. Purchase UoM is a property of the purchase line, not the item. A pack unit that shares no
+dimension with the stock unit (a box of eaches, a roll of metres) converts through the item-specific
+conversion of
+[ADR 0050](../decisions/0050-item-specific-uom-conversion-and-divisibility.md), and a line's unit
+starts on whatever the chosen supplier sells the item in
+([purchasing.md](purchasing.md#purchase-unit-default)).
 
 **Supplier sourcing.** Approved suppliers are represented by Purchasing's company-scoped
 `item_suppliers` relationship, not a single column on `items`. Each relationship may carry the

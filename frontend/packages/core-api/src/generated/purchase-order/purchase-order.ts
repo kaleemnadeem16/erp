@@ -22,17 +22,22 @@ import type {
 
 import type {
   AuthenticationExceptionResponse,
+  AuthorizationExceptionResponse,
   CancelPurchaseOrderRequest,
   InventoryCutoversOpenPurchaseOrdersCommit200,
   ModelNotFoundExceptionResponse,
   PurchaseOrderLinesShortClose200,
+  PurchaseOrderLinesShortClose403,
   PurchaseOrdersCancel200,
   PurchaseOrdersIndex200,
   PurchaseOrdersIndexParams,
   PurchaseOrdersIssue200,
+  PurchaseOrdersIssue403,
   PurchaseOrdersShow200,
   PurchaseOrdersShowParams,
   PurchaseOrdersStore201,
+  PurchaseOrdersSubmit200,
+  PurchaseOrdersSubmit403,
   PurchaseOrdersUpdate200,
   StorePurchaseOrderRequest,
   UpdatePurchaseOrderRequest,
@@ -53,6 +58,11 @@ export type purchaseOrdersIndexResponse401 = {
   status: 401;
 };
 
+export type purchaseOrdersIndexResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type purchaseOrdersIndexResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -63,7 +73,9 @@ export type purchaseOrdersIndexResponseSuccess =
     headers: Headers;
   };
 export type purchaseOrdersIndexResponseError = (
-  purchaseOrdersIndexResponse401 | purchaseOrdersIndexResponse422
+  | purchaseOrdersIndexResponse401
+  | purchaseOrdersIndexResponse403
+  | purchaseOrdersIndexResponse422
 ) & {
   headers: Headers;
 };
@@ -110,7 +122,10 @@ export const getPurchaseOrdersIndexQueryKey = (
 
 export const getPurchaseOrdersIndexQueryOptions = <
   TData = Awaited<ReturnType<typeof purchaseOrdersIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: PurchaseOrdersIndexParams,
   options?: {
@@ -144,11 +159,16 @@ export type PurchaseOrdersIndexQueryResult = NonNullable<
   Awaited<ReturnType<typeof purchaseOrdersIndex>>
 >;
 export type PurchaseOrdersIndexQueryError =
-  AuthenticationExceptionResponse | ValidationExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
 
 export function usePurchaseOrdersIndex<
   TData = Awaited<ReturnType<typeof purchaseOrdersIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params: undefined | PurchaseOrdersIndexParams,
   options: {
@@ -175,7 +195,10 @@ export function usePurchaseOrdersIndex<
 };
 export function usePurchaseOrdersIndex<
   TData = Awaited<ReturnType<typeof purchaseOrdersIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: PurchaseOrdersIndexParams,
   options?: {
@@ -202,7 +225,10 @@ export function usePurchaseOrdersIndex<
 };
 export function usePurchaseOrdersIndex<
   TData = Awaited<ReturnType<typeof purchaseOrdersIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: PurchaseOrdersIndexParams,
   options?: {
@@ -222,7 +248,10 @@ export function usePurchaseOrdersIndex<
 
 export function usePurchaseOrdersIndex<
   TData = Awaited<ReturnType<typeof purchaseOrdersIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: PurchaseOrdersIndexParams,
   options?: {
@@ -261,6 +290,11 @@ export type purchaseOrdersStoreResponse401 = {
   status: 401;
 };
 
+export type purchaseOrdersStoreResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type purchaseOrdersStoreResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -271,7 +305,9 @@ export type purchaseOrdersStoreResponseSuccess =
     headers: Headers;
   };
 export type purchaseOrdersStoreResponseError = (
-  purchaseOrdersStoreResponse401 | purchaseOrdersStoreResponse422
+  | purchaseOrdersStoreResponse401
+  | purchaseOrdersStoreResponse403
+  | purchaseOrdersStoreResponse422
 ) & {
   headers: Headers;
 };
@@ -296,7 +332,10 @@ export const purchaseOrdersStore = async (
 };
 
 export const getPurchaseOrdersStoreMutationOptions = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -338,10 +377,15 @@ export type PurchaseOrdersStoreMutationResult = NonNullable<
 >;
 export type PurchaseOrdersStoreMutationBody = StorePurchaseOrderRequest;
 export type PurchaseOrdersStoreMutationError =
-  AuthenticationExceptionResponse | ValidationExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
 
 export const usePurchaseOrdersStore = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(
   options?: {
@@ -374,6 +418,11 @@ export type purchaseOrdersShowResponse401 = {
   status: 401;
 };
 
+export type purchaseOrdersShowResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type purchaseOrdersShowResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -390,6 +439,7 @@ export type purchaseOrdersShowResponseSuccess =
   };
 export type purchaseOrdersShowResponseError = (
   | purchaseOrdersShowResponse401
+  | purchaseOrdersShowResponse403
   | purchaseOrdersShowResponse404
   | purchaseOrdersShowResponse422
 ) & {
@@ -446,6 +496,7 @@ export const getPurchaseOrdersShowQueryOptions = <
   TData = Awaited<ReturnType<typeof purchaseOrdersShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -489,6 +540,7 @@ export type PurchaseOrdersShowQueryResult = NonNullable<
 >;
 export type PurchaseOrdersShowQueryError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
@@ -496,6 +548,7 @@ export function usePurchaseOrdersShow<
   TData = Awaited<ReturnType<typeof purchaseOrdersShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -527,6 +580,7 @@ export function usePurchaseOrdersShow<
   TData = Awaited<ReturnType<typeof purchaseOrdersShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -558,6 +612,7 @@ export function usePurchaseOrdersShow<
   TData = Awaited<ReturnType<typeof purchaseOrdersShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -582,6 +637,7 @@ export function usePurchaseOrdersShow<
   TData = Awaited<ReturnType<typeof purchaseOrdersShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -627,6 +683,11 @@ export type purchaseOrdersUpdateResponse401 = {
   status: 401;
 };
 
+export type purchaseOrdersUpdateResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type purchaseOrdersUpdateResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -643,6 +704,7 @@ export type purchaseOrdersUpdateResponseSuccess =
   };
 export type purchaseOrdersUpdateResponseError = (
   | purchaseOrdersUpdateResponse401
+  | purchaseOrdersUpdateResponse403
   | purchaseOrdersUpdateResponse404
   | purchaseOrdersUpdateResponse422
 ) & {
@@ -675,6 +737,7 @@ export const purchaseOrdersUpdate = async (
 export const getPurchaseOrdersUpdateMutationOptions = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -719,12 +782,14 @@ export type PurchaseOrdersUpdateMutationResult = NonNullable<
 export type PurchaseOrdersUpdateMutationBody = UpdatePurchaseOrderRequest;
 export type PurchaseOrdersUpdateMutationError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
 export const usePurchaseOrdersUpdate = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -749,6 +814,141 @@ export const usePurchaseOrdersUpdate = <
 
   return useMutation(mutationOptions, queryClient);
 };
+/**
+ * @summary Sends a draft for approval. When the company's approval mode says none is needed the order is returned unchanged
+ */
+export type purchaseOrdersSubmitResponse200 = {
+  data: PurchaseOrdersSubmit200;
+  status: 200;
+};
+
+export type purchaseOrdersSubmitResponse401 = {
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
+
+export type purchaseOrdersSubmitResponse403 = {
+  data: PurchaseOrdersSubmit403;
+  status: 403;
+};
+
+export type purchaseOrdersSubmitResponse404 = {
+  data: ModelNotFoundExceptionResponse;
+  status: 404;
+};
+
+export type purchaseOrdersSubmitResponseSuccess =
+  purchaseOrdersSubmitResponse200 & {
+    headers: Headers;
+  };
+export type purchaseOrdersSubmitResponseError = (
+  | purchaseOrdersSubmitResponse401
+  | purchaseOrdersSubmitResponse403
+  | purchaseOrdersSubmitResponse404
+) & {
+  headers: Headers;
+};
+
+export type purchaseOrdersSubmitResponse =
+  purchaseOrdersSubmitResponseSuccess | purchaseOrdersSubmitResponseError;
+
+export const getPurchaseOrdersSubmitUrl = (purchaseOrder: number) => {
+  return `/v1/purchase-orders/${purchaseOrder}/submit`;
+};
+
+export const purchaseOrdersSubmit = async (
+  purchaseOrder: number,
+  options?: RequestInit,
+): Promise<purchaseOrdersSubmitResponse> => {
+  return fetchClient<purchaseOrdersSubmitResponse>(
+    getPurchaseOrdersSubmitUrl(purchaseOrder),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
+
+export const getPurchaseOrdersSubmitMutationOptions = <
+  TError =
+    | AuthenticationExceptionResponse
+    | PurchaseOrdersSubmit403
+    | ModelNotFoundExceptionResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof purchaseOrdersSubmit>>,
+    TError,
+    { purchaseOrder: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof fetchClient>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof purchaseOrdersSubmit>>,
+  TError,
+  { purchaseOrder: number },
+  TContext
+> => {
+  const mutationKey = ["purchaseOrdersSubmit"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof purchaseOrdersSubmit>>,
+    { purchaseOrder: number }
+  > = (props) => {
+    const { purchaseOrder } = props ?? {};
+
+    return purchaseOrdersSubmit(purchaseOrder, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PurchaseOrdersSubmitMutationResult = NonNullable<
+  Awaited<ReturnType<typeof purchaseOrdersSubmit>>
+>;
+
+export type PurchaseOrdersSubmitMutationError =
+  | AuthenticationExceptionResponse
+  | PurchaseOrdersSubmit403
+  | ModelNotFoundExceptionResponse;
+
+/**
+ * @summary Sends a draft for approval. When the company's approval mode says none is needed the order is returned unchanged
+ */
+export const usePurchaseOrdersSubmit = <
+  TError =
+    | AuthenticationExceptionResponse
+    | PurchaseOrdersSubmit403
+    | ModelNotFoundExceptionResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof purchaseOrdersSubmit>>,
+      TError,
+      { purchaseOrder: number },
+      TContext
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof purchaseOrdersSubmit>>,
+  TError,
+  { purchaseOrder: number },
+  TContext
+> => {
+  const mutationOptions = getPurchaseOrdersSubmitMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
 export type purchaseOrdersIssueResponse200 = {
   data: PurchaseOrdersIssue200;
   status: 200;
@@ -757,6 +957,11 @@ export type purchaseOrdersIssueResponse200 = {
 export type purchaseOrdersIssueResponse401 = {
   data: AuthenticationExceptionResponse;
   status: 401;
+};
+
+export type purchaseOrdersIssueResponse403 = {
+  data: PurchaseOrdersIssue403;
+  status: 403;
 };
 
 export type purchaseOrdersIssueResponse404 = {
@@ -769,7 +974,9 @@ export type purchaseOrdersIssueResponseSuccess =
     headers: Headers;
   };
 export type purchaseOrdersIssueResponseError = (
-  purchaseOrdersIssueResponse401 | purchaseOrdersIssueResponse404
+  | purchaseOrdersIssueResponse401
+  | purchaseOrdersIssueResponse403
+  | purchaseOrdersIssueResponse404
 ) & {
   headers: Headers;
 };
@@ -795,7 +1002,10 @@ export const purchaseOrdersIssue = async (
 };
 
 export const getPurchaseOrdersIssueMutationOptions = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | PurchaseOrdersIssue403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -837,10 +1047,15 @@ export type PurchaseOrdersIssueMutationResult = NonNullable<
 >;
 
 export type PurchaseOrdersIssueMutationError =
-  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
+  | AuthenticationExceptionResponse
+  | PurchaseOrdersIssue403
+  | ModelNotFoundExceptionResponse;
 
 export const usePurchaseOrdersIssue = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | PurchaseOrdersIssue403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(
   options?: {
@@ -873,6 +1088,11 @@ export type purchaseOrdersCancelResponse401 = {
   status: 401;
 };
 
+export type purchaseOrdersCancelResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type purchaseOrdersCancelResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -889,6 +1109,7 @@ export type purchaseOrdersCancelResponseSuccess =
   };
 export type purchaseOrdersCancelResponseError = (
   | purchaseOrdersCancelResponse401
+  | purchaseOrdersCancelResponse403
   | purchaseOrdersCancelResponse404
   | purchaseOrdersCancelResponse422
 ) & {
@@ -921,6 +1142,7 @@ export const purchaseOrdersCancel = async (
 export const getPurchaseOrdersCancelMutationOptions = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -965,12 +1187,14 @@ export type PurchaseOrdersCancelMutationResult = NonNullable<
 export type PurchaseOrdersCancelMutationBody = CancelPurchaseOrderRequest;
 export type PurchaseOrdersCancelMutationError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
 export const usePurchaseOrdersCancel = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -1005,6 +1229,11 @@ export type purchaseOrderLinesShortCloseResponse401 = {
   status: 401;
 };
 
+export type purchaseOrderLinesShortCloseResponse403 = {
+  data: PurchaseOrderLinesShortClose403;
+  status: 403;
+};
+
 export type purchaseOrderLinesShortCloseResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -1016,6 +1245,7 @@ export type purchaseOrderLinesShortCloseResponseSuccess =
   };
 export type purchaseOrderLinesShortCloseResponseError = (
   | purchaseOrderLinesShortCloseResponse401
+  | purchaseOrderLinesShortCloseResponse403
   | purchaseOrderLinesShortCloseResponse404
 ) & {
   headers: Headers;
@@ -1045,7 +1275,10 @@ export const purchaseOrderLinesShortClose = async (
 };
 
 export const getPurchaseOrderLinesShortCloseMutationOptions = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | PurchaseOrderLinesShortClose403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -1087,10 +1320,15 @@ export type PurchaseOrderLinesShortCloseMutationResult = NonNullable<
 >;
 
 export type PurchaseOrderLinesShortCloseMutationError =
-  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
+  | AuthenticationExceptionResponse
+  | PurchaseOrderLinesShortClose403
+  | ModelNotFoundExceptionResponse;
 
 export const usePurchaseOrderLinesShortClose = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | PurchaseOrderLinesShortClose403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(
   options?: {

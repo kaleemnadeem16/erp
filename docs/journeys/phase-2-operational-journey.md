@@ -59,7 +59,9 @@ the purchasing steps, even if their maintenance screens are not part of this Pha
 
 1. Open `/purchase-orders` and select **New purchase order**.
 2. Select the supplier (and site where applicable), order dates and currency. Add one or more
-   approved item-supplier lines. Confirm quantity, purchase UoM, price, tax/discount, expected
+   approved item-supplier lines. Confirm quantity, purchase UoM (a line starts on the unit that
+   supplier sells the item in, else the item's stock unit — see
+   [purchasing.md](../domain/purchasing.md#purchase-unit-default)), price, tax/discount, expected
    delivery, QA requirement and any advanced FX evidence.
 3. Save the document. It is `DRAFT`: it can be edited or cancelled, but it is not yet a
    receivable commitment.

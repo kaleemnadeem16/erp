@@ -161,8 +161,12 @@ docker compose exec app php artisan demo:seed
 The command is idempotent: stable codes (or, where a screen has no natural code, a marker like
 `GoodsReceipt.idempotency_key` or `PhysicalCount.reference`) update or skip the records owned by
 the demo dataset without deleting unrelated local records. Its orchestrator calls small seeders
-for Foundation, Accounting, Parties, Inventory, Purchasing, Stock and Estimating in dependency
-order; a new module adds its own seeder to that list. Both the command and every module seeder
+for Foundation, Accounting, Parties, Inventory, Pack Conversions, Purchasing, Stock, the
+negative-stock and recalculation lifecycles, Stock Transfers and Estimating in dependency order
+(Pack Conversions before Purchasing because some item-supplier rows buy in a pack unit; the
+lifecycles after Stock because they reuse that seeder's actors and resting policy; the stock
+workflow seeders share `SeedsDedicatedStockItems`, one dedicated item per scenario); a new module
+adds its own seeder to that list. Both the command and every module seeder
 refuse to run unless Laravel's environment is `local` or `testing`, so a normal production
 `db:seed` cannot install demo data. The demo login defaults to `user@erp.x1techs.com` /
 `!User@Erp@123`; local environment variables `DEMO_USER_EMAIL`, `DEMO_USER_PASSWORD` and
@@ -258,6 +262,53 @@ same way a second real staff member would in production.
 Traefik on `proxy-net` with `Host()` routing rules and an HTTPS-redirect middleware; images in
 GHCR tagged by commit SHA; Compose project per app. Consistency with the existing nine projects
 is worth more than any improvement we might invent.
+
+## Known local issue: the dev Postgres restarts itself
+
+Observed 2026-09-04 to 2026-09-30 on the WSL2/Docker dev stack (not production). Every so often the Postgres postmaster logs
+`server process (PID n) exited with exit code 2` (or `terminated by signal 13`), then `terminating any other active server
+processes`, `all server processes terminated; reinitializing` and `automatic recovery in progress`. Every open connection is
+dropped, so a running test suite fails in bulk and passes on rerun.
+
+What the evidence says, and does not say:
+
+- **Not memory.** The container's `OOMKilled` is false, its restart count is 0, and the WSL host has free memory.
+- **Not a data problem.** Recovery completes in seconds and no committed data was lost; the exit-code-2 lines are preceded by no
+  SQL error from our code. One crash (2026-09-30 02:36) happened overnight with no test or job running.
+- **The disk is stalling.** Checkpoints normally sync in 0.1–0.5 s. Around the crashes they take 12–66 s, with one at 397 s
+  (2026-09-29 12:52), while the checkpoint write phase alone stays around 100 s.
+  That points at the WSL2/Docker volume (or the VM being paused and resumed), not at our queries.
+- **Not proven.** Postgres logs no cause for exit code 2, so a Postgres-side fault is not excluded; it is the least likely reading.
+  Nothing in the ERP code can cause it: production runs on dedicated VMs ([dbvm](#dbvm--data-tier)) and has not shown it.
+
+Consequences: it does not block Phase 3. A red run that shows `SQLSTATE[08006]`/"recovery mode" or a mass of unrelated failures
+should simply be rerun. Two concurrent test runs against `erp_testing` (two agents) also deadlock each other on schema drops.
+
+**Done (2026-10-01): a throwaway test database on tmpfs** — see below.
+
+## Test database on tmpfs
+
+A second Postgres service, `postgres-test`, keeps its data directory in RAM (`tmpfs`, 768 MB) with `fsync`, `synchronous_commit`
+and `full_page_writes` off. It is opt-in (compose profile `test-db`), so a plain `docker compose up` is unchanged. Nothing it
+holds survives a stop, which is fine: the suite builds its own data and the schema is rebuilt on each run.
+
+```
+docker/backend/run-tests-tmpfs.sh                          # whole suite
+docker/backend/run-tests-tmpfs.sh --filter=Estimating      # arguments go to `php artisan test`
+TEST_DB_NAME=erp_testing_b docker/backend/run-tests-tmpfs.sh   # a private database for a second person or agent
+```
+
+The script starts the service, creates the named database if needed, migrates it, and runs the tests with `TEST_DB_HOST`,
+`TEST_DB_PORT` and `TEST_DB_DATABASE` pointing at it. Those three variables are the only change to `config/database.php`'s
+`testing` connection; unset (CI, and the default `docker compose exec app php artisan test`), behaviour is exactly as before.
+
+- **Why:** the disk is out of the test path (the dev server's slow checkpoints and self-restarts no longer touch a run), the dev
+  database is never involved, and two runs on two database names cannot deadlock on schema drops.
+- **Parity check:** the full suite, 1274 tests, passes against it in about 4 minutes; two runs at once on `erp_testing_a` and
+  `erp_testing_b` both passed.
+- **Cost:** a few hundred MB of RAM while it runs (`docker compose --profile test-db stop postgres-test` frees it). It cannot
+  reveal problems that depend on real disk behaviour; the pipeline still runs on a real Postgres service.
+- **Not changed:** CI, the dev entrypoint's migration of `erp_testing`, and the dev `postgres` service.
 
 ## Related
 

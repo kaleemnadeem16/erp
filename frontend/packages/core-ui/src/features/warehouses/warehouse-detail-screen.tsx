@@ -1,6 +1,6 @@
 import { ArrowLeft, Pencil } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router';
-import { useWarehousesShow } from '@erp/core-api';
+import { useInventorySettingsShow, useWarehousesShow } from '@erp/core-api';
 
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -8,6 +8,8 @@ import { Skeleton } from '../../components/ui/skeleton';
 import { DetailField } from '../../components/detail/detail-field';
 import { DetailPageLayout, DetailSection } from '../../components/detail/detail-page-layout';
 import { PageHeader } from '../../components/page/page-header';
+import { useAuthStore } from '../../stores/auth-store';
+import { LocationsPanel } from './locations-panel';
 import { DetailPrintLayout, PrintTrigger, useQuickPrint, type DetailPrintSection } from '../../components/print';
 
 export function WarehouseDetailScreen() {
@@ -17,6 +19,13 @@ export function WarehouseDetailScreen() {
     include: 'locations',
   });
   const warehouse = warehouseQuery.data?.status === 200 ? warehouseQuery.data.data.data : undefined;
+  const settingsQuery = useInventorySettingsShow();
+  const structured = settingsQuery.data?.status === 200 && settingsQuery.data.data.data.inventory_location_mode === 'STRUCTURED';
+  const user = useAuthStore((state) => state.user);
+  const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
+  const mayManageLocations = permissions.includes('inventory.location.manage');
+  const mayManageWarehouse = permissions.includes('inventory.warehouse.manage');
+  const mayMarkUsable = permissions.includes('inventory.location-policy.manage');
   const { contentRef: printRef, print } = useQuickPrint({
     documentTitle: warehouse ? `Warehouse ${warehouse.code}` : 'Warehouse',
   });
@@ -69,12 +78,14 @@ export function WarehouseDetailScreen() {
         actions={
           <>
             <PrintTrigger onPrint={() => print()} />
+            {mayManageWarehouse && (
             <Button asChild size="sm">
               <Link to={`/warehouses/${warehouse.id}/edit`}>
                 <Pencil className="h-4 w-4" />
                 Edit
               </Link>
             </Button>
+            )}
           </>
         }
       />
@@ -89,17 +100,7 @@ export function WarehouseDetailScreen() {
           </DetailField>
           <DetailField label="Default warehouse">{warehouse.is_default ? 'Yes' : 'No'}</DetailField>
         </DetailSection>
-        <DetailSection
-          title="Locations"
-          description="Every warehouse has at least one real location; structured companies may have a hierarchy."
-        >
-          {(warehouse.locations ?? []).map((location) => (
-            <DetailField key={location.id} label={location.code}>
-              {location.name}
-              {location.active ? '' : ' (inactive)'}
-            </DetailField>
-          ))}
-        </DetailSection>
+        <LocationsPanel warehouseId={warehouse.id} structured={structured} mayManage={mayManageLocations} mayMarkUsable={mayMarkUsable} />
       </DetailPageLayout>
       <div className="hidden">
         <div ref={printRef}>

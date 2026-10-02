@@ -2,8 +2,11 @@
 
 namespace Tests\Feature\Modules\Estimating;
 
+use App\Exceptions\DomainInvariantException;
 use App\Models\Uom;
 use App\Models\User;
+use App\Modules\Estimating\Actions\CreateResourceRate;
+use App\Modules\Estimating\Actions\DeleteResourceRate;
 use App\Modules\Estimating\Actions\ResolveResourceRate;
 use App\Modules\Estimating\Models\ResourceRate;
 use App\Modules\Inventory\Models\Category;
@@ -14,6 +17,7 @@ use App\Support\UomDimension;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Tests\Support\PermissionedActor;
 use Tests\TestCase;
 
 class ResourceRateApiTest extends TestCase
@@ -62,7 +66,7 @@ class ResourceRateApiTest extends TestCase
 
     public function test_a_rate_can_be_created_for_a_labour_item(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.resource-rate.manage']);
 
         $response = $this->actingAs($user)->postJson('/api/v1/resource-rates', [
             'item_id' => $this->electrician->id, 'rate' => '20.000000',
@@ -77,7 +81,7 @@ class ResourceRateApiTest extends TestCase
 
     public function test_a_non_labour_or_plant_item_is_rejected(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.resource-rate.manage']);
 
         $this->actingAs($user)->postJson('/api/v1/resource-rates', [
             'item_id' => $this->paintItem->id, 'rate' => '20', 'rate_uom_id' => $this->hour->id,
@@ -87,7 +91,7 @@ class ResourceRateApiTest extends TestCase
 
     public function test_a_cross_company_item_is_rejected(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.resource-rate.manage']);
         $otherCompanyId = DB::table('companies')->insertGetId(['name' => 'Other', 'created_at' => now(), 'updated_at' => now()]);
         $this->actingAsCompany($otherCompanyId);
         $otherHour = Uom::create(['code' => 'HR', 'name' => 'Hour', 'dimension' => UomDimension::Time, 'factor_to_base' => '1']);
@@ -106,7 +110,7 @@ class ResourceRateApiTest extends TestCase
 
     public function test_duplicate_item_and_effective_date_is_rejected(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.resource-rate.manage']);
         ResourceRate::create([
             'item_id' => $this->electrician->id, 'rate' => '20', 'rate_uom_id' => $this->hour->id,
             'effective_from' => '2026-01-01',
@@ -120,7 +124,7 @@ class ResourceRateApiTest extends TestCase
 
     public function test_a_later_dated_rate_for_the_same_item_is_allowed(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.resource-rate.manage']);
         ResourceRate::create([
             'item_id' => $this->electrician->id, 'rate' => '20', 'rate_uom_id' => $this->hour->id,
             'effective_from' => '2026-01-01',
@@ -146,7 +150,7 @@ class ResourceRateApiTest extends TestCase
 
     public function test_a_rate_can_be_deleted(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.resource-rate.manage']);
         $rate = ResourceRate::create([
             'item_id' => $this->electrician->id, 'rate' => '20', 'rate_uom_id' => $this->hour->id,
             'effective_from' => '2026-01-01',
@@ -183,5 +187,65 @@ class ResourceRateApiTest extends TestCase
         $this->actingAsCompany(1);
 
         $this->actingAs($user)->getJson("/api/v1/resource-rates/{$otherRate->id}")->assertNotFound();
+    }
+
+    public function test_writes_require_manage_and_non_manager_reads_omit_rate(): void
+    {
+        $rate = ResourceRate::create([
+            'item_id' => $this->electrician->id, 'rate' => '20', 'rate_uom_id' => $this->hour->id,
+            'effective_from' => '2026-01-01',
+        ]);
+        $viewer = User::factory()->create();
+
+        $this->actingAs($viewer)->getJson('/api/v1/resource-rates')->assertOk()
+            ->assertJsonMissingPath('data.0.rate');
+        $this->getJson("/api/v1/resource-rates/{$rate->id}")->assertOk()
+            ->assertJsonMissingPath('data.rate');
+        $this->postJson('/api/v1/resource-rates', [
+            'item_id' => $this->electrician->id, 'rate' => '30', 'rate_uom_id' => $this->hour->id,
+            'effective_from' => '2026-07-01',
+        ])->assertForbidden();
+        $this->deleteJson("/api/v1/resource-rates/{$rate->id}")->assertForbidden();
+        $this->assertDatabaseHas('resource_rates', ['id' => $rate->id, 'rate' => '20.000000']);
+    }
+
+    public function test_internal_cost_viewer_can_read_rate_but_cannot_change_it(): void
+    {
+        $rate = ResourceRate::create([
+            'item_id' => $this->electrician->id, 'rate' => '20', 'rate_uom_id' => $this->hour->id,
+            'effective_from' => '2026-01-01',
+        ]);
+        $viewer = PermissionedActor::grant(User::factory()->create(), ['estimating.internal_cost.view']);
+
+        $this->actingAs($viewer)->getJson("/api/v1/resource-rates/{$rate->id}")->assertOk()
+            ->assertJsonPath('data.rate', '20.000000');
+        $this->deleteJson("/api/v1/resource-rates/{$rate->id}")->assertForbidden();
+    }
+
+    public function test_non_http_actions_reject_an_unpermitted_actor(): void
+    {
+        $rate = ResourceRate::create([
+            'item_id' => $this->electrician->id, 'rate' => '20', 'rate_uom_id' => $this->hour->id,
+            'effective_from' => '2026-01-01',
+        ]);
+        $viewer = User::factory()->create();
+
+        foreach ([
+            fn () => app(CreateResourceRate::class)([
+                'item_id' => $this->electrician->id, 'rate' => '30', 'rate_uom_id' => $this->hour->id,
+                'effective_from' => '2026-07-01',
+            ], $viewer),
+            fn () => app(DeleteResourceRate::class)($rate, $viewer),
+        ] as $action) {
+            try {
+                $action();
+                $this->fail('Expected the action to reject an unpermitted actor.');
+            } catch (DomainInvariantException) {
+                // Both paths must reject the actor before writing.
+            }
+        }
+
+        $this->assertDatabaseHas('resource_rates', ['id' => $rate->id, 'rate' => '20.000000']);
+        $this->assertDatabaseMissing('resource_rates', ['effective_from' => '2026-07-01']);
     }
 }

@@ -25,6 +25,8 @@ class LocationResource extends JsonResource
             'barcode' => $location->barcode,
             'sort_order' => $location->sort_order,
             'allows_stock' => $location->allows_stock,
+            'counts_as_usable' => $location->counts_as_usable,
+            'counts_as_usable_effective' => $location->countsAsUsable(),
             'active' => $location->active,
             'warehouse' => $this->whenLoaded('warehouse', fn () => new WarehouseResource($location->warehouse)),
             'parent' => $this->whenLoaded('parent', fn () => new self($location->parent)),

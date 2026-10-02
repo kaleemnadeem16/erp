@@ -114,15 +114,6 @@ routine cross-department assigned/task-scoped access without creating one role p
 Spatie Teams currently scopes assignments by `company_id`; it is groundwork, not this record-scope
 model. See [authorization.md](architecture/authorization.md#teams-and-organisational-scope).
 
-### Q27 — Shared approval workflow contract
-**Blocks:** The first configurable multi-stage approval implementation
-
-Should Purchase Orders provide the first concrete workflow and then extract a shared approval
-contract, or should a cross-module engine be built first? Decide the minimum shared semantics for
-sequential/parallel steps, distinct approver counts, thresholds, expiry, delegation, rejection,
-resubmission and policy-version snapshots. See
-[approval-workflows.md](architecture/approval-workflows.md).
-
 ### Q28 — Purchase-order approval policy
 **Blocks:** Introducing PO submission/approval before operational purchasing relies on issuance
 
@@ -130,6 +121,19 @@ Which PO approvals are required by amount, currency, department/site, supplier/c
 risk; may the creator submit, may an approver also issue, how many independent approvers are
 needed, and what happens on rejection or draft revision? Today any authenticated caller reaching
 the endpoint can create and issue a PO; DRAFT → ISSUED has no approval fact.
+
+### Q33 — ERP-wide Notifications capability
+**Blocks:** Any user-facing notification: approval requests and decisions, assignments, overdue and escalation events, module events
+
+Notifications are a shared capability, not a feature of any one module, and are deliberately **not** built inside
+the approval engine ([ADR 0070](decisions/0070-shared-configurable-approval-engine.md)): its inbox is pull-only until
+this is decided. Before building it, research and record how mature ERPs handle in-app notifications; approvals and
+assignments; overdue and escalation events; module-raised events; per-user and per-company preferences; delivery
+channels (in-app, e-mail, mobile push, chat); grouping and de-duplication; deep links; permissions and company
+isolation (a notification must never leak a record its recipient may not see); audit and history; and immediate versus
+digest delivery. Those are prompts, not a predetermined architecture. Consumers waiting on it: approval requests and
+expiries, overdue steps and escalation capabilities, recalculation and negative-stock reviews past their SLA, and the
+purchase-order and quotation workflows.
 
 ---
 
@@ -144,6 +148,11 @@ Answered questions live in [decisions/](decisions/) as ADRs. See the
 <a id="q21--phase-4-selling-price-strategy-baseline"></a>
 <a id="q22--physical-container-granularity"></a>
 <a id="q25--material-resolution-permissions-and-sensitive-fields"></a>
+<a id="q30--location-labels-are-ambiguous-across-warehouses"></a>
+<a id="q31--a-failed-list-request-renders-as-an-empty-or-stale-list"></a>
+<a id="q29--boolean-query-string-filters"></a>
+<a id="q32--pickers-and-lookups-that-fail-to-load-read-as-empty"></a>
+<a id="q27--shared-approval-workflow-contract"></a>
 
 Q17, Q19 and Q22 were resolved on 2026-09-26 by
 [ADR 0051](decisions/0051-phase-3-commercial-packaging-and-supplier-cost-scenarios.md),
@@ -166,3 +175,29 @@ Q25 was resolved on 2026-09-26 by
 [ADR 0057](decisions/0057-stable-material-resolution-capabilities-with-dynamic-assignment.md):
 Material Resolution has stable action/field capabilities with company-configured roles and direct
 grants; approval policy remains separate, while department and record scope remain Q26.
+
+Q30 was resolved on 2026-09-28 by
+[ADR 0059](decisions/0059-name-a-location-as-warehouse-and-location.md): a location is named
+`warehouse / location` through one shared formatter, and the API always returns a location's
+warehouse; codes stay unique per warehouse only.
+
+Q29 was resolved on 2026-09-28 by
+[ADR 0060](decisions/0060-accept-true-and-false-for-boolean-list-filters.md): the shared list-query
+trait accepts `true` / `false` for any filter its request declares boolean, so the API no longer rejects
+what the generated client sends.
+
+Q31 was resolved on 2026-09-28 by
+[ADR 0061](decisions/0061-retry-only-transient-failures-and-say-why-a-list-failed.md): a list retries
+only transient failures, twice, and its error block names the cause and offers "Try again". The
+question's first wording ("invisible") was corrected by measurement: the error was late and vague, not
+absent.
+
+Q32 was resolved on 2026-09-29 by
+[ADR 0064](decisions/0064-pickers-report-a-failed-lookup-and-offer-retry.md): a picker fed by a request
+says why it failed, in the tables' words, and offers "Try again" instead of reading as "no results".
+
+Q27 was resolved on 2026-09-30 by
+[ADR 0070](decisions/0070-shared-configurable-approval-engine.md): one shared, configurable engine — versioned
+policies with typed conditions, counted distinct approvers per step, per-person authority ceilings, delegation within
+the delegator's authority, pinned currency evidence and invalidation on change. Q28 keeps the company's own purchase-order
+policy content (amounts, currencies, departments); the mechanism is the engine.

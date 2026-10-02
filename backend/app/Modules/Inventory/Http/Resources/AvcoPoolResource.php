@@ -27,10 +27,10 @@ class AvcoPoolResource extends JsonResource
             'batch_id' => $pool->batch_id,
             'batch' => $this->whenLoaded('batch', fn () => $pool->batch === null ? null : new StockBatchResource($pool->batch)),
             'qty_on_hand' => $pool->qty_on_hand,
-            'inventory_value' => $pool->inventory_value,
-            'avg_unit_cost' => $pool->avg_unit_cost,
-            'base_avg_unit_cost' => $pool->base_avg_unit_cost,
-            'last_valid_avg_unit_cost' => $pool->last_valid_avg_unit_cost,
+            'inventory_value' => $this->when($request->user()?->can('inventory.valuation.view'), $pool->inventory_value),
+            'avg_unit_cost' => $this->when($request->user()?->can('inventory.valuation.view'), $pool->avg_unit_cost),
+            'base_avg_unit_cost' => $this->when($request->user()?->can('inventory.valuation.view'), $pool->base_avg_unit_cost),
+            'last_valid_avg_unit_cost' => $this->when($request->user()?->can('inventory.valuation.view'), $pool->last_valid_avg_unit_cost),
             'status' => $pool->status->value,
         ];
     }

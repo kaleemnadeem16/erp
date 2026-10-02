@@ -13,7 +13,7 @@ class StoreApplicationRateRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('estimating.application-rate.manage') === true;
     }
 
     /** @return array<string, mixed> */

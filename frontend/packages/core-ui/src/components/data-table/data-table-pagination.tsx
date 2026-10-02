@@ -8,9 +8,13 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 export function DataTablePagination<TRow>({
   table,
   pageSizeOptions = [10, 25, 50, 100],
+  recordNoun,
+  numbered,
 }: {
   table: Table<TRow>;
   pageSizeOptions?: number[];
+  recordNoun?: string;
+  numbered?: boolean;
 }) {
   const { pageIndex, pageSize } = table.getState().pagination;
   const rowCount = table.getRowCount();
@@ -27,7 +31,7 @@ export function DataTablePagination<TRow>({
           <span>0 records</span>
         ) : (
           <span>
-            Showing {from}–{to} of {rowCount}
+            {recordNoun ? `${from}–${to} of ${rowCount} ${recordNoun}` : `Showing ${from}–${to} of ${rowCount}`}
           </span>
         )}
       </div>
@@ -52,9 +56,11 @@ export function DataTablePagination<TRow>({
           </Select>
         </div>
 
-        <div className="text-sm text-muted-foreground">
-          Page {pageIndex + 1} of {table.getPageCount()}
-        </div>
+        {!numbered && (
+          <div className="text-sm text-muted-foreground">
+            Page {pageIndex + 1} of {table.getPageCount()}
+          </div>
+        )}
 
         <div className="flex items-center gap-1">
           <Tooltip>
@@ -87,6 +93,15 @@ export function DataTablePagination<TRow>({
             </TooltipTrigger>
             <TooltipContent>Previous page</TooltipContent>
           </Tooltip>
+          {numbered && (
+            <span
+              aria-current="page"
+              aria-label={`Page ${pageIndex + 1} of ${table.getPageCount()}`}
+              className="inline-flex h-8 min-w-8 items-center justify-center rounded-md border border-primary px-2 text-sm font-medium text-primary"
+            >
+              {pageIndex + 1}
+            </span>
+          )}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button

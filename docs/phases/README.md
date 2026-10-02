@@ -7,7 +7,7 @@ Eight phases, each independently shippable. Current state is in
 
 | Phase | Name | Status | Detail |
 |---|---|---|---|
-| 0 | Foundation | In progress | [phase-0-foundation.md](phase-0-foundation.md) |
+| 0 | Foundation | Complete | [phase-0-foundation.md](phase-0-foundation.md) |
 | 1 | Master data | Complete | [phase-1-master-data.md](phase-1-master-data.md) |
 | 2 | Purchasing & stock | In progress | [phase-2-purchasing-stock.md](phase-2-purchasing-stock.md) |
 | 3 | Estimating core | In progress | [phase-3-estimating-core.md](phase-3-estimating-core.md) |
@@ -35,7 +35,10 @@ presentations.
 ### Phase 0 — Foundation
 Environment and cross-cutting scaffolding, no business logic. Docker Compose, production
 Dockerfile, Laravel + React skeletons, PostgreSQL-only CI, Sanctum auth, companies, users, roles,
-audit log, UoM system, custom fields, numbering sequences, Scramble → Orval pipeline.
+audit log, operable company member/role administration, UoM system, custom fields, numbering
+sequences, Scramble → Orval pipeline. Business modules continue to contribute their own stable
+capabilities as they are implemented; companies bundle those capabilities into roles rather than
+waiting for a fixed application-wide role catalogue.
 
 **No dependency on any open question — can start immediately.**
 → [phase-0-foundation.md](phase-0-foundation.md)
@@ -86,6 +89,14 @@ delta touching it needs a Sales/COGS correction line — see
 ### Phase 5 — Job execution
 Jobs, work orders, material issue, timesheets, unified job cost entries, estimate-vs-actual
 variance reporting. This is where the system starts paying for itself.
+
+**Owes an Inventory package-tracking design** (owner confirmed 2026-10-01; its own ADR, not yet scheduled) before material issue is designed:
+`item_packagings`, the `PACKAGE_BALANCE` / `CONTAINER_TRACKED` modes, sealed/opened package state and remnants,
+package-aware proposals, and the waste/residual variance bands that need them
+([ADR 0052](../decisions/0052-progressive-inventory-package-tracking.md); the hand-built stock mix it must extend is
+[ADR 0072](../decisions/0072-hand-built-stock-mix-in-base-quantity.md); variable-content packages stay
+[Q23](../OPEN-QUESTIONS.md#q23--variable-content-and-catch-weight-packages), alongside
+[Q24](../OPEN-QUESTIONS.md#q24--phase-5-material-exceptions)).
 
 **Owes [ADR 0040](../decisions/0040-control-backdated-stock-recalculation-and-corrections.md)'s
 multi-owner correction package**: once job-consumed stock exists, a correction delta touching it

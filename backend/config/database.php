@@ -101,11 +101,13 @@ return [
 
         // Fixed database name regardless of DB_DATABASE — entrypoint.dev.sh migrates this
         // on every container start so the test suite always has an up-to-date schema.
+        // TEST_DB_* are opt-in overrides for pointing the suite at the throwaway tmpfs Postgres
+        // (docker/backend/run-tests-tmpfs.sh); unset, behaviour is unchanged (CI and the default dev flow).
         'testing' => [
             'driver' => 'pgsql',
-            'host' => env('DB_HOST', '127.0.0.1'),
-            'port' => env('DB_PORT', '5432'),
-            'database' => 'erp_testing',
+            'host' => env('TEST_DB_HOST', env('DB_HOST', '127.0.0.1')),
+            'port' => env('TEST_DB_PORT', env('DB_PORT', '5432')),
+            'database' => env('TEST_DB_DATABASE', 'erp_testing'),
             'username' => env('DB_USERNAME', 'root'),
             'password' => env('DB_PASSWORD', ''),
             'charset' => env('DB_CHARSET', 'utf8'),

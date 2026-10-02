@@ -275,6 +275,15 @@ The inventory cutover HTTP surface is exposed per
 /api/v1/inventory-cutover-negative-openings/{id}/approve` for ADR 0037's cutover-shortage
 exception. `GET .../preview` is the one read-only, no-state-change action.
 
+Per [ADR 0075](../decisions/0075-authorise-inventory-cutover-economic-record-reads.md),
+list/detail/preview are economic migration reads. A caller needs an Inventory cutover duty or
+`inventory.valuation.view`; unrelated authenticated users receive 403. Cutover actors see the
+complete value evidence needed to prepare, reconcile or independently approve opening state;
+valuation-only readers can inspect but cannot act. The SPA gates New, batch attachment and each
+transition/negative-opening control by its own capability. A Purchasing open-PO cutover committer
+alone does not gain the Inventory valuation record. Source facts are deliberately not includable
+on the header; any later paginated read or export needs the same boundary.
+
 `AttachInventoryCutoverBatch` requires an already-`Validated` `ImportBatch`, but the Imports
 module owns batch creation and has no HTTP API or UI of its own yet
 ([data-import.md](../architecture/data-import.md)). The `/inventory-cutovers/:id` detail screen's

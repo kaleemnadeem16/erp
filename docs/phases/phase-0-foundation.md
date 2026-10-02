@@ -31,6 +31,7 @@ feature.
 - Laravel + React skeletons, wired together
 - CI on PostgreSQL 16 (single engine)
 - Authentication, companies, users, roles, audit log
+- Company member invitation/lifecycle and role/access administration
 - UoM system
 - Custom field mechanism
 - Numbering sequences
@@ -40,7 +41,9 @@ feature.
 
 - Items, customers, suppliers → Phase 1
 - Any domain model beyond UoM → Phase 3+
-- Real permission definitions beyond a basic set → Phase 4 ([ADR 0028](../decisions/0028-dynamic-namespaced-permissions.md))
+- Business-module permission definitions → owned by each module's implementation slice; there is
+  no later fixed role catalogue ([ADR 0028](../decisions/0028-dynamic-namespaced-permissions.md),
+  [ADR 0062](../decisions/0062-company-member-and-access-administration.md))
 - Plugin packages → not until a second customer exists
 - Frontend design system beyond shadcn defaults → Phase 4
 
@@ -139,12 +142,20 @@ feature.
       itself, which bypasses the model's mutator by querying raw
 - [x] ~~`spatie/laravel-permission` — namespaced permissions (`module.action`), **Teams
       enabled** from the first migration, minimal role set~~ — done 2026-08-12. No roles
-      seeded yet (deliberately — the real list is Phase 4, per
-      [authorization.md](../architecture/authorization.md)); mechanism verified by tests
+      seeded (deliberately — companies define role bundles from the module-owned capability
+      vocabulary, per [authorization.md](../architecture/authorization.md)); mechanism verified by tests
       covering both role-based and direct-to-user permissions. `team_id` is resolved
       per-request from `CompanyContext` (`App\Http\Middleware\SetPermissionsTeam`) rather
       than a second hardcoded value — team and company coincide today but are not the
       same dimension
+- [x] ~~Operable company access administration~~ — completed 2026-09-29: permitted
+      administrators can invite members with a single-use set-password link, edit member details,
+      suspend/reactivate accounts, resend pending invitations, define company roles and assign
+      additive roles/direct exceptions. Separate view/manage/assign capabilities, company-scoped
+      queries, effective-permission inspection, anti-escalation and self-lockout guards, and
+      reasoned audit evidence are defined by [ADR 0062](../decisions/0062-company-member-and-access-administration.md)
+      and exposed through the Members and Roles & Permissions screens →
+      [access-administration.md](../domain/access-administration.md)
 - [x] ~~`spatie/laravel-activitylog` wired to a base model~~ — done 2026-08-12,
       `App\Models\Model` + `App\Models\Concerns\LogsActivityWithDefaults` (dirty-only,
       never logs `password`/`remember_token`). `User` uses the trait directly since it
@@ -276,6 +287,9 @@ arm64 + `merge-manifest`); 4 CI-only bugs found and fixed in the process, see ST
       401~~ — HTTP contract verified via curl (login 200, session check 200, logout 204, 401
       after) and confirmed by an actual browser click-through 2026-08-18 (login screen, dashboard,
       logout all rendering correctly)
+- [x] A permitted administrator can invite and suspend another member, maintain company roles and
+      assignments, and inspect effective access without server/database access; an administrator
+      cannot grant a capability they do not hold or edit their own assignments
 - [ ] Changing a Laravel API resource field and regenerating produces a **TypeScript compile
       error** in the frontend
 - [ ] A model using `BelongsToCompany` cannot return another company's rows, including from a

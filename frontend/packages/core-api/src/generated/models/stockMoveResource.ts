@@ -28,9 +28,9 @@ export interface StockMoveResource {
   moved_at: string;
   source_type: string;
   source_id: number;
-  unit_cost: string;
-  currency_id: number;
-  fx_rate: string;
+  unit_cost?: string;
+  currency_id?: number;
+  fx_rate?: string;
   batch_id: StockMoveResourceBatchId;
   batch?: StockMoveResourceBatch;
   serial_no: StockMoveResourceSerialNo;

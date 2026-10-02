@@ -21,7 +21,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '../../components/ui/too
 import { Combobox } from '../../components/ui/combobox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../components/ui/form';
 import { DetailSection } from '../../components/detail/detail-page-layout';
-import { applyApiErrorsToForm, getApiErrorMessage } from '../../lib/api-errors';
+import { applyApiErrorsToForm, getApiErrorMessage, lookupState } from '../../lib/api-errors';
 import { apiSortToTableSorting, tableSortingToApiSort, useListQueryState } from '../../lib/list-query-state';
 import { itemQuantityUnitColumns } from './item-quantity-units-columns';
 
@@ -170,7 +170,7 @@ export function ItemQuantityUnitsListScreen() {
       />
 
       <div className="flex flex-wrap items-center gap-2">
-        <Combobox
+        <Combobox {...lookupState(itemsResult, 'items')}
           className="h-9 w-64"
           aria-label="Filter by item"
           value={query.filters.item_id ?? 'all'}
@@ -199,7 +199,7 @@ export function ItemQuantityUnitsListScreen() {
                 <FormItem>
                   <FormLabel>Item</FormLabel>
                   <FormControl>
-                    <Combobox
+                    <Combobox {...lookupState(itemsResult, 'items')}
                       ref={field.ref}
                       disabled={!!editing}
                       value={field.value}
@@ -221,7 +221,7 @@ export function ItemQuantityUnitsListScreen() {
                 <FormItem>
                   <FormLabel>Pack unit</FormLabel>
                   <FormControl>
-                    <Combobox
+                    <Combobox {...lookupState(uomsResult, 'units')}
                       ref={field.ref}
                       disabled={!!editing}
                       value={field.value}
@@ -300,6 +300,8 @@ export function ItemQuantityUnitsListScreen() {
         rowActions={renderRowActions}
         isLoading={result.isLoading}
         isError={result.isError}
+        error={result.error}
+        onRetry={() => void result.refetch()}
         errorMessage={getApiErrorMessage(result.error) ?? "Couldn't load pack conversions."}
         emptyMessage="No pack conversions yet."
       />

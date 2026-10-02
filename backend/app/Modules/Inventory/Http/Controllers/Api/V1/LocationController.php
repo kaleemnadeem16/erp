@@ -17,6 +17,7 @@ use App\Modules\Inventory\Models\Location;
 use App\Support\Concerns\AppliesApiQuery;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -56,11 +57,12 @@ class LocationController extends Controller
 
     public function update(UpdateLocationRequest $request, Location $location, UpdateLocation $update): LocationResource
     {
-        return new LocationResource($update($location, $request->validated()));
+        return new LocationResource($update($location, $request->validated(), $request->user()?->id));
     }
 
-    public function destroy(Location $location, ArchiveLocation $archive): Response
+    public function destroy(Request $request, Location $location, ArchiveLocation $archive): Response
     {
+        abort_unless($request->user()?->can('inventory.location.manage'), 403);
         $archive($location);
 
         return response()->noContent();

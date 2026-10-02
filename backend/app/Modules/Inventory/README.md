@@ -15,7 +15,9 @@ movement and valuation, built in Phase 2.
   discriminator (`RAW`/`SEMI_FINISHED`/`FINISHED`/`SERVICE`/`LABOUR`/`PLANT`) rather than
   separate product/service/resource tables ([Phase 1](../../../../docs/phases/phase-1-master-data.md))
 - `Warehouse`, hierarchical `Location`, and warehouse location roles — Phase 2 stock custody
-  foundations with SIMPLE/STRUCTURED company modes
+  foundations with SIMPLE/STRUCTURED company modes. A location code is unique only within its
+  warehouse, so `Location` always eager-loads its warehouse and every resource embedding one carries
+  it ([ADR 0059](../../../../docs/decisions/0059-name-a-location-as-warehouse-and-location.md))
 - `StockMove`, `StockLayer`, `StockBatch`, `AvcoPool` and `StockValuationEntry` — the immutable
   movement, traceability and valuation-feed foundation; receipts, issues, shortage settlement and
   physical transfers are live for AVCO/FIFO/SPECIFIC
@@ -54,6 +56,11 @@ movement and valuation, built in Phase 2.
   exact version with its own expiry, executed at most once
 - `StockLayerConsumption` — permanent link from each layer allocation to the move it served, the
   FIFO/SPECIFIC replay foundation ADR 0040 depends on
+- `QueryStockAvailability` (with `StockBalance`, `StockAvailabilitySnapshot`, `InventoryScope`) — the
+  read-only, single-statement availability read model Estimating's inventory proposal consumes
+  (ADR 0058): open layers per item/location/batch, QA hold attributed to the layer it sits in,
+  location usability (the location's own `counts_as_usable` mark, else `LocationType::holdsUsableStock()`), and defensible cost evidence. It
+  locks and posts nothing; see [inventory-packages.md](../../../../docs/domain/inventory-packages.md#first-implementation-quantity_only-availability-and-allocation)
 
 ## Does not own
 
@@ -69,6 +76,28 @@ movement and valuation, built in Phase 2.
 future non-HTTP entry points. Model guards still enforce tenant, hierarchy and valuation
 invariants regardless of which Action invokes them.
 
+Item and Category reads remain available to every authenticated company user because they are
+shared reference data used by selectors throughout the ERP. Create, update, archive and activate
+require `inventory.item.manage` or `inventory.category.manage` respectively; the React screens
+hide those controls when the effective permission is absent. Location create, update and archive
+require `inventory.location.manage`; marking a location as counting or not counting as usable stock also needs
+`inventory.location-policy.manage`, a reason and STRUCTURED mode, and is recorded in the inventory policy history
+([ADR 0067](../../../docs/decisions/0067-governed-per-location-usability-mark.md)). The warehouse detail screen's Locations
+panel edits them (structured companies only for hierarchy, type and the mark). Warehouse create, update and archive require
+`inventory.warehouse.manage`; warehouse-location role writes require `inventory.location.manage`. GL-account field visibility remains
+a separate Finance-owned decision and is not implied by either write capability.
+
+Operational stock ledger, layer, pool and overview reads remain quantity-visible to authenticated
+company users. Their monetary fields and included valuation entries require the separate
+`inventory.valuation.view` capability (ADR 0073); Purchasing commercial and Estimating internal
+cost permissions do not imply it. Current Inventory workflow responses and print/export paths
+have completed their separate valuation-visibility audit; no Inventory CSV/download endpoint
+exists yet. New exports must preserve the same server-side monetary projection.
+The shared settings response omits the recalculation high-risk amount threshold except for
+`inventory.recalculation-policy.manage` and `inventory.policy-history.view`; policy-change
+history is already restricted to the latter. It is a governance threshold, not a stock
+value, so the valuation-read permission alone does not reveal it.
+
 `CreateWarehouse` always creates its first location in the same transaction, so an active
 warehouse cannot enter normal use without an exact physical location. Warehouse and location
 updates/archiving use their corresponding Actions. `SIMPLE` mode keeps one plain location per
@@ -80,6 +109,9 @@ itself permit a negative movement; authorisation, posting and settlement are sep
 `RequestNegativeStockOverride` snapshots the exact shortage and current authorisation policy;
 `DecideNegativeStockOverride` and `ReviewNegativeStockOverride` enforce their distinct modes,
 permissions and independent-user rules without mutating the request.
+Override request/approval/review HTTP resources contain no costs or settlement values;
+shortages and settlements have no direct HTTP read route. Their economic effect is read
+through already valuation-gated stock moves and inventory overview (ADR 0073).
 `PostInventoryMovement` is the sole quantity/valuation write boundary — a four-method facade
 whose per-movement logic lives in the internal `Actions/Movements/` collaborators (receipt,
 issue, transfer, pool state, layer allocation, settlement); nothing else may call those. Inbound
@@ -106,6 +138,12 @@ fuzzes the whole engine and asserts feed/pool/layer/shortage agreement after eve
 movement.
 
 ## Recalculation review
+
+Recalculation list/show expose full economic impact only to a recalculation workflow-duty holder
+or an `inventory.valuation.view` reader (ADR 0074). The former needs the evidence to request,
+approve, execute or coordinate a correction; the latter may audit but has no workflow authority.
+Unrelated authenticated users cannot read the document. This does not grant recalculation actors
+the generic stock-ledger monetary projection.
 
 Inventory also owns backdated receipt/issue/transfer requests, immutable impact/approval records,
 layer-consumption ledger and regeneration coordination reviews. `RequestStockRecalculation`
@@ -144,6 +182,11 @@ history and permission details live in
 [stock-recalculation.md](../../../../docs/domain/stock-recalculation.md).
 
 ## Inventory cutover
+
+Inventory cutover list/show and preview expose source/control valuation and negative-opening
+evidence only to cutover workflow-duty holders or `inventory.valuation.view` readers (ADR 0075).
+The former need full economic evidence for reconciliation and approval; the latter can audit
+without lifecycle authority. Unrelated authenticated users cannot read the migration record.
 
 `CreateInventoryCutover`, `AttachInventoryCutoverBatch`, `ValidateInventoryCutover`,
 `ApproveInventoryCutover`, `CommitInventoryCutoverOpeningState` and `FinaliseInventoryCutover` own
@@ -198,6 +241,10 @@ always needs an explicit reviewer-supplied `found_unit_cost`, never inferred fro
 or any other source; a negative variance posts as an ordinary issue with no override authority,
 relying on `IssuePoster`'s own insufficient-stock guard for the rare race where something else
 moved the same identity after the count. `CancelPhysicalCount` abandons a draft with no postings.
+`PhysicalCountLineResource` keeps quantities visible to company readers but omits the
+posted `found_unit_cost` without `inventory.physical_count.post` or
+`inventory.valuation.view`; the poster still supplies that cost explicitly and the
+SPA gates each workflow control by its own capability.
 
 ## Events
 

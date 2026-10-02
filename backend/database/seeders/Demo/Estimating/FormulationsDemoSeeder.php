@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Database\Seeders\Demo\Estimating;
 
 use App\Models\Uom;
+use App\Models\User;
 use App\Modules\Estimating\Actions\ActivateFormulationVersion;
 use App\Modules\Estimating\Models\Formulation;
 use App\Modules\Estimating\Support\FormulationCycleGuard;
@@ -46,9 +47,12 @@ final class FormulationsDemoSeeder extends Seeder
 {
     use EnsuresDemoEnvironment;
 
+    private User $demoActor;
+
     public function run(): void
     {
         $this->ensureDemoEnvironment();
+        $this->demoActor = User::query()->where('email', config('demo.user.email'))->firstOrFail();
 
         $kg = Uom::query()->where('code', 'kg')->firstOrFail();
         $litre = Uom::query()->where('code', 'l')->firstOrFail();
@@ -145,7 +149,7 @@ final class FormulationsDemoSeeder extends Seeder
         foreach ($lines as $sequence => $line) {
             $version->lines()->create([...$line, 'sequence' => $sequence]);
         }
-        (new ActivateFormulationVersion(new FormulationCycleGuard))($version);
+        (new ActivateFormulationVersion(new FormulationCycleGuard))($version, $this->demoActor);
 
         return $formulation->refresh();
     }
@@ -158,6 +162,6 @@ final class FormulationsDemoSeeder extends Seeder
         foreach ($lines as $sequence => $line) {
             $version->lines()->create([...$line, 'sequence' => $sequence]);
         }
-        (new ActivateFormulationVersion(new FormulationCycleGuard))($version);
+        (new ActivateFormulationVersion(new FormulationCycleGuard))($version, $this->demoActor);
     }
 }

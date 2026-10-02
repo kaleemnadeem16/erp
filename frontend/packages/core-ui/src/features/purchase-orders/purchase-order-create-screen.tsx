@@ -78,6 +78,7 @@ export function PurchaseOrderCreateScreen({ presentation = "page" }: { presentat
         description={DESCRIPTION}
         icon={<FilePlus2 />}
         size="xl"
+        className="po-detail"
         actions={advancedOptionsMenu}
         dismissOnOutsideClick={false}
         onClose={() => navigate({ pathname: "/purchase-orders", search })}
@@ -87,7 +88,7 @@ export function PurchaseOrderCreateScreen({ presentation = "page" }: { presentat
     );
   }
   return (
-    <div className="space-y-4 p-6">
+    <div className="po-detail space-y-4 p-6">
       <PageHeader
         title={TITLE}
         description={DESCRIPTION}

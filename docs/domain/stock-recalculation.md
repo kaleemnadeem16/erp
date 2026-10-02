@@ -296,6 +296,17 @@ defined non-disableable governance conditions are hard high-risk triggers requir
 independent approver. Optional bounded company thresholds use base/functional currency and may
 strengthen, never disable, hard routing.
 
+The current `recalculation_high_risk_threshold_base_amount` is a governed routing
+policy, not an operational stock value. The shared `GET /api/v1/inventory-settings`
+omits it unless the caller has `inventory.recalculation-policy.manage` or
+`inventory.policy-history.view`; other settings remain available for their existing
+consumers. Policy-history rows can contain old/new threshold values, and their entire
+endpoint already requires `inventory.policy-history.view`. Requesters and approvers
+receive the classified risk and required authority on the impact version; they do not
+need the exact policy threshold to perform their step. This is the settings/history
+read audit under [ADR 0073](../decisions/0073-separate-inventory-valuation-visibility-from-stock-operations.md),
+not a change to risk classification or permission assignment.
+
 Final revalidation/execution serialises overlapping recalculations and locks the complete Q14.2
 economic closure: affected configured AVCO pools plus cross-pool dependencies; FIFO layers,
 allocations and downstream graph; the exact SPECIFIC serial/unit chain; and affected shortage
@@ -368,11 +379,35 @@ exception's own route prefix.
 (`required_approval_count`, `is_rejected`, `is_fully_approved`, `has_unexpired_full_approval`,
 `is_decided`) straight from the model's own methods, rather than pushing the expiry-comparison and
 distinct-approver-counting logic onto the frontend the way every earlier derived-status screen
-could safely do — this domain's approval state is genuinely more involved. `decide` and `execute`
+could safely do — this domain's approval state is genuinely more involved.
+
+Per [ADR 0074](../decisions/0074-authorise-recalculation-economic-record-reads-by-workflow-duty.md),
+list/show are economic-review reads, not open stock lookups. A caller needs a recalculation
+request/approve/high-risk-approve/execute/regeneration-review capability or
+`inventory.valuation.view`; unrelated authenticated users receive 403. Workflow-duty holders
+see the full cost and impact evidence they must submit or judge. Valuation-only readers can audit
+but cannot act; the SPA hides unavailable controls and blocks a bookmarked New form. Company-wide
+record scope remains subject to Q26. This does not grant workflow actors generic Inventory
+valuation visibility on the stock ledger or overview.
+
+`decide` and `execute`
 both revalidate the ledger immediately before acting and can commit a stale-flip (and usually a
 replacement version) even when they go on to fail, so a 422 can still mean server state changed;
 the `/recalculation-requests/:id` detail screen refetches the request after every action attempt,
 not just a successful one.
+
+**Demo data.** `StockDemoSeeder` leaves one request approved but unexecuted so the demo login can
+execute it live; `RecalculationLifecycleDemoSeeder` adds one request in each remaining state on
+dedicated items, through the same Actions: an AVCO request executed (the pool converged to the approved
+counterfactual with one valuation adjustment), a FIFO request executed (a cheaper layer proved to sit
+before the one a later issue consumed, so the issue is corrected by an append-only reversal and
+replacement rather than a pool adjustment), one rejected (and so never executable) and one awaiting its
+first decision. Two more: a HIGH_RISK request (its impact clears the company's high-risk threshold, set to 10,000 once if unset)
+with the first of two approvals given and the elevated second outstanding, and a request whose approvals were
+invalidated three times by later stock movements, so regeneration is paused for a reviewer to resume. Approvals
+expire after the company TTL; each `demo:seed` run renews the supervisor's lapsed approval on a live request
+(same-actor renewal), so the older seeded request and the high-risk one read "ready" again after re-seeding. The
+executed and rejected scenarios are unaffected.
 
 ## Related
 

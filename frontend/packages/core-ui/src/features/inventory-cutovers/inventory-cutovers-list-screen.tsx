@@ -14,6 +14,7 @@ import { apiSortToTableSorting, tableSortingToApiSort, useListQueryState } from 
 import { useColumnVisibilityPreference } from '../../lib/use-column-visibility-preference';
 import { useListViewPreference } from '../../lib/use-view-preference';
 import { inventoryCutoverColumns } from './inventory-cutover-columns';
+import { usePermission } from '../../hooks/use-permission';
 
 interface InventoryCutoverFilters {
   status: string;
@@ -24,6 +25,7 @@ const STATUSES = ['DRAFT', 'VALIDATED', 'APPROVED', 'FINALISED', 'FAILED'] as co
 
 export function InventoryCutoversListScreen() {
   const navigate = useNavigate();
+  const mayCreate = usePermission('inventory.cutover.create');
   const query = useListQueryState<InventoryCutoverFilters>({ defaultSort: '-created_at', defaultPerPage: 25 });
   const [columnVisibility, setColumnVisibility] = useColumnVisibilityPreference(
     'inventory-cutovers-list',
@@ -54,7 +56,7 @@ export function InventoryCutoversListScreen() {
       <PageHeader
         title="Inventory Cutovers"
         description="Bring in a predecessor system's opening stock balances under a controlled, auditable workflow."
-        primaryAction={{ label: 'New cutover', onClick: () => navigate('/inventory-cutovers/new') }}
+        primaryAction={mayCreate ? { label: 'New cutover', onClick: () => navigate('/inventory-cutovers/new') } : undefined}
       />
 
       <div className="flex flex-wrap items-center gap-2">
@@ -110,6 +112,8 @@ export function InventoryCutoversListScreen() {
         onRowClick={(cutover: InventoryCutoverResource) => navigate(`/inventory-cutovers/${cutover.id}`)}
         isLoading={cutoversQuery.isLoading}
         isError={cutoversQuery.isError}
+        error={cutoversQuery.error}
+        onRetry={() => void cutoversQuery.refetch()}
         errorMessage="Couldn't load inventory cutovers."
         emptyMessage="No inventory cutovers match these filters."
         view={view}

@@ -47,9 +47,20 @@ owner of cutover orchestration and finalisation.
 ## Authorisation
 
 Purchasing policy management and policy-history viewing use separate permissions; cutover commit
-checks `purchasing.cutover.commit`. Ordinary item-supplier, PO, receipt and QA endpoints are
-currently authenticated but do not yet have a complete capability permission matrix. PO approval
-does not exist: DRAFT moves directly to ISSUED. Before adding it, follow
+checks `purchasing.cutover.commit`. Operational writes are split into
+`purchasing.item-supplier.manage`, `purchasing.purchase-order.create` (draft create/update),
+`.issue`, `.cancel`, `.short-close`, `purchasing.goods-receipt.create`, `.post`, `.reverse`, and
+`purchasing.quality-disposition.post`. Document index/show require separate
+`purchasing.purchase-order.view`, `purchasing.goods-receipt.view` and
+`purchasing.item-supplier.view` capabilities or an action capability with a necessary read
+dependency. QA disposition reads follow receipt access. The matrix is in `PurchasingReadAccess`
+and [ADR 0068](../../../../docs/decisions/0068-purchasing-document-read-capabilities.md).
+Purchasing settings remain an authenticated reference read; policy history has its own capability.
+The SPA gates matching write controls, while consequential Actions repeat checks for non-HTTP
+callers. Commercial amounts are projected separately: PO prices/totals/FX and receipt costs/FX are omitted unless the
+caller holds `purchasing.commercial-cost.view` (or `purchasing.purchase-order.create`), and a receipt creator
+without it has cost, currency and FX derived from the issued PO
+([ADR 0069](../../../../docs/decisions/0069-separate-purchasing-commercial-visibility-from-receiving.md)). PO approval does not exist: DRAFT moves directly to ISSUED. Before adding it, follow
 [authorization.md](../../../../docs/architecture/authorization.md) and
 [approval-workflows.md](../../../../docs/architecture/approval-workflows.md); create/edit,
 submit, approve, issue, receive, inspect, reverse and history access must each be considered.

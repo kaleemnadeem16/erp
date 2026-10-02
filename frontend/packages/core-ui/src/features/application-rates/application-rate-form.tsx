@@ -8,6 +8,7 @@ import { Input } from '../../components/ui/input';
 import { Combobox } from '../../components/ui/combobox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../components/ui/form';
 import { DetailSection } from '../../components/detail/detail-page-layout';
+import { lookupState } from '../../lib/api-errors';
 
 const NONE = 'NONE';
 
@@ -104,7 +105,7 @@ export function ApplicationRateForm({
               <FormItem>
                 <FormLabel>Item</FormLabel>
                 <FormControl>
-                  <Combobox
+                  <Combobox {...lookupState(itemsResult, 'items')}
                     ref={field.ref}
                     disabled={mode === 'edit'}
                     value={field.value}
@@ -126,7 +127,7 @@ export function ApplicationRateForm({
               <FormItem>
                 <FormLabel>Work unit</FormLabel>
                 <FormControl>
-                  <Combobox
+                  <Combobox {...lookupState(uomsResult, 'units')}
                     ref={field.ref}
                     disabled={mode === 'edit'}
                     value={field.value}
@@ -161,7 +162,7 @@ export function ApplicationRateForm({
               <FormItem>
                 <FormLabel>Consumption unit</FormLabel>
                 <FormControl>
-                  <Combobox
+                  <Combobox {...lookupState(uomsResult, 'units')}
                     ref={field.ref}
                     value={field.value}
                     onValueChange={field.onChange}
@@ -206,7 +207,7 @@ export function ApplicationRateForm({
                       {dimension.is_required && <span className="text-muted-foreground"> (required axis)</span>}
                     </FormLabel>
                     <FormControl>
-                      <Combobox
+                      <Combobox {...lookupState(dimensionsResult, 'rate dimensions')}
                         ref={field.ref}
                         value={field.value ?? NONE}
                         onValueChange={field.onChange}

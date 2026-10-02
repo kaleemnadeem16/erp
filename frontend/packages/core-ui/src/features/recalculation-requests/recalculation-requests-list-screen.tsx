@@ -19,6 +19,7 @@ import { apiSortToTableSorting, tableSortingToApiSort, useListQueryState } from 
 import { useColumnVisibilityPreference } from '../../lib/use-column-visibility-preference';
 import { useListViewPreference } from '../../lib/use-view-preference';
 import { recalculationRequestColumns } from './recalculation-request-columns';
+import { usePermission } from '../../hooks/use-permission';
 
 interface RecalculationRequestFilters {
   search: string;
@@ -30,6 +31,7 @@ const MOVEMENT_KINDS = ['RECEIPT', 'ISSUE', 'TRANSFER'] as const;
 
 export function RecalculationRequestsListScreen() {
   const navigate = useNavigate();
+  const mayRequest = usePermission('inventory.recalculation.request');
   const query = useListQueryState<RecalculationRequestFilters>({ defaultSort: '-requested_at', defaultPerPage: 25 });
   const [columnVisibility, setColumnVisibility] = useColumnVisibilityPreference(
     'recalculation-requests-list',
@@ -71,7 +73,7 @@ export function RecalculationRequestsListScreen() {
       <PageHeader
         title="Stock Recalculation"
         description="ADR 0040's backdated correction workflow — request, decide, and execute a correction for a receipt, issue or transfer that conflicts with later valuation history."
-        primaryAction={{ label: 'New request', onClick: () => navigate('/recalculation-requests/new') }}
+        primaryAction={mayRequest ? { label: 'New request', onClick: () => navigate('/recalculation-requests/new') } : undefined}
       />
 
       <div className="flex flex-wrap items-center gap-2">
@@ -133,6 +135,8 @@ export function RecalculationRequestsListScreen() {
         onRowClick={(request: RecalculationRequestResource) => navigate(`/recalculation-requests/${request.id}`)}
         isLoading={requestsQuery.isLoading}
         isError={requestsQuery.isError}
+        error={requestsQuery.error}
+        onRetry={() => void requestsQuery.refetch()}
         errorMessage="Couldn't load stock recalculation requests."
         emptyMessage="No stock recalculation requests match these filters."
         view={view}

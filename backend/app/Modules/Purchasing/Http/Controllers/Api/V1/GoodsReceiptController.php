@@ -13,6 +13,7 @@ use App\Modules\Purchasing\Http\Requests\GoodsReceipt\ReverseGoodsReceiptRequest
 use App\Modules\Purchasing\Http\Requests\GoodsReceipt\StoreGoodsReceiptRequest;
 use App\Modules\Purchasing\Http\Resources\GoodsReceiptResource;
 use App\Modules\Purchasing\Models\GoodsReceipt;
+use App\Modules\Purchasing\Support\PurchasingReadAccess;
 use App\Support\Concerns\AppliesApiQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -45,7 +46,7 @@ class GoodsReceiptController extends Controller
 
     public function store(StoreGoodsReceiptRequest $request, CreateGoodsReceipt $create): JsonResponse
     {
-        $receipt = $create($request->validated(), $request->header('Idempotency-Key'));
+        $receipt = $create($request->validated(), $request->user(), $request->header('Idempotency-Key'));
         $receipt->load(['lines' => fn ($query) => $query->withQaAggregates()]);
 
         return (new GoodsReceiptResource($receipt))->response()->setStatusCode(201);
@@ -53,12 +54,15 @@ class GoodsReceiptController extends Controller
 
     public function show(Request $request, GoodsReceipt $goodsReceipt): GoodsReceiptResource
     {
+        abort_unless(PurchasingReadAccess::goodsReceipts($request->user()), 403);
+
         return new GoodsReceiptResource($goodsReceipt->load(['lines' => fn ($query) => $query->withQaAggregates()]));
     }
 
-    public function post(GoodsReceipt $goodsReceipt, PostGoodsReceipt $post): GoodsReceiptResource
+    public function post(Request $request, GoodsReceipt $goodsReceipt, PostGoodsReceipt $post): GoodsReceiptResource
     {
-        $receipt = $post($goodsReceipt);
+        abort_unless($request->user()?->can('purchasing.goods-receipt.post'), 403);
+        $receipt = $post($goodsReceipt, $request->user());
         $receipt->load(['lines' => fn ($query) => $query->withQaAggregates()]);
 
         return new GoodsReceiptResource($receipt);

@@ -10,6 +10,7 @@ use App\Support\CompanyContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\Feature\Modules\Inventory\Concerns\BuildsOutboundRecalculation;
+use Tests\Support\PermissionedActor;
 use Tests\TestCase;
 
 /**
@@ -38,7 +39,7 @@ class AvcoPoolApiTest extends TestCase
 
     public function test_index_reflects_the_current_converged_balance(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['inventory.valuation.view']);
         $this->receive($this->warehouseA, '5', '10', '2026-01-01', 1);
         $this->receive($this->warehouseA, '5', '20', '2026-01-02', 2);
 
@@ -49,6 +50,24 @@ class AvcoPoolApiTest extends TestCase
         $response->assertJsonPath('data.0.qty_on_hand', '10.0000');
         $response->assertJsonPath('data.0.avg_unit_cost', '15.0000');
         $response->assertJsonPath('data.0.status', 'ACTIVE');
+    }
+
+    public function test_ordinary_reader_sees_pool_quantity_but_not_value_or_rates(): void
+    {
+        $this->receive($this->warehouseA, '5', '10', '2026-01-01', 1);
+        $pool = AvcoPool::query()->sole();
+
+        $this->actingAs(User::factory()->create())
+            ->getJson('/api/v1/avco-pools')
+            ->assertOk()
+            ->assertJsonPath('data.0.qty_on_hand', '5.0000')
+            ->assertJsonMissingPath('data.0.inventory_value')
+            ->assertJsonMissingPath('data.0.avg_unit_cost');
+
+        $this->getJson("/api/v1/avco-pools/{$pool->id}")
+            ->assertOk()
+            ->assertJsonMissingPath('data.inventory_value')
+            ->assertJsonMissingPath('data.last_valid_avg_unit_cost');
     }
 
     public function test_index_filters_by_item_and_status(): void

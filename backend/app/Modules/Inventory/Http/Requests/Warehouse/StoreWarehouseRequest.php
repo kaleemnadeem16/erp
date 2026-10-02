@@ -11,7 +11,7 @@ class StoreWarehouseRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('inventory.warehouse.manage') === true;
     }
 
     protected function prepareForValidation(): void

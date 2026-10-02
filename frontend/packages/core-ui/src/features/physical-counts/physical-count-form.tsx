@@ -8,6 +8,7 @@ import { Input } from '../../components/ui/input';
 import { Combobox } from '../../components/ui/combobox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../components/ui/form';
 import { DetailSection } from '../../components/detail/detail-page-layout';
+import { lookupState } from '../../lib/api-errors';
 
 const physicalCountFormSchema = z.object({
   warehouse_id: z.string().min(1, 'Warehouse is required'),
@@ -35,11 +36,7 @@ export function PhysicalCountForm({
     defaultValues: DEFAULT_VALUES,
   });
 
-  // Not filter[active]=true: Laravel's boolean rule rejects the literal
-  // string "true" a query param always serialises to (it only accepts
-  // '1'/'0'/1/0/true/false) — AddPhysicalCountLine itself already rejects an
-  // inactive warehouse/location with a clear 422.
-  const warehousesQuery = useWarehousesIndex({ per_page: 100, sort: 'name' });
+  const warehousesQuery = useWarehousesIndex({ per_page: 100, sort: 'name', 'filter[active]': true });
   const warehouses = warehousesQuery.data?.status === 200 ? warehousesQuery.data.data.data : [];
 
   return (
@@ -59,7 +56,7 @@ export function PhysicalCountForm({
               <FormItem>
                 <FormLabel>Warehouse</FormLabel>
                 <FormControl>
-                  <Combobox
+                  <Combobox {...lookupState(warehousesQuery, 'warehouses')}
                     ref={field.ref}
                     value={field.value}
                     onValueChange={field.onChange}

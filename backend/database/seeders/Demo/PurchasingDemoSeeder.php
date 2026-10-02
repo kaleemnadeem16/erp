@@ -27,6 +27,7 @@ use App\Modules\Purchasing\Actions\ReverseGoodsReceipt;
 use App\Modules\Purchasing\Models\GoodsReceipt;
 use App\Modules\Purchasing\Models\ItemSupplier;
 use App\Modules\Purchasing\Models\PurchaseOrder;
+use App\Support\PermissionRegistry;
 use Database\Seeders\Demo\Concerns\EnsuresDemoEnvironment;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
@@ -52,13 +53,22 @@ final class PurchasingDemoSeeder extends Seeder
 {
     use EnsuresDemoEnvironment;
 
+    private User $actor;
+
     public function run(): void
     {
         $this->ensureDemoEnvironment();
 
+        $permissions = app(PermissionRegistry::class);
+        $permissions->registerForTeam(1);
+        $this->actor = User::query()->where('email', config('demo.user.email'))->firstOrFail();
+        $this->actor->syncPermissions($permissions->all());
+
         $kg = Uom::query()->where('code', 'kg')->firstOrFail();
         $litre = Uom::query()->where('code', 'l')->firstOrFail();
         $each = Uom::query()->where('code', 'ea')->firstOrFail();
+        $roll = Uom::query()->where('code', 'roll')->firstOrFail();
+        $box = Uom::query()->where('code', 'box')->firstOrFail();
 
         $relationships = [
             ['item' => 'demo-pig-blue', 'supplier' => 'sup-punjab', 'supplier_code' => 'PB-25KG', 'priority' => 1, 'lead' => 4, 'moq' => '25.0000', 'uom' => $kg],
@@ -66,6 +76,13 @@ final class PurchasingDemoSeeder extends Seeder
             ['item' => 'demo-pig-red', 'supplier' => 'sup-punjab', 'supplier_code' => 'IROX-RD', 'priority' => 1, 'lead' => 5, 'moq' => '25.0000', 'uom' => $kg],
             ['item' => 'demo-thinner', 'supplier' => 'sup-pakchem', 'supplier_code' => 'THN-200', 'priority' => 1, 'lead' => 6, 'moq' => '200.0000', 'uom' => $litre],
             ['item' => 'demo-spray-unit', 'supplier' => 'sup-coatings', 'supplier_code' => 'ASU-450', 'priority' => 1, 'lead' => 12, 'moq' => '1.0000', 'uom' => $each],
+            // Sold by this supplier in a pack unit, which the item's pack conversion converts to its
+            // stock unit (PackConversionsDemoSeeder). A purchase order line for one of these items at
+            // this supplier therefore starts on Roll / Box rather than the stock unit.
+            // Minimum orders are written in the purchase unit (10 rolls, 4 boxes); no consumer
+            // defines or enforces the MOQ's unit yet, so this is a display convention only.
+            ['item' => 'demo-masking-tape', 'supplier' => 'sup-coatings', 'supplier_code' => 'MSK-50M', 'priority' => 1, 'lead' => 3, 'moq' => '10.0000', 'uom' => $roll],
+            ['item' => 'demo-sanding-disc', 'supplier' => 'sup-coatings', 'supplier_code' => 'SND-BX50', 'priority' => 1, 'lead' => 3, 'moq' => '4.0000', 'uom' => $box],
         ];
 
         foreach ($relationships as $data) {
@@ -92,6 +109,7 @@ final class PurchasingDemoSeeder extends Seeder
 
         $this->seedGoodsReceipts($location, $currency);
         $this->seedDraftGoodsReceipt($location, $currency);
+        $this->seedReceivingClerkDraftReceipt($location, $currency);
         $this->seedReversedGoodsReceipt($location, $currency, $demoUser);
         $this->seedInventoryOverviewDemoData($location, $currency, $demoUser);
         $this->seedMultiLinePurchaseOrder($currency);
@@ -132,7 +150,7 @@ final class PurchasingDemoSeeder extends Seeder
                     'ordered_qty' => $data['qty'], 'purchase_uom_id' => $item->stock_uom_id, 'unit_price' => $data['cost'],
                 ]],
             ]);
-            $order = app(IssuePurchaseOrder::class)($order);
+            $order = app(IssuePurchaseOrder::class)($order, $this->actor);
             $line = $order->lines->sole();
 
             $receipt = app(CreateGoodsReceipt::class)([
@@ -145,8 +163,8 @@ final class PurchasingDemoSeeder extends Seeder
                     'currency_id' => $currency->getKey(), 'fx_rate' => '1.000000000',
                     'fx_rate_date' => $orderedAt, 'fx_rate_type' => 'SPOT', 'fx_rate_source' => 'manual',
                 ]],
-            ], $data['key']);
-            app(PostGoodsReceipt::class)($receipt);
+            ], $this->actor, $data['key']);
+            app(PostGoodsReceipt::class)($receipt, $this->actor);
         }
     }
 
@@ -176,7 +194,7 @@ final class PurchasingDemoSeeder extends Seeder
                 'ordered_qty' => '25.0000', 'purchase_uom_id' => $item->stock_uom_id, 'unit_price' => '345.0000',
             ]],
         ]);
-        $order = app(IssuePurchaseOrder::class)($order);
+        $order = app(IssuePurchaseOrder::class)($order, $this->actor);
         $line = $order->lines->sole();
 
         app(CreateGoodsReceipt::class)([
@@ -189,7 +207,59 @@ final class PurchasingDemoSeeder extends Seeder
                 'currency_id' => $currency->getKey(), 'fx_rate' => '1.000000000',
                 'fx_rate_date' => $orderedAt, 'fx_rate_type' => 'SPOT', 'fx_rate_source' => 'manual',
             ]],
-        ], $key);
+        ], $this->actor, $key);
+        // Deliberately never posted.
+    }
+
+    /**
+     * A Receiving Clerk who may record what arrived but cannot see supplier economics (ADR 0069): the
+     * account holds view and create for receipts, view for purchase orders and QA disposition, and NOT
+     * `purchasing.commercial-cost.view`, so every price, cost and FX field is absent from what they see.
+     * They sign in with the demo password. Their draft receipt is submitted without any monetary field;
+     * the server derives the provisional cost, currency and FX evidence from the issued purchase order,
+     * which is what a person with commercial visibility then sees on it.
+     */
+    private function seedReceivingClerkDraftReceipt(Location $location, Currency $currency): void
+    {
+        $clerk = User::query()->updateOrCreate(
+            ['email' => 'demo-receiver@erp.x1techs.com'],
+            ['name' => 'Demo Receiving Clerk', 'password' => config('demo.user.password')],
+        );
+        $clerk->forceFill(['email_verified_at' => now()])->save();
+        $clerk->syncPermissions([
+            'purchasing.purchase-order.view', 'purchasing.goods-receipt.view', 'purchasing.goods-receipt.create',
+            'purchasing.quality-disposition.post',
+        ]);
+
+        $key = 'demo-receipt-thinner-clerk-draft';
+        if (GoodsReceipt::query()->where('idempotency_key', $key)->exists()) {
+            return;
+        }
+
+        $item = Item::query()->where('code', 'demo-thinner')->firstOrFail();
+        $supplier = SupplierAccount::query()->where('code', 'sup-pakchem')->firstOrFail();
+        $orderedAt = now()->subDay()->format('Y-m-d');
+
+        $order = app(CreatePurchaseOrder::class)([
+            'supplier_account_id' => $supplier->getKey(), 'currency_id' => $currency->getKey(),
+            'fx_rate' => '1.000000000', 'fx_rate_date' => $orderedAt, 'fx_rate_type' => 'SPOT', 'fx_rate_source' => 'manual',
+            'order_date' => $orderedAt,
+            'lines' => [[
+                'line_number' => 1, 'item_id' => $item->getKey(), 'description' => $item->name,
+                'ordered_qty' => '40.0000', 'purchase_uom_id' => $item->stock_uom_id, 'unit_price' => '348.0000',
+            ]],
+        ]);
+        $line = app(IssuePurchaseOrder::class)($order, $this->actor)->lines->sole();
+
+        app(CreateGoodsReceipt::class)([
+            'supplier_account_id' => $supplier->getKey(),
+            'physical_arrival_at' => now()->subDay()->toIso8601String(),
+            'posting_date' => $orderedAt,
+            'lines' => [[
+                'purchase_order_line_id' => $line->getKey(), 'item_id' => $item->getKey(), 'location_id' => $location->getKey(),
+                'received_qty' => '40.0000', 'received_uom_id' => $item->stock_uom_id,
+            ]],
+        ], $clerk, $key);
         // Deliberately never posted.
     }
 
@@ -243,7 +313,7 @@ final class PurchasingDemoSeeder extends Seeder
                 'ordered_qty' => '10.0000', 'purchase_uom_id' => $item->stock_uom_id, 'unit_price' => '1180.0000',
             ]],
         ]);
-        $order = app(IssuePurchaseOrder::class)($order);
+        $order = app(IssuePurchaseOrder::class)($order, $this->actor);
         $line = $order->lines->sole();
 
         $receipt = app(CreateGoodsReceipt::class)([
@@ -257,8 +327,8 @@ final class PurchasingDemoSeeder extends Seeder
                 'fx_rate_date' => $orderedAt, 'fx_rate_type' => 'SPOT', 'fx_rate_source' => 'manual',
                 'batch_no' => 'PG-WRONGBATCH',
             ]],
-        ], $key);
-        $receipt = app(PostGoodsReceipt::class)($receipt);
+        ], $this->actor, $key);
+        $receipt = app(PostGoodsReceipt::class)($receipt, $this->actor);
         app(ReverseGoodsReceipt::class)($receipt, 'Demo: wrong batch received — reversed and re-received separately.', $demoUser->getKey());
     }
 
@@ -306,7 +376,7 @@ final class PurchasingDemoSeeder extends Seeder
                 'ordered_qty' => $qty, 'purchase_uom_id' => $item->stock_uom_id, 'unit_price' => $cost,
             ]],
         ]);
-        $order = app(IssuePurchaseOrder::class)($order);
+        $order = app(IssuePurchaseOrder::class)($order, $this->actor);
         $line = $order->lines->sole();
 
         $receipt = app(CreateGoodsReceipt::class)([
@@ -320,8 +390,8 @@ final class PurchasingDemoSeeder extends Seeder
                 'fx_rate_date' => $orderedAt, 'fx_rate_type' => 'SPOT', 'fx_rate_source' => 'manual',
                 'batch_no' => $batchNo,
             ]],
-        ], $idempotencyKey);
-        app(PostGoodsReceipt::class)($receipt);
+        ], $this->actor, $idempotencyKey);
+        app(PostGoodsReceipt::class)($receipt, $this->actor);
     }
 
     /** demo-spray-unit is SERIAL-tracked (and SPECIFIC-valued): each receipt line is exactly one unit with its own serial. */
@@ -348,7 +418,7 @@ final class PurchasingDemoSeeder extends Seeder
                     'ordered_qty' => '1.0000', 'purchase_uom_id' => $item->stock_uom_id, 'unit_price' => '45000.0000',
                 ]],
             ]);
-            $order = app(IssuePurchaseOrder::class)($order);
+            $order = app(IssuePurchaseOrder::class)($order, $this->actor);
             $line = $order->lines->sole();
 
             $receipt = app(CreateGoodsReceipt::class)([
@@ -362,8 +432,8 @@ final class PurchasingDemoSeeder extends Seeder
                     'fx_rate_date' => $orderedAt, 'fx_rate_type' => 'SPOT', 'fx_rate_source' => 'manual',
                     'serial_no' => $data['serial'],
                 ]],
-            ], $data['key']);
-            app(PostGoodsReceipt::class)($receipt);
+            ], $this->actor, $data['key']);
+            app(PostGoodsReceipt::class)($receipt, $this->actor);
         }
     }
 
@@ -394,7 +464,7 @@ final class PurchasingDemoSeeder extends Seeder
                 'qa_required' => true,
             ]],
         ]);
-        $order = app(IssuePurchaseOrder::class)($order);
+        $order = app(IssuePurchaseOrder::class)($order, $this->actor);
         $line = $order->lines->sole();
 
         $receipt = app(CreateGoodsReceipt::class)([
@@ -408,8 +478,8 @@ final class PurchasingDemoSeeder extends Seeder
                 'fx_rate_date' => $orderedAt, 'fx_rate_type' => 'SPOT', 'fx_rate_source' => 'manual',
                 'batch_no' => 'PR-QA-01',
             ]],
-        ], $key);
-        app(PostGoodsReceipt::class)($receipt);
+        ], $this->actor, $key);
+        app(PostGoodsReceipt::class)($receipt, $this->actor);
 
         app(PostQualityDisposition::class)(
             $receipt->lines->sole(),
@@ -445,7 +515,7 @@ final class PurchasingDemoSeeder extends Seeder
                 'ordered_qty' => '75.0000', 'purchase_uom_id' => $item->stock_uom_id, 'unit_price' => '505.0000',
             ]],
         ]);
-        app(IssuePurchaseOrder::class)($order);
+        app(IssuePurchaseOrder::class)($order, $this->actor);
     }
 
     /**
@@ -491,7 +561,7 @@ final class PurchasingDemoSeeder extends Seeder
                 ],
             ],
         ]);
-        app(IssuePurchaseOrder::class)($order);
+        app(IssuePurchaseOrder::class)($order, $this->actor);
     }
 
     /** Never issued — every other demo PO is ISSUED or further along; this is the list's only DRAFT row. */
@@ -543,7 +613,7 @@ final class PurchasingDemoSeeder extends Seeder
                 'ordered_qty' => '15.0000', 'purchase_uom_id' => $item->stock_uom_id, 'unit_price' => '345.0000',
             ]],
         ]);
-        $order = app(IssuePurchaseOrder::class)($order);
-        app(CancelPurchaseOrder::class)($order, 'Demo: superseded by the combined multi-item order placed the same week.');
+        $order = app(IssuePurchaseOrder::class)($order, $this->actor);
+        app(CancelPurchaseOrder::class)($order, 'Demo: superseded by the combined multi-item order placed the same week.', $this->actor);
     }
 }

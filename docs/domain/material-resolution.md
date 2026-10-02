@@ -78,6 +78,12 @@ revalidates the same resolver when a real draft adopts a plan; Phase 5 reserves 
 slice may be `QUANTITY_ONLY` and approximate, but must never infer sealed packs or containers from
 aggregate stock.
 
+**Implemented so far:** technical resolution with separately gated internal cost (2026-09-26) and the
+`QUANTITY_ONLY` inventory proposal (2026-09-28 — permitted-scope availability, strategy,
+recommendation with alternatives, coverage and shortage; see
+[inventory-packages.md](inventory-packages.md#first-implementation-quantity_only-availability-and-allocation)).
+Planned adjustments, ADR 0054 variance evaluation and the completion slice remain.
+
 ## Physical precision and selection policy
 
 [ADR 0052](../decisions/0052-progressive-inventory-package-tracking.md) provides three progressive
@@ -127,6 +133,147 @@ measures rather than one opaque score. A different valid package mix at the same
 normally needs no reason unless its cost/waste consequence crosses a configured band. Material
 changes after approval are re-evaluated and cannot inherit an old decision.
 
+## Variance policy storage
+
+[ADR 0054](../decisions/0054-risk-based-material-plan-variance-controls.md)'s configurable control is
+stored in three company-scoped tables (migration `2026_09_29_090000`):
+
+```text
+material_variance_reasons          company-defined reason list; nothing is seeded (demo data only: `MaterialVarianceDemoSeeder`)
+  code (unique per company), name, description, active
+
+material_variance_policies         versioned, effective-dated; the row id is the version an evaluation snapshots
+  scope_type  COMPANY | CATEGORY | ITEM      scope_id NULL iff COMPANY (no FK; validated in the request)
+  minimum_effect  nullable floor: whatever the bands give, never lighter than this
+  reason (why this version), status DRAFT | ACTIVE | SUPERSEDED, effective_from/to, changed_by
+  one ACTIVE per scope; no overlapping periods (same constraints as overhead_policies)
+
+material_variance_policy_bands     the typed conditions of one policy
+  direction OVER | UNDER   measure QUANTITY | PERCENT | COST_AMOUNT | COST_PERCENT
+  threshold ≥ 0            uom_id iff QUANTITY (a quantity means nothing without a unit)
+  effect AUDIT_ONLY | REASON_REQUIRED | APPROVAL_REQUIRED | BLOCKED
+```
+
+Resolution is item → nearest category ancestor → company; the strongest matching effect wins
+(`BLOCKED > APPROVAL_REQUIRED > REASON_REQUIRED > AUDIT_ONLY`). A quantity band names its own unit and
+applies to every item whose stock unit converts to it; for any other item it is skipped and the
+evaluation says so, so a category-wide "over 2 L" works for every liquid without being wrong for a
+kilogram item. `APPROVAL_REQUIRED` is in the stable API vocabulary so the shared approval workflow (Q27) can enable
+it without a schema change, but it is neither storable nor resolvable until then, and waste/residual is
+not a measure until package-level tracking exists — both tracked under
+[Phase 3 deferred work](../phases/phase-3-estimating-core.md#deferred-and-blocked-work).
+
+### Managing reasons and policies
+
+`/api/v1/material-variance-reasons` (list, create, patch — never delete) and
+`/api/v1/material-variance-policies` (list, show, create, patch, delete-while-draft, `activate`) follow the
+overhead-policy lifecycle: a policy is created as a DRAFT with its bands, edited only while DRAFT (a `bands`
+array replaces the whole set), and activation supersedes the previous ACTIVE version for the scope and closes
+its period, so history is never rewritten. Scope cannot be edited. Band rules are enforced twice, in the
+request and again in the Action: a quantity band needs a unit and no other measure has one, thresholds are
+non-negative and an under-plan percentage cannot exceed 100, and `APPROVAL_REQUIRED` cannot be chosen. All
+writes need `estimating.material_variance_policy.manage`.
+
+### Hand-built stock mix (ADR 0072)
+
+A person may choose the draw themselves instead of a preset's proposal: `stock_mix` lines of `(item, location, batch, quantity, unit)`,
+held as a quantity in the item's stock unit. The server refuses an unusable or exhausted source, a draw above a balance, a repeated
+source, a quantity off the item's precision, an unconvertible unit, and a total above the planned quantity (more use is a planned-quantity
+change, judged by the variance rules — so a mix can never bypass reasons, blocks or approval). A total below the requirement is a reported shortage.
+The mix is priced from the proposal's cost evidence and compared with it. What that comparison *means* is the company's choice
+([ADR 0076](../decisions/0076-company-control-over-hand-chosen-stock.md); not the variance bands, see
+[ADR 0072](../decisions/0072-hand-built-stock-mix-in-base-quantity.md)): `NOT_ALLOWED` (mixes refused), `INFORMATION` (default: cost shown),
+`REASON_REQUIRED` or `APPROVAL_REQUIRED` at a percentage above the proposal's *average unit cost* (so a part-covering mix is not
+mistaken for a cheap one). A cheaper mix never triggers; a mix that cannot be costed is `NOT_JUDGED`, never passed; a stored approval level
+fails closed (`BLOCKED`) if approvals are later switched off. Resolved item → category → company → built-in, but only the company scope can be
+set today; the judgement is the same for everyone and its numbers follow `estimating.internal_cost.view`. Choosing stock by hand needs
+`estimating.stock_mix.choose` on top of `estimating.inventory_availability.view`; the rule is set on `/settings/material-selection` with
+`estimating.stock_mix_policy.manage` (reason and history, like ADR 0071). The approval level is a `STOCK_MIX` subject on the shared engine
+(`estimating.stock_mix.approve`); in a preview it only names the approval a mix would need — submission waits for plan adoption (Phase 4).
+
+### Stock-selection preference (ADR 0071)
+
+Which stock the proposal draws first follows a stored preference, item → category → company → built-in, set on
+`/settings/material-selection` (holders of `estimating.selection-policy.manage`; history readable with
+`estimating.policy-history.view`). It is a governed setting — a reason for every change, kept as history — and separate from
+the variance rules below. Each material in the preview names the level its preset came from.
+
+### Setup screen
+
+`/settings/material-variance` (Settings → Company → Material Variance, shown to holders of
+`estimating.material_variance_policy.manage`) is where a company configures all of this: its reason list
+(add, retire, reinstate — never delete) and, per scope (whole company, one category or one item), the rule
+sets — the version in force, drafts to edit, activate or delete, and the superseded history. A "Where rules
+are set" overview lists every active rule set with its version. The band editor offers only what a company
+may choose today: record only, reason required or blocked, over or under plan, measured as a quantity (with a
+unit), a percentage or an internal-cost impact. "Approval required" and waste bands are deliberately absent
+until the approval workflow and package-level tracking exist. Viewers without the manage permission see the
+same screen read-only (rules need `estimating.policy-history.view`; reasons need the preview permission).
+
+### What-if adjustments in the preview
+
+`POST /api/v1/assemblies/{assembly}/material-preview` accepts `planned_adjustments[]`
+(`item_id`, `planned_quantity`, `uom_id`, optional `reason_id` and `note`) from anyone who may run a preview —
+adjusting is hypothetical here, so it needs no separate permission (that boundary is Phase 4's). Each is
+converted to the item's stock unit, checked against its quantity precision (refused, never rounded), judged by
+the resolved policy, and returned under `variance` with the standard, planned, difference, effect, whether the
+reason is `NOT_NEEDED`, `PROVIDED`, `MISSING` or `NOT_ACCEPTED` (blocked), whether the plan could be adopted
+as it stands, the matched and skipped conditions, and the policy version used. The same planned quantity
+drives the inventory proposal, so shortage and coverage follow what the user plans; the standard is returned
+beside it (`standard_quantity`, `required_quantity`).
+
+An adjustment that cannot be used fails with the field that is wrong rather than being ignored: an item the
+assembly does not require, a unit that does not convert, a retired reason, an unknown reason, a negative
+quantity, a duplicate item. Internal cost still decides cost bands, but the amount a cost band observed is
+returned only with `estimating.internal_cost.view`; without it that value is `null`, never zero. A zero unit
+cost counts as no evidence ("never received" is not "free"), so a cost band is reported skipped. Adjustments
+are part of the evidence fingerprint. Nothing is written.
+
+With `estimating.internal_cost.view` each adjusted material also carries `cost` — the internal cost of the standard,
+of the plan and their signed difference, at the item's current AVCO company-pool unit cost — and the summary
+carries `cost_impact`, the plan's total cost effect over the materials that have evidence, with
+`cost_evidence_missing_count` for those that do not. Without the capability every amount is `null` and the status
+is `HIDDEN`; with it but no defensible unit cost (non-AVCO, no pool, zero average) the status is `NO_EVIDENCE` and
+the amounts are `null` — never zero. It is an estimate at today's cost, not a quotation price.
+
+### What-if on the Material Preview screen
+
+Under each leaf material the screen offers a planned quantity, a unit (any unit that converts to the item's
+stock unit), a reason (the company's active reasons, readable with the preview permission) and a note.
+Typing a quantity changes nothing until the preview is calculated again; then the material shows the standard
+beside the plan, the difference, the effect, the reason status, the conditions that matched and those that
+were skipped (with why), and a headline says whether the whole plan could be adopted as it stands. The stock
+proposal draws for the planned amount and says "planned; the standard is …". Changing the assembly,
+version, customer or a rate dimension discards typed plans, because the materials required may differ.
+Cost observations in a matched condition are shown only with `estimating.internal_cost.view`. Component:
+`frontend/packages/core-ui/src/features/material-preview/variance-what-if.tsx`.
+
+### Freshness on the Material Preview screen
+
+The result shows when it was calculated and a **Check if still current** button. It repeats the exact request
+behind the result on screen (not whatever the form says now) and compares the returned `evidence_fingerprint`
+with the earlier one: equal means "still current", different means something the preview rests on changed and
+the figures are refreshed. The fingerprint is a stale-comparison aid, never a reservation token.
+
+### How a planned quantity is judged
+
+`EvaluateMaterialVariance` compares a planned quantity with its standard (both in the item's stock unit)
+and is deterministic, write-free and never rounds an intermediate value (percentages carry six
+decimals):
+
+- **planned = standard** — no adjustment, so no effect and nothing to explain.
+- **No policy resolved** — ADR 0054's built-in default: any non-zero difference needs a reason.
+- **A policy** — each band in the difference's direction is measured; a band matches at or beyond its
+  threshold; the strongest matching effect wins regardless of the order the bands were entered in. A
+  non-zero difference matching no band is recorded only, and the policy's `minimum_effect` is a floor.
+- **A band that cannot be measured is skipped and reported, never passed or read as zero**: a
+  percentage of a zero standard (absolute rules still apply), a cost band without cost evidence, or a
+  quantity band whose unit does not convert for that item.
+- **`APPROVAL_REQUIRED` resolves to `BLOCKED`** with a stated limitation, never to a reason.
+
+Worked example: a 6.5 L standard planned as 8 L is +1.5 L (+23.076923 %); at a cost of 20 per litre the
+impact is 30, which is 23.08 % of the 130 standard cost.
+
 ## Authorisation impact
 
 Material resolution uses the stable capabilities accepted by
@@ -147,6 +294,11 @@ Material resolution uses the stable capabilities accepted by
 unless their own permission is effective, including history, exports, lookups, approval tasks and
 notifications. A cost-triggered approval routes only to an approver who can view internal cost.
 Selling price/margin and supplier offers remain outside this permission set.
+
+The Phase 3 what-if variance summary includes `needs_approval_count` alongside reason and block
+counts, including `0` when no approval is needed. It reports an approval requirement for planning
+only; it does not submit a request or adopt the plan. The corresponding no-policy preview test
+asserts the full response shape so this additive contract stays visible.
 
 Roles and assignments are company-configurable. The first implementation is honestly
 company-scoped; Q26 later adds own/assigned/organisation-unit/task scopes without renaming these

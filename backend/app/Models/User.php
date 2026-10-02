@@ -4,6 +4,8 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Models\Concerns\LogsActivityWithDefaults;
+use App\Modules\Administration\Notifications\MemberPasswordReset;
+use App\Modules\Administration\Support\MemberStatus;
 use App\Support\Concerns\BelongsToCompany;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -13,10 +15,16 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
+/** @property MemberStatus $status */
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use BelongsToCompany, HasApiTokens, HasFactory, HasRoles, LogsActivityWithDefaults, Notifiable;
+
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new MemberPasswordReset($token));
+    }
 
     /**
      * The attributes that are mass assignable.
@@ -27,6 +35,11 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'status',
+        'invited_at',
+        'invited_by',
+        'suspended_at',
+        'suspended_by',
     ];
 
     /**
@@ -62,6 +75,13 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'status' => MemberStatus::class,
+            'invited_at' => 'datetime',
+            'suspended_at' => 'datetime',
+            'last_login_at' => 'datetime',
+            'access_updated_at' => 'datetime',
+            'must_change_password' => 'boolean',
+            'credential_version' => 'integer',
         ];
     }
 }

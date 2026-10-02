@@ -16,6 +16,7 @@ import type { ListView } from '../../lib/use-view-preference';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Skeleton } from '../ui/skeleton';
 import { DataTableCards } from './data-table-cards';
+import { ListError } from './list-error';
 import { DataTablePagination } from './data-table-pagination';
 import { DataTableSortSelect } from './data-table-sort-select';
 import { DataTableViewOptions } from './data-table-view-options';
@@ -39,7 +40,12 @@ export interface DataTableProps<TRow> {
   onRowClick?: (row: TRow) => void;
   isLoading?: boolean;
   isError?: boolean;
+  /** The screen's own context for a failure, e.g. "Couldn't load warehouses." The cause is added from `error`. */
   errorMessage?: string;
+  /** The failed request's error, so the cause (no permission, bad filter, server fault, offline) can be said. */
+  error?: unknown;
+  /** Offers "Try again" in the error state. */
+  onRetry?: () => void;
   emptyMessage?: string;
   pageSizeOptions?: number[];
   /** Current table/cards rendering mode. Omit entirely to keep this table always table-only (today's behavior). */
@@ -54,6 +60,20 @@ export interface DataTableProps<TRow> {
    * both. The base component only owns placement/layout; which actions exist
    * is entirely up to the screen passing this prop.
    */
+  /** Optional class name to attach to the Columns dropdown content */
+  viewOptionsMenuClassName?: string;
+  /** Opt-in content for the left of the toolbar row, opposite the Columns button (e.g. active-filter chips). */
+  toolbarStart?: ReactNode;
+  /** Opt-in: name the records in the footer count, e.g. "purchase orders" -> "1–6 of 6 purchase orders". */
+  recordNoun?: string;
+  /** Opt-in: show the current page as a numbered button instead of "Page 1 of N". */
+  numberedPagination?: boolean;
+  /** Opt-in: replaces the default icon on the Columns button. */
+  viewOptionsIcon?: ReactNode;
+  /** Opt-in: extra classes for the Columns button (e.g. a taller control). */
+  viewOptionsTriggerClassName?: string;
+  /** Opt-in: show this text as the (right-aligned) heading of the row-actions column instead of hiding it. */
+  actionsHeader?: string;
   rowActions?: (row: TRow) => ReactNode;
 }
 
@@ -84,11 +104,20 @@ export function DataTable<TRow>({
   isLoading,
   isError,
   errorMessage,
+  error,
+  onRetry,
   emptyMessage = 'No records found.',
   pageSizeOptions,
   view,
   onViewChange,
   cardColumns,
+  viewOptionsMenuClassName,
+  toolbarStart,
+  recordNoun,
+  numberedPagination,
+  viewOptionsIcon,
+  viewOptionsTriggerClassName,
+  actionsHeader,
   rowActions,
 }: DataTableProps<TRow>) {
   const table = useReactTable({
@@ -113,7 +142,7 @@ export function DataTable<TRow>({
 
   return (
     <div className="space-y-3">
-      {(onColumnVisibilityChange || onViewChange) && (
+      {(onColumnVisibilityChange || onViewChange || toolbarStart) && (
         <div className="flex items-center gap-2">
           {onViewChange && (
             <div className="md:hidden">
@@ -125,9 +154,10 @@ export function DataTable<TRow>({
               <DataTableSortSelect columns={cardColumns} sorting={sorting} onSortingChange={onSortingChange} />
             </div>
           )}
+          {toolbarStart && <div className="min-w-0 flex-1">{toolbarStart}</div>}
           {onColumnVisibilityChange && (
             <div className="ml-auto">
-              <DataTableViewOptions table={table} />
+              <DataTableViewOptions table={table} contentClassName={viewOptionsMenuClassName} icon={viewOptionsIcon} triggerClassName={viewOptionsTriggerClassName} />
             </div>
           )}
         </div>
@@ -143,6 +173,8 @@ export function DataTable<TRow>({
           isLoading={isLoading}
           isError={isError}
           errorMessage={errorMessage}
+          error={error}
+          onRetry={onRetry}
           emptyMessage={emptyMessage}
           skeletonCount={Math.min(pagination.pageSize, 8)}
         />
@@ -158,8 +190,8 @@ export function DataTable<TRow>({
                   </TableHead>
                 ))}
                 {rowActions && (
-                  <TableHead className="w-px">
-                    <span className="sr-only">Actions</span>
+                  <TableHead className={actionsHeader ? 'text-right' : 'w-px'}>
+                    <span className={actionsHeader ? undefined : 'sr-only'}>{actionsHeader ?? 'Actions'}</span>
                   </TableHead>
                 )}
               </TableRow>
@@ -178,8 +210,8 @@ export function DataTable<TRow>({
               ))
             ) : isError ? (
               <TableRow>
-                <TableCell colSpan={columnCount} className="h-24 text-center text-destructive">
-                  {errorMessage ?? 'Something went wrong loading this list.'}
+                <TableCell colSpan={columnCount}>
+                  <ListError message={errorMessage} error={error} onRetry={onRetry} />
                 </TableCell>
               </TableRow>
             ) : table.getRowModel().rows.length === 0 ? (
@@ -228,7 +260,8 @@ export function DataTable<TRow>({
       </div>
       )}
 
-      <DataTablePagination table={table} pageSizeOptions={pageSizeOptions} />
+      {/* A failed load has no count to show — "0 records" would read as "nothing found". */}
+      {!isError && <DataTablePagination table={table} pageSizeOptions={pageSizeOptions} recordNoun={recordNoun} numbered={numberedPagination} />}
     </div>
   );
 }

@@ -9,15 +9,55 @@ use App\Support\CompanyContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class WarehouseApiTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_creating_a_warehouse_atomically_creates_its_first_location(): void
+    protected function setUp(): void
+    {
+        parent::setUp();
+        app(PermissionRegistrar::class)->setPermissionsTeamId(1);
+        Permission::findOrCreate('inventory.warehouse.manage');
+        Permission::findOrCreate('inventory.location.manage');
+    }
+
+    private function manager(): User
     {
         $user = User::factory()->create();
+        $user->givePermissionTo('inventory.warehouse.manage', 'inventory.location.manage');
+
+        return $user;
+    }
+
+    public function test_warehouse_and_role_writes_need_their_permissions_but_reads_stay_open(): void
+    {
+        $warehouse = Warehouse::create(['code' => 'main', 'name' => 'Main']);
+        $location = $warehouse->locations()->create(['code' => 'main', 'name' => 'Main']);
+        $nobody = User::factory()->create();
+
+        $this->actingAs($nobody)->getJson('/api/v1/warehouses')->assertOk();
+        $this->getJson("/api/v1/warehouses/{$warehouse->id}")->assertOk();
+        $this->postJson('/api/v1/warehouses', ['code' => 'two', 'name' => 'Two', 'location_code' => 'main', 'location_name' => 'Main'])->assertForbidden();
+        $this->patchJson("/api/v1/warehouses/{$warehouse->id}", ['name' => 'Renamed'])->assertForbidden();
+        $this->deleteJson("/api/v1/warehouses/{$warehouse->id}")->assertForbidden();
+        $this->postJson('/api/v1/warehouse-location-roles', ['warehouse_id' => $warehouse->id, 'location_id' => $location->id, 'role' => 'RECEIVING'])->assertForbidden();
+        $this->assertSame('Main', $warehouse->fresh()->name);
+
+        // Location maintenance alone is not warehouse maintenance.
+        $locationManager = User::factory()->create();
+        $locationManager->givePermissionTo('inventory.location.manage');
+        $this->actingAs($locationManager)->patchJson("/api/v1/warehouses/{$warehouse->id}", ['name' => 'Renamed'])->assertForbidden();
+
+        $this->actingAs($this->manager())->patchJson("/api/v1/warehouses/{$warehouse->id}", ['name' => 'Renamed'])->assertOk();
+    }
+
+    public function test_creating_a_warehouse_atomically_creates_its_first_location(): void
+    {
+        $user = $this->manager();
         $this->actingAs($user)->postJson('/api/v1/warehouses', [
             'code' => 'MAIN', 'name' => 'Main warehouse', 'is_default' => true,
             'location_code' => 'RECEIVING', 'location_name' => 'Receiving',
@@ -27,7 +67,7 @@ class WarehouseApiTest extends TestCase
 
     public function test_only_one_default_warehouse_is_allowed(): void
     {
-        $user = User::factory()->create();
+        $user = $this->manager();
         Warehouse::create(['code' => 'one', 'name' => 'One', 'is_default' => true])->locations()->create(['code' => 'main', 'name' => 'Main']);
         $this->actingAs($user)->postJson('/api/v1/warehouses', [
             'code' => 'two', 'name' => 'Two', 'is_default' => true,
@@ -38,7 +78,7 @@ class WarehouseApiTest extends TestCase
 
     public function test_last_active_location_cannot_be_archived(): void
     {
-        $user = User::factory()->create();
+        $user = $this->manager();
         $warehouse = Warehouse::create(['code' => 'main', 'name' => 'Main']);
         $location = $warehouse->locations()->create(['code' => 'main', 'name' => 'Main']);
         $this->actingAs($user)->deleteJson("/api/v1/locations/{$location->id}")
@@ -47,7 +87,7 @@ class WarehouseApiTest extends TestCase
 
     public function test_archived_warehouse_cannot_be_reactivated_without_an_active_location(): void
     {
-        $user = User::factory()->create();
+        $user = $this->manager();
         $warehouse = Warehouse::create(['code' => 'main', 'name' => 'Main']);
         $warehouse->locations()->create(['code' => 'main', 'name' => 'Main']);
 

@@ -20,9 +20,10 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '../../components/ui/too
 import { Combobox } from '../../components/ui/combobox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../components/ui/form';
 import { DetailSection } from '../../components/detail/detail-page-layout';
-import { applyApiErrorsToForm, getApiErrorMessage } from '../../lib/api-errors';
+import { applyApiErrorsToForm, getApiErrorMessage, lookupState } from '../../lib/api-errors';
 import { apiSortToTableSorting, tableSortingToApiSort, useListQueryState } from '../../lib/list-query-state';
 import { resourceRateColumns } from './resource-rates-columns';
+import { usePermission } from '../../hooks/use-permission';
 
 const schema = z.object({
   item_id: z.string().min(1, 'Item is required'),
@@ -43,6 +44,7 @@ interface Filters {
  * screen for the same reason; delete is the only row action.
  */
 export function ResourceRatesListScreen() {
+  const mayManage = usePermission('estimating.resource-rate.manage');
   const query = useListQueryState<Filters>({ defaultSort: '-effective_from' });
   const result = useResourceRatesIndex({
     include: 'item,rateUom',
@@ -117,7 +119,7 @@ export function ResourceRatesListScreen() {
         description="The standard estimating rate for a LABOUR or PLANT item, effective as of a date — the source Assembly component costing resolves from. A correction is a new dated row, not an edit to an old one."
       />
 
-      <DetailSection title="Add a rate">
+      {mayManage && <DetailSection title="Add a rate">
         {formError && (
           <div className="sm:col-span-2 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
             {formError}
@@ -132,7 +134,7 @@ export function ResourceRatesListScreen() {
                 <FormItem>
                   <FormLabel>Item</FormLabel>
                   <FormControl>
-                    <Combobox
+                    <Combobox {...lookupState(itemsResult, 'items')}
                       ref={field.ref}
                       value={field.value}
                       onValueChange={field.onChange}
@@ -166,7 +168,7 @@ export function ResourceRatesListScreen() {
                 <FormItem>
                   <FormLabel>Per unit</FormLabel>
                   <FormControl>
-                    <Combobox
+                    <Combobox {...lookupState(uomsResult, 'units')}
                       ref={field.ref}
                       value={field.value}
                       onValueChange={field.onChange}
@@ -200,7 +202,7 @@ export function ResourceRatesListScreen() {
             </div>
           </form>
         </Form>
-      </DetailSection>
+      </DetailSection>}
 
       <DataTable
         columns={columns}
@@ -216,9 +218,11 @@ export function ResourceRatesListScreen() {
         onSortingChange={(u) =>
           query.setSort(tableSortingToApiSort(typeof u === 'function' ? u(sorting) : u, resourceRateColumns))
         }
-        rowActions={renderRowActions}
+        rowActions={mayManage ? renderRowActions : undefined}
         isLoading={result.isLoading}
         isError={result.isError}
+        error={result.error}
+        onRetry={() => void result.refetch()}
         errorMessage={getApiErrorMessage(result.error) ?? "Couldn't load resource rates."}
         emptyMessage="No resource rates yet."
       />

@@ -44,9 +44,9 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 /**
  * @summary Read-only preview of ADR 0049's resolution — which policy wins for an
-assembly, and (given optional basis figures) the overhead amount it
-produces. No special permission, same as ApplicationRate/Formulation's
-resolve endpoints — see ResolveOverheadPolicyRequest
+assembly. Monetary policy values and the computed amount require
+policy-management, policy-history or internal-cost access; otherwise
+arbitrary basis inputs could reveal the configured rate
  */
 export type overheadPoliciesResolveResponse200 = {
   data: OverheadPoliciesResolve200;
@@ -250,9 +250,9 @@ export function useOverheadPoliciesResolve<
 };
 /**
  * @summary Read-only preview of ADR 0049's resolution — which policy wins for an
-assembly, and (given optional basis figures) the overhead amount it
-produces. No special permission, same as ApplicationRate/Formulation's
-resolve endpoints — see ResolveOverheadPolicyRequest
+assembly. Monetary policy values and the computed amount require
+policy-management, policy-history or internal-cost access; otherwise
+arbitrary basis inputs could reveal the configured rate
  */
 
 export function useOverheadPoliciesResolve<

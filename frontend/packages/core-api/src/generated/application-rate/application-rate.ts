@@ -21,6 +21,7 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  ApplicationRatesDestroy403,
   ApplicationRatesIndex200,
   ApplicationRatesIndexParams,
   ApplicationRatesResolve200,
@@ -30,6 +31,7 @@ import type {
   ApplicationRatesStore201,
   ApplicationRatesUpdate200,
   AuthenticationExceptionResponse,
+  AuthorizationExceptionResponse,
   ModelNotFoundExceptionResponse,
   StoreApplicationRateRequest,
   UpdateApplicationRateRequest,
@@ -488,6 +490,11 @@ export type applicationRatesStoreResponse401 = {
   status: 401;
 };
 
+export type applicationRatesStoreResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type applicationRatesStoreResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -498,7 +505,9 @@ export type applicationRatesStoreResponseSuccess =
     headers: Headers;
   };
 export type applicationRatesStoreResponseError = (
-  applicationRatesStoreResponse401 | applicationRatesStoreResponse422
+  | applicationRatesStoreResponse401
+  | applicationRatesStoreResponse403
+  | applicationRatesStoreResponse422
 ) & {
   headers: Headers;
 };
@@ -526,7 +535,10 @@ export const applicationRatesStore = async (
 };
 
 export const getApplicationRatesStoreMutationOptions = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -568,10 +580,15 @@ export type ApplicationRatesStoreMutationResult = NonNullable<
 >;
 export type ApplicationRatesStoreMutationBody = StoreApplicationRateRequest;
 export type ApplicationRatesStoreMutationError =
-  AuthenticationExceptionResponse | ValidationExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
 
 export const useApplicationRatesStore = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(
   options?: {
@@ -857,6 +874,11 @@ export type applicationRatesDestroyResponse401 = {
   status: 401;
 };
 
+export type applicationRatesDestroyResponse403 = {
+  data: ApplicationRatesDestroy403;
+  status: 403;
+};
+
 export type applicationRatesDestroyResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -867,7 +889,9 @@ export type applicationRatesDestroyResponseSuccess =
     headers: Headers;
   };
 export type applicationRatesDestroyResponseError = (
-  applicationRatesDestroyResponse401 | applicationRatesDestroyResponse404
+  | applicationRatesDestroyResponse401
+  | applicationRatesDestroyResponse403
+  | applicationRatesDestroyResponse404
 ) & {
   headers: Headers;
 };
@@ -893,7 +917,10 @@ export const applicationRatesDestroy = async (
 };
 
 export const getApplicationRatesDestroyMutationOptions = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | ApplicationRatesDestroy403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -935,10 +962,15 @@ export type ApplicationRatesDestroyMutationResult = NonNullable<
 >;
 
 export type ApplicationRatesDestroyMutationError =
-  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
+  | AuthenticationExceptionResponse
+  | ApplicationRatesDestroy403
+  | ModelNotFoundExceptionResponse;
 
 export const useApplicationRatesDestroy = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | ApplicationRatesDestroy403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(
   options?: {
@@ -971,6 +1003,11 @@ export type applicationRatesUpdateResponse401 = {
   status: 401;
 };
 
+export type applicationRatesUpdateResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type applicationRatesUpdateResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -987,6 +1024,7 @@ export type applicationRatesUpdateResponseSuccess =
   };
 export type applicationRatesUpdateResponseError = (
   | applicationRatesUpdateResponse401
+  | applicationRatesUpdateResponse403
   | applicationRatesUpdateResponse404
   | applicationRatesUpdateResponse422
 ) & {
@@ -1019,6 +1057,7 @@ export const applicationRatesUpdate = async (
 export const getApplicationRatesUpdateMutationOptions = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -1063,12 +1102,14 @@ export type ApplicationRatesUpdateMutationResult = NonNullable<
 export type ApplicationRatesUpdateMutationBody = UpdateApplicationRateRequest;
 export type ApplicationRatesUpdateMutationError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
 export const useApplicationRatesUpdate = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,

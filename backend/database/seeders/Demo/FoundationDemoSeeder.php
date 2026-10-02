@@ -45,6 +45,14 @@ final class FoundationDemoSeeder extends Seeder
             ['code' => 'm', 'name' => 'Metre', 'dimension' => UomDimension::Length, 'factor_to_base' => '1.000000000', 'is_base' => true],
             ['code' => 'sqm', 'name' => 'Square metre', 'dimension' => UomDimension::Area, 'factor_to_base' => '1.000000000', 'is_base' => true],
             ['code' => 'hr', 'name' => 'Hour', 'dimension' => UomDimension::Time, 'factor_to_base' => '1.000000000', 'is_base' => true],
+            // Pack units are COUNT-dimension unit *names* only. How much of an item's own stock unit
+            // one bag/can/drum/roll/box holds is a per-item fact, seeded as pack conversions by
+            // PackConversionsDemoSeeder — never a global ratio (ADR 0050).
+            ['code' => 'bag', 'name' => 'Bag', 'dimension' => UomDimension::Count, 'factor_to_base' => '1.000000000', 'is_base' => false],
+            ['code' => 'can', 'name' => 'Can', 'dimension' => UomDimension::Count, 'factor_to_base' => '1.000000000', 'is_base' => false],
+            ['code' => 'drum', 'name' => 'Drum', 'dimension' => UomDimension::Count, 'factor_to_base' => '1.000000000', 'is_base' => false],
+            ['code' => 'roll', 'name' => 'Roll', 'dimension' => UomDimension::Count, 'factor_to_base' => '1.000000000', 'is_base' => false],
+            ['code' => 'box', 'name' => 'Box', 'dimension' => UomDimension::Count, 'factor_to_base' => '1.000000000', 'is_base' => false],
         ];
 
         foreach ($units as $unit) {

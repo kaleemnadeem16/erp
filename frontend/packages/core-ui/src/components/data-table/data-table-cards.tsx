@@ -4,6 +4,7 @@ import type { VisibilityState } from '@tanstack/react-table';
 import { cn } from '../../lib/utils';
 import { Skeleton } from '../ui/skeleton';
 import { formatColumnValue, isColumnVisibleByDefault, type DataColumn } from './types';
+import { ListError } from './list-error';
 
 export interface DataTableCardsProps<TRow> {
   columns: DataColumn<TRow>[];
@@ -16,6 +17,8 @@ export interface DataTableCardsProps<TRow> {
   isLoading?: boolean;
   isError?: boolean;
   errorMessage?: string;
+  error?: unknown;
+  onRetry?: () => void;
   emptyMessage?: string;
   skeletonCount?: number;
 }
@@ -39,6 +42,8 @@ export function DataTableCards<TRow>({
   isLoading,
   isError,
   errorMessage,
+  error,
+  onRetry,
   emptyMessage = 'No records found.',
   skeletonCount = 6,
 }: DataTableCardsProps<TRow>) {
@@ -64,8 +69,8 @@ export function DataTableCards<TRow>({
 
   if (isError) {
     return (
-      <div className="rounded-md border border-border p-6 text-center text-sm text-destructive">
-        {errorMessage ?? 'Something went wrong loading this list.'}
+      <div className="rounded-md border border-border">
+        <ListError message={errorMessage} error={error} onRetry={onRetry} />
       </div>
     );
   }

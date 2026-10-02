@@ -14,13 +14,14 @@ use App\Modules\Estimating\Http\Resources\ResourceRateResource;
 use App\Modules\Estimating\Models\ResourceRate;
 use App\Support\Concerns\AppliesApiQuery;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
  * No update endpoint — a rate change is a new dated row, never an edit to
- * an already-used historical one, see ResourceRate. Delete is unrestricted
- * (mirrors ExchangeRate — no "in use" tracking exists at this level yet).
+ * an already-used historical one, see ResourceRate. Delete has no "in use"
+ * guard yet, but still requires the resource-rate management capability.
  */
 class ResourceRateController extends Controller
 {
@@ -44,7 +45,7 @@ class ResourceRateController extends Controller
 
     public function store(StoreResourceRateRequest $request, CreateResourceRate $create): JsonResponse
     {
-        return (new ResourceRateResource($create($request->validated())))->response()->setStatusCode(201);
+        return (new ResourceRateResource($create($request->validated(), $request->user())))->response()->setStatusCode(201);
     }
 
     public function show(ShowResourceRateRequest $request, ResourceRate $resource_rate): ResourceRateResource
@@ -52,9 +53,10 @@ class ResourceRateController extends Controller
         return new ResourceRateResource($resource_rate->load($this->requestedIncludes($request, self::INCLUDABLE)));
     }
 
-    public function destroy(ResourceRate $resource_rate, DeleteResourceRate $delete): Response
+    public function destroy(Request $request, ResourceRate $resource_rate, DeleteResourceRate $delete): Response
     {
-        $delete($resource_rate);
+        abort_unless($request->user()?->can('estimating.resource-rate.manage'), 403);
+        $delete($resource_rate, $request->user());
 
         return response()->noContent();
     }

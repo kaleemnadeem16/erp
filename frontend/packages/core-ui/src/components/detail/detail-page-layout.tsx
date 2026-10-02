@@ -56,9 +56,18 @@ export function DetailSection({ title, description, children, className, fullWid
  * make an already-two-column field grid uncomfortably narrow on a typical
  * desktop width.
  */
-export function DetailPageLayout({ children, className }: { children: ReactNode; className?: string }) {
+export function DetailPageLayout({
+  children,
+  className,
+  equalHeight,
+}: {
+  children: ReactNode;
+  className?: string;
+  /** Opt-in: sections sharing a row stretch to the same height instead of each hugging its own content. */
+  equalHeight?: boolean;
+}) {
   return (
-    <div className={cn('@container grid min-w-0 grid-cols-1 items-start gap-4 @2xl:grid-cols-2', className)}>
+    <div className={cn('@container grid min-w-0 grid-cols-1 gap-4 @2xl:grid-cols-2', equalHeight ? 'items-stretch' : 'items-start', className)}>
       {children}
     </div>
   );

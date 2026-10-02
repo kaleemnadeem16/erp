@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Combobox } from '../../components/ui/combobox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../components/ui/form';
 import { DetailSection } from '../../components/detail/detail-page-layout';
+import { lookupState, type LookupState } from '../../lib/api-errors';
 
 const NONE = 'NONE';
 const schema = z.object({
@@ -103,7 +104,8 @@ export function CategoryForm({
   const select = (
     name: 'parent_id' | 'income_account_id' | 'expense_account_id' | 'inventory_account_id',
     label: string,
-    options: { id: number; code: string; name: string }[]
+    options: { id: number; code: string; name: string }[],
+    lookup: LookupState
   ) => (
     <FormField
       control={form.control}
@@ -113,6 +115,7 @@ export function CategoryForm({
           <FormLabel>{label}</FormLabel>
           <FormControl>
             <Combobox
+              {...lookup}
               ref={field.ref}
               value={field.value}
               onValueChange={field.onChange}
@@ -164,7 +167,7 @@ export function CategoryForm({
               </FormItem>
             )}
           />
-          {select('parent_id', 'Parent category', categories)}
+          {select('parent_id', 'Parent category', categories, lookupState(categoriesResult, 'categories'))}
           <FormField
             control={form.control}
             name="default_valuation_method"
@@ -195,9 +198,9 @@ export function CategoryForm({
           title="GL account defaults"
           description="Blank values inherit from the nearest category ancestor."
         >
-          {select('income_account_id', 'Income account', accounts)}
-          {select('expense_account_id', 'Expense account', accounts)}
-          {select('inventory_account_id', 'Inventory account', accounts)}
+          {select('income_account_id', 'Income account', accounts, lookupState(accountsResult, 'accounts'))}
+          {select('expense_account_id', 'Expense account', accounts, lookupState(accountsResult, 'accounts'))}
+          {select('inventory_account_id', 'Inventory account', accounts, lookupState(accountsResult, 'accounts'))}
         </DetailSection>
         <div className="flex justify-end">
           <Button type="submit" disabled={isSubmitting}>

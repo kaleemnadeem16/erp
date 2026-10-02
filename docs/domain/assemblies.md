@@ -25,6 +25,43 @@ ASSEMBLY ← you are here
 
 Built in [Phase 3](../phases/README.md); consumed by [sales-pipeline.md](sales-pipeline.md).
 
+## Assembly access
+
+Authenticated company users can list and inspect assemblies and their versions as shared
+estimating lookups. Creating, editing, archiving or activating an assembly or version requires
+`estimating.assembly.manage` at the API and non-HTTP Action boundary. The assembly setup screen
+uses the same effective capability, supplied by company roles or direct grants rather than a
+hardcoded role name. The version cost-breakdown endpoint exposes resolved internal costs and
+requires the separate `estimating.internal_cost.view` capability, even for a manager; its UI
+control is hidden otherwise. Existing maintainers need an explicit grant before deployment.
+The Assemblies list exposes the API's code/name search, group and status filters as
+URL-backed controls; non-search filters move into a bottom sheet on mobile, where the
+list also offers cards. The group filter searches the Assembly Groups API and
+resolves a bookmarked selected group by ID; other forms still use the shared
+100-option lookup pattern.
+
+This is a capability retrofit, not a redesign of assembly lifecycle or record scope. List/show
+remain company-scoped shared reads; later organisation-scoped visibility would need matching
+query and policy rules. Header `margin_type`/`margin_pct` and nested component `rate_override`
+are omitted from list/show responses unless the caller can manage assemblies or has
+`estimating.internal_cost.view`. Managers need those settings to edit the assembly; cost viewers
+may inspect them without write access. The version cost-breakdown remains separately gated by
+`estimating.internal_cost.view`, including for assembly managers. This protects these direct
+commercial fields, but does not claim system-wide estimating cost secrecy; other resources and
+indirect inference paths require their own review.
+
+## Assembly-group access
+
+Assembly groups are shared classification lookups for assembly and overhead-policy forms, so
+authenticated company members may list and inspect them. Creating, changing or deleting a group
+requires `estimating.assembly-group.manage` at both the API and Action boundary. The setup screen
+uses the same effective capability, assigned dynamically through company roles or direct grants.
+Deletion remains blocked while an assembly refers to the group. Before deployment, existing
+maintainers need an explicit grant; registration alone does not grant operational users access.
+The Assembly Groups list exposes URL-backed code/name search and mobile cards. Its New
+and row-edit affordances follow the effective manage capability; API and Action checks
+remain authoritative.
+
 ## Schema
 
 ```
@@ -241,6 +278,13 @@ A small company can ignore all of this and configure a single `COMPANY`-scope po
 and assembly-level tiers only exist for companies that create rows there. Which UI exposes the
 group/assembly-level tiers is a separate, later decision — see
 [extensibility.md](../architecture/extensibility.md#progressive-capability-modes).
+
+The authenticated resolver still reveals which tier and policy wins for an assembly, so forms
+can explain the source. Its policy `rate` and calculated `overhead_amount` are commercial
+information, however: they are visible only with `estimating.overhead-policy.manage`,
+`estimating.policy-history.view` or `estimating.internal_cost.view`. Supplying an arbitrary basis
+to the resolver cannot bypass that projection. Policy list/show are already gated by the history
+permission; management responses retain the rate for editing.
 
 An unexamined overhead rule quietly makes every job look profitable — this configurability
 doesn't remove the need to actually pick a sensible one per assembly/group, it just stops the

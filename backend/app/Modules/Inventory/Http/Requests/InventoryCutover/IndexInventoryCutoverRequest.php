@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Inventory\Http\Requests\InventoryCutover;
 
 use App\Http\Requests\Concerns\ValidatesListQuery;
+use App\Modules\Inventory\Support\CutoverReadAccess;
 use App\Modules\Inventory\Support\InventoryCutoverStatus;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -15,7 +16,7 @@ class IndexInventoryCutoverRequest extends FormRequest
 
     public function authorize(): bool
     {
-        return true;
+        return CutoverReadAccess::allows($this->user());
     }
 
     /** @return array<string, mixed> */

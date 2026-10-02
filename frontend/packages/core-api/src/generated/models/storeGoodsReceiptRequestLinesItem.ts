@@ -18,15 +18,15 @@ export type StoreGoodsReceiptRequestLinesItem = {
    * @minLength 0
    * @maxLength 1000000000000000
    */
-  provisional_unit_cost: string;
-  currency_id: number;
+  provisional_unit_cost?: string;
+  currency_id?: number;
   /** @maxLength 10000000000 */
-  fx_rate: string;
-  fx_rate_date: string;
+  fx_rate?: string;
+  fx_rate_date?: string;
   /** @maxLength 50 */
-  fx_rate_type: string;
+  fx_rate_type?: string;
   /** @maxLength 100 */
-  fx_rate_source: string;
+  fx_rate_source?: string;
   /** @maxLength 100 */
   batch_no?: StoreGoodsReceiptRequestLinesItemBatchNo;
   /** @maxLength 100 */

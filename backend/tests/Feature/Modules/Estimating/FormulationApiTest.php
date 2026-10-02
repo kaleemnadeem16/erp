@@ -2,10 +2,19 @@
 
 namespace Tests\Feature\Modules\Estimating;
 
+use App\Exceptions\DomainInvariantException;
 use App\Models\Uom;
 use App\Models\User;
 use App\Modules\Accounting\Models\ChartOfAccount;
 use App\Modules\Accounting\Support\AccountType;
+use App\Modules\Estimating\Actions\ActivateFormulationVersion;
+use App\Modules\Estimating\Actions\ArchiveFormulation;
+use App\Modules\Estimating\Actions\CreateFormulation;
+use App\Modules\Estimating\Actions\CreateFormulationVersion;
+use App\Modules\Estimating\Actions\DeleteFormulationVersion;
+use App\Modules\Estimating\Actions\UpdateFormulation;
+use App\Modules\Estimating\Actions\UpdateFormulationVersion;
+use App\Modules\Estimating\Models\Formulation;
 use App\Modules\Inventory\Models\Category;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Support\ItemType;
@@ -13,6 +22,7 @@ use App\Modules\Parties\Models\CustomerAccount;
 use App\Modules\Parties\Models\Party;
 use App\Support\UomDimension;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Support\PermissionedActor;
 use Tests\TestCase;
 
 class FormulationApiTest extends TestCase
@@ -52,7 +62,7 @@ class FormulationApiTest extends TestCase
 
     public function test_a_formulation_can_be_created_with_lines_and_listed(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.formulation.manage']);
 
         $response = $this->actingAs($user)->postJson('/api/v1/formulations', [
             'output_item_id' => $this->shade->id, 'code' => 'F-SHADE', 'name' => 'Shade #4471',
@@ -71,7 +81,7 @@ class FormulationApiTest extends TestCase
 
     public function test_version_history_can_include_human_readable_item_and_unit_details(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.formulation.manage']);
         $formulation = $this->actingAs($user)->postJson('/api/v1/formulations', [
             'output_item_id' => $this->shade->id, 'code' => 'F-SHADE', 'name' => 'Shade #4471',
             'output_uom_id' => $this->litre->id,
@@ -88,7 +98,7 @@ class FormulationApiTest extends TestCase
 
     public function test_formulation_units_must_match_their_items_dimensions(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.formulation.manage']);
 
         $this->actingAs($user)->postJson('/api/v1/formulations', [
             'output_item_id' => $this->shade->id, 'code' => 'BAD-OUTPUT-UOM', 'name' => 'Bad output',
@@ -109,7 +119,7 @@ class FormulationApiTest extends TestCase
 
     public function test_a_version_can_be_activated_and_superseded_by_the_next(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.formulation.manage']);
         $formulation = $this->actingAs($user)->postJson('/api/v1/formulations', [
             'output_item_id' => $this->shade->id, 'code' => 'F-SHADE', 'name' => 'Shade #4471',
             'output_uom_id' => $this->litre->id,
@@ -140,7 +150,7 @@ class FormulationApiTest extends TestCase
 
     public function test_an_active_versions_lines_cannot_be_changed(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.formulation.manage']);
         $formulation = $this->actingAs($user)->postJson('/api/v1/formulations', [
             'output_item_id' => $this->shade->id, 'code' => 'F-SHADE', 'name' => 'Shade #4471',
             'output_uom_id' => $this->litre->id,
@@ -156,7 +166,7 @@ class FormulationApiTest extends TestCase
 
     public function test_activating_an_empty_version_is_rejected(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.formulation.manage']);
         $formulation = $this->actingAs($user)->postJson('/api/v1/formulations', [
             'output_item_id' => $this->shade->id, 'code' => 'F-SHADE', 'name' => 'Shade #4471',
             'output_uom_id' => $this->litre->id,
@@ -168,7 +178,7 @@ class FormulationApiTest extends TestCase
 
     public function test_a_draft_version_can_be_deleted_but_an_active_one_cannot(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.formulation.manage']);
         $formulation = $this->actingAs($user)->postJson('/api/v1/formulations', [
             'output_item_id' => $this->shade->id, 'code' => 'F-SHADE', 'name' => 'Shade #4471',
             'output_uom_id' => $this->litre->id,
@@ -187,7 +197,7 @@ class FormulationApiTest extends TestCase
 
     public function test_resolve_prefers_the_customers_own_formulation_over_the_default(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.formulation.manage']);
         $customer = $this->customer('cus-alpha');
 
         $defaultFormulation = $this->actingAs($user)->postJson('/api/v1/formulations', [
@@ -213,7 +223,7 @@ class FormulationApiTest extends TestCase
 
     public function test_resolve_fails_loudly_with_no_formulation(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.formulation.manage']);
 
         $this->actingAs($user)->getJson("/api/v1/formulations/resolve?output_item_id={$this->shade->id}")
             ->assertUnprocessable();
@@ -221,7 +231,9 @@ class FormulationApiTest extends TestCase
 
     public function test_cost_breakdown_returns_the_resolved_total(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), [
+            'estimating.formulation.manage', 'estimating.internal_cost.view',
+        ]);
         $formulation = $this->actingAs($user)->postJson('/api/v1/formulations', [
             'output_item_id' => $this->shade->id, 'code' => 'F-SHADE', 'name' => 'Shade #4471',
             'output_uom_id' => $this->litre->id,
@@ -230,7 +242,12 @@ class FormulationApiTest extends TestCase
         $versionId = $formulation['versions'][0]['id'];
         $this->postJson("/api/v1/formulation-versions/{$versionId}/activate")->assertOk();
 
-        $this->getJson("/api/v1/formulation-versions/{$versionId}/cost-breakdown")
+        $managerWithoutCost = PermissionedActor::grant(User::factory()->create(), ['estimating.formulation.manage']);
+        $this->actingAs($managerWithoutCost)
+            ->getJson("/api/v1/formulation-versions/{$versionId}/cost-breakdown")
+            ->assertForbidden();
+
+        $this->actingAs($user)->getJson("/api/v1/formulation-versions/{$versionId}/cost-breakdown")
             ->assertOk()
             ->assertJsonPath('data.cost_per_output_unit', '0.0000')
             ->assertJsonCount(1, 'data.lines');
@@ -238,7 +255,7 @@ class FormulationApiTest extends TestCase
 
     public function test_output_item_cannot_be_changed_through_the_update_endpoint(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.formulation.manage']);
         $formulation = $this->actingAs($user)->postJson('/api/v1/formulations', [
             'output_item_id' => $this->shade->id, 'code' => 'F-SHADE', 'name' => 'Shade #4471',
             'output_uom_id' => $this->litre->id,
@@ -254,7 +271,7 @@ class FormulationApiTest extends TestCase
 
     public function test_destroy_archives_the_formulation(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.formulation.manage']);
         $formulation = $this->actingAs($user)->postJson('/api/v1/formulations', [
             'output_item_id' => $this->shade->id, 'code' => 'F-SHADE', 'name' => 'Shade #4471',
             'output_uom_id' => $this->litre->id,
@@ -264,5 +281,73 @@ class FormulationApiTest extends TestCase
 
         $this->getJson("/api/v1/formulations/{$formulation['id']}")
             ->assertOk()->assertJsonPath('data.status', 'ARCHIVED');
+    }
+
+    public function test_formulation_and_version_writes_require_manage_while_reads_remain_available(): void
+    {
+        $formulation = Formulation::create([
+            'output_item_id' => $this->shade->id, 'code' => 'F-SHADE',
+            'name' => 'Shade #4471', 'output_uom_id' => $this->litre->id,
+        ]);
+        $version = $formulation->versions()->create(['version_no' => 1])->refresh();
+        $version->lines()->create([
+            'input_item_id' => $this->pigment->id, 'qty' => '0.500000',
+            'uom_id' => $this->kg->id, 'sequence' => 0,
+        ]);
+        $reader = User::factory()->create();
+
+        $this->actingAs($reader)->getJson('/api/v1/formulations')->assertOk();
+        $this->getJson("/api/v1/formulations/{$formulation->id}?include=versions.lines")->assertOk();
+        $this->postJson('/api/v1/formulations', [
+            'output_item_id' => $this->shade->id, 'code' => 'OTHER',
+            'name' => 'Other', 'output_uom_id' => $this->litre->id,
+        ])->assertForbidden();
+        $this->patchJson("/api/v1/formulations/{$formulation->id}", ['name' => 'Changed'])->assertForbidden();
+        $this->deleteJson("/api/v1/formulations/{$formulation->id}")->assertForbidden();
+        $this->postJson("/api/v1/formulations/{$formulation->id}/versions", [])->assertForbidden();
+        $this->patchJson("/api/v1/formulation-versions/{$version->id}", ['notes' => 'Changed'])->assertForbidden();
+        $this->deleteJson("/api/v1/formulation-versions/{$version->id}")->assertForbidden();
+        $this->postJson("/api/v1/formulation-versions/{$version->id}/activate")->assertForbidden();
+
+        $this->assertSame('Shade #4471', $formulation->fresh()->name);
+        $this->assertSame('DRAFT', $version->fresh()->status->value);
+        $this->assertSame(1, $formulation->versions()->count());
+        $this->assertDatabaseMissing('formulations', ['code' => 'OTHER']);
+    }
+
+    public function test_formulation_actions_reject_an_unprivileged_non_http_caller(): void
+    {
+        $formulation = Formulation::create([
+            'output_item_id' => $this->shade->id, 'code' => 'F-SHADE',
+            'name' => 'Shade #4471', 'output_uom_id' => $this->litre->id,
+        ]);
+        $version = $formulation->versions()->create(['version_no' => 1])->refresh();
+        $version->lines()->create([
+            'input_item_id' => $this->pigment->id, 'qty' => '0.500000',
+            'uom_id' => $this->kg->id, 'sequence' => 0,
+        ]);
+        $reader = User::factory()->create();
+        $actions = [
+            fn () => app(CreateFormulation::class)([], $reader),
+            fn () => app(UpdateFormulation::class)($formulation, ['name' => 'Changed'], $reader),
+            fn () => app(ArchiveFormulation::class)($formulation, $reader),
+            fn () => app(CreateFormulationVersion::class)($formulation, [], $reader),
+            fn () => app(UpdateFormulationVersion::class)($version, ['notes' => 'Changed'], $reader),
+            fn () => app(DeleteFormulationVersion::class)($version, $reader),
+            fn () => app(ActivateFormulationVersion::class)($version, $reader),
+        ];
+
+        foreach ($actions as $action) {
+            try {
+                $action();
+                $this->fail('An unprivileged Action caller was accepted.');
+            } catch (DomainInvariantException $exception) {
+                $this->assertStringContainsString('not permitted', $exception->getMessage());
+            }
+        }
+
+        $this->assertSame('Shade #4471', $formulation->fresh()->name);
+        $this->assertSame('DRAFT', $version->fresh()->status->value);
+        $this->assertSame(1, $formulation->versions()->count());
     }
 }

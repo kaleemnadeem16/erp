@@ -20,6 +20,7 @@ import { getApiErrorMessage } from '../../lib/api-errors';
 import { formatDateTime } from '../../lib/format-date';
 import { overrideStatus } from './negative-stock-override-columns';
 import { useAuthStore } from '../../stores/auth-store';
+import { formatLocation } from '../../lib/format-location';
 
 /**
  * The workspace for one override request: header/shortage evidence, plus
@@ -130,7 +131,7 @@ export function NegativeStockOverrideDetailScreen() {
           </DetailField>
           <DetailField label="Movement class">{override.movement_class}</DetailField>
           <DetailField label="Item">{override.item ? `${override.item.code} — ${override.item.name}` : override.item_id}</DetailField>
-          <DetailField label="Location">{override.location?.code ?? override.location_id}</DetailField>
+          <DetailField label="Location">{formatLocation(override.location) ?? override.location_id}</DetailField>
           <DetailField label="Requested / available">{`${override.requested_qty} / ${override.available_qty}`}</DetailField>
           <DetailField label="Shortage quantity">{override.shortage_qty}</DetailField>
           <DetailField label="Reason">{override.reason_code}</DetailField>

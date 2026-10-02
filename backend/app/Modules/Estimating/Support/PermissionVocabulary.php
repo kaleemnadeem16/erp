@@ -11,7 +11,18 @@ final class PermissionVocabulary
     public static function all(): array
     {
         return [
+            'estimating.rate-dimension.manage',
+            'estimating.application-rate.manage',
+            'estimating.formulation.manage',
+            'estimating.assembly-group.manage',
+            'estimating.assembly.manage',
+            'estimating.resource-rate.manage',
             'estimating.overhead-policy.manage',
+            'estimating.material_variance_policy.manage',
+            'estimating.selection-policy.manage',
+            'estimating.stock_mix_policy.manage',
+            'estimating.stock_mix.choose',
+            'estimating.stock_mix.approve',
             'estimating.policy-history.view',
             'estimating.material_preview.run',
             'estimating.inventory_availability.view',

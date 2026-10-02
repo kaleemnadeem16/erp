@@ -28,7 +28,7 @@ export interface PhysicalCountLineResource {
   counted_qty: PhysicalCountLineResourceCountedQty;
   counted_by: PhysicalCountLineResourceCountedBy;
   counted_at: PhysicalCountLineResourceCountedAt;
-  found_unit_cost: PhysicalCountLineResourceFoundUnitCost;
+  found_unit_cost?: PhysicalCountLineResourceFoundUnitCost;
   posted_stock_move_id: PhysicalCountLineResourcePostedStockMoveId;
   entries?: PhysicalCountLineEntryResource[];
 }

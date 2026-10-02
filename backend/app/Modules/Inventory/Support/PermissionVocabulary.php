@@ -11,6 +11,10 @@ final class PermissionVocabulary
     public static function all(): array
     {
         return [
+            'inventory.item.manage',
+            'inventory.category.manage',
+            'inventory.location.manage',
+            'inventory.warehouse.manage',
             'inventory.physical_count.create',
             'inventory.physical_count.count',
             'inventory.physical_count.post',
@@ -33,6 +37,7 @@ final class PermissionVocabulary
             'inventory.recalculation.review-regeneration',
             'inventory.location-policy.manage',
             'inventory.valuation-policy.manage',
+            'inventory.valuation.view',
             'inventory.policy-history.view',
             'inventory.negative-stock-policy.manage',
             'inventory.backdating-horizon-policy.manage',

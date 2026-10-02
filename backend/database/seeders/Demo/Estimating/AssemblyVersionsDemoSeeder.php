@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Database\Seeders\Demo\Estimating;
 
 use App\Models\Uom;
+use App\Models\User;
 use App\Modules\Estimating\Actions\ActivateAssemblyVersion;
 use App\Modules\Estimating\Models\Assembly;
 use App\Modules\Inventory\Models\Item;
@@ -41,6 +42,7 @@ final class AssemblyVersionsDemoSeeder extends Seeder
     public function run(): void
     {
         $this->ensureDemoEnvironment();
+        $demoActor = User::query()->where('email', config('demo.user.email'))->firstOrFail();
 
         $sqm = Uom::query()->where('code', 'sqm')->firstOrFail();
         $kg = Uom::query()->where('code', 'kg')->firstOrFail();
@@ -70,6 +72,7 @@ final class AssemblyVersionsDemoSeeder extends Seeder
                     'rate_override' => '2.0000',
                 ],
             ],
+            $demoActor,
         );
 
         $this->ensureActiveVersion(
@@ -80,11 +83,12 @@ final class AssemblyVersionsDemoSeeder extends Seeder
                     'qty_per_work_unit' => '1.000000', 'uom_id' => $hour->id,
                 ],
             ],
+            $demoActor,
         );
     }
 
     /** @param list<array<string, mixed>> $components */
-    private function ensureActiveVersion(Assembly $assembly, array $components): void
+    private function ensureActiveVersion(Assembly $assembly, array $components, User $actor): void
     {
         if ($assembly->activeVersion()->exists()) {
             return;
@@ -94,6 +98,6 @@ final class AssemblyVersionsDemoSeeder extends Seeder
         foreach ($components as $sequence => $component) {
             $version->components()->create([...$component, 'sequence' => $sequence]);
         }
-        (new ActivateAssemblyVersion)($version);
+        (new ActivateAssemblyVersion)($version, $actor);
     }
 }

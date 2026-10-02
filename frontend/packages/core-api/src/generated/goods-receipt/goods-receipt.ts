@@ -22,11 +22,14 @@ import type {
 
 import type {
   AuthenticationExceptionResponse,
+  AuthorizationExceptionResponse,
   GoodsReceiptsIndex200,
   GoodsReceiptsIndexParams,
   GoodsReceiptsPost200,
+  GoodsReceiptsPost403,
   GoodsReceiptsReverse200,
   GoodsReceiptsShow200,
+  GoodsReceiptsShow403,
   GoodsReceiptsStore201,
   ModelNotFoundExceptionResponse,
   ReverseGoodsReceiptRequest,
@@ -48,6 +51,11 @@ export type goodsReceiptsIndexResponse401 = {
   status: 401;
 };
 
+export type goodsReceiptsIndexResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type goodsReceiptsIndexResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -58,7 +66,9 @@ export type goodsReceiptsIndexResponseSuccess =
     headers: Headers;
   };
 export type goodsReceiptsIndexResponseError = (
-  goodsReceiptsIndexResponse401 | goodsReceiptsIndexResponse422
+  | goodsReceiptsIndexResponse401
+  | goodsReceiptsIndexResponse403
+  | goodsReceiptsIndexResponse422
 ) & {
   headers: Headers;
 };
@@ -103,7 +113,10 @@ export const getGoodsReceiptsIndexQueryKey = (
 
 export const getGoodsReceiptsIndexQueryOptions = <
   TData = Awaited<ReturnType<typeof goodsReceiptsIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: GoodsReceiptsIndexParams,
   options?: {
@@ -137,11 +150,16 @@ export type GoodsReceiptsIndexQueryResult = NonNullable<
   Awaited<ReturnType<typeof goodsReceiptsIndex>>
 >;
 export type GoodsReceiptsIndexQueryError =
-  AuthenticationExceptionResponse | ValidationExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
 
 export function useGoodsReceiptsIndex<
   TData = Awaited<ReturnType<typeof goodsReceiptsIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params: undefined | GoodsReceiptsIndexParams,
   options: {
@@ -168,7 +186,10 @@ export function useGoodsReceiptsIndex<
 };
 export function useGoodsReceiptsIndex<
   TData = Awaited<ReturnType<typeof goodsReceiptsIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: GoodsReceiptsIndexParams,
   options?: {
@@ -195,7 +216,10 @@ export function useGoodsReceiptsIndex<
 };
 export function useGoodsReceiptsIndex<
   TData = Awaited<ReturnType<typeof goodsReceiptsIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: GoodsReceiptsIndexParams,
   options?: {
@@ -215,7 +239,10 @@ export function useGoodsReceiptsIndex<
 
 export function useGoodsReceiptsIndex<
   TData = Awaited<ReturnType<typeof goodsReceiptsIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: GoodsReceiptsIndexParams,
   options?: {
@@ -254,6 +281,11 @@ export type goodsReceiptsStoreResponse401 = {
   status: 401;
 };
 
+export type goodsReceiptsStoreResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type goodsReceiptsStoreResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -264,7 +296,9 @@ export type goodsReceiptsStoreResponseSuccess =
     headers: Headers;
   };
 export type goodsReceiptsStoreResponseError = (
-  goodsReceiptsStoreResponse401 | goodsReceiptsStoreResponse422
+  | goodsReceiptsStoreResponse401
+  | goodsReceiptsStoreResponse403
+  | goodsReceiptsStoreResponse422
 ) & {
   headers: Headers;
 };
@@ -289,7 +323,10 @@ export const goodsReceiptsStore = async (
 };
 
 export const getGoodsReceiptsStoreMutationOptions = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -331,10 +368,15 @@ export type GoodsReceiptsStoreMutationResult = NonNullable<
 >;
 export type GoodsReceiptsStoreMutationBody = StoreGoodsReceiptRequest;
 export type GoodsReceiptsStoreMutationError =
-  AuthenticationExceptionResponse | ValidationExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
 
 export const useGoodsReceiptsStore = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(
   options?: {
@@ -367,6 +409,11 @@ export type goodsReceiptsShowResponse401 = {
   status: 401;
 };
 
+export type goodsReceiptsShowResponse403 = {
+  data: GoodsReceiptsShow403;
+  status: 403;
+};
+
 export type goodsReceiptsShowResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -376,7 +423,9 @@ export type goodsReceiptsShowResponseSuccess = goodsReceiptsShowResponse200 & {
   headers: Headers;
 };
 export type goodsReceiptsShowResponseError = (
-  goodsReceiptsShowResponse401 | goodsReceiptsShowResponse404
+  | goodsReceiptsShowResponse401
+  | goodsReceiptsShowResponse403
+  | goodsReceiptsShowResponse404
 ) & {
   headers: Headers;
 };
@@ -407,7 +456,10 @@ export const getGoodsReceiptsShowQueryKey = (goodsReceipt?: number) => {
 
 export const getGoodsReceiptsShowQueryOptions = <
   TData = Awaited<ReturnType<typeof goodsReceiptsShow>>,
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | GoodsReceiptsShow403
+    | ModelNotFoundExceptionResponse,
 >(
   goodsReceipt: number,
   options?: {
@@ -446,11 +498,16 @@ export type GoodsReceiptsShowQueryResult = NonNullable<
   Awaited<ReturnType<typeof goodsReceiptsShow>>
 >;
 export type GoodsReceiptsShowQueryError =
-  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
+  | AuthenticationExceptionResponse
+  | GoodsReceiptsShow403
+  | ModelNotFoundExceptionResponse;
 
 export function useGoodsReceiptsShow<
   TData = Awaited<ReturnType<typeof goodsReceiptsShow>>,
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | GoodsReceiptsShow403
+    | ModelNotFoundExceptionResponse,
 >(
   goodsReceipt: number,
   options: {
@@ -477,7 +534,10 @@ export function useGoodsReceiptsShow<
 };
 export function useGoodsReceiptsShow<
   TData = Awaited<ReturnType<typeof goodsReceiptsShow>>,
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | GoodsReceiptsShow403
+    | ModelNotFoundExceptionResponse,
 >(
   goodsReceipt: number,
   options?: {
@@ -504,7 +564,10 @@ export function useGoodsReceiptsShow<
 };
 export function useGoodsReceiptsShow<
   TData = Awaited<ReturnType<typeof goodsReceiptsShow>>,
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | GoodsReceiptsShow403
+    | ModelNotFoundExceptionResponse,
 >(
   goodsReceipt: number,
   options?: {
@@ -524,7 +587,10 @@ export function useGoodsReceiptsShow<
 
 export function useGoodsReceiptsShow<
   TData = Awaited<ReturnType<typeof goodsReceiptsShow>>,
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | GoodsReceiptsShow403
+    | ModelNotFoundExceptionResponse,
 >(
   goodsReceipt: number,
   options?: {
@@ -563,6 +629,11 @@ export type goodsReceiptsPostResponse401 = {
   status: 401;
 };
 
+export type goodsReceiptsPostResponse403 = {
+  data: GoodsReceiptsPost403;
+  status: 403;
+};
+
 export type goodsReceiptsPostResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -572,7 +643,9 @@ export type goodsReceiptsPostResponseSuccess = goodsReceiptsPostResponse200 & {
   headers: Headers;
 };
 export type goodsReceiptsPostResponseError = (
-  goodsReceiptsPostResponse401 | goodsReceiptsPostResponse404
+  | goodsReceiptsPostResponse401
+  | goodsReceiptsPostResponse403
+  | goodsReceiptsPostResponse404
 ) & {
   headers: Headers;
 };
@@ -598,7 +671,10 @@ export const goodsReceiptsPost = async (
 };
 
 export const getGoodsReceiptsPostMutationOptions = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | GoodsReceiptsPost403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -640,10 +716,15 @@ export type GoodsReceiptsPostMutationResult = NonNullable<
 >;
 
 export type GoodsReceiptsPostMutationError =
-  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
+  | AuthenticationExceptionResponse
+  | GoodsReceiptsPost403
+  | ModelNotFoundExceptionResponse;
 
 export const useGoodsReceiptsPost = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | GoodsReceiptsPost403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(
   options?: {
@@ -676,6 +757,11 @@ export type goodsReceiptsReverseResponse401 = {
   status: 401;
 };
 
+export type goodsReceiptsReverseResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type goodsReceiptsReverseResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -692,6 +778,7 @@ export type goodsReceiptsReverseResponseSuccess =
   };
 export type goodsReceiptsReverseResponseError = (
   | goodsReceiptsReverseResponse401
+  | goodsReceiptsReverseResponse403
   | goodsReceiptsReverseResponse404
   | goodsReceiptsReverseResponse422
 ) & {
@@ -724,6 +811,7 @@ export const goodsReceiptsReverse = async (
 export const getGoodsReceiptsReverseMutationOptions = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -768,12 +856,14 @@ export type GoodsReceiptsReverseMutationResult = NonNullable<
 export type GoodsReceiptsReverseMutationBody = ReverseGoodsReceiptRequest;
 export type GoodsReceiptsReverseMutationError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
 export const useGoodsReceiptsReverse = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,

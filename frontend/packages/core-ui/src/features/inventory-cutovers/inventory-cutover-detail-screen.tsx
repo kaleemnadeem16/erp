@@ -26,9 +26,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { PageHeader } from '../../components/page/page-header';
 import { DetailPageLayout, DetailSection } from '../../components/detail/detail-page-layout';
 import { DetailField } from '../../components/detail/detail-field';
-import { getApiErrorMessage } from '../../lib/api-errors';
+import { getApiErrorMessage, lookupState } from '../../lib/api-errors';
 import { formatDateTime } from '../../lib/format-date';
 import { useAuthStore } from '../../stores/auth-store';
+import { formatLocation } from '../../lib/format-location';
+import { usePermission } from '../../hooks/use-permission';
 
 const STATUS_VARIANT: Record<string, 'secondary' | 'default' | 'success' | 'destructive'> = {
   DRAFT: 'secondary',
@@ -58,6 +60,14 @@ const NEGATIVE_OPENING_STATUS_VARIANT: Record<string, 'secondary' | 'success'> =
 export function InventoryCutoverDetailScreen() {
   const params = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const mayStage = usePermission('inventory.cutover.stage');
+  const mayValidate = usePermission('inventory.cutover.validate');
+  const mayApprove = usePermission('inventory.cutover.approve');
+  const mayCommit = usePermission('inventory.cutover.commit');
+  const mayFinalise = usePermission('inventory.cutover.finalise');
+  const mayCommitOpenOrders = usePermission('purchasing.cutover.commit');
+  const mayRequestNegativeOpening = usePermission('inventory.cutover.negative_opening.request');
+  const mayApproveNegativeOpening = usePermission('inventory.cutover.negative_opening.approve');
   const cutoverId = Number(params.id);
 
   const cutoverQuery = useInventoryCutoversShow(cutoverId, { include: 'batches,policyTransitions,negativeOpenings,creator' });
@@ -214,12 +224,12 @@ export function InventoryCutoverDetailScreen() {
             <Button variant="outline" onClick={() => previewQuery.refetch()} disabled={previewQuery.isFetching}>
               {previewQuery.isFetching ? 'Loading…' : 'Preview'}
             </Button>
-            {isDraft && (
+            {isDraft && mayValidate && (
               <Button onClick={handleValidate} disabled={validateCutover.isPending}>
                 Validate
               </Button>
             )}
-            {isValidated && (
+            {isValidated && mayApprove && (
               <div className="flex flex-col items-end gap-1">
                 <Button
                   onClick={handleApprove}
@@ -237,10 +247,12 @@ export function InventoryCutoverDetailScreen() {
             )}
             {isApproved && (
               <>
-                <Button variant="outline" onClick={handleCommit} disabled={commitCutover.isPending}>
-                  Commit opening state
-                </Button>
-                {hasPendingOpenPurchaseOrders && (
+                {mayCommit && (
+                  <Button variant="outline" onClick={handleCommit} disabled={commitCutover.isPending}>
+                    Commit opening state
+                  </Button>
+                )}
+                {hasPendingOpenPurchaseOrders && mayCommitOpenOrders && (
                   <Button
                     variant="outline"
                     onClick={handleCommitOpenPurchaseOrders}
@@ -249,9 +261,11 @@ export function InventoryCutoverDetailScreen() {
                     Commit open purchase orders
                   </Button>
                 )}
-                <Button onClick={handleFinalise} disabled={finaliseCutover.isPending}>
-                  Finalise
-                </Button>
+                {mayFinalise && (
+                  <Button onClick={handleFinalise} disabled={finaliseCutover.isPending}>
+                    Finalise
+                  </Button>
+                )}
               </>
             )}
           </>
@@ -323,7 +337,7 @@ export function InventoryCutoverDetailScreen() {
             </Table>
           </div>
 
-          {isDraft && (
+          {isDraft && mayStage && (
             <form onSubmit={handleAttachBatch} className="flex flex-wrap items-end gap-2 border-t border-border pt-4 sm:col-span-2">
               <div className="flex flex-col gap-1">
                 <span className="text-xs font-medium text-muted-foreground">Import batch ID</span>
@@ -365,14 +379,14 @@ export function InventoryCutoverDetailScreen() {
                   negativeOpenings.map((exception) => (
                     <TableRow key={exception.id}>
                       <TableCell>{exception.item ? `${exception.item.code} — ${exception.item.name}` : exception.item_id}</TableCell>
-                      <TableCell>{exception.location ? exception.location.code : exception.location_id}</TableCell>
+                      <TableCell>{formatLocation(exception.location) ?? exception.location_id}</TableCell>
                       <TableCell className="text-right tabular-nums">{exception.source_quantity}</TableCell>
                       <TableCell className="text-right tabular-nums">{exception.provisional_unit_cost}</TableCell>
                       <TableCell>
                         <Badge variant={NEGATIVE_OPENING_STATUS_VARIANT[exception.status] ?? 'secondary'}>{exception.status}</Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        {exception.status === 'REQUESTED' && (
+                        {exception.status === 'REQUESTED' && mayApproveNegativeOpening && (
                           <Button variant="outline" size="sm" onClick={() => handleApproveNegativeOpening(exception.id)} disabled={approveNegativeOpening.isPending}>
                             Approve
                           </Button>
@@ -385,7 +399,7 @@ export function InventoryCutoverDetailScreen() {
             </Table>
           </div>
 
-          {!showNegativeOpeningForm ? (
+          {mayRequestNegativeOpening && (!showNegativeOpeningForm ? (
             <div className="sm:col-span-2">
               <Button type="button" variant="outline" size="sm" onClick={() => setShowNegativeOpeningForm(true)}>
                 Request negative-opening exception
@@ -395,7 +409,7 @@ export function InventoryCutoverDetailScreen() {
             <form onSubmit={handleRequestNegativeOpening} className="grid grid-cols-1 gap-3 border-t border-border pt-4 sm:col-span-2 sm:grid-cols-2">
               <div className="flex flex-col gap-1">
                 <span className="text-xs font-medium text-muted-foreground">Item</span>
-                <Combobox
+                <Combobox {...lookupState(itemsQuery, 'items')}
                   className="h-9"
                   value={negativeOpeningDraft.item_id}
                   onValueChange={(value) => setNegativeOpeningDraft((draft) => ({ ...draft, item_id: value }))}
@@ -407,14 +421,14 @@ export function InventoryCutoverDetailScreen() {
               </div>
               <div className="flex flex-col gap-1">
                 <span className="text-xs font-medium text-muted-foreground">Location</span>
-                <Combobox
+                <Combobox {...lookupState(locationsQuery, 'locations')}
                   className="h-9"
                   value={negativeOpeningDraft.location_id}
                   onValueChange={(value) => setNegativeOpeningDraft((draft) => ({ ...draft, location_id: value }))}
                   placeholder="Select a location"
                   searchPlaceholder="Search locations…"
                   emptyText="No locations found."
-                  options={locations.map((location) => ({ value: String(location.id), label: location.code }))}
+                  options={locations.map((location) => ({ value: String(location.id), label: formatLocation(location) }))}
                 />
               </div>
               <div className="flex flex-col gap-1">
@@ -455,7 +469,7 @@ export function InventoryCutoverDetailScreen() {
                 </Button>
               </div>
             </form>
-          )}
+          ))}
         </DetailSection>
       </DetailPageLayout>
     </div>

@@ -22,10 +22,12 @@ import type {
 
 import type {
   AuthenticationExceptionResponse,
+  AuthorizationExceptionResponse,
   ModelNotFoundExceptionResponse,
   StoreWarehouseRequest,
   UpdateWarehouseRequest,
   ValidationExceptionResponse,
+  WarehousesDestroy403,
   WarehousesIndex200,
   WarehousesIndexParams,
   WarehousesShow200,
@@ -247,6 +249,11 @@ export type warehousesStoreResponse401 = {
   status: 401;
 };
 
+export type warehousesStoreResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type warehousesStoreResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -256,7 +263,9 @@ export type warehousesStoreResponseSuccess = warehousesStoreResponse201 & {
   headers: Headers;
 };
 export type warehousesStoreResponseError = (
-  warehousesStoreResponse401 | warehousesStoreResponse422
+  | warehousesStoreResponse401
+  | warehousesStoreResponse403
+  | warehousesStoreResponse422
 ) & {
   headers: Headers;
 };
@@ -281,7 +290,10 @@ export const warehousesStore = async (
 };
 
 export const getWarehousesStoreMutationOptions = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -323,10 +335,15 @@ export type WarehousesStoreMutationResult = NonNullable<
 >;
 export type WarehousesStoreMutationBody = StoreWarehouseRequest;
 export type WarehousesStoreMutationError =
-  AuthenticationExceptionResponse | ValidationExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
 
 export const useWarehousesStore = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(
   options?: {
@@ -587,6 +604,11 @@ export type warehousesDestroyResponse401 = {
   status: 401;
 };
 
+export type warehousesDestroyResponse403 = {
+  data: WarehousesDestroy403;
+  status: 403;
+};
+
 export type warehousesDestroyResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -596,7 +618,9 @@ export type warehousesDestroyResponseSuccess = warehousesDestroyResponse204 & {
   headers: Headers;
 };
 export type warehousesDestroyResponseError = (
-  warehousesDestroyResponse401 | warehousesDestroyResponse404
+  | warehousesDestroyResponse401
+  | warehousesDestroyResponse403
+  | warehousesDestroyResponse404
 ) & {
   headers: Headers;
 };
@@ -622,7 +646,10 @@ export const warehousesDestroy = async (
 };
 
 export const getWarehousesDestroyMutationOptions = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | WarehousesDestroy403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -664,10 +691,15 @@ export type WarehousesDestroyMutationResult = NonNullable<
 >;
 
 export type WarehousesDestroyMutationError =
-  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
+  | AuthenticationExceptionResponse
+  | WarehousesDestroy403
+  | ModelNotFoundExceptionResponse;
 
 export const useWarehousesDestroy = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | WarehousesDestroy403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(
   options?: {
@@ -700,6 +732,11 @@ export type warehousesUpdateResponse401 = {
   status: 401;
 };
 
+export type warehousesUpdateResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type warehousesUpdateResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -715,6 +752,7 @@ export type warehousesUpdateResponseSuccess = warehousesUpdateResponse200 & {
 };
 export type warehousesUpdateResponseError = (
   | warehousesUpdateResponse401
+  | warehousesUpdateResponse403
   | warehousesUpdateResponse404
   | warehousesUpdateResponse422
 ) & {
@@ -747,6 +785,7 @@ export const warehousesUpdate = async (
 export const getWarehousesUpdateMutationOptions = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -791,12 +830,14 @@ export type WarehousesUpdateMutationResult = NonNullable<
 export type WarehousesUpdateMutationBody = UpdateWarehouseRequest;
 export type WarehousesUpdateMutationError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
 export const useWarehousesUpdate = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,

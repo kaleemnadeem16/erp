@@ -9,13 +9,27 @@ use App\Modules\Inventory\Models\Category;
 use App\Modules\Inventory\Models\Item;
 use App\Support\CompanyContext;
 use App\Support\UomDimension;
+use Illuminate\Contracts\Auth\Authenticatable as UserContract;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Tests\Support\PermissionedActor;
 use Tests\TestCase;
 
 class ItemApiTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function actingAs(UserContract $user, $guard = null): static
+    {
+        PermissionedActor::grant($user, ['inventory.item.manage']);
+
+        return parent::actingAs($user, $guard);
+    }
+
+    protected function actingAsUnprivileged(UserContract $user, $guard = null): static
+    {
+        return parent::actingAs($user, $guard);
+    }
 
     private Uom $uom;
 
@@ -44,6 +58,18 @@ class ItemApiTest extends TestCase
     public function test_it_requires_authentication(): void
     {
         $this->getJson('/api/v1/items')->assertUnauthorized();
+    }
+
+    public function test_item_writes_require_manage_permission_but_reads_remain_available(): void
+    {
+        $user = User::factory()->create();
+        $item = Item::create($this->payload(['code' => 'READ-ONLY']));
+
+        $this->actingAsUnprivileged($user)->getJson('/api/v1/items')->assertOk();
+        $this->getJson("/api/v1/items/{$item->id}")->assertOk();
+        $this->postJson('/api/v1/items', $this->payload())->assertForbidden();
+        $this->patchJson("/api/v1/items/{$item->id}", ['name' => 'Denied'])->assertForbidden();
+        $this->deleteJson("/api/v1/items/{$item->id}")->assertForbidden();
     }
 
     public function test_an_item_can_be_created_and_fetched(): void

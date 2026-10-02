@@ -52,6 +52,9 @@ export function AssemblyEditScreen() {
       </div>
     );
 
+  if (row.margin_type == null || row.margin_pct == null)
+    return <div className="p-6 text-sm text-destructive">You cannot edit this assembly without access to its margin settings.</div>;
+
   return (
     <div className="space-y-4 p-6">
       <PageHeader
@@ -77,7 +80,7 @@ export function AssemblyEditScreen() {
       {resolution && (
         <p className="text-sm text-muted-foreground">
           Effective overhead: resolved from {RESOLUTION_LABELS[resolution.method] ?? resolution.method}
-          {resolution.method !== 'NONE' && ` (${resolution.policy?.rate} ${resolution.policy?.driver_type})`}.
+          {resolution.method !== 'NONE' && resolution.policy?.rate != null && ` (${resolution.policy.rate} ${resolution.policy.driver_type})`}.
         </p>
       )}
       <AssemblyVersionsSection assemblyId={row.id} versions={row.versions ?? []} />

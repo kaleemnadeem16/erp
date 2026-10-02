@@ -13,7 +13,7 @@ class UpdateWarehouseLocationAssignmentRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('inventory.location.manage') === true;
     }
 
     /** @return array<string, mixed> */

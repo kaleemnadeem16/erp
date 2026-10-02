@@ -17,6 +17,7 @@ import type { PurchaseOrderResourceIssuedAt } from "./purchaseOrderResourceIssue
 import type { PurchaseOrderResourceClosedAt } from "./purchaseOrderResourceClosedAt";
 import type { PurchaseOrderResourceCancelledAt } from "./purchaseOrderResourceCancelledAt";
 import type { PurchaseOrderResourceCancellationReason } from "./purchaseOrderResourceCancellationReason";
+import type { PurchaseOrderResourceCreatedAt } from "./purchaseOrderResourceCreatedAt";
 
 export interface PurchaseOrderResource {
   id: number;
@@ -26,11 +27,11 @@ export interface PurchaseOrderResource {
   supplier_site?: PurchaseOrderResourceSupplierSite;
   status: string;
   currency_id: number;
-  fx_policy: string;
-  fx_rate: string;
-  fx_rate_date: string;
-  fx_rate_type: string;
-  fx_rate_source: string;
+  fx_policy?: string;
+  fx_rate?: string;
+  fx_rate_date?: string;
+  fx_rate_type?: string;
+  fx_rate_source?: string;
   order_date: string;
   expected_delivery_date: PurchaseOrderResourceExpectedDeliveryDate;
   notes: PurchaseOrderResourceNotes;
@@ -40,8 +41,11 @@ export interface PurchaseOrderResource {
   total_amount?: string;
   base_total_amount?: string;
   lines?: PurchaseOrderLineResource[];
+  /** Where the order stands with the approval engine; only on the screens that act on one order. */
+  approval?: string;
   issued_at: PurchaseOrderResourceIssuedAt;
   closed_at: PurchaseOrderResourceClosedAt;
   cancelled_at: PurchaseOrderResourceCancelledAt;
   cancellation_reason: PurchaseOrderResourceCancellationReason;
+  created_at: PurchaseOrderResourceCreatedAt;
 }

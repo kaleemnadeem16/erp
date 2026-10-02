@@ -36,8 +36,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // docs/architecture/api-conventions.md: 120/min for authenticated requests.
-        RateLimiter::for('api', fn (Request $request) => Limit::perMinute(120)->by(
+        // docs/architecture/api-conventions.md: 120/min for authenticated requests (config/api.php; the dev stack raises it for e2e runs).
+        RateLimiter::for('api', fn (Request $request) => Limit::perMinute(config('api.rate_limit_per_minute'))->by(
             $request->user()?->id ?: $request->ip()
         ));
 

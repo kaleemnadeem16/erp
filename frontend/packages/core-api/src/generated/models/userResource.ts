@@ -9,6 +9,7 @@ export interface UserResource {
   id: number;
   name: string;
   email: string;
+  must_change_password: boolean;
   /** Navigation may use this as a convenience, but every endpoint
 still authorises server-side. Never expose another user's
 grants when this resource is nested in audit/history data. */

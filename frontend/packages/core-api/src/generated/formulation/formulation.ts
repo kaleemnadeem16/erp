@@ -22,6 +22,8 @@ import type {
 
 import type {
   AuthenticationExceptionResponse,
+  AuthorizationExceptionResponse,
+  FormulationsDestroy403,
   FormulationsIndex200,
   FormulationsIndexParams,
   FormulationsResolve200,
@@ -473,6 +475,11 @@ export type formulationsStoreResponse401 = {
   status: 401;
 };
 
+export type formulationsStoreResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type formulationsStoreResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -482,7 +489,9 @@ export type formulationsStoreResponseSuccess = formulationsStoreResponse201 & {
   headers: Headers;
 };
 export type formulationsStoreResponseError = (
-  formulationsStoreResponse401 | formulationsStoreResponse422
+  | formulationsStoreResponse401
+  | formulationsStoreResponse403
+  | formulationsStoreResponse422
 ) & {
   headers: Headers;
 };
@@ -507,7 +516,10 @@ export const formulationsStore = async (
 };
 
 export const getFormulationsStoreMutationOptions = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -549,10 +561,15 @@ export type FormulationsStoreMutationResult = NonNullable<
 >;
 export type FormulationsStoreMutationBody = StoreFormulationRequest;
 export type FormulationsStoreMutationError =
-  AuthenticationExceptionResponse | ValidationExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
 
 export const useFormulationsStore = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(
   options?: {
@@ -836,6 +853,11 @@ export type formulationsDestroyResponse401 = {
   status: 401;
 };
 
+export type formulationsDestroyResponse403 = {
+  data: FormulationsDestroy403;
+  status: 403;
+};
+
 export type formulationsDestroyResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -846,7 +868,9 @@ export type formulationsDestroyResponseSuccess =
     headers: Headers;
   };
 export type formulationsDestroyResponseError = (
-  formulationsDestroyResponse401 | formulationsDestroyResponse404
+  | formulationsDestroyResponse401
+  | formulationsDestroyResponse403
+  | formulationsDestroyResponse404
 ) & {
   headers: Headers;
 };
@@ -872,7 +896,10 @@ export const formulationsDestroy = async (
 };
 
 export const getFormulationsDestroyMutationOptions = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | FormulationsDestroy403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -914,10 +941,15 @@ export type FormulationsDestroyMutationResult = NonNullable<
 >;
 
 export type FormulationsDestroyMutationError =
-  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
+  | AuthenticationExceptionResponse
+  | FormulationsDestroy403
+  | ModelNotFoundExceptionResponse;
 
 export const useFormulationsDestroy = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | FormulationsDestroy403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(
   options?: {
@@ -950,6 +982,11 @@ export type formulationsUpdateResponse401 = {
   status: 401;
 };
 
+export type formulationsUpdateResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type formulationsUpdateResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -966,6 +1003,7 @@ export type formulationsUpdateResponseSuccess =
   };
 export type formulationsUpdateResponseError = (
   | formulationsUpdateResponse401
+  | formulationsUpdateResponse403
   | formulationsUpdateResponse404
   | formulationsUpdateResponse422
 ) & {
@@ -998,6 +1036,7 @@ export const formulationsUpdate = async (
 export const getFormulationsUpdateMutationOptions = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -1042,12 +1081,14 @@ export type FormulationsUpdateMutationResult = NonNullable<
 export type FormulationsUpdateMutationBody = UpdateFormulationRequest;
 export type FormulationsUpdateMutationError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
 export const useFormulationsUpdate = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,

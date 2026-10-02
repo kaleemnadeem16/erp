@@ -20,6 +20,7 @@ import {
 import { useColumnVisibilityPreference } from '../../lib/use-column-visibility-preference';
 import { useListViewPreference } from '../../lib/use-view-preference';
 import { categoryColumns } from './categories-columns';
+import { usePermission } from '../../hooks/use-permission';
 
 interface Filters {
   parent_id: string;
@@ -28,6 +29,7 @@ interface Filters {
 }
 
 export function CategoriesListScreen() {
+  const mayManage = usePermission('inventory.category.manage');
   const navigate = useNavigate();
   const query = useListQueryState<Filters>({ defaultSort: 'name' });
   const [search, setSearch] = useState(query.filters.search ?? '');
@@ -67,7 +69,7 @@ export function CategoriesListScreen() {
       <PageHeader
         title="Categories"
         description="Hierarchical item groups and inherited valuation and account defaults."
-        primaryAction={{ label: 'New category', onClick: () => navigate('/categories/new') }}
+        primaryAction={mayManage ? { label: 'New category', onClick: () => navigate('/categories/new') } : undefined}
       />
       <div className="flex flex-wrap items-center gap-2">
         <Input
@@ -123,6 +125,8 @@ export function CategoriesListScreen() {
         onRowClick={(row: CategoryResource) => navigate(`/categories/${row.id}`)}
         isLoading={result.isLoading}
         isError={result.isError}
+        error={result.error}
+        onRetry={() => void result.refetch()}
         errorMessage="Couldn't load categories."
         emptyMessage="No categories match these filters."
         view={view}

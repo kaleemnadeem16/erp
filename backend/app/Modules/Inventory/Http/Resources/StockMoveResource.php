@@ -30,13 +30,16 @@ class StockMoveResource extends JsonResource
             'moved_at' => $move->moved_at->toIso8601String(),
             'source_type' => $move->source_type,
             'source_id' => $move->source_id,
-            'unit_cost' => $move->unit_cost,
-            'currency_id' => $move->currency_id,
-            'fx_rate' => $move->fx_rate,
+            'unit_cost' => $this->when($request->user()?->can('inventory.valuation.view'), $move->unit_cost),
+            'currency_id' => $this->when($request->user()?->can('inventory.valuation.view'), $move->currency_id),
+            'fx_rate' => $this->when($request->user()?->can('inventory.valuation.view'), $move->fx_rate),
             'batch_id' => $move->batch_id,
             'batch' => $this->whenLoaded('batch', fn () => new StockBatchResource($move->batch)),
             'serial_no' => $move->serial_no,
-            'valuation_entries' => StockValuationEntryResource::collection($this->whenLoaded('valuationEntries')),
+            'valuation_entries' => $this->when(
+                $request->user()?->can('inventory.valuation.view'),
+                fn () => StockValuationEntryResource::collection($this->whenLoaded('valuationEntries')),
+            ),
             'created_at' => $move->created_at?->toIso8601String(),
         ];
     }

@@ -10,6 +10,7 @@ use App\Support\CompanyContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\Feature\Modules\Inventory\Concerns\BuildsOutboundRecalculation;
+use Tests\Support\PermissionedActor;
 use Tests\TestCase;
 
 /**
@@ -115,7 +116,7 @@ class StockMoveApiTest extends TestCase
 
     public function test_show_can_include_valuation_entries(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['inventory.valuation.view']);
         $this->receive($this->warehouseA, '5', '10', '2026-01-01', 1);
         $move = StockMove::query()->sole();
 
@@ -125,6 +126,27 @@ class StockMoveApiTest extends TestCase
         $response->assertJsonPath('data.qty', '5.0000');
         $response->assertJsonCount(1, 'data.valuation_entries');
         $response->assertJsonPath('data.valuation_entries.0.base_amount', '50.0000');
+    }
+
+    public function test_ordinary_stock_ledger_reader_cannot_see_cost_or_included_valuation_entries(): void
+    {
+        $this->receive($this->warehouseA, '5', '10', '2026-01-01', 1);
+        $move = StockMove::query()->sole();
+
+        $buyer = PermissionedActor::grant(User::factory()->create(), ['purchasing.commercial-cost.view']);
+        $this->actingAs($buyer)
+            ->getJson('/api/v1/stock-moves?include=valuation_entries')
+            ->assertOk()
+            ->assertJsonPath('data.0.qty', '5.0000')
+            ->assertJsonMissingPath('data.0.unit_cost')
+            ->assertJsonMissingPath('data.0.fx_rate')
+            ->assertJsonMissingPath('data.0.valuation_entries');
+
+        $this->getJson("/api/v1/stock-moves/{$move->id}?include=valuation_entries")
+            ->assertOk()
+            ->assertJsonMissingPath('data.unit_cost')
+            ->assertJsonMissingPath('data.currency_id')
+            ->assertJsonMissingPath('data.valuation_entries');
     }
 
     public function test_another_companys_stock_move_is_not_visible(): void

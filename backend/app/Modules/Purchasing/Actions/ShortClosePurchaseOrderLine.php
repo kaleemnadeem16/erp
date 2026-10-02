@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Purchasing\Actions;
 
 use App\Exceptions\DomainInvariantException;
+use App\Models\User;
 use App\Modules\Purchasing\Models\GoodsReceiptLine;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Modules\Purchasing\Models\PurchaseOrderLine;
@@ -15,8 +16,12 @@ use Illuminate\Support\Facades\DB;
 
 final class ShortClosePurchaseOrderLine
 {
-    public function __invoke(PurchaseOrderLine $line): PurchaseOrderLine
+    public function __invoke(PurchaseOrderLine $line, User $actor): PurchaseOrderLine
     {
+        if (! $actor->can('purchasing.purchase-order.short-close')) {
+            throw new DomainInvariantException('The actor is not permitted to short-close a purchase-order line.', 'status');
+        }
+
         return DB::transaction(function () use ($line): PurchaseOrderLine {
             $order = PurchaseOrder::query()->lockForUpdate()->findOrFail($line->purchase_order_id);
             $line = PurchaseOrderLine::query()->lockForUpdate()->findOrFail($line->id);

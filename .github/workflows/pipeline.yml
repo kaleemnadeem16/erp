@@ -225,6 +225,10 @@ jobs:
       DB_USERNAME: erp
       DB_PASSWORD: secret
       REDIS_HOST: 127.0.0.1
+      # The browser suite opens dozens of screens in quick succession. Match
+      # the development stack's raised limit so /api/v1/user does not return
+      # 429 and send otherwise authenticated tests back to the sign-in page.
+      API_RATE_LIMIT_PER_MINUTE: 10000
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
@@ -403,6 +407,19 @@ jobs:
           # (GET /up, docker-compose.prod.yml) reports healthy.
           docker compose up -d --remove-orphans --wait
           docker compose run --rm app php artisan permission:register
+          # permission:register only creates the Permission rows for any new
+          # names a release ships — it grants nobody anything. Without this,
+          # the administrator created once via `erp:create-admin
+          # --permissions=all` silently falls behind every later feature
+          # slice's new permissions (see authorization.md's "Safe rollout
+          # rule"; found 2026-09-26). Set the ERP_ADMIN_EMAIL repository
+          # variable to the sign-in that should always hold every registered
+          # permission; skipped with a warning, not a failed deploy, if unset.
+          if [ -n "${{ vars.ERP_ADMIN_EMAIL }}" ]; then
+            docker compose run --rm app php artisan erp:sync-admin-permissions "${{ vars.ERP_ADMIN_EMAIL }}"
+          else
+            echo "::warning::ERP_ADMIN_EMAIL repository variable is not set — skipped syncing the administrator's permissions."
+          fi
       - name: Verify production endpoints
         run: |
           set -euo pipefail

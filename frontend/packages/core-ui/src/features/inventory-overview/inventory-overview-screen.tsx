@@ -30,6 +30,8 @@ import {
 import { useColumnVisibilityPreference } from '../../lib/use-column-visibility-preference';
 import { useListViewPreference } from '../../lib/use-view-preference';
 import { inventoryOverviewColumns } from './inventory-overview-columns';
+import { lookupState, type LookupState } from '../../lib/api-errors';
+import { usePermission } from '../../hooks/use-permission';
 
 interface InventoryOverviewFilters {
   category_id: string;
@@ -50,6 +52,7 @@ function formatMoney(value: string): string {
  */
 export function InventoryOverviewScreen() {
   const navigate = useNavigate();
+  const mayViewValuation = usePermission('inventory.valuation.view');
   const query = useListQueryState<InventoryOverviewFilters>({ defaultSort: 'name', defaultPerPage: 25 });
   const uomsQuery = useUomsIndex({ per_page: 100, sort: 'name' });
   const uomLabels = useMemo(
@@ -59,7 +62,10 @@ export function InventoryOverviewScreen() {
       ),
     [uomsQuery.data],
   );
-  const overviewColumns = useMemo(() => inventoryOverviewColumns(uomLabels), [uomLabels]);
+  const overviewColumns = useMemo(
+    () => inventoryOverviewColumns(uomLabels).filter((column) => mayViewValuation || (column.key !== 'on_hand_value' && column.key !== 'available_value')),
+    [uomLabels, mayViewValuation],
+  );
   const [columnVisibility, setColumnVisibility] = useColumnVisibilityPreference(
     'inventory-overview-list',
     Object.fromEntries(overviewColumns.map((column) => [column.key, isColumnVisibleByDefault(column)]))
@@ -143,18 +149,22 @@ export function InventoryOverviewScreen() {
           a fixed 2-up grid keeps every card wide enough to show the full
           figure instead. */}
       <div className="grid grid-cols-2 gap-3 md:flex md:flex-wrap">
-        <StatCard
-          label="On-hand value"
-          value={summary ? formatMoney(summary.on_hand_value) : '—'}
-          tone="info"
-          isLoading={summaryQuery.isLoading}
-        />
-        <StatCard
-          label="Available value"
-          value={summary ? formatMoney(summary.available_value) : '—'}
-          tone="success"
-          isLoading={summaryQuery.isLoading}
-        />
+        {mayViewValuation && (
+          <StatCard
+            label="On-hand value"
+            value={summary?.on_hand_value != null ? formatMoney(summary.on_hand_value) : '—'}
+            tone="info"
+            isLoading={summaryQuery.isLoading}
+          />
+        )}
+        {mayViewValuation && (
+          <StatCard
+            label="Available value"
+            value={summary?.available_value != null ? formatMoney(summary.available_value) : '—'}
+            tone="success"
+            isLoading={summaryQuery.isLoading}
+          />
+        )}
         <StatCard
           label="Items with shortage"
           value={summary?.shortage_item_count ?? '—'}
@@ -180,7 +190,7 @@ export function InventoryOverviewScreen() {
         />
 
         <div className="hidden items-center gap-2 md:flex">
-          <InventoryOverviewFilterControls categories={categories} query={query} />
+          <InventoryOverviewFilterControls categoriesLookup={lookupState(categoriesQuery, 'categories')} categories={categories} query={query} />
           <PrintTrigger onPrint={() => print()} />
         </div>
 
@@ -197,7 +207,7 @@ export function InventoryOverviewScreen() {
             <SheetTitle>Filters</SheetTitle>
           </SheetHeader>
           <div className="flex flex-col gap-3 py-4">
-            <InventoryOverviewFilterControls categories={categories} query={query} full />
+            <InventoryOverviewFilterControls categoriesLookup={lookupState(categoriesQuery, 'categories')} categories={categories} query={query} full />
             <PrintTrigger onPrint={() => print()} className="w-full justify-center" />
           </div>
           <SheetFooter>
@@ -229,6 +239,8 @@ export function InventoryOverviewScreen() {
         onRowClick={(row: InventoryOverviewResource) => navigate(`/items/${row.item_id}`)}
         isLoading={overviewQuery.isLoading}
         isError={overviewQuery.isError}
+        error={overviewQuery.error}
+        onRetry={() => void overviewQuery.refetch()}
         errorMessage="Couldn't load the inventory overview."
         emptyMessage="No stocked items match these filters."
         view={view}
@@ -259,14 +271,15 @@ export function InventoryOverviewScreen() {
 }
 
 interface InventoryOverviewFilterControlsProps {
+  categoriesLookup: LookupState;
   categories: { id: number; name: string }[];
   query: ReturnType<typeof useListQueryState<InventoryOverviewFilters>>;
   full?: boolean;
 }
 
-function InventoryOverviewFilterControls({ categories, query, full }: InventoryOverviewFilterControlsProps) {
+function InventoryOverviewFilterControls({ categoriesLookup, categories, query, full }: InventoryOverviewFilterControlsProps) {
   return (
-    <Combobox
+    <Combobox {...categoriesLookup}
       className={full ? 'h-9 w-full' : 'h-9 w-40'}
       aria-label="Category"
       value={query.filters.category_id ?? 'all'}

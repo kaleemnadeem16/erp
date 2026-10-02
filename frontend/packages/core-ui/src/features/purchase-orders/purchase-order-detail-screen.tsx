@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useLocation, useNavigate, useParams } from "react-router";
 import {
   usePurchaseOrderLinesShortClose,
@@ -20,7 +20,10 @@ import {
   DetailPageLayout,
   DetailSection,
 } from "../../components/detail/detail-page-layout";
-import { PageHeader, type PageHeaderBreadcrumb } from "../../components/page/page-header";
+import {
+  PageHeader,
+  type PageHeaderBreadcrumb,
+} from "../../components/page/page-header";
 import { RecordSheet } from "../../components/page/record-sheet";
 import {
   DetailPrintLayout,
@@ -40,18 +43,13 @@ import {
 } from "../../components/ui/table";
 import { Textarea } from "../../components/ui/textarea";
 import { getApiErrorMessage } from "../../lib/api-errors";
+import { formatDateTime } from "../../lib/format-date";
 import type { Presentation } from "../../lib/presentation";
 import { useFocusOnOpen } from "../../lib/use-focus-on-open";
-
-const STATUS_VARIANT: Record<
-  string,
-  "secondary" | "default" | "success" | "destructive"
-> = {
-  DRAFT: "secondary",
-  ISSUED: "default",
-  CLOSED: "success",
-  CANCELLED: "destructive",
-};
+import { usePermission } from "../../hooks/use-permission";
+import { PurchaseOrderApprovalSection, type PurchaseOrderApproval } from "./purchase-order-approval-section";
+import { usePurchasingCommercialCost } from "../../hooks/use-purchasing-commercial-cost";
+import { PurchaseOrderStatusBadge } from "./purchase-order-columns";
 
 const SITE_ROLE_LABEL: Record<string, string> = {
   ORDER_FROM: "Ordering from",
@@ -59,9 +57,23 @@ const SITE_ROLE_LABEL: Record<string, string> = {
 };
 
 /** "12 Industrial Road, Lahore, Punjab 54000, PK" — skips whatever the address doesn't have. */
-function siteAddressLine(site: NonNullable<PurchaseOrderResource["supplier_site"]>): string {
-  const { address_line1, address_line2, city, state, postal_code, country_code } = site.party_site;
-  return [address_line1, address_line2, [city, state, postal_code].filter(Boolean).join(" "), country_code]
+function siteAddressLine(
+  site: NonNullable<PurchaseOrderResource["supplier_site"]>,
+): string {
+  const {
+    address_line1,
+    address_line2,
+    city,
+    state,
+    postal_code,
+    country_code,
+  } = site.party_site;
+  return [
+    address_line1,
+    address_line2,
+    [city, state, postal_code].filter(Boolean).join(" "),
+    country_code,
+  ]
     .filter(Boolean)
     .join(", ");
 }
@@ -72,12 +84,24 @@ function siteAddressLine(site: NonNullable<PurchaseOrderResource["supplier_site"
  * (the nested `:id` route) shows the same content in a side sheet over the
  * purchase-order list, which stays mounted behind it.
  */
-export function PurchaseOrderDetailScreen({ presentation = "page" }: { presentation?: Presentation }) {
+export function PurchaseOrderDetailScreen({
+  presentation = "page",
+}: {
+  presentation?: Presentation;
+}) {
+  const mayViewCommercialCost = usePurchasingCommercialCost();
+  const mayEdit = usePermission("purchasing.purchase-order.create");
+  const mayIssue = usePermission("purchasing.purchase-order.issue");
+  const mayCancel = usePermission("purchasing.purchase-order.cancel");
+  const mayShortClose = usePermission("purchasing.purchase-order.short-close");
+  const maySubmit = usePermission("purchasing.purchase-order.submit");
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { search } = useLocation();
   const orderId = Number(id);
-  const orderQuery = usePurchaseOrdersShow(orderId, { include: "lines,supplierSite" });
+  const orderQuery = usePurchaseOrdersShow(orderId, {
+    include: "lines,supplierSite",
+  });
   const order =
     orderQuery.data?.status === 200 ? orderQuery.data.data.data : undefined;
   const supplierQuery = useSupplierAccountsShow(
@@ -114,13 +138,31 @@ export function PurchaseOrderDetailScreen({ presentation = "page" }: { presentat
     number | null
   >(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  const issueHeadingRef = useFocusOnOpen<HTMLHeadingElement>(showIssueConfirmation);
+  const issueHeadingRef = useFocusOnOpen<HTMLHeadingElement>(
+    showIssueConfirmation,
+  );
   const cancelHeadingRef = useFocusOnOpen<HTMLHeadingElement>(showCancel);
-  const shortCloseHeadingRef = useFocusOnOpen<HTMLHeadingElement>(pendingShortCloseLineId !== null);
+  const shortCloseHeadingRef = useFocusOnOpen<HTMLHeadingElement>(
+    pendingShortCloseLineId !== null,
+  );
   const refetch = () => orderQuery.refetch();
+  // The list's row menu can hand over "issue" or "cancel": open that confirmation here, where the approval rules
+  // and the confirmation already live, but only when it is currently allowed — and only once.
+  const { pathname: currentPath, state: navigationState } = useLocation();
+  const quickAction = (navigationState as { quickAction?: string } | null)?.quickAction;
+  useEffect(() => {
+    if (!quickAction || !order) return;
+    const approvalState = (order as unknown as { approval?: PurchaseOrderApproval }).approval;
+    const needsApproval = !!approvalState?.required && approvalState.status !== "APPROVED";
+    if (quickAction === "issue" && order.status === "DRAFT" && mayIssue && !needsApproval) setShowIssueConfirmation(true);
+    if (quickAction === "cancel" && order.status === "ISSUED" && mayCancel) setShowCancel(true);
+    navigate({ pathname: currentPath, search }, { replace: true, state: null });
+  }, [quickAction, order, mayIssue, mayCancel, navigate, currentPath, search]);
   const fail = (error: unknown) => setActionError(getApiErrorMessage(error));
   const { contentRef: printRef, print } = useQuickPrint({
-    documentTitle: order?.number ? `Purchase Order ${order.number}` : `Draft Purchase Order #${orderId}`,
+    documentTitle: order?.number
+      ? `Purchase Order ${order.number}`
+      : `Draft Purchase Order #${orderId}`,
   });
 
   function handleIssue() {
@@ -168,7 +210,12 @@ export function PurchaseOrderDetailScreen({ presentation = "page" }: { presentat
   // The same content either fills a page or a side sheet over the list.
   function present(
     content: ReactNode,
-    header?: { title: string; description?: string; breadcrumbs?: PageHeaderBreadcrumb[]; actions?: ReactNode },
+    header?: {
+      title: string;
+      description?: string;
+      breadcrumbs?: PageHeaderBreadcrumb[];
+      actions?: ReactNode;
+    },
   ) {
     if (presentation === "sheet") {
       return (
@@ -177,6 +224,7 @@ export function PurchaseOrderDetailScreen({ presentation = "page" }: { presentat
           description={header?.description}
           actions={header?.actions}
           size="xl"
+          className="po-detail"
           onClose={() => navigate({ pathname: "/purchase-orders", search })}
         >
           <div className="space-y-4 pb-4">{content}</div>
@@ -184,7 +232,7 @@ export function PurchaseOrderDetailScreen({ presentation = "page" }: { presentat
       );
     }
     return (
-      <div className="space-y-4 p-6">
+      <div className="po-detail space-y-4 p-6">
         {header && (
           <PageHeader
             title={header.title}
@@ -211,7 +259,10 @@ export function PurchaseOrderDetailScreen({ presentation = "page" }: { presentat
         <p className="text-sm text-destructive">
           Couldn&apos;t load this purchase order.
         </p>
-        <Button variant="outline" onClick={() => navigate({ pathname: "/purchase-orders", search })}>
+        <Button
+          variant="outline"
+          onClick={() => navigate({ pathname: "/purchase-orders", search })}
+        >
           Back to purchase orders
         </Button>
       </>,
@@ -221,9 +272,16 @@ export function PurchaseOrderDetailScreen({ presentation = "page" }: { presentat
   // the unit's long name (kept as a hover title) and lets descriptions wrap —
   // otherwise the QA and Short-close columns are pushed off the right edge.
   const compact = presentation === "sheet";
-  const purchaseUomLabel = (uomId: number) => uomLabels.get(uomId) ?? `UoM #${uomId}`;
+  const purchaseUomLabel = (uomId: number) =>
+    uomLabels.get(uomId) ?? `UoM #${uomId}`;
+  const uomCode = (uomId: number) =>
+    uomLabels.get(uomId)?.split(" — ")[0] ?? `UoM #${uomId}`;
   const isDraft = order.status === "DRAFT";
   const isIssued = order.status === "ISSUED";
+  const approval = (order as unknown as { approval?: PurchaseOrderApproval }).approval;
+  // The server enforces both; the buttons just say so instead of failing after a click.
+  const awaitingApproval = approval?.status === "PENDING";
+  const needsApprovalFirst = !!approval?.required && approval.status !== "APPROVED";
   const supplierLabel = supplier
     ? `${supplier.code}${supplier.party?.name ? ` — ${supplier.party.name}` : ""}`
     : `Supplier #${order.supplier_account_id}`;
@@ -232,12 +290,40 @@ export function PurchaseOrderDetailScreen({ presentation = "page" }: { presentat
     {
       title: "Order",
       fields: [
+        { label: "PO number", value: order.number ?? `Draft #${order.id}` },
         { label: "Status", value: order.status },
         { label: "Order date", value: order.order_date },
-        { label: "Expected delivery", value: order.expected_delivery_date ?? "" },
-        { label: "Currency", value: currency ? `${currency.code} — ${currency.name}` : `Currency #${order.currency_id}` },
-        { label: "FX policy", value: order.fx_policy },
-        { label: "FX rate", value: `${order.fx_rate} (${order.fx_rate_date}, ${order.fx_rate_source})` },
+        {
+          label: "Expected delivery",
+          value: order.expected_delivery_date ?? "",
+        },
+        ...(order.issued_at
+          ? [{ label: "Issued at", value: formatDateTime(order.issued_at) ?? "" }]
+          : []),
+        ...(order.closed_at
+          ? [{ label: "Closed at", value: formatDateTime(order.closed_at) ?? "" }]
+          : []),
+        ...(order.cancelled_at
+          ? [{ label: "Cancelled at", value: formatDateTime(order.cancelled_at) ?? "" }]
+          : []),
+        ...(order.cancellation_reason
+          ? [{ label: "Cancellation reason", value: order.cancellation_reason }]
+          : []),
+        {
+          label: "Currency",
+          value: currency
+            ? `${currency.code} — ${currency.name}`
+            : `Currency #${order.currency_id}`,
+        },
+        ...(mayViewCommercialCost
+          ? [
+              { label: "FX policy", value: order.fx_policy ?? "" },
+              {
+                label: "FX rate",
+                value: `${order.fx_rate} (${order.fx_rate_date}, ${order.fx_rate_source})`,
+              },
+            ]
+          : []),
       ],
     },
     {
@@ -248,40 +334,131 @@ export function PurchaseOrderDetailScreen({ presentation = "page" }: { presentat
           ? [
               {
                 label: SITE_ROLE_LABEL[order.supplier_site.role] ?? "Site",
-                value: [order.supplier_site.party_site.name, siteAddressLine(order.supplier_site)]
+                value: [
+                  order.supplier_site.party_site.name,
+                  siteAddressLine(order.supplier_site),
+                ]
                   .filter(Boolean)
                   .join(" — "),
               },
             ]
           : []),
-        ...(supplier?.party?.tax_id ? [{ label: "Tax ID", value: supplier.party.tax_id }] : []),
-        ...(supplier?.party?.registration_no
-          ? [{ label: "Registration no.", value: supplier.party.registration_no }]
+        ...(supplier?.party?.tax_id
+          ? [{ label: "Tax ID", value: supplier.party.tax_id }]
           : []),
-        { label: "Payment terms", value: supplier ? `${supplier.payment_terms_days} days` : "" },
+        ...(supplier?.party?.registration_no
+          ? [
+              {
+                label: "Registration no.",
+                value: supplier.party.registration_no,
+              },
+            ]
+          : []),
+        {
+          label: "Payment terms",
+          value: supplier ? `${supplier.payment_terms_days} days` : "",
+        },
       ],
     },
-    ...(order.notes ? [{ title: "Notes", fullWidth: true, fields: [{ label: "Notes", value: order.notes }] }] : []),
+    {
+      title: "Record information",
+      fields: [
+        { label: "Created at", value: formatDateTime(order.created_at) ?? "" },
+        ...(order.inventory_cutover_id
+          ? [{ label: "Cutover origin", value: "Opening inventory commitment" }]
+          : []),
+        ...(order.source_system
+          ? [{ label: "Source system", value: order.source_system }]
+          : []),
+        ...(order.source_record_id
+          ? [{ label: "Legacy reference", value: order.source_record_id }]
+          : []),
+      ],
+    },
+    ...(order.notes
+      ? [
+          {
+            title: "Notes",
+            fullWidth: true,
+            fields: [{ label: "Notes", value: order.notes }],
+          },
+        ]
+      : []),
   ];
   const printLineColumns: DataColumn<PurchaseOrderLineResource>[] = [
-    { key: "line_number", header: "#", value: (line) => line.line_number, align: "right" },
-    { key: "item", header: "Item", value: (line) => line.item_code ?? `#${line.item_id}` },
-    { key: "description", header: "Description", value: (line) => line.description },
+    {
+      key: "line_number",
+      header: "#",
+      value: (line) => line.line_number,
+      align: "right",
+    },
+    {
+      key: "item",
+      header: "Item",
+      value: (line) => line.item_code ?? `#${line.item_id}`,
+      cell: (line) => (
+        <div>
+          <div>{line.item_code ?? `#${line.item_id}`}</div>
+          {line.supplier_item_code && (
+            <div className="text-[9px] text-black/60">
+              SKU: {line.supplier_item_code}
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "description",
+      header: "Description",
+      value: (line) => line.description,
+    },
     {
       key: "ordered_qty",
       header: "Ordered",
-      value: (line) => `${line.ordered_qty} ${uomLabels.get(line.purchase_uom_id)?.split(" — ")[0] ?? ""}`,
+      value: (line) =>
+        `${line.ordered_qty} ${uomCode(line.purchase_uom_id)}`,
+      cell: (line) => (
+        <div>
+          <div>
+            {line.ordered_qty} {uomCode(line.purchase_uom_id)}
+          </div>
+          {line.purchase_uom_id !== line.stock_uom_id && (
+            <div className="text-[9px] text-black/60">
+              = {line.ordered_stock_qty} {uomCode(line.stock_uom_id)}
+            </div>
+          )}
+        </div>
+      ),
       align: "right",
     },
-    { key: "unit_price", header: "Unit price", value: (line) => line.unit_price, align: "right" },
-    { key: "discount_amount", header: "Discount", value: (line) => line.discount_amount, align: "right" },
-    { key: "tax_amount", header: "Tax", value: (line) => line.tax_amount, align: "right" },
-    {
-      key: "line_amount",
-      header: "Amount",
-      value: (line) => `${line.line_amount} ${currency?.code ?? ""}`,
-      align: "right",
-    },
+    ...(mayViewCommercialCost
+      ? ([
+          {
+            key: "unit_price",
+            header: "Unit price",
+            value: (line) => line.unit_price,
+            align: "right",
+          },
+          {
+            key: "discount_amount",
+            header: "Discount",
+            value: (line) => line.discount_amount,
+            align: "right",
+          },
+          {
+            key: "tax_amount",
+            header: "Tax",
+            value: (line) => line.tax_amount,
+            align: "right",
+          },
+          {
+            key: "line_amount",
+            header: "Amount",
+            value: (line) => `${line.line_amount} ${currency?.code ?? ""}`,
+            align: "right",
+          },
+        ] satisfies DataColumn<PurchaseOrderLineResource>[])
+      : []),
   ];
   const printLineColumnCount = printLineColumns.length;
   const printTotalsFooter = (
@@ -301,23 +478,28 @@ export function PurchaseOrderDetailScreen({ presentation = "page" }: { presentat
   const actions = (
     <>
       <PrintTrigger onPrint={() => print()} />
-      {isDraft && (
+      {isDraft && mayEdit && (
         <Button
           variant="outline"
-          onClick={() => navigate({ pathname: `/purchase-orders/${order.id}/edit`, search })}
+          disabled={awaitingApproval}
+          title={awaitingApproval ? "Withdraw the approval request to edit this order" : undefined}
+          onClick={() =>
+            navigate({ pathname: `/purchase-orders/${order.id}/edit`, search })
+          }
         >
           Edit draft
         </Button>
       )}
-      {isDraft && (
+      {isDraft && mayIssue && (
         <Button
           onClick={() => setShowIssueConfirmation(true)}
-          disabled={issue.isPending}
+          disabled={issue.isPending || needsApprovalFirst}
+          title={needsApprovalFirst ? "This order needs approval before it can be issued" : undefined}
         >
           Issue purchase order
         </Button>
       )}
-      {isIssued && (
+      {isIssued && mayCancel && (
         <Button
           variant="outline"
           onClick={() => setShowCancel((value) => !value)}
@@ -335,13 +517,18 @@ export function PurchaseOrderDetailScreen({ presentation = "page" }: { presentat
           {actionError}
         </div>
       )}
+      <PurchaseOrderApprovalSection orderId={order.id} approval={approval} isDraft={isDraft} maySubmit={maySubmit} onChanged={refetch} />
       {showIssueConfirmation && isDraft && (
         <section
           className="space-y-3 rounded-md border p-4"
           aria-label="Issue purchase order"
         >
           <div>
-            <h2 ref={issueHeadingRef} tabIndex={-1} className="font-medium outline-none">
+            <h2
+              ref={issueHeadingRef}
+              tabIndex={-1}
+              className="font-medium outline-none"
+            >
               Issue this purchase order
             </h2>
             <p className="text-sm text-muted-foreground">
@@ -368,7 +555,11 @@ export function PurchaseOrderDetailScreen({ presentation = "page" }: { presentat
           aria-label="Cancel purchase order"
         >
           <div>
-            <h2 ref={cancelHeadingRef} tabIndex={-1} className="font-medium outline-none">
+            <h2
+              ref={cancelHeadingRef}
+              tabIndex={-1}
+              className="font-medium outline-none"
+            >
               Cancel this issued order
             </h2>
             <p className="text-sm text-muted-foreground">
@@ -401,7 +592,11 @@ export function PurchaseOrderDetailScreen({ presentation = "page" }: { presentat
           aria-label="Short-close purchase-order line"
         >
           <div>
-            <h2 ref={shortCloseHeadingRef} tabIndex={-1} className="font-medium outline-none">
+            <h2
+              ref={shortCloseHeadingRef}
+              tabIndex={-1}
+              className="font-medium outline-none"
+            >
               Short-close line{" "}
               {
                 order.lines?.find((line) => line.id === pendingShortCloseLineId)
@@ -429,35 +624,57 @@ export function PurchaseOrderDetailScreen({ presentation = "page" }: { presentat
           </div>
         </section>
       )}
-      <DetailPageLayout>
+      <DetailPageLayout equalHeight>
         <DetailSection title="Order">
+          <DetailField label="PO number">
+            <span className="font-semibold">
+              {order.number ?? `Draft #${order.id}`}
+            </span>
+          </DetailField>
           <DetailField label="Status">
-            <Badge variant={STATUS_VARIANT[order.status] ?? "secondary"}>
-              {order.status}
-            </Badge>
+            <PurchaseOrderStatusBadge status={order.status} />
           </DetailField>
           <DetailField label="Order date">{order.order_date}</DetailField>
           <DetailField label="Expected delivery">
             {order.expected_delivery_date ?? "Not set"}
           </DetailField>
-          {order.notes && (
-            <DetailField label="Notes" fullWidth>
-              {order.notes}
+          {order.issued_at && (
+            <DetailField label="Issued at">
+              {formatDateTime(order.issued_at)}
+            </DetailField>
+          )}
+          {order.closed_at && (
+            <DetailField label="Closed at">
+              {formatDateTime(order.closed_at)}
+            </DetailField>
+          )}
+          {order.cancelled_at && (
+            <DetailField label="Cancelled at">
+              {formatDateTime(order.cancelled_at)}
             </DetailField>
           )}
           {order.cancellation_reason && (
-            <DetailField label="Cancellation reason">
+            <DetailField label="Cancellation reason" fullWidth>
               {order.cancellation_reason}
+            </DetailField>
+          )}
+          {order.notes && (
+            <DetailField label="Notes" fullWidth>
+              {order.notes}
             </DetailField>
           )}
         </DetailSection>
         <DetailSection title="Supplier">
           <DetailField label="Supplier">{supplierLabel}</DetailField>
           {order.supplier_site && (
-            <DetailField label={SITE_ROLE_LABEL[order.supplier_site.role] ?? "Site"}>
+            <DetailField
+              label={SITE_ROLE_LABEL[order.supplier_site.role] ?? "Site"}
+            >
               <div>{order.supplier_site.party_site.name}</div>
               {siteAddressLine(order.supplier_site) && (
-                <div className="text-xs text-muted-foreground">{siteAddressLine(order.supplier_site)}</div>
+                <div className="text-xs text-muted-foreground">
+                  {siteAddressLine(order.supplier_site)}
+                </div>
               )}
             </DetailField>
           )}
@@ -468,36 +685,73 @@ export function PurchaseOrderDetailScreen({ presentation = "page" }: { presentat
             <DetailField label="Tax ID">{supplier.party.tax_id}</DetailField>
           )}
           {supplier?.party?.registration_no && (
-            <DetailField label="Registration no.">{supplier.party.registration_no}</DetailField>
+            <DetailField label="Registration no.">
+              {supplier.party.registration_no}
+            </DetailField>
           )}
           {supplier?.party?.website && (
             <DetailField label="Website">{supplier.party.website}</DetailField>
           )}
           {supplier?.lead_time_days != null && (
-            <DetailField label="Lead time">{supplier.lead_time_days} days</DetailField>
+            <DetailField label="Lead time">
+              {supplier.lead_time_days} days
+            </DetailField>
           )}
         </DetailSection>
-        <DetailSection title="Commercial">
-          <DetailField label="Currency">
-            {currency
-              ? `${currency.code} — ${currency.name}`
-              : `Currency #${order.currency_id}`}
+        {mayViewCommercialCost && (
+          <DetailSection title="Commercial">
+            <DetailField label="Currency">
+              {currency
+                ? `${currency.code} — ${currency.name}`
+                : `Currency #${order.currency_id}`}
+            </DetailField>
+            <DetailField label="FX policy">{order.fx_policy}</DetailField>
+            <DetailField label="FX rate">
+              {order.fx_rate}
+              {order.fx_rate_date && (
+                <span className="ml-1 text-xs text-muted-foreground">
+                  ({order.fx_rate_date}{order.fx_rate_source ? `, ${order.fx_rate_source}` : ""})
+                </span>
+              )}
+            </DetailField>
+            <DetailField label="Order total">
+              {order.total_amount ?? "—"} {currency?.code ?? ""}
+            </DetailField>
+            <DetailField label="Base-currency total">
+              {order.base_total_amount ?? "—"}
+            </DetailField>
+          </DetailSection>
+        )}
+        <DetailSection title="Record information">
+          <DetailField label="Created at">
+            {formatDateTime(order.created_at)}
           </DetailField>
-          <DetailField label="FX policy">{order.fx_policy}</DetailField>
-          <DetailField label="FX rate">{order.fx_rate}</DetailField>
-          <DetailField label="Order total">
-            {order.total_amount ?? "—"} {currency?.code ?? ""}
-          </DetailField>
-          <DetailField label="Base-currency total">
-            {order.base_total_amount ?? "—"}
-          </DetailField>
+          {order.inventory_cutover_id && (
+            <DetailField label="Cutover origin">
+              Opening inventory commitment
+            </DetailField>
+          )}
+          {order.source_system && (
+            <DetailField label="Source system">
+              {order.source_system}
+            </DetailField>
+          )}
+          {order.source_record_id && (
+            <DetailField label="Legacy reference">
+              {order.source_record_id}
+            </DetailField>
+          )}
         </DetailSection>
         <DetailSection
           title="Lines"
-          description="Ordered quantities and commercial values are immutable after issue."
+          description={
+            mayViewCommercialCost
+              ? "Ordered quantities and commercial values are immutable after issue. Line amount = quantity × unit price − line discount + line tax (discount and tax are fixed amounts for the line)."
+              : "Ordered quantities are immutable after issue."
+          }
           fullWidth
         >
-          <div className="overflow-hidden rounded-md border sm:col-span-2">
+          <div className="po-detail-table overflow-hidden rounded-md border sm:col-span-2">
             <Table scrollRegionLabel="Order lines">
               <TableHeader>
                 <TableRow>
@@ -507,7 +761,9 @@ export function PurchaseOrderDetailScreen({ presentation = "page" }: { presentat
                   <TableHead className="text-right">Ordered</TableHead>
                   <TableHead className="text-right">Received</TableHead>
                   <TableHead className="text-right">Outstanding</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
+                  {mayViewCommercialCost && (
+                    <TableHead className="text-right">Amount</TableHead>
+                  )}
                   <TableHead>QA</TableHead>
                   <TableHead />
                 </TableRow>
@@ -516,52 +772,126 @@ export function PurchaseOrderDetailScreen({ presentation = "page" }: { presentat
                 {(order.lines ?? []).map((line) => {
                   const closed = Number(line.short_closed_stock_qty) > 0;
                   const fullyReceived = Number(line.outstanding_stock_qty) <= 0;
+                  const purchaseCode = uomCode(line.purchase_uom_id);
+                  const stockCode = uomCode(line.stock_uom_id);
+                  const hasUomConversion = line.purchase_uom_id !== line.stock_uom_id;
+                  const hasLineDelivery = Boolean(
+                    line.expected_delivery_date &&
+                    line.expected_delivery_date !== order.expected_delivery_date,
+                  );
+                  const hasDiscount = Number(line.discount_amount) > 0;
+                  const hasTax = Number(line.tax_amount) > 0;
+
                   return (
                     <TableRow key={line.id}>
                       <TableCell>{line.line_number}</TableCell>
                       <TableCell>
-                        {line.item_code ?? `#${line.item_id}`}
+                        <div className="font-medium">
+                          {line.item_code ?? `#${line.item_id}`}
+                        </div>
+                        {line.supplier_item_code && (
+                          <div className="text-xs text-muted-foreground">
+                            SKU: {line.supplier_item_code}
+                          </div>
+                        )}
                       </TableCell>
-                      <TableCell className={compact ? "whitespace-normal" : undefined}>
-                        {line.description}
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {line.ordered_qty}{" "}
-                        <span className="text-muted-foreground" title={purchaseUomLabel(line.purchase_uom_id)}>
-                          {compact
-                            ? purchaseUomLabel(line.purchase_uom_id).split(" — ")[0]
-                            : purchaseUomLabel(line.purchase_uom_id)}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {line.received_stock_qty}{" "}
-                        {uomLabels.get(line.stock_uom_id)?.split(" — ")[0] ??
-                          ""}
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {line.outstanding_stock_qty}{" "}
-                        {uomLabels.get(line.stock_uom_id)?.split(" — ")[0] ??
-                          ""}
+                      <TableCell
+                        className={compact ? "whitespace-normal" : undefined}
+                      >
+                        <div>{line.description}</div>
+                        {hasLineDelivery && (
+                          <div className="text-xs text-muted-foreground">
+                            Expected: {line.expected_delivery_date}
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
-                        {line.line_amount} {currency?.code ?? ""}
+                        <div>
+                          {line.ordered_qty}{" "}
+                          <span
+                            className="text-muted-foreground"
+                            title={purchaseUomLabel(line.purchase_uom_id)}
+                          >
+                            {purchaseCode}
+                          </span>
+                        </div>
+                        {hasUomConversion && (
+                          <div className="text-xs text-muted-foreground">
+                            = {line.ordered_stock_qty} {stockCode} (1 {purchaseCode} = {line.uom_factor} {stockCode})
+                          </div>
+                        )}
                       </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        <div>
+                          {line.received_stock_qty}{" "}
+                          <span
+                            className="text-muted-foreground"
+                            title={uomLabels.get(line.stock_uom_id)}
+                          >
+                            {stockCode}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        <div>
+                          {line.outstanding_stock_qty}{" "}
+                          <span
+                            className="text-muted-foreground"
+                            title={uomLabels.get(line.stock_uom_id)}
+                          >
+                            {stockCode}
+                          </span>
+                        </div>
+                        {closed && (
+                          <div className="text-xs text-muted-foreground">
+                            Short-closed: {line.short_closed_stock_qty} {stockCode}
+                          </div>
+                        )}
+                      </TableCell>
+                      {mayViewCommercialCost && (
+                        <TableCell className="text-right tabular-nums">
+                          <div className="font-medium">
+                            {line.line_amount} {currency?.code ?? ""}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            <span>
+                              {line.unit_price} {currency?.code ?? ""} / {purchaseCode}
+                            </span>
+                            {hasDiscount && (
+                              <span> · Line discount −{line.discount_amount} {currency?.code ?? ""}</span>
+                            )}
+                            {hasTax && (
+                              <span> · Line tax +{line.tax_amount} {currency?.code ?? ""}</span>
+                            )}
+                          </div>
+                        </TableCell>
+                      )}
                       <TableCell>
                         {line.qa_required ? "Required" : "Not required"}
                       </TableCell>
                       <TableCell className="text-right">
-                        {isIssued && !closed && !fullyReceived && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setPendingShortCloseLineId(line.id)}
-                            disabled={shortClose.isPending}
-                          >
-                            Short-close
-                          </Button>
-                        )}
+                        {isIssued &&
+                          !closed &&
+                          !fullyReceived &&
+                          mayShortClose && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() =>
+                                setPendingShortCloseLineId(line.id)
+                              }
+                              disabled={shortClose.isPending}
+                            >
+                              Short-close
+                            </Button>
+                          )}
                         {closed && (
-                          <Badge variant="secondary">Short-closed</Badge>
+                          <div className="flex flex-col items-end gap-0.5">
+                            <Badge variant="secondary">Short-closed</Badge>
+                            <span className="text-[11px] text-muted-foreground">
+                              {line.short_closed_stock_qty} {stockCode}
+                            </span>
+                          </div>
                         )}
                       </TableCell>
                     </TableRow>
@@ -578,7 +908,11 @@ export function PurchaseOrderDetailScreen({ presentation = "page" }: { presentat
         <div ref={printRef}>
           <DetailPrintLayout
             title="Purchase order"
-            subtitle={order.number ? `No. ${order.number} · ${order.status}` : `Draft #${order.id} · ${order.status}`}
+            subtitle={
+              order.number
+                ? `No. ${order.number} · ${order.status}`
+                : `Draft #${order.id} · ${order.status}`
+            }
             printedAt={new Date()}
             sections={printSections}
           >
@@ -586,14 +920,16 @@ export function PurchaseOrderDetailScreen({ presentation = "page" }: { presentat
               columns={printLineColumns}
               rows={order.lines ?? []}
               getRowKey={(line) => line.id}
-              footer={printTotalsFooter}
+              footer={mayViewCommercialCost ? printTotalsFooter : undefined}
             />
           </DetailPrintLayout>
         </div>
       </div>
     </>,
     {
-      title: order.number ? `Purchase order ${order.number}` : `Draft purchase order #${order.id}`,
+      title: order.number
+        ? `Purchase order ${order.number}`
+        : `Draft purchase order #${order.id}`,
       description: supplierLabel,
       breadcrumbs: [
         { label: "Purchase Orders", to: "/purchase-orders" },

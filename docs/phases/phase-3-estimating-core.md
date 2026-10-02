@@ -188,7 +188,7 @@ module-scoped demo data (`database/seeders/Demo/Estimating/`, per
       formulation's own delete-and-recreate demo-seeder idempotency would conflict with a real
       `assembly_components` FK on every re-seed; that code path is covered by
       `AssemblyCostRollUpTest` instead — 2026-09-25
-- [ ] **Assembly cost preview** — resolution across all four layers (application rate →
+- [x] **Assembly cost preview** — delivered as the Material Preview (ADR 0058, 2026-09-26 to 2026-09-30) — resolution across all four layers (application rate →
       formulation → overhead policy → roll-up), read-only inspection UI surfacing which rate/
       policy was selected and any default-fallback warning. Step 3 shipped a narrower per-version
       breakdown (material/labour/plant/subcontract/overhead, resolved tier/driver, cost/sell per
@@ -211,20 +211,143 @@ module-scoped demo data (`database/seeders/Demo/Estimating/`, per
         effective permissions (`UserResource`) and the `/material-preview` screen gates on it
         client-side — the first screen in the app to do so. Read-only, proven with a no-side-effects
         test. Reachable at `/material-preview` (Estimating nav) — 2026-09-26
-      - [ ] **Inventory proposal slice** — permitted warehouse/location narrowing, consistent
+      - [x] **Inventory proposal slice** — permitted warehouse/location narrowing, consistent
         quantity-only availability, strategy, deterministic recommendation/alternatives,
-        shortage/residual and every corresponding UI control/explanation
-      - [ ] **Variance and sensitive-field slice** — hypothetical planned adjustments and ADR 0054
+        shortage/residual and every corresponding UI control/explanation. The `inventory` block
+        is returned only under `estimating.inventory_availability.view` (its scope/strategy inputs
+        are refused without it) and is `QUANTITY_ONLY`: usable stock per location/batch from
+        `stock_layers` in one statement, QA hold attributed to its layer, unusable location types
+        reported not counted, and a lexicographic ADR 0053 plan per preset with the other two as
+        alternatives and unavailable criteria reported. Cost fields stay behind
+        `estimating.internal_cost.view`. `/material-preview` gained warehouse/location narrowing
+        (location only when the warehouse has a real choice) and the strategy under Advanced
+        options. Deliberately deferred and recorded in
+        [inventory-packages.md](../domain/inventory-packages.md#first-implementation-quantity_only-availability-and-allocation):
+        stored item/category/company strategy settings, hand-built package mixes, package
+        equivalents and the `PACKAGE_BALANCE`/`CONTAINER_TRACKED` modes — 2026-09-28
+      - [x] **Variance and sensitive-field slice** — hypothetical planned adjustments and ADR 0054
         outcome, independent availability/cost field filtering, effective-permission exposure and
-        frontend action/field gating
-      - [ ] **Completion slice** — stale fingerprint/warnings, accessibility and end-to-end tests,
-        Phase 3 product journey and final implementation-truth documentation
+        frontend action/field gating. Decided 2026-09-29 to deliver the *configurable* feature, not a
+        built-in default only: company-defined variance reasons, versioned company/category/item
+        policies of typed bands (strongest effect wins), an evaluator, management APIs and screens,
+        preview integration (planned quantity also drives the inventory proposal), the what-if UI on
+        the Material Preview screen (done 2026-09-29) and demo data. Its
+        deliberate limits are tracked under
+        [Deferred and blocked work](#deferred-and-blocked-work) rather than left implicit
+      - [x] **Completion slice** — the preview shows when it was calculated and "Check if still current"
+        compares the evidence fingerprint; accessibility (axe, keyboard) and end-to-end specs for the what-if and
+        freshness states; the [Phase 3 journey](../journeys/phase-3-material-planning-journey.md) — 2026-09-30
 - [x] Exclusion-constraint pattern applied consistently across formulation, overhead-policy and
       assembly version tables. The recursive-CTE roll-up originally proposed here was
       deliberately not used for formulations — see formulations.md's "Nesting" — so this item
       tracked the exclusion constraint only, never a CTE requirement for every version table
 
 Tick these in the same commit as the work.
+
+## Reconciliation — 2026-10-01
+
+Everything Phase 3 set out to deliver is built and verified. What remains open below is deliberately deferred, and each item
+waits on something outside Phase 3:
+
+| Open item | Why it is legitimately outside Phase 3 | Waits on |
+|---|---|---|
+| Persisted adoption, approval submission and history | A plan is only hypothetical until a quotation revision adopts it | Phase 4 |
+| Variance reporting (ADR 0054 §8) | Needs adopted plans to report on | Phase 4 |
+| Package-level proposals, package tracking, waste/residual bands, package-aware mixes | Need sealed/opened package state that does not exist | An Inventory package-tracking design ([ADR 0072](../decisions/0072-hand-built-stock-mix-in-base-quantity.md), [phases/README.md](README.md)) |
+| Enforcing the company's stock-choice control (reason/approval) | Judged in the preview now; enforced when a plan is adopted ([ADR 0076](../decisions/0076-company-control-over-hand-chosen-stock.md)) | Phase 4 |
+| Department-limited availability | Needs organisational scope | [Q26](../OPEN-QUESTIONS.md#q26--organisational-and-record-level-access-scope) |
+| Approval notifications | Shared, ERP-wide capability | [Q33](../OPEN-QUESTIONS.md#q33--erp-wide-notifications-capability) |
+
+Verified on a clean, fully committed tree (`73bd25c`, 2026-10-01): the full backend suite passes (1253 tests), the frontend
+type-checks, and the browser specs for the material preview, stored preferences, variance settings, approvals and picker errors
+pass (20). The dev Postgres self-restart is a documented environment issue, not a product blocker
+([environments.md](../architecture/environments.md)).
+
+## Deferred and blocked work
+
+Things this phase knowingly does not do, each with what it waits on, so none is forgotten. Tick an
+item here in the same commit that delivers it; add new ones as they are found.
+
+### Waiting on another feature
+
+- [x] **`APPROVAL_REQUIRED` variance band** — delivered 2026-09-30 through the shared approval engine
+      ([ADR 0070](../decisions/0070-shared-configurable-approval-engine.md), which resolves Q27). The effect is
+      selectable only while approvals are switched on for material variance, a stored band fails closed to
+      `BLOCKED` if they are switched off later, and the Material Preview names the approval a plan would need and
+      marks it not adoptable. *Submitting* a plan for that approval still waits for adoption on a quotation
+      revision (Phase 4), because a plan is hypothetical until then. See [approvals.md](../domain/approvals.md).
+- [ ] **Waste/residual variance bands** — ADR 0054 lists expected package residual as a controlled
+      measure, but residual needs sealed-pack and remnant state that only `PACKAGE_BALANCE` /
+      `CONTAINER_TRACKED` tracking ([ADR 0052](../decisions/0052-progressive-inventory-package-tracking.md))
+      provides. Shown as "not available yet"; bands configured before it exists must keep working
+      unchanged when it does. Waits on those Inventory modes and `item_packagings`.
+- [ ] **Package-level proposals** — the `PACKAGE_BALANCE` / `CONTAINER_TRACKED` modes, package
+      definitions, package equivalents of a quantity ("about two 5 L cans") and open-remnant / expiry /
+      surplus criteria in the ADR 0053 presets. See
+      [inventory-packages.md](../domain/inventory-packages.md#first-implementation-quantity_only-availability-and-allocation).
+- [x] **Stored strategy settings** — delivered 2026-10-01
+      ([ADR 0071](../decisions/0071-stored-material-selection-strategy-as-governed-history.md)): item → nearest category → company →
+      built-in, each change a governed row with a reason, effective from the next preview only; Settings → Material selection and
+      demo data (`MaterialSelectionDemoSeeder`).
+- [x] **Hand-built stock mix, quantity-only** — delivered 2026-10-01
+      ([ADR 0072](../decisions/0072-hand-built-stock-mix-in-base-quantity.md)): a quantity per location/batch in the item's
+      stock unit, typed in any convertible unit, validated and priced by the server (an impossible mix is refused; a mix cannot
+      draw more than the plan, so it cannot bypass the variance rules). The cost/waste *escalation* half of ADR 0054 §4 is
+      deliberately not built: the variance bands measure planned-vs-standard quantity, not the cost of a draw against the
+      proposal, so reusing them would distort them. Decided instead by [ADR 0076](../decisions/0076-company-control-over-hand-chosen-stock.md) (2026-10-01):
+      a company-managed control — not allowed / show the cost / reason above X% / approval above X% — company-wide now, shaped for
+      category and item scope later, plus a `stock_mix.choose` capability; enforcement waits for Phase 4 adoption.
+- [x] **Short mix** — decided 2026-10-01: a mix covering less than the requirement stays accepted and is reported as a shortage.
+- [ ] **Package tracking and everything that needs it** — `item_packagings`, `PACKAGE_BALANCE` / `CONTAINER_TRACKED`, sealed/opened
+      package state and remnants, package-aware proposals and equivalents, expiry/remnant/surplus criteria, waste/residual
+      variance bands, per-unit precision. All extend the base-quantity mix; none needs it redesigned. Dependency and the
+      owner (confirmed 2026-10-01: an Inventory package-tracking design before Phase 5 material issue) are in
+      [ADR 0072](../decisions/0072-hand-built-stock-mix-in-base-quantity.md#deferred-with-what-each-depends-on) and
+      [phases/README.md](README.md). Variable-content packages: [Q23](../OPEN-QUESTIONS.md#q23--variable-content-and-catch-weight-packages).
+- [ ] **Generic material cost resolution (FIFO, SPECIFIC, warehouse-scoped AVCO in assembly costing)** — designed, not built, by
+      [ADR 0077](../decisions/0077-generic-material-cost-resolution-with-a-configurable-costing-scope.md) (2026-10-01): strategies per
+      valuation method behind one contract, a configurable costing scope (chosen stock → document → company default → unknown),
+      a snapshot-ready result, `unknown` never zero. The runtime stays AVCO-only and fails loudly until the Phase 4 adoption design
+      uses it. Owner of the build: the Phase 4 adoption work.
+- [ ] **Department-limited availability** — company-wide only until
+      [Q26](../OPEN-QUESTIONS.md#q26--organisational-and-record-level-access-scope).
+- [ ] **Persisted adoption, approval and history** (`material_plan.adjust`, `package_plan.adopt`,
+      `material_variance.request/approve`, `material_resolution_history.view`) — registered but not
+      actionable; they belong to a Phase 4 quotation revision, not a temporary Phase 3 draft.
+
+### Open questions and gaps
+
+- [x] **[Q32](../OPEN-QUESTIONS.md#q32--pickers-and-lookups-that-fail-to-load-read-as-empty)** —
+      pickers and lookups that fail to load read as "No items found". Resolved 2026-09-29 by
+      [ADR 0064](../decisions/0064-pickers-report-a-failed-lookup-and-offer-retry.md).
+- [x] **Usable-stock location rule** — resolved 2026-09-29 by
+      [ADR 0067](../decisions/0067-governed-per-location-usability-mark.md): the type default stays, and a
+      STRUCTURED company can mark a location as counting or not, as a governed policy. Demo data: `StructuredLocationsDemoSeeder`
+      switches the demo company to STRUCTURED and gives the Main Warehouse a hierarchy, one location of each
+      type with its role, two governed marks and pigment stock placed to show every way a location counts.
+- [ ] **Variance reporting** (ADR 0054 §8) — distinguishing one-off justified exceptions from repeated
+      deviations that should trigger a standards review. Needs adopted history, so it follows Phase 4.
+
+### Demo-data gaps
+
+Stock workflows without later-state demo data (see
+[environments.md](../architecture/environments.md#development-demo-data)):
+
+- [x] Cutover negative-opening exception — added 2026-09-29 to the demo cutover in `StockDemoSeeder`: an AVCO
+      shortage whose exception is approved by a second actor and a FIFO one left requested, so committing is refused
+      until the demo login approves it. Only one non-failed cutover is allowed per company and a database that
+      already holds the earlier demo cutover keeps it unchanged, so this appears on a fresh demo database.
+- [x] A HIGH_RISK two-approver recalculation and a regeneration paused for review — `RecalculationLifecycleDemoSeeder`
+      scenarios E and F (2026-09-30): the company's high-risk threshold is set to 10,000 once (if unset); E has its first
+      approval and waits for an elevated second approver, F had three approvals invalidated by later stock movements and
+      waits for a reviewer to resume it.
+- [x] Serial (SPECIFIC) stock transfers — `demo-xfer-laser` (2026-09-30): three serial-numbered meters, one transferred
+      to Karachi as that exact unit at its own cost.
+- [x] Typed locations (quarantine, receiving, multi-location warehouses) — `StructuredLocationsDemoSeeder` (2026-09-29)
+      switched the demo company to `STRUCTURED` mode with the Main Warehouse's hierarchy, typed locations and roles.
+- [x] The older seeded recalculation's approval expires after the company TTL, so its "execute it live"
+      step lapses — each `demo:seed` run now renews the supervisor's lapsed approval on a live request (a same-actor
+      renewal, per ADR 0040), so re-seeding restores the step; a finished request is left alone.
 
 ## Acceptance criteria
 
@@ -250,21 +373,21 @@ Tick these in the same commit as the work.
       produce verifiably different numbers for the same inputs — `AssemblyCostRollUpTest` hand-
       verifies this against docs/domain/assemblies.md's own MARGIN-vs-MARKUP worked example
       (cost 100, 20% → MARKUP 120, MARGIN 125)
-- [ ] The cost-preview screen shows a full breakdown for an assembly, including which application
+- [x] The cost-preview screen shows a full breakdown for an assembly, including which application
       rate resolved (and whether that was a default fallback) and which overhead policy resolved
       (and from which scope) — the overhead half of this is done (see Step 3 above); the
       application-rate resolve/fallback half is not, since Step 3 didn't build ad-hoc
       quantity/dimension-value/customer selection
-- [ ] Every new screen meets the same keyboard/focus/WCAG bar Phase 2's audit established
+- [x] Every new screen meets the same keyboard/focus/WCAG bar Phase 2's audit established — axe checks (no serious/critical violations) cover the Material Preview inventory, what-if and error states, the Material Variance settings screen and the warehouse Locations panel; keyboard operation is covered for the what-if flow
 
 ## Docs to update on completion
 
-- [ ] `docs/STATUS.md`
-- [ ] [formulations.md](../domain/formulations.md), [application-rates.md](../domain/application-rates.md),
+- [x] `docs/STATUS.md`
+- [x] [formulations.md](../domain/formulations.md), [application-rates.md](../domain/application-rates.md),
       [assemblies.md](../domain/assemblies.md) — mark implemented, correct any detail that
       changed during build
-- [ ] New ADRs for any decision made during the phase beyond ADR 0049
-- [ ] A Phase 3 entry in [journeys/](../journeys/README.md), alongside the UI work that
+- [x] New ADRs for any decision made during the phase beyond ADR 0049 — 0050 to 0055, 0057 to 0059, 0061, 0064 and 0067
+- [x] A Phase 3 entry in [journeys/](../journeys/README.md), alongside the UI work that
       implements it — not deferred to the end
 
 ## Related

@@ -2,13 +2,19 @@
 
 namespace Tests\Feature\Modules\Estimating;
 
+use App\Exceptions\DomainInvariantException;
 use App\Models\Uom;
 use App\Models\User;
+use App\Modules\Estimating\Actions\ArchiveApplicationRate;
+use App\Modules\Estimating\Actions\CreateApplicationRate;
+use App\Modules\Estimating\Actions\UpdateApplicationRate;
+use App\Modules\Estimating\Models\ApplicationRate;
 use App\Modules\Estimating\Models\RateDimension;
 use App\Modules\Inventory\Models\Category;
 use App\Modules\Inventory\Models\Item;
 use App\Support\UomDimension;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Support\PermissionedActor;
 use Tests\TestCase;
 
 class ApplicationRateApiTest extends TestCase
@@ -43,7 +49,7 @@ class ApplicationRateApiTest extends TestCase
 
     public function test_a_rate_can_be_created_with_dimension_values_and_listed(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.application-rate.manage']);
 
         $this->actingAs($user)->postJson('/api/v1/application-rates', [
             'item_id' => $this->item->id, 'work_uom_id' => $this->sqm->id,
@@ -59,7 +65,7 @@ class ApplicationRateApiTest extends TestCase
 
     public function test_qty_per_work_unit_must_be_positive(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.application-rate.manage']);
 
         $this->actingAs($user)->postJson('/api/v1/application-rates', [
             'item_id' => $this->item->id, 'work_uom_id' => $this->sqm->id,
@@ -69,7 +75,7 @@ class ApplicationRateApiTest extends TestCase
 
     public function test_an_unknown_dimension_value_id_is_rejected(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.application-rate.manage']);
 
         $this->actingAs($user)->postJson('/api/v1/application-rates', [
             'item_id' => $this->item->id, 'work_uom_id' => $this->sqm->id,
@@ -80,7 +86,7 @@ class ApplicationRateApiTest extends TestCase
 
     public function test_an_exact_duplicate_combination_is_rejected(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.application-rate.manage']);
         $payload = [
             'item_id' => $this->item->id, 'work_uom_id' => $this->sqm->id,
             'qty_per_work_unit' => '0.0833', 'uom_id' => $this->litre->id,
@@ -94,7 +100,7 @@ class ApplicationRateApiTest extends TestCase
 
     public function test_resolve_returns_the_winning_rate_and_method(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.application-rate.manage']);
         $rate = $this->actingAs($user)->postJson('/api/v1/application-rates', [
             'item_id' => $this->item->id, 'work_uom_id' => $this->sqm->id,
             'qty_per_work_unit' => '0.0833', 'uom_id' => $this->litre->id,
@@ -119,7 +125,7 @@ class ApplicationRateApiTest extends TestCase
 
     public function test_item_id_cannot_be_changed_through_the_update_endpoint(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.application-rate.manage']);
         $rate = $this->actingAs($user)->postJson('/api/v1/application-rates', [
             'item_id' => $this->item->id, 'work_uom_id' => $this->sqm->id,
             'qty_per_work_unit' => '0.0833', 'uom_id' => $this->litre->id,
@@ -135,7 +141,7 @@ class ApplicationRateApiTest extends TestCase
 
     public function test_destroy_removes_the_rate(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.application-rate.manage']);
         $rate = $this->actingAs($user)->postJson('/api/v1/application-rates', [
             'item_id' => $this->item->id, 'work_uom_id' => $this->sqm->id,
             'qty_per_work_unit' => '0.0833', 'uom_id' => $this->litre->id,
@@ -143,5 +149,58 @@ class ApplicationRateApiTest extends TestCase
 
         $this->deleteJson("/api/v1/application-rates/{$rate['id']}")->assertNoContent();
         $this->getJson("/api/v1/application-rates/{$rate['id']}")->assertNotFound();
+    }
+
+    public function test_application_rate_writes_require_manage_but_reads_and_resolution_remain_available(): void
+    {
+        $rate = ApplicationRate::create([
+            'item_id' => $this->item->id, 'work_uom_id' => $this->sqm->id,
+            'qty_per_work_unit' => '0.0833', 'uom_id' => $this->litre->id,
+            'is_default' => true,
+        ]);
+        $reader = User::factory()->create();
+
+        $this->actingAs($reader)->getJson('/api/v1/application-rates')->assertOk();
+        $this->getJson("/api/v1/application-rates/{$rate->id}")->assertOk();
+        $this->getJson('/api/v1/application-rates/resolve?item_id='.$this->item->id.'&work_uom_id='.$this->sqm->id)
+            ->assertOk()->assertJsonPath('data.method', 'DEFAULT');
+        $this->postJson('/api/v1/application-rates', [
+            'item_id' => $this->item->id, 'work_uom_id' => $this->sqm->id,
+            'qty_per_work_unit' => '0.0900', 'uom_id' => $this->litre->id,
+        ])->assertForbidden();
+        $this->patchJson("/api/v1/application-rates/{$rate->id}", ['qty_per_work_unit' => '0.0900'])->assertForbidden();
+        $this->deleteJson("/api/v1/application-rates/{$rate->id}")->assertForbidden();
+
+        $this->assertSame('0.083300', $rate->fresh()->qty_per_work_unit);
+        $this->assertSame(1, ApplicationRate::query()->count());
+    }
+
+    public function test_application_rate_actions_reject_an_unprivileged_non_http_caller(): void
+    {
+        $rate = ApplicationRate::create([
+            'item_id' => $this->item->id, 'work_uom_id' => $this->sqm->id,
+            'qty_per_work_unit' => '0.0833', 'uom_id' => $this->litre->id,
+        ]);
+        $reader = User::factory()->create();
+        $actions = [
+            fn () => app(CreateApplicationRate::class)([
+                'item_id' => $this->item->id, 'work_uom_id' => $this->sqm->id,
+                'qty_per_work_unit' => '0.0900', 'uom_id' => $this->litre->id,
+            ], $reader),
+            fn () => app(UpdateApplicationRate::class)($rate, ['qty_per_work_unit' => '0.0900'], $reader),
+            fn () => app(ArchiveApplicationRate::class)($rate, $reader),
+        ];
+
+        foreach ($actions as $action) {
+            try {
+                $action();
+                $this->fail('An unprivileged Action caller was accepted.');
+            } catch (DomainInvariantException $exception) {
+                $this->assertStringContainsString('not permitted', $exception->getMessage());
+            }
+        }
+
+        $this->assertSame('0.083300', $rate->fresh()->qty_per_work_unit);
+        $this->assertSame(1, ApplicationRate::query()->count());
     }
 }

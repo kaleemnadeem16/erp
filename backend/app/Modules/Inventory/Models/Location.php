@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $barcode
  * @property int $sort_order
  * @property bool $allows_stock
+ * @property bool|null $counts_as_usable
  * @property-read Warehouse $warehouse
  */
 class Location extends Model
@@ -29,6 +30,17 @@ class Location extends Model
     use BelongsToCompanyThroughParent;
 
     protected $guarded = ['id'];
+
+    /**
+     * A location's code is unique only within its warehouse (two warehouses may both have a `stock`
+     * location), so a location can only be named unambiguously as warehouse + location. Always
+     * carrying the warehouse means every resource that embeds a location — moves, layers, counts,
+     * recalculations, overrides, cutover exceptions — can show that, in one extra eager-loaded
+     * query for a whole result set rather than one lazy query per row.
+     *
+     * @var list<string>
+     */
+    protected $with = ['warehouse'];
 
     protected static function booted(): void
     {
@@ -60,12 +72,22 @@ class Location extends Model
         });
     }
 
+    /**
+     * Whether stock here counts as usable for availability: the company's own mark when there is one,
+     * otherwise what the location's type implies (`LocationType::holdsUsableStock()`).
+     */
+    public function countsAsUsable(): bool
+    {
+        return $this->counts_as_usable ?? $this->type->holdsUsableStock();
+    }
+
     protected function casts(): array
     {
         return [
             'active' => 'bool',
             'type' => LocationType::class,
             'allows_stock' => 'bool',
+            'counts_as_usable' => 'bool',
         ];
     }
 

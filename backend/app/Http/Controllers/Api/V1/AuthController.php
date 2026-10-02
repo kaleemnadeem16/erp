@@ -10,6 +10,7 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\ResetPasswordRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use App\Modules\Administration\Support\MemberStatus;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -31,15 +32,18 @@ class AuthController extends Controller
         // docs/architecture/database.md.
         $credentials = $request->only('email', 'password');
         $credentials['email'] = strtolower($credentials['email']);
+        $credentials['status'] = MemberStatus::Active->value;
 
-        if (! Auth::attempt($credentials)) {
+        if (! Auth::guard('web')->attempt($credentials)) {
             throw ValidationException::withMessages([
                 'email' => ['These credentials do not match our records.'],
             ]);
         }
 
         /** @var User $user */
-        $user = Auth::user();
+        $user = Auth::guard('web')->user();
+        // A sign-in is not a profile/access edit; keep updated_at meaningful.
+        User::withoutTimestamps(fn () => $user->forceFill(['last_login_at' => now()])->save());
 
         if ($request->filled('device_name')) {
             $token = $user->createToken($request->string('device_name')->toString())->plainTextToken;
@@ -50,6 +54,7 @@ class AuthController extends Controller
         }
 
         $request->session()->regenerate();
+        $request->session()->put('credential_version', $user->credential_version);
 
         return (new UserResource($user))->response();
     }
@@ -102,7 +107,14 @@ class AuthController extends Controller
                 'email' => strtolower($request->string('email')->toString()),
             ],
             function (User $user, string $password): void {
-                $user->forceFill(['password' => $password])->save();
+                $user->forceFill([
+                    'password' => $password,
+                    'status' => $user->status === MemberStatus::Invited ? MemberStatus::Active : $user->status,
+                    'email_verified_at' => $user->email_verified_at ?? now(),
+                    'must_change_password' => false,
+                    'credential_version' => $user->credential_version + 1,
+                ])->save();
+                $user->tokens()->delete();
             }
         );
 

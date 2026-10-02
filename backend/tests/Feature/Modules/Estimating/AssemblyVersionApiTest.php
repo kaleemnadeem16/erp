@@ -2,8 +2,13 @@
 
 namespace Tests\Feature\Modules\Estimating;
 
+use App\Exceptions\DomainInvariantException;
 use App\Models\Uom;
 use App\Models\User;
+use App\Modules\Estimating\Actions\ActivateAssemblyVersion;
+use App\Modules\Estimating\Actions\CreateAssemblyVersion;
+use App\Modules\Estimating\Actions\DeleteAssemblyVersion;
+use App\Modules\Estimating\Actions\UpdateAssemblyVersion;
 use App\Modules\Estimating\Models\Assembly;
 use App\Modules\Estimating\Models\AssemblyVersion;
 use App\Modules\Inventory\Models\Category;
@@ -11,6 +16,7 @@ use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Support\ItemType;
 use App\Support\UomDimension;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Support\PermissionedActor;
 use Tests\TestCase;
 
 class AssemblyVersionApiTest extends TestCase
@@ -54,7 +60,7 @@ class AssemblyVersionApiTest extends TestCase
 
     public function test_a_version_can_be_created_with_a_material_component(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.assembly.manage']);
 
         $response = $this->actingAs($user)->postJson("/api/v1/assemblies/{$this->assembly->id}/versions", [
             'components' => [$this->materialComponent()],
@@ -68,7 +74,7 @@ class AssemblyVersionApiTest extends TestCase
 
     public function test_a_labour_component_rejects_non_default_wastage_or_multiplier(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.assembly.manage']);
         $hour = Uom::create(['code' => 'HR', 'name' => 'Hour', 'dimension' => UomDimension::Time, 'factor_to_base' => '1', 'is_base' => true]);
         $category = Category::create(['code' => 'LABOUR', 'name' => 'Labour', 'default_valuation_method' => 'AVCO']);
         $electrician = Item::create(['code' => 'demo-electrician', 'name' => 'Electrician', 'type' => ItemType::Labour, 'stock_uom_id' => $hour->id, 'category_id' => $category->id]);
@@ -83,7 +89,7 @@ class AssemblyVersionApiTest extends TestCase
 
     public function test_a_subcontract_component_requires_a_rate_override(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.assembly.manage']);
 
         $this->actingAs($user)->postJson("/api/v1/assemblies/{$this->assembly->id}/versions", [
             'components' => [[
@@ -94,7 +100,7 @@ class AssemblyVersionApiTest extends TestCase
 
     public function test_a_subcontract_component_cannot_reference_an_item(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.assembly.manage']);
 
         $this->actingAs($user)->postJson("/api/v1/assemblies/{$this->assembly->id}/versions", [
             'components' => [[
@@ -106,7 +112,7 @@ class AssemblyVersionApiTest extends TestCase
 
     public function test_a_material_component_needs_an_item_or_an_application_rate(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.assembly.manage']);
 
         $this->actingAs($user)->postJson("/api/v1/assemblies/{$this->assembly->id}/versions", [
             'components' => [[
@@ -117,7 +123,7 @@ class AssemblyVersionApiTest extends TestCase
 
     public function test_only_a_draft_version_can_be_activated_and_needs_at_least_one_component(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.assembly.manage']);
         $empty = $this->actingAs($user)->postJson("/api/v1/assemblies/{$this->assembly->id}/versions", [])
             ->assertCreated()->json('data');
 
@@ -136,7 +142,7 @@ class AssemblyVersionApiTest extends TestCase
 
     public function test_activating_supersedes_the_previous_active_version(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.assembly.manage']);
         $first = $this->actingAs($user)->postJson("/api/v1/assemblies/{$this->assembly->id}/versions", [
             'components' => [$this->materialComponent()],
         ])->assertCreated()->json('data');
@@ -153,7 +159,7 @@ class AssemblyVersionApiTest extends TestCase
 
     public function test_an_active_version_cannot_be_edited_or_deleted(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.assembly.manage']);
         $version = $this->actingAs($user)->postJson("/api/v1/assemblies/{$this->assembly->id}/versions", [
             'components' => [$this->materialComponent()],
         ])->assertCreated()->json('data');
@@ -168,7 +174,7 @@ class AssemblyVersionApiTest extends TestCase
 
     public function test_a_draft_version_can_be_updated_and_deleted(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.assembly.manage']);
         $version = $this->actingAs($user)->postJson("/api/v1/assemblies/{$this->assembly->id}/versions", [
             'components' => [$this->materialComponent()],
         ])->assertCreated()->json('data');
@@ -182,7 +188,7 @@ class AssemblyVersionApiTest extends TestCase
 
     public function test_show_assembly_can_include_versions_and_active_version(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.assembly.manage']);
         $version = $this->actingAs($user)->postJson("/api/v1/assemblies/{$this->assembly->id}/versions", [
             'components' => [$this->materialComponent()],
         ])->assertCreated()->json('data');
@@ -192,5 +198,66 @@ class AssemblyVersionApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.active_version.status', 'ACTIVE')
             ->assertJsonCount(1, 'data.active_version.components');
+    }
+
+    public function test_nested_component_rate_override_is_hidden_without_commercial_access(): void
+    {
+        $version = $this->assembly->versions()->create(['version_no' => 1]);
+        $version->components()->create([
+            'kind' => 'SUBCONTRACT', 'qty_per_work_unit' => '1', 'uom_id' => $this->sqm->id,
+            'rate_override' => '15.0000', 'sequence' => 0,
+        ]);
+        $viewer = User::factory()->create();
+        $url = "/api/v1/assemblies/{$this->assembly->id}?include=versions,versions.components";
+
+        $this->actingAs($viewer)->getJson($url)->assertOk()
+            ->assertJsonMissingPath('data.versions.0.components.0.rate_override');
+
+        $manager = PermissionedActor::grant(User::factory()->create(), ['estimating.assembly.manage']);
+        $this->actingAs($manager)->getJson($url)->assertOk()
+            ->assertJsonPath('data.versions.0.components.0.rate_override', '15.0000');
+
+        $costViewer = PermissionedActor::grant(User::factory()->create(), ['estimating.internal_cost.view']);
+        $this->actingAs($costViewer)->getJson($url)->assertOk()
+            ->assertJsonPath('data.versions.0.components.0.rate_override', '15.0000');
+    }
+
+    public function test_version_writes_require_assembly_manage(): void
+    {
+        $manager = PermissionedActor::grant(User::factory()->create(), ['estimating.assembly.manage']);
+        $version = $this->actingAs($manager)->postJson("/api/v1/assemblies/{$this->assembly->id}/versions", [
+            'components' => [$this->materialComponent()],
+        ])->assertCreated()->json('data');
+
+        $viewer = User::factory()->create();
+        $this->actingAs($viewer)->postJson("/api/v1/assemblies/{$this->assembly->id}/versions", [])->assertForbidden();
+        $this->patchJson("/api/v1/assembly-versions/{$version['id']}", ['notes' => 'Changed'])->assertForbidden();
+        $this->postJson("/api/v1/assembly-versions/{$version['id']}/activate")->assertForbidden();
+        $this->deleteJson("/api/v1/assembly-versions/{$version['id']}")->assertForbidden();
+
+        $this->assertDatabaseHas('assembly_versions', ['id' => $version['id'], 'status' => 'DRAFT', 'notes' => null]);
+    }
+
+    public function test_version_actions_reject_non_http_unpermitted_actor(): void
+    {
+        $viewer = User::factory()->create();
+        $version = $this->assembly->versions()->create(['version_no' => 1]);
+        $version->components()->create($this->materialComponent() + ['sequence' => 0]);
+
+        foreach ([
+            fn () => app(CreateAssemblyVersion::class)($this->assembly, [], $viewer),
+            fn () => app(UpdateAssemblyVersion::class)($version, ['notes' => 'Changed'], $viewer),
+            fn () => app(DeleteAssemblyVersion::class)($version, $viewer),
+            fn () => app(ActivateAssemblyVersion::class)($version, $viewer),
+        ] as $action) {
+            try {
+                $action();
+                $this->fail('Expected the action to reject an unpermitted actor.');
+            } catch (DomainInvariantException) {
+                // Permission must be checked before any mutation.
+            }
+        }
+
+        $this->assertDatabaseHas('assembly_versions', ['id' => $version->id, 'status' => 'DRAFT', 'notes' => null]);
     }
 }

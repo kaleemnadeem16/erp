@@ -10,6 +10,7 @@ use App\Support\CompanyContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\Feature\Modules\Inventory\Concerns\BuildsOutboundRecalculation;
+use Tests\Support\PermissionedActor;
 use Tests\TestCase;
 
 /**
@@ -119,6 +120,20 @@ class StockLayerApiTest extends TestCase
         $response->assertJsonPath('data.qty_remaining', '5.0000');
         $response->assertJsonPath('data.item.code', 'item');
         $response->assertJsonPath('data.location.code', 'a');
+        $response->assertJsonMissingPath('data.unit_cost');
+        $response->assertJsonMissingPath('data.base_unit_cost');
+    }
+
+    public function test_valuation_viewer_sees_layer_costs(): void
+    {
+        $this->receive($this->warehouseA, '5', '10', '2026-01-01', 1);
+        $layer = StockLayer::query()->sole();
+        $viewer = PermissionedActor::grant(User::factory()->create(), ['inventory.valuation.view']);
+
+        $this->actingAs($viewer)->getJson("/api/v1/stock-layers/{$layer->id}")
+            ->assertOk()
+            ->assertJsonPath('data.unit_cost', '10.0000')
+            ->assertJsonPath('data.base_unit_cost', '10.0000');
     }
 
     public function test_another_companys_stock_layer_is_not_visible(): void

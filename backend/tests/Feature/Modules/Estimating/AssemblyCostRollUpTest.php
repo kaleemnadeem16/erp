@@ -30,6 +30,7 @@ use App\Modules\Inventory\Support\ItemType;
 use App\Support\UomConversionService;
 use App\Support\UomDimension;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Support\PermissionedActor;
 use Tests\TestCase;
 
 /**
@@ -121,7 +122,7 @@ class AssemblyCostRollUpTest extends TestCase
         foreach ($components as $sequence => $component) {
             $version->components()->create([...$component, 'sequence' => $sequence]);
         }
-        (new ActivateAssemblyVersion)($version);
+        (new ActivateAssemblyVersion)($version, PermissionedActor::grant(User::factory()->create(), ['estimating.assembly.manage']));
 
         return $version->refresh();
     }
@@ -252,7 +253,10 @@ class AssemblyCostRollUpTest extends TestCase
         ]);
         $formulationVersion = $formulation->versions()->create(['version_no' => 1])->refresh();
         $formulationVersion->lines()->create(['input_item_id' => $this->pigment->id, 'qty' => '0.750000', 'uom_id' => $this->kg->id, 'sequence' => 0]);
-        (new ActivateFormulationVersion(new FormulationCycleGuard))($formulationVersion);
+        (new ActivateFormulationVersion(new FormulationCycleGuard))(
+            $formulationVersion,
+            PermissionedActor::grant(User::factory()->create(), ['estimating.formulation.manage']),
+        );
         // cost_per_output_unit = 0.75kg * $10/kg = $7.50/L
 
         $assembly = $this->assembly();
@@ -378,7 +382,7 @@ class AssemblyCostRollUpTest extends TestCase
         ]);
         $this->companyOverheadPolicy('PCT_MATERIAL', '10');
 
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.internal_cost.view']);
         $response = $this->actingAs($user)->getJson("/api/v1/assembly-versions/{$version->id}/cost-breakdown");
 
         $response->assertOk();
@@ -392,5 +396,17 @@ class AssemblyCostRollUpTest extends TestCase
         $response->assertJsonPath('data.sell_per_unit', '12.1000');
         $response->assertJsonPath('data.components.0.cost_source', 'AVCO stock valuation');
         $response->assertJsonPath('data.components.0.resolved_unit_cost', '10.0000');
+    }
+
+    public function test_assembly_manager_without_internal_cost_cannot_read_cost_breakdown(): void
+    {
+        $assembly = $this->assembly();
+        $version = $this->activatedVersion($assembly, [
+            ['kind' => 'MATERIAL', 'item_id' => $this->pigment->id, 'qty_per_work_unit' => '1.000000', 'uom_id' => $this->kg->id],
+        ]);
+        $manager = PermissionedActor::grant(User::factory()->create(), ['estimating.assembly.manage']);
+
+        $this->actingAs($manager)->getJson("/api/v1/assembly-versions/{$version->id}/cost-breakdown")
+            ->assertForbidden()->assertDontSee('cost_per_unit');
     }
 }

@@ -21,6 +21,7 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  AssembliesDestroy403,
   AssembliesIndex200,
   AssembliesIndexParams,
   AssembliesShow200,
@@ -28,6 +29,7 @@ import type {
   AssembliesStore201,
   AssembliesUpdate200,
   AuthenticationExceptionResponse,
+  AuthorizationExceptionResponse,
   ModelNotFoundExceptionResponse,
   StoreAssemblyRequest,
   UpdateAssemblyRequest,
@@ -247,6 +249,11 @@ export type assembliesStoreResponse401 = {
   status: 401;
 };
 
+export type assembliesStoreResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type assembliesStoreResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -256,7 +263,9 @@ export type assembliesStoreResponseSuccess = assembliesStoreResponse201 & {
   headers: Headers;
 };
 export type assembliesStoreResponseError = (
-  assembliesStoreResponse401 | assembliesStoreResponse422
+  | assembliesStoreResponse401
+  | assembliesStoreResponse403
+  | assembliesStoreResponse422
 ) & {
   headers: Headers;
 };
@@ -281,7 +290,10 @@ export const assembliesStore = async (
 };
 
 export const getAssembliesStoreMutationOptions = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -323,10 +335,15 @@ export type AssembliesStoreMutationResult = NonNullable<
 >;
 export type AssembliesStoreMutationBody = StoreAssemblyRequest;
 export type AssembliesStoreMutationError =
-  AuthenticationExceptionResponse | ValidationExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
 
 export const useAssembliesStore = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(
   options?: {
@@ -583,6 +600,11 @@ export type assembliesDestroyResponse401 = {
   status: 401;
 };
 
+export type assembliesDestroyResponse403 = {
+  data: AssembliesDestroy403;
+  status: 403;
+};
+
 export type assembliesDestroyResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -592,7 +614,9 @@ export type assembliesDestroyResponseSuccess = assembliesDestroyResponse204 & {
   headers: Headers;
 };
 export type assembliesDestroyResponseError = (
-  assembliesDestroyResponse401 | assembliesDestroyResponse404
+  | assembliesDestroyResponse401
+  | assembliesDestroyResponse403
+  | assembliesDestroyResponse404
 ) & {
   headers: Headers;
 };
@@ -618,7 +642,10 @@ export const assembliesDestroy = async (
 };
 
 export const getAssembliesDestroyMutationOptions = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AssembliesDestroy403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -660,10 +687,15 @@ export type AssembliesDestroyMutationResult = NonNullable<
 >;
 
 export type AssembliesDestroyMutationError =
-  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AssembliesDestroy403
+  | ModelNotFoundExceptionResponse;
 
 export const useAssembliesDestroy = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AssembliesDestroy403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(
   options?: {
@@ -696,6 +728,11 @@ export type assembliesUpdateResponse401 = {
   status: 401;
 };
 
+export type assembliesUpdateResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type assembliesUpdateResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -711,6 +748,7 @@ export type assembliesUpdateResponseSuccess = assembliesUpdateResponse200 & {
 };
 export type assembliesUpdateResponseError = (
   | assembliesUpdateResponse401
+  | assembliesUpdateResponse403
   | assembliesUpdateResponse404
   | assembliesUpdateResponse422
 ) & {
@@ -743,6 +781,7 @@ export const assembliesUpdate = async (
 export const getAssembliesUpdateMutationOptions = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -787,12 +826,14 @@ export type AssembliesUpdateMutationResult = NonNullable<
 export type AssembliesUpdateMutationBody = UpdateAssemblyRequest;
 export type AssembliesUpdateMutationError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
 export const useAssembliesUpdate = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,

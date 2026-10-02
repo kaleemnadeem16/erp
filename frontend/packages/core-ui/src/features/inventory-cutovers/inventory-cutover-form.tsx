@@ -12,6 +12,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '../../components/ui/too
 import { Combobox } from '../../components/ui/combobox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../components/ui/form';
 import { DetailSection } from '../../components/detail/detail-page-layout';
+import { lookupState } from '../../lib/api-errors';
 
 const inventoryCutoverFormSchema = z.object({
   mode: z.string().min(1, 'Mode is required'),
@@ -215,7 +216,7 @@ export function InventoryCutoverForm({
               <div key={index} className="flex flex-wrap items-end gap-2">
                 <div className="flex flex-col gap-1">
                   <span className="text-xs font-medium text-muted-foreground">Item</span>
-                  <Combobox
+                  <Combobox {...lookupState(itemsQuery, 'items')}
                     className="h-9 w-56"
                     value={row.itemCode}
                     onValueChange={(value) => updateRow(index, { itemCode: value })}

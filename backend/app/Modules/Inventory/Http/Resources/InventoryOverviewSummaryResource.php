@@ -32,8 +32,8 @@ class InventoryOverviewSummaryResource extends JsonResource
             // (no rounding ever needed); available_value additionally divides by
             // on_hand_qty, and Postgres NUMERIC division doesn't preserve a fixed
             // scale — rounding here is the norm, not the exception, for that one.
-            'on_hand_value' => (string) BigDecimal::of($this->on_hand_value)->toScale(4),
-            'available_value' => (string) BigDecimal::of($this->available_value)->toScale(4, RoundingMode::HALF_UP),
+            'on_hand_value' => $this->when($request->user()?->can('inventory.valuation.view'), fn () => (string) BigDecimal::of($this->on_hand_value)->toScale(4)),
+            'available_value' => $this->when($request->user()?->can('inventory.valuation.view'), fn () => (string) BigDecimal::of($this->available_value)->toScale(4, RoundingMode::HALF_UP)),
             'item_count' => (int) $this->item_count,
             'shortage_item_count' => (int) $this->shortage_item_count,
             'qa_held_item_count' => (int) $this->qa_held_item_count,

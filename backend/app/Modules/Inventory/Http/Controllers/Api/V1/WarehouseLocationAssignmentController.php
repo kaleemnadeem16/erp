@@ -16,6 +16,7 @@ use App\Modules\Inventory\Http\Resources\WarehouseLocationAssignmentResource;
 use App\Modules\Inventory\Models\WarehouseLocationAssignment;
 use App\Support\Concerns\AppliesApiQuery;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -57,8 +58,9 @@ class WarehouseLocationAssignmentController extends Controller
         return new WarehouseLocationAssignmentResource($update($warehouseLocationRole, $request->validated()));
     }
 
-    public function destroy(WarehouseLocationAssignment $warehouseLocationRole, DeleteWarehouseLocationAssignment $delete): Response
+    public function destroy(Request $request, WarehouseLocationAssignment $warehouseLocationRole, DeleteWarehouseLocationAssignment $delete): Response
     {
+        abort_unless($request->user()?->can('inventory.location.manage'), 403);
         $delete($warehouseLocationRole);
 
         return response()->noContent();

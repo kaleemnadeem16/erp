@@ -9,6 +9,8 @@ use Database\Seeders\Demo\Estimating\ApplicationRatesDemoSeeder;
 use Database\Seeders\Demo\Estimating\AssembliesDemoSeeder;
 use Database\Seeders\Demo\Estimating\AssemblyVersionsDemoSeeder;
 use Database\Seeders\Demo\Estimating\FormulationsDemoSeeder;
+use Database\Seeders\Demo\Estimating\MaterialSelectionDemoSeeder;
+use Database\Seeders\Demo\Estimating\MaterialVarianceDemoSeeder;
 use Database\Seeders\Demo\Estimating\OverheadPoliciesDemoSeeder;
 use Database\Seeders\Demo\Estimating\RateDimensionsDemoSeeder;
 use Database\Seeders\Demo\Estimating\ResourceRatesDemoSeeder;
@@ -29,8 +31,16 @@ final class DemoDatabaseSeeder extends Seeder
                 AccountingDemoSeeder::class,
                 PartiesDemoSeeder::class,
                 InventoryDemoSeeder::class,
+                // Before Purchasing: some item-supplier rows buy in a pack unit.
+                PackConversionsDemoSeeder::class,
                 PurchasingDemoSeeder::class,
                 StockDemoSeeder::class,
+                // After StockDemoSeeder: reuses its demo-ops/demo-supervisor actors and resting policy.
+                NegativeStockLifecycleDemoSeeder::class,
+                RecalculationLifecycleDemoSeeder::class,
+                StockTransfersDemoSeeder::class,
+                // After the stock seeders: it switches the company to STRUCTURED and stocks the pigment in typed locations.
+                StructuredLocationsDemoSeeder::class,
                 RateDimensionsDemoSeeder::class,
                 ApplicationRatesDemoSeeder::class,
                 FormulationsDemoSeeder::class,
@@ -38,6 +48,12 @@ final class DemoDatabaseSeeder extends Seeder
                 OverheadPoliciesDemoSeeder::class,
                 ResourceRatesDemoSeeder::class,
                 AssemblyVersionsDemoSeeder::class,
+                MaterialVarianceDemoSeeder::class,
+                MaterialSelectionDemoSeeder::class,
+                // After the assemblies and the stock seeders: a FIFO material in two depots, and the company's stock-choice rule.
+                StockMixControlDemoSeeder::class,
+                // Last: it uses the demo supplier and pigment, the demo variance rules and the personas' permissions.
+                ApprovalsDemoSeeder::class,
             ]);
         });
     }

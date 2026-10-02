@@ -6,8 +6,11 @@ namespace App\Modules\Purchasing\Actions;
 
 use App\Contracts\NumberingScheme;
 use App\Exceptions\DomainInvariantException;
+use App\Models\User;
+use App\Modules\Approvals\Actions\RequireApproval;
 use App\Modules\Purchasing\Models\ItemSupplier;
 use App\Modules\Purchasing\Models\PurchaseOrder;
+use App\Modules\Purchasing\Support\PurchaseOrderApprovalSubject;
 use App\Modules\Purchasing\Support\PurchaseOrderStatus;
 use Illuminate\Support\Facades\DB;
 
@@ -16,14 +19,26 @@ final class IssuePurchaseOrder
     public function __construct(
         private readonly NumberingScheme $numbers,
         private readonly ResolvePurchasingSettings $resolveSettings,
+        private readonly RequireApproval $requireApproval,
     ) {}
 
-    public function __invoke(PurchaseOrder $order): PurchaseOrder
+    public function __invoke(PurchaseOrder $order, User $actor): PurchaseOrder
     {
+        $canCommitCutoverOrder = $order->inventory_cutover_id !== null
+            && $actor->can('purchasing.cutover.commit');
+
+        if (! $actor->can('purchasing.purchase-order.issue') && ! $canCommitCutoverOrder) {
+            throw new DomainInvariantException('The actor is not permitted to issue a purchase order.', 'issued_by');
+        }
+
         return DB::transaction(function () use ($order): PurchaseOrder {
             $order = PurchaseOrder::query()->lockForUpdate()->findOrFail($order->id);
             if ($order->status !== PurchaseOrderStatus::Draft || ! $order->lines()->exists()) {
                 throw new DomainInvariantException('Only a non-empty draft purchase order can be issued.', 'status');
+            }
+            // A migrated open order (cutover) was decided in the legacy system; a new order needs the company's approval.
+            if ($order->inventory_cutover_id === null) {
+                ($this->requireApproval)(PurchaseOrderApprovalSubject::CODE, $order->id);
             }
             $settings = ($this->resolveSettings)();
             foreach ($order->lines()->with('item')->lockForUpdate()->get() as $line) {

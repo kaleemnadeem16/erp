@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Purchasing\Actions;
 
 use App\Exceptions\DomainInvariantException;
+use App\Models\User;
 use App\Modules\Inventory\Actions\PostInventoryMovement;
 use App\Modules\Purchasing\Models\GoodsReceipt;
 use App\Modules\Purchasing\Models\GoodsReceiptLine;
@@ -33,6 +34,11 @@ final class ReverseGoodsReceipt
 
     public function __invoke(GoodsReceipt $receipt, string $reason, int $actorId): GoodsReceipt
     {
+        $actor = User::withoutGlobalScopes()->findOrFail($actorId);
+        if (! $actor->can('purchasing.goods-receipt.reverse')) {
+            throw new DomainInvariantException('The actor is not permitted to reverse a goods receipt.', 'reversed_by');
+        }
+
         return DB::transaction(function () use ($receipt, $reason, $actorId): GoodsReceipt {
             $receipt = GoodsReceipt::query()->lockForUpdate()->findOrFail($receipt->id);
             if ($receipt->status === GoodsReceiptStatus::Reversed) {

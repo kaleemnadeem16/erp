@@ -56,6 +56,27 @@ class NegativeStockOverrideRequestApiTest extends PurchaseOrderFoundationTest
             ->assertOk()->assertJsonPath('data.approval.decision', 'APPROVED')->assertJsonPath('data.approval.decided_by', $approver->id);
     }
 
+    public function test_override_reads_expose_shortage_quantities_but_no_settlement_or_cost_data(): void
+    {
+        [$itemId, $locationId] = $this->foundation('PRIOR_APPROVAL');
+        $requester = $this->permittedUser('inventory.negative-stock.request');
+        $requestId = $this->actingAs($requester)->postJson('/api/v1/negative-stock-override-requests', $this->input($itemId, $locationId))
+            ->assertCreated()->json('data.id');
+
+        foreach ([
+            "/api/v1/negative-stock-override-requests/{$requestId}?include=item,location,approval,review",
+            '/api/v1/negative-stock-override-requests?include=item,location,approval,review',
+        ] as $url) {
+            $response = $this->actingAs(User::factory()->create())->getJson($url)->assertOk();
+            $record = str_contains($url, "{$requestId}?") ? $response->json('data') : $response->json('data.0');
+
+            $this->assertSame('5.0000', $record['shortage_qty']);
+            foreach (['provisional_unit_cost', 'actual_unit_cost', 'unit_cost_difference', 'valuation_adjustment', 'settlements'] as $field) {
+                $this->assertArrayNotHasKey($field, $record);
+            }
+        }
+    }
+
     public function test_immediate_review_lifecycle_requires_an_independent_reviewer_by_default(): void
     {
         [$itemId, $locationId] = $this->foundation('IMMEDIATE_WITH_REVIEW');

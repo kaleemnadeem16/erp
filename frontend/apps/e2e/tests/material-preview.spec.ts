@@ -1,0 +1,240 @@
+import AxeBuilder from '@axe-core/playwright';
+import { expect, test } from '@playwright/test';
+import { pickCombobox, pickSelect } from './support';
+
+/**
+ * The Material Preview screen's inventory proposal (ADR 0058): a permitted
+ * user sees advisory stock availability beside the technical requirement, can
+ * narrow the stock scope and choose a strategy, and nothing on the screen
+ * offers to reserve. Runs against the demo data (`demo-asm-wall-paint`, whose
+ * blue pigment is stocked in `demo-main`) as the demo login, who holds every
+ * registered permission.
+ */
+test.describe('material preview inventory proposal', () => {
+  test('shows advisory availability with an explained recommendation, and stays accessible', async ({ page }) => {
+    await page.goto('/material-preview');
+    await expect(page.getByRole('heading', { name: 'Material Preview' })).toBeVisible();
+
+    await pickCombobox(page, 'Assembly', /demo-asm-wall-paint/);
+    await page.getByLabel('Work quantity', { exact: true }).fill('10');
+    await page.getByRole('button', { name: 'Calculate preview' }).click();
+
+    const panel = page.locator('section[aria-labelledby="available-stock-heading"]');
+    await expect(panel.getByRole('heading', { name: 'Available stock' })).toBeVisible();
+    // Precision is stated, never implied: the first slice is quantity-only.
+    await expect(panel.getByText('Quantity only — approximate')).toBeVisible();
+    await expect(panel.getByRole('table', { name: /Recommended draw of demo-pig-blue/ })).toBeVisible();
+    await expect(panel.getByText(/reserves nothing/)).toBeVisible();
+    await expect(page.getByText('Advisory — not reserved')).toBeVisible();
+
+    for (const summary of await panel.locator('summary').all()) await summary.click();
+    await expect(panel.getByText('Fewest physical picks')).toBeVisible();
+
+    const results = await new AxeBuilder({ page }).analyze();
+    const serious = results.violations.filter((violation) => violation.impact === 'critical' || violation.impact === 'serious');
+    expect(serious, JSON.stringify(serious, null, 2)).toEqual([]);
+  });
+
+  test('narrowing the scope and choosing a strategy change the question that is asked', async ({ page }) => {
+    await page.goto('/material-preview');
+    await expect(page.getByRole('heading', { name: 'Material Preview' })).toBeVisible();
+
+    // The strategy control is an advanced option: absent until opted into.
+    await expect(page.getByLabel('Selection strategy', { exact: true })).toHaveCount(0);
+    await page.getByRole('button', { name: 'Advanced options' }).click();
+    await page.getByRole('menuitemcheckbox', { name: 'Choose stock selection strategy' }).click();
+    await page.keyboard.press('Escape');
+    await pickSelect(page, 'Selection strategy', 'Fewest packages');
+
+    await pickCombobox(page, 'Warehouse', /demo-main/);
+    await pickCombobox(page, 'Assembly', /demo-asm-wall-paint/);
+    await page.getByLabel('Work quantity', { exact: true }).fill('10');
+    await page.getByRole('button', { name: 'Calculate preview' }).click();
+
+    const panel = page.locator('section[aria-labelledby="available-stock-heading"]');
+    await expect(panel.getByText(/Proposed by fewest packages \(chosen for this preview\)/)).toBeVisible();
+    await expect(panel.getByText(/limited to the stock scope you selected/)).toBeVisible();
+
+    // Changing any input discards a result that no longer answers the question on screen.
+    await page.getByLabel('Work quantity', { exact: true }).fill('20');
+    await expect(panel).toHaveCount(0);
+  });
+});
+
+/**
+ * The what-if half (ADR 0054 + 0058): a planned quantity is judged against the calculated standard, a
+ * difference that needs a reason says so until one is given, and the stock proposal follows the plan.
+ * Nothing is saved. Uses the pigment of `demo-asm-wall-paint`; the reason is created here when absent, so
+ * the spec does not lean on any other spec's leftovers. Which effect applies to the pigment depends on the
+ * company's configured rules, so the spec asserts the flow, not a particular policy.
+ */
+test.describe('material preview what-if plan', () => {
+  const REASON_CODE = 'e2e-preview-reason';
+  const REASON_NAME = 'End-to-end preview reason';
+
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/settings/material-variance');
+    await expect(page.getByRole('heading', { name: 'Material variance' })).toBeVisible();
+    const row = page.locator('li', { hasText: `(${REASON_CODE})` });
+    if ((await row.count()) === 0) {
+      await page.getByRole('button', { name: 'Add a reason' }).click();
+      await page.getByLabel('Name', { exact: true }).fill(REASON_NAME);
+      await page.getByLabel('Code', { exact: true }).fill(REASON_CODE);
+      await page.getByRole('button', { name: 'Add reason' }).click();
+    } else if ((await row.getByText('Retired').count()) > 0) {
+      await row.getByRole('button', { name: /^Reinstate/ }).click();
+    }
+    await expect(row).toBeVisible();
+    await expect(row.getByText('Retired')).toHaveCount(0);
+  });
+
+  test('a planned quantity is judged against the standard, and the stock proposal follows the plan', async ({ page }) => {
+    await page.goto('/material-preview');
+    await pickCombobox(page, 'Assembly', /demo-asm-wall-paint/);
+    await page.getByLabel('Work quantity', { exact: true }).fill('10');
+    await page.getByRole('button', { name: 'Calculate preview' }).click();
+
+    const editor = page.getByLabel('Planned quantity of demo-pig-blue');
+    await expect(editor).toBeVisible();
+    // No verdict until a plan is entered, and no claim that anything can be adopted.
+    await expect(page.getByRole('group', { name: /Variance verdict/ })).toHaveCount(0);
+
+    // Plan far above the standard, no reason yet.
+    await editor.fill('999');
+    await expect(page.getByText(/Calculate the preview again to judge/)).toBeVisible();
+    await page.getByRole('button', { name: 'Calculate preview' }).click();
+
+    const verdict = page.getByRole('group', { name: 'Variance verdict for demo-pig-blue' });
+    await expect(verdict).toBeVisible();
+    await expect(verdict.getByText(/Standard .* · Planned 999/)).toBeVisible();
+    await expect(verdict.getByText('Over plan by', { exact: false })).toBeVisible();
+    // Planning far more than double the standard falls in the pigment's approval-required band (ADR 0070): the verdict names the
+    // approval it would need and says the plan cannot be adopted yet.
+    await expect(verdict.getByText(/Needs approval — Variance sign-off/)).toBeVisible();
+    await expect(verdict.getByText(/Estimating lead — 1 approval/)).toBeVisible();
+    await expect(page.getByText('This plan cannot be adopted yet.')).toBeVisible();
+    // Whoever may see internal cost sees what the plan would cost against the standard, signed.
+    await expect(verdict.getByText(/Internal cost: standard/)).toBeVisible();
+    await expect(verdict.getByText(/difference \+/)).toBeVisible();
+    await expect(page.getByText(/Estimated internal-cost effect of this plan: \+/)).toBeVisible();
+
+    const stock = page.getByRole('group', { name: /demo-pig-blue —/ }).filter({ hasText: 'Needs 999' });
+    await expect(stock.getByText(/planned; the standard is/)).toBeVisible();
+
+    // If the rules demand a reason, the screen says so and cannot-adopt is shown; giving one clears it.
+    if ((await verdict.getByText('Reason missing').count()) > 0) {
+      await expect(page.getByText('This plan cannot be adopted yet.')).toBeVisible();
+      await pickSelect(page, 'Reason for the plan of demo-pig-blue', REASON_NAME);
+      await page.getByRole('button', { name: 'Calculate preview' }).click();
+      await expect(verdict.getByText('Reason given')).toBeVisible();
+      await expect(page.getByText('This plan can be adopted as it stands.')).toBeVisible();
+    }
+
+    // Clearing the plan asks the original question again: no verdict, stock back at the standard.
+    await editor.fill('');
+    await page.getByRole('button', { name: 'Calculate preview' }).click();
+    await expect(page.getByRole('group', { name: /Variance verdict/ })).toHaveCount(0);
+    await expect(page.getByText(/planned; the standard is/)).toHaveCount(0);
+  });
+
+  test('changing the assembly discards the typed plan', async ({ page }) => {
+    await page.goto('/material-preview');
+    await pickCombobox(page, 'Assembly', /demo-asm-wall-paint/);
+    await page.getByRole('button', { name: 'Calculate preview' }).click();
+    await page.getByLabel('Planned quantity of demo-pig-blue').fill('5');
+    await pickCombobox(page, 'Assembly', /demo-asm-wall-paint/);
+    await page.getByRole('button', { name: 'Calculate preview' }).click();
+    await expect(page.getByLabel('Planned quantity of demo-pig-blue')).toHaveValue('');
+    await expect(page.getByRole('group', { name: /Variance verdict/ })).toHaveCount(0);
+  });
+});
+
+/**
+ * A preview reserves nothing and can be out of date the moment it is shown (ADR 0058), so the screen says
+ * when it was calculated and can ask the same question again, comparing the evidence fingerprint.
+ */
+test.describe('material preview freshness', () => {
+  async function calculate(page: import('@playwright/test').Page) {
+    await page.goto('/material-preview');
+    await pickCombobox(page, 'Assembly', /demo-asm-wall-paint/);
+    await page.getByLabel('Work quantity', { exact: true }).fill('10');
+    await page.getByRole('button', { name: 'Calculate preview' }).click();
+    await expect(page.getByText(/^Calculated /)).toBeVisible();
+  }
+
+  test('asking again when nothing changed says the preview is still current', async ({ page }) => {
+    await calculate(page);
+    await page.getByRole('button', { name: 'Check if still current' }).click();
+    await expect(page.getByRole('status').filter({ hasText: /Still current at/ })).toBeVisible();
+  });
+
+  test('a changed answer is called out and the figures are refreshed', async ({ page }) => {
+    await calculate(page);
+    // The second answer comes back with different evidence, as if stock or a rate had moved meanwhile.
+    await page.route(/\/material-preview$/, async (route) => {
+      const response = await route.fetch();
+      const body = await response.json();
+      body.data.evidence_fingerprint = 'changed-'.concat(String(body.data.evidence_fingerprint));
+      await route.fulfill({ response, json: body });
+    });
+    await page.getByRole('button', { name: 'Check if still current' }).click();
+    await expect(page.getByRole('status').filter({ hasText: /changed since it was first calculated/ })).toBeVisible();
+  });
+
+  test('the what-if state has no serious accessibility violations and works by keyboard', async ({ page }) => {
+    await calculate(page);
+    const planned = page.getByLabel('Planned quantity of demo-pig-blue');
+    await planned.focus();
+    await page.keyboard.type('12');
+    await page.getByRole('button', { name: 'Calculate preview' }).press('Enter');
+    await expect(page.getByRole('group', { name: 'Variance verdict for demo-pig-blue' })).toBeVisible();
+
+    const results = await new AxeBuilder({ page }).analyze();
+    const serious = results.violations.filter((violation) => violation.impact === 'critical' || violation.impact === 'serious');
+    expect(serious, JSON.stringify(serious, null, 2)).toEqual([]);
+  });
+});
+
+/**
+ * The hand-built mix (ADR 0072): someone chooses how much to take from each stock location, the server validates
+ * it against the real usable balances and prices it, and an impossible mix is refused with the reason rather than
+ * shown as a warning. Quantities are figures the spec reads from the screen, so it does not lean on how much the
+ * demo happens to stock.
+ */
+test.describe('material preview hand-built stock mix', () => {
+  test('a chosen mix is priced by the server, explained line by line, and an impossible one is refused', async ({ page }) => {
+    await page.goto('/material-preview');
+    await pickCombobox(page, 'Assembly', /demo-asm-wall-paint/);
+    await page.getByLabel('Work quantity', { exact: true }).fill('10');
+    await page.getByRole('button', { name: 'Calculate preview' }).click();
+
+    const panel = page.locator('section[aria-labelledby="available-stock-heading"]');
+    const material = panel.getByRole('group', { name: /^demo-pig-blue/ });
+    await material.getByRole('button', { name: 'Choose the stock yourself' }).click();
+    const mix = material.getByRole('group', { name: 'Your own mix for demo-pig-blue' });
+
+    // Take a small part of the first usable location: a partial mix is allowed and reported as a shortage.
+    const firstInput = mix.getByLabel(/^Take from /).first();
+    await firstInput.fill('0.5');
+    await mix.getByRole('button', { name: 'Calculate with my mix' }).click();
+    await expect(mix.getByRole('status')).toContainText('Your mix covers 0.5 of');
+    await expect(mix.getByRole('status')).toContainText('uncovered');
+    await expect(mix.getByRole('table', { name: 'Where each quantity of your mix comes from' })).toBeVisible();
+    await expect(mix.getByText(/reserves nothing/)).toBeVisible();
+
+    const results = await new AxeBuilder({ page }).analyze();
+    const serious = results.violations.filter((violation) => violation.impact === 'critical' || violation.impact === 'serious');
+    expect(serious, JSON.stringify(serious, null, 2)).toEqual([]);
+
+    // More than the location holds is an invalid plan, refused with the reason.
+    await firstInput.fill('999999');
+    await mix.getByRole('button', { name: 'Calculate with my mix' }).click();
+    await expect(page.getByText(/is usable there/)).toBeVisible();
+
+    // Going back to the proposal removes the chosen mix from the next question.
+    await mix.getByRole('button', { name: 'Use the proposal instead' }).click();
+    await page.getByRole('button', { name: 'Calculate preview' }).click();
+    await expect(page.getByText(/is usable there/)).toHaveCount(0);
+    await expect(panel.getByRole('table', { name: /Recommended draw of demo-pig-blue/ })).toBeVisible();
+  });
+});

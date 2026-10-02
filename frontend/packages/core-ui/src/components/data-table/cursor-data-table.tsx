@@ -13,6 +13,7 @@ import { DataTableSortSelect } from './data-table-sort-select';
 import { DataTableViewOptions } from './data-table-view-options';
 import { DataTableViewToggle } from './data-table-view-toggle';
 import type { DataColumn } from './types';
+import { ListError } from './list-error';
 
 export interface CursorDataTableProps<TRow> {
   columns: ColumnDef<TRow, unknown>[];
@@ -25,6 +26,8 @@ export interface CursorDataTableProps<TRow> {
   isLoading?: boolean;
   isError?: boolean;
   errorMessage?: string;
+  error?: unknown;
+  onRetry?: () => void;
   emptyMessage?: string;
   perPage: number;
   onPerPageChange: (perPage: number) => void;
@@ -66,6 +69,8 @@ export function CursorDataTable<TRow>({
   isLoading,
   isError,
   errorMessage,
+  error,
+  onRetry,
   emptyMessage = 'No records found.',
   perPage,
   onPerPageChange,
@@ -124,6 +129,8 @@ export function CursorDataTable<TRow>({
           isLoading={isLoading}
           isError={isError}
           errorMessage={errorMessage}
+          error={error}
+          onRetry={onRetry}
           emptyMessage={emptyMessage}
           skeletonCount={Math.min(perPage, 8)}
         />
@@ -159,8 +166,8 @@ export function CursorDataTable<TRow>({
               ))
             ) : isError ? (
               <TableRow>
-                <TableCell colSpan={columnCount} className="h-24 text-center text-destructive">
-                  {errorMessage ?? 'Something went wrong loading this list.'}
+                <TableCell colSpan={columnCount}>
+                  <ListError message={errorMessage} error={error} onRetry={onRetry} />
                 </TableCell>
               </TableRow>
             ) : table.getRowModel().rows.length === 0 ? (

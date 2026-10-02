@@ -21,6 +21,7 @@ import {
   type AssemblyComponentFormValues,
 } from './assembly-component-fields';
 import { AssemblyCostBreakdown } from './assembly-cost-breakdown';
+import { usePermission } from '../../hooks/use-permission';
 
 const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'success'> = {
   DRAFT: 'secondary',
@@ -32,6 +33,7 @@ const versionSchema = z.object({ components: z.array(assemblyComponentSchema) })
 type VersionFormValues = z.infer<typeof versionSchema>;
 
 export function AssemblyVersionsSection({ assemblyId, versions }: { assemblyId: number; versions: AssemblyVersionResource[] }) {
+  const mayViewCost = usePermission('estimating.internal_cost.view');
   const [creating, setCreating] = useState(false);
   const [breakdownVersionId, setBreakdownVersionId] = useState<number | null>(null);
   const activateMutation = useAssemblyVersionsActivate();
@@ -95,7 +97,7 @@ export function AssemblyVersionsSection({ assemblyId, versions }: { assemblyId: 
                     </Button>
                   </>
                 )}
-                {version.status === 'ACTIVE' && (
+                {version.status === 'ACTIVE' && mayViewCost && (
                   <Button
                     type="button"
                     variant="outline"

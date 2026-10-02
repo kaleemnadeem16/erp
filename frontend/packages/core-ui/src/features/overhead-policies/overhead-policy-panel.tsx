@@ -38,7 +38,8 @@ function driverLabel(driver: string): string {
   return DRIVER_LABELS[driver] ?? driver;
 }
 
-function policySummary(driver: string, rate: string): string {
+function policySummary(driver: string, rate?: string): string {
+  if (rate == null) return 'Rate restricted';
   return PERCENTAGE_DRIVERS.includes(driver) ? `${rate}% ${driverLabel(driver)}` : `${rate} ${driverLabel(driver)}`;
 }
 

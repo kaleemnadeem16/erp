@@ -16,7 +16,18 @@ final class PermissionRegistrationTest extends TestCase
     {
         $vocabularies = app(PermissionRegistry::class)->byOwner();
 
-        $this->assertSame(['estimating', 'inventory', 'purchasing'], array_keys($vocabularies));
+        $this->assertSame(['administration', 'approvals', 'estimating', 'inventory', 'purchasing'], array_keys($vocabularies));
+        $this->assertContains('administration.access.assign', $vocabularies['administration']);
+        foreach ([
+            'estimating.rate-dimension.manage',
+            'estimating.application-rate.manage',
+            'estimating.formulation.manage',
+            'estimating.assembly-group.manage',
+            'estimating.assembly.manage',
+            'estimating.resource-rate.manage',
+        ] as $capability) {
+            $this->assertContains($capability, $vocabularies['estimating']);
+        }
         $this->assertContains('estimating.material_preview.run', $vocabularies['estimating']);
         $this->assertContains('estimating.inventory_availability.view', $vocabularies['estimating']);
         $this->assertContains('estimating.internal_cost.view', $vocabularies['estimating']);
@@ -64,5 +75,40 @@ final class PermissionRegistrationTest extends TestCase
         $user = User::query()->where('email', 'first-admin@example.com')->firstOrFail();
 
         $this->assertCount(count(app(PermissionRegistry::class)->all()), $user->getAllPermissions());
+    }
+
+    public function test_sync_admin_permissions_grants_names_registered_after_the_user_was_created(): void
+    {
+        // Simulates the real production gap: an administrator created back when
+        // the registry was smaller than it is now, and never re-granted anything
+        // since — exactly what `permission:register` alone does not fix.
+        $registry = app(PermissionRegistry::class);
+        $registry->registerForTeam(1);
+        $this->assertGreaterThan(1, count($registry->all()));
+
+        $user = User::factory()->create(['email' => 'admin@example.com']);
+        $user->givePermissionTo('estimating.overhead-policy.manage');
+
+        $this->artisan('erp:sync-admin-permissions', ['email' => 'admin@example.com'])
+            ->assertSuccessful();
+
+        $user->unsetRelation('permissions');
+        $this->assertSame(count($registry->all()), $user->getAllPermissions()->count());
+    }
+
+    public function test_sync_admin_permissions_is_idempotent(): void
+    {
+        $user = User::factory()->create(['email' => 'admin@example.com']);
+
+        $this->artisan('erp:sync-admin-permissions', ['email' => 'admin@example.com'])->assertSuccessful();
+        $this->artisan('erp:sync-admin-permissions', ['email' => 'admin@example.com'])
+            ->expectsOutputToContain('already held all')
+            ->assertSuccessful();
+    }
+
+    public function test_sync_admin_permissions_fails_for_an_unknown_email(): void
+    {
+        $this->artisan('erp:sync-admin-permissions', ['email' => 'nobody@example.com'])
+            ->assertFailed();
     }
 }

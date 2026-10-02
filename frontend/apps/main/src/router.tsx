@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Outlet } from "react-router";
 import {
   AppShell,
+  AcceptInvitationScreen,
   ApplicationRateCreateScreen,
   ApplicationRateEditScreen,
   ApplicationRatesListScreen,
@@ -16,6 +17,10 @@ import {
   CategoryEditScreen,
   DashboardScreen,
   EstimatingSettingsScreen,
+  ApprovalsInboxScreen,
+  ApprovalsSettingsScreen,
+  MaterialSelectionSettingsScreen,
+  MaterialVarianceSettingsScreen,
   FormulationCreateScreen,
   FormulationEditScreen,
   FormulationsListScreen,
@@ -36,7 +41,9 @@ import {
   ItemSuppliersListScreen,
   ItemsListScreen,
   LoginScreen,
+  PasswordChangeRequiredScreen,
   MaterialPreviewScreen,
+  MembersSettingsScreen,
   NegativeStockOverrideCreateScreen,
   NegativeStockOverrideDetailScreen,
   NegativeStockOverridesListScreen,
@@ -52,6 +59,7 @@ import {
   AppearanceSettingsScreen,
   PrintingSettingsScreen,
   ProtectedRoute,
+  PermissionRoute,
   PurchasingSettingsScreen,
   RateDimensionCreateScreen,
   RateDimensionEditScreen,
@@ -60,6 +68,7 @@ import {
   RecalculationRequestDetailScreen,
   RecalculationRequestsListScreen,
   ResourceRatesListScreen,
+  RolesSettingsScreen,
   StockLedgerScreen,
   StockMoveDetailScreen,
   WarehouseCreateScreen,
@@ -71,12 +80,22 @@ import { presentation } from "./presentation";
 
 const purchaseOrderCreateAsSheet = presentation.purchaseOrderCreate === "sheet";
 const purchaseOrderDetailAsSheet = presentation.purchaseOrderDetail === "sheet";
+const purchaseOrderEditAsSheet = presentation.purchaseOrderEdit === "sheet";
 
 export function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginScreen />} />
+        <Route
+          path="/change-password"
+          element={<PasswordChangeRequiredScreen />}
+        />
+        <Route path="/accept-invitation" element={<AcceptInvitationScreen />} />
+        <Route
+          path="/reset-password"
+          element={<AcceptInvitationScreen mode="reset" />}
+        />
         <Route
           path="/"
           element={
@@ -462,10 +481,22 @@ export function AppRouter() {
           }
         >
           {purchaseOrderCreateAsSheet && (
-            <Route path="new" element={<PurchaseOrderCreateScreen presentation="sheet" />} />
+            <Route
+              path="new"
+              element={<PurchaseOrderCreateScreen presentation="sheet" />}
+            />
           )}
           {purchaseOrderDetailAsSheet && (
-            <Route path=":id" element={<PurchaseOrderDetailScreen presentation="sheet" />} />
+            <Route
+              path=":id"
+              element={<PurchaseOrderDetailScreen presentation="sheet" />}
+            />
+          )}
+          {purchaseOrderEditAsSheet && (
+            <Route
+              path=":id/edit"
+              element={<PurchaseOrderEditScreen presentation="sheet" />}
+            />
           )}
         </Route>
         {!purchaseOrderCreateAsSheet && (
@@ -522,16 +553,18 @@ export function AppRouter() {
             }
           />
         )}
-        <Route
-          path="/purchase-orders/:id/edit"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <PurchaseOrderEditScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
+        {!purchaseOrderEditAsSheet && (
+          <Route
+            path="/purchase-orders/:id/edit"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <PurchaseOrderEditScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
         <Route
           path="/settings/account"
           element={
@@ -548,6 +581,30 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <AppearanceSettingsScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings/members"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <PermissionRoute permission="administration.member.view">
+                  <MembersSettingsScreen />
+                </PermissionRoute>
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings/roles"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <PermissionRoute permission="administration.role.view">
+                  <RolesSettingsScreen />
+                </PermissionRoute>
               </AppShell>
             </ProtectedRoute>
           }
@@ -708,6 +765,46 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <EstimatingSettingsScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings/material-selection"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <MaterialSelectionSettingsScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings/material-variance"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <MaterialVarianceSettingsScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings/approvals"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <ApprovalsSettingsScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/approvals"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <ApprovalsInboxScreen />
               </AppShell>
             </ProtectedRoute>
           }

@@ -13,14 +13,28 @@ use App\Modules\Parties\Models\SupplierAccount;
 use App\Modules\Purchasing\Models\ItemSupplier;
 use App\Support\CompanyContext;
 use App\Support\UomDimension;
+use Illuminate\Contracts\Auth\Authenticatable as UserContract;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
+use Tests\Support\PurchasingActor;
 use Tests\TestCase;
 
 class ItemSupplierApiTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function actingAs(UserContract $user, $guard = null): static
+    {
+        PurchasingActor::grant($user, ['purchasing.item-supplier.manage']);
+
+        return parent::actingAs($user, $guard);
+    }
+
+    protected function actingAsUnprivileged(UserContract $user, $guard = null): static
+    {
+        return parent::actingAs($user, $guard);
+    }
 
     private Item $item;
 
@@ -55,6 +69,28 @@ class ItemSupplierApiTest extends TestCase
                 return $this->companyId;
             }
         });
+    }
+
+    public function test_item_supplier_reads_and_writes_require_capabilities(): void
+    {
+        $user = User::factory()->create();
+        $supplier = $this->supplier('READ');
+        $relationship = ItemSupplier::create([
+            'item_id' => $this->item->id,
+            'supplier_account_id' => $supplier->id,
+            'priority' => 2,
+        ]);
+
+        $this->actingAsUnprivileged($user)->getJson('/api/v1/item-suppliers')->assertForbidden();
+        $this->getJson("/api/v1/item-suppliers/{$relationship->id}")->assertForbidden();
+        $this->postJson('/api/v1/item-suppliers', [])->assertForbidden();
+        $this->patchJson("/api/v1/item-suppliers/{$relationship->id}", ['priority' => 3])->assertForbidden();
+        $this->deleteJson("/api/v1/item-suppliers/{$relationship->id}")->assertForbidden();
+
+        PurchasingActor::grant($user, ['purchasing.item-supplier.view']);
+        $this->getJson('/api/v1/item-suppliers')->assertOk();
+        $this->getJson("/api/v1/item-suppliers/{$relationship->id}")->assertOk();
+        $this->postJson('/api/v1/item-suppliers', [])->assertForbidden();
     }
 
     public function test_multiple_suppliers_and_sourcing_terms_round_trip(): void

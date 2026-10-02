@@ -12,7 +12,33 @@ export type PurchaseOrdersIndexParams = {
    * @minimum 1
    */
   "filter[supplier_account_id]"?: number;
+  /**
+   * @minimum 1
+   */
+  "filter[supplier_site_id]"?: number;
   "filter[status]"?: PurchaseOrderStatus;
+  /**
+   * @minimum 1
+   */
+  "filter[currency_id]"?: number;
+  /**
+   * @minimum 1
+   */
+  "filter[item_id]"?: number;
+  "filter[order_date_from]"?: string;
+  "filter[order_date_to]"?: string;
+  "filter[expected_delivery_from]"?: string;
+  "filter[expected_delivery_to]"?: string;
+  "filter[issued_from]"?: string;
+  "filter[issued_to]"?: string;
+  /**
+   * @minimum 0
+   */
+  "filter[total_min]"?: number;
+  /**
+   * @minimum 0
+   */
+  "filter[total_max]"?: number;
   /**
    * @maxLength 255
    */

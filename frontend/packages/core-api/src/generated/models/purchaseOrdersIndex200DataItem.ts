@@ -10,8 +10,5 @@ import type { PurchaseOrdersIndex200DataItemAllOf } from "./purchaseOrdersIndex2
 export type PurchaseOrdersIndex200DataItem = PurchaseOrderResource &
   PurchaseOrdersIndex200DataItemAllOf &
   Required<
-    Pick<
-      PurchaseOrderResource & PurchaseOrdersIndex200DataItemAllOf,
-      "total_amount" | "base_total_amount" | "lines"
-    >
+    Pick<PurchaseOrderResource & PurchaseOrdersIndex200DataItemAllOf, "lines">
   >;
