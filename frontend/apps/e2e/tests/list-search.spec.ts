@@ -39,11 +39,14 @@ test('Purchase Orders: Enter searches at once and emptying the box restores the 
   const table = page.locator('.po-screen table').first();
   await expect(table.locator('tbody tr').first()).toBeVisible();
 
+  // Search for an order that really exists in whatever data this run has: the number shown in the last row
+  const wanted = (await table.locator('tbody tr').last().locator('.po-order-link').innerText()).trim();
+
   // Enter does not wait out the pause
-  await box.fill('0042');
+  await box.fill(wanted);
   await box.press('Enter');
-  await expect(page).toHaveURL(/filter\.search=0042/, { timeout: 250 });
-  await expect(table.locator('tbody')).toContainText('0042');
+  await expect(page).toHaveURL(new RegExp(`filter\\.search=${wanted.replace(/[^A-Za-z0-9]/g, '.')}`), { timeout: 250 });
+  await expect(table.locator('tbody')).toContainText(wanted);
 
   // Emptying the box restores the full list at once (no pause) — and the footer never reads "0 records" on the way
   await box.fill('');
