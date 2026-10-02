@@ -60,6 +60,10 @@ still owns company PO policy. Neither should be silently decided by adding a rol
 
 ## Risk-ordered work queue
 
+Development environment note (2026-10-02): `permission:register` was run for company 1 after
+the FX and chart slices (90 vocabulary entries registered). This makes the two new capabilities
+available to Access Administration. No member or role assignment was made by this task.
+
 - [ ] **Policy decision:** product and Finance identify actual FX, chart and Party maintainers,
   separate duties that must not be bundled, and decide which financial/master-data fields need
   narrower read or write access. Record the decision in an ADR/domain doc, using existing research
