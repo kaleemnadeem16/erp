@@ -8,6 +8,7 @@
 |---|---|---|
 | General | name, legal name, short **code**\* | `company.profile.manage` |
 | Localization and finance | **time zone**\*, **base currency**\*, **fiscal year starts in**\* | `company.settings.manage` |
+| Registration and tax | company registration number, tax number, sales tax / VAT / GST number | `company.profile.manage` |
 | Contact and address | country, address lines, city, state, postal code, email, phone, website | `company.profile.manage` |
 
 \* *governed*: a change needs a reason and is recorded in the history. Reading the history needs `company.history.view`.
@@ -52,5 +53,6 @@ when and the reason. Rows written before the rename keep their original key wher
 
 ## Not built yet
 
-Branding/logo and company print defaults (need a file-storage and branding architecture), tax and registration numbers,
-a company switcher.
+Branding/logo and company print defaults (deferred until there is a file-storage and branding architecture). A company switcher
+is neither built nor decided. The registration and tax numbers are stored and shown on the Company screen but not yet printed on
+documents — that arrives with the first invoice-like document.

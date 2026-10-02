@@ -18,7 +18,7 @@ screen at all; and nothing identified the company in a document number except an
 ## Decision
 
 1. **One place, one source.** `GET /api/v1/company` and `PATCH /api/v1/company` serve the profile (name, legal name, short code,
-   country, address, email, phone, website) and the company-wide settings (time zone, base currency, fiscal-year start month).
+   company registration number, tax number, sales-tax/VAT/GST number, country, address, email, phone, website) and the company-wide settings (time zone, base currency, fiscal-year start month).
    Other modules read them through `CurrentCompany`, never by reaching into the table.
 2. **Ownership rule.** A setting belongs on the Company screen only if more than one module reads it and it is not another
    module's domain policy. Over-receipt, negative stock, backdating, approval and numbering policies stay with their modules.
@@ -47,8 +47,8 @@ screen at all; and nothing identified the company in a document number except an
 
 ## Deferred
 
-Branding/logo (needs a file-storage and branding architecture first), tax and registration numbers, per-company print defaults,
-and a company-switcher (the system is single-tenant per login today; every query is already company-scoped).
+Branding/logo and per-company print defaults — **deferred by decision** until a file-storage and branding architecture exists.
+Not built, not decided: a company switcher (the system is single-company per login today; every query is already company-scoped).
 
 ## Consequences
 

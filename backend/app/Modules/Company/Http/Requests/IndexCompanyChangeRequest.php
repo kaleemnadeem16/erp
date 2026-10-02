@@ -16,6 +16,6 @@ class IndexCompanyChangeRequest extends FormRequest
     /** @return array<string, mixed> */
     public function rules(): array
     {
-        return ['per_page' => ['sometimes', 'integer', 'between:1,100'], 'filter.section' => ['sometimes', 'in:GENERAL,LOCALIZATION,CONTACT']];
+        return ['per_page' => ['sometimes', 'integer', 'between:1,100'], 'filter.section' => ['sometimes', 'in:GENERAL,LOCALIZATION,REGISTRATION,CONTACT']];
     }
 }

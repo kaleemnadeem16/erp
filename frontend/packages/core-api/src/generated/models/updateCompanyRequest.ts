@@ -7,6 +7,9 @@
 import type { UpdateCompanyRequestLegalName } from "./updateCompanyRequestLegalName";
 import type { UpdateCompanyRequestCode } from "./updateCompanyRequestCode";
 import type { UpdateCompanyRequestBaseCurrencyId } from "./updateCompanyRequestBaseCurrencyId";
+import type { UpdateCompanyRequestRegistrationNumber } from "./updateCompanyRequestRegistrationNumber";
+import type { UpdateCompanyRequestTaxNumber } from "./updateCompanyRequestTaxNumber";
+import type { UpdateCompanyRequestSalesTaxNumber } from "./updateCompanyRequestSalesTaxNumber";
 import type { UpdateCompanyRequestCountryCode } from "./updateCompanyRequestCountryCode";
 import type { UpdateCompanyRequestAddressLine1 } from "./updateCompanyRequestAddressLine1";
 import type { UpdateCompanyRequestAddressLine2 } from "./updateCompanyRequestAddressLine2";
@@ -38,6 +41,12 @@ export interface UpdateCompanyRequest {
    * @maximum 12
    */
   fiscal_year_start_month?: number;
+  /** @pattern ^[A-Za-z0-9][A-Za-z0-9 .\/-]{0,49}$ */
+  registration_number?: UpdateCompanyRequestRegistrationNumber;
+  /** @pattern ^[A-Za-z0-9][A-Za-z0-9 .\/-]{0,49}$ */
+  tax_number?: UpdateCompanyRequestTaxNumber;
+  /** @pattern ^[A-Za-z0-9][A-Za-z0-9 .\/-]{0,49}$ */
+  sales_tax_number?: UpdateCompanyRequestSalesTaxNumber;
   /** @pattern ^[A-Z]{2}$ */
   country_code?: UpdateCompanyRequestCountryCode;
   /** @maxLength 255 */

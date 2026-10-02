@@ -37,6 +37,9 @@ use Illuminate\Support\Carbon;
  * @property string $timezone IANA time zone of the company's books and business day (ADR 0081)
  * @property string|null $code stable short code, used in document numbers
  * @property string|null $legal_name
+ * @property string|null $registration_number
+ * @property string|null $tax_number
+ * @property string|null $sales_tax_number
  * @property string|null $country_code ISO 3166-1 alpha-2
  * @property string|null $address_line1
  * @property string|null $address_line2

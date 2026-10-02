@@ -12,5 +12,6 @@ export type CompanyChangesIndexFilterSection =
 export const CompanyChangesIndexFilterSection = {
   GENERAL: "GENERAL",
   LOCALIZATION: "LOCALIZATION",
+  REGISTRATION: "REGISTRATION",
   CONTACT: "CONTACT",
 } as const;

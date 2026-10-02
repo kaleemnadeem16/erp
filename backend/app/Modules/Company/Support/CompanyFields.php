@@ -20,10 +20,14 @@ final class CompanyFields
 
     public const SETTINGS = 'company.settings.manage';
 
+    /** Letters, digits, space and . / - only, starting with a letter or digit (matches the database CHECK). */
+    private const IDENTIFIER = ['string', 'regex:/^[A-Za-z0-9][A-Za-z0-9 .\/-]{0,49}$/'];
+
     /** @var array<string, array{label: string, description: string}> */
     public const SECTIONS = [
         'GENERAL' => ['label' => 'General', 'description' => 'Who the company is.'],
         'LOCALIZATION' => ['label' => 'Localization and finance', 'description' => 'Company-wide settings that every part of the system relies on.'],
+        'REGISTRATION' => ['label' => 'Registration and tax', 'description' => 'The identifiers that appear on invoices and statutory documents.'],
         'CONTACT' => ['label' => 'Contact and address', 'description' => 'How people reach the company.'],
     ];
 
@@ -53,6 +57,9 @@ final class CompanyFields
                 'The month a fiscal year begins. It can be changed until the first accounting period is closed.',
                 CompanyFieldType::Month, ['integer', 'between:1,12'], self::SETTINGS, governed: true, nullable: false,
             ),
+            new CompanyField('registration_number', 'REGISTRATION', 'Company registration number', 'The number the company is registered under with the corporate registry (for example SECP or Companies House).', CompanyFieldType::Text, [...self::IDENTIFIER], self::PROFILE, maxLength: 50),
+            new CompanyField('tax_number', 'REGISTRATION', 'Tax number', 'The national tax identifier (for example NTN, TIN or EIN).', CompanyFieldType::Text, [...self::IDENTIFIER], self::PROFILE, maxLength: 50),
+            new CompanyField('sales_tax_number', 'REGISTRATION', 'Sales tax / VAT / GST number', 'The indirect-tax registration number (for example STRN, VAT or GSTIN), where the company is registered for it.', CompanyFieldType::Text, [...self::IDENTIFIER], self::PROFILE, maxLength: 50),
             new CompanyField('country_code', 'CONTACT', 'Country', 'The country the company is based in.', CompanyFieldType::Country, ['string', 'regex:/^[A-Z]{2}$/'], self::PROFILE),
             new CompanyField('address_line1', 'CONTACT', 'Address line 1', '', CompanyFieldType::Text, ['string', 'max:255'], self::PROFILE, maxLength: 255),
             new CompanyField('address_line2', 'CONTACT', 'Address line 2', '', CompanyFieldType::Text, ['string', 'max:255'], self::PROFILE, maxLength: 255),

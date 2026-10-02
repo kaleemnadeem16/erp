@@ -42,6 +42,7 @@ final class FoundationDemoSeeder extends Seeder
         $profile = [
             'code' => 'X1', 'legal_name' => 'X1 ERP Demo Company (Pvt) Ltd', 'country_code' => 'PK',
             'address_line1' => '12 Industrial Estate Road', 'city' => 'Lahore', 'state' => 'Punjab', 'postal_code' => '54000',
+            'registration_number' => '0123456', 'tax_number' => '1234567-8', 'sales_tax_number' => '32-77-8760-001-37',
             'email' => 'info@demo.example', 'phone' => '+92 42 111 000 111', 'website' => 'https://demo.example',
         ];
         foreach ($profile as $field => $value) {

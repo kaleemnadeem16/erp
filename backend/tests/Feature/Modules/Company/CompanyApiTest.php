@@ -60,6 +60,21 @@ class CompanyApiTest extends TestCase
         $this->assertNull($changes[0]->reason);
     }
 
+    public function test_registration_and_tax_numbers_are_validated_and_recorded_as_their_own_section(): void
+    {
+        $this->actingAs($this->admin());
+        $this->patchJson('/api/v1/company', ['tax_number' => '<script>'])->assertUnprocessable()->assertJsonValidationErrors('tax_number');
+        $this->patchJson('/api/v1/company', ['sales_tax_number' => str_repeat('1', 51)])->assertUnprocessable()->assertJsonValidationErrors('sales_tax_number');
+
+        $this->patchJson('/api/v1/company', ['registration_number' => '0123456', 'tax_number' => '1234567-8', 'sales_tax_number' => '32-77-8760-001-37'])->assertOk()
+            ->assertJsonPath('data.values.tax_number', '1234567-8');
+
+        $change = CompanyChange::query()->sole();
+        $this->assertSame('REGISTRATION', $change->section);
+        $this->assertEquals(['registration_number' => null, 'tax_number' => null, 'sales_tax_number' => null], $change->old_values);
+        $this->actingAs(PurchasingActor::make([]))->patchJson('/api/v1/company', ['tax_number' => '1'])->assertForbidden();
+    }
+
     public function test_an_unchanged_save_writes_no_history(): void
     {
         $this->actingAs($this->admin())->patchJson('/api/v1/company', ['city' => 'Lahore'])->assertOk();
