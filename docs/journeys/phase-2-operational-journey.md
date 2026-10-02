@@ -44,6 +44,14 @@ Stock Ledger for operational stock questions.
 
 Do this once before the first PO for a new item. Existing records can be reused.
 
+After creating an item, its detail screen offers **Pack conversions**. An item manager can add
+alternate units there: choose the pack unit and enter how many stock units one pack contains.
+For example, a box containing 24 each uses factor 24. Each pack level converts directly to the
+stock unit. Stock quantity increment is optional on item create/edit (blank means unrestricted).
+These values describe quantity; they do not prove sealed packages exist. Conversion maintenance
+adds no approval step; its backend permission gap is explicitly tracked in the
+[improvement plan](../phases/item-purchasing-improvements.md#authorisation-review).
+
 | Order | Screen | What to do | Result |
 |---|---|---|---|
 | 1 | `/categories` | Create or choose the category and its defaults. | The item can inherit applicable defaults. |

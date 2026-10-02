@@ -11,6 +11,7 @@ import { DetailPageLayout, DetailSection } from '../../components/detail/detail-
 import { DetailField } from '../../components/detail/detail-field';
 import { DetailPrintLayout, PrintTrigger, useQuickPrint, type DetailPrintSection } from '../../components/print';
 import { getApiErrorMessage } from '../../lib/api-errors';
+import { ItemQuantityUnitsListScreen } from '../item-quantity-units/item-quantity-units-list-screen';
 import { usePermission } from '../../hooks/use-permission';
 
 export function ItemDetailScreen() {
@@ -93,6 +94,7 @@ export function ItemDetailScreen() {
           label: 'Stock unit of measure',
           value: uom ? `${uom.name} (${uom.code})` : ''
         },
+        { label: 'Stock quantity increment', value: item.quantity_precision ?? 'Unrestricted' },
         { label: 'Tracking', value: item.tracking },
         { label: 'Valuation method', value: item.valuation_method },
         { label: 'AVCO pool scope', value: item.avco_pool_scope ?? '' },
@@ -156,6 +158,7 @@ export function ItemDetailScreen() {
 
         <DetailSection title="Stock &amp; valuation">
           <DetailField label="Stock unit of measure">{uom ? `${uom.name} (${uom.code})` : undefined}</DetailField>
+          <DetailField label="Stock quantity increment">{item.quantity_precision ?? 'Unrestricted'}</DetailField>
           <DetailField label="Tracking">{item.tracking}</DetailField>
           <DetailField label="Valuation method">{item.valuation_method}</DetailField>
           <DetailField label="AVCO pool scope">{item.avco_pool_scope}</DetailField>
@@ -190,6 +193,12 @@ export function ItemDetailScreen() {
           </DetailSection>
         )}
       </DetailPageLayout>
+
+      <DetailSection title="Pack conversions" description="Alternate units for this item. These conversions describe quantity, not sealed packages in stock." fullWidth>
+        <div className="col-span-full">
+          <ItemQuantityUnitsListScreen key={item.id} itemId={item.id} stockUnit={uom?.code} />
+        </div>
+      </DetailSection>
 
       {/* Quick Print — a dedicated print-only layout, hidden until react-to-print clones it. */}
       <div className="hidden">

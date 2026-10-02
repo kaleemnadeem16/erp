@@ -1,6 +1,6 @@
 # Project Status
 
-**Updated:** 2026-10-01
+**Updated:** 2026-10-02
 **Current phase:** Phase 3 — Estimating core (in progress; two vertical slices shipped
 2026-09-23 — rate dimensions/application rates, then formulations with versioning, customer
 overrides and nested cost roll-up, now followed by the 2026-09-24 draft-editing, human-readable
@@ -44,6 +44,7 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 
 | Item | Date |
 |---|---|
+| **Item pack-conversion access (step 1)** — item details embed the existing editor with fixed item identity; create/edit expose stock quantity increment and detail/print show it. The incremental plan records PO conversion visibility next and research gates for further changes; the existing conversion backend write-authorisation gap is explicitly open → [plan](phases/item-purchasing-improvements.md), [items](domain/items.md). | 2026-10-02 |
 | **Formulations list lookups are server-searchable** — output-item and customer filters query their existing search APIs and resolve selected IDs after a bookmarked reload; they no longer stop at the first 100 options. Estimating form pickers remain a separate scale pass → [formulations](domain/formulations.md#access), [retrofit](architecture/authorization-retrofit.md#c-existing-estimating-crud). | 2026-10-01 |
 | **Assemblies group filter is server-searchable** — the group picker now queries the Assembly Groups API and resolves selected IDs after a bookmarked reload, rather than limiting choices to the first 100. Formulations and other Estimating selectors still need scaling → [assemblies](domain/assemblies.md#assembly-access), [retrofit](architecture/authorization-retrofit.md#c-existing-estimating-crud). | 2026-10-01 |
 | **Application Rates work-unit filter is server-searchable** — like its Item filter, it queries the existing UoMs search API and resolves a selected ID for bookmarked URLs. Other Estimating lookup selectors still need scaling → [application rates](domain/application-rates.md#access-to-application-rates), [retrofit](architecture/authorization-retrofit.md#c-existing-estimating-crud). | 2026-10-01 |

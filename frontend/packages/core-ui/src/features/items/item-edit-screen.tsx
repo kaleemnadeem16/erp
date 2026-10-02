@@ -70,6 +70,7 @@ export function ItemEditScreen() {
     description: item.description ?? '',
     type: item.type as ItemType,
     stock_uom_id: String(item.stock_uom_id),
+    quantity_precision: item.quantity_precision ?? '',
     category_id: String(item.category_id),
     is_stocked: item.is_stocked,
     is_purchasable: item.is_purchasable,

@@ -196,6 +196,14 @@ so cross-module selectors keep working. Write controls and endpoints require
 decide whether GL-account IDs should be visible; that field-level Finance boundary remains tracked
 separately in the authorisation retrofit backlog.
 
+Item details embed the existing pack-conversion editor, scoped to the current item, so the
+post-create detail screen is also the entry point for adding pack sizes. Write controls require
+`inventory.item.manage`; the existing conversion API/Action authorisation gap is recorded in
+[the delivery sequence](../phases/item-purchasing-improvements.md#authorisation-review).
+Create/edit expose the optional stock quantity increment; detail and Quick Print show its stored
+value or “Unrestricted”. This is divisibility metadata, not a supplier order multiple, and does
+not add PO enforcement. See [the incremental plan](../phases/item-purchasing-improvements.md).
+
 ## Landmines
 
 **Codes and case sensitivity.** Postgres is case-sensitive, so `PIG-001` and `pig-001` are

@@ -125,6 +125,9 @@ Gmail.
 
 ---
 
+The [Item and Purchasing improvements](item-purchasing-improvements.md) sequence tracks the
+pack-conversion usability deliveries and the research gates for further Purchasing extensions.
+
 ## Sequencing notes
 
 **Phases 3–5 are the differentiator** and the hardest part. Phases 0–2 are table stakes, but

@@ -23,6 +23,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { DetailSection } from '../../components/detail/detail-page-layout';
 import { applyApiErrorsToForm, getApiErrorMessage, lookupState } from '../../lib/api-errors';
 import { apiSortToTableSorting, tableSortingToApiSort, useListQueryState } from '../../lib/list-query-state';
+import { usePermission } from '../../hooks/use-permission';
 import { itemQuantityUnitColumns } from './item-quantity-units-columns';
 
 const DECIMAL = /^\d{1,10}(\.\d{1,9})?$/;
@@ -48,10 +49,12 @@ interface Filters {
  * an existing row only ever changes factor/quantity_precision, never which
  * item or unit it's about.
  */
-export function ItemQuantityUnitsListScreen() {
+export function ItemQuantityUnitsListScreen({ itemId, stockUnit }: { itemId?: number; stockUnit?: string } = {}) {
+  const mayManage = usePermission('inventory.item.manage');
+  const emptyValues = { ...EMPTY_VALUES, item_id: itemId ? String(itemId) : '' };
   const query = useListQueryState<Filters>({ defaultSort: '-created_at' });
   const result = useItemQuantityUnitsIndex({
-    'filter[item_id]': query.filters.item_id ? Number(query.filters.item_id) : undefined,
+    'filter[item_id]': itemId ?? (query.filters.item_id ? Number(query.filters.item_id) : undefined),
     include: 'item,uom',
     sort: query.sort as 'created_at' | '-created_at' | undefined,
     per_page: query.perPage,
@@ -73,7 +76,7 @@ export function ItemQuantityUnitsListScreen() {
   const [formError, setFormError] = useState<string | null>(null);
   const [editing, setEditing] = useState<ItemQuantityUnitResource | null>(null);
 
-  const form = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: EMPTY_VALUES });
+  const form = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: emptyValues });
 
   function startEdit(row: ItemQuantityUnitResource) {
     setFormError(null);
@@ -89,7 +92,7 @@ export function ItemQuantityUnitsListScreen() {
   function cancelEdit() {
     setFormError(null);
     setEditing(null);
-    form.reset(EMPTY_VALUES);
+    form.reset(emptyValues);
   }
 
   function submit(values: FormValues) {
@@ -163,13 +166,13 @@ export function ItemQuantityUnitsListScreen() {
   }
 
   return (
-    <div className="space-y-4 p-4 pb-24 md:p-6">
-      <PageHeader
+    <div className={itemId ? "space-y-4" : "space-y-4 p-4 pb-24 md:p-6"}>
+      {!itemId && <PageHeader
         title="Pack conversions"
         description="An item's own alternate/pack unit factor (a box of eaches, a roll priced by the metre) — resolved before the global unit-of-measure conversion. Item and pack unit are fixed once created; delete and re-add to change either."
-      />
+      />}
 
-      <div className="flex flex-wrap items-center gap-2">
+      {!itemId && <div className="flex flex-wrap items-center gap-2">
         <Combobox {...lookupState(itemsResult, 'items')}
           className="h-9 w-64"
           aria-label="Filter by item"
@@ -180,9 +183,9 @@ export function ItemQuantityUnitsListScreen() {
           emptyText="No items found."
           options={[{ value: 'all', label: 'All items' }, ...items.map((i) => ({ value: String(i.id), label: `${i.code} — ${i.name}` }))]}
         />
-      </div>
+      </div>}
 
-      <DetailSection
+      {mayManage && <DetailSection
         title={editing ? `Edit pack conversion — ${editing.item ? editing.item.code : editing.item_id}` : 'Add a pack conversion'}
       >
         {formError && (
@@ -190,9 +193,10 @@ export function ItemQuantityUnitsListScreen() {
             {formError}
           </div>
         )}
+        {stockUnit && <p className="col-span-full text-sm text-muted-foreground">1 pack unit = factor × {stockUnit}. Each pack size converts directly to the stock unit.</p>}
         <Form {...form}>
           <form className="col-span-full grid gap-3 sm:grid-cols-4" onSubmit={form.handleSubmit(submit)}>
-            <FormField
+            {!itemId && <FormField
               control={form.control}
               name="item_id"
               render={({ field }) => (
@@ -213,7 +217,7 @@ export function ItemQuantityUnitsListScreen() {
                   <FormMessage />
                 </FormItem>
               )}
-            />
+            />}
             <FormField
               control={form.control}
               name="uom_id"
@@ -281,8 +285,9 @@ export function ItemQuantityUnitsListScreen() {
             </div>
           </form>
         </Form>
-      </DetailSection>
+      </DetailSection>}
 
+      {deleteMutation.isError && <p role="alert" className="text-sm text-destructive">{getApiErrorMessage(deleteMutation.error)}</p>}
       <DataTable
         columns={columns}
         data={rows}
@@ -297,7 +302,7 @@ export function ItemQuantityUnitsListScreen() {
         onSortingChange={(u) =>
           query.setSort(tableSortingToApiSort(typeof u === 'function' ? u(sorting) : u, itemQuantityUnitColumns))
         }
-        rowActions={renderRowActions}
+        rowActions={mayManage ? renderRowActions : undefined}
         isLoading={result.isLoading}
         isError={result.isError}
         error={result.error}

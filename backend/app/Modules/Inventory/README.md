@@ -263,6 +263,13 @@ directly rather than re-resolved on every read — a later change to the categor
 silently move an already-created item's official cost basis. See
 [ADR 0032](../../../../docs/decisions/0032-per-item-valuation-method.md).
 
+Item details embed the item-scoped conversion editor; its write controls use
+`inventory.item.manage`, and item forms expose `quantity_precision`. Conversion reads remain
+company-scoped reference data. The existing conversion write API/Actions are authentication-only;
+the backend capability gap is tracked in the
+[improvement plan](../../../../docs/phases/item-purchasing-improvements.md#authorisation-review).
+No approval transition is added.
+
 ## Related
 
 - [domain/items.md](../../../../docs/domain/items.md)

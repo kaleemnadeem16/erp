@@ -27,6 +27,7 @@ const itemFormSchema = z
     name: z.string().trim().min(1, 'Name is required').max(255),
     description: z.string().max(5000).optional(),
     type: z.enum(ItemType),
+    quantity_precision: z.string().trim().refine((v) => !v || (/^\d{1,10}(\.\d{1,9})?$/.test(v) && Number(v) > 0), 'Enter a positive increment with up to 9 decimal places'),
     stock_uom_id: z.string().min(1, 'Stock unit of measure is required'),
     category_id: z.string().min(1, 'Category is required'),
     is_stocked: z.boolean(),
@@ -58,6 +59,7 @@ export const ITEM_FORM_FIELDS = [
   'description',
   'type',
   'stock_uom_id',
+  'quantity_precision',
   'category_id',
   'is_stocked',
   'is_purchasable',
@@ -74,6 +76,7 @@ export const ITEM_FORM_DEFAULT_VALUES: ItemFormValues = {
   description: '',
   type: ItemType.RAW,
   stock_uom_id: '',
+  quantity_precision: '',
   category_id: '',
   is_stocked: true,
   is_purchasable: true,
@@ -92,6 +95,7 @@ export function toItemPayload(values: ItemFormValues) {
     description: values.description?.trim() ? values.description.trim() : null,
     type: values.type,
     stock_uom_id: Number(values.stock_uom_id),
+    quantity_precision: values.quantity_precision || null,
     category_id: Number(values.category_id),
     is_stocked: values.is_stocked,
     is_purchasable: values.is_purchasable,
@@ -264,6 +268,18 @@ export function ItemForm({ mode, defaultValues, onSubmit, onCancel, isSubmitting
                     emptyText="No units found."
                   />
                 </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="quantity_precision"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Stock quantity increment (optional)</FormLabel>
+                <FormControl><Input inputMode="decimal" placeholder="Unrestricted" {...field} /></FormControl>
+                <p className="text-xs text-muted-foreground">In the stock unit: 1 for whole units, 0.5 for half units. Leave blank for unrestricted quantities. This is not a supplier order multiple.</p>
                 <FormMessage />
               </FormItem>
             )}
