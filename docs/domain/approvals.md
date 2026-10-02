@@ -71,6 +71,11 @@ act on it or has acted on it.
 `/approvals` — the inbox (including what a person may decide as someone's delegate), an audit tab for those who may, and
 "Cover while you are away" (delegations). The purchase-order detail screen shows the approval state, submit/withdraw and the
 decision history, and disables Issue/Edit with the reason rather than failing after a click.
+The **purchase-order list** has an **Approval** column, a filter (*All approvals · Waiting · Approved · Rejected · Withdrawn · No
+longer valid · Expired · Not sent for approval*) and a chip, shown only for a company that uses approvals. The API sends
+`approval_status` per row (one query for the page; `null` for every row while approvals are off) and `filter[approval]` judges
+an order by its **latest** request. The row menu offers *Submit for approval* and hides *Issue order* while approval stands in
+the way.
 
 ## Not yet available
 
@@ -80,6 +85,18 @@ decision history, and disables Issue/Edit with the reason rather than failing af
   ([Q33](../OPEN-QUESTIONS.md#q33--erp-wide-notifications-capability)), not unfinished approval work. The engine records everything
   a notification would need (who is eligible, deadlines, overdue flags, decisions), and the inbox is pull-only until that
   shared capability exists; the engine deliberately contains no e-mail, push or approval-specific alerting.
+- **Purchase-order approval — not done yet (recorded 2026-10-02 so it is not lost):**
+  - *Approval section of the order panel*: who is expected to approve and at which step, the step's due date and whether it is
+    overdue, a decision timeline with each approver's note, and the policy that routed the order (the engine already records
+    all of this; the screen shows only the status and the decisions).
+  - *Bulk action* on the list: **Submit selected for approval** (the bulk bar exists; the action does not).
+  - *A filter for "needs approval but not yet submitted"*: the list shows it in the column, but it cannot be a filter because it
+    depends on matching policies per order. Needs either a stored "approval required" snapshot written when an order is saved,
+    or a policy-matching query; to be decided.
+  - *Explicit "approvals in use" flag from the list API*: the column and filter currently appear once any row carries an
+    approval status (and stay once seen). An explicit `meta` flag on the list response would remove that inference — decision
+    pending with the owner.
+  - *Approvals on other list screens* (goods receipts, requests): the same column/filter pattern, per consumer.
 - Submitting a material plan for approval (Phase 4 adoption).
 - Migrating recalculation, negative-stock and cutover approvals onto the engine.
 
