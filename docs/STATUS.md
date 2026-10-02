@@ -110,6 +110,10 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 
 ## Next
 
+Packaged/loose Purchasing implementation is authorised under accepted
+[ADR 0080](decisions/0080-packaged-purchasing-and-independent-price-basis.md); the
+[delivery plan](phases/item-purchasing-improvements.md) tracks committed implementation slices.
+
 The owner’s expanded small-to-large packaging and Purchasing discussion is captured in the
 [research brief](phases/item-purchasing-improvements.md#packaging-research-discussion-brief--2026-10-02).
 It records nested Thinner packs, related cases, existing foundations and unresolved questions;

@@ -137,15 +137,6 @@ purchase-order and quotation workflows.
 
 ---
 
-### Q34 — Item pack-conversion maintenance authorisation
-**Blocks:** Claiming conversion writes are protected by a capability
-
-The standalone and embedded conversion editors gate writes with `inventory.item.manage`, but
-store/update/delete requests and their non-HTTP Actions currently require only authentication.
-Should the existing item-management capability govern all conversion maintenance? Once decided,
-protect HTTP and Action writes and test allowed/denied callers. Reads remain company-scoped
-reference data. Found during [item/Purchasing step 1](phases/item-purchasing-improvements.md#authorisation-review).
-
 ## Answered
 
 Answered questions live in [decisions/](decisions/) as ADRs. See the

@@ -93,7 +93,9 @@ in the same commit.
 | [0078](0078-debounced-list-search-and-stable-tables-while-loading.md) | Wait for a pause before searching, and keep the table steady while it loads | accepted | 2026-10-02 |
 | [0079](0079-document-numbering-system-templates-over-a-variable-registry.md) | One central document-numbering framework: series of templates over a registry of variables | accepted | 2026-10-02 |
 
-**Next number: 0080**
+| [0080](0080-packaged-purchasing-and-independent-price-basis.md) | Separate named packages, supplier offers and purchasing price basis | accepted | 2026-10-02 |
+
+**Next number: 0081**
 
 ## By theme
 

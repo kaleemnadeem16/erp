@@ -8,6 +8,21 @@ phases; it does not bring every later-phase capability into Phase 2. Follow the
 
 ## Delivery sequence
 
+The owner approved [ADR 0080](../decisions/0080-packaged-purchasing-and-independent-price-basis.md).
+Implementation is now authorised in committed slices:
+
+- [ ] Enforce conversion maintenance permission in Requests and Actions; fix receipt conversion/price normalisation.
+- [ ] Add fixed named package definitions and supplier offers, with company-safe references and lifecycle guards.
+- [ ] Add PO package/loose choice, separate price basis, warning/reason evidence and immutable snapshots.
+- [ ] Add receipt package evidence, partial delivery and replacement-order linkage.
+- [ ] Expose package/offer maintenance and purchasing/receiving in the existing screens; regenerate client and verify.
+
+Acceptance: equal-content boxes remain distinct; 10 boxes of 2 L priced at PKR 850/L costs
+PKR 17,000; loose 6.5 L works; 6+4 boxes receives as 12+8 L; changed masters cannot change issued
+terms; denied API/Action callers cannot mutate masters; quantity-only stock never claims sealed packs.
+Supplier MOQ/multiple violations warn and require a reason. Physical package balances, containers,
+catch weight, price tiers and configurable constraint escalation are deliberate later deliveries.
+
 1. [x] **Item pack-conversion access:** reuse ADR 0050's editor within item details, fix its item
    identity to the current record, retain pagination and server errors, and expose stock quantity
    increment in item create/edit/detail. Creating an item leads directly to its conversions.
