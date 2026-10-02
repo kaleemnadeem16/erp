@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Actions\ManageExchangeRate;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ExchangeRate\IndexExchangeRateRequest;
 use App\Http\Requests\ExchangeRate\ShowExchangeRateRequest;
@@ -14,6 +15,7 @@ use App\Models\ExchangeRate;
 use App\Support\Concerns\AppliesApiQuery;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Validation\ValidationException;
 
@@ -74,13 +76,10 @@ class ExchangeRateController extends Controller
         return ExchangeRateResource::collection($query->paginate($perPage));
     }
 
-    public function store(StoreExchangeRateRequest $request): JsonResponse
+    public function store(StoreExchangeRateRequest $request, ManageExchangeRate $manage): JsonResponse
     {
         try {
-            $rate = ExchangeRate::create([
-                ...$request->validated(),
-                'source' => 'manual',
-            ]);
+            $rate = $manage->create($request->user(), $request->validated());
         } catch (QueryException $exception) {
             if ((string) $exception->getCode() !== '23505'
                 || ! str_contains($exception->getMessage(), 'exchange_rates_unique_rate')) {
@@ -102,16 +101,14 @@ class ExchangeRateController extends Controller
         ));
     }
 
-    public function update(UpdateExchangeRateRequest $request, ExchangeRate $exchange_rate): ExchangeRateResource
+    public function update(UpdateExchangeRateRequest $request, ExchangeRate $exchange_rate, ManageExchangeRate $manage): ExchangeRateResource
     {
-        $exchange_rate->update($request->validated());
-
-        return new ExchangeRateResource($exchange_rate);
+        return new ExchangeRateResource($manage->update($request->user(), $exchange_rate, $request->validated()));
     }
 
-    public function destroy(ExchangeRate $exchange_rate): JsonResponse
+    public function destroy(Request $request, ExchangeRate $exchange_rate, ManageExchangeRate $manage): JsonResponse
     {
-        $exchange_rate->delete();
+        $manage->delete($request->user(), $exchange_rate);
 
         return response()->json(status: 204);
     }

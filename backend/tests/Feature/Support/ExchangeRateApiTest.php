@@ -2,13 +2,17 @@
 
 namespace Tests\Feature\Support;
 
+use App\Actions\ManageExchangeRate;
 use App\Models\Currency;
 use App\Models\ExchangeRate;
 use App\Models\User;
 use App\Support\CompanyContext;
 use App\Support\RateType;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class ExchangeRateApiTest extends TestCase
@@ -32,9 +36,83 @@ class ExchangeRateApiTest extends TestCase
         $this->getJson('/api/v1/exchange-rates')->assertUnauthorized();
     }
 
+    public function test_a_user_without_rate_maintenance_can_read_but_cannot_write(): void
+    {
+        $rate = ExchangeRate::create([
+            'from_currency_id' => $this->usd->id,
+            'to_currency_id' => $this->pkr->id,
+            'rate' => '280.5',
+            'rate_date' => '2026-08-13',
+            'rate_type' => RateType::Spot,
+        ]);
+        $user = User::factory()->create();
+        $payload = [
+            'from_currency_id' => $this->usd->id,
+            'to_currency_id' => $this->pkr->id,
+            'rate' => '281.0',
+            'rate_date' => '2026-08-14',
+            'rate_type' => RateType::Spot->value,
+        ];
+
+        $this->actingAs($user)->getJson('/api/v1/exchange-rates')->assertOk();
+        $this->getJson("/api/v1/exchange-rates/{$rate->id}")->assertOk();
+        $this->postJson('/api/v1/exchange-rates', $payload)->assertForbidden();
+        $this->patchJson("/api/v1/exchange-rates/{$rate->id}", ['rate' => '999'])->assertForbidden();
+        $this->deleteJson("/api/v1/exchange-rates/{$rate->id}")->assertForbidden();
+
+        $this->assertDatabaseCount('exchange_rates', 1);
+        $this->assertDatabaseHas('exchange_rates', ['id' => $rate->id, 'rate' => '280.500000000']);
+    }
+
+    public function test_the_non_http_write_boundary_denies_an_unprivileged_actor(): void
+    {
+        $actor = User::factory()->create();
+        $rate = ExchangeRate::create([
+            'from_currency_id' => $this->usd->id,
+            'to_currency_id' => $this->pkr->id,
+            'rate' => '280.5',
+            'rate_date' => '2026-08-13',
+            'rate_type' => RateType::Spot,
+        ]);
+        $manage = app(ManageExchangeRate::class);
+
+        foreach ([
+            fn () => $manage->create($actor, ['rate' => '1']),
+            fn () => $manage->update($actor, $rate, ['rate' => '999']),
+            fn () => $manage->delete($actor, $rate),
+        ] as $operation) {
+            try {
+                $operation();
+                $this->fail('The rate write should have been denied.');
+            } catch (AuthorizationException) {
+                // Every entry point must fail before it mutates a rate.
+            }
+        }
+
+        $this->assertDatabaseCount('exchange_rates', 1);
+        $this->assertDatabaseHas('exchange_rates', ['id' => $rate->id, 'rate' => '280.500000000']);
+    }
+
+    public function test_a_role_grant_allows_rate_maintenance(): void
+    {
+        Permission::findOrCreate('currency.exchange-rate.manage');
+        $role = Role::findOrCreate('FX Maintainer');
+        $role->givePermissionTo('currency.exchange-rate.manage');
+        $user = User::factory()->create();
+        $user->assignRole($role);
+
+        $this->actingAs($user)->postJson('/api/v1/exchange-rates', [
+            'from_currency_id' => $this->usd->id,
+            'to_currency_id' => $this->pkr->id,
+            'rate' => '281.0',
+            'rate_date' => '2026-08-14',
+            'rate_type' => RateType::Spot->value,
+        ])->assertCreated();
+    }
+
     public function test_a_rate_can_be_manually_entered(): void
     {
-        $response = $this->actingAs(User::factory()->create())->postJson('/api/v1/exchange-rates', [
+        $response = $this->actingAs($this->rateMaintainer())->postJson('/api/v1/exchange-rates', [
             'from_currency_id' => $this->usd->id,
             'to_currency_id' => $this->pkr->id,
             'rate' => '280.5',
@@ -56,7 +134,7 @@ class ExchangeRateApiTest extends TestCase
 
     public function test_source_cannot_be_set_by_the_client(): void
     {
-        $response = $this->actingAs(User::factory()->create())->postJson('/api/v1/exchange-rates', [
+        $response = $this->actingAs($this->rateMaintainer())->postJson('/api/v1/exchange-rates', [
             'from_currency_id' => $this->usd->id,
             'to_currency_id' => $this->pkr->id,
             'rate' => '280.5',
@@ -71,7 +149,7 @@ class ExchangeRateApiTest extends TestCase
 
     public function test_a_rate_cannot_be_fabricated_between_a_currency_and_itself(): void
     {
-        $response = $this->actingAs(User::factory()->create())->postJson('/api/v1/exchange-rates', [
+        $response = $this->actingAs($this->rateMaintainer())->postJson('/api/v1/exchange-rates', [
             'from_currency_id' => $this->usd->id,
             'to_currency_id' => $this->usd->id,
             'rate' => '1',
@@ -85,7 +163,7 @@ class ExchangeRateApiTest extends TestCase
 
     public function test_duplicate_pair_date_and_type_is_rejected_with_a_422_not_a_500(): void
     {
-        $user = User::factory()->create();
+        $user = $this->rateMaintainer();
 
         ExchangeRate::create([
             'from_currency_id' => $this->usd->id,
@@ -132,7 +210,7 @@ class ExchangeRateApiTest extends TestCase
             ]);
         });
 
-        $response = $this->actingAs(User::factory()->create())->postJson('/api/v1/exchange-rates', [
+        $response = $this->actingAs($this->rateMaintainer())->postJson('/api/v1/exchange-rates', [
             'from_currency_id' => $this->usd->id,
             'to_currency_id' => $this->pkr->id,
             'rate' => '280.5',
@@ -153,7 +231,7 @@ class ExchangeRateApiTest extends TestCase
             'rate_type' => RateType::Spot->value,
         ];
 
-        $this->actingAs(User::factory()->create())
+        $this->actingAs($this->rateMaintainer())
             ->postJson('/api/v1/exchange-rates', [...$payload, 'rate' => '12345678901'])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('rate');
@@ -165,7 +243,7 @@ class ExchangeRateApiTest extends TestCase
 
     public function test_index_lists_rates_and_can_be_filtered_by_rate_type(): void
     {
-        $user = User::factory()->create();
+        $user = $this->rateMaintainer();
 
         ExchangeRate::create([
             'from_currency_id' => $this->usd->id, 'to_currency_id' => $this->pkr->id,
@@ -185,7 +263,7 @@ class ExchangeRateApiTest extends TestCase
 
     public function test_index_rejects_invalid_filters_and_pagination(): void
     {
-        $user = User::factory()->create();
+        $user = $this->rateMaintainer();
 
         $this->actingAs($user)
             ->getJson('/api/v1/exchange-rates?filter[from_currency_id]=not-an-id')
@@ -263,7 +341,7 @@ class ExchangeRateApiTest extends TestCase
 
     public function test_only_the_rate_itself_can_be_updated(): void
     {
-        $user = User::factory()->create();
+        $user = $this->rateMaintainer();
 
         $rate = ExchangeRate::create([
             'from_currency_id' => $this->usd->id, 'to_currency_id' => $this->pkr->id,
@@ -282,7 +360,7 @@ class ExchangeRateApiTest extends TestCase
 
     public function test_a_rate_can_be_deleted(): void
     {
-        $user = User::factory()->create();
+        $user = $this->rateMaintainer();
 
         $rate = ExchangeRate::create([
             'from_currency_id' => $this->usd->id, 'to_currency_id' => $this->pkr->id,
@@ -320,5 +398,14 @@ class ExchangeRateApiTest extends TestCase
         $user = User::factory()->create();
 
         $this->actingAs($user)->getJson("/api/v1/exchange-rates/{$otherCompanyRate->id}")->assertNotFound();
+    }
+
+    private function rateMaintainer(): User
+    {
+        Permission::findOrCreate('currency.exchange-rate.manage');
+        $user = User::factory()->create();
+        $user->givePermissionTo('currency.exchange-rate.manage');
+
+        return $user;
     }
 }

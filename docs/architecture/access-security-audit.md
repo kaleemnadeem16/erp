@@ -28,7 +28,7 @@ allowed and denied users. Later reviewers must record exact endpoint/Action cove
 
 | ID | Surface and evidence | Current consequence | Required decision / work |
 |---|---|---|---|
-| A1 | Core [exchange-rate routes](../../backend/routes/api/exchange-rates.php), [controller](../../backend/app/Http/Controllers/Api/V1/ExchangeRateController.php) and store/update requests | Authentication is required, but create/update/delete have no capability check; both write requests authorize any authenticated user. Rates can affect monetary calculations. | Decide who maintains FX rates and whether approval/history is needed. Gate HTTP and any non-HTTP write path; preserve intentional reference reads. |
+| A1 | Core [exchange-rate routes](../../backend/routes/api/exchange-rates.php), [controller](../../backend/app/Http/Controllers/Api/V1/ExchangeRateController.php) and store/update requests | At the audit baseline, any authenticated user could create/update/delete rates. The `currency.exchange-rate.manage` HTTP/Action retrofit is implemented in the current slice; integration-test verification is pending the unrelated packaged-purchasing migration repair. | Assign a dev maintainer through the app and rerun API tests. Separate approval/history remains a later policy decision. |
 | A2 | Accounting [routes](../../backend/app/Modules/Accounting/routes.php), [chart controller](../../backend/app/Modules/Accounting/Http/Controllers/Api/V1/ChartOfAccountController.php) and create Action | Authenticated users can create, alter/reparent and archive chart accounts without a chart-maintenance capability. | Finance owner defines chart-maintainer authority, lifecycle separation and any sensitive read boundary before enforcement. |
 | A3 | Parties [routes](../../backend/app/Modules/Parties/routes.php), Party/Customer/Supplier controllers and write requests | Authenticated users can maintain Party, CustomerAccount, SupplierAccount and supplier-site master data without resource capabilities. Customer terms, credit limit and ledger account IDs are writable. | Define separate operational master-data powers and any Finance-only field policy; test Actions as well as HTTP. |
 | A4 | Inventory [ItemResource](../../backend/app/Modules/Inventory/Http/Resources/ItemResource.php) and [CategoryResource](../../backend/app/Modules/Inventory/Http/Resources/CategoryResource.php) | GL account IDs are returned unconditionally on shared authenticated reads. This is an established open decision, not a newly introduced regression. | Finance decides whether those IDs are sensitive and who may edit/view them; then project fields and guard writes consistently. |
@@ -63,9 +63,11 @@ still owns company PO policy. Neither should be silently decided by adding a rol
   separate duties that must not be bundled, and decide which financial/master-data fields need
   narrower read or write access. Record the decision in an ADR/domain doc, using existing research
   first. Do not infer it from demo roles.
-- [ ] **A1 FX slice:** register the chosen stable capability, inventory all write entry points,
-  prepare explicit grants for real maintainers, then enforce HTTP and non-HTTP paths. Test denied
-  and allowed actors, company boundaries, existing lookup consumers and calculation effects.
+- [ ] **A1 FX slice:** `currency.exchange-rate.manage` is registered and checked at HTTP and
+  non-HTTP write boundaries, while authenticated lookup remains open. Complete integration tests
+  after the other agent's migration is fixed; then grant an actual dev maintainer through Access
+  Administration and verify effective access. Future rate import and calculation effects still
+  need their own tests/review.
 - [ ] **A2 chart slice:** follow the same sequence, including reparent/archive and account lookup
   uses; separate Finance field controls if the policy calls for them.
 - [ ] **A3 Parties slice:** review Party, customer, supplier and site as distinct operations; apply

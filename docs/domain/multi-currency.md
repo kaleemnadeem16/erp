@@ -33,6 +33,26 @@ exchange_rates
 
 ## Behaviour
 
+### Access to manual exchange rates
+
+Authenticated company users can list/show rates for document selection. Creating, correcting
+the rate value, or deleting a manual rate requires `currency.exchange-rate.manage`, checked by
+the HTTP requests/controller and the `ManageExchangeRate` Action for non-HTTP callers. The
+permission is assigned through company roles or a direct grant in Access Administration; no
+role name is hardcoded. The configured administrator receives new vocabulary through the normal
+permission-registration and admin-sync deployment steps. There is not yet an exchange-rate
+maintenance screen: the current frontend only consumes rates as reference data, so a future
+screen must hide write controls for users without this capability and still rely on the backend.
+
+This boundary reuses [ADR 0031](../decisions/0031-manual-exchange-rate-entry.md)'s manual-only
+decision. For a bounded external check, [Business Central's exchange-rate guidance](https://learn.microsoft.com/en-us/dynamics365/business-central/finance-how-update-currencies)
+separates rate maintenance from downstream exchange-rate adjustment, while its
+[granular-permission guidance](https://learn.microsoft.com/en-us/dynamics365/business-central/ui-define-granular-permissions)
+distinguishes read, insert, modify and delete rights. We keep one small rate-maintenance
+capability for the present manual-entry workflow and shared reference reads; a future import,
+approval or revaluation process needs a separate authority review rather than inheriting this
+permission automatically.
+
 ### Three distinct concepts
 
 | Concept | Meaning | Stored? |
