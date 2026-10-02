@@ -13,6 +13,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class ExchangeRateApiTest extends TestCase
@@ -26,6 +27,8 @@ class ExchangeRateApiTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        app(PermissionRegistrar::class)->setPermissionsTeamId(1);
 
         $this->usd = Currency::create(['code' => 'USD', 'name' => 'US Dollar', 'symbol' => '$']);
         $this->pkr = Currency::create(['code' => 'PKR', 'name' => 'Pakistani Rupee', 'symbol' => 'Rs']);

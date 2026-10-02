@@ -28,7 +28,7 @@ allowed and denied users. Later reviewers must record exact endpoint/Action cove
 
 | ID | Surface and evidence | Current consequence | Required decision / work |
 |---|---|---|---|
-| A1 | Core [exchange-rate routes](../../backend/routes/api/exchange-rates.php), [controller](../../backend/app/Http/Controllers/Api/V1/ExchangeRateController.php) and store/update requests | At the audit baseline, any authenticated user could create/update/delete rates. The `currency.exchange-rate.manage` HTTP/Action retrofit is implemented in the current slice; integration-test verification is pending the unrelated packaged-purchasing migration repair. | Assign a dev maintainer through the app and rerun API tests. Separate approval/history remains a later policy decision. |
+| A1 | Core [exchange-rate routes](../../backend/routes/api/exchange-rates.php), [controller](../../backend/app/Http/Controllers/Api/V1/ExchangeRateController.php) and store/update requests | At the audit baseline, any authenticated user could create/update/delete rates. The `currency.exchange-rate.manage` HTTP/Action retrofit is now tested for allowed and denied access. | Assign a dev maintainer through the app. Separate approval/history and future import authority remain later decisions. |
 | A2 | Accounting [routes](../../backend/app/Modules/Accounting/routes.php), [chart controller](../../backend/app/Modules/Accounting/Http/Controllers/Api/V1/ChartOfAccountController.php) and create Action | Authenticated users can create, alter/reparent and archive chart accounts without a chart-maintenance capability. | Finance owner defines chart-maintainer authority, lifecycle separation and any sensitive read boundary before enforcement. |
 | A3 | Parties [routes](../../backend/app/Modules/Parties/routes.php), Party/Customer/Supplier controllers and write requests | Authenticated users can maintain Party, CustomerAccount, SupplierAccount and supplier-site master data without resource capabilities. Customer terms, credit limit and ledger account IDs are writable. | Define separate operational master-data powers and any Finance-only field policy; test Actions as well as HTTP. |
 | A4 | Inventory [ItemResource](../../backend/app/Modules/Inventory/Http/Resources/ItemResource.php) and [CategoryResource](../../backend/app/Modules/Inventory/Http/Resources/CategoryResource.php) | GL account IDs are returned unconditionally on shared authenticated reads. This is an established open decision, not a newly introduced regression. | Finance decides whether those IDs are sensitive and who may edit/view them; then project fields and guard writes consistently. |
@@ -63,11 +63,12 @@ still owns company PO policy. Neither should be silently decided by adding a rol
   separate duties that must not be bundled, and decide which financial/master-data fields need
   narrower read or write access. Record the decision in an ADR/domain doc, using existing research
   first. Do not infer it from demo roles.
-- [ ] **A1 FX slice:** `currency.exchange-rate.manage` is registered and checked at HTTP and
-  non-HTTP write boundaries, while authenticated lookup remains open. Complete integration tests
-  after the other agent's migration is fixed; then grant an actual dev maintainer through Access
-  Administration and verify effective access. Future rate import and calculation effects still
-  need their own tests/review.
+- [x] **A1 manual FX API:** `currency.exchange-rate.manage` is registered and checked at HTTP
+  and non-HTTP write boundaries, while authenticated lookup remains open. The focused API and
+  permission-registration suite passes (21 tests, 73 assertions, 2026-10-02).
+- [ ] **A1 operational follow-up:** grant a dev maintainer through Access Administration and
+  verify effective access in the app. Future rate import and calculation effects need their own
+  tests/review; the current frontend has no rate-maintenance screen.
 - [ ] **A2 chart slice:** follow the same sequence, including reparent/archive and account lookup
   uses; separate Finance field controls if the policy calls for them.
 - [ ] **A3 Parties slice:** review Party, customer, supplier and site as distinct operations; apply
