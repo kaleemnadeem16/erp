@@ -24,6 +24,7 @@ these choices were made, see [decisions/](../decisions/).
 | [user-interface.md](user-interface.md) | UI research, interaction standards and phase screen ownership | Planning or building screens |
 | [ui-building-blocks.md](ui-building-blocks.md) | The reusable UI that exists, and the alternatives kept on purpose | Before building any control, layout or screen behaviour |
 | [appearance-and-printing.md](appearance-and-printing.md) | Light/dark/theme tokens and Quick Print branding, both company/user-layered | Adding a colour, a theme, or touching print output |
+| [erp-blue-design-standard.md](erp-blue-design-standard.md) | The `erp-blue` palette, scoping and rules proven on Purchase Orders, and how to roll it out | Restyling a screen, or adding a palette |
 | [api-conventions.md](api-conventions.md) | Routes, responses, errors, pagination | Adding an endpoint |
 | [deployment.md](deployment.md) | Targets, multi-arch, what a customer deployment needs | Deploying or changing infra |
 
