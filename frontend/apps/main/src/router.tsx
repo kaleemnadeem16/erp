@@ -20,6 +20,8 @@ import {
   ApprovalsInboxScreen,
   ApprovalsSettingsScreen,
   MaterialSelectionSettingsScreen,
+  NumberingEditorScreen,
+  NumberingSettingsScreen,
   MaterialVarianceSettingsScreen,
   FormulationCreateScreen,
   FormulationEditScreen,
@@ -779,6 +781,19 @@ export function AppRouter() {
             </ProtectedRoute>
           }
         />
+        {/* The editor is a child route so the list stays mounted (dimmed) behind its side sheet. */}
+        <Route
+          path="/settings/document-numbering"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <NumberingSettingsScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        >
+          <Route path=":type" element={<NumberingEditorScreen />} />
+        </Route>
         <Route
           path="/settings/material-variance"
           element={

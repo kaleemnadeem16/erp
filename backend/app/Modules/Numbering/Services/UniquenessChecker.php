@@ -62,7 +62,14 @@ final class UniquenessChecker
             }
         }
 
-        return ['collisions' => array_values($collisions), 'warnings' => $warnings];
+        // Many sampled pairs describe one problem; show a few and say how many more there are.
+        $collisions = array_values($collisions);
+        if (count($collisions) > 3) {
+            $more = count($collisions) - 3;
+            $collisions = [...array_slice($collisions, 0, 3), "…and {$more} more like these."];
+        }
+
+        return ['collisions' => $collisions, 'warnings' => $warnings];
     }
 
     /** @return list<array{0: string, 1: string}> [number, "counterKey"] */

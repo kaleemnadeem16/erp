@@ -14,6 +14,7 @@ becomes official. It knows nothing about the documents themselves: each hands it
   number). `UniquenessChecker`, `TemplateValidator`, `VariableResolver`, `SeriesRouter`, `CounterStore`.
 - Two allocation strategies behind `AllocationStrategy`: `LockedCounterStrategy` (GAPLESS) and `SequenceCounterStrategy` (ALLOW_GAPS).
 - Actions: `EnsureDefaultSeries`, `CreateSeries`, `SaveSeriesVersion`, `CreateSeriesRule`, `SaveConstant`, `RaiseCounter`.
+- `Http\\Controllers\\Api\\V1` + `routes.php` (`/api/v1/numbering/*`) and `Services\\NumberingOverview` (what the screen lists); the screens live in `frontend/packages/core-ui/src/features/numbering`.
 - The `FiscalCalendar` port; Accounting fulfils it (`AccountingFiscalCalendar`).
 
 ## Adding a numbered document

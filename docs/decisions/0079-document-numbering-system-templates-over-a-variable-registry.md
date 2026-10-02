@@ -320,7 +320,7 @@ issue/post; the number text, the unique index and the API are unchanged.
 
 ### 19. Phasing
 
-*Status 2026-10-02: step 1 is implemented and tested (engine; PO and GR migrated with no visible change; both allocators proven with two real database sessions). The sequence-backed counter creates one PostgreSQL sequence per counter, named `numbering_seq_<random>`.*
+*Status 2026-10-02: steps 1 and 2 are implemented and tested — the settings API and Settings → Document Numbering (list, editor with tester, series and routing, counters, history, constants). Step 1 is implemented and tested (engine; PO and GR migrated with no visible change; both allocators proven with two real database sessions). The sequence-backed counter creates one PostgreSQL sequence per counter, named `numbering_seq_<random>`.*
 
 1. **Engine (this ADR's implementation)**: the module, registries, parser/validator, scope and counter-key logic, both
    allocators, the allocation log, versions, rules, constants, counter raising, the uniqueness check, the preview service;

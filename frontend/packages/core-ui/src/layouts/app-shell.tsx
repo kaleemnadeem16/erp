@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
+  Hash,
   ArrowLeftRight,
   Boxes,
   Calculator,
@@ -183,6 +184,11 @@ const settingsNavGroup: NavGroup = {
       icon: ListChecks,
     },
     {
+      to: "/settings/document-numbering",
+      label: "Document Numbering",
+      icon: Hash,
+    },
+    {
       to: "/settings/material-variance",
       label: "Material Variance",
       icon: Scale,
@@ -233,6 +239,11 @@ const SETTINGS_MENU: { label: string; items: NavItem[] }[] = [
         to: "/settings/material-selection",
         label: "Material Selection",
         icon: ListChecks,
+      },
+      {
+        to: "/settings/document-numbering",
+        label: "Document Numbering",
+        icon: Hash,
       },
       {
         to: "/settings/material-variance",

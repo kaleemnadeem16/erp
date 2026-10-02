@@ -55,3 +55,8 @@ export * from "./generated/material-preview/material-preview";
 export * from "./generated/item-quantity-unit/item-quantity-unit";
 export * from "./generated/member/member";
 export * from "./generated/role/role";
+export * from "./generated/numbering-document-type/numbering-document-type";
+export * from "./generated/numbering-preview/numbering-preview";
+export * from "./generated/numbering-series/numbering-series";
+export * from "./generated/numbering-counter/numbering-counter";
+export * from "./generated/numbering-constant/numbering-constant";

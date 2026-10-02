@@ -199,6 +199,7 @@ export { ApprovalsInboxScreen } from "./features/approvals/approvals-inbox-scree
 export { ApprovalsSettingsScreen } from "./features/approvals/approvals-settings-screen";
 export { MaterialVarianceSettingsScreen } from "./features/material-variance/material-variance-settings-screen";
 export { MaterialSelectionSettingsScreen } from "./features/material-selection/material-selection-settings-screen";
+export { NumberingEditorScreen, NumberingSettingsScreen } from "./features/numbering/numbering-settings-screen";
 export { ResourceRatesListScreen } from "./features/resource-rates/resource-rates-list-screen";
 export { StockLedgerScreen } from "./features/stock-ledger/stock-ledger-screen";
 export { StockMoveDetailScreen } from "./features/stock-ledger/stock-move-detail-screen";

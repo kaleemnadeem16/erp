@@ -71,11 +71,34 @@ number) and, if it already has numbers, carry the old counter over in a migratio
 | `PURCHASE_ORDER` | issued | `SUPPLIER_CODE`, `CURRENCY` | — | `{SEQ:4}`, ALLOW_GAPS (existing companies: GAPLESS, carried over) |
 | `GOODS_RECEIPT` | posted | `WAREHOUSE`, `SUPPLIER_CODE` | `WAREHOUSE` | `{SEQ:4}`, ALLOW_GAPS (existing companies: GAPLESS, carried over) |
 
+## API and screens
+
+**Settings → Document Numbering** (`/settings/document-numbering`, needs `numbering.view`) lists every registered document type with
+its current format, a live example, how often it restarts and its gap policy. *Edit* opens a side sheet
+(`/settings/document-numbering/{TYPE}`): the simple view is the **format** (a variable palette inserts at the cursor), **how often to
+restart the count** in plain words, **whether gaps are allowed**, a **live tester**, and a reason box. Everything else sits behind that
+sheet's *Advanced options*: count separately by a dimension, series and routing rules, counters (raise only), and history.
+*Company constants* is a toggle on the page. A time-zone notice shows while the company is still on the UTC default.
+
+| Call | Does | Needs |
+|---|---|---|
+| `GET numbering/document-types` | Every type with its series, current version and example | `numbering.view` |
+| `GET numbering/context` | Built-in variables, constants, the company time zone | `numbering.view` |
+| `POST numbering/preview` | The tester; reads counters, never takes a number | `numbering.view` |
+| `POST numbering/series` · `POST numbering/series/{id}/versions` | Add a series · add a governed version | the type's manage permission |
+| `GET numbering/series/{id}/versions · counters · rules` | History · counters (with next number) · routing rules | `numbering.view` |
+| `POST numbering/series/{id}/rules` | Add a routing rule | the type's manage permission |
+| `POST numbering/counters/{id}/raise` | Raise a counter, with a reason | `numbering.counter.raise` |
+| `GET/POST numbering/constants` | Constants and their history · record or retire one | `numbering.view` · `numbering.constant.manage` |
+
+A refused configuration is a `422` whose message says why (for example which two counters would both reach `PO-2026-00001`).
+Modules link into this one screen; they keep no numbering screens of their own.
+
 ## Not built yet
 
-The API and **Settings → Document Numbering** screens (list of document types with examples, the default-series editor with the
-tester, the advanced areas); a company profile screen for the time zone (today it is set in Inventory settings); `{COMPANY}` (needs a company code); purchase-order
-`{WAREHOUSE}` (needs a ship-to); numbers-must-follow-dates validation for gapless series. See ADR 0079 §19.
+A company profile screen for the time zone (today it is set in Inventory settings); `{COMPANY}` (needs a company code); purchase-order
+`{WAREHOUSE}` (needs a ship-to); a read screen for the allocation log; numbers-must-follow-dates validation for gapless series. See
+ADR 0079 §19.
 
 ## Related
 

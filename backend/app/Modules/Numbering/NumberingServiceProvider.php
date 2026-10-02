@@ -9,6 +9,7 @@ use App\Modules\Numbering\Support\FiscalCalendar;
 use App\Modules\Numbering\Support\NumberingRegistry;
 use App\Modules\Numbering\Support\PermissionVocabulary;
 use App\Support\PermissionRegistry;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
 /**
@@ -24,5 +25,10 @@ class NumberingServiceProvider extends ServiceProvider
         $this->app->afterResolving(PermissionRegistry::class, static function (PermissionRegistry $registry): void {
             $registry->registerVocabulary('numbering', PermissionVocabulary::all());
         });
+    }
+
+    public function boot(): void
+    {
+        Route::middleware('api')->prefix('api/v1')->group(__DIR__.'/routes.php');
     }
 }

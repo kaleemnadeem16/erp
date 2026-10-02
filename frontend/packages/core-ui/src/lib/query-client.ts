@@ -7,7 +7,7 @@ import { shouldRetryQuery } from './api-errors';
  * They must not refresh the app's data: nothing changed, and a refresh would only add load.
  * Keys are the generated hooks' mutation keys.
  */
-const READ_ONLY_MUTATIONS = new Set(['assembliesMaterialPreview']);
+const READ_ONLY_MUTATIONS = new Set(['assembliesMaterialPreview', 'numberingPreview']);
 
 /**
  * The app's one QueryClient, with the rule that keeps every screen honest: after any change is saved, whatever is on
