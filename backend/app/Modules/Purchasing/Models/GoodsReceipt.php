@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
+ * @property int $location_id
  * @property GoodsReceiptStatus $status
  * @property CarbonImmutable $physical_arrival_at
  * @property CarbonImmutable $recorded_at

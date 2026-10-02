@@ -4,25 +4,27 @@ declare(strict_types=1);
 
 namespace App\Modules\Purchasing\Actions;
 
-use App\Contracts\NumberingScheme;
 use App\Exceptions\DomainInvariantException;
 use App\Models\User;
 use App\Modules\Inventory\Actions\PostInventoryMovement;
+use App\Modules\Numbering\Services\NumberingService;
 use App\Modules\Purchasing\Models\GoodsReceipt;
 use App\Modules\Purchasing\Models\GoodsReceiptLine;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Modules\Purchasing\Models\PurchaseOrderLine;
+use App\Modules\Purchasing\Numbering\GoodsReceiptNumbering;
 use App\Modules\Purchasing\Support\GoodsReceiptStatus;
 use App\Modules\Purchasing\Support\OverReceiptMode;
 use App\Modules\Purchasing\Support\PurchaseOrderStatus;
 use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 final class PostGoodsReceipt
 {
-    public function __construct(private readonly PostInventoryMovement $postMovement, private readonly NumberingScheme $numbers) {}
+    public function __construct(private readonly PostInventoryMovement $postMovement, private readonly NumberingService $numbering) {}
 
     public function __invoke(GoodsReceipt $receipt, User $actor): GoodsReceipt
     {
@@ -30,7 +32,7 @@ final class PostGoodsReceipt
             throw new DomainInvariantException('The actor is not permitted to post a goods receipt.', 'posted_by');
         }
 
-        return DB::transaction(function () use ($receipt): GoodsReceipt {
+        return DB::transaction(function () use ($receipt, $actor): GoodsReceipt {
             $receipt = GoodsReceipt::query()->lockForUpdate()->findOrFail($receipt->id);
             if ($receipt->status === GoodsReceiptStatus::Posted) {
                 return $receipt->load('lines');
@@ -127,10 +129,13 @@ final class PostGoodsReceipt
                 ]);
             }
 
+            $postedAt = CarbonImmutable::now();
+            // The number is taken at the moment the receipt becomes official, by the central numbering framework (ADR 0079).
+            $number = $this->numbering->allocate(GoodsReceiptNumbering::contextFor($receipt, $postedAt, $actor->id))->number;
             $receipt->update([
-                'number' => $this->numbers->next('goods_receipt'),
+                'number' => $number,
                 'status' => GoodsReceiptStatus::Posted,
-                'posted_at' => now(),
+                'posted_at' => $postedAt,
             ]);
 
             foreach ($poLines->pluck('purchase_order_id')->unique()->sort() as $orderId) {

@@ -85,11 +85,13 @@ enumeration outside the scoped model layer.
 
 → [multi-tenancy.md](multi-tenancy.md)
 
-## 8. Gapless document numbering
+## 8. Document numbers are unique, issued by one framework, and gapless only where a series says so
 
-Invoice and document numbers come from a `sequences` table using `lockForUpdate()`.
-
-**`MAX(id) + 1` produces duplicates under concurrent load.** This is not theoretical.
+Every document number comes from the central numbering framework ([document-numbering.md](document-numbering.md), ADR 0079):
+a counter advanced under a lock inside the document's transaction (**GAPLESS**) or from a PostgreSQL sequence (**ALLOW_GAPS**),
+never `MAX(id) + 1`, which produces duplicates under concurrent load — this is not theoretical. Uniqueness within
+*(company, document type)* is always enforced by the database; *gaplessness* is a per-series policy that statutory document types
+can lock, because it costs concurrency and is not needed for ordinary operational documents.
 
 → [domain/receivables.md](../domain/receivables.md)
 

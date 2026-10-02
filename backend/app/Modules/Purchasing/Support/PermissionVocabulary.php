@@ -29,6 +29,8 @@ final class PermissionVocabulary
             'purchasing.over-receipt-policy.manage',
             'purchasing.policy-history.view',
             'purchasing.cutover.commit',
+            // Changes purchase-order and goods-receipt number series in Settings → Document Numbering (ADR 0079).
+            'purchasing.numbering.manage',
         ];
     }
 }

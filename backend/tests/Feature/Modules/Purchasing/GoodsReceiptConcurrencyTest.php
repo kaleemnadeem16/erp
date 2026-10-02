@@ -222,6 +222,13 @@ class GoodsReceiptConcurrencyTest extends TestCase
             }
         }
 
+        // The numbers the two receipts were issued, and the counters (some own PostgreSQL sequences) behind them.
+        foreach ($pdo->query("select sequence_name from numbering_counters where company_id = {$companyId} and sequence_name is not null")->fetchAll(PDO::FETCH_COLUMN) as $sequenceName) {
+            $pdo->exec("drop sequence if exists {$sequenceName}");
+        }
+        foreach (['numbering_allocations', 'numbering_counter_adjustments', 'numbering_counters', 'numbering_series_rules', 'numbering_series_versions', 'numbering_series'] as $table) {
+            $pdo->exec("delete from {$table} where company_id = {$companyId}");
+        }
         $pdo->exec("delete from sequences where company_id = {$companyId}");
         $pdo->exec("delete from activity_log where company_id = {$companyId}");
         $pdo->exec("delete from users where company_id = {$companyId}");

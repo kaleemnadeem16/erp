@@ -5,6 +5,7 @@ use App\Modules\Administration\AdministrationServiceProvider;
 use App\Modules\Approvals\ApprovalsServiceProvider;
 use App\Modules\Estimating\EstimatingServiceProvider;
 use App\Modules\Imports\ImportsServiceProvider;
+use App\Modules\Numbering\NumberingServiceProvider;
 use App\Modules\Inventory\InventoryServiceProvider;
 use App\Modules\Parties\PartiesServiceProvider;
 use App\Modules\Purchasing\PurchasingServiceProvider;
@@ -19,6 +20,7 @@ return [
     CurrencyServiceProvider::class,
     UomServiceProvider::class,
     ImportsServiceProvider::class,
+    NumberingServiceProvider::class,
     InventoryServiceProvider::class,
     PartiesServiceProvider::class,
     AccountingServiceProvider::class,

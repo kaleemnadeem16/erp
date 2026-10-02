@@ -6,7 +6,10 @@ namespace App\Modules\Purchasing;
 
 use App\Modules\Approvals\Support\ApprovalSubjectRegistry;
 use App\Modules\Imports\Support\ImportTargetRegistry;
+use App\Modules\Numbering\Support\NumberingRegistry;
 use App\Modules\Purchasing\Imports\OpenPurchaseOrderImportTarget;
+use App\Modules\Purchasing\Numbering\GoodsReceiptNumbering;
+use App\Modules\Purchasing\Numbering\PurchaseOrderNumbering;
 use App\Modules\Purchasing\Support\PermissionVocabulary;
 use App\Modules\Purchasing\Support\PurchaseOrderApprovalSubject;
 use App\Support\PermissionRegistry;
@@ -23,6 +26,12 @@ class PurchasingServiceProvider extends ServiceProvider
 
         $this->app->afterResolving(ApprovalSubjectRegistry::class, static function (ApprovalSubjectRegistry $registry): void {
             $registry->register(new PurchaseOrderApprovalSubject);
+        });
+
+        // Purchase orders and goods receipts are numbered by the central framework (ADR 0079); this is all they declare.
+        $this->app->afterResolving(NumberingRegistry::class, static function (NumberingRegistry $registry): void {
+            $registry->register(new PurchaseOrderNumbering);
+            $registry->register(new GoodsReceiptNumbering);
         });
 
         $this->app->afterResolving(PermissionRegistry::class, static function (PermissionRegistry $registry): void {

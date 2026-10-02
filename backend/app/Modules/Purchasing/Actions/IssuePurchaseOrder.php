@@ -4,20 +4,22 @@ declare(strict_types=1);
 
 namespace App\Modules\Purchasing\Actions;
 
-use App\Contracts\NumberingScheme;
 use App\Exceptions\DomainInvariantException;
 use App\Models\User;
 use App\Modules\Approvals\Actions\RequireApproval;
+use App\Modules\Numbering\Services\NumberingService;
 use App\Modules\Purchasing\Models\ItemSupplier;
 use App\Modules\Purchasing\Models\PurchaseOrder;
+use App\Modules\Purchasing\Numbering\PurchaseOrderNumbering;
 use App\Modules\Purchasing\Support\PurchaseOrderApprovalSubject;
 use App\Modules\Purchasing\Support\PurchaseOrderStatus;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
 final class IssuePurchaseOrder
 {
     public function __construct(
-        private readonly NumberingScheme $numbers,
+        private readonly NumberingService $numbering,
         private readonly ResolvePurchasingSettings $resolveSettings,
         private readonly RequireApproval $requireApproval,
     ) {}
@@ -31,7 +33,7 @@ final class IssuePurchaseOrder
             throw new DomainInvariantException('The actor is not permitted to issue a purchase order.', 'issued_by');
         }
 
-        return DB::transaction(function () use ($order): PurchaseOrder {
+        return DB::transaction(function () use ($order, $actor): PurchaseOrder {
             $order = PurchaseOrder::query()->lockForUpdate()->findOrFail($order->id);
             if ($order->status !== PurchaseOrderStatus::Draft || ! $order->lines()->exists()) {
                 throw new DomainInvariantException('Only a non-empty draft purchase order can be issued.', 'status');
@@ -51,7 +53,10 @@ final class IssuePurchaseOrder
                     'over_receipt_tolerance_percent' => $line->over_receipt_tolerance_percent ?? $settings->over_receipt_tolerance_percent,
                 ]);
             }
-            $order->update(['number' => $this->numbers->next('purchase_order'), 'status' => PurchaseOrderStatus::Issued, 'issued_at' => now()]);
+            $issuedAt = CarbonImmutable::now();
+            // The number is taken at the moment the order becomes official, by the central numbering framework (ADR 0079).
+            $number = $this->numbering->allocate(PurchaseOrderNumbering::contextFor($order, $issuedAt, $actor->id))->number;
+            $order->update(['number' => $number, 'status' => PurchaseOrderStatus::Issued, 'issued_at' => $issuedAt]);
 
             return $order->refresh()->load('lines');
         });

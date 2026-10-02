@@ -5,8 +5,7 @@
 - **Status:** accepted (2026-10-02, after the owner's final adjustments below). Phase 1 — the engine and the migration of
   purchase orders and goods receipts — is being built; the settings screens are the next step.
 - **Affects:** a new central `Numbering` module (the framework), `sequences` / `NumberingScheme` ([phase 0](../phases/phase-0-foundation.md))
-  which it replaces, purchase orders and goods receipts first and then every numbered document, a general company-level time
-  zone, **Settings → Document Numbering**, [extensibility.md](../architecture/extensibility.md) rung 1
+  which it replaces, purchase orders and goods receipts first and then every numbered document, the existing company time zone (`accounting_timezone`), **Settings → Document Numbering**, [extensibility.md](../architecture/extensibility.md) rung 1
 
 ## Context
 
@@ -140,8 +139,8 @@ allocates the counter and returns/stores the number; it never queries suppliers,
 ### 4. Variables
 
 A **variable** is registered once (key, label, description, kind, options, sample) and is one of: **engine variables** the
-engine computes itself — `{YYYY} {YY} {MM} {DD}`, `{FY} {FP}` (from the fiscal calendar through a port), `{DOCTYPE}`, `{SEQ:n}`,
-constants — or **document variables** (`{SUPPLIER_CODE}`, `{CURRENCY}`, `{BRANCH}`, `{WAREHOUSE}`, `{CATEGORY}`, …) whose value
+engine computes itself — `{YYYY} {YY} {MM} {DD}`, `{FY} {FP}` (from the fiscal calendar through a port), `{SEQ:n}`,
+constants (a `{DOCTYPE}` variable was dropped: fixed text does the same job) — or **document variables** (`{SUPPLIER_CODE}`, `{CURRENCY}`, `{BRANCH}`, `{WAREHOUSE}`, `{CATEGORY}`, …) whose value
 the document's context supplies. A document type lists the variables it supplies; the template validator refuses any other.
 A new variable is a registration, not a schema change. `{COMPANY}` needs a company code and arrives with it.
 
@@ -183,16 +182,21 @@ transaction with a clear message rather than ever storing a duplicate. A prototy
 ### 8. Numbering date and the company time zone (settled)
 
 Date variables and fiscal variables use the **issue/officialisation instant** (`issuedAt`), **never** an editable business date
-(the order date stays separate), **rendered in the company's time zone**. The time zone is a **general company-level setting**
-(`companies.timezone`, an IANA name; **null = not set**), because other features need it too — it is not a numbering setting.
-Consequences, settled:
+(the order date stays separate), **rendered in the company's time zone**. The company time zone is a **general company-level
+setting, not a numbering one** — and it already exists: **`companies.accounting_timezone`** (an IANA name, default `UTC`, set
+through the Inventory settings API, and already used for the backdating floors). The framework **reuses it rather than adding a
+second time-zone column**; the column keeps its name so the existing settings API and policies are untouched, and the numbering
+screens call it "the company time zone". (A first draft of this ADR proposed a new nullable `companies.timezone`; it was dropped on
+discovering `accounting_timezone`.) Consequences, settled:
 
-- a template that uses any date or fiscal variable, or a period scope other than `NONE`, **cannot be saved while the company
-  time zone is unset** (the editor says why and where to set it); the engine refuses to allocate such a number rather than
-  guess UTC;
-- series without date parts (today's PO/GR) need no time zone and are unaffected;
+- it is never null, so it defaults to `UTC` until a company sets its own; **the tester and the series editor therefore warn
+  when a date-based format is about to use `UTC`** ("your company time zone is UTC, the default; an order issued after midnight
+  local time may be numbered into the previous day or month — set the company time zone first"), rather than blocking, because
+  UTC may genuinely be the right answer;
+- series without date parts (today's PO/GR) are unaffected either way;
 - `{FY}`/`{FP}` are looked up from the fiscal calendar for the **local date**; if none covers it, issuing is refused with a clear
-  message.
+  message;
+- a company-profile screen to set the time zone is still wanted (today it lives in Inventory settings).
 
 ### 9. Continuity: two policies, two allocators (settled)
 
@@ -302,7 +306,7 @@ numbering_allocations       id, company_id, doc_type, series_id, version_id, doc
                             issued_at, local_date, variables (jsonb), allocated_by, allocated_at
                             UNIQUE(company,doc_type,number)
 numbering_constants         id, company_id, code, value, status, reason, changed_by, effective_from
-companies.timezone          nullable IANA name
+(the company time zone is the existing companies.accounting_timezone — no new column)
 ```
 
 ### 18. Migration of purchase orders and goods receipts (no visible change)
@@ -315,6 +319,8 @@ plugin extension point is kept. Purchase orders and goods receipts call `Numberi
 issue/post; the number text, the unique index and the API are unchanged.
 
 ### 19. Phasing
+
+*Status 2026-10-02: step 1 is implemented and tested (engine; PO and GR migrated with no visible change; both allocators proven with two real database sessions). The sequence-backed counter creates one PostgreSQL sequence per counter, named `numbering_seq_<random>`.*
 
 1. **Engine (this ADR's implementation)**: the module, registries, parser/validator, scope and counter-key logic, both
    allocators, the allocation log, versions, rules, constants, counter raising, the uniqueness check, the preview service;
@@ -335,15 +341,15 @@ issue/post; the number text, the unique index and the API are unchanged.
   future document uses it. The sequence-backed allocator creates one PostgreSQL sequence per counter (DDL at first use), which
   needs schema privileges the application role already has.
 - **Negative:** two policies mean documents in one company can behave differently; the screens always say which.
-- **Requires:** `companies.timezone` (null until set; date-based formats are blocked until it is); a fiscal calendar covering any
+- **Requires:** the company time zone set correctly for date-based formats (`accounting_timezone`, default `UTC`); a fiscal calendar covering any
   date a fiscal variable is used for; later, a company code (`{COMPANY}`) and a ship-to on purchase orders (`{WAREHOUSE}`).
 
 ## Open questions
 
 1. **Block-reserved allocation** for very high-volume series is not needed by `nextval` and is not built; revisit if a series ever
    needs cross-process caching.
-2. **The company time-zone screen** — a company profile page does not exist yet; until it does the value is set by an
-   administrator command/seed. Date-based formats stay blocked until then.
+2. **The company time-zone screen** — a company profile page does not exist yet; today the value is set in Inventory settings.
+   Date-based formats warn while it is still the `UTC` default.
 3. **Routing attributes** for the first real second series (domestic/import, branch) are defined when a document type needs them.
 4. **Statutory numbering for invoices** (sequential-series requirements in some tax regimes) was not researched and must be
    verified against current official guidance when invoice numbering is designed; the locked `GAPLESS` policy is ready for it.
