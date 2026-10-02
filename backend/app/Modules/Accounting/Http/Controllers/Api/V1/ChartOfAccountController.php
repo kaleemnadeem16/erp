@@ -17,6 +17,7 @@ use App\Modules\Accounting\Models\ChartOfAccount;
 use App\Support\Concerns\AppliesApiQuery;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -63,7 +64,7 @@ class ChartOfAccountController extends Controller
 
     public function store(StoreChartOfAccountRequest $request, CreateChartOfAccount $create): JsonResponse
     {
-        $chart_of_account = $create($request->validated());
+        $chart_of_account = $create($request->validated(), $request->user());
 
         return (new ChartOfAccountResource($chart_of_account))->response()->setStatusCode(201);
     }
@@ -75,12 +76,12 @@ class ChartOfAccountController extends Controller
 
     public function update(UpdateChartOfAccountRequest $request, ChartOfAccount $chart_of_account, UpdateChartOfAccount $update): ChartOfAccountResource
     {
-        return new ChartOfAccountResource($update($chart_of_account, $request->validated()));
+        return new ChartOfAccountResource($update($chart_of_account, $request->validated(), $request->user()));
     }
 
-    public function destroy(ChartOfAccount $chart_of_account, ArchiveChartOfAccount $archive): Response
+    public function destroy(Request $request, ChartOfAccount $chart_of_account, ArchiveChartOfAccount $archive): Response
     {
-        $archive($chart_of_account);
+        $archive($chart_of_account, $request->user());
 
         return response()->noContent();
     }

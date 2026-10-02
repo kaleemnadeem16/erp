@@ -78,6 +78,22 @@ journal_lines
 
 ## Behaviour
 
+### Chart access
+
+Authenticated company users may list/show chart accounts as references for other forms.
+Creating, editing/reparenting and deleting an unreferenced chart account require
+`accounting.chart-of-account.manage` through an assigned role or direct grant. The Form
+Requests and controller enforce HTTP access; all three write Actions also require an actor and
+check the capability, including non-HTTP callers. The existing company scope and foreign-key
+guards still apply. This permission does **not** decide who may see or edit the Item/Category
+GL-account mapping fields or customer/supplier control-account fields; those cross-module field
+policies remain open in the [access audit](../architecture/access-security-audit.md).
+
+No chart-maintenance SPA screen exists yet. A future screen should gate write controls using
+the effective capability, with backend checks remaining authoritative. The configured
+administrator receives the vocabulary via normal registration/admin sync; other development
+maintainers can be granted the permission through Access Administration.
+
 ### Account type and normal balance
 
 `chart_of_accounts.type` is a backed `AccountType` enum, not a bare string — `ASSET | LIABILITY |

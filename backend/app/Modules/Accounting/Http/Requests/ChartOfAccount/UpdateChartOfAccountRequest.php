@@ -15,7 +15,7 @@ class UpdateChartOfAccountRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('accounting.chart-of-account.manage') === true;
     }
 
     /**

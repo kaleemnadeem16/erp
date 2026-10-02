@@ -3,26 +3,69 @@
 namespace Tests\Feature\Modules\Accounting;
 
 use App\Models\User;
+use App\Modules\Accounting\Actions\ArchiveChartOfAccount;
+use App\Modules\Accounting\Actions\CreateChartOfAccount;
+use App\Modules\Accounting\Actions\UpdateChartOfAccount;
 use App\Modules\Accounting\Models\ChartOfAccount;
 use App\Modules\Accounting\Support\AccountType;
 use App\Modules\Inventory\Models\Category;
 use App\Support\CompanyContext;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class ChartOfAccountApiTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        app(PermissionRegistrar::class)->setPermissionsTeamId(1);
+    }
+
     public function test_it_requires_authentication(): void
     {
         $this->getJson('/api/v1/chart-of-accounts')->assertUnauthorized();
     }
 
+    public function test_shared_lookup_does_not_grant_chart_maintenance(): void
+    {
+        $account = ChartOfAccount::create(['code' => '1000', 'name' => 'Cash', 'type' => AccountType::Asset]);
+        $this->actingAs(User::factory()->create())->getJson('/api/v1/chart-of-accounts')->assertOk();
+        $this->getJson("/api/v1/chart-of-accounts/{$account->id}")->assertOk();
+        $this->postJson('/api/v1/chart-of-accounts', ['code' => '2000', 'name' => 'Payables', 'type' => 'LIABILITY'])->assertForbidden();
+        $this->patchJson("/api/v1/chart-of-accounts/{$account->id}", ['name' => 'Changed'])->assertForbidden();
+        $this->deleteJson("/api/v1/chart-of-accounts/{$account->id}")->assertForbidden();
+        $this->assertDatabaseHas('chart_of_accounts', ['id' => $account->id, 'name' => 'Cash']);
+    }
+
+    public function test_non_http_actions_require_chart_maintenance(): void
+    {
+        $actor = User::factory()->create();
+        $account = ChartOfAccount::create(['code' => '1000', 'name' => 'Cash', 'type' => AccountType::Asset]);
+        foreach ([
+            fn () => app(CreateChartOfAccount::class)(['code' => '2000', 'name' => 'Payables', 'type' => AccountType::Liability], $actor),
+            fn () => app(UpdateChartOfAccount::class)($account, ['name' => 'Changed'], $actor),
+            fn () => app(ArchiveChartOfAccount::class)($account, $actor),
+        ] as $operation) {
+            try {
+                $operation();
+                $this->fail('Chart maintenance should be denied.');
+            } catch (AuthorizationException) {
+                // Denied before mutation.
+            }
+        }
+        $this->assertDatabaseCount('chart_of_accounts', 1);
+        $this->assertDatabaseHas('chart_of_accounts', ['id' => $account->id, 'name' => 'Cash']);
+    }
+
     public function test_a_chart_of_account_can_be_created_and_fetched(): void
     {
-        $user = User::factory()->create();
+        $user = $this->chartMaintainer();
 
         $response = $this->actingAs($user)->postJson('/api/v1/chart-of-accounts', [
             'code' => '1000',
@@ -41,7 +84,7 @@ class ChartOfAccountApiTest extends TestCase
 
     public function test_duplicate_code_is_rejected_with_a_422(): void
     {
-        $user = User::factory()->create();
+        $user = $this->chartMaintainer();
         ChartOfAccount::create(['code' => '1000', 'name' => 'Cash', 'type' => AccountType::Asset]);
 
         $this->actingAs($user)->postJson('/api/v1/chart-of-accounts', [
@@ -53,7 +96,7 @@ class ChartOfAccountApiTest extends TestCase
 
     public function test_an_invalid_type_is_rejected_with_a_422(): void
     {
-        $user = User::factory()->create();
+        $user = $this->chartMaintainer();
 
         $this->actingAs($user)->postJson('/api/v1/chart-of-accounts', [
             'code' => '1000',
@@ -64,7 +107,7 @@ class ChartOfAccountApiTest extends TestCase
 
     public function test_a_nonexistent_parent_id_is_rejected_with_a_422_not_a_500(): void
     {
-        $user = User::factory()->create();
+        $user = $this->chartMaintainer();
 
         $this->actingAs($user)->postJson('/api/v1/chart-of-accounts', [
             'code' => '1010', 'name' => 'Cash', 'type' => 'ASSET', 'parent_id' => 999999,
@@ -79,7 +122,7 @@ class ChartOfAccountApiTest extends TestCase
      */
     public function test_reparenting_under_its_own_descendant_is_rejected_with_a_422_not_a_500(): void
     {
-        $user = User::factory()->create();
+        $user = $this->chartMaintainer();
         $a = ChartOfAccount::create(['code' => '1000', 'name' => 'Assets', 'type' => AccountType::Asset]);
         $b = ChartOfAccount::create(['code' => '1010', 'name' => 'Cash', 'type' => AccountType::Asset, 'parent_id' => $a->id]);
 
@@ -117,7 +160,7 @@ class ChartOfAccountApiTest extends TestCase
 
     public function test_a_chart_of_account_can_be_deleted(): void
     {
-        $user = User::factory()->create();
+        $user = $this->chartMaintainer();
         $account = ChartOfAccount::create(['code' => '1000', 'name' => 'Cash', 'type' => AccountType::Asset]);
 
         $this->actingAs($user)->deleteJson("/api/v1/chart-of-accounts/{$account->id}")->assertNoContent();
@@ -133,7 +176,7 @@ class ChartOfAccountApiTest extends TestCase
      */
     public function test_deleting_an_account_still_referenced_by_a_category_returns_409_not_500(): void
     {
-        $user = User::factory()->create();
+        $user = $this->chartMaintainer();
         $account = ChartOfAccount::create(['code' => '4000', 'name' => 'Sales', 'type' => AccountType::Income]);
         Category::create(['code' => 'RAW', 'name' => 'Raw materials', 'income_account_id' => $account->id]);
 
@@ -160,5 +203,14 @@ class ChartOfAccountApiTest extends TestCase
         $user = User::factory()->create();
 
         $this->actingAs($user)->getJson("/api/v1/chart-of-accounts/{$otherAccount->id}")->assertNotFound();
+    }
+
+    private function chartMaintainer(): User
+    {
+        Permission::findOrCreate('accounting.chart-of-account.manage');
+        $user = User::factory()->create();
+        $user->givePermissionTo('accounting.chart-of-account.manage');
+
+        return $user;
     }
 }
