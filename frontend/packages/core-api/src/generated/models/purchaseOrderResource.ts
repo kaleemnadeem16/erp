@@ -13,6 +13,7 @@ import type { PurchaseOrderResourceInventoryCutoverId } from "./purchaseOrderRes
 import type { PurchaseOrderResourceSourceSystem } from "./purchaseOrderResourceSourceSystem";
 import type { PurchaseOrderResourceSourceRecordId } from "./purchaseOrderResourceSourceRecordId";
 import type { PurchaseOrderLineResource } from "./purchaseOrderLineResource";
+import type { PurchaseOrderResourceApprovalStatus } from "./purchaseOrderResourceApprovalStatus";
 import type { PurchaseOrderResourceIssuedAt } from "./purchaseOrderResourceIssuedAt";
 import type { PurchaseOrderResourceClosedAt } from "./purchaseOrderResourceClosedAt";
 import type { PurchaseOrderResourceCancelledAt } from "./purchaseOrderResourceCancelledAt";
@@ -41,7 +42,9 @@ export interface PurchaseOrderResource {
   total_amount?: string;
   base_total_amount?: string;
   lines?: PurchaseOrderLineResource[];
-  /** Where the order stands with the approval engine; only on the screens that act on one order. */
+  /** Where the order stands with the approval engine; only on the screens that act on one order.
+The list's Approval column: the same status as `approval`, for a whole page at once (null while approvals are off). */
+  approval_status?: PurchaseOrderResourceApprovalStatus;
   approval?: string;
   issued_at: PurchaseOrderResourceIssuedAt;
   closed_at: PurchaseOrderResourceClosedAt;

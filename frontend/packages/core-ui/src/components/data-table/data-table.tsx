@@ -1,4 +1,4 @@
-import type { KeyboardEvent, ReactNode } from 'react';
+import { useEffect, useState, type KeyboardEvent, type ReactNode } from 'react';
 import {
   flexRender,
   getCoreRowModel,
@@ -120,12 +120,23 @@ export function DataTable<TRow>({
   actionsHeader,
   rowActions,
 }: DataTableProps<TRow>) {
+  // While a new page, sort or search is on its way, keep showing the last rows (dimmed) instead of flashing skeletons and
+  // a "0 records" count: the screen changes at once and the figures settle when the answer arrives. Skeletons are only for
+  // the very first load, when there is nothing to keep.
+  const [lastLoaded, setLastLoaded] = useState<{ data: TRow[]; rowCount: number } | null>(null);
+  useEffect(() => {
+    if (!isLoading && !isError) setLastLoaded({ data, rowCount });
+  }, [data, rowCount, isLoading, isError]);
+  const refreshing = Boolean(isLoading && lastLoaded);
+  const shownData = refreshing ? lastLoaded!.data : data;
+  const shownRowCount = refreshing ? lastLoaded!.rowCount : rowCount;
+
   const table = useReactTable({
-    data,
+    data: shownData,
     columns,
     state: { pagination, sorting, rowSelection, columnVisibility },
-    pageCount: Math.max(1, Math.ceil(rowCount / Math.max(1, pagination.pageSize))),
-    rowCount,
+    pageCount: Math.max(1, Math.ceil(shownRowCount / Math.max(1, pagination.pageSize))),
+    rowCount: shownRowCount,
     manualPagination: true,
     manualSorting: true,
     enableMultiSort: false,
@@ -179,8 +190,8 @@ export function DataTable<TRow>({
           skeletonCount={Math.min(pagination.pageSize, 8)}
         />
       ) : (
-      <div className="rounded-md border border-border">
-        <Table>
+      <div className="rounded-md border border-border" aria-busy={refreshing || undefined}>
+        <Table className={refreshing ? 'opacity-60 transition-opacity' : 'transition-opacity'}>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
@@ -198,7 +209,7 @@ export function DataTable<TRow>({
             ))}
           </TableHeader>
           <TableBody>
-            {isLoading ? (
+            {isLoading && !refreshing ? (
               Array.from({ length: Math.min(pagination.pageSize, 8) }).map((_, index) => (
                 <TableRow key={`skeleton-${index}`}>
                   {Array.from({ length: columnCount }).map((__, cellIndex) => (

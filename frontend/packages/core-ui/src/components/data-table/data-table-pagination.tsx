@@ -24,7 +24,8 @@ export function DataTablePagination<TRow>({
 
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div className="text-sm text-muted-foreground">
+      {/* A polite live region: the count is the "N results" status message a screen-reader user otherwise never hears (WCAG 4.1.3). */}
+      <div role="status" className="text-sm text-muted-foreground">
         {selected > 0 ? (
           <span>{selected} selected</span>
         ) : rowCount === 0 ? (

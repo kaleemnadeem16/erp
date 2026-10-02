@@ -275,6 +275,19 @@ test.describe('Purchase Orders Light Palette Theme Audit', () => {
     expect(await heights('Commercial')).toBe(await heights('Record information'));
   });
 
+  test('the rows-per-page picker shows the current size, and changing it is reflected', async ({ page }) => {
+    await page.goto('/purchase-orders');
+    await expect(page.getByRole('heading', { name: 'Purchase Orders' })).toBeVisible();
+    const picker = page.getByRole('combobox', { name: 'Rows per page' });
+    await expect(picker).toHaveText('25');
+    // wide enough to show the value, not squeezed to the page-step buttons' size
+    expect((await picker.boundingBox())!.width).toBeGreaterThan(60);
+
+    await picker.click();
+    await page.getByRole('option', { name: '50', exact: true }).press('Enter');
+    await expect(picker).toHaveText('50');
+  });
+
   test('verifies other screens (Items) are completely untouched by po-screen styles', async ({ page }) => {
     await page.goto('/items');
     await expect(page.getByRole('heading', { name: 'Items' })).toBeVisible();
@@ -284,5 +297,29 @@ test.describe('Purchase Orders Light Palette Theme Audit', () => {
 
     // Capture items screen screenshot for visual comparison
     await page.screenshot({ path: 'test-results/items-screen-untouched.png', fullPage: true });
+  });
+});
+
+test.describe('Purchase Orders approval column and filter', () => {
+  test('the list shows each order\'s approval status and can be narrowed to what is waiting', async ({ page }) => {
+    await page.goto('/purchase-orders');
+    await expect(page.getByRole('heading', { name: 'Purchase Orders' })).toBeVisible();
+    const table = page.locator('.po-screen table').first();
+    await expect(table.locator('thead')).toContainText('Approval');
+
+    // The demo company keeps one order waiting for approval
+    await page.getByRole('combobox', { name: 'Approval' }).click();
+    await page.getByRole('option', { name: 'Waiting for approval' }).press('Enter');
+    await expect(page).toHaveURL(/filter\.approval=PENDING/);
+    const rows = table.locator('tbody tr');
+    await expect(rows.first()).toContainText('Waiting for approval');
+    for (const row of await rows.all()) await expect(row).toContainText('Waiting for approval');
+
+    // The chip names the filter, and removing it brings the full list back
+    const chip = page.locator('.po-chip-active', { hasText: 'Approval: Waiting for approval' });
+    await expect(chip).toBeVisible();
+    await chip.getByRole('button').click();
+    await expect(page).not.toHaveURL(/filter\.approval/);
+    await expect(page.getByRole('combobox', { name: 'Approval' })).toBeVisible();
   });
 });

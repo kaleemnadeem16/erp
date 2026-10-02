@@ -41,6 +41,7 @@ use Illuminate\Support\Carbon;
  * @property int|null $import_batch_id
  * @property string|null $source_system
  * @property string|null $source_record_id
+ * @property string|null $approval_status Set by the list endpoint only (see PurchaseOrderApprovalState::statusesFor); not a column.
  * @property-read SupplierAccount $supplierAccount
  * @property-read SupplierSite|null $supplierSite
  * @property-read Currency $currency

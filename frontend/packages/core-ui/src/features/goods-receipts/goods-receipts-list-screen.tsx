@@ -44,6 +44,7 @@ import {
   useListQueryState,
 } from "../../lib/list-query-state";
 import { useColumnVisibilityPreference } from "../../lib/use-column-visibility-preference";
+import { useDebouncedSearch } from "../../lib/use-debounced-search";
 import { useListViewPreference } from "../../lib/use-view-preference";
 import { goodsReceiptColumns } from "./goods-receipt-columns";
 import { usePermission } from "../../hooks/use-permission";
@@ -65,6 +66,8 @@ export function GoodsReceiptsListScreen() {
     defaultSort: "-created_at",
     defaultPerPage: 25,
   });
+  // The search box answers at once but only asks the server once typing pauses (see useDebouncedSearch).
+  const searchBox = useDebouncedSearch(query.filters.search, (value) => query.setFilter("search", value));
   const [filtersOpen, setFiltersOpen] = useState(false);
   const { view, setView } = useListViewPreference("goods-receipts-list");
   const suppliersQuery = useSupplierAccountsIndex({
@@ -141,10 +144,7 @@ export function GoodsReceiptsListScreen() {
         <Input
           className="h-9 flex-1 md:w-56 md:flex-none"
           placeholder="Search receipt number"
-          value={query.filters.search ?? ""}
-          onChange={(event) =>
-            query.setFilter("search", event.target.value || undefined)
-          }
+          {...searchBox.searchProps}
         />
         <div className="hidden items-center gap-2 md:flex md:flex-wrap">
           <ReceiptFilterControls suppliersLookup={lookupState(suppliersQuery, 'suppliers')}

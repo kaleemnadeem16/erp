@@ -533,7 +533,7 @@
   border-color: var(--po-border-strong);
 }
 :root:not(.dark) :is(.po-screen, .po-detail) button.border-input:disabled,
-:root:not(.dark) :is(.po-screen, .po-detail) button[aria-label$=" page"]:disabled {
+:root:not(.dark) :is(.po-screen, .po-detail) button:is([aria-label="First page"], [aria-label="Previous page"], [aria-label="Next page"], [aria-label="Last page"]):disabled {
   color: var(--po-text-disabled);
   border-color: var(--po-border-disabled);
   background-color: var(--po-bg-surface-sunken);
@@ -651,11 +651,13 @@
   height: 1.125rem;
 }
 /* Footer: roomier controls and readable counts */
-:root:not(.dark) :is(.po-screen, .po-detail) button[aria-label$=" page"],
 :root:not(.dark) :is(.po-screen, .po-detail) button[aria-label="Rows per page"] {
   height: 2.25rem;
+  width: 5rem;
 }
-:root:not(.dark) :is(.po-screen, .po-detail) button[aria-label$=" page"] {
+/* The four page-step buttons only: "Rows per page" also ends in " page", so match them by name */
+:root:not(.dark) :is(.po-screen, .po-detail) :is(button[aria-label="First page"], button[aria-label="Previous page"], button[aria-label="Next page"], button[aria-label="Last page"]) {
+  height: 2.25rem;
   width: 2.25rem;
 }
 :root:not(.dark) :is(.po-screen, .po-detail) [aria-current="page"] {

@@ -10,6 +10,7 @@ use App\Modules\Approvals\Support\ApprovalMode;
 use App\Modules\Approvals\Support\ApprovalPolicyStatus;
 use App\Modules\Approvals\Support\ApprovalSubjectRegistry;
 use App\Modules\Purchasing\Models\PurchaseOrder;
+use Illuminate\Support\Facades\DB;
 use Tests\Support\PurchasingActor;
 
 /** Purchase orders through ADR 0070's engine: optional, band-driven, frozen while pending, and void once edited. */
@@ -168,5 +169,57 @@ class PurchaseOrderApprovalTest extends PurchaseOrderFoundationTest
         // A required order with no applicable policy cannot be issued...
         $this->actingAsUnprivileged($this->issuer)->postJson("/api/v1/purchase-orders/{$order->id}/issue")->assertUnprocessable();
         $this->assertSame('DRAFT', $order->fresh()->status->value);
+    }
+
+    public function test_the_list_shows_each_orders_approval_status_and_filters_by_it(): void
+    {
+        $this->mode(ApprovalMode::Required);
+        $this->policy('all-orders', [['permission' => 'purchasing.purchase-order.approve']]);
+        $waiting = $this->orderWorth('80000.0000');
+        $untouched = $this->siblingWorth($waiting, '1000.0000');
+        $this->submit($waiting)->assertOk();
+        $approved = $this->siblingWorth($waiting, '2000.0000');
+        $this->submit($approved)->assertOk();
+        $this->actingAsUnprivileged(PurchasingActor::make(['purchasing.purchase-order.approve']))
+            ->postJson('/api/v1/approval-requests/'.ApprovalRequest::query()->where('subject_id', $approved->id)->value('id').'/decide', ['decision' => 'APPROVED'])->assertOk();
+
+        $statuses = fn (array $query = []) => collect($this->actingAsUnprivileged($this->buyer)->getJson('/api/v1/purchase-orders?'.http_build_query($query))->assertOk()->json('data'))
+            ->mapWithKeys(fn (array $row): array => [$row['id'] => $row['approval_status']]);
+
+        $all = $statuses();
+        $this->assertSame('PENDING', $all[$waiting->id]);
+        $this->assertSame('NOT_SUBMITTED', $all[$untouched->id]);
+
+        $this->assertSame([$waiting->id], $statuses(['filter' => ['approval' => 'PENDING']])->keys()->all());
+        $this->assertSame('APPROVED', $all[$approved->id]);
+        $this->assertSame([$approved->id], $statuses(['filter' => ['approval' => 'APPROVED']])->keys()->all());
+        $this->assertEqualsCanonicalizing([$untouched->id], $statuses(['filter' => ['approval' => 'NONE']])->keys()->all());
+        $this->assertSame([], $statuses(['filter' => ['approval' => 'REJECTED']])->keys()->all());
+    }
+
+    public function test_the_list_status_is_null_while_approvals_are_switched_off(): void
+    {
+        $order = $this->orderWorth('80000.0000');
+
+        $row = collect($this->actingAsUnprivileged($this->buyer)->getJson('/api/v1/purchase-orders')->assertOk()->json('data'))->firstWhere('id', $order->id);
+        $this->assertArrayHasKey('approval_status', $row);
+        $this->assertNull($row['approval_status']);
+    }
+
+    public function test_the_list_asks_for_approval_state_in_a_fixed_number_of_queries(): void
+    {
+        $this->mode(ApprovalMode::Required);
+        $this->policy('all-orders', [['permission' => 'purchasing.purchase-order.approve']]);
+        $first = $this->orderWorth('80000.0000');
+        $this->submit($first)->assertOk();
+        for ($i = 0; $i < 4; $i++) {
+            $this->submit($this->siblingWorth($first, '1000.0000'))->assertOk();
+        }
+
+        DB::enableQueryLog();
+        $this->actingAsUnprivileged($this->buyer)->getJson('/api/v1/purchase-orders')->assertOk();
+        $requestLookups = collect(DB::getQueryLog())->filter(fn (array $q): bool => str_contains($q['query'], 'from "approval_requests"') && str_contains($q['query'], '"subject_id" in'))->count();
+
+        $this->assertSame(1, $requestLookups, 'the latest requests are fetched once for the page, not once per order');
     }
 }

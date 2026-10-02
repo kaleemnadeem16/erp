@@ -22,8 +22,11 @@ use App\Modules\Purchasing\Http\Resources\PurchaseOrderLineResource;
 use App\Modules\Purchasing\Http\Resources\PurchaseOrderResource;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Modules\Purchasing\Models\PurchaseOrderLine;
+use App\Modules\Purchasing\Support\PurchaseOrderApprovalState;
+use App\Modules\Purchasing\Support\PurchaseOrderApprovalSubject;
 use App\Support\Concerns\AppliesApiQuery;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -78,6 +81,23 @@ class PurchaseOrderController extends Controller
                 [$request->input('filter.total_max')]
             );
         }
+        if ($request->filled('filter.approval')) {
+            $wanted = $request->string('filter.approval')->toString();
+            $ofThisOrder = function (QueryBuilder $sub): QueryBuilder {
+                return $sub->selectRaw('1')->from('approval_requests as ar')
+                    ->where('ar.subject_type', PurchaseOrderApprovalSubject::CODE)
+                    ->whereColumn('ar.subject_id', 'purchase_orders.id')
+                    ->whereColumn('ar.company_id', 'purchase_orders.company_id');
+            };
+            if ($wanted === 'NONE') {
+                $query->whereNotExists($ofThisOrder(...));
+            } else {
+                // Only the latest request counts: an order approved long ago and since re-submitted is judged by the re-submission.
+                $query->whereExists(fn (QueryBuilder $sub) => $ofThisOrder($sub)
+                    ->where('ar.status', $wanted)
+                    ->whereRaw('ar.id = (SELECT MAX(r2.id) FROM approval_requests r2 WHERE r2.subject_type = ar.subject_type AND r2.subject_id = ar.subject_id AND r2.company_id = ar.company_id)'));
+            }
+        }
         if ($request->filled('filter.item_id')) {
             $query->whereHas('lines', function (Builder $line) use ($request): void {
                 $line->where('item_id', $request->integer('filter.item_id'));
@@ -116,7 +136,12 @@ class PurchaseOrderController extends Controller
             $this->applySort($query, $request, self::SORTABLE, 'created_at');
         }
 
-        return PurchaseOrderResource::collection($query->paginate($request->integer('per_page', 25)));
+        $page = $query->paginate($request->integer('per_page', 25));
+        // The list's Approval column: one query for the page's latest requests, not one per row.
+        $statuses = app(PurchaseOrderApprovalState::class)->statusesFor($page->getCollection());
+        $page->getCollection()->each(fn (PurchaseOrder $order) => $order->setAttribute('approval_status', $statuses[$order->id] ?? null));
+
+        return PurchaseOrderResource::collection($page);
     }
 
     public function store(StorePurchaseOrderRequest $request, CreatePurchaseOrder $create): JsonResponse

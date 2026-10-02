@@ -36,6 +36,8 @@ class PurchaseOrderResource extends JsonResource
             'base_total_amount' => $this->when($commercial && $this->relationLoaded('lines'), fn () => $this->sumLines('base_line_amount')),
             'lines' => PurchaseOrderLineResource::collection($this->whenLoaded('lines')),
             // Where the order stands with the approval engine; only on the screens that act on one order.
+            // The list's Approval column: the same status as `approval`, for a whole page at once (null while approvals are off).
+            'approval_status' => $this->when($request->routeIs('purchase-orders.index'), fn () => $this->approval_status),
             'approval' => $this->when($request->routeIs('purchase-orders.show', 'purchase-orders.store', 'purchase-orders.update', 'purchase-orders.submit', 'purchase-orders.issue', 'purchase-orders.cancel'), fn () => app(PurchaseOrderApprovalState::class)->for($this->resource)),
             'issued_at' => $this->issued_at?->toIso8601String(), 'closed_at' => $this->closed_at?->toIso8601String(),
             'cancelled_at' => $this->cancelled_at?->toIso8601String(), 'cancellation_reason' => $this->cancellation_reason,

@@ -5,6 +5,7 @@
  * OpenAPI spec version: 0.0.1
  */
 import type { PurchaseOrderStatus } from "./purchaseOrderStatus";
+import type { PurchaseOrdersIndexFilterApproval } from "./purchaseOrdersIndexFilterApproval";
 import type { PurchaseOrdersIndexSort } from "./purchaseOrdersIndexSort";
 
 export type PurchaseOrdersIndexParams = {
@@ -43,6 +44,10 @@ export type PurchaseOrdersIndexParams = {
    * @maxLength 255
    */
   "filter[search]"?: string;
+  /**
+   * The status of the order's latest approval request; NONE means it never had one.
+   */
+  "filter[approval]"?: PurchaseOrdersIndexFilterApproval;
   sort?: PurchaseOrdersIndexSort;
   include?: string;
   /**

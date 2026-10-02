@@ -9,6 +9,7 @@ import {
   Database,
   EllipsisVertical,
   Search,
+  ShieldCheck,
   SlidersHorizontal,
   Tag,
   X,
@@ -18,9 +19,11 @@ import {
   useCurrenciesIndex,
   useItemsIndex,
   usePurchaseOrdersIndex,
+  usePurchaseOrdersSubmit,
   useSupplierAccountsIndex,
   useSupplierAccountsSitesIndex,
   type PurchaseOrderResource,
+  type PurchaseOrdersIndexFilterApproval,
   type PurchaseOrdersIndexSort,
   type SupplierSiteResource,
 } from "@erp/core-api";
@@ -72,6 +75,7 @@ import {
   useListQueryState,
 } from "../../lib/list-query-state";
 import { useColumnVisibilityPreference } from "../../lib/use-column-visibility-preference";
+import { useDebouncedSearch } from "../../lib/use-debounced-search";
 import { useListViewPreference } from "../../lib/use-view-preference";
 import { purchaseOrderColumns } from "./purchase-order-columns";
 import { hasUnfinishedPurchaseOrder } from "./purchase-order-form";
@@ -83,6 +87,7 @@ interface PurchaseOrderFilters {
   search: string;
   supplier_account_id: string;
   status: string;
+  approval: string;
   supplier_site_id: string;
   currency_id: string;
   item_id: string;
@@ -99,10 +104,27 @@ interface PurchaseOrderFilters {
 
 const STATUSES = ["DRAFT", "ISSUED", "CLOSED", "CANCELLED"] as const;
 
+// Approval states in which a draft cannot be issued yet, and the ones from which it can be (re)submitted.
+const BLOCKS_ISSUE = new Set(["NOT_SUBMITTED", "PENDING", "REJECTED", "WITHDRAWN", "INVALIDATED", "EXPIRED"]);
+const SUBMITTABLE = new Set(["NOT_SUBMITTED", "REJECTED", "WITHDRAWN", "INVALIDATED", "EXPIRED"]);
+
+// The approval filter judges an order by its latest approval request; NONE is "never sent for approval".
+const APPROVAL_FILTER_LABELS: Record<string, string> = {
+  PENDING: "Waiting for approval",
+  APPROVED: "Approved",
+  REJECTED: "Rejected",
+  WITHDRAWN: "Withdrawn",
+  INVALIDATED: "No longer valid",
+  EXPIRED: "Expired",
+  NONE: "Not sent for approval",
+};
+
 export function PurchaseOrdersListScreen() {
   const mayCreate = usePermission("purchasing.purchase-order.create");
   const mayIssue = usePermission("purchasing.purchase-order.issue");
   const mayCancel = usePermission("purchasing.purchase-order.cancel");
+  const maySubmit = usePermission("purchasing.purchase-order.submit");
+  const submitForApproval = usePurchaseOrdersSubmit();
   const mayViewCommercialCost = usePurchasingCommercialCost();
   const navigate = useNavigate();
   const { search } = useLocation();
@@ -110,6 +132,8 @@ export function PurchaseOrdersListScreen() {
     defaultSort: "-created_at",
     defaultPerPage: 25,
   });
+  // The search box answers at once but only asks the server once typing pauses (see useDebouncedSearch).
+  const searchBox = useDebouncedSearch(query.filters.search, (value) => query.setFilter("search", value));
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(() =>
     Boolean(
@@ -185,22 +209,6 @@ export function PurchaseOrdersListScreen() {
       new Map(currencies.map((currency) => [currency.id, currency.code])),
     [currencies],
   );
-  const columns = useMemo(
-    () =>
-      purchaseOrderColumns(
-        supplierLabels,
-        currencyLabels,
-        mayViewCommercialCost,
-      ),
-    [supplierLabels, currencyLabels, mayViewCommercialCost],
-  );
-  const [columnVisibility, setColumnVisibility] = useColumnVisibilityPreference(
-    "purchase-orders-list",
-    Object.fromEntries(
-      columns.map((column) => [column.key, isColumnVisibleByDefault(column)]),
-    ),
-  );
-
   const ordersQuery = usePurchaseOrdersIndex({
     "filter[search]": query.filters.search || undefined,
     "filter[supplier_account_id]": selectedSupplierId,
@@ -209,6 +217,9 @@ export function PurchaseOrdersListScreen() {
       : undefined,
     "filter[status]":
       (query.filters.status as (typeof STATUSES)[number] | undefined) ||
+      undefined,
+    "filter[approval]":
+      (query.filters.approval as PurchaseOrdersIndexFilterApproval | undefined) ||
       undefined,
     "filter[currency_id]": query.filters.currency_id
       ? Number(query.filters.currency_id)
@@ -244,6 +255,30 @@ export function PurchaseOrdersListScreen() {
     ordersQuery.data?.status === 200 ? ordersQuery.data.data.data : [];
   const meta =
     ordersQuery.data?.status === 200 ? ordersQuery.data.data.meta : undefined;
+  // Approvals are "in use" once any order carries an approval status (the API sends null while the company has them
+  // switched off). It stays on once seen, so the column and filter do not blink away when a filter empties the page.
+  const [approvalsSeen, setApprovalsSeen] = useState(false);
+  useEffect(() => {
+    if (orders.some((order) => order.approval_status != null)) setApprovalsSeen(true);
+  }, [orders]);
+  const approvalsInUse = approvalsSeen || Boolean(query.filters.approval);
+  const columns = useMemo(
+    () =>
+      purchaseOrderColumns(
+        supplierLabels,
+        currencyLabels,
+        mayViewCommercialCost,
+        approvalsInUse,
+      ),
+    [supplierLabels, currencyLabels, mayViewCommercialCost, approvalsInUse],
+  );
+  const [columnVisibility, setColumnVisibility] = useColumnVisibilityPreference(
+    "purchase-orders-list",
+    Object.fromEntries(
+      columns.map((column) => [column.key, isColumnVisibleByDefault(column)]),
+    ),
+  );
+
   const tanStackColumns = useMemo(
     () => [selectionColumn<PurchaseOrderResource>(), ...toTanStackColumns(columns)],
     [columns],
@@ -274,6 +309,7 @@ export function PurchaseOrdersListScreen() {
   const mobileActiveFilterCount = [
     query.filters.supplier_account_id,
     query.filters.status,
+    query.filters.approval,
     query.filters.order_date_from || query.filters.order_date_to,
     query.filters.expected_delivery_from || query.filters.expected_delivery_to,
     query.filters.issued_from || query.filters.issued_to,
@@ -303,6 +339,7 @@ export function PurchaseOrdersListScreen() {
     query.setFilters({
       supplier_account_id: undefined,
       status: undefined,
+      approval: undefined,
       order_date_from: undefined,
       order_date_to: undefined,
       expected_delivery_from: undefined,
@@ -355,6 +392,14 @@ export function PurchaseOrdersListScreen() {
         icon: <Tag className="h-3.5 w-3.5" />,
         label: `Status: ${query.filters.status.replace(/_/g, " ")}`,
         onRemove: () => query.setFilter("status", undefined),
+      });
+    }
+    if (query.filters.approval) {
+      chips.push({
+        id: "approval",
+        icon: <ShieldCheck className="h-3.5 w-3.5" />,
+        label: `Approval: ${APPROVAL_FILTER_LABELS[query.filters.approval] ?? query.filters.approval}`,
+        onRemove: () => query.setFilter("approval", undefined),
       });
     }
     if (query.filters.order_date_from || query.filters.order_date_to) {
@@ -483,14 +528,12 @@ export function PurchaseOrdersListScreen() {
           <Input
             className="h-10 w-full pl-10"
             placeholder="Search orders, suppliers, items…"
-            value={query.filters.search ?? ""}
-            onChange={(event) =>
-              query.setFilter("search", event.target.value || undefined)
-            }
+            {...searchBox.searchProps}
           />
         </div>
         <div className="hidden items-center gap-2 md:flex md:flex-wrap">
           <PurchaseOrderFilterControls
+            approvalsInUse={approvalsInUse}
             suppliersLookup={lookupState(suppliersQuery, "suppliers")}
             suppliers={suppliers}
             supplierLabels={supplierLabels}
@@ -592,6 +635,7 @@ export function PurchaseOrdersListScreen() {
                 Primary
               </span>
               <PurchaseOrderFilterControls
+                approvalsInUse={approvalsInUse}
                 suppliersLookup={lookupState(suppliersQuery, "suppliers")}
                 suppliers={suppliers}
                 supplierLabels={supplierLabels}
@@ -748,7 +792,16 @@ export function PurchaseOrdersListScreen() {
                   Edit draft
                 </DropdownMenuItem>
               )}
-              {order.status === "DRAFT" && mayIssue && (
+              {/* A draft that must be approved first is sent for approval from here; it can only be issued once approved. */}
+              {order.status === "DRAFT" && maySubmit && SUBMITTABLE.has(order.approval_status ?? "") && (
+                <DropdownMenuItem
+                  disabled={submitForApproval.isPending}
+                  onSelect={() => submitForApproval.mutate({ purchaseOrder: order.id })}
+                >
+                  Submit for approval
+                </DropdownMenuItem>
+              )}
+              {order.status === "DRAFT" && mayIssue && !BLOCKS_ISSUE.has(order.approval_status ?? "") && (
                 <DropdownMenuItem
                   onSelect={() =>
                     navigate(
@@ -850,6 +903,7 @@ function describeFilters(
     );
   }
   if (filters.status) lines.push(`Status = ${filters.status}`);
+  if (filters.approval) lines.push(`Approval = ${APPROVAL_FILTER_LABELS[filters.approval] ?? filters.approval}`);
   if (filters.order_date_from || filters.order_date_to) {
     lines.push(
       `Order Date = ${filters.order_date_from ?? "…"} to ${filters.order_date_to ?? "…"}`,
@@ -888,6 +942,8 @@ function describeFilters(
 }
 
 interface PurchaseOrderFilterControlsProps {
+  /** Show the Approval filter — only for a company that uses approvals. */
+  approvalsInUse?: boolean;
   suppliersLookup: LookupState;
   suppliers: { id: number }[];
   supplierLabels: ReadonlyMap<number, string>;
@@ -897,6 +953,7 @@ interface PurchaseOrderFilterControlsProps {
 
 /** Supplier/Status selects — shared by the always-visible desktop row and the mobile Filters sheet. */
 function PurchaseOrderFilterControls({
+  approvalsInUse,
   suppliersLookup,
   suppliers,
   supplierLabels,
@@ -955,6 +1012,32 @@ function PurchaseOrderFilterControls({
           ))}
         </SelectContent>
       </Select>
+      {approvalsInUse && (
+        <Select
+          value={query.filters.approval ?? "all"}
+          onValueChange={(value) =>
+            query.setFilter("approval", value === "all" ? undefined : value)
+          }
+        >
+          <SelectTrigger
+            className={full ? "h-9 w-full" : "h-10 w-52"}
+            aria-label="Approval"
+          >
+            <div className="flex min-w-0 items-center gap-2">
+              {!full && <ShieldCheck aria-hidden="true" className="po-field-icon h-[18px] w-[18px] shrink-0" />}
+              <SelectValue placeholder="Approval" />
+            </div>
+          </SelectTrigger>
+          <SelectContent className="po-select-content">
+            <SelectItem value="all">All approvals</SelectItem>
+            {Object.entries(APPROVAL_FILTER_LABELS).map(([value, label]) => (
+              <SelectItem key={value} value={value}>
+                {label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
     </>
   );
 }

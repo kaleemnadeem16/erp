@@ -3,6 +3,7 @@ import type { PurchaseOrderResource } from "@erp/core-api";
 import { Badge } from "../../components/ui/badge";
 import type { DataColumn } from "../../components/data-table/types";
 import { formatDate } from "../../lib/format-date";
+import { REQUEST_STATUS_LABELS } from "../approvals/approval-labels";
 
 // The shared Badge variant is the base look (dark mode and anywhere the PO palette is not active);
 // the po-status-* class restyles it from the erp-blue status tokens inside the light PO screen.
@@ -50,10 +51,41 @@ export function PurchaseOrderStatusBadge({ status }: { status: string }) {
   );
 }
 
+/**
+ * Where an order stands with approval, in the list's words. Orders that need no approval show a dash rather than "Not
+ * required": in a company that uses approvals most orders do not need one, and a word on every row is noise.
+ */
+export const APPROVAL_STATUS_LABELS: Record<string, string> = {
+  NOT_SUBMITTED: "Needs approval",
+  INVALIDATED: "Changed since approval",
+  ...REQUEST_STATUS_LABELS,
+};
+
+const APPROVAL_CLASS: Record<string, string> = {
+  NOT_SUBMITTED: "po-status-pending",
+  PENDING: "po-status-pending",
+  APPROVED: "po-status-success",
+  REJECTED: "po-status-danger",
+  WITHDRAWN: "po-status-draft",
+  EXPIRED: "po-status-draft",
+  INVALIDATED: "po-status-pending",
+};
+
+export function PurchaseOrderApprovalBadge({ status }: { status: string | null | undefined }) {
+  if (!status || status === "NOT_REQUIRED") return <span className="text-muted-foreground">—</span>;
+  return (
+    <Badge variant="secondary" className={`po-status-badge ${APPROVAL_CLASS[status] ?? "po-status-draft"}`}>
+      {APPROVAL_STATUS_LABELS[status] ?? status}
+    </Badge>
+  );
+}
+
 export function purchaseOrderColumns(
   suppliers: ReadonlyMap<number, string>,
   currencies: ReadonlyMap<number, string>,
   mayViewCommercialCost: boolean,
+  /** Whether the company uses approvals at all; the Approval column is left out when it does not. */
+  approvalsInUse = false,
 ): DataColumn<PurchaseOrderResource>[] {
   return [
     {
@@ -122,6 +154,20 @@ export function purchaseOrderColumns(
       cell: (order) => <PurchaseOrderStatusBadge status={order.status} />,
       filterable: true,
     },
+    ...(approvalsInUse
+      ? [
+          {
+            key: "approval_status",
+            header: "Approval",
+            value: (order) =>
+              order.approval_status && order.approval_status !== "NOT_REQUIRED"
+                ? (APPROVAL_STATUS_LABELS[order.approval_status] ?? order.approval_status)
+                : null,
+            cell: (order) => <PurchaseOrderApprovalBadge status={order.approval_status} />,
+            filterable: true,
+          } satisfies DataColumn<PurchaseOrderResource>,
+        ]
+      : []),
     {
       key: "issued_at",
       header: "Issued",

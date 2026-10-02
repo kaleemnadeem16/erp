@@ -3,7 +3,7 @@
  * Do not edit manually.
  *
  * Pure-type schemas are re-exported with `export type *` so a browser never requests them;
- * only the 115 schemas that export a runtime value use `export *`.
+ * only the 116 schemas that export a runtime value use `export *`.
  */
 export type * from "./accountShow200";
 export * from "./accountType";
@@ -1156,6 +1156,7 @@ export type * from "./purchaseOrderLineResourceSupplierItemCode";
 export type * from "./purchaseOrderLinesShortClose200";
 export type * from "./purchaseOrderLinesShortClose403";
 export type * from "./purchaseOrderResource";
+export type * from "./purchaseOrderResourceApprovalStatus";
 export type * from "./purchaseOrderResourceCancellationReason";
 export type * from "./purchaseOrderResourceCancelledAt";
 export type * from "./purchaseOrderResourceClosedAt";
@@ -1187,6 +1188,7 @@ export type * from "./purchaseOrdersIndex200MetaLinksItem";
 export type * from "./purchaseOrdersIndex200MetaLinksItemUrl";
 export type * from "./purchaseOrdersIndex200MetaPath";
 export type * from "./purchaseOrdersIndex200MetaTo";
+export * from "./purchaseOrdersIndexFilterApproval";
 export type * from "./purchaseOrdersIndexParams";
 export * from "./purchaseOrdersIndexSort";
 export type * from "./purchaseOrdersIssue200";
