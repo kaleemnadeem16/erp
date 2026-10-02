@@ -108,6 +108,11 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 
 ## Next
 
+The owner’s expanded small-to-large packaging and Purchasing discussion is captured in the
+[research brief](phases/item-purchasing-improvements.md#packaging-research-discussion-brief--2026-10-02).
+It records nested Thinner packs, related cases, existing foundations and unresolved questions;
+it is a discussion input, not an accepted design. Review it before extending the conversion/PO model.
+
 The new [product journeys](journeys/README.md) layer records the implemented Phase 2 flow from
 login and master-data setup through PO, receipt, QA, stock visibility and controlled exceptions.
 Keep it current whenever a workflow screen, status or consequence changes; later phases add their

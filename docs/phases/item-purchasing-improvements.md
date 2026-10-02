@@ -64,6 +64,94 @@ lack the capability check used by the screen. UI gating is not backend enforceme
 in the open questions and resolve the conversion-maintenance boundary before claiming those
 writes are permission-protected. Step 1 keeps the API contract unchanged.
 
+## Packaging research discussion brief — 2026-10-02
+
+**State:** requirements and questions captured from the owner discussion; not an accepted model
+or a completed ERP comparison. Discuss before implementing. The sequence above is provisional:
+this review may change how PO conversion visibility and packaging selection should be delivered.
+
+### Business example
+
+Thinner is one product, held in litres, offered in 0.1 L bottles, 1 L bottles and 5 L cans.
+A box may contain 20 × 0.1 L bottles; another may contain 40 of those bottles. Other boxes
+contain the 1 L or 5 L packs, with cartons/pallets potentially above them. Counts except the
+20-bottle example are illustrative, not mandatory defaults.
+
+A box of 20 × 0.1 L and a box of 2 × 1 L both contain 2 L but are different things to order,
+receive and hold. Quantity maths alone cannot identify their contents or physical arrangement.
+The owner wants an unambiguous PO choice between individual packs and boxes of specific packs.
+
+### Existing foundation to reuse and verify
+
+- ADR 0050: one stock UoM per item; item/UoM overrides; direct factors against stock UoM;
+  divisibility separate from MOQ/order multiples. One generic bottle UoM cannot have multiple
+  factors for the same item. Distinct conversion units express the maths today, but their use
+  as durable package identities needs assessment.
+- ADRs 0051–0053 and the Inventory packages domain: package definitions, package balances,
+  physical containers and lot/batch identities are different facts. QUANTITY_ONLY,
+  PACKAGE_BALANCE and CONTAINER_TRACKED are progressive capabilities; verify shipped versus
+  conceptual scope. Supplier replenishment remains Purchasing-owned.
+- The committed step 1 panel exposes existing conversions; it does not implement packaging
+  hierarchy, sealed-pack stock or a PO packaging selector.
+- Purchasing already defaults purchase UoM by supplier relationship and records conversion
+  evidence on lines. Verify snapshot timing, pricing semantics and current API/UI contracts.
+- Preserve the Phase 5 physical-package ownership boundary and Q23 catch-weight question.
+  Q34 records the separate conversion-write authorisation gap; verify its current status.
+
+### Cases to assess
+
+| Case | Example / question |
+|---|---|
+| Fixed and nested packs | Bottle → box → carton → pallet; alternative boxes and equal-volume packages with different contents |
+| Supplier-specific offers | Supplier A sells 20-bottle boxes; B sells 24; applicable packaging, supplier SKU and defaults |
+| Variable content / catch weight | A nominal 25 kg sack actually weighs 24.7 kg; record count and measured content |
+| Independent price basis | Order boxes, pay per litre, kg, bottle or per 100/1,000 units |
+| Order constraints | MOQ, multiples, fractional packs, rounding, warning/blocking and authorised exceptions |
+| Kits / assortments | One purchased set contains resin, hardener and thinner; not a single-item conversion |
+| Variants | Grade/colour versus packaging; when separate item identities are necessary |
+| Returnable packaging | Drum ownership, return lifecycle and refundable deposit |
+| Open packs / remnants | A 5 L can has 2 L remaining; quantity-only cannot infer sealed inventory |
+| Traceability | Batch, expiry and serial identity across packs and outer containers |
+| Weight / volume | Density-based kg↔litre conversion, including batch variability and measurement conditions |
+| Delivery planning | Partial receipts, split destinations, requested/promised dates and packing discrepancy |
+| Repacking / decanting | Drum → cans; packaging materials, loss and cost consequences |
+| Identifiers / handling | Package-level barcodes, dimensions, weights and scanning needs |
+
+### Small-to-large design boundary
+
+Aim for one coherent model: a small business can define a few purchasing packs, order them and
+track aggregate quantity without mandatory scanning or container administration. Larger companies
+can enable physical package balances, hierarchy, barcodes and individually tracked containers.
+Distinguish domain capability, company configuration and UI exposure, following
+[extensibility](../architecture/extensibility.md#progressive-capability-modes).
+
+Neither a mandatory large-warehouse workflow nor an expensive-to-migrate simple schema is a
+predetermined choice. These are candidate capabilities, not a promise to build all of them now.
+
+### Questions and expected discussion output
+
+1. Map responsibility across item, package definition, supplier offer, PO, receipt and physical
+   stock. Resolve when packaging means one item, a variant, a kit or multiple measured quantities.
+2. Explain nested/alternative package identity while respecting ADR 0050's direct conversion
+   factors. Consider equal quantities, different contents, supplier-specific choices and barcodes.
+3. Walk through Item → supplier → packaging → quantity → price basis → PO → receipt using
+   Thinner. Explain mixed-pack lines, defaults, validation and what the buyer sees before saving.
+4. Identify the snapshot boundary and correction rules so later master-data edits cannot rewrite
+   issued documents. Explain opening/repacking/transfers/returns and reconciliation to the stock
+   ledger, without inventing physical evidence in QUANTITY_ONLY mode.
+5. Complete the authorisation checklist: read/write/override/approval duties, field sensitivity,
+   company scope, Action enforcement, UI capabilities and tests.
+6. Reuse sufficient existing research first. For unanswered semantics compare two to four mature
+   ERPs from primary sources; record dates, convergence, meaningful differences, failure modes,
+   realistic alternatives and remaining uncertainty. Do not simply copy a vendor hierarchy.
+7. Produce a case/support matrix, conceptual recommendation, rejected alternatives, simple and
+   advanced user experiences, and a revised delivery sequence with dependencies and acceptance
+   criteria. Identify new/superseding ADRs and domain/phase/open-question updates needed.
+
+No migrations or implementation of the new business shape during the discussion. Accepted ADRs
+remain immutable; any changed decision needs a superseding ADR. Preserve company scope, decimal
+arithmetic, historical evidence, module ownership and the established stock/valuation authority.
+
 ## Related
 
 - [Items](../domain/items.md)
