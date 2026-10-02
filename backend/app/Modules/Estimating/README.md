@@ -139,6 +139,8 @@ filters as URL-backed controls, with a mobile filter sheet and cards. Boolean
 Its Item and work-unit filters now query the existing Items and UoMs search
 endpoints as the user types and resolve selected IDs separately, rather than
 relying on the first 100 results.
+The read-only Application Rate resolution tester now uses the same server-search
+lookups for Item and Work unit; rate form pickers remain a separate scale pass.
 
 `CreateAssemblyGroup`/`UpdateAssemblyGroup`/`ArchiveAssemblyGroup` and
 `CreateAssembly`/`UpdateAssembly`/`ArchiveAssembly` are plain CRUD, same shape as the rate

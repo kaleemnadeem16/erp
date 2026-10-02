@@ -228,6 +228,8 @@ All validated Estimating list filters now have controls. The shared lookup selec
 fetch at most 100 options; server-side search/pagination is a separate scale follow-up.
 Application Rates Item/work-unit, Assemblies group, and Formulations output-item/customer
 filters are server-searchable; Estimating form pickers still need a scale pass.
+The Application Rate resolution tester now shares that server-search behavior for
+Item and Work unit; saved-rate forms still need their own picker pass.
 
 **Recommended capabilities**, matching `OverheadPolicy`'s naming shape: `estimating.rate-dimension.manage`,
 `estimating.application-rate.manage`, `estimating.formulation.manage` (covers `FormulationVersion`

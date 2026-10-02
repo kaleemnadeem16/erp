@@ -10,7 +10,7 @@ import type { ComboboxOption } from './combobox';
 
 interface RemoteLookupComboboxProps extends LookupState {
   label: string;
-  allLabel: string;
+  allLabel?: string;
   value: string;
   selectedLabel?: string;
   onValueChange: (value: string) => void;
@@ -36,7 +36,7 @@ export function RemoteLookupCombobox({
 }: RemoteLookupComboboxProps) {
   const [open, setOpen] = useState(false);
   const displayLabel =
-    value === 'all' ? allLabel : (options.find((option) => option.value === value)?.label ?? selectedLabel);
+    value === 'all' && allLabel ? allLabel : (options.find((option) => option.value === value)?.label ?? selectedLabel);
 
   return (
     <Popover
@@ -82,17 +82,19 @@ export function RemoteLookupCombobox({
             />
             <CommandList>
               <CommandGroup>
-                <CommandItem
-                  value="all"
-                  onSelect={() => {
-                    onValueChange('all');
-                    setOpen(false);
-                    onSearchChange('');
-                  }}
-                >
-                  <Check className={cn('h-4 w-4 shrink-0', value === 'all' ? 'opacity-100' : 'opacity-0')} />
-                  {allLabel}
-                </CommandItem>
+                {allLabel && (
+                  <CommandItem
+                    value="all"
+                    onSelect={() => {
+                      onValueChange('all');
+                      setOpen(false);
+                      onSearchChange('');
+                    }}
+                  >
+                    <Check className={cn('h-4 w-4 shrink-0', value === 'all' ? 'opacity-100' : 'opacity-0')} />
+                    {allLabel}
+                  </CommandItem>
+                )}
                 {options.length === 0 && (
                   <p className="px-2 py-4 text-center text-sm text-muted-foreground">
                     {loading ? 'Loading…' : 'No matching results.'}

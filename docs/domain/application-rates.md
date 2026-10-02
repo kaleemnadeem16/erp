@@ -131,6 +131,9 @@ than clearing the filter. The Item and work-unit filters search their respective
 APIs as the user types, so choices beyond the first 100 results can still be
 selected; ID-based show reads preserve their labels on bookmarked URLs. Other
 Estimating pickers need the same scale treatment in later slices.
+The resolution tester's Item and Work unit pickers use the same server-search
+pattern, retaining selected labels while the tester stays open. It remains a
+read-only test of the existing resolution rule, not a saved rate change.
 
 ## Landmines
 

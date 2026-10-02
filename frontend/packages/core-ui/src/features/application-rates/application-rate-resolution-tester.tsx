@@ -1,7 +1,15 @@
-import { useState } from 'react';
-import { useApplicationRatesResolve, useItemsIndex, useRateDimensionsIndex, useUomsIndex } from '@erp/core-api';
+import { useEffect, useState } from 'react';
+import {
+  useApplicationRatesResolve,
+  useItemsIndex,
+  useItemsShow,
+  useRateDimensionsIndex,
+  useUomsIndex,
+  useUomsShow,
+} from '@erp/core-api';
 import { Button } from '../../components/ui/button';
 import { Combobox } from '../../components/ui/combobox';
+import { RemoteLookupCombobox } from '../../components/ui/remote-lookup-combobox';
 import { DetailSection } from '../../components/detail/detail-page-layout';
 import { getApiErrorMessage, lookupState } from '../../lib/api-errors';
 
@@ -19,15 +27,35 @@ const METHOD_LABEL: Record<string, string> = {
  * fallback, before any document exists to reference one (Phase 4).
  */
 export function ApplicationRateResolutionTester() {
-  const itemsResult = useItemsIndex({ per_page: 100, sort: 'name' });
+  const [itemSearch, setItemSearch] = useState('');
+  const [debouncedItemSearch, setDebouncedItemSearch] = useState('');
+  const [uomSearch, setUomSearch] = useState('');
+  const [debouncedUomSearch, setDebouncedUomSearch] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedItemSearch(itemSearch), 300);
+    return () => clearTimeout(timer);
+  }, [itemSearch]);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedUomSearch(uomSearch), 300);
+    return () => clearTimeout(timer);
+  }, [uomSearch]);
+  const itemsResult = useItemsIndex({
+    'filter[search]': debouncedItemSearch || undefined,
+    per_page: 100,
+    sort: 'name',
+  });
   const items = itemsResult.data?.status === 200 ? itemsResult.data.data.data : [];
-  const uomsResult = useUomsIndex({ per_page: 100, sort: 'name' });
+  const uomsResult = useUomsIndex({ 'filter[search]': debouncedUomSearch || undefined, per_page: 100, sort: 'name' });
   const uoms = uomsResult.data?.status === 200 ? uomsResult.data.data.data : [];
   const dimensionsResult = useRateDimensionsIndex({ per_page: 100, sort: 'sort_order', include: 'values' });
   const dimensions = dimensionsResult.data?.status === 200 ? dimensionsResult.data.data.data : [];
 
   const [itemId, setItemId] = useState('');
   const [workUomId, setWorkUomId] = useState('');
+  const selectedItemQuery = useItemsShow(Number(itemId || 0), undefined, { query: { enabled: !!itemId } });
+  const selectedItem = selectedItemQuery.data?.status === 200 ? selectedItemQuery.data.data.data : undefined;
+  const selectedUomQuery = useUomsShow(Number(workUomId || 0), { query: { enabled: !!workUomId } });
+  const selectedUom = selectedUomQuery.data?.status === 200 ? selectedUomQuery.data.data.data : undefined;
   const [dimensionValues, setDimensionValues] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState<{
     itemId: number;
@@ -49,7 +77,7 @@ export function ApplicationRateResolutionTester() {
       work_uom_id: submitted?.workUomId ?? 0,
       'dimension_value_ids[]': submitted?.dimensionValueIds,
     },
-    { query: { enabled: submitted !== null } }
+    { query: { enabled: submitted !== null } },
   );
   const resolution = result.data?.status === 200 ? result.data.data.data : undefined;
 
@@ -59,26 +87,37 @@ export function ApplicationRateResolutionTester() {
       description="Preview which rate wins for a given item, work unit and combination of dimension values, and how it was chosen."
     >
       <div className="grid gap-3 sm:grid-cols-2">
-        <Combobox {...lookupState(itemsResult, 'items')}
-          aria-label="Item"
+        <RemoteLookupCombobox
+          {...lookupState(itemsResult, 'items')}
+          label="Item"
           value={itemId}
+          selectedLabel={selectedItem ? `${selectedItem.code} — ${selectedItem.name}` : undefined}
           onValueChange={setItemId}
-          options={items.map((i) => ({ value: String(i.id), label: `${i.code} — ${i.name}` }))}
-          placeholder="Item"
-          searchPlaceholder="Search items…"
-          emptyText="No items found."
+          search={itemSearch}
+          onSearchChange={setItemSearch}
+          loading={itemsResult.isLoading || itemSearch !== debouncedItemSearch}
+          options={(itemSearch === debouncedItemSearch ? items : []).map((i) => ({
+            value: String(i.id),
+            label: `${i.code} — ${i.name}`,
+          }))}
         />
-        <Combobox {...lookupState(uomsResult, 'units')}
-          aria-label="Work unit"
+        <RemoteLookupCombobox
+          {...lookupState(uomsResult, 'units')}
+          label="Work unit"
           value={workUomId}
+          selectedLabel={selectedUom ? `${selectedUom.name} (${selectedUom.code})` : undefined}
           onValueChange={setWorkUomId}
-          options={uoms.map((u) => ({ value: String(u.id), label: `${u.name} (${u.code})` }))}
-          placeholder="Work unit"
-          searchPlaceholder="Search units…"
-          emptyText="No units found."
+          search={uomSearch}
+          onSearchChange={setUomSearch}
+          loading={uomsResult.isLoading || uomSearch !== debouncedUomSearch}
+          options={(uomSearch === debouncedUomSearch ? uoms : []).map((u) => ({
+            value: String(u.id),
+            label: `${u.name} (${u.code})`,
+          }))}
         />
         {dimensions.map((dimension) => (
-          <Combobox {...lookupState(dimensionsResult, 'rate dimensions')}
+          <Combobox
+            {...lookupState(dimensionsResult, 'rate dimensions')}
             key={dimension.id}
             aria-label={dimension.name}
             value={dimensionValues[dimension.id] ?? NONE}
