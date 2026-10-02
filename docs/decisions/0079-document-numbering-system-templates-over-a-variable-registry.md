@@ -2,12 +2,11 @@
 
 # 0079 — One document-numbering system: series of templates over a registry of variables
 
-- **Status:** proposed — **research and design only; nothing is built.** Revised twice on 2026-10-02: first from a
-  purchase-order-only proposal to one system for every document, then with the owner's seven adjustments (below), each
-  checked against vendor documentation.
-- **Affects:** `sequences` / `NumberingScheme` ([phase 0](../phases/phase-0-foundation.md)), purchase orders and goods
-  receipts first, then every document that carries a number; one shared settings component in each owning module's settings
-  screen; [extensibility.md](../architecture/extensibility.md) rung 1
+- **Status:** accepted (2026-10-02, after the owner's final adjustments below). Phase 1 — the engine and the migration of
+  purchase orders and goods receipts — is being built; the settings screens are the next step.
+- **Affects:** a new central `Numbering` module (the framework), `sequences` / `NumberingScheme` ([phase 0](../phases/phase-0-foundation.md))
+  which it replaces, purchase orders and goods receipts first and then every numbered document, a general company-level time
+  zone, **Settings → Document Numbering**, [extensibility.md](../architecture/extensibility.md) rung 1
 
 ## Context
 
@@ -30,6 +29,10 @@ adjustments, now part of the design:
 6. business-derived variables must use a value **frozen when the number is issued**;
 7. the settings screen has a **preview/tester** that explains the date used, counter scope, reset, next numbers and any
    uniqueness conflict.
+
+**Final framing (owner, 2026-10-02):** this is a **central, reusable Document Numbering framework** for the whole ERP — purchase
+orders, goods receipts, sales orders, invoices, credit notes, stock transfers, work orders and every future internal document
+— not something built inside Purchasing. A new document should need only to register itself and supply a numbering context.
 
 Owner decisions recorded: date basis = issue date; default year = calendar year with fiscal year also supported; gapless =
 configurable; constants = yes; multiple series = architecture now, simple UI first.
@@ -67,192 +70,283 @@ configurable; constants = yes; multiple series = architecture now, simple UI fir
   attributes are frozen by then; the rule is ours, and it is the safe reading.
 - **Preview (7).** Odoo shows its placeholders and an example beside the form; the rest is our design.
 
-## Decision proposed
+## Decision
 
-### 1. Vocabulary
+### 1. The concepts, kept separate
 
-- **Document type** — a numbered kind of document (`purchase_order`), **registered in code** by its owning module.
-- **Series** — a named numbering line for one document type (`DEFAULT`, `IMPORT`, `LHR`): its own format, counters and policy.
-- **Format** — a template such as `PO-{YYYY}-{MM}-{SEQ:5}`: literal text, variables, and exactly one counter.
-- **Counter scope** — which counter a number is drawn from; explicit (section 3).
-- **Variable** — a registered value that can appear in a template: a *system variable* (code) or a *company constant*.
-- **Numbering date** — the moment the document becomes official (issue, post), in the company's time zone.
-
-### 2. Templates are parsed, never evaluated
-
-A format is a short string: literal text (letters, digits and `- _ / .`; no spaces; at most 30 characters in a run), `{NAME}` or
-`{NAME:option}` variables, and exactly one `{SEQ:n}` (zero-padded, 1–12). It is parsed on save into a structure; there are no
-expressions or code. An unknown variable, a missing or repeated counter, a variable the document type cannot supply, or an
-over-long result (proposed limit 40) is rejected with the reason.
-
-### 3. Counter scope is an explicit setting, validated against the template
-
-A series declares its **counter scope** as a *period granularity* (`NONE`, `YEAR`, `MONTH`, `DAY`, `FISCAL_YEAR`,
-`FISCAL_PERIOD`) plus a list of **scope dimensions** the document type offers (`WAREHOUSE`, `BRANCH`, … — the company is always
-in scope). The scope decides when a counter restarts and which counters exist. It is **independent of decoration**: a template
-may contain `{REGION}` or `{SUPPLIER}` that do not affect which counter is used. Three validations tie scope to the template:
-
-1. **Availability** — every dimension in the scope must be resolvable from the document at numbering time (the document type
-   declares which it can supply). A scope on `WAREHOUSE` for a document with no warehouse is refused.
-2. **Uniqueness** — two different counters must never produce the same text. So every period and dimension in the scope must be
-   *visible* in the template through a variable that distinguishes it (a monthly scope needs a year and a month; a warehouse
-   scope needs `{WAREHOUSE}`). Otherwise `0001` would repeat in the next period. This is a hard rejection, not a warning.
-3. **Honesty** — a template that shows more than the scope (a month in the text with a yearly counter) is allowed and the
-   tester says so ("the number carries the month, the counter continues through the year").
-
-A scope or format change is a new format version; it starts new counters and never rewrites issued numbers.
-
-### 4. Numbering date: the issue date, in the company's time zone
-
-Date variables (`{YYYY}`, `{YY}`, `{MM}`, `{DD}`) and fiscal variables (`{FY}`, `{FP}`) use the **numbering date** the document
-type registers (its issue/post moment) — **never the order or document date**, which stays a separate field. Dates are
-evaluated in the **company's time zone, not UTC** — the application's time zone is UTC today, so an order issued at 00:30
-local on the 1st would otherwise be numbered in the previous month; **a company time-zone setting is therefore a prerequisite**.
-`{FY}`/`{FP}` come from the fiscal calendar by that date; if no fiscal year covers it, issuing is refused with a clear message
-rather than numbering silently from the calendar. The default template uses the calendar year; the fiscal year is one
-variable away.
-
-### 5. Continuity is a per-series policy, with two allocation methods
-
-| Policy | Method | Use |
+| Concept | What it is | Owned by |
 |---|---|---|
-| `GAPLESS` | The counter row is locked **inside the document's own transaction**, as today, so a rollback returns the number. Issues of one counter are serialised. | Statutory documents (invoices, in some regimes) and any series the owner chooses. |
-| `ALLOW_GAPS` | The counter is advanced in its **own short transaction**, reserving a **block** of numbers (cached), so the document transaction never waits on a lock and a rollback or crash leaves a gap. Numbers still increase and never repeat. | Operational documents and high-volume series. |
+| **Document type** | A numberable kind of document (`PURCHASE_ORDER`). Registered in code. Declares its variables, defaults, permission, and when it becomes official. | The module that owns the document |
+| **Number series** | A named numbering line of one document type (`DEFAULT`, `IMPORT`, `LOCAL`). Has its own counters. A type structurally supports many; the first screen shows only the default. | Numbering (data) |
+| **Series version** | The governed configuration of a series at a time: **template + counter scope + continuity policy**. A change adds a version; it never edits history. | Numbering (data) |
+| **Template** | The format string, e.g. `PO-{BRANCH}-{YYYY}-{SEQ:5}`. | Inside a version |
+| **Counter scope** | Which counter a number is drawn from: a **period** plus **dimensions** (e.g. *Company + Branch + Year*). Explicit. | Inside a version |
+| **Series routing** | How a document is assigned a series: a manual choice, an automatic rule, or the default. | Numbering (data) |
+| **Counter** | The running number for one *(series, counter key)*, where the key is the scope's resolved values. | Numbering (data) |
+| **Allocation log** | The permanent, frozen record of every number issued. | Numbering (data) |
+| **Company constants** | Company-defined named strings usable in templates (`{REGION}`=`NORTH`). | Numbering (data) |
 
-- **PostgreSQL sequences are not used for gapless** (their own documentation says they cannot be); they or a block reservation
-  serve the gaps-allowed method.
-- **Each document type registers its default and whether it is locked**: a statutory type is `GAPLESS` and locked; an
-  operational type defaults to `ALLOW_GAPS`, changeable. Stock movements, if they are ever numbered, take the cheap policy by
-  default.
-- **Existing series keep today's behaviour.** The migration creates purchase orders and goods receipts as `GAPLESS` so that
-  nothing observable changes; the owner may switch them. Switching is a governed change (reason, warning, future numbers only);
-  Oracle advises avoiding mode changes after use, so the editor warns.
-- An optional later flag on gapless series — **numbers must follow document dates** (Oracle's transaction-date validation) —
-  is reserved, not built.
+The engine knows none of the documents. **Document-specific knowledge stays with the document**, which hands the engine a
+*numbering context* (section 3).
 
-### 6. Series from day one
+### 2. The central document-type registry and the extension contract
 
-Structure (all company-scoped, all additions to the model, none a redesign later):
+Numbering lives in its own module and exposes one contract. A numberable document implements it and registers it in its own
+service provider — no numbering tables, services or screens of its own:
+
+```php
+interface NumberableDocumentType
+{
+    public function key(): string;                    // 'PURCHASE_ORDER'
+    public function label(): string;                  // 'Purchase order'
+    public function module(): string;                 // 'purchasing' — which module's settings link here
+    public function becomesOfficial(): string;        // 'when it is issued' — shown beside the date explanation
+    /** @return list<VariableSupply> variables this document can supply, and whether each is frozen at numbering */
+    public function variables(): array;
+    /** @return list<string> keys of supplied variables that may be used as counter-scope dimensions (e.g. BRANCH) */
+    public function dimensions(): array;
+    /** @return list<string> attributes the document exposes to routing rules (e.g. ORDER_TYPE) */
+    public function routingAttributes(): array;
+    public function defaultTemplate(): string;        // 'PO-{YYYY}-{SEQ:5}'
+    public function defaultScope(): CounterScope;     // Company + Year
+    public function defaultContinuity(): Continuity;  // ALLOW_GAPS
+    public function continuityLocked(): bool;         // true for a statutory type: GAPLESS and not changeable
+    public function managePermission(): string;       // who may change this type's series
+    public function sampleContext(CarbonImmutable $at): NumberingContext;  // used by the tester
+    /** @return array<string, list<string>> dimension => values that exist today, for conflict checks and the tester */
+    public function knownDimensionValues(): array;
+}
+```
+
+Adding a document is: implement this once, bind it in the module's provider (`Numbering::register(...)`), and call
+`NumberingService::allocate($context)` at the moment the document becomes official. Everything else — series, versions,
+counters, the log, the screens, the tester, permissions' wiring — is common.
+
+### 3. The numbering context: what the document supplies
 
 ```
-numbering_series            id, company_id, doc_type, code, name, is_default, status (ACTIVE|RETIRED),
-                            selector (nullable, reserved)                    UNIQUE(company, doc_type, code); one default per type
-numbering_series_versions   id, series_id, template, counter_scope (period + dimensions), continuity,
-                            effective_from, status (ACTIVE|SUPERSEDED), reason, changed_by      one ACTIVE per series; governed history
-numbering_counters          id, company_id, series_id, counter_key, next_number, reserved_until      UNIQUE(series_id, counter_key)
-numbering_allocations       id, company_id, doc_type, series_id, version_id, document_id, number, counter_key,
-                            numbering_date, variables (frozen JSON), allocated_by, allocated_at   UNIQUE(company, doc_type, number)
-numbering_constants         id, company_id, code, value, status, reason, changed_by, effective_from   governed history
+NumberingContext
+  documentType      'PURCHASE_ORDER'
+  documentId        the document's id (set once it exists)
+  issuedAt          the instant the document became official (UTC)
+  values            { SUPPLIER_CODE: SUP012 (source: supplier_accounts#12), CURRENCY: USD (currencies#3), BRANCH: LHR (branches#2) }
+  routing           { ORDER_TYPE: IMPORT }
+  requestedSeries   optional — a manual choice, only for a series marked selectable
 ```
 
-- A document records the **series it was numbered from** (`number_series_id`, set at issue). A series is chosen by the user at
-  creation or by a **selector rule** later (a warehouse, a supplier group, domestic vs import — Dynamics' groups, Oracle's
-  assignments); the column is reserved now, the rule engine is not built.
-- **First release UI exposes only the default series**, with an "Add a series" action under advanced options. Nothing in the
-  model changes when the second series appears.
-- **Cross-series uniqueness** is enforced by `UNIQUE(company, doc_type, number)` on the allocation log, written in the same
-  transaction as the number — the backstop — and by a **save-time conflict check**: two active series of one type cannot have an
-  identical pattern, and the tester lists any other series whose literal text could produce the same numbers (shown as a
-  warning where overlap cannot be ruled out, a rejection where it is certain).
+Each value is a **frozen text plus the reference it came from**. The engine only resolves registered variables, picks a series,
+allocates the counter and returns/stores the number; it never queries suppliers, customers, warehouses or sales channels.
 
-### 7. Variables
+### 4. Variables
 
-**System variables** are registered classes, owned by the module that owns the data (as `PermissionRegistry` and
-`ApprovalSubjectRegistry` are). Each declares a key, label and description, a **resolver**, its **options**, whether it can
-define a **scope dimension / period**, and a **sample** for the preview. A document type registers which variables it can supply
-and **whether each is frozen at numbering** (below). Adding one later is adding one class; no schema change.
+A **variable** is registered once (key, label, description, kind, options, sample) and is one of: **engine variables** the
+engine computes itself — `{YYYY} {YY} {MM} {DD}`, `{FY} {FP}` (from the fiscal calendar through a port), `{DOCTYPE}`, `{SEQ:n}`,
+constants — or **document variables** (`{SUPPLIER_CODE}`, `{CURRENCY}`, `{BRANCH}`, `{WAREHOUSE}`, `{CATEGORY}`, …) whose value
+the document's context supplies. A document type lists the variables it supplies; the template validator refuses any other.
+A new variable is a registration, not a schema change. `{COMPANY}` needs a company code and arrives with it.
 
-| Group | Variables |
-|---|---|
-| Date (numbering date) | `{YYYY}` `{YY}` `{MM}` `{DD}` (later `{DOY}`, `{WK}`) |
-| Fiscal | `{FY}`, `{FP}` |
-| Organisation | `{COMPANY}` (needs a company code), `{WAREHOUSE}` (goods receipts now; purchase orders after a ship-to field exists), later `{BRANCH}`, `{DEPARTMENT}`, `{ENTITY}` |
-| Document | `{DOCTYPE}`, and per type where frozen: `{SUPPLIER}`, `{CURRENCY}`, `{CATEGORY}` |
-| Counter | `{SEQ:n}` — exactly one |
+### 5. Templates are parsed, never evaluated
 
-**Company constants** ship in the first release: a name (`REGION`, upper-case letters, digits and `_`, ≤ 20 characters) and a
-value (≤ 20 characters in the literal character set), e.g. `{REGION}` = `NORTH`, `{BRAND}` = `ABC`. They are a governed history
-(reason, actor, future-only). A constant in use cannot be deleted, only retired.
+Literal text (letters, digits, `- _ / .`; no spaces; ≤ 30 characters per run), `{NAME}`/`{NAME:option}`, and exactly one
+`{SEQ:n}` (1–12 digits). Parsed on save into parts; no expressions or code. Unknown or unsupplied variables, a missing or
+repeated counter, or a result over 40 characters are rejected with the reason.
 
-### 8. Business-derived values are frozen at issue
+### 6. Explicit counter scope
 
-A variable that comes from the document or its master data (`{SUPPLIER}`, `{CURRENCY}`, `{WAREHOUSE}`, `{CATEGORY}`) may only be
-offered where the **document type declares the source frozen at numbering** — a purchase order's supplier and currency are
-frozen when it is issued, a goods receipt's location when it is posted. Two protections make a later edit unable to change the
-meaning of an issued number:
+A version declares its **counter scope**: a **period** — `NONE, YEAR, MONTH, DAY, FISCAL_YEAR, FISCAL_PERIOD` — plus **dimensions**
+chosen from those the document type offers. Company is always in scope. The scope alone decides which counter a number comes
+from and when it restarts. A variable in the template that is not in the scope is **decorative**: `PO-{BRANCH}-{YYYY}-{SEQ:5}`
+with scope *Company + Year* is one counter for the company, with the branch shown but not counted. Every dimension in a scope
+must be supplied by the document type (availability check).
 
-- the engine **snapshots every resolved value into the allocation log** (the text *and* the record it came from — `sup-punjab`
-  and supplier id 7), so the meaning of `PUN` in a 2026 order stays explainable even if the supplier's code is later changed;
-- the number is stored as plain text on the document and is never recomputed.
+### 7. Uniqueness is the real invariant — the boundary and how it is checked
 
-Each registered supply point carries a test that the source cannot be edited after the number is taken. A value that can change
-after numbering is not offered.
+**Boundary (settled): a number is unique within *(company, document type)*, across all that type's series.** The database
+enforces it (`UNIQUE (company, doc type, number)` on the allocation log, written in the same transaction as the number, and the
+document's own unique index). The framework does not require every scope dimension to appear in the template. It validates the
+invariant itself on every save of a version:
 
-### 9. The settings screen and its tester
+- it **enumerates the numbers the configuration can produce** — for each series, a few periods (the current and next, and the
+  previous year boundary), every combination of the dimension values that exist today (the document type's
+  `knownDimensionValues()`, plus counters already in use) with two stand-in values where none exist, and a spread of counter
+  values (1, 9, 10, 99, 100, … up to the width);
+- two *different* counters — in one series or in different active series — producing **the same text** is a **certain collision**
+  and the version is **rejected**, naming the two counters and the number
+  (*"Lahore and Karachi both reach `PO-2026-00001`"*);
+- two configurations that cannot be shown disjoint by sampling (for example two series whose templates begin with a variable
+  and so may overlap in a way the sample missed) are a **warning**, never silent;
+- numbers that stay distinguishable by any decorative variable (a branch in the text, a series literal `IMPORT`) pass.
 
-One shared `NumberFormatPanel`, embedded under **Document numbers** in each owning module's settings (Purchasing Settings for
-purchase orders and receipts; Inventory, Sales and so on as their documents appear). Each document type registers its screen
-and manage permission (`<module>.numbering.manage`, proposed). API: `GET numbering/document-types`, `GET/POST
-numbering/series`, `POST numbering/series/{series}/versions`, `GET/POST numbering/constants`, `POST numbering/preview`.
+Sampling is a guard, not a proof; the unique constraint is the proof, and a collision at issue time fails the issuing
+transaction with a clear message rather than ever storing a duplicate. A prototype check on real series is part of phase 1.
 
-The **tester** is read-only — it never takes a number — and shows, for the template being edited and a sample the user can
-change (a simulated issue date; sample values for each variable the type offers):
+### 8. Numbering date and the company time zone (settled)
 
-- the **result**: `PO-{YYYY}-{MM}-{SEQ:5}` → `PO-2026-10-00042`, with each part highlighted and named;
-- **which date is used**: "Issue date (when the order is issued), in your company time zone (UTC+5): 2 Oct 2026", and that
-  the order date is not used;
-- **the counter scope**: "one counter per company, per calendar month";
-- **when and how it resets**: "restarts at 00001 on the first issue of each month, by issue date";
-- **the next example numbers**: the next three numbers, and the first number of the next period (`PO-2026-11-00001`), read from
-  the live counter (current value shown) without consuming anything;
-- **uniqueness and conflicts**: "OK — year and month are in the number", or the exact reason it is rejected, or a warning listing
-  another series that could produce the same text;
-- **continuity**: "gaps possible after a failure" or "no gaps; issues of this series are processed one at a time";
-- **length** (`15 / 40`), and a plain-language **change impact** ("applies to orders issued from now on; issued numbers do not
-  change").
+Date variables and fiscal variables use the **issue/officialisation instant** (`issuedAt`), **never** an editable business date
+(the order date stays separate), **rendered in the company's time zone**. The time zone is a **general company-level setting**
+(`companies.timezone`, an IANA name; **null = not set**), because other features need it too — it is not a numbering setting.
+Consequences, settled:
 
-A table beside it shows the **current counters** (per scope key) and lets a manager raise one with a reason; lowering is
-refused.
+- a template that uses any date or fiscal variable, or a period scope other than `NONE`, **cannot be saved while the company
+  time zone is unset** (the editor says why and where to set it); the engine refuses to allocate such a number rather than
+  guess UTC;
+- series without date parts (today's PO/GR) need no time zone and are unaffected;
+- `{FY}`/`{FP}` are looked up from the fiscal calendar for the **local date**; if none covers it, issuing is refused with a clear
+  message.
 
-### 10. Migration and phasing
+### 9. Continuity: two policies, two allocators (settled)
 
-- `sequences` rows become the first series version for each document type: `prefix + {SEQ:padding}`, scope `NONE`, continuity
-  `GAPLESS`, `next_number` preserved — **no number is repeated or skipped by the change.** Existing numbers are not logged
-  retroactively; the log starts at the migration.
-- `NumberingScheme` remains the extension point (a plugin can rebind it); its call gains a **numbering context** (the document and
-  its numbering date).
-- Legacy or imported documents carry their own numbers; the counter start is raised above them.
-- **Phases:** (1) engine — registries, parser and validator, series and versions, counters, both allocators, allocation log,
-  preview, constants; purchase orders and goods receipts migrated with no visible change; (2) the shared settings component in
-  Purchasing Settings, company code and company time zone, `{WAREHOUSE}` for goods receipts; (3) new document types register as
-  they arrive; (4) later: selector rules for series, purchase-order `{WAREHOUSE}` after ship-to, numbers-follow-dates validation,
-  field-backed variables, organisational scope.
+| Policy | Allocator | Behaviour |
+|---|---|---|
+| `GAPLESS` | **Locked counter**: the counter row is locked inside the document's own transaction. | A rollback returns the number; issues of one counter are serialised. |
+| `ALLOW_GAPS` | **Sequence-backed counter**: each counter owns a PostgreSQL sequence; `nextval` is not transactional. | No waiting on another issue; a rollback or crash can leave a gap; numbers still rise and never repeat. |
+
+The choice is `AllocationStrategy`, an interface with these two implementations, picked by the version's continuity — a third can
+be added without touching callers. PostgreSQL's own documentation states its sequences cannot give gapless numbers, which is why
+the strict policy uses the row lock. **Defaults:** each document type registers its default and whether it is locked —
+purchase orders, goods receipts, stock documents and other operational documents default to **`ALLOW_GAPS`**; a **statutory
+type registers `GAPLESS` and `continuityLocked() = true`**, and the engine refuses to change it. Switching a series' policy is a
+new governed version with a reason, a warning (vendors advise against switching after use) and applies to numbers issued from
+then on.
+
+**Existing purchase orders and goods receipts (settled).** Their registered default is `ALLOW_GAPS`. But the numbers already
+issued — in the live database too — were produced gaplessly, so **migrating each existing series preserves what it was: version 1
+is `GAPLESS`, same prefix, same padding, same next number.** Nothing about them changes on deploy; the owner moves them to
+`ALLOW_GAPS` with one governed change when and if they want. A fresh installation (no existing series) gets the registered
+default. **Concurrency is tested** for both allocators with real separate connections: simultaneous allocations never repeat a
+number; the locked allocator serialises and a rollback leaves no gap; the sequence allocator does not block and a rollback leaves
+a gap; first-use races on a new counter resolve to one counter.
+
+### 10. Series and routing (settled)
+
+A document type has any number of series; exactly one is the **default**. The series for a document is chosen in this order:
+
+1. **Manual selection** — the caller passes `requestedSeries`, accepted only if that series is active, belongs to the document type
+   and is marked **selectable**; the *caller* has already checked the actor's permission to choose (the framework supplies a
+   permission, `numbering.series.select`, for documents to use).
+2. **Routing rules** — each series may have rules, evaluated by priority; a rule is a list of conditions **over the routing
+   attributes the document type exposes** (`ORDER_TYPE = IMPORT`; `BRANCH in (LHR, KHI)`), all of which must hold. First match wins.
+3. **The default series.**
+
+Example (invoice): *Domestic* → `INV-DOM-{BRANCH}-{FY}-{SEQ:6}` for `SALE_TYPE = DOMESTIC`; *Export* →
+`INV-EXP-{BRANCH}-{FY}-{SEQ:6}` for `SALE_TYPE = EXPORT`; a rule picks the series automatically. The rules table has defined
+semantics from the start — (series, priority, ordered conditions of *attribute, EQ/IN, values*) — and there is **no vague
+reserved column**. Rules and series are engine data; the first screen exposes neither until a second series exists.
+
+### 11. Series versions — governed and immutable
+
+A version is *(template, counter scope, continuity)* with an effective-from instant, a reason and an actor; one is active per
+series. Changing any of the three adds a version and supersedes the previous one; old versions are never edited, and **every
+allocation records the version that produced it**. Example — *Default PO*: v1 `PO-{YYYY}-{SEQ:5}`, then v2
+`PO-{BRANCH}-{YYYY}-{SEQ:5}`: v1's issued numbers stay tied to v1; v2 starts its own counters if its scope differs. The
+same governed pattern as [ADR 0071](0071-stored-material-selection-strategy-as-governed-history.md).
+
+### 12. The allocation log freezes everything
+
+At allocation the engine writes, in the document's transaction: the **final number** (also stored as plain text on the
+document), the **series** and **version**, the **resolved value of every variable with the reference it came from**, the
+**issue instant and the local date used**, the **counter scope and key**, and the **counter value**. A number is never
+recomputed; a later change to a supplier, customer, branch or warehouse cannot alter an issued number or the record of why it reads as
+it does. Document types may offer only business-derived variables whose source the document **freezes at that moment**, and each
+supply point carries a test that it cannot be edited afterwards.
+
+### 13. Company constants (first release)
+
+A name (`REGION`, upper-case letters, digits and `_`, ≤ 20 characters) and a value (≤ 20 characters in the literal character
+set): `{REGION}=NORTH`, `{BRAND}=ABC`, `{DIVISION}=INDUSTRIAL`. A governed history (reason, actor, from-now-on only); a constant in
+use cannot be removed, only retired; each allocation freezes the value it used.
+
+### 14. One central management area, with progressive complexity
+
+**Settings → Document Numbering** is the one place. It lists **every registered document type** with its current default series
+and a live example (`Purchase order → PO-2026-00042`, `Goods receipt → GR-2026-00128`, …). Modules may link into it filtered to
+their documents from their own settings, but have no numbering screens or logic of their own. Permissions: reading and the
+tester need `numbering.view`; changing a type's series needs the permission **that type registers**
+(`purchasing.numbering.manage` for purchasing documents); raising a counter needs `numbering.counter.raise`; constants
+`numbering.constant.manage`; choosing a series on a document `numbering.series.select`.
+
+The default view is deliberately small: **template, reset (*never / yearly / monthly* in plain words, mapped to the scope's
+period), continuity, preview.** Series, routing rules, dimensions, fiscal periods, constants, counter management and detailed
+history appear only when needed — under *Advanced*, or once a second series exists. One implementation underneath; no "simple
+mode" code path.
+
+### 15. The tester (never consumes a number)
+
+For the template and scope being edited, with a simulated issue instant and editable sample values, it shows: the **rendered
+example** with each part named; **which instant is used** and the **company time zone**; the **series**; the **counter scope**
+and **when it resets**; the **continuity policy**; the **next few numbers** read from the live counters and the **first number of the
+next period**; **collisions** (section 7); **format and length** problems; and **the effect of the proposed change** ("applies to
+numbers issued from now; issued numbers do not change; a new counter starts for each branch"). It reads sequence-backed counters
+without `nextval`.
+
+### 16. Counter management
+
+A manager with `numbering.counter.raise` may **raise** a counter, with a **reason**; it is recorded in a counter-adjustment
+history (who, when, from, to, why). **Lowering is refused** — by the action and by a database check.
+
+### 17. Data model
+
+All tables are company-scoped (composite uniques and foreign keys carry `company_id`, as the architecture tests require):
+
+```
+numbering_series            id, company_id, doc_type, code, name, is_default, is_selectable, status (ACTIVE|RETIRED)
+                            UNIQUE(company,id); UNIQUE(company,doc_type,code); one default per (company,doc_type)
+numbering_series_versions   id, company_id, series_id, template, scope_period, scope_dimensions (text[]), continuity,
+                            effective_from, status (ACTIVE|SUPERSEDED), reason, changed_by
+                            one ACTIVE per series; rows are append-only
+numbering_series_rules      id, company_id, series_id, priority, conditions (jsonb: [{attribute, operator, values}]), status
+numbering_counters          id, company_id, series_id, counter_key, allocator (LOCKED|SEQUENCE), next_number (LOCKED) / sequence_name (SEQUENCE)
+                            UNIQUE(series_id, counter_key)
+numbering_counter_adjustments  id, company_id, counter_id, from_value, to_value, reason, changed_by, created_at
+numbering_allocations       id, company_id, doc_type, series_id, version_id, document_id, number, counter_key, counter_value,
+                            issued_at, local_date, variables (jsonb), allocated_by, allocated_at
+                            UNIQUE(company,doc_type,number)
+numbering_constants         id, company_id, code, value, status, reason, changed_by, effective_from
+companies.timezone          nullable IANA name
+```
+
+### 18. Migration of purchase orders and goods receipts (no visible change)
+
+Each existing `sequences` row becomes a series `DEFAULT` for its type with version 1 `prefix + {SEQ:padding}`, scope
+`COMPANY` (period `NONE`), continuity `GAPLESS`, and a `LOCKED` counter whose next number is carried over — so the next number
+issued is exactly the one that would have been. Types with no row yet get the registered default on first use. `NumberingScheme`
+(the interface and `DefaultNumberingScheme`) stays as a thin facade onto the engine for any caller that has no context, so the
+plugin extension point is kept. Purchase orders and goods receipts call `NumberingService::allocate()` with their context at
+issue/post; the number text, the unique index and the API are unchanged.
+
+### 19. Phasing
+
+1. **Engine (this ADR's implementation)**: the module, registries, parser/validator, scope and counter-key logic, both
+   allocators, the allocation log, versions, rules, constants, counter raising, the uniqueness check, the preview service;
+   `companies.timezone`; PO and GR migrated and registered.
+2. **Settings → Document Numbering**: the API and the screens (list, default-series editor with tester, advanced areas).
+3. **As documents arrive**: each registers its type and context.
+4. **Later**: a company profile screen for the time zone; `{COMPANY}` with a company code; purchase-order `{WAREHOUSE}` after
+   ship-to; numbers-follow-dates validation for gapless series; field-backed variables.
 
 ## Consequences
 
-- **Positive:** one place to maintain numbering; a new document type is a registration, a new variable is a class; each series
-  chooses the guarantee it needs; safe by construction (parsed not evaluated, scope validated, unique, future-only, auditable,
-  frozen).
-- **Positive:** nothing changes for a company that never opens the screen.
-- **Negative:** real infrastructure (five tables, two registries, a parser, two allocators, an editor); worth it only because many
-  documents will use it. The gaps-allowed allocator is genuinely different code from today's and must be tested under
-  concurrency.
-- **Negative:** two policies mean documents in one company can behave differently; the screen must always say which.
-- **Requires:** a company code; a **company time-zone setting**; a ship-to field on purchase orders before `{WAREHOUSE}` applies to
-  them; a fiscal calendar that covers any date a `{FY}` template is used for.
+- **Positive:** one framework for every document; a new document is a registration plus a context; each series chooses the
+  guarantee it needs; safe by construction (parsed not evaluated, explicit scope, uniqueness validated and enforced, governed,
+  frozen, auditable).
+- **Positive:** nothing visible changes for purchase orders and goods receipts, and nothing changes at all for a company that
+  never opens the screen.
+- **Negative:** real infrastructure (a module, eight tables, two allocators, a parser, a checker, screens); worth it because every
+  future document uses it. The sequence-backed allocator creates one PostgreSQL sequence per counter (DDL at first use), which
+  needs schema privileges the application role already has.
+- **Negative:** two policies mean documents in one company can behave differently; the screens always say which.
+- **Requires:** `companies.timezone` (null until set; date-based formats are blocked until it is); a fiscal calendar covering any
+  date a fiscal variable is used for; later, a company code (`{COMPANY}`) and a ship-to on purchase orders (`{WAREHOUSE}`).
 
 ## Open questions
 
-1. **Continuity of the migrated purchase-order and goods-receipt series** — kept `GAPLESS` to avoid any change (proposed); the owner
-   may prefer `ALLOW_GAPS` from the start.
-2. **Where the company time zone is set** — a new company setting is needed; the application's own zone is UTC.
-3. **Block size for the gaps-allowed method** and whether blocks are held per process or per counter — an implementation
-   decision to settle by load test.
-4. **How a series is chosen** the first time two exist — a picker on the document, or a selector rule — and which attribute
-   (warehouse, supplier group, domestic/import) drives it.
-5. **Statutory numbering for invoices** (sequential-series requirements in some tax regimes) was **not** researched and must be
-   verified against current official guidance when invoice numbering is designed. This ADR keeps the gapless, locked policy
-   available for it.
+1. **Block-reserved allocation** for very high-volume series is not needed by `nextval` and is not built; revisit if a series ever
+   needs cross-process caching.
+2. **The company time-zone screen** — a company profile page does not exist yet; until it does the value is set by an
+   administrator command/seed. Date-based formats stay blocked until then.
+3. **Routing attributes** for the first real second series (domestic/import, branch) are defined when a document type needs them.
+4. **Statutory numbering for invoices** (sequential-series requirements in some tax regimes) was not researched and must be
+   verified against current official guidance when invoice numbering is designed; the locked `GAPLESS` policy is ready for it.
 
 ## Alternatives considered
 
@@ -263,6 +357,8 @@ declares scope explicitly, and a derived scope lets an edit silently start a new
 without a row lock inside the document's transaction.
 
 **Gaps allowed for everything** — rejected: statutory documents need the strict policy.
+
+**Numbering built inside Purchasing** — rejected by the owner: every module would repeat it.
 
 **One series per document type, add more later** — rejected by the owner and the vendors' history: retrofitting a second series
 changes the counter key, the allocation log and the document's columns.

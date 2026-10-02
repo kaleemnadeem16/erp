@@ -91,7 +91,7 @@ in the same commit.
 | [0076](0076-company-control-over-hand-chosen-stock.md) | Let each company choose how tightly hand-chosen stock is controlled | accepted | 2026-10-01 |
 | [0077](0077-generic-material-cost-resolution-with-a-configurable-costing-scope.md) | Resolve material cost through one generic contract, with a configurable costing scope | accepted (design only) | 2026-10-01 |
 | [0078](0078-debounced-list-search-and-stable-tables-while-loading.md) | Wait for a pause before searching, and keep the table steady while it loads | accepted | 2026-10-02 |
-| [0079](0079-document-numbering-system-templates-over-a-variable-registry.md) | One document-numbering system: templates over a registry of variables (proposal — nothing built) | proposed | 2026-10-02 |
+| [0079](0079-document-numbering-system-templates-over-a-variable-registry.md) | One central document-numbering framework: series of templates over a registry of variables | accepted | 2026-10-02 |
 
 **Next number: 0080**
 
