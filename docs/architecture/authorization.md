@@ -258,6 +258,8 @@ gating. The retrofit is an explicit implementation backlog:
 behind the summary row below — read/write permission per endpoint, missing filter UI, unprotected
 sensitive fields and a risk-ordered task checklist — for Items/Categories, Purchase
 Orders/Receipts and existing Estimating CRUD so far.
+The broader [access and sensitive-data audit](access-security-audit.md) records confirmed gaps
+outside that original scope and distinguishes first-pass observations from completed reviews.
 
 | Area | Current boundary | Retrofit requirement |
 |---|---|---|
@@ -324,6 +326,8 @@ stored actors, not something a role assignment guarantees.
 
 - [Authorisation retrofit backlog](authorization-retrofit.md) — the tracked, per-feature audit and
   task checklist behind "Incremental retrofit" above
+- [Access and sensitive-data audit](access-security-audit.md) — cross-module findings and staged
+  remediation without a blanket access change
 - [Approval workflows](approval-workflows.md)
 - [Extensibility](extensibility.md) — config-driven workflows and progressive capability modes
 - [Multi-tenancy](multi-tenancy.md) — company isolation is separate from record visibility

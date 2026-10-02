@@ -18,6 +18,9 @@ retrofit of already-built features" table, for the first three areas audited: It
 Purchase Orders/Receipts (+ Item Suppliers, Quality Dispositions), existing Estimating CRUD. Read
 `authorization.md` first — this file assumes its RBAC model, registration standard and safe-rollout
 rule and doesn't repeat them.
+For other modules and core APIs, use the newer
+[cross-module access audit](access-security-audit.md); this historical tracker is not an
+ERP-wide security sign-off.
 
 **Read before starting any task below**, and **tick each task in the same commit as the work**,
 matching the phase-doc convention this file borrows.
