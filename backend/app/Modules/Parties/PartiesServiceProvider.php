@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Parties;
 
+use App\Modules\Parties\Support\PermissionVocabulary;
+use App\Support\PermissionRegistry;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
@@ -14,6 +16,11 @@ use Illuminate\Support\ServiceProvider;
  */
 class PartiesServiceProvider extends ServiceProvider
 {
+    public function register(): void
+    {
+        $this->app->afterResolving(PermissionRegistry::class, fn (PermissionRegistry $registry) => $registry->registerVocabulary('parties', PermissionVocabulary::all()));
+    }
+
     public function boot(): void
     {
         Route::middleware('api')->prefix('api/v1')->group(__DIR__.'/routes.php');

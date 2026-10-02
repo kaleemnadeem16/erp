@@ -15,7 +15,7 @@ class UpdatePartyRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('parties.party.manage') === true;
     }
 
     /**

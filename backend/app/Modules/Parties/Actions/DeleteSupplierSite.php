@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Modules\Parties\Actions;
 
+use App\Models\User;
 use App\Modules\Parties\Models\SupplierSite;
+use App\Modules\Parties\Support\PartyWriteAccess;
+use App\Modules\Parties\Support\PermissionVocabulary;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -16,8 +19,12 @@ use Illuminate\Support\Facades\DB;
  */
 final class DeleteSupplierSite
 {
-    public function __invoke(SupplierSite $supplierSite): void
+    public function __construct(private readonly PartyWriteAccess $access) {}
+
+    public function __invoke(SupplierSite $supplierSite, User $actor): void
     {
+        $this->access->require($actor, PermissionVocabulary::SUPPLIER_SITE_MANAGE, $supplierSite->supplierAccount->company_id);
+
         DB::transaction(fn () => $supplierSite->delete());
     }
 }

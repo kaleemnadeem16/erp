@@ -50,6 +50,7 @@ import {
   type WizardStep,
 } from "../../components/page/wizard-shell";
 import { clearDraft, readDraft, writeDraft } from "../../lib/session-draft";
+import { usePermission } from "../../hooks/use-permission";
 import { PurchaseLinePackageFields } from "./purchase-line-package-fields";
 import { PurchaseOrderSummary } from "./purchase-order-summary";
 import { SupplierSiteDialog } from "./supplier-site-form";
@@ -304,6 +305,7 @@ export function PurchaseOrderForm({
   onAdvancedOptionsChange?: (options: AdvancedOption[]) => void;
 }) {
   const isCreate = !defaultValues;
+  const mayManageSupplierSites = usePermission("parties.supplier-site.manage");
   const [unfinished] = useState(() =>
     isCreate ? readUnfinishedPurchaseOrder() : null,
   );
@@ -661,17 +663,19 @@ export function PurchaseOrderForm({
                       className="flex-1"
                     />
                   </FormControl>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    disabled={!supplierIdNumber}
-                    title="Add a supplier site"
-                    onClick={() => setAddingSite(true)}
-                  >
-                    <MapPin />
-                    <span className="sr-only">Add a supplier site</span>
-                  </Button>
+                  {mayManageSupplierSites && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      disabled={!supplierIdNumber}
+                      title="Add a supplier site"
+                      onClick={() => setAddingSite(true)}
+                    >
+                      <MapPin />
+                      <span className="sr-only">Add a supplier site</span>
+                    </Button>
+                  )}
                 </div>
                 <FormMessage />
               </FormItem>
@@ -1156,7 +1160,7 @@ export function PurchaseOrderForm({
           </>
         )}
       </form>
-      {supplierIdNumber > 0 && (
+      {mayManageSupplierSites && supplierIdNumber > 0 && (
         <SupplierSiteDialog
           supplierAccountId={supplierIdNumber}
           open={addingSite}

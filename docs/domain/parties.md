@@ -106,6 +106,37 @@ supplier_sites
 
 ## Behaviour
 
+### Access to trading-partner master data
+
+Authenticated company users may use Party, customer-account, supplier-account and supplier-site
+list/detail endpoints as reference lookups for the workflows they already hold. Their writes are
+separate dynamic capabilities, checked by the HTTP requests and all twelve write Actions:
+
+| Capability | Controls |
+|---|---|
+| `parties.party.manage` | Shared identity create/edit/archive, including name, registration and tax identifiers |
+| `parties.customer-account.manage` | Customer-role create/edit/archive, currently including credit limit, terms and receivable account |
+| `parties.supplier-account.manage` | Supplier-role create/edit/archive, currently including terms and payable account |
+| `parties.supplier-site.manage` | Supplier address/role create/edit/delete; does not grant supplier-account maintenance |
+
+These are capabilities, not fixed role names. Grant them through Access Administration only to
+members whose duties include all fields behind that capability. In particular, do not treat
+`parties.customer-account.manage` as a harmless contact-edit grant: it currently permits
+credit-limit and control-account changes. A separate Finance decision is still required for
+field-level write/read policy and the shared lookup responses (see the
+[access audit](../architecture/access-security-audit.md)). No customer/supplier master-data
+maintenance screen exists yet. The purchase-order form does have an inline supplier-site creation
+dialog; its add affordance and dialog mount now follow `parties.supplier-site.manage`, with the
+server check remaining authoritative.
+
+This separation reuses [ADR 0030](../decisions/0030-unified-party-model.md)'s one-identity,
+independent-role structure. In a bounded external comparison, [Odoo's contact guidance](https://www.odoo.com/documentation/19.0/applications/essentials/contacts.html)
+shows contact data and accounting-related details together, while its
+[security guidance](https://www.odoo.com/documentation/19.0/developer/tutorials/backend.html#security)
+distinguishes model access, record rules and field restrictions. Our four capabilities follow
+our existing model boundaries; they do not imply that a model-level grant is a complete
+financial-field policy.
+
 ### One identity, independent roles
 
 A party can hold a `customer_account`, a `supplier_account`, both, or neither while it's being

@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Modules\Parties\Actions;
 
+use App\Models\User;
 use App\Modules\Parties\Models\PartySite;
 use App\Modules\Parties\Models\SupplierAccount;
 use App\Modules\Parties\Models\SupplierSite;
+use App\Modules\Parties\Support\PartyWriteAccess;
+use App\Modules\Parties\Support\PermissionVocabulary;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -18,9 +21,13 @@ use Illuminate\Support\Str;
  */
 final class CreateSupplierSite
 {
+    public function __construct(private readonly PartyWriteAccess $access) {}
+
     /** @param array<string, mixed> $attributes */
-    public function __invoke(SupplierAccount $supplierAccount, array $attributes): SupplierSite
+    public function __invoke(SupplierAccount $supplierAccount, array $attributes, User $actor): SupplierSite
     {
+        $this->access->require($actor, PermissionVocabulary::SUPPLIER_SITE_MANAGE, $supplierAccount->company_id);
+
         return DB::transaction(function () use ($supplierAccount, $attributes): SupplierSite {
             $role = $attributes['role'];
             $isDefault = (bool) ($attributes['is_default'] ?? false);

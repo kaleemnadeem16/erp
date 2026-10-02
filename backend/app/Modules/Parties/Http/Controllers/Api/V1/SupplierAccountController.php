@@ -16,6 +16,7 @@ use App\Modules\Parties\Http\Resources\SupplierAccountResource;
 use App\Modules\Parties\Models\SupplierAccount;
 use App\Support\Concerns\AppliesApiQuery;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -54,7 +55,7 @@ class SupplierAccountController extends Controller
 
     public function store(StoreSupplierAccountRequest $request, CreateSupplierAccount $create): JsonResponse
     {
-        $supplier_account = $create($request->validated());
+        $supplier_account = $create($request->validated(), $request->user());
 
         return (new SupplierAccountResource($supplier_account))->response()->setStatusCode(201);
     }
@@ -66,12 +67,12 @@ class SupplierAccountController extends Controller
 
     public function update(UpdateSupplierAccountRequest $request, SupplierAccount $supplier_account, UpdateSupplierAccount $update): SupplierAccountResource
     {
-        return new SupplierAccountResource($update($supplier_account, $request->validated()));
+        return new SupplierAccountResource($update($supplier_account, $request->validated(), $request->user()));
     }
 
-    public function destroy(SupplierAccount $supplier_account, ArchiveSupplierAccount $archive): Response
+    public function destroy(Request $request, SupplierAccount $supplier_account, ArchiveSupplierAccount $archive): Response
     {
-        $archive($supplier_account);
+        $archive($supplier_account, $request->user());
 
         return response()->noContent();
     }

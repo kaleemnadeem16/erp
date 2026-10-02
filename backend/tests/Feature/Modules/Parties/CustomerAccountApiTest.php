@@ -10,11 +10,23 @@ use App\Modules\Parties\Models\Party;
 use App\Support\CompanyContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class CustomerAccountApiTest extends TestCase
 {
     use RefreshDatabase;
+
+    private function maintainer(): User
+    {
+        app(PermissionRegistrar::class)->setPermissionsTeamId(1);
+        Permission::findOrCreate('parties.customer-account.manage');
+        $user = User::factory()->create();
+        $user->givePermissionTo('parties.customer-account.manage');
+
+        return $user;
+    }
 
     private Party $party;
 
@@ -45,9 +57,20 @@ class CustomerAccountApiTest extends TestCase
         $this->getJson('/api/v1/customer-accounts')->assertUnauthorized();
     }
 
+    public function test_shared_customer_reads_do_not_grant_customer_writes(): void
+    {
+        $account = CustomerAccount::create($this->payload());
+        $this->actingAs(User::factory()->create())->getJson('/api/v1/customer-accounts')->assertOk();
+        $this->getJson("/api/v1/customer-accounts/{$account->id}")->assertOk();
+        $this->postJson('/api/v1/customer-accounts', $this->payload(['code' => 'OTHER']))->assertForbidden();
+        $this->patchJson("/api/v1/customer-accounts/{$account->id}", ['credit_limit' => '999'])->assertForbidden();
+        $this->deleteJson("/api/v1/customer-accounts/{$account->id}")->assertForbidden();
+        $this->assertDatabaseHas('customer_accounts', ['id' => $account->id, 'credit_limit' => null, 'deleted_at' => null]);
+    }
+
     public function test_a_customer_account_can_be_created_and_fetched(): void
     {
-        $user = User::factory()->create();
+        $user = $this->maintainer();
 
         $response = $this->actingAs($user)->postJson('/api/v1/customer-accounts', $this->payload());
 
@@ -62,7 +85,7 @@ class CustomerAccountApiTest extends TestCase
 
     public function test_a_nonexistent_party_id_is_rejected_with_a_422_not_a_500(): void
     {
-        $user = User::factory()->create();
+        $user = $this->maintainer();
 
         $this->actingAs($user)->postJson('/api/v1/customer-accounts', $this->payload(['party_id' => 999999]))
             ->assertUnprocessable()
@@ -71,7 +94,7 @@ class CustomerAccountApiTest extends TestCase
 
     public function test_a_credit_limit_exceeding_the_columns_precision_is_rejected_with_a_422_not_a_500(): void
     {
-        $user = User::factory()->create();
+        $user = $this->maintainer();
 
         $this->actingAs($user)->postJson('/api/v1/customer-accounts', $this->payload([
             'credit_limit' => '1234567890123456',
@@ -80,7 +103,7 @@ class CustomerAccountApiTest extends TestCase
 
     public function test_payment_terms_days_outside_the_smallint_range_is_rejected_with_a_422_not_a_500(): void
     {
-        $user = User::factory()->create();
+        $user = $this->maintainer();
 
         $this->actingAs($user)->postJson('/api/v1/customer-accounts', $this->payload([
             'payment_terms_days' => 99999,
@@ -93,7 +116,7 @@ class CustomerAccountApiTest extends TestCase
 
     public function test_tax_code_is_rejected_until_the_tax_codes_table_exists(): void
     {
-        $user = User::factory()->create();
+        $user = $this->maintainer();
 
         $this->actingAs($user)->postJson('/api/v1/customer-accounts', $this->payload([
             'tax_code_id' => 123,
@@ -107,7 +130,7 @@ class CustomerAccountApiTest extends TestCase
 
     public function test_a_party_can_only_hold_one_customer_account_duplicate_is_rejected_with_a_422(): void
     {
-        $user = User::factory()->create();
+        $user = $this->maintainer();
         CustomerAccount::create($this->payload());
 
         $this->actingAs($user)->postJson('/api/v1/customer-accounts', $this->payload(['code' => 'ACME-2']))
@@ -117,7 +140,7 @@ class CustomerAccountApiTest extends TestCase
 
     public function test_show_can_include_the_party(): void
     {
-        $user = User::factory()->create();
+        $user = $this->maintainer();
         $account = CustomerAccount::create($this->payload());
 
         $response = $this->actingAs($user)->getJson("/api/v1/customer-accounts/{$account->id}?include=party");
@@ -128,7 +151,7 @@ class CustomerAccountApiTest extends TestCase
 
     public function test_a_customer_account_is_soft_deleted(): void
     {
-        $user = User::factory()->create();
+        $user = $this->maintainer();
         $account = CustomerAccount::create($this->payload());
 
         $this->actingAs($user)->deleteJson("/api/v1/customer-accounts/{$account->id}")->assertNoContent();
@@ -158,7 +181,7 @@ class CustomerAccountApiTest extends TestCase
         ]);
         $this->app->instance(CompanyContext::class, new CompanyContext);
 
-        $user = User::factory()->create();
+        $user = $this->maintainer();
 
         $this->actingAs($user)->getJson("/api/v1/customer-accounts/{$otherCustomerAccount->id}")->assertNotFound();
     }

@@ -30,7 +30,7 @@ allowed and denied users. Later reviewers must record exact endpoint/Action cove
 |---|---|---|---|
 | A1 | Core [exchange-rate routes](../../backend/routes/api/exchange-rates.php), [controller](../../backend/app/Http/Controllers/Api/V1/ExchangeRateController.php) and store/update requests | At the audit baseline, any authenticated user could create/update/delete rates. The `currency.exchange-rate.manage` HTTP/Action retrofit is now tested for allowed and denied access. | Assign a dev maintainer through the app. Separate approval/history and future import authority remain later decisions. |
 | A2 | Accounting [routes](../../backend/app/Modules/Accounting/routes.php), [chart controller](../../backend/app/Modules/Accounting/Http/Controllers/Api/V1/ChartOfAccountController.php) and write Actions | At the audit baseline, authenticated users could create, alter/reparent and delete chart accounts. `accounting.chart-of-account.manage` now protects these writes at HTTP and Action boundaries; focused tests pass. | Grant dev maintainers through the app; Finance still decides any narrower read/field policy and future lifecycle separation. |
-| A3 | Parties [routes](../../backend/app/Modules/Parties/routes.php), Party/Customer/Supplier controllers and write requests | Authenticated users can maintain Party, CustomerAccount, SupplierAccount and supplier-site master data without resource capabilities. Customer terms, credit limit and ledger account IDs are writable. | Define separate operational master-data powers and any Finance-only field policy; test Actions as well as HTTP. |
+| A3 | Parties [routes](../../backend/app/Modules/Parties/routes.php), Party/Customer/Supplier controllers and write requests | At the audit baseline, authenticated users could maintain Party, CustomerAccount, SupplierAccount and supplier sites. Four resource capabilities now guard their requests and twelve Actions; the PO inline supplier-site add control follows its capability. Backend and browser tests pass. | Finance still decides field-specific policy for credit, terms and control-account IDs. |
 | A4 | Inventory [ItemResource](../../backend/app/Modules/Inventory/Http/Resources/ItemResource.php) and [CategoryResource](../../backend/app/Modules/Inventory/Http/Resources/CategoryResource.php) | GL account IDs are returned unconditionally on shared authenticated reads. This is an established open decision, not a newly introduced regression. | Finance decides whether those IDs are sensitive and who may edit/view them; then project fields and guard writes consistently. |
 
 A1–A3 were confirmed missing **write** capability boundaries at the audit baseline; A1 and A2
@@ -45,7 +45,7 @@ apply; a missing capability check is a separate issue.
 |---|---|---|
 | Core Auth/Account/Currency/UoM/ExchangeRate | A1 confirmed; shared reference lookups exist | Map every write/read, session and recovery boundary; test FX allowed/denied paths. |
 | Accounting | A2 write boundary now tested | Account-selection reads, history, future lifecycle rules and any narrower field policy. |
-| Parties | A3 confirmed | Each Party/account/site Action, field projections, cross-company and credit/terms changes. |
+| Parties | A3 write boundary and PO inline site control verified | Field projections, credit/terms policy and future master-data screens. |
 | Administration | Capability and anti-escalation checks observed; existing API tests | Full member recovery, grant/revocation, self-lockout and audit-history negative-path review. |
 | Approvals | Assignment/capability checks observed | Check whether approval `amount_base` and evidence reveal Purchasing commercial facts to users lacking `purchasing.commercial-cost.view`; approval authority is not a substitute for field policy. |
 | Estimating | Original CRUD retrofit tracked separately | Review new material/adoption and cost surfaces as built, including non-HTTP Actions. |
@@ -63,6 +63,9 @@ still owns company PO policy. Neither should be silently decided by adding a rol
 Development environment note (2026-10-02): `permission:register` was run for company 1 after
 the FX and chart slices (90 vocabulary entries registered). This makes the two new capabilities
 available to Access Administration. No member or role assignment was made by this task.
+After the Parties slice, registration was rerun (94 entries) and the documented demo
+administrator `user@erp.x1techs.com` was synced to all 94. The four new Parties permissions were
+added to that administrator only; no Buyer or operational role was broadened.
 
 - [ ] **Policy decision:** product and Finance identify actual FX, chart and Party maintainers,
   separate duties that must not be bundled, and decide which financial/master-data fields need
@@ -81,8 +84,12 @@ available to Access Administration. No member or role assignment was made by thi
 - [ ] **A2 operational/field follow-up:** grant a dev chart maintainer in Access
   Administration; Finance must decide whether account lookup or cross-module account fields
   require narrower visibility. There is no chart-maintenance SPA screen yet.
-- [ ] **A3 Parties slice:** review Party, customer, supplier and site as distinct operations; apply
-  the agreed capabilities and field policy to request, Action, response and existing UI.
+- [x] **A3 Parties write slice:** four distinct capabilities protect requests and all twelve
+  write Actions; the PO inline site-creation control follows the site capability. The complete
+  Parties module and architecture suite passes (89 tests, 218 assertions), as does the focused
+  browser spec (setup plus administrator and Buyer cases), 2026-10-02.
+- [ ] **A3 financial-field follow-up:** decide customer credit/terms and customer/supplier
+  control-account write/read visibility separately, including list/detail/lookup projections.
 - [ ] **A4 GL fields:** implement the Finance decision for Item/Category edits and every list,
   detail, lookup, print and export projection; add negative field-presence tests.
 - [ ] **Information-flow review:** test approval evidence against Purchasing cost visibility,

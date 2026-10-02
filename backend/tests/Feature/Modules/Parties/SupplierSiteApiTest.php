@@ -10,11 +10,23 @@ use App\Modules\Parties\Models\SupplierAccount;
 use App\Support\CompanyContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class SupplierSiteApiTest extends TestCase
 {
     use RefreshDatabase;
+
+    private function maintainer(): User
+    {
+        app(PermissionRegistrar::class)->setPermissionsTeamId(1);
+        Permission::findOrCreate('parties.supplier-site.manage');
+        $user = User::factory()->create();
+        $user->givePermissionTo('parties.supplier-site.manage');
+
+        return $user;
+    }
 
     private SupplierAccount $supplier;
 
@@ -48,9 +60,27 @@ class SupplierSiteApiTest extends TestCase
         $this->getJson("/api/v1/supplier-accounts/{$this->supplier->id}/sites")->assertUnauthorized();
     }
 
+    public function test_supplier_account_authority_does_not_grant_site_writes(): void
+    {
+        app(PermissionRegistrar::class)->setPermissionsTeamId(1);
+        Permission::findOrCreate('parties.supplier-account.manage');
+        $accountManager = User::factory()->create();
+        $accountManager->givePermissionTo('parties.supplier-account.manage');
+        $siteId = $this->actingAs($this->maintainer())
+            ->postJson("/api/v1/supplier-accounts/{$this->supplier->id}/sites", $this->payload())
+            ->assertCreated()->json('data.id');
+
+        $this->actingAs($accountManager)
+            ->getJson("/api/v1/supplier-accounts/{$this->supplier->id}/sites")->assertOk();
+        $this->postJson("/api/v1/supplier-accounts/{$this->supplier->id}/sites", $this->payload())->assertForbidden();
+        $this->patchJson("/api/v1/supplier-sites/{$siteId}", ['city' => 'Karachi'])->assertForbidden();
+        $this->deleteJson("/api/v1/supplier-sites/{$siteId}")->assertForbidden();
+        $this->assertDatabaseHas('supplier_sites', ['id' => $siteId, 'deleted_at' => null]);
+    }
+
     public function test_a_site_can_be_created_and_listed(): void
     {
-        $user = User::factory()->create();
+        $user = $this->maintainer();
 
         $response = $this->actingAs($user)->postJson("/api/v1/supplier-accounts/{$this->supplier->id}/sites", $this->payload());
 
@@ -73,7 +103,7 @@ class SupplierSiteApiTest extends TestCase
 
     public function test_a_second_default_of_the_same_role_displaces_the_first(): void
     {
-        $user = User::factory()->create();
+        $user = $this->maintainer();
         $this->actingAs($user);
 
         $first = $this->postJson("/api/v1/supplier-accounts/{$this->supplier->id}/sites", $this->payload(['is_default' => true]))->json('data.id');
@@ -86,7 +116,7 @@ class SupplierSiteApiTest extends TestCase
 
     public function test_updating_address_and_role_fields_together(): void
     {
-        $user = User::factory()->create();
+        $user = $this->maintainer();
         $this->actingAs($user);
         $id = $this->postJson("/api/v1/supplier-accounts/{$this->supplier->id}/sites", $this->payload())->json('data.id');
 
@@ -104,7 +134,7 @@ class SupplierSiteApiTest extends TestCase
 
     public function test_deleting_a_site_removes_it_from_the_list_but_keeps_the_address_record(): void
     {
-        $user = User::factory()->create();
+        $user = $this->maintainer();
         $this->actingAs($user);
         $id = $this->postJson("/api/v1/supplier-accounts/{$this->supplier->id}/sites", $this->payload())->json('data.id');
 
@@ -138,7 +168,7 @@ class SupplierSiteApiTest extends TestCase
         ]);
         $this->app->instance(CompanyContext::class, new CompanyContext);
 
-        $user = User::factory()->create();
+        $user = $this->maintainer();
 
         $this->actingAs($user)
             ->postJson("/api/v1/supplier-accounts/{$otherSupplier->id}/sites", $this->payload())
@@ -147,7 +177,7 @@ class SupplierSiteApiTest extends TestCase
 
     public function test_role_must_be_a_known_value(): void
     {
-        $user = User::factory()->create();
+        $user = $this->maintainer();
 
         $this->actingAs($user)
             ->postJson("/api/v1/supplier-accounts/{$this->supplier->id}/sites", $this->payload(['role' => 'BILL_TO']))

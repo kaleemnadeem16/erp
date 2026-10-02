@@ -15,6 +15,7 @@ use App\Modules\Parties\Http\Resources\SupplierSiteResource;
 use App\Modules\Parties\Models\SupplierAccount;
 use App\Modules\Parties\Models\SupplierSite;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -37,19 +38,19 @@ class SupplierSiteController extends Controller
 
     public function store(StoreSupplierSiteRequest $request, SupplierAccount $supplier_account, CreateSupplierSite $create): JsonResponse
     {
-        $site = $create($supplier_account, $request->validated());
+        $site = $create($supplier_account, $request->validated(), $request->user());
 
         return (new SupplierSiteResource($site))->response()->setStatusCode(201);
     }
 
     public function update(UpdateSupplierSiteRequest $request, SupplierSite $supplier_site, UpdateSupplierSite $update): SupplierSiteResource
     {
-        return new SupplierSiteResource($update($supplier_site, $request->validated()));
+        return new SupplierSiteResource($update($supplier_site, $request->validated(), $request->user()));
     }
 
-    public function destroy(SupplierSite $supplier_site, DeleteSupplierSite $delete): Response
+    public function destroy(Request $request, SupplierSite $supplier_site, DeleteSupplierSite $delete): Response
     {
-        $delete($supplier_site);
+        $delete($supplier_site, $request->user());
 
         return response()->noContent();
     }

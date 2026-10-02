@@ -12,20 +12,43 @@ use App\Modules\Parties\Models\SupplierAccount;
 use App\Support\CompanyContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class PartyApiTest extends TestCase
 {
     use RefreshDatabase;
 
+    private function maintainer(): User
+    {
+        app(PermissionRegistrar::class)->setPermissionsTeamId(1);
+        Permission::findOrCreate('parties.party.manage');
+        $user = User::factory()->create();
+        $user->givePermissionTo('parties.party.manage');
+
+        return $user;
+    }
+
     public function test_it_requires_authentication(): void
     {
         $this->getJson('/api/v1/parties')->assertUnauthorized();
     }
 
+    public function test_shared_party_reads_do_not_grant_party_writes(): void
+    {
+        $party = Party::create(['code' => 'ACME', 'name' => 'Acme Corp']);
+        $this->actingAs(User::factory()->create())->getJson('/api/v1/parties')->assertOk();
+        $this->getJson("/api/v1/parties/{$party->id}")->assertOk();
+        $this->postJson('/api/v1/parties', ['code' => 'OTHER', 'name' => 'Other'])->assertForbidden();
+        $this->patchJson("/api/v1/parties/{$party->id}", ['name' => 'Changed'])->assertForbidden();
+        $this->deleteJson("/api/v1/parties/{$party->id}")->assertForbidden();
+        $this->assertDatabaseHas('parties', ['id' => $party->id, 'name' => 'Acme Corp', 'deleted_at' => null]);
+    }
+
     public function test_a_party_can_be_created_and_fetched(): void
     {
-        $user = User::factory()->create();
+        $user = $this->maintainer();
 
         $response = $this->actingAs($user)->postJson('/api/v1/parties', [
             'code' => 'ACME',
@@ -42,7 +65,7 @@ class PartyApiTest extends TestCase
 
     public function test_duplicate_code_is_rejected_with_a_422(): void
     {
-        $user = User::factory()->create();
+        $user = $this->maintainer();
         Party::create(['code' => 'ACME', 'name' => 'Acme Corp']);
 
         $this->actingAs($user)->postJson('/api/v1/parties', [
@@ -53,7 +76,7 @@ class PartyApiTest extends TestCase
 
     public function test_custom_fields_reject_a_value_with_no_matching_definition(): void
     {
-        $user = User::factory()->create();
+        $user = $this->maintainer();
 
         $this->actingAs($user)->postJson('/api/v1/parties', [
             'code' => 'ACME',
@@ -75,7 +98,7 @@ class PartyApiTest extends TestCase
             'label' => 'Preferred contact method',
             'data_type' => 'string',
         ]);
-        $user = User::factory()->create();
+        $user = $this->maintainer();
 
         $response = $this->actingAs($user)->postJson('/api/v1/parties', [
             'code' => 'ACME',
@@ -94,7 +117,7 @@ class PartyApiTest extends TestCase
 
     public function test_index_rejects_invalid_filters_and_pagination(): void
     {
-        $user = User::factory()->create();
+        $user = $this->maintainer();
 
         $this->actingAs($user)
             ->getJson('/api/v1/parties?filter[status]=NOT_A_STATUS')
@@ -108,7 +131,7 @@ class PartyApiTest extends TestCase
 
     public function test_index_can_search_by_name(): void
     {
-        $user = User::factory()->create();
+        $user = $this->maintainer();
         Party::create(['code' => 'ACME', 'name' => 'Acme Corp']);
         Party::create(['code' => 'GLOBEX', 'name' => 'Globex Inc']);
 
@@ -121,7 +144,7 @@ class PartyApiTest extends TestCase
 
     public function test_a_party_is_soft_deleted(): void
     {
-        $user = User::factory()->create();
+        $user = $this->maintainer();
         $party = Party::create(['code' => 'ACME', 'name' => 'Acme Corp']);
 
         $this->actingAs($user)->deleteJson("/api/v1/parties/{$party->id}")->assertNoContent();
@@ -132,7 +155,10 @@ class PartyApiTest extends TestCase
 
     public function test_a_party_cannot_be_archived_until_both_roles_are_archived(): void
     {
-        $user = User::factory()->create();
+        $user = $this->maintainer();
+        Permission::findOrCreate('parties.customer-account.manage');
+        Permission::findOrCreate('parties.supplier-account.manage');
+        $user->givePermissionTo('parties.customer-account.manage', 'parties.supplier-account.manage');
         $party = Party::create(['code' => 'ACME', 'name' => 'Acme Corp']);
         $receivable = ChartOfAccount::create(['code' => '1100', 'name' => 'AR', 'type' => AccountType::Asset]);
         $payable = ChartOfAccount::create(['code' => '2100', 'name' => 'AP', 'type' => AccountType::Liability]);
@@ -174,7 +200,7 @@ class PartyApiTest extends TestCase
         $otherParty = Party::create(['code' => 'ACME', 'name' => 'Acme Corp']);
         $this->app->instance(CompanyContext::class, new CompanyContext);
 
-        $user = User::factory()->create();
+        $user = $this->maintainer();
 
         $this->actingAs($user)->getJson("/api/v1/parties/{$otherParty->id}")->assertNotFound();
     }

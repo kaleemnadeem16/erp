@@ -17,6 +17,7 @@ use App\Modules\Parties\Models\Party;
 use App\Support\Concerns\AppliesApiQuery;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -56,7 +57,7 @@ class PartyController extends Controller
 
     public function store(StorePartyRequest $request, CreateParty $create): JsonResponse
     {
-        $party = $create($request->validated());
+        $party = $create($request->validated(), $request->user());
 
         return (new PartyResource($party))->response()->setStatusCode(201);
     }
@@ -68,12 +69,12 @@ class PartyController extends Controller
 
     public function update(UpdatePartyRequest $request, Party $party, UpdateParty $update): PartyResource
     {
-        return new PartyResource($update($party, $request->validated()));
+        return new PartyResource($update($party, $request->validated(), $request->user()));
     }
 
-    public function destroy(Party $party, ArchiveParty $archive): Response
+    public function destroy(Request $request, Party $party, ArchiveParty $archive): Response
     {
-        $archive($party);
+        $archive($party, $request->user());
 
         return response()->noContent();
     }

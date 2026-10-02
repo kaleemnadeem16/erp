@@ -16,6 +16,7 @@ use App\Modules\Parties\Http\Resources\CustomerAccountResource;
 use App\Modules\Parties\Models\CustomerAccount;
 use App\Support\Concerns\AppliesApiQuery;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -54,7 +55,7 @@ class CustomerAccountController extends Controller
 
     public function store(StoreCustomerAccountRequest $request, CreateCustomerAccount $create): JsonResponse
     {
-        $customer_account = $create($request->validated());
+        $customer_account = $create($request->validated(), $request->user());
 
         return (new CustomerAccountResource($customer_account))->response()->setStatusCode(201);
     }
@@ -66,12 +67,12 @@ class CustomerAccountController extends Controller
 
     public function update(UpdateCustomerAccountRequest $request, CustomerAccount $customer_account, UpdateCustomerAccount $update): CustomerAccountResource
     {
-        return new CustomerAccountResource($update($customer_account, $request->validated()));
+        return new CustomerAccountResource($update($customer_account, $request->validated(), $request->user()));
     }
 
-    public function destroy(CustomerAccount $customer_account, ArchiveCustomerAccount $archive): Response
+    public function destroy(Request $request, CustomerAccount $customer_account, ArchiveCustomerAccount $archive): Response
     {
-        $archive($customer_account);
+        $archive($customer_account, $request->user());
 
         return response()->noContent();
     }

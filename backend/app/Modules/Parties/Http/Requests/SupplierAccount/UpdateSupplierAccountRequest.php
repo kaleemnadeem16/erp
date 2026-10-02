@@ -15,7 +15,7 @@ class UpdateSupplierAccountRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('parties.supplier-account.manage') === true;
     }
 
     /**

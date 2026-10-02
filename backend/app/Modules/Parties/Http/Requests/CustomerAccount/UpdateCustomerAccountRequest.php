@@ -15,7 +15,7 @@ class UpdateCustomerAccountRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('parties.customer-account.manage') === true;
     }
 
     /**

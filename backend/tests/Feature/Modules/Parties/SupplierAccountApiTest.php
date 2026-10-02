@@ -10,11 +10,23 @@ use App\Modules\Parties\Models\SupplierAccount;
 use App\Support\CompanyContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class SupplierAccountApiTest extends TestCase
 {
     use RefreshDatabase;
+
+    private function maintainer(): User
+    {
+        app(PermissionRegistrar::class)->setPermissionsTeamId(1);
+        Permission::findOrCreate('parties.supplier-account.manage');
+        $user = User::factory()->create();
+        $user->givePermissionTo('parties.supplier-account.manage');
+
+        return $user;
+    }
 
     private Party $party;
 
@@ -45,9 +57,20 @@ class SupplierAccountApiTest extends TestCase
         $this->getJson('/api/v1/supplier-accounts')->assertUnauthorized();
     }
 
+    public function test_shared_supplier_reads_do_not_grant_supplier_writes(): void
+    {
+        $account = SupplierAccount::create($this->payload());
+        $this->actingAs(User::factory()->create())->getJson('/api/v1/supplier-accounts')->assertOk();
+        $this->getJson("/api/v1/supplier-accounts/{$account->id}")->assertOk();
+        $this->postJson('/api/v1/supplier-accounts', $this->payload(['code' => 'OTHER']))->assertForbidden();
+        $this->patchJson("/api/v1/supplier-accounts/{$account->id}", ['payment_terms_days' => 99])->assertForbidden();
+        $this->deleteJson("/api/v1/supplier-accounts/{$account->id}")->assertForbidden();
+        $this->assertDatabaseHas('supplier_accounts', ['id' => $account->id, 'payment_terms_days' => 30, 'deleted_at' => null]);
+    }
+
     public function test_a_supplier_account_can_be_created_and_fetched(): void
     {
-        $user = User::factory()->create();
+        $user = $this->maintainer();
 
         $response = $this->actingAs($user)->postJson('/api/v1/supplier-accounts', $this->payload());
 
@@ -61,7 +84,7 @@ class SupplierAccountApiTest extends TestCase
 
     public function test_a_nonexistent_payable_account_id_is_rejected_with_a_422_not_a_500(): void
     {
-        $user = User::factory()->create();
+        $user = $this->maintainer();
 
         $this->actingAs($user)->postJson('/api/v1/supplier-accounts', $this->payload(['payable_account_id' => 999999]))
             ->assertUnprocessable()
@@ -70,7 +93,7 @@ class SupplierAccountApiTest extends TestCase
 
     public function test_lead_time_days_outside_the_smallint_range_is_rejected_with_a_422_not_a_500(): void
     {
-        $user = User::factory()->create();
+        $user = $this->maintainer();
 
         $this->actingAs($user)->postJson('/api/v1/supplier-accounts', $this->payload(['lead_time_days' => -5]))
             ->assertUnprocessable()
@@ -79,7 +102,7 @@ class SupplierAccountApiTest extends TestCase
 
     public function test_a_party_can_only_hold_one_supplier_account_duplicate_is_rejected_with_a_422(): void
     {
-        $user = User::factory()->create();
+        $user = $this->maintainer();
         SupplierAccount::create($this->payload());
 
         $this->actingAs($user)->postJson('/api/v1/supplier-accounts', $this->payload(['code' => 'ACME-2']))
@@ -104,7 +127,7 @@ class SupplierAccountApiTest extends TestCase
         $otherAccount = ChartOfAccount::create(['code' => '2100', 'name' => 'AP', 'type' => AccountType::Liability]);
         $this->app->instance(CompanyContext::class, new CompanyContext);
 
-        $user = User::factory()->create();
+        $user = $this->maintainer();
 
         $this->actingAs($user)->postJson('/api/v1/supplier-accounts', $this->payload(['payable_account_id' => $otherAccount->id]))
             ->assertUnprocessable()
@@ -113,7 +136,7 @@ class SupplierAccountApiTest extends TestCase
 
     public function test_a_supplier_account_is_soft_deleted(): void
     {
-        $user = User::factory()->create();
+        $user = $this->maintainer();
         $account = SupplierAccount::create($this->payload());
 
         $this->actingAs($user)->deleteJson("/api/v1/supplier-accounts/{$account->id}")->assertNoContent();
@@ -143,7 +166,7 @@ class SupplierAccountApiTest extends TestCase
         ]);
         $this->app->instance(CompanyContext::class, new CompanyContext);
 
-        $user = User::factory()->create();
+        $user = $this->maintainer();
 
         $this->actingAs($user)->getJson("/api/v1/supplier-accounts/{$otherSupplierAccount->id}")->assertNotFound();
     }

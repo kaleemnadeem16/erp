@@ -19,7 +19,7 @@ class StoreSupplierSiteRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('parties.supplier-site.manage') === true;
     }
 
     /** @return array<string, mixed> */
