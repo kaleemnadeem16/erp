@@ -21,6 +21,7 @@ class StorePurchaseOrderRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'replaces_purchase_order_id' => ['nullable', 'integer', CompanyScoped::exists('purchase_orders')],
             'supplier_account_id' => ['required', 'integer', CompanyScoped::exists('supplier_accounts')],
             'supplier_site_id' => ['nullable', 'integer', Rule::exists('supplier_sites', 'id')->where(fn ($q) => $q->where('supplier_account_id', $this->input('supplier_account_id')))],
             'currency_id' => ['required', 'integer', 'exists:currencies,id'],
@@ -36,6 +37,11 @@ class StorePurchaseOrderRequest extends FormRequest
             'lines.*.description' => ['required', 'string', 'max:255'],
             'lines.*.ordered_qty' => ['required', 'decimal:0,4', 'gt:0', 'max:999999999999999.9999'],
             'lines.*.purchase_uom_id' => ['required', 'integer', CompanyScoped::exists('uoms')],
+            'lines.*.item_packaging_id' => ['nullable', 'integer', CompanyScoped::exists('item_packagings')],
+            'lines.*.supplier_offer_id' => ['nullable', 'integer', CompanyScoped::exists('supplier_offers')],
+            'lines.*.price_uom_id' => ['nullable', 'integer', CompanyScoped::exists('uoms')],
+            'lines.*.price_quantity' => ['sometimes', 'decimal:0,4', 'gt:0', 'max:999999999999999.9999'],
+            'lines.*.ordering_exception_reason' => ['nullable', 'string', 'max:2000'],
             'lines.*.unit_price' => ['required', 'decimal:0,4', 'min:0', 'max:999999999999999.9999'],
             'lines.*.discount_amount' => ['sometimes', 'decimal:0,4', 'min:0', 'max:999999999999999.9999'], 'lines.*.tax_amount' => ['sometimes', 'decimal:0,4', 'min:0', 'max:999999999999999.9999'],
             'lines.*.expected_delivery_date' => ['nullable', 'date_format:Y-m-d'], 'lines.*.qa_required' => ['sometimes', 'boolean'],

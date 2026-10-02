@@ -398,6 +398,32 @@ never edit the original or automatically unwind unrelated downstream facts.
 [ADR 0037](../decisions/0037-controlled-negative-stock-overrides.md); backdated receipts and
 corrections are governed by [ADR 0040](../decisions/0040-control-backdated-stock-recalculation-and-corrections.md).
 
+## Packaged/loose purchasing (ADR 0080)
+ 
+Supplier offers are child records of item_suppliers, not replacement relationships. An offer
+names a fixed package or loose unit, supplier SKU, default, MOQ/multiple, lead time, validity
+and price/currency with an independent price unit and denominator. Minimums/multiples use the
+line order basis; violating them requires a recorded reason, without rounding the quantity.
+Price tiers and configurable escalation remain deferred.
+ 
+PO draft lines snapshot package identity/content, order label, offer terms/SKU, price basis,
+priced quantity and exception evidence. Issuing preserves that resolution; offer/master edits
+apply to new drafts only. Receiving the agreed package reuses issued content, supports partial
+receipts and records package/count alongside stock quantity. Alternate loose receipt units
+normalise gross provisional price; exact provisional amounts feed the existing stock engine.
+Discount/tax acquisition allocation remains the separate acquisition-costing capability.
+Replacement linkage requires a cancelled or short-closed previous commitment.
+ 
+Package writes use inventory.item.manage. Offer writes require purchasing.item-supplier.manage
+and existing commercial access; offer reads use supplier read/manage or PO-create capability,
+with prices projected only to commercial viewers. Both maintenance Actions repeat checks.
+The line-preview endpoint is read-only, uses PO-create access and the same conversion/price
+resolver; receipt/issue/post permissions remain unchanged. No new permission vocabulary or
+role assignment is required.
+ 
+Validation: 64 focused Purchasing tests pass, including equal-content identities, independent
+pricing, partial receipts, changed-offer history, quantity increments and warning/reason handling.
+ 
 ## Related
 
 - [Material resolution](material-resolution.md) — Phase 3 reports internal-stock shortages;

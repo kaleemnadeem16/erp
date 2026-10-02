@@ -20,6 +20,19 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
+ * @property int|null $item_packaging_id
+ * @property int|null $supplier_offer_id
+ * @property string|null $package_name
+ * @property string|null $package_code
+ * @property string|null $order_unit_label
+ * @property int|null $price_uom_id
+ * @property string|null $price_unit_label
+ * @property string|null $price_quantity
+ * @property string|null $price_stock_factor
+ * @property string|null $priced_qty
+ * @property string|null $minimum_order_qty
+ * @property string|null $order_multiple
+ * @property string|null $ordering_exception_reason
  * @property int $company_id
  * @property int $purchase_order_id
  * @property int $line_number
@@ -79,6 +92,7 @@ class PurchaseOrderLine extends Model
             'over_receipt_mode' => OverReceiptMode::class,
             'qa_required' => 'bool',
             'expected_delivery_date' => 'date',
+            'offer_snapshot' => 'array', 'price_quantity' => 'decimal:4', 'price_stock_factor' => 'decimal:9', 'priced_qty' => 'decimal:9', 'package_increment' => 'decimal:9', 'minimum_order_qty' => 'decimal:4', 'order_multiple' => 'decimal:4',
             'ordered_qty' => 'decimal:4', 'ordered_stock_qty' => 'decimal:4',
             'uom_factor' => 'decimal:9', 'unit_price' => 'decimal:4',
             'discount_amount' => 'decimal:4', 'tax_amount' => 'decimal:4', 'line_amount' => 'decimal:4',

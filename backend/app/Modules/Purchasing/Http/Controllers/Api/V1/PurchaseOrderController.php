@@ -39,6 +39,15 @@ class PurchaseOrderController extends Controller
 
     private const SORTABLE = ['number' => 'number', 'order_date' => 'order_date', 'expected_delivery_date' => 'expected_delivery_date', 'created_at' => 'created_at'];
 
+    public function previewLine(\App\Modules\Purchasing\Http\Requests\PurchaseOrder\StorePurchaseOrderRequest $request, \App\Modules\Purchasing\Actions\BuildPurchaseOrderLineAttributes $build): \App\Modules\Purchasing\Http\Resources\PurchaseOrderLineResource
+    {
+        $input = $request->validated();
+        $lines = \Illuminate\Support\Arr::pull($input, 'lines');
+        $order = new \App\Modules\Purchasing\Models\PurchaseOrder($input);
+        $line = new \App\Modules\Purchasing\Models\PurchaseOrderLine($build($order, $lines[0], true));
+        return new \App\Modules\Purchasing\Http\Resources\PurchaseOrderLineResource($line);
+    }
+
     public function index(IndexPurchaseOrderRequest $request): AnonymousResourceCollection
     {
         $query = PurchaseOrder::query();

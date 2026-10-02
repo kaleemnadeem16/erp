@@ -17,6 +17,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
+ * @property int|null $item_packaging_id
+ * @property string|null $package_name
+ * @property string|null $received_package_qty
+ * @property string|null $provisional_amount
  * @property int|null $purchase_order_line_id
  * @property int $item_id
  * @property int $location_id

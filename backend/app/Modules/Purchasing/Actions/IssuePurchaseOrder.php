@@ -48,7 +48,7 @@ final class IssuePurchaseOrder
                     ->where('supplier_account_id', $order->supplier_account_id)->where('active', true)->first();
                 $line->update([
                     'item_code' => $line->item->code,
-                    'supplier_item_code' => $supplierItem?->supplier_item_code,
+                    'supplier_item_code' => $line->supplier_offer_id ? $line->supplier_item_code : $supplierItem?->supplier_item_code,
                     'over_receipt_mode' => $line->over_receipt_mode ?? $settings->over_receipt_mode,
                     'over_receipt_tolerance_percent' => $line->over_receipt_tolerance_percent ?? $settings->over_receipt_tolerance_percent,
                 ]);

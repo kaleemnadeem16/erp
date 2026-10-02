@@ -114,7 +114,7 @@ final class PostGoodsReceipt
                 // re-derived from the rounded per-unit cost.
                 $unitCost = BigDecimal::of($line->provisional_unit_cost)->dividedBy($factor, 4, RoundingMode::HALF_UP);
                 $baseUnitCost = BigDecimal::of($line->base_unit_cost)->dividedBy($factor, 4, RoundingMode::HALF_UP);
-                $amount = BigDecimal::of($line->received_qty)->multipliedBy(BigDecimal::of($line->provisional_unit_cost))->toScale(4, RoundingMode::HALF_UP);
+                $amount = $line->provisional_amount !== null ? BigDecimal::of($line->provisional_amount) : BigDecimal::of($line->received_qty)->multipliedBy(BigDecimal::of($line->provisional_unit_cost))->toScale(4, RoundingMode::HALF_UP);
                 $baseAmount = $amount->multipliedBy(BigDecimal::of($line->fx_rate))->toScale(4, RoundingMode::HALF_UP);
 
                 ($this->postMovement)([

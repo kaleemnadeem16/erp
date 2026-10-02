@@ -12,9 +12,9 @@ The owner approved [ADR 0080](../decisions/0080-packaged-purchasing-and-independ
 Implementation is now authorised in committed slices:
 
 - [x] Enforce conversion maintenance permission in Requests and Actions; fix receipt conversion/price normalisation.
-- [ ] Add fixed named package definitions and supplier offers, with company-safe references and lifecycle guards.
-- [ ] Add PO package/loose choice, separate price basis, warning/reason evidence and immutable snapshots.
-- [ ] Add receipt package evidence, partial delivery and replacement-order linkage.
+- [x] Add fixed named package definitions and supplier offers, with company-safe references and lifecycle guards.
+- [x] Add PO package/loose choice, separate price basis, warning/reason evidence and immutable snapshots.
+- [x] Add receipt package evidence, partial delivery and replacement-order linkage.
 - [ ] Expose package/offer maintenance and purchasing/receiving in the existing screens; regenerate client and verify.
 
 Acceptance: equal-content boxes remain distinct; 10 boxes of 2 L priced at PKR 850/L costs

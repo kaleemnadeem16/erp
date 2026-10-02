@@ -28,6 +28,7 @@ class StoreGoodsReceiptRequest extends FormRequest
             'lines.*.purchase_order_line_id' => ['required', 'integer', CompanyScoped::exists('purchase_order_lines')],
             'lines.*.item_id' => ['required', 'integer', CompanyScoped::exists('items')],
             'lines.*.location_id' => ['required', 'integer', 'exists:locations,id'],
+            'lines.*.item_packaging_id' => ['nullable', 'integer', CompanyScoped::exists('item_packagings')],
             'lines.*.received_qty' => ['required', 'decimal:0,4', 'gt:0', 'max:999999999999999.9999'],
             'lines.*.received_uom_id' => ['required', 'integer', CompanyScoped::exists('uoms')],
             'lines.*.provisional_unit_cost' => [$commercialField, 'decimal:0,4', 'min:0', 'max:999999999999999.9999'],

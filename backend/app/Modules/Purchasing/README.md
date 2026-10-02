@@ -60,7 +60,7 @@ The SPA gates matching write controls, while consequential Actions repeat checks
 callers. Commercial amounts are projected separately: PO prices/totals/FX and receipt costs/FX are omitted unless the
 caller holds `purchasing.commercial-cost.view` (or `purchasing.purchase-order.create`), and a receipt creator
 without it has cost, currency and FX derived from the issued PO
-([ADR 0069](../../../../docs/decisions/0069-separate-purchasing-commercial-visibility-from-receiving.md)). PO approval does not exist: DRAFT moves directly to ISSUED. Before adding it, follow
+([ADR 0069](../../../../docs/decisions/0069-separate-purchasing-commercial-visibility-from-receiving.md)). PO submission/approval uses the shared Approvals engine (ADR 0070). Before adding it, follow
 [authorization.md](../../../../docs/architecture/authorization.md) and
 [approval-workflows.md](../../../../docs/architecture/approval-workflows.md); create/edit,
 submit, approve, issue, receive, inspect, reverse and history access must each be considered.

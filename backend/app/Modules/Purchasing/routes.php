@@ -9,8 +9,12 @@ use App\Modules\Purchasing\Http\Controllers\Api\V1\QualityDispositionController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth:sanctum')->group(function () {
+    Route::get('supplier-offers', [\App\Modules\Purchasing\Http\Controllers\Api\V1\SupplierOfferController::class,'index'])->name('supplier-offers.index');
+    Route::post('supplier-offers', [\App\Modules\Purchasing\Http\Controllers\Api\V1\SupplierOfferController::class,'store'])->name('supplier-offers.store');
+    Route::patch('supplier-offers/{supplier_offer}', [\App\Modules\Purchasing\Http\Controllers\Api\V1\SupplierOfferController::class,'update'])->name('supplier-offers.update');
     Route::apiResource('item-suppliers', ItemSupplierController::class)->except('update');
     Route::patch('item-suppliers/{item_supplier}', [ItemSupplierController::class, 'update'])->name('item-suppliers.update');
+    Route::post('purchase-order-lines/preview', [PurchaseOrderController::class, 'previewLine'])->name('purchase-order-lines.preview');
     Route::apiResource('purchase-orders', PurchaseOrderController::class)->only(['index', 'store', 'show']);
     Route::patch('purchase-orders/{purchaseOrder}', [PurchaseOrderController::class, 'update'])->name('purchase-orders.update');
     Route::post('purchase-orders/{purchaseOrder}/submit', [PurchaseOrderController::class, 'submit'])->name('purchase-orders.submit');

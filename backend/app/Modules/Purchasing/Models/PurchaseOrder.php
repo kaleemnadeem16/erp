@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
+ * @property int|null $replaces_purchase_order_id
  * @property string|null $number
  * @property int $supplier_account_id
  * @property int|null $supplier_site_id
@@ -57,12 +58,19 @@ class PurchaseOrder extends Model
     {
         static::updating(function (PurchaseOrder $purchaseOrder): void {
             if ($purchaseOrder->getOriginal('status') !== PurchaseOrderStatus::Draft
-                && $purchaseOrder->isDirty(['supplier_account_id', 'supplier_site_id', 'currency_id', 'fx_policy', 'fx_rate', 'fx_rate_date', 'fx_rate_type', 'fx_rate_source', 'order_date', 'expected_delivery_date', 'inventory_cutover_id', 'import_batch_id', 'source_system', 'source_record_id'])) {
+                && $purchaseOrder->isDirty(['replaces_purchase_order_id', 'supplier_account_id', 'supplier_site_id', 'currency_id', 'fx_policy', 'fx_rate', 'fx_rate_date', 'fx_rate_type', 'fx_rate_source', 'order_date', 'expected_delivery_date', 'inventory_cutover_id', 'import_batch_id', 'source_system', 'source_record_id'])) {
                 throw new DomainInvariantException('Issued purchase-order commercial data is immutable.', 'status');
             }
         });
 
         static::saving(function (PurchaseOrder $purchaseOrder): void {
+            if ($purchaseOrder->isDirty('replaces_purchase_order_id') && $purchaseOrder->replaces_purchase_order_id !== null) {
+                $previous = self::query()->findOrFail($purchaseOrder->replaces_purchase_order_id);
+                if ($previous->id === $purchaseOrder->id || ($previous->status !== PurchaseOrderStatus::Cancelled
+                    && ! $previous->lines()->where('short_closed_stock_qty', '>', 0)->exists())) {
+                    throw new DomainInvariantException('Replacement requires a cancelled order or explicitly short-closed commitment.', 'replaces_purchase_order_id');
+                }
+            }
             if (! $purchaseOrder->isDirty(['supplier_account_id', 'supplier_site_id'])
                 || $purchaseOrder->supplier_site_id === null) {
                 return;
@@ -81,7 +89,7 @@ class PurchaseOrder extends Model
     protected static function companyScopedForeignKeys(): array
     {
         return [
-            'supplier_account_id' => SupplierAccount::class, 'supplier_site_id' => SupplierSite::class,
+            'replaces_purchase_order_id' => self::class, 'supplier_account_id' => SupplierAccount::class, 'supplier_site_id' => SupplierSite::class,
             'inventory_cutover_id' => InventoryCutover::class, 'import_batch_id' => ImportBatch::class,
         ];
     }

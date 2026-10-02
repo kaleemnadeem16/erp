@@ -7,6 +7,7 @@ use App\Modules\Inventory\Http\Controllers\Api\V1\InventoryOverviewController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\InventoryPolicyChangeController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\InventorySettingsController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\ItemController;
+use App\Modules\Inventory\Http\Controllers\Api\V1\ItemPackagingController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\ItemQuantityUnitController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\LocationController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\NegativeStockOverrideRequestController;
@@ -19,6 +20,9 @@ use App\Modules\Inventory\Http\Controllers\Api\V1\WarehouseLocationAssignmentCon
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth:sanctum')->group(function () {
+    Route::get('item-packagings', [ItemPackagingController::class, 'index'])->name('item-packagings.index');
+    Route::post('item-packagings', [ItemPackagingController::class, 'store'])->name('item-packagings.store');
+    Route::patch('item-packagings/{item_packaging}', [ItemPackagingController::class, 'update'])->name('item-packagings.update');
     Route::apiResource('categories', CategoryController::class)->except('update');
     Route::patch('categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
     Route::apiResource('items', ItemController::class)->except('update');

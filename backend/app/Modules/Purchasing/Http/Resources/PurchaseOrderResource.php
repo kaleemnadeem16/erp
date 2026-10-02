@@ -19,6 +19,7 @@ class PurchaseOrderResource extends JsonResource
         $commercial = PurchasingCommercialAccess::canView($request->user());
 
         return [
+            'replaces_purchase_order_id' => $this->replaces_purchase_order_id,
             'id' => $this->id, 'number' => $this->number,
             'supplier_account_id' => $this->supplier_account_id, 'supplier_site_id' => $this->supplier_site_id,
             'supplier_site' => $this->whenLoaded('supplierSite', fn () => $this->supplierSite === null ? null : new SupplierSiteResource($this->supplierSite)),

@@ -44,6 +44,7 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 
 | Item | Date |
 |---|---|
+| **Exchange-rate maintenance capability added, integration verification pending** — `currency.exchange-rate.manage` protects manual rate create/update/delete in HTTP and non-HTTP Action paths; authenticated rate lookup remains. The API tests are written, but the current uncommitted packaged-purchasing migration breaks database setup before they run. Assign a dev maintainer through Access Administration once verified → [multi-currency](domain/multi-currency.md#access-to-manual-exchange-rates), [audit](architecture/access-security-audit.md). | 2026-10-02 |
 | **Cross-module access audit baseline recorded** — a read-only pass found authenticated-only writes for core exchange rates, Accounting chart accounts and Parties master data, plus the previously open unconditional Item/Category GL-account fields. The new audit separates confirmed findings from unverified modules and specifies decision, assignment and staged-enforcement gates so no user is locked out or financial visibility changed by assumption → [audit](architecture/access-security-audit.md). | 2026-10-02 |
 | **Application Rate resolution tester lookups scale past 100 options** — its Item and Work unit pickers now search the existing APIs as the user types and retain selected labels; resolution remains read-only. The saved-rate forms and other Estimating form pickers remain a separate pass → [application rates](domain/application-rates.md#access-to-application-rates), [retrofit](architecture/authorization-retrofit.md#c-existing-estimating-crud). | 2026-10-02 |
 | **Item pack-conversion access (step 1)** — item details embed the existing editor with fixed item identity; create/edit expose stock quantity increment and detail/print show it. The incremental plan records PO conversion visibility next and research gates for further changes; the existing conversion backend write-authorisation gap is explicitly open → [plan](phases/item-purchasing-improvements.md), [items](domain/items.md). | 2026-10-02 |
@@ -113,6 +114,9 @@ Conversion/receipt foundation for ADR 0080 is committed: server-side conversion 
 authorisation and issued-factor/default-price receiving are covered by 41 focused tests.
 
 ## Next
+
+Package/offer masters, independent PO price snapshots and partial package receipts are implemented
+under ADR 0080 (64 focused Purchasing tests pass); UI exposure is in progress.
 
 Packaged/loose Purchasing implementation is authorised under accepted
 [ADR 0080](decisions/0080-packaged-purchasing-and-independent-price-basis.md); the

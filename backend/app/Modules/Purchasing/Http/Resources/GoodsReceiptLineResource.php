@@ -21,6 +21,7 @@ class GoodsReceiptLineResource extends JsonResource
         return [
             'id' => $this->id, 'purchase_order_line_id' => $this->purchase_order_line_id,
             'item_id' => $this->item_id, 'location_id' => $this->location_id,
+            'item_packaging_id' => $this->item_packaging_id, 'package_name' => $this->package_name, 'received_package_qty' => $this->received_package_qty,
             'received_qty' => $this->received_qty, 'received_uom_id' => $this->received_uom_id,
             'stock_qty' => $this->stock_qty, 'stock_uom_id' => $this->stock_uom_id, 'uom_factor' => $this->uom_factor,
             'provisional_unit_cost' => $this->when($commercial, fn () => $this->provisional_unit_cost),

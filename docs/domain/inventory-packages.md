@@ -251,6 +251,14 @@ replace them.
 - A custom policy builder comes only after preset usage provides real requirements; its policies
   will be ordered, versioned and explainable rather than arbitrary code or opaque weights.
 
+## Fixed purchasing definitions (ADR 0080)
+ 
+Named fixed packages now have their own item-owned direct stock quantity, increment, barcode
+and optional inner package/count. Content and identity cannot be edited; archive/create replaces
+them. Maintenance needs inventory.item.manage in HTTP and Actions. Inner content must match
+the same item and direct quantity; immutable links cannot introduce a cycle.
+This implements package masters only: PACKAGE_BALANCE and CONTAINER_TRACKED remain unbuilt.
+ 
 ## Related
 
 - [Material resolution](material-resolution.md) · [Items](items.md) · [Stock](stock.md)
