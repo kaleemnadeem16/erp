@@ -104,6 +104,14 @@ a user means.
 
 → [domain/assemblies.md](../domain/assemblies.md)
 
+## 10. Company-wide facts have one owner, and the base currency is locked by what holds money
+
+The company's time zone, base currency, fiscal-year start month, short code and name live on the `companies` row, are changed
+only through the Company module, and are read by other modules through `CurrentCompany` ([ADR 0081](../decisions/0081-central-company-profile-and-company-wide-settings.md)).
+The base currency can change only while no financial record exists: every module that stores money registers a
+`FinancialActivity` probe for its tables, and the `Company` model refuses the change while any probe finds a row. **A module
+that starts carrying money without registering a probe silently removes the lock** — add the probe in the same change.
+
 ## 10. Consumption basis is not pricing basis
 
 250 sqm of wall at 2 coats consumes 500 sqm of material but is priced per sqm of wall.

@@ -36,6 +36,24 @@ final class FoundationDemoSeeder extends Seeder
             'base_currency_id' => $pkr->getKey(),
         ]);
 
+        // The company profile and its time zone (ADR 0080): filled only where still empty, so re-seeding never overwrites what
+        // someone has set on Settings → Company.
+        $company = Company::query()->findOrFail(1);
+        $profile = [
+            'code' => 'X1', 'legal_name' => 'X1 ERP Demo Company (Pvt) Ltd', 'country_code' => 'PK',
+            'address_line1' => '12 Industrial Estate Road', 'city' => 'Lahore', 'state' => 'Punjab', 'postal_code' => '54000',
+            'email' => 'info@demo.example', 'phone' => '+92 42 111 000 111', 'website' => 'https://demo.example',
+        ];
+        foreach ($profile as $field => $value) {
+            if ($company->getAttribute($field) === null) {
+                $company->setAttribute($field, $value);
+            }
+        }
+        if ($company->timezone === 'UTC') {
+            $company->timezone = 'Asia/Karachi';
+        }
+        $company->save();
+
         $units = [
             ['code' => 'ea', 'name' => 'Each', 'dimension' => UomDimension::Count, 'factor_to_base' => '1.000000000', 'is_base' => true],
             ['code' => 'kg', 'name' => 'Kilogram', 'dimension' => UomDimension::Mass, 'factor_to_base' => '1.000000000', 'is_base' => true],

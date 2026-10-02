@@ -20,6 +20,7 @@ import {
   ApprovalsInboxScreen,
   ApprovalsSettingsScreen,
   MaterialSelectionSettingsScreen,
+  CompanySettingsScreen,
   NumberingEditorScreen,
   NumberingSettingsScreen,
   MaterialVarianceSettingsScreen,
@@ -777,6 +778,16 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <MaterialSelectionSettingsScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings/company"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <CompanySettingsScreen />
               </AppShell>
             </ProtectedRoute>
           }

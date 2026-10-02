@@ -31,7 +31,7 @@ final class UpdateInventorySettings
             'negative_stock_scrap_writeoff_enabled',
         ],
         'BACKDATING_HORIZON' => [
-            'accounting_timezone', 'backdating_horizon_mode', 'backdating_posting_floor_subtype',
+            'backdating_horizon_mode', 'backdating_posting_floor_subtype',
             'backdating_posting_floor_fixed_date', 'backdating_posting_floor_rolling_days',
         ],
         'RECALCULATION' => [

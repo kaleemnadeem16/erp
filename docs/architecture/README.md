@@ -26,6 +26,7 @@ these choices were made, see [decisions/](../decisions/).
 | [ui-building-blocks.md](ui-building-blocks.md) | The reusable UI that exists, and the alternatives kept on purpose | Before building any control, layout or screen behaviour |
 | [appearance-and-printing.md](appearance-and-printing.md) | Light/dark/theme tokens and Quick Print branding, both company/user-layered | Adding a colour, a theme, or touching print output |
 | [document-numbering.md](document-numbering.md) | The central numbering framework: series, versions, counters, routing, and how to make a document numbered | Adding a document that carries a number, or changing how numbers are issued |
+| [company-settings.md](company-settings.md) | The Company module: profile, company-wide settings, field registry, locks, history, how to add a field | Adding a company-wide setting, or reading the company's time zone/code |
 | [erp-blue-design-standard.md](erp-blue-design-standard.md) | The `erp-blue` palette, scoping and rules proven on Purchase Orders, and how to roll it out | Restyling a screen, or adding a palette |
 | [api-conventions.md](api-conventions.md) | Routes, responses, errors, pagination | Adding an endpoint |
 | [deployment.md](deployment.md) | Targets, multi-arch, what a customer deployment needs | Deploying or changing infra |

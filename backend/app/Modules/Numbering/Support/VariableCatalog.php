@@ -14,6 +14,7 @@ final class VariableCatalog
         'MM' => ['label' => 'Month', 'description' => 'The month, 01 to 12.', 'kind' => 'date'],
         'DD' => ['label' => 'Day', 'description' => 'The day of the month, 01 to 31.', 'kind' => 'date'],
         'FY' => ['label' => 'Fiscal year', 'description' => 'The company fiscal year: 2026, or 2025-26 when it spans two calendar years. {FY:START} and {FY:END} give one year.', 'kind' => 'fiscal'],
+        'COMPANY' => ['label' => 'Company code', 'description' => 'The company\'s short code from Settings → Company. It never comes from the editable company name; numbers already issued keep the code they were issued with.', 'kind' => 'company'],
         'FP' => ['label' => 'Fiscal period', 'description' => 'The fiscal period number, two digits.', 'kind' => 'fiscal'],
     ];
 
@@ -24,7 +25,7 @@ final class VariableCatalog
 
     public static function needsDate(string $key): bool
     {
-        return isset(self::ENGINE[$key]);
+        return isset(self::ENGINE[$key]) && self::ENGINE[$key]['kind'] !== 'company';
     }
 
     public static function needsFiscalCalendar(string $key): bool

@@ -128,6 +128,8 @@ const rules: readonly Rule[] = [
     path: "/settings/material-selection",
     anyOf: ["estimating.selection-policy.manage", "estimating.stock_mix_policy.manage", "estimating.policy-history.view"],
   },
+  // Everyone can read the company; each field enforces its own edit permission.
+  { path: "/settings/company" },
   { path: "/settings/document-numbering", anyOf: ["numbering.view"] },
   {
     path: "/settings/material-variance",

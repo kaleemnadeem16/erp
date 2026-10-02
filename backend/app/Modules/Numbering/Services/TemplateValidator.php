@@ -41,7 +41,7 @@ final class TemplateValidator
         foreach ($parsed->variables() as ['key' => $key, 'option' => $option]) {
             if (VariableCatalog::isEngine($key)) {
                 $length += match ($key) {
-                    'YYYY' => 4, 'FY' => 9, default => 2,
+                    'YYYY' => 4, 'FY' => 9, 'COMPANY' => 10, default => 2,
                 };
                 if ($key === 'FY' && $option !== null && ! in_array($option, ['START', 'END'], true)) {
                     $errors[] = "{FY:{$option}} is not valid; use {FY}, {FY:START} or {FY:END}.";

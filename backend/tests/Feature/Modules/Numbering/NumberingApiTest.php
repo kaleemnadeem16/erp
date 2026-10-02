@@ -81,13 +81,13 @@ class NumberingApiTest extends TestCase
             ->assertJsonPath('data.timezone', 'UTC')->assertJsonPath('data.timezone_is_default', true)
             ->assertJsonPath('data.engine_variables.0.key', 'YYYY');
 
-        DB::table('companies')->where('id', 1)->update(['accounting_timezone' => 'Asia/Karachi']);
+        DB::table('companies')->where('id', 1)->update(['timezone' => 'Asia/Karachi']);
         $this->as($this->viewer)->getJson('/api/v1/numbering/context')->assertJsonPath('data.timezone_is_default', false);
     }
 
     public function test_the_tester_explains_a_configuration_and_consumes_nothing(): void
     {
-        DB::table('companies')->where('id', 1)->update(['accounting_timezone' => 'Asia/Karachi']);
+        DB::table('companies')->where('id', 1)->update(['timezone' => 'Asia/Karachi']);
         $this->as($this->manager)->postJson('/api/v1/numbering/series', ['document_type' => 'SALES_INVOICE', 'code' => 'EXPORT', 'name' => 'Export', 'is_selectable' => true] + $this->body('EXP-{YYYY}-{SEQ:5}', 'YEAR'))->assertCreated();
         $before = DB::table('numbering_counters')->get();
 

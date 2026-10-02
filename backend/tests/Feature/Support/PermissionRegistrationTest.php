@@ -16,7 +16,7 @@ final class PermissionRegistrationTest extends TestCase
     {
         $vocabularies = app(PermissionRegistry::class)->byOwner();
 
-        $this->assertSame(['administration', 'approvals', 'estimating', 'inventory', 'numbering', 'purchasing'], array_keys($vocabularies));
+        $this->assertSame(['accounting', 'administration', 'approvals', 'company', 'currency', 'estimating', 'inventory', 'numbering', 'purchasing'], array_keys($vocabularies));
         $this->assertContains('administration.access.assign', $vocabularies['administration']);
         foreach ([
             'estimating.rate-dimension.manage',

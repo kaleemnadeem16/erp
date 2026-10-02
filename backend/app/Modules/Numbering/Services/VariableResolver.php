@@ -10,11 +10,14 @@ use App\Modules\Numbering\Support\NumberingException;
 use App\Modules\Numbering\Support\ParsedTemplate;
 use App\Modules\Numbering\Support\TemplateParser;
 use App\Modules\Numbering\Support\VariableCatalog;
+use App\Support\CurrentCompany;
 use Carbon\CarbonImmutable;
 
 /** Turns a parsed template's variables into text for one numbering context, recording where each value came from. */
 final class VariableResolver
 {
+    public function __construct(private readonly CurrentCompany $company) {}
+
     /**
      * @param  array<string, string>  $constants
      * @return array<string, array{value: string, source: string|null}> variable token (KEY or KEY:option) => value and source
@@ -28,7 +31,9 @@ final class VariableResolver
                 continue;
             }
             if (VariableCatalog::isEngine($key)) {
-                $out[$token] = ['value' => $this->engine($key, $option, $local, $fiscal), 'source' => null];
+                $out[$token] = $key === 'COMPANY'
+                    ? ['value' => $this->companyCode(), 'source' => 'company:code']
+                    : ['value' => $this->engine($key, $option, $local, $fiscal), 'source' => null];
             } elseif (isset($constants[$key])) {
                 $out[$token] = ['value' => $constants[$key], 'source' => 'constant:'.$key];
             } elseif (isset($context->values[$key])) {
@@ -43,6 +48,16 @@ final class VariableResolver
         }
 
         return $out;
+    }
+
+    private function companyCode(): string
+    {
+        $code = $this->company->code();
+        if ($code === null) {
+            throw new NumberingException('This number format uses {COMPANY}, but the company has no short code yet. Set one in Settings → Company.', 'COMPANY');
+        }
+
+        return $code;
     }
 
     private function engine(string $key, ?string $option, ?CarbonImmutable $local, ?FiscalPosition $fiscal): string

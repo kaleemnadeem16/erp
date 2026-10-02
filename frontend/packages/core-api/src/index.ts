@@ -60,3 +60,6 @@ export * from "./generated/numbering-preview/numbering-preview";
 export * from "./generated/numbering-series/numbering-series";
 export * from "./generated/numbering-counter/numbering-counter";
 export * from "./generated/numbering-constant/numbering-constant";
+
+export * from "./generated/company/company";
+export * from "./generated/company-change/company-change";

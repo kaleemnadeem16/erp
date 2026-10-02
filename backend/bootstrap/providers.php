@@ -3,6 +3,7 @@
 use App\Modules\Accounting\AccountingServiceProvider;
 use App\Modules\Administration\AdministrationServiceProvider;
 use App\Modules\Approvals\ApprovalsServiceProvider;
+use App\Modules\Company\CompanyServiceProvider;
 use App\Modules\Estimating\EstimatingServiceProvider;
 use App\Modules\Imports\ImportsServiceProvider;
 use App\Modules\Inventory\InventoryServiceProvider;
@@ -20,6 +21,7 @@ return [
     CurrencyServiceProvider::class,
     UomServiceProvider::class,
     ImportsServiceProvider::class,
+    CompanyServiceProvider::class,
     NumberingServiceProvider::class,
     InventoryServiceProvider::class,
     PartiesServiceProvider::class,

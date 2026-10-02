@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Contracts\NumberingScheme;
 use App\Support\CompanyContext;
+use App\Support\CompanyLocks\FinancialActivity;
 use App\Support\DefaultNumberingScheme;
 use App\Support\OpenApi\DecimalAsStringRuleTransformer;
 use App\Support\PermissionRegistry;
@@ -28,6 +29,7 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->singleton(CompanyContext::class);
         $this->app->singleton(PermissionRegistry::class);
+        $this->app->singleton(FinancialActivity::class);
         $this->app->bind(NumberingScheme::class, DefaultNumberingScheme::class);
     }
 

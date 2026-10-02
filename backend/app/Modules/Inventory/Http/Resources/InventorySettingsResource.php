@@ -28,7 +28,6 @@ class InventorySettingsResource extends JsonResource
             'negative_stock_material_consumption_enabled' => $company->negative_stock_material_consumption_enabled,
             'negative_stock_supplier_return_enabled' => $company->negative_stock_supplier_return_enabled,
             'negative_stock_scrap_writeoff_enabled' => $company->negative_stock_scrap_writeoff_enabled,
-            'accounting_timezone' => $company->accounting_timezone,
             'backdating_horizon_mode' => $company->backdating_horizon_mode->value,
             'backdating_posting_floor_subtype' => $company->backdating_posting_floor_subtype?->value,
             'backdating_posting_floor_fixed_date' => $company->backdating_posting_floor_fixed_date?->toDateString(),

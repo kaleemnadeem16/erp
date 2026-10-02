@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
+  Building2,
   Hash,
   ArrowLeftRight,
   Boxes,
@@ -164,6 +165,11 @@ const settingsNavGroup: NavGroup = {
   label: "Settings",
   items: [
     {
+      to: "/settings/company",
+      label: "Company",
+      icon: Building2,
+    },
+    {
       to: "/settings/purchasing",
       label: "Purchasing Settings",
       icon: Settings,
@@ -228,6 +234,7 @@ const SETTINGS_MENU: { label: string; items: NavItem[] }[] = [
   {
     label: "Company",
     items: [
+      { to: "/settings/company", label: "Company profile", icon: Building2 },
       { to: "/settings/purchasing", label: "Purchasing", icon: Settings },
       {
         to: "/settings/inventory",

@@ -53,10 +53,10 @@ class NumberingEngineTest extends TestCase
         app(NumberingRegistry::class)->register($type);
     }
 
-    /** The company time zone is the existing accounting_timezone setting (default UTC). */
+    /** The company time zone is the central company timezone setting (default UTC). */
     private function timezone(string $zone = 'Asia/Karachi'): void
     {
-        DB::table('companies')->where('id', 1)->update(['accounting_timezone' => $zone]);
+        DB::table('companies')->where('id', 1)->update(['timezone' => $zone]);
     }
 
     private function allocate(string $at, string $branch = 'LHR', array $routing = [], ?string $series = null): string
@@ -130,6 +130,42 @@ class NumberingEngineTest extends TestCase
         $this->assertSame(['value' => '2026', 'source' => null], $log->variables['YYYY']);
         $this->assertSame($this->series()->activeVersion->id, $log->version_id);
         $this->assertSame($this->manager->id, $log->allocated_by);
+    }
+
+    public function test_company_is_the_stable_code_never_the_editable_name_and_is_frozen_with_the_number(): void
+    {
+        $this->timezone();
+        DB::table('companies')->where('id', 1)->update(['name' => 'Acme Chemicals', 'code' => 'ACME']);
+        $this->version('{COMPANY}-INV-{SEQ:4}', ScopePeriod::None);
+
+        $number = $this->allocate('2026-10-02 10:00:00');
+        $this->assertSame('ACME-INV-0001', $number);
+
+        // Renaming the company changes nothing; recoding it changes later numbers only
+        DB::table('companies')->where('id', 1)->update(['name' => 'Acme Group', 'code' => 'AGRP']);
+        $this->assertSame('AGRP-INV-0002', $this->allocate('2026-10-02 10:05:00'));
+        $log = NumberingAllocation::query()->where('number', $number)->firstOrFail();
+        $this->assertSame(['value' => 'ACME', 'source' => 'company:code'], $log->variables['COMPANY']);
+    }
+
+    public function test_a_format_using_company_is_refused_plainly_while_the_company_has_no_code(): void
+    {
+        $this->timezone();
+        $this->expectException(NumberingException::class);
+        $this->expectExceptionMessage('Settings → Company');
+        $this->version('{COMPANY}-INV-{SEQ:4}', ScopePeriod::None);
+    }
+
+    public function test_removing_the_code_later_stops_issuing_rather_than_issuing_a_wrong_number(): void
+    {
+        $this->timezone();
+        DB::table('companies')->where('id', 1)->update(['code' => 'ACME']);
+        $this->version('{COMPANY}-INV-{SEQ:4}', ScopePeriod::None);
+        DB::table('companies')->where('id', 1)->update(['code' => null]);
+
+        $this->expectException(NumberingException::class);
+        $this->expectExceptionMessage('Settings → Company');
+        $this->allocate('2026-10-02 10:00:00');
     }
 
     public function test_an_issued_number_is_history(): void

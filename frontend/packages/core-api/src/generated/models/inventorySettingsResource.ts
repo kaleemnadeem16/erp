@@ -20,7 +20,6 @@ export interface InventorySettingsResource {
   negative_stock_material_consumption_enabled: boolean;
   negative_stock_supplier_return_enabled: boolean;
   negative_stock_scrap_writeoff_enabled: boolean;
-  accounting_timezone: string;
   backdating_horizon_mode: string;
   backdating_posting_floor_subtype: InventorySettingsResourceBackdatingPostingFloorSubtype;
   backdating_posting_floor_fixed_date: InventorySettingsResourceBackdatingPostingFloorFixedDate;

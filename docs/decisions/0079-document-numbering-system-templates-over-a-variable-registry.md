@@ -2,6 +2,8 @@
 
 # 0079 — One document-numbering system: series of templates over a registry of variables
 
+> **Update (2026-10-02, [ADR 0081](0081-central-company-profile-and-company-wide-settings.md)):** the company time zone this ADR reuses is now `companies.timezone`, owned by Settings → Company (renamed from `accounting_timezone`, removed from Inventory settings), and `{COMPANY}` is available from the company's stable short code.
+
 - **Status:** accepted (2026-10-02, after the owner's final adjustments below). Phase 1 — the engine and the migration of
   purchase orders and goods receipts — is being built; the settings screens are the next step.
 - **Affects:** a new central `Numbering` module (the framework), `sequences` / `NumberingScheme` ([phase 0](../phases/phase-0-foundation.md))

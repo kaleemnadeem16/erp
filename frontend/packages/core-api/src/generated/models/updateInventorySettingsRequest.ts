@@ -27,7 +27,6 @@ export interface UpdateInventorySettingsRequest {
   negative_stock_material_consumption_enabled?: boolean;
   negative_stock_supplier_return_enabled?: boolean;
   negative_stock_scrap_writeoff_enabled?: boolean;
-  accounting_timezone?: string;
   backdating_horizon_mode?: BackdatingHorizonMode;
   backdating_posting_floor_subtype?: PostingFloorSubtype;
   backdating_posting_floor_fixed_date?: string;

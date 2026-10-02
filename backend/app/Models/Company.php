@@ -4,17 +4,16 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Modules\Accounting\Models\AccountingPeriod;
-use App\Modules\Accounting\Support\PeriodStatus;
+use App\Exceptions\DomainInvariantException;
 use App\Modules\Inventory\Support\AvcoPoolScope;
 use App\Modules\Inventory\Support\BackdatingHorizonMode;
 use App\Modules\Inventory\Support\InventoryLocationMode;
 use App\Modules\Inventory\Support\NegativeStockAuthorisationMode;
 use App\Modules\Inventory\Support\NegativeStockMode;
 use App\Modules\Inventory\Support\PostingFloorSubtype;
+use App\Support\CompanyLocks\CompanyLocks;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
-use RuntimeException;
 
 /**
  * The tenant-isolation boundary itself — see docs/architecture/multi-tenancy.md.
@@ -35,7 +34,18 @@ use RuntimeException;
  * @property bool $negative_stock_material_consumption_enabled
  * @property bool $negative_stock_supplier_return_enabled
  * @property bool $negative_stock_scrap_writeoff_enabled
- * @property string $accounting_timezone
+ * @property string $timezone IANA time zone of the company's books and business day (ADR 0081)
+ * @property string|null $code stable short code, used in document numbers
+ * @property string|null $legal_name
+ * @property string|null $country_code ISO 3166-1 alpha-2
+ * @property string|null $address_line1
+ * @property string|null $address_line2
+ * @property string|null $city
+ * @property string|null $state
+ * @property string|null $postal_code
+ * @property string|null $email
+ * @property string|null $phone
+ * @property string|null $website
  * @property BackdatingHorizonMode $backdating_horizon_mode
  * @property PostingFloorSubtype|null $backdating_posting_floor_subtype
  * @property Carbon|null $backdating_posting_floor_fixed_date
@@ -72,20 +82,14 @@ class Company extends Model
     protected static function booted(): void
     {
         static::updating(function (Company $company): void {
-            if (! $company->isDirty('fiscal_year_start_month')) {
-                return;
+            // The lifecycle rules of ADR 0024, enforced here so no caller — API, import or console — can bypass them. The same
+            // reasons are shown to people on the Company screen (see CompanyLocks).
+            $locks = app(CompanyLocks::class);
+            if ($company->isDirty('fiscal_year_start_month') && ($reason = $locks->fiscalYearStartMonth($company)) !== null) {
+                throw new DomainInvariantException($reason, 'fiscal_year_start_month');
             }
-
-            // ADR 0024's lock condition is the first closed period. Permissioned
-            // close/reopen transitions remain Phase 6; this guard protects the
-            // company setting once the persisted accounting state says CLOSED.
-            if (AccountingPeriod::withoutGlobalScopes()
-                ->where('company_id', $company->getKey())
-                ->where('status', PeriodStatus::Closed->value)
-                ->exists()) {
-                throw new RuntimeException(
-                    'Company fiscal_year_start_month is immutable after an accounting period is closed.'
-                );
+            if ($company->isDirty('base_currency_id') && $company->getOriginal('base_currency_id') !== null && ($reason = $locks->baseCurrency($company)) !== null) {
+                throw new DomainInvariantException($reason, 'base_currency_id');
             }
         });
     }

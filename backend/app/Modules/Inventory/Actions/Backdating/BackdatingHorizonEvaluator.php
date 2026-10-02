@@ -85,7 +85,7 @@ final class BackdatingHorizonEvaluator
         // expected path.
         $floor = match ($company->backdating_posting_floor_subtype) {
             PostingFloorSubtype::FixedDate => $company->backdating_posting_floor_fixed_date->copy()->startOfDay(),
-            PostingFloorSubtype::RollingFormula => Carbon::now($company->accounting_timezone)
+            PostingFloorSubtype::RollingFormula => Carbon::now($company->timezone)
                 ->startOfDay()->subDays($company->backdating_posting_floor_rolling_days),
             null => throw new DomainInvariantException(
                 'POSTING_FLOOR mode requires a posting-floor subtype.', 'backdating_posting_floor_subtype',
@@ -112,7 +112,7 @@ final class BackdatingHorizonEvaluator
 
     private function evaluateCurrentAndPreviousPeriod(Company $company, Carbon $proposed): HorizonBoundary
     {
-        $currentPeriod = $this->periodContaining($company, Carbon::now($company->accounting_timezone));
+        $currentPeriod = $this->periodContaining($company, Carbon::now($company->timezone));
         if ($currentPeriod === null) {
             throw new DomainInvariantException('No accounting period covers the current date.', 'backdating_horizon_mode');
         }

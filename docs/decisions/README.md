@@ -94,8 +94,9 @@ in the same commit.
 | [0079](0079-document-numbering-system-templates-over-a-variable-registry.md) | One central document-numbering framework: series of templates over a registry of variables | accepted | 2026-10-02 |
 
 | [0080](0080-packaged-purchasing-and-independent-price-basis.md) | Separate named packages, supplier offers and purchasing price basis | accepted | 2026-10-02 |
+| [0081](0081-central-company-profile-and-company-wide-settings.md) | A central Company screen: profile, company-wide settings, a stable code, and lifecycle locks | accepted | 2026-10-02 |
 
-**Next number: 0081**
+**Next number: 0082**
 
 ## By theme
 

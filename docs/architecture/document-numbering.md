@@ -33,7 +33,7 @@ Document type (registered in code)  ──►  Number series  ──►  Series 
 | Rule | Meaning |
 |---|---|
 | **Uniqueness boundary** | A number is unique within *(company, document type)* across all that type's series — enforced by `UNIQUE(company, doc_type, number)` on the log. Saving a configuration is rejected when two different counters could issue the same text (checked by sampling periods, dimension values and counter values); the index is the proof. |
-| **Issue date** | Date and fiscal variables use the instant the document becomes official, never an editable document date, in the **company's time zone** (the existing `companies.accounting_timezone`, default `UTC`; a general company setting, not a numbering one). The tester warns when a date-based format is about to use the `UTC` default. |
+| **Issue date** | Date and fiscal variables use the instant the document becomes official, never an editable document date, in the **company's time zone** (`companies.timezone`, default `UTC`, set in **Settings → Company**, [ADR 0081](../decisions/0081-central-company-profile-and-company-wide-settings.md); a general company setting, not a numbering one). The tester warns when a date-based format is about to use the `UTC` default. |
 | **Continuity** | Per series: `GAPLESS` (the counter is advanced inside the document's transaction, so a rollback returns the number) or `ALLOW_GAPS` (each counter owns a PostgreSQL sequence; `nextval` never waits, a rollback leaves a gap). A type can lock its policy (statutory documents). |
 | **Frozen values** | Business-derived variables (supplier, currency, warehouse…) are offered only where the document freezes the source at numbering; their values and sources are copied into the log. |
 | **Counters only rise** | `RaiseCounter` needs a reason and is audited; lowering is refused by the action and a database check. |
@@ -94,9 +94,14 @@ sheet's *Advanced options*: count separately by a dimension, series and routing 
 A refused configuration is a `422` whose message says why (for example which two counters would both reach `PO-2026-00001`).
 Modules link into this one screen; they keep no numbering screens of their own.
 
+## `{COMPANY}`
+
+The company's short code from Settings → Company (never the editable name). It is frozen with the number in the allocation log; a format that
+uses it before the company has a code fails with a message pointing to the Company screen.
+
 ## Not built yet
 
-A company profile screen for the time zone (today it is set in Inventory settings); `{COMPANY}` (needs a company code); purchase-order
+Purchase-order
 `{WAREHOUSE}` (needs a ship-to); a read screen for the allocation log; numbers-must-follow-dates validation for gapless series. See
 ADR 0079 §19.
 

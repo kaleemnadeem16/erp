@@ -1,4 +1,5 @@
 import { RotateCcw } from "lucide-react";
+import { Link } from "react-router";
 
 import { DetailPageLayout, DetailSection } from "../../components/detail/detail-page-layout";
 import { PageHeader } from "../../components/page/page-header";
@@ -8,6 +9,7 @@ import { Button } from "../../components/ui/button";
 import { Checkbox } from "../../components/ui/checkbox";
 import { Input } from "../../components/ui/input";
 import { Textarea } from "../../components/ui/textarea";
+import { useCompanyName } from "../company/use-company-name";
 import { usePrintSettingsStore } from "../../stores/print-settings-store";
 
 const ACCENT_PRESETS = [
@@ -43,6 +45,7 @@ const PREVIEW_COLUMNS = [
  */
 export function PrintingSettingsScreen() {
   const settings = usePrintSettingsStore();
+  const companyName = useCompanyName();
 
   return (
     <div className="space-y-4 p-6">
@@ -61,11 +64,10 @@ export function PrintingSettingsScreen() {
           <DetailSection title="Company">
             <div className="sm:col-span-2">
               <label className="mb-1 block text-sm font-medium">Company name</label>
-              <Input
-                value={settings.companyName}
-                onChange={(event) => settings.set({ companyName: event.target.value })}
-                placeholder="Your company's name"
-              />
+              <p className="text-sm">{companyName ?? "—"}</p>
+              <p className="text-xs text-muted-foreground">
+                Printed documents use the company name from <Link className="underline" to="/settings/company">Settings → Company</Link>.
+              </p>
             </div>
             <div className="sm:col-span-2">
               <label className="mb-1 block text-sm font-medium">Logo URL</label>

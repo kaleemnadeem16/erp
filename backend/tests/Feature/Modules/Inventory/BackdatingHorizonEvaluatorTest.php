@@ -74,7 +74,7 @@ class BackdatingHorizonEvaluatorTest extends TestCase
         // default app timezone) would be one calendar day earlier than correct.
         Carbon::setTestNow(Carbon::create(2026, 6, 15, 23, 30, 0, 'UTC'));
         $company = $this->configuredCompany([
-            'accounting_timezone' => 'Pacific/Kiritimati',
+            'timezone' => 'Pacific/Kiritimati',
             'backdating_horizon_mode' => 'POSTING_FLOOR',
             'backdating_posting_floor_subtype' => 'ROLLING_FORMULA',
             'backdating_posting_floor_rolling_days' => 10,

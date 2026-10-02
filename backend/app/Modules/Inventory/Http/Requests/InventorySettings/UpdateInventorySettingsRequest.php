@@ -27,7 +27,7 @@ class UpdateInventorySettingsRequest extends FormRequest
     ];
 
     private const BACKDATING_HORIZON_FIELDS = [
-        'accounting_timezone', 'backdating_horizon_mode', 'backdating_posting_floor_subtype',
+        'backdating_horizon_mode', 'backdating_posting_floor_subtype',
         'backdating_posting_floor_fixed_date', 'backdating_posting_floor_rolling_days',
     ];
 
@@ -75,7 +75,6 @@ class UpdateInventorySettingsRequest extends FormRequest
             'negative_stock_material_consumption_enabled' => ['sometimes', 'boolean'],
             'negative_stock_supplier_return_enabled' => ['sometimes', 'boolean'],
             'negative_stock_scrap_writeoff_enabled' => ['sometimes', 'boolean'],
-            'accounting_timezone' => ['sometimes', 'timezone'],
             'backdating_horizon_mode' => ['sometimes', Rule::enum(BackdatingHorizonMode::class)],
             'backdating_posting_floor_subtype' => [
                 'required_if:backdating_horizon_mode,'.BackdatingHorizonMode::PostingFloor->value,

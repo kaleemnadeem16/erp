@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
 
+import { useCompanyName } from '../../features/company/use-company-name';
 import { usePrintSettingsStore } from '../../stores/print-settings-store';
 
 export interface PrintMetaLine {
@@ -55,7 +56,9 @@ export function PrintLayout({
   children,
 }: PrintLayoutProps) {
   const settings = usePrintSettingsStore();
-  const resolvedCompanyName = companyName ?? settings.companyName;
+  // The authoritative company profile wins; the old browser-only name remains only as a fallback while the profile loads or is unreachable.
+  const profileName = useCompanyName();
+  const resolvedCompanyName = companyName ?? profileName ?? settings.companyName;
   const resolvedLogoUrl = companyLogoUrl ?? settings.companyLogoUrl;
   const resolvedShowSignatures = showSignatureLines ?? settings.showSignatureLines;
   const style = { '--print-accent': settings.accentColor } as CSSProperties;
