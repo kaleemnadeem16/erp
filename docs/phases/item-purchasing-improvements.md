@@ -11,7 +11,7 @@ phases; it does not bring every later-phase capability into Phase 2. Follow the
 The owner approved [ADR 0080](../decisions/0080-packaged-purchasing-and-independent-price-basis.md).
 Implementation is now authorised in committed slices:
 
-- [ ] Enforce conversion maintenance permission in Requests and Actions; fix receipt conversion/price normalisation.
+- [x] Enforce conversion maintenance permission in Requests and Actions; fix receipt conversion/price normalisation.
 - [ ] Add fixed named package definitions and supplier offers, with company-safe references and lifecycle guards.
 - [ ] Add PO package/loose choice, separate price basis, warning/reason evidence and immutable snapshots.
 - [ ] Add receipt package evidence, partial delivery and replacement-order linkage.
@@ -74,7 +74,8 @@ reference data, with no monetary fields, assignment scope or approval transition
 company-scoped requests/models protect references; no schema, deployment grants, history,
 separation-of-duties or approval behaviour changes here.
 
-**Existing backend gap:** conversion store/update/delete and their non-HTTP Actions currently
+**Resolved under ADR 0080:** conversion store/update/delete and their non-HTTP Actions now enforce
+inventory.item.manage; HTTP and direct Action denial is tested. The original step-1 finding was that they
 lack the capability check used by the screen. UI gating is not backend enforcement. Record this
 in the open questions and resolve the conversion-maintenance boundary before claiming those
 writes are permission-protected. Step 1 keeps the API contract unchanged.

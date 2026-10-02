@@ -11,6 +11,7 @@ use App\Modules\Inventory\Actions\CreateWarehouse;
 use App\Modules\Inventory\Models\AvcoPool;
 use App\Modules\Inventory\Models\Category;
 use App\Modules\Inventory\Models\Item;
+use App\Modules\Inventory\Models\ItemQuantityUnit;
 use App\Modules\Inventory\Models\StockLayer;
 use App\Modules\Inventory\Models\StockMove;
 use App\Modules\Inventory\Support\AvcoPoolScope;
@@ -32,6 +33,34 @@ use Tests\Support\PurchasingActor;
 
 class GoodsReceiptPostingTest extends PurchaseOrderFoundationTest
 {
+    public function test_issued_pack_factor_and_default_cost_survive_master_change(): void
+    {
+        [$order, $item, $uom] = $this->makeOrder();
+        $item->update(['is_stocked' => true, 'valuation_method' => ValuationMethod::Avco, 'tracking' => ItemTracking::None, 'avco_pool_scope' => AvcoPoolScope::CompanyItem, 'inventory_account_id' => ChartOfAccount::query()->firstOrFail()->id]);
+        $box = Uom::create(['code' => 'box', 'name' => 'Box', 'dimension' => UomDimension::Count, 'factor_to_base' => '1']);
+        $poLine = $order->lines()->create(array_merge($this->lineAttributes($order, $item, $box), [
+            'ordered_qty' => '2', 'ordered_stock_qty' => '24', 'stock_uom_id' => $uom->id, 'uom_factor' => '12', 'unit_price' => '120',
+        ]));
+        app(IssuePurchaseOrder::class)($order, $this->purchasingActor());
+        ItemQuantityUnit::create(['item_id' => $item->id, 'uom_id' => $box->id, 'factor' => '99']);
+        $receiver = PurchasingActor::make(['purchasing.goods-receipt.create', 'purchasing.goods-receipt.post']);
+        $payload = [
+            'supplier_account_id' => $order->supplier_account_id,
+            'physical_arrival_at' => now()->toIso8601String(), 'posting_date' => now()->format('Y-m-d'),
+            'lines' => [['purchase_order_line_id' => $poLine->id, 'item_id' => $item->id,
+                'location_id' => $this->locationId(), 'received_qty' => '1', 'received_uom_id' => $box->id]],
+        ];
+        $id = $this->actingAsUnprivileged($receiver)->postJson('/api/v1/goods-receipts', $payload)->assertCreated()->json('data.id');
+        $this->assertDatabaseHas('goods_receipt_lines', ['goods_receipt_id' => $id, 'stock_qty' => '12', 'uom_factor' => '12', 'provisional_unit_cost' => '120']);
+        $this->postJson("/api/v1/goods-receipts/{$id}/post")->assertOk();
+        $payload['lines'][0]['received_uom_id'] = $uom->id;
+        $payload['lines'][0]['received_qty'] = '12';
+        $id = $this->postJson('/api/v1/goods-receipts', $payload)->assertCreated()->json('data.id');
+        $this->assertDatabaseHas('goods_receipt_lines', ['goods_receipt_id' => $id, 'stock_qty' => '12', 'provisional_unit_cost' => '10']);
+        $this->postJson("/api/v1/goods-receipts/{$id}/post")->assertOk();
+        $this->assertSame('240.0000', AvcoPool::query()->sole()->inventory_value);
+    }
+
     public function test_receiver_can_create_from_issued_po_without_seeing_or_supplying_cost(): void
     {
         [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Avco);

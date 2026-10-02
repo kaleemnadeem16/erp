@@ -7,13 +7,13 @@ namespace App\Modules\Purchasing\Actions;
 use App\Exceptions\DomainInvariantException;
 use App\Models\Uom;
 use App\Models\User;
+use App\Modules\Inventory\Actions\ItemUomConversionService;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Purchasing\Models\GoodsReceipt;
 use App\Modules\Purchasing\Models\PurchaseOrderLine;
 use App\Modules\Purchasing\Support\PurchaseOrderFxPolicy;
 use App\Modules\Purchasing\Support\PurchaseOrderStatus;
 use App\Modules\Purchasing\Support\PurchasingCommercialAccess;
-use App\Support\UomConversionService;
 use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
 use Illuminate\Support\Arr;
@@ -26,7 +26,7 @@ final class CreateGoodsReceipt
         'provisional_unit_cost', 'currency_id', 'fx_rate', 'fx_rate_date', 'fx_rate_type', 'fx_rate_source',
     ];
 
-    public function __construct(private readonly UomConversionService $conversion) {}
+    public function __construct(private readonly ItemUomConversionService $conversion) {}
 
     /** @param array<string, mixed> $attributes */
     public function __invoke(array $attributes, User $actor, ?string $idempotencyKey = null): GoodsReceipt
@@ -58,6 +58,7 @@ final class CreateGoodsReceipt
             ]));
 
             foreach ($lines as $input) {
+                $hasExplicitCost = array_key_exists('provisional_unit_cost', $input);
                 $poLine = PurchaseOrderLine::query()->with('purchaseOrder')->findOrFail($input['purchase_order_line_id']);
                 $item = Item::query()->findOrFail($poLine->item_id);
                 if ($poLine->purchaseOrder->status !== PurchaseOrderStatus::Issued
@@ -84,11 +85,18 @@ final class CreateGoodsReceipt
                 $receivedUom = Uom::query()->findOrFail($input['received_uom_id']);
                 $stockUom = Uom::query()->findOrFail($item->stock_uom_id);
                 try {
-                    $factor = $this->conversion->convert('1', $receivedUom, $stockUom);
+                    $factor = $receivedUom->id === $poLine->purchase_uom_id
+                        ? BigDecimal::of($poLine->uom_factor)
+                        : $this->conversion->stockUnitFactor($item, $receivedUom);
                 } catch (InvalidArgumentException) {
                     throw new DomainInvariantException('Received UoM must have the same dimension as the item stock UoM.', 'received_uom_id');
                 }
                 $stockQty = BigDecimal::of((string) $input['received_qty'])->multipliedBy($factor)->toScale(4, RoundingMode::HALF_UP);
+                // An issued price is per purchase unit, not automatically per received unit.
+                if (! $hasExplicitCost) {
+                    $input['provisional_unit_cost'] = (string) BigDecimal::of($poLine->unit_price)
+                        ->multipliedBy($factor)->dividedBy($poLine->uom_factor, 4, RoundingMode::HALF_UP);
+                }
                 $baseUnitCost = BigDecimal::of((string) $input['provisional_unit_cost'])
                     ->multipliedBy(BigDecimal::of((string) $input['fx_rate']))->toScale(4, RoundingMode::HALF_UP);
 

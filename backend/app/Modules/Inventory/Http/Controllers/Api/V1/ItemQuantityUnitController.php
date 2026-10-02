@@ -16,6 +16,7 @@ use App\Modules\Inventory\Http\Resources\ItemQuantityUnitResource;
 use App\Modules\Inventory\Models\ItemQuantityUnit;
 use App\Support\Concerns\AppliesApiQuery;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -47,7 +48,7 @@ class ItemQuantityUnitController extends Controller
 
     public function store(StoreItemQuantityUnitRequest $request, CreateItemQuantityUnit $create): JsonResponse
     {
-        return (new ItemQuantityUnitResource($create($request->validated())))->response()->setStatusCode(201);
+        return (new ItemQuantityUnitResource($create($request->validated(), $request->user())))->response()->setStatusCode(201);
     }
 
     public function show(ShowItemQuantityUnitRequest $request, ItemQuantityUnit $item_quantity_unit): ItemQuantityUnitResource
@@ -57,12 +58,13 @@ class ItemQuantityUnitController extends Controller
 
     public function update(UpdateItemQuantityUnitRequest $request, ItemQuantityUnit $item_quantity_unit, UpdateItemQuantityUnit $update): ItemQuantityUnitResource
     {
-        return new ItemQuantityUnitResource($update($item_quantity_unit, $request->validated()));
+        return new ItemQuantityUnitResource($update($item_quantity_unit, $request->validated(), $request->user()));
     }
 
-    public function destroy(ItemQuantityUnit $item_quantity_unit, ArchiveItemQuantityUnit $archive): Response
+    public function destroy(Request $request, ItemQuantityUnit $item_quantity_unit, ArchiveItemQuantityUnit $archive): Response
     {
-        $archive($item_quantity_unit);
+        abort_unless($request->user()?->can('inventory.item.manage'), 403);
+        $archive($item_quantity_unit, $request->user());
 
         return response()->noContent();
     }

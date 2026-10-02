@@ -2,8 +2,12 @@
 
 namespace Tests\Feature\Modules\Inventory;
 
+use App\Exceptions\DomainInvariantException;
 use App\Models\Uom;
 use App\Models\User;
+use App\Modules\Inventory\Actions\ArchiveItemQuantityUnit;
+use App\Modules\Inventory\Actions\CreateItemQuantityUnit;
+use App\Modules\Inventory\Actions\UpdateItemQuantityUnit;
 use App\Modules\Inventory\Models\Category;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Models\ItemQuantityUnit;
@@ -12,6 +16,7 @@ use App\Support\UomDimension;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
+use Tests\Support\PermissionedActor;
 use Tests\TestCase;
 
 class ItemQuantityUnitApiTest extends TestCase
@@ -30,9 +35,31 @@ class ItemQuantityUnitApiTest extends TestCase
         $this->item = Item::create(['code' => 'PIG', 'name' => 'Pigment', 'type' => 'RAW', 'stock_uom_id' => $this->each->id, 'category_id' => $category->id]);
     }
 
+    public function test_http_and_direct_actions_deny_conversion_writes_without_capability(): void
+    {
+        $actor = User::factory()->create();
+        $box = Uom::create(['code' => 'box', 'name' => 'Box', 'dimension' => UomDimension::Count, 'factor_to_base' => '1']);
+        $row = ItemQuantityUnit::create(['item_id' => $this->item->id, 'uom_id' => $box->id, 'factor' => '12']);
+        $this->actingAs($actor)->postJson('/api/v1/item-quantity-units', [])->assertForbidden();
+        $this->patchJson("/api/v1/item-quantity-units/{$row->id}", ['factor' => '24'])->assertForbidden();
+        $this->deleteJson("/api/v1/item-quantity-units/{$row->id}")->assertForbidden();
+        foreach ([
+            fn () => app(CreateItemQuantityUnit::class)([], $actor),
+            fn () => app(UpdateItemQuantityUnit::class)($row, ['factor' => '24'], $actor),
+            fn () => app(ArchiveItemQuantityUnit::class)($row, $actor),
+        ] as $write) {
+            try {
+                $write();
+                $this->fail('Unprivileged Action must be denied.');
+            } catch (DomainInvariantException) {
+                $this->assertDatabaseHas('item_quantity_units', ['id' => $row->id, 'factor' => '12']);
+            }
+        }
+    }
+
     public function test_pack_override_round_trips_and_is_filterable_by_item(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['inventory.item.manage']);
         $box = Uom::create(['code' => 'box', 'name' => 'Box of 12', 'dimension' => UomDimension::Count, 'factor_to_base' => '1']);
 
         $id = $this->actingAs($user)->postJson('/api/v1/item-quantity-units', [
@@ -51,7 +78,7 @@ class ItemQuantityUnitApiTest extends TestCase
 
     public function test_only_one_override_per_item_and_uom_is_allowed(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['inventory.item.manage']);
         $box = Uom::create(['code' => 'box', 'name' => 'Box of 12', 'dimension' => UomDimension::Count, 'factor_to_base' => '1']);
         ItemQuantityUnit::create(['item_id' => $this->item->id, 'uom_id' => $box->id, 'factor' => '12']);
 
@@ -62,7 +89,7 @@ class ItemQuantityUnitApiTest extends TestCase
 
     public function test_factor_must_be_positive(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['inventory.item.manage']);
         $box = Uom::create(['code' => 'box', 'name' => 'Box of 12', 'dimension' => UomDimension::Count, 'factor_to_base' => '1']);
 
         $this->actingAs($user)->postJson('/api/v1/item-quantity-units', [
@@ -72,7 +99,7 @@ class ItemQuantityUnitApiTest extends TestCase
 
     public function test_destroy_hard_deletes_the_override(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['inventory.item.manage']);
         $box = Uom::create(['code' => 'box', 'name' => 'Box of 12', 'dimension' => UomDimension::Count, 'factor_to_base' => '1']);
         $row = ItemQuantityUnit::create(['item_id' => $this->item->id, 'uom_id' => $box->id, 'factor' => '12']);
 
@@ -82,7 +109,7 @@ class ItemQuantityUnitApiTest extends TestCase
 
     public function test_identity_cannot_be_repointed_after_creation(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['inventory.item.manage']);
         $box = Uom::create(['code' => 'box', 'name' => 'Box of 12', 'dimension' => UomDimension::Count, 'factor_to_base' => '1']);
         $roll = Uom::create(['code' => 'roll', 'name' => 'Roll', 'dimension' => UomDimension::Length, 'factor_to_base' => '1']);
         $row = ItemQuantityUnit::create(['item_id' => $this->item->id, 'uom_id' => $box->id, 'factor' => '12']);

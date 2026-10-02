@@ -126,6 +126,12 @@ assume; read `is_base`.
 their own. Display UoM is a presentation preference, like display currency
 ([multi-currency.md](multi-currency.md)).
 
+## Conversion maintenance and receipt agreement
+
+Conversion writes require inventory.item.manage in both HTTP and Actions (ADR 0080).
+Receiving in the issued order unit reuses the frozen PO factor; alternate units use the
+item-aware conversion service. Receipt prices are normalised to the received unit.
+
 ## Related
 
 - [ADR 0050](../decisions/0050-item-specific-uom-conversion-and-divisibility.md) — item-specific

@@ -10,7 +10,7 @@ class UpdateItemQuantityUnitRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('inventory.item.manage') === true;
     }
 
     /** @return array<string, mixed> */
