@@ -44,6 +44,7 @@ class PurchaseOrderLineResource extends JsonResource
             'price_stock_factor' => $this->when($commercial, fn () => $this->price_stock_factor),
             'priced_qty' => $this->when($commercial, fn () => $this->priced_qty),
             'minimum_order_qty' => $this->minimum_order_qty, 'order_multiple' => $this->order_multiple,
+            'ordering_terms_violated' => ! empty($this->offer_snapshot['constraint_warning']),
             'ordering_exception_reason' => $this->ordering_exception_reason,
             'ordered_qty' => $this->ordered_qty, 'purchase_uom_id' => $this->purchase_uom_id,
             'ordered_stock_qty' => $this->ordered_stock_qty, 'received_stock_qty' => (string) $received,

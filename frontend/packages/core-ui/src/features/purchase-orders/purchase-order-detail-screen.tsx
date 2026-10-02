@@ -47,7 +47,10 @@ import { formatDateTime } from "../../lib/format-date";
 import type { Presentation } from "../../lib/presentation";
 import { useFocusOnOpen } from "../../lib/use-focus-on-open";
 import { usePermission } from "../../hooks/use-permission";
-import { PurchaseOrderApprovalSection, type PurchaseOrderApproval } from "./purchase-order-approval-section";
+import {
+  PurchaseOrderApprovalSection,
+  type PurchaseOrderApproval,
+} from "./purchase-order-approval-section";
 import { usePurchasingCommercialCost } from "../../hooks/use-purchasing-commercial-cost";
 import { PurchaseOrderStatusBadge } from "./purchase-order-columns";
 
@@ -149,13 +152,24 @@ export function PurchaseOrderDetailScreen({
   // The list's row menu can hand over "issue" or "cancel": open that confirmation here, where the approval rules
   // and the confirmation already live, but only when it is currently allowed — and only once.
   const { pathname: currentPath, state: navigationState } = useLocation();
-  const quickAction = (navigationState as { quickAction?: string } | null)?.quickAction;
+  const quickAction = (navigationState as { quickAction?: string } | null)
+    ?.quickAction;
   useEffect(() => {
     if (!quickAction || !order) return;
-    const approvalState = (order as unknown as { approval?: PurchaseOrderApproval }).approval;
-    const needsApproval = !!approvalState?.required && approvalState.status !== "APPROVED";
-    if (quickAction === "issue" && order.status === "DRAFT" && mayIssue && !needsApproval) setShowIssueConfirmation(true);
-    if (quickAction === "cancel" && order.status === "ISSUED" && mayCancel) setShowCancel(true);
+    const approvalState = (
+      order as unknown as { approval?: PurchaseOrderApproval }
+    ).approval;
+    const needsApproval =
+      !!approvalState?.required && approvalState.status !== "APPROVED";
+    if (
+      quickAction === "issue" &&
+      order.status === "DRAFT" &&
+      mayIssue &&
+      !needsApproval
+    )
+      setShowIssueConfirmation(true);
+    if (quickAction === "cancel" && order.status === "ISSUED" && mayCancel)
+      setShowCancel(true);
     navigate({ pathname: currentPath, search }, { replace: true, state: null });
   }, [quickAction, order, mayIssue, mayCancel, navigate, currentPath, search]);
   const fail = (error: unknown) => setActionError(getApiErrorMessage(error));
@@ -278,10 +292,12 @@ export function PurchaseOrderDetailScreen({
     uomLabels.get(uomId)?.split(" — ")[0] ?? `UoM #${uomId}`;
   const isDraft = order.status === "DRAFT";
   const isIssued = order.status === "ISSUED";
-  const approval = (order as unknown as { approval?: PurchaseOrderApproval }).approval;
+  const approval = (order as unknown as { approval?: PurchaseOrderApproval })
+    .approval;
   // The server enforces both; the buttons just say so instead of failing after a click.
   const awaitingApproval = approval?.status === "PENDING";
-  const needsApprovalFirst = !!approval?.required && approval.status !== "APPROVED";
+  const needsApprovalFirst =
+    !!approval?.required && approval.status !== "APPROVED";
   const supplierLabel = supplier
     ? `${supplier.code}${supplier.party?.name ? ` — ${supplier.party.name}` : ""}`
     : `Supplier #${order.supplier_account_id}`;
@@ -298,13 +314,28 @@ export function PurchaseOrderDetailScreen({
           value: order.expected_delivery_date ?? "",
         },
         ...(order.issued_at
-          ? [{ label: "Issued at", value: formatDateTime(order.issued_at) ?? "" }]
+          ? [
+              {
+                label: "Issued at",
+                value: formatDateTime(order.issued_at) ?? "",
+              },
+            ]
           : []),
         ...(order.closed_at
-          ? [{ label: "Closed at", value: formatDateTime(order.closed_at) ?? "" }]
+          ? [
+              {
+                label: "Closed at",
+                value: formatDateTime(order.closed_at) ?? "",
+              },
+            ]
           : []),
         ...(order.cancelled_at
-          ? [{ label: "Cancelled at", value: formatDateTime(order.cancelled_at) ?? "" }]
+          ? [
+              {
+                label: "Cancelled at",
+                value: formatDateTime(order.cancelled_at) ?? "",
+              },
+            ]
           : []),
         ...(order.cancellation_reason
           ? [{ label: "Cancellation reason", value: order.cancellation_reason }]
@@ -416,11 +447,12 @@ export function PurchaseOrderDetailScreen({
       key: "ordered_qty",
       header: "Ordered",
       value: (line) =>
-        `${line.ordered_qty} ${uomCode(line.purchase_uom_id)}`,
+        `${line.ordered_qty} ${line.order_unit_label ?? uomCode(line.purchase_uom_id)}`,
       cell: (line) => (
         <div>
           <div>
-            {line.ordered_qty} {uomCode(line.purchase_uom_id)}
+            {line.ordered_qty}{" "}
+            {line.order_unit_label ?? uomCode(line.purchase_uom_id)}
           </div>
           {line.purchase_uom_id !== line.stock_uom_id && (
             <div className="text-[9px] text-black/60">
@@ -436,7 +468,12 @@ export function PurchaseOrderDetailScreen({
           {
             key: "unit_price",
             header: "Unit price",
-            value: (line) => line.unit_price,
+            value: (line) =>
+              line.unit_price +
+              " per " +
+              (line.price_quantity ?? "1") +
+              " " +
+              (line.price_unit_label ?? uomCode(line.purchase_uom_id)),
             align: "right",
           },
           {
@@ -482,7 +519,11 @@ export function PurchaseOrderDetailScreen({
         <Button
           variant="outline"
           disabled={awaitingApproval}
-          title={awaitingApproval ? "Withdraw the approval request to edit this order" : undefined}
+          title={
+            awaitingApproval
+              ? "Withdraw the approval request to edit this order"
+              : undefined
+          }
           onClick={() =>
             navigate({ pathname: `/purchase-orders/${order.id}/edit`, search })
           }
@@ -494,7 +535,11 @@ export function PurchaseOrderDetailScreen({
         <Button
           onClick={() => setShowIssueConfirmation(true)}
           disabled={issue.isPending || needsApprovalFirst}
-          title={needsApprovalFirst ? "This order needs approval before it can be issued" : undefined}
+          title={
+            needsApprovalFirst
+              ? "This order needs approval before it can be issued"
+              : undefined
+          }
         >
           Issue purchase order
         </Button>
@@ -517,7 +562,13 @@ export function PurchaseOrderDetailScreen({
           {actionError}
         </div>
       )}
-      <PurchaseOrderApprovalSection orderId={order.id} approval={approval} isDraft={isDraft} maySubmit={maySubmit} onChanged={refetch} />
+      <PurchaseOrderApprovalSection
+        orderId={order.id}
+        approval={approval}
+        isDraft={isDraft}
+        maySubmit={maySubmit}
+        onChanged={refetch}
+      />
       {showIssueConfirmation && isDraft && (
         <section
           className="space-y-3 rounded-md border p-4"
@@ -710,7 +761,8 @@ export function PurchaseOrderDetailScreen({
               {order.fx_rate}
               {order.fx_rate_date && (
                 <span className="ml-1 text-xs text-muted-foreground">
-                  ({order.fx_rate_date}{order.fx_rate_source ? `, ${order.fx_rate_source}` : ""})
+                  ({order.fx_rate_date}
+                  {order.fx_rate_source ? `, ${order.fx_rate_source}` : ""})
                 </span>
               )}
             </DetailField>
@@ -772,12 +824,15 @@ export function PurchaseOrderDetailScreen({
                 {(order.lines ?? []).map((line) => {
                   const closed = Number(line.short_closed_stock_qty) > 0;
                   const fullyReceived = Number(line.outstanding_stock_qty) <= 0;
-                  const purchaseCode = uomCode(line.purchase_uom_id);
+                  const purchaseCode =
+                    line.order_unit_label ?? uomCode(line.purchase_uom_id);
                   const stockCode = uomCode(line.stock_uom_id);
-                  const hasUomConversion = line.purchase_uom_id !== line.stock_uom_id;
+                  const hasUomConversion =
+                    line.purchase_uom_id !== line.stock_uom_id;
                   const hasLineDelivery = Boolean(
                     line.expected_delivery_date &&
-                    line.expected_delivery_date !== order.expected_delivery_date,
+                    line.expected_delivery_date !==
+                      order.expected_delivery_date,
                   );
                   const hasDiscount = Number(line.discount_amount) > 0;
                   const hasTax = Number(line.tax_amount) > 0;
@@ -817,7 +872,8 @@ export function PurchaseOrderDetailScreen({
                         </div>
                         {hasUomConversion && (
                           <div className="text-xs text-muted-foreground">
-                            = {line.ordered_stock_qty} {stockCode} (1 {purchaseCode} = {line.uom_factor} {stockCode})
+                            = {line.ordered_stock_qty} {stockCode} (1{" "}
+                            {purchaseCode} = {line.uom_factor} {stockCode})
                           </div>
                         )}
                       </TableCell>
@@ -844,7 +900,8 @@ export function PurchaseOrderDetailScreen({
                         </div>
                         {closed && (
                           <div className="text-xs text-muted-foreground">
-                            Short-closed: {line.short_closed_stock_qty} {stockCode}
+                            Short-closed: {line.short_closed_stock_qty}{" "}
+                            {stockCode}
                           </div>
                         )}
                       </TableCell>
@@ -855,13 +912,23 @@ export function PurchaseOrderDetailScreen({
                           </div>
                           <div className="text-xs text-muted-foreground">
                             <span>
-                              {line.unit_price} {currency?.code ?? ""} / {purchaseCode}
+                              {line.unit_price} {currency?.code ?? ""} /{" "}
+                              {line.price_quantity ?? "1"}{" "}
+                              {line.price_unit_label ?? purchaseCode}
                             </span>
                             {hasDiscount && (
-                              <span> · Line discount −{line.discount_amount} {currency?.code ?? ""}</span>
+                              <span>
+                                {" "}
+                                · Line discount −{line.discount_amount}{" "}
+                                {currency?.code ?? ""}
+                              </span>
                             )}
                             {hasTax && (
-                              <span> · Line tax +{line.tax_amount} {currency?.code ?? ""}</span>
+                              <span>
+                                {" "}
+                                · Line tax +{line.tax_amount}{" "}
+                                {currency?.code ?? ""}
+                              </span>
                             )}
                           </div>
                         </TableCell>

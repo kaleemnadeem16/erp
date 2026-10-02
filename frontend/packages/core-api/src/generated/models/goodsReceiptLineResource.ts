@@ -5,6 +5,9 @@
  * OpenAPI spec version: 0.0.1
  */
 import type { GoodsReceiptLineResourcePurchaseOrderLineId } from "./goodsReceiptLineResourcePurchaseOrderLineId";
+import type { GoodsReceiptLineResourceItemPackagingId } from "./goodsReceiptLineResourceItemPackagingId";
+import type { GoodsReceiptLineResourcePackageName } from "./goodsReceiptLineResourcePackageName";
+import type { GoodsReceiptLineResourceReceivedPackageQty } from "./goodsReceiptLineResourceReceivedPackageQty";
 import type { GoodsReceiptLineResourceBatchNo } from "./goodsReceiptLineResourceBatchNo";
 import type { GoodsReceiptLineResourceSerialNo } from "./goodsReceiptLineResourceSerialNo";
 import type { GoodsReceiptLineResourceQaUnallocatedQty } from "./goodsReceiptLineResourceQaUnallocatedQty";
@@ -15,6 +18,9 @@ export interface GoodsReceiptLineResource {
   purchase_order_line_id: GoodsReceiptLineResourcePurchaseOrderLineId;
   item_id: number;
   location_id: number;
+  item_packaging_id: GoodsReceiptLineResourceItemPackagingId;
+  package_name: GoodsReceiptLineResourcePackageName;
+  received_package_qty: GoodsReceiptLineResourceReceivedPackageQty;
   received_qty: string;
   received_uom_id: number;
   stock_qty: string;

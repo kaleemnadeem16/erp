@@ -8,7 +8,10 @@ use App\Exceptions\DomainInvariantException;
 use App\Models\Uom;
 use App\Modules\Inventory\Actions\ItemUomConversionService;
 use App\Modules\Inventory\Models\Item;
+use App\Modules\Inventory\Models\ItemPackaging;
+use App\Modules\Inventory\Models\ItemQuantityUnit;
 use App\Modules\Purchasing\Models\PurchaseOrder;
+use App\Modules\Purchasing\Models\SupplierOffer;
 use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
 use InvalidArgumentException;
@@ -38,9 +41,9 @@ final class BuildPurchaseOrderLineAttributes
             );
         }
         $package = empty($input['item_packaging_id']) ? null
-            : \App\Modules\Inventory\Models\ItemPackaging::query()->findOrFail($input['item_packaging_id']);
+            : ItemPackaging::query()->findOrFail($input['item_packaging_id']);
         $offer = empty($input['supplier_offer_id']) ? null
-            : \App\Modules\Purchasing\Models\SupplierOffer::query()->with('relationship')->findOrFail($input['supplier_offer_id']);
+            : SupplierOffer::query()->with('relationship')->findOrFail($input['supplier_offer_id']);
         if ($offer) {
             if (! $offer->active || ! $offer->relationship->active || $offer->relationship->item_id !== $item->id
                 || $offer->relationship->supplier_account_id !== $order->supplier_account_id
@@ -57,7 +60,7 @@ final class BuildPurchaseOrderLineAttributes
             }
             $factor = BigDecimal::of($package->stock_quantity);
         }
-        $increment = $package?->quantity_precision ?? \App\Modules\Inventory\Models\ItemQuantityUnit::query()
+        $increment = $package?->quantity_precision ?? ItemQuantityUnit::query()
             ->where('item_id', $item->id)->where('uom_id', $purchaseUom->id)->value('quantity_precision');
         if ($increment !== null && ! $qty->remainder($increment)->isZero()) {
             throw new DomainInvariantException('Order quantity violates the selected package/unit increment.', 'ordered_qty');
@@ -67,11 +70,17 @@ final class BuildPurchaseOrderLineAttributes
             throw new DomainInvariantException('Order quantity violates the item stock increment.', 'ordered_qty');
         }
         $stockQty = $exactStockQty->toScale(4, RoundingMode::HALF_UP);
-        $priceUomId = $input['price_uom_id'] ?? $offer?->price_uom_id;
+        $priceUomId = array_key_exists('price_uom_id', $input) ? $input['price_uom_id'] : $offer?->price_uom_id;
         $priceUom = $priceUomId ? Uom::query()->findOrFail($priceUomId) : null;
-        $priceFactor = $priceUom ? $this->conversion->stockUnitFactor($item, $priceUom) : $factor;
+        try {
+            $priceFactor = $priceUom ? $this->conversion->stockUnitFactor($item, $priceUom) : $factor;
+        } catch (InvalidArgumentException) {
+            throw new DomainInvariantException('No fixed conversion exists for the pricing unit.', 'price_uom_id');
+        }
         $priceQuantity = BigDecimal::of((string) ($input['price_quantity'] ?? $offer?->price_quantity ?? '1'));
-        if (! $priceQuantity->isPositive()) { throw new DomainInvariantException('Price denominator must be positive.', 'price_quantity'); }
+        if (! $priceQuantity->isPositive()) {
+            throw new DomainInvariantException('Price denominator must be positive.', 'price_quantity');
+        }
         $pricedQty = $stockQty->dividedBy($priceFactor, 9, RoundingMode::HALF_UP);
         $minimum = $offer?->minimum_order_qty;
         $multiple = $offer?->order_multiple;
@@ -86,7 +95,7 @@ final class BuildPurchaseOrderLineAttributes
             'price_uom_id' => $priceUom?->id, 'price_unit_label' => $priceUom?->code ?? $package?->name ?? $purchaseUom->code,
             'price_quantity' => (string) $priceQuantity, 'price_stock_factor' => (string) $priceFactor,
             'priced_qty' => (string) $pricedQty, 'minimum_order_qty' => $minimum, 'order_multiple' => $multiple,
-            'offer_snapshot' => $offer ? array_merge($offer->getAttributes(), ['constraint_warning' => $violatesTerms]) : null,
+            'offer_snapshot' => $offer ? array_merge($offer->getAttributes(), ['supplier_account_id' => $order->supplier_account_id, 'item_id' => $item->id, 'constraint_warning' => $violatesTerms]) : null,
         ]);
         $unitPrice = BigDecimal::of((string) $input['unit_price']);
         $discount = BigDecimal::of((string) ($input['discount_amount'] ?? '0'));

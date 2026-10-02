@@ -4,6 +4,7 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
+import type { PurchaseOrderResourceReplacesPurchaseOrderId } from "./purchaseOrderResourceReplacesPurchaseOrderId";
 import type { PurchaseOrderResourceNumber } from "./purchaseOrderResourceNumber";
 import type { PurchaseOrderResourceSupplierSiteId } from "./purchaseOrderResourceSupplierSiteId";
 import type { PurchaseOrderResourceSupplierSite } from "./purchaseOrderResourceSupplierSite";
@@ -21,6 +22,7 @@ import type { PurchaseOrderResourceCancellationReason } from "./purchaseOrderRes
 import type { PurchaseOrderResourceCreatedAt } from "./purchaseOrderResourceCreatedAt";
 
 export interface PurchaseOrderResource {
+  replaces_purchase_order_id: PurchaseOrderResourceReplacesPurchaseOrderId;
   id: number;
   number: PurchaseOrderResourceNumber;
   supplier_account_id: number;

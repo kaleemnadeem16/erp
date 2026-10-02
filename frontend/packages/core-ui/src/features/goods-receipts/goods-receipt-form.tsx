@@ -39,6 +39,7 @@ const positiveDecimal = decimal.refine(
 const lineSchema = z.object({
   purchase_order_line_id: z.string().min(1, "Select an order line."),
   location_id: z.string().min(1, "Select a stock location."),
+  item_packaging_id: z.string().optional(),
   received_qty: positiveDecimal,
   received_uom_id: z.string().min(1, "Select a UoM."),
   provisional_unit_cost: z.union([decimal, z.literal("")]),
@@ -78,6 +79,7 @@ export type GoodsReceiptFormValues = z.infer<typeof schema>;
 const emptyLine = {
   purchase_order_line_id: "",
   location_id: "",
+  item_packaging_id: "",
   received_qty: "",
   received_uom_id: "",
   provisional_unit_cost: "",
@@ -85,6 +87,16 @@ const emptyLine = {
   serial_no: "",
 };
 
+function packageQuantity(stock: string, factor: string): string {
+  const scaled = (text: string, places: number) => {
+    const [w = "0", f = ""] = text.split(".");
+    return BigInt(w) * 10n ** BigInt(places) + BigInt(f.padEnd(places, "0"));
+  };
+  const content = scaled(factor, 9);
+  if (content === 0n) return "";
+  const q = (scaled(stock, 4) * 1000000000n + content / 2n) / content;
+  return String(q / 10000n) + "." + String(q % 10000n).padStart(4, "0");
+}
 export function GoodsReceiptForm({
   onSubmit,
   isSubmitting,
@@ -180,17 +192,23 @@ export function GoodsReceiptForm({
     );
     if (!selected) return;
     form.setValue(
+      ("lines." + index + ".item_packaging_id") as "lines.0.item_packaging_id",
+      selected.line.item_packaging_id
+        ? String(selected.line.item_packaging_id)
+        : "",
+    );
+    form.setValue(
       `lines.${index}.received_qty`,
-      selected.line.outstanding_stock_qty,
+      packageQuantity(
+        selected.line.outstanding_stock_qty,
+        selected.line.uom_factor,
+      ),
     );
     form.setValue(
       `lines.${index}.received_uom_id`,
       String(selected.line.purchase_uom_id),
     );
-    form.setValue(
-      `lines.${index}.provisional_unit_cost`,
-      mayViewCommercialCost ? (selected.line.unit_price ?? "") : "",
-    );
+    form.setValue(`lines.${index}.provisional_unit_cost`, "");
   }
 
   return (
@@ -211,6 +229,9 @@ export function GoodsReceiptForm({
               location_id: Number(line.location_id),
               received_qty: line.received_qty,
               received_uom_id: Number(line.received_uom_id),
+              item_packaging_id: line.item_packaging_id
+                ? Number(line.item_packaging_id)
+                : null,
               ...(mayViewCommercialCost
                 ? {
                     ...(line.provisional_unit_cost
@@ -404,7 +425,15 @@ export function GoodsReceiptForm({
                   name={`lines.${index}.received_qty`}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Received quantity</FormLabel>
+                      <FormLabel>
+                        {form.watch(
+                          ("lines." +
+                            index +
+                            ".item_packaging_id") as "lines.0.item_packaging_id",
+                        )
+                          ? "Received packages"
+                          : "Received quantity"}
+                      </FormLabel>
                       <FormControl>
                         <Input inputMode="decimal" {...field} />
                       </FormControl>
@@ -421,6 +450,13 @@ export function GoodsReceiptForm({
                       <FormControl>
                         <Combobox
                           {...lookupState(uomsQuery, "units")}
+                          disabled={
+                            !!form.watch(
+                              ("lines." +
+                                index +
+                                ".item_packaging_id") as "lines.0.item_packaging_id",
+                            )
+                          }
                           ref={field.ref}
                           value={field.value}
                           onValueChange={field.onChange}

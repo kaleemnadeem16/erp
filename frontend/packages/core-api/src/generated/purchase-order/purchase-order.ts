@@ -26,6 +26,7 @@ import type {
   CancelPurchaseOrderRequest,
   InventoryCutoversOpenPurchaseOrdersCommit200,
   ModelNotFoundExceptionResponse,
+  PurchaseOrderLinesPreview200,
   PurchaseOrderLinesShortClose200,
   PurchaseOrderLinesShortClose403,
   PurchaseOrdersCancel200,
@@ -48,6 +49,138 @@ import { fetchClient } from "../../mutator/fetch-client";
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
+export type purchaseOrderLinesPreviewResponse200 = {
+  data: PurchaseOrderLinesPreview200;
+  status: 200;
+};
+
+export type purchaseOrderLinesPreviewResponse401 = {
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
+
+export type purchaseOrderLinesPreviewResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
+export type purchaseOrderLinesPreviewResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
+};
+
+export type purchaseOrderLinesPreviewResponseSuccess =
+  purchaseOrderLinesPreviewResponse200 & {
+    headers: Headers;
+  };
+export type purchaseOrderLinesPreviewResponseError = (
+  | purchaseOrderLinesPreviewResponse401
+  | purchaseOrderLinesPreviewResponse403
+  | purchaseOrderLinesPreviewResponse422
+) & {
+  headers: Headers;
+};
+
+export type purchaseOrderLinesPreviewResponse =
+  | purchaseOrderLinesPreviewResponseSuccess
+  | purchaseOrderLinesPreviewResponseError;
+
+export const getPurchaseOrderLinesPreviewUrl = () => {
+  return `/v1/purchase-order-lines/preview`;
+};
+
+export const purchaseOrderLinesPreview = async (
+  storePurchaseOrderRequest: StorePurchaseOrderRequest,
+  options?: RequestInit,
+): Promise<purchaseOrderLinesPreviewResponse> => {
+  return fetchClient<purchaseOrderLinesPreviewResponse>(
+    getPurchaseOrderLinesPreviewUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(storePurchaseOrderRequest),
+    },
+  );
+};
+
+export const getPurchaseOrderLinesPreviewMutationOptions = <
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof purchaseOrderLinesPreview>>,
+    TError,
+    { data: StorePurchaseOrderRequest },
+    TContext
+  >;
+  request?: SecondParameter<typeof fetchClient>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof purchaseOrderLinesPreview>>,
+  TError,
+  { data: StorePurchaseOrderRequest },
+  TContext
+> => {
+  const mutationKey = ["purchaseOrderLinesPreview"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof purchaseOrderLinesPreview>>,
+    { data: StorePurchaseOrderRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return purchaseOrderLinesPreview(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PurchaseOrderLinesPreviewMutationResult = NonNullable<
+  Awaited<ReturnType<typeof purchaseOrderLinesPreview>>
+>;
+export type PurchaseOrderLinesPreviewMutationBody = StorePurchaseOrderRequest;
+export type PurchaseOrderLinesPreviewMutationError =
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
+
+export const usePurchaseOrderLinesPreview = <
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof purchaseOrderLinesPreview>>,
+      TError,
+      { data: StorePurchaseOrderRequest },
+      TContext
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof purchaseOrderLinesPreview>>,
+  TError,
+  { data: StorePurchaseOrderRequest },
+  TContext
+> => {
+  const mutationOptions = getPurchaseOrderLinesPreviewMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
 export type purchaseOrdersIndexResponse200 = {
   data: PurchaseOrdersIndex200;
   status: 200;

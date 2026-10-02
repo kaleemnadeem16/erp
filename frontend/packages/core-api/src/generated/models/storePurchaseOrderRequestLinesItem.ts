@@ -4,6 +4,10 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
+import type { StorePurchaseOrderRequestLinesItemItemPackagingId } from "./storePurchaseOrderRequestLinesItemItemPackagingId";
+import type { StorePurchaseOrderRequestLinesItemSupplierOfferId } from "./storePurchaseOrderRequestLinesItemSupplierOfferId";
+import type { StorePurchaseOrderRequestLinesItemPriceUomId } from "./storePurchaseOrderRequestLinesItemPriceUomId";
+import type { StorePurchaseOrderRequestLinesItemOrderingExceptionReason } from "./storePurchaseOrderRequestLinesItemOrderingExceptionReason";
 import type { StorePurchaseOrderRequestLinesItemExpectedDeliveryDate } from "./storePurchaseOrderRequestLinesItemExpectedDeliveryDate";
 import type { StorePurchaseOrderRequestLinesItemOverReceiptMode } from "./storePurchaseOrderRequestLinesItemOverReceiptMode";
 import type { StorePurchaseOrderRequestLinesItemOverReceiptTolerancePercent } from "./storePurchaseOrderRequestLinesItemOverReceiptTolerancePercent";
@@ -20,6 +24,13 @@ export type StorePurchaseOrderRequestLinesItem = {
   /** @maxLength 1000000000000000 */
   ordered_qty: string;
   purchase_uom_id: number;
+  item_packaging_id?: StorePurchaseOrderRequestLinesItemItemPackagingId;
+  supplier_offer_id?: StorePurchaseOrderRequestLinesItemSupplierOfferId;
+  price_uom_id?: StorePurchaseOrderRequestLinesItemPriceUomId;
+  /** @maxLength 1000000000000000 */
+  price_quantity?: string;
+  /** @maxLength 2000 */
+  ordering_exception_reason?: StorePurchaseOrderRequestLinesItemOrderingExceptionReason;
   /**
    * @minLength 0
    * @maxLength 1000000000000000

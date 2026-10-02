@@ -99,6 +99,9 @@ class Item extends Model
         });
 
         static::updating(function (Item $item): void {
+            if ($item->isDirty('stock_uom_id') && ItemPackaging::query()->where('item_id', $item->id)->exists()) {
+                throw new DomainInvariantException('Stock unit cannot change after package definitions exist.', 'stock_uom_id');
+            }
             $locked = array_values(array_intersect(
                 ['valuation_method', 'avco_pool_scope', 'stock_uom_id', 'tracking'],
                 array_keys($item->getDirty()),

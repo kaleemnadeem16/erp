@@ -50,9 +50,10 @@ import {
   type WizardStep,
 } from "../../components/page/wizard-shell";
 import { clearDraft, readDraft, writeDraft } from "../../lib/session-draft";
+import { PurchaseLinePackageFields } from "./purchase-line-package-fields";
 import { PurchaseOrderSummary } from "./purchase-order-summary";
 import { SupplierSiteDialog } from "./supplier-site-form";
-import { lookupState } from '../../lib/api-errors';
+import { lookupState } from "../../lib/api-errors";
 
 // "CODE — City, ST" when there's an address to show; the name alone otherwise.
 const supplierSiteLabel = (site: SupplierSiteResource) => {
@@ -77,6 +78,12 @@ const decimal = (label: string, positive = false) =>
 const lineSchema = z.object({
   item_id: z.string().min(1, "Item is required"),
   description: z.string().trim().min(1, "Description is required").max(255),
+  item_packaging_id: z.string().optional(),
+  supplier_offer_id: z.string().optional(),
+  price_uom_id: z.string().optional(),
+  price_quantity: z.string().optional(),
+  ordering_exception_reason: z.string().optional(),
+  priced_qty: z.string().optional(),
   ordered_qty: decimal("Quantity", true),
   purchase_uom_id: z.string().min(1, "Purchase UoM is required"),
   unit_price: decimal("Unit price"),
@@ -88,6 +95,7 @@ const lineSchema = z.object({
 const schema = z.object({
   supplier_account_id: z.string().min(1, "Supplier is required"),
   supplier_site_id: z.string(),
+  replaces_purchase_order_id: z.string().optional(),
   currency_id: z.string().min(1, "Currency is required"),
   fx_policy: z.enum(["FLOATING", "FIXED"]),
   fx_rate: z
@@ -227,6 +235,9 @@ const WIZARD_STEP_FIELDS: FieldPath<PurchaseOrderFormValues>[][] = [
 
 export function toPurchaseOrderPayload(values: PurchaseOrderFormValues) {
   return {
+    replaces_purchase_order_id: values.replaces_purchase_order_id
+      ? Number(values.replaces_purchase_order_id)
+      : null,
     supplier_account_id: Number(values.supplier_account_id),
     supplier_site_id: values.supplier_site_id
       ? Number(values.supplier_site_id)
@@ -246,6 +257,15 @@ export function toPurchaseOrderPayload(values: PurchaseOrderFormValues) {
       description: line.description.trim(),
       ordered_qty: line.ordered_qty,
       purchase_uom_id: Number(line.purchase_uom_id),
+      item_packaging_id: line.item_packaging_id
+        ? Number(line.item_packaging_id)
+        : null,
+      supplier_offer_id: line.supplier_offer_id
+        ? Number(line.supplier_offer_id)
+        : null,
+      price_uom_id: line.price_uom_id ? Number(line.price_uom_id) : null,
+      price_quantity: line.price_quantity || "1",
+      ordering_exception_reason: line.ordering_exception_reason || null,
       unit_price: line.unit_price,
       discount_amount: line.discount_amount,
       tax_amount: line.tax_amount,
@@ -377,7 +397,9 @@ export function PurchaseOrderForm({
     [suppliers],
   );
   const supplierIdNumber = Number(form.watch("supplier_account_id")) || 0;
-  const chosenSupplier = suppliers.find((supplier) => supplier.id === supplierIdNumber);
+  const chosenSupplier = suppliers.find(
+    (supplier) => supplier.id === supplierIdNumber,
+  );
   const sitesQuery = useSupplierAccountsSitesIndex(supplierIdNumber, {
     per_page: 100,
   });
@@ -431,16 +453,24 @@ export function PurchaseOrderForm({
   // varies per item and supplier). Used only to default a line's Purchase UoM when its item is
   // chosen; an item with no such row, or one that names no unit, starts on its stock unit.
   const itemSuppliersQuery = useItemSuppliersIndex(
-    { "filter[supplier_account_id]": supplierIdNumber, "filter[active]": true, per_page: 100 },
+    {
+      "filter[supplier_account_id]": supplierIdNumber,
+      "filter[active]": true,
+      per_page: 100,
+    },
     { query: { enabled: supplierIdNumber > 0 } },
   );
   const purchaseUomIdByItem = useMemo(() => {
     const rows =
-      itemSuppliersQuery.data?.status === 200 ? itemSuppliersQuery.data.data.data : [];
+      itemSuppliersQuery.data?.status === 200
+        ? itemSuppliersQuery.data.data.data
+        : [];
 
     return new Map(
       rows.flatMap((row) =>
-        row.purchase_uom_id === null ? [] : [[row.item_id, row.purchase_uom_id] as const],
+        row.purchase_uom_id === null
+          ? []
+          : [[row.item_id, row.purchase_uom_id] as const],
       ),
     );
   }, [itemSuppliersQuery.data]);
@@ -506,10 +536,14 @@ export function PurchaseOrderForm({
   } as const;
   // What a money field means, said on the form itself: discount and tax are fixed amounts for the whole line —
   // not a percentage and not per unit — and the price is for one purchase unit.
-  const LINE_FIELD_HINT: Partial<Record<keyof typeof LINE_FIELD_LABEL, string>> = {
-    unit_price: "Price for one purchase unit.",
-    discount_amount: "A fixed amount off this whole line — not a percentage, not per unit.",
-    tax_amount: "A fixed tax amount for this whole line — not a percentage, not per unit.",
+  const LINE_FIELD_HINT: Partial<
+    Record<keyof typeof LINE_FIELD_LABEL, string>
+  > = {
+    unit_price: "Price for the selected pricing quantity and basis.",
+    discount_amount:
+      "A fixed amount off this whole line — not a percentage, not per unit.",
+    tax_amount:
+      "A fixed tax amount for this whole line — not a percentage, not per unit.",
   };
   const LINE_DECIMAL_FIELDS = [
     "ordered_qty",
@@ -549,7 +583,9 @@ export function PurchaseOrderForm({
                 />
               )}
             </FormControl>
-            {LINE_FIELD_HINT[name] && <FormDescription>{LINE_FIELD_HINT[name]}</FormDescription>}
+            {LINE_FIELD_HINT[name] && (
+              <FormDescription>{LINE_FIELD_HINT[name]}</FormDescription>
+            )}
             <FormMessage />
           </FormItem>
         )}
@@ -563,12 +599,30 @@ export function PurchaseOrderForm({
         <DetailSection title="Supplier and dates">
           <FormField
             control={form.control}
+            name="replaces_purchase_order_id"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Replaces order ID (optional)</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    value={field.value ?? ""}
+                    placeholder="Cancelled or short-closed order ID"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
             name="supplier_account_id"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Supplier</FormLabel>
                 <FormControl>
-                  <Combobox {...lookupState(suppliersQuery, 'suppliers')}
+                  <Combobox
+                    {...lookupState(suppliersQuery, "suppliers")}
                     ref={field.ref}
                     value={field.value}
                     onValueChange={field.onChange}
@@ -590,7 +644,8 @@ export function PurchaseOrderForm({
                 <FormLabel>Supplier site</FormLabel>
                 <div className="flex gap-1.5">
                   <FormControl>
-                    <Combobox {...lookupState(sitesQuery, 'supplier sites')}
+                    <Combobox
+                      {...lookupState(sitesQuery, "supplier sites")}
                       ref={field.ref}
                       value={field.value}
                       onValueChange={field.onChange}
@@ -663,7 +718,8 @@ export function PurchaseOrderForm({
               <FormItem>
                 <FormLabel>Currency</FormLabel>
                 <FormControl>
-                  <Combobox {...lookupState(currenciesQuery, 'currencies')}
+                  <Combobox
+                    {...lookupState(currenciesQuery, "currencies")}
                     ref={field.ref}
                     value={field.value}
                     onValueChange={field.onChange}
@@ -797,7 +853,8 @@ export function PurchaseOrderForm({
                     <FormItem>
                       <FormLabel>Item</FormLabel>
                       <FormControl>
-                        <Combobox {...lookupState(itemsQuery, 'items')}
+                        <Combobox
+                          {...lookupState(itemsQuery, "items")}
                           ref={itemField.ref}
                           value={itemField.value}
                           onValueChange={(value) => {
@@ -838,10 +895,18 @@ export function PurchaseOrderForm({
                     <FormItem>
                       <FormLabel>Purchase UoM</FormLabel>
                       <FormControl>
-                        <Combobox {...lookupState(uomsQuery, 'units')}
+                        <Combobox
+                          {...lookupState(uomsQuery, "units")}
                           ref={uomField.ref}
                           value={uomField.value}
                           onValueChange={uomField.onChange}
+                          disabled={
+                            !!form.watch(
+                              ("lines." +
+                                index +
+                                ".item_packaging_id") as "lines.0.item_packaging_id",
+                            )
+                          }
                           options={uomOptions}
                           placeholder="Select UoM"
                           searchPlaceholder="Search units…"
@@ -852,6 +917,25 @@ export function PurchaseOrderForm({
                     </FormItem>
                   )}
                 />
+                <div className="col-span-full">
+                  <PurchaseLinePackageFields
+                    form={form}
+                    index={index}
+                    stockUomId={
+                      items.find(
+                        (item) =>
+                          item.id ===
+                          Number(
+                            form.watch(
+                              ("lines." +
+                                index +
+                                ".item_id") as "lines.0.item_id",
+                            ),
+                          ),
+                      )?.stock_uom_id
+                    }
+                  />
+                </div>
                 {renderLineField(index, "unit_price")}
                 {renderLineField(index, "discount_amount")}
                 {renderLineField(index, "tax_amount")}
@@ -934,8 +1018,12 @@ export function PurchaseOrderForm({
                     ?.label ?? line.description}
                   {" — "}
                   {line.ordered_qty} × {line.unit_price}
-                  {Number(line.discount_amount) > 0 && <> · line discount −{line.discount_amount}</>}
-                  {Number(line.tax_amount) > 0 && <> · line tax +{line.tax_amount}</>}
+                  {Number(line.discount_amount) > 0 && (
+                    <> · line discount −{line.discount_amount}</>
+                  )}
+                  {Number(line.tax_amount) > 0 && (
+                    <> · line tax +{line.tax_amount}</>
+                  )}
                 </li>
               ))}
             </ul>

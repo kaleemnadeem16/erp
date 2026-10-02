@@ -44,6 +44,10 @@ final class IssuePurchaseOrder
             }
             $settings = ($this->resolveSettings)();
             foreach ($order->lines()->with('item')->lockForUpdate()->get() as $line) {
+                if ($line->offer_snapshot !== null && (($line->offer_snapshot['supplier_account_id'] ?? null) !== $order->supplier_account_id
+                    || ($line->offer_snapshot['currency_id'] ?? null) !== $order->currency_id)) {
+                    throw new DomainInvariantException('Supplier/currency changed after offer resolution; resave the lines before issuing.', 'lines');
+                }
                 $supplierItem = ItemSupplier::query()->where('item_id', $line->item_id)
                     ->where('supplier_account_id', $order->supplier_account_id)->where('active', true)->first();
                 $line->update([

@@ -63,3 +63,6 @@ export * from "./generated/numbering-constant/numbering-constant";
 
 export * from "./generated/company/company";
 export * from "./generated/company-change/company-change";
+
+export * from "./generated/item-packaging/item-packaging";
+export * from "./generated/supplier-offer/supplier-offer";

@@ -24,7 +24,7 @@ final class MaintainSupplierOffer
             'preferred' => ['sometimes', 'boolean'], 'active' => ['sometimes', 'boolean'], 'minimum_order_qty' => ['nullable', 'decimal:0,4', 'gt:0'], 'order_multiple' => ['nullable', 'decimal:0,4', 'gt:0'],
             'lead_time_days' => ['nullable', 'integer', 'between:0,65535'], 'unit_price' => ['required', 'decimal:0,4', 'min:0', 'max:999999999999999.9999'],
             'currency_id' => ['required', 'integer', 'exists:currencies,id'], 'price_uom_id' => ['nullable', 'integer', CompanyScoped::exists('uoms')], 'price_quantity' => ['required', 'decimal:0,4', 'gt:0'],
-            'valid_from' => ['nullable', 'date_format:Y-m-d'], 'valid_to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:valid_from']];
+            'valid_from' => ['nullable', 'date_format:Y-m-d'], 'valid_to' => ['nullable', 'date_format:Y-m-d']];
     }
 
     public function __invoke(array $input, User $actor, ?SupplierOffer $offer = null): SupplierOffer
@@ -44,6 +44,9 @@ final class MaintainSupplierOffer
                 }
             }
             $data = Validator::make($values, self::rules())->validate();
+            if (! empty($data['valid_from']) && ! empty($data['valid_to']) && $data['valid_to'] < $data['valid_from']) {
+                throw new DomainInvariantException('Validity end must be on or after its start.', 'valid_to');
+            }
             $rel = ItemSupplier::query()->lockForUpdate()->findOrFail($data['item_supplier_id']);
             $item = Item::query()->findOrFail($rel->item_id);
             if (! empty($data['item_packaging_id'])) {
@@ -55,10 +58,18 @@ final class MaintainSupplierOffer
                 if (empty($data['price_uom_id'])) {
                     throw new DomainInvariantException('Loose offers require a price unit.', 'price_uom_id');
                 }
-                app(ItemUomConversionService::class)->stockUnitFactor($item, Uom::query()->findOrFail($data['purchase_uom_id']));
+                try {
+                    app(ItemUomConversionService::class)->stockUnitFactor($item, Uom::query()->findOrFail($data['purchase_uom_id']));
+                } catch (\InvalidArgumentException) {
+                    throw new DomainInvariantException('No fixed conversion exists for the order unit.', 'purchase_uom_id');
+                }
             }
             if (! empty($data['price_uom_id'])) {
-                app(ItemUomConversionService::class)->stockUnitFactor($item, Uom::query()->findOrFail($data['price_uom_id']));
+                try {
+                    app(ItemUomConversionService::class)->stockUnitFactor($item, Uom::query()->findOrFail($data['price_uom_id']));
+                } catch (\InvalidArgumentException) {
+                    throw new DomainInvariantException('No fixed conversion exists for the pricing unit.', 'price_uom_id');
+                }
             }
             if (! empty($data['preferred']) && ($data['active'] ?? true)) {
                 SupplierOffer::query()->where('item_supplier_id', $rel->id)->where('preferred', true)->when($offer, fn ($q) => $q->whereKeyNot($offer->id))->update(['preferred' => false]);
@@ -69,7 +80,7 @@ final class MaintainSupplierOffer
                 return $offer->refresh();
             }
 
-return SupplierOffer::create($data)->refresh();
+            return SupplierOffer::create($data)->refresh();
         });
     }
 }

@@ -270,3 +270,5 @@ This implements package masters only: PACKAGE_BALANCE and CONTAINER_TRACKED rema
 - [ADR 0054](../decisions/0054-risk-based-material-plan-variance-controls.md)
 - [ADR 0057](../decisions/0057-stable-material-resolution-capabilities-with-dynamic-assignment.md)
 - [ADR 0058](../decisions/0058-phase-3-material-resolution-preview-contract.md)
+
+Package content and inner-package composition are immutable at both the model and database boundary. An item stock unit cannot change after a package definition exists, even before its first stock movement, because every package factor is defined against that unit. Archive/create preserves identity when content changes.

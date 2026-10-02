@@ -15,7 +15,7 @@ Implementation is now authorised in committed slices:
 - [x] Add fixed named package definitions and supplier offers, with company-safe references and lifecycle guards.
 - [x] Add PO package/loose choice, separate price basis, warning/reason evidence and immutable snapshots.
 - [x] Add receipt package evidence, partial delivery and replacement-order linkage.
-- [ ] Expose package/offer maintenance and purchasing/receiving in the existing screens; regenerate client and verify.
+- [x] Expose package/offer maintenance and purchasing/receiving in the existing screens; regenerate client and verify.
 
 Acceptance: equal-content boxes remain distinct; 10 boxes of 2 L priced at PKR 850/L costs
 PKR 17,000; loose 6.5 L works; 6+4 boxes receives as 12+8 L; changed masters cannot change issued
@@ -176,3 +176,9 @@ arithmetic, historical evidence, module ownership and the established stock/valu
 - [Inventory packages](../domain/inventory-packages.md)
 - [Authorisation](../architecture/authorization.md#per-feature-authorisation-checklist)
 - [Open questions](../OPEN-QUESTIONS.md)
+
+### Delivered screens and verification — 2026-10-02
+
+Item detail now maintains named packages and supplier offers, including a preferred offer. Purchase orders select package or loose buying and a separate price unit/denominator, with server-calculated quantity and amount previews and recorded ordering exceptions. Receipts default to outstanding package counts and can receive loose stock against the frozen agreement. Replacement drafts link a cancelled or short-closed order. Package content and the item stock unit are protected by application and database guards.
+
+Validation: 106 focused backend tests (including inherited foundation cases), the production frontend build, and the packaged-purchasing browser checks plus existing conversion/supplier-unit checks. Physical package balances, containers, catch weight and package-aware allocation remain deferred under ADR 0080.

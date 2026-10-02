@@ -31,19 +31,33 @@ export interface LineAmounts {
 export function lineAmounts(line: {
   ordered_qty?: string;
   unit_price?: string;
+  item_packaging_id?: string;
+  priced_qty?: string;
+  price_quantity?: string;
   discount_amount?: string;
   tax_amount?: string;
 }): LineAmounts | null {
-  const quantity = parseDecimal(line.ordered_qty);
+  const precise = (text: string | undefined): bigint | null => {
+    if (!/^\d+(\.\d{1,9})?$/.test(text ?? "")) return null;
+    const [whole = "0", fraction = ""] = (text ?? "").split(".");
+    return BigInt(whole) * 1000000000n + BigInt(fraction.padEnd(9, "0"));
+  };
+  const quantity = precise(
+    line.priced_qty || (line.item_packaging_id ? "" : line.ordered_qty),
+  );
   const price = parseDecimal(line.unit_price);
   const discount = parseDecimal(line.discount_amount ?? "0");
   const tax = parseDecimal(line.tax_amount ?? "0");
-  if (quantity === null || price === null || discount === null || tax === null) return null;
+  if (quantity === null || price === null || discount === null || tax === null)
+    return null;
 
-  // quantity × price carries eight decimals; the server keeps them until the final rounding.
-  const exactGross = quantity * price;
-  const exactTotal = exactGross - discount * UNIT + tax * UNIT;
-  const round = (value: bigint) => (value + UNIT / 2n) / UNIT;
+  // Keep the nine-decimal priced quantity and denominator exact until final rounding.
+  const denominator = parseDecimal(line.price_quantity || "1");
+  if (denominator === null || denominator === 0n) return null;
+  const divisor = denominator * 1000000000n;
+  const exactGross = quantity * price * UNIT;
+  const exactTotal = exactGross - discount * divisor + tax * divisor;
+  const round = (value: bigint) => (value + divisor / 2n) / divisor;
   return { gross: round(exactGross), discount, tax, total: round(exactTotal) };
 }
 
@@ -52,7 +66,10 @@ export function formatScaled(value: bigint): string {
   const negative = value < 0n;
   const abs = negative ? -value : value;
   const whole = (abs / UNIT).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  let fraction = (abs % UNIT).toString().padStart(SCALE, "0").replace(/0+$/, "");
+  let fraction = (abs % UNIT)
+    .toString()
+    .padStart(SCALE, "0")
+    .replace(/0+$/, "");
   if (fraction.length < 2) fraction = fraction.padEnd(2, "0");
   return `${negative ? "-" : ""}${whole}.${fraction}`;
 }

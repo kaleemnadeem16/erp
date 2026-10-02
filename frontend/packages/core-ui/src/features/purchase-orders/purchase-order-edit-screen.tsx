@@ -8,7 +8,10 @@ import {
   type AdvancedOption,
 } from "../../components/ui/advanced-options-menu";
 import { Button } from "../../components/ui/button";
-import { PageHeader, type PageHeaderBreadcrumb } from "../../components/page/page-header";
+import {
+  PageHeader,
+  type PageHeaderBreadcrumb,
+} from "../../components/page/page-header";
 import { RecordSheet } from "../../components/page/record-sheet";
 import type { Presentation } from "../../lib/presentation";
 import { Skeleton } from "../../components/ui/skeleton";
@@ -25,7 +28,11 @@ import {
  * sheet, a click outside is ignored (a stray click must not throw away typed changes), and closing returns to the
  * order. `"page"` is the same form on a page of its own.
  */
-export function PurchaseOrderEditScreen({ presentation = "page" }: { presentation?: Presentation }) {
+export function PurchaseOrderEditScreen({
+  presentation = "page",
+}: {
+  presentation?: Presentation;
+}) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { search } = useLocation();
@@ -87,7 +94,9 @@ export function PurchaseOrderEditScreen({ presentation = "page" }: { presentatio
           size="xl"
           className="po-detail"
           dismissOnOutsideClick={false}
-          onClose={() => navigate({ pathname: `/purchase-orders/${orderId}`, search })}
+          onClose={() =>
+            navigate({ pathname: `/purchase-orders/${orderId}`, search })
+          }
         >
           <div className="space-y-4 pb-4">{content}</div>
         </RecordSheet>
@@ -122,7 +131,10 @@ export function PurchaseOrderEditScreen({ presentation = "page" }: { presentatio
         <p className="text-sm text-destructive">
           Couldn&apos;t load this purchase order.
         </p>
-        <Button variant="outline" onClick={() => navigate({ pathname: "/purchase-orders", search })}>
+        <Button
+          variant="outline"
+          onClick={() => navigate({ pathname: "/purchase-orders", search })}
+        >
           Back to purchase orders
         </Button>
       </>,
@@ -136,7 +148,9 @@ export function PurchaseOrderEditScreen({ presentation = "page" }: { presentatio
         </p>
         <Button
           variant="outline"
-          onClick={() => navigate({ pathname: `/purchase-orders/${order.id}`, search })}
+          onClick={() =>
+            navigate({ pathname: `/purchase-orders/${order.id}`, search })
+          }
         >
           View purchase order
         </Button>
@@ -165,7 +179,9 @@ export function PurchaseOrderEditScreen({ presentation = "page" }: { presentatio
         </p>
         <Button
           variant="outline"
-          onClick={() => navigate({ pathname: `/purchase-orders/${order.id}`, search })}
+          onClick={() =>
+            navigate({ pathname: `/purchase-orders/${order.id}`, search })
+          }
         >
           View purchase order
         </Button>
@@ -187,9 +203,22 @@ export function PurchaseOrderEditScreen({ presentation = "page" }: { presentatio
     order_date: order.order_date,
     expected_delivery_date: order.expected_delivery_date ?? "",
     notes: order.notes ?? "",
+    replaces_purchase_order_id: order.replaces_purchase_order_id
+      ? String(order.replaces_purchase_order_id)
+      : "",
     lines: (order.lines ?? []).map((line) => ({
       item_id: String(line.item_id),
       description: line.description,
+      item_packaging_id: line.item_packaging_id
+        ? String(line.item_packaging_id)
+        : "",
+      supplier_offer_id: line.supplier_offer_id
+        ? String(line.supplier_offer_id)
+        : "",
+      price_uom_id: line.price_uom_id ? String(line.price_uom_id) : "",
+      price_quantity: line.price_quantity ?? "1",
+      ordering_exception_reason: line.ordering_exception_reason ?? "",
+      priced_qty: line.priced_qty ?? "",
       ordered_qty: line.ordered_qty,
       purchase_uom_id: String(line.purchase_uom_id),
       unit_price: line.unit_price!,
@@ -210,7 +239,8 @@ export function PurchaseOrderEditScreen({ presentation = "page" }: { presentatio
     />,
     {
       title: `Edit draft #${order.id}`,
-      description: "Changes remain provisional until the purchase order is issued.",
+      description:
+        "Changes remain provisional until the purchase order is issued.",
       breadcrumbs: [
         { label: "Purchase Orders", to: "/purchase-orders" },
         { label: `Draft #${order.id}`, to: `/purchase-orders/${order.id}` },

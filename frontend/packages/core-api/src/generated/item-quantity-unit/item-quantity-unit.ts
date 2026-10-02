@@ -22,6 +22,8 @@ import type {
 
 import type {
   AuthenticationExceptionResponse,
+  AuthorizationExceptionResponse,
+  ItemQuantityUnitsDestroy403,
   ItemQuantityUnitsIndex200,
   ItemQuantityUnitsIndexParams,
   ItemQuantityUnitsShow200,
@@ -256,6 +258,11 @@ export type itemQuantityUnitsStoreResponse401 = {
   status: 401;
 };
 
+export type itemQuantityUnitsStoreResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type itemQuantityUnitsStoreResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -266,7 +273,9 @@ export type itemQuantityUnitsStoreResponseSuccess =
     headers: Headers;
   };
 export type itemQuantityUnitsStoreResponseError = (
-  itemQuantityUnitsStoreResponse401 | itemQuantityUnitsStoreResponse422
+  | itemQuantityUnitsStoreResponse401
+  | itemQuantityUnitsStoreResponse403
+  | itemQuantityUnitsStoreResponse422
 ) & {
   headers: Headers;
 };
@@ -294,7 +303,10 @@ export const itemQuantityUnitsStore = async (
 };
 
 export const getItemQuantityUnitsStoreMutationOptions = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -336,10 +348,15 @@ export type ItemQuantityUnitsStoreMutationResult = NonNullable<
 >;
 export type ItemQuantityUnitsStoreMutationBody = StoreItemQuantityUnitRequest;
 export type ItemQuantityUnitsStoreMutationError =
-  AuthenticationExceptionResponse | ValidationExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
 
 export const useItemQuantityUnitsStore = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(
   options?: {
@@ -625,6 +642,11 @@ export type itemQuantityUnitsDestroyResponse401 = {
   status: 401;
 };
 
+export type itemQuantityUnitsDestroyResponse403 = {
+  data: ItemQuantityUnitsDestroy403;
+  status: 403;
+};
+
 export type itemQuantityUnitsDestroyResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -635,7 +657,9 @@ export type itemQuantityUnitsDestroyResponseSuccess =
     headers: Headers;
   };
 export type itemQuantityUnitsDestroyResponseError = (
-  itemQuantityUnitsDestroyResponse401 | itemQuantityUnitsDestroyResponse404
+  | itemQuantityUnitsDestroyResponse401
+  | itemQuantityUnitsDestroyResponse403
+  | itemQuantityUnitsDestroyResponse404
 ) & {
   headers: Headers;
 };
@@ -662,7 +686,10 @@ export const itemQuantityUnitsDestroy = async (
 };
 
 export const getItemQuantityUnitsDestroyMutationOptions = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | ItemQuantityUnitsDestroy403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -704,10 +731,15 @@ export type ItemQuantityUnitsDestroyMutationResult = NonNullable<
 >;
 
 export type ItemQuantityUnitsDestroyMutationError =
-  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
+  | AuthenticationExceptionResponse
+  | ItemQuantityUnitsDestroy403
+  | ModelNotFoundExceptionResponse;
 
 export const useItemQuantityUnitsDestroy = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | ItemQuantityUnitsDestroy403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(
   options?: {
@@ -740,6 +772,11 @@ export type itemQuantityUnitsUpdateResponse401 = {
   status: 401;
 };
 
+export type itemQuantityUnitsUpdateResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type itemQuantityUnitsUpdateResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -756,6 +793,7 @@ export type itemQuantityUnitsUpdateResponseSuccess =
   };
 export type itemQuantityUnitsUpdateResponseError = (
   | itemQuantityUnitsUpdateResponse401
+  | itemQuantityUnitsUpdateResponse403
   | itemQuantityUnitsUpdateResponse404
   | itemQuantityUnitsUpdateResponse422
 ) & {
@@ -788,6 +826,7 @@ export const itemQuantityUnitsUpdate = async (
 export const getItemQuantityUnitsUpdateMutationOptions = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -832,12 +871,14 @@ export type ItemQuantityUnitsUpdateMutationResult = NonNullable<
 export type ItemQuantityUnitsUpdateMutationBody = UpdateItemQuantityUnitRequest;
 export type ItemQuantityUnitsUpdateMutationError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
 export const useItemQuantityUnitsUpdate = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,

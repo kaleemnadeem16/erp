@@ -4,6 +4,7 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
+import type { StoreGoodsReceiptRequestLinesItemItemPackagingId } from "./storeGoodsReceiptRequestLinesItemItemPackagingId";
 import type { StoreGoodsReceiptRequestLinesItemBatchNo } from "./storeGoodsReceiptRequestLinesItemBatchNo";
 import type { StoreGoodsReceiptRequestLinesItemSerialNo } from "./storeGoodsReceiptRequestLinesItemSerialNo";
 
@@ -11,6 +12,7 @@ export type StoreGoodsReceiptRequestLinesItem = {
   purchase_order_line_id: number;
   item_id: number;
   location_id: number;
+  item_packaging_id?: StoreGoodsReceiptRequestLinesItemItemPackagingId;
   /** @maxLength 1000000000000000 */
   received_qty: string;
   received_uom_id: number;

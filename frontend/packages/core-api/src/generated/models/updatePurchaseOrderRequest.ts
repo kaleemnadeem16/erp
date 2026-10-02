@@ -4,6 +4,7 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
+import type { UpdatePurchaseOrderRequestReplacesPurchaseOrderId } from "./updatePurchaseOrderRequestReplacesPurchaseOrderId";
 import type { UpdatePurchaseOrderRequestSupplierSiteId } from "./updatePurchaseOrderRequestSupplierSiteId";
 import type { PurchaseOrderFxPolicy } from "./purchaseOrderFxPolicy";
 import type { UpdatePurchaseOrderRequestExpectedDeliveryDate } from "./updatePurchaseOrderRequestExpectedDeliveryDate";
@@ -11,6 +12,7 @@ import type { UpdatePurchaseOrderRequestNotes } from "./updatePurchaseOrderReque
 import type { UpdatePurchaseOrderRequestLinesItem } from "./updatePurchaseOrderRequestLinesItem";
 
 export interface UpdatePurchaseOrderRequest {
+  replaces_purchase_order_id?: UpdatePurchaseOrderRequestReplacesPurchaseOrderId;
   supplier_account_id?: number;
   supplier_site_id?: UpdatePurchaseOrderRequestSupplierSiteId;
   currency_id?: number;

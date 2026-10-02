@@ -361,7 +361,7 @@ export function GoodsReceiptDetailScreen() {
       key: "received_qty",
       header: "Received",
       value: (line) =>
-        `${line.received_qty} ${uoms.find((uom) => uom.id === line.received_uom_id)?.code ?? ""}`,
+        `${line.received_qty} ${line.package_name ?? uoms.find((uom) => uom.id === line.received_uom_id)?.code ?? ""}`,
       align: "right",
     },
     {
@@ -592,7 +592,7 @@ export function GoodsReceiptDetailScreen() {
                 <div>
                   <span className="text-muted-foreground">Received</span>
                   <div className="tabular-nums">
-                    {line.received_qty} {receivedUom?.code}
+                    {line.received_qty} {line.package_name ?? receivedUom?.code}
                   </div>
                 </div>
                 <div>

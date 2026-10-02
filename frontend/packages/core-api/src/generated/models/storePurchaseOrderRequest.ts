@@ -4,6 +4,7 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
+import type { StorePurchaseOrderRequestReplacesPurchaseOrderId } from "./storePurchaseOrderRequestReplacesPurchaseOrderId";
 import type { StorePurchaseOrderRequestSupplierSiteId } from "./storePurchaseOrderRequestSupplierSiteId";
 import type { PurchaseOrderFxPolicy } from "./purchaseOrderFxPolicy";
 import type { StorePurchaseOrderRequestExpectedDeliveryDate } from "./storePurchaseOrderRequestExpectedDeliveryDate";
@@ -11,6 +12,7 @@ import type { StorePurchaseOrderRequestNotes } from "./storePurchaseOrderRequest
 import type { StorePurchaseOrderRequestLinesItem } from "./storePurchaseOrderRequestLinesItem";
 
 export interface StorePurchaseOrderRequest {
+  replaces_purchase_order_id?: StorePurchaseOrderRequestReplacesPurchaseOrderId;
   supplier_account_id: number;
   supplier_site_id?: StorePurchaseOrderRequestSupplierSiteId;
   currency_id: number;
