@@ -88,6 +88,12 @@ export function ApprovalRequestPanel({ request, onChanged, mayWithdraw = false }
         </div>
       )}
 
+      {request.evidence_visible === false && (
+        <p className="text-sm text-muted-foreground" data-testid="approval-amount-hidden">
+          The amount is not shown: it comes from figures you do not have access to. The approval's status and decisions are.
+        </p>
+      )}
+
       <ol className="space-y-2">
         {request.steps.map((step) => (
           <li key={step.id} className="rounded-md border p-3 text-sm">

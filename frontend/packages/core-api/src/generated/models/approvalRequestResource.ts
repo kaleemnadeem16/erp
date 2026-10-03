@@ -22,9 +22,11 @@ export interface ApprovalRequestResource {
   submitted_at: string;
   closed_at: ApprovalRequestResourceClosedAt;
   closing_reason: ApprovalRequestResourceClosingReason;
-  /** The routing evidence an approver decides on — including the pinned currency conversion. */
+  /** The routing evidence an approver decides on — including the pinned currency conversion — only for whoever may see
+the document's figures, or is asked to decide (ApprovalEvidenceAccess); an auditor sees the decisions without it. */
   amount_base: unknown;
   evidence: unknown;
+  evidence_visible: boolean;
   can_decide: boolean;
   my_step_id: ApprovalRequestResourceMyStepId;
   steps: ApprovalRequestResourceStepsItem[];

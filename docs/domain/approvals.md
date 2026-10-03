@@ -34,6 +34,13 @@ design baseline and per-workflow checklist are in
   again. An approval given at 80,000 cannot be used to issue an 800,000 order.
 - **Currency evidence.** Amounts are routed in base currency at the document's own pinned rate. The request keeps the original
   amount and currency, the rate, its date and source, and the converted amount, so an approval never moves when a rate does.
+- **Who sees the money.** Authority to approve is not a licence to read commercial or cost data. The routed amount and the currency
+  evidence are returned only to (1) whoever the document's own module says may see its figures — each subject answers
+  `ApprovalSubject::canViewEvidence` (a purchase order: `purchasing.commercial-cost.view` or `purchasing.purchase-order.create`;
+  stock-mix and material-variance: `estimating.internal_cost.view`); (2) the person currently asked to decide an open step, for that
+  request only; (3) a person who has decided or acted on it. Everyone else — including a pure auditor with `approvals.history.view`
+  and the submitter — gets the status, steps and decisions with `amount_base: null`, `evidence: []` and `evidence_visible: false`
+  (`ApprovalEvidenceAccess`). A subject's `summary` must never carry a cost figure. Free-text decision reasons are not filtered.
 - **Expiry never decides.** A step may have `expires_after_hours`. On expiry it is marked *overdue* (still decidable; an optional
   `escalation_permission` starts to count) or, if configured, the request ends as `EXPIRED` and must be resubmitted.
   `ExpireOverdueApprovals` applies this; nothing is ever auto-approved or auto-rejected.
@@ -63,7 +70,7 @@ own), `approvals.history.view` (see every request). Per-subject capabilities liv
 `GET approval-subject-types` and `PUT approval-subject-types/{type}/mode`; `approval-policies` (create → draft, `PATCH` a draft,
 `POST …/activate`, `DELETE` a draft); `approval-authorities` (+ `mine`); `approval-delegations`; `approval-requests` (audit list,
 `inbox`, `show`, `POST …/decide`, `POST …/withdraw`). A request is visible to its submitter, to auditors, and to anyone who can
-act on it or has acted on it.
+act on it or has acted on it; what money it shows them follows the rule above.
 
 ## Screens
 

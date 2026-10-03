@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Purchasing\Support;
 
+use App\Models\User;
 use App\Modules\Approvals\Support\ApprovalFactType;
 use App\Modules\Approvals\Support\ApprovalRouting;
 use App\Modules\Approvals\Support\ApprovalSubject;
@@ -42,6 +43,12 @@ final class PurchaseOrderApprovalSubject implements ApprovalSubject
             'supplier_account_id' => ['label' => 'Supplier', 'type' => ApprovalFactType::Id],
             'currency_id' => ['label' => 'Order currency', 'type' => ApprovalFactType::Id],
         ];
+    }
+
+    /** The amount and its currency evidence are the order's commercial facts: whoever may see those on the order may see them here. */
+    public function canViewEvidence(User $user): bool
+    {
+        return PurchasingCommercialAccess::canView($user);
     }
 
     public function routing(int $subjectId): ApprovalRouting

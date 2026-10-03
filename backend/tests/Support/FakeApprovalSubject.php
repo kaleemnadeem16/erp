@@ -2,6 +2,7 @@
 
 namespace Tests\Support;
 
+use App\Models\User;
 use App\Modules\Approvals\Support\ApprovalFactType;
 use App\Modules\Approvals\Support\ApprovalRouting;
 use App\Modules\Approvals\Support\ApprovalSubject;
@@ -33,6 +34,11 @@ final class FakeApprovalSubject implements ApprovalSubject
             'amount_base' => ['label' => 'Amount', 'type' => ApprovalFactType::Decimal],
             'warehouse' => ['label' => 'Warehouse', 'type' => ApprovalFactType::String],
         ];
+    }
+
+    public function canViewEvidence(User $user): bool
+    {
+        return $user->can('test.document.cost.view');
     }
 
     public function routing(int $subjectId): ApprovalRouting

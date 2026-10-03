@@ -6,6 +6,7 @@ namespace App\Modules\Approvals\Http\Resources;
 
 use App\Modules\Approvals\Models\ApprovalRequest;
 use App\Modules\Approvals\Support\ApprovalDecisionKind;
+use App\Modules\Approvals\Support\ApprovalEvidenceAccess;
 use App\Modules\Approvals\Support\ApprovalInbox;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -20,6 +21,7 @@ class ApprovalRequestResource extends JsonResource
         $row = $this->resource;
         $row->loadMissing(['steps.policyStep', 'steps.decisions.decider', 'policy', 'submitter']);
         $actionable = $request->user() !== null && $row->isOpen() ? app(ApprovalInbox::class)->actionableStep($request->user(), $row) : null;
+        $showMoney = app(ApprovalEvidenceAccess::class)->canView($request->user(), $row, $actionable);
 
         return [
             'id' => $row->id, 'subject_type' => $row->subject_type, 'subject_id' => $row->subject_id,
@@ -28,8 +30,11 @@ class ApprovalRequestResource extends JsonResource
             'submitted_by' => ['id' => $row->submitted_by, 'name' => $row->submitter->name],
             'submitted_at' => $row->submitted_at->toIso8601String(), 'closed_at' => $row->closed_at?->toIso8601String(),
             'closing_reason' => $row->closing_reason,
-            // The routing evidence an approver decides on — including the pinned currency conversion.
-            'amount_base' => $row->facts['amount_base'] ?? null, 'evidence' => $row->facts['evidence'] ?? [],
+            // The routing evidence an approver decides on — including the pinned currency conversion — only for whoever may see
+            // the document's figures, or is asked to decide (ApprovalEvidenceAccess); an auditor sees the decisions without it.
+            'amount_base' => $showMoney ? ($row->facts['amount_base'] ?? null) : null,
+            'evidence' => $showMoney ? ($row->facts['evidence'] ?? []) : [],
+            'evidence_visible' => (bool) $showMoney,
             'can_decide' => $actionable !== null, 'my_step_id' => $actionable?->id,
             'steps' => $row->steps->map(fn ($s): array => [
                 'id' => $s->id, 'stage' => $s->stage, 'name' => $s->name, 'status' => $s->status->value,

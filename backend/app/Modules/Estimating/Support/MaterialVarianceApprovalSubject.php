@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Estimating\Support;
 
 use App\Exceptions\DomainInvariantException;
+use App\Models\User;
 use App\Modules\Approvals\Support\ApprovalFactType;
 use App\Modules\Approvals\Support\ApprovalRouting;
 use App\Modules\Approvals\Support\ApprovalSubject;
@@ -41,6 +42,12 @@ final class MaterialVarianceApprovalSubject implements ApprovalSubject
             'item_id' => ['label' => 'Material', 'type' => ApprovalFactType::Id],
             'category_id' => ['label' => 'Material category', 'type' => ApprovalFactType::Id],
         ];
+    }
+
+    /** The cost impact is internal cost: whoever may see internal cost may see it on the approval. */
+    public function canViewEvidence(User $user): bool
+    {
+        return $user->can('estimating.internal_cost.view');
     }
 
     public function routing(int $subjectId): ApprovalRouting
