@@ -270,6 +270,14 @@ the backend capability gap is tracked in the
 [improvement plan](../../../../docs/phases/item-purchasing-improvements.md#authorisation-review).
 No approval transition is added.
 
+## Package-balance design boundary
+
+Physical tracking remains unimplemented. The owner confirmed grouped sealed/open balances;
+[proposed ADR 0082](../../../../docs/decisions/0082-reconcile-package-balances-with-stock-operations.md)
+and the [delivery plan](../../../../docs/phases/package-balance-delivery.md) record the next
+integration spike. Receipt/issue/transfer, QA, counts, cutover and backdated/reversal paths must
+be package-consistent before activation. No alternate quantity or valuation engine is proposed.
+
 ## Related
 
 - [domain/items.md](../../../../docs/domain/items.md)

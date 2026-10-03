@@ -26,20 +26,22 @@ proposal does not reserve anything.
 
 ## Package definitions
 
-The conceptual first-generation shape is:
+The implemented fixed-definition shape under ADR 0080 is:
 
 ```text
 item_packagings
   id, company_id, item_id
-  item_quantity_unit_id
   code, name
+  stock_quantity, quantity_precision nullable
   barcode nullable
+  inner_packaging_id nullable, inner_count nullable
   active
 ```
 
-`item_quantity_unit_id` supplies the fixed contained quantity through ADR 0050. The definition is
-item-specific; “box” or “drum” is not a globally convertible UoM. Archiving prevents new use but
-must not break historical snapshots.
+The definition stores its contained quantity directly in the item's stock unit under ADR 0080;
+item quantity conversions remain a separate ADR 0050 capability. Definitions are item-specific,
+and equal-content packages can retain distinct identities. Archiving prevents new use without
+breaking historical snapshots or proving anything about physical on-hand stock.
 
 Whether a package is offered for purchasing, selling or internal issue is workflow metadata, not
 its physical identity. Add those applicability controls only with the workflow that consumes them.
@@ -216,8 +218,8 @@ replace them.
 
 **Not yet built** — each is a deliberate boundary, not an oversight:
 
-- `PACKAGE_BALANCE` and `CONTAINER_TRACKED` modes and the package definitions
-  (`item_packagings`), so no sealed-pack, remnant or container claim is ever made.
+- PACKAGE_BALANCE and CONTAINER_TRACKED modes: package definitions are now implemented
+  under ADR 0080, but no exact sealed-pack, remnant or container availability claim is made.
 - Package equivalents of a quantity draw ("about two 5 L cans"), which would be approximate in
   `QUANTITY_ONLY` and are better delivered with `PACKAGE_BALANCE`.
 
@@ -259,6 +261,24 @@ them. Maintenance needs inventory.item.manage in HTTP and Actions. Inner content
 the same item and direct quantity; immutable links cannot introduce a cycle.
 This implements package masters only: PACKAGE_BALANCE and CONTAINER_TRACKED remain unbuilt.
  
+## Physical-balance design started — 2026-10-03
+
+The owner confirmed sealed counts plus grouped open/loose quantity are sufficient for the first
+physical release. [Proposed ADR 0082](../decisions/0082-reconcile-package-balances-with-stock-operations.md)
+distinguishes unpacking an outer box into still-sealed inner packages from opening the contents
+into loose stock. Both preserve quantity and value. Availability/QA status remains a separate
+axis, and different locations/batches/hold provenance must not be pooled together. Existing
+stock requires a counted, reconciled activation; it cannot be reconstructed from old order counts.
+
+The [delivery plan](../phases/package-balance-delivery.md) requires proof of posting-layer,
+valuation, QA and correction compatibility before committing an operational schema. All current
+items remain QUANTITY_ONLY; no physical tracking migration, permission or API is implemented by
+this design review. Individual container tracking and catch weight remain deferred.
+
+Package content and inner-package composition are immutable at both the model and database boundary. An item stock unit cannot change after a package definition exists, even before its first stock movement, because every package factor is defined against that unit. Archive/create preserves identity when content changes.
+
+Representative purchasing demo scenarios are provided by PackagedPurchasingDemoSeeder, opt-in through demo:seed. The [walkthrough](../journeys/packaged-purchasing-demo.md) covers distinct/nested packages, independent price units/denominators, loose and partial receipts, recorded ordering exceptions, historical offer changes and linked replacement orders; physical package availability remains outside this slice.
+
 ## Related
 
 - [Material resolution](material-resolution.md) · [Items](items.md) · [Stock](stock.md)
@@ -270,7 +290,3 @@ This implements package masters only: PACKAGE_BALANCE and CONTAINER_TRACKED rema
 - [ADR 0054](../decisions/0054-risk-based-material-plan-variance-controls.md)
 - [ADR 0057](../decisions/0057-stable-material-resolution-capabilities-with-dynamic-assignment.md)
 - [ADR 0058](../decisions/0058-phase-3-material-resolution-preview-contract.md)
-
-Package content and inner-package composition are immutable at both the model and database boundary. An item stock unit cannot change after a package definition exists, even before its first stock movement, because every package factor is defined against that unit. Archive/create preserves identity when content changes.
-
-Representative purchasing demo scenarios are provided by PackagedPurchasingDemoSeeder, opt-in through demo:seed. The [walkthrough](../journeys/packaged-purchasing-demo.md) covers distinct/nested packages, independent price units/denominators, loose and partial receipts, recorded ordering exceptions, historical offer changes and linked replacement orders; physical package availability remains outside this slice.

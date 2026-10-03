@@ -96,7 +96,9 @@ in the same commit.
 | [0080](0080-packaged-purchasing-and-independent-price-basis.md) | Separate named packages, supplier offers and purchasing price basis | accepted | 2026-10-02 |
 | [0081](0081-central-company-profile-and-company-wide-settings.md) | A central Company screen: profile, company-wide settings, a stable code, and lifecycle locks | accepted | 2026-10-02 |
 
-**Next number: 0082**
+| [0082](0082-reconcile-package-balances-with-stock-operations.md) | Reconcile package balances with stock operations | proposed | 2026-10-03 |
+
+**Next number: 0083**
 
 ## By theme
 

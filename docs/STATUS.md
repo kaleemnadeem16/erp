@@ -1,6 +1,6 @@
 # Project Status
 
-**Updated:** 2026-10-02
+**Updated:** 2026-10-03
 **Current phase:** Phase 3 — Estimating core (in progress; two vertical slices shipped
 2026-09-23 — rate dimensions/application rates, then formulations with versioning, customer
 overrides and nested cost roll-up, now followed by the 2026-09-24 draft-editing, human-readable
@@ -119,6 +119,12 @@ Conversion/receipt foundation for ADR 0080 is committed: server-side conversion 
 authorisation and issued-factor/default-price receiving are covered by 41 focused tests.
 
 ## Next
+
+Physical package tracking design has started: the owner confirmed unopened counts plus grouped
+leftovers. [Proposed ADR 0082](decisions/0082-reconcile-package-balances-with-stock-operations.md)
+and [delivery plan](phases/package-balance-delivery.md) record the design and acceptance cases;
+next is the stock/valuation/QA/correction compatibility spike. No operational tracking schema
+or mode activation is implemented yet, 2026-10-03.
 
 Package/offer maintenance, independent PO pricing, partial package/loose receipts and replacement
 order linkage are implemented in the existing screens under [ADR 0080](decisions/0080-packaged-purchasing-and-independent-price-basis.md).

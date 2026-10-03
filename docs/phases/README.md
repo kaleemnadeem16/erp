@@ -28,6 +28,10 @@ User-facing entry-to-exit workflows live in [product journeys](../journeys/READM
 journey is maintained alongside its screens and is the source for future training documents or
 presentations.
 
+The [physical package-balance delivery](package-balance-delivery.md) has started with a design
+review under ADR 0052 and proposed ADR 0082. It extends the purchasing package masters without
+starting Phase 5 job execution; operational tracking remains unimplemented.
+
 ---
 
 ## Outline
