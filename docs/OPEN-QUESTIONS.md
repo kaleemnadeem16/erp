@@ -135,6 +135,29 @@ digest delivery. Those are prompts, not a predetermined architecture. Consumers 
 expiries, overdue steps and escalation capabilities, recalculation and negative-stock reviews past their SLA, and the
 purchase-order and quotation workflows.
 
+### Q34 — Finance-owned field visibility for accounts and credit terms
+**Blocks:** Enforcing field-level access on Item/Category GL-account IDs, customer credit limits and terms, and customer/supplier control-account IDs (access audit A3 and A4)
+
+Which of these fields are sensitive, who may read them, and who may change them? Item/Category GL-account IDs are returned unconditionally on
+shared reads today; customer credit, payment terms and control-account IDs have write boundaries (Parties capabilities) but no field policy.
+Decide per field: visible to everyone who can see the record, visible only with a Finance capability, or write-restricted while readable; then
+list, detail, lookup, print and any export must all follow it. Reuse the ADR 0069/0073/0083 pattern (omit restricted keys; never send a zero).
+See [access-security-audit.md](architecture/access-security-audit.md).
+
+### Q35 — Approval evidence exception and authority-ceiling visibility
+**Blocks:** Finalising the access audit's information-flow review for approvals (not any build)
+
+ADR 0070's approvals now show the routed amount and its currency evidence only to people the document's own module allows, plus whoever is
+asked to decide or has decided that request (`ApprovalEvidenceAccess`). Confirm that exception — an approver sees the total of the request in
+front of them without seeing the PO's line prices — and decide who may list per-person authority ceilings (`approvals.history.view` holders can
+today). Free-text decision reasons are not filtered; decide whether that is acceptable.
+
+### Q36 — Bearer-token lifetime and device sessions
+**Blocks:** Any mobile client or integration using bearer tokens (Phase 7)
+
+`sanctum.expiration` is null, so a bearer token never expires on its own (it is revoked on password change, reset, suspension and temporary
+password). Decide the lifetime, whether tokens are per-device and listable/revocable by the user, and whether inactivity should end them.
+
 ---
 
 ## Answered

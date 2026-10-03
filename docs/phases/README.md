@@ -132,6 +132,9 @@ Gmail.
 The [Item and Purchasing improvements](item-purchasing-improvements.md) sequence tracks the
 pack-conversion usability deliveries and the research gates for further Purchasing extensions.
 
+The [Settings, forms and access hardening](settings-and-access-hardening.md) record tracks the company/settings screens, the Purchase
+Order form redesign and the access-security audit slices, with what is done, what is open and how to resume.
+
 ## Sequencing notes
 
 **Phases 3–5 are the differentiator** and the hardest part. Phases 0–2 are table stakes, but

@@ -51,3 +51,7 @@ logs/
 *.swp
 .DS_Store
 Thumbs.db
+
+# Local test/auth artefacts — a Playwright session file and a stray nested e2e folder; never commit them
+frontend/.auth/
+frontend/apps/e2e/frontend/
