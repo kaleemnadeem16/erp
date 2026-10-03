@@ -134,10 +134,13 @@ final class RecordPackageCheckpoint
             if ($actual !== $vector || ! $ledger->isEqualTo($expected)) {
                 throw new DomainInvariantException('Stock changed since the count; refresh and recount package evidence.');
             }
+            $watermark = StockMove::query()->where($moveScope)
+                ->where(fn ($q) => $q->where('to_location_id', $location->id)->orWhere('from_location_id', $location->id))->max('id');
             $operation = PackageOperation::query()->create([
                 'item_id' => $item->id, 'location_id' => $location->id, 'batch_id' => $batchId,
                 'request_key' => $key, 'payload_hash' => $hash, 'evidence_kind' => 'COUNTED',
                 'actor_id' => $actor->id, 'reason' => $reason, 'recorded_at' => now(),
+                'stock_move_watermark' => $watermark,
             ]);
             $remaining = $layers->mapWithKeys(fn ($layer) => [$layer->id => BigDecimal::of($layer->qty_remaining)])->all();
             $total = BigDecimal::zero();

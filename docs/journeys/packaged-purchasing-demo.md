@@ -88,8 +88,12 @@ This records a fictional physical count of 5 L cans plus loose contents on the d
 It is historical counted evidence, independent of receipt provenance; it does not activate
 tracking or change ledger quantity/value. Its immutable stable key is skipped on reruns.
 
-There is no checkpoint screen yet. Developer inspection uses the scoped PackageOperation,
-PackageState and PackageContribution models. Do not present this checkpoint as current stock
+There is no checkpoint screen yet. Developer inspection can call ReplayPackageCheckpoint with
+the operation ID and a user granted inventory.package-state.view. It returns counted composition,
+exact totals and freshness reasons without cost fields or tracking activation. Older local
+checkpoints show UNKNOWN_MOVEMENT_WATERMARK; newly seeded checkpoints record the watermark.
+The module rerun grants demo view access while preserving the existing checkpoint. Scoped
+PackageOperation, PackageState and PackageContribution models remain available for inspection. Do not present this checkpoint as current stock
 after another receipt, issue or transfer. The [writer contract](../domain/package-balance-integration.md#authorised-counted-checkpoint-writer--2026-10-03)
 records permissions, unsupported QA/serial/shortage cases and the remaining operational work.
 

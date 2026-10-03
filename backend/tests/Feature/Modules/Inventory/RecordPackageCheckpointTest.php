@@ -153,7 +153,7 @@ class RecordPackageCheckpointTest extends StockIssueTest
         app(RecordPackageCheckpoint::class)($input, $actor);
     }
 
-    private function checkpoint(): array
+    protected function checkpoint(): array
     {
         [$order, $item, $unit] = $this->issuedOrder(ValuationMethod::Fifo);
         $location = $this->locationId();

@@ -42,7 +42,8 @@ has shipped. This plan extends the delivered purchasing package masters; it is n
    ([schema and verified limits](../domain/package-balance-integration.md#inactive-storage-foundation--2026-10-03));
    Counted-evidence posting, equal-payload retries, request/location/layer locks and live-stock
    reconciliation now work ([writer](../domain/package-balance-integration.md#authorised-counted-checkpoint-writer--2026-10-03)).
-   Operational posting, projection rebuilding and policy resolution remain. Company-safe definition references, immutable event
+   On-demand checkpoint projection is implemented ([replay](../domain/package-balance-integration.md#on-demand-history-projection--2026-10-03));
+   operational event replay/posting and policy resolution remain. Company-safe definition references, immutable event
    and operation identity, reconstructible balance projections, exact decimal constraints,
    stable lock order, equal-payload retry semantics and rollback/reconciliation tests. Establish
    guarded default/item/category mode resolution without activating unsupported modes.

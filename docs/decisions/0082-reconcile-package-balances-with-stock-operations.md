@@ -22,8 +22,9 @@ Extend ADR 0052 with PACKAGE_BALANCE: count sealed definitions and group open/lo
 the same company, item, location and required traceability/availability scope. Preserve the stock
 movement/valuation engine as the quantity and cost authority. Implement the delivery gates in
 [the plan](../phases/package-balance-delivery.md); this proposal does not activate tracking or
-authorise a new valuation method. An inactive evidence-storage foundation now exists; no executable package permission, operational
-stock writer or activation setting is added. An internal counted-evidence writer now uses
+authorise a new valuation method. An inactive evidence-storage foundation and authorised checkpoint writer/reader now exist.
+The reader enforces inventory.package-state.view; no operational stock writer or activation
+setting is added. An internal counted-evidence writer now uses
 existing physical-count creation authority; it does not activate tracking.
 
 ### 1. Physical and availability state are separate
@@ -115,7 +116,8 @@ Backdated corrections must preserve both timelines; until the adapter is proved,
 unsupported tracked operation rather than commit one side. Production activation requires every
 existing writer to be integrated or explicitly blocked for tracked items with a usable explanation.
 
-Proposed distinct Inventory capabilities: package-state view, open/unpack, and tracking-policy
+The internal history reader now enforces inventory.package-state.view. Remaining proposed
+distinct Inventory capabilities: open/unpack and tracking-policy
 management. Existing receipt, transfer, count, QA and valuation permissions remain separate.
 Register final names with the enforcing slice, assign dev personas and follow the administrator
 rollout procedure. Opening permission is not issue/scrap/QA authority. Cost fields still require

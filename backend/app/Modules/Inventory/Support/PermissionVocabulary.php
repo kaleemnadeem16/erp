@@ -39,6 +39,7 @@ final class PermissionVocabulary
             'inventory.valuation-policy.manage',
             'inventory.valuation.view',
             'inventory.policy-history.view',
+            'inventory.package-state.view',
             'inventory.negative-stock-policy.manage',
             'inventory.backdating-horizon-policy.manage',
             'inventory.recalculation-policy.manage',

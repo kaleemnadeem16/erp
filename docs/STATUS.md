@@ -123,11 +123,11 @@ authorisation and issued-factor/default-price receiving are covered by 41 focuse
 
 ## Next
 
-Physical package counted-evidence writer is implemented: existing physical-count authority,
-equal-payload retries, request/location/layer locks and exact live-stock reconciliation.
-Package/demo/architecture checks pass 143 tests / 590 assertions; a create-once checkpoint demo
-is loaded locally → [writer](domain/package-balance-integration.md#authorised-counted-checkpoint-writer--2026-10-03).
-Next: projection rebuilding, policy resolution and operational stock adapters.
+Physical package checkpoint replay is implemented on demand: immutable composition/totals,
+movement watermark, freshness reasons and separate package-state view authority; no costs.
+Package/demo/permission/architecture checks pass 157 tests / 653 assertions → [replay](domain/package-balance-integration.md#on-demand-history-projection--2026-10-03).
+Local migration and demo access update are applied; existing checkpoint history is preserved.
+Next: policy resolution and operational stock adapters.
 [ADR 0082](decisions/0082-reconcile-package-balances-with-stock-operations.md) remains proposed;
 no operational tracking or activation is implemented yet, 2026-10-03.
 

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Support;
 
+use App\Models\User;
+use App\Modules\Inventory\Actions\ReplayPackageCheckpoint;
 use App\Modules\Inventory\Models\PackageOperation;
 use App\Modules\Inventory\Models\PackageState;
 use Database\Seeders\Demo\PackageCheckpointDemoSeeder;
@@ -19,6 +21,10 @@ class PackageCheckpointDemoSeederTest extends TestCase
         $this->artisan('demo:seed')->assertSuccessful();
         $operation = PackageOperation::query()->where('request_key', 'demo-package-counted-checkpoint')->sole();
         $this->assertSame('COUNTED', $operation->evidence_kind);
+        $actor = User::query()->where('email', config('demo.user.email'))->firstOrFail();
+        $replay = app(ReplayPackageCheckpoint::class)($operation->id, $actor);
+        $this->assertTrue($replay['matches_current_stock']);
+        $this->assertFalse($replay['tracking_active']);
         $this->assertStringContainsString('fictional observed count', $operation->reason);
         $this->assertTrue(PackageState::query()->where('operation_id', $operation->id)->where('form', 'SEALED')->exists());
         $this->assertTrue(PackageState::query()->where('operation_id', $operation->id)->where('form', 'OPEN_LOOSE')->exists());

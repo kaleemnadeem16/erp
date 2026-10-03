@@ -25,6 +25,8 @@ final class PackageCheckpointDemoSeeder extends Seeder
     {
         $this->ensureDemoEnvironment();
         app(PermissionRegistry::class)->registerForTeam(1);
+        $actor = User::query()->where('email', config('demo.user.email'))->firstOrFail();
+        $actor->givePermissionTo('inventory.package-state.view');
         $key = 'demo-package-counted-checkpoint';
         if (PackageOperation::query()->where('request_key', $key)->exists()) {
             return; // Preserve the immutable checkpoint after manual stock progress.
@@ -52,6 +54,6 @@ final class PackageCheckpointDemoSeeder extends Seeder
             'expected_quantity' => (string) $total,
             'expected_layers' => $layers->pluck('qty_remaining', 'id')->all(),
             'composition' => $composition,
-        ], User::query()->where('email', config('demo.user.email'))->firstOrFail());
+        ], $actor);
     }
 }

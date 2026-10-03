@@ -188,6 +188,46 @@ Remaining kernel work: projection rebuilding, policy resolution and operational 
 Activation, QA physical splitting, package open/unpack/transfer and reversal workflows remain
 unimplemented.
 
+## On-demand history projection — 2026-10-03
+
+ReplayPackageCheckpoint reconstructs each immutable state and its ordered layer contributions
+without reading today's package names or costs. It returns exact recorded/loose totals, composition,
+integrity status, current ledger quantity and explicit mismatch reasons. No projection cache or
+second quantity ledger is introduced. This replays full checkpoint snapshots; operational event
+deltas are not implemented. The result always says tracking_active=false.
+
+The internal Action enforces inventory.package-state.view and actor/company matching.
+Count creation alone does not grant read access, and no valuation capability is required because
+no financial columns are projected. Administrators assign the new capability through Access
+Administration; the demo maintainer receives it on the module-seeder rerun. There is no new HTTP
+route, response Resource, generated client or screen.
+
+New checkpoints capture the maximum stock move ID in their exact item/location/batch scope.
+A nullable company-safe stock_move_watermark column preserves existing immutable rows as unknown;
+there is no guessed backfill. Movement history changing invalidates a match even when a receipt
+and reversal return quantities and positive layers to their original values. Identical write
+retries return the original watermark rather than refreshing historical evidence.
+
+Replay takes the same location lock as ordinary posting/checkpoint creation before reading live
+layers and movement totals. A checkpoint matches current stock only when its contributions
+reconcile, it is latest in its exact scope, the movement watermark and remaining layer vector
+match, ledger quantity matches, and supported QA/shortage/identity checks pass. Unknown watermark,
+later movement, supersession, changed stock, incomplete evidence and unsupported scope are explicit
+reasons; none activates tracking or proves live issue eligibility. Direct cutover/recalculation
+writers still need integration/guards before any operational activation.
+
+Seven additional replay cases cover exact deterministic reconstruction, later issue, equal-total
+receipt/reversal history, supersession, archived/renamed definitions, unknown legacy evidence and
+separate read authority. The existing demo test also invokes the real reader and verifies inactive
+tracking. Combined package, demo, permission-registration and architecture checks pass
+**157 tests / 653 assertions** (including inherited baseline coverage).
+The local additive watermark migration and module-seeder rerun succeeded. The existing local
+checkpoint remains immutable and therefore has an unknown watermark; fresh installations record
+one. Do not overwrite an old checkpoint merely to make the demo appear fresh.
+
+Kernel projection reconstruction is now implemented on demand. Policy resolution, operational
+event adapters, QA physical evidence and activation guards remain.
+
 ## Related
 
 - [Inventory packages](inventory-packages.md)
