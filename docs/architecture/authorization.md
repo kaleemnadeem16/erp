@@ -189,7 +189,10 @@ Required automated controls:
 4. API tests prove list and show endpoints apply identical record scope;
 5. the authenticated-user response exposes effective permissions and any safe scope labels needed
    by the SPA—never confidential policy internals;
-6. generated UI/client code does not invent permission strings independently.
+6. generated UI/client code does not invent permission strings independently;
+7. every API write route has a visible capability guard or a recorded reason it needs none—enforced by
+   `tests/Architecture/WriteRouteGuardTest.php`, which also keeps a ratchet list of routes guarded only at the HTTP boundary
+   (an Action called without HTTP is not stopped there; see the audit's "Action-level guards" item).
 
 ## Per-feature authorisation checklist
 

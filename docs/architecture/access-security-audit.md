@@ -99,6 +99,17 @@ added to that administrator only; no Buyer or operational role was broadened.
   (`ApprovalEvidenceVisibilityTest`; Approvals + PO approval + Estimating approval suites: 61 tests, 364 assertions). The approval
   panel says when the amount is hidden. Open: whether the approver's need-to-know exception stays (approver decides on the total
   without seeing line prices on the PO), and the per-person authority-ceiling read policy.
+- [x] **Write-route guard inventory (2026-10-03):** `tests/Architecture/WriteRouteGuardTest.php` walks every API POST/PUT/PATCH/DELETE
+  route and fails unless it has a capability guard (Form Request `authorize()`, an inline controller gate, or an Action gate) or is
+  named with a reason (sign-in/recovery, the caller's own account/session, approval decide/withdraw whose eligibility the Action
+  checks). Three compute-only POSTs (numbering tester, PO line preview, material preview) are classed separately. The detector was
+  proven by removing one request's guard (`POST api/v1/items` then failed). It proves a guard is *present*, not correct.
+- [ ] **Action-level guards (open, ratchet):** about 45 write routes are guarded at the HTTP boundary only — their Action has no gate
+  of its own, so a console command, job or future integration calling the Action is not stopped (the list is
+  `ACTION_WITHOUT_GATE` in that test; new routes may not join it). Governance Actions go first (approval policy/authority/settings,
+  the Estimating policies and reasons, Inventory/Purchasing/Company settings), then master-data CRUD (items, categories,
+  warehouses, locations, item-suppliers, purchase orders). Each needs an actor parameter and its seeders/tests updated, so it is a
+  sequence of small slices, not one change.
 - [ ] **Information-flow review (continuing):** complete the module inspections above and update this matrix with endpoint/Action/test
   references. New Inventory/Purchasing/Estimating features need their own check before sign-off.
 - [ ] **Deployment verification:** enumerate each active company member, role, direct grant and
