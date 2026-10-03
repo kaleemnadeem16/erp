@@ -35,14 +35,32 @@ class PasswordResetTest extends TestCase
         Notification::assertSentTo($user, MemberPasswordReset::class);
     }
 
-    public function test_forgot_password_returns_422_for_an_unknown_email(): void
+    public function test_forgot_password_answers_identically_for_an_unknown_email_so_accounts_cannot_be_discovered(): void
     {
         Notification::fake();
+        $user = User::factory()->create();
 
-        $response = $this->postJson('/api/v1/forgot-password', ['email' => 'nobody@example.com']);
+        $known = $this->postJson('/api/v1/forgot-password', ['email' => $user->email]);
+        $unknown = $this->postJson('/api/v1/forgot-password', ['email' => 'nobody@example.com']);
 
-        $response->assertStatus(422);
-        Notification::assertNothingSent();
+        $unknown->assertOk();
+        $this->assertSame($known->getStatusCode(), $unknown->getStatusCode());
+        $this->assertSame($known->json(), $unknown->json());
+        Notification::assertSentToTimes($user, MemberPasswordReset::class, 1);
+        Notification::assertCount(1);
+    }
+
+    public function test_a_repeated_request_that_the_broker_throttles_does_not_reveal_that_the_account_exists(): void
+    {
+        Notification::fake();
+        $user = User::factory()->create();
+
+        $first = $this->postJson('/api/v1/forgot-password', ['email' => $user->email]);
+        $second = $this->postJson('/api/v1/forgot-password', ['email' => $user->email]); // the broker throttles this one
+        $unknown = $this->postJson('/api/v1/forgot-password', ['email' => 'nobody@example.com']);
+
+        $this->assertSame($first->json(), $second->json());
+        $this->assertSame($first->json(), $unknown->json());
     }
 
     public function test_reset_password_with_a_valid_token_changes_the_password(): void

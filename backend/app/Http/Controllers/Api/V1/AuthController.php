@@ -90,13 +90,11 @@ class AuthController extends Controller
 
     public function forgotPassword(ForgotPasswordRequest $request): JsonResponse
     {
-        $status = Password::sendResetLink(['email' => strtolower($request->string('email')->toString())]);
+        // The same answer whether or not the address belongs to an account (and whether or not the broker throttled it), so this
+        // endpoint cannot be used to find out who has an account here. The link, if any, goes to the mailbox.
+        Password::sendResetLink(['email' => strtolower($request->string('email')->toString())]);
 
-        if ($status !== Password::RESET_LINK_SENT) {
-            throw ValidationException::withMessages(['email' => [__($status)]]);
-        }
-
-        return response()->json(['message' => __($status)]);
+        return response()->json(['message' => 'If that email belongs to an account, a password reset link has been sent to it.']);
     }
 
     public function resetPassword(ResetPasswordRequest $request): JsonResponse

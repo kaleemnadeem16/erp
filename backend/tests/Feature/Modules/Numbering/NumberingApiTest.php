@@ -203,4 +203,22 @@ class NumberingApiTest extends TestCase
         $codes = collect($this->as($this->viewer)->getJson('/api/v1/numbering/document-types')->json('data'))->firstWhere('key', 'PURCHASE_ORDER')['series'];
         $this->assertSame(['DEFAULT'], array_column($codes, 'code'));
     }
+
+    public function test_another_companys_series_and_counters_are_unreachable_by_id(): void
+    {
+        DB::table('companies')->insert(['id' => 2, 'name' => 'Other', 'created_at' => now(), 'updated_at' => now()]);
+        $seriesId = DB::table('numbering_series')->insertGetId(['company_id' => 2, 'doc_type' => 'PURCHASE_ORDER', 'code' => 'OTHERS', 'name' => 'Not ours', 'is_default' => false, 'is_selectable' => false, 'status' => 'ACTIVE', 'created_at' => now(), 'updated_at' => now()]);
+        $counterId = DB::table('numbering_counters')->insertGetId(['company_id' => 2, 'series_id' => $seriesId, 'counter_key' => 'ALL', 'allocator' => 'LOCKED', 'next_number' => 5, 'created_at' => now(), 'updated_at' => now()]);
+
+        $this->as($this->manager);
+        $this->getJson("/api/v1/numbering/series/{$seriesId}/versions")->assertNotFound();
+        $this->getJson("/api/v1/numbering/series/{$seriesId}/counters")->assertNotFound();
+        $this->getJson("/api/v1/numbering/series/{$seriesId}/rules")->assertNotFound();
+        $this->postJson("/api/v1/numbering/series/{$seriesId}/versions", $this->body('X-{SEQ:4}'))->assertNotFound();
+        $this->postJson("/api/v1/numbering/series/{$seriesId}/rules", ['reason' => 'x'])->assertNotFound();
+        $this->postJson("/api/v1/numbering/counters/{$counterId}/raise", ['to' => 100, 'reason' => 'x'])->assertNotFound();
+
+        $this->assertSame(5, (int) DB::table('numbering_counters')->where('id', $counterId)->value('next_number'));
+        $this->assertSame(0, DB::table('numbering_counter_adjustments')->count());
+    }
 }
