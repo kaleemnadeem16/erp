@@ -19,6 +19,7 @@ use App\Support\UomDimension;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\PermissionedActor;
+use Tests\Support\PurchasingActor;
 use Tests\TestCase;
 
 /**
@@ -127,6 +128,6 @@ class LocationWarehouseLabelTest extends TestCase
 
     private function warehouse(string $code, string $name): Location
     {
-        return app(CreateWarehouse::class)(['code' => $code, 'name' => $name, 'location_code' => 'stock', 'location_name' => 'Stock'])->locations()->sole();
+        return app(CreateWarehouse::class)(['code' => $code, 'name' => $name, 'location_code' => 'stock', 'location_name' => 'Stock'], PurchasingActor::make(['inventory.warehouse.manage']))->locations()->sole();
     }
 }

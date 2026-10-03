@@ -18,6 +18,7 @@ final class PermissionRegistrationTest extends TestCase
 
         $this->assertSame(['accounting', 'administration', 'approvals', 'company', 'currency', 'estimating', 'inventory', 'numbering', 'parties', 'purchasing'], array_keys($vocabularies));
         $this->assertContains('administration.access.assign', $vocabularies['administration']);
+        $this->assertContains('inventory.package-state.open', $vocabularies['inventory']);
         foreach ([
             'estimating.rate-dimension.manage',
             'estimating.application-rate.manage',

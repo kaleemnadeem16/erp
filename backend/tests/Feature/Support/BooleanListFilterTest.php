@@ -8,6 +8,7 @@ use App\Modules\Inventory\Models\Warehouse;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Support\PermissionedActor;
+use Tests\Support\PurchasingActor;
 use Tests\TestCase;
 
 /**
@@ -87,6 +88,6 @@ class BooleanListFilterTest extends TestCase
 
     private function warehouse(string $code, string $name): Warehouse
     {
-        return app(CreateWarehouse::class)(['code' => $code, 'name' => $name, 'location_code' => 'main', 'location_name' => 'Main']);
+        return app(CreateWarehouse::class)(['code' => $code, 'name' => $name, 'location_code' => 'main', 'location_name' => 'Main'], PurchasingActor::make(['inventory.warehouse.manage']));
     }
 }

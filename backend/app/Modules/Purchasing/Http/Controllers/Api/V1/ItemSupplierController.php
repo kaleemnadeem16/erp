@@ -56,7 +56,7 @@ class ItemSupplierController extends Controller
 
     public function store(StoreItemSupplierRequest $request, CreateItemSupplier $create): JsonResponse
     {
-        return (new ItemSupplierResource($create($request->validated())))->response()->setStatusCode(201);
+        return (new ItemSupplierResource($create($request->validated(), $request->user())))->response()->setStatusCode(201);
     }
 
     public function show(ShowItemSupplierRequest $request, ItemSupplier $item_supplier): ItemSupplierResource
@@ -66,13 +66,13 @@ class ItemSupplierController extends Controller
 
     public function update(UpdateItemSupplierRequest $request, ItemSupplier $item_supplier, UpdateItemSupplier $update): ItemSupplierResource
     {
-        return new ItemSupplierResource($update($item_supplier, $request->validated()));
+        return new ItemSupplierResource($update($item_supplier, $request->validated(), $request->user()));
     }
 
     public function destroy(Request $request, ItemSupplier $item_supplier, ArchiveItemSupplier $archive): Response
     {
         abort_unless($request->user()?->can('purchasing.item-supplier.manage'), 403);
-        $archive($item_supplier);
+        $archive($item_supplier, $request->user());
 
         return response()->noContent();
     }

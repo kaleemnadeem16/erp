@@ -45,7 +45,7 @@ class WarehouseController extends Controller
 
     public function store(StoreWarehouseRequest $request, CreateWarehouse $create): JsonResponse
     {
-        return (new WarehouseResource($create($request->validated())))->response()->setStatusCode(201);
+        return (new WarehouseResource($create($request->validated(), $request->user())))->response()->setStatusCode(201);
     }
 
     public function show(ShowWarehouseRequest $request, Warehouse $warehouse): WarehouseResource
@@ -55,13 +55,13 @@ class WarehouseController extends Controller
 
     public function update(UpdateWarehouseRequest $request, Warehouse $warehouse, UpdateWarehouse $update): WarehouseResource
     {
-        return new WarehouseResource($update($warehouse, $request->validated()));
+        return new WarehouseResource($update($warehouse, $request->validated(), $request->user()));
     }
 
     public function destroy(Request $request, Warehouse $warehouse, ArchiveWarehouse $archive): Response
     {
         abort_unless($request->user()?->can('inventory.warehouse.manage'), 403);
-        $archive($warehouse);
+        $archive($warehouse, $request->user());
 
         return response()->noContent();
     }

@@ -298,7 +298,7 @@ class QueryStockAvailabilityTest extends TestCase
     /** A new warehouse; returns its single, automatically created 'main' location. */
     private function warehouse(string $code): Location
     {
-        return app(CreateWarehouse::class)(['code' => $code, 'name' => $code, 'location_code' => 'main', 'location_name' => 'Main'])->locations()->sole();
+        return app(CreateWarehouse::class)(['code' => $code, 'name' => $code, 'location_code' => 'main', 'location_name' => 'Main'], PurchasingActor::make(['inventory.warehouse.manage']))->locations()->sole();
     }
 
     private function receive(Item $item, Location $location, string $qty, string $cost, ?string $batch = null): void

@@ -30,6 +30,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
+use Tests\Support\PurchasingActor;
 use Tests\TestCase;
 
 class LayerReplayAuditTest extends TestCase
@@ -63,7 +64,7 @@ class LayerReplayAuditTest extends TestCase
             'avco_pool_scope' => $method === ValuationMethod::Avco ? AvcoPoolScope::CompanyItem : null,
             'inventory_account_id' => ChartOfAccount::query()->firstOr(fn () => ChartOfAccount::create(['code' => 'inv', 'name' => 'Inventory', 'type' => AccountType::Asset]))->id,
         ]);
-        $location = app(CreateWarehouse::class)(['code' => 'main', 'name' => 'Main', 'location_code' => 'main', 'location_name' => 'Main'])->locations()->sole();
+        $location = app(CreateWarehouse::class)(['code' => 'main', 'name' => 'Main', 'location_code' => 'main', 'location_name' => 'Main'], PurchasingActor::make(['inventory.warehouse.manage']))->locations()->sole();
 
         return [$item, $uom, $location];
     }
@@ -101,7 +102,7 @@ class LayerReplayAuditTest extends TestCase
     public function test_transferred_stock_cannot_fund_an_issue_before_arrival_but_keeps_fifo_age_afterwards(): void
     {
         [$item, $uom, $source] = $this->makeItem(ValuationMethod::Fifo);
-        $destination = app(CreateWarehouse::class)(['code' => 'other', 'name' => 'Other', 'location_code' => 'other', 'location_name' => 'Other'])->locations()->sole();
+        $destination = app(CreateWarehouse::class)(['code' => 'other', 'name' => 'Other', 'location_code' => 'other', 'location_name' => 'Other'], PurchasingActor::make(['inventory.warehouse.manage']))->locations()->sole();
         $this->postReceiptAt($item, $uom, $source, '5', '10', Carbon::parse('2026-01-01'), 1);
         $this->postReceiptAt($item, $uom, $destination, '5', '30', Carbon::parse('2026-01-02'), 2);
         $this->postIssueAt($item, $uom, $destination, '3', Carbon::parse('2026-01-05'), 3);

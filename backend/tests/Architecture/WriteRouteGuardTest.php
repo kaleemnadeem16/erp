@@ -40,16 +40,8 @@ class WriteRouteGuardTest extends TestCase
         'POST api/v1/numbering/preview', 'POST api/v1/purchase-order-lines/preview', 'POST api/v1/assemblies/{assembly}/material-preview',
     ];
 
-    /** Write routes whose Action has no gate of its own — the guard is the Form Request/controller. Ratchet: do not add. */
-    private const ACTION_WITHOUT_GATE = [
-        'POST api/v1/categories', 'DELETE api/v1/categories/{category}', 'PATCH api/v1/categories/{category}',
-        'POST api/v1/items', 'DELETE api/v1/items/{item}', 'PATCH api/v1/items/{item}', 'POST api/v1/warehouses',
-        'DELETE api/v1/warehouses/{warehouse}', 'PATCH api/v1/warehouses/{warehouse}', 'POST api/v1/locations',
-        'DELETE api/v1/locations/{location}', 'PATCH api/v1/locations/{location}', 'POST api/v1/warehouse-location-roles', 'DELETE api/v1/warehouse-location-roles/{warehouseLocationRole}',
-        'PATCH api/v1/warehouse-location-roles/{warehouseLocationRole}', 'POST api/v1/item-suppliers',
-        'DELETE api/v1/item-suppliers/{item_supplier}', 'PATCH api/v1/item-suppliers/{item_supplier}',
-        'POST api/v1/purchase-orders', 'PATCH api/v1/purchase-orders/{purchaseOrder}',
-    ];
+    /** Write routes whose Action has no gate of its own — the guard is the Form Request/controller. Ratchet: it is now empty and must stay empty. */
+    private const ACTION_WITHOUT_GATE = [];
 
     /** @return list<array{key: string, route: Route, source: string}> */
     private function writeRoutes(): array

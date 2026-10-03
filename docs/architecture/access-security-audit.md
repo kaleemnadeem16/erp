@@ -106,18 +106,17 @@ added to that administrator only; no Buyer or operational role was broadened.
   named with a reason (sign-in/recovery, the caller's own account/session, approval decide/withdraw whose eligibility the Action
   checks). Three compute-only POSTs (numbering tester, PO line preview, material preview) are classed separately. The detector was
   proven by removing one request's guard (`POST api/v1/items` then failed). It proves a guard is *present*, not correct.
-- [ ] **Action-level guards (partly done, ratchet):** the governance Actions now check their own capability through
-  `App\Support\ActionAuthorization` — approval policies (create, edit, delete, activate), approval authorities, delegations (own
-  or manage), the approval mode, the Estimating policies and variance reasons (overhead, material selection, stock mix, material
-  variance), the Inventory and Purchasing policy settings (each group against its own capability) and the Company settings (each
-  field against its registry capability) — so a console command, job or integration is stopped as a request is
-  (`ApprovalGovernanceActionGuardTest` and the existing Action tests). **20 write routes remain guarded at the HTTP boundary only**
-  (`ACTION_WITHOUT_GATE` in `WriteRouteGuardTest`): items, categories, warehouses, locations, warehouse-location roles, item
-  suppliers and purchase orders. Next slice: that master data, starting with purchase orders and item suppliers.
+- [x] **Action-level guards (2026-10-03):** every API write route now has a capability check inside its Action, through
+  `App\Support\ActionAuthorization`, as well as at the request boundary: approval policies, authorities, delegations and the mode;
+  the Estimating policies and variance reasons; the Inventory, Purchasing and Company settings; and the master data — purchase
+  orders, item suppliers, items, categories, warehouses, locations and warehouse-location roles. A console command, job or
+  integration is stopped as a request is. `ACTION_WITHOUT_GATE` in `WriteRouteGuardTest` is empty and must stay empty;
+  `ApprovalGovernanceActionGuardTest` and `MasterDataActionGuardTest` prove each Action refuses a caller without its capability. The
+  open-PO cutover commit (`purchasing.cutover.commit`) creates its orders through `CreatePurchaseOrder::forWorkflow`, because that
+  workflow has already authorised its own actor under its own capability. Demo seeders, jobs and tests pass the actor explicitly.
 - [x] **Administration, Numbering, Imports and Core Auth negative paths (2026-10-03):** foreign-company member/role and series/counter
   routes are unreachable by id (new isolation tests); forgot-password no longer enumerates accounts (A7); the Imports Actions have no
-  entry point and a test keeps it that way. Open from this pass: bearer-token expiry, and
-  Action-level guards.
+  entry point and a test keeps it that way. Open from this pass: bearer-token expiry.
 - [x] **A6 stock-read capabilities (2026-10-03):** ADR 0083. Three separate read capabilities enforced on the overview, layers, pools and
   ledger (request boundary, before includes/filters), blind counting by role, SPA screen access aligned, and a grant migration that
   preserves existing screen holders. `StockVisibilityTest` (each surface × each capability alone and none, includes/filters, body

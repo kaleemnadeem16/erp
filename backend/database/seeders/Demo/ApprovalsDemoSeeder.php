@@ -234,7 +234,7 @@ final class ApprovalsDemoSeeder extends Seeder
                 'line_number' => 1, 'item_id' => $item->getKey(), 'description' => $item->name, 'ordered_qty' => '1000.0000',
                 'purchase_uom_id' => $item->stock_uom_id, 'unit_price' => number_format((float) $amount / 1000, 4, '.', ''),
             ]],
-        ]);
+        ], $this->buyer);
         $scenario($order);
     }
 

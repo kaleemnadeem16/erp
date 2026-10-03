@@ -22,6 +22,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
+use Tests\Support\PurchasingActor;
 use Tests\TestCase;
 
 /**
@@ -54,7 +55,7 @@ class PhysicalCountApiTest extends TestCase
         $uom = Uom::query()->create(['code' => 'EA', 'name' => 'Each', 'dimension' => UomDimension::Count, 'factor_to_base' => '1.000000000', 'is_base' => true]);
         $account = ChartOfAccount::query()->create(['code' => 'inv', 'name' => 'Inventory', 'type' => AccountType::Asset]);
         $category = Category::query()->create(['code' => 'stock', 'name' => 'Stock', 'default_valuation_method' => ValuationMethod::Avco, 'inventory_account_id' => $account->id]);
-        $warehouse = app(CreateWarehouse::class)(['code' => 'MAIN', 'name' => 'Main warehouse', 'is_default' => true, 'location_code' => 'STOCK', 'location_name' => 'Stock']);
+        $warehouse = app(CreateWarehouse::class)(['code' => 'MAIN', 'name' => 'Main warehouse', 'is_default' => true, 'location_code' => 'STOCK', 'location_name' => 'Stock'], PurchasingActor::make(['inventory.warehouse.manage']));
         $this->warehouseId = $warehouse->id;
         $this->locationId = (int) Location::query()->where('code', 'stock')->value('id');
 

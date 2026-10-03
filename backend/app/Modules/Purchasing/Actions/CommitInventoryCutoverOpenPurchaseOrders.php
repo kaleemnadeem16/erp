@@ -88,7 +88,7 @@ final class CommitInventoryCutoverOpenPurchaseOrders
                 $currency = Currency::query()->where('code', strtoupper((string) $first['currency_code']))->firstOrFail();
                 $importBatchId = (int) $sourceBatchIds->sole();
 
-                $order = ($this->create)([
+                $order = $this->create->forWorkflow([
                     'supplier_account_id' => $supplier->id,
                     'supplier_site_id' => $supplierSite?->id,
                     'currency_id' => $currency->id,

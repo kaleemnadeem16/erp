@@ -192,8 +192,8 @@ Required automated controls:
    by the SPA—never confidential policy internals;
 6. generated UI/client code does not invent permission strings independently;
 7. every API write route has a visible capability guard or a recorded reason it needs none—enforced by
-   `tests/Architecture/WriteRouteGuardTest.php`, which also keeps a ratchet list of routes guarded only at the HTTP boundary
-   (an Action called without HTTP is not stopped there; see the audit's "Action-level guards" item).
+   `tests/Architecture/WriteRouteGuardTest.php`, which also fails any write route whose Action has no gate of its own (the ratchet list
+   is empty; an Action called without HTTP must stop itself — see `ActionAuthorization`).
 
 ## Per-feature authorisation checklist
 

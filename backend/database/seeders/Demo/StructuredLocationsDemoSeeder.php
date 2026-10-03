@@ -134,11 +134,11 @@ final class StructuredLocationsDemoSeeder extends Seeder
         $update($locations['returns'], [
             'counts_as_usable' => true,
             'counts_as_usable_reason' => 'Returned stock is inspected on arrival and goes straight back into use.',
-        ], $actor->id);
+        ], $actor);
         $update($locations['overflow'], [
             'counts_as_usable' => false,
             'counts_as_usable_reason' => 'The overflow shelf holds damaged or opened stock awaiting a decision.',
-        ], $actor->id);
+        ], $actor);
     }
 
     /** @param array<string, Location> $locations */

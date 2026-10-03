@@ -75,6 +75,11 @@ movement and valuation, built in Phase 2.
 preserving exact layer contributions. It is read-only and has no HTTP/UI or tracking activation;
 see [opening preview](../../../../docs/domain/package-opening-preview.md).
 
+`PostPackageOpening` appends a complete OPEN/UNPACK successor under package-state.open plus
+package-state.view authority, preserving exact layer contributions and immutable history.
+There is no HTTP/UI or tracking activation; [saved operations](../../../../docs/domain/package-opening-operations.md)
+describe locking, freshness, conservation and demo history.
+
 `CreateCategory`/`UpdateCategory`/`ArchiveCategory` and
 `CreateItem`/`UpdateItem`/`ArchiveItem` own the transactional write boundary used by HTTP and
 future non-HTTP entry points. Model guards still enforce tenant, hierarchy and valuation

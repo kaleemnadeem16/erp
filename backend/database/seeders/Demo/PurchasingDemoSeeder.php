@@ -149,7 +149,7 @@ final class PurchasingDemoSeeder extends Seeder
                     'line_number' => 1, 'item_id' => $item->getKey(), 'description' => $item->name,
                     'ordered_qty' => $data['qty'], 'purchase_uom_id' => $item->stock_uom_id, 'unit_price' => $data['cost'],
                 ]],
-            ]);
+            ], $this->actor);
             $order = app(IssuePurchaseOrder::class)($order, $this->actor);
             $line = $order->lines->sole();
 
@@ -193,7 +193,7 @@ final class PurchasingDemoSeeder extends Seeder
                 'line_number' => 1, 'item_id' => $item->getKey(), 'description' => $item->name,
                 'ordered_qty' => '25.0000', 'purchase_uom_id' => $item->stock_uom_id, 'unit_price' => '345.0000',
             ]],
-        ]);
+        ], $this->actor);
         $order = app(IssuePurchaseOrder::class)($order, $this->actor);
         $line = $order->lines->sole();
 
@@ -248,7 +248,7 @@ final class PurchasingDemoSeeder extends Seeder
                 'line_number' => 1, 'item_id' => $item->getKey(), 'description' => $item->name,
                 'ordered_qty' => '40.0000', 'purchase_uom_id' => $item->stock_uom_id, 'unit_price' => '348.0000',
             ]],
-        ]);
+        ], $this->actor);
         $line = app(IssuePurchaseOrder::class)($order, $this->actor)->lines->sole();
 
         app(CreateGoodsReceipt::class)([
@@ -312,7 +312,7 @@ final class PurchasingDemoSeeder extends Seeder
                 'line_number' => 1, 'item_id' => $item->getKey(), 'description' => $item->name,
                 'ordered_qty' => '10.0000', 'purchase_uom_id' => $item->stock_uom_id, 'unit_price' => '1180.0000',
             ]],
-        ]);
+        ], $this->actor);
         $order = app(IssuePurchaseOrder::class)($order, $this->actor);
         $line = $order->lines->sole();
 
@@ -375,7 +375,7 @@ final class PurchasingDemoSeeder extends Seeder
                 'line_number' => 1, 'item_id' => $item->getKey(), 'description' => $item->name,
                 'ordered_qty' => $qty, 'purchase_uom_id' => $item->stock_uom_id, 'unit_price' => $cost,
             ]],
-        ]);
+        ], $this->actor);
         $order = app(IssuePurchaseOrder::class)($order, $this->actor);
         $line = $order->lines->sole();
 
@@ -417,7 +417,7 @@ final class PurchasingDemoSeeder extends Seeder
                     'line_number' => 1, 'item_id' => $item->getKey(), 'description' => $item->name,
                     'ordered_qty' => '1.0000', 'purchase_uom_id' => $item->stock_uom_id, 'unit_price' => '45000.0000',
                 ]],
-            ]);
+            ], $this->actor);
             $order = app(IssuePurchaseOrder::class)($order, $this->actor);
             $line = $order->lines->sole();
 
@@ -463,7 +463,7 @@ final class PurchasingDemoSeeder extends Seeder
                 'ordered_qty' => '50.0000', 'purchase_uom_id' => $item->stock_uom_id, 'unit_price' => '540.0000',
                 'qa_required' => true,
             ]],
-        ]);
+        ], $this->actor);
         $order = app(IssuePurchaseOrder::class)($order, $this->actor);
         $line = $order->lines->sole();
 
@@ -514,7 +514,7 @@ final class PurchasingDemoSeeder extends Seeder
                 'line_number' => 1, 'item_id' => $item->getKey(), 'description' => $item->name,
                 'ordered_qty' => '75.0000', 'purchase_uom_id' => $item->stock_uom_id, 'unit_price' => '505.0000',
             ]],
-        ]);
+        ], $this->actor);
         app(IssuePurchaseOrder::class)($order, $this->actor);
     }
 
@@ -560,7 +560,7 @@ final class PurchasingDemoSeeder extends Seeder
                     'ordered_qty' => '40.0000', 'purchase_uom_id' => $thinner->stock_uom_id, 'unit_price' => '345.0000',
                 ],
             ],
-        ]);
+        ], $this->actor);
         app(IssuePurchaseOrder::class)($order, $this->actor);
     }
 
@@ -586,7 +586,7 @@ final class PurchasingDemoSeeder extends Seeder
                 'line_number' => 1, 'item_id' => $item->getKey(), 'description' => 'Spray unit — pending quote confirmation',
                 'ordered_qty' => '2.0000', 'purchase_uom_id' => $item->stock_uom_id, 'unit_price' => '44500.0000',
             ]],
-        ]);
+        ], $this->actor);
         // Deliberately never issued.
     }
 
@@ -612,7 +612,7 @@ final class PurchasingDemoSeeder extends Seeder
                 'line_number' => 1, 'item_id' => $item->getKey(), 'description' => 'Thinner — superseded by a larger combined order',
                 'ordered_qty' => '15.0000', 'purchase_uom_id' => $item->stock_uom_id, 'unit_price' => '345.0000',
             ]],
-        ]);
+        ], $this->actor);
         $order = app(IssuePurchaseOrder::class)($order, $this->actor);
         app(CancelPurchaseOrder::class)($order, 'Demo: superseded by the combined multi-item order placed the same week.', $this->actor);
     }

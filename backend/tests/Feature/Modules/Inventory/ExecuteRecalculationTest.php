@@ -38,6 +38,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
+use Tests\Support\PurchasingActor;
 use Tests\TestCase;
 
 class ExecuteRecalculationTest extends TestCase
@@ -72,7 +73,7 @@ class ExecuteRecalculationTest extends TestCase
             'is_stocked' => true, 'valuation_method' => ValuationMethod::Avco, 'avco_pool_scope' => AvcoPoolScope::CompanyItem,
             'inventory_account_id' => ChartOfAccount::query()->firstOr(fn () => ChartOfAccount::create(['code' => 'inv', 'name' => 'Inventory', 'type' => AccountType::Asset]))->id,
         ]);
-        $location = app(CreateWarehouse::class)(['code' => 'main', 'name' => 'Main', 'location_code' => 'main', 'location_name' => 'Main'])->locations()->sole();
+        $location = app(CreateWarehouse::class)(['code' => 'main', 'name' => 'Main', 'location_code' => 'main', 'location_name' => 'Main'], PurchasingActor::make(['inventory.warehouse.manage']))->locations()->sole();
 
         return [$item, $uom, $location];
     }
@@ -256,7 +257,7 @@ class ExecuteRecalculationTest extends TestCase
             'is_stocked' => true, 'valuation_method' => ValuationMethod::Specific, 'tracking' => 'SERIAL',
             'inventory_account_id' => ChartOfAccount::query()->firstOr(fn () => ChartOfAccount::create(['code' => 'inv', 'name' => 'Inventory', 'type' => AccountType::Asset]))->id,
         ]);
-        $location = app(CreateWarehouse::class)(['code' => 'main', 'name' => 'Main', 'location_code' => 'main', 'location_name' => 'Main'])->locations()->sole();
+        $location = app(CreateWarehouse::class)(['code' => 'main', 'name' => 'Main', 'location_code' => 'main', 'location_name' => 'Main'], PurchasingActor::make(['inventory.warehouse.manage']))->locations()->sole();
         // Establishes the item-wide "later history exists" conflict — the
         // proposed serial (SER-NEW) never overlaps this one's own layer group.
         app(PostInventoryMovement::class)([
@@ -300,7 +301,7 @@ class ExecuteRecalculationTest extends TestCase
             'is_stocked' => true, 'valuation_method' => ValuationMethod::Fifo,
             'inventory_account_id' => ChartOfAccount::query()->firstOr(fn () => ChartOfAccount::create(['code' => 'inv', 'name' => 'Inventory', 'type' => AccountType::Asset]))->id,
         ]);
-        $location = app(CreateWarehouse::class)(['code' => 'main', 'name' => 'Main', 'location_code' => 'main', 'location_name' => 'Main'])->locations()->sole();
+        $location = app(CreateWarehouse::class)(['code' => 'main', 'name' => 'Main', 'location_code' => 'main', 'location_name' => 'Main'], PurchasingActor::make(['inventory.warehouse.manage']))->locations()->sole();
 
         return [$item, $uom, $location];
     }
@@ -432,7 +433,7 @@ class ExecuteRecalculationTest extends TestCase
         [$item, $uom, $source] = $this->makeFifoItem();
         $destination = app(CreateWarehouse::class)([
             'code' => 'secondary', 'name' => 'Secondary', 'location_code' => 'secondary', 'location_name' => 'Secondary',
-        ])->locations()->sole();
+        ], PurchasingActor::make(['inventory.warehouse.manage']))->locations()->sole();
         foreach ([
             ['qty' => '5.0000', 'at' => '2026-01-01', 'cost' => '10.0000', 'source' => 1],
             ['qty' => '5.0000', 'at' => '2026-01-10', 'cost' => '12.0000', 'source' => 2],
@@ -502,7 +503,7 @@ class ExecuteRecalculationTest extends TestCase
         [$item, $uom, $source] = $this->makeFifoItem();
         $destination = app(CreateWarehouse::class)([
             'code' => 'secondary', 'name' => 'Secondary', 'location_code' => 'secondary', 'location_name' => 'Secondary',
-        ])->locations()->sole();
+        ], PurchasingActor::make(['inventory.warehouse.manage']))->locations()->sole();
         foreach ([
             ['qty' => '5.0000', 'at' => '2026-01-01', 'cost' => '10.0000', 'source' => 1],
             ['qty' => '5.0000', 'at' => '2026-01-10', 'cost' => '12.0000', 'source' => 2],
@@ -568,10 +569,10 @@ class ExecuteRecalculationTest extends TestCase
         [$item, $uom, $source] = $this->makeFifoItem();
         $destination = app(CreateWarehouse::class)([
             'code' => 'secondary', 'name' => 'Secondary', 'location_code' => 'secondary', 'location_name' => 'Secondary',
-        ])->locations()->sole();
+        ], PurchasingActor::make(['inventory.warehouse.manage']))->locations()->sole();
         $tertiary = app(CreateWarehouse::class)([
             'code' => 'tertiary', 'name' => 'Tertiary', 'location_code' => 'tertiary', 'location_name' => 'Tertiary',
-        ])->locations()->sole();
+        ], PurchasingActor::make(['inventory.warehouse.manage']))->locations()->sole();
         foreach ([
             ['qty' => '5.0000', 'at' => '2026-01-01', 'cost' => '10.0000', 'source' => 1],
             ['qty' => '5.0000', 'at' => '2026-01-10', 'cost' => '12.0000', 'source' => 2],
@@ -656,7 +657,7 @@ class ExecuteRecalculationTest extends TestCase
         [$item, $uom, $source] = $this->makeFifoItem();
         $destination = app(CreateWarehouse::class)([
             'code' => 'secondary', 'name' => 'Secondary', 'location_code' => 'secondary', 'location_name' => 'Secondary',
-        ])->locations()->sole();
+        ], PurchasingActor::make(['inventory.warehouse.manage']))->locations()->sole();
         app(PostInventoryMovement::class)([
             'item_id' => $item->id, 'location_id' => $source->id, 'qty' => '10.0000', 'uom_id' => $uom->id,
             'moved_at' => Carbon::parse('2026-01-01'), 'source_type' => 'TEST_RECEIPT', 'source_id' => 1,

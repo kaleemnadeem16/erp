@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace App\Modules\Purchasing\Actions;
 
 use App\Exceptions\DomainInvariantException;
+use App\Models\User;
 use App\Modules\Approvals\Actions\InvalidateApprovals;
 use App\Modules\Approvals\Models\ApprovalRequest;
 use App\Modules\Approvals\Support\ApprovalRequestStatus;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Modules\Purchasing\Support\PurchaseOrderApprovalSubject;
 use App\Modules\Purchasing\Support\PurchaseOrderStatus;
+use App\Support\ActionAuthorization;
 use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
 use Illuminate\Support\Arr;
@@ -24,8 +26,10 @@ final class UpdatePurchaseOrder
     ) {}
 
     /** @param array<string, mixed> $attributes */
-    public function __invoke(PurchaseOrder $order, array $attributes): PurchaseOrder
+    public function __invoke(PurchaseOrder $order, array $attributes, User $actor): PurchaseOrder
     {
+        ActionAuthorization::require($actor, 'purchasing.purchase-order.create', 'edit a purchase order');
+
         return DB::transaction(function () use ($order, $attributes): PurchaseOrder {
             $order = PurchaseOrder::query()->lockForUpdate()->findOrFail($order->id);
             if ($order->status !== PurchaseOrderStatus::Draft) {

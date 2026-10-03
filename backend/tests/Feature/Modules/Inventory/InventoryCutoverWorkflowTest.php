@@ -37,6 +37,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
+use Tests\Support\PurchasingActor;
 use Tests\TestCase;
 
 class InventoryCutoverWorkflowTest extends TestCase
@@ -311,7 +312,7 @@ class InventoryCutoverWorkflowTest extends TestCase
         app(CreateWarehouse::class)([
             'code' => 'MAIN', 'name' => 'Main warehouse', 'is_default' => true,
             'location_code' => 'STOCK', 'location_name' => 'Stock',
-        ]);
+        ], PurchasingActor::make(['inventory.warehouse.manage']));
     }
 
     /** @param string|array<int, string> $permissions */

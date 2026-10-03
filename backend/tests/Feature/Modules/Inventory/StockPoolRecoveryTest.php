@@ -9,6 +9,7 @@ use App\Modules\Inventory\Models\NegativeStockShortage;
 use App\Modules\Inventory\Models\StockLayer;
 use App\Modules\Inventory\Support\AvcoPoolScope;
 use App\Modules\Inventory\Support\ValuationMethod;
+use Tests\Support\PurchasingActor;
 
 /**
  * Pool-level recovery behaviour around ADR 0037: frozen pools must never
@@ -127,10 +128,10 @@ class StockPoolRecoveryTest extends StockIssueTest
     {
         [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Avco, qty: '10.0000');
         $item->update(['avco_pool_scope' => AvcoPoolScope::WarehouseItem]);
-        $warehouseA = app(CreateWarehouse::class)(['code' => 'wa', 'name' => 'Branch A', 'location_code' => 'a1', 'location_name' => 'A1']);
+        $warehouseA = app(CreateWarehouse::class)(['code' => 'wa', 'name' => 'Branch A', 'location_code' => 'a1', 'location_name' => 'A1'], PurchasingActor::make(['inventory.warehouse.manage']));
         $locationA1Id = $warehouseA->locations()->sole()->id;
         $locationA2Id = $warehouseA->locations()->create(['code' => 'a2', 'name' => 'A2'])->id;
-        $warehouseB = app(CreateWarehouse::class)(['code' => 'wb', 'name' => 'Branch B', 'location_code' => 'b1', 'location_name' => 'B1']);
+        $warehouseB = app(CreateWarehouse::class)(['code' => 'wb', 'name' => 'Branch B', 'location_code' => 'b1', 'location_name' => 'B1'], PurchasingActor::make(['inventory.warehouse.manage']));
         $locationB1Id = $warehouseB->locations()->sole()->id;
 
         // Receive 10 @ $10 at A1.

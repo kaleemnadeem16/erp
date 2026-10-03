@@ -32,6 +32,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\Support\PermissionedActor;
+use Tests\Support\PurchasingActor;
 use Tests\TestCase;
 
 /**
@@ -77,7 +78,7 @@ class StockMixControlTest extends TestCase
     {
         $this->locations[$warehouse] ??= app(CreateWarehouse::class)([
             'code' => $warehouse, 'name' => strtoupper($warehouse), 'location_code' => 'main', 'location_name' => 'Main',
-        ])->locations()->sole();
+        ], PurchasingActor::make(['inventory.warehouse.manage']))->locations()->sole();
         $currency = Currency::query()->where('code', 'USD')->firstOrFail();
         app(PostInventoryMovement::class)([
             'item_id' => $this->item->id, 'location_id' => $this->locations[$warehouse]->id, 'qty' => $qty, 'uom_id' => $this->kg->id,

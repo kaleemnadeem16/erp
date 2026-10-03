@@ -21,6 +21,7 @@ use App\Modules\Inventory\Support\ValuationMethod;
 use App\Support\UomDimension;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Tests\Support\PurchasingActor;
 use Tests\TestCase;
 
 class StockLayerConsumptionTest extends TestCase
@@ -40,7 +41,7 @@ class StockLayerConsumptionTest extends TestCase
             'avco_pool_scope' => $method === ValuationMethod::Avco ? AvcoPoolScope::CompanyItem : null,
             'inventory_account_id' => ChartOfAccount::query()->firstOr(fn () => ChartOfAccount::create(['code' => 'inv', 'name' => 'Inventory', 'type' => AccountType::Asset]))->id,
         ]);
-        $location = app(CreateWarehouse::class)(['code' => 'main', 'name' => 'Main', 'location_code' => 'main', 'location_name' => 'Main'])->locations()->sole();
+        $location = app(CreateWarehouse::class)(['code' => 'main', 'name' => 'Main', 'location_code' => 'main', 'location_name' => 'Main'], PurchasingActor::make(['inventory.warehouse.manage']))->locations()->sole();
 
         return [$item, $uom, $location];
     }
@@ -80,7 +81,7 @@ class StockLayerConsumptionTest extends TestCase
     public function test_a_fifo_transfer_records_a_consumption_row_only_for_the_source_layer(): void
     {
         [$item, $uom, $location] = $this->makeItem(ValuationMethod::Fifo);
-        $destination = app(CreateWarehouse::class)(['code' => 'other', 'name' => 'Other', 'location_code' => 'other', 'location_name' => 'Other'])->locations()->sole();
+        $destination = app(CreateWarehouse::class)(['code' => 'other', 'name' => 'Other', 'location_code' => 'other', 'location_name' => 'Other'], PurchasingActor::make(['inventory.warehouse.manage']))->locations()->sole();
         $this->postReceiptAt($item, $uom, $location, '5.0000', '10.0000', Carbon::parse('2026-01-01'), 1);
         $sourceLayer = StockLayer::query()->sole();
 
@@ -132,7 +133,7 @@ class StockLayerConsumptionTest extends TestCase
     public function test_an_avco_transfer_records_no_consumption_rows(): void
     {
         [$item, $uom, $location] = $this->makeItem(ValuationMethod::Avco);
-        $destination = app(CreateWarehouse::class)(['code' => 'other', 'name' => 'Other', 'location_code' => 'other', 'location_name' => 'Other'])->locations()->sole();
+        $destination = app(CreateWarehouse::class)(['code' => 'other', 'name' => 'Other', 'location_code' => 'other', 'location_name' => 'Other'], PurchasingActor::make(['inventory.warehouse.manage']))->locations()->sole();
         $this->postReceiptAt($item, $uom, $location, '5.0000', '10.0000', Carbon::parse('2026-01-01'), 1);
 
         app(PostInventoryMovement::class)->transfer([

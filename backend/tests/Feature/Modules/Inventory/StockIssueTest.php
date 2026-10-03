@@ -27,6 +27,7 @@ use Brick\Math\BigDecimal;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\Feature\Modules\Purchasing\PurchaseOrderFoundationTest;
+use Tests\Support\PurchasingActor;
 
 class StockIssueTest extends PurchaseOrderFoundationTest
 {
@@ -348,7 +349,7 @@ class StockIssueTest extends PurchaseOrderFoundationTest
         // physically-covered issue from the same frozen pool already gets.
         [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Avco, qty: '10.0000');
         $item->update(['avco_pool_scope' => AvcoPoolScope::WarehouseItem]);
-        $warehouse = app(CreateWarehouse::class)(['code' => 'w1', 'name' => 'W1', 'location_code' => 'a', 'location_name' => 'A']);
+        $warehouse = app(CreateWarehouse::class)(['code' => 'w1', 'name' => 'W1', 'location_code' => 'a', 'location_name' => 'A'], PurchasingActor::make(['inventory.warehouse.manage']));
         $locationAId = $warehouse->locations()->sole()->id;
         $locationBId = $warehouse->locations()->create(['code' => 'b', 'name' => 'B'])->id;
         $locationCId = $this->otherLocationId('c');
@@ -426,14 +427,14 @@ class StockIssueTest extends PurchaseOrderFoundationTest
     {
         return app(CreateWarehouse::class)([
             'code' => 'main', 'name' => 'Main', 'location_code' => 'main', 'location_name' => 'Main',
-        ])->locations()->sole()->id;
+        ], PurchasingActor::make(['inventory.warehouse.manage']))->locations()->sole()->id;
     }
 
     protected function otherLocationId(string $code): int
     {
         return app(CreateWarehouse::class)([
             'code' => $code, 'name' => ucfirst($code), 'location_code' => $code, 'location_name' => ucfirst($code),
-        ])->locations()->sole()->id;
+        ], PurchasingActor::make(['inventory.warehouse.manage']))->locations()->sole()->id;
     }
 
     protected function postReceipt(int $poLineId, int $itemId, int $uomId, int $locationId, string $qty, string $cost, ?string $serialNo = null): int

@@ -39,6 +39,7 @@ use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\Support\PermissionedActor;
+use Tests\Support\PurchasingActor;
 use Tests\TestCase;
 
 class MaterialPreviewApiTest extends TestCase
@@ -927,7 +928,7 @@ class MaterialPreviewApiTest extends TestCase
         if (! isset($this->locations[$warehouseCode])) {
             $this->locations[$warehouseCode] = app(CreateWarehouse::class)([
                 'code' => $warehouseCode, 'name' => strtoupper($warehouseCode), 'location_code' => 'main', 'location_name' => 'Main',
-            ])->locations()->sole();
+            ], PurchasingActor::make(['inventory.warehouse.manage']))->locations()->sole();
             if ($type !== null) {
                 $this->locations[$warehouseCode]->update(['type' => $type]);
             }

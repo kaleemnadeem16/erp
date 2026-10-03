@@ -192,7 +192,7 @@ final class PackagedPurchasingDemoSeeder extends Seeder
             $order = app(CreatePurchaseOrder::class)(['supplier_account_id' => $this->supplier->id,
                 'currency_id' => $this->currency->id, 'fx_rate' => '1.000000000', 'fx_rate_date' => now()->toDateString(),
                 'fx_rate_type' => 'SPOT', 'fx_rate_source' => 'manual', 'order_date' => now()->toDateString(),
-                'notes' => $marker.' '.$explanation, 'replaces_purchase_order_id' => $replaces?->id, 'lines' => [$line]]);
+                'notes' => $marker.' '.$explanation, 'replaces_purchase_order_id' => $replaces?->id, 'lines' => [$line]], $this->actor);
             if ($transition) {
                 $transition($order);
             }

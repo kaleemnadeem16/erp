@@ -47,7 +47,7 @@ class LocationController extends Controller
 
     public function store(StoreLocationRequest $request, CreateLocation $create): JsonResponse
     {
-        return (new LocationResource($create($request->validated())))->response()->setStatusCode(201);
+        return (new LocationResource($create($request->validated(), $request->user())))->response()->setStatusCode(201);
     }
 
     public function show(ShowLocationRequest $request, Location $location): LocationResource
@@ -57,13 +57,13 @@ class LocationController extends Controller
 
     public function update(UpdateLocationRequest $request, Location $location, UpdateLocation $update): LocationResource
     {
-        return new LocationResource($update($location, $request->validated(), $request->user()?->id));
+        return new LocationResource($update($location, $request->validated(), $request->user()));
     }
 
     public function destroy(Request $request, Location $location, ArchiveLocation $archive): Response
     {
         abort_unless($request->user()?->can('inventory.location.manage'), 403);
-        $archive($location);
+        $archive($location, $request->user());
 
         return response()->noContent();
     }

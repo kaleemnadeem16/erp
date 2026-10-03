@@ -38,7 +38,7 @@ class PackagedPurchasingTest extends PurchaseOrderFoundationTest
         $attrs = $seed->getAttributes();
         unset($attrs['id'],$attrs['company_id'],$attrs['created_at'],$attrs['updated_at']);
         $attrs['lines'] = [array_merge($this->lineAttributes($seed, $item, $uom), ['item_packaging_id' => $package->id, 'supplier_offer_id' => $offer->id, 'ordered_qty' => '10', 'unit_price' => '850', 'price_uom_id' => $uom->id, 'price_quantity' => '1'])];
-        $order = app(CreatePurchaseOrder::class)($attrs);
+        $order = app(CreatePurchaseOrder::class)($attrs, $actor);
         $line = $order->lines->sole();
         $this->assertSame('20.0000', $line->ordered_stock_qty);
         $this->assertSame('17000.0000', $line->line_amount);
@@ -47,7 +47,7 @@ class PackagedPurchasingTest extends PurchaseOrderFoundationTest
         $this->assertSame('850.0000', $line->refresh()->unit_price);
         $this->assertSame('supplier-box', $line->supplier_item_code);
         $item->update(['is_stocked' => true, 'valuation_method' => 'AVCO', 'tracking' => 'NONE', 'avco_pool_scope' => 'COMPANY_ITEM', 'inventory_account_id' => ChartOfAccount::query()->firstOrFail()->id]);
-        $warehouse = app(CreateWarehouse::class)(['code' => 'package-store', 'name' => 'Store', 'location_code' => 'store', 'location_name' => 'Store']);
+        $warehouse = app(CreateWarehouse::class)(['code' => 'package-store', 'name' => 'Store', 'location_code' => 'store', 'location_name' => 'Store'], PurchasingActor::make(['inventory.warehouse.manage']));
         foreach (['6', '4'] as $qty) {
             $id = $this->actingAs($actor)->postJson('/api/v1/goods-receipts', ['supplier_account_id' => $order->supplier_account_id, 'physical_arrival_at' => now()->toIso8601String(), 'posting_date' => now()->format('Y-m-d'),
                 'lines' => [['purchase_order_line_id' => $line->id, 'item_id' => $item->id, 'location_id' => $warehouse->locations()->sole()->id, 'received_uom_id' => $uom->id, 'received_qty' => $qty, 'item_packaging_id' => $package->id]]])->assertCreated()->json('data.id');
@@ -135,8 +135,8 @@ class PackagedPurchasingTest extends PurchaseOrderFoundationTest
             $this->assertTrue(true);
         }
         $input['ordering_exception_reason'] = 'Supplier agreed to seven boxes.';
-        $built = app(BuildPurchaseOrderLineAttributes::class)($order,$input);
-        $this->assertSame('14.0000',$built['ordered_stock_qty']);
-        $this->assertSame('11900.0000',$built['line_amount']);
+        $built = app(BuildPurchaseOrderLineAttributes::class)($order, $input);
+        $this->assertSame('14.0000', $built['ordered_stock_qty']);
+        $this->assertSame('11900.0000', $built['line_amount']);
     }
 }

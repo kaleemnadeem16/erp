@@ -31,6 +31,7 @@ use App\Support\UomDimension;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
+use Tests\Support\PurchasingActor;
 use Tests\TestCase;
 
 class PhysicalCountTest extends TestCase
@@ -281,7 +282,7 @@ class PhysicalCountTest extends TestCase
         $warehouse = app(CreateWarehouse::class)([
             'code' => 'MAIN', 'name' => 'Main warehouse', 'is_default' => true,
             'location_code' => 'STOCK', 'location_name' => 'Stock',
-        ]);
+        ], PurchasingActor::make(['inventory.warehouse.manage']));
         $this->warehouseId = $warehouse->id;
         $this->locationId = (int) Location::query()->where('code', 'stock')->value('id');
         Company::query()->findOrFail(1)->update(['base_currency_id' => Currency::query()->where('code', 'PKR')->value('id')]);

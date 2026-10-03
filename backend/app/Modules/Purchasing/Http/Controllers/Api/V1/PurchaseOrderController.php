@@ -158,7 +158,7 @@ class PurchaseOrderController extends Controller
 
     public function store(StorePurchaseOrderRequest $request, CreatePurchaseOrder $create): JsonResponse
     {
-        return (new PurchaseOrderResource($create($request->validated())))->response()->setStatusCode(201);
+        return (new PurchaseOrderResource($create($request->validated(), $request->user())))->response()->setStatusCode(201);
     }
 
     public function show(ShowPurchaseOrderRequest $request, PurchaseOrder $purchaseOrder): PurchaseOrderResource
@@ -176,7 +176,7 @@ class PurchaseOrderController extends Controller
 
     public function update(UpdatePurchaseOrderRequest $request, PurchaseOrder $purchaseOrder, UpdatePurchaseOrder $update): PurchaseOrderResource
     {
-        return new PurchaseOrderResource($update($purchaseOrder, $request->validated()));
+        return new PurchaseOrderResource($update($purchaseOrder, $request->validated(), $request->user()));
     }
 
     public function issue(Request $request, PurchaseOrder $purchaseOrder, IssuePurchaseOrder $issue): PurchaseOrderResource

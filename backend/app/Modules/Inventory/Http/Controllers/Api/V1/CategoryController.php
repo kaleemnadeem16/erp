@@ -58,7 +58,7 @@ class CategoryController extends Controller
 
     public function store(StoreCategoryRequest $request, CreateCategory $create): JsonResponse
     {
-        $category = $create($request->validated());
+        $category = $create($request->validated(), $request->user());
 
         return (new CategoryResource($category))->response()->setStatusCode(201);
     }
@@ -70,13 +70,13 @@ class CategoryController extends Controller
 
     public function update(UpdateCategoryRequest $request, Category $category, UpdateCategory $update): CategoryResource
     {
-        return new CategoryResource($update($category, $request->validated()));
+        return new CategoryResource($update($category, $request->validated(), $request->user()));
     }
 
     public function destroy(Request $request, Category $category, ArchiveCategory $archive): Response
     {
         abort_unless($request->user()?->can('inventory.category.manage'), 403);
-        $archive($category);
+        $archive($category, $request->user());
 
         return response()->noContent();
     }

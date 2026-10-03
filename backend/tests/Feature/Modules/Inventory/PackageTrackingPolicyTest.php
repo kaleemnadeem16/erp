@@ -14,6 +14,7 @@ use App\Modules\Inventory\Support\PackageTrackingMode;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Tests\Support\PurchasingActor;
 use Tests\TestCase;
 
 class PackageTrackingPolicyTest extends TestCase
@@ -156,6 +157,6 @@ class PackageTrackingPolicyTest extends TestCase
         return app(CreateItem::class)(array_merge([
             'code' => 'policy-item-'.++$this->sequence, 'name' => 'Policy item',
             'type' => 'RAW', 'stock_uom_id' => $this->unit->id, 'category_id' => $category->id,
-        ], $extra));
+        ], $extra), PurchasingActor::make(['inventory.item.manage']));
     }
 }

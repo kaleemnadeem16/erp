@@ -40,7 +40,7 @@ final class PackageOpeningDemoSeeder extends Seeder
                 ?? app(CreateItem::class)(['code' => 'demo-package-opening', 'name' => 'Thinner — opening and unpacking preview',
                     'type' => 'RAW', 'stock_uom_id' => $base->stock_uom_id, 'category_id' => $base->category_id,
                     'valuation_method' => 'FIFO', 'tracking' => 'NONE', 'inventory_account_id' => $base->inventory_account_id,
-                    'is_stocked' => true, 'is_purchasable' => true, 'is_sellable' => false]);
+                    'is_stocked' => true, 'is_purchasable' => true, 'is_sellable' => false], $actor);
             $inner = ItemPackaging::query()->where('item_id', $item->id)->where('code', 'bottle-100ml')->first()
                 ?? app(MaintainItemPackaging::class)(['item_id' => $item->id, 'code' => 'bottle-100ml', 'name' => 'Sealed 100 mL bottle', 'stock_quantity' => '0.1'], $actor);
             $outer = ItemPackaging::query()->where('item_id', $item->id)->where('code', 'carton-2l')->first()

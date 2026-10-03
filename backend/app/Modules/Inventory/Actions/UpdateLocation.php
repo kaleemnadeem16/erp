@@ -6,9 +6,11 @@ namespace App\Modules\Inventory\Actions;
 
 use App\Exceptions\DomainInvariantException;
 use App\Models\Company;
+use App\Models\User;
 use App\Modules\Inventory\Models\InventoryPolicyChange;
 use App\Modules\Inventory\Models\Location;
 use App\Modules\Inventory\Support\InventoryLocationMode;
+use App\Support\ActionAuthorization;
 use App\Support\CompanyContext;
 use Illuminate\Support\Facades\DB;
 
@@ -17,8 +19,15 @@ final class UpdateLocation
     public function __construct(private readonly CompanyContext $companyContext) {}
 
     /** @param array<string, mixed> $attributes */
-    public function __invoke(Location $location, array $attributes, ?int $actorId = null): Location
+    public function __invoke(Location $location, array $attributes, User $actor): Location
     {
+        ActionAuthorization::require($actor, 'inventory.location.manage', 'edit a location');
+        // Marking a location (un)usable is governed by its own policy capability, as the request also requires.
+        if (array_key_exists('counts_as_usable', $attributes)) {
+            ActionAuthorization::require($actor, 'inventory.location-policy.manage', 'mark a location as usable or unusable');
+        }
+        $actorId = $actor->id;
+
         return DB::transaction(function () use ($location, $attributes, $actorId): Location {
             $structuredFields = ['parent_id', 'type', 'barcode', 'sort_order', 'allows_stock', 'counts_as_usable'];
             if (array_intersect(array_keys($attributes), $structuredFields) !== []) {

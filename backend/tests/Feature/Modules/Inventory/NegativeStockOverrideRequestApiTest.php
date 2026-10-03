@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\Feature\Modules\Purchasing\PurchaseOrderFoundationTest;
+use Tests\Support\PurchasingActor;
 
 /**
  * The negative-stock override HTTP surface — exposed per
@@ -156,7 +157,7 @@ class NegativeStockOverrideRequestApiTest extends PurchaseOrderFoundationTest
         [, $item] = $this->makeOrder();
         $item->update(['is_stocked' => true, 'valuation_method' => ValuationMethod::Fifo, 'avco_pool_scope' => null]);
         Company::query()->findOrFail(1)->update(['negative_stock_mode' => 'AUTHORISED_OVERRIDE', 'negative_stock_authorisation_mode' => $mode]);
-        $locationId = app(CreateWarehouse::class)(['code' => 'main', 'name' => 'Main', 'location_code' => 'main', 'location_name' => 'Main'])->locations()->sole()->id;
+        $locationId = app(CreateWarehouse::class)(['code' => 'main', 'name' => 'Main', 'location_code' => 'main', 'location_name' => 'Main'], PurchasingActor::make(['inventory.warehouse.manage']))->locations()->sole()->id;
 
         return [$item->id, $locationId];
     }

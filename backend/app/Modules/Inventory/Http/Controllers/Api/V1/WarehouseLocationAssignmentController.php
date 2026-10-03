@@ -44,7 +44,7 @@ class WarehouseLocationAssignmentController extends Controller
 
     public function store(StoreWarehouseLocationAssignmentRequest $request, CreateWarehouseLocationAssignment $create): JsonResponse
     {
-        return (new WarehouseLocationAssignmentResource($create($request->validated())))
+        return (new WarehouseLocationAssignmentResource($create($request->validated(), $request->user())))
             ->response()->setStatusCode(201);
     }
 
@@ -55,13 +55,13 @@ class WarehouseLocationAssignmentController extends Controller
 
     public function update(UpdateWarehouseLocationAssignmentRequest $request, WarehouseLocationAssignment $warehouseLocationRole, UpdateWarehouseLocationAssignment $update): WarehouseLocationAssignmentResource
     {
-        return new WarehouseLocationAssignmentResource($update($warehouseLocationRole, $request->validated()));
+        return new WarehouseLocationAssignmentResource($update($warehouseLocationRole, $request->validated(), $request->user()));
     }
 
     public function destroy(Request $request, WarehouseLocationAssignment $warehouseLocationRole, DeleteWarehouseLocationAssignment $delete): Response
     {
         abort_unless($request->user()?->can('inventory.location.manage'), 403);
-        $delete($warehouseLocationRole);
+        $delete($warehouseLocationRole, $request->user());
 
         return response()->noContent();
     }

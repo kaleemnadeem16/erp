@@ -19,6 +19,7 @@ use App\Modules\Inventory\Support\ValuationMethod;
 use Illuminate\Support\Carbon;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
+use Tests\Support\PurchasingActor;
 
 trait BuildsOutboundRecalculation
 {
@@ -54,7 +55,7 @@ trait BuildsOutboundRecalculation
 
     private function location(string $code): Location
     {
-        return app(CreateWarehouse::class)(['code' => $code, 'name' => $code, 'location_code' => $code, 'location_name' => $code])->locations()->sole();
+        return app(CreateWarehouse::class)(['code' => $code, 'name' => $code, 'location_code' => $code, 'location_name' => $code], PurchasingActor::make(['inventory.warehouse.manage']))->locations()->sole();
     }
 
     private function receive(Location $location, string $qty, string $cost, string $date, int $id, ?string $serial = null, ?string $batch = null): void

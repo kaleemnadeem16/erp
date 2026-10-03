@@ -44,7 +44,7 @@ final class ReceiptPackageEvidenceDemoSeeder extends Seeder
                 'valuation_method' => 'AVCO', 'avco_pool_scope' => 'COMPANY_ITEM', 'tracking' => 'NONE',
                 'inventory_account_id' => $base->inventory_account_id,
                 'is_stocked' => true, 'is_purchasable' => true, 'is_sellable' => false,
-            ]);
+            ], $actor);
         $packages = [];
         foreach (['box-2l' => 'Agreed 2 L box', 'can-2l' => 'Observed 2 L can'] as $code => $name) {
             $packages[$code] = ItemPackaging::query()->where('item_id', $item->id)->where('code', $code)->first()
@@ -72,7 +72,7 @@ final class ReceiptPackageEvidenceDemoSeeder extends Seeder
                     'lines' => [['line_number' => 1, 'item_id' => $item->id, 'description' => $item->name,
                         'ordered_qty' => '2', 'purchase_uom_id' => $unit->id, 'item_packaging_id' => $packages['box-2l']->id,
                         'unit_price' => '850', 'price_uom_id' => $unit->id, 'price_quantity' => '1', 'qa_required' => $qa]],
-                ]);
+                ], $actor);
                 app(IssuePurchaseOrder::class)($order, $actor);
                 $line = $order->lines()->sole();
                 $receipt = app(CreateGoodsReceipt::class)([

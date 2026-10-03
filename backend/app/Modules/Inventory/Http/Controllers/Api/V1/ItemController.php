@@ -77,7 +77,7 @@ class ItemController extends Controller
 
     public function store(StoreItemRequest $request, CreateItem $create): JsonResponse
     {
-        $item = $create($request->validated());
+        $item = $create($request->validated(), $request->user());
 
         return (new ItemResource($item))->response()->setStatusCode(201);
     }
@@ -89,13 +89,13 @@ class ItemController extends Controller
 
     public function update(UpdateItemRequest $request, Item $item, UpdateItem $update): ItemResource
     {
-        return new ItemResource($update($item, $request->validated()));
+        return new ItemResource($update($item, $request->validated(), $request->user()));
     }
 
     public function destroy(Request $request, Item $item, ArchiveItem $archive): Response
     {
         abort_unless($request->user()?->can('inventory.item.manage'), 403);
-        $archive($item);
+        $archive($item, $request->user());
 
         return response()->noContent();
     }

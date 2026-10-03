@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Database\Seeders\Demo;
 
 use App\Models\Uom;
+use App\Models\User;
 use App\Modules\Inventory\Actions\CreateCategory;
 use App\Modules\Inventory\Actions\CreateItem;
 use App\Modules\Inventory\Models\Category;
@@ -16,9 +17,12 @@ final class PackageTrackingPolicyDemoSeeder extends Seeder
 {
     use EnsuresDemoEnvironment;
 
+    private User $actor;
+
     public function run(): void
     {
         $this->ensureDemoEnvironment();
+        $this->actor = User::query()->where('email', config('demo.user.email'))->firstOrFail();
         $company = $this->category('demo-package-policy-company', 'Package policy — company fallback');
         $root = $this->category('demo-package-policy-root', 'Package policy — quantity-only category default', mode: 'QUANTITY_ONLY');
         $leaf = $this->category('demo-package-policy-leaf', 'Package policy — inherits nearest ancestor', $root->id);
@@ -40,7 +44,7 @@ final class PackageTrackingPolicyDemoSeeder extends Seeder
             if ($mode !== null) {
                 $attributes['package_tracking_mode'] = $mode;
             }
-            app(CreateItem::class)($attributes);
+            app(CreateItem::class)($attributes, $this->actor);
         }
     }
 
@@ -50,6 +54,6 @@ final class PackageTrackingPolicyDemoSeeder extends Seeder
             ?? app(CreateCategory::class)([
                 'code' => $code, 'name' => $name, 'parent_id' => $parentId,
                 'default_valuation_method' => 'FIFO', 'default_package_tracking_mode' => $mode,
-            ]);
+            ], $this->actor);
     }
 }

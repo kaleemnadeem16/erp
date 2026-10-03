@@ -24,6 +24,7 @@ use App\Modules\Purchasing\Models\PurchaseOrder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
+use Tests\Support\PurchasingActor;
 
 class OpenPurchaseOrderCutoverTest extends PurchaseOrderFoundationTest
 {
@@ -53,7 +54,7 @@ class OpenPurchaseOrderCutoverTest extends PurchaseOrderFoundationTest
         app(CreateWarehouse::class)([
             'code' => 'MAIN', 'name' => 'Main', 'is_default' => true,
             'location_code' => 'STOCK', 'location_name' => 'Stock',
-        ]);
+        ], PurchasingActor::make(['inventory.warehouse.manage']));
 
         $openingBatch = $this->validatedBatch('OPENING_STATE', [
             'source_record_id' => 'OPEN-1', 'item_code' => $item->code, 'warehouse_code' => 'MAIN',

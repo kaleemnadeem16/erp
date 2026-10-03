@@ -340,7 +340,7 @@ class InventoryOverviewApiTest extends TestCase
     {
         $warehouse = app(CreateWarehouse::class)([
             'code' => 'main', 'name' => 'Main', 'location_code' => 'main', 'location_name' => 'Main',
-        ]);
+        ], PurchasingActor::make(['inventory.warehouse.manage']));
 
         return $warehouse->locations()->sole()->id;
     }

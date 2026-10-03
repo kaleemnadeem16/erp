@@ -34,6 +34,7 @@ use App\Support\UomDimension;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
+use Tests\Support\PurchasingActor;
 use Tests\TestCase;
 
 class InventoryCutoverOpeningStatePostingTest extends TestCase
@@ -156,7 +157,7 @@ class InventoryCutoverOpeningStatePostingTest extends TestCase
             'is_stocked' => true, 'valuation_method' => ValuationMethod::Avco, 'tracking' => ItemTracking::None,
             'category_id' => $category->id,
         ]);
-        app(CreateWarehouse::class)(['code' => 'MAIN', 'name' => 'Main warehouse', 'is_default' => true, 'location_code' => 'STOCK', 'location_name' => 'Stock']);
+        app(CreateWarehouse::class)(['code' => 'MAIN', 'name' => 'Main warehouse', 'is_default' => true, 'location_code' => 'STOCK', 'location_name' => 'Stock'], PurchasingActor::make(['inventory.warehouse.manage']));
 
         $rows = [[
             'source_id' => 'CUT-NEG-1', 'sku' => 'SKU-NEG', 'warehouse' => 'MAIN', 'location' => 'STOCK',
@@ -289,7 +290,7 @@ class InventoryCutoverOpeningStatePostingTest extends TestCase
         app(CreateWarehouse::class)([
             'code' => 'MAIN', 'name' => 'Main warehouse', 'is_default' => true,
             'location_code' => 'STOCK', 'location_name' => 'Stock',
-        ]);
+        ], PurchasingActor::make(['inventory.warehouse.manage']));
     }
 
     /** @param string|array<int, string> $permissions */
