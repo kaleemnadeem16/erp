@@ -123,10 +123,11 @@ authorisation and issued-factor/default-price receiving are covered by 41 focuse
 
 ## Next
 
-Physical package kernel storage foundation is implemented but inactive: immutable operation,
-composition and layer-contribution tables; database scope/reconciliation constraints.
-Package and architecture suites pass 105 tests / 402 assertions → [kernel detail](domain/package-balance-integration.md#inactive-storage-foundation--2026-10-03).
-Next: authorised transactional writer, retry handling, scope locks and live-stock reconciliation.
+Physical package counted-evidence writer is implemented: existing physical-count authority,
+equal-payload retries, request/location/layer locks and exact live-stock reconciliation.
+Package/demo/architecture checks pass 143 tests / 590 assertions; a create-once checkpoint demo
+is loaded locally → [writer](domain/package-balance-integration.md#authorised-counted-checkpoint-writer--2026-10-03).
+Next: projection rebuilding, policy resolution and operational stock adapters.
 [ADR 0082](decisions/0082-reconcile-package-balances-with-stock-operations.md) remains proposed;
 no operational tracking or activation is implemented yet, 2026-10-03.
 

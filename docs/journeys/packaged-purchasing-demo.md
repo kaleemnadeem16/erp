@@ -81,6 +81,18 @@ escalation remain later scope. Supplier relationships and offers can now be main
 Suppliers screen remains available. Percentage discounts, tax-engine work and split
 delivery scheduling are separate older roadmap items, not completed by this slice.
 
+## Internal counted checkpoint example
+
+demo:seed also creates demo-package-counted-checkpoint through RecordPackageCheckpoint.
+This records a fictional physical count of 5 L cans plus loose contents on the demo thinner.
+It is historical counted evidence, independent of receipt provenance; it does not activate
+tracking or change ledger quantity/value. Its immutable stable key is skipped on reruns.
+
+There is no checkpoint screen yet. Developer inspection uses the scoped PackageOperation,
+PackageState and PackageContribution models. Do not present this checkpoint as current stock
+after another receipt, issue or transfer. The [writer contract](../domain/package-balance-integration.md#authorised-counted-checkpoint-writer--2026-10-03)
+records permissions, unsupported QA/serial/shortage cases and the remaining operational work.
+
 ## Related
 
 - [Phase 2 operational journey](phase-2-operational-journey.md)

@@ -106,8 +106,9 @@ its real Action-based demo and journey.
 
 ## Inactive storage foundation — 2026-10-03
 
-Migration 2026_10_03_120000 adds three empty tables. No stock writer, route, policy setting
-or seeder uses them. They store immutable evidence, not current on-hand projections.
+Migration 2026_10_03_120000 initially added three empty tables without an operational writer.
+The counted-evidence Action and demo below now write these tables; no operational stock
+writer, route or tracking-policy setting uses them. They store immutable evidence, not current on-hand projections.
 No authority to activate tracking or write operational package state is introduced.
 
 | Table | Stored evidence and constraints |
@@ -136,6 +137,56 @@ The architecture check caught a bare actor foreign key during development; it no
 company-safe composite reference and the complete checked set passes. This includes database-level rejection and rollback;
 it does not establish concurrent operational posting. No demo is added because there is no
 new user workflow. The enforcing slice must seed real Actions and supply its journey.
+
+## Authorised counted checkpoint writer — 2026-10-03
+
+RecordPackageCheckpoint now records a complete COUNTED snapshot through one transaction.
+This is an internal Action without an HTTP route or UI. It never posts stock or valuation,
+enables a policy, or treats the checkpoint as current on-hand after later movements.
+
+Existing inventory.physical_count.create authority is checked directly in the Action, including
+retries, and the actor must belong to the current company. This grants counted-evidence
+creation only; it does not grant open, issue, QA, activation or valuation access.
+Administrators assign that existing capability through Access Administration. No new permission
+registration or cost projection is introduced.
+
+The caller supplies the counted total, expected positive remaining quantities keyed by layer,
+and ordered sealed-definition/count or loose-quantity rows. Decimal inputs are canonicalised at
+four places without rounding. The fingerprint includes actor, reason, item/location/batch,
+expected stock and ordered composition; equivalent decimal spellings and layer-map ordering
+are equivalent payloads. Composition order is significant bookkeeping evidence.
+
+A company/request advisory transaction lock serialises absent request identities, including
+collisions at different locations. Equal fingerprints return the original immutable checkpoint,
+even after stock changes; a changed payload is refused. An identical retry is not fresh stock
+evidence. New requests lock the location then positive layers in received-time/id order, following
+normal movement locking. Stale layer vectors or net incoming-minus-outgoing ledger totals are
+refused. Every current positive layer must be fully apportioned exactly once across cohorts;
+over/under-count failures roll back the header and all children.
+
+This writer supports NONE/BATCH AVCO/FIFO counted evidence only. It refuses serial/SPECIFIC,
+open shortages anywhere on the item and all QA-required receipt layers, including released ones,
+until a physical availability adapter exists. The existing layer/ledger total must reconcile;
+a quantity variance still uses the governed physical-count workflow. Archived definitions can
+describe existing sealed stock and retain their name/code/content snapshot.
+
+Eleven additional writer cases cover authority, revoked-authority retries, equivalent retries,
+conflicts, freshness, rollback, cross-layer sealed evidence, precision and QA refusal.
+A second database connection verifies exclusion by the held request lock; this is not a complete
+multi-process simultaneous posting test. Combined package, demo and architecture checks pass
+**143 tests / 590 assertions**. Direct cutover/recalculation writers still require adapters or
+guards before activation; this checkpoint does not establish operational tracking concurrency.
+
+PackageCheckpointDemoSeeder is opt-in through demo:seed and runs after packaged Purchasing.
+It records a fictional counted arrangement of 5 L cans plus loose contents on the demo thinner,
+using the real Action. It explicitly labels counted evidence rather than inferred receipt
+provenance. Its stable key skips reruns, preserving immutable history and manual stock progress.
+The command and module retain local/testing guards. The local additive migration and this
+module seeder were run successfully; no production data was changed.
+
+Remaining kernel work: projection rebuilding, policy resolution and operational posting adapters.
+Activation, QA physical splitting, package open/unpack/transfer and reversal workflows remain
+unimplemented.
 
 ## Related
 

@@ -23,7 +23,8 @@ the same company, item, location and required traceability/availability scope. P
 movement/valuation engine as the quantity and cost authority. Implement the delivery gates in
 [the plan](../phases/package-balance-delivery.md); this proposal does not activate tracking or
 authorise a new valuation method. An inactive evidence-storage foundation now exists; no executable package permission, operational
-writer or activation setting is added.
+stock writer or activation setting is added. An internal counted-evidence writer now uses
+existing physical-count creation authority; it does not activate tracking.
 
 ### 1. Physical and availability state are separate
 
