@@ -31,14 +31,13 @@ has shipped. This plan extends the delivered purchasing package masters; it is n
 1. [x] Review ADRs 0052/0053/0080 and the current posting/read paths; compare primary ERP sources.
 2. [x] Confirm grouped leftovers versus individually tracked vessels with the owner.
 3. [x] Record proposed physical semantics, acceptance cases, integration obligations and exclusions.
-4. [ ] **Compatibility spike, before schema commitment.** Existing writer audit and five real-Action
-   compatibility cases are complete; [evidence and remaining contract](../domain/package-balance-integration.md).
-   Contribution allocation, partial cohort selection and QA splitting remain before schema commitment. Exercise receipt/issue/transfer/reversal,
-   QA partial release/scrap, physical counts, cutover and recalculation with package composition.
-   Demonstrate how physical provenance relates to the allocations selected by the existing
-   valuation engine; record supported NONE/BATCH, AVCO/FIFO and SERIAL/SPECIFIC cases. Identify
-   negative-stock/backdated paths that must be supported or explicitly unavailable in the first slice.
-   Refine/accept ADR 0082 only after this seam has a defensible implementation contract.
+4. [x] **Compatibility spike and executable contribution contract.** Existing writer audit,
+   five real-Action cases and twelve allocation contract cases complete; combined 38 tests /
+   180 assertions pass. [Evidence, contract and exclusions](../domain/package-balance-integration.md).
+   NONE/BATCH AVCO/FIFO remain activation candidates; SERIAL/SPECIFIC, negative debt and
+   backdated replay need enforcing adapters or guards. This completes the reversible spike,
+   not operational package integration. ADR 0082 remains proposed; kernel work must preserve
+   its disabled-by-default boundary and explicit activation gates.
 5. [ ] **Schema and transactional kernel.** Company-safe definition references, immutable event
    and operation identity, reconstructible balance projections, exact decimal constraints,
    stable lock order, equal-payload retry semantics and rollback/reconciliation tests. Establish

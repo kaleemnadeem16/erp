@@ -83,8 +83,9 @@ The [compatibility spike](../domain/package-balance-integration.md) demonstrates
 sealed package can span multiple cost layers. Proposed physical cohorts therefore need separate
 layer contribution quantities, including an explicit AVCO allocation vector; a single layer
 foreign key on each sealed balance is insufficient. Counted bookkeeping attribution must not
-claim verified historical receipt provenance. Contribution allocation and QA splitting still
-need implementation-contract tests before schema commitment.
+claim verified historical receipt provenance. The test-only contribution contract now covers whole-count selection, per-layer allocation
+equality, QA usability and destination remapping. Real QA split evidence and transactional
+package projections remain enforcing implementation work.
 
 ### 5. Enable only with a reconciled opening state
 

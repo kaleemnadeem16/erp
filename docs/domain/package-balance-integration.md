@@ -61,12 +61,46 @@ NONE/BATCH with AVCO/FIFO are candidates, not a verified activation matrix. SERI
 negative-stock settlement and backdated replay remain unavailable for activation until their
 adapters are proven. Every direct writer needs integration or an enforcing guard.
 
-## Remaining gate before schema commitment
+## Executable contribution contract — 2026-10-03
 
-Specify and test the contribution allocation contract for partial cohort selection, transfers,
-QA splits and counted checkpoints. Then refine the proposed ADR and build the transactional
-kernel with tracking disabled by default. Real package reconciliation, retry/concurrency,
-permissions and activation tests belong to the enforcing implementation slice.
+Tests/Support/PackageContributionPrototype is deliberately test-only. Twelve unit cases
+exercise the proposed contract; together with the real-Action compatibility suite,
+**38 tests / 180 assertions pass**. Pint passes on both new files.
+
+A cohort has whole package count, snapshotted content and ordered positive layer contributions.
+Its contribution total must equal count times content exactly at four decimals. Selecting whole
+packages takes the required quantity from that cohort's ordered contributions, then requires
+the resulting per-layer vector to equal the authoritative stock allocation. Vector equality is
+by layer and quantity, not array iteration order. No alternate receipt cost is substituted.
+The remainder reconciles to the unselected count, including repeated selections and exact
+small decimal quantities. Invalid counts and finer-than-ledger quantities are refused.
+
+QA usability is checked per selected layer after allocation compatibility. A one-unit release
+cannot release a sealed five-unit package. An explicit open and separate availability evidence
+are prerequisites for consuming the released portion; this prototype does not invent that
+workflow or post a QA decision. Cohorts must already be segregated by physical and QA evidence.
+
+Transfers map each selected source contribution to its distinct posted destination layer,
+preserving quantities without merging away attribution. Missing, extra or collapsed mappings
+are refused. Actual posting supplies the map; the prototype cannot predict database identities.
+
+The order within a counted cohort is deterministic bookkeeping, not identified-vessel evidence.
+A count checkpoint may assign contributions across layers but must label that provenance
+COUNTED, rather than asserting it was verified on the historical receipt. Before activation,
+receipt-backed held stock needs attributable physical evidence; an aggregate count alone does
+not resolve an unknown held/usable split.
+
+## Next enforcing slice
+
+Build the transactional kernel with tracking disabled by default, carrying this contract into
+production only under the proposed ADR's delivery gates. No stock writer calls the prototype.
+The operational adapter must pass actual AVCO/FIFO allocation and transfer mappings, revalidate
+company/scope and state under locks, and integrate or guard every direct writer.
+
+Real package reconciliation, retry/concurrency, immutable events, permissions and activation
+tests remain implementation work. SERIAL/SPECIFIC, negative debt and backdated replay remain
+excluded candidates until their adapters are proven. The spike does not prove loose selection,
+open/unpack projection changes or receipt reversal of package events.
 No operational package demo is added to this test-only spike; each enforcing slice must provide
 its real Action-based demo and journey.
 

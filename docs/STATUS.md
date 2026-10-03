@@ -120,16 +120,12 @@ authorisation and issued-factor/default-price receiving are covered by 41 focuse
 
 ## Next
 
-Physical package compatibility: existing writer audit and five real-Action cases complete;
-26 tests / 162 assertions pass. Cross-layer sealed cohorts need a contribution-allocation
-contract before schema commitment; tracking remains unimplemented →
-[spike](domain/package-balance-integration.md).
-
-Physical package tracking design has started: the owner confirmed unopened counts plus grouped
-leftovers. [Proposed ADR 0082](decisions/0082-reconcile-package-balances-with-stock-operations.md)
-and [delivery plan](phases/package-balance-delivery.md) record the design and acceptance cases;
-next is the stock/valuation/QA/correction compatibility spike. No operational tracking schema
-or mode activation is implemented yet, 2026-10-03.
+Physical package compatibility and its test-only contribution contract are complete:
+38 tests / 180 assertions pass. Next is the disabled-by-default transactional package kernel;
+operational writers, QA split evidence and activation guards remain → [spike](domain/package-balance-integration.md)
+and [delivery plan](phases/package-balance-delivery.md).
+[ADR 0082](decisions/0082-reconcile-package-balances-with-stock-operations.md) remains proposed.
+No operational tracking schema or mode activation is implemented yet, 2026-10-03.
 
 Package/offer maintenance, independent PO pricing, partial package/loose receipts and replacement
 order linkage are implemented in the existing screens under [ADR 0080](decisions/0080-packaged-purchasing-and-independent-price-basis.md).
