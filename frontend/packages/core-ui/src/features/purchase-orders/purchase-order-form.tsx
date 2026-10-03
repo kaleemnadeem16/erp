@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   useFieldArray,
   useForm,
@@ -20,6 +20,7 @@ import {
 } from "@erp/core-api";
 
 import { AdvancedOptionSection } from "../../components/ui/advanced-option-section";
+import { Collapse } from "../../components/ui/collapse";
 import { MoreOptionsToggle } from "../../components/ui/more-options-toggle";
 import type { OptionsStyle } from "../../lib/presentation";
 import type { AdvancedOption } from "../../components/ui/advanced-options-menu";
@@ -369,6 +370,14 @@ export function PurchaseOrderForm({
   );
   const replacesVisible = optionsStyle === "menu" ? showReplaces : moreOpen;
   const fxVisible = optionsStyle === "menu" ? showFxDetails : moreOpen;
+  // An optional block: in the menu style it is simply absent until its checkbox is ticked; in the disclosure style it stays
+  // mounted and slides open and closed with the "More options" toggle.
+  const optional = (open: boolean, node: ReactNode) =>
+    optionsStyle === "menu" ? (
+      <AdvancedOptionSection expanded={open}>{node}</AdvancedOptionSection>
+    ) : (
+      <Collapse open={open}>{node}</Collapse>
+    );
   const moreSummary = [
     form.watch("replaces_purchase_order_id") ? "replaces an order" : null,
     fxIsCustomised(form.getValues()) ? "exchange rate" : null,
@@ -738,7 +747,7 @@ export function PurchaseOrderForm({
               </FormItem>
             )}
           />
-          {replacesVisible && (
+          {optional(replacesVisible, (
             <FormField
               control={form.control}
               name="replaces_purchase_order_id"
@@ -768,7 +777,7 @@ export function PurchaseOrderForm({
                 </FormItem>
               )}
             />
-          )}
+          ))}
           <FormField
             control={form.control}
             name="notes"
@@ -800,7 +809,7 @@ export function PurchaseOrderForm({
         </DetailSection>
       )}
       {showDetailsStep && (
-        <AdvancedOptionSection expanded={fxVisible}>
+        optional(fxVisible, (
           <DetailSection
             title="Exchange rate"
             description="The rate and its source are pinned when the order is issued."
@@ -884,7 +893,7 @@ export function PurchaseOrderForm({
               />
             ))}
           </DetailSection>
-        </AdvancedOptionSection>
+        ))
       )}
       {showLinesStep && (
         <DetailSection

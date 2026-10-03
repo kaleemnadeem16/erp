@@ -14,6 +14,7 @@ import {
 import { getApiErrorMessage } from "../../lib/api-errors";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
+import { Boxes, Info } from "lucide-react";
 import { FieldHint } from "../../components/ui/field-hint";
 
 type LineKey =
@@ -74,6 +75,7 @@ export function usePurchaseLinePricing(
     null,
   );
   const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
   const set = (key: LineKey, value: string) =>
     form.setValue(
       ("lines." + index + "." + key) as FieldPath<PurchaseOrderFormValues>,
@@ -153,21 +155,34 @@ export function usePurchaseLinePricing(
   const request = preview.mutateAsync;
   useEffect(() => {
     let current = true;
-    setResolved(null);
-    setError(null);
-    set("priced_qty", "");
-    if (!itemId || !supplierId || !values.currency_id || !line.purchase_uom_id)
+    if (!itemId || !supplierId || !values.currency_id || !line.purchase_uom_id) {
+      setResolved(null);
+      setError(null);
+      setPending(false);
+      set("priced_qty", "");
       return;
+    }
+    // The last answer stays on screen while the next is fetched, so nothing blinks as a person types. A plain line (no package,
+    // no separate price unit) is priced from its own quantity, so a stale server figure is dropped for it at once.
+    if (!line.item_packaging_id && !line.price_uom_id) set("priced_qty", "");
+    setPending(true);
     const timer = setTimeout(() => {
       request({ data: JSON.parse(payloadText) })
         .then((result) => {
           if (current && result.status === 200) {
             setResolved(result.data.data);
+            setError(null);
             set("priced_qty", result.data.data.priced_qty ?? "");
           }
         })
         .catch((e) => {
-          if (current) setError(getApiErrorMessage(e));
+          if (current) {
+            setResolved(null);
+            setError(getApiErrorMessage(e));
+          }
+        })
+        .finally(() => {
+          if (current) setPending(false);
         });
     }, 250);
     return () => {
@@ -189,6 +204,7 @@ export function usePurchaseLinePricing(
     setOfferPage,
     resolved,
     error,
+    pending,
     applyOffer,
     choosePackage,
     set,
@@ -251,52 +267,50 @@ export function PackageAndOfferFields({
   const offersInCurrency = offerRows.filter(
     (o) => o.currency_id === Number(values.currency_id),
   );
+  const nothing = packageRows.length === 0 && offersInCurrency.length === 0;
   return (
     <div className="space-y-2">
-      <div className="grid gap-3 sm:grid-cols-2">
-        {packageRows.length > 0 ? (
-          <LabelledSelect
-            label="Package or loose"
-            hint="Order in a named package (a drum, a box of 20) instead of loose units. The quantity then counts packages, and the stock quantity is worked out from what the package holds."
-            value={line.item_packaging_id}
-            onChange={pricing.choosePackage}
-            options={packageRows.map((p) => ({
-              value: String(p.id),
-              label: p.name + " — " + p.stock_quantity + " stock units",
-            }))}
-            empty="Loose / alternate unit"
-          />
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            This item has no packages defined, so it is ordered loose. Packages
-            are added on the item.
-          </p>
-        )}
-        {offersInCurrency.length > 0 ? (
-          <LabelledSelect
-            label="Supplier offer"
-            hint="A standing price and terms this supplier has agreed for the item (price, minimum order, order multiple). Choosing one fills the unit, package and price; 'Manual agreed terms' means you enter them yourself."
-            value={line.supplier_offer_id}
-            onChange={pricing.applyOffer}
-            options={offersInCurrency.map((o) => ({
-              value: String(o.id),
-              label:
-                (o.supplier_item_code ?? "Offer " + o.id) +
-                " · " +
-                (pricing.packageRows.find((p) => p.id === o.item_packaging_id)
-                  ?.name ?? "Loose") +
-                " · " +
-                o.unit_price,
-            }))}
-            empty="Manual agreed terms"
-          />
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            No standing offer from this supplier for this item in this
-            currency — the price is entered by hand.
-          </p>
-        )}
-      </div>
+      {nothing ? (
+        <p className="flex items-start gap-2 text-sm text-muted-foreground">
+          <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+          Ordered loose, and this supplier has no standing offer for the item in this currency — the price is entered by hand.
+        </p>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {packageRows.length > 0 && (
+            <LabelledSelect
+              label="Package or loose"
+              hint="Order in a named package (a drum, a box of 20) instead of loose units. The quantity then counts packages, and the stock quantity is worked out from what the package holds."
+              value={line.item_packaging_id}
+              onChange={pricing.choosePackage}
+              options={packageRows.map((p) => ({
+                value: String(p.id),
+                label: p.name + " — " + p.stock_quantity + " stock units",
+              }))}
+              empty="Loose / alternate unit"
+            />
+          )}
+          {offersInCurrency.length > 0 && (
+            <LabelledSelect
+              label="Supplier offer"
+              hint="A standing price and terms this supplier has agreed for the item (price, minimum order, order multiple). Choosing one fills the unit, package and price; 'Manual agreed terms' means you enter them yourself."
+              value={line.supplier_offer_id}
+              onChange={pricing.applyOffer}
+              options={offersInCurrency.map((o) => ({
+                value: String(o.id),
+                label:
+                  (o.supplier_item_code ?? "Offer " + o.id) +
+                  " · " +
+                  (pricing.packageRows.find((p) => p.id === o.item_packaging_id)
+                    ?.name ?? "Loose") +
+                  " · " +
+                  o.unit_price,
+              }))}
+              empty="Manual agreed terms"
+            />
+          )}
+        </div>
+      )}
       {pricing.packages.isError && (
         <p role="alert" className="text-sm text-destructive">
           {getApiErrorMessage(pricing.packages.error)}
@@ -400,35 +414,43 @@ export function PriceBasisFields({
   );
 }
 
-/** What the server worked out for this line, as a labelled read-out rather than a sentence. */
-export function LineReadout({ pricing }: { pricing: PurchaseLinePricing }) {
-  const { resolved, error } = pricing;
+/**
+ * One quiet line, shown only when the server's working-out says something the fields do not already: the quantity in stock units
+ * when the order unit or a package converts to it, and the package used. A plain line (loose, in the stock unit) shows nothing —
+ * everything about it is already in the fields above. It dims while a new answer is being fetched instead of disappearing.
+ */
+export function LineStockNote({
+  pricing,
+  stockUnit,
+}: {
+  pricing: PurchaseLinePricing;
+  stockUnit?: string;
+}) {
+  const { resolved, error, pending } = pricing;
   if (error)
     return (
       <p role="alert" className="text-sm text-destructive">
         {error}
       </p>
     );
-  if (!resolved)
-    return (
-      <p className="text-sm text-muted-foreground">
-        Choose the item and a unit to see the stock quantity and line total.
-      </p>
-    );
-  const cell = (label: string, value: string) => (
-    <div className="min-w-0">
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="break-words text-sm font-medium tabular-nums">{value}</dd>
-    </div>
-  );
+  if (!resolved) return null;
+  const converts =
+    Number(resolved.ordered_stock_qty) !== Number(resolved.ordered_qty);
+  if (!converts && !resolved.package_name) return null;
   return (
-    <dl className="grid grid-cols-2 gap-x-4 gap-y-2 rounded-md border border-dashed border-border px-3 py-2 sm:grid-cols-3">
-      {cell("Ordered", `${resolved.ordered_qty} ${resolved.order_unit_label}`)}
-      {cell("Stock quantity", resolved.ordered_stock_qty)}
-      {cell(
-        "Price",
-        `${resolved.unit_price} per ${resolved.price_quantity} ${resolved.price_unit_label}`,
-      )}
-    </dl>
+    <p
+      aria-live="polite"
+      className={
+        "flex items-center gap-2 text-sm text-muted-foreground transition-opacity " +
+        (pending ? "opacity-50" : "opacity-100")
+      }
+    >
+      <Boxes className="size-4 shrink-0" aria-hidden="true" />
+      <span>
+        = <strong className="font-medium text-foreground tabular-nums">{resolved.ordered_stock_qty}</strong> {stockUnit ?? "stock units"} in stock
+        {resolved.package_name ? ` · ${resolved.package_name}` : ""}
+        {" "}(1 {resolved.order_unit_label} = {Number(resolved.uom_factor)} {stockUnit ?? ""})
+      </span>
+    </p>
   );
 }

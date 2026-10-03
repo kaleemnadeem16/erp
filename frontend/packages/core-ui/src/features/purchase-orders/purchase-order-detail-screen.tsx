@@ -44,7 +44,7 @@ import {
 import { Textarea } from "../../components/ui/textarea";
 import { getApiErrorMessage } from "../../lib/api-errors";
 import { DataTableViewToggle } from "../../components/data-table/data-table-view-toggle";
-import { useLinesViewPreference } from "../../lib/use-view-preference";
+import { useListViewPreference } from "../../lib/use-view-preference";
 import { formatDateTime } from "../../lib/format-date";
 import type { Presentation } from "../../lib/presentation";
 import { useFocusOnOpen } from "../../lib/use-focus-on-open";
@@ -136,7 +136,7 @@ export function PurchaseOrderDetailScreen({
   const issue = usePurchaseOrdersIssue();
   const cancel = usePurchaseOrdersCancel();
   const shortClose = usePurchaseOrderLinesShortClose();
-  const { view: linesView, setView: setLinesView } = useLinesViewPreference("po-detail-lines");
+  const { view: linesView, setView: setLinesView } = useListViewPreference("po-detail-lines");
   const [cancelReason, setCancelReason] = useState("");
   const [showIssueConfirmation, setShowIssueConfirmation] = useState(false);
   const [showCancel, setShowCancel] = useState(false);
@@ -806,7 +806,7 @@ export function PurchaseOrderDetailScreen({
           }
           fullWidth
         >
-          <div className="flex justify-end sm:col-span-2">
+          <div className="flex justify-end sm:col-span-2 md:hidden">
             <DataTableViewToggle value={linesView} onChange={setLinesView} />
           </div>
           {linesView === "cards" ? (

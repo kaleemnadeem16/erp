@@ -1,6 +1,6 @@
-import { useEffect, useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
 import type { FieldPath, UseFormReturn } from "react-hook-form";
-import { Trash2 } from "lucide-react";
+import { PackageOpen, Tags, Trash2, Truck } from "lucide-react";
 import {
   useItemQuantityUnitsIndex,
   type ItemResource,
@@ -13,6 +13,7 @@ import {
 } from "../../components/ui/advanced-options-menu";
 import { Button } from "../../components/ui/button";
 import { Checkbox } from "../../components/ui/checkbox";
+import { Collapse } from "../../components/ui/collapse";
 import { Combobox } from "../../components/ui/combobox";
 import { MoreOptionsToggle } from "../../components/ui/more-options-toggle";
 import type { OptionsStyle } from "../../lib/presentation";
@@ -30,7 +31,7 @@ import {
 import { Input } from "../../components/ui/input";
 import type { LookupState } from "../../lib/api-errors";
 import {
-  LineReadout,
+  LineStockNote,
   PackageAndOfferFields,
   PriceBasisFields,
   usePurchaseLinePricing,
@@ -297,182 +298,245 @@ export function PurchaseOrderLineFields({
     </div>
   );
 
+  const showPack = isOpen("pack");
+  const showPricing = isOpen("basis") || isOpen("adjust");
+  const showDelivery = isOpen("date") || isOpen("qa");
+  const detailsOpen = optionsStyle === "menu" ? opened.size > 0 : disclosureOpen;
+
+  // A titled group inside the line's details: soft panel, small caps heading with an icon.
+  const group = (title: string, icon: ReactNode, children: ReactNode, className?: string) => (
+    <section className={"min-w-0 space-y-3 rounded-lg border border-border/70 bg-muted/30 p-3 " + (className ?? "")}>
+      <h5 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground [&_svg]:size-4">
+        {icon}
+        {title}
+      </h5>
+      {children}
+    </section>
+  );
+
   return (
     <fieldset
       aria-label={`Line ${index + 1}`}
-      // `[&>*]:min-w-0`: a grid item's default `min-width: auto` sizes its track to its content's intrinsic width, so a long
-      // selected item name in the Combobox would widen this whole row instead of truncating.
-      className="grid min-w-0 gap-x-4 gap-y-3 rounded-lg border bg-panel/60 p-4 @lg:grid-cols-2 @3xl:grid-cols-4 [&>*]:min-w-0"
+      className="min-w-0 overflow-hidden rounded-xl border border-border bg-card shadow-xs"
     >
-      <div className="col-span-full flex flex-wrap items-center justify-between gap-2">
-        <h4 className="text-sm font-semibold">Line {index + 1}</h4>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-muted/40 px-4 py-2">
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary-soft text-xs font-semibold text-primary-soft-foreground">
+            {index + 1}
+          </span>
+          <h4 className="truncate text-sm font-semibold">Line {index + 1}</h4>
+          {item && <span className="hidden min-w-0 truncate text-xs text-muted-foreground sm:inline">{item.name}</span>}
+        </div>
         <div className="flex items-center gap-2">
           {optionsStyle === "menu" && (
             <AdvancedOptionsMenu options={options} label="Line options" ariaLabel={`Options for line ${index + 1}`} />
           )}
-          <Button type="button" variant="outline" size="sm" onClick={onRemove} disabled={!canRemove}>
+          <Button type="button" variant="ghost" size="sm" onClick={onRemove} disabled={!canRemove} className="text-muted-foreground hover:text-destructive">
             <Trash2 className="size-4" />
             Remove
           </Button>
         </div>
       </div>
 
-      <FormField
-        control={form.control}
-        name={`lines.${index}.item_id`}
-        render={({ field }) => (
-          <FormItem className="@3xl:col-span-2">
-            <FormLabelWithHint hint="">Item</FormLabelWithHint>
-            <FormControl>
-              <Combobox
-                {...itemLookup}
-                ref={field.ref}
-                value={field.value}
-                onValueChange={(value) => {
-                  field.onChange(value);
-                  const chosen = items.find((candidate) => candidate.id === Number(value));
-                  if (chosen) {
-                    form.setValue(`lines.${index}.description`, chosen.name);
-                    form.setValue(
-                      `lines.${index}.purchase_uom_id`,
-                      String(purchaseUomIdByItem.get(chosen.id) ?? chosen.stock_uom_id),
-                    );
-                  }
-                }}
-                options={itemOptions}
-                placeholder="Select item"
-                searchPlaceholder="Search items…"
-                emptyText="No items found."
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      {text(
-        "description",
-        "Description",
-        "What is printed on the order for this line. It starts as the item's name — change it to add the supplier's own wording.",
-        "@3xl:col-span-2",
-      )}
-      {text("ordered_qty", "Quantity", "How many of the unit shown to the right you are ordering. With a package chosen, this counts packages.")}
-      <FormField
-        control={form.control}
-        name={`lines.${index}.purchase_uom_id`}
-        render={({ field }) => (
-          <FormItem>
-            <FormLabelWithHint
-              hint="The unit you order in. It starts as the unit this supplier sells the item in, or the item's stock unit. Only units that can be converted for this item are listed; the stock quantity is worked out from the one you pick. It is fixed while a package is chosen."
-              hintLabel="Purchase UoM"
-            >
-              Purchase UoM
-            </FormLabelWithHint>
-            <FormControl>
-              <Combobox
-                {...uomLookup}
-                ref={field.ref}
-                value={field.value}
-                onValueChange={field.onChange}
-                disabled={!!line.item_packaging_id}
-                options={unitOptions}
-                placeholder="Select UoM"
-                searchPlaceholder="Search units…"
-                emptyText="No units found."
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      {text(
-        "unit_price",
-        "Unit price",
-        "What the supplier charges for one pricing unit — shown under the field as 'per 1 kg'. The pricing unit is the unit you order in, unless the price basis in the line's more options says otherwise (for example per 100 pieces).",
-      )}
-      <div className="space-y-2">
-        <div className="flex min-h-5 items-center">
-          <span className="text-sm font-medium">Line total</span>
-        </div>
-        <output
-          aria-label="Line total"
-          className="flex h-10 items-center rounded-md border border-dashed border-border bg-muted/40 px-3 text-sm font-semibold tabular-nums"
-        >
-          {lineTotal}
-        </output>
-      </div>
-
-      {optionsStyle === "disclosure" && (
-        <MoreOptionsToggle
-          className="col-span-full"
-          open={disclosureOpen}
-          onOpenChange={setDisclosureOpen}
-          controls={regionId}
-          label="More details for this line"
-          openLabel="Hide details"
-          summary={setSummary}
+      <div className="grid min-w-0 gap-x-4 gap-y-3 p-4 @lg:grid-cols-2 @3xl:grid-cols-4 [&>*]:min-w-0">
+        <FormField
+          control={form.control}
+          name={`lines.${index}.item_id`}
+          render={({ field }) => (
+            <FormItem className="@3xl:col-span-2">
+              <FormLabelWithHint>Item</FormLabelWithHint>
+              <FormControl>
+                <Combobox
+                  {...itemLookup}
+                  ref={field.ref}
+                  value={field.value}
+                  onValueChange={(value) => {
+                    field.onChange(value);
+                    const chosen = items.find((candidate) => candidate.id === Number(value));
+                    if (chosen) {
+                      form.setValue(`lines.${index}.description`, chosen.name);
+                      form.setValue(
+                        `lines.${index}.purchase_uom_id`,
+                        String(purchaseUomIdByItem.get(chosen.id) ?? chosen.stock_uom_id),
+                      );
+                    }
+                  }}
+                  options={itemOptions}
+                  placeholder="Select item"
+                  searchPlaceholder="Search items…"
+                  emptyText="No items found."
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-      )}
-
-      {(optionsStyle === "menu" ? opened.size > 0 : disclosureOpen) && (
-      <div id={regionId} className="col-span-full grid min-w-0 gap-x-4 gap-y-3 @lg:grid-cols-2 @3xl:grid-cols-4 [&>*]:min-w-0">
-        {packPanel}
-        {isOpen("basis") && (
-          <div className="rounded-md border border-border bg-card p-3 @3xl:col-span-2">
-            <PriceBasisFields form={form} index={index} pricing={pricing} />
+        {text(
+          "description",
+          "Description",
+          "What is printed on the order for this line. It starts as the item's name — change it to add the supplier's own wording.",
+          "@3xl:col-span-2",
+        )}
+        {text("ordered_qty", "Quantity", "How many of the unit shown to the right you are ordering. With a package chosen, this counts packages.")}
+        <FormField
+          control={form.control}
+          name={`lines.${index}.purchase_uom_id`}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabelWithHint
+                hint="The unit you order in. It starts as the unit this supplier sells the item in, or the item's stock unit. Only units that can be converted for this item are listed; the stock quantity is worked out from the one you pick. It is fixed while a package is chosen."
+                hintLabel="Purchase UoM"
+              >
+                Purchase UoM
+              </FormLabelWithHint>
+              <FormControl>
+                <Combobox
+                  {...uomLookup}
+                  ref={field.ref}
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  disabled={!!line.item_packaging_id}
+                  options={unitOptions}
+                  placeholder="Select UoM"
+                  searchPlaceholder="Search units…"
+                  emptyText="No units found."
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        {text(
+          "unit_price",
+          "Unit price",
+          "What the supplier charges for one pricing unit — shown under the field as 'per 1 kg'. The pricing unit is the unit you order in, unless the price basis in the line's details says otherwise (for example per 100 pieces).",
+        )}
+        <div className="space-y-2">
+          <div className="flex min-h-5 items-center">
+            <span className="text-sm font-medium">Line total</span>
           </div>
-        )}
-        {isOpen("adjust") && (
-          <>
-            {money("discount_amount", "Line discount (amount)", "A fixed amount off this whole line — not a percentage, not per unit.")}
-            {money("tax_amount", "Line tax (amount)", "A fixed tax amount for this whole line — not a percentage, not per unit.")}
-          </>
-        )}
-        {isOpen("date") && (
-          <FormField
-            control={form.control}
-            name={`lines.${index}.expected_delivery_date`}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabelWithHint hint="Only when this line is due on a different date from the order. Leave it empty and the line follows the order's expected delivery.">
-                  Line delivery date
-                </FormLabelWithHint>
-                <FormControl>
-                  <DateField value={String(field.value)} onChange={field.onChange} onBlur={field.onBlur} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        )}
-        {isOpen("qa") && (
-          <FormField
-            control={form.control}
-            name={`lines.${index}.qa_required`}
-            render={({ field }) => (
-              <FormItem>
-                {/* A plain heading, not a second FormLabel: the checkbox is named by its own "QA required" label below. */}
-                <div className="flex min-h-5 items-center gap-1.5">
-                  <span className="text-sm font-medium">Quality check</span>
-                  <FieldHint label="the quality check">
-                    Goods on this line are held for a quality check when they are received, before they count as usable stock.
-                  </FieldHint>
-                </div>
-                <div className="flex h-10 items-center gap-2">
-                  <FormControl>
-                    <Checkbox checked={field.value} onCheckedChange={(checked) => field.onChange(checked === true)} />
-                  </FormControl>
-                  <FormLabel className="font-normal">QA required</FormLabel>
-                </div>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        )}
-      </div>
-      )}
+          <output
+            aria-label="Line total"
+            className="flex h-10 items-center justify-end rounded-md bg-primary-soft px-3 text-base font-semibold tabular-nums text-primary-soft-foreground"
+          >
+            {lineTotal}
+          </output>
+        </div>
 
-      <div className="col-span-full">
-        <LineReadout pricing={pricing} />
+        <div className="col-span-full">
+          <LineStockNote pricing={pricing} stockUnit={stockUom?.code} />
+        </div>
+
+        {optionsStyle === "disclosure" && (
+          <MoreOptionsToggle
+            className="col-span-full border-t border-border pt-2"
+            open={disclosureOpen}
+            onOpenChange={setDisclosureOpen}
+            controls={regionId}
+            label="More details for this line"
+            openLabel="Hide details"
+            summary={setSummary}
+          />
+        )}
+
+        <Collapse open={detailsOpen} id={regionId} className="col-span-full">
+          <div className="grid min-w-0 gap-3 @3xl:grid-cols-2 [&>*]:min-w-0">
+            {showPack && group("Packaging and offers", <PackageOpen aria-hidden="true" />, (
+              <>
+                <PackageAndOfferFields form={form} index={index} pricing={pricing} />
+                {(pricing.resolved?.ordering_terms_violated || line.ordering_exception_reason || lineErrors?.ordering_exception_reason) && (
+                  <FormField
+                    control={form.control}
+                    name={`lines.${index}.ordering_exception_reason`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabelWithHint hint="The supplier's offer sets a minimum quantity or an order multiple, and this quantity is outside it. Say why you are ordering it anyway — the reason is kept with the order.">
+                          Reason for supplier quantity exception
+                        </FormLabelWithHint>
+                        {pricing.resolved?.ordering_terms_violated && (
+                          <p role="alert" className="text-sm text-amber-700">
+                            The quantity is outside the supplier's minimum or multiple (
+                            {[
+                              pricing.resolved.minimum_order_qty ? `minimum ${pricing.resolved.minimum_order_qty}` : null,
+                              pricing.resolved.order_multiple ? `multiple ${pricing.resolved.order_multiple}` : null,
+                            ]
+                              .filter(Boolean)
+                              .join(", ")}
+                            ). A reason is required to save.
+                          </p>
+                        )}
+                        <FormControl>
+                          <Input {...field} value={field.value ?? ""} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+              </>
+            ), "@3xl:col-span-2")}
+            {showPricing && group("Pricing", <Tags aria-hidden="true" />, (
+              <div className="grid gap-3 @lg:grid-cols-2 [&>*]:min-w-0">
+                {isOpen("basis") && (
+                  <div className="@lg:col-span-2">
+                    <PriceBasisFields form={form} index={index} pricing={pricing} />
+                  </div>
+                )}
+                {isOpen("adjust") && (
+                  <>
+                    {money("discount_amount", "Line discount (amount)", "A fixed amount off this whole line — not a percentage, not per unit.")}
+                    {money("tax_amount", "Line tax (amount)", "A fixed tax amount for this whole line — not a percentage, not per unit.")}
+                  </>
+                )}
+              </div>
+            ))}
+            {showDelivery && group("Delivery and quality", <Truck aria-hidden="true" />, (
+              <div className="grid gap-3 [&>*]:min-w-0">
+                {isOpen("date") && (
+                  <FormField
+                    control={form.control}
+                    name={`lines.${index}.expected_delivery_date`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabelWithHint hint="Only when this line is due on a different date from the order. Leave it empty and the line follows the order's expected delivery.">
+                          Line delivery date
+                        </FormLabelWithHint>
+                        <FormControl>
+                          <DateField value={String(field.value)} onChange={field.onChange} onBlur={field.onBlur} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+                {isOpen("qa") && (
+                  <FormField
+                    control={form.control}
+                    name={`lines.${index}.qa_required`}
+                    render={({ field }) => (
+                      <FormItem>
+                        {/* A plain heading, not a second FormLabel: the checkbox is named by its own "QA required" label below. */}
+                        <div className="flex min-h-5 items-center gap-1.5">
+                          <span className="text-sm font-medium">Quality check</span>
+                          <FieldHint label="the quality check">
+                            Goods on this line are held for a quality check when they are received, before they count as usable stock.
+                          </FieldHint>
+                        </div>
+                        <div className="flex h-10 items-center gap-2">
+                          <FormControl>
+                            <Checkbox checked={field.value} onCheckedChange={(checked) => field.onChange(checked === true)} />
+                          </FormControl>
+                          <FormLabel className="font-normal">QA required</FormLabel>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        </Collapse>
       </div>
     </fieldset>
   );

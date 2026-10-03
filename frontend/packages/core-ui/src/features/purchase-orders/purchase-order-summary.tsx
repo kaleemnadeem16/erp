@@ -11,7 +11,7 @@ import {
 } from "./purchase-order-form";
 import { formatScaled, lineAmounts } from "./purchase-order-amounts";
 import { DataTableViewToggle } from "../../components/data-table/data-table-view-toggle";
-import { useLinesViewPreference } from "../../lib/use-view-preference";
+import { useListViewPreference } from "../../lib/use-view-preference";
 
 interface Option {
   value: string;
@@ -259,7 +259,7 @@ function ReviewSummary({
 }: SummaryProps) {
   const values = useWatch({ control });
   const { resolved, loading } = useResolvedLines(values);
-  const { view, setView } = useLinesViewPreference("po-review-lines");
+  const { view, setView } = useListViewPreference("po-review-lines");
   const label = (options: Option[], value?: string) =>
     value ? options.find((option) => option.value === value)?.label : undefined;
   const currencyLabel = label(currencyOptions, values.currency_id);
@@ -295,7 +295,7 @@ function ReviewSummary({
         </div>
       )}
 
-      <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
+      <dl className="grid gap-x-6 gap-y-4 rounded-lg border border-border bg-muted/30 p-4 sm:grid-cols-2 lg:grid-cols-3">
         <Fact label="Supplier">{label(supplierOptions, values.supplier_account_id) ?? NOT_SET}</Fact>
         <Fact label="Supplier site">{label(siteOptions, values.supplier_site_id) ?? "The supplier's default"}</Fact>
         <Fact label="Currency">{currencyLabel ?? NOT_SET}</Fact>
@@ -322,7 +322,10 @@ function ReviewSummary({
       <div className="space-y-2">
         <div className="flex items-center justify-between gap-3">
           <h3 className="text-sm font-semibold">Lines ({lines.length})</h3>
-          <DataTableViewToggle value={view} onChange={setView} />
+          {/* Table or cards is a phone choice (ADR 0015): a wide screen always gets the table. */}
+          <div className="md:hidden">
+            <DataTableViewToggle value={view} onChange={setView} />
+          </div>
         </div>
         {view === "cards" ? (
           <ol className="grid gap-3 @lg:grid-cols-2">
@@ -375,7 +378,7 @@ function ReviewSummary({
         ) : (
         <div className="overflow-x-auto rounded-md border border-border bg-card">
           <table className="w-full min-w-[56rem] text-sm">
-            <thead className="border-b border-border text-left text-xs text-muted-foreground">
+            <thead className="border-b border-border bg-muted/40 text-left text-xs text-muted-foreground">
               <tr>
                 <th className="px-3 py-2 font-medium">Item</th>
                 <th className="px-3 py-2 font-medium">Ordered</th>
@@ -447,7 +450,7 @@ function ReviewSummary({
       </div>
 
       {complete.length > 0 && (
-        <div className="ml-auto max-w-sm space-y-2">
+        <div className="ml-auto max-w-sm space-y-2 rounded-lg border border-border bg-muted/30 p-4">
           <dl className="space-y-1 text-sm">
             <TotalRow label="Subtotal" value={money(sum((amount) => amount.gross))} />
             {sum((amount) => amount.discount) > 0n && (

@@ -47,24 +47,3 @@ export function useListViewPreference(screenKey: string) {
   return { view: isDesktop ? ('table' as const) : (stored ?? 'cards'), setView, isDesktop };
 }
 
-/**
- * Table or cards for the lines of a document (a purchase order's review and detail). Unlike a list screen, the choice is open on
- * every screen size: a wide screen may still prefer cards, and a phone may prefer the table. With no stored choice, cards on a
- * small screen and the table on a large one.
- */
-export function useLinesViewPreference(screenKey: string) {
-  const isDesktop = useMediaQuery(MD_BREAKPOINT_QUERY);
-  const [stored, setStored] = useState<ListView | null>(() => readStored(screenKey));
-  const setView = useCallback(
-    (next: ListView) => {
-      setStored(next);
-      try {
-        window.localStorage.setItem(STORAGE_PREFIX + screenKey, next);
-      } catch {
-        // Not persisted when storage is unavailable; the choice still applies to this visit.
-      }
-    },
-    [screenKey],
-  );
-  return { view: stored ?? (isDesktop ? ('table' as const) : ('cards' as const)), setView };
-}
