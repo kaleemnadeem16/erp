@@ -78,7 +78,7 @@ final class ReplayPackageCheckpoint
                 ->where(fn ($q) => $q->where('to_location_id', $operation->location_id)->orWhere('from_location_id', $operation->location_id))->max('id');
             $latest = PackageOperation::query()->where([
                 'item_id' => $operation->item_id, 'location_id' => $operation->location_id, 'batch_id' => $operation->batch_id,
-            ])->where('evidence_kind', 'COUNTED')->max('id');
+            ])->whereIn('evidence_kind', ['COUNTED', 'OPEN', 'UNPACK'])->max('id');
             $reasons = [];
             if (! $integrity) {
                 $reasons[] = 'INCOMPLETE_EVIDENCE';
@@ -88,13 +88,13 @@ final class ReplayPackageCheckpoint
             } elseif ((int) $operation->stock_move_watermark !== (int) $watermark) {
                 $reasons[] = 'LATER_STOCK_MOVEMENT';
             }
-            if ($operation->evidence_kind === 'COUNTED' && (int) $latest !== $operation->id) {
+            if (in_array($operation->evidence_kind, ['COUNTED', 'OPEN', 'UNPACK'], true) && (int) $latest !== $operation->id) {
                 $reasons[] = 'SUPERSEDED_CHECKPOINT';
             }
             if ($recordedVector !== $currentVector || ! $total->isEqualTo($currentQty)) {
                 $reasons[] = 'STOCK_QUANTITIES_CHANGED';
             }
-            if ($operation->evidence_kind !== 'COUNTED' || $item->tracking === ItemTracking::Serial || $item->valuation_method === ValuationMethod::Specific) {
+            if (! in_array($operation->evidence_kind, ['COUNTED', 'OPEN', 'UNPACK'], true) || $item->tracking === ItemTracking::Serial || $item->valuation_method === ValuationMethod::Specific) {
                 $reasons[] = 'UNSUPPORTED_EVIDENCE_SCOPE';
             }
             if (NegativeStockShortage::query()->where('item_id', $item->id)->where('qty_open', '>', 0)->exists()) {
@@ -108,6 +108,8 @@ final class ReplayPackageCheckpoint
             return [
                 'operation_id' => $operation->id, 'evidence_kind' => $operation->evidence_kind,
                 'source_receipt_line_id' => $operation->source_receipt_line_id,
+                'predecessor_id' => $operation->predecessor_id, 'selected_state_id' => $operation->selected_state_id,
+                'selected_count' => $operation->selected_count,
                 'tracking_active' => false, 'integrity_valid' => $integrity,
                 'matches_current_stock' => $reasons === [], 'mismatch_reasons' => $reasons,
                 'latest_checkpoint_id' => (int) $latest,

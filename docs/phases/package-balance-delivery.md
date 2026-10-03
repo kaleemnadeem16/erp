@@ -4,8 +4,9 @@
 
 Started 2026-10-03 under accepted ADR 0052. [ADR 0082](../decisions/0082-reconcile-package-balances-with-stock-operations.md)
 is a **proposed** operational refinement. The owner confirmed counts of unopened packages plus
-combined open/loose quantity are sufficient. No physical-tracking schema, permission or activation
-has shipped. This plan extends the delivered purchasing package masters; it is not Phase 5 job execution.
+combined open/loose quantity are sufficient. Inactive evidence storage and enforcing read/open
+capabilities have shipped; physical-tracking activation remains blocked. This plan extends the
+delivered purchasing package masters; it is not Phase 5 job execution.
 
 ## Scope and examples
 
@@ -49,7 +50,9 @@ has shipped. This plan extends the delivered purchasing package masters; it is n
    is implemented with source-layer/QA evidence and posting rollback/retry tests. It has no
    authoring/history UI yet and cannot activate tracking. [Opening/unpacking preview](../domain/package-opening-preview.md)
    now calculates exact layer-preserving proposals and has a dedicated counted demo.
-   Remaining: persisted open/unpack operations, composition-preserving transfer and count correction; QA, reversal, cutover
+   [Saved open/unpack successors](../domain/package-opening-operations.md) now persist complete
+   composition with lineage, locking, retries and a separate history demo. Tracking stays inactive.
+   Remaining: issue/transfer composition and count correction; QA, reversal, cutover
    and recalculation adapters or explicit first-release guards. Cover every direct Action writer,
    not only public HTTP controllers. Preserve QUANTITY_ONLY behaviour.
 7. [ ] **Permissions and workflows.** Register only enforcing capabilities; grant demo personas

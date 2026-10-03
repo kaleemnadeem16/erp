@@ -42,9 +42,9 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 
 ## Recently done
 
-Opening/unpacking now has a read-only backend preview preserving exact layer contributions,
-with a dedicated two-carton demo. Persisted operations and tracking activation remain next →
-[preview contract](domain/package-opening-preview.md).
+Opening/unpacking now saves immutable complete snapshots with lineage, fresh-stock checks,
+duplicate/conflict protection and a dedicated history demo. Issue/transfer integration and
+tracking activation remain next → [saved operations](domain/package-opening-operations.md).
 
 | Item | Date |
 |---|---|

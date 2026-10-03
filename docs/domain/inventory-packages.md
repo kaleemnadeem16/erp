@@ -296,6 +296,7 @@ authoring Action and three real posted demo cases precede the later capture/hist
 ## Related
 
 - [Opening and unpacking preview](package-opening-preview.md)
+- [Saved opening/unpacking operations](package-opening-operations.md)
 
 - [Material resolution](material-resolution.md) · [Items](items.md) · [Stock](stock.md)
 - [Purchasing](purchasing.md) · [Sales pipeline](sales-pipeline.md)

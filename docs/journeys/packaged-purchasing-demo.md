@@ -121,6 +121,10 @@ this example does not enable physical tracking or change the earlier live draft'
 
 ## Related
 
+- [Saved opening/unpacking history demo](../domain/package-opening-operations.md#demo-and-verification) —
+  dedicated item ends with one carton, eighteen sealed bottles and 0.2 L open; still 4 L.
+  Backend inspection only; tracking remains inactive.
+
 - [Opening/unpacking backend demo](../domain/package-opening-preview.md#demo-and-verification) — dedicated
   two-carton fixture; inspect OPEN versus UNPACK proposals internally. No posting control or screen yet.
 

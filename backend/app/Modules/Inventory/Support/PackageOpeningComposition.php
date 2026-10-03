@@ -11,6 +11,11 @@ use Brick\Math\Exception\MathException;
 /** Exact cohort transformation. Contributions represent bookkeeping, not vessel identities. */
 final class PackageOpeningComposition
 {
+    /**
+     * @param  list<array<string,mixed>>  $composition
+     * @param  array<string,mixed>|null  $inner
+     * @return list<array<string,mixed>>
+     */
     public function __invoke(array $composition, int $stateId, int $count, string $kind, ?array $inner = null, ?int $innerCount = null): array
     {
         if (! in_array($kind, ['OPEN', 'UNPACK'], true) || $count < 1) {
@@ -39,7 +44,11 @@ final class PackageOpeningComposition
                     || ! $this->exact($inner['content_quantity'])->multipliedBy($innerCount)->isEqualTo($row['content_quantity'])) {
                     throw new DomainInvariantException('Inner sealed contents must exactly reconcile to the outer package.');
                 }
-                $target = array_replace($target, $inner, ['sealed_count' => $count * $innerCount]);
+                $innerTotal = BigDecimal::of($count)->multipliedBy($innerCount);
+                if ($innerTotal->isGreaterThan(2147483647)) {
+                    throw new DomainInvariantException('Unpacked count exceeds supported package-count storage.');
+                }
+                $target = array_replace($target, $inner, ['sealed_count' => $innerTotal->toInt()]);
             }
             [$taken, $remaining] = $this->split($row['contributions'], $quantity);
             $target['quantity'] = (string) $quantity;
@@ -88,6 +97,10 @@ final class PackageOpeningComposition
         return $sealed;
     }
 
+    /**
+     * @param  list<array{layer_id:int,position:int,quantity:string}>  $parts
+     * @return array{list<array{layer_id:int,position:int,quantity:string}>,list<array{layer_id:int,position:int,quantity:string}>}
+     */
     private function split(array $parts, BigDecimal $needed): array
     {
         $taken = [];

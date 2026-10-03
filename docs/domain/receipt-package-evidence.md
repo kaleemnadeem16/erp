@@ -59,7 +59,8 @@ and both new Actions enforce their own authority. Costs are not stored in observ
 tables. The later workflow slice must expose observation capture and receipt history safely.
 
 PACKAGE_BALANCE/CONTAINER_TRACKED activation remains blocked by model/database gates.
-Issue/open/unpack/transfer, QA splitting, cutover and recalculation integration remain unfinished.
+[Saved open/unpack evidence](package-opening-operations.md) is implemented for fresh full-scope
+counted snapshots. Issue/transfer, QA splitting, cutover and recalculation integration remain unfinished.
 
 ## Verification and demo
 

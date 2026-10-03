@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 /** Read-only physical transformation proposal; never posts or reserves packages. */
 final class PreviewPackageOpening
 {
+    /** @return array<string,mixed> */
     public function __invoke(int $operationId, int $stateId, int $count, string $kind, User $actor): array
     {
         return DB::transaction(function () use ($operationId, $stateId, $count, $kind, $actor): array {
@@ -21,9 +22,14 @@ final class PreviewPackageOpening
             if (! $snapshot['matches_current_stock']) {
                 throw new DomainInvariantException('A fresh full-scope counted checkpoint is required: '.implode(', ', $snapshot['mismatch_reasons']));
             }
-            $selected = collect($snapshot['composition'])->firstWhere('state_id', $stateId);
+            /** @var list<array<string,mixed>> $composition */
+            $composition = $snapshot['composition'];
+            $selected = collect($composition)->firstWhere('state_id', $stateId);
             if ($selected === null) {
                 throw new DomainInvariantException('Selected package state does not belong to this checkpoint.');
+            }
+            if ($selected['form'] !== 'SEALED') {
+                throw new DomainInvariantException('Opening or unpacking requires a sealed package selection.');
             }
             $inner = null;
             $innerCount = null;
@@ -41,7 +47,7 @@ final class PreviewPackageOpening
             return ['checkpoint_id' => $operationId, 'stock_move_watermark' => $snapshot['stock_move_watermark'],
                 'kind' => $kind, 'tracking_active' => false, 'posted' => false, 'reserved' => false,
                 'quantity' => $snapshot['recorded_quantity'],
-                'composition' => app(PackageOpeningComposition::class)($snapshot['composition'], $stateId, $count, $kind, $inner, $innerCount)];
+                'composition' => app(PackageOpeningComposition::class)($composition, $stateId, $count, $kind, $inner, $innerCount)];
         });
     }
 }

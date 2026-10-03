@@ -4,8 +4,9 @@
 
 Read-only backend slice under proposed [ADR 0082](../decisions/0082-reconcile-package-balances-with-stock-operations.md).
 PreviewPackageOpening proposes a physical transformation against a fresh full-scope counted
-checkpoint. It does not save an opening, reserve stock, activate tracking or change valuation.
-Persisted operations with predecessor lineage and concurrency/idempotency controls remain next.
+checkpoint or saved open/unpack successor. It does not save an opening, reserve stock, activate tracking or change valuation.
+[Persisted operations](package-opening-operations.md) now enforce predecessor lineage and
+concurrency/idempotency separately; invoking the preview still saves nothing.
 
 ## Behaviour
 
@@ -57,6 +58,7 @@ including inherited stock/checkpoint cases. The module demo loaded successfully 
 ## Related
 
 - [Inventory packages](inventory-packages.md)
+- [Saved operations](package-opening-operations.md)
 - [Receipt package evidence](receipt-package-evidence.md)
 - [Package kernel](package-balance-integration.md)
 - [Delivery plan](../phases/package-balance-delivery.md)

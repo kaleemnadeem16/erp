@@ -107,13 +107,13 @@ its real Action-based demo and journey.
 ## Inactive storage foundation — 2026-10-03
 
 Migration 2026_10_03_120000 initially added three empty tables without an operational writer.
-The counted-evidence Action and demo below now write these tables; no operational stock
-writer, route or tracking-policy setting uses them. They store immutable evidence, not current on-hand projections.
-No authority to activate tracking or write operational package state is introduced.
+Counted evidence, observed receipts and saved open/unpack successors now write these tables.
+They store immutable evidence, not enabled live on-hand projections. Tracking activation remains
+blocked; the enforcing read/open capabilities are documented in [saved operations](package-opening-operations.md).
 
 | Table | Stored evidence and constraints |
 |---|---|
-| inventory_package_operations | Company, item, location, optional batch, company-unique request key, payload hash, COUNTED/RECEIPT provenance, actor, reason and recorded time |
+| inventory_package_operations | Company, item, location, optional batch, company-unique request key, payload hash, COUNTED/RECEIPT/OPEN/UNPACK provenance, predecessor/selection, actor, reason and recorded time |
 | inventory_package_states | Operation-bound SEALED/OPEN_LOOSE form, HELD/USABLE evidence, definition/name/content snapshot, whole count and exact stock quantity |
 | inventory_package_contributions | Ordered positive quantities linking each state to one or more stock layers; unique layer and position within the state |
 
@@ -184,9 +184,8 @@ provenance. Its stable key skips reruns, preserving immutable history and manual
 The command and module retain local/testing guards. The local additive migration and this
 module seeder were run successfully; no production data was changed.
 
-Remaining kernel work: projection rebuilding, policy resolution and operational posting adapters.
-Activation, QA physical splitting, package open/unpack/transfer and reversal workflows remain
-unimplemented.
+Policy resolution and [saved open/unpack successors](package-opening-operations.md) now exist.
+Activation, QA physical splitting, package issue/transfer and reversal workflows remain unimplemented.
 
 ## On-demand history projection — 2026-10-03
 
@@ -235,11 +234,13 @@ remain.
 [Observed receipt evidence](receipt-package-evidence.md) now captures draft physical composition
 and writes immutable RECEIPT operations with source-line provenance inside normal stock posting.
 These are inbound historical snapshots, not current projections. Checkpoint reconstruction uses
-only COUNTED operations for supersession. Other operational adapters and activation remain pending.
+COUNTED/OPEN/UNPACK full-scope snapshots for supersession; RECEIPT remains partial inbound evidence.
+Other operational adapters and activation remain pending.
 
 ## Related
 
 - [Inventory packages](inventory-packages.md)
+- [Saved opening/unpacking operations](package-opening-operations.md)
 - [Delivery plan](../phases/package-balance-delivery.md)
 - [Stock](stock.md)
 - [Research gate](../architecture/research-and-design.md)
