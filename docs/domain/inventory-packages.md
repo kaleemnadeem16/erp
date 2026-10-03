@@ -279,6 +279,13 @@ Package content and inner-package composition are immutable at both the model an
 
 Representative purchasing demo scenarios are provided by PackagedPurchasingDemoSeeder, opt-in through demo:seed. The [walkthrough](../journeys/packaged-purchasing-demo.md) covers distinct/nested packages, independent price units/denominators, loose and partial receipts, recorded ordering exceptions, historical offer changes and linked replacement orders; physical package availability remains outside this slice.
 
+## Implemented policy foundation
+
+[Package tracking policy](package-tracking-policy.md) now resolves and pins item creation
+semantics with source evidence. Only QUANTITY_ONLY can be stored; model/database gates refuse
+advanced activation. Existing item semantics are not reinterpreted from today's category/default.
+Operational package tracking remains pending.
+
 ## Related
 
 - [Material resolution](material-resolution.md) · [Items](items.md) · [Stock](stock.md)

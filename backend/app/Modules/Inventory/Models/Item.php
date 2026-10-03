@@ -9,9 +9,11 @@ use App\Models\Company;
 use App\Models\Model;
 use App\Models\Uom;
 use App\Modules\Accounting\Models\ChartOfAccount;
+use App\Modules\Inventory\Actions\ResolvePackageTrackingPolicy;
 use App\Modules\Inventory\Support\AvcoPoolScope;
 use App\Modules\Inventory\Support\ItemTracking;
 use App\Modules\Inventory\Support\ItemType;
+use App\Modules\Inventory\Support\PackageTrackingMode;
 use App\Modules\Inventory\Support\ValuationMethod;
 use App\Modules\Purchasing\Models\ItemSupplier;
 use App\Support\CompanyContext;
@@ -73,6 +75,20 @@ class Item extends Model
     protected static function booted(): void
     {
         static::saving(function (Item $item): void {
+            if (! $item->exists) {
+                $policy = app(ResolvePackageTrackingPolicy::class)(
+                    $item->package_tracking_mode, $item->category_id,
+                );
+                $policy['mode']->requireImplemented();
+                $item->package_tracking_mode = $policy['mode'];
+                $item->package_tracking_source = $policy['source'];
+                $item->package_tracking_source_category_id = $policy['category_id'];
+            } else {
+                $item->package_tracking_mode?->requireImplemented();
+                if ($item->isDirty(['package_tracking_mode', 'package_tracking_source', 'package_tracking_source_category_id'])) {
+                    throw new DomainInvariantException('Item package policy is pinned; governed transitions are not implemented.', 'package_tracking_mode');
+                }
+            }
             // Resolve valuation_method here (not in a separate creating hook): Eloquent
             // always fires saving before creating on insert, so a hook downstream that
             // branches on valuation_method must see it already resolved.
@@ -131,6 +147,7 @@ class Item extends Model
     {
         return [
             'category_id' => Category::class,
+            'package_tracking_source_category_id' => Category::class,
             'stock_uom_id' => Uom::class,
             'income_account_id' => ChartOfAccount::class,
             'expense_account_id' => ChartOfAccount::class,
@@ -151,6 +168,7 @@ class Item extends Model
             'valuation_method' => ValuationMethod::class,
             'avco_pool_scope' => AvcoPoolScope::class,
             'tracking' => ItemTracking::class,
+            'package_tracking_mode' => PackageTrackingMode::class,
             'quantity_precision' => 'decimal:9',
             'status' => Status::class,
         ];

@@ -92,7 +92,9 @@ package projections remain enforcing implementation work.
 
 ### 5. Enable only with a reconciled opening state
 
-Keep QUANTITY_ONLY as default and resolve item/category/company configuration under ADR 0052.
+The implemented [policy foundation](../domain/package-tracking-policy.md) keeps QUANTITY_ONLY
+as the only persistable mode and pins creation-time item/category/company resolution under ADR 0052.
+Model/database gates block advanced modes; no activation setting is exposed.
 Existing items require a physical count of sealed definitions and open/loose stock, a reason,
 actor and a reconciled checkpoint before activation. Recheck stock under locks when committing:
 a count made before another receipt/transfer cannot activate from a stale total. Do not rewrite

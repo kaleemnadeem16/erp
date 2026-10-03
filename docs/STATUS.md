@@ -123,13 +123,14 @@ authorisation and issued-factor/default-price receiving are covered by 41 focuse
 
 ## Next
 
-Physical package checkpoint replay is implemented on demand: immutable composition/totals,
-movement watermark, freshness reasons and separate package-state view authority; no costs.
-Package/demo/permission/architecture checks pass 157 tests / 653 assertions → [replay](domain/package-balance-integration.md#on-demand-history-projection--2026-10-03).
-Local migration and demo access update are applied; existing checkpoint history is preserved.
-Next: policy resolution and operational stock adapters.
+Physical package policy foundation now pins creation-time item/category/company resolution
+and source evidence; model/database gates permit only QUANTITY_ONLY.
+Policy/demo/replay/architecture/API checks pass 125 tests / 421 assertions; separate model/
+Company/unit checks pass 75 tests / 217 assertions (overlapping sets) → [policy](domain/package-tracking-policy.md).
+Three non-stock policy demo items are loaded locally; the inactive checkpoint kernel is complete.
+Next: operational package stock adapters, followed by governed activation and user workflows.
 [ADR 0082](decisions/0082-reconcile-package-balances-with-stock-operations.md) remains proposed;
-no operational tracking or activation is implemented yet, 2026-10-03.
+operational physical tracking is still disabled, 2026-10-03.
 
 Package/offer maintenance, independent PO pricing, partial package/loose receipts and replacement
 order linkage are implemented in the existing screens under [ADR 0080](decisions/0080-packaged-purchasing-and-independent-price-basis.md).

@@ -38,15 +38,13 @@ has shipped. This plan extends the delivered purchasing package masters; it is n
    backdated replay need enforcing adapters or guards. This completes the reversible spike,
    not operational package integration. ADR 0082 remains proposed; kernel work must preserve
    its disabled-by-default boundary and explicit activation gates.
-5. [ ] **Schema and transactional kernel.** Inactive immutable storage foundation is shipped
-   ([schema and verified limits](../domain/package-balance-integration.md#inactive-storage-foundation--2026-10-03));
-   Counted-evidence posting, equal-payload retries, request/location/layer locks and live-stock
-   reconciliation now work ([writer](../domain/package-balance-integration.md#authorised-counted-checkpoint-writer--2026-10-03)).
-   On-demand checkpoint projection is implemented ([replay](../domain/package-balance-integration.md#on-demand-history-projection--2026-10-03));
-   operational event replay/posting and policy resolution remain. Company-safe definition references, immutable event
-   and operation identity, reconstructible balance projections, exact decimal constraints,
-   stable lock order, equal-payload retry semantics and rollback/reconciliation tests. Establish
-   guarded default/item/category mode resolution without activating unsupported modes.
+5. [x] **Inactive checkpoint kernel and policy foundation.** Company-safe immutable evidence,
+   exact contribution constraints, counted-evidence posting, equal-payload retries, request/
+   location/layer locks and on-demand history reconstruction are implemented.
+   [Creation-time policy resolution](../domain/package-tracking-policy.md) pins sources and
+   enforces QUANTITY_ONLY through model/database gates. No activation or live package balance
+   is advertised. Operational event replay/posting belongs to step 6; transitions and relaxation
+   of the gates require the later enforcing/reconciliation slices.
 6. [ ] **Operational integration.** Observed sealed/loose receipt capture, outer unpack versus
    content open, composition-preserving transfer and count correction; QA, reversal, cutover
    and recalculation adapters or explicit first-release guards. Cover every direct Action writer,

@@ -278,7 +278,10 @@ adds scoped immutable snapshots and database reconciliation constraints; it is n
 RecordPackageCheckpoint writes counted evidence with existing physical-count creation authority,
 request retries and stock freshness checks. It has no HTTP route and cannot activate tracking.
 ReplayPackageCheckpoint reconstructs immutable evidence on demand, reports freshness against
-stock movement history and enforces inventory.package-state.view without projecting costs. The owner confirmed grouped sealed/open balances;
+stock movement history and enforces inventory.package-state.view without projecting costs.
+ResolvePackageTrackingPolicy pins creation-time item/category/company choices;
+[model/database gates](../../../../docs/domain/package-tracking-policy.md) permit only
+QUANTITY_ONLY until operational adapters and governed reconciliation are implemented. The owner confirmed grouped sealed/open balances;
 [proposed ADR 0082](../../../../docs/decisions/0082-reconcile-package-balances-with-stock-operations.md)
 and the [delivery plan](../../../../docs/phases/package-balance-delivery.md) record the next
 integration spike. Its [verified findings](../../../../docs/domain/package-balance-integration.md)

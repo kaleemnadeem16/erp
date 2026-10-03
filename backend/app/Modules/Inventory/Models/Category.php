@@ -6,6 +6,7 @@ namespace App\Modules\Inventory\Models;
 
 use App\Models\Model;
 use App\Modules\Accounting\Models\ChartOfAccount;
+use App\Modules\Inventory\Support\PackageTrackingMode;
 use App\Modules\Inventory\Support\ValuationMethod;
 use App\Support\Concerns\BelongsToCompany;
 use App\Support\Concerns\GuardsCompanyScopedHierarchy;
@@ -39,6 +40,13 @@ class Category extends Model
     use GuardsCompanyScopedHierarchy;
     use GuardsRelatedCompanyScope;
 
+    protected static function booted(): void
+    {
+        static::saving(function (Category $category): void {
+            $category->default_package_tracking_mode?->requireImplemented();
+        });
+    }
+
     protected $guarded = ['id'];
 
     /**
@@ -60,6 +68,7 @@ class Category extends Model
     {
         return [
             'default_valuation_method' => ValuationMethod::class,
+            'default_package_tracking_mode' => PackageTrackingMode::class,
         ];
     }
 

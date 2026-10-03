@@ -225,8 +225,10 @@ The local additive watermark migration and module-seeder rerun succeeded. The ex
 checkpoint remains immutable and therefore has an unknown watermark; fresh installations record
 one. Do not overwrite an old checkpoint merely to make the demo appear fresh.
 
-Kernel projection reconstruction is now implemented on demand. Policy resolution, operational
-event adapters, QA physical evidence and activation guards remain.
+Kernel projection reconstruction is now implemented on demand. The
+[policy foundation](package-tracking-policy.md) now pins creation-time semantics and blocks
+advanced modes in the database. Operational adapters, QA evidence and activation reconciliation
+remain.
 
 ## Related
 

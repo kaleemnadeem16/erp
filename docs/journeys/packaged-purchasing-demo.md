@@ -97,6 +97,15 @@ PackageOperation, PackageState and PackageContribution models remain available f
 after another receipt, issue or transfer. The [writer contract](../domain/package-balance-integration.md#authorised-counted-checkpoint-writer--2026-10-03)
 records permissions, unsupported QA/serial/shortage cases and the remaining operational work.
 
+## Creation-policy examples
+
+Search the Items list for “Package policy” to find three non-stock examples: company choice,
+nearest category choice and explicit item choice. They all remain quantity-only.
+PackageTrackingPolicyDemoSeeder creates them through the normal creation Actions and preserves
+manual edits/archives on rerun. Developer model inspection shows package_tracking_mode,
+package_tracking_source and its selected ancestor reference; there is no advanced-mode control.
+See [policy rules](../domain/package-tracking-policy.md) for precedence and activation gates.
+
 ## Related
 
 - [Phase 2 operational journey](phase-2-operational-journey.md)

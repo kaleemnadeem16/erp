@@ -10,6 +10,7 @@ use App\Modules\Inventory\Support\BackdatingHorizonMode;
 use App\Modules\Inventory\Support\InventoryLocationMode;
 use App\Modules\Inventory\Support\NegativeStockAuthorisationMode;
 use App\Modules\Inventory\Support\NegativeStockMode;
+use App\Modules\Inventory\Support\PackageTrackingMode;
 use App\Modules\Inventory\Support\PostingFloorSubtype;
 use App\Support\CompanyLocks\CompanyLocks;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -66,6 +67,7 @@ class Company extends Model
     {
         return [
             'inventory_location_mode' => InventoryLocationMode::class,
+            'default_package_tracking_mode' => PackageTrackingMode::class,
             'default_avco_pool_scope' => AvcoPoolScope::class,
             'negative_stock_mode' => NegativeStockMode::class,
             'negative_stock_authorisation_mode' => NegativeStockAuthorisationMode::class,
@@ -84,6 +86,10 @@ class Company extends Model
 
     protected static function booted(): void
     {
+        static::saving(function (Company $company): void {
+            $company->default_package_tracking_mode ??= PackageTrackingMode::QuantityOnly;
+            $company->default_package_tracking_mode->requireImplemented();
+        });
         static::updating(function (Company $company): void {
             // The lifecycle rules of ADR 0024, enforced here so no caller — API, import or console — can bypass them. The same
             // reasons are shown to people on the Company screen (see CompanyLocks).
