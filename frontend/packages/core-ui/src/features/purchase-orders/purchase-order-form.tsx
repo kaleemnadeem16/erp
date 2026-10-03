@@ -6,12 +6,13 @@ import {
   type UseFormReturn,
 } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { History, MapPin, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { History, MapPin, Plus, RotateCcw } from "lucide-react";
 import { z } from "zod";
 import {
   useCurrenciesIndex,
   useItemSuppliersIndex,
   useItemsIndex,
+  usePurchaseOrdersIndex,
   useSupplierAccountsIndex,
   useSupplierAccountsSitesIndex,
   useUomsIndex,
@@ -23,11 +24,10 @@ import type { AdvancedOption } from "../../components/ui/advanced-options-menu";
 import { Combobox } from "../../components/ui/combobox";
 import { DateField } from "../../components/ui/date-field";
 import { Button } from "../../components/ui/button";
-import { Checkbox } from "../../components/ui/checkbox";
+import { FormLabelWithHint } from "../../components/ui/field-hint";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -43,7 +43,6 @@ import {
   SelectValue,
 } from "../../components/ui/select";
 import { DetailSection } from "../../components/detail/detail-page-layout";
-import { DetailField } from "../../components/detail/detail-field";
 import { RecordSheetAside } from "../../components/page/record-sheet";
 import {
   WizardShell,
@@ -51,7 +50,7 @@ import {
 } from "../../components/page/wizard-shell";
 import { clearDraft, readDraft, writeDraft } from "../../lib/session-draft";
 import { usePermission } from "../../hooks/use-permission";
-import { PurchaseLinePackageFields } from "./purchase-line-package-fields";
+import { PurchaseOrderLineFields } from "./purchase-order-line-fields";
 import { PurchaseOrderSummary } from "./purchase-order-summary";
 import { SupplierSiteDialog } from "./supplier-site-form";
 import { lookupState } from "../../lib/api-errors";
@@ -206,9 +205,8 @@ export const hasUnfinishedPurchaseOrder = () =>
   readUnfinishedPurchaseOrder() !== null;
 export const clearUnfinishedPurchaseOrder = () => clearDraft(DRAFT_NAME);
 
-// The create flow only — an edit screen shows every section at once since
-// the user is changing an already-complete order, not filling one in for
-// the first time. Exchange rate has no step of its own: it's rarely edited
+// The same steps for create and edit, so the two never feel like different screens; editing just lets any step be opened
+// at any time (an order being edited is already complete). Exchange rate has no step of its own: it's rarely edited
 // (see the "Override the exchange rate" advanced option below) and belongs
 // with the fields around it, not promoted to a whole extra step.
 const WIZARD_STEPS: WizardStep[] = [
@@ -337,6 +335,15 @@ export function PurchaseOrderForm({
     return () => subscription.unsubscribe();
   }, [form, isCreate, step]);
 
+  // A field that was reported invalid is checked again as soon as it changes, so its message goes away the moment the value is
+  // fixed. (Without this, an error found by "Next" stays on screen until the whole form is submitted.)
+  useEffect(() => {
+    const subscription = form.watch((_values, { name }) => {
+      if (name && form.getFieldState(name as FieldPath<PurchaseOrderFormValues>).error) void form.trigger(name as FieldPath<PurchaseOrderFormValues>);
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
+
   // Collapsed for the common case; auto-expanded when editing an order — or
   // resuming one — whose FX fields were already customized, so existing
   // overrides stay visible instead of hiding behind a click.
@@ -344,16 +351,30 @@ export function PurchaseOrderForm({
     () => !!startingValues && fxIsCustomised(startingValues),
   );
 
+  const [showReplaces, setShowReplaces] = useState(
+    () => !!startingValues?.replaces_purchase_order_id,
+  );
+
   function startOver() {
     form.reset(createDefaults());
     setStep(0);
     setShowFxDetails(false);
+    setShowReplaces(false);
     setResumed(false);
     setConfirmingStartOver(false);
     clearDraft(DRAFT_NAME);
   }
   useEffect(() => {
     onAdvancedOptionsChange?.([
+      {
+        id: "replaces-order",
+        label: "This order replaces another",
+        checked: showReplaces,
+        onCheckedChange: (checked) => {
+          if (!checked) form.setValue("replaces_purchase_order_id", "");
+          setShowReplaces(checked);
+        },
+      },
       {
         id: "fx-override",
         label: "Override the exchange rate",
@@ -375,7 +396,7 @@ export function PurchaseOrderForm({
       },
     ]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showFxDetails]);
+  }, [showFxDetails, showReplaces]);
   // Lands keyboard/screen-reader focus on Supplier — the form's first field —
   // instead of wherever it was left (e.g. the "New PO" nav link), on create only.
   useEffect(() => {
@@ -499,7 +520,29 @@ export function PurchaseOrderForm({
 
   const [addingSite, setAddingSite] = useState(false);
 
-  const watchedLines = form.watch("lines");
+  // Orders this one could replace: the chosen supplier's orders that have left draft. The server decides which are eligible
+  // (cancelled, or with a short-closed quantity) and says so if the pick is not.
+  const replaceableQuery = usePurchaseOrdersIndex(
+    {
+      "filter[supplier_account_id]": supplierIdNumber,
+      sort: "-created_at",
+      per_page: 100,
+    },
+    { query: { enabled: showReplaces && supplierIdNumber > 0 } },
+  );
+  const replaceableOptions = useMemo(
+    () =>
+      (replaceableQuery.data?.status === 200
+        ? replaceableQuery.data.data.data
+        : []
+      )
+        .filter((order) => order.status !== "DRAFT")
+        .map((order) => ({
+          value: String(order.id),
+          label: `${order.number ?? `#${order.id}`} · ${order.status.toLowerCase()} · ${order.order_date}`,
+        })),
+    [replaceableQuery.data],
+  );
 
   // A single stable button drives both "Next" and the final "Save draft" —
   // it never swaps from type="button" to type="submit" under the user's own
@@ -524,98 +567,24 @@ export function PurchaseOrderForm({
   // which section is currently shown — only the JSX is conditional, so
   // switching steps never loses a value the same way the AVCO-only field
   // elsewhere in this codebase doesn't reset when it's hidden.
-  const showDetailsStep = !isCreate || step === 0;
-  const showLinesStep = !isCreate || step === 1;
-  const showReviewStep = isCreate && step === 2;
+  const showDetailsStep = step === 0;
+  const showLinesStep = step === 1;
+  const showReviewStep = step === 2;
 
-  const LINE_FIELD_LABEL = {
-    description: "Description",
-    ordered_qty: "Quantity",
-    unit_price: "Unit price",
-    discount_amount: "Line discount (amount)",
-    tax_amount: "Line tax (amount)",
-    expected_delivery_date: "Line expected date (optional)",
-  } as const;
-  // What a money field means, said on the form itself: discount and tax are fixed amounts for the whole line —
-  // not a percentage and not per unit — and the price is for one purchase unit.
-  const LINE_FIELD_HINT: Partial<
-    Record<keyof typeof LINE_FIELD_LABEL, string>
-  > = {
-    unit_price: "Price for the selected pricing quantity and basis.",
-    discount_amount:
-      "A fixed amount off this whole line — not a percentage, not per unit.",
-    tax_amount:
-      "A fixed tax amount for this whole line — not a percentage, not per unit.",
+  const summaryProps = {
+    supplierOptions,
+    siteOptions,
+    currencyOptions,
+    itemOptions,
+    uomOptions,
+    paymentTermsDays: chosenSupplier?.payment_terms_days,
+    leadTimeDays: chosenSupplier?.lead_time_days,
   };
-  const LINE_DECIMAL_FIELDS = [
-    "ordered_qty",
-    "unit_price",
-    "discount_amount",
-    "tax_amount",
-  ];
-  // One text/date input of a line. Declared in the order they should be
-  // tabbed through — quantity beside its unit, then the money, then the date.
-  function renderLineField(
-    index: number,
-    name: keyof typeof LINE_FIELD_LABEL,
-    className?: string,
-  ) {
-    return (
-      <FormField
-        control={form.control}
-        name={`lines.${index}.${name}` as FieldPath<PurchaseOrderFormValues>}
-        render={({ field: lineField }) => (
-          <FormItem className={className}>
-            <FormLabel>{LINE_FIELD_LABEL[name]}</FormLabel>
-            <FormControl>
-              {name === "expected_delivery_date" ? (
-                <DateField
-                  value={String(lineField.value)}
-                  onChange={lineField.onChange}
-                  onBlur={lineField.onBlur}
-                />
-              ) : (
-                <Input
-                  type="text"
-                  inputMode={
-                    LINE_DECIMAL_FIELDS.includes(name) ? "decimal" : undefined
-                  }
-                  {...lineField}
-                  value={String(lineField.value)}
-                />
-              )}
-            </FormControl>
-            {LINE_FIELD_HINT[name] && (
-              <FormDescription>{LINE_FIELD_HINT[name]}</FormDescription>
-            )}
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-    );
-  }
 
   const sections = (
     <>
       {showDetailsStep && (
         <DetailSection title="Supplier and dates">
-          <FormField
-            control={form.control}
-            name="replaces_purchase_order_id"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Replaces order ID (optional)</FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    value={field.value ?? ""}
-                    placeholder="Cancelled or short-closed order ID"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
           <FormField
             control={form.control}
             name="supplier_account_id"
@@ -643,7 +612,9 @@ export function PurchaseOrderForm({
             name="supplier_site_id"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Supplier site</FormLabel>
+                <FormLabelWithHint hint="The supplier's address this order is placed with. Leave it on the default to use the supplier's main site; add one with the pin button when they have another (a warehouse, a factory).">
+                  Supplier site
+                </FormLabelWithHint>
                 <div className="flex gap-1.5">
                   <FormControl>
                     <Combobox
@@ -703,7 +674,9 @@ export function PurchaseOrderForm({
             name="expected_delivery_date"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Expected delivery</FormLabel>
+                <FormLabelWithHint hint="When you expect the goods overall. Every line follows this date unless it is given its own (line Advanced options → A delivery date for this line).">
+                  Expected delivery
+                </FormLabelWithHint>
                 <FormControl>
                   <DateField
                     value={field.value}
@@ -720,7 +693,9 @@ export function PurchaseOrderForm({
             name="currency_id"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Currency</FormLabel>
+                <FormLabelWithHint hint="The currency the supplier invoices in. It starts as the supplier's own currency. If it differs from the company's base currency the exchange rate applies — see Advanced options → Override the exchange rate.">
+                  Currency
+                </FormLabelWithHint>
                 <FormControl>
                   <Combobox
                     {...lookupState(currenciesQuery, "currencies")}
@@ -737,6 +712,37 @@ export function PurchaseOrderForm({
               </FormItem>
             )}
           />
+          {showReplaces && (
+            <FormField
+              control={form.control}
+              name="replaces_purchase_order_id"
+              render={({ field }) => (
+                <FormItem className="sm:col-span-2">
+                  <FormLabelWithHint hint="Links this order to an earlier one it takes the place of — a cancelled order, or one with a short-closed quantity — so the history stays connected and nothing is ordered twice by mistake. The earlier order must belong to the same supplier.">
+                    Replaces order
+                  </FormLabelWithHint>
+                  <FormControl>
+                    <Combobox
+                      {...lookupState(replaceableQuery, "orders")}
+                      ref={field.ref}
+                      value={field.value ?? ""}
+                      onValueChange={field.onChange}
+                      disabled={!supplierIdNumber}
+                      options={replaceableOptions}
+                      placeholder={
+                        supplierIdNumber
+                          ? "Choose the order this replaces"
+                          : "Select a supplier first"
+                      }
+                      searchPlaceholder="Search orders…"
+                      emptyText="This supplier has no orders that can be replaced."
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
           <FormField
             control={form.control}
             name="notes"
@@ -767,7 +773,9 @@ export function PurchaseOrderForm({
               name="fx_policy"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Policy</FormLabel>
+                  <FormLabelWithHint hint="Fixed keeps this rate. Floating until issue lets it follow the market rate until the order is issued, then pins it.">
+                    Policy
+                  </FormLabelWithHint>
                   <Select value={field.value} onValueChange={field.onChange}>
                     <FormControl>
                       <SelectTrigger>
@@ -799,7 +807,16 @@ export function PurchaseOrderForm({
                 name={name}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>
+                    <FormLabelWithHint
+                      hint={
+                        {
+                          fx_rate: "How many units of the company's base currency one unit of the order currency buys. 1 means no conversion.",
+                          fx_rate_date: "The day the rate applies to.",
+                          fx_rate_type: "Which kind of rate it is — for example MANUAL, or a bank's buying or selling rate.",
+                          fx_rate_source: "Where the rate came from, kept so it can be traced later.",
+                        }[name]
+                      }
+                    >
                       {
                         {
                           fx_rate: "Rate",
@@ -808,7 +825,7 @@ export function PurchaseOrderForm({
                           fx_rate_source: "Source",
                         }[name]
                       }
-                    </FormLabel>
+                    </FormLabelWithHint>
                     <FormControl>
                       {name === "fx_rate_date" ? (
                         <DateField
@@ -839,142 +856,19 @@ export function PurchaseOrderForm({
         >
           <div className="space-y-4 sm:col-span-2">
             {fields.map((field, index) => (
-              <fieldset
+              <PurchaseOrderLineFields
                 key={field.id}
-                // `[&>*]:min-w-0`: a grid item's default `min-width: auto` sizes its
-                // track to its content's intrinsic width, so a long selected item
-                // name in the Combobox below would widen this whole row instead of
-                // truncating — same fix DetailSection's grid uses.
-                className="grid min-w-0 gap-3 rounded-lg border bg-panel/60 p-4 @lg:grid-cols-2 @3xl:grid-cols-3 @5xl:grid-cols-4 [&>*]:min-w-0"
-              >
-                <legend className="px-1 text-sm font-medium">
-                  Line {index + 1}
-                </legend>
-                <FormField
-                  control={form.control}
-                  name={`lines.${index}.item_id`}
-                  render={({ field: itemField }) => (
-                    <FormItem>
-                      <FormLabel>Item</FormLabel>
-                      <FormControl>
-                        <Combobox
-                          {...lookupState(itemsQuery, "items")}
-                          ref={itemField.ref}
-                          value={itemField.value}
-                          onValueChange={(value) => {
-                            itemField.onChange(value);
-                            const item = items.find(
-                              (candidate) => candidate.id === Number(value),
-                            );
-                            if (item) {
-                              form.setValue(
-                                `lines.${index}.description`,
-                                item.name,
-                              );
-                              form.setValue(
-                                `lines.${index}.purchase_uom_id`,
-                                String(
-                                  purchaseUomIdByItem.get(item.id) ??
-                                    item.stock_uom_id,
-                                ),
-                              );
-                            }
-                          }}
-                          options={itemOptions}
-                          placeholder="Select item"
-                          searchPlaceholder="Search items…"
-                          emptyText="No items found."
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                {renderLineField(index, "description", "@3xl:col-span-2")}
-                {renderLineField(index, "ordered_qty")}
-                <FormField
-                  control={form.control}
-                  name={`lines.${index}.purchase_uom_id`}
-                  render={({ field: uomField }) => (
-                    <FormItem>
-                      <FormLabel>Purchase UoM</FormLabel>
-                      <FormControl>
-                        <Combobox
-                          {...lookupState(uomsQuery, "units")}
-                          ref={uomField.ref}
-                          value={uomField.value}
-                          onValueChange={uomField.onChange}
-                          disabled={
-                            !!form.watch(
-                              ("lines." +
-                                index +
-                                ".item_packaging_id") as "lines.0.item_packaging_id",
-                            )
-                          }
-                          options={uomOptions}
-                          placeholder="Select UoM"
-                          searchPlaceholder="Search units…"
-                          emptyText="No units found."
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="col-span-full">
-                  <PurchaseLinePackageFields
-                    form={form}
-                    index={index}
-                    stockUomId={
-                      items.find(
-                        (item) =>
-                          item.id ===
-                          Number(
-                            form.watch(
-                              ("lines." +
-                                index +
-                                ".item_id") as "lines.0.item_id",
-                            ),
-                          ),
-                      )?.stock_uom_id
-                    }
-                  />
-                </div>
-                {renderLineField(index, "unit_price")}
-                {renderLineField(index, "discount_amount")}
-                {renderLineField(index, "tax_amount")}
-                {renderLineField(index, "expected_delivery_date")}
-                <FormField
-                  control={form.control}
-                  name={`lines.${index}.qa_required`}
-                  render={({ field: qaField }) => (
-                    <FormItem className="flex items-center gap-2 @lg:pt-6">
-                      <FormControl>
-                        <Checkbox
-                          checked={qaField.value}
-                          onCheckedChange={(checked) =>
-                            qaField.onChange(checked === true)
-                          }
-                        />
-                      </FormControl>
-                      <FormLabel>QA required</FormLabel>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="flex items-end justify-end @lg:col-start-2 @3xl:col-start-3 @5xl:col-start-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => remove(index)}
-                    disabled={fields.length === 1}
-                  >
-                    <Trash2 className="size-4" />
-                    Remove
-                  </Button>
-                </div>
-              </fieldset>
+                form={form}
+                index={index}
+                items={items}
+                itemOptions={itemOptions}
+                itemLookup={lookupState(itemsQuery, "items")}
+                uoms={uoms}
+                uomLookup={lookupState(uomsQuery, "units")}
+                purchaseUomIdByItem={purchaseUomIdByItem}
+                canRemove={fields.length > 1}
+                onRemove={() => remove(index)}
+              />
             ))}
           </div>
           <Button
@@ -990,48 +884,14 @@ export function PurchaseOrderForm({
       {showReviewStep && (
         <DetailSection
           title="Review"
-          description="Check the details below, then save the draft."
+          description="This is everything that will be saved. Go back to change anything; nothing is frozen until the order is issued."
+          fullWidth
         >
-          <DetailField label="Supplier">
-            {
-              supplierOptions.find((option) => option.value === supplierId)
-                ?.label
-            }
-          </DetailField>
-          <DetailField label="Order date">
-            {form.watch("order_date") || undefined}
-          </DetailField>
-          <DetailField label="Expected delivery">
-            {form.watch("expected_delivery_date") || undefined}
-          </DetailField>
-          <DetailField label="Currency">
-            {
-              currencyOptions.find(
-                (option) => option.value === form.watch("currency_id"),
-              )?.label
-            }
-          </DetailField>
-          <DetailField label="Notes" fullWidth>
-            {form.watch("notes") || undefined}
-          </DetailField>
-          <DetailField label="Lines" fullWidth>
-            <ul className="space-y-1">
-              {watchedLines.map((line, index) => (
-                <li key={index} className="text-sm">
-                  {itemOptions.find((option) => option.value === line.item_id)
-                    ?.label ?? line.description}
-                  {" — "}
-                  {line.ordered_qty} × {line.unit_price}
-                  {Number(line.discount_amount) > 0 && (
-                    <> · line discount −{line.discount_amount}</>
-                  )}
-                  {Number(line.tax_amount) > 0 && (
-                    <> · line tax +{line.tax_amount}</>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </DetailField>
+          <PurchaseOrderSummary
+            variant="review"
+            control={form.control}
+            {...summaryProps}
+          />
         </DetailSection>
       )}
     </>
@@ -1056,7 +916,9 @@ export function PurchaseOrderForm({
           ? "Next"
           : isSubmitting
             ? "Saving…"
-            : "Save draft"}
+            : isCreate
+              ? "Save draft"
+              : "Save changes"}
       </Button>
     </>
   );
@@ -1070,18 +932,16 @@ export function PurchaseOrderForm({
         className="@container space-y-6"
         onSubmit={form.handleSubmit((values) => onSubmit(values, form))}
       >
-        <RecordSheetAside>
-          <PurchaseOrderSummary
-            control={form.control}
-            supplierOptions={supplierOptions}
-            siteOptions={siteOptions}
-            currencyOptions={currencyOptions}
-            itemOptions={itemOptions}
-            uomOptions={uomOptions}
-            paymentTermsDays={chosenSupplier?.payment_terms_days}
-            leadTimeDays={chosenSupplier?.lead_time_days}
-          />
-        </RecordSheetAside>
+        {/* The review step is the full version of this summary, so the side column steps aside for it. */}
+        {!showReviewStep && (
+          <RecordSheetAside>
+            <PurchaseOrderSummary
+              variant="aside"
+              control={form.control}
+              {...summaryProps}
+            />
+          </RecordSheetAside>
+        )}
         {formError && (
           <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
             {formError}
@@ -1141,24 +1001,15 @@ export function PurchaseOrderForm({
             )}
           </div>
         )}
-        {isCreate ? (
-          <WizardShell
-            steps={WIZARD_STEPS}
-            activeIndex={step}
-            footer={wizardFooter}
-          >
-            {sections}
-          </WizardShell>
-        ) : (
-          <>
-            {sections}
-            <div className="flex justify-end">
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Saving…" : "Save draft"}
-              </Button>
-            </div>
-          </>
-        )}
+        <WizardShell
+          steps={WIZARD_STEPS}
+          activeIndex={step}
+          freeNavigation={!isCreate}
+          onStepClick={setStep}
+          footer={wizardFooter}
+        >
+          {sections}
+        </WizardShell>
       </form>
       {mayManageSupplierSites && supplierIdNumber > 0 && (
         <SupplierSiteDialog

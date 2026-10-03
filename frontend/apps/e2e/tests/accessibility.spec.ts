@@ -79,6 +79,9 @@ test('DateField: arrow keys move between segments, Tab exits the whole control',
   await expect(day).not.toBeFocused();
   await expect(orderDateGroup.getByRole('button', { name: 'Choose date' })).toBeFocused();
   await page.keyboard.press('Tab');
+  // The next field's label carries a help (i) button, which is a keyboard stop of its own, before its Month segment.
+  await expect(page.getByRole('button', { name: 'About Expected delivery' })).toBeFocused();
+  await page.keyboard.press('Tab');
   const nextMonth = page.getByRole('group', { name: 'Expected delivery' }).getByLabel('Month');
   await expect(nextMonth).toBeFocused();
 });

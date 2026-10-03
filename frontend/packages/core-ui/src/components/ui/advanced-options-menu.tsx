@@ -31,7 +31,17 @@ export interface AdvancedOption {
  * menu in its own `PageHeader` — the form owns the state and reset logic,
  * the screen just decides where the trigger sits.
  */
-export function AdvancedOptionsMenu({ options }: { options: AdvancedOption[] }) {
+export function AdvancedOptionsMenu({
+  options,
+  label = 'Advanced options',
+  ariaLabel,
+}: {
+  options: AdvancedOption[];
+  /** The button's and the menu's title — leave as is for a page; a repeated block (a line of an order) names itself. */
+  label?: string;
+  /** What assistive technology calls the button when there are several on one screen ("Options for line 2"). */
+  ariaLabel?: string;
+}) {
   if (options.length === 0) return null;
   const activeCount = options.filter((option) => option.checked).length;
 
@@ -41,14 +51,14 @@ export function AdvancedOptionsMenu({ options }: { options: AdvancedOption[] }) 
         {/* Text label hides below `sm` — alone in PageHeader's `actions` slot, the
             full label pushed this onto its own crowded line on a narrow screen;
             icon (+ count badge) only reads fine there without it. */}
-        <Button variant="outline" size="sm" aria-label="Advanced options">
+        <Button variant="outline" size="sm" aria-label={ariaLabel ?? label}>
           <SlidersHorizontal className="h-4 w-4" />
-          <span className="hidden sm:inline">Advanced options</span>
+          <span className="hidden sm:inline">{label}</span>
           {activeCount > 0 && <Badge className="ml-1">{activeCount}</Badge>}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64">
-        <DropdownMenuLabel>Advanced options</DropdownMenuLabel>
+        <DropdownMenuLabel>{label}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {options.map((option) => (
           <DropdownMenuCheckboxItem

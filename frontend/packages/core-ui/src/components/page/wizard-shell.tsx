@@ -13,6 +13,8 @@ export interface WizardShellProps {
   activeIndex: number;
   /** Jump back to an already-completed step by clicking its label. A later step isn't clickable — its validity depends on the current one, which the caller gates via its own "Next" handler. */
   onStepClick?: (index: number) => void;
+  /** Let any step be opened at any time — for editing something already complete, where there is nothing to gate. */
+  freeNavigation?: boolean;
   children: ReactNode;
   /** Back/Next (or Back/Save on the last step) — always render both, even a disabled/invisible Back on the first step, so the footer's spacing stays consistent. */
   footer: ReactNode;
@@ -23,14 +25,14 @@ export interface WizardShellProps {
  * flow. Purely presentational — the caller owns step state, validation
  * gating, and what content each step shows.
  */
-export function WizardShell({ steps, activeIndex, onStepClick, children, footer }: WizardShellProps) {
+export function WizardShell({ steps, activeIndex, onStepClick, freeNavigation, children, footer }: WizardShellProps) {
   return (
     <div className="space-y-6">
       <ol className="flex items-center gap-2 overflow-x-auto pb-1">
         {steps.map((step, index) => {
           const isActive = index === activeIndex;
           const isComplete = index < activeIndex;
-          const isClickable = isComplete && !!onStepClick;
+          const isClickable = (isComplete || !!freeNavigation) && !isActive && !!onStepClick;
           return (
             <li key={step.id} className="flex items-center gap-2">
               {index > 0 && <span aria-hidden="true" className="h-px w-6 shrink-0 bg-border sm:w-10" />}

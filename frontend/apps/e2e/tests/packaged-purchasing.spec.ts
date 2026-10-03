@@ -103,6 +103,11 @@ test("buyer selects a named package and sees the server conversion and price bas
   });
   await sheet.getByRole("button", { name: "Next" }).click();
   await pickCombobox(page, "Item", "Phthalo Blue Pigment", { within: sheet });
+  // Package and price basis are the line's advanced options: open them from the line's own menu.
+  await sheet.getByRole("button", { name: "Options for line 1" }).click();
+  await page.getByRole("menuitemcheckbox", { name: "Package or supplier offer" }).click();
+  await page.getByRole("menuitemcheckbox", { name: /^Price basis/ }).click();
+  await page.keyboard.press("Escape");
   await sheet
     .getByLabel("Package or loose", { exact: true })
     .selectOption("900001");
@@ -111,8 +116,8 @@ test("buyer selects a named package and sees the server conversion and price bas
     .selectOption({ label: "kg" });
   await sheet.getByLabel("Quantity", { exact: true }).fill("10");
   await sheet.getByLabel("Unit price", { exact: true }).fill("850");
-  await expect(sheet.getByText(/Stock quantity: 20.0000/)).toBeVisible();
-  await expect(sheet.getByText(/Line total: 17000.0000/)).toBeVisible();
+  await expect(sheet.getByText("Stock quantity").locator("..")).toContainText("20.0000");
+  await expect(sheet.getByText("Line total").locator("..")).toContainText("17000.0000");
   await expect(
     sheet.getByLabel("Purchase UoM", { exact: true }),
   ).toBeDisabled();
