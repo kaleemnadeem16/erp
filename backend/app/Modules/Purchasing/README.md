@@ -73,6 +73,14 @@ No events emitted yet.
 
 Item detail reuses ItemSupplierForm and the existing item-supplier endpoints for add/edit/archive/restore. The form fixes the item identity; update payloads exclude both identities. Reads follow existing supplier/PO lookup access and mutation controls require purchasing.item-supplier.manage; Request authorisation and tenant guards remain authoritative. No new API schema or permission registration. PackagedPurchasingDemoSeeder includes an archived trial relationship and preserves a demo user restoring it.
 
+## Observed receipt composition
+
+RecordReceiptComposition records draft sealed/loose physical arrival using receipt creation
+authority; PostGoodsReceipt invokes Inventory's evidence adapter in the stock transaction.
+Commercial package/price snapshots remain unchanged. Observations freeze after posting,
+with initially held evidence for QA. No composition endpoint or screen is exposed yet.
+[Contract, tests and limits](../../../../docs/domain/receipt-package-evidence.md).
+
 ## Related
 
 - [Packaged purchasing demo](../../../../docs/journeys/packaged-purchasing-demo.md) — opt-in PackagedPurchasingDemoSeeder; creates definitions and workflow examples once, preserving receiver progress on reruns.

@@ -286,6 +286,13 @@ semantics with source evidence. Only QUANTITY_ONLY can be stored; model/database
 advanced activation. Existing item semantics are not reinterpreted from today's category/default.
 Operational package tracking remains pending.
 
+## Observed inbound evidence
+
+[Receipt package evidence](receipt-package-evidence.md) now records observed sealed/loose
+composition independently of the agreement and posts immutable source-layer evidence atomically.
+It remains historical inbound evidence; no active package balance is enabled. The internal
+authoring Action and three real posted demo cases precede the later capture/history screens.
+
 ## Related
 
 - [Material resolution](material-resolution.md) · [Items](items.md) · [Stock](stock.md)

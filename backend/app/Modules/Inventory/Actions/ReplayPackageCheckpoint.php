@@ -78,7 +78,7 @@ final class ReplayPackageCheckpoint
                 ->where(fn ($q) => $q->where('to_location_id', $operation->location_id)->orWhere('from_location_id', $operation->location_id))->max('id');
             $latest = PackageOperation::query()->where([
                 'item_id' => $operation->item_id, 'location_id' => $operation->location_id, 'batch_id' => $operation->batch_id,
-            ])->max('id');
+            ])->where('evidence_kind', 'COUNTED')->max('id');
             $reasons = [];
             if (! $integrity) {
                 $reasons[] = 'INCOMPLETE_EVIDENCE';
@@ -88,7 +88,7 @@ final class ReplayPackageCheckpoint
             } elseif ((int) $operation->stock_move_watermark !== (int) $watermark) {
                 $reasons[] = 'LATER_STOCK_MOVEMENT';
             }
-            if ((int) $latest !== $operation->id) {
+            if ($operation->evidence_kind === 'COUNTED' && (int) $latest !== $operation->id) {
                 $reasons[] = 'SUPERSEDED_CHECKPOINT';
             }
             if ($recordedVector !== $currentVector || ! $total->isEqualTo($currentQty)) {
@@ -107,6 +107,7 @@ final class ReplayPackageCheckpoint
 
             return [
                 'operation_id' => $operation->id, 'evidence_kind' => $operation->evidence_kind,
+                'source_receipt_line_id' => $operation->source_receipt_line_id,
                 'tracking_active' => false, 'integrity_valid' => $integrity,
                 'matches_current_stock' => $reasons === [], 'mismatch_reasons' => $reasons,
                 'latest_checkpoint_id' => (int) $latest,

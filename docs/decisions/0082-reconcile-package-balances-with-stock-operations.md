@@ -64,7 +64,9 @@ An order's package is an agreement, not proof that stock arrived sealed. Posting
 receipt requires an observed split: whole sealed packages plus actual open/loose quantity.
 Physical content must equal received stock quantity; the agreed factor and independent price
 basis remain frozen. A damaged/open delivery can preserve the commercial package count while
-recording different physical composition. No inventory package state is created for draft receipts.
+recording different physical composition. Draft observed rows now exist separately; immutable Inventory package evidence is created only
+inside posting. [Receipt implementation and limits](../domain/receipt-package-evidence.md) remain
+historical inbound evidence while operational tracking is disabled.
 
 ### 4. One transactional stock boundary
 

@@ -290,6 +290,14 @@ integration spike. Its [verified findings](../../../../docs/domain/package-balan
 require contribution-allocation tests before schema commitment. Receipt/issue/transfer, QA, counts, cutover and backdated/reversal paths must
 be package-consistent before activation. No alternate quantity or valuation engine is proposed.
 
+## Receipt physical evidence adapter
+
+RecordReceiptPackageEvidence owns immutable inbound source-layer evidence and requires receipt
+posting authority in the same transaction. Purchasing owns draft observations. This does not
+activate tracking or infer composition from agreement fields. Serial/debt-settled source layers
+are guarded; later stock operations still need integration.
+[Receipt contract](../../../../docs/domain/receipt-package-evidence.md).
+
 ## Related
 
 - [domain/items.md](../../../../docs/domain/items.md)

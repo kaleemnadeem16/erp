@@ -124,14 +124,14 @@ authorisation and issued-factor/default-price receiving are covered by 41 focuse
 
 ## Next
 
-Physical package policy foundation now pins creation-time item/category/company resolution
-and source evidence; model/database gates permit only QUANTITY_ONLY.
-Policy/demo/replay/architecture/API checks pass 125 tests / 421 assertions; separate model/
-Company/unit checks pass 75 tests / 217 assertions (overlapping sets) → [policy](domain/package-tracking-policy.md).
-Three non-stock policy demo items are loaded locally; the inactive checkpoint kernel is complete.
-Next: operational package stock adapters, followed by governed activation and user workflows.
+Observed receipt package backend now captures sealed/loose arrival separately from commercial
+snapshots and posts immutable source/QA evidence atomically with stock. Three real posted demo
+cases are loaded locally; no capture/history screen or activation yet → [receipt evidence](domain/receipt-package-evidence.md).
+Receipt/QA/replay checks pass 151 tests / 861 assertions; architecture rerun passes
+41 tests / 81 assertions after a parallel permission-ratchet update.
+Next: open/unpack, issue/transfer and remaining operational adapters, then user workflows.
 [ADR 0082](decisions/0082-reconcile-package-balances-with-stock-operations.md) remains proposed;
-operational physical tracking is still disabled, 2026-10-03.
+advanced physical tracking stays blocked by model/database gates, 2026-10-03.
 
 Package/offer maintenance, independent PO pricing, partial package/loose receipts and replacement
 order linkage are implemented in the existing screens under [ADR 0080](decisions/0080-packaged-purchasing-and-independent-price-basis.md).

@@ -106,6 +106,19 @@ manual edits/archives on rerun. Developer model inspection shows package_trackin
 package_tracking_source and its selected ancestor reference; there is no advanced-mode control.
 See [policy rules](../domain/package-tracking-policy.md) for precedence and activation gates.
 
+## Observed receipt examples
+
+Search Items or purchase-order lines for “observed receipt composition demo”.
+The dedicated thinner has three posted orders, each two agreed 2 L boxes/4 L, priced at 850/L
+(total 3,400): one sealed box plus 2 L loose, two actual sealed cans, and two QA-held boxes.
+Orders carry the explanation. Actual arrival evidence is stored separately from the commercial
+receipt package fields; there is no observation capture/history screen yet.
+
+Developer inspection uses GoodsReceiptPackageObservation and source-linked PackageOperation /
+PackageState / PackageContribution models. The [receipt contract](../domain/receipt-package-evidence.md)
+explains authority and unsupported serial/debt cases. Reruns preserve immutable receipts;
+this example does not enable physical tracking or change the earlier live draft's stock history.
+
 ## Related
 
 - [Phase 2 operational journey](phase-2-operational-journey.md)

@@ -45,7 +45,9 @@ has shipped. This plan extends the delivered purchasing package masters; it is n
    enforces QUANTITY_ONLY through model/database gates. No activation or live package balance
    is advertised. Operational event replay/posting belongs to step 6; transitions and relaxation
    of the gates require the later enforcing/reconciliation slices.
-6. [ ] **Operational integration.** Observed sealed/loose receipt capture, outer unpack versus
+6. [ ] **Operational integration.** [Observed receipt backend](../domain/receipt-package-evidence.md)
+   is implemented with source-layer/QA evidence and posting rollback/retry tests. It has no
+   authoring/history UI yet and cannot activate tracking. Remaining: outer unpack versus
    content open, composition-preserving transfer and count correction; QA, reversal, cutover
    and recalculation adapters or explicit first-release guards. Cover every direct Action writer,
    not only public HTTP controllers. Preserve QUANTITY_ONLY behaviour.

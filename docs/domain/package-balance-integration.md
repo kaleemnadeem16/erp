@@ -230,6 +230,13 @@ Kernel projection reconstruction is now implemented on demand. The
 advanced modes in the database. Operational adapters, QA evidence and activation reconciliation
 remain.
 
+## First operational adapter
+
+[Observed receipt evidence](receipt-package-evidence.md) now captures draft physical composition
+and writes immutable RECEIPT operations with source-line provenance inside normal stock posting.
+These are inbound historical snapshots, not current projections. Checkpoint reconstruction uses
+only COUNTED operations for supersession. Other operational adapters and activation remain pending.
+
 ## Related
 
 - [Inventory packages](inventory-packages.md)

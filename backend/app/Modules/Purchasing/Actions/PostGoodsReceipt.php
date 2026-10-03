@@ -7,6 +7,7 @@ namespace App\Modules\Purchasing\Actions;
 use App\Exceptions\DomainInvariantException;
 use App\Models\User;
 use App\Modules\Inventory\Actions\PostInventoryMovement;
+use App\Modules\Inventory\Actions\RecordReceiptPackageEvidence;
 use App\Modules\Numbering\Services\NumberingService;
 use App\Modules\Purchasing\Models\GoodsReceipt;
 use App\Modules\Purchasing\Models\GoodsReceiptLine;
@@ -24,7 +25,7 @@ use Illuminate\Support\Facades\DB;
 
 final class PostGoodsReceipt
 {
-    public function __construct(private readonly PostInventoryMovement $postMovement, private readonly NumberingService $numbering) {}
+    public function __construct(private readonly PostInventoryMovement $postMovement, private readonly NumberingService $numbering, private readonly RecordReceiptPackageEvidence $packageEvidence) {}
 
     public function __invoke(GoodsReceipt $receipt, User $actor): GoodsReceipt
     {
@@ -42,7 +43,7 @@ final class PostGoodsReceipt
             }
 
             /** @var Collection<int, GoodsReceiptLine> $receiptLines */
-            $receiptLines = $receipt->lines()->orderBy('purchase_order_line_id')->get();
+            $receiptLines = $receipt->lines()->orderBy('purchase_order_line_id')->lockForUpdate()->get();
             if ($receiptLines->isEmpty()) {
                 throw new DomainInvariantException('A goods receipt must contain at least one line.', 'lines');
             }
@@ -127,6 +128,7 @@ final class PostGoodsReceipt
                     'amount' => (string) $amount, 'base_amount' => (string) $baseAmount,
                     'batch_no' => $line->batch_no, 'serial_no' => $line->serial_no,
                 ]);
+                ($this->packageEvidence)($line, $actor);
             }
 
             $postedAt = CarbonImmutable::now();
