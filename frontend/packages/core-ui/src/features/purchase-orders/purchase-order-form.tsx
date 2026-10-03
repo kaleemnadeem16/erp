@@ -20,6 +20,8 @@ import {
 } from "@erp/core-api";
 
 import { AdvancedOptionSection } from "../../components/ui/advanced-option-section";
+import { MoreOptionsToggle } from "../../components/ui/more-options-toggle";
+import type { OptionsStyle } from "../../lib/presentation";
 import type { AdvancedOption } from "../../components/ui/advanced-options-menu";
 import { Combobox } from "../../components/ui/combobox";
 import { DateField } from "../../components/ui/date-field";
@@ -285,6 +287,7 @@ export function PurchaseOrderForm({
   isSubmitting,
   formError,
   onAdvancedOptionsChange,
+  optionsStyle = "disclosure",
 }: {
   defaultValues?: PurchaseOrderFormValues;
   onSubmit: (
@@ -301,6 +304,12 @@ export function PurchaseOrderForm({
    * trigger button sits.
    */
   onAdvancedOptionsChange?: (options: AdvancedOption[]) => void;
+  /**
+   * How the rarely-changed fields (replaces-order, exchange rate, and on each line the package, price basis, discount and tax…)
+   * are put away: `"disclosure"` — one "More options" toggle, fields keep their defaults — or `"menu"` — the Advanced options
+   * checkbox menu. Both are kept; the choice is made in `apps/main/src/presentation.ts`.
+   */
+  optionsStyle?: OptionsStyle;
 }) {
   const isCreate = !defaultValues;
   const mayManageSupplierSites = usePermission("parties.supplier-site.manage");
@@ -355,16 +364,33 @@ export function PurchaseOrderForm({
     () => !!startingValues?.replaces_purchase_order_id,
   );
 
+  const [moreOpen, setMoreOpen] = useState(
+    () => showFxDetails || showReplaces,
+  );
+  const replacesVisible = optionsStyle === "menu" ? showReplaces : moreOpen;
+  const fxVisible = optionsStyle === "menu" ? showFxDetails : moreOpen;
+  const moreSummary = [
+    form.watch("replaces_purchase_order_id") ? "replaces an order" : null,
+    fxIsCustomised(form.getValues()) ? "exchange rate" : null,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
   function startOver() {
     form.reset(createDefaults());
     setStep(0);
     setShowFxDetails(false);
     setShowReplaces(false);
+    setMoreOpen(false);
     setResumed(false);
     setConfirmingStartOver(false);
     clearDraft(DRAFT_NAME);
   }
   useEffect(() => {
+    if (optionsStyle !== "menu") {
+      onAdvancedOptionsChange?.([]);
+      return;
+    }
     onAdvancedOptionsChange?.([
       {
         id: "replaces-order",
@@ -396,7 +422,7 @@ export function PurchaseOrderForm({
       },
     ]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showFxDetails, showReplaces]);
+  }, [showFxDetails, showReplaces, optionsStyle]);
   // Lands keyboard/screen-reader focus on Supplier — the form's first field —
   // instead of wherever it was left (e.g. the "New PO" nav link), on create only.
   useEffect(() => {
@@ -528,7 +554,7 @@ export function PurchaseOrderForm({
       sort: "-created_at",
       per_page: 100,
     },
-    { query: { enabled: showReplaces && supplierIdNumber > 0 } },
+    { query: { enabled: replacesVisible && supplierIdNumber > 0 } },
   );
   const replaceableOptions = useMemo(
     () =>
@@ -590,7 +616,7 @@ export function PurchaseOrderForm({
             name="supplier_account_id"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Supplier</FormLabel>
+                <FormLabelWithHint>Supplier</FormLabelWithHint>
                 <FormControl>
                   <Combobox
                     {...lookupState(suppliersQuery, "suppliers")}
@@ -657,7 +683,7 @@ export function PurchaseOrderForm({
             name="order_date"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Order date</FormLabel>
+                <FormLabelWithHint>Order date</FormLabelWithHint>
                 <FormControl>
                   <DateField
                     value={field.value}
@@ -712,12 +738,12 @@ export function PurchaseOrderForm({
               </FormItem>
             )}
           />
-          {showReplaces && (
+          {replacesVisible && (
             <FormField
               control={form.control}
               name="replaces_purchase_order_id"
               render={({ field }) => (
-                <FormItem className="sm:col-span-2">
+                <FormItem>
                   <FormLabelWithHint hint="Links this order to an earlier one it takes the place of — a cancelled order, or one with a short-closed quantity — so the history stays connected and nothing is ordered twice by mistake. The earlier order must belong to the same supplier.">
                     Replaces order
                   </FormLabelWithHint>
@@ -748,7 +774,7 @@ export function PurchaseOrderForm({
             name="notes"
             render={({ field }) => (
               <FormItem className="sm:col-span-2">
-                <FormLabel>Notes</FormLabel>
+                <FormLabelWithHint>Notes</FormLabelWithHint>
                 <FormControl>
                   <Textarea
                     {...field}
@@ -760,10 +786,21 @@ export function PurchaseOrderForm({
               </FormItem>
             )}
           />
+          {optionsStyle === "disclosure" && (
+            <MoreOptionsToggle
+              className="sm:col-span-2"
+              open={moreOpen}
+              onOpenChange={setMoreOpen}
+              controls="po-more-options"
+              label="More options"
+              openLabel="Hide options"
+              summary={moreSummary}
+            />
+          )}
         </DetailSection>
       )}
       {showDetailsStep && (
-        <AdvancedOptionSection expanded={showFxDetails}>
+        <AdvancedOptionSection expanded={fxVisible}>
           <DetailSection
             title="Exchange rate"
             description="The rate and its source are pinned when the order is issued."
@@ -866,6 +903,7 @@ export function PurchaseOrderForm({
                 uoms={uoms}
                 uomLookup={lookupState(uomsQuery, "units")}
                 purchaseUomIdByItem={purchaseUomIdByItem}
+                optionsStyle={optionsStyle}
                 canRemove={fields.length > 1}
                 onRemove={() => remove(index)}
               />

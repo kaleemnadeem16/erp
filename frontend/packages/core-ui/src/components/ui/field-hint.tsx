@@ -31,13 +31,15 @@ export function FieldHint({ label, children }: { label: string; children: ReactN
   );
 }
 
-/** A `FormLabel` with an optional (i) hint beside it. Must sit inside a `FormItem`. */
+/**
+ * A `FormLabel` with an optional (i) hint beside it. Must sit inside a `FormItem`. Every label sits in a row of the same height
+ * whether or not it has a hint, so the inputs under a row of fields line up.
+ */
 export function FormLabelWithHint({ children, hint, hintLabel }: { children: string; hint?: ReactNode; hintLabel?: string }) {
-  if (!hint) return <FormLabel>{children}</FormLabel>;
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex min-h-5 items-center gap-1.5">
       <FormLabel>{children}</FormLabel>
-      <FieldHint label={hintLabel ?? children}>{hint}</FieldHint>
+      {hint ? <FieldHint label={hintLabel ?? children}>{hint}</FieldHint> : null}
     </div>
   );
 }

@@ -37,7 +37,7 @@ export {
   type RecordSheetProps,
   type RecordSheetSize,
 } from "./components/page/record-sheet";
-export type { Presentation } from "./lib/presentation";
+export type { Presentation, OptionsStyle } from "./lib/presentation";
 export { AppearanceProvider } from "./components/theme/appearance-provider";
 export {
   THEMES,

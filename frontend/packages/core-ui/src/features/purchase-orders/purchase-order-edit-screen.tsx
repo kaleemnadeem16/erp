@@ -13,7 +13,7 @@ import {
   type PageHeaderBreadcrumb,
 } from "../../components/page/page-header";
 import { RecordSheet } from "../../components/page/record-sheet";
-import type { Presentation } from "../../lib/presentation";
+import type { OptionsStyle, Presentation } from "../../lib/presentation";
 import { Skeleton } from "../../components/ui/skeleton";
 import { getApiErrorMessage, isApiError } from "../../lib/api-errors";
 import {
@@ -30,8 +30,10 @@ import {
  */
 export function PurchaseOrderEditScreen({
   presentation = "page",
+  optionsStyle = "disclosure",
 }: {
   presentation?: Presentation;
+  optionsStyle?: OptionsStyle;
 }) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -236,6 +238,7 @@ export function PurchaseOrderEditScreen({
       isSubmitting={update.isPending}
       formError={formError}
       onAdvancedOptionsChange={setAdvancedOptions}
+      optionsStyle={optionsStyle}
     />,
     {
       title: `Edit draft #${order.id}`,

@@ -7,7 +7,7 @@ import { usePurchaseOrdersStore } from "@erp/core-api";
 import { AdvancedOptionsMenu, type AdvancedOption } from "../../components/ui/advanced-options-menu";
 import { PageHeader } from "../../components/page/page-header";
 import { RecordSheet } from "../../components/page/record-sheet";
-import type { Presentation } from "../../lib/presentation";
+import type { OptionsStyle, Presentation } from "../../lib/presentation";
 import { getApiErrorMessage, isApiError } from "../../lib/api-errors";
 import {
   PurchaseOrderForm,
@@ -27,7 +27,13 @@ const DESCRIPTION = "Create a draft supplier commitment. Nothing is frozen until
  * was entered (see PurchaseOrderForm). `"page"` is the same form on a page of
  * its own.
  */
-export function PurchaseOrderCreateScreen({ presentation = "page" }: { presentation?: Presentation }) {
+export function PurchaseOrderCreateScreen({
+  presentation = "page",
+  optionsStyle = "disclosure",
+}: {
+  presentation?: Presentation;
+  optionsStyle?: OptionsStyle;
+}) {
   const navigate = useNavigate();
   const { search } = useLocation();
   const create = usePurchaseOrdersStore();
@@ -67,6 +73,7 @@ export function PurchaseOrderCreateScreen({ presentation = "page" }: { presentat
       isSubmitting={create.isPending}
       formError={formError}
       onAdvancedOptionsChange={setAdvancedOptions}
+      optionsStyle={optionsStyle}
     />
   );
   const advancedOptionsMenu = <AdvancedOptionsMenu options={advancedOptions} />;

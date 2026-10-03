@@ -388,7 +388,7 @@ export function PriceBasisFields({
           value={line.price_uom_id ?? ""}
           onChange={(e) => pricing.set("price_uom_id", e.target.value)}
         >
-          <option value="">The unit ordered (or the package)</option>
+          <option value="">Same as the order unit</option>
           {pricing.unitRows.map((u) => (
             <option key={u.id} value={String(u.id)}>
               {u.code}
@@ -418,18 +418,17 @@ export function LineReadout({ pricing }: { pricing: PurchaseLinePricing }) {
   const cell = (label: string, value: string) => (
     <div className="min-w-0">
       <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="truncate text-sm font-medium tabular-nums">{value}</dd>
+      <dd className="break-words text-sm font-medium tabular-nums">{value}</dd>
     </div>
   );
   return (
-    <dl className="grid grid-cols-2 gap-x-4 gap-y-2 rounded-md border border-dashed border-border px-3 py-2 sm:grid-cols-4">
+    <dl className="grid grid-cols-2 gap-x-4 gap-y-2 rounded-md border border-dashed border-border px-3 py-2 sm:grid-cols-3">
       {cell("Ordered", `${resolved.ordered_qty} ${resolved.order_unit_label}`)}
       {cell("Stock quantity", resolved.ordered_stock_qty)}
       {cell(
         "Price",
         `${resolved.unit_price} per ${resolved.price_quantity} ${resolved.price_unit_label}`,
       )}
-      {cell("Line total", resolved.line_amount ?? "—")}
     </dl>
   );
 }

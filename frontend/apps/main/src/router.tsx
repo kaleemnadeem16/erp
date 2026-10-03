@@ -79,7 +79,7 @@ import {
   WarehouseEditScreen,
   WarehousesListScreen,
 } from "@erp/core-ui";
-import { presentation } from "./presentation";
+import { presentation, purchaseOrderOptionsStyle } from "./presentation";
 
 const purchaseOrderCreateAsSheet = presentation.purchaseOrderCreate === "sheet";
 const purchaseOrderDetailAsSheet = presentation.purchaseOrderDetail === "sheet";
@@ -486,7 +486,7 @@ export function AppRouter() {
           {purchaseOrderCreateAsSheet && (
             <Route
               path="new"
-              element={<PurchaseOrderCreateScreen presentation="sheet" />}
+              element={<PurchaseOrderCreateScreen presentation="sheet" optionsStyle={purchaseOrderOptionsStyle} />}
             />
           )}
           {purchaseOrderDetailAsSheet && (
@@ -498,7 +498,7 @@ export function AppRouter() {
           {purchaseOrderEditAsSheet && (
             <Route
               path=":id/edit"
-              element={<PurchaseOrderEditScreen presentation="sheet" />}
+              element={<PurchaseOrderEditScreen presentation="sheet" optionsStyle={purchaseOrderOptionsStyle} />}
             />
           )}
         </Route>
@@ -508,7 +508,7 @@ export function AppRouter() {
             element={
               <ProtectedRoute>
                 <AppShell>
-                  <PurchaseOrderCreateScreen presentation="page" />
+                  <PurchaseOrderCreateScreen presentation="page" optionsStyle={purchaseOrderOptionsStyle} />
                 </AppShell>
               </ProtectedRoute>
             }
@@ -562,7 +562,7 @@ export function AppRouter() {
             element={
               <ProtectedRoute>
                 <AppShell>
-                  <PurchaseOrderEditScreen presentation="page" />
+                  <PurchaseOrderEditScreen presentation="page" optionsStyle={purchaseOrderOptionsStyle} />
                 </AppShell>
               </ProtectedRoute>
             }

@@ -1,4 +1,4 @@
-import type { Presentation } from "@erp/core-ui";
+import type { OptionsStyle, Presentation } from "@erp/core-ui";
 
 /**
  * How each record screen is shown: `"page"` (a page of its own) or `"sheet"` (a
@@ -15,3 +15,10 @@ export const presentation: {
   purchaseOrderDetail: "sheet",
   purchaseOrderEdit: "sheet",
 };
+
+/**
+ * How the purchase order form puts its rarely-changed fields away: `"disclosure"` — one "More options" show/hide toggle (the
+ * order's, and one per line), fields keep their defaults — or `"menu"` — the earlier "Advanced options" checkbox menus. Both
+ * are implemented; change one word to try the other.
+ */
+export const purchaseOrderOptionsStyle: OptionsStyle = "disclosure";

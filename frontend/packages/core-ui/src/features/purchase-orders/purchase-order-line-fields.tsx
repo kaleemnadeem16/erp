@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import type { FieldPath, UseFormReturn } from "react-hook-form";
 import { Trash2 } from "lucide-react";
 import {
@@ -14,8 +14,11 @@ import {
 import { Button } from "../../components/ui/button";
 import { Checkbox } from "../../components/ui/checkbox";
 import { Combobox } from "../../components/ui/combobox";
+import { MoreOptionsToggle } from "../../components/ui/more-options-toggle";
+import type { OptionsStyle } from "../../lib/presentation";
+import { formatScaled, lineAmounts } from "./purchase-order-amounts";
 import { DateField } from "../../components/ui/date-field";
-import { FormLabelWithHint } from "../../components/ui/field-hint";
+import { FieldHint, FormLabelWithHint } from "../../components/ui/field-hint";
 import {
   FormControl,
   FormDescription,
@@ -73,6 +76,7 @@ export function PurchaseOrderLineFields({
   purchaseUomIdByItem,
   canRemove,
   onRemove,
+  optionsStyle = "disclosure",
 }: {
   form: UseFormReturn<PurchaseOrderFormValues>;
   index: number;
@@ -84,12 +88,25 @@ export function PurchaseOrderLineFields({
   purchaseUomIdByItem: Map<number, number>;
   canRemove: boolean;
   onRemove: () => void;
+  /** "disclosure": one More options toggle per line. "menu": a checkbox menu per line (the alternative, kept switchable). */
+  optionsStyle?: OptionsStyle;
 }) {
   const line = form.watch(`lines.${index}` as FieldPath<PurchaseOrderFormValues>) as unknown as Line;
   const itemId = Number(line.item_id) || 0;
   const item = items.find((candidate) => candidate.id === itemId);
   const pricing = usePurchaseLinePricing(form, index, item?.stock_uom_id);
   const [opened, setOpened] = useState<Set<OptionId>>(() => new Set(usedGroups(line)));
+
+  const regionId = useId();
+  const [disclosureOpen, setDisclosureOpen] = useState(() => usedGroups(line).length > 0);
+  const isOpen = (id: OptionId) => (optionsStyle === "menu" ? opened.has(id) : disclosureOpen);
+  const GROUP_LABEL: Record<OptionId, string> = {
+    pack: "package or offer",
+    basis: "price basis",
+    adjust: "discount or tax",
+    date: "delivery date",
+    qa: "quality check",
+  };
 
   // A group opens by itself when something fills it (a preferred offer, a saved line) — never leave a set value hidden.
   const used = usedGroups(line).join(",");
@@ -106,6 +123,7 @@ export function PurchaseOrderLineFields({
     if (lineErrors?.price_quantity || lineErrors?.price_uom_id) need.push("basis");
     if (lineErrors?.discount_amount || lineErrors?.tax_amount) need.push("adjust");
     if (lineErrors?.expected_delivery_date) need.push("date");
+    if (need.length > 0) setDisclosureOpen(true);
     if (need.some((id) => !opened.has(id))) setOpened((current) => new Set([...current, ...need]));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lineErrors]);
@@ -225,7 +243,7 @@ export function PurchaseOrderLineFields({
       name={`lines.${index}.${name}` as FieldPath<PurchaseOrderFormValues>}
       render={({ field }) => (
         <FormItem>
-          <FormLabel>{label}</FormLabel>
+          <FormLabelWithHint>{label}</FormLabelWithHint>
           <FormControl>
             <Input type="text" inputMode="decimal" {...field} value={String(field.value ?? "")} />
           </FormControl>
@@ -236,17 +254,62 @@ export function PurchaseOrderLineFields({
     />
   );
 
+  // The line's total, worked out with the server's rule — a read-out, not an input, set in the price row so the sum is in view.
+  const estimate = lineAmounts(line);
+  const lineTotal = pricing.resolved?.line_amount ?? (estimate ? formatScaled(estimate.total) : "—");
+
+  const setSummary = usedGroups(line)
+    .map((id) => GROUP_LABEL[id])
+    .join(", ");
+
+  const packPanel = isOpen("pack") && (
+    <div className="col-span-full rounded-md border border-border bg-card p-3">
+      <PackageAndOfferFields form={form} index={index} pricing={pricing} />
+      {(pricing.resolved?.ordering_terms_violated || line.ordering_exception_reason || lineErrors?.ordering_exception_reason) && (
+        <FormField
+          control={form.control}
+          name={`lines.${index}.ordering_exception_reason`}
+          render={({ field }) => (
+            <FormItem className="mt-3">
+              <FormLabelWithHint hint="The supplier's offer sets a minimum quantity or an order multiple, and this quantity is outside it. Say why you are ordering it anyway — the reason is kept with the order.">
+                Reason for supplier quantity exception
+              </FormLabelWithHint>
+              {pricing.resolved?.ordering_terms_violated && (
+                <p role="alert" className="text-sm text-amber-700">
+                  The quantity is outside the supplier's minimum or multiple (
+                  {[
+                    pricing.resolved.minimum_order_qty ? `minimum ${pricing.resolved.minimum_order_qty}` : null,
+                    pricing.resolved.order_multiple ? `multiple ${pricing.resolved.order_multiple}` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(", ")}
+                  ). A reason is required to save.
+                </p>
+              )}
+              <FormControl>
+                <Input {...field} value={field.value ?? ""} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      )}
+    </div>
+  );
+
   return (
     <fieldset
       aria-label={`Line ${index + 1}`}
       // `[&>*]:min-w-0`: a grid item's default `min-width: auto` sizes its track to its content's intrinsic width, so a long
       // selected item name in the Combobox would widen this whole row instead of truncating.
-      className="grid min-w-0 gap-3 rounded-lg border bg-panel/60 p-4 @lg:grid-cols-2 @3xl:grid-cols-4 [&>*]:min-w-0"
+      className="grid min-w-0 gap-x-4 gap-y-3 rounded-lg border bg-panel/60 p-4 @lg:grid-cols-2 @3xl:grid-cols-4 [&>*]:min-w-0"
     >
-      <div className="col-span-full flex items-center justify-between gap-2">
-        <h4 className="text-sm font-medium">Line {index + 1}</h4>
+      <div className="col-span-full flex flex-wrap items-center justify-between gap-2">
+        <h4 className="text-sm font-semibold">Line {index + 1}</h4>
         <div className="flex items-center gap-2">
-          <AdvancedOptionsMenu options={options} label="Line options" ariaLabel={`Options for line ${index + 1}`} />
+          {optionsStyle === "menu" && (
+            <AdvancedOptionsMenu options={options} label="Line options" ariaLabel={`Options for line ${index + 1}`} />
+          )}
           <Button type="button" variant="outline" size="sm" onClick={onRemove} disabled={!canRemove}>
             <Trash2 className="size-4" />
             Remove
@@ -258,8 +321,8 @@ export function PurchaseOrderLineFields({
         control={form.control}
         name={`lines.${index}.item_id`}
         render={({ field }) => (
-          <FormItem>
-            <FormLabel>Item</FormLabel>
+          <FormItem className="@3xl:col-span-2">
+            <FormLabelWithHint hint="">Item</FormLabelWithHint>
             <FormControl>
               <Combobox
                 {...itemLookup}
@@ -290,7 +353,7 @@ export function PurchaseOrderLineFields({
         "description",
         "Description",
         "What is printed on the order for this line. It starts as the item's name — change it to add the supplier's own wording.",
-        "@3xl:col-span-3",
+        "@3xl:col-span-2",
       )}
       {text("ordered_qty", "Quantity", "How many of the unit shown to the right you are ordering. With a package chosen, this counts packages.")}
       <FormField
@@ -324,87 +387,88 @@ export function PurchaseOrderLineFields({
       {text(
         "unit_price",
         "Unit price",
-        "What the supplier charges for one pricing unit — shown under the field as 'per 1 kg'. The pricing unit is the unit you order in, unless the price basis in Advanced options says otherwise (for example per 100 pieces).",
+        "What the supplier charges for one pricing unit — shown under the field as 'per 1 kg'. The pricing unit is the unit you order in, unless the price basis in the line's more options says otherwise (for example per 100 pieces).",
+      )}
+      <div className="space-y-2">
+        <div className="flex min-h-5 items-center">
+          <span className="text-sm font-medium">Line total</span>
+        </div>
+        <output
+          aria-label="Line total"
+          className="flex h-10 items-center rounded-md border border-dashed border-border bg-muted/40 px-3 text-sm font-semibold tabular-nums"
+        >
+          {lineTotal}
+        </output>
+      </div>
+
+      {optionsStyle === "disclosure" && (
+        <MoreOptionsToggle
+          className="col-span-full"
+          open={disclosureOpen}
+          onOpenChange={setDisclosureOpen}
+          controls={regionId}
+          label="More details for this line"
+          openLabel="Hide details"
+          summary={setSummary}
+        />
       )}
 
-      {opened.has("pack") && (
-        <div className="col-span-full rounded-md border border-border bg-card p-3">
-          <PackageAndOfferFields form={form} index={index} pricing={pricing} />
-          {(pricing.resolved?.ordering_terms_violated || line.ordering_exception_reason || lineErrors?.ordering_exception_reason) && (
-            <FormField
-              control={form.control}
-              name={`lines.${index}.ordering_exception_reason`}
-              render={({ field }) => (
-                <FormItem className="mt-3">
-                  <FormLabelWithHint hint="The supplier's offer sets a minimum quantity or an order multiple, and this quantity is outside it. Say why you are ordering it anyway — the reason is kept with the order.">
-                    Reason for supplier quantity exception
-                  </FormLabelWithHint>
-                  {pricing.resolved?.ordering_terms_violated && (
-                    <p role="alert" className="text-sm text-amber-700">
-                      The quantity is outside the supplier's minimum or multiple (
-                      {[
-                        pricing.resolved.minimum_order_qty ? `minimum ${pricing.resolved.minimum_order_qty}` : null,
-                        pricing.resolved.order_multiple ? `multiple ${pricing.resolved.order_multiple}` : null,
-                      ]
-                        .filter(Boolean)
-                        .join(", ")}
-                      ). A reason is required to save.
-                    </p>
-                  )}
+      {(optionsStyle === "menu" ? opened.size > 0 : disclosureOpen) && (
+      <div id={regionId} className="col-span-full grid min-w-0 gap-x-4 gap-y-3 @lg:grid-cols-2 @3xl:grid-cols-4 [&>*]:min-w-0">
+        {packPanel}
+        {isOpen("basis") && (
+          <div className="rounded-md border border-border bg-card p-3 @3xl:col-span-2">
+            <PriceBasisFields form={form} index={index} pricing={pricing} />
+          </div>
+        )}
+        {isOpen("adjust") && (
+          <>
+            {money("discount_amount", "Line discount (amount)", "A fixed amount off this whole line — not a percentage, not per unit.")}
+            {money("tax_amount", "Line tax (amount)", "A fixed tax amount for this whole line — not a percentage, not per unit.")}
+          </>
+        )}
+        {isOpen("date") && (
+          <FormField
+            control={form.control}
+            name={`lines.${index}.expected_delivery_date`}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabelWithHint hint="Only when this line is due on a different date from the order. Leave it empty and the line follows the order's expected delivery.">
+                  Line delivery date
+                </FormLabelWithHint>
+                <FormControl>
+                  <DateField value={String(field.value)} onChange={field.onChange} onBlur={field.onBlur} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+        {isOpen("qa") && (
+          <FormField
+            control={form.control}
+            name={`lines.${index}.qa_required`}
+            render={({ field }) => (
+              <FormItem>
+                {/* A plain heading, not a second FormLabel: the checkbox is named by its own "QA required" label below. */}
+                <div className="flex min-h-5 items-center gap-1.5">
+                  <span className="text-sm font-medium">Quality check</span>
+                  <FieldHint label="the quality check">
+                    Goods on this line are held for a quality check when they are received, before they count as usable stock.
+                  </FieldHint>
+                </div>
+                <div className="flex h-10 items-center gap-2">
                   <FormControl>
-                    <Input {...field} value={field.value ?? ""} />
+                    <Checkbox checked={field.value} onCheckedChange={(checked) => field.onChange(checked === true)} />
                   </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
-        </div>
-      )}
-      {opened.has("basis") && (
-        <div className="col-span-full rounded-md border border-border bg-card p-3">
-          <PriceBasisFields form={form} index={index} pricing={pricing} />
-        </div>
-      )}
-      {opened.has("adjust") && (
-        <>
-          {money("discount_amount", "Line discount (amount)", "A fixed amount off this whole line — not a percentage, not per unit.")}
-          {money("tax_amount", "Line tax (amount)", "A fixed tax amount for this whole line — not a percentage, not per unit.")}
-        </>
-      )}
-      {opened.has("date") && (
-        <FormField
-          control={form.control}
-          name={`lines.${index}.expected_delivery_date`}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabelWithHint hint="Only when this line is due on a different date from the order. Leave it off and the line follows the order's expected delivery.">
-                Line expected date (optional)
-              </FormLabelWithHint>
-              <FormControl>
-                <DateField value={String(field.value)} onChange={field.onChange} onBlur={field.onBlur} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      )}
-      {opened.has("qa") && (
-        <FormField
-          control={form.control}
-          name={`lines.${index}.qa_required`}
-          render={({ field }) => (
-            <FormItem className="flex items-center gap-2 @lg:pt-6">
-              <FormControl>
-                <Checkbox checked={field.value} onCheckedChange={(checked) => field.onChange(checked === true)} />
-              </FormControl>
-              <FormLabelWithHint hint="Goods on this line are held for a quality check when they are received, before they count as usable stock.">
-                QA required
-              </FormLabelWithHint>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+                  <FormLabel className="font-normal">QA required</FormLabel>
+                </div>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+      </div>
       )}
 
       <div className="col-span-full">

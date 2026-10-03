@@ -150,7 +150,8 @@ export function RecordSheet({ title, description, icon, actions, aside, onClose,
                     {description && <SheetDescription className="record-sheet-description">{description}</SheetDescription>}
                   </div>
                 </div>
-                {actions && <div className="ml-auto flex flex-wrap items-center gap-2">{actions}</div>}
+                {/* Full width and left-aligned when it drops under the title on a narrow sheet; right-aligned beside it on a wide one. */}
+                {actions && <div className="flex w-full flex-wrap items-center justify-start gap-2 sm:ml-auto sm:w-auto sm:justify-end">{actions}</div>}
               </div>
             </SheetHeader>
             {/* The negative margin / matching padding gives focus rings and

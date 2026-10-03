@@ -43,6 +43,8 @@ import {
 } from "../../components/ui/table";
 import { Textarea } from "../../components/ui/textarea";
 import { getApiErrorMessage } from "../../lib/api-errors";
+import { DataTableViewToggle } from "../../components/data-table/data-table-view-toggle";
+import { useLinesViewPreference } from "../../lib/use-view-preference";
 import { formatDateTime } from "../../lib/format-date";
 import type { Presentation } from "../../lib/presentation";
 import { useFocusOnOpen } from "../../lib/use-focus-on-open";
@@ -134,6 +136,7 @@ export function PurchaseOrderDetailScreen({
   const issue = usePurchaseOrdersIssue();
   const cancel = usePurchaseOrdersCancel();
   const shortClose = usePurchaseOrderLinesShortClose();
+  const { view: linesView, setView: setLinesView } = useLinesViewPreference("po-detail-lines");
   const [cancelReason, setCancelReason] = useState("");
   const [showIssueConfirmation, setShowIssueConfirmation] = useState(false);
   const [showCancel, setShowCancel] = useState(false);
@@ -803,6 +806,68 @@ export function PurchaseOrderDetailScreen({
           }
           fullWidth
         >
+          <div className="flex justify-end sm:col-span-2">
+            <DataTableViewToggle value={linesView} onChange={setLinesView} />
+          </div>
+          {linesView === "cards" ? (
+          <ol className="grid gap-3 @lg:grid-cols-2 sm:col-span-2">
+            {(order.lines ?? []).map((line) => {
+              const closed = Number(line.short_closed_stock_qty) > 0;
+              const fullyReceived = Number(line.outstanding_stock_qty) <= 0;
+              const purchaseCode = line.order_unit_label ?? uomCode(line.purchase_uom_id);
+              const stockCode = uomCode(line.stock_uom_id);
+              const stat = (name: string, value: ReactNode) => (
+                <div className="min-w-0">
+                  <dt className="text-xs text-muted-foreground">{name}</dt>
+                  <dd className="text-sm tabular-nums">{value}</dd>
+                </div>
+              );
+              return (
+                <li key={line.id} className="space-y-3 rounded-lg border border-border bg-card p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-xs text-muted-foreground">Line {line.line_number}</p>
+                      <p className="font-medium">{line.item_code ?? `#${line.item_id}`}</p>
+                      <p className="text-sm">{line.description}</p>
+                      {line.supplier_item_code && <p className="text-xs text-muted-foreground">SKU: {line.supplier_item_code}</p>}
+                    </div>
+                    {mayViewCommercialCost && (
+                      <p className="shrink-0 text-right text-sm font-semibold tabular-nums">
+                        {line.line_amount} {currency?.code ?? ""}
+                      </p>
+                    )}
+                  </div>
+                  <dl className="grid grid-cols-2 gap-x-4 gap-y-2">
+                    {stat("Ordered", `${line.ordered_qty} ${purchaseCode ?? ""}`)}
+                    {stat("Received", `${line.received_stock_qty} ${stockCode ?? ""}`)}
+                    {stat("Outstanding", `${line.outstanding_stock_qty} ${stockCode ?? ""}`)}
+                    {line.purchase_uom_id !== line.stock_uom_id && stat("In stock units", `${line.ordered_stock_qty} ${stockCode ?? ""}`)}
+                    {mayViewCommercialCost &&
+                      stat(
+                        "Price",
+                        `${line.unit_price} ${currency?.code ?? ""} / ${line.price_quantity ?? "1"} ${line.price_unit_label ?? purchaseCode ?? ""}`,
+                      )}
+                    {mayViewCommercialCost && Number(line.discount_amount) > 0 && stat("Line discount", `−${line.discount_amount}`)}
+                    {mayViewCommercialCost && Number(line.tax_amount) > 0 && stat("Line tax", `+${line.tax_amount}`)}
+                    {line.expected_delivery_date && line.expected_delivery_date !== order.expected_delivery_date && stat("Expected", line.expected_delivery_date)}
+                    {stat("QA", line.qa_required ? "Required" : "Not required")}
+                  </dl>
+                  {(closed || (isIssued && !fullyReceived && mayShortClose)) && (
+                    <div className="flex items-center justify-between gap-2">
+                      {closed ? (
+                        <Badge variant="secondary">Short-closed · {line.short_closed_stock_qty} {stockCode}</Badge>
+                      ) : (
+                        <Button size="sm" variant="outline" onClick={() => setPendingShortCloseLineId(line.id)} disabled={shortClose.isPending}>
+                          Short-close
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+          ) : (
           <div className="po-detail-table overflow-hidden rounded-md border sm:col-span-2">
             <Table scrollRegionLabel="Order lines">
               <TableHeader>
@@ -967,6 +1032,7 @@ export function PurchaseOrderDetailScreen({
               </TableBody>
             </Table>
           </div>
+          )}
         </DetailSection>
       </DetailPageLayout>
 

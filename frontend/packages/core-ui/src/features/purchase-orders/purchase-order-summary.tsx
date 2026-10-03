@@ -10,6 +10,8 @@ import {
   type PurchaseOrderFormValues,
 } from "./purchase-order-form";
 import { formatScaled, lineAmounts } from "./purchase-order-amounts";
+import { DataTableViewToggle } from "../../components/data-table/data-table-view-toggle";
+import { useLinesViewPreference } from "../../lib/use-view-preference";
 
 interface Option {
   value: string;
@@ -257,6 +259,7 @@ function ReviewSummary({
 }: SummaryProps) {
   const values = useWatch({ control });
   const { resolved, loading } = useResolvedLines(values);
+  const { view, setView } = useLinesViewPreference("po-review-lines");
   const label = (options: Option[], value?: string) =>
     value ? options.find((option) => option.value === value)?.label : undefined;
   const currencyLabel = label(currencyOptions, values.currency_id);
@@ -317,7 +320,59 @@ function ReviewSummary({
       </dl>
 
       <div className="space-y-2">
-        <h3 className="text-sm font-semibold">Lines ({lines.length})</h3>
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-sm font-semibold">Lines ({lines.length})</h3>
+          <DataTableViewToggle value={view} onChange={setView} />
+        </div>
+        {view === "cards" ? (
+          <ol className="grid gap-3 @lg:grid-cols-2">
+            {lines.map((line, index) => {
+              const row = resolved[index];
+              const amount = amounts[index];
+              const stat = (name: string, value: ReactNode) => (
+                <div className="min-w-0">
+                  <dt className="text-xs text-muted-foreground">{name}</dt>
+                  <dd className="text-sm tabular-nums">{value}</dd>
+                </div>
+              );
+              return (
+                <li key={index} className="space-y-3 rounded-lg border border-border bg-card p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-xs text-muted-foreground">Line {index + 1}</p>
+                      <p className="font-medium">
+                        {label(itemOptions, line?.item_id) ?? <span className="font-normal text-muted-foreground">Item not chosen</span>}
+                      </p>
+                      {line?.description && label(itemOptions, line?.item_id)?.indexOf(line.description) === -1 && (
+                        <p className="text-xs text-muted-foreground">{line.description}</p>
+                      )}
+                    </div>
+                    <p className="shrink-0 text-right text-sm font-semibold tabular-nums">{amount ? formatScaled(amount.total) : "—"}</p>
+                  </div>
+                  <dl className="grid grid-cols-2 gap-x-4 gap-y-2">
+                    {stat("Ordered", `${line?.ordered_qty} ${row?.order_unit_label ?? uomCode(line?.purchase_uom_id) ?? ""}`)}
+                    {stat("Stock quantity", row ? row.ordered_stock_qty : loading ? "…" : "—")}
+                    {stat("Price", `${line?.unit_price} per ${row?.price_quantity ?? line?.price_quantity ?? "1"} ${row?.price_unit_label ?? uomCode(line?.purchase_uom_id) ?? ""}`)}
+                    {(parseFloat(line?.discount_amount ?? "0") || 0) > 0 && stat("Discount", `−${line?.discount_amount}`)}
+                    {(parseFloat(line?.tax_amount ?? "0") || 0) > 0 && stat("Tax", line?.tax_amount)}
+                    {line?.expected_delivery_date && stat("Due", line.expected_delivery_date)}
+                  </dl>
+                  {(row?.package_name || line?.qa_required || line?.ordering_exception_reason?.trim()) && (
+                    <p className="text-xs text-muted-foreground">
+                      {[
+                        row?.package_name ? `Package: ${row.package_name}` : null,
+                        line?.qa_required ? "QA check on receipt" : null,
+                        line?.ordering_exception_reason?.trim() ? `Quantity exception: ${line.ordering_exception_reason}` : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </p>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        ) : (
         <div className="overflow-x-auto rounded-md border border-border bg-card">
           <table className="w-full min-w-[56rem] text-sm">
             <thead className="border-b border-border text-left text-xs text-muted-foreground">
@@ -388,6 +443,7 @@ function ReviewSummary({
             </tbody>
           </table>
         </div>
+        )}
       </div>
 
       {complete.length > 0 && (

@@ -28,21 +28,21 @@ export interface WizardShellProps {
 export function WizardShell({ steps, activeIndex, onStepClick, freeNavigation, children, footer }: WizardShellProps) {
   return (
     <div className="space-y-6">
-      <ol className="flex items-center gap-2 overflow-x-auto pb-1">
+      <ol className="flex items-center gap-1 pb-1 sm:gap-2">
         {steps.map((step, index) => {
           const isActive = index === activeIndex;
           const isComplete = index < activeIndex;
           const isClickable = (isComplete || !!freeNavigation) && !isActive && !!onStepClick;
           return (
             <li key={step.id} className="flex items-center gap-2">
-              {index > 0 && <span aria-hidden="true" className="h-px w-6 shrink-0 bg-border sm:w-10" />}
+              {index > 0 && <span aria-hidden="true" className="h-px w-3 shrink-0 bg-border sm:w-10" />}
               <button
                 type="button"
                 disabled={!isClickable}
                 onClick={() => onStepClick?.(index)}
                 aria-current={isActive ? 'step' : undefined}
                 className={cn(
-                  'flex items-center gap-2 whitespace-nowrap rounded-md px-2 py-1 text-sm font-medium',
+                  'flex items-center gap-2 whitespace-nowrap rounded-md px-1 py-1 text-sm font-medium sm:px-2',
                   isActive ? 'text-foreground' : 'text-muted-foreground',
                   isClickable && 'hover:bg-accent hover:text-accent-foreground'
                 )}
@@ -57,7 +57,8 @@ export function WizardShell({ steps, activeIndex, onStepClick, freeNavigation, c
                 >
                   {isComplete ? <Check className="size-3.5" /> : index + 1}
                 </span>
-                {step.label}
+                {/* Only the current step keeps its name on a phone — the others are their numbers — so three steps fit. */}
+                <span className={cn(!isActive && 'sr-only sm:not-sr-only')}>{step.label}</span>
               </button>
             </li>
           );

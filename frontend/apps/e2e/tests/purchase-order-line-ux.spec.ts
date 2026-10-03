@@ -16,7 +16,7 @@ test('a "required" message goes away as soon as the field is fixed', async ({ pa
   await expect(sheet.getByText('Supplier is required')).toHaveCount(0);
 });
 
-test('a line shows only the everyday fields; the rest are its own advanced options, each with a hint', async ({ page }) => {
+test('a line shows only the everyday fields; the rest hide behind one "More details" toggle and are still saved', async ({ page }) => {
   const sheet = await openNew(page);
   await pickCombobox(page, 'Supplier', 'Punjab Pigments', { within: sheet });
   await sheet.getByRole('button', { name: 'Next' }).click();
@@ -24,7 +24,8 @@ test('a line shows only the everyday fields; the rest are its own advanced optio
 
   for (const label of ['Item', 'Description', 'Quantity', 'Purchase UoM', 'Unit price'])
     await expect(sheet.getByLabel(label, { exact: true })).toBeVisible();
-  for (const label of ['Package or loose', 'Line discount (amount)', 'Line tax (amount)', 'Line expected date (optional)', 'QA required'])
+  await expect(sheet.getByLabel('Line total', { exact: true })).toBeVisible();
+  for (const label of ['Line discount (amount)', 'Line tax (amount)', 'Line delivery date', 'QA required'])
     await expect(sheet.getByLabel(label, { exact: true })).toHaveCount(0);
 
   // What the price means is on hand, and the line says what it is "per"
@@ -32,15 +33,16 @@ test('a line shows only the everyday fields; the rest are its own advanced optio
   await sheet.getByRole('button', { name: 'About Unit price' }).hover();
   await expect(page.getByRole('tooltip').first()).toContainText('pricing unit');
 
-  // A set value is never hidden: choosing a discount opens its group and unticking it puts the default back
-  await sheet.getByRole('button', { name: 'Options for line 1' }).click();
-  await page.getByRole('menuitemcheckbox', { name: 'Line discount and tax' }).click();
-  await page.keyboard.press('Escape');
-  await sheet.getByLabel('Line discount (amount)').fill('5');
-  await sheet.getByRole('button', { name: 'Options for line 1' }).click();
-  await page.getByRole('menuitemcheckbox', { name: 'Line discount and tax' }).click();
-  await page.keyboard.press('Escape');
-  await expect(sheet.getByLabel('Line discount (amount)')).toHaveCount(0);
+  // One toggle shows every optional field, with its default; hiding it keeps what was entered and says so
+  const toggle = sheet.getByRole('button', { name: 'More details for this line' });
+  await toggle.click();
+  await sheet.getByLabel('Line discount (amount)', { exact: true }).fill('5');
+  await expect(sheet.getByLabel('Line tax (amount)', { exact: true })).toBeVisible();
+  await expect(sheet.getByLabel('Line delivery date', { exact: true })).toBeVisible();
+  await expect(sheet.getByLabel('QA required', { exact: true })).toBeVisible();
+  await sheet.getByRole('button', { name: 'Hide details' }).click();
+  await expect(sheet.getByLabel('Line discount (amount)', { exact: true })).toHaveCount(0);
+  await expect(sheet.getByText('Set: discount or tax')).toBeVisible();
 });
 
 test('the purchase unit offers only units the item can be converted to', async ({ page }) => {
@@ -56,12 +58,38 @@ test('the purchase unit offers only units the item can be converted to', async (
   await page.keyboard.press('Escape');
 });
 
-test('"replaces" is a picker of the supplier\'s earlier orders, behind the order\'s advanced options', async ({ page }) => {
+test('"replaces" is a picker of the supplier\'s earlier orders, behind the order\'s More options', async ({ page }) => {
   const sheet = await openNew(page);
   await expect(sheet.getByLabel('Replaces order', { exact: true })).toHaveCount(0);
   await pickCombobox(page, 'Supplier', 'Punjab Pigments', { within: sheet });
-  await sheet.getByRole('button', { name: 'Advanced options', exact: true }).click();
-  await page.getByRole('menuitemcheckbox', { name: 'This order replaces another' }).click();
-  await page.keyboard.press('Escape');
+  await sheet.getByRole('button', { name: 'More options' }).click();
   await expect(sheet.getByLabel('Replaces order', { exact: true })).toBeVisible();
+  await expect(sheet.getByRole('heading', { name: 'Exchange rate' })).toBeVisible();
+});
+
+test('a picker list inside the side sheet scrolls with the wheel or touch pad, not only the scrollbar', async ({ page }) => {
+  const sheet = await openNew(page);
+  await pickCombobox(page, 'Supplier', 'Punjab Pigments', { within: sheet });
+  await sheet.getByRole('button', { name: 'More options' }).click();
+  await sheet.getByLabel('Replaces order', { exact: true }).click();
+  const list = page.locator('[cmdk-list]');
+  await expect(list).toBeVisible();
+  await expect.poll(async () => list.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true);
+  const box = (await list.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.wheel(0, 240);
+  await expect.poll(async () => list.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+});
+
+test('the review shows its lines as a table or as cards, as chosen', async ({ page }) => {
+  const sheet = await openNew(page);
+  await pickCombobox(page, 'Supplier', 'Punjab Pigments', { within: sheet });
+  await sheet.getByRole('button', { name: 'Next' }).click();
+  await pickCombobox(page, 'Item', 'Phthalo', { within: sheet });
+  await sheet.getByRole('button', { name: 'Next' }).click();
+  await sheet.getByRole('button', { name: 'Table view' }).click();
+  await expect(sheet.getByRole('columnheader', { name: 'Stock quantity' })).toBeVisible();
+  await sheet.getByRole('button', { name: 'Card view' }).click();
+  await expect(sheet.getByRole('columnheader', { name: 'Stock quantity' })).toHaveCount(0);
+  await expect(sheet.getByText('Line 1', { exact: true })).toBeVisible();
 });

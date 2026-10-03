@@ -12,12 +12,10 @@ async function createDraft(page: import('@playwright/test').Page) {
   await pickCombobox(page, 'Item', 'Phthalo', { within: sheet });
   await sheet.getByLabel('Quantity', { exact: true }).fill('3');
   await sheet.getByLabel('Unit price', { exact: true }).fill('100');
-  // Discount and tax are the line's advanced options, closed until asked for
-  await sheet.getByRole('button', { name: 'Options for line 1' }).click();
-  await page.getByRole('menuitemcheckbox', { name: 'Line discount and tax' }).click();
-  await page.keyboard.press('Escape');
-  await sheet.getByLabel('Line discount (amount)').fill('20');
-  await sheet.getByLabel('Line tax (amount)').fill('5');
+  // Discount and tax sit under the line's "More details", closed until asked for
+  await sheet.getByRole('button', { name: 'More details for this line' }).click();
+  await sheet.getByLabel('Line discount (amount)', { exact: true }).fill('20');
+  await sheet.getByLabel('Line tax (amount)', { exact: true }).fill('5');
   return sheet;
 }
 
@@ -63,10 +61,10 @@ test('editing opens in the side panel, and the list behind it never shows stale 
   // Editing walks the same steps as creating; the line is on the second, and its discount is already showing
   await edit.getByRole('button', { name: 'Next' }).click();
   await expect(edit.locator('aside')).toContainText('Order summary');
-  await expect(edit.getByLabel('Line discount (amount)')).toHaveValue('20.0000');
+  await expect(edit.getByLabel('Line discount (amount)', { exact: true })).toHaveValue('20.0000');
 
   // Changing the discount updates the estimate, and saving returns to the order with the new figures
-  await edit.getByLabel('Line discount (amount)').fill('30');
+  await edit.getByLabel('Line discount (amount)', { exact: true }).fill('30');
   await expect(edit.locator('aside').getByText('Estimated total').locator('..')).toContainText('275.00');
   await edit.getByRole('button', { name: 'Next' }).click();
   await edit.getByRole('button', { name: 'Save changes' }).click();

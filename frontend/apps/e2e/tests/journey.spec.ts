@@ -50,10 +50,8 @@ test('purchase order through receipt, QA and availability', async ({ page }) => 
   await pickCombobox(page, 'Item', ITEM, { within: sheet });
   await sheet.getByLabel('Quantity', { exact: true }).fill(String(QTY));
   await sheet.getByLabel('Unit price', { exact: true }).fill('100.0000');
-  // The quality check is one of the line's advanced options, closed until asked for
-  await sheet.getByRole('button', { name: 'Options for line 1' }).click();
-  await page.getByRole('menuitemcheckbox', { name: 'Quality check on receipt' }).click();
-  await page.keyboard.press('Escape');
+  // The quality check sits under the line's "More details", closed until asked for
+  await sheet.getByRole('button', { name: 'More details for this line' }).click();
   await sheet.getByLabel('QA required', { exact: true }).check();
   await sheet.getByRole('button', { name: 'Next' }).click();
 
