@@ -120,6 +120,11 @@ authorisation and issued-factor/default-price receiving are covered by 41 focuse
 
 ## Next
 
+Physical package compatibility: existing writer audit and five real-Action cases complete;
+26 tests / 162 assertions pass. Cross-layer sealed cohorts need a contribution-allocation
+contract before schema commitment; tracking remains unimplemented →
+[spike](domain/package-balance-integration.md).
+
 Physical package tracking design has started: the owner confirmed unopened counts plus grouped
 leftovers. [Proposed ADR 0082](decisions/0082-reconcile-package-balances-with-stock-operations.md)
 and [delivery plan](phases/package-balance-delivery.md) record the design and acceptance cases;

@@ -275,7 +275,8 @@ No approval transition is added.
 Physical tracking remains unimplemented. The owner confirmed grouped sealed/open balances;
 [proposed ADR 0082](../../../../docs/decisions/0082-reconcile-package-balances-with-stock-operations.md)
 and the [delivery plan](../../../../docs/phases/package-balance-delivery.md) record the next
-integration spike. Receipt/issue/transfer, QA, counts, cutover and backdated/reversal paths must
+integration spike. Its [verified findings](../../../../docs/domain/package-balance-integration.md)
+require contribution-allocation tests before schema commitment. Receipt/issue/transfer, QA, counts, cutover and backdated/reversal paths must
 be package-consistent before activation. No alternate quantity or valuation engine is proposed.
 
 ## Related

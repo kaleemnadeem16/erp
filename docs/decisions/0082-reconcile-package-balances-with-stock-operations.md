@@ -79,6 +79,13 @@ allocation, FIFO/AVCO valuation, QA attribution and receipt reversal. A selected
 not silently change the valuation method, assign a false receipt cost or bypass held stock.
 Do not decide a layer/provenance schema before this is demonstrated with real posting Actions.
 
+The [compatibility spike](../domain/package-balance-integration.md) demonstrates that a counted
+sealed package can span multiple cost layers. Proposed physical cohorts therefore need separate
+layer contribution quantities, including an explicit AVCO allocation vector; a single layer
+foreign key on each sealed balance is insufficient. Counted bookkeeping attribution must not
+claim verified historical receipt provenance. Contribution allocation and QA splitting still
+need implementation-contract tests before schema commitment.
+
 ### 5. Enable only with a reconciled opening state
 
 Keep QUANTITY_ONLY as default and resolve item/category/company configuration under ADR 0052.
