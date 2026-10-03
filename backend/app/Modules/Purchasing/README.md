@@ -71,6 +71,7 @@ No events emitted yet.
 
 ## Related
 
+- [Packaged purchasing demo](../../../../docs/journeys/packaged-purchasing-demo.md) — opt-in PackagedPurchasingDemoSeeder; creates definitions and workflow examples once, preserving receiver progress on reruns.
 - [Phase 2](../../../../docs/phases/phase-2-purchasing-stock.md)
 - [Inventory module](../Inventory/README.md)
 - [Parties module](../Parties/README.md)

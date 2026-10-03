@@ -16,6 +16,7 @@ Implementation is now authorised in committed slices:
 - [x] Add PO package/loose choice, separate price basis, warning/reason evidence and immutable snapshots.
 - [x] Add receipt package evidence, partial delivery and replacement-order linkage.
 - [x] Expose package/offer maintenance and purchasing/receiving in the existing screens; regenerate client and verify.
+- [x] Add representative opt-in demo scenarios and prove their outcomes/idempotency.
 
 Acceptance: equal-content boxes remain distinct; 10 boxes of 2 L priced at PKR 850/L costs
 PKR 17,000; loose 6.5 L works; 6+4 boxes receives as 12+8 L; changed masters cannot change issued
@@ -26,17 +27,17 @@ catch weight, price tiers and configurable constraint escalation are deliberate 
 1. [x] **Item pack-conversion access:** reuse ADR 0050's editor within item details, fix its item
    identity to the current record, retain pagination and server errors, and expose stock quantity
    increment in item create/edit/detail. Creating an item leads directly to its conversions.
-2. [ ] **PO entry conversion visibility:** display the authoritative conversion factor and stock
+2. [x] **PO entry conversion visibility:** display the authoritative conversion factor and stock
    quantity before saving; cover item/supplier/unit changes, unavailable conversions and decimal
    arithmetic. Reuse ADR 0050; do not invent sealed-package availability.
 3. [ ] **Supplier terms within item context:** expose the existing supplier relationships with
    their Purchasing read/write capabilities; preserve supplier-specific purchase-unit defaulting.
-4. [ ] **Supplier ordering constraints research:** decide MOQ units, warnings versus blocking,
+4. [x] **Supplier ordering constraints research:** decide MOQ units, warnings versus blocking,
    order multiples, rounding, override authority and issue-time snapshots. ADR 0050 leaves MOQ
    enforcement/order multiples open. Compare two to four mature ERPs from primary sources and
-   record synthesis, alternatives and the chosen scope before implementation.
-5. [ ] **Purchasing commercial basis research:** decide percentage discounts and pricing per
-   quantity/UoM, including rounding and historical evidence. Reuse existing cost and currency
+   record synthesis, alternatives and the chosen scope before implementation. Resolved for fixed-package purchasing by ADR 0080.
+5. [ ] **Purchasing commercial basis research:** independent price UoM/denominator is delivered under ADR 0080; remaining work includes percentage discounts and tax integration.
+   Reuse existing cost and currency
    contracts. Tax integration must follow ADRs 0025/0056, with current authoritative guidance
    verified at implementation; a manual rate field is not the tax engine.
 6. [ ] **Delivery planning research:** decide receiving destination, split schedules and requested
@@ -168,6 +169,16 @@ No migrations or implementation of the new business shape during the discussion.
 remain immutable; any changed decision needs a superseding ADR. Preserve company scope, decimal
 arithmetic, historical evidence, module ownership and the established stock/valuation authority.
 
+### Delivered screens and verification — 2026-10-02
+
+Item detail now maintains named packages and supplier offers, including a preferred offer. Purchase orders select package or loose buying and a separate price unit/denominator, with server-calculated quantity and amount previews and recorded ordering exceptions. Receipts default to outstanding package counts and can receive loose stock against the frozen agreement. Replacement drafts link a cancelled or short-closed order. Package content and the item stock unit are protected by application and database guards.
+
+Validation: 106 focused backend tests (including inherited foundation cases), the production frontend build, and the packaged-purchasing browser checks plus existing conversion/supplier-unit checks. Physical package balances, containers, catch weight and package-aware allocation remain deferred under ADR 0080.
+
+### Demo delivery — 2026-10-03
+
+The opt-in orchestrator now includes PackagedPurchasingDemoSeeder after Purchasing. It creates a dedicated quantity-only thinner item, seven named/nested package definitions, nine supplier offers and seventeen labelled PO scenarios. Six receipts demonstrate complete, partial, loose and short-closed supply, including one draft left for the demo receiver. Definitions and workflow history are recognised/skipped on reruns, preserving manual edits and user progress. Seven dedicated tests pass (95 assertions), including exact valuation, rejected selections, rerun preservation after posting the draft, and the production guard. See the [demo walkthrough](../journeys/packaged-purchasing-demo.md). The combined packaged-purchasing/conversion demo regression run passes 25 tests (171 assertions).
+
 ## Related
 
 - [Items](../domain/items.md)
@@ -176,9 +187,3 @@ arithmetic, historical evidence, module ownership and the established stock/valu
 - [Inventory packages](../domain/inventory-packages.md)
 - [Authorisation](../architecture/authorization.md#per-feature-authorisation-checklist)
 - [Open questions](../OPEN-QUESTIONS.md)
-
-### Delivered screens and verification — 2026-10-02
-
-Item detail now maintains named packages and supplier offers, including a preferred offer. Purchase orders select package or loose buying and a separate price unit/denominator, with server-calculated quantity and amount previews and recorded ordering exceptions. Receipts default to outstanding package counts and can receive loose stock against the frozen agreement. Replacement drafts link a cancelled or short-closed order. Package content and the item stock unit are protected by application and database guards.
-
-Validation: 106 focused backend tests (including inherited foundation cases), the production frontend build, and the packaged-purchasing browser checks plus existing conversion/supplier-unit checks. Physical package balances, containers, catch weight and package-aware allocation remain deferred under ADR 0080.

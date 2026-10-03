@@ -22,6 +22,7 @@ They sit beside the existing documentation rather than replacing it:
 |---|---|---|
 | [Approvals journey](approvals-journey.md) | Administrator, buyer, approver, finance | Switching approvals on, writing policies and limits, submitting and deciding a purchase order, delegation |
 | [Phase 2 operational journey](phase-2-operational-journey.md) | New operator, buyer, receiver/QA operator, inventory controller | Implemented entry-to-exit flow from login and setup through purchasing, receiving, QA, stock visibility and control work |
+| [Packaged purchasing demo](packaged-purchasing-demo.md) | Buyer, receiver | Compare named packages and price bases, post a partial delivery, and inspect supplier changes and replacement agreements |
 | [Phase 3 material-planning journey](phase-3-material-planning-journey.md) | Estimator, planning lead, administrator | Implemented rules setup, Material Preview, stock proposal, what-if variance verdicts and the freshness check |
 | Future Phase 4–7 journeys | To be added when each phase starts | Sales, job execution, finance, mobile and integrations |
 

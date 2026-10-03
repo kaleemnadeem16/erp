@@ -161,7 +161,7 @@ docker compose exec app php artisan demo:seed
 The command is idempotent: stable codes (or, where a screen has no natural code, a marker like
 `GoodsReceipt.idempotency_key` or `PhysicalCount.reference`) update or skip the records owned by
 the demo dataset without deleting unrelated local records. Its orchestrator calls small seeders
-for Foundation, Accounting, Parties, Inventory, Pack Conversions, Purchasing, Stock, the
+for Foundation, Accounting, Parties, Inventory, Pack Conversions, Purchasing, Packaged Purchasing, Stock, the
 negative-stock and recalculation lifecycles, Stock Transfers and Estimating in dependency order
 (Pack Conversions before Purchasing because some item-supplier rows buy in a pack unit; the
 lifecycles after Stock because they reuse that seeder's actors and resting policy; the stock
@@ -217,6 +217,8 @@ single scenario into one file per table.
 identity is item + work unit + a dimension-value *combination* that lives in a pivot table) can
 instead delete the narrow slice it owns and recreate it every run — see
 `ApplicationRatesDemoSeeder` — rather than force a fragile partial-match key.
+
+The [packaged-purchasing walkthrough](../journeys/packaged-purchasing-demo.md) documents the named/nested packages, price bases, receipts and replacement-order examples. Its immutable definitions and workflow records are created once and skipped on reruns; manual master edits and completed receiver steps are preserved.
 
 #### Immutable transactional demo data: create once, never reconcile
 

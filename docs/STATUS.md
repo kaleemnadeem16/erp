@@ -122,6 +122,8 @@ authorisation and issued-factor/default-price receiving are covered by 41 focuse
 Package/offer maintenance, independent PO pricing, partial package/loose receipts and replacement
 order linkage are implemented in the existing screens under [ADR 0080](decisions/0080-packaged-purchasing-and-independent-price-basis.md).
 Validation and remaining physical-tracking scope are recorded in the [delivery plan](phases/item-purchasing-improvements.md).
+Representative demo data is loaded locally: seven packages, nine offers and seventeen orders;
+[walkthrough](journeys/packaged-purchasing-demo.md), seven outcome/rerun tests (95 assertions), 2026-10-03.
 
 Packaged/loose Purchasing implementation is authorised under accepted
 [ADR 0080](decisions/0080-packaged-purchasing-and-independent-price-basis.md); the

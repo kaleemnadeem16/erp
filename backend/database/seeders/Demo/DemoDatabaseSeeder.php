@@ -34,6 +34,7 @@ final class DemoDatabaseSeeder extends Seeder
                 // Before Purchasing: some item-supplier rows buy in a pack unit.
                 PackConversionsDemoSeeder::class,
                 PurchasingDemoSeeder::class,
+                PackagedPurchasingDemoSeeder::class,
                 StockDemoSeeder::class,
                 // After StockDemoSeeder: reuses its demo-ops/demo-supervisor actors and resting policy.
                 NegativeStockLifecycleDemoSeeder::class,
