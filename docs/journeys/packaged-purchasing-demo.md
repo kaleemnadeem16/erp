@@ -121,6 +121,9 @@ this example does not enable physical tracking or change the earlier live draft'
 
 ## Related
 
+- [Opening/unpacking backend demo](../domain/package-opening-preview.md#demo-and-verification) — dedicated
+  two-carton fixture; inspect OPEN versus UNPACK proposals internally. No posting control or screen yet.
+
 - [Phase 2 operational journey](phase-2-operational-journey.md)
 - [Item and Purchasing delivery plan](../phases/item-purchasing-improvements.md)
 - [Inventory packages](../domain/inventory-packages.md)

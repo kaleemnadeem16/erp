@@ -47,8 +47,9 @@ has shipped. This plan extends the delivered purchasing package masters; it is n
    of the gates require the later enforcing/reconciliation slices.
 6. [ ] **Operational integration.** [Observed receipt backend](../domain/receipt-package-evidence.md)
    is implemented with source-layer/QA evidence and posting rollback/retry tests. It has no
-   authoring/history UI yet and cannot activate tracking. Remaining: outer unpack versus
-   content open, composition-preserving transfer and count correction; QA, reversal, cutover
+   authoring/history UI yet and cannot activate tracking. [Opening/unpacking preview](../domain/package-opening-preview.md)
+   now calculates exact layer-preserving proposals and has a dedicated counted demo.
+   Remaining: persisted open/unpack operations, composition-preserving transfer and count correction; QA, reversal, cutover
    and recalculation adapters or explicit first-release guards. Cover every direct Action writer,
    not only public HTTP controllers. Preserve QUANTITY_ONLY behaviour.
 7. [ ] **Permissions and workflows.** Register only enforcing capabilities; grant demo personas

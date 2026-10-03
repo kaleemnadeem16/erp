@@ -42,6 +42,10 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 
 ## Recently done
 
+Opening/unpacking now has a read-only backend preview preserving exact layer contributions,
+with a dedicated two-carton demo. Persisted operations and tracking activation remain next →
+[preview contract](domain/package-opening-preview.md).
+
 | Item | Date |
 |---|---|
 | **Parties write capability retrofit complete** — four dynamic capabilities gate Party, customer, supplier and supplier-site create/edit/archive at HTTP and Action boundaries; shared lookups stay available. The PO inline supplier-site add control follows the site capability. The full Parties/architecture suite passes (89 tests, 218 assertions) and the targeted browser spec passes. Finance field policy remains open → [Parties](domain/parties.md#access-to-trading-partner-master-data), [audit](architecture/access-security-audit.md). | 2026-10-02 |

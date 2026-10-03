@@ -88,6 +88,7 @@ Lead → Opportunity → Quotation (revisions) → Job → Work Order → Invoic
 | [purchasing.md](purchasing.md) | Purchase orders, receipts, QA and matching boundaries |
 | [acquisition-costing.md](acquisition-costing.md) | Provisional/actual purchase cost and landed-cost allocation |
 | [receipt-package-evidence.md](receipt-package-evidence.md) | Observed sealed/loose arrival and atomic receipt-source evidence |
+| [package-opening-preview.md](package-opening-preview.md) | Read-only opening/unpacking composition and layer-preserving proposals |
 | [package-tracking-policy.md](package-tracking-policy.md) | Pinned item policy, creation-time precedence and disabled activation gates |
 | [package-balance-integration.md](package-balance-integration.md) | Physical package compatibility evidence and remaining adapter gates |
 | [stock.md](stock.md) | Warehouses, moves, layers, AVCO pools, the valuation feed |

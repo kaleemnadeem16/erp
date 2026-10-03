@@ -71,6 +71,10 @@ movement and valuation, built in Phase 2.
 
 ## Key actions
 
+`PreviewPackageOpening` proposes opening or unpacking against fresh authorised counted evidence,
+preserving exact layer contributions. It is read-only and has no HTTP/UI or tracking activation;
+see [opening preview](../../../../docs/domain/package-opening-preview.md).
+
 `CreateCategory`/`UpdateCategory`/`ArchiveCategory` and
 `CreateItem`/`UpdateItem`/`ArchiveItem` own the transactional write boundary used by HTTP and
 future non-HTTP entry points. Model guards still enforce tenant, hierarchy and valuation

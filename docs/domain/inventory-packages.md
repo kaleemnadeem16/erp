@@ -295,6 +295,8 @@ authoring Action and three real posted demo cases precede the later capture/hist
 
 ## Related
 
+- [Opening and unpacking preview](package-opening-preview.md)
+
 - [Material resolution](material-resolution.md) · [Items](items.md) · [Stock](stock.md)
 - [Purchasing](purchasing.md) · [Sales pipeline](sales-pipeline.md)
 - [ADR 0050](../decisions/0050-item-specific-uom-conversion-and-divisibility.md)
