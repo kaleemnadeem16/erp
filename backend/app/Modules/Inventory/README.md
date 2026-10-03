@@ -272,7 +272,9 @@ No approval transition is added.
 
 ## Package-balance design boundary
 
-Physical tracking remains unimplemented. The owner confirmed grouped sealed/open balances;
+Operational physical tracking remains unimplemented. The inactive
+[storage foundation](../../../../docs/domain/package-balance-integration.md#inactive-storage-foundation--2026-10-03)
+adds scoped immutable snapshots and database reconciliation constraints; it is not live on-hand. The owner confirmed grouped sealed/open balances;
 [proposed ADR 0082](../../../../docs/decisions/0082-reconcile-package-balances-with-stock-operations.md)
 and the [delivery plan](../../../../docs/phases/package-balance-delivery.md) record the next
 integration spike. Its [verified findings](../../../../docs/domain/package-balance-integration.md)

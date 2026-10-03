@@ -4,7 +4,7 @@
 
 Verified 2026-10-03. This records existing stock behaviour, not implemented package tracking.
 [Proposed ADR 0082](../decisions/0082-reconcile-package-balances-with-stock-operations.md)
-remains proposed. No schema, production Action, permission or demo activation changes in this spike.
+remains proposed. The original spike changed no production semantics. The storage foundation below is now shipped, without activation.
 
 ## Evidence from real posting Actions
 
@@ -103,6 +103,39 @@ excluded candidates until their adapters are proven. The spike does not prove lo
 open/unpack projection changes or receipt reversal of package events.
 No operational package demo is added to this test-only spike; each enforcing slice must provide
 its real Action-based demo and journey.
+
+## Inactive storage foundation — 2026-10-03
+
+Migration 2026_10_03_120000 adds three empty tables. No stock writer, route, policy setting
+or seeder uses them. They store immutable evidence, not current on-hand projections.
+No authority to activate tracking or write operational package state is introduced.
+
+| Table | Stored evidence and constraints |
+|---|---|
+| inventory_package_operations | Company, item, location, optional batch, company-unique request key, payload hash, COUNTED/RECEIPT provenance, actor, reason and recorded time |
+| inventory_package_states | Operation-bound SEALED/OPEN_LOOSE form, HELD/USABLE evidence, definition/name/content snapshot, whole count and exact stock quantity |
+| inventory_package_contributions | Ordered positive quantities linking each state to one or more stock layers; unique layer and position within the state |
+
+Company-safe foreign keys and scope triggers enforce location ownership, item/batch identity,
+package definition/content identity and contribution item/location/batch/company matching.
+Serial layers are excluded. SEALED quantity equals whole count times content; OPEN_LOOSE has
+no sealed identity/count. Deferred constraints require every state to have contributions and
+their sum to equal its quantity at transaction completion. Multiple contributions may be
+inserted before reconciliation is checked. Update/delete triggers protect all three tables,
+including raw SQL; models also reject history edits.
+
+PackageOperation, PackageState and PackageContribution are scoped immutable evidence models.
+The unique request key is only the database prerequisite for retries: equal-payload replay,
+conflict handling, stable scope locks and an authorised posting service remain unfinished.
+Snapshots do not yet reconcile against live on-hand or prove availability; no consumer may
+present these rows as usable stock. Backdated/reversal and projection rebuilding remain pending.
+
+Nine new storage cases plus inherited baseline coverage pass; combined with the two earlier
+suites: **68 tests / 333 assertions**. Including the architecture checks: **105 tests / 402 assertions**.
+The architecture check caught a bare actor foreign key during development; it now uses a
+company-safe composite reference and the complete checked set passes. This includes database-level rejection and rollback;
+it does not establish concurrent operational posting. No demo is added because there is no
+new user workflow. The enforcing slice must seed real Actions and supply its journey.
 
 ## Related
 

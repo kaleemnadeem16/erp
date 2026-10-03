@@ -38,7 +38,10 @@ has shipped. This plan extends the delivered purchasing package masters; it is n
    backdated replay need enforcing adapters or guards. This completes the reversible spike,
    not operational package integration. ADR 0082 remains proposed; kernel work must preserve
    its disabled-by-default boundary and explicit activation gates.
-5. [ ] **Schema and transactional kernel.** Company-safe definition references, immutable event
+5. [ ] **Schema and transactional kernel.** Inactive immutable storage foundation is shipped
+   ([schema and verified limits](../domain/package-balance-integration.md#inactive-storage-foundation--2026-10-03));
+   authorised posting, equal-payload retries, stable locks, live reconciliation, projection rebuilding
+   and policy resolution remain. Company-safe definition references, immutable event
    and operation identity, reconstructible balance projections, exact decimal constraints,
    stable lock order, equal-payload retry semantics and rollback/reconciliation tests. Establish
    guarded default/item/category mode resolution without activating unsupported modes.

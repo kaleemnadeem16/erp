@@ -22,7 +22,8 @@ Extend ADR 0052 with PACKAGE_BALANCE: count sealed definitions and group open/lo
 the same company, item, location and required traceability/availability scope. Preserve the stock
 movement/valuation engine as the quantity and cost authority. Implement the delivery gates in
 [the plan](../phases/package-balance-delivery.md); this proposal does not activate tracking or
-authorise a new valuation method. No migrations or executable permission names are added yet.
+authorise a new valuation method. An inactive evidence-storage foundation now exists; no executable package permission, operational
+writer or activation setting is added.
 
 ### 1. Physical and availability state are separate
 
