@@ -29,6 +29,10 @@ delivered purchasing package masters; it is not Phase 5 job execution.
 
 ## Delivery sequence
 
+**Continuation checkpoint:** [package-balance-handoff.md](package-balance-handoff.md) records the
+completed implementation, live demo/test baseline, shared-checkout boundaries and the exact next
+issue/transfer work. Consult it before resuming this workstream; it does not replace project STATUS.
+
 1. [x] Review ADRs 0052/0053/0080 and the current posting/read paths; compare primary ERP sources.
 2. [x] Confirm grouped leftovers versus individually tracked vessels with the owner.
 3. [x] Record proposed physical semantics, acceptance cases, integration obligations and exclusions.

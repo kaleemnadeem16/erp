@@ -45,6 +45,8 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 Opening/unpacking now saves immutable complete snapshots with lineage, fresh-stock checks,
 duplicate/conflict protection and a dedicated history demo. Issue/transfer integration and
 tracking activation remain next → [saved operations](domain/package-opening-operations.md).
+The scoped [continuation handoff](phases/package-balance-handoff.md) records the exact resume point
+and shared-checkout boundaries; other workstreams retain their own priorities.
 
 | Item | Date |
 |---|---|
