@@ -81,6 +81,12 @@ final class PackagedPurchasingDemoSeeder extends Seeder
         $retired = $this->package('old-box-2l', 'Old 2 L box — archived after issue; agreement preserved', '2');
 
         $rel = $this->relationship($this->supplier);
+        // Visible on Item detail: an archived relationship to practise restoring, not another offer.
+        ItemSupplier::query()->firstOrCreate([
+            'item_id' => $this->item->id,
+            'supplier_account_id' => SupplierAccount::query()->where('code', 'sup-punjab')->firstOrFail()->id,
+        ], ['supplier_item_code' => 'Archived trial supplier — restore to resume buying',
+            'purchase_uom_id' => $this->litre->id, 'priority' => 3, 'active' => false]);
         $preferred = $this->offer($rel, 'DEMO-BOX-L', $box, '850', $this->litre->id, '1', ['preferred' => true, 'minimum_order_qty' => '5', 'order_multiple' => '5']);
         $perBox = $this->offer($rel, 'DEMO-BOX-EACH', $otherBox, '1700', null);
         $perHundred = $this->offer($rel, 'DEMO-PER-100L', $box, '85000', $this->litre->id, '100');

@@ -23,6 +23,14 @@ offer with minimum/multiple five; a changed price; an alternative supplier; and 
 future and inactive offers. Offer SKU labels start with **DEMO-** so they are recognisable.
 PakChem supplies most examples; Industrial Coatings has the alternative supplier offer.
 
+The **Supplier relationships** panel above the packages lists these two active suppliers and an
+archived Punjab trial supplier. Use **Restore** to practise resuming supply, or **Edit** to change
+its sourcing terms. **Add supplier relationship** fixes the current item and lets you select the
+supplier, supplier item code, priority, lead time, minimum and default purchase unit. Existing
+relationship identities cannot be repointed. Archiving a relationship prevents new offer-based
+orders using it; issued agreement snapshots remain unchanged. A demo rerun preserves your
+restoration or later edits.
+
 ## Compare the agreements
 
 Purchase-order notes start with **[Pack demo:scenario]** and explain the expected result.
@@ -69,8 +77,8 @@ records. This capability creates its definitions once because package content is
 This demo shows named **purchasing** packages and receipt evidence. Inventory still records litre
 balances; it does not claim to know how many sealed boxes or opened bottles physically remain.
 Physical package balances, containers, catch weight, price tiers and configurable constraint
-escalation remain later scope. Supplier-relationship setup still uses Item Suppliers; Item detail
-maintains offers under an existing relationship. Percentage discounts, tax-engine work and split
+escalation remain later scope. Supplier relationships and offers can now be maintained on Item detail; the standalone Item
+Suppliers screen remains available. Percentage discounts, tax-engine work and split
 delivery scheduling are separate older roadmap items, not completed by this slice.
 
 ## Related

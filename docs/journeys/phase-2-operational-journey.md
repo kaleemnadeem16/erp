@@ -209,13 +209,6 @@ those later phases own that boundary.
 - UI conventions and ownership: [user-interface.md](../architecture/user-interface.md)
 - Implemented route map: [`router.tsx`](../../frontend/apps/main/src/router.tsx)
 
-## Related
-
-- [Product journeys index](README.md)
-- [Phase 2 roadmap](../phases/phase-2-purchasing-stock.md)
-- [Purchasing module](../../backend/app/Modules/Purchasing/README.md)
-- [Inventory module](../../backend/app/Modules/Inventory/README.md)
-
 ## Named packages and independent purchase prices
 
 On Item detail, add fixed packages with their content in the stock unit; an outer package may reference an existing inner package and its count. Create supplier offers under the existing item/supplier relationship, selecting package or loose unit, price basis, currency and optional minimum/multiple. Choose the preferred offer for future orders. To change package content, archive the old package and create another; stock units cannot change once packages exist.
@@ -223,3 +216,12 @@ On Item detail, add fixed packages with their content in the stock unit; an oute
 On a draft purchase-order line, select a package or loose buying, enter the order quantity, and select how the supplier prices it. The preview shows order quantity, factor, stock quantity and line amount. Ten 2 L boxes priced at 850 per litre produce 20 L and 17,000. Minimum/multiple exceptions need a reason before saving. Issuing freezes the agreement; later master changes do not rewrite it.
 
 Receive part of the order in its named packages or as loose stock. The outstanding package count is suggested, and the stock movement uses the issued factor and price basis. If the supplier cannot supply the agreed package or price, cancel an unreceived order or short-close its remainder, then create a replacement draft using the previous order ID. Earlier receipts and agreement evidence remain visible.
+
+On Item detail, **Supplier relationships** now supports add/edit/archive/restore in place. The item is fixed, and editing cannot change the supplier identity. Read-only buyers can inspect the terms; changing them requires purchasing.item-supplier.manage. The panel lists archived relationships as well as active ones, paginates, and reports lookup failures. Create an active relationship here before adding an offer below it.
+
+## Related
+
+- [Product journeys index](README.md)
+- [Phase 2 roadmap](../phases/phase-2-purchasing-stock.md)
+- [Purchasing module](../../backend/app/Modules/Purchasing/README.md)
+- [Inventory module](../../backend/app/Modules/Inventory/README.md)

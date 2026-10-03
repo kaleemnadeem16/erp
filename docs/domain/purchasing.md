@@ -424,6 +424,10 @@ role assignment is required.
 Validation: 64 focused Purchasing tests pass, including equal-content identities, independent
 pricing, partial receipts, changed-offer history, quantity increments and warning/reason handling.
  
+## Supplier relationships in item context
+
+Item detail exposes the existing ItemSupplier relationship contract: create with a fixed current item; edit sourcing terms; archive/restore without changing identity. Its list includes active and archived relationships and preserves item scope across pagination. Read exposure follows supplier view/manage or PO view/create reference access; writes require the existing purchasing.item-supplier.manage HTTP permission. No monetary fields or new commercial-cost permissions are introduced. Offer selection only uses active relationships. Dedicated browser checks cover scope, mutations, read-only/denied UI access, errors and pagination.
+
 ## Related
 
 - [Material resolution](material-resolution.md) — Phase 3 reports internal-stock shortages;

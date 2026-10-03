@@ -1,47 +1,61 @@
-import { useForm, type UseFormReturn } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { useItemsIndex, useSupplierAccountsIndex, useUomsIndex } from '@erp/core-api';
-import { Button } from '../../components/ui/button';
-import { Checkbox } from '../../components/ui/checkbox';
-import { Input } from '../../components/ui/input';
-import { Combobox } from '../../components/ui/combobox';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../components/ui/form';
-import { DetailSection } from '../../components/detail/detail-page-layout';
-import { lookupState, type LookupState } from '../../lib/api-errors';
-const NONE = 'NONE';
+import { useForm, type UseFormReturn } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import {
+  useItemsIndex,
+  useSupplierAccountsIndex,
+  useUomsIndex,
+} from "@erp/core-api";
+import { Button } from "../../components/ui/button";
+import { Checkbox } from "../../components/ui/checkbox";
+import { Input } from "../../components/ui/input";
+import { Combobox } from "../../components/ui/combobox";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "../../components/ui/form";
+import { DetailSection } from "../../components/detail/detail-page-layout";
+import { lookupState, type LookupState } from "../../lib/api-errors";
+const NONE = "NONE";
 const schema = z.object({
-  item_id: z.string().min(1, 'Item is required'),
-  supplier_account_id: z.string().min(1, 'Supplier is required'),
+  item_id: z.string().min(1, "Item is required"),
+  supplier_account_id: z.string().min(1, "Supplier is required"),
   supplier_item_code: z.string().max(255),
   priority: z
     .string()
     .refine(
       (v) => !v || (/^\d+$/.test(v) && Number(v) >= 1 && Number(v) <= 32767),
-      'Priority must be between 1 and 32767'
+      "Priority must be between 1 and 32767",
     ),
   lead_time_days: z
     .string()
-    .refine((v) => !v || (/^\d+$/.test(v) && Number(v) <= 32767), 'Lead time must be between 0 and 32767'),
+    .refine(
+      (v) => !v || (/^\d+$/.test(v) && Number(v) <= 32767),
+      "Lead time must be between 0 and 32767",
+    ),
   minimum_order_qty: z
     .string()
     .refine(
       (v) => !v || (/^\d{1,15}(\.\d{1,4})?$/.test(v) && Number(v) > 0),
-      'Enter a positive quantity with up to 4 decimal places'
+      "Enter a positive quantity with up to 4 decimal places",
     ),
   purchase_uom_id: z.string(),
   active: z.boolean(),
 });
 export type ItemSupplierFormValues = z.infer<typeof schema>;
 export const ITEM_SUPPLIER_FORM_FIELDS = [
-  'item_id',
-  'supplier_account_id',
-  'supplier_item_code',
-  'priority',
-  'lead_time_days',
-  'minimum_order_qty',
-  'purchase_uom_id',
-  'active',
+  "item_id",
+  "supplier_account_id",
+  "supplier_item_code",
+  "priority",
+  "lead_time_days",
+  "minimum_order_qty",
+  "purchase_uom_id",
+  "active",
 ] as const satisfies readonly (keyof ItemSupplierFormValues)[];
 export function itemSupplierPayload(v: ItemSupplierFormValues) {
   return {
@@ -49,7 +63,8 @@ export function itemSupplierPayload(v: ItemSupplierFormValues) {
     priority: v.priority ? Number(v.priority) : null,
     lead_time_days: v.lead_time_days ? Number(v.lead_time_days) : null,
     minimum_order_qty: v.minimum_order_qty ? v.minimum_order_qty.trim() : null,
-    purchase_uom_id: v.purchase_uom_id === NONE ? null : Number(v.purchase_uom_id),
+    purchase_uom_id:
+      v.purchase_uom_id === NONE ? null : Number(v.purchase_uom_id),
     active: v.active,
   };
 }
@@ -59,34 +74,54 @@ export function ItemSupplierForm({
   onSubmit,
   isSubmitting,
   formError,
+  fixedItem,
 }: {
-  mode: 'create' | 'edit';
+  mode: "create" | "edit";
   defaultValues?: Partial<ItemSupplierFormValues>;
-  onSubmit: (v: ItemSupplierFormValues, f: UseFormReturn<ItemSupplierFormValues>) => void;
+  onSubmit: (
+    v: ItemSupplierFormValues,
+    f: UseFormReturn<ItemSupplierFormValues>,
+  ) => void;
   isSubmitting?: boolean;
   formError?: string | null;
+  fixedItem?: { id: number; label: string };
 }) {
   const form = useForm<ItemSupplierFormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      item_id: '',
-      supplier_account_id: '',
-      supplier_item_code: '',
-      priority: '',
-      lead_time_days: '',
-      minimum_order_qty: '',
+      item_id: "",
+      supplier_account_id: "",
+      supplier_item_code: "",
+      priority: "",
+      lead_time_days: "",
+      minimum_order_qty: "",
       purchase_uom_id: NONE,
       active: true,
       ...defaultValues,
+      ...(fixedItem ? { item_id: String(fixedItem.id) } : {}),
     },
   });
-  const itemsResult = useItemsIndex({ per_page: 100, sort: 'name' });
-  const items = itemsResult.data?.status === 200 ? itemsResult.data.data.data : [];
-  const suppliersResult = useSupplierAccountsIndex({ per_page: 100, sort: 'code', include: 'party' });
-  const suppliers = suppliersResult.data?.status === 200 ? suppliersResult.data.data.data : [];
-  const uomsResult = useUomsIndex({ per_page: 100, sort: 'name' });
+  const itemsResult = useItemsIndex(
+    { per_page: 100, sort: "name" },
+    { query: { enabled: !fixedItem } },
+  );
+  const items =
+    itemsResult.data?.status === 200 ? itemsResult.data.data.data : [];
+  const suppliersResult = useSupplierAccountsIndex({
+    per_page: 100,
+    sort: "code",
+    include: "party",
+  });
+  const suppliers =
+    suppliersResult.data?.status === 200 ? suppliersResult.data.data.data : [];
+  const uomsResult = useUomsIndex({ per_page: 100, sort: "name" });
   const uoms = uomsResult.data?.status === 200 ? uomsResult.data.data.data : [];
-  const select = (name: 'item_id' | 'supplier_account_id', label: string, options: { id: number; label: string }[], lookup: LookupState) => (
+  const select = (
+    name: "item_id" | "supplier_account_id",
+    label: string,
+    options: { id: number; label: string }[],
+    lookup: LookupState,
+  ) => (
     <FormField
       control={form.control}
       name={name}
@@ -97,10 +132,13 @@ export function ItemSupplierForm({
             <Combobox
               {...lookup}
               ref={field.ref}
-              disabled={mode === 'edit'}
+              disabled={mode === "edit"}
               value={field.value}
               onValueChange={field.onChange}
-              options={options.map((o) => ({ value: String(o.id), label: o.label }))}
+              options={options.map((o) => ({
+                value: String(o.id),
+                label: o.label,
+              }))}
               placeholder={`Select ${label.toLowerCase()}`}
               searchPlaceholder={`Search ${label.toLowerCase()}s…`}
               emptyText={`No ${label.toLowerCase()}s found.`}
@@ -113,7 +151,10 @@ export function ItemSupplierForm({
   );
   return (
     <Form {...form}>
-      <form className="space-y-6" onSubmit={form.handleSubmit((v) => onSubmit(v, form))}>
+      <form
+        className="space-y-6"
+        onSubmit={form.handleSubmit((v) => onSubmit(v, form))}
+      >
         {formError && (
           <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
             {formError}
@@ -122,22 +163,32 @@ export function ItemSupplierForm({
         <DetailSection
           title="Relationship"
           description={
-            mode === 'edit'
-              ? 'Item and supplier are immutable; archive and create a new relationship to change either.'
+            mode === "edit"
+              ? "Item and supplier are immutable; archive and create a new relationship to change either."
               : undefined
           }
         >
-          {select(
-            'item_id',
-            'Item',
-            items.map((i) => ({ id: i.id, label: `${i.code} — ${i.name}` })),
-            lookupState(itemsResult, 'items')
+          {fixedItem ? (
+            <div className="space-y-1">
+              <p className="text-sm font-medium">Item</p>
+              <p className="text-sm">{fixedItem.label}</p>
+            </div>
+          ) : (
+            select(
+              "item_id",
+              "Item",
+              items.map((i) => ({ id: i.id, label: `${i.code} — ${i.name}` })),
+              lookupState(itemsResult, "items"),
+            )
           )}
           {select(
-            'supplier_account_id',
-            'Supplier',
-            suppliers.map((s) => ({ id: s.id, label: `${s.code}${s.party?.name ? ` — ${s.party.name}` : ''}` })),
-            lookupState(suppliersResult, 'suppliers')
+            "supplier_account_id",
+            "Supplier",
+            suppliers.map((s) => ({
+              id: s.id,
+              label: `${s.code}${s.party?.name ? ` — ${s.party.name}` : ""}`,
+            })),
+            lookupState(suppliersResult, "suppliers"),
           )}
           <FormField
             control={form.control}
@@ -200,13 +251,17 @@ export function ItemSupplierForm({
               <FormItem>
                 <FormLabel>Purchase unit</FormLabel>
                 <FormControl>
-                  <Combobox {...lookupState(uomsResult, 'units')}
+                  <Combobox
+                    {...lookupState(uomsResult, "units")}
                     ref={field.ref}
                     value={field.value}
                     onValueChange={field.onChange}
                     options={[
-                      { value: NONE, label: 'Use stock unit' },
-                      ...uoms.map((u) => ({ value: String(u.id), label: `${u.name} (${u.code})` })),
+                      { value: NONE, label: "Use stock unit" },
+                      ...uoms.map((u) => ({
+                        value: String(u.id),
+                        label: `${u.name} (${u.code})`,
+                      })),
                     ]}
                     searchPlaceholder="Search units…"
                     emptyText="No units found."
@@ -222,7 +277,10 @@ export function ItemSupplierForm({
             render={({ field }) => (
               <FormItem className="flex items-center gap-3 space-y-0">
                 <FormControl>
-                  <Checkbox checked={field.value} onCheckedChange={(v) => field.onChange(!!v)} />
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={(v) => field.onChange(!!v)}
+                  />
                 </FormControl>
                 <FormLabel>Active</FormLabel>
                 <FormMessage />
@@ -232,7 +290,7 @@ export function ItemSupplierForm({
         </DetailSection>
         <div className="flex justify-end">
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Saving…' : 'Save relationship'}
+            {isSubmitting ? "Saving…" : "Save relationship"}
           </Button>
         </div>
       </form>

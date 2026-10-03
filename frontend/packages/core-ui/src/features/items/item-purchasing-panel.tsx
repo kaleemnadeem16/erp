@@ -15,20 +15,26 @@ import { usePurchasingCommercialCost } from "../../hooks/use-purchasing-commerci
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { getApiErrorMessage } from "../../lib/api-errors";
+import { ItemSupplierPanel } from "./item-supplier-panel";
 
 export function ItemPurchasingPanel({
   itemId,
   stockUomId,
   stockUnit,
+  itemLabel,
 }: {
   itemId: number;
   stockUomId: number;
   stockUnit?: string;
+  itemLabel: string;
 }) {
   const canManage = usePermission("inventory.item.manage");
   const canSupplier = usePermission("purchasing.item-supplier.manage");
+  const canCreateOrder = usePermission("purchasing.purchase-order.create");
   const canReadSupplier =
-    usePermission("purchasing.item-supplier.view") || canSupplier;
+    usePermission("purchasing.item-supplier.view") ||
+    canSupplier ||
+    canCreateOrder;
   const commercial = usePurchasingCommercialCost();
   const [page, setPage] = useState(1);
   const [offerPage, setOfferPage] = useState(1);
@@ -44,7 +50,6 @@ export function ItemPurchasingPanel({
   const suppliers = useItemSuppliersIndex(
     {
       "filter[item_id]": itemId,
-      "filter[active]": true,
       include: "supplierAccount",
       per_page: 100,
     },
@@ -85,7 +90,9 @@ export function ItemPurchasingPanel({
   const packRows = packages.data?.status === 200 ? packages.data.data.data : [];
   const offerRows = offers.data?.status === 200 ? offers.data.data.data : [];
   const relRows =
-    suppliers.data?.status === 200 ? suppliers.data.data.data : [];
+    suppliers.data?.status === 200
+      ? suppliers.data.data.data.filter((row) => row.active)
+      : [];
   const unitRows = units.data?.status === 200 ? units.data.data.data : [];
   const currencyRows =
     currencies.data?.status === 200 ? currencies.data.data.data : [];
@@ -127,6 +134,7 @@ export function ItemPurchasingPanel({
           {error}
         </p>
       )}
+      <ItemSupplierPanel key={itemId} itemId={itemId} itemLabel={itemLabel} />
       <section className="space-y-3">
         <h3 className="font-medium">Purchasing packages</h3>
         <p className="text-sm text-muted-foreground">

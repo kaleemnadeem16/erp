@@ -30,7 +30,7 @@ catch weight, price tiers and configurable constraint escalation are deliberate 
 2. [x] **PO entry conversion visibility:** display the authoritative conversion factor and stock
    quantity before saving; cover item/supplier/unit changes, unavailable conversions and decimal
    arithmetic. Reuse ADR 0050; do not invent sealed-package availability.
-3. [ ] **Supplier terms within item context:** expose the existing supplier relationships with
+3. [x] **Supplier terms within item context:** expose the existing supplier relationships with
    their Purchasing read/write capabilities; preserve supplier-specific purchase-unit defaulting.
 4. [x] **Supplier ordering constraints research:** decide MOQ units, warnings versus blocking,
    order multiples, rounding, override authority and issue-time snapshots. ADR 0050 leaves MOQ
@@ -178,6 +178,12 @@ Validation: 106 focused backend tests (including inherited foundation cases), th
 ### Demo delivery — 2026-10-03
 
 The opt-in orchestrator now includes PackagedPurchasingDemoSeeder after Purchasing. It creates a dedicated quantity-only thinner item, seven named/nested package definitions, nine supplier offers and seventeen labelled PO scenarios. Six receipts demonstrate complete, partial, loose and short-closed supply, including one draft left for the demo receiver. Definitions and workflow history are recognised/skipped on reruns, preserving manual edits and user progress. Seven dedicated tests pass (95 assertions), including exact valuation, rejected selections, rerun preservation after posting the draft, and the production guard. See the [demo walkthrough](../journeys/packaged-purchasing-demo.md). The combined packaged-purchasing/conversion demo regression run passes 25 tests (171 assertions).
+
+### Supplier relationships on Item detail — 2026-10-03
+
+Item detail now lists all supplier relationships with pagination and their active/archived state. A maintainer can add a supplier, edit sourcing terms, and archive/restore a relationship without leaving the item. The shared form fixes the item identity and retains immutable supplier identity on edits. Supplier read/manage and the existing PO reference-read capabilities match the backend; mutation controls require item-supplier.manage. Failures are shown rather than treated as empty lists. Offer entry uses only active relationships.
+
+The demo item also has an archived Punjab trial supplier to practise restoring; demo:seed preserves a restoration. Verification: 12 browser checks pass across this panel and existing conversion/package/unit behaviour; the frontend build and combined demo/supplier API regressions pass (15 tests, 129 assertions). This is UI exposure of existing endpoints, with no new permission names, master schema or pricing model.
 
 ## Related
 

@@ -124,6 +124,9 @@ order linkage are implemented in the existing screens under [ADR 0080](decisions
 Validation and remaining physical-tracking scope are recorded in the [delivery plan](phases/item-purchasing-improvements.md).
 Representative demo data is loaded locally: seven packages, nine offers and seventeen orders;
 [walkthrough](journeys/packaged-purchasing-demo.md), seven outcome/rerun tests (95 assertions), 2026-10-03.
+Item-detail supplier add/edit/archive/restore is implemented with existing Purchasing permissions;
+[delivery notes](phases/item-purchasing-improvements.md#supplier-relationships-on-item-detail--2026-10-03),
+12 browser checks pass; an archived demo supplier can be restored, 2026-10-03.
 
 Packaged/loose Purchasing implementation is authorised under accepted
 [ADR 0080](decisions/0080-packaged-purchasing-and-independent-price-basis.md); the

@@ -69,6 +69,10 @@ submit, approve, issue, receive, inspect, reverse and history access must each b
 
 No events emitted yet.
 
+## Item-context supplier maintenance
+
+Item detail reuses ItemSupplierForm and the existing item-supplier endpoints for add/edit/archive/restore. The form fixes the item identity; update payloads exclude both identities. Reads follow existing supplier/PO lookup access and mutation controls require purchasing.item-supplier.manage; Request authorisation and tenant guards remain authoritative. No new API schema or permission registration. PackagedPurchasingDemoSeeder includes an archived trial relationship and preserves a demo user restoring it.
+
 ## Related
 
 - [Packaged purchasing demo](../../../../docs/journeys/packaged-purchasing-demo.md) — opt-in PackagedPurchasingDemoSeeder; creates definitions and workflow examples once, preserving receiver progress on reruns.

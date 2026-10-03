@@ -273,6 +273,7 @@ export function ItemDetailScreen() {
         <div className="col-span-full">
           <ItemPurchasingPanel
             itemId={item.id}
+            itemLabel={item.code + " — " + item.name}
             stockUomId={item.stock_uom_id}
             stockUnit={uom?.code}
           />

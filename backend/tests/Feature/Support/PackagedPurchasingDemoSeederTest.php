@@ -15,6 +15,7 @@ use App\Modules\Purchasing\Actions\BuildPurchaseOrderLineAttributes;
 use App\Modules\Purchasing\Actions\MaintainSupplierOffer;
 use App\Modules\Purchasing\Actions\PostGoodsReceipt;
 use App\Modules\Purchasing\Models\GoodsReceipt;
+use App\Modules\Purchasing\Models\ItemSupplier;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Modules\Purchasing\Models\SupplierOffer;
 use Database\Seeders\Demo\PackagedPurchasingDemoSeeder;
@@ -142,6 +143,19 @@ final class PackagedPurchasingDemoSeederTest extends TestCase
         app()->instance('env', 'production');
         $this->expectException(\RuntimeException::class);
         (new PackagedPurchasingDemoSeeder)->run();
+    }
+
+    public function test_item_context_demo_has_an_archived_relationship_and_preserves_restoration(): void
+    {
+        $relationships = ItemSupplier::query()->where('item_id', $this->item()->id)->get();
+        $this->assertCount(3, $relationships);
+        $archived = $relationships->where('active', false)->sole();
+        $this->assertStringContainsString('restore', $archived->supplier_item_code);
+        $actor = User::query()->where('email', config('demo.user.email'))->sole();
+        $this->actingAs($actor)->patchJson('/api/v1/item-suppliers/'.$archived->id, ['active' => true])->assertOk();
+        $this->artisan('demo:seed')->assertSuccessful();
+        $this->assertTrue($archived->refresh()->active);
+        $this->assertSame(3, ItemSupplier::query()->where('item_id', $this->item()->id)->count());
     }
 
     private function assertRejected(PurchaseOrder $order, array $line, string $field): void
