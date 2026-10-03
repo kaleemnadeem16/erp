@@ -6,6 +6,7 @@ namespace App\Modules\Inventory\Http\Requests\AvcoPool;
 
 use App\Http\Requests\Concerns\ValidatesListQuery;
 use App\Modules\Inventory\Support\AvcoPoolStatus;
+use App\Modules\Inventory\Support\StockVisibility;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -15,7 +16,7 @@ class IndexAvcoPoolRequest extends FormRequest
 
     public function authorize(): bool
     {
-        return true;
+        return StockVisibility::stock($this->user());
     }
 
     /** @return array<string, mixed> */

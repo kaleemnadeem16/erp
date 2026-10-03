@@ -48,6 +48,7 @@ class InventoryOverviewApiTest extends TestCase
     public function test_index_computes_on_hand_available_qa_held_on_order_and_shortage(): void
     {
         $item = $this->seedFullScenario();
+        $this->actingAs(PermissionedActor::grant(User::factory()->create(), ['inventory.availability.view']));
 
         $response = $this->getJson('/api/v1/inventory-overview?filter[search]='.$item->code);
 
@@ -67,7 +68,7 @@ class InventoryOverviewApiTest extends TestCase
     public function test_operational_reader_sees_quantities_and_counts_without_inventory_values(): void
     {
         $item = $this->seedFullScenario();
-        $this->actingAs(User::factory()->create());
+        $this->actingAs(PermissionedActor::grant(User::factory()->create(), ['inventory.availability.view']));
 
         $this->getJson('/api/v1/inventory-overview?filter[search]='.$item->code)
             ->assertOk()
@@ -94,7 +95,7 @@ class InventoryOverviewApiTest extends TestCase
     {
         $item = $this->seedFullScenario();
         DB::table('avco_pools')->where('item_id', $item->id)->update(['inventory_value' => '61.0000']);
-        $this->actingAs(PermissionedActor::grant(User::factory()->create(), ['inventory.valuation.view']));
+        $this->actingAs(PermissionedActor::grant(User::factory()->create(), ['inventory.availability.view', 'inventory.valuation.view']));
 
         $response = $this->getJson('/api/v1/inventory-overview?filter[search]='.$item->code);
 
@@ -109,7 +110,7 @@ class InventoryOverviewApiTest extends TestCase
     public function test_summary_computes_value_and_counts_across_the_filtered_set(): void
     {
         $item = $this->seedFullScenario();
-        $this->actingAs(PermissionedActor::grant(User::factory()->create(), ['inventory.valuation.view']));
+        $this->actingAs(PermissionedActor::grant(User::factory()->create(), ['inventory.availability.view', 'inventory.valuation.view']));
 
         $response = $this->getJson('/api/v1/inventory-overview/summary?filter[search]='.$item->code);
 
@@ -132,7 +133,7 @@ class InventoryOverviewApiTest extends TestCase
         // available_qty / on_hand_qty came back with more than 4 decimal digits, and the default
         // `toScale(4)` (RoundingMode::UNNECESSARY) threw instead of rounding. 61 isn't a multiple of 6.
         DB::table('avco_pools')->where('item_id', $item->id)->update(['inventory_value' => '61.0000']);
-        $this->actingAs(PermissionedActor::grant(User::factory()->create(), ['inventory.valuation.view']));
+        $this->actingAs(PermissionedActor::grant(User::factory()->create(), ['inventory.availability.view', 'inventory.valuation.view']));
 
         $response = $this->getJson('/api/v1/inventory-overview/summary?filter[search]='.$item->code);
 
@@ -155,7 +156,7 @@ class InventoryOverviewApiTest extends TestCase
             'category_id' => $category->id, 'is_stocked' => true,
         ]);
 
-        $response = $this->actingAs(PermissionedActor::grant(User::factory()->create(), ['inventory.valuation.view']))->getJson('/api/v1/inventory-overview/summary?filter[search]=idle');
+        $response = $this->actingAs(PermissionedActor::grant(User::factory()->create(), ['inventory.availability.view', 'inventory.valuation.view']))->getJson('/api/v1/inventory-overview/summary?filter[search]=idle');
 
         $response->assertOk();
         $response->assertJsonPath('data.on_hand_value', '0.0000');
@@ -234,7 +235,7 @@ class InventoryOverviewApiTest extends TestCase
             'category_id' => $category->id, 'is_stocked' => true,
         ]);
 
-        $response = $this->actingAs(User::factory()->create())->getJson('/api/v1/inventory-overview?filter[search]=idle');
+        $response = $this->actingAs(PermissionedActor::grant(User::factory()->create(), ['inventory.availability.view']))->getJson('/api/v1/inventory-overview?filter[search]=idle');
 
         $response->assertOk();
         $response->assertJsonCount(1, 'data');
@@ -254,13 +255,13 @@ class InventoryOverviewApiTest extends TestCase
             'category_id' => $category->id, 'is_stocked' => false,
         ]);
 
-        $this->actingAs(User::factory()->create())->getJson('/api/v1/inventory-overview?filter[search]=labour')
+        $this->actingAs(PermissionedActor::grant(User::factory()->create(), ['inventory.availability.view']))->getJson('/api/v1/inventory-overview?filter[search]=labour')
             ->assertOk()->assertJsonCount(0, 'data');
     }
 
     public function test_index_rejects_invalid_sort(): void
     {
-        $this->actingAs(User::factory()->create())
+        $this->actingAs(PermissionedActor::grant(User::factory()->create(), ['inventory.availability.view']))
             ->getJson('/api/v1/inventory-overview?sort=on_hand_qty')
             ->assertUnprocessable()->assertJsonValidationErrors('sort');
     }
@@ -274,6 +275,8 @@ class InventoryOverviewApiTest extends TestCase
             'category_id' => $category->id, 'is_stocked' => true,
         ]);
 
+        // The reader holds the capability in both companies, so the only thing that can empty the list is tenant scoping.
+        $reader = PermissionedActor::grant(User::factory()->create(), ['inventory.availability.view']);
         $otherCompanyId = DB::table('companies')->insertGetId(['name' => 'Other Co', 'created_at' => now(), 'updated_at' => now()]);
         $this->app->instance(CompanyContext::class, new class($otherCompanyId) extends CompanyContext
         {
@@ -285,7 +288,9 @@ class InventoryOverviewApiTest extends TestCase
             }
         });
 
-        $this->actingAs(User::factory()->create())->getJson('/api/v1/inventory-overview')
+        PermissionedActor::grant($reader, ['inventory.availability.view'], $otherCompanyId);
+
+        $this->actingAs($reader)->getJson('/api/v1/inventory-overview')
             ->assertOk()->assertJsonCount(0, 'data');
     }
 

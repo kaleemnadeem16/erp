@@ -35,8 +35,9 @@ const STATUS_VARIANT: Record<string, 'secondary' | 'success' | 'destructive'> = 
   CANCELLED: 'destructive',
 };
 
+// Null without a book quantity: a counter who counts blind (ADR 0083) is never shown the variance, which would give the book figure away.
 function lineVariance(line: PhysicalCountLineResource): number | null {
-  return line.counted_qty === null ? null : Number(line.counted_qty) - Number(line.book_qty);
+  return line.counted_qty === null || line.book_qty === undefined ? null : Number(line.counted_qty) - Number(line.book_qty);
 }
 
 /**
@@ -55,6 +56,9 @@ export function PhysicalCountDetailScreen() {
   const mayPost = usePermission('inventory.physical_count.post');
   const mayViewValuation = usePermission('inventory.valuation.view');
   const maySeeFoundCost = mayPost || mayViewValuation;
+  // Mirrors the server (StockVisibility::bookQuantity): a counter who holds only the count capability counts blind.
+  const mayStockView = usePermission('inventory.stock.view');
+  const maySeeBook = mayStockView || mayCreate || mayPost;
   const countId = Number(params.id);
 
   const countQuery = usePhysicalCountsShow(countId, { include: 'warehouse,lines,lines.item,lines.location' });
@@ -223,16 +227,16 @@ export function PhysicalCountDetailScreen() {
                   <TableHead>Item</TableHead>
                   <TableHead>Location</TableHead>
                   <TableHead>Batch / serial</TableHead>
-                  <TableHead className="text-right">Book qty</TableHead>
+                  {maySeeBook && <TableHead className="text-right">Book qty</TableHead>}
                   <TableHead className="text-right">Counted qty</TableHead>
-                  <TableHead className="text-right">Variance</TableHead>
+                  {maySeeBook && <TableHead className="text-right">Variance</TableHead>}
                   {maySeeFoundCost && <TableHead className="text-right">Found cost</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {lines.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={maySeeFoundCost ? 7 : 6} className="h-16 text-center text-muted-foreground">
+                    <TableCell colSpan={4 + (maySeeBook ? 2 : 0) + (maySeeFoundCost ? 1 : 0)} className="h-16 text-center text-muted-foreground">
                       No lines yet.
                     </TableCell>
                   </TableRow>
@@ -246,7 +250,7 @@ export function PhysicalCountDetailScreen() {
                         <TableCell>{line.item ? `${line.item.code} — ${line.item.name}` : line.item_id}</TableCell>
                         <TableCell>{formatLocation(line.location) ?? line.location_id}</TableCell>
                         <TableCell>{line.batch_id ? `Batch #${line.batch_id}` : (line.serial_no ?? '—')}</TableCell>
-                        <TableCell className="text-right tabular-nums">{line.book_qty}</TableCell>
+                        {maySeeBook && <TableCell className="text-right tabular-nums">{line.book_qty}</TableCell>}
                         <TableCell className="text-right">
                           {isDraft && mayCount ? (
                             <div className="flex items-center justify-end gap-1">
@@ -278,15 +282,17 @@ export function PhysicalCountDetailScreen() {
                             <span className="tabular-nums">{line.counted_qty ?? '—'}</span>
                           )}
                         </TableCell>
-                        <TableCell
-                          className={cn(
-                            'text-right tabular-nums',
-                            varianceValue !== null && varianceValue > 0 && 'text-status-success',
-                            varianceValue !== null && varianceValue < 0 && 'text-destructive'
-                          )}
-                        >
-                          {varianceValue === null ? '—' : varianceValue.toFixed(4)}
-                        </TableCell>
+                        {maySeeBook && (
+                          <TableCell
+                            className={cn(
+                              'text-right tabular-nums',
+                              varianceValue !== null && varianceValue > 0 && 'text-status-success',
+                              varianceValue !== null && varianceValue < 0 && 'text-destructive'
+                            )}
+                          >
+                            {varianceValue === null ? '—' : varianceValue.toFixed(4)}
+                          </TableCell>
+                        )}
                         {maySeeFoundCost && <TableCell className="text-right">
                           {needsFoundCost && mayPost ? (
                             <Input

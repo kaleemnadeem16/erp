@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Inventory\Http\Resources;
 
 use App\Modules\Inventory\Models\PhysicalCountLine;
+use App\Modules\Inventory\Support\StockVisibility;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -26,7 +27,8 @@ class PhysicalCountLineResource extends JsonResource
             'location' => $this->whenLoaded('location', fn () => new LocationResource($line->location)),
             'batch_id' => $line->batch_id,
             'serial_no' => $line->serial_no,
-            'book_qty' => $line->book_qty,
+            // The system quantity is withheld from a counter who holds only the count capability (blind counting, ADR 0083).
+            'book_qty' => $this->when(StockVisibility::bookQuantity($request->user()), $line->book_qty),
             'counted_qty' => $line->counted_qty,
             'counted_by' => $line->counted_by,
             'counted_at' => $line->counted_at?->toIso8601String(),

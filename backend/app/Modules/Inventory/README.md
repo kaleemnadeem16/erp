@@ -87,8 +87,10 @@ panel edits them (structured companies only for hierarchy, type and the mark). W
 `inventory.warehouse.manage`; warehouse-location role writes require `inventory.location.manage`. GL-account field visibility remains
 a separate Finance-owned decision and is not implied by either write capability.
 
-Operational stock ledger, layer, pool and overview reads remain quantity-visible to authenticated
-company users. Their monetary fields and included valuation entries require the separate
+Stock reads are three separate capabilities (ADR 0083): `inventory.availability.view` for the item-level overview and its summary,
+`inventory.stock.view` for layers, AVCO pool quantities and the per-location position (and it also gives the availability summary), and
+`inventory.movement.view` for the ledger. A physical-count line's `book_qty` is shown only to `inventory.stock.view`,
+`inventory.physical_count.create` or `.post` holders, so a counter holding only `.count` counts blind. Their monetary fields and included valuation entries require the separate
 `inventory.valuation.view` capability (ADR 0073); Purchasing commercial and Estimating internal
 cost permissions do not imply it. Current Inventory workflow responses and print/export paths
 have completed their separate valuation-visibility audit; no Inventory CSV/download endpoint

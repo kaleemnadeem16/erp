@@ -42,7 +42,7 @@ class StockMoveApiTest extends TestCase
 
     public function test_index_cursor_paginates_newest_first_by_default(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['inventory.movement.view']);
         $this->receive($this->warehouseA, '5', '10', '2026-01-01', 1);
         $this->receive($this->warehouseA, '3', '12', '2026-01-02', 2);
         $this->receive($this->warehouseA, '1', '15', '2026-01-03', 3);
@@ -65,7 +65,7 @@ class StockMoveApiTest extends TestCase
 
     public function test_index_filters_by_item_warehouse_location_and_date_range(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['inventory.movement.view']);
         $this->receive($this->warehouseA, '5', '10', '2026-01-01', 1);
         $this->receive($this->warehouseB, '2', '10', '2026-01-05', 2);
         $this->transfer($this->warehouseA, $this->warehouseB, '1', '2026-01-10', 3);
@@ -89,7 +89,7 @@ class StockMoveApiTest extends TestCase
 
     public function test_index_rejects_invalid_filters_sort_and_include(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['inventory.movement.view']);
 
         $this->actingAs($user)
             ->getJson('/api/v1/stock-moves?sort=unit_cost')
@@ -104,7 +104,7 @@ class StockMoveApiTest extends TestCase
 
     public function test_index_can_include_item_and_locations(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['inventory.movement.view']);
         $this->receive($this->warehouseA, '5', '10', '2026-01-01', 1);
 
         $response = $this->actingAs($user)->getJson('/api/v1/stock-moves?include=item,to_location');
@@ -116,7 +116,7 @@ class StockMoveApiTest extends TestCase
 
     public function test_show_can_include_valuation_entries(): void
     {
-        $user = PermissionedActor::grant(User::factory()->create(), ['inventory.valuation.view']);
+        $user = PermissionedActor::grant(User::factory()->create(), ['inventory.movement.view', 'inventory.valuation.view']);
         $this->receive($this->warehouseA, '5', '10', '2026-01-01', 1);
         $move = StockMove::query()->sole();
 
@@ -133,7 +133,7 @@ class StockMoveApiTest extends TestCase
         $this->receive($this->warehouseA, '5', '10', '2026-01-01', 1);
         $move = StockMove::query()->sole();
 
-        $buyer = PermissionedActor::grant(User::factory()->create(), ['purchasing.commercial-cost.view']);
+        $buyer = PermissionedActor::grant(User::factory()->create(), ['inventory.movement.view', 'purchasing.commercial-cost.view']);
         $this->actingAs($buyer)
             ->getJson('/api/v1/stock-moves?include=valuation_entries')
             ->assertOk()
@@ -166,7 +166,7 @@ class StockMoveApiTest extends TestCase
                 return $this->companyId;
             }
         });
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['inventory.movement.view']);
 
         $this->actingAs($user)->getJson("/api/v1/stock-moves/{$move->id}")->assertNotFound();
     }

@@ -45,7 +45,7 @@ class PhysicalCountApiTest extends TestCase
     {
         parent::setUp();
         app(PermissionRegistrar::class)->setPermissionsTeamId(1);
-        foreach (['inventory.physical_count.create', 'inventory.physical_count.count', 'inventory.physical_count.post', 'inventory.valuation.view'] as $permission) {
+        foreach (['inventory.physical_count.create', 'inventory.physical_count.count', 'inventory.physical_count.post', 'inventory.valuation.view', 'inventory.stock.view'] as $permission) {
             Permission::findOrCreate($permission);
         }
 
@@ -230,5 +230,31 @@ class PhysicalCountApiTest extends TestCase
         });
 
         $this->actingAs(User::factory()->create())->getJson("/api/v1/physical-counts/{$countId}")->assertNotFound();
+    }
+
+    public function test_a_counter_counts_blind_while_reviewers_and_stock_viewers_see_the_book_quantity(): void
+    {
+        $creator = $this->permittedUser('inventory.physical_count.create');
+        $counter = $this->permittedUser('inventory.physical_count.count');
+        $poster = $this->permittedUser('inventory.physical_count.post');
+        $stockViewer = $this->permittedUser(['inventory.physical_count.count', 'inventory.stock.view']);
+
+        $countId = $this->actingAs($creator)->postJson('/api/v1/physical-counts', ['warehouse_id' => $this->warehouseId])->json('data.id');
+        $lineId = $this->actingAs($creator)
+            ->postJson("/api/v1/physical-counts/{$countId}/lines", ['item_id' => $this->item->id, 'location_id' => $this->locationId])
+            ->assertCreated()->assertJsonPath('data.book_qty', '10.0000')->json('data.id');
+
+        // The blind counter never receives the figure — not on the count, the list, or their own count response.
+        $blind = $this->actingAs($counter)->getJson("/api/v1/physical-counts/{$countId}?include=lines")->assertOk();
+        $this->assertStringNotContainsString('book_qty', $blind->getContent());
+        $this->assertStringNotContainsString('10.0000', $blind->getContent());
+        $response = $this->postJson("/api/v1/physical-count-lines/{$lineId}/count", ['counted_qty' => '8.0000'])->assertOk()->assertJsonPath('data.counted_qty', '8.0000');
+        $this->assertStringNotContainsString('book_qty', $response->getContent());
+        $this->assertStringNotContainsString('book_qty', $this->getJson('/api/v1/physical-counts')->getContent());
+
+        // Whoever sets up or posts a count, or may see stock positions, does.
+        foreach ([$creator, $poster, $stockViewer] as $reader) {
+            $this->actingAs($reader)->getJson("/api/v1/physical-counts/{$countId}?include=lines")->assertOk()->assertJsonPath('data.lines.0.book_qty', '10.0000');
+        }
     }
 }

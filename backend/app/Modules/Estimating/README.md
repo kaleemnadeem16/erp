@@ -98,7 +98,7 @@ write capability, while a preview user can inspect rates and test resolution.
 
 `PreviewAssemblyMaterials` is the read-only Material Preview (`POST
 /api/v1/assemblies/{assembly}/material-preview`, ADR 0058). For a caller holding
-`estimating.inventory_availability.view` it also runs `PreviewInventoryAvailability`: per leaf
+`estimating.inventory_availability.view` (stock context inside a plan — it grants no Inventory screen and the Inventory stock-read capabilities do not expose this preview, ADR 0083) it also runs `PreviewInventoryAvailability`: per leaf
 material it reads usable stock through Inventory's `QueryStockAvailability`, and
 `AllocateInventory` — a pure function — turns requirement plus balances into an ADR 0053 draw plan
 under the effective strategy (built-in company default `MINIMISE_WASTE`, or a per-request what-if

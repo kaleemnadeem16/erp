@@ -19,6 +19,7 @@ import type {
 
 import type {
   AuthenticationExceptionResponse,
+  AuthorizationExceptionResponse,
   InventoryOverviewIndex200,
   InventoryOverviewIndexParams,
   InventoryOverviewSummary200,
@@ -40,6 +41,11 @@ export type inventoryOverviewIndexResponse401 = {
   status: 401;
 };
 
+export type inventoryOverviewIndexResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type inventoryOverviewIndexResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -50,7 +56,9 @@ export type inventoryOverviewIndexResponseSuccess =
     headers: Headers;
   };
 export type inventoryOverviewIndexResponseError = (
-  inventoryOverviewIndexResponse401 | inventoryOverviewIndexResponse422
+  | inventoryOverviewIndexResponse401
+  | inventoryOverviewIndexResponse403
+  | inventoryOverviewIndexResponse422
 ) & {
   headers: Headers;
 };
@@ -97,7 +105,10 @@ export const getInventoryOverviewIndexQueryKey = (
 
 export const getInventoryOverviewIndexQueryOptions = <
   TData = Awaited<ReturnType<typeof inventoryOverviewIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: InventoryOverviewIndexParams,
   options?: {
@@ -131,11 +142,16 @@ export type InventoryOverviewIndexQueryResult = NonNullable<
   Awaited<ReturnType<typeof inventoryOverviewIndex>>
 >;
 export type InventoryOverviewIndexQueryError =
-  AuthenticationExceptionResponse | ValidationExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
 
 export function useInventoryOverviewIndex<
   TData = Awaited<ReturnType<typeof inventoryOverviewIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params: undefined | InventoryOverviewIndexParams,
   options: {
@@ -162,7 +178,10 @@ export function useInventoryOverviewIndex<
 };
 export function useInventoryOverviewIndex<
   TData = Awaited<ReturnType<typeof inventoryOverviewIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: InventoryOverviewIndexParams,
   options?: {
@@ -189,7 +208,10 @@ export function useInventoryOverviewIndex<
 };
 export function useInventoryOverviewIndex<
   TData = Awaited<ReturnType<typeof inventoryOverviewIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: InventoryOverviewIndexParams,
   options?: {
@@ -209,7 +231,10 @@ export function useInventoryOverviewIndex<
 
 export function useInventoryOverviewIndex<
   TData = Awaited<ReturnType<typeof inventoryOverviewIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: InventoryOverviewIndexParams,
   options?: {
@@ -253,6 +278,11 @@ export type inventoryOverviewSummaryResponse401 = {
   status: 401;
 };
 
+export type inventoryOverviewSummaryResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type inventoryOverviewSummaryResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -263,7 +293,9 @@ export type inventoryOverviewSummaryResponseSuccess =
     headers: Headers;
   };
 export type inventoryOverviewSummaryResponseError = (
-  inventoryOverviewSummaryResponse401 | inventoryOverviewSummaryResponse422
+  | inventoryOverviewSummaryResponse401
+  | inventoryOverviewSummaryResponse403
+  | inventoryOverviewSummaryResponse422
 ) & {
   headers: Headers;
 };
@@ -314,7 +346,10 @@ export const getInventoryOverviewSummaryQueryKey = (
 
 export const getInventoryOverviewSummaryQueryOptions = <
   TData = Awaited<ReturnType<typeof inventoryOverviewSummary>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: InventoryOverviewSummaryParams,
   options?: {
@@ -348,11 +383,16 @@ export type InventoryOverviewSummaryQueryResult = NonNullable<
   Awaited<ReturnType<typeof inventoryOverviewSummary>>
 >;
 export type InventoryOverviewSummaryQueryError =
-  AuthenticationExceptionResponse | ValidationExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
 
 export function useInventoryOverviewSummary<
   TData = Awaited<ReturnType<typeof inventoryOverviewSummary>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params: undefined | InventoryOverviewSummaryParams,
   options: {
@@ -379,7 +419,10 @@ export function useInventoryOverviewSummary<
 };
 export function useInventoryOverviewSummary<
   TData = Awaited<ReturnType<typeof inventoryOverviewSummary>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: InventoryOverviewSummaryParams,
   options?: {
@@ -406,7 +449,10 @@ export function useInventoryOverviewSummary<
 };
 export function useInventoryOverviewSummary<
   TData = Awaited<ReturnType<typeof inventoryOverviewSummary>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: InventoryOverviewSummaryParams,
   options?: {
@@ -431,7 +477,10 @@ via a subquery wrapping the same per-item builder index() paginates
 
 export function useInventoryOverviewSummary<
   TData = Awaited<ReturnType<typeof inventoryOverviewSummary>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: InventoryOverviewSummaryParams,
   options?: {

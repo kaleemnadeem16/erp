@@ -37,6 +37,10 @@ final class PermissionVocabulary
             'inventory.recalculation.review-regeneration',
             'inventory.location-policy.manage',
             'inventory.valuation-policy.manage',
+            // Stock reads (ADR 0083): what is in stock, where, and its history — separate from value (below) and from each other.
+            'inventory.availability.view',
+            'inventory.stock.view',
+            'inventory.movement.view',
             'inventory.valuation.view',
             'inventory.policy-history.view',
             'inventory.package-state.view',

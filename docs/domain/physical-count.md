@@ -36,6 +36,8 @@ physical_count_line_entries         -- immutable append-only recount trail
 ## Workflow
 
 1. **Create** the header against one warehouse (`inventory.physical_count.create`).
+   *Blind counting (ADR 0083).* `book_qty` is shown only to someone holding `inventory.stock.view`, `inventory.physical_count.create` or
+   `inventory.physical_count.post`; a counter holding only `inventory.physical_count.count` is never sent it and sees no variance.
 2. **Add lines**, one per exact (item, location, batch/serial) identity. `book_qty` is snapshotted
    at this moment as `SUM(stock_layers.qty_remaining)` at that identity — the same physical-on-hand
    source of truth every valuation method already writes to (`stock_layers` exists for every

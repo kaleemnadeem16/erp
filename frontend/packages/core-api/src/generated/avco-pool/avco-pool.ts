@@ -19,6 +19,7 @@ import type {
 
 import type {
   AuthenticationExceptionResponse,
+  AuthorizationExceptionResponse,
   AvcoPoolsIndex200,
   AvcoPoolsIndexParams,
   AvcoPoolsShow200,
@@ -41,6 +42,11 @@ export type avcoPoolsIndexResponse401 = {
   status: 401;
 };
 
+export type avcoPoolsIndexResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type avcoPoolsIndexResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -50,7 +56,9 @@ export type avcoPoolsIndexResponseSuccess = avcoPoolsIndexResponse200 & {
   headers: Headers;
 };
 export type avcoPoolsIndexResponseError = (
-  avcoPoolsIndexResponse401 | avcoPoolsIndexResponse422
+  | avcoPoolsIndexResponse401
+  | avcoPoolsIndexResponse403
+  | avcoPoolsIndexResponse422
 ) & {
   headers: Headers;
 };
@@ -90,7 +98,10 @@ export const getAvcoPoolsIndexQueryKey = (params?: AvcoPoolsIndexParams) => {
 
 export const getAvcoPoolsIndexQueryOptions = <
   TData = Awaited<ReturnType<typeof avcoPoolsIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: AvcoPoolsIndexParams,
   options?: {
@@ -119,11 +130,16 @@ export type AvcoPoolsIndexQueryResult = NonNullable<
   Awaited<ReturnType<typeof avcoPoolsIndex>>
 >;
 export type AvcoPoolsIndexQueryError =
-  AuthenticationExceptionResponse | ValidationExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
 
 export function useAvcoPoolsIndex<
   TData = Awaited<ReturnType<typeof avcoPoolsIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params: undefined | AvcoPoolsIndexParams,
   options: {
@@ -146,7 +162,10 @@ export function useAvcoPoolsIndex<
 };
 export function useAvcoPoolsIndex<
   TData = Awaited<ReturnType<typeof avcoPoolsIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: AvcoPoolsIndexParams,
   options?: {
@@ -169,7 +188,10 @@ export function useAvcoPoolsIndex<
 };
 export function useAvcoPoolsIndex<
   TData = Awaited<ReturnType<typeof avcoPoolsIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: AvcoPoolsIndexParams,
   options?: {
@@ -185,7 +207,10 @@ export function useAvcoPoolsIndex<
 
 export function useAvcoPoolsIndex<
   TData = Awaited<ReturnType<typeof avcoPoolsIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: AvcoPoolsIndexParams,
   options?: {
@@ -220,6 +245,11 @@ export type avcoPoolsShowResponse401 = {
   status: 401;
 };
 
+export type avcoPoolsShowResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type avcoPoolsShowResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -234,7 +264,10 @@ export type avcoPoolsShowResponseSuccess = avcoPoolsShowResponse200 & {
   headers: Headers;
 };
 export type avcoPoolsShowResponseError = (
-  avcoPoolsShowResponse401 | avcoPoolsShowResponse404 | avcoPoolsShowResponse422
+  | avcoPoolsShowResponse401
+  | avcoPoolsShowResponse403
+  | avcoPoolsShowResponse404
+  | avcoPoolsShowResponse422
 ) & {
   headers: Headers;
 };
@@ -286,6 +319,7 @@ export const getAvcoPoolsShowQueryOptions = <
   TData = Awaited<ReturnType<typeof avcoPoolsShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -324,6 +358,7 @@ export type AvcoPoolsShowQueryResult = NonNullable<
 >;
 export type AvcoPoolsShowQueryError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
@@ -331,6 +366,7 @@ export function useAvcoPoolsShow<
   TData = Awaited<ReturnType<typeof avcoPoolsShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -358,6 +394,7 @@ export function useAvcoPoolsShow<
   TData = Awaited<ReturnType<typeof avcoPoolsShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -385,6 +422,7 @@ export function useAvcoPoolsShow<
   TData = Awaited<ReturnType<typeof avcoPoolsShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -405,6 +443,7 @@ export function useAvcoPoolsShow<
   TData = Awaited<ReturnType<typeof avcoPoolsShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(

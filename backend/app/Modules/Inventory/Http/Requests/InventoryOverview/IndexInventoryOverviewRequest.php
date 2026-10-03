@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Inventory\Http\Requests\InventoryOverview;
 
 use App\Http\Requests\Concerns\ValidatesListQuery;
+use App\Modules\Inventory\Support\StockVisibility;
 use Illuminate\Foundation\Http\FormRequest;
 
 class IndexInventoryOverviewRequest extends FormRequest
@@ -13,7 +14,7 @@ class IndexInventoryOverviewRequest extends FormRequest
 
     public function authorize(): bool
     {
-        return true;
+        return StockVisibility::availability($this->user());
     }
 
     /** @return array<string, mixed> */

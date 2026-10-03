@@ -22,6 +22,7 @@ import type {
 
 import type {
   AuthenticationExceptionResponse,
+  AuthorizationExceptionResponse,
   ModelNotFoundExceptionResponse,
   StoreSupplierSiteRequest,
   SupplierAccountsSitesIndex200,
@@ -300,6 +301,11 @@ export type supplierAccountsSitesStoreResponse401 = {
   status: 401;
 };
 
+export type supplierAccountsSitesStoreResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type supplierAccountsSitesStoreResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -316,6 +322,7 @@ export type supplierAccountsSitesStoreResponseSuccess =
   };
 export type supplierAccountsSitesStoreResponseError = (
   | supplierAccountsSitesStoreResponse401
+  | supplierAccountsSitesStoreResponse403
   | supplierAccountsSitesStoreResponse404
   | supplierAccountsSitesStoreResponse422
 ) & {
@@ -349,6 +356,7 @@ export const supplierAccountsSitesStore = async (
 export const getSupplierAccountsSitesStoreMutationOptions = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -393,12 +401,14 @@ export type SupplierAccountsSitesStoreMutationResult = NonNullable<
 export type SupplierAccountsSitesStoreMutationBody = StoreSupplierSiteRequest;
 export type SupplierAccountsSitesStoreMutationError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
 export const useSupplierAccountsSitesStore = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -433,6 +443,11 @@ export type supplierSitesUpdateResponse401 = {
   status: 401;
 };
 
+export type supplierSitesUpdateResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type supplierSitesUpdateResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -449,6 +464,7 @@ export type supplierSitesUpdateResponseSuccess =
   };
 export type supplierSitesUpdateResponseError = (
   | supplierSitesUpdateResponse401
+  | supplierSitesUpdateResponse403
   | supplierSitesUpdateResponse404
   | supplierSitesUpdateResponse422
 ) & {
@@ -481,6 +497,7 @@ export const supplierSitesUpdate = async (
 export const getSupplierSitesUpdateMutationOptions = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -525,12 +542,14 @@ export type SupplierSitesUpdateMutationResult = NonNullable<
 export type SupplierSitesUpdateMutationBody = UpdateSupplierSiteRequest;
 export type SupplierSitesUpdateMutationError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
 export const useSupplierSitesUpdate = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,

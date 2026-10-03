@@ -42,7 +42,7 @@ class StockLayerApiTest extends TestCase
 
     public function test_index_cursor_paginates_newest_first_by_default(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['inventory.stock.view']);
         $this->receive($this->warehouseA, '5', '10', '2026-01-01', 1);
         $this->receive($this->warehouseA, '3', '12', '2026-01-02', 2);
         $this->receive($this->warehouseA, '1', '15', '2026-01-03', 3);
@@ -64,7 +64,7 @@ class StockLayerApiTest extends TestCase
 
     public function test_index_filters_by_item_and_location(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['inventory.stock.view']);
         $this->receive($this->warehouseA, '5', '10', '2026-01-01', 1);
         $this->receive($this->warehouseB, '2', '10', '2026-01-05', 2);
 
@@ -79,7 +79,7 @@ class StockLayerApiTest extends TestCase
 
     public function test_index_filters_open_layers(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['inventory.stock.view']);
         $this->receive($this->warehouseA, '5', '10', '2026-01-01', 1);
         $this->receive($this->warehouseA, '5', '12', '2026-01-02', 2);
         $this->issue($this->warehouseA, '5', '2026-01-03', 3);
@@ -95,7 +95,7 @@ class StockLayerApiTest extends TestCase
 
     public function test_index_rejects_invalid_filters_sort_and_include(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['inventory.stock.view']);
 
         $this->actingAs($user)
             ->getJson('/api/v1/stock-layers?sort=unit_cost')
@@ -110,7 +110,7 @@ class StockLayerApiTest extends TestCase
 
     public function test_show_can_include_item_and_location(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['inventory.stock.view']);
         $this->receive($this->warehouseA, '5', '10', '2026-01-01', 1);
         $layer = StockLayer::query()->sole();
 
@@ -128,7 +128,7 @@ class StockLayerApiTest extends TestCase
     {
         $this->receive($this->warehouseA, '5', '10', '2026-01-01', 1);
         $layer = StockLayer::query()->sole();
-        $viewer = PermissionedActor::grant(User::factory()->create(), ['inventory.valuation.view']);
+        $viewer = PermissionedActor::grant(User::factory()->create(), ['inventory.stock.view', 'inventory.valuation.view']);
 
         $this->actingAs($viewer)->getJson("/api/v1/stock-layers/{$layer->id}")
             ->assertOk()
@@ -152,6 +152,6 @@ class StockLayerApiTest extends TestCase
             }
         });
 
-        $this->actingAs(User::factory()->create())->getJson("/api/v1/stock-layers/{$layer->id}")->assertNotFound();
+        $this->actingAs(PermissionedActor::grant(User::factory()->create(), ['inventory.stock.view']))->getJson("/api/v1/stock-layers/{$layer->id}")->assertNotFound();
     }
 }

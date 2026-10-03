@@ -19,6 +19,7 @@ import type {
 
 import type {
   AuthenticationExceptionResponse,
+  AuthorizationExceptionResponse,
   ModelNotFoundExceptionResponse,
   StockLayersIndex200,
   StockLayersIndexParams,
@@ -41,6 +42,11 @@ export type stockLayersIndexResponse401 = {
   status: 401;
 };
 
+export type stockLayersIndexResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type stockLayersIndexResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -50,7 +56,9 @@ export type stockLayersIndexResponseSuccess = stockLayersIndexResponse200 & {
   headers: Headers;
 };
 export type stockLayersIndexResponseError = (
-  stockLayersIndexResponse401 | stockLayersIndexResponse422
+  | stockLayersIndexResponse401
+  | stockLayersIndexResponse403
+  | stockLayersIndexResponse422
 ) & {
   headers: Headers;
 };
@@ -92,7 +100,10 @@ export const getStockLayersIndexQueryKey = (
 
 export const getStockLayersIndexQueryOptions = <
   TData = Awaited<ReturnType<typeof stockLayersIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: StockLayersIndexParams,
   options?: {
@@ -126,11 +137,16 @@ export type StockLayersIndexQueryResult = NonNullable<
   Awaited<ReturnType<typeof stockLayersIndex>>
 >;
 export type StockLayersIndexQueryError =
-  AuthenticationExceptionResponse | ValidationExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
 
 export function useStockLayersIndex<
   TData = Awaited<ReturnType<typeof stockLayersIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params: undefined | StockLayersIndexParams,
   options: {
@@ -157,7 +173,10 @@ export function useStockLayersIndex<
 };
 export function useStockLayersIndex<
   TData = Awaited<ReturnType<typeof stockLayersIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: StockLayersIndexParams,
   options?: {
@@ -184,7 +203,10 @@ export function useStockLayersIndex<
 };
 export function useStockLayersIndex<
   TData = Awaited<ReturnType<typeof stockLayersIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: StockLayersIndexParams,
   options?: {
@@ -204,7 +226,10 @@ export function useStockLayersIndex<
 
 export function useStockLayersIndex<
   TData = Awaited<ReturnType<typeof stockLayersIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: StockLayersIndexParams,
   options?: {
@@ -243,6 +268,11 @@ export type stockLayersShowResponse401 = {
   status: 401;
 };
 
+export type stockLayersShowResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type stockLayersShowResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -258,6 +288,7 @@ export type stockLayersShowResponseSuccess = stockLayersShowResponse200 & {
 };
 export type stockLayersShowResponseError = (
   | stockLayersShowResponse401
+  | stockLayersShowResponse403
   | stockLayersShowResponse404
   | stockLayersShowResponse422
 ) & {
@@ -314,6 +345,7 @@ export const getStockLayersShowQueryOptions = <
   TData = Awaited<ReturnType<typeof stockLayersShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -356,6 +388,7 @@ export type StockLayersShowQueryResult = NonNullable<
 >;
 export type StockLayersShowQueryError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
@@ -363,6 +396,7 @@ export function useStockLayersShow<
   TData = Awaited<ReturnType<typeof stockLayersShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -394,6 +428,7 @@ export function useStockLayersShow<
   TData = Awaited<ReturnType<typeof stockLayersShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -425,6 +460,7 @@ export function useStockLayersShow<
   TData = Awaited<ReturnType<typeof stockLayersShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -449,6 +485,7 @@ export function useStockLayersShow<
   TData = Awaited<ReturnType<typeof stockLayersShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(

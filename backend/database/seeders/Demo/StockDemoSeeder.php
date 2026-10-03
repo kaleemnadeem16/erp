@@ -90,10 +90,14 @@ final class StockDemoSeeder extends Seeder
             'inventory.cutover.negative_opening.request',
             'inventory.negative-stock.request', 'inventory.negative-stock.override',
             'inventory.recalculation.request',
+            'inventory.availability.view', 'inventory.stock.view', 'inventory.movement.view',
         ]);
         $supervisor = $this->seedActor('demo-supervisor@erp.x1techs.com', 'Demo Inventory Supervisor', [
             'inventory.cutover.approve', 'inventory.cutover.negative_opening.approve', 'inventory.recalculation.approve',
+            'inventory.availability.view', 'inventory.stock.view', 'inventory.movement.view',
         ]);
+        // Counts blind (ADR 0083): holds only the count capability, so a count shows no book quantity and no stock screens.
+        $this->seedActor('demo-counter@erp.x1techs.com', 'Demo Stock Counter', ['inventory.physical_count.count']);
 
         $warehouse = Warehouse::query()->where('code', 'demo-main')->firstOrFail();
         $location = $warehouse->locations()->where('code', 'stock')->firstOrFail();

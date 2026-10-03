@@ -97,8 +97,9 @@ in the same commit.
 | [0081](0081-central-company-profile-and-company-wide-settings.md) | A central Company screen: profile, company-wide settings, a stable code, and lifecycle locks | accepted | 2026-10-02 |
 
 | [0082](0082-reconcile-package-balances-with-stock-operations.md) | Reconcile package balances with stock operations | proposed | 2026-10-03 |
+| [0083](0083-layered-stock-read-capabilities-and-blind-counting.md) | Layered stock-read capabilities (availability / stock / movement), and blind counting by role | accepted | 2026-10-03 |
 
-**Next number: 0083**
+**Next number: 0084**
 
 ## By theme
 

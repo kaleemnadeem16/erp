@@ -22,6 +22,7 @@ import type {
 
 import type {
   AuthenticationExceptionResponse,
+  AuthorizationExceptionResponse,
   ChartOfAccountsIndex200,
   ChartOfAccountsIndexParams,
   ChartOfAccountsShow200,
@@ -256,6 +257,11 @@ export type chartOfAccountsStoreResponse401 = {
   status: 401;
 };
 
+export type chartOfAccountsStoreResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type chartOfAccountsStoreResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -266,7 +272,9 @@ export type chartOfAccountsStoreResponseSuccess =
     headers: Headers;
   };
 export type chartOfAccountsStoreResponseError = (
-  chartOfAccountsStoreResponse401 | chartOfAccountsStoreResponse422
+  | chartOfAccountsStoreResponse401
+  | chartOfAccountsStoreResponse403
+  | chartOfAccountsStoreResponse422
 ) & {
   headers: Headers;
 };
@@ -294,7 +302,10 @@ export const chartOfAccountsStore = async (
 };
 
 export const getChartOfAccountsStoreMutationOptions = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -336,10 +347,15 @@ export type ChartOfAccountsStoreMutationResult = NonNullable<
 >;
 export type ChartOfAccountsStoreMutationBody = StoreChartOfAccountRequest;
 export type ChartOfAccountsStoreMutationError =
-  AuthenticationExceptionResponse | ValidationExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
 
 export const useChartOfAccountsStore = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(
   options?: {
@@ -739,6 +755,11 @@ export type chartOfAccountsUpdateResponse401 = {
   status: 401;
 };
 
+export type chartOfAccountsUpdateResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type chartOfAccountsUpdateResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -755,6 +776,7 @@ export type chartOfAccountsUpdateResponseSuccess =
   };
 export type chartOfAccountsUpdateResponseError = (
   | chartOfAccountsUpdateResponse401
+  | chartOfAccountsUpdateResponse403
   | chartOfAccountsUpdateResponse404
   | chartOfAccountsUpdateResponse422
 ) & {
@@ -787,6 +809,7 @@ export const chartOfAccountsUpdate = async (
 export const getChartOfAccountsUpdateMutationOptions = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -831,12 +854,14 @@ export type ChartOfAccountsUpdateMutationResult = NonNullable<
 export type ChartOfAccountsUpdateMutationBody = UpdateChartOfAccountRequest;
 export type ChartOfAccountsUpdateMutationError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
 export const useChartOfAccountsUpdate = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,

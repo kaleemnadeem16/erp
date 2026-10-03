@@ -6,5 +6,5 @@
  */
 
 export type PasswordEmail200 = {
-  message: string;
+  message: "If that email belongs to an account, a password reset link has been sent to it.";
 };

@@ -22,6 +22,7 @@ import type {
 
 import type {
   AuthenticationExceptionResponse,
+  AuthorizationExceptionResponse,
   ModelNotFoundExceptionResponse,
   PartiesIndex200,
   PartiesIndexParams,
@@ -226,6 +227,11 @@ export type partiesStoreResponse401 = {
   status: 401;
 };
 
+export type partiesStoreResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type partiesStoreResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -235,7 +241,7 @@ export type partiesStoreResponseSuccess = partiesStoreResponse201 & {
   headers: Headers;
 };
 export type partiesStoreResponseError = (
-  partiesStoreResponse401 | partiesStoreResponse422
+  partiesStoreResponse401 | partiesStoreResponse403 | partiesStoreResponse422
 ) & {
   headers: Headers;
 };
@@ -260,7 +266,10 @@ export const partiesStore = async (
 };
 
 export const getPartiesStoreMutationOptions = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -302,10 +311,15 @@ export type PartiesStoreMutationResult = NonNullable<
 >;
 export type PartiesStoreMutationBody = StorePartyRequest;
 export type PartiesStoreMutationError =
-  AuthenticationExceptionResponse | ValidationExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
 
 export const usePartiesStore = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(
   options?: {
@@ -666,6 +680,11 @@ export type partiesUpdateResponse401 = {
   status: 401;
 };
 
+export type partiesUpdateResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type partiesUpdateResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -680,7 +699,10 @@ export type partiesUpdateResponseSuccess = partiesUpdateResponse200 & {
   headers: Headers;
 };
 export type partiesUpdateResponseError = (
-  partiesUpdateResponse401 | partiesUpdateResponse404 | partiesUpdateResponse422
+  | partiesUpdateResponse401
+  | partiesUpdateResponse403
+  | partiesUpdateResponse404
+  | partiesUpdateResponse422
 ) & {
   headers: Headers;
 };
@@ -708,6 +730,7 @@ export const partiesUpdate = async (
 export const getPartiesUpdateMutationOptions = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -752,12 +775,14 @@ export type PartiesUpdateMutationResult = NonNullable<
 export type PartiesUpdateMutationBody = UpdatePartyRequest;
 export type PartiesUpdateMutationError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
 export const usePartiesUpdate = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,

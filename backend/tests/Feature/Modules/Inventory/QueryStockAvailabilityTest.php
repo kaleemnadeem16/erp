@@ -32,6 +32,7 @@ use Brick\Math\BigDecimal;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Tests\Support\PermissionedActor;
 use Tests\Support\PurchasingActor;
 use Tests\TestCase;
 
@@ -263,7 +264,7 @@ class QueryStockAvailabilityTest extends TestCase
         // The overview's location-agnostic "available" is on-hand 9 minus QA-held 2; with no unusable
         // location in play, this location-aware figure must equal it.
         $usable = $balances->reduce(fn ($sum, StockBalance $b) => $sum->plus($b->usable), BigDecimal::zero());
-        $overview = $this->actingAs(User::factory()->create())
+        $overview = $this->actingAs(PermissionedActor::grant(User::factory()->create(), ['inventory.availability.view']))
             ->getJson('/api/v1/inventory-overview?filter[search]='.$item->code)
             ->assertOk()->json('data.0.available_qty');
         $this->assertSame($overview, (string) $usable->toScale(4));

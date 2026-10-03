@@ -18,6 +18,7 @@ use App\Modules\Inventory\Support\ValuationMethod;
 use App\Support\UomDimension;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Tests\Support\PermissionedActor;
 use Tests\TestCase;
 
 /**
@@ -66,7 +67,7 @@ class LocationWarehouseLabelTest extends TestCase
 
     public function test_a_transfer_between_identically_coded_locations_says_which_warehouse_each_end_is_in(): void
     {
-        $response = $this->actingAs(User::factory()->create())
+        $response = $this->actingAs(PermissionedActor::grant(User::factory()->create(), ['inventory.stock.view', 'inventory.movement.view']))
             ->getJson('/api/v1/stock-moves?filter[source_type]=TEST_TRANSFER&include=from_location,to_location')
             ->assertOk();
 
@@ -81,7 +82,7 @@ class LocationWarehouseLabelTest extends TestCase
     {
         // Stock layers include `location` plainly (no nested warehouse include), like the override,
         // recalculation, count-line and cutover-exception resources.
-        $response = $this->actingAs(User::factory()->create())->getJson('/api/v1/stock-layers?include=location')->assertOk();
+        $response = $this->actingAs(PermissionedActor::grant(User::factory()->create(), ['inventory.stock.view', 'inventory.movement.view']))->getJson('/api/v1/stock-layers?include=location')->assertOk();
 
         $warehouses = collect($response->json('data'))->map(fn (array $layer): string => $layer['location']['warehouse']['code'])->unique()->sort()->values()->all();
         $this->assertSame(['khi', 'main'], $warehouses);
@@ -89,7 +90,7 @@ class LocationWarehouseLabelTest extends TestCase
 
     public function test_the_location_list_carries_the_warehouse_without_asking_for_it(): void
     {
-        $response = $this->actingAs(User::factory()->create())->getJson('/api/v1/locations')->assertOk();
+        $response = $this->actingAs(PermissionedActor::grant(User::factory()->create(), ['inventory.stock.view', 'inventory.movement.view']))->getJson('/api/v1/locations')->assertOk();
 
         $byWarehouse = collect($response->json('data'))->mapWithKeys(fn (array $row): array => [$row['warehouse']['code'] => $row['code']]);
         $this->assertSame(['main' => 'stock', 'khi' => 'stock'], $byWarehouse->all());
@@ -97,7 +98,7 @@ class LocationWarehouseLabelTest extends TestCase
 
     public function test_the_warehouse_queries_do_not_grow_with_the_number_of_rows(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['inventory.stock.view', 'inventory.movement.view']);
         $uom = $this->item->stockUom;
         $url = '/api/v1/stock-moves?filter[source_type]=TEST_TRANSFER&include=from_location,to_location&per_page=50';
         $warehouseQueries = function () use ($user, $url): int {

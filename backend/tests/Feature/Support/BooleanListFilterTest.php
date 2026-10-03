@@ -36,7 +36,7 @@ class BooleanListFilterTest extends TestCase
     #[DataProvider('booleanFilters')]
     public function test_true_and_false_are_accepted_as_well_as_one_and_zero(string $url, string $filter): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['inventory.stock.view', 'inventory.movement.view']);
         if ($url === '/api/v1/item-suppliers') {
             PermissionedActor::grant($user, ['purchasing.item-supplier.view']);
         }
@@ -50,7 +50,7 @@ class BooleanListFilterTest extends TestCase
     #[DataProvider('booleanFilters')]
     public function test_a_value_that_is_not_a_boolean_still_fails(string $url, string $filter): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['inventory.stock.view', 'inventory.movement.view']);
         if ($url === '/api/v1/item-suppliers') {
             PermissionedActor::grant($user, ['purchasing.item-supplier.view']);
         }
@@ -61,7 +61,7 @@ class BooleanListFilterTest extends TestCase
 
     public function test_the_filter_actually_filters_rather_than_only_validating(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['inventory.stock.view', 'inventory.movement.view']);
         $this->warehouse('open-depot', 'Open Depot');
         $closed = $this->warehouse('closed-depot', 'Closed Depot');
         $closed->update(['active' => false]);
@@ -75,7 +75,7 @@ class BooleanListFilterTest extends TestCase
 
     public function test_a_text_filter_is_never_treated_as_a_boolean(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['inventory.stock.view', 'inventory.movement.view']);
         $this->warehouse('true-north', 'True North Depot');
         $this->warehouse('other', 'Other Depot');
 

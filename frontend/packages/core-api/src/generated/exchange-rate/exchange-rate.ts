@@ -22,6 +22,7 @@ import type {
 
 import type {
   AuthenticationExceptionResponse,
+  AuthorizationExceptionResponse,
   ExchangeRatesIndex200,
   ExchangeRatesIndexParams,
   ExchangeRatesShow200,
@@ -254,6 +255,11 @@ export type exchangeRatesStoreResponse401 = {
   status: 401;
 };
 
+export type exchangeRatesStoreResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type exchangeRatesStoreResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -264,7 +270,9 @@ export type exchangeRatesStoreResponseSuccess =
     headers: Headers;
   };
 export type exchangeRatesStoreResponseError = (
-  exchangeRatesStoreResponse401 | exchangeRatesStoreResponse422
+  | exchangeRatesStoreResponse401
+  | exchangeRatesStoreResponse403
+  | exchangeRatesStoreResponse422
 ) & {
   headers: Headers;
 };
@@ -289,7 +297,10 @@ export const exchangeRatesStore = async (
 };
 
 export const getExchangeRatesStoreMutationOptions = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -331,10 +342,15 @@ export type ExchangeRatesStoreMutationResult = NonNullable<
 >;
 export type ExchangeRatesStoreMutationBody = StoreExchangeRateRequest;
 export type ExchangeRatesStoreMutationError =
-  AuthenticationExceptionResponse | ValidationExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
 
 export const useExchangeRatesStore = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(
   options?: {
@@ -619,6 +635,11 @@ export type exchangeRatesUpdateResponse401 = {
   status: 401;
 };
 
+export type exchangeRatesUpdateResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type exchangeRatesUpdateResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -635,6 +656,7 @@ export type exchangeRatesUpdateResponseSuccess =
   };
 export type exchangeRatesUpdateResponseError = (
   | exchangeRatesUpdateResponse401
+  | exchangeRatesUpdateResponse403
   | exchangeRatesUpdateResponse404
   | exchangeRatesUpdateResponse422
 ) & {
@@ -667,6 +689,7 @@ export const exchangeRatesUpdate = async (
 export const getExchangeRatesUpdateMutationOptions = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -711,12 +734,14 @@ export type ExchangeRatesUpdateMutationResult = NonNullable<
 export type ExchangeRatesUpdateMutationBody = UpdateExchangeRateRequest;
 export type ExchangeRatesUpdateMutationError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
 export const useExchangeRatesUpdate = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,

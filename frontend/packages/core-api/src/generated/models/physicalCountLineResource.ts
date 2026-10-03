@@ -24,7 +24,8 @@ export interface PhysicalCountLineResource {
   location?: LocationResource;
   batch_id: PhysicalCountLineResourceBatchId;
   serial_no: PhysicalCountLineResourceSerialNo;
-  book_qty: string;
+  /** The system quantity is withheld from a counter who holds only the count capability (blind counting, ADR 0083). */
+  book_qty?: string;
   counted_qty: PhysicalCountLineResourceCountedQty;
   counted_by: PhysicalCountLineResourceCountedBy;
   counted_at: PhysicalCountLineResourceCountedAt;

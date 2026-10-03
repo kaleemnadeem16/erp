@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Inventory\Http\Requests\AvcoPool;
 
 use App\Http\Requests\Concerns\ValidatesIncludes;
+use App\Modules\Inventory\Support\StockVisibility;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ShowAvcoPoolRequest extends FormRequest
@@ -13,7 +14,7 @@ class ShowAvcoPoolRequest extends FormRequest
 
     public function authorize(): bool
     {
-        return true;
+        return StockVisibility::stock($this->user());
     }
 
     /** @return array<string, mixed> */

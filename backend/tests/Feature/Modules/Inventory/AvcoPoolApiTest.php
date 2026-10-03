@@ -39,7 +39,7 @@ class AvcoPoolApiTest extends TestCase
 
     public function test_index_reflects_the_current_converged_balance(): void
     {
-        $user = PermissionedActor::grant(User::factory()->create(), ['inventory.valuation.view']);
+        $user = PermissionedActor::grant(User::factory()->create(), ['inventory.stock.view', 'inventory.valuation.view']);
         $this->receive($this->warehouseA, '5', '10', '2026-01-01', 1);
         $this->receive($this->warehouseA, '5', '20', '2026-01-02', 2);
 
@@ -57,7 +57,7 @@ class AvcoPoolApiTest extends TestCase
         $this->receive($this->warehouseA, '5', '10', '2026-01-01', 1);
         $pool = AvcoPool::query()->sole();
 
-        $this->actingAs(User::factory()->create())
+        $this->actingAs(PermissionedActor::grant(User::factory()->create(), ['inventory.stock.view']))
             ->getJson('/api/v1/avco-pools')
             ->assertOk()
             ->assertJsonPath('data.0.qty_on_hand', '5.0000')
@@ -72,7 +72,7 @@ class AvcoPoolApiTest extends TestCase
 
     public function test_index_filters_by_item_and_status(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['inventory.stock.view']);
         $this->receive($this->warehouseA, '5', '10', '2026-01-01', 1);
 
         $this->actingAs($user);
@@ -89,7 +89,7 @@ class AvcoPoolApiTest extends TestCase
 
     public function test_index_rejects_invalid_sort_and_include(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['inventory.stock.view']);
 
         $this->actingAs($user)
             ->getJson('/api/v1/avco-pools?sort=qty_on_hand')
@@ -101,7 +101,7 @@ class AvcoPoolApiTest extends TestCase
 
     public function test_show_can_include_item_and_warehouse(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['inventory.stock.view']);
         $this->receive($this->warehouseA, '5', '10', '2026-01-01', 1);
         $pool = AvcoPool::query()->sole();
 
@@ -128,6 +128,6 @@ class AvcoPoolApiTest extends TestCase
             }
         });
 
-        $this->actingAs(User::factory()->create())->getJson("/api/v1/avco-pools/{$pool->id}")->assertNotFound();
+        $this->actingAs(PermissionedActor::grant(User::factory()->create(), ['inventory.stock.view']))->getJson("/api/v1/avco-pools/{$pool->id}")->assertNotFound();
     }
 }

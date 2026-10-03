@@ -19,6 +19,7 @@ import type {
 
 import type {
   AuthenticationExceptionResponse,
+  AuthorizationExceptionResponse,
   ModelNotFoundExceptionResponse,
   StockMovesIndex200,
   StockMovesIndexParams,
@@ -41,6 +42,11 @@ export type stockMovesIndexResponse401 = {
   status: 401;
 };
 
+export type stockMovesIndexResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type stockMovesIndexResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -50,7 +56,9 @@ export type stockMovesIndexResponseSuccess = stockMovesIndexResponse200 & {
   headers: Headers;
 };
 export type stockMovesIndexResponseError = (
-  stockMovesIndexResponse401 | stockMovesIndexResponse422
+  | stockMovesIndexResponse401
+  | stockMovesIndexResponse403
+  | stockMovesIndexResponse422
 ) & {
   headers: Headers;
 };
@@ -90,7 +98,10 @@ export const getStockMovesIndexQueryKey = (params?: StockMovesIndexParams) => {
 
 export const getStockMovesIndexQueryOptions = <
   TData = Awaited<ReturnType<typeof stockMovesIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: StockMovesIndexParams,
   options?: {
@@ -123,11 +134,16 @@ export type StockMovesIndexQueryResult = NonNullable<
   Awaited<ReturnType<typeof stockMovesIndex>>
 >;
 export type StockMovesIndexQueryError =
-  AuthenticationExceptionResponse | ValidationExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
 
 export function useStockMovesIndex<
   TData = Awaited<ReturnType<typeof stockMovesIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params: undefined | StockMovesIndexParams,
   options: {
@@ -154,7 +170,10 @@ export function useStockMovesIndex<
 };
 export function useStockMovesIndex<
   TData = Awaited<ReturnType<typeof stockMovesIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: StockMovesIndexParams,
   options?: {
@@ -181,7 +200,10 @@ export function useStockMovesIndex<
 };
 export function useStockMovesIndex<
   TData = Awaited<ReturnType<typeof stockMovesIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: StockMovesIndexParams,
   options?: {
@@ -201,7 +223,10 @@ export function useStockMovesIndex<
 
 export function useStockMovesIndex<
   TData = Awaited<ReturnType<typeof stockMovesIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: StockMovesIndexParams,
   options?: {
@@ -240,6 +265,11 @@ export type stockMovesShowResponse401 = {
   status: 401;
 };
 
+export type stockMovesShowResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type stockMovesShowResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -255,6 +285,7 @@ export type stockMovesShowResponseSuccess = stockMovesShowResponse200 & {
 };
 export type stockMovesShowResponseError = (
   | stockMovesShowResponse401
+  | stockMovesShowResponse403
   | stockMovesShowResponse404
   | stockMovesShowResponse422
 ) & {
@@ -308,6 +339,7 @@ export const getStockMovesShowQueryOptions = <
   TData = Awaited<ReturnType<typeof stockMovesShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -346,6 +378,7 @@ export type StockMovesShowQueryResult = NonNullable<
 >;
 export type StockMovesShowQueryError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
@@ -353,6 +386,7 @@ export function useStockMovesShow<
   TData = Awaited<ReturnType<typeof stockMovesShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -380,6 +414,7 @@ export function useStockMovesShow<
   TData = Awaited<ReturnType<typeof stockMovesShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -407,6 +442,7 @@ export function useStockMovesShow<
   TData = Awaited<ReturnType<typeof stockMovesShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -427,6 +463,7 @@ export function useStockMovesShow<
   TData = Awaited<ReturnType<typeof stockMovesShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(

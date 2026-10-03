@@ -59,14 +59,6 @@ const recalculation = [
   "inventory.recalculation.execute",
   "inventory.recalculation.review-regeneration",
 ] as const;
-const stockRead = [
-  "inventory.item.manage",
-  "inventory.category.manage",
-  ...physicalCount,
-  ...cutover,
-  ...negativeStock,
-  ...recalculation,
-] as const;
 
 const rules: readonly Rule[] = [
   { path: "/", allOf: legacySetup },
@@ -83,8 +75,9 @@ const rules: readonly Rule[] = [
     path: "/warehouses",
     anyOf: ["inventory.warehouse.manage", "inventory.location.manage"],
   },
-  { path: "/inventory-overview", anyOf: stockRead },
-  { path: "/stock-moves", anyOf: stockRead },
+  // Stock reads are their own capabilities (ADR 0083): the summary needs availability or stock, the ledger needs movement.
+  { path: "/inventory-overview", anyOf: ["inventory.availability.view", "inventory.stock.view"] },
+  { path: "/stock-moves", anyOf: ["inventory.movement.view"] },
   { path: "/physical-counts", anyOf: physicalCount },
   { path: "/inventory-cutovers", anyOf: cutover },
   { path: "/negative-stock-overrides", anyOf: negativeStock },

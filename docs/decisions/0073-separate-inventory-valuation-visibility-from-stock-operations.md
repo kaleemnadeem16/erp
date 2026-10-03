@@ -2,7 +2,7 @@
 
 # 0073 — Separate Inventory valuation visibility from stock operations
 
-- **Status:** accepted
+- **Status:** accepted — its quantity-read paragraph is superseded by [ADR 0083](0083-layered-stock-read-capabilities-and-blind-counting.md); the valuation boundary stands
 - **Date:** 2026-09-30
 - **Affects:** Inventory read projections, stock ledger and overview screens, company roles
 

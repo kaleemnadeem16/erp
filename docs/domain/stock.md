@@ -292,8 +292,11 @@ path. `item`/`from_location`/`to_location`/`batch`/`valuation_entries` are all o
 `total`/page-jump UI, only Previous/Next against the API's opaque cursor.
 
 Per [ADR 0073](../decisions/0073-separate-inventory-valuation-visibility-from-stock-operations.md),
-ordinary authenticated readers see movement and quantity facts but not Inventory's monetary
-valuation. `inventory.valuation.view` is required for move cost/FX and valuation entries, layer
+ordinary authenticated readers could see movement and quantity facts but not Inventory's monetary
+valuation; [ADR 0083](../decisions/0083-layered-stock-read-capabilities-and-blind-counting.md) supersedes the open
+quantity reads with three capabilities: `inventory.availability.view` (the item-level overview and summary),
+`inventory.stock.view` (layers, AVCO pool quantities and per-location position; it also gives the availability summary) and
+`inventory.movement.view` (the ledger). Each is independent of valuation. `inventory.valuation.view` is required for move cost/FX and valuation entries, layer
 cost/FX, AVCO pool value/rates, and inventory-overview row/summary values. The API omits restricted
 keys, including a requested `valuation_entries` include; ledger/overview columns, details, cards
 and quick-print content follow the same capability. Purchasing supplier-price and Estimating
