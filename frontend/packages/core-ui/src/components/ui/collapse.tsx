@@ -5,15 +5,22 @@ import { cn } from '../../lib/utils';
 /**
  * Shows or hides a block with the same easing the list's Advanced filters panel uses: it grows from nothing and fades in, and
  * shrinks away the same way. The content stays mounted — so what was typed in it is kept and nothing re-renders on opening — and
- * while closed it is invisible, out of the tab order and hidden from assistive technology.
+ * while closed it is invisible, out of the tab order and hidden from assistive technology. Inside a `SectionStack` its gap
+ * to the section above animates with it, so nothing is left behind when it is closed.
  */
 export function Collapse({ open, id, className, children }: { open: boolean; id?: string; className?: string; children: ReactNode }) {
   return (
     <div
       id={id}
       className={cn(
-        'grid transition-[grid-template-rows,opacity,visibility] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none',
-        open ? 'visible grid-rows-[1fr] opacity-100' : 'invisible pointer-events-none grid-rows-[0fr] opacity-0',
+        // Timing and easing come from the --collapse-* tokens (apps/main/src/index.css): change them once there for every
+        // screen, or set them on one screen's wrapper to override just there. Opening decelerates into place; closing eases in
+        // and out, because a decelerating curve looks like a snap when something is going away.
+        'grid transition-[grid-template-rows,opacity,visibility,margin-top]',
+        open
+          ? 'visible grid-rows-[1fr] opacity-100 duration-(--collapse-open-duration) ease-(--collapse-open-ease)'
+          : 'invisible pointer-events-none mt-0! grid-rows-[0fr] opacity-0 duration-(--collapse-close-duration) ease-(--collapse-close-ease)',
+        'motion-reduce:transition-none',
         className
       )}
       aria-hidden={!open}

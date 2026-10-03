@@ -54,6 +54,13 @@
 }
 
 :root {
+  /* Form motion and spacing — one place to change them for every screen. A screen that needs its own overrides these on its
+     own wrapper (e.g. `.po-detail { --section-gap: 1.25rem; }`). Used by Collapse and SectionStack in @erp/core-ui. */
+  --section-gap: 1rem;
+  --collapse-open-duration: 300ms;
+  --collapse-open-ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --collapse-close-duration: 260ms;
+  --collapse-close-ease: cubic-bezier(0.4, 0, 0.2, 1);
   --radius: 0.5rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);

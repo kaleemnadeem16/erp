@@ -113,3 +113,26 @@ test('table or cards is a phone choice: a wide screen has no toggle, a phone sta
   await expect(sheet.getByRole('button', { name: 'Card view' })).toBeVisible();
   await expect(sheet.getByRole('columnheader', { name: 'Stock quantity' })).toHaveCount(0);
 });
+
+test('opened sections are spaced apart, and closing slides away rather than snapping', async ({ page }) => {
+  const sheet = await openNew(page);
+  await pickCombobox(page, 'Supplier', 'Punjab Pigments', { within: sheet });
+  await sheet.getByRole('button', { name: 'More options' }).click();
+  const rate = sheet.getByRole('heading', { name: 'Exchange rate' });
+  await expect(rate).toBeVisible();
+  await page.waitForTimeout(500);
+
+  // A gap between the "Supplier and dates" card and the "Exchange rate" card
+  const gap = await page.evaluate(() => {
+    const cards = [...document.querySelectorAll('section')].filter((s) => /Supplier and dates|Exchange rate/.test(s.querySelector('h2')?.textContent ?? ''));
+    return cards[1]!.getBoundingClientRect().top - cards[0]!.getBoundingClientRect().bottom;
+  });
+  expect(gap).toBeGreaterThanOrEqual(8);
+
+  // Closing is a transition: shortly after the click the card is still partly there
+  await sheet.getByRole('button', { name: 'Hide options' }).click();
+  await page.waitForTimeout(60);
+  const mid = await sheet.locator('h2', { hasText: 'Exchange rate' }).evaluate((el) => el.closest('section')!.getBoundingClientRect().height);
+  expect(mid).toBeGreaterThan(0);
+  await expect(rate).toBeHidden();
+});

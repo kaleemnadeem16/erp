@@ -21,6 +21,7 @@ import {
 
 import { AdvancedOptionSection } from "../../components/ui/advanced-option-section";
 import { Collapse } from "../../components/ui/collapse";
+import { SectionStack } from "../../components/ui/section-stack";
 import { MoreOptionsToggle } from "../../components/ui/more-options-toggle";
 import type { OptionsStyle } from "../../lib/presentation";
 import type { AdvancedOption } from "../../components/ui/advanced-options-menu";
@@ -617,7 +618,7 @@ export function PurchaseOrderForm({
   };
 
   const sections = (
-    <>
+    <SectionStack>
       {showDetailsStep && (
         <DetailSection title="Supplier and dates">
           <FormField
@@ -941,7 +942,7 @@ export function PurchaseOrderForm({
           />
         </DetailSection>
       )}
-    </>
+    </SectionStack>
   );
 
   const wizardFooter = (
