@@ -19,6 +19,7 @@ use App\Support\UomDimension;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
+use Tests\Support\PermissionedActor;
 use Tests\TestCase;
 
 /** ADR 0071: stored selection strategies — item → category ancestry → company → built-in, governed and kept as history. */
@@ -49,7 +50,7 @@ class MaterialSelectionPolicyTest extends TestCase
 
     private function set(MaterialSelectionScope $scope, ?int $id, ?MaterialSelectionStrategy $strategy, string $reason = 'Because'): MaterialSelectionPolicy
     {
-        return app(SetMaterialSelectionPolicy::class)($scope, $id, $strategy, $reason, User::factory()->create()->id);
+        return app(SetMaterialSelectionPolicy::class)($scope, $id, $strategy, $reason, PermissionedActor::grant(User::factory()->create(), ['estimating.selection-policy.manage']));
     }
 
     private function resolve(int $itemId, ?MaterialSelectionStrategy $override = null): ResolvedSelectionStrategy

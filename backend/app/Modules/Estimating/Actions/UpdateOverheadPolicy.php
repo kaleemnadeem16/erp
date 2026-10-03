@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Modules\Estimating\Actions;
 
 use App\Exceptions\DomainInvariantException;
+use App\Models\User;
 use App\Modules\Estimating\Models\OverheadPolicy;
 use App\Modules\Estimating\Support\OverheadPolicyStatus;
+use App\Support\ActionAuthorization;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -19,8 +21,9 @@ use Illuminate\Support\Facades\DB;
 final class UpdateOverheadPolicy
 {
     /** @param array<string, mixed> $attributes */
-    public function __invoke(OverheadPolicy $policy, array $attributes): OverheadPolicy
+    public function __invoke(OverheadPolicy $policy, array $attributes, User $actor): OverheadPolicy
     {
+        ActionAuthorization::require($actor, 'estimating.overhead-policy.manage', 'edit an overhead policy');
         if ($policy->status !== OverheadPolicyStatus::Draft) {
             throw new DomainInvariantException(
                 'Only a DRAFT overhead policy may be edited; create a new one instead.',

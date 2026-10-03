@@ -6,8 +6,10 @@ namespace App\Modules\Company\Actions;
 
 use App\Exceptions\DomainInvariantException;
 use App\Models\Company;
+use App\Models\User;
 use App\Modules\Company\Models\CompanyChange;
 use App\Modules\Company\Support\CompanyFields;
+use App\Support\ActionAuthorization;
 use App\Support\CompanyContext;
 use Illuminate\Support\Facades\DB;
 
@@ -21,8 +23,16 @@ final class UpdateCompany
     public function __construct(private readonly CompanyContext $companyContext) {}
 
     /** @param array<string, mixed> $attributes only keys known to CompanyFields */
-    public function __invoke(array $attributes, int $actorId, ?string $reason = null): Company
+    public function __invoke(array $attributes, User $actor, ?string $reason = null): Company
     {
+        // Each field is changed with the capability its registry entry names, whoever calls this (the request asks the same).
+        foreach (CompanyFields::all() as $field) {
+            if (array_key_exists($field->key, $attributes)) {
+                ActionAuthorization::require($actor, $field->permission, 'change the company\'s '.$field->label);
+            }
+        }
+        $actorId = $actor->id;
+
         return DB::transaction(function () use ($attributes, $actorId, $reason): Company {
             $company = Company::query()->lockForUpdate()->findOrFail($this->companyContext->id());
 

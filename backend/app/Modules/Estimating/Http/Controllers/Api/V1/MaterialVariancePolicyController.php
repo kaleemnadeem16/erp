@@ -51,18 +51,18 @@ class MaterialVariancePolicyController extends Controller
 
     public function store(StoreMaterialVariancePolicyRequest $request, CreateMaterialVariancePolicy $create): JsonResponse
     {
-        return (new MaterialVariancePolicyResource($create($request->validated(), $request->user()->id)))->response()->setStatusCode(201);
+        return (new MaterialVariancePolicyResource($create($request->validated(), $request->user())))->response()->setStatusCode(201);
     }
 
     public function update(UpdateMaterialVariancePolicyRequest $request, MaterialVariancePolicy $material_variance_policy, UpdateMaterialVariancePolicy $update): MaterialVariancePolicyResource
     {
-        return new MaterialVariancePolicyResource($update($material_variance_policy, $request->validated()));
+        return new MaterialVariancePolicyResource($update($material_variance_policy, $request->validated(), $request->user()));
     }
 
     public function destroy(Request $request, MaterialVariancePolicy $material_variance_policy, DeleteMaterialVariancePolicy $delete): Response
     {
         $this->assertMayManage($request, 'delete');
-        $delete($material_variance_policy);
+        $delete($material_variance_policy, $request->user());
 
         return response()->noContent();
     }
@@ -71,7 +71,7 @@ class MaterialVariancePolicyController extends Controller
     {
         $this->assertMayManage($request, 'activate');
 
-        return new MaterialVariancePolicyResource($activate($material_variance_policy));
+        return new MaterialVariancePolicyResource($activate($material_variance_policy, $request->user()));
     }
 
     private function assertMayManage(Request $request, string $verb): void

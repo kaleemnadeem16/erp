@@ -55,7 +55,7 @@ class StockMixPolicyController extends Controller
             $request->filled('level') ? StockMixLevel::from($request->string('level')->toString()) : null,
             $request->filled('threshold_percent') ? $request->string('threshold_percent')->toString() : null,
             $request->string('reason')->toString(),
-            (int) $request->user()->id,
+            $request->user(),
         );
         $this->nameScopes([$row]);
 

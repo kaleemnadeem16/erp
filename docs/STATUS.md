@@ -118,20 +118,21 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 | **Access audit — every API write route now has a guard or a recorded reason, enforced by a test** — `WriteRouteGuardTest` fails any new POST/PUT/PATCH/DELETE route that has no capability guard (request, controller or Action), and keeps a ratchet list of the ~45 routes guarded only at the HTTP boundary so Action-level guards can be added slice by slice. | [access-security-audit.md](architecture/access-security-audit.md) | 2026-10-03 |
 | **Access audit — negative paths for Administration, Numbering, Imports and sign-in** — a company administrator cannot reach another company's members, roles, numbering series or counters (tests); *forgot password* now answers every address identically so it cannot reveal who has an account (A7); the import staging Actions have no entry point and a test fails when one appears. Open and recorded: stock-quantity visibility (A6), bearer-token expiry, Action-level guards. | [access-security-audit.md](architecture/access-security-audit.md) | 2026-10-03 |
 | **Stock reads are now three capabilities, and counters count blind (ADR 0083, audit A6)** — `inventory.availability.view` (the item-level overview), `inventory.stock.view` (location/batch position, layers, pools; also gives availability) and `inventory.movement.view` (the ledger) are enforced on the API and the screens, separate from valuation and from Estimating's availability capability. A counter holding only the count capability no longer sees the book quantity or variance. A migration grants the new capabilities to everyone who already used the Inventory screens (not to count-only roles); demo data adds a blind counter. Staging verification is still to do. | [ADR 0083](decisions/0083-layered-stock-read-capabilities-and-blind-counting.md) | 2026-10-03 |
+| **Access audit — governance Actions now check their own capability** — approval policies, authorities, delegations and settings; the Estimating overhead, selection, stock-mix and variance policies and reasons; the Inventory and Purchasing policy settings; and the Company settings each refuse a caller without the right capability even when no request stands in front of them (`ActionAuthorization`). 20 master-data write routes (items, categories, warehouses, locations, item suppliers, purchase orders) remain guarded at the HTTP boundary only and are tracked by a ratchet test. | [access-security-audit.md](architecture/access-security-audit.md) | 2026-10-03 |
 
 Conversion/receipt foundation for ADR 0080 is committed: server-side conversion maintenance
 authorisation and issued-factor/default-price receiving are covered by 41 focused tests.
 
 ## Next
 
-Observed receipt package backend now captures sealed/loose arrival separately from commercial
-snapshots and posts immutable source/QA evidence atomically with stock. Three real posted demo
-cases are loaded locally; no capture/history screen or activation yet → [receipt evidence](domain/receipt-package-evidence.md).
-Receipt/QA/replay checks pass 151 tests / 861 assertions; architecture rerun passes
-41 tests / 81 assertions after a parallel permission-ratchet update.
-Next: open/unpack, issue/transfer and remaining operational adapters, then user workflows.
+Physical package policy foundation now pins creation-time item/category/company resolution
+and source evidence; model/database gates permit only QUANTITY_ONLY.
+Policy/demo/replay/architecture/API checks pass 125 tests / 421 assertions; separate model/
+Company/unit checks pass 75 tests / 217 assertions (overlapping sets) → [policy](domain/package-tracking-policy.md).
+Three non-stock policy demo items are loaded locally; the inactive checkpoint kernel is complete.
+Next: operational package stock adapters, followed by governed activation and user workflows.
 [ADR 0082](decisions/0082-reconcile-package-balances-with-stock-operations.md) remains proposed;
-advanced physical tracking stays blocked by model/database gates, 2026-10-03.
+operational physical tracking is still disabled, 2026-10-03.
 
 Package/offer maintenance, independent PO pricing, partial package/loose receipts and replacement
 order linkage are implemented in the existing screens under [ADR 0080](decisions/0080-packaged-purchasing-and-independent-price-basis.md).

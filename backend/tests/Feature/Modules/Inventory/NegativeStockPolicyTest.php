@@ -11,6 +11,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
+use Tests\Support\PermissionedActor;
 use Tests\TestCase;
 
 class NegativeStockPolicyTest extends TestCase
@@ -112,17 +113,25 @@ class NegativeStockPolicyTest extends TestCase
         DB::table('companies')->where('id', 1)->update(['negative_stock_review_sla_hours' => 0]);
     }
 
-    public function test_action_rejects_policy_changes_without_auditable_context(): void
+    public function test_action_rejects_policy_changes_without_a_reason_or_without_the_capability(): void
     {
+        $holder = PermissionedActor::grant(User::factory()->create(), ['inventory.negative-stock-policy.manage']);
+        try {
+            app(UpdateInventorySettings::class)(['negative_stock_mode' => 'AUTHORISED_OVERRIDE'], $holder);
+            $this->fail('A policy change needs a reason.');
+        } catch (DomainInvariantException $e) {
+            $this->assertSame('reason', $e->field ?? 'reason');
+        }
+
         $this->expectException(DomainInvariantException::class);
-        app(UpdateInventorySettings::class)(['negative_stock_mode' => 'AUTHORISED_OVERRIDE']);
+        app(UpdateInventorySettings::class)(['negative_stock_mode' => 'AUTHORISED_OVERRIDE'], User::factory()->create(), 'no capability');
     }
 
     public function test_policy_audit_rows_are_database_immutable(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['inventory.negative-stock-policy.manage']);
         app(UpdateInventorySettings::class)(
-            ['negative_stock_mode' => 'AUTHORISED_OVERRIDE'], $user->id, 'approved policy change',
+            ['negative_stock_mode' => 'AUTHORISED_OVERRIDE'], $user, 'approved policy change',
         );
 
         $this->expectException(QueryException::class);
@@ -139,7 +148,7 @@ class NegativeStockPolicyTest extends TestCase
 
         $this->expectException(DomainInvariantException::class);
         app(UpdateInventorySettings::class)(
-            ['negative_stock_mode' => 'AUTHORISED_OVERRIDE'], $otherUserId, 'invalid actor',
+            ['negative_stock_mode' => 'AUTHORISED_OVERRIDE'], User::query()->withoutGlobalScopes()->findOrFail($otherUserId), 'invalid actor',
         );
     }
 }

@@ -609,7 +609,7 @@ class MaterialPreviewApiTest extends TestCase
         $user = $this->userWith('estimating.inventory_availability.view');
         $this->stockPigment('a', '3');
         $this->stockPigment('b', '2');
-        $actor = User::factory()->create()->id;
+        $actor = PermissionedActor::grant(User::factory()->create(), ['estimating.selection-policy.manage']);
         $set = app(SetMaterialSelectionPolicy::class);
 
         $set(MaterialSelectionScope::Company, null, MaterialSelectionStrategy::LowestInternalCost, 'Company prefers cost', $actor);
@@ -634,7 +634,7 @@ class MaterialPreviewApiTest extends TestCase
     {
         $user = $this->userWith('estimating.inventory_availability.view');
         $this->stockPigment('a', '3');
-        $actor = User::factory()->create()->id;
+        $actor = PermissionedActor::grant(User::factory()->create(), ['estimating.selection-policy.manage']);
         $set = app(SetMaterialSelectionPolicy::class);
         $print = fn () => $this->actingAs($user)->postJson($this->url(), $this->payload())->json('data.evidence_fingerprint');
 

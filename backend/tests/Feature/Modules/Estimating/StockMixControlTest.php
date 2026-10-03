@@ -31,6 +31,7 @@ use App\Support\UomDimension;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
+use Tests\Support\PermissionedActor;
 use Tests\TestCase;
 
 /**
@@ -47,7 +48,7 @@ class StockMixControlTest extends TestCase
 
     private Category $category;
 
-    private int $actor;
+    private User $actor;
 
     /** @var array<string, Location> */
     private array $locations = [];
@@ -69,7 +70,7 @@ class StockMixControlTest extends TestCase
         ]);
         $currency = Currency::firstOrCreate(['code' => 'USD'], ['name' => 'US Dollar', 'symbol' => '$']);
         Company::query()->findOrFail(1)->update(['base_currency_id' => $currency->id]);
-        $this->actor = User::factory()->create()->id;
+        $this->actor = PermissionedActor::grant(User::factory()->create(), ['estimating.stock_mix_policy.manage', 'approvals.settings.manage']);
     }
 
     private function receive(string $warehouse, string $qty, string $unitCost): void

@@ -70,7 +70,7 @@ final class StructuredLocationsDemoSeeder extends Seeder
 
         app(UpdateInventorySettings::class)(
             ['inventory_location_mode' => InventoryLocationMode::Structured->value],
-            $actor->id,
+            $actor,
             'Demo: the Main Warehouse is organised into zones, bins and operational locations.',
         );
     }

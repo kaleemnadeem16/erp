@@ -37,7 +37,7 @@ final class StockMixControlDemoSeeder extends Seeder
         $actor = User::query()->where('email', config('demo.user.email'))->firstOrFail();
         app(SetStockMixPolicy::class)(
             MaterialSelectionScope::Company, null, StockMixLevel::ReasonRequired, '10',
-            'Demo company: stock chosen by hand may cost up to 10% more per unit than the proposal; beyond that, say why.', $actor->id,
+            'Demo company: stock chosen by hand may cost up to 10% more per unit than the proposal; beyond that, say why.', $actor,
         );
     }
 }

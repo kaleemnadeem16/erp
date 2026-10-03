@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Modules\Approvals\Actions;
 
+use App\Models\User;
 use App\Modules\Approvals\Models\ApprovalPolicy;
 use App\Modules\Approvals\Support\ApprovalPolicyGuard;
 use App\Modules\Approvals\Support\ApprovalPolicyStatus;
+use App\Support\ActionAuthorization;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -21,8 +23,10 @@ final class CreateApprovalPolicy
     /**
      * @param  array<string, mixed>  $attributes
      */
-    public function __invoke(array $attributes, int $actorId): ApprovalPolicy
+    public function __invoke(array $attributes, User $actor): ApprovalPolicy
     {
+        ActionAuthorization::require($actor, 'approvals.policy.manage', 'create an approval policy');
+        $actorId = $actor->id;
         /** @var list<array<string, mixed>> $conditions */
         $conditions = $attributes['conditions'] ?? [];
         /** @var list<array<string, mixed>> $steps */

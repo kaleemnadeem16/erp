@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Modules\Approvals\Actions;
 
 use App\Exceptions\DomainInvariantException;
+use App\Models\User;
 use App\Modules\Approvals\Models\ApprovalDelegation;
 use App\Modules\Approvals\Support\ApprovalSubjectRegistry;
+use App\Support\ActionAuthorization;
 
 /**
  * Dated cover: the delegate acts as the delegator, within the delegator's authority (ADR 0070 §6). A delegate cannot
@@ -17,8 +19,13 @@ final class CreateApprovalDelegation
     public function __construct(private readonly ApprovalSubjectRegistry $subjects) {}
 
     /** @param  array<string, mixed>  $attributes */
-    public function __invoke(array $attributes, int $actorId): ApprovalDelegation
+    public function __invoke(array $attributes, User $actor): ApprovalDelegation
     {
+        // Anyone may delegate their own authority; delegating someone else's takes the delegation-management capability.
+        if ((int) $attributes['delegator_id'] !== $actor->id) {
+            ActionAuthorization::require($actor, 'approvals.delegation.manage', 'delegate another person\'s authority');
+        }
+        $actorId = $actor->id;
         if (! empty($attributes['subject_type'])) {
             $this->subjects->get($attributes['subject_type']);
         }

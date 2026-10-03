@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Modules\Estimating\Actions;
 
 use App\Exceptions\DomainInvariantException;
+use App\Models\User;
 use App\Modules\Estimating\Models\MaterialVariancePolicy;
 use App\Modules\Estimating\Support\MaterialVariancePolicyStatus;
 use App\Modules\Estimating\Support\VariancePolicyGuard;
+use App\Support\ActionAuthorization;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -18,8 +20,9 @@ use Illuminate\Support\Facades\DB;
 final class UpdateMaterialVariancePolicy
 {
     /** @param array<string, mixed> $attributes */
-    public function __invoke(MaterialVariancePolicy $policy, array $attributes): MaterialVariancePolicy
+    public function __invoke(MaterialVariancePolicy $policy, array $attributes, User $actor): MaterialVariancePolicy
     {
+        ActionAuthorization::require($actor, 'estimating.material_variance_policy.manage', 'edit a material variance policy');
         if ($policy->status !== MaterialVariancePolicyStatus::Draft) {
             throw new DomainInvariantException('Only a DRAFT variance policy may be edited; create a new version instead.', 'status');
         }

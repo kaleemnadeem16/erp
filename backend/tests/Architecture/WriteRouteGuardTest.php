@@ -21,7 +21,7 @@ use Tests\TestCase;
  */
 class WriteRouteGuardTest extends TestCase
 {
-    private const GATE = '/->can\(|->canAny\(|->authorize\(|Gate::|->hasPermissionTo\(|->hasAnyPermission\(|abort_unless\(|abort_if\(|PartyWriteAccess|NumberingAccess|->require\(|ApprovalGrant|assertMay/';
+    private const GATE = '/->can\(|->canAny\(|->authorize\(|Gate::|->hasPermissionTo\(|->hasAnyPermission\(|abort_unless\(|abort_if\(|PartyWriteAccess|NumberingAccess|ActionAuthorization::|->require\(|ApprovalGrant|assertMay/';
 
     /** Routes that need no capability, and why. `METHOD uri`. */
     private const NO_CAPABILITY_NEEDED = [
@@ -42,25 +42,13 @@ class WriteRouteGuardTest extends TestCase
 
     /** Write routes whose Action has no gate of its own — the guard is the Form Request/controller. Ratchet: do not add. */
     private const ACTION_WITHOUT_GATE = [
-        'PATCH api/v1/company', 'POST api/v1/categories', 'DELETE api/v1/categories/{category}', 'PATCH api/v1/categories/{category}',
+        'POST api/v1/categories', 'DELETE api/v1/categories/{category}', 'PATCH api/v1/categories/{category}',
         'POST api/v1/items', 'DELETE api/v1/items/{item}', 'PATCH api/v1/items/{item}', 'POST api/v1/warehouses',
         'DELETE api/v1/warehouses/{warehouse}', 'PATCH api/v1/warehouses/{warehouse}', 'POST api/v1/locations',
-        'DELETE api/v1/locations/{location}', 'PATCH api/v1/locations/{location}', 'PATCH api/v1/inventory-settings',
-        'POST api/v1/warehouse-location-roles', 'DELETE api/v1/warehouse-location-roles/{warehouseLocationRole}',
+        'DELETE api/v1/locations/{location}', 'PATCH api/v1/locations/{location}', 'POST api/v1/warehouse-location-roles', 'DELETE api/v1/warehouse-location-roles/{warehouseLocationRole}',
         'PATCH api/v1/warehouse-location-roles/{warehouseLocationRole}', 'POST api/v1/item-suppliers',
         'DELETE api/v1/item-suppliers/{item_supplier}', 'PATCH api/v1/item-suppliers/{item_supplier}',
         'POST api/v1/purchase-orders', 'PATCH api/v1/purchase-orders/{purchaseOrder}',
-        'PATCH api/v1/purchasing-settings', 'PUT api/v1/approval-subject-types/{subject_type}/mode', 'POST api/v1/approval-policies',
-        'DELETE api/v1/approval-policies/{approval_policy}', 'PATCH api/v1/approval-policies/{approval_policy}',
-        'POST api/v1/approval-policies/{approval_policy}/activate', 'POST api/v1/approval-authorities',
-        'DELETE api/v1/approval-authorities/{approval_authority}', 'POST api/v1/approval-delegations',
-        'DELETE api/v1/approval-delegations/{approval_delegation}', 'POST api/v1/material-selection-policies',
-        'POST api/v1/stock-mix-policies', 'POST api/v1/overhead-policies', 'DELETE api/v1/overhead-policies/{overhead_policy}',
-        'PATCH api/v1/overhead-policies/{overhead_policy}', 'POST api/v1/overhead-policies/{overhead_policy}/activate',
-        'POST api/v1/material-variance-reasons', 'PATCH api/v1/material-variance-reasons/{material_variance_reason}',
-        'POST api/v1/material-variance-policies', 'DELETE api/v1/material-variance-policies/{material_variance_policy}',
-        'PATCH api/v1/material-variance-policies/{material_variance_policy}',
-        'POST api/v1/material-variance-policies/{material_variance_policy}/activate',
     ];
 
     /** @return list<array{key: string, route: Route, source: string}> */

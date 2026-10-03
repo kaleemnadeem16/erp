@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Modules\Approvals\Actions;
 
 use App\Exceptions\DomainInvariantException;
+use App\Models\User;
 use App\Modules\Approvals\Models\ApprovalPolicy;
 use App\Modules\Approvals\Support\ApprovalPolicyGuard;
 use App\Modules\Approvals\Support\ApprovalPolicyStatus;
+use App\Support\ActionAuthorization;
 use Illuminate\Support\Facades\DB;
 
 /** Edits a DRAFT version in place. An active or superseded version is history: change it by creating a new version. */
@@ -16,8 +18,10 @@ final class UpdateApprovalPolicy
     public function __construct(private readonly ApprovalPolicyGuard $guard, private readonly CreateApprovalPolicy $create) {}
 
     /** @param  array<string, mixed>  $attributes */
-    public function __invoke(ApprovalPolicy $policy, array $attributes, int $actorId): ApprovalPolicy
+    public function __invoke(ApprovalPolicy $policy, array $attributes, User $actor): ApprovalPolicy
     {
+        ActionAuthorization::require($actor, 'approvals.policy.manage', 'edit an approval policy');
+        $actorId = $actor->id;
         if ($policy->status !== ApprovalPolicyStatus::Draft) {
             throw new DomainInvariantException('Only a draft can be edited. Start a new version instead.', 'status');
         }

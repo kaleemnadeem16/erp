@@ -142,16 +142,26 @@ class BackdatingHorizonPolicyTest extends TestCase
             'backdating_horizon_mode' => 'POSTING_FLOOR',
             'backdating_posting_floor_subtype' => 'FIXED_DATE',
             'backdating_posting_floor_fixed_date' => '2026-01-01',
-        ], $user->id, 'set a fixed floor');
+        ], $user, 'set a fixed floor');
 
         $this->expectException(QueryException::class);
         DB::table('companies')->where('id', 1)->update(['backdating_horizon_mode' => 'PERIOD_LOCK_ONLY']);
     }
 
-    public function test_action_rejects_policy_changes_without_auditable_context(): void
+    public function test_action_rejects_policy_changes_without_a_reason_or_without_the_capability(): void
     {
+        $holder = User::factory()->create();
+        $holder->givePermissionTo('inventory.backdating-horizon-policy.manage');
+        try {
+            app(UpdateInventorySettings::class)(['backdating_horizon_mode' => 'PERIOD_LOCK_ONLY'], $holder);
+            $this->fail('A policy change needs a reason.');
+        } catch (DomainInvariantException $e) {
+            $this->assertSame('reason', $e->field ?? 'reason');
+        }
+
         $this->expectException(DomainInvariantException::class);
-        app(UpdateInventorySettings::class)(['backdating_horizon_mode' => 'PERIOD_LOCK_ONLY']);
+        $this->expectExceptionMessage('not permitted');
+        app(UpdateInventorySettings::class)(['backdating_horizon_mode' => 'PERIOD_LOCK_ONLY'], User::factory()->create(), 'no capability');
     }
 
     public function test_the_time_zone_is_no_longer_an_inventory_setting(): void

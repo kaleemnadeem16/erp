@@ -90,8 +90,8 @@ final class MaterialVarianceDemoSeeder extends Seeder
 
         $policy = (new CreateMaterialVariancePolicy)([
             'scope_type' => $scope, 'scope_id' => $scopeId, 'reason' => $reason, 'bands' => $bands,
-        ], $actor->id);
+        ], $actor);
 
-        (new ActivateMaterialVariancePolicy)($policy);
+        (new ActivateMaterialVariancePolicy)($policy, $actor);
     }
 }

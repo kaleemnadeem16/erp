@@ -36,13 +36,13 @@ class ApprovalDelegationController extends Controller
         $delegatorId = (int) ($data['delegator_id'] ?? $request->user()->id);
         abort_if($delegatorId !== $request->user()->id && ! $request->user()->can('approvals.delegation.manage'), 403, 'You can only delegate your own authority.');
 
-        return (new ApprovalDelegationResource($create($data + ['delegator_id' => $delegatorId], $request->user()->id)))->response()->setStatusCode(201);
+        return (new ApprovalDelegationResource($create($data + ['delegator_id' => $delegatorId], $request->user())))->response()->setStatusCode(201);
     }
 
     public function destroy(Request $request, ApprovalDelegation $approval_delegation, RevokeApprovalDelegation $revoke): ApprovalDelegationResource
     {
         abort_unless($approval_delegation->delegator_id === $request->user()->id || $request->user()->can('approvals.delegation.manage'), 403);
 
-        return new ApprovalDelegationResource($revoke($approval_delegation));
+        return new ApprovalDelegationResource($revoke($approval_delegation, $request->user()));
     }
 }

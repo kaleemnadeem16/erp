@@ -55,7 +55,7 @@ class MaterialSelectionPolicyController extends Controller
             $request->filled('scope_id') ? $request->integer('scope_id') : null,
             $request->filled('strategy') ? MaterialSelectionStrategy::from($request->string('strategy')->toString()) : null,
             $request->string('reason')->toString(),
-            (int) $request->user()->id,
+            $request->user(),
         );
         $this->nameScopes([$row]);
 

@@ -18,6 +18,7 @@ use App\Support\UomDimension;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
+use Tests\Support\PermissionedActor;
 use Tests\TestCase;
 
 /**
@@ -53,7 +54,7 @@ class MaterialVarianceApprovalTest extends TestCase
         app(CreateMaterialVariancePolicy::class)([
             'scope_type' => 'COMPANY', 'scope_id' => null, 'reason' => 'Test',
             'bands' => [['direction' => 'OVER', 'measure' => 'PERCENT', 'threshold' => '20', 'uom_id' => null, 'effect' => $effect]],
-        ], $this->user->id);
+        ], PermissionedActor::grant($this->user, ['estimating.material_variance_policy.manage']));
         MaterialVariancePolicy::query()->update(['status' => 'ACTIVE', 'effective_from' => now()->subDay()->toDateString()]);
     }
 

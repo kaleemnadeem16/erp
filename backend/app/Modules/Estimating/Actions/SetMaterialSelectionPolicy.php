@@ -6,12 +6,14 @@ namespace App\Modules\Estimating\Actions;
 
 use App\Exceptions\DomainInvariantException;
 use App\Models\Company;
+use App\Models\User;
 use App\Modules\Estimating\Models\MaterialSelectionPolicy;
 use App\Modules\Estimating\Support\MaterialSelectionPolicyStatus;
 use App\Modules\Estimating\Support\MaterialSelectionScope;
 use App\Modules\Estimating\Support\MaterialSelectionStrategy;
 use App\Modules\Inventory\Models\Category;
 use App\Modules\Inventory\Models\Item;
+use App\Support\ActionAuthorization;
 use App\Support\CompanyContext;
 use Illuminate\Support\Facades\DB;
 
@@ -27,8 +29,10 @@ final class SetMaterialSelectionPolicy
 {
     public function __construct(private readonly CompanyContext $companyContext) {}
 
-    public function __invoke(MaterialSelectionScope $scope, ?int $scopeId, ?MaterialSelectionStrategy $strategy, string $reason, int $actorId): MaterialSelectionPolicy
+    public function __invoke(MaterialSelectionScope $scope, ?int $scopeId, ?MaterialSelectionStrategy $strategy, string $reason, User $actor): MaterialSelectionPolicy
     {
+        ActionAuthorization::require($actor, 'estimating.selection-policy.manage', 'set a material selection policy');
+        $actorId = $actor->id;
         $reason = trim($reason);
         if ($reason === '') {
             throw new DomainInvariantException('Changing a selection strategy requires a reason.', 'reason');

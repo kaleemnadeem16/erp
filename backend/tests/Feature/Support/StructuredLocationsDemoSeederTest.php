@@ -6,6 +6,7 @@ namespace Tests\Feature\Support;
 
 use App\Exceptions\DomainInvariantException;
 use App\Models\Company;
+use App\Models\User;
 use App\Modules\Inventory\Actions\QueryStockAvailability;
 use App\Modules\Inventory\Actions\UpdateInventorySettings;
 use App\Modules\Inventory\Models\InventoryPolicyChange;
@@ -19,6 +20,7 @@ use App\Modules\Inventory\Support\InventoryScope;
 use App\Modules\Inventory\Support\LocationType;
 use App\Modules\Inventory\Support\StockBalance;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Support\PermissionedActor;
 use Tests\TestCase;
 
 /**
@@ -85,7 +87,7 @@ final class StructuredLocationsDemoSeederTest extends TestCase
     {
         $this->expectException(DomainInvariantException::class);
 
-        app(UpdateInventorySettings::class)(['inventory_location_mode' => 'SIMPLE'], 1, 'Try to undo');
+        app(UpdateInventorySettings::class)(['inventory_location_mode' => 'SIMPLE'], PermissionedActor::grant(User::query()->where('email', config('demo.user.email'))->firstOrFail(), ['inventory.location-policy.manage']), 'Try to undo');
     }
 
     public function test_reseeding_changes_nothing(): void

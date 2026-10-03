@@ -24,7 +24,7 @@ class InventorySettingsController extends Controller
 
         return new InventorySettingsResource($update(
             $attributes,
-            $request->user()->id,
+            $request->user(),
             $request->validated('reason'),
         ));
     }

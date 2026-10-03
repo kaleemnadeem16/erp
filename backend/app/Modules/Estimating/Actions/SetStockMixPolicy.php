@@ -6,6 +6,7 @@ namespace App\Modules\Estimating\Actions;
 
 use App\Exceptions\DomainInvariantException;
 use App\Models\Company;
+use App\Models\User;
 use App\Modules\Approvals\Support\ApprovalMode;
 use App\Modules\Approvals\Support\ApprovalModes;
 use App\Modules\Estimating\Models\StockMixPolicy;
@@ -15,6 +16,7 @@ use App\Modules\Estimating\Support\StockMixApprovalSubject;
 use App\Modules\Estimating\Support\StockMixLevel;
 use App\Modules\Inventory\Models\Category;
 use App\Modules\Inventory\Models\Item;
+use App\Support\ActionAuthorization;
 use App\Support\CompanyContext;
 use Brick\Math\BigDecimal;
 use Illuminate\Support\Facades\DB;
@@ -32,8 +34,10 @@ final class SetStockMixPolicy
 {
     public function __construct(private readonly CompanyContext $companyContext, private readonly ApprovalModes $approvals) {}
 
-    public function __invoke(MaterialSelectionScope $scope, ?int $scopeId, ?StockMixLevel $level, ?string $thresholdPercent, string $reason, int $actorId): StockMixPolicy
+    public function __invoke(MaterialSelectionScope $scope, ?int $scopeId, ?StockMixLevel $level, ?string $thresholdPercent, string $reason, User $actor): StockMixPolicy
     {
+        ActionAuthorization::require($actor, 'estimating.stock_mix_policy.manage', 'set a stock-mix policy');
+        $actorId = $actor->id;
         $reason = trim($reason);
         if ($reason === '') {
             throw new DomainInvariantException('Changing how hand-chosen stock is controlled requires a reason.', 'reason');

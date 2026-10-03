@@ -81,6 +81,6 @@ final class OverheadPoliciesDemoSeeder extends Seeder
             'rate' => $rate, 'reason' => $reason, 'changed_by' => $actor->id,
         ])->refresh();
 
-        (new ActivateOverheadPolicy)($policy);
+        (new ActivateOverheadPolicy)($policy, $actor);
     }
 }

@@ -40,23 +40,23 @@ class ApprovalPolicyController extends Controller
 
     public function store(StoreApprovalPolicyRequest $request, CreateApprovalPolicy $create): JsonResponse
     {
-        return (new ApprovalPolicyResource($create($request->validated(), $request->user()->id)))->response()->setStatusCode(201);
+        return (new ApprovalPolicyResource($create($request->validated(), $request->user())))->response()->setStatusCode(201);
     }
 
     public function update(UpdateApprovalPolicyRequest $request, ApprovalPolicy $approval_policy, UpdateApprovalPolicy $update): ApprovalPolicyResource
     {
-        return new ApprovalPolicyResource($update($approval_policy, $request->validated(), $request->user()->id));
+        return new ApprovalPolicyResource($update($approval_policy, $request->validated(), $request->user()));
     }
 
     public function destroy(ManageApprovalPolicyRequest $request, ApprovalPolicy $approval_policy, DeleteApprovalPolicy $delete): Response
     {
-        $delete($approval_policy);
+        $delete($approval_policy, $request->user());
 
         return response()->noContent();
     }
 
     public function activate(ManageApprovalPolicyRequest $request, ApprovalPolicy $approval_policy, ActivateApprovalPolicy $activate): ApprovalPolicyResource
     {
-        return new ApprovalPolicyResource($activate($approval_policy));
+        return new ApprovalPolicyResource($activate($approval_policy, $request->user()));
     }
 }

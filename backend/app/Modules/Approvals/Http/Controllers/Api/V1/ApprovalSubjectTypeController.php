@@ -25,7 +25,7 @@ class ApprovalSubjectTypeController extends Controller
 
     public function updateMode(SaveApprovalSettingRequest $request, string $subject_type, SaveApprovalSubjectSetting $save, ApprovalSubjectRegistry $subjects): JsonResponse
     {
-        $setting = $save($subject_type, ApprovalMode::from($request->validated('mode')), $request->user()->id);
+        $setting = $save($subject_type, ApprovalMode::from($request->validated('mode')), $request->user());
 
         return response()->json(['data' => $this->describe($subjects->get($subject_type), $setting->mode)]);
     }

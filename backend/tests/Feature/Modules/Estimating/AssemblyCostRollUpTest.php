@@ -134,7 +134,7 @@ class AssemblyCostRollUpTest extends TestCase
             'scope_type' => 'COMPANY', 'driver_type' => $driverType, 'rate' => $rate,
             'reason' => 'test fixture', 'changed_by' => $user->id,
         ])->refresh();
-        (new ActivateOverheadPolicy)($policy);
+        (new ActivateOverheadPolicy)($policy, PermissionedActor::grant($user, ['estimating.overhead-policy.manage']));
 
         return $policy->refresh();
     }
@@ -351,7 +351,7 @@ class AssemblyCostRollUpTest extends TestCase
             'scope_type' => 'ASSEMBLY', 'scope_id' => $assembly->id, 'driver_type' => 'PCT_DIRECT_COST',
             'rate' => '25', 'reason' => 'exception', 'changed_by' => $user->id,
         ])->refresh();
-        (new ActivateOverheadPolicy)($assemblyPolicy);
+        (new ActivateOverheadPolicy)($assemblyPolicy, PermissionedActor::grant($user, ['estimating.overhead-policy.manage']));
 
         $breakdown = ($this->explode())($version->refresh());
 

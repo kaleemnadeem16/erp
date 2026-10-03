@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Modules\Approvals\Actions;
 
 use App\Exceptions\DomainInvariantException;
+use App\Models\User;
 use App\Modules\Approvals\Models\ApprovalPolicy;
 use App\Modules\Approvals\Support\ApprovalPolicyStatus;
+use App\Support\ActionAuthorization;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -15,8 +17,9 @@ use Illuminate\Support\Facades\DB;
  */
 final class ActivateApprovalPolicy
 {
-    public function __invoke(ApprovalPolicy $policy): ApprovalPolicy
+    public function __invoke(ApprovalPolicy $policy, User $actor): ApprovalPolicy
     {
+        ActionAuthorization::require($actor, 'approvals.policy.manage', 'activate an approval policy');
         if ($policy->status !== ApprovalPolicyStatus::Draft) {
             throw new DomainInvariantException('Only a draft can be activated.', 'status');
         }

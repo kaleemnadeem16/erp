@@ -87,8 +87,8 @@ final class ApprovalsDemoSeeder extends Seeder
         $this->finance = $this->persona('demo-finance@erp.x1techs.com', 'Demo Finance Controller', ['purchasing.purchase-order.view', self::PO_APPROVE, 'purchasing.purchase-order.issue', 'purchasing.commercial-cost.view']);
 
         $save = app(SaveApprovalSubjectSetting::class);
-        $save('PURCHASE_ORDER', ApprovalMode::Policy, $this->admin->id);
-        $save('MATERIAL_VARIANCE', ApprovalMode::Policy, $this->admin->id);
+        $save('PURCHASE_ORDER', ApprovalMode::Policy, $this->admin);
+        $save('MATERIAL_VARIANCE', ApprovalMode::Policy, $this->admin);
 
         $this->policies();
         $this->authorities();
@@ -133,8 +133,8 @@ final class ApprovalsDemoSeeder extends Seeder
         $policy = app(CreateApprovalPolicy::class)([
             'subject_type' => $subject, 'code' => $code, 'name' => $name, 'priority' => $priority, 'reason' => 'Demo: an example approval policy — a real company sets its own.',
             'conditions' => array_map(fn (array $c): array => ['fact' => $c[0], 'operator' => $c[1], 'value' => $c[2]], $conditions), 'steps' => $steps,
-        ], $this->admin->id);
-        app(ActivateApprovalPolicy::class)($policy);
+        ], $this->admin);
+        app(ActivateApprovalPolicy::class)($policy, $this->admin);
     }
 
     private function authorities(): void
@@ -146,7 +146,7 @@ final class ApprovalsDemoSeeder extends Seeder
             app(CreateApprovalAuthority::class)([
                 'user_id' => $user->id, 'subject_type' => 'PURCHASE_ORDER', 'unlimited' => $unlimited, 'ceiling_base_amount' => $ceiling,
                 'reason' => $unlimited ? 'Demo: no ceiling' : 'Demo: Purchasing manager approves up to 300,000', 'valid_from' => null, 'valid_to' => null,
-            ], $this->admin->id);
+            ], $this->admin);
         }
     }
 
@@ -158,7 +158,7 @@ final class ApprovalsDemoSeeder extends Seeder
         app(CreateApprovalDelegation::class)([
             'delegator_id' => $this->manager->id, 'delegate_id' => $this->buyer->id, 'subject_type' => 'PURCHASE_ORDER',
             'valid_from' => today()->toDateString(), 'valid_to' => today()->addDays(7)->toDateString(), 'reason' => 'Demo: manager away this week',
-        ], $this->manager->id);
+        ], $this->manager);
     }
 
     private function orders(): void
@@ -260,7 +260,7 @@ final class ApprovalsDemoSeeder extends Seeder
         $next = app(CreateMaterialVariancePolicy::class)([
             'scope_type' => VarianceScopeType::Item->value, 'scope_id' => $pigment->id, 'minimum_effect' => $active->minimum_effect?->value,
             'reason' => 'Demo: planning more than double the pigment needs approval, not just a reason.', 'bands' => $bands,
-        ], $this->admin->id);
-        app(ActivateMaterialVariancePolicy::class)($next);
+        ], $this->admin);
+        app(ActivateMaterialVariancePolicy::class)($next, $this->admin);
     }
 }

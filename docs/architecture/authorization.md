@@ -165,7 +165,8 @@ and verify the work, while unrelated records and sensitive fields remain hidden.
   explain why; it is usability, never the enforcement boundary.
 
 High-risk transitions should be checked in the Action even if middleware or a Form Request also
-checks them. The existing inventory approval Actions correctly follow this pattern.
+checks them. Use `App\Support\ActionAuthorization::require($actor, 'module.capability', 'what it is doing')`
+for a plain capability check: it refuses with the domain error Actions already use, so every guarded Action reads the same way. The existing inventory approval Actions correctly follow this pattern.
 
 ## Registration and maintenance standard
 

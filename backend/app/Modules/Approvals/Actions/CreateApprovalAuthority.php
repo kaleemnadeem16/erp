@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Modules\Approvals\Actions;
 
 use App\Exceptions\DomainInvariantException;
+use App\Models\User;
 use App\Modules\Approvals\Models\ApprovalAuthority;
 use App\Modules\Approvals\Support\ApprovalSubjectRegistry;
+use App\Support\ActionAuthorization;
 
 /** Grants a person an amount ceiling for a subject type (ADR 0070 §5). Ceilings are data, never permissions. */
 final class CreateApprovalAuthority
@@ -14,8 +16,10 @@ final class CreateApprovalAuthority
     public function __construct(private readonly ApprovalSubjectRegistry $subjects) {}
 
     /** @param  array<string, mixed>  $attributes */
-    public function __invoke(array $attributes, int $actorId): ApprovalAuthority
+    public function __invoke(array $attributes, User $actor): ApprovalAuthority
     {
+        ActionAuthorization::require($actor, 'approvals.authority.manage', 'grant approval authority');
+        $actorId = $actor->id;
         $this->subjects->get($attributes['subject_type']);
         $unlimited = (bool) ($attributes['unlimited'] ?? false);
         if ($unlimited === isset($attributes['ceiling_base_amount'])) {

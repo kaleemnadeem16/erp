@@ -3,8 +3,10 @@
 namespace App\Modules\Purchasing\Actions;
 
 use App\Exceptions\DomainInvariantException;
+use App\Models\User;
 use App\Modules\Purchasing\Models\PurchasingPolicyChange;
 use App\Modules\Purchasing\Models\PurchasingSetting;
+use App\Support\ActionAuthorization;
 use Illuminate\Support\Facades\DB;
 
 final class UpdatePurchasingSettings
@@ -19,8 +21,13 @@ final class UpdatePurchasingSettings
     private const POLICY_FIELDS = ['over_receipt_mode', 'over_receipt_tolerance_percent', 'purchase_order_required'];
 
     /** @param array<string, mixed> $attributes */
-    public function __invoke(array $attributes, ?int $actorId = null, ?string $reason = null): PurchasingSetting
+    public function __invoke(array $attributes, User $actor, ?string $reason = null): PurchasingSetting
     {
+        if (array_intersect(array_keys($attributes), self::POLICY_FIELDS) !== []) {
+            ActionAuthorization::require($actor, 'purchasing.over-receipt-policy.manage', 'change the over-receipt policy');
+        }
+        $actorId = $actor->id;
+
         return DB::transaction(function () use ($attributes, $actorId, $reason): PurchasingSetting {
             $settings = PurchasingSetting::query()->lockForUpdate()->firstOrCreate([]);
             // A row created just now carries only the columns the insert
@@ -39,8 +46,8 @@ final class UpdatePurchasingSettings
             // Eloquent's cast-aware dirty check, so resubmitting an unchanged
             // value in a different lexical form is not recorded as a change.
             $changedFields = array_keys(array_intersect_key($settings->getDirty(), array_flip(self::POLICY_FIELDS)));
-            if ($changedFields !== [] && ($actorId === null || trim((string) $reason) === '')) {
-                throw new DomainInvariantException('Policy changes require an actor and reason.', 'reason');
+            if ($changedFields !== [] && trim((string) $reason) === '') {
+                throw new DomainInvariantException('Policy changes require a reason.', 'reason');
             }
 
             $settings->save();

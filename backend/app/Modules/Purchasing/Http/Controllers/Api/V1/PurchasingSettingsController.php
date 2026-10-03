@@ -19,7 +19,7 @@ class PurchasingSettingsController extends Controller
     {
         return new PurchasingSettingsResource($update(
             $request->safe()->except('reason'),
-            $request->user()->id,
+            $request->user(),
             $request->validated('reason'),
         ));
     }

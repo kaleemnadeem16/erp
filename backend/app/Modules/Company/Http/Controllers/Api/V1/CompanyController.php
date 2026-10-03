@@ -21,7 +21,7 @@ class CompanyController extends Controller
 
     public function update(UpdateCompanyRequest $request, UpdateCompany $update): CompanyResource
     {
-        $company = $update($request->safe()->except('reason'), $request->user()->id, $request->validated('reason'));
+        $company = $update($request->safe()->except('reason'), $request->user(), $request->validated('reason'));
 
         return new CompanyResource($company->load('baseCurrency'));
     }

@@ -56,13 +56,13 @@ class OverheadPolicyController extends Controller
 
     public function store(StoreOverheadPolicyRequest $request, CreateOverheadPolicy $create): JsonResponse
     {
-        return (new OverheadPolicyResource($create($request->validated(), $request->user()->id)))
+        return (new OverheadPolicyResource($create($request->validated(), $request->user())))
             ->response()->setStatusCode(201);
     }
 
     public function update(UpdateOverheadPolicyRequest $request, OverheadPolicy $overhead_policy, UpdateOverheadPolicy $update): OverheadPolicyResource
     {
-        return new OverheadPolicyResource($update($overhead_policy, $request->validated()));
+        return new OverheadPolicyResource($update($overhead_policy, $request->validated(), $request->user()));
     }
 
     public function destroy(Request $request, OverheadPolicy $overhead_policy, DeleteOverheadPolicy $delete): Response
@@ -71,7 +71,7 @@ class OverheadPolicyController extends Controller
             throw new DomainInvariantException('The actor is not permitted to delete an overhead policy.', 'status');
         }
 
-        $delete($overhead_policy);
+        $delete($overhead_policy, $request->user());
 
         return response()->noContent();
     }
@@ -82,7 +82,7 @@ class OverheadPolicyController extends Controller
             throw new DomainInvariantException('The actor is not permitted to activate an overhead policy.', 'status');
         }
 
-        return new OverheadPolicyResource($activate($overhead_policy));
+        return new OverheadPolicyResource($activate($overhead_policy, $request->user()));
     }
 
     /**

@@ -39,11 +39,11 @@ class MaterialVarianceReasonController extends Controller
 
     public function store(StoreMaterialVarianceReasonRequest $request, CreateMaterialVarianceReason $create): JsonResponse
     {
-        return (new MaterialVarianceReasonResource($create($request->validated())))->response()->setStatusCode(201);
+        return (new MaterialVarianceReasonResource($create($request->validated(), $request->user())))->response()->setStatusCode(201);
     }
 
     public function update(UpdateMaterialVarianceReasonRequest $request, MaterialVarianceReason $material_variance_reason, UpdateMaterialVarianceReason $update): MaterialVarianceReasonResource
     {
-        return new MaterialVarianceReasonResource($update($material_variance_reason, $request->validated()));
+        return new MaterialVarianceReasonResource($update($material_variance_reason, $request->validated(), $request->user()));
     }
 }

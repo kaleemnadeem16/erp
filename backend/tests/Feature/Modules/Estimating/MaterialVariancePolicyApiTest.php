@@ -122,7 +122,7 @@ class MaterialVariancePolicyApiTest extends TestCase
 
         app(CreateMaterialVariancePolicy::class)(
             ['scope_type' => 'COMPANY', 'reason' => 'x', 'bands' => [['direction' => 'OVER', 'measure' => 'PERCENT', 'threshold' => '10', 'effect' => 'APPROVAL_REQUIRED']]],
-            $this->manager->id,
+            $this->manager,
         );
     }
 

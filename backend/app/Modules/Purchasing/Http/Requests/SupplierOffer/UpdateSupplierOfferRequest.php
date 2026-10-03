@@ -12,6 +12,6 @@ class UpdateSupplierOfferRequest extends StoreSupplierOfferRequest
             array_unshift($rule, 'sometimes');
         }
 
-return $rules;
+        return $rules;
     }
 }

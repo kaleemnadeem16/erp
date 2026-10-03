@@ -6,6 +6,7 @@ namespace App\Modules\Purchasing\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Modules\Inventory\Models\InventoryCutover;
+use App\Modules\Purchasing\Actions\BuildPurchaseOrderLineAttributes;
 use App\Modules\Purchasing\Actions\CancelPurchaseOrder;
 use App\Modules\Purchasing\Actions\CommitInventoryCutoverOpenPurchaseOrders;
 use App\Modules\Purchasing\Actions\CreatePurchaseOrder;
@@ -30,6 +31,7 @@ use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Arr;
 
 class PurchaseOrderController extends Controller
 {
@@ -39,13 +41,14 @@ class PurchaseOrderController extends Controller
 
     private const SORTABLE = ['number' => 'number', 'order_date' => 'order_date', 'expected_delivery_date' => 'expected_delivery_date', 'created_at' => 'created_at'];
 
-    public function previewLine(\App\Modules\Purchasing\Http\Requests\PurchaseOrder\StorePurchaseOrderRequest $request, \App\Modules\Purchasing\Actions\BuildPurchaseOrderLineAttributes $build): \App\Modules\Purchasing\Http\Resources\PurchaseOrderLineResource
+    public function previewLine(StorePurchaseOrderRequest $request, BuildPurchaseOrderLineAttributes $build): PurchaseOrderLineResource
     {
         $input = $request->validated();
-        $lines = \Illuminate\Support\Arr::pull($input, 'lines');
-        $order = new \App\Modules\Purchasing\Models\PurchaseOrder($input);
-        $line = new \App\Modules\Purchasing\Models\PurchaseOrderLine($build($order, $lines[0], true));
-        return new \App\Modules\Purchasing\Http\Resources\PurchaseOrderLineResource($line);
+        $lines = Arr::pull($input, 'lines');
+        $order = new PurchaseOrder($input);
+        $line = new PurchaseOrderLine($build($order, $lines[0], true));
+
+        return new PurchaseOrderLineResource($line);
     }
 
     public function index(IndexPurchaseOrderRequest $request): AnonymousResourceCollection

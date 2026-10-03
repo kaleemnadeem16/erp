@@ -106,12 +106,14 @@ added to that administrator only; no Buyer or operational role was broadened.
   named with a reason (sign-in/recovery, the caller's own account/session, approval decide/withdraw whose eligibility the Action
   checks). Three compute-only POSTs (numbering tester, PO line preview, material preview) are classed separately. The detector was
   proven by removing one request's guard (`POST api/v1/items` then failed). It proves a guard is *present*, not correct.
-- [ ] **Action-level guards (open, ratchet):** about 45 write routes are guarded at the HTTP boundary only — their Action has no gate
-  of its own, so a console command, job or future integration calling the Action is not stopped (the list is
-  `ACTION_WITHOUT_GATE` in that test; new routes may not join it). Governance Actions go first (approval policy/authority/settings,
-  the Estimating policies and reasons, Inventory/Purchasing/Company settings), then master-data CRUD (items, categories,
-  warehouses, locations, item-suppliers, purchase orders). Each needs an actor parameter and its seeders/tests updated, so it is a
-  sequence of small slices, not one change.
+- [ ] **Action-level guards (partly done, ratchet):** the governance Actions now check their own capability through
+  `App\Support\ActionAuthorization` — approval policies (create, edit, delete, activate), approval authorities, delegations (own
+  or manage), the approval mode, the Estimating policies and variance reasons (overhead, material selection, stock mix, material
+  variance), the Inventory and Purchasing policy settings (each group against its own capability) and the Company settings (each
+  field against its registry capability) — so a console command, job or integration is stopped as a request is
+  (`ApprovalGovernanceActionGuardTest` and the existing Action tests). **20 write routes remain guarded at the HTTP boundary only**
+  (`ACTION_WITHOUT_GATE` in `WriteRouteGuardTest`): items, categories, warehouses, locations, warehouse-location roles, item
+  suppliers and purchase orders. Next slice: that master data, starting with purchase orders and item suppliers.
 - [x] **Administration, Numbering, Imports and Core Auth negative paths (2026-10-03):** foreign-company member/role and series/counter
   routes are unreachable by id (new isolation tests); forgot-password no longer enumerates accounts (A7); the Imports Actions have no
   entry point and a test keeps it that way. Open from this pass: bearer-token expiry, and

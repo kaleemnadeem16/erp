@@ -41,13 +41,13 @@ final class MaterialSelectionDemoSeeder extends Seeder
 
         $solvents = Category::query()->where('code', 'demo-solvents')->first();
         if ($solvents !== null && ! $this->hasRows(MaterialSelectionScope::ItemCategory, $solvents->id)) {
-            $set(MaterialSelectionScope::ItemCategory, $solvents->id, MaterialSelectionStrategy::LowestInternalCost, 'Onboarding: buy and use the cheapest solvent first.', $actor->id);
-            $set(MaterialSelectionScope::ItemCategory, $solvents->id, MaterialSelectionStrategy::FewestPackages, 'Drums are awkward to open for small jobs: use as few as possible.', $actor->id);
+            $set(MaterialSelectionScope::ItemCategory, $solvents->id, MaterialSelectionStrategy::LowestInternalCost, 'Onboarding: buy and use the cheapest solvent first.', $actor);
+            $set(MaterialSelectionScope::ItemCategory, $solvents->id, MaterialSelectionStrategy::FewestPackages, 'Drums are awkward to open for small jobs: use as few as possible.', $actor);
         }
 
         $pigment = Item::query()->where('code', 'demo-pig-blue')->first();
         if ($pigment !== null && ! $this->hasRows(MaterialSelectionScope::Item, $pigment->id)) {
-            $set(MaterialSelectionScope::Item, $pigment->id, MaterialSelectionStrategy::LowestInternalCost, 'Phthalo blue is expensive: draw the cheapest stock first.', $actor->id);
+            $set(MaterialSelectionScope::Item, $pigment->id, MaterialSelectionStrategy::LowestInternalCost, 'Phthalo blue is expensive: draw the cheapest stock first.', $actor);
         }
     }
 

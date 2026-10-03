@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Estimating\Actions;
 
+use App\Models\User;
 use App\Modules\Estimating\Models\OverheadPolicy;
+use App\Support\ActionAuthorization;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -16,8 +18,11 @@ use Illuminate\Support\Facades\DB;
 final class CreateOverheadPolicy
 {
     /** @param array<string, mixed> $attributes */
-    public function __invoke(array $attributes, int $actorId): OverheadPolicy
+    public function __invoke(array $attributes, User $actor): OverheadPolicy
     {
+        ActionAuthorization::require($actor, 'estimating.overhead-policy.manage', 'create an overhead policy');
+        $actorId = $actor->id;
+
         return DB::transaction(fn () => OverheadPolicy::create([
             ...$attributes,
             'changed_by' => $actorId,

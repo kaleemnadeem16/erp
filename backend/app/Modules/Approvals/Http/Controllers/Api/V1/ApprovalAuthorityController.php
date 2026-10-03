@@ -38,11 +38,11 @@ class ApprovalAuthorityController extends Controller
 
     public function store(StoreApprovalAuthorityRequest $request, CreateApprovalAuthority $create): JsonResponse
     {
-        return (new ApprovalAuthorityResource($create($request->validated(), $request->user()->id)))->response()->setStatusCode(201);
+        return (new ApprovalAuthorityResource($create($request->validated(), $request->user())))->response()->setStatusCode(201);
     }
 
     public function destroy(ManageApprovalAuthorityRequest $request, ApprovalAuthority $approval_authority, RevokeApprovalAuthority $revoke): ApprovalAuthorityResource
     {
-        return new ApprovalAuthorityResource($revoke($approval_authority));
+        return new ApprovalAuthorityResource($revoke($approval_authority, $request->user()));
     }
 }

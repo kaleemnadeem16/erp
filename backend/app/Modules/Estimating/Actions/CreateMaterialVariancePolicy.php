@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Modules\Estimating\Actions;
 
+use App\Models\User;
 use App\Modules\Estimating\Models\MaterialVariancePolicy;
 use App\Modules\Estimating\Support\VariancePolicyGuard;
+use App\Support\ActionAuthorization;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -15,8 +17,10 @@ use Illuminate\Support\Facades\DB;
 final class CreateMaterialVariancePolicy
 {
     /** @param array<string, mixed> $attributes */
-    public function __invoke(array $attributes, int $actorId): MaterialVariancePolicy
+    public function __invoke(array $attributes, User $actor): MaterialVariancePolicy
     {
+        ActionAuthorization::require($actor, 'estimating.material_variance_policy.manage', 'create a material variance policy');
+        $actorId = $actor->id;
         /** @var list<array<string, mixed>> $bands */
         $bands = $attributes['bands'] ?? [];
         unset($attributes['bands']);

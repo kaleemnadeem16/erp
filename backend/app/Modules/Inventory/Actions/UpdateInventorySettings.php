@@ -6,11 +6,13 @@ namespace App\Modules\Inventory\Actions;
 
 use App\Exceptions\DomainInvariantException;
 use App\Models\Company;
+use App\Models\User;
 use App\Modules\Inventory\Models\InventoryPolicyChange;
 use App\Modules\Inventory\Models\Location;
 use App\Modules\Inventory\Models\Warehouse;
 use App\Modules\Inventory\Models\WarehouseLocationAssignment;
 use App\Modules\Inventory\Support\InventoryLocationMode;
+use App\Support\ActionAuthorization;
 use App\Support\CompanyContext;
 use Illuminate\Support\Facades\DB;
 
@@ -40,11 +42,27 @@ final class UpdateInventorySettings
         ],
     ];
 
+    /** The capability each policy group needs; the Form Request asks the same, this is the authoritative check. */
+    private const GROUP_PERMISSIONS = [
+        'LOCATION_STRUCTURE' => 'inventory.location-policy.manage',
+        'DEFAULT_AVCO_POOL_SCOPE' => 'inventory.valuation-policy.manage',
+        'NEGATIVE_STOCK' => 'inventory.negative-stock-policy.manage',
+        'BACKDATING_HORIZON' => 'inventory.backdating-horizon-policy.manage',
+        'RECALCULATION' => 'inventory.recalculation-policy.manage',
+    ];
+
     public function __construct(private readonly CompanyContext $companyContext) {}
 
     /** @param array<string, mixed> $attributes */
-    public function __invoke(array $attributes, ?int $actorId = null, ?string $reason = null): Company
+    public function __invoke(array $attributes, User $actor, ?string $reason = null): Company
     {
+        foreach (self::GROUP_PERMISSIONS as $group => $permission) {
+            if (array_intersect(array_keys($attributes), self::POLICY_FIELD_GROUPS[$group]) !== []) {
+                ActionAuthorization::require($actor, $permission, 'change the '.strtolower(str_replace('_', ' ', $group)).' policy');
+            }
+        }
+        $actorId = $actor->id;
+
         return DB::transaction(function () use ($attributes, $actorId, $reason): Company {
             $company = Company::query()->lockForUpdate()->findOrFail($this->companyContext->id());
 
@@ -63,8 +81,8 @@ final class UpdateInventorySettings
             // value in a different lexical form ("1" for a boolean, "24" for
             // an integer) is not recorded as a policy change.
             $changedPolicyFields = array_keys(array_intersect_key($company->getDirty(), array_flip($allPolicyFields)));
-            if ($changedPolicyFields !== [] && ($actorId === null || trim((string) $reason) === '')) {
-                throw new DomainInvariantException('Policy changes require an actor and reason.', 'reason');
+            if ($changedPolicyFields !== [] && trim((string) $reason) === '') {
+                throw new DomainInvariantException('Policy changes require a reason.', 'reason');
             }
 
             $company->save();
