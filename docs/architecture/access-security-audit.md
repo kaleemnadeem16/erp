@@ -155,10 +155,21 @@ added to that administrator only; no Buyer or operational role was broadened.
 - [x] **Open-read sweep (2026-10-06, Part 1):** a user holding no capability was sent to every id-less API read; 28 answered 200.
   `tests/Feature/Support/OpenReadRoutesTest.php` now names each with a reason (15 shared reference lookups or the caller's own data, the
   estimating lookups whose cost fields are already projected, and the two settings endpoints whose only sensitive figure is projected) and
-  lists **six still pending review**: `company` (registration/tax numbers — Core), `parties`, `customer-accounts`, `supplier-accounts`
-  (Q34), `chart-of-accounts` (A2/Finance) and `approval-delegations` (Approvals) — those belong to Part 2 and the owner decisions, and
+  lists **eight still pending review**: `company` (registration/tax numbers — Core), `parties`, `customer-accounts`, `supplier-accounts`
+  (Q34), `chart-of-accounts` (A2/Finance), `approval-delegations` (Approvals), and `formulations` and `application-rates` (A9, recipe visibility) — those belong to Part 2 and the owner decisions, and
   each is removed from the pending list when decided. A new open read now fails the test (mutation-checked); so does a listed route that
   is no longer open. Limit: id-less routes only; `show` routes rely on each module's own denied tests.
+- [ ] **A9 recipe visibility (found 2026-10-06, owner decision):** formulation list/show/resolve and application-rate list/show/resolve are open
+  to every signed-in user, and they return each recipe's input items, quantities and wastage (and the material quantity per unit of work).
+  Cost, rate and margin fields are already projected by capability; the recipe itself is not. For a manufacturer the formulation may be the
+  most sensitive thing in the system. Decide whether recipes are confidential and to whom (formulators/estimators, buyers needing totals,
+  everyone), then gate by a read capability or project the lines, with response-body tests and the SPA screen rule. Until then the two routes
+  are listed as pending review in `OpenReadRoutesTest`. Nothing was changed in code.
+- [x] **Rollout check for the A8 read gates (2026-10-06, development database only):** `erp:audit-access-inventory` (read-only) over the 12
+  demo members shows who has none of the capabilities now needed to read override requests or physical counts: Buyer, Receiver, Manager,
+  Finance and two unrelated demo accounts (the counter loses override reads only). The SPA screen-access map already hid both screens from
+  all of them, so no one loses a screen they could open; only direct API reads change. **Not a staging verification:** repeat on staging
+  with real members, and decide whether read-only auditors such as Finance should be granted `inventory.stock.view`.
 - [ ] **Information-flow review (continuing):** complete the module inspections above and update this matrix with endpoint/Action/test
   references. New Inventory/Purchasing/Estimating features need their own check before sign-off.
 - [ ] **Deployment verification:** enumerate each active company member, role, direct grant and
