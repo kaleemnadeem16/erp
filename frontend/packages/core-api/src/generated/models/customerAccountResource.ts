@@ -16,10 +16,10 @@ export interface CustomerAccountResource {
   id: number;
   party_id: number;
   code: string;
-  credit_limit: CustomerAccountResourceCreditLimit;
+  credit_limit?: CustomerAccountResourceCreditLimit;
   payment_terms_days: number;
   tax_code_id: CustomerAccountResourceTaxCodeId;
-  receivable_account_id: number;
+  receivable_account_id?: number;
   default_currency_id: CustomerAccountResourceDefaultCurrencyId;
   custom_fields: CustomerAccountResourceCustomFields;
   status: string;

@@ -88,25 +88,23 @@ checkboxes and current-boundary table later in this document track subsequent fi
 
 | Resource | List filters (backend) | UI coverage | Write permission | Read permission | Sensitive fields |
 |---|---|---|---|---|---|
-| Item | `category_id,search,status,type` | Full (4/4) | `inventory.item.manage` | Shared authenticated lookup | GL account columns — decision open |
-| Category | `parent_id,search` | Full (2/2) | `inventory.category.manage` | Shared authenticated lookup | GL account columns — decision open |
+| Item | `category_id,search,status,type` | Full (4/4) | `inventory.item.manage` | Shared authenticated lookup | GL fields — ADR 0084 separate mapping read/manage |
+| Category | `parent_id,search` | Full (2/2) | `inventory.category.manage` | Shared authenticated lookup | GL fields — ADR 0084 separate mapping read/manage |
 
 **Recommended capabilities:** `inventory.item.manage`, `inventory.category.manage` — write only,
-per finding 3. Whether GL-account assignment needs its own finer permission, split from general
-item/category editing, is explicitly **not decided here** — flag to whoever owns the
-Finance/Accounting relationship rather than deciding unilaterally.
+per finding 3. The owner accepted separate GL-field read/manage authority under ADR 0084;
+field checks supplement the surrounding resource capability.
 
 ### Tasks
 
 - [x] Register `inventory.item.manage`, `inventory.category.manage`
-- [ ] Decide (with Finance/Accounting) whether GL-account fields need their own permission, separate
-      from general item/category editing
-- [ ] Field-level protection: hide GL account columns from `ItemResource`/`CategoryResource` for
-      callers without the relevant permission
+- [x] Owner accepted separate mapping read/manage capabilities (ADR 0084, 2026-10-06)
+- [x] Item/Category mapping keys projected throughout nested Resources; request/Action write checks,
+      category form/detail/print gates and response-body tests accompany the grant migration.
 - [x] Assignment/backfill pass, then enforce `inventory.item.manage`/`inventory.category.manage` on
       create/update/archive (index/show stay open)
 - [x] Frontend action gating (Archive/Activate/Edit) once `/api/v1/user` effective permissions ship
-- [x] Allowed/denied capability tests; field-filtering remains with the unresolved GL-account decision
+- [x] Allowed/denied capability tests; mapping presence/absence and independent field-write tests now pass (ADR 0084)
 - [x] Update `app/Modules/Inventory/README.md` and [items.md](../domain/items.md)
 
 ## B. Purchase Orders, Receipts, Item Suppliers, Quality Dispositions (Purchasing)
@@ -306,8 +304,8 @@ Item and Work unit; saved-rate forms still need their own picker pass.
 ## Recommended sequence across all three areas, by risk (lowest first)
 
 Historical rollout order from the baseline audit; operational enforcement steps 2, 4–7
-have landed. Step 3 remains open only for the Item/Category GL-account decision and
-its resulting field treatment.
+have landed. Step 3 is now implemented for Item/Category GL fields under ADR 0084; staging assignment
+verification remains open.
 
 1. Formulations/Assemblies filter UI (section C) — zero risk, no permission dependency
 2. Register every capability listed above, everywhere — zero risk, registration without
@@ -342,7 +340,7 @@ its resulting field treatment.
 - [x] This file — per-slice tasks reconciled with implementation
 - [x] `authorization.md` — implementation assessment and boundaries refreshed
 - [x] Module READMEs and domain docs named per section above updated with their slices;
-      the unresolved GL-account policy will need its own documentation
+      the GL-account field policy is documented in ADR 0084 and the Items domain doc
 
 ## Related
 

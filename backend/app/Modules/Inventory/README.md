@@ -93,8 +93,11 @@ require `inventory.location.manage`; marking a location as counting or not count
 `inventory.location-policy.manage`, a reason and STRUCTURED mode, and is recorded in the inventory policy history
 ([ADR 0067](../../../docs/decisions/0067-governed-per-location-usability-mark.md)). The warehouse detail screen's Locations
 panel edits them (structured companies only for hierarchy, type and the mark). Warehouse create, update and archive require
-`inventory.warehouse.manage`; warehouse-location role writes require `inventory.location.manage`. GL-account field visibility remains
-a separate Finance-owned decision and is not implied by either write capability.
+`inventory.warehouse.manage`; warehouse-location role writes require `inventory.location.manage`. GL-account fields use separate
+`accounting.account-mapping.view` / `.manage` capabilities (ADR 0084). Management supplies minimum
+read; resource maintenance is also required for changes. Item/Category Resources omit restricted
+keys across nested consumers, and requests/Actions reject unauthorised mapping keys. Category
+forms/detail/quick print honour the same boundary; omitted mappings retain stored values.
 
 Stock reads are three separate capabilities (ADR 0083): `inventory.availability.view` for the item-level overview and its summary,
 `inventory.stock.view` for layers, AVCO pool quantities and the per-location position (and it also gives the availability summary), and

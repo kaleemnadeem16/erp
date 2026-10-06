@@ -46,6 +46,13 @@ mechanism): no self-parenting, no cycles, parent must resolve in the current com
 its fiscal year's date range *is* an application-level guard (`AccountingPeriod::booted()`) —
 that containment can't be expressed as a same-table `CHECK`.
 
+### Financial mapping access
+
+`AccountMappingAccess` owns the separate `accounting.account-mapping.view` / `.manage` field
+boundary (ADR 0084). Inventory and Parties use it in requests, Actions and Resources. Management
+supplies minimum field read, but resource maintenance is still required. Chart identity/structure
+lookups remain shared. The additive migration backfills actual prior field maintainers only.
+
 ## Related
 
 - [domain/general-ledger.md](../../../../docs/domain/general-ledger.md)

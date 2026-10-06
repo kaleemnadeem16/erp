@@ -117,16 +117,21 @@ The four DELETE controllers explicitly check their matching capability before ca
 | Capability | Controls |
 |---|---|
 | `parties.party.manage` | Shared identity create/edit/archive, including name, registration and tax identifiers |
-| `parties.customer-account.manage` | Customer-role create/edit/archive, currently including credit limit, terms and receivable account |
-| `parties.supplier-account.manage` | Supplier-role create/edit/archive, currently including terms and payable account |
+| `parties.customer-account.manage` | Customer-role create/edit/archive; protected fields also require their field capability |
+| `parties.supplier-account.manage` | Supplier-role create/edit/archive; protected fields also require their field capability |
 | `parties.supplier-site.manage` | Supplier address/role create/edit/delete; does not grant supplier-account maintenance |
 
-These are capabilities, not fixed role names. Grant them through Access Administration only to
-members whose duties include all fields behind that capability. In particular, do not treat
-`parties.customer-account.manage` as a harmless contact-edit grant: it currently permits
-credit-limit and control-account changes. A separate Finance decision is still required for
-field-level write/read policy and the shared lookup responses (see the
-[access audit](../architecture/access-security-audit.md)). No customer/supplier master-data
+[ADR 0084](../decisions/0084-separate-financial-master-data-fields.md) separates financial fields:
+`parties.credit-limit.view` reads credit limits, `.manage` changes them and supplies minimum read;
+`parties.payment-terms.manage` changes terms, which stay readable to account readers.
+`accounting.account-mapping.view` reads receivable/payable mappings; `.manage` changes them and
+supplies minimum read. Resource maintenance is also required for every write. Mandatory account
+creation needs terms and mapping management; identity-only Party creation remains independent.
+Restricted response keys are omitted on all lists/details/includes and mutation responses.
+Submitting protected keys, even null or unchanged values, requires field authority at both request
+and Action boundaries; omitted fields retain their values. An additive migration preserves prior
+actual field maintainers via company role/direct grants; read-only readership needs explicit review.
+No customer/supplier master-data
 maintenance screen exists yet. The purchase-order form does have an inline supplier-site creation
 dialog; its add affordance and dialog mount now follow `parties.supplier-site.manage`, with the
 server check remaining authoritative.

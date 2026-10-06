@@ -54,9 +54,7 @@ Practical commands (WSL, repository root `/home/kaleem/projects/erp`):
 
 ### Needs an owner decision first
 
-1. **A3/A4 — Finance field visibility** (open question [Q34](../OPEN-QUESTIONS.md#q34--finance-owned-field-visibility-for-accounts-and-credit-terms)):
-   who may read or write Item/Category GL-account IDs, customer credit and terms, and control-account IDs. Then implement the projection and
-   write checks everywhere those fields appear (list, detail, lookup, print) with field-presence tests.
+1. ~~**A3/A4 — Finance field visibility**~~ — accepted and implemented under ADR 0084; staging readership sign-off remains open.
 2. **Approvals** (open question [Q35](../OPEN-QUESTIONS.md#q35--approval-evidence-exception-and-authority-ceiling-visibility)): confirm that an approver sees the amount of the
    request they must decide without seeing PO line prices, and decide who may list per-person authority ceilings.
 3. **Bearer-token lifetime** (open question [Q36](../OPEN-QUESTIONS.md#q36--bearer-token-lifetime-and-device-sessions)) — before any mobile client ships.
@@ -129,6 +127,26 @@ checks pass.
 - Migrations that create SQL functions must use `CREATE OR REPLACE FUNCTION` (tests run `migrate:fresh`, which does not drop functions).
 - Dev database: `journey.spec.ts` and the line-UX specs leave drafts and receipts behind; `purchasing-commercial-visibility.spec.ts` assumes
   which draft receipt is first and can fail after them.
+
+## Q34 implementation checkpoint — 2026-10-06
+
+The owner accepted the recommended split in [ADR 0084](../decisions/0084-separate-financial-master-data-fields.md).
+A3/A4 financial fields now have separate read/change capabilities, omitted restricted response keys,
+request/Action write checks and an additive prior-maintainer grant migration. Category forms,
+detail and print follow the same policy; generated optional Resource types accompany the change.
+Verification: 248 backend tests passed (the full run also hit the already documented
+`TestingEnvironmentIsolationTest` wrapper failure: it expects `erp_testing`, but the required
+private wrapper sets `erp_codex_q34`). The read-only inventory test passes separately (20 assertions).
+The category browser spec passes all three permission cases plus sign-in (4 tests), including
+hidden print content and submitted field absence. Explicit-path Pint, PHPStan and TypeScript pass.
+API regeneration changed only four Resource types; the private test database was dropped afterwards.
+For a development walkthrough, use existing categories with an ordinary category-maintainer,
+a mapping reader, and a mapping manager; the browser fixtures exercise these without changing
+live categories or broadening demo roles. Before release, register permissions, run the additive
+migration and normal designated-admin sync, then complete the staging assignment sign-off.
+
+Staging Finance/sales readership and service-actor verification remain open. The earlier checkpoints
+are historical evidence; Q34 is resolved, while Q26/Q35/Q36 remain undecided.
 
 ## Related
 

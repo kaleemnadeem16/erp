@@ -22,6 +22,9 @@ final class PermissionVocabulary
             self::CUSTOMER_ACCOUNT_MANAGE,
             self::SUPPLIER_ACCOUNT_MANAGE,
             self::SUPPLIER_SITE_MANAGE,
+            'parties.credit-limit.view',
+            'parties.credit-limit.manage',
+            'parties.payment-terms.manage',
         ];
     }
 }

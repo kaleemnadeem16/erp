@@ -9,6 +9,7 @@ import { Combobox } from '../../components/ui/combobox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../components/ui/form';
 import { DetailSection } from '../../components/detail/detail-page-layout';
 import { lookupState, type LookupState } from '../../lib/api-errors';
+import { usePermission } from '../../hooks/use-permission';
 
 const NONE = 'NONE';
 const schema = z.object({
@@ -31,7 +32,10 @@ export const CATEGORY_FORM_FIELDS = [
   'inventory_account_id',
 ] as const satisfies readonly (keyof CategoryFormValues)[];
 /** Every descendant of `id` within `categories`, walking parent_id links — not just its direct children. */
-function descendantCategoryIds(id: number | undefined, categories: { id: number; parent_id: number | null }[]): Set<number> {
+function descendantCategoryIds(
+  id: number | undefined,
+  categories: { id: number; parent_id: number | null }[],
+): Set<number> {
   const result = new Set<number>();
   if (id === undefined) return result;
   const childrenByParent = new Map<number, number[]>();
@@ -53,7 +57,7 @@ function descendantCategoryIds(id: number | undefined, categories: { id: number;
   }
   return result;
 }
-export function categoryPayload(v: CategoryFormValues) {
+export function categoryPayload(v: CategoryFormValues, mayManageMappings: boolean) {
   const id = (value: string) => (value === NONE ? null : Number(value));
   return {
     code: v.code.trim(),
@@ -61,9 +65,13 @@ export function categoryPayload(v: CategoryFormValues) {
     parent_id: id(v.parent_id),
     default_valuation_method:
       v.default_valuation_method === NONE ? null : (v.default_valuation_method as ValuationMethod),
-    income_account_id: id(v.income_account_id),
-    expense_account_id: id(v.expense_account_id),
-    inventory_account_id: id(v.inventory_account_id),
+    ...(mayManageMappings
+      ? {
+          income_account_id: id(v.income_account_id),
+          expense_account_id: id(v.expense_account_id),
+          inventory_account_id: id(v.inventory_account_id),
+        }
+      : {}),
   };
 }
 export function CategoryForm({
@@ -79,6 +87,7 @@ export function CategoryForm({
   isSubmitting?: boolean;
   formError?: string | null;
 }) {
+  const mayManageMappings = usePermission('accounting.account-mapping.manage');
   const form = useForm<CategoryFormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -99,13 +108,16 @@ export function CategoryForm({
   // GuardsCompanyScopedHierarchy). Exclude the full descendant subtree too.
   const excludedParentIds = descendantCategoryIds(excludeId, allCategories);
   const categories = allCategories.filter((c) => c.id !== excludeId && !excludedParentIds.has(c.id));
-  const accountsResult = useChartOfAccountsIndex({ per_page: 100, sort: 'code' });
+  const accountsResult = useChartOfAccountsIndex(
+    { per_page: 100, sort: 'code' },
+    { query: { enabled: mayManageMappings } },
+  );
   const accounts = accountsResult.data?.status === 200 ? accountsResult.data.data.data : [];
   const select = (
     name: 'parent_id' | 'income_account_id' | 'expense_account_id' | 'inventory_account_id',
     label: string,
     options: { id: number; code: string; name: string }[],
-    lookup: LookupState
+    lookup: LookupState,
   ) => (
     <FormField
       control={form.control}
@@ -121,7 +133,10 @@ export function CategoryForm({
               onValueChange={field.onChange}
               options={[
                 { value: NONE, label: 'None' },
-                ...options.map((o) => ({ value: String(o.id), label: `${o.code} — ${o.name}` })),
+                ...options.map((o) => ({
+                  value: String(o.id),
+                  label: `${o.code} — ${o.name}`,
+                })),
               ]}
               searchPlaceholder={`Search ${label.toLowerCase()}s…`}
               emptyText="No results found."
@@ -194,14 +209,16 @@ export function CategoryForm({
             )}
           />
         </DetailSection>
-        <DetailSection
-          title="GL account defaults"
-          description="Blank values inherit from the nearest category ancestor."
-        >
-          {select('income_account_id', 'Income account', accounts, lookupState(accountsResult, 'accounts'))}
-          {select('expense_account_id', 'Expense account', accounts, lookupState(accountsResult, 'accounts'))}
-          {select('inventory_account_id', 'Inventory account', accounts, lookupState(accountsResult, 'accounts'))}
-        </DetailSection>
+        {mayManageMappings && (
+          <DetailSection
+            title="GL account defaults"
+            description="Blank values inherit from the nearest category ancestor."
+          >
+            {select('income_account_id', 'Income account', accounts, lookupState(accountsResult, 'accounts'))}
+            {select('expense_account_id', 'Expense account', accounts, lookupState(accountsResult, 'accounts'))}
+            {select('inventory_account_id', 'Inventory account', accounts, lookupState(accountsResult, 'accounts'))}
+          </DetailSection>
+        )}
         <div className="flex justify-end">
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? 'Saving…' : 'Save category'}

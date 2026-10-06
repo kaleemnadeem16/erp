@@ -193,8 +193,14 @@ identity rule below, while allowing sourcing terms to change.
 Items and Categories are company-wide reference data: authenticated users may list and view them
 so cross-module selectors keep working. Write controls and endpoints require
 `inventory.item.manage` and `inventory.category.manage` respectively. These capabilities do not
-decide whether GL-account IDs should be visible; that field-level Finance boundary remains tracked
-separately in the authorisation retrofit backlog.
+grant GL-field access. Under [ADR 0084](../decisions/0084-separate-financial-master-data-fields.md),
+`accounting.account-mapping.view` reads these mappings and `.manage` changes them (and supplies
+minimum read), in addition to resource maintenance. Restricted keys are omitted from list/detail,
+lookup and nested Resources. Category detail/quick print hide the GL section without field read;
+forms omit mapping keys without field management. Requests and Actions reject any unauthorised
+submitted mapping key, including null or unchanged values; omission preserves stored mappings.
+The additive migration grants existing Item/Category maintainers mapping read/change in their
+existing companies. No Item GL editor or standalone Item/Party GL print path exists.
 
 Item details embed the existing pack-conversion editor, scoped to the current item, so the
 post-create detail screen is also the entry point for adding pack sizes. Write controls require

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Parties\Http\Requests\SupplierAccount;
 
+use App\Modules\Accounting\Support\AccountMappingAccess;
 use App\Modules\Parties\Models\SupplierAccount;
+use App\Modules\Parties\Support\AccountTermsAccess;
 use App\Rules\Support\CompanyScoped;
 use App\Rules\Support\ValidCustomFields;
 use App\Support\Status;
@@ -15,7 +17,9 @@ class StoreSupplierAccountRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('parties.supplier-account.manage') === true;
+        return $this->user()?->can('parties.supplier-account.manage') === true
+            && AccountMappingAccess::canWrite($this->user(), $this->all())
+            && AccountTermsAccess::canWrite($this->user(), $this->all());
     }
 
     /**

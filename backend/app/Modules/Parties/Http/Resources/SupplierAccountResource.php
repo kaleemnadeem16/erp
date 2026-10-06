@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Parties\Http\Resources;
 
+use App\Modules\Accounting\Support\AccountMappingAccess;
 use App\Modules\Parties\Models\SupplierAccount;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -27,7 +28,7 @@ class SupplierAccountResource extends JsonResource
             'code' => $account->code,
             'payment_terms_days' => $account->payment_terms_days,
             'lead_time_days' => $account->lead_time_days,
-            'payable_account_id' => $account->payable_account_id,
+            'payable_account_id' => $this->when(AccountMappingAccess::canView($request->user()), fn () => $account->payable_account_id),
             'default_currency_id' => $account->default_currency_id,
             'custom_fields' => $account->custom_fields,
             'status' => $account->status->value,

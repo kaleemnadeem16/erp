@@ -22,8 +22,14 @@ class CustomerAccountApiTest extends TestCase
     {
         app(PermissionRegistrar::class)->setPermissionsTeamId(1);
         Permission::findOrCreate('parties.customer-account.manage');
+        Permission::findOrCreate('accounting.account-mapping.manage');
+        Permission::findOrCreate('parties.payment-terms.manage');
+        Permission::findOrCreate('parties.credit-limit.manage');
         $user = User::factory()->create();
         $user->givePermissionTo('parties.customer-account.manage');
+        $user->givePermissionTo('accounting.account-mapping.manage');
+        $user->givePermissionTo('parties.payment-terms.manage');
+        $user->givePermissionTo('parties.credit-limit.manage');
 
         return $user;
     }

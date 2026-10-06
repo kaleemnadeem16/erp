@@ -17,7 +17,7 @@ export interface SupplierAccountResource {
   code: string;
   payment_terms_days: number;
   lead_time_days: SupplierAccountResourceLeadTimeDays;
-  payable_account_id: number;
+  payable_account_id?: number;
   default_currency_id: SupplierAccountResourceDefaultCurrencyId;
   custom_fields: SupplierAccountResourceCustomFields;
   status: string;

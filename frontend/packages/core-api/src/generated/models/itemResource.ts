@@ -30,9 +30,9 @@ export interface ItemResource {
   avco_pool_scope: ItemResourceAvcoPoolScope;
   tracking: string;
   category_id: number;
-  income_account_id: ItemResourceIncomeAccountId;
-  expense_account_id: ItemResourceExpenseAccountId;
-  inventory_account_id: ItemResourceInventoryAccountId;
+  income_account_id?: ItemResourceIncomeAccountId;
+  expense_account_id?: ItemResourceExpenseAccountId;
+  inventory_account_id?: ItemResourceInventoryAccountId;
   custom_fields: ItemResourceCustomFields;
   status: string;
   category?: CategoryResource;

@@ -18,8 +18,8 @@ final class AuditAccessInventory extends Command
     public const CAPABILITIES = [
         'A1' => ['currency.exchange-rate.manage'],
         'A2' => ['accounting.chart-of-account.manage'],
-        'A3' => ['parties.party.manage', 'parties.customer-account.manage', 'parties.supplier-account.manage', 'parties.supplier-site.manage'],
-        'A4' => [], // Q34 pending: no capability has been decided.
+        'A3' => ['parties.party.manage', 'parties.customer-account.manage', 'parties.supplier-account.manage', 'parties.supplier-site.manage', 'parties.credit-limit.view', 'parties.credit-limit.manage', 'parties.payment-terms.manage'],
+        'A4' => ['accounting.account-mapping.view', 'accounting.account-mapping.manage'], // ADR 0084.
         'A5' => [], // Projection follows subject capabilities and workflow eligibility; no new capability.
         'A6' => ['inventory.availability.view', 'inventory.stock.view', 'inventory.movement.view'],
     ];
@@ -75,7 +75,7 @@ final class AuditAccessInventory extends Command
                 'audit_capabilities' => self::CAPABILITIES,
                 'notes' => [
                     'Missing capabilities are review flags, not recommended grants. Verify intended duty with the company owner.',
-                    'A4 awaits Q34; A5 uses existing subject field capabilities and workflow eligibility, requiring request-specific checks.',
+                    'A3/A4 use ADR 0084 field capabilities; field management supplies minimum field read. A5 still needs request-specific checks.',
                     'No service-account marker exists. Owners must classify every member, including service actors without tokens.',
                     'Token expiry shown here is per-token only; Sanctum global expiration also applies.',
                 ],

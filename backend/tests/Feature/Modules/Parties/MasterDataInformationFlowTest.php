@@ -49,9 +49,10 @@ class MasterDataInformationFlowTest extends TestCase
             $this->assertStringNotContainsString('SECRET', json_encode($response->json('data')));
         }
         $response = $this->getJson("/api/v1/parties/{$own['party']->id}?include=customer_account,supplier_account")->assertOk()
-            ->assertJsonPath('data.customer_account.credit_limit', '12345.0000')
-            ->assertJsonPath('data.customer_account.receivable_account_id', $own['account']->id)
-            ->assertJsonPath('data.supplier_account.payable_account_id', $own['account']->id);
+            ->assertJsonMissingPath('data.customer_account.credit_limit')
+            ->assertJsonMissingPath('data.customer_account.receivable_account_id')
+            ->assertJsonMissingPath('data.supplier_account.payable_account_id')
+            ->assertJsonPath('data.customer_account.payment_terms_days', 30);
         $this->assertStringNotContainsString('SECRET', $response->getContent());
         $this->getJson("/api/v1/supplier-accounts/{$own['supplier']->id}/sites")->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.party_site.name', 'OWN address');
         $this->getJson("/api/v1/supplier-accounts/{$foreign['supplier']->id}/sites")->assertNotFound();

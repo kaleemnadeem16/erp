@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Inventory\Http\Requests\Item;
 
+use App\Modules\Accounting\Support\AccountMappingAccess;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Support\AvcoPoolScope;
 use App\Modules\Inventory\Support\ItemTracking;
@@ -19,7 +20,8 @@ class UpdateItemRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('inventory.item.manage') === true;
+        return $this->user()?->can('inventory.item.manage') === true
+            && AccountMappingAccess::canWrite($this->user(), $this->all());
     }
 
     protected function prepareForValidation(): void

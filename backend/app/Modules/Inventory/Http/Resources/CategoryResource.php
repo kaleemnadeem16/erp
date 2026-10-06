@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Inventory\Http\Resources;
 
+use App\Modules\Accounting\Support\AccountMappingAccess;
 use App\Modules\Inventory\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -29,9 +30,9 @@ class CategoryResource extends JsonResource
             'parent_id' => $category->parent_id,
             'code' => $category->code,
             'name' => $category->name,
-            'income_account_id' => $category->income_account_id,
-            'expense_account_id' => $category->expense_account_id,
-            'inventory_account_id' => $category->inventory_account_id,
+            'income_account_id' => $this->when(AccountMappingAccess::canView($request->user()), fn () => $category->income_account_id),
+            'expense_account_id' => $this->when(AccountMappingAccess::canView($request->user()), fn () => $category->expense_account_id),
+            'inventory_account_id' => $this->when(AccountMappingAccess::canView($request->user()), fn () => $category->inventory_account_id),
             'default_valuation_method' => $category->default_valuation_method?->value,
             'parent' => $this->whenLoaded('parent', fn () => new CategoryResource($category->parent)),
             'children' => $this->whenLoaded('children', fn () => CategoryResource::collection($category->children)),

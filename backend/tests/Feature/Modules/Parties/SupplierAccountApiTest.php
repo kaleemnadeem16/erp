@@ -22,8 +22,12 @@ class SupplierAccountApiTest extends TestCase
     {
         app(PermissionRegistrar::class)->setPermissionsTeamId(1);
         Permission::findOrCreate('parties.supplier-account.manage');
+        Permission::findOrCreate('accounting.account-mapping.manage');
+        Permission::findOrCreate('parties.payment-terms.manage');
         $user = User::factory()->create();
         $user->givePermissionTo('parties.supplier-account.manage');
+        $user->givePermissionTo('accounting.account-mapping.manage');
+        $user->givePermissionTo('parties.payment-terms.manage');
 
         return $user;
     }

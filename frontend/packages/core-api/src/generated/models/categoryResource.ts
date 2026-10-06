@@ -18,9 +18,9 @@ export interface CategoryResource {
   parent_id: CategoryResourceParentId;
   code: string;
   name: string;
-  income_account_id: CategoryResourceIncomeAccountId;
-  expense_account_id: CategoryResourceExpenseAccountId;
-  inventory_account_id: CategoryResourceInventoryAccountId;
+  income_account_id?: CategoryResourceIncomeAccountId;
+  expense_account_id?: CategoryResourceExpenseAccountId;
+  inventory_account_id?: CategoryResourceInventoryAccountId;
   default_valuation_method: CategoryResourceDefaultValuationMethod;
   parent?: CategoryResourceParent;
   children?: CategoryResource[];

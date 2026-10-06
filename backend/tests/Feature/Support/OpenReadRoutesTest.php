@@ -26,10 +26,14 @@ class OpenReadRoutesTest extends TestCase
         'api/v1/account' => 'The caller\'s own profile.',
         'api/v1/currencies' => 'Reference data every document form needs.',
         'api/v1/exchange-rates' => 'Shared rate lookup (writes need currency.exchange-rate.manage, A1); a Finance decision may narrow it later.',
+        'api/v1/parties' => 'Shared trading-partner identities; nested financial fields are projected under ADR 0084.',
+        'api/v1/customer-accounts' => 'Shared account references/terms; credit and control mappings are projected under ADR 0084.',
+        'api/v1/supplier-accounts' => 'Shared account references/terms; control mappings are projected under ADR 0084.',
+        'api/v1/chart-of-accounts' => 'Shared account identity/structure catalogue, without balances or trading-partner/item mappings (ADR 0084).',
         'api/v1/uoms' => 'Reference data every quantity field needs.',
         'api/v1/item-packagings' => 'Reference data: the pack-size catalogue every item form offers; carries no price or stock figure.',
-        'api/v1/categories' => 'Shared item lookup; the GL-account fields on it are the open Finance decision A4/Q34.',
-        'api/v1/items' => 'Shared item lookup; GL fields are A4/Q34, and cost/price fields are already projected by capability.',
+        'api/v1/categories' => 'Shared item lookup; GL mapping keys are projected by ADR 0084 field authority.',
+        'api/v1/items' => 'Shared item lookup; GL mappings (ADR 0084) and cost/price fields are projected by capability.',
         'api/v1/item-quantity-units' => 'Reference data: the units an item may be stocked or bought in; no price or stock figure.',
         'api/v1/warehouses' => 'Shared lookup every stock and purchasing form needs; carries no stock figure.',
         'api/v1/locations' => 'Shared lookup every stock and purchasing form needs; carries no stock figure.',
@@ -50,10 +54,6 @@ class OpenReadRoutesTest extends TestCase
     /** Open today and NOT yet decided — each is an open item in the audit tracker, not an approval. `uri => where it is tracked`. */
     private const OPEN_PENDING_REVIEW = [
         'api/v1/company' => 'Company profile incl. registration/tax numbers: confirm what a non-administrator should see (Core, Part 2).',
-        'api/v1/parties' => 'Q34 / A3: Finance decides field visibility for trading-partner master data.',
-        'api/v1/customer-accounts' => 'Q34 / A3: credit limit, terms and control-account IDs await the Finance decision.',
-        'api/v1/supplier-accounts' => 'Q34 / A3: terms and control-account IDs await the Finance decision.',
-        'api/v1/chart-of-accounts' => 'A2: account lookup is shared; Finance decides any narrower read policy.',
     ];
 
     public function test_every_id_less_read_open_to_a_user_with_no_capability_is_named_with_a_reason(): void

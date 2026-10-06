@@ -98,8 +98,9 @@ in the same commit.
 
 | [0082](0082-reconcile-package-balances-with-stock-operations.md) | Reconcile package balances with stock operations | proposed | 2026-10-03 |
 | [0083](0083-layered-stock-read-capabilities-and-blind-counting.md) | Layered stock-read capabilities (availability / stock / movement), and blind counting by role | accepted | 2026-10-03 |
+| [0084](0084-separate-financial-master-data-fields.md) | Separate financial master-data fields from ordinary maintenance | accepted | 2026-10-06 |
 
-**Next number: 0084**
+**Next number: 0085**
 
 ## By theme
 

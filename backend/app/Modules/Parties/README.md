@@ -53,6 +53,14 @@ foreign-key path, not a boundary violation (see
 Writes to these tables from outside this module are the thing to avoid — go through the Actions
 above, not a direct `->update()` on the model.
 
+### Financial account fields
+
+ADR 0084 adds separate credit read/manage, payment-term manage and Accounting mapping read/manage
+capabilities. Terms stay readable; credit/control-account keys are omitted without field read (or
+management), including nested/mutation responses. Requests and all four account Actions refuse
+protected key presence without field management; omitted values are preserved. Mandatory account
+creation needs terms/mapping management as well as account maintenance. See the domain access section.
+
 ## Related
 
 - [domain/parties.md](../../../../docs/domain/parties.md)

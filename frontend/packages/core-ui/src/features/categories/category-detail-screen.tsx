@@ -11,14 +11,19 @@ import { usePermission } from '../../hooks/use-permission';
 
 export function CategoryDetailScreen() {
   const mayManage = usePermission('inventory.category.manage');
+  const mayViewMappings = usePermission('accounting.account-mapping.view');
+  const mayManageMappings = usePermission('accounting.account-mapping.manage');
+  const showMappings = mayViewMappings || mayManageMappings;
   const id = Number(useParams<{ id: string }>().id);
   const navigate = useNavigate();
   const query = useCategoriesShow(id, { include: 'parent,children' });
   const category = query.data?.status === 200 ? query.data.data.data : undefined;
-  const accountsQuery = useChartOfAccountsIndex({ per_page: 100, sort: 'code' });
+  const accountsQuery = useChartOfAccountsIndex({ per_page: 100, sort: 'code' }, { query: { enabled: showMappings } });
   const accounts = accountsQuery.data?.status === 200 ? accountsQuery.data.data.data : [];
-  const account = (accountId: number | null) => accounts.find((a) => a.id === accountId);
-  const { contentRef, print } = useQuickPrint({ documentTitle: category ? `Category ${category.code}` : 'Category' });
+  const account = (accountId: number | null | undefined) => accounts.find((a) => a.id === accountId);
+  const { contentRef, print } = useQuickPrint({
+    documentTitle: category ? `Category ${category.code}` : 'Category',
+  });
   if (query.isLoading)
     return (
       <div className="space-y-4 p-6">
@@ -35,7 +40,7 @@ export function CategoryDetailScreen() {
         </Button>
       </div>
     );
-  const display = (accountId: number | null) => {
+  const display = (accountId: number | null | undefined) => {
     const a = account(accountId);
     return a ? `${a.code} — ${a.name}` : undefined;
   };
@@ -46,17 +51,33 @@ export function CategoryDetailScreen() {
         { label: 'Code', value: category.code },
         { label: 'Name', value: category.name },
         { label: 'Parent', value: category.parent?.name ?? '' },
-        { label: 'Default valuation', value: category.default_valuation_method ?? 'Inherited' },
+        {
+          label: 'Default valuation',
+          value: category.default_valuation_method ?? 'Inherited',
+        },
       ],
     },
-    {
-      title: 'GL account defaults',
-      fields: [
-        { label: 'Income account', value: display(category.income_account_id) ?? 'Inherited' },
-        { label: 'Expense account', value: display(category.expense_account_id) ?? 'Inherited' },
-        { label: 'Inventory account', value: display(category.inventory_account_id) ?? 'Inherited' },
-      ],
-    },
+    ...(showMappings && 'inventory_account_id' in category
+      ? [
+          {
+            title: 'GL account defaults',
+            fields: [
+              {
+                label: 'Income account',
+                value: display(category.income_account_id) ?? 'Inherited',
+              },
+              {
+                label: 'Expense account',
+                value: display(category.expense_account_id) ?? 'Inherited',
+              },
+              {
+                label: 'Inventory account',
+                value: display(category.inventory_account_id) ?? 'Inherited',
+              },
+            ],
+          },
+        ]
+      : []),
   ];
   return (
     <div className="space-y-4 p-6">
@@ -67,12 +88,14 @@ export function CategoryDetailScreen() {
         actions={
           <>
             <PrintTrigger onPrint={print} />
-            {mayManage && <Button asChild size="sm">
-              <Link to={`/categories/${id}/edit`}>
-                <Pencil className="h-4 w-4" />
-                Edit
-              </Link>
-            </Button>}
+            {mayManage && (
+              <Button asChild size="sm">
+                <Link to={`/categories/${id}/edit`}>
+                  <Pencil className="h-4 w-4" />
+                  Edit
+                </Link>
+              </Button>
+            )}
           </>
         }
       />
@@ -83,11 +106,13 @@ export function CategoryDetailScreen() {
           <DetailField label="Parent">{category.parent?.name}</DetailField>
           <DetailField label="Default valuation">{category.default_valuation_method ?? 'Inherited'}</DetailField>
         </DetailSection>
-        <DetailSection title="GL account defaults">
-          <DetailField label="Income account">{display(category.income_account_id) ?? 'Inherited'}</DetailField>
-          <DetailField label="Expense account">{display(category.expense_account_id) ?? 'Inherited'}</DetailField>
-          <DetailField label="Inventory account">{display(category.inventory_account_id) ?? 'Inherited'}</DetailField>
-        </DetailSection>
+        {showMappings && 'inventory_account_id' in category && (
+          <DetailSection title="GL account defaults">
+            <DetailField label="Income account">{display(category.income_account_id) ?? 'Inherited'}</DetailField>
+            <DetailField label="Expense account">{display(category.expense_account_id) ?? 'Inherited'}</DetailField>
+            <DetailField label="Inventory account">{display(category.inventory_account_id) ?? 'Inherited'}</DetailField>
+          </DetailSection>
+        )}
         {category.children && category.children.length > 0 && (
           <DetailSection title="Child categories">
             {category.children.map((child) => (

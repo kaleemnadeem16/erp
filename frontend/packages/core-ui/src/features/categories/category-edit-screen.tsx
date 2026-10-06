@@ -7,10 +7,12 @@ import { Skeleton } from '../../components/ui/skeleton';
 import { PageHeader } from '../../components/page/page-header';
 import { applyApiErrorsToForm } from '../../lib/api-errors';
 import { CATEGORY_FORM_FIELDS, CategoryForm, categoryPayload, type CategoryFormValues } from './category-form';
-const optionalId = (value: number | null) => (value == null ? 'NONE' : String(value));
+import { usePermission } from '../../hooks/use-permission';
+const optionalId = (value: number | null | undefined) => (value == null ? 'NONE' : String(value));
 
 export function CategoryEditScreen() {
   const id = Number(useParams<{ id: string }>().id);
+  const mayManageMappings = usePermission('accounting.account-mapping.manage');
   const navigate = useNavigate();
   const query = useCategoriesShow(id);
   const category = query.data?.status === 200 ? query.data.data.data : undefined;
@@ -19,13 +21,13 @@ export function CategoryEditScreen() {
   const submit = (values: CategoryFormValues, form: UseFormReturn<CategoryFormValues>) => {
     setError(null);
     mutation.mutate(
-      { category: id, data: categoryPayload(values) },
+      { category: id, data: categoryPayload(values, mayManageMappings) },
       {
         onSuccess: (r) => {
           if (r.status === 200) navigate(`/categories/${r.data.data.id}`);
         },
         onError: (e) => setError(applyApiErrorsToForm(e, form.setError, CATEGORY_FORM_FIELDS)),
-      }
+      },
     );
   };
   if (query.isLoading)

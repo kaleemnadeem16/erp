@@ -88,7 +88,11 @@ check the capability, including non-HTTP callers. DELETE also refuses callers wi
 capability in the controller before invoking the Action (2026-10-06). The existing company scope and foreign-key
 guards still apply. This permission does **not** decide who may see or edit the Item/Category
 GL-account mapping fields or customer/supplier control-account fields; those cross-module field
-policies remain open in the [access audit](../architecture/access-security-audit.md).
+policies are separate under [ADR 0084](../decisions/0084-separate-financial-master-data-fields.md):
+`accounting.account-mapping.view` reads mappings; `.manage` changes them and supplies minimum read.
+Both supplement resource authority, and `AccountMappingAccess` centralises these checks across
+Accounting references in Inventory and Parties. Shared chart identity/structure reads remain
+available; they expose no balances or particular customer/item account assignments.
 
 No chart-maintenance SPA screen exists yet. A future screen should gate write controls using
 the effective capability, with backend checks remaining authoritative. The configured

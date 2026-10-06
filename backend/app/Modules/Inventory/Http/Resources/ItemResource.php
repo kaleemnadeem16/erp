@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Inventory\Http\Resources;
 
+use App\Modules\Accounting\Support\AccountMappingAccess;
 use App\Modules\Inventory\Models\Item;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -36,9 +37,9 @@ class ItemResource extends JsonResource
             'avco_pool_scope' => $item->avco_pool_scope?->value,
             'tracking' => $item->tracking->value,
             'category_id' => $item->category_id,
-            'income_account_id' => $item->income_account_id,
-            'expense_account_id' => $item->expense_account_id,
-            'inventory_account_id' => $item->inventory_account_id,
+            'income_account_id' => $this->when(AccountMappingAccess::canView($request->user()), fn () => $item->income_account_id),
+            'expense_account_id' => $this->when(AccountMappingAccess::canView($request->user()), fn () => $item->expense_account_id),
+            'inventory_account_id' => $this->when(AccountMappingAccess::canView($request->user()), fn () => $item->inventory_account_id),
             'custom_fields' => $item->custom_fields,
             'status' => $item->status->value,
             'category' => $this->whenLoaded('category', fn () => new CategoryResource($item->category)),

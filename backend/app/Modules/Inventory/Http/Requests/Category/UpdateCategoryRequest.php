@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Inventory\Http\Requests\Category;
 
+use App\Modules\Accounting\Support\AccountMappingAccess;
 use App\Modules\Inventory\Models\Category;
 use App\Modules\Inventory\Support\ValuationMethod;
 use App\Rules\Support\CompanyScoped;
@@ -14,7 +15,8 @@ class UpdateCategoryRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('inventory.category.manage') === true;
+        return $this->user()?->can('inventory.category.manage') === true
+            && AccountMappingAccess::canWrite($this->user(), $this->all());
     }
 
     /**

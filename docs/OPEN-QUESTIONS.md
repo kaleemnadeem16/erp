@@ -147,28 +147,6 @@ digest delivery. Those are prompts, not a predetermined architecture. Consumers 
 expiries, overdue steps and escalation capabilities, recalculation and negative-stock reviews past their SLA, and the
 purchase-order and quotation workflows.
 
-### Q34 — Finance-owned field visibility for accounts and credit terms
-**Blocks:** Enforcing field-level access on Item/Category GL-account IDs, customer credit limits and terms, and customer/supplier control-account IDs (access audit A3 and A4)
-
-Which of these fields are sensitive, who may read them, and who may change them? Item/Category GL-account IDs are returned unconditionally on
-shared reads today; customer credit, payment terms and control-account IDs have write boundaries (Parties capabilities) but no field policy.
-Decide per field: visible to everyone who can see the record, visible only with a Finance capability, or write-restricted while readable; then
-list, detail, lookup, print and any export must all follow it. Reuse the ADR 0069/0073/0083 pattern (omit restricted keys; never send a zero).
-See [access-security-audit.md](architecture/access-security-audit.md).
-
-**Decision brief (2026-10-06; proposed, awaiting Finance/owner):** Options: retain shared reads;
-restrict all listed fields; or separate operational terms from Finance-owned risk/account mappings.
-**Recommend the third:** credit limits and Item/Category/customer/supplier GL mappings need separate
-Finance read and change capabilities; payment terms stay readable for operational work, with
-Finance-controlled edits. Base resource maintenance alone must not authorise those changes.
-Consequences: append capabilities and approved grant migrations; reject restricted-field writes
-without clearing stored values; omit keys on list/detail/nested lookup/print and future exports,
-including mutation responses. Match filters/sorts and chart/account selectors to the chosen policy.
-Owner must confirm each field and whether a writer also gets its minimum read projection.
-Basis: [ADR 0069](decisions/0069-separate-purchasing-commercial-visibility-from-receiving.md),
-[ADR 0073](decisions/0073-separate-inventory-valuation-visibility-from-stock-operations.md),
-ADR 0083 and the field-security comparison below. A3/A4 projections remain unimplemented.
-
 ### Q35 — Approval evidence exception and authority-ceiling visibility
 **Blocks:** Finalising the access audit's information-flow review for approvals (not any build)
 
@@ -182,14 +160,29 @@ and history-wide ceilings/reasons; remove the exception and require document-cos
 or retain request-specific amount evidence while separately protecting ceilings and free text.
 **Recommend the third:** actionable/past deciders keep the pinned request total and FX evidence,
 never PO line prices through approval evidence; all-company ceilings require authority management
-or a separate read capability, while `mine` stays self-only. Hide decision/closing reasons from
-viewers lacking subject evidence access unless they participated; do not attempt numeric-text
+or a separate read capability, while `mine` stays self-only. Project decision/closing reasons to the same audience as that request's amount (subject evidence
+readers, current actionable approver, recorded decider/principal); do not attempt numeric-text
 scrubbing. Consequences: less context for non-financial auditors, explicit ceiling-reader rollout,
 and consistent reason projection across list/show/inbox/decide/withdraw. Finance/owner must confirm
 whether past-decider access persists after reassignment and which reason audiences are legitimate.
 Basis: [ADR 0070](decisions/0070-shared-configurable-approval-engine.md) and existing
 `ApprovalEvidenceVisibilityTest`; vendor approval limits govern eligibility, not our read policy.
 No exception, ceiling or reason policy changed by this audit.
+
+**Research refresh for the next owner decision (2026-10-06):** Reused ADR 0070's workflow
+comparison. [NetSuite's official approval-limit guidance](https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_N2395573.html)
+routes a transaction by its amount and the approver's limit, with currency conversion;
+[Dynamics field security](https://learn.microsoft.com/en-us/dynamics365/fin-ops-core/dev-itpro/data-entities/security-data-entities#sensitive-data)
+permits separate privileges for nonessential sensitive fields. These support amount-based
+eligibility plus distinct data access, but neither prescribes our past-decider or reason audience.
+Recommended scope: current actionable approver and recorded decider/principal retain the pinned
+request total/FX evidence; ordinary history readers receive outcome/identity/time but no monetary
+free-text reasons without subject evidence authority. Proposed `approvals.authority.view` permits
+company ceiling lists; authority managers also read them, and `mine` remains self-only. History
+readers who legitimately audit ceilings need explicit field-duty assignment/backfill approval.
+A request author may insert figures into reasons, so hiding totals alone is insufficient; numeric
+scrubbing cannot reliably remove all disclosures. This remains a proposal, with no Q35 code change.
+
 
 ### Q36 — Bearer-token lifetime and device sessions
 **Blocks:** Any mobile client or integration using bearer tokens (Phase 7)
@@ -228,6 +221,13 @@ existing ADR research were used, without treating unverified detail as policy.
 ## Answered---
 
 ## Answered
+
+<a id="q34--finance-owned-field-visibility-for-accounts-and-credit-terms"></a>
+
+Q34 was resolved on 2026-10-06 by [ADR 0084](decisions/0084-separate-financial-master-data-fields.md):
+credit limits and account mappings have separate read/change capabilities; payment terms remain
+readable with separately controlled changes.
+
 
 Answered questions live in [decisions/](decisions/) as ADRs. See the
 [decision index](decisions/README.md) for the full list.

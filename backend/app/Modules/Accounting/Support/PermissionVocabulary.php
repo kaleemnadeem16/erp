@@ -9,6 +9,10 @@ final class PermissionVocabulary
     /** @return list<string> */
     public static function all(): array
     {
-        return ['accounting.chart-of-account.manage'];
+        return [
+            'accounting.chart-of-account.manage',
+            'accounting.account-mapping.view',
+            'accounting.account-mapping.manage',
+        ];
     }
 }
