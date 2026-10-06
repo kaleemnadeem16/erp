@@ -15,11 +15,11 @@ export const RECIPE_READ_PERMISSIONS = [
 
 export function useRecipeAccess(): boolean {
   const user = useAuthStore((state) => state.user);
+  const permissions: unknown[] = Array.isArray(user?.permissions)
+    ? user.permissions
+    : [];
 
-  return (
-    Array.isArray(user?.permissions) &&
-    RECIPE_READ_PERMISSIONS.some((permission) =>
-      user.permissions.includes(permission),
-    )
+  return RECIPE_READ_PERMISSIONS.some((permission) =>
+    permissions.includes(permission),
   );
 }
