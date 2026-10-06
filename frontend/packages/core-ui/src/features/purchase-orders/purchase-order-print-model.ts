@@ -1,3 +1,4 @@
+import { formatDateTime } from '../../lib/format-date';
 import type { PurchaseOrderResource, SupplierAccountResource } from '@erp/core-api';
 import type { CompanyView } from '../company/company-types';
 import type { PrintSettings } from '../../stores/print-settings-store';
@@ -109,6 +110,7 @@ export function buildPurchaseOrderPrintDocument(input: {
         ...field('Site', site?.name),
         ...field('Tax ID', supplier?.party?.tax_id),
         ...field('Registration', supplier?.party?.registration_no),
+        ...field('Website', supplier?.party?.website),
       ],
     },
     metadata: [
@@ -118,6 +120,9 @@ export function buildPurchaseOrderPrintDocument(input: {
         ? [{ label: 'Payment terms', value: `${supplier.payment_terms_days} days` }]
         : []),
       ...(currency ? [{ label: 'Currency', value: currency }] : []),
+      ...(supplier?.lead_time_days != null ? [{ label: 'Lead time', value: `${supplier.lead_time_days} days` }] : []),
+      ...field('Created', formatDateTime(order.created_at)),
+      ...field('Issued', order.issued_at ? formatDateTime(order.issued_at) : undefined),
       ...field('External reference', order.source_record_id),
     ],
     lines: (order.lines ?? []).map((line) => ({

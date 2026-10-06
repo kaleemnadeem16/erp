@@ -14,10 +14,49 @@ test('PO print uses real company data, amount columns and one authoritative tota
     });
     await route.fulfill({ response, json: body });
   });
+  await page.route('**/api/v1/purchase-orders/173?*', async (route) => {
+    const response = await route.fetch();
+    const body = await response.json();
+    body.data.supplier_site = {
+      id: 88001,
+      supplier_account_id: body.data.supplier_account_id,
+      role: 'ORDERING',
+      is_default: true,
+      party_site: {
+        id: 88002,
+        party_id: 88003,
+        code: 'main',
+        name: 'Main office',
+        address_line1: '18 Industrial Road',
+        address_line2: null,
+        city: 'Lahore',
+        state: 'Punjab',
+        postal_code: '54000',
+        country_code: 'PK',
+        status: 'ACTIVE',
+      },
+    };
+    await route.fulfill({ response, json: body });
+  });
+  await page.route('**/api/v1/supplier-accounts/*?*', async (route) => {
+    const response = await route.fetch();
+    const body = await response.json();
+    Object.assign(body.data.party, {
+      tax_id: 'SUPPLIER-TAX-18',
+      registration_no: 'SUPPLIER-REG-18',
+      website: 'https://supplier.example',
+    });
+    await route.fulfill({ response, json: body });
+  });
   await page.goto('/purchase-orders/173');
   const print = page.getByTestId('purchase-order-print');
   await expect(print).toContainText('Coating Works');
   await expect(print).toContainText('Punjab Pigments');
+  await expect(print).toContainText('18 Industrial Road');
+  await expect(print).toContainText('SUPPLIER-TAX-18');
+  await expect(print.locator('table')).toHaveCount(1);
+  await expect(print.locator('.po-print-order-details')).toContainText('PO details');
+
   await expect(print).toContainText('95,000.0000');
   await expect(print.getByText('42 Works Road', { exact: false })).toHaveCount(1);
   await expect(print.locator('.po-print-total')).toHaveCount(1);

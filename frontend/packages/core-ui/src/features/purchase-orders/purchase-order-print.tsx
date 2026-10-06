@@ -52,14 +52,26 @@ function Header({ document: d }: SectionProps) {
         {d.company.logoUrl && <img src={d.company.logoUrl} alt="Company logo" />}
         <div>
           <div className="po-print-company">{d.company.name}</div>
-          {d.company.legalName && <div>{d.company.legalName}</div>}
-          {d.company.address.length > 0 && <address>{d.company.address.join(' · ')}</address>}
+          {d.company.legalName && <div className="po-print-legal-name">{d.company.legalName}</div>}
+          {d.company.address.length > 0 && <address>{d.company.address.join(', ')}</address>}
           <div className="po-print-contact">
-            {d.company.fields.map((f) => (
-              <span key={f.label}>
-                {f.label}: {f.value}
-              </span>
-            ))}
+            {d.company.fields
+              .filter((f) => ['Phone', 'Email', 'Web'].includes(f.label))
+              .map((f) => (
+                <div key={f.label}>
+                  <span>{f.label}</span>
+                  <strong>{f.value}</strong>
+                </div>
+              ))}
+          </div>
+          <div className="po-print-registration">
+            {d.company.fields
+              .filter((f) => !['Phone', 'Email', 'Web'].includes(f.label))
+              .map((f) => (
+                <span key={f.label}>
+                  {f.label}: <strong>{f.value}</strong>
+                </span>
+              ))}
           </div>
         </div>
       </div>
@@ -83,14 +95,17 @@ function Parties({ document: d }: SectionProps) {
 }
 function Metadata({ document: d }: SectionProps) {
   return (
-    <dl className="po-print-meta">
-      {d.metadata.map((f) => (
-        <div key={f.label}>
-          <dt>{f.label}</dt>
-          <dd>{f.value}</dd>
-        </div>
-      ))}
-    </dl>
+    <section className="po-print-order-details">
+      <h2>PO details</h2>
+      <dl className="po-print-meta">
+        {d.metadata.map((f) => (
+          <div key={f.label}>
+            <dt>{f.label}</dt>
+            <dd>{f.value}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
   );
 }
 function Lines({ document: d }: SectionProps) {
@@ -169,8 +184,11 @@ function Summary({ document: d }: SectionProps) {
       )}
       {d.commercial && d.total !== undefined && (
         <section className="po-print-total">
-          <span>Total ({d.currency || 'order currency'})</span>
-          <strong>{printDecimal(d.total)}</strong>
+          <h2>Order total</h2>
+          <div className="po-print-total-body">
+            <span>Total ({d.currency || 'order currency'})</span>
+            <strong>{printDecimal(d.total)}</strong>
+          </div>
         </section>
       )}
     </div>

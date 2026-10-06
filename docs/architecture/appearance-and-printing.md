@@ -81,8 +81,8 @@ split and when to reach for which.
 ## Default purchase-order format (2026-10-06)
 
 PO Quick Print has a dedicated A4 layout in `features/purchase-orders/purchase-order-print.tsx`
-and its stylesheet. It uses a compact letterhead, supplier, order metadata, repeatable item-table
-headings, notes, one authoritative total and a footer. Company identity/address/contact and tax
+and its stylesheet. It uses a spacious letterhead, supplier and PO details in separate panels
+side by side, repeatable item-table headings, notes, one authoritative total and a footer. Company identity/address/contact and tax
 identifiers come from the Company profile, with the existing browser logo/accent/footer and
 signature choices. Missing optional fields are omitted. The PO has no delivery destination,
 contact person, Incoterms or agreed legal terms today: the reference image's values are not
@@ -104,11 +104,14 @@ The existing commercial-read gate and API omissions both apply. Decimal strings 
 separators without float conversion or loss of precision. Discount/tax are labelled whole-line
 amounts, rates retain their price quantity/unit basis, and totals are read from the API; no
 frontend subtotal arithmetic is introduced. Unsupported aggregate subtotal/discount/tax rows are
-omitted rather than reconstructed. No new business action, grant or print endpoint is added.
+omitted rather than reconstructed. Section headers have a shaded band, labels/values have explicit
+spacing and font weights, and notes/total use separate panels. Only line items use a table; other
+fields use definition lists. Available supplier site, tax/registration/website, lead time and
+created/issued timestamps are included. No new business action, grant or print endpoint is added.
 
 Browser verification covers company-profile branding without repeated addresses, amount labels,
 missing optional sections, draft identification, quantity-only visibility and a 55-line order.
-The generated one-page and seven-page PDFs were inspected: headings repeat on every page,
+The generated one-page and multi-page PDFs were inspected: headings repeat on every page,
 all lines are retained and the precise server total appears once at the end.
 
 ### Format comparison
