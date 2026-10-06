@@ -90,6 +90,13 @@ Saved commercial values and exact amounts survive matching-line operational edit
 package composition prevents replacement. Posted corrections still use reversal.
 See [the contract](../../../../docs/domain/purchasing.md#correcting-a-draft-receipt-2026-10-06).
 
+## Default PO Quick Print
+
+The frontend uses a dedicated modular A4 default over existing projected PO/supplier/company data.
+It preserves commercial visibility and server totals, distinguishes drafts, and offers a typed
+section/data boundary for later backend document templates. No new endpoint or print permission.
+See [printing](../../../../docs/architecture/appearance-and-printing.md#default-purchase-order-format-2026-10-06).
+
 ## Related
 
 - [Packaged purchasing demo](../../../../docs/journeys/packaged-purchasing-demo.md) — opt-in PackagedPurchasingDemoSeeder; creates definitions and workflow examples once, preserving receiver progress on reruns.

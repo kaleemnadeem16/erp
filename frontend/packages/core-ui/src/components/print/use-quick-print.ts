@@ -41,12 +41,12 @@ const quickPrintPageStyle = `
  * into a hidden iframe, so the source node can stay visually hidden
  * (`className="hidden"`) in the normal page without affecting the printout.
  */
-export function useQuickPrint(options?: { documentTitle?: string }) {
+export function useQuickPrint(options?: { documentTitle?: string; pageStyle?: string }) {
   const contentRef = useRef<HTMLDivElement>(null);
   const print = useReactToPrint({
     contentRef,
     documentTitle: options?.documentTitle,
-    pageStyle: quickPrintPageStyle,
+    pageStyle: quickPrintPageStyle + (options?.pageStyle ?? ''),
   });
 
   return { contentRef, print };

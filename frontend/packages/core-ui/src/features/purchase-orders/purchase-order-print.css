@@ -1,0 +1,274 @@
+.po-print {
+  --po-print-accent: #183b56;
+  background: white;
+  color: #162536;
+  font:
+    11px/1.5 Arial,
+    sans-serif;
+  width: 100%;
+  text-align: left;
+}
+.po-print * {
+  box-sizing: border-box;
+}
+.po-print h1,
+.po-print h2,
+.po-print p,
+.po-print dl,
+.po-print dd {
+  margin: 0;
+}
+.po-print h2 {
+  color: var(--po-print-accent);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 9px;
+}
+.po-print address {
+  font-style: normal;
+  color: #526170;
+  margin-top: 5px;
+}
+.po-print-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 28px;
+  border-bottom: 3px solid var(--po-print-accent);
+  padding-bottom: 20px;
+  break-inside: avoid;
+}
+.po-print-letterhead {
+  display: flex;
+  gap: 14px;
+  flex: 1;
+  min-width: 0;
+}
+.po-print-letterhead img {
+  width: 55px;
+  height: 55px;
+  object-fit: contain;
+}
+.po-print-company {
+  font-size: 24px;
+  line-height: 1.15;
+  font-weight: 750;
+  color: var(--po-print-accent);
+}
+.po-print-contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 14px;
+  margin-top: 7px;
+  color: #526170;
+  font-size: 9px;
+}
+.po-print-contact span {
+  overflow-wrap: anywhere;
+}
+.po-print-identity {
+  flex: 0 0 250px;
+  text-align: right;
+}
+.po-print-eyebrow {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: #526170;
+}
+.po-print h1 {
+  font-size: 23px;
+  line-height: 1.4;
+  text-transform: uppercase;
+  color: var(--po-print-accent);
+}
+.po-print-number {
+  font-size: 15px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+.po-print-status {
+  display: inline-block;
+  border: 1px solid #ccd5dd;
+  padding: 2px 8px;
+  font-size: 9px;
+  margin-top: 6px;
+}
+.po-print-draft {
+  margin-top: 5px;
+  font-size: 9px;
+  font-weight: 700;
+}
+.po-print-parties {
+  display: flex;
+  gap: 24px;
+  padding: 20px 0;
+  break-inside: avoid;
+}
+.po-print-party {
+  flex: 1;
+  min-width: 0;
+  border-left: 3px solid #dbe4eb;
+  padding-left: 12px;
+}
+.po-print-party > strong {
+  font-size: 14px;
+}
+.po-print-party dl {
+  margin-top: 7px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+}
+.po-print-party dl div {
+  display: flex;
+  gap: 7px;
+}
+.po-print dt {
+  color: #526170;
+}
+.po-print-meta {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px 16px;
+  border-top: 1px solid #dbe4eb;
+  border-bottom: 1px solid #dbe4eb;
+  padding: 12px 0;
+  break-inside: avoid;
+}
+.po-print-meta dt {
+  font-size: 9px;
+}
+.po-print-meta dd {
+  font-weight: 600;
+  margin-top: 3px;
+}
+.po-print-lines {
+  margin-top: 22px;
+}
+.po-print-lines h2 {
+  break-after: avoid;
+}
+.po-print table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: auto;
+  font-size: 10px;
+}
+.po-print thead {
+  display: table-header-group;
+}
+.po-print th {
+  padding: 8px 5px;
+  background: #edf2f6;
+  border-top: 1px solid #cdd8e1;
+  border-bottom: 1px solid #cdd8e1;
+  text-align: left;
+  font-size: 9px;
+  color: var(--po-print-accent);
+}
+.po-print td {
+  padding: 10px 5px;
+  border-bottom: 1px solid #dbe4eb;
+  vertical-align: top;
+}
+.po-print tr {
+  break-inside: avoid;
+}
+.po-print .po-print-numeric {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.po-print-description {
+  width: 40%;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.po-print td small {
+  display: block;
+  color: #526170;
+  font-size: 8px;
+  margin-top: 3px;
+  white-space: normal;
+}
+.po-print-seq {
+  width: 20px;
+}
+.po-print-table-note {
+  color: #526170;
+  font-size: 9px;
+  padding-top: 7px;
+}
+.po-print-summary {
+  display: flex;
+  align-items: flex-start;
+  gap: 25px;
+  margin-top: 22px;
+}
+.po-print-notes {
+  flex: 1;
+  min-width: 0;
+}
+.po-print-notes p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.po-print-total {
+  margin-left: auto;
+  flex: 0 0 230px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 12px;
+  border-top: 2px solid var(--po-print-accent);
+  background: #edf2f6;
+  break-inside: avoid;
+}
+.po-print-total strong {
+  font-size: 16px;
+  color: var(--po-print-accent);
+  font-variant-numeric: tabular-nums;
+}
+.po-print-terms {
+  margin-top: 20px;
+  break-inside: avoid;
+}
+.po-print-terms ol {
+  padding-left: 17px;
+}
+.po-print-signatures {
+  display: flex;
+  gap: 30px;
+  margin-top: 48px;
+  break-inside: avoid;
+}
+.po-print-signatures > div {
+  flex: 1;
+  border-top: 1px solid #8896a3;
+  padding-top: 6px;
+}
+.po-print-signatures small {
+  display: block;
+  color: #526170;
+  margin-top: 12px;
+}
+.po-print-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  border-top: 1px solid #cdd8e1;
+  margin-top: 28px;
+  padding-top: 8px;
+  color: #526170;
+  font-size: 8px;
+  break-inside: avoid;
+}
+@media print {
+  .po-print {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

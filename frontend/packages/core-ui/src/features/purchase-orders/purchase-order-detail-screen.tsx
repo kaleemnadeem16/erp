@@ -1,3 +1,4 @@
+import { PurchaseOrderQuickPrint } from "./purchase-order-print";
 import { useEffect, useState, type ReactNode } from "react";
 import { useLocation, useNavigate, useParams } from "react-router";
 import {
@@ -26,11 +27,8 @@ import {
 } from "../../components/page/page-header";
 import { RecordSheet } from "../../components/page/record-sheet";
 import {
-  DetailPrintLayout,
-  PrintableTable,
   PrintTrigger,
   useQuickPrint,
-  type DetailPrintSection,
 } from "../../components/print";
 import { Skeleton } from "../../components/ui/skeleton";
 import {
@@ -178,6 +176,7 @@ export function PurchaseOrderDetailScreen({
   }, [quickAction, order, mayIssue, mayCancel, navigate, currentPath, search]);
   const fail = (error: unknown) => setActionError(getApiErrorMessage(error));
   const { contentRef: printRef, print } = useQuickPrint({
+    pageStyle: "@page { size: A4; margin: 10mm; }",
     documentTitle: order?.number
       ? `Purchase Order ${order.number}`
       : `Draft Purchase Order #${orderId}`,
@@ -305,216 +304,6 @@ export function PurchaseOrderDetailScreen({
   const supplierLabel = supplier
     ? `${supplier.code}${supplier.party?.name ? ` — ${supplier.party.name}` : ""}`
     : `Supplier #${order.supplier_account_id}`;
-
-  const printSections: DetailPrintSection[] = [
-    {
-      title: "Order",
-      fields: [
-        { label: "PO number", value: order.number ?? `Draft #${order.id}` },
-        { label: "Status", value: order.status },
-        { label: "Order date", value: order.order_date },
-        {
-          label: "Expected delivery",
-          value: order.expected_delivery_date ?? "",
-        },
-        ...(order.issued_at
-          ? [
-              {
-                label: "Issued at",
-                value: formatDateTime(order.issued_at) ?? "",
-              },
-            ]
-          : []),
-        ...(order.closed_at
-          ? [
-              {
-                label: "Closed at",
-                value: formatDateTime(order.closed_at) ?? "",
-              },
-            ]
-          : []),
-        ...(order.cancelled_at
-          ? [
-              {
-                label: "Cancelled at",
-                value: formatDateTime(order.cancelled_at) ?? "",
-              },
-            ]
-          : []),
-        ...(order.cancellation_reason
-          ? [{ label: "Cancellation reason", value: order.cancellation_reason }]
-          : []),
-        {
-          label: "Currency",
-          value: currency
-            ? `${currency.code} — ${currency.name}`
-            : `Currency #${order.currency_id}`,
-        },
-        ...(mayViewCommercialCost
-          ? [
-              { label: "FX policy", value: order.fx_policy ?? "" },
-              {
-                label: "FX rate",
-                value: `${order.fx_rate} (${order.fx_rate_date}, ${order.fx_rate_source})`,
-              },
-            ]
-          : []),
-      ],
-    },
-    {
-      title: "Supplier",
-      fields: [
-        { label: "Supplier", value: supplierLabel },
-        ...(order.supplier_site
-          ? [
-              {
-                label: SITE_ROLE_LABEL[order.supplier_site.role] ?? "Site",
-                value: [
-                  order.supplier_site.party_site.name,
-                  siteAddressLine(order.supplier_site),
-                ]
-                  .filter(Boolean)
-                  .join(" — "),
-              },
-            ]
-          : []),
-        ...(supplier?.party?.tax_id
-          ? [{ label: "Tax ID", value: supplier.party.tax_id }]
-          : []),
-        ...(supplier?.party?.registration_no
-          ? [
-              {
-                label: "Registration no.",
-                value: supplier.party.registration_no,
-              },
-            ]
-          : []),
-        {
-          label: "Payment terms",
-          value: supplier ? `${supplier.payment_terms_days} days` : "",
-        },
-      ],
-    },
-    {
-      title: "Record information",
-      fields: [
-        { label: "Created at", value: formatDateTime(order.created_at) ?? "" },
-        ...(order.inventory_cutover_id
-          ? [{ label: "Cutover origin", value: "Opening inventory commitment" }]
-          : []),
-        ...(order.source_system
-          ? [{ label: "Source system", value: order.source_system }]
-          : []),
-        ...(order.source_record_id
-          ? [{ label: "Legacy reference", value: order.source_record_id }]
-          : []),
-      ],
-    },
-    ...(order.notes
-      ? [
-          {
-            title: "Notes",
-            fullWidth: true,
-            fields: [{ label: "Notes", value: order.notes }],
-          },
-        ]
-      : []),
-  ];
-  const printLineColumns: DataColumn<PurchaseOrderLineResource>[] = [
-    {
-      key: "line_number",
-      header: "#",
-      value: (line) => line.line_number,
-      align: "right",
-    },
-    {
-      key: "item",
-      header: "Item",
-      value: (line) => line.item_code ?? `#${line.item_id}`,
-      cell: (line) => (
-        <div>
-          <div>{line.item_code ?? `#${line.item_id}`}</div>
-          {line.supplier_item_code && (
-            <div className="text-[9px] text-black/60">
-              SKU: {line.supplier_item_code}
-            </div>
-          )}
-        </div>
-      ),
-    },
-    {
-      key: "description",
-      header: "Description",
-      value: (line) => line.description,
-    },
-    {
-      key: "ordered_qty",
-      header: "Ordered",
-      value: (line) =>
-        `${line.ordered_qty} ${line.order_unit_label ?? uomCode(line.purchase_uom_id)}`,
-      cell: (line) => (
-        <div>
-          <div>
-            {line.ordered_qty}{" "}
-            {line.order_unit_label ?? uomCode(line.purchase_uom_id)}
-          </div>
-          {line.purchase_uom_id !== line.stock_uom_id && (
-            <div className="text-[9px] text-black/60">
-              = {line.ordered_stock_qty} {uomCode(line.stock_uom_id)}
-            </div>
-          )}
-        </div>
-      ),
-      align: "right",
-    },
-    ...(mayViewCommercialCost
-      ? ([
-          {
-            key: "unit_price",
-            header: "Unit price",
-            value: (line) =>
-              line.unit_price +
-              " per " +
-              (line.price_quantity ?? "1") +
-              " " +
-              (line.price_unit_label ?? uomCode(line.purchase_uom_id)),
-            align: "right",
-          },
-          {
-            key: "discount_amount",
-            header: "Discount",
-            value: (line) => line.discount_amount,
-            align: "right",
-          },
-          {
-            key: "tax_amount",
-            header: "Tax",
-            value: (line) => line.tax_amount,
-            align: "right",
-          },
-          {
-            key: "line_amount",
-            header: "Amount",
-            value: (line) => `${line.line_amount} ${currency?.code ?? ""}`,
-            align: "right",
-          },
-        ] satisfies DataColumn<PurchaseOrderLineResource>[])
-      : []),
-  ];
-  const printLineColumnCount = printLineColumns.length;
-  const printTotalsFooter = (
-    <tr>
-      <td
-        colSpan={printLineColumnCount - 1}
-        className="px-1.5 py-2 text-right text-[9.5px] font-semibold uppercase tracking-wide text-black/60"
-      >
-        Order total
-      </td>
-      <td className="px-1.5 py-2 text-right text-[11px] font-bold text-[var(--print-accent)]">
-        {order.total_amount ?? "—"} {currency?.code ?? ""}
-      </td>
-    </tr>
-  );
 
   const actions = (
     <>
@@ -1093,23 +882,13 @@ export function PurchaseOrderDetailScreen({
       {/* Quick Print — a dedicated print-only layout, hidden until react-to-print clones it. */}
       <div className="hidden">
         <div ref={printRef}>
-          <DetailPrintLayout
-            title="Purchase order"
-            subtitle={
-              order.number
-                ? `No. ${order.number} · ${order.status}`
-                : `Draft #${order.id} · ${order.status}`
-            }
-            printedAt={new Date()}
-            sections={printSections}
-          >
-            <PrintableTable
-              columns={printLineColumns}
-              rows={order.lines ?? []}
-              getRowKey={(line) => line.id}
-              footer={mayViewCommercialCost ? printTotalsFooter : undefined}
-            />
-          </DetailPrintLayout>
+          <PurchaseOrderQuickPrint
+            order={order}
+            supplier={supplier}
+            currency={currency?.code ?? ""}
+            commercial={mayViewCommercialCost}
+            uom={uomCode}
+          />
         </div>
       </div>
     </>,

@@ -445,6 +445,14 @@ Unchanged saved amounts retain their rounding residual. A draft with recorded pa
 is refused rather than deleting that physical evidence; that internal workflow has no exposed UI.
 No new permission, grant or approval transition is needed for this update surface.
 
+### Default PO print
+
+The live PO's Print action uses a modular A4 document rather than reproducing its screen cards.
+It includes the company profile once, actual supplier/site, agreed price bases and fixed discount/
+tax amounts, with the API total and existing field visibility. Drafts are marked not issued;
+missing destination/contact/terms are omitted. The frontend default and later backend template
+boundary are documented in [printing](../architecture/appearance-and-printing.md#default-purchase-order-format-2026-10-06).
+
 ## Related
 
 - [Material resolution](material-resolution.md) — Phase 3 reports internal-stock shortages;

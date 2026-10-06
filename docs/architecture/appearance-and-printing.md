@@ -78,6 +78,52 @@ Backend-generated formal documents (stable PDFs, company letterhead templates, p
 separate, not-yet-built track; see the docblock on `components/print/use-quick-print.ts` for the
 split and when to reach for which.
 
+## Default purchase-order format (2026-10-06)
+
+PO Quick Print has a dedicated A4 layout in `features/purchase-orders/purchase-order-print.tsx`
+and its stylesheet. It uses a compact letterhead, supplier, order metadata, repeatable item-table
+headings, notes, one authoritative total and a footer. Company identity/address/contact and tax
+identifiers come from the Company profile, with the existing browser logo/accent/footer and
+signature choices. Missing optional fields are omitted. The PO has no delivery destination,
+contact person, Incoterms or agreed legal terms today: the reference image's values are not
+fabricated, company address is not assumed to be a ship-to, and generic conditions are not inserted.
+Signatures are blank and follow the existing print setting; no current user is invented as buyer
+or approver. Drafts explicitly say they are not issued. Browser page numbering remains a browser
+print-dialog choice, not a fabricated “1 of 1”.
+
+`buildPurchaseOrderPrintDocument` adapts the current projected API resources to a versioned,
+JSON-compatible `PurchaseOrderPrintDocument`. `PurchaseOrderPrintTemplate` consumes only that
+model and a versioned list of named sections. Each section renderer can be replaced independently
+through `overrides`; optional delivery and terms sections already accept supplied data. A future
+authorised backend document/template projection can feed that boundary without modifying the
+renderer or constructing HTML in the screen. This is a reversible frontend default, not an
+implemented backend template service or a stable archival PDF. Submitted approval print remains
+its separately projected frozen evidence; live PO print does not substitute for it.
+
+The existing commercial-read gate and API omissions both apply. Decimal strings get grouping
+separators without float conversion or loss of precision. Discount/tax are labelled whole-line
+amounts, rates retain their price quantity/unit basis, and totals are read from the API; no
+frontend subtotal arithmetic is introduced. Unsupported aggregate subtotal/discount/tax rows are
+omitted rather than reconstructed. No new business action, grant or print endpoint is added.
+
+Browser verification covers company-profile branding without repeated addresses, amount labels,
+missing optional sections, draft identification, quantity-only visibility and a 55-line order.
+The generated one-page and seven-page PDFs were inspected: headings repeat on every page,
+all lines are retained and the precise server total appears once at the end.
+
+### Format comparison
+
+Research accessed 2026-10-06: [ERPNext Purchase Order](https://docs.frappe.io/erpnext/purchase-order)
+separates supplier address, shipping address, letterhead and agreed terms;
+[Odoo's official PO template](https://github.com/odoo/odoo/blob/19.0/addons/purchase/report/purchase_order_templates.xml)
+uses an external letterhead, optional destination, order metadata, item/quantity/rate/amount table,
+notes and payment terms. We reuse their separation and optionality, rather than duplicating the
+company address or mirroring every internal screen card. Odoo's percentage discount and tax
+classification differ from our fixed line amounts, so their labels/calculations are not copied.
+The reference's internal FX, repeated totals, invented contacts/terms and received-by signatures
+were rejected for this supplier-facing default. Backend formal rendering remains the separate
+track above, including trustworthy page counts and frozen company letterhead.
+
 ## Related
 
 - [UI building blocks](ui-building-blocks.md) — the wider inventory of reusable UI, and the
