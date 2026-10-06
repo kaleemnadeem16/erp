@@ -203,6 +203,8 @@ The Phase 3 Material Resolution / Assembly Preview has no remaining blocking que
 consolidated ADR is accepted; implementation is next. [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) —
 0 blocking, 9 non-blocking.
 
+**Owed once the shared checkout builds again** (browser re-runs for the access work, dev-database update, client-drift check, staging sign-off; `develop` pushes are paused by the owner): see [settings-and-access-hardening.md](phases/settings-and-access-hardening.md#to-do-when-the-shared-checkout-is-stable-recorded-2026-10-06).
+
 ## Roadmap at a glance
 
 | Phase | Name | Status |
