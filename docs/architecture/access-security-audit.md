@@ -149,6 +149,13 @@ added to that administrator only; no Buyer or operational role was broadened.
   were open to every signed-in user and returned counted quantities per item and location; the SPA rule gained `inventory.stock.view`. **Still to do (Part 2 modules and Estimating/Purchasing/Numbering sweep):** the
   remaining Form Requests that return `true` on a write (Accounting 2, Company 1, Parties 7 at the time of counting) and consider having
   `WriteRouteGuardTest` require the request-layer guard too.
+- [x] **Open-read sweep (2026-10-06, Part 1):** a user holding no capability was sent to every id-less API read; 28 answered 200.
+  `tests/Feature/Support/OpenReadRoutesTest.php` now names each with a reason (15 shared reference lookups or the caller's own data, the
+  estimating lookups whose cost fields are already projected, and the two settings endpoints whose only sensitive figure is projected) and
+  lists **six still pending review**: `company` (registration/tax numbers — Core), `parties`, `customer-accounts`, `supplier-accounts`
+  (Q34), `chart-of-accounts` (A2/Finance) and `approval-delegations` (Approvals) — those belong to Part 2 and the owner decisions, and
+  each is removed from the pending list when decided. A new open read now fails the test (mutation-checked); so does a listed route that
+  is no longer open. Limit: id-less routes only; `show` routes rely on each module's own denied tests.
 - [ ] **Information-flow review (continuing):** complete the module inspections above and update this matrix with endpoint/Action/test
   references. New Inventory/Purchasing/Estimating features need their own check before sign-off.
 - [ ] **Deployment verification:** enumerate each active company member, role, direct grant and
