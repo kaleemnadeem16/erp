@@ -29,6 +29,9 @@ now*; it never mutates another module's status and never issues or posts anythin
 
 `approvals.policy.manage`, `approvals.authority.manage`, `approvals.delegation.manage`, `approvals.settings.manage`,
 `approvals.history.view`. Reading one's own inbox and delegating one's own approvals need no capability.
+Delegation lists show the caller's own involvement unless they hold delegation management.
+Decision eligibility requires an active actor and active delegated principal, each past any
+mandatory temporary-password change; suspension cannot be bypassed through retained authority.
 
 ## Does not own
 

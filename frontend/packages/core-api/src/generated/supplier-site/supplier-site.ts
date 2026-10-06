@@ -28,6 +28,7 @@ import type {
   SupplierAccountsSitesIndex200,
   SupplierAccountsSitesIndexParams,
   SupplierAccountsSitesStore201,
+  SupplierSitesDestroy403,
   SupplierSitesUpdate200,
   UpdateSupplierSiteRequest,
   ValidationExceptionResponse,
@@ -584,6 +585,11 @@ export type supplierSitesDestroyResponse401 = {
   status: 401;
 };
 
+export type supplierSitesDestroyResponse403 = {
+  data: SupplierSitesDestroy403;
+  status: 403;
+};
+
 export type supplierSitesDestroyResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -594,7 +600,9 @@ export type supplierSitesDestroyResponseSuccess =
     headers: Headers;
   };
 export type supplierSitesDestroyResponseError = (
-  supplierSitesDestroyResponse401 | supplierSitesDestroyResponse404
+  | supplierSitesDestroyResponse401
+  | supplierSitesDestroyResponse403
+  | supplierSitesDestroyResponse404
 ) & {
   headers: Headers;
 };
@@ -620,7 +628,10 @@ export const supplierSitesDestroy = async (
 };
 
 export const getSupplierSitesDestroyMutationOptions = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | SupplierSitesDestroy403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -662,10 +673,15 @@ export type SupplierSitesDestroyMutationResult = NonNullable<
 >;
 
 export type SupplierSitesDestroyMutationError =
-  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
+  | AuthenticationExceptionResponse
+  | SupplierSitesDestroy403
+  | ModelNotFoundExceptionResponse;
 
 export const useSupplierSitesDestroy = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | SupplierSitesDestroy403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(
   options?: {

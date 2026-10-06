@@ -26,8 +26,8 @@ customers and suppliers are one module rather than split across Sales/Purchasing
 
 Every write Action takes the actor and checks its matching Party, customer-account,
 supplier-account or supplier-site capability through `PartyWriteAccess`; the create/update
-Form Requests check the same capabilities and the delete controllers pass the actor to the
-Action. Shared authenticated list/detail lookups remain available. The capability-to-surface
+Form Requests check the same capabilities; delete controllers explicitly check them before
+passing the actor to the Action. Shared authenticated list/detail lookups remain available. The capability-to-surface
 mapping and still-open financial-field decision are in
 [domain/parties.md](../../../../docs/domain/parties.md#access-to-trading-partner-master-data).
 

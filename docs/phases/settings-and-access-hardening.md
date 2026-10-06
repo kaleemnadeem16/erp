@@ -103,6 +103,22 @@ No policy implementation is included; A3/A4 field projections wait for Q34. The 
 `erp:audit-access-inventory` command and staging sign-off template are delivered; no live staging
 assignments have been reviewed or changed. API response contracts are unchanged, so no client regeneration.
 
+## Part 2 follow-up — remaining request/delegation boundaries (2026-10-06)
+
+The six FX/chart/Party DELETE controllers now perform their own HTTP capability check, retaining
+all existing Action gates. Approval eligibility now denies suspended/invited/temporary-password
+actors and principals; a suspended principal's delegate previously still saw and decided requests.
+New body/Action assertions prove denial and restored access. Delegation-list reads are explicitly
+classified as involvement-scoped under ADR 0070; Q35's ceiling/reason policy remains undecided.
+
+The read-only inventory also passed a development runtime smoke check; two unresolved assignment
+actors need owner review. This is not staging verification. Q26/Q34/Q35/Q36 remain pending, and
+an independent staging target plus approved assignment/classification map are still required.
+Success payloads are unchanged; the six affected clients and 403 error models plus their barrel
+were regenerated because the HTTP guards add explicit OpenAPI 403 responses. No new grants.
+Focused backend checks pass 187 tests / 771 assertions; explicit-path Pint, PHPStan and TypeScript
+checks pass.
+
 ## Known CI and environment issues (not caused by this workstream)
 
 - `lint-backend`: Pint flags two package migrations (`…180000_create_packages_and_supplier_offers`, `…180100_add_packaged_purchasing_snapshots`)

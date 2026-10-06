@@ -38,6 +38,7 @@ class OpenReadRoutesTest extends TestCase
         'api/v1/purchasing-settings' => 'Operational switches (over-receipt mode and tolerance, PO required) that shape receiving forms; no price.',
         'api/v1/approval-authorities/mine' => 'The caller\'s own approval authority only.',
         'api/v1/approval-requests/inbox' => 'Scoped to the caller\'s own assignments.',
+        'api/v1/approval-delegations' => 'Only delegations involving the caller; approvals.delegation.manage permits the company list (ADR 0070).',
         'api/v1/assembly-groups' => 'Shared estimating lookup; carries no cost (writes need estimating.assembly-group.manage).',
         'api/v1/assemblies' => 'Shared estimating lookup; commercial configuration is projected by capability (audit, 2026-09-30).',
         'api/v1/rate-dimensions' => 'Shared estimating lookup; carries no cost.',
@@ -53,7 +54,6 @@ class OpenReadRoutesTest extends TestCase
         'api/v1/customer-accounts' => 'Q34 / A3: credit limit, terms and control-account IDs await the Finance decision.',
         'api/v1/supplier-accounts' => 'Q34 / A3: terms and control-account IDs await the Finance decision.',
         'api/v1/chart-of-accounts' => 'A2: account lookup is shared; Finance decides any narrower read policy.',
-        'api/v1/approval-delegations' => 'Approvals (Part 2): who may list other people\'s delegations is undecided (Q35 neighbours).',
     ];
 
     public function test_every_id_less_read_open_to_a_user_with_no_capability_is_named_with_a_reason(): void

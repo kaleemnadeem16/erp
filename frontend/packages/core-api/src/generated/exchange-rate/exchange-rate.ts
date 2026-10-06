@@ -23,6 +23,7 @@ import type {
 import type {
   AuthenticationExceptionResponse,
   AuthorizationExceptionResponse,
+  ExchangeRatesDestroy403,
   ExchangeRatesIndex200,
   ExchangeRatesIndexParams,
   ExchangeRatesShow200,
@@ -776,6 +777,11 @@ export type exchangeRatesDestroyResponse401 = {
   status: 401;
 };
 
+export type exchangeRatesDestroyResponse403 = {
+  data: ExchangeRatesDestroy403;
+  status: 403;
+};
+
 export type exchangeRatesDestroyResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -786,7 +792,9 @@ export type exchangeRatesDestroyResponseSuccess =
     headers: Headers;
   };
 export type exchangeRatesDestroyResponseError = (
-  exchangeRatesDestroyResponse401 | exchangeRatesDestroyResponse404
+  | exchangeRatesDestroyResponse401
+  | exchangeRatesDestroyResponse403
+  | exchangeRatesDestroyResponse404
 ) & {
   headers: Headers;
 };
@@ -812,7 +820,10 @@ export const exchangeRatesDestroy = async (
 };
 
 export const getExchangeRatesDestroyMutationOptions = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | ExchangeRatesDestroy403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -854,10 +865,15 @@ export type ExchangeRatesDestroyMutationResult = NonNullable<
 >;
 
 export type ExchangeRatesDestroyMutationError =
-  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
+  | AuthenticationExceptionResponse
+  | ExchangeRatesDestroy403
+  | ModelNotFoundExceptionResponse;
 
 export const useExchangeRatesDestroy = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | ExchangeRatesDestroy403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(
   options?: {

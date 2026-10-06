@@ -72,6 +72,7 @@ class SupplierAccountController extends Controller
 
     public function destroy(Request $request, SupplierAccount $supplier_account, ArchiveSupplierAccount $archive): Response
     {
+        abort_unless($request->user()?->can('parties.supplier-account.manage'), 403);
         $archive($supplier_account, $request->user());
 
         return response()->noContent();

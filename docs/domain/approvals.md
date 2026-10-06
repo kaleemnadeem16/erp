@@ -25,6 +25,12 @@ design baseline and per-workflow checklist are in
 
 ## Rules the engine enforces
 
+- **Active identities.** Both the decision actor and any delegated principal must be `ACTIVE` and
+  have completed their temporary-password change. Retained permissions or amount authority cannot
+  keep delegated approval access alive during suspension/invitation/credential restriction. This
+  eligibility check applies to inbox/amount visibility and direct `DecideApproval` callers; existing
+  decisions remain immutable. Reactivation restores eligibility only while the delegation and all
+  other authority checks still hold (`ApprovalInformationFlowTest`, 2026-10-06).
 - **Distinct people.** One person can never fill two slots of a step: not twice personally, not personally and as a delegate,
   not as two different delegators' principal. The database has unique keys on `(step, decided_by)` and `(step, principal_id)`.
 - **Maker/checker per step.** The submitter cannot satisfy a step unless that step sets `allow_submitter`. Off by default; a
@@ -64,6 +70,9 @@ Recalculation, negative-stock and cutover approvals keep their own module-specif
 (ceilings), `approvals.delegation.manage` (delegate on someone's behalf and see everyone's delegations — anyone may delegate their
 own), `approvals.history.view` (see every request). Per-subject capabilities live with the module:
 `purchasing.purchase-order.submit`, `purchasing.purchase-order.approve`, `estimating.material_variance.approve`.
+Delegation list responses contain only records involving the caller unless they hold
+`approvals.delegation.manage`; this is the existing ADR 0070 boundary, not a Q35 policy decision.
+Response-body tests cover delegator, delegate, unrelated user, manager and foreign-company records.
 
 ## API
 

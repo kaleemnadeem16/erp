@@ -37,7 +37,8 @@ exchange_rates
 
 Authenticated company users can list/show rates for document selection. Creating, correcting
 the rate value, or deleting a manual rate requires `currency.exchange-rate.manage`, checked by
-the HTTP requests/controller and the `ManageExchangeRate` Action for non-HTTP callers. The
+the HTTP requests/controller and the `ManageExchangeRate` Action for non-HTTP callers. DELETE
+also checks this capability explicitly in its controller before calling the Action (2026-10-06). The
 permission is assigned through company roles or a direct grant in Access Administration; no
 role name is hardcoded. The configured administrator receives new vocabulary through the normal
 permission-registration and admin-sync deployment steps. There is not yet an exchange-rate

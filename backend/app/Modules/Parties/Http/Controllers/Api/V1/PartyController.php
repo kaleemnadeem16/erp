@@ -74,6 +74,7 @@ class PartyController extends Controller
 
     public function destroy(Request $request, Party $party, ArchiveParty $archive): Response
     {
+        abort_unless($request->user()?->can('parties.party.manage'), 403);
         $archive($party, $request->user());
 
         return response()->noContent();

@@ -50,6 +50,7 @@ class SupplierSiteController extends Controller
 
     public function destroy(Request $request, SupplierSite $supplier_site, DeleteSupplierSite $delete): Response
     {
+        abort_unless($request->user()?->can('parties.supplier-site.manage'), 403);
         $delete($supplier_site, $request->user());
 
         return response()->noContent();

@@ -24,6 +24,7 @@ import type {
   AuthenticationExceptionResponse,
   AuthorizationExceptionResponse,
   ModelNotFoundExceptionResponse,
+  PartiesDestroy403,
   PartiesIndex200,
   PartiesIndexParams,
   PartiesShow200,
@@ -570,6 +571,11 @@ export type partiesDestroyResponse401 = {
   status: 401;
 };
 
+export type partiesDestroyResponse403 = {
+  data: PartiesDestroy403;
+  status: 403;
+};
+
 export type partiesDestroyResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -579,7 +585,9 @@ export type partiesDestroyResponseSuccess = partiesDestroyResponse204 & {
   headers: Headers;
 };
 export type partiesDestroyResponseError = (
-  partiesDestroyResponse401 | partiesDestroyResponse404
+  | partiesDestroyResponse401
+  | partiesDestroyResponse403
+  | partiesDestroyResponse404
 ) & {
   headers: Headers;
 };
@@ -602,7 +610,10 @@ export const partiesDestroy = async (
 };
 
 export const getPartiesDestroyMutationOptions = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | PartiesDestroy403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -644,10 +655,15 @@ export type PartiesDestroyMutationResult = NonNullable<
 >;
 
 export type PartiesDestroyMutationError =
-  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
+  | AuthenticationExceptionResponse
+  | PartiesDestroy403
+  | ModelNotFoundExceptionResponse;
 
 export const usePartiesDestroy = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | PartiesDestroy403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(
   options?: {

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Approvals\Support;
 
 use App\Models\User;
+use App\Modules\Administration\Support\MemberStatus;
 use App\Modules\Approvals\Models\ApprovalAuthority;
 use App\Modules\Approvals\Models\ApprovalDelegation;
 use App\Modules\Approvals\Models\ApprovalRequest;
@@ -23,6 +24,9 @@ final class ApprovalEligibility
 
     public function grantFor(User $actor, ApprovalRequest $request, ApprovalRequestStep $step): ?ApprovalGrant
     {
+        if (! $this->canAct($actor)) {
+            return null;
+        }
         $own = $this->directGrant($actor, $request, $step);
         if ($own !== null) {
             return $own;
@@ -48,6 +52,9 @@ final class ApprovalEligibility
 
     private function directGrant(User $person, ApprovalRequest $request, ApprovalRequestStep $step): ?ApprovalGrant
     {
+        if (! $this->canAct($person)) {
+            return null;
+        }
         $policyStep = $step->policyStep;
         $permission = $policyStep->permission ?? $this->subjects->get($request->subject_type)->approvePermission();
         $viaEscalation = false;
@@ -74,6 +81,11 @@ final class ApprovalEligibility
         }
 
         return new ApprovalGrant($person, null, $snapshot);
+    }
+
+    private function canAct(User $person): bool
+    {
+        return $person->status === MemberStatus::Active && ! $person->must_change_password;
     }
 
     private function authorityCovering(User $person, string $subjectType, BigDecimal $amount): ?ApprovalAuthority

@@ -84,7 +84,8 @@ Authenticated company users may list/show chart accounts as references for other
 Creating, editing/reparenting and deleting an unreferenced chart account require
 `accounting.chart-of-account.manage` through an assigned role or direct grant. The Form
 Requests and controller enforce HTTP access; all three write Actions also require an actor and
-check the capability, including non-HTTP callers. The existing company scope and foreign-key
+check the capability, including non-HTTP callers. DELETE also refuses callers without the
+capability in the controller before invoking the Action (2026-10-06). The existing company scope and foreign-key
 guards still apply. This permission does **not** decide who may see or edit the Item/Category
 GL-account mapping fields or customer/supplier control-account fields; those cross-module field
 policies remain open in the [access audit](../architecture/access-security-audit.md).

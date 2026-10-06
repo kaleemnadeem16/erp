@@ -108,6 +108,7 @@ class ExchangeRateController extends Controller
 
     public function destroy(Request $request, ExchangeRate $exchange_rate, ManageExchangeRate $manage): JsonResponse
     {
+        abort_unless($request->user()?->can('currency.exchange-rate.manage'), 403);
         $manage->delete($request->user(), $exchange_rate);
 
         return response()->json(status: 204);

@@ -25,7 +25,8 @@ Phase 6, per [ADR 0011](../../../../docs/decisions/0011-double-entry-open-item-a
 
 `CreateChartOfAccount`/`UpdateChartOfAccount`/`ArchiveChartOfAccount` own chart write
 transactions. All three require `accounting.chart-of-account.manage` from the actor, and the
-HTTP create/update/delete endpoints enforce the same capability. Authenticated list/show remain
+HTTP create/update/delete endpoints enforce the same capability; DELETE explicitly checks it
+in the controller before calling the Action. Authenticated list/show remain
 shared account-selection lookups. The current DELETE physically removes an unreferenced account;
 the Action name does not imply a soft-delete history. Fiscal-year and period workflow Actions will be added with their APIs; period
 close remains a separate Phase 6 business operation.

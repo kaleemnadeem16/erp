@@ -72,6 +72,7 @@ class CustomerAccountController extends Controller
 
     public function destroy(Request $request, CustomerAccount $customer_account, ArchiveCustomerAccount $archive): Response
     {
+        abort_unless($request->user()?->can('parties.customer-account.manage'), 403);
         $archive($customer_account, $request->user());
 
         return response()->noContent();

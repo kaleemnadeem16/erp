@@ -23,6 +23,7 @@ import type {
 import type {
   AuthenticationExceptionResponse,
   AuthorizationExceptionResponse,
+  ChartOfAccountsDestroy403,
   ChartOfAccountsIndex200,
   ChartOfAccountsIndexParams,
   ChartOfAccountsShow200,
@@ -641,6 +642,11 @@ export type chartOfAccountsDestroyResponse401 = {
   status: 401;
 };
 
+export type chartOfAccountsDestroyResponse403 = {
+  data: ChartOfAccountsDestroy403;
+  status: 403;
+};
+
 export type chartOfAccountsDestroyResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -651,7 +657,9 @@ export type chartOfAccountsDestroyResponseSuccess =
     headers: Headers;
   };
 export type chartOfAccountsDestroyResponseError = (
-  chartOfAccountsDestroyResponse401 | chartOfAccountsDestroyResponse404
+  | chartOfAccountsDestroyResponse401
+  | chartOfAccountsDestroyResponse403
+  | chartOfAccountsDestroyResponse404
 ) & {
   headers: Headers;
 };
@@ -677,7 +685,10 @@ export const chartOfAccountsDestroy = async (
 };
 
 export const getChartOfAccountsDestroyMutationOptions = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | ChartOfAccountsDestroy403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -719,10 +730,15 @@ export type ChartOfAccountsDestroyMutationResult = NonNullable<
 >;
 
 export type ChartOfAccountsDestroyMutationError =
-  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
+  | AuthenticationExceptionResponse
+  | ChartOfAccountsDestroy403
+  | ModelNotFoundExceptionResponse;
 
 export const useChartOfAccountsDestroy = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | ChartOfAccountsDestroy403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(
   options?: {

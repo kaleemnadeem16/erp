@@ -23,6 +23,7 @@ import type {
 import type {
   AuthenticationExceptionResponse,
   AuthorizationExceptionResponse,
+  CustomerAccountsDestroy403,
   CustomerAccountsIndex200,
   CustomerAccountsIndexParams,
   CustomerAccountsShow200,
@@ -641,6 +642,11 @@ export type customerAccountsDestroyResponse401 = {
   status: 401;
 };
 
+export type customerAccountsDestroyResponse403 = {
+  data: CustomerAccountsDestroy403;
+  status: 403;
+};
+
 export type customerAccountsDestroyResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -651,7 +657,9 @@ export type customerAccountsDestroyResponseSuccess =
     headers: Headers;
   };
 export type customerAccountsDestroyResponseError = (
-  customerAccountsDestroyResponse401 | customerAccountsDestroyResponse404
+  | customerAccountsDestroyResponse401
+  | customerAccountsDestroyResponse403
+  | customerAccountsDestroyResponse404
 ) & {
   headers: Headers;
 };
@@ -677,7 +685,10 @@ export const customerAccountsDestroy = async (
 };
 
 export const getCustomerAccountsDestroyMutationOptions = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | CustomerAccountsDestroy403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -719,10 +730,15 @@ export type CustomerAccountsDestroyMutationResult = NonNullable<
 >;
 
 export type CustomerAccountsDestroyMutationError =
-  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
+  | AuthenticationExceptionResponse
+  | CustomerAccountsDestroy403
+  | ModelNotFoundExceptionResponse;
 
 export const useCustomerAccountsDestroy = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | CustomerAccountsDestroy403
+    | ModelNotFoundExceptionResponse,
   TContext = unknown,
 >(
   options?: {

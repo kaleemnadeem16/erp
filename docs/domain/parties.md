@@ -110,7 +110,9 @@ supplier_sites
 
 Authenticated company users may use Party, customer-account, supplier-account and supplier-site
 list/detail endpoints as reference lookups for the workflows they already hold. Their writes are
-separate dynamic capabilities, checked by the HTTP requests and all twelve write Actions:
+separate dynamic capabilities, checked by the HTTP requests/controllers and all twelve write Actions.
+The four DELETE controllers explicitly check their matching capability before calling the Action
+(2026-10-06); a shared read grant does not imply archive/delete authority:
 
 | Capability | Controls |
 |---|---|

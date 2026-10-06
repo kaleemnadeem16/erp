@@ -81,6 +81,7 @@ class ChartOfAccountController extends Controller
 
     public function destroy(Request $request, ChartOfAccount $chart_of_account, ArchiveChartOfAccount $archive): Response
     {
+        abort_unless($request->user()?->can('accounting.chart-of-account.manage'), 403);
         $archive($chart_of_account, $request->user());
 
         return response()->noContent();
