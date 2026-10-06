@@ -61,6 +61,17 @@ An observed check is **not** an audit sign-off. [Q26](../OPEN-QUESTIONS.md#q26--
 still owns organisation/record scope; [Q28](../OPEN-QUESTIONS.md#q28--purchase-order-approval-policy)
 still owns company PO policy. Neither should be silently decided by adding a role.
 
+## Audit ownership (two agents in parallel, from 2026-10-06)
+
+To finish the audit quickly, the remaining work is split by module so the two agents rarely touch
+the same files. Each edits only its own coverage-map rows and work-queue items; shared files
+(this tracker, STATUS, OPEN-QUESTIONS) are edited by inspecting the diff first.
+
+| Part | Modules and work |
+|---|---|
+| **Part 1** | Inventory (incl. negative-stock override reads, ADR 0082 package routes, any export), Purchasing, Estimating, Numbering allocation log; the build rules in [authorization.md](authorization.md#build-rules-every-new-feature-follows) and `AGENTS.md`. |
+| **Part 2** | Core/Auth, Accounting, Parties, Administration, Approvals, Imports; decision briefs for Q34, Q35, Q36, Q26; the staging verification inventory and sign-off template; A3/A4 field projections once Q34 is decided. |
+
 ## Risk-ordered work queue
 
 Development environment note (2026-10-02): `permission:register` was run for company 1 after

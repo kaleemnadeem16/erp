@@ -213,6 +213,33 @@ Every new or changed action, endpoint, screen and background command must explic
 “No new permission” is allowed, but it must be a conscious answer during review rather than the
 result of forgetting the question.
 
+### Build rules every new feature follows
+
+The checklist asks the questions; these are the answers the [access audit](access-security-audit.md)
+taught us to build in from the first commit. A feature that skips one is not finished, and a new
+surface is never shipped "authenticated-only, to be fixed later".
+
+| # | Rule | What proves it |
+|---|---|---|
+| R1 | **Guard twice.** Every write has a capability check in its Form Request/controller *and* inside its Action (`ActionAuthorization::require`). A console command, job or seeder passes an explicit actor; a workflow that has already authorised its actor under its own capability uses a `forWorkflow` entry point, never a bypass. | `WriteRouteGuardTest` fails an unguarded write route; its exception list is empty and must stay empty. Add a denied-actor test for the Action (pattern: `MasterDataActionGuardTest`). |
+| R2 | **Split what people need separately.** Read ≠ write ≠ approve/post ≠ reverse ≠ history; quantity ≠ valuation/cost; operating a record ≠ configuring its policy. Name capabilities by duty, never mechanically (`*.view`/`*.manage` per table). | Each capability is registered by the owning module and exercised alone and absent in tests (pattern: `StockVisibilityTest`). |
+| R3 | **Protect the data, not the button.** A sensitive field (prices, costs, margins, GL/credit/terms, approval amounts, policy rates) is omitted from the response unless the caller holds its capability — in lists, `show`, nested `include`s, lookups, evidence/audit payloads, print projections and any export. Omit; never return zero. The UI hides the control as a convenience only. | Response-body tests, including `assertStringNotContainsString` on nested includes and with the capability absent (patterns: `MaterialPreviewApiTest`, `ApprovalEvidenceVisibilityTest`). |
+| R4 | **Filters, sorts and includes obey the same rule.** A caller who cannot see a field cannot filter, sort or include by it (a monetary sort without the capability is refused), or the value can be inferred. Enforce at the request boundary, before the query runs. | A denied-caller test per filter/sort/include that touches a protected field. |
+| R5 | **Ship the grant with the check.** A new fail-closed capability needs registration, a grant migration for everyone who already legitimately used the surface (never a count-only or unrelated role), and the administrator re-sync. Never grant a broad role to make a test pass. | `permission:register` + `erp:sync-admin-permissions` in the release steps; a rollout test for the migration (pattern: `StockVisibilityRolloutTest`: grants, idempotence, the exception, per-company). Verify in staging per the [safe rollout rule](#safe-rollout-rule). |
+| R6 | **Tenant isolation is tested by id.** Every company-scoped route is proven unreachable for another company's record, by id, on `show`, update and any action route — not only absent from the list. | A cross-company test per new resource (pattern: `AccessAdministrationTenantIsolationTest`, the numbering isolation tests). |
+| R7 | **No side doors.** Print, quick-print, CSV/export, download and notification payloads render only what the screen's projection already allows. A new export is a new surface and gets its own review row. A staged or internal Action with no entry point gets a test that fails the day one appears. | The audit tracker's coverage map names the surface; `ImportStagingHasNoEntryPointTest` is the pattern for "must stay unreachable". |
+| R8 | **Do not leak existence.** Sign-in, recovery and lookup endpoints answer identically whether or not an account or record exists; throttle them. | Identical-body test (pattern: forgot-password, A7). |
+| R9 | **Maker/checker is a domain invariant.** Separation of duties is checked against stored actors in the Action, not assumed from role assignment; approval evidence follows the subject document's own field policy plus an explicit need-to-know rule. | Same-actor refusal test; a new approval subject implements `canViewEvidence` ([approvals.md](../domain/approvals.md)). |
+| R10 | **The SPA learns capability from the server.** Effective permissions come from `GET /api/v1/user`; navigation and controls use the shared screen-access map ([ADR 0066](../decisions/0066-capability-driven-screen-navigation.md)). A bookmarked URL to a screen the user cannot use is blocked, not just unlinked. | A browser spec for an allowed and a denied/read-only user. |
+| R11 | **Say it in the docs, in the same commit.** The domain doc and journey name the capability and its approval consequence; the audit tracker's coverage-map row for the module is updated; STATUS gets its one row. | Review checklist item 10. |
+
+**Before you open a pull request**, run the guards that catch most regressions:
+`tests/Architecture/WriteRouteGuardTest.php`, `PermissionCheckRegistrationTest.php`,
+`CompanyScoped*Test.php`, `ControllerActionBoundaryTest.php` and `ImportStagingHasNoEntryPointTest.php`,
+plus your own module's allowed/denied suite. If you add a route, a capability, a Resource field or an
+export, also add its row to the [audit coverage map](access-security-audit.md#coverage-map-and-next-inspection).
+These tests prove a guard is *present*; whether it is the *right* one is a review question.
+
 ## Current implementation assessment
 
 ### Strong foundation already present
@@ -236,12 +263,19 @@ result of forgetting the question.
   capability checks. Shared reference reads remain authenticated-only by design; the
   Item/Category GL-account field boundary still needs a Finance decision. See
   [authorisation retrofit](authorization-retrofit.md).
-- Purchase orders have DRAFT → ISSUED with no submit/approval state; issue records neither actor
-  nor approval chain.
-- No generic approval-policy/step/decision schema exists; the `workflow_states` sketch in
-  `extensibility.md` is not implemented and one `required_permission` cannot model multiple
-  independent approvals.
-- No department/organisation-unit membership or record-level visibility system exists.
+- Purchase orders can route through submit → approve → issue under the shared approval engine
+  ([ADR 0070](../decisions/0070-shared-configurable-approval-engine.md)), but nothing is asked until a
+  company switches approvals on (mode `NONE` by default). Recalculation, negative-stock and cutover
+  approvals have not been migrated onto the engine yet; company PO policy is still Q28.
+- Every API write route has a capability guard at the request boundary and inside its Action
+  (`WriteRouteGuardTest`, empty exception list). That proves a guard is present, not that the
+  capability is the right one; the [audit](access-security-audit.md) tracks what is still unreviewed.
+- Open owner decisions: Finance-owned field visibility (Q34), approval evidence exception and
+  authority-ceiling reads (Q35), bearer-token lifetime (Q36). Negative-stock override request reads
+  are not yet gated by workflow duty.
+- No department/organisation-unit membership or record-level visibility system exists (Q26); stock
+  and other read capabilities are company-wide until it is decided. Nothing has been verified in
+  staging, only in development.
 - The authenticated-user response exposes effective capabilities and permission-aware routing;
   capability-gated operational controls have landed for the retrofit slices below. Future
   screens must keep API and UI authority aligned.
