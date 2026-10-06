@@ -191,13 +191,13 @@ class PhysicalCountApiTest extends TestCase
 
     public function test_store_validates_warehouse_and_rejects_an_unpermitted_actor(): void
     {
-        $user = User::factory()->create();
+        $creator = $this->permittedUser('inventory.physical_count.create');
 
-        $this->actingAs($user)->postJson('/api/v1/physical-counts', ['warehouse_id' => 999999])
+        $this->actingAs($creator)->postJson('/api/v1/physical-counts', ['warehouse_id' => 999999])
             ->assertUnprocessable()->assertJsonValidationErrors('warehouse_id');
 
-        $this->actingAs($user)->postJson('/api/v1/physical-counts', ['warehouse_id' => $this->warehouseId])
-            ->assertUnprocessable()->assertJsonValidationErrors('created_by');
+        // Refused at the request layer (403) before validation; the Action keeps its own check for non-HTTP callers.
+        $this->actingAs(User::factory()->create())->postJson('/api/v1/physical-counts', ['warehouse_id' => $this->warehouseId])->assertForbidden();
     }
 
     public function test_index_filters_by_warehouse_and_status(): void

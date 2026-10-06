@@ -174,13 +174,13 @@ class InventoryCutoverApiTest extends TestCase
 
     public function test_store_validates_shape_and_rejects_an_unpermitted_actor(): void
     {
-        $user = User::factory()->create();
+        $creator = $this->permittedUser('inventory.cutover.create');
 
-        $this->actingAs($user)->postJson('/api/v1/inventory-cutovers', ['mode' => 'BOGUS'])
+        $this->actingAs($creator)->postJson('/api/v1/inventory-cutovers', ['mode' => 'BOGUS'])
             ->assertUnprocessable()->assertJsonValidationErrors(['mode', 'source_system', 'target_valuation_policy']);
 
-        $this->actingAs($user)->postJson('/api/v1/inventory-cutovers', $this->cutoverInput())
-            ->assertUnprocessable()->assertJsonValidationErrors('created_by');
+        // Refused at the request layer (403) before validation; the Action keeps its own check for non-HTTP callers.
+        $this->actingAs(User::factory()->create())->postJson('/api/v1/inventory-cutovers', $this->cutoverInput())->assertForbidden();
     }
 
     public function test_approver_cannot_be_the_creator_or_validator(): void

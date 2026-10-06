@@ -46,13 +46,13 @@ apply; a missing capability check is a separate issue.
 
 | Area | First-pass state | Still to verify |
 |---|---|---|
-| Core Auth/Account/Currency/UoM/ExchangeRate | A1 write boundary tested; login throttled (5/min), session `credential_version` and token revocation on password reset/change/suspension/temporary password reviewed; **forgot-password no longer reveals whether an account exists (A7, fixed 2026-10-03)**; `PATCH /account` edits the caller's name only | Bearer tokens never expire (`sanctum.expiration` null) — policy decision before the mobile client ships; shared reference lookups stay open by design. |
-| Accounting | A2 write boundary now tested | Account-selection reads, history, future lifecycle rules and any narrower field policy. |
-| Parties | A3 write boundary and PO inline site control verified | Field projections, credit/terms policy and future master-data screens. |
-| Administration | Capability and anti-escalation checks; self-targeting refused for access, suspension and role edits (no path to zero administrators found); **cross-company member and role routes proven unreachable (`AccessAdministrationTenantIsolationTest`, 2026-10-03)** | Audit-history negative paths and delegated administration (Q26). |
-| Approvals | Assignment/capability checks observed; **evidence/amount projection fixed and tested (A5)** | Remaining: who may read per-person authority ceilings (`approvals.history.view` can list them); free-text decision reasons are unfiltered; ADR-0070 consumers added later must implement `canViewEvidence`. |
+| Core Auth/Account/Currency/UoM/ExchangeRate | **Part 2 reviewed 2026-10-06:** Reviewed login/logout/recovery and self account controllers, requests and `UserResource`; Currency/UoM/FX list/show/includes and FX Actions. `AuthInformationFlowTest` + Auth/reference API tests prove credential secrecy, self-only mutation and foreign login/token refusal; no identity secrets or other-user grants are in Resources. A1/A7 retained. | Q36 token lifetime pending; self-only account access and global Currency/company UoM and FX reference reads remain intentional. No server print/export paths in this slice. |
+| Accounting | **Part 2 reviewed 2026-10-06:** Reviewed all chart endpoints, three write Actions and `ChartOfAccountResource` parent/children includes; fiscal calendar has no HTTP API/history. Chart tests plus `MasterDataInformationFlowTest` prove shared lookup and foreign list/search/show exclusion. | Q34 narrower field policy and future posting/lifecycle/history APIs; no chart print/export endpoint or SPA chart screen exists. |
+| Parties | **Part 2 reviewed 2026-10-06:** Reviewed Party/customer/supplier/site endpoints, twelve Actions and all Resources, including Party→account and account→Party includes and nested addresses. Existing write tests plus `MasterDataInformationFlowTest` assert company isolation and actual nested bodies. | Q34 credit/terms/control-account projections remain pending. Shared fields are asserted as current behaviour, not approved Finance policy; no Parties print/export API or master-data SPA exists. |
+| Administration | **Part 2 reviewed 2026-10-06:** Reviewed member/role endpoints, all Actions, Resources and scoped history. Hydrated foreign targets now refused by six Actions; profile Action whitelists name/email. `AccessAdministrationActionIsolationTest` and existing API/isolation tests prove bodies omit credentials and unrelated/foreign history. | Q26 delegated administration remains unimplemented. Current company-wide administration is not unit delegation; staging actor classification/sign-off still required. |
+| Approvals | **Part 2 reviewed 2026-10-06:** Reviewed subject types, policies, authorities/mine, delegations, history/inbox/show/decide/withdraw; all Actions/Resources and nested decisions. Five governance and two internal workflow Actions re-query scoped targets; decision eligibility now precedes state-changing preflight. `ApprovalInformationFlowTest`, engine/API/evidence/guard tests pass. | Q35 exception, history-reader ceiling access and free-text decision/closing reasons remain unchanged pending decision. No approval print/export API; future subjects must implement `canViewEvidence`. |
 | Estimating | Original CRUD retrofit tracked separately; material preview, stock-mix, variance and cost-breakdown reviewed 2026-10-03: cost and availability are projected by capability and proven on response bodies (`MaterialPreviewApiTest`: `assertStringNotContainsString` on cost figures), cost breakdowns return 403 without `estimating.internal_cost.view`; approval evidence now follows `estimating.internal_cost.view` (A5) | Action-level guards (ratchet list); Phase 4 adoption/quotation surfaces must be reviewed as they are built. |
-| Imports | **No entry point exists**: the staging/validation/profile Actions are called only by tests and the demo seeder, and check no capability. `ImportStagingHasNoEntryPointTest` fails the moment an HTTP, console or job caller appears. | Any future import screen/command needs its own capability, per-record authority and a field policy on staged rows that carry prices/costs. |
+| Imports | **Part 2 reviewed 2026-10-06:** Reviewed profile/stage/validate Actions, mappings/raw rows/errors and callers. No HTTP/console/job read/write/export API or Resources exists (`ImportStagingHasNoEntryPointTest`). Staging now re-queries the profile before reading mappings; `ImportProfileTenantIsolationTest` proves foreign input cannot be staged. | Future entry points still need capability, record authority and staged-row field policy. No import capabilities introduced solely for this inactive foundation. |
 | Inventory | Existing operational and valuation slices tracked separately; valuation fields (`on_hand_value`, stock-move valuation, pool value) are projected by `inventory.valuation.view`; **there are no export, download or print endpoints** (printing renders data the screen already holds); A4 open; **A6 fixed (ADR 0083)** | **Negative-stock override request reads gated by workflow duty or `inventory.stock.view` (2026-10-06, A8)**; GL-field policy (A4); re-check when package-balance operations (ADR 0082) add routes. |
 | Numbering | Endpoint-by-endpoint allowed/denied tests exist; **by-id cross-company access to series, versions, rules, counters and counter raises proven unreachable (2026-10-03)**; the allocation log has no read API | History/allocation-log screen, when built, needs `numbering.view` plus a field review (it stores supplier/customer codes). |
 | Purchasing | Existing document/commercial-cost slices tracked separately; packaged purchasing reviewed 2026-10-03: supplier-offer prices/currency/price basis are projected by `PurchasingCommercialAccess` and the offer Action requires manage + commercial access; package writes need `inventory.item.manage` at request and Action; the PO line preview needs create | Future exports and any cross-module price evidence (approvals now covered, A5). |
@@ -140,14 +140,60 @@ added to that administrator only; no Buyer or operational role was broadened.
   "every write route is guarded at the request boundary and in its Action" was too strong: `WriteRouteGuardTest` accepts an Action gate
   alone. Their Form Requests now check the same capability. `NegativeStockOverrideRequestApiTest` covers each outsider (unrelated,
   availability-only, movement-only, valuation-only), each reader, and a stock viewer refused on create/decide/review; Inventory suite and
-  architecture tests pass (784). **Follow-up for both parts:** sweep the other write routes for a Form Request that returns `true` while
-  only the Action guards (R1 asks for both), and consider having `WriteRouteGuardTest` require the request-layer guard too.
+  architecture tests pass. **Sweep of Inventory (Part 1) done the same day:** six more write requests had the same gap and now check the
+  Action's capability first — recalculation create (`.request`) and decide (`.approve`), cutover create, physical-count create, add-line and
+  post; two tests that asserted a 422 for an unpermitted actor now expect 403 and validate shape as a permitted user. The inventory
+  settings request was already per-field-group guarded. **Still to do (Part 2 modules and Estimating/Purchasing/Numbering sweep):** the
+  remaining Form Requests that return `true` on a write (Accounting 2, Company 1, Parties 7 at the time of counting) and consider having
+  `WriteRouteGuardTest` require the request-layer guard too.
 - [ ] **Information-flow review (continuing):** complete the module inspections above and update this matrix with endpoint/Action/test
   references. New Inventory/Purchasing/Estimating features need their own check before sign-off.
 - [ ] **Deployment verification:** enumerate each active company member, role, direct grant and
   service actor needing a new capability; verify effective access in staging before enforcement.
   Record who approved the map and the result. Re-run administrator permission sync. Do not grant
   a broad role merely to make a failing test or workflow pass.
+
+### Part 2 evidence and staging sign-off (2026-10-06)
+
+Code review covers every currently registered endpoint, Action and Resource in Core/Auth,
+Accounting, Parties, Administration, Approvals and Imports. Existing allowed/denied write
+coverage was reused, not retrofitted again. No new permissions, grants or financial projections
+were introduced. Four gaps were fixed: hydrated foreign Administration targets, hydrated foreign
+approval-governance targets, foreign import profile mappings, and ineligible approval preflight
+cancellation; Administration profile Actions also reject credential/status changes by omission.
+Internal stage opening/invalidation also re-query the scoped request. These enforce existing tenant and operation boundaries, not Q26 organisational scope.
+
+Read-only inventory: `docker compose exec -T app php artisan erp:audit-access-inventory > access-inventory.json`.
+Run on staging, retain the output in restricted release evidence, and record its checksum.
+The command reads every company, including unassigned roles, direct grants, effective role-plus-
+direct capabilities and token-holder metadata; PostgreSQL enforces a read-only repeatable snapshot.
+`AccessInventoryCommandTest` compares all relevant tables before/after and asserts no token secrets.
+It neither registers permissions nor syncs administrators, grants access or updates last-use times.
+A4 has no decided capability and A5 adds no new capability: its subject-field/workflow checks need
+representative approval requests. Missing-capability flags indicate review, not an instruction to
+grant all of them. `inventory.stock.view` also supplies availability at runtime; review that
+implication before interpreting a missing explicit availability grant as lost access.
+No service-account marker exists: classify **every member**, including actors without tokens,
+and resolve unknown token/pivot actors and foreign-team assignments before sign-off.
+
+Copy this template into restricted staging release evidence; this tracker records no live assignments:
+
+| Sign-off field | Evidence to fill |
+|---|---|
+| Release / staging / company | Commit, environment, company ID/name, run time, inventory checksum/location |
+| Assignment reviewer | Company owner + Finance/access administrator names and date |
+| Actor classification | Every member: human/service; status; service owner, consumer and rotation plan |
+| Approved map | Intended duties; role/direct capabilities; missing flags accepted or approved narrow grant change |
+| Representative cases | Warehouse, sales, blind counter, Finance, administrator and each service consumer |
+| API/body evidence | Allowed/denied and cross-company cases; nested includes, lookups and available print paths; approval amount/FX/reasons and authority/mine bodies |
+| A1–A6 result | Rate/chart/Party maintenance; Q34 pending or decided field matrix; A5 workflow exception; A6 quantity/valuation and blind-count outcomes |
+| Release procedure | Approved grant migrations applied; registration/admin-sync evidence separately recorded by operator; never run mutations as part of inventory |
+| Exceptions / decision blockers | Q26/Q34/Q35/Q36 owner decisions, accepted missing capabilities, unresolved actors and release impact |
+| Final sign-off | Owner/reviewer, date, PASS/BLOCKED, follow-up reference |
+
+Inventory tooling is delivered; **staging verification is not done** and the Deployment verification
+checkbox remains open. Q34 implementation waits for an owner-approved field matrix and ADR;
+Part 1 owns the Inventory A4 code once policy is decided, Part 2 owns Parties projections.
 
 ### Safe release and exit criteria
 

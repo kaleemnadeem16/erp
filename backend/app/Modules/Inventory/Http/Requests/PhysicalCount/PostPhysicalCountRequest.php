@@ -19,7 +19,7 @@ class PostPhysicalCountRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('inventory.physical_count.post') === true;
     }
 
     /** @return array<string, mixed> */

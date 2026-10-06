@@ -12,7 +12,7 @@ class DecideRecalculationRequestRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('inventory.recalculation.approve') === true;
     }
 
     /** @return array<string, mixed> */

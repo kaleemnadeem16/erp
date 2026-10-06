@@ -27,7 +27,7 @@ class StoreInventoryCutoverRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('inventory.cutover.create') === true;
     }
 
     /** @return array<string, mixed> */

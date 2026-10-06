@@ -19,7 +19,7 @@ class StoreRecalculationRequestRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('inventory.recalculation.request') === true;
     }
 
     /** @return array<string, mixed> */

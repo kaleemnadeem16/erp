@@ -17,7 +17,7 @@ class StorePhysicalCountLineRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('inventory.physical_count.create') === true;
     }
 
     /** @return array<string, mixed> */
