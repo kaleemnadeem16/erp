@@ -13,6 +13,7 @@ final class RevokeApprovalDelegation
 {
     public function __invoke(ApprovalDelegation $delegation, User $actor): ApprovalDelegation
     {
+        $delegation = ApprovalDelegation::query()->findOrFail($delegation->id);
         // The delegator may withdraw their own delegation; revoking someone else's takes the delegation-management capability.
         if ($delegation->delegator_id !== $actor->id) {
             ActionAuthorization::require($actor, 'approvals.delegation.manage', 'revoke another person\'s delegation');

@@ -86,6 +86,23 @@ Practical commands (WSL, repository root `/home/kaleem/projects/erp`):
   `SectionStack`/`FieldHint` and `useDebouncedSearch` as they are touched.
 - Approval-section enhancements are recorded in [approvals.md](../domain/approvals.md).
 
+## Part 2 audit checkpoint — 2026-10-06
+
+Core/Auth, Accounting, Parties, Administration, Approvals and Imports endpoints, Actions,
+Resources, nested includes and available print/export entry points reviewed; exact coverage and
+remaining policies are in the [tracker](../architecture/access-security-audit.md#coverage-map-and-next-inspection).
+Administration Actions now refuse hydrated foreign members/roles and restrict profile attributes;
+approval governance Actions re-query company-scoped targets; import staging re-queries its profile.
+Approval decisions now refuse ineligible actors before stale/expiry preflight can change state.
+Focused Part 2 checks pass 264 tests / 1,084 assertions; explicit-path Pint and PHPStan pass.
+New response-body/Action tests accompany reused allowed/denied suites; no new grants or permissions.
+
+The four [decision briefs](../OPEN-QUESTIONS.md) are recommendations awaiting the owner:
+Q34 Finance fields, Q35 amount exception/ceilings/reasons, Q36 tokens, Q26 scope/delegated administration.
+No policy implementation is included; A3/A4 field projections wait for Q34. The read-only
+`erp:audit-access-inventory` command and staging sign-off template are delivered; no live staging
+assignments have been reviewed or changed. API response contracts are unchanged, so no client regeneration.
+
 ## Known CI and environment issues (not caused by this workstream)
 
 - `lint-backend`: Pint flags two package migrations (`…180000_create_packages_and_supplier_offers`, `…180100_add_packaged_purchasing_snapshots`)

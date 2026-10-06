@@ -1,0 +1,71 @@
+<?php
+
+namespace Tests\Feature\Support;
+
+use App\Console\Commands\AuditAccessInventory;
+use App\Models\Role;
+use App\Models\User;
+use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
+use Tests\Support\PermissionedActor;
+use Tests\TestCase;
+
+class AccessInventoryCommandTest extends TestCase
+{
+    use DatabaseMigrations;
+
+    public function test_inventory_covers_each_company_roles_direct_grants_and_token_actors_without_mutation(): void
+    {
+        $member = PermissionedActor::grant(User::factory()->create(), ['currency.exchange-rate.manage', 'inventory.stock.view']);
+        $role = Role::create(['team_id' => 1, 'name' => 'Chart maintainer']);
+        PermissionedActor::grant(User::factory()->create(), ['accounting.chart-of-account.manage']);
+        $role->givePermissionTo('accounting.chart-of-account.manage');
+        $member->assignRole($role);
+        Role::create(['team_id' => 1, 'name' => 'Unassigned role']);
+        $cleartext = $member->createToken('Integration actor')->plainTextToken;
+        DB::table('companies')->insert(['id' => 2, 'name' => 'Second company']);
+        $foreignId = DB::table('users')->insertGetId(['company_id' => 2, 'name' => 'Foreign service actor', 'email' => 'service@example.com', 'password' => 'secret-hash']);
+        Role::create(['team_id' => 2, 'name' => 'Second company role']);
+        $permissionId = DB::table('permissions')->where('name', 'inventory.stock.view')->value('id');
+        DB::table('model_has_permissions')->insert(['permission_id' => $permissionId, 'model_type' => User::class, 'model_id' => $foreignId, 'team_id' => 2]);
+        DB::table('personal_access_tokens')->insert(['tokenable_type' => 'UnknownService', 'tokenable_id' => 123, 'name' => 'Unknown actor', 'token' => hash('sha256', 'unknown-secret'), 'abilities' => '["*"]']);
+        $before = $this->snapshot();
+        $queries = [];
+        DB::listen(function ($query) use (&$queries): void {
+            $queries[] = $query->sql;
+        });
+        $this->assertSame(0, Artisan::call('erp:audit-access-inventory'));
+        $output = Artisan::output();
+        $report = json_decode($output, true, flags: JSON_THROW_ON_ERROR);
+        $this->assertCount(2, $report['companies']);
+        $own = collect($report['companies'][0]['members'])->firstWhere('id', $member->id);
+        $this->assertSame(['currency.exchange-rate.manage', 'inventory.stock.view'], $own['direct_grants']);
+        $this->assertContains('accounting.chart-of-account.manage', $own['effective_capabilities']);
+        $this->assertNotContains('accounting.chart-of-account.manage', $own['missing_audit_capabilities']);
+        $this->assertContains('inventory.movement.view', $own['missing_audit_capabilities']);
+        $this->assertContains('Unassigned role', array_column($report['companies'][0]['roles'], 'name'));
+        $this->assertSame('Integration actor', $own['bearer_tokens'][0]['name']);
+        $this->assertSame('OWNER_CONFIRMATION_REQUIRED', $own['service_actor_classification']);
+        $foreign = $report['companies'][1]['members'][0];
+        $this->assertSame(['inventory.stock.view'], $foreign['effective_capabilities']);
+        $this->assertSame('UnknownService', $report['unresolved_token_actors'][0]['actor_type']);
+        foreach ([$cleartext, 'secret-hash', 'unknown-secret', '"password"', '"token"', '"abilities"'] as $secret) {
+            $this->assertStringNotContainsString($secret, $output);
+        }
+        $this->assertContains('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY', $queries);
+        $this->assertSame($before, $this->snapshot());
+        $this->assertSame(AuditAccessInventory::CAPABILITIES, $report['audit_capabilities']);
+    }
+
+    /** @return array<string, mixed> */
+    private function snapshot(): array
+    {
+        $result = [];
+        foreach (['companies', 'users', 'roles', 'permissions', 'model_has_roles', 'model_has_permissions', 'role_has_permissions', 'personal_access_tokens', 'activity_log'] as $table) {
+            $result[$table] = DB::table($table)->get()->map(fn ($row) => (array) $row)->all();
+        }
+
+        return $result;
+    }
+}

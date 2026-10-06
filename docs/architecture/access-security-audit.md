@@ -161,7 +161,10 @@ coverage was reused, not retrofitted again. No new permissions, grants or financ
 were introduced. Four gaps were fixed: hydrated foreign Administration targets, hydrated foreign
 approval-governance targets, foreign import profile mappings, and ineligible approval preflight
 cancellation; Administration profile Actions also reject credential/status changes by omission.
-Internal stage opening/invalidation also re-query the scoped request. These enforce existing tenant and operation boundaries, not Q26 organisational scope.
+Internal stage opening/invalidation also re-query the scoped request. These enforce existing
+tenant and operation boundaries, not Q26 organisational scope. The focused Part 2 regression run
+passes **264 tests / 1,084 assertions**; explicit-path Pint and PHPStan pass. The throwaway database
+is `erp_codex_part2` and is dropped after verification.
 
 Read-only inventory: `docker compose exec -T app php artisan erp:audit-access-inventory > access-inventory.json`.
 Run on staging, retain the output in restricted release evidence, and record its checksum.
@@ -193,7 +196,8 @@ Copy this template into restricted staging release evidence; this tracker record
 
 Inventory tooling is delivered; **staging verification is not done** and the Deployment verification
 checkbox remains open. Q34 implementation waits for an owner-approved field matrix and ADR;
-Part 1 owns the Inventory A4 code once policy is decided, Part 2 owns Parties projections.
+Part 2 will implement the decided A3/A4 projections, coordinating Inventory-owned surfaces
+with Part 1 before editing them.
 
 ### Safe release and exit criteria
 

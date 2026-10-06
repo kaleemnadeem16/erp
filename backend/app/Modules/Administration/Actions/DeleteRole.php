@@ -7,11 +7,16 @@ namespace App\Modules\Administration\Actions;
 use App\Exceptions\DomainInvariantException;
 use App\Models\Role;
 use App\Models\User;
+use App\Modules\Administration\Support\AccessAssignmentGuard;
 
 final class DeleteRole
 {
+    public function __construct(private readonly AccessAssignmentGuard $guard) {}
+
     public function __invoke(Role $role, string $reason, User $actor): void
     {
+        $this->guard->assertCompany($actor);
+        $this->guard->assertCompany($role);
         if (! $actor->can('administration.role.manage')) {
             throw new DomainInvariantException('The actor cannot manage roles.', 'role');
         }

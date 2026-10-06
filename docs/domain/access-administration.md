@@ -97,6 +97,22 @@ All queries are limited to the active company/team. Permission names are read fr
 registry; administrators cannot invent executable capabilities. Access screens never reveal
 password hashes, reset tokens or sessions.
 
+## Audit and non-HTTP boundary (2026-10-06)
+
+Member profile/status/access/temporary-password and role save/delete Actions check the active
+company for hydrated targets as well as the actor. Passing a model loaded under a different
+company cannot bypass HTTP route scoping. Profile maintenance changes name/email only; password,
+status and invitation metadata must use their dedicated workflows even when called without HTTP.
+History requires member-read capability and projects only recognised administration events,
+actor name, reason and time; raw properties, credentials and unrelated events are excluded.
+`AccessAdministrationActionIsolationTest` proves these boundaries alongside the API/isolation suite.
+
+`erp:audit-access-inventory` is a server-operated, read-only staging report of all companies,
+members, roles, direct grants and token-holder metadata. Missing A1–A6 capabilities are review flags,
+never automatic grants. Every member's human/service classification requires owner confirmation
+because no service-account marker exists. See the [audit sign-off template](../architecture/access-security-audit.md#part-2-evidence-and-staging-sign-off-2026-10-06).
+Delegated/unit administration still waits for Q26.
+
 ## Landmines
 
 - Registration is not assignment. A newly shipped permission grants nobody access until a role or

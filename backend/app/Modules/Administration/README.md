@@ -51,6 +51,14 @@ The backend is authoritative. The SPA gates navigation/actions for usability onl
   [`deployment.md`](../../../../docs/architecture/deployment.md); the UI deliberately blocks
   self-suspension and self access editing.
 
+## Staging audit
+
+`erp:audit-access-inventory` reads all company/member/role/direct-grant and token-actor metadata
+without changing assignments or emitting credentials. Its flags need owner review; service actors
+must be identified by the owner. The sign-off template lives in the access-security audit tracker.
+All member/role mutation Actions also refuse hydrated foreign targets; profile maintenance accepts
+name/email only. Scoped history response assertions accompany the existing API isolation tests.
+
 ## Related
 
 - [`docs/domain/access-administration.md`](../../../../docs/domain/access-administration.md)

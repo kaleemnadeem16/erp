@@ -19,6 +19,7 @@ final class ActivateApprovalPolicy
 {
     public function __invoke(ApprovalPolicy $policy, User $actor): ApprovalPolicy
     {
+        $policy = ApprovalPolicy::query()->findOrFail($policy->id);
         ActionAuthorization::require($actor, 'approvals.policy.manage', 'activate an approval policy');
         if ($policy->status !== ApprovalPolicyStatus::Draft) {
             throw new DomainInvariantException('Only a draft can be activated.', 'status');

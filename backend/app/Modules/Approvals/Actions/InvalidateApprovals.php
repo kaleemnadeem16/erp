@@ -16,6 +16,7 @@ final class InvalidateApprovals
 {
     public function __invoke(ApprovalRequest $request, string $reason, ApprovalRequestStatus $as = ApprovalRequestStatus::Invalidated): ApprovalRequest
     {
+        $request = ApprovalRequest::query()->findOrFail($request->id);
         $request->steps()->whereIn('status', [ApprovalStepStatus::Open, ApprovalStepStatus::Waiting])->update(['status' => ApprovalStepStatus::Closed]);
         $request->update(['status' => $as, 'closed_at' => $request->closed_at ?? now(), 'closing_reason' => $reason]);
 

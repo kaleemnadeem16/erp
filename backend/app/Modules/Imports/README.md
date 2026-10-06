@@ -32,6 +32,13 @@ time are stored on the mapping; each application is copied into the immutable st
 facts (including quantity/value, warehouse, item/UoM, valuation identity, batch and serial) cannot
 be defaulted, and staging never splits a source balance across target locations (ADR 0046).
 
+## Audit boundary
+
+Staging re-queries the profile in the active company before loading mappings, so a hydrated
+foreign profile cannot be used by a non-HTTP caller. Validation likewise re-queries its batch.
+`ImportProfileTenantIsolationTest` proves the staging boundary; the entry-point architecture test
+still forbids HTTP/console/job exposure until capabilities and staged-row projection are designed.
+
 ## Related
 
 - [Data import](../../../../docs/architecture/data-import.md)

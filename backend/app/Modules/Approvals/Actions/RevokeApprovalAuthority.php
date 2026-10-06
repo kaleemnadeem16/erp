@@ -13,6 +13,7 @@ final class RevokeApprovalAuthority
 {
     public function __invoke(ApprovalAuthority $authority, User $actor): ApprovalAuthority
     {
+        $authority = ApprovalAuthority::query()->findOrFail($authority->id);
         ActionAuthorization::require($actor, 'approvals.authority.manage', 'revoke approval authority');
         if ($authority->revoked_at === null) {
             $authority->update(['revoked_at' => now()]);

@@ -18,6 +18,10 @@ final class SaveRole
     /** @param array<string, mixed> $attributes */
     public function __invoke(?Role $role, array $attributes, User $actor): Role
     {
+        $this->guard->assertCompany($actor);
+        if ($role !== null) {
+            $this->guard->assertCompany($role);
+        }
         if (! $actor->can('administration.role.manage')) {
             throw new DomainInvariantException('The actor cannot manage roles.', 'name');
         }

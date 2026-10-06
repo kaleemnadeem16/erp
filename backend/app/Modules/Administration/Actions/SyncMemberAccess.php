@@ -16,6 +16,8 @@ final class SyncMemberAccess
     /** @param array<string, mixed> $attributes */
     public function __invoke(User $member, array $attributes, User $actor): User
     {
+        $this->guard->assertCompany($actor);
+        $this->guard->assertCompany($member);
         if (! $actor->can('administration.access.assign')) {
             throw new DomainInvariantException('The actor cannot assign access.', 'role_ids');
         }

@@ -72,6 +72,19 @@ own), `approvals.history.view` (see every request). Per-subject capabilities liv
 `inbox`, `show`, `POST …/decide`, `POST …/withdraw`). A request is visible to its submitter, to auditors, and to anyone who can
 act on it or has acted on it; what money it shows them follows the rule above.
 
+## Audit boundary (2026-10-06)
+
+Policy update/delete/activate and authority/delegation revocation re-query their target under the
+active company before reading or mutating it, including non-HTTP calls with hydrated foreign models. Internal stage-opening/invalidation Actions
+also re-query the request before changing it.
+A decision checks actor eligibility, maker/checker separation and previous slots before inspecting
+changed-document evidence or settling expiry; those preflight checks can cancel a request and must
+not be triggered by an unrelated caller. Eligibility is checked again inside the decision transaction.
+`ApprovalInformationFlowTest` verifies foreign list/detail/Action paths and that an ineligible
+response neither discloses document-change state nor cancels a stale request. Existing engine tests
+retain eligible stale/expired handling. Q35's amount exception, ceiling-reader and free-text reason
+policies are unchanged; see the [decision brief](../OPEN-QUESTIONS.md#q35--approval-evidence-exception-and-authority-ceiling-visibility).
+
 ## Screens
 
 `/settings/approvals` — what needs approval (per subject type), policies (list, editor, versions), approval limits.

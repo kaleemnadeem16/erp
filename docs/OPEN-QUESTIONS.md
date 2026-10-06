@@ -114,6 +114,18 @@ routine cross-department assigned/task-scoped access without creating one role p
 Spatie Teams currently scopes assignments by `company_id`; it is groundwork, not this record-scope
 model. See [authorization.md](architecture/authorization.md#teams-and-organisational-scope).
 
+**Decision brief (2026-10-06; proposed, awaiting owner):** Options: keep company-wide records;
+use Spatie Teams as organisation units (migrate assignments); or retain Teams for company and add
+separate organisation memberships plus own/assigned/unit/company scopes. **Recommend the third**:
+several memberships, one policy/query-scope definition applied to list/count/search/lookup/show/write,
+and time-bounded task access. Delegated administrators get an explicit unit mandate and delegable
+capability subset, never tenant/Finance administration merely through a role. Consequences: new
+membership/scope records and audited delegation; existing grants need an approved company-wide
+backfill before enforcement. Reject one role per department pair and direct grants as denials.
+Basis: [ADR 0028](decisions/0028-dynamic-namespaced-permissions.md),
+[ADR 0062 research](decisions/0062-company-member-and-access-administration.md#research-basis),
+and the Odoo/Dynamics comparison below. No organisation or delegated-access model implemented.
+
 ### Q28 — Purchase-order approval policy
 **Blocks:** Introducing PO submission/approval before operational purchasing relies on issuance
 
@@ -144,6 +156,19 @@ Decide per field: visible to everyone who can see the record, visible only with 
 list, detail, lookup, print and any export must all follow it. Reuse the ADR 0069/0073/0083 pattern (omit restricted keys; never send a zero).
 See [access-security-audit.md](architecture/access-security-audit.md).
 
+**Decision brief (2026-10-06; proposed, awaiting Finance/owner):** Options: retain shared reads;
+restrict all listed fields; or separate operational terms from Finance-owned risk/account mappings.
+**Recommend the third:** credit limits and Item/Category/customer/supplier GL mappings need separate
+Finance read and change capabilities; payment terms stay readable for operational work, with
+Finance-controlled edits. Base resource maintenance alone must not authorise those changes.
+Consequences: append capabilities and approved grant migrations; reject restricted-field writes
+without clearing stored values; omit keys on list/detail/nested lookup/print and future exports,
+including mutation responses. Match filters/sorts and chart/account selectors to the chosen policy.
+Owner must confirm each field and whether a writer also gets its minimum read projection.
+Basis: [ADR 0069](decisions/0069-separate-purchasing-commercial-visibility-from-receiving.md),
+[ADR 0073](decisions/0073-separate-inventory-valuation-visibility-from-stock-operations.md),
+ADR 0083 and the field-security comparison below. A3/A4 projections remain unimplemented.
+
 ### Q35 — Approval evidence exception and authority-ceiling visibility
 **Blocks:** Finalising the access audit's information-flow review for approvals (not any build)
 
@@ -152,13 +177,55 @@ asked to decide or has decided that request (`ApprovalEvidenceAccess`). Confirm 
 front of them without seeing the PO's line prices — and decide who may list per-person authority ceilings (`approvals.history.view` holders can
 today). Free-text decision reasons are not filtered; decide whether that is acceptable.
 
+**Decision brief (2026-10-06; proposed, awaiting owner):** Options: retain the current exception
+and history-wide ceilings/reasons; remove the exception and require document-cost access;
+or retain request-specific amount evidence while separately protecting ceilings and free text.
+**Recommend the third:** actionable/past deciders keep the pinned request total and FX evidence,
+never PO line prices through approval evidence; all-company ceilings require authority management
+or a separate read capability, while `mine` stays self-only. Hide decision/closing reasons from
+viewers lacking subject evidence access unless they participated; do not attempt numeric-text
+scrubbing. Consequences: less context for non-financial auditors, explicit ceiling-reader rollout,
+and consistent reason projection across list/show/inbox/decide/withdraw. Finance/owner must confirm
+whether past-decider access persists after reassignment and which reason audiences are legitimate.
+Basis: [ADR 0070](decisions/0070-shared-configurable-approval-engine.md) and existing
+`ApprovalEvidenceVisibilityTest`; vendor approval limits govern eligibility, not our read policy.
+No exception, ceiling or reason policy changed by this audit.
+
 ### Q36 — Bearer-token lifetime and device sessions
 **Blocks:** Any mobile client or integration using bearer tokens (Phase 7)
 
 `sanctum.expiration` is null, so a bearer token never expires on its own (it is revoked on password change, reset, suspension and temporary
 password). Decide the lifetime, whether tokens are per-device and listable/revocable by the user, and whether inactivity should end them.
 
+**Decision brief (2026-10-06; proposed, awaiting owner):** Options: unlimited with revocation;
+a fixed absolute expiry; or absolute plus inactivity expiry and managed device sessions.
+**Recommend a 30-day absolute limit for human device tokens**, separate owner-approved shorter
+service credentials, self list/revoke by device, and fresh sign-in to renew; defer inactivity expiry
+until offline/mobile requirements are known. Consequences: existing old tokens expire at rollout,
+users must reauthenticate, pruning is housekeeping rather than enforcement, and service owners
+must plan rotation. Do not add an automatic refresh token which recreates unlimited lifetime.
+Basis: [ADR 0005](decisions/0005-sanctum-authentication.md) fixes SPA cookies/mobile bearer modes;
+[Sanctum expiry](https://laravel.com/docs/12.x/sanctum#token-expiration) supports global and
+per-token expiry but specifies no ERP lifetime. Thirty days is a proposed product choice, not a
+vendor standard. No expiry or device-management behaviour changed.
+
+**Brief research supplement (accessed 2026-10-06):**
+[Odoo record rules](https://www.odoo.com/documentation/19.0/developer/tutorials/restrict_data_access.html)
+and [Dynamics XDS](https://learn.microsoft.com/en-us/dynamics365/fin-ops-core/dev-itpro/sysadmin/extensible-data-security-policies)
+separate record scope from operation rights; Odoo rules are default-allow when none applies,
+whereas Dynamics applies constrained-table policies. Neither decides our organisation structure.
+[Dynamics field/data-entity security](https://learn.microsoft.com/en-us/dynamics365/fin-ops-core/dev-itpro/data-entities/security-data-entities)
+protects nonessential sensitive fields separately and warns that imports/services need explicit
+security; [Odoo field groups](https://www.odoo.com/documentation/15.0/developer/reference/backend/security.html#field-access)
+provide a contrasting group-based field boundary. Both support server-side field enforcement;
+our fields' sensitivity remains Finance's choice. [NetSuite approval limits](https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_N2395573.html)
+corroborates per-person amount authority already researched by ADR 0070; it does not establish
+who may read ceilings or reasons. Odoo 19 page fetch timed out; its indexed official text and
+existing ADR research were used, without treating unverified detail as policy.
+
 ---
+
+## Answered---
 
 ## Answered
 

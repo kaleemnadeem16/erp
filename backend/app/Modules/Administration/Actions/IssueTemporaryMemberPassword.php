@@ -6,6 +6,7 @@ namespace App\Modules\Administration\Actions;
 
 use App\Exceptions\DomainInvariantException;
 use App\Models\User;
+use App\Modules\Administration\Support\AccessAssignmentGuard;
 use App\Modules\Administration\Support\MemberStatus;
 use Illuminate\Auth\Passwords\PasswordBroker;
 use Illuminate\Support\Facades\DB;
@@ -14,8 +15,12 @@ use Illuminate\Support\Str;
 
 final class IssueTemporaryMemberPassword
 {
+    public function __construct(private readonly AccessAssignmentGuard $guard) {}
+
     public function __invoke(User $member, User $actor): string
     {
+        $this->guard->assertCompany($actor);
+        $this->guard->assertCompany($member);
         if (! $actor->can('administration.member.manage') || ! $actor->can('administration.access.assign')) {
             throw new DomainInvariantException('You cannot issue member credentials.', 'member');
         }

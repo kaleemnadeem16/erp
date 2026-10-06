@@ -19,6 +19,7 @@ final class StageImportBatch
     /** @param array<int, array<string, mixed>> $rows */
     public function __invoke(ImportProfile $profile, ImportPurpose $purpose, string $externalBatchId, string $fileName, array $rows, User $actor): ImportBatch
     {
+        $profile = ImportProfile::query()->findOrFail($profile->id);
         $rows = array_values($rows);
         $this->targets->get($purpose, $profile->entity_type);
         if ($rows === [] || trim($externalBatchId) === '' || trim($fileName) === '') {

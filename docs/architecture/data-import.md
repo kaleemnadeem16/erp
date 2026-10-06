@@ -133,6 +133,16 @@ whether the valid rows commit anyway or the whole batch waits — don't let this
 defined matching rule (exact, fuzzy, manual reconciliation) — silently guessing produces wrong
 links that are hard to notice later.
 
+## Current security boundary (2026-10-06)
+
+The staging foundation has no HTTP/console/job entry point or generic read/export API.
+`StageImportBatch` re-queries its profile in the active company before reading mappings;
+`ValidateImportBatch` re-queries its batch before reading rows. Hydrated foreign profiles are
+refused with no staged data written (`ImportProfileTenantIsolationTest`). Raw source, mapped data,
+transformations and errors can carry financial fields; any future entry point needs explicit
+capability/record authority and field projections. The architecture entry-point ratchet and
+remaining work are in the [audit tracker](access-security-audit.md).
+
 ## Related
 
 - [extensibility.md](extensibility.md) — custom-field landing spot for unmapped columns

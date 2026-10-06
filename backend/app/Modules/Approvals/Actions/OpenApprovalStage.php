@@ -12,6 +12,7 @@ final class OpenApprovalStage
 {
     public function __invoke(ApprovalRequest $request, int $stage): void
     {
+        $request = ApprovalRequest::query()->findOrFail($request->id);
         foreach ($request->steps()->where('stage', $stage)->with('policyStep')->get() as $step) {
             $hours = $step->policyStep->expires_after_hours;
             $step->update([

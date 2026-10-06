@@ -19,9 +19,9 @@ use App\Modules\Approvals\Support\ExpiryAction;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Records one decision on an open step (ADR 0070). In order it checks that the document is unchanged since it was
- * routed, that the step has not expired, that the actor holds the authority — their own or a delegator's — that the
- * submitter is not satisfying a step that forbids it, and that this person has not already filled a slot in the step
+ * Records one decision on an open step (ADR 0070). It first checks actor authority, maker/checker separation and
+ * previous slots, before inspecting changed-document evidence or settling expiry. Eligibility is checked again
+ * inside the decision transaction. The submitter cannot satisfy a step that forbids it or fill more than one slot
  * (as themselves or as a delegator's principal). Only then does it append the decision and advance the request.
  *
  * Rejection is terminal for the request: the submitter revises and submits again, as a new request. Approving the
@@ -44,7 +44,13 @@ final class DecideApproval
 
         // Cancelling a stale or expired approval must survive the refusal that follows it, so those checks run (and
         // commit) before the transaction that records a decision — a throw inside it would roll the cancellation back.
-        $this->preflight(ApprovalRequest::query()->findOrFail($request->id));
+        $current = ApprovalRequest::query()->findOrFail($request->id);
+        if (! $current->isOpen()) {
+            throw new DomainInvariantException("This approval is already {$current->status->value}.", 'status');
+        }
+        // Refuse an unrelated caller before examining document changes or settling expiry: both can write state.
+        $this->authorisedStep($current, $actor, $stepId);
+        $this->preflight($current);
 
         return DB::transaction(function () use ($request, $actor, $decision, $reason, $stepId): ApprovalRequest {
             $request = ApprovalRequest::query()->whereKey($request->id)->lockForUpdate()->firstOrFail();
@@ -52,16 +58,7 @@ final class DecideApproval
                 throw new DomainInvariantException("This approval is already {$request->status->value}.", 'status');
             }
 
-            [$step, $grant] = $this->stepFor($request, $actor, $stepId);
-            $policyStep = $step->policyStep;
-            if (! $policyStep->allow_submitter && in_array($request->submitted_by, [$actor->id, $grant->principal->id], true)) {
-                throw new DomainInvariantException('The person who submitted this cannot approve this step.', 'decided_by');
-            }
-            $taken = $step->decisions()->get();
-            if ($taken->contains(fn (ApprovalDecision $d): bool => $d->decided_by === $actor->id || $d->principal_id === $actor->id
-                || $d->principal_id === $grant->principal->id || $d->decided_by === $grant->principal->id)) {
-                throw new DomainInvariantException('You have already filled an approval slot in this step, personally or on behalf of someone else.', 'decided_by');
-            }
+            [$step, $grant] = $this->authorisedStep($request, $actor, $stepId);
 
             ApprovalDecision::query()->create([
                 'request_id' => $request->id, 'request_step_id' => $step->id, 'decision' => $decision,
@@ -71,6 +68,23 @@ final class DecideApproval
 
             return $this->advance($request, $step, $decision, $reason);
         });
+    }
+
+    /** @return array{0: ApprovalRequestStep, 1: ApprovalGrant} */
+    private function authorisedStep(ApprovalRequest $request, User $actor, ?int $stepId): array
+    {
+        [$step, $grant] = $this->stepFor($request, $actor, $stepId);
+        $policyStep = $step->policyStep;
+        if (! $policyStep->allow_submitter && in_array($request->submitted_by, [$actor->id, $grant->principal->id], true)) {
+            throw new DomainInvariantException('The person who submitted this cannot approve this step.', 'decided_by');
+        }
+        $taken = $step->decisions()->get();
+        if ($taken->contains(fn (ApprovalDecision $d): bool => $d->decided_by === $actor->id || $d->principal_id === $actor->id
+            || $d->principal_id === $grant->principal->id || $d->decided_by === $grant->principal->id)) {
+            throw new DomainInvariantException('You have already filled an approval slot in this step, personally or on behalf of someone else.', 'decided_by');
+        }
+
+        return [$step, $grant];
     }
 
     private function preflight(ApprovalRequest $request): void

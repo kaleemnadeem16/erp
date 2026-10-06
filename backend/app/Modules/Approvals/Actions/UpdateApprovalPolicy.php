@@ -20,6 +20,7 @@ final class UpdateApprovalPolicy
     /** @param  array<string, mixed>  $attributes */
     public function __invoke(ApprovalPolicy $policy, array $attributes, User $actor): ApprovalPolicy
     {
+        $policy = ApprovalPolicy::query()->findOrFail($policy->id);
         ActionAuthorization::require($actor, 'approvals.policy.manage', 'edit an approval policy');
         $actorId = $actor->id;
         if ($policy->status !== ApprovalPolicyStatus::Draft) {

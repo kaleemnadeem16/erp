@@ -6,13 +6,18 @@ namespace App\Modules\Administration\Actions;
 
 use App\Exceptions\DomainInvariantException;
 use App\Models\User;
+use App\Modules\Administration\Support\AccessAssignmentGuard;
 use App\Modules\Administration\Support\MemberStatus;
 use Illuminate\Support\Facades\DB;
 
 final class ChangeMemberStatus
 {
+    public function __construct(private readonly AccessAssignmentGuard $guard) {}
+
     public function __invoke(User $member, MemberStatus $status, string $reason, User $actor): User
     {
+        $this->guard->assertCompany($actor);
+        $this->guard->assertCompany($member);
         if (! $actor->can('administration.member.manage')) {
             throw new DomainInvariantException('The actor cannot manage members.', 'status');
         }
