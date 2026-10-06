@@ -24,6 +24,7 @@ import type {
   AuthenticationExceptionResponse,
   ForgotPasswordRequest,
   Login200,
+  Login401,
   LoginRequest,
   PasswordEmail200,
   PasswordReset200,
@@ -41,6 +42,11 @@ export type loginResponse200 = {
   status: 200;
 };
 
+export type loginResponse401 = {
+  data: Login401;
+  status: 401;
+};
+
 export type loginResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -49,7 +55,7 @@ export type loginResponse422 = {
 export type loginResponseSuccess = loginResponse200 & {
   headers: Headers;
 };
-export type loginResponseError = loginResponse422 & {
+export type loginResponseError = (loginResponse401 | loginResponse422) & {
   headers: Headers;
 };
 
@@ -72,7 +78,7 @@ export const login = async (
 };
 
 export const getLoginMutationOptions = <
-  TError = ValidationExceptionResponse,
+  TError = Login401 | ValidationExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -113,10 +119,10 @@ export type LoginMutationResult = NonNullable<
   Awaited<ReturnType<typeof login>>
 >;
 export type LoginMutationBody = LoginRequest;
-export type LoginMutationError = ValidationExceptionResponse;
+export type LoginMutationError = Login401 | ValidationExceptionResponse;
 
 export const useLogin = <
-  TError = ValidationExceptionResponse,
+  TError = Login401 | ValidationExceptionResponse,
   TContext = unknown,
 >(
   options?: {

@@ -56,7 +56,7 @@ Practical commands (WSL, repository root `/home/kaleem/projects/erp`):
 
 1. ~~**A3/A4 — Finance field visibility**~~ — accepted and implemented under ADR 0084; staging readership sign-off remains open.
 2. ~~**Approvals** (Q35)~~ — resolved: document review under ADR 0085, limits and reasons under [ADR 0087](../decisions/0087-approval-limits-and-reasons-are-separate-auditor-capabilities.md). The original wording follows for history: decide who may list per-person authority ceilings and read confidential decision reasons.
-3. **Bearer-token lifetime** (open question [Q36](../OPEN-QUESTIONS.md#q36--bearer-token-lifetime-and-device-sessions)) — before any mobile client ships.
+3. ~~**Bearer-token lifetime** (Q36)~~ — resolved by [ADR 0088](../decisions/0088-device-tokens-expire-and-sign-in-has-seams-for-stronger-authentication.md); two-factor, step-up and mobile re-authentication are researched later as [Q37](../OPEN-QUESTIONS.md#q37--two-factor-step-up-and-mobile-re-authentication).
 4. **Record-level scope and delegated administration** — already [Q26](../OPEN-QUESTIONS.md#q26--organisational-and-record-level-access-scope); the stock-read capabilities are company-wide until it is decided.
 
 ### Ready to implement
@@ -193,6 +193,12 @@ had appeared, and the dev app's login page crashed. That is not this workstream'
 4. **Staging sign-off for A1–A9 and ADR 0087:** run `erp:audit-access-inventory` on staging and decide per person who keeps `approvals.authority.view`,
    `approvals.reason.view` and the other A8/A9 reads (the report's `read_access_lost` section lists who lost one).
 5. **Pushing `develop` is paused** until the owner says otherwise.
+6. **Q36 (ADR 0088) release steps:** `php artisan migrate` (adds `meta` to `personal_access_tokens`); count bearer tokens in production before release
+   (`erp:audit-access-inventory`, or `select count(*) from personal_access_tokens`) — existing tokens expire 30 days after creation; re-run the browser spec
+   `signed-in-devices.spec.ts` against the live stack (the dev server was too slow to finish it on 2026-10-06; the backend and typecheck pass).
+7. **Found while doing Q36, not changed:** the scheduler container runs every minute, but until Q36 nothing was scheduled, and `ExpireOverdueApprovals`
+   (flagging and expiring overdue approval steps) is called by nothing but tests, so an approval only expires lazily when someone tries to decide it. Decide
+   whether to schedule it (ADR 0070 designed it to run on a timer); it changes what happens to overdue requests in production, so it is the owner's call.
 
 ## Related
 

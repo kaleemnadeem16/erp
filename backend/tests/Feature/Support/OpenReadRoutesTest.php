@@ -24,6 +24,7 @@ class OpenReadRoutesTest extends TestCase
     private const OPEN_BY_DESIGN = [
         'api/v1/user' => 'The caller\'s own identity and effective permissions; the SPA needs them to decide what to show.',
         'api/v1/account' => 'The caller\'s own profile.',
+        'api/v1/account/devices' => 'The caller\'s own signed-in devices (bearer tokens); the query starts from their tokens, never anyone else\'s (ADR 0088).',
         'api/v1/currencies' => 'Reference data every document form needs.',
         'api/v1/exchange-rates' => 'Shared rate lookup (writes need currency.exchange-rate.manage, A1); a Finance decision may narrow it later.',
         'api/v1/parties' => 'Shared trading-partner identities; nested financial fields are projected under ADR 0084 (ProtectedFinancialFieldsNeverLeakTest).',

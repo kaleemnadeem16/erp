@@ -30,6 +30,7 @@ class WriteRouteGuardTest extends TestCase
         'POST api/v1/reset-password' => 'Recovery: proven by the emailed token.',
         'POST api/v1/logout' => 'Ends the caller\'s own session.',
         'PATCH api/v1/account' => 'The caller edits their own profile only.',
+        'DELETE api/v1/account/devices/{device}' => 'The caller signs out one of their own devices: DeviceController starts from the caller\'s own tokens, so another person\'s device is a 404.',
         'PATCH api/v1/account/password' => 'The caller changes their own password, proving the current one.',
         'POST api/v1/approval-requests/{approval_request}/decide' => 'Decided by eligibility, not a fixed capability: DecideApproval checks authority, assignment, separation of duties and state.',
         'POST api/v1/approval-requests/{approval_request}/withdraw' => 'Only the submitter may withdraw: WithdrawApproval checks the actor.',

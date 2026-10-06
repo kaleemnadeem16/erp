@@ -102,8 +102,9 @@ in the same commit.
 | [0085](0085-request-specific-document-review-for-approvals.md) | Request-specific document review with commercial and technical approval profiles | accepted | 2026-10-06 |
 | [0086](0086-gate-recipe-reads-by-capability.md) | Gate recipe reads behind a capability administrators grant through roles | accepted | 2026-10-06 |
 | [0087](0087-approval-limits-and-reasons-are-separate-auditor-capabilities.md) | Approval limits and written reasons are separate auditor capabilities | accepted | 2026-10-06 |
+| [0088](0088-device-tokens-expire-and-sign-in-has-seams-for-stronger-authentication.md) | Device tokens expire, people manage their devices, and sign-in leaves room for stronger authentication | accepted | 2026-10-06 |
 
-**Next number: 0088**
+**Next number: 0089**
 
 ## By theme
 

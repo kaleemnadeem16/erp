@@ -50,7 +50,9 @@ return [
     |
     */
 
-    'expiration' => null,
+    // Hard ceiling in minutes: no bearer token is valid longer than this from its creation, whatever its own expiry says. 30 days (Q36,
+    // docs/decisions/0088-*.md); the per-token expiry is set at sign-in from config/signin.php and can only be shorter.
+    'expiration' => env('SANCTUM_EXPIRATION', 43200),
 
     /*
     |--------------------------------------------------------------------------

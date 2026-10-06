@@ -15,6 +15,7 @@ import { DetailPageLayout, DetailSection } from '../../components/detail/detail-
 import { applyApiErrorsToForm } from '../../lib/api-errors';
 import { getInitials } from '../../lib/initials';
 import { useAuthStore } from '../../stores/auth-store';
+import { SignedInDevicesSection } from './signed-in-devices-section';
 
 const profileSchema = z.object({
   name: z.string().trim().min(1, 'Name is required').max(255),
@@ -211,6 +212,8 @@ export function AccountSettingsScreen() {
             </DetailSection>
           </form>
         </Form>
+
+        <SignedInDevicesSection />
       </DetailPageLayout>
     </div>
   );

@@ -147,37 +147,18 @@ digest delivery. Those are prompts, not a predetermined architecture. Consumers 
 expiries, overdue steps and escalation capabilities, recalculation and negative-stock reviews past their SLA, and the
 purchase-order and quotation workflows.
 
-### Q36 — Bearer-token lifetime and device sessions
-**Blocks:** Any mobile client or integration using bearer tokens (Phase 7)
+### Q37 — Two-factor, step-up and mobile re-authentication
+**Blocks:** Nothing built; needed before a mobile client or integration handles sensitive data in production (Phase 7)
 
-`sanctum.expiration` is null, so a bearer token never expires on its own (it is revoked on password change, reset, suspension and temporary
-password). Decide the lifetime, whether tokens are per-device and listable/revocable by the user, and whether inactivity should end them.
-
-**Decision brief (2026-10-06; proposed, awaiting owner):** Options: unlimited with revocation;
-a fixed absolute expiry; or absolute plus inactivity expiry and managed device sessions.
-**Recommend a 30-day absolute limit for human device tokens**, separate owner-approved shorter
-service credentials, self list/revoke by device, and fresh sign-in to renew; defer inactivity expiry
-until offline/mobile requirements are known. Consequences: existing old tokens expire at rollout,
-users must reauthenticate, pruning is housekeeping rather than enforcement, and service owners
-must plan rotation. Do not add an automatic refresh token which recreates unlimited lifetime.
-Basis: [ADR 0005](decisions/0005-sanctum-authentication.md) fixes SPA cookies/mobile bearer modes;
-[Sanctum expiry](https://laravel.com/docs/12.x/sanctum#token-expiration) supports global and
-per-token expiry but specifies no ERP lifetime. Thirty days is a proposed product choice, not a
-vendor standard. No expiry or device-management behaviour changed.
-
-**Brief research supplement (accessed 2026-10-06):**
-[Odoo record rules](https://www.odoo.com/documentation/19.0/developer/tutorials/restrict_data_access.html)
-and [Dynamics XDS](https://learn.microsoft.com/en-us/dynamics365/fin-ops-core/dev-itpro/sysadmin/extensible-data-security-policies)
-separate record scope from operation rights; Odoo rules are default-allow when none applies,
-whereas Dynamics applies constrained-table policies. Neither decides our organisation structure.
-[Dynamics field/data-entity security](https://learn.microsoft.com/en-us/dynamics365/fin-ops-core/dev-itpro/data-entities/security-data-entities)
-protects nonessential sensitive fields separately and warns that imports/services need explicit
-security; [Odoo field groups](https://www.odoo.com/documentation/15.0/developer/reference/backend/security.html#field-access)
-provide a contrasting group-based field boundary. Both support server-side field enforcement;
-our fields' sensitivity remains Finance's choice. [NetSuite approval limits](https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_N2395573.html)
-corroborates per-person amount authority already researched by ADR 0070; it does not establish
-who may read ceilings or reasons. Odoo 19 page fetch timed out; its indexed official text and
-existing ADR research were used, without treating unverified detail as policy.
+The owner (2026-10-06) wants stronger sign-in researched properly later: **two-factor authentication that a company can make
+mandatory or optional**, policies that require signing in again (every time, or after an interval), fingerprint/biometric sign-in on mobile,
+and the like. [ADR 0088](decisions/0088-device-tokens-expire-and-sign-in-has-seams-for-stronger-authentication.md) leaves the places for them
+(a sign-in requirement registry, a token policy, per-token authentication records) and fixes none of the decisions. Needs a bounded
+primary-source comparison of mature ERPs before design ([research rule](architecture/research-and-design.md)): which factors (authenticator
+app, passkeys/WebAuthn, e-mail or SMS codes), what a company can configure and per whom, recovery and lost-factor handling, how a pending
+sign-in is represented and completed (the provisional 401 `challenge` shape), step-up for sensitive actions, device trust, and whether
+service credentials for integrations are separate. Also open from the same review: a security-event audit trail for sign-ins, failed
+attempts and device changes.
 
 ---
 
@@ -192,6 +173,12 @@ Q35 was resolved on 2026-10-06 in two steps: [ADR 0085](decisions/0085-request-s
 [ADR 0087](decisions/0087-approval-limits-and-reasons-are-separate-auditor-capabilities.md) (everyone's
 spending limits need `approvals.authority.manage` or `approvals.authority.view`; person-written reasons
 follow the evidence, plus `approvals.reason.view` for an auditor and the author's own words).
+
+<a id="q36--bearer-token-lifetime-and-device-sessions"></a>
+
+Q36 was resolved on 2026-10-06 by [ADR 0088](decisions/0088-device-tokens-expire-and-sign-in-has-seams-for-stronger-authentication.md):
+every bearer token expires after 30 days (no refresh token), people list and sign out their own devices, expired tokens are pruned daily,
+and sign-in has seams for stronger authentication (opened as Q37).
 
 <a id="q34--finance-owned-field-visibility-for-accounts-and-credit-terms"></a>
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Actions\Auth\IssueDeviceToken;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Auth\LoginRequest;
@@ -11,6 +12,7 @@ use App\Http\Requests\Auth\ResetPasswordRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Modules\Administration\Support\MemberStatus;
+use App\Support\Auth\SignInRequirements;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -24,8 +26,13 @@ use Illuminate\Validation\ValidationException;
  */
 class AuthController extends Controller
 {
-    public function login(LoginRequest $request): JsonResponse
+    public function login(LoginRequest $request, IssueDeviceToken $issueDeviceToken, SignInRequirements $requirements): JsonResponse
     {
+        // The switch for signing in with a device_name at all (config/signin.php): off stops any new bearer token without a release.
+        if ($request->filled('device_name') && ! config('signin.bearer_sign_in_enabled')) {
+            throw ValidationException::withMessages(['device_name' => ['Signing in with a device is turned off.']]);
+        }
+
         // Auth::attempt() builds a raw WHERE on the credentials array, bypassing the
         // User model's email-lowercasing mutator entirely — normalise here too, or
         // login becomes case-sensitive despite storage never being. See
@@ -42,11 +49,21 @@ class AuthController extends Controller
 
         /** @var User $user */
         $user = Auth::guard('web')->user();
+
+        // A correct password may not be enough (a second factor, a confirmed device — Q37). Nothing is registered today; when something
+        // is, the first unmet requirement stops the sign-in before any session or token exists and before it is recorded as a login.
+        $challenge = $requirements->firstUnmet($user, $request);
+        if ($challenge !== null) {
+            Auth::guard('web')->logout();
+
+            return response()->json(['message' => $challenge->message, 'challenge' => ['type' => $challenge->type, 'data' => $challenge->data]], 401);
+        }
+
         // A sign-in is not a profile/access edit; keep updated_at meaningful.
         User::withoutTimestamps(fn () => $user->forceFill(['last_login_at' => now()])->save());
 
         if ($request->filled('device_name')) {
-            $token = $user->createToken($request->string('device_name')->toString())->plainTextToken;
+            $token = $issueDeviceToken($user, $request->string('device_name')->toString(), $request)->plainTextToken;
 
             return (new UserResource($user))
                 ->additional(['meta' => ['token' => $token]])
