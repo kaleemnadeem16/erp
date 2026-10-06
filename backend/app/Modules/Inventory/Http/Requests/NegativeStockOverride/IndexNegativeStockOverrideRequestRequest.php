@@ -7,6 +7,7 @@ namespace App\Modules\Inventory\Http\Requests\NegativeStockOverride;
 use App\Http\Requests\Concerns\ValidatesListQuery;
 use App\Modules\Inventory\Support\NegativeStockAuthorisationMode;
 use App\Modules\Inventory\Support\NegativeStockMovementClass;
+use App\Modules\Inventory\Support\NegativeStockReadAccess;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -16,7 +17,7 @@ class IndexNegativeStockOverrideRequestRequest extends FormRequest
 
     public function authorize(): bool
     {
-        return true;
+        return NegativeStockReadAccess::allows($this->user());
     }
 
     /** @return array<string, mixed> */

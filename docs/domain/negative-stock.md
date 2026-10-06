@@ -185,6 +185,21 @@ same "refetch after every mutation, no optimistic state" rule as physical counts
 queue produces the `override_request_id` an issue's own posting call already knows how to consume
 (see "Authorised outbound posting" above) — the screen itself never posts a movement.
 
+### Who may read and act on a request (2026-10-06)
+
+Listing or opening an override request needs **any one of** `inventory.negative-stock.request`,
+`.override`, `.approve` or `.review` (the people who raise, decide or review one), or
+`inventory.stock.view` for read-only audit of shortages — the request records requested, available
+and short quantities, which are stock-position facts under
+[ADR 0083](../decisions/0083-layered-stock-read-capabilities-and-blind-counting.md). Item-level
+availability, ledger-only and valuation-only holders are refused: the record carries no cost, so
+`inventory.valuation.view` is not part of the rule. A stock viewer cannot create, decide or review.
+The same boundary now sits on the writes at the request layer: create needs `.request` or
+`.override`, decide `.approve`, review `.review`, answering 403 (they were previously refused only
+inside the Action, as a 422). The Actions keep their own checks and the maker/checker rules are
+unchanged. Record scope stays company-wide pending Q26. The `/negative-stock-overrides` screen
+admits the same capabilities.
+
 The request, approval and review API projections contain shortage quantities, identity,
 reasons and decisions but no unit costs, valuation adjustments or settlement rows. The
 `negative_stock_shortages` and `negative_stock_settlements` tables have no HTTP read endpoint.

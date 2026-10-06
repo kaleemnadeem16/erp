@@ -64,8 +64,9 @@ Practical commands (WSL, repository root `/home/kaleem/projects/erp`):
 
 ### Ready to implement
 
-- **Negative-stock override request reads** are still open to every signed-in user; gate them by workflow duty like ADR 0074 did for recalculation
-  (explicitly kept as its own slice when A6 was agreed).
+- ~~**Negative-stock override request reads**~~ — done 2026-10-06 (Part 1 of the two-agent audit): list/show need a negative-stock duty or
+  `inventory.stock.view`; create/decide/review now also refuse at the request boundary
+  ([negative-stock.md](../domain/negative-stock.md#who-may-read-and-act-on-a-request-2026-10-06)).
 - **Deployment verification (every slice A1–A6):** enumerate real members, roles, direct grants and service actors; verify effective access for
   representative warehouse, sales, counting, finance and administrator users in staging; record who approved the map and the result. The A6
   grant migration and the deploy job's `permission:register` + admin sync are the release steps; nothing has been verified outside dev.

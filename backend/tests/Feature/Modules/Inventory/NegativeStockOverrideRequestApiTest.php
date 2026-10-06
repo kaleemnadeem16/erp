@@ -29,7 +29,8 @@ class NegativeStockOverrideRequestApiTest extends PurchaseOrderFoundationTest
         app(PermissionRegistrar::class)->setPermissionsTeamId(1);
         foreach ([
             'inventory.negative-stock.request', 'inventory.negative-stock.override',
-            'inventory.negative-stock.approve', 'inventory.negative-stock.review',
+            'inventory.negative-stock.approve', 'inventory.negative-stock.review', 'inventory.stock.view',
+            'inventory.availability.view', 'inventory.movement.view', 'inventory.valuation.view',
         ] as $permission) {
             Permission::findOrCreate($permission);
         }
@@ -68,7 +69,7 @@ class NegativeStockOverrideRequestApiTest extends PurchaseOrderFoundationTest
             "/api/v1/negative-stock-override-requests/{$requestId}?include=item,location,approval,review",
             '/api/v1/negative-stock-override-requests?include=item,location,approval,review',
         ] as $url) {
-            $response = $this->actingAs(User::factory()->create())->getJson($url)->assertOk();
+            $response = $this->actingAs($this->permittedUser('inventory.stock.view'))->getJson($url)->assertOk();
             $record = str_contains($url, "{$requestId}?") ? $response->json('data') : $response->json('data.0');
 
             $this->assertSame('5.0000', $record['shortage_qty']);
@@ -76,6 +77,50 @@ class NegativeStockOverrideRequestApiTest extends PurchaseOrderFoundationTest
                 $this->assertArrayNotHasKey($field, $record);
             }
         }
+    }
+
+    public function test_reads_need_a_workflow_duty_or_stock_position_access(): void
+    {
+        [$itemId, $locationId] = $this->foundation('PRIOR_APPROVAL');
+        $requester = $this->permittedUser('inventory.negative-stock.request');
+        $requestId = $this->actingAs($requester)->postJson('/api/v1/negative-stock-override-requests', $this->input($itemId, $locationId))
+            ->assertCreated()->json('data.id');
+
+        // An unrelated signed-in user, and one who only sees item-level availability or the ledger, learn nothing about the shortage.
+        foreach ([
+            User::factory()->create(),
+            $this->permittedUser('inventory.availability.view'),
+            $this->permittedUser('inventory.movement.view'),
+            $this->permittedUser('inventory.valuation.view'),
+        ] as $outsider) {
+            $this->actingAs($outsider)->getJson('/api/v1/negative-stock-override-requests')->assertForbidden();
+            $this->actingAs($outsider)->getJson("/api/v1/negative-stock-override-requests/{$requestId}")->assertForbidden();
+            $this->actingAs($outsider)->getJson("/api/v1/negative-stock-override-requests/{$requestId}?include=item,location,batch,approval,review")->assertForbidden();
+        }
+
+        // Each workflow duty, and read-only stock position access, can list and open it.
+        foreach ([
+            'inventory.negative-stock.request', 'inventory.negative-stock.override', 'inventory.negative-stock.approve',
+            'inventory.negative-stock.review', 'inventory.stock.view',
+        ] as $permission) {
+            $reader = $this->permittedUser($permission);
+            $this->actingAs($reader)->getJson('/api/v1/negative-stock-override-requests')->assertOk()->assertJsonCount(1, 'data');
+            $this->actingAs($reader)->getJson("/api/v1/negative-stock-override-requests/{$requestId}")->assertOk()->assertJsonPath('data.shortage_qty', '5.0000');
+        }
+    }
+
+    public function test_a_read_only_stock_viewer_cannot_act_on_a_request(): void
+    {
+        [$itemId, $locationId] = $this->foundation('PRIOR_APPROVAL');
+        $requester = $this->permittedUser('inventory.negative-stock.request');
+        $requestId = $this->actingAs($requester)->postJson('/api/v1/negative-stock-override-requests', $this->input($itemId, $locationId))
+            ->assertCreated()->json('data.id');
+
+        $viewer = $this->permittedUser('inventory.stock.view');
+        $this->actingAs($viewer)->postJson('/api/v1/negative-stock-override-requests', $this->input($itemId, $locationId, 9))->assertForbidden();
+        $this->assertDatabaseCount('negative_stock_override_requests', 1);
+        $this->actingAs($viewer)->postJson("/api/v1/negative-stock-override-requests/{$requestId}/decide", ['decision' => 'APPROVED', 'notes' => 'x'])->assertForbidden();
+        $this->actingAs($viewer)->postJson("/api/v1/negative-stock-override-requests/{$requestId}/review", ['outcome' => 'JUSTIFIED', 'notes' => 'x'])->assertForbidden();
     }
 
     public function test_immediate_review_lifecycle_requires_an_independent_reviewer_by_default(): void
@@ -148,7 +193,7 @@ class NegativeStockOverrideRequestApiTest extends PurchaseOrderFoundationTest
             }
         });
 
-        $this->actingAs(User::factory()->create())->getJson("/api/v1/negative-stock-override-requests/{$requestId}")->assertNotFound();
+        $this->actingAs($this->permittedUser('inventory.stock.view'))->getJson("/api/v1/negative-stock-override-requests/{$requestId}")->assertNotFound();
     }
 
     /** @return array{int, int} */

@@ -12,7 +12,7 @@ class ReviewNegativeStockOverrideRequestRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('inventory.negative-stock.review') === true;
     }
 
     /** @return array<string, mixed> */

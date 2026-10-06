@@ -20,7 +20,7 @@ class StoreNegativeStockOverrideRequestRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->hasAnyPermission(['inventory.negative-stock.request', 'inventory.negative-stock.override']) === true;
     }
 
     /** @return array<string, mixed> */

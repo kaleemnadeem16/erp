@@ -12,7 +12,7 @@ class DecideNegativeStockOverrideRequestRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('inventory.negative-stock.approve') === true;
     }
 
     /** @return array<string, mixed> */

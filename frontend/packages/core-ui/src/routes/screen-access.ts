@@ -50,6 +50,7 @@ const negativeStock = [
   "inventory.negative-stock.override",
   "inventory.negative-stock.approve",
   "inventory.negative-stock.review",
+  "inventory.stock.view",
 ] as const;
 const recalculation = [
   "inventory.valuation.view",
