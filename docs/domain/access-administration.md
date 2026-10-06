@@ -166,6 +166,14 @@ in the same role or direct company grant set); other grants use normal Access Ad
 Supported entities/types, fixed code/type behaviour, required-value validation and demo coverage
 are documented in [extensibility](../architecture/extensibility.md#implemented-custom-field-settings-2026-10-06).
 
+## Expired browser sessions
+
+The SPA transport reports HTTP 401 and 419 to the application for reads and writes alike.
+Protected screens replace the document with `/login`, clearing cached identity and data; they
+never replay a rejected write. Public sign-in, invitation and password-reset forms retain their
+own errors. HTTP 403 remains an access error on the current screen. The browser session-expiry
+spec covers read expiry, CSRF expiry on save, access denial and invalid credentials.
+
 ## Related
 
 - [ADR 0062](../decisions/0062-company-member-and-access-administration.md)

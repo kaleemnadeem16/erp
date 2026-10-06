@@ -3,9 +3,11 @@
 // package configures the base URL and, on mobile, the token — neither is known here.
 let baseUrl = '';
 let authToken: string | null = null;
+let onSessionExpired: (() => void) | undefined;
 
-export function configureCoreApi(options: { baseUrl: string }): void {
+export function configureCoreApi(options: { baseUrl: string; onSessionExpired?: () => void }): void {
   baseUrl = options.baseUrl;
+  onSessionExpired = options.onSessionExpired;
 }
 
 export function setAuthToken(token: string | null): void {
@@ -52,6 +54,7 @@ export async function fetchClient<T>(url: string, options: RequestInit = {}): Pr
   });
 
   if (!response.ok) {
+    if (response.status === 401 || response.status === 419) onSessionExpired?.();
     const body = await response.json().catch(() => null);
     throw Object.assign(new Error(`Request failed: ${response.status}`), {
       status: response.status,
