@@ -28,7 +28,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int|null $lead_time_days
  * @property int $payable_account_id
  * @property int|null $default_currency_id
- * @property array<string, mixed>|null $custom_fields
+ * @property array<string, string|int|float|bool>|null $custom_fields
  * @property Status $status
  */
 class SupplierAccount extends Model

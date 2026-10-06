@@ -60,7 +60,11 @@ adds no approval step; its backend permission gap is explicitly tracked in the
 | 4 | `/warehouses` | Create a warehouse and its first usable location; add or edit locations as the company's mode permits. | The receiver has a physical destination for the receipt. |
 | 5 | `/settings/purchasing` and `/settings/inventory` | Review company purchasing tolerance and inventory structure/valuation defaults. Change them only with the required permission and reason. | Policy is auditable and is resolved/snapshotted where the document requires it. |
 
-Supplier identity/accounts and currencies/UoMs are Phase 1 master data. They must exist before
+Supplier identity/accounts and currencies/UoMs are Phase 1 master data. Register suppliers at
+`/suppliers/new`: select an existing trading partner or register one, then enter the supplier
+account. Supplier maintenance plus terms/mapping management are required; a new partner also
+requires Party maintenance. Retry retains a partner already saved. The supplier edit screen
+adds addresses with supplier-site maintenance. They must exist before
 the purchasing steps, even if their maintenance screens are not part of this Phase 2 navigation.
 
 ## 3. Create and issue a purchase order
@@ -94,7 +98,9 @@ receipts, not typed into the PO.
    quantity. Enter physical arrival time, posting date, actual quantity/UoM, destination location,
    provisional cost/FX evidence and required batch or serial identity.
 3. Save. The receipt is `DRAFT`; the draft claims its quantity so another draft cannot claim the
-   same remaining PO quantity. Review the detail workspace before posting.
+   same remaining PO quantity. Review the detail workspace before posting. Use **Edit draft**
+   (`/goods-receipts/{id}/edit`, receipt-create duty) to correct header/lines before posting.
+   Saved lines remain selectable even with no unallocated quantity. Hidden costs are retained.
 4. Choose **Post** and confirm the stock consequences. The server rechecks cumulative receipt
    limits and posts the receipt atomically through Inventory's movement boundary.
 5. The receipt becomes `POSTED`. It creates the stock move, traceable layer and valuation-feed
@@ -218,6 +224,16 @@ On a draft purchase-order line, select a package or loose buying, enter the orde
 Receive part of the order in its named packages or as loose stock. The outstanding package count is suggested, and the stock movement uses the issued factor and price basis. If the supplier cannot supply the agreed package or price, cancel an unreceived order or short-close its remainder, then create a replacement draft using the previous order ID. Earlier receipts and agreement evidence remain visible.
 
 On Item detail, **Supplier relationships** now supports add/edit/archive/restore in place. The item is fixed, and editing cannot change the supplier identity. Read-only buyers can inspect the terms; changing them requires purchasing.item-supplier.manage. The panel lists archived relationships as well as active ones, paginates, and reports lookup failures. Create an active relationship here before adding an offer below it.
+
+## Company-specific descriptive fields
+
+Settings → **Custom Fields** requires `administration.custom-field.manage`. Choose a supported
+record type, code, label and text/number/date/yes-no/choice type; newly defined fields appear on
+Item create/edit and supplier registration/edit, with Party fields during new-partner entry.
+Required values are checked by the API. After saving a new item, open its detail to add conversions,
+packages and supplier offers. The Thinner demo shows three populated custom values; configuring
+customer definitions does not imply a customer form has shipped. See
+[the implemented scope](../architecture/extensibility.md#implemented-custom-field-settings-2026-10-06).
 
 ## Related
 

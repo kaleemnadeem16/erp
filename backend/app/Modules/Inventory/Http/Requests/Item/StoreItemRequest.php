@@ -33,6 +33,9 @@ class StoreItemRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
+        if (! $this->exists('custom_fields')) {
+            $this->merge(['custom_fields' => []]);
+        }
         if ($this->filled('code')) {
             $this->merge(['code' => $this->string('code')->lower()->toString()]);
         }

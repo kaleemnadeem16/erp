@@ -7,6 +7,7 @@
 import type { StorePartyRequestRegistrationNo } from "./storePartyRequestRegistrationNo";
 import type { StorePartyRequestTaxId } from "./storePartyRequestTaxId";
 import type { StorePartyRequestWebsite } from "./storePartyRequestWebsite";
+import type { StorePartyRequestCustomFields } from "./storePartyRequestCustomFields";
 import type { Status } from "./status";
 
 export interface StorePartyRequest {
@@ -20,6 +21,6 @@ export interface StorePartyRequest {
   tax_id?: StorePartyRequestTaxId;
   /** @maxLength 255 */
   website?: StorePartyRequestWebsite;
-  custom_fields?: string;
+  custom_fields?: StorePartyRequestCustomFields;
   status?: Status;
 }

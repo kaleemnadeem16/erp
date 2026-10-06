@@ -31,9 +31,11 @@ import type {
   GoodsReceiptsShow200,
   GoodsReceiptsShow403,
   GoodsReceiptsStore201,
+  GoodsReceiptsUpdate200,
   ModelNotFoundExceptionResponse,
   ReverseGoodsReceiptRequest,
   StoreGoodsReceiptRequest,
+  UpdateGoodsReceiptRequest,
   ValidationExceptionResponse,
 } from ".././models";
 
@@ -619,6 +621,147 @@ export function useGoodsReceiptsShow<
   return query;
 }
 
+export type goodsReceiptsUpdateResponse200 = {
+  data: GoodsReceiptsUpdate200;
+  status: 200;
+};
+
+export type goodsReceiptsUpdateResponse401 = {
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
+
+export type goodsReceiptsUpdateResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
+export type goodsReceiptsUpdateResponse404 = {
+  data: ModelNotFoundExceptionResponse;
+  status: 404;
+};
+
+export type goodsReceiptsUpdateResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
+};
+
+export type goodsReceiptsUpdateResponseSuccess =
+  goodsReceiptsUpdateResponse200 & {
+    headers: Headers;
+  };
+export type goodsReceiptsUpdateResponseError = (
+  | goodsReceiptsUpdateResponse401
+  | goodsReceiptsUpdateResponse403
+  | goodsReceiptsUpdateResponse404
+  | goodsReceiptsUpdateResponse422
+) & {
+  headers: Headers;
+};
+
+export type goodsReceiptsUpdateResponse =
+  goodsReceiptsUpdateResponseSuccess | goodsReceiptsUpdateResponseError;
+
+export const getGoodsReceiptsUpdateUrl = (goodsReceipt: number) => {
+  return `/v1/goods-receipts/${goodsReceipt}`;
+};
+
+export const goodsReceiptsUpdate = async (
+  goodsReceipt: number,
+  updateGoodsReceiptRequest: UpdateGoodsReceiptRequest,
+  options?: RequestInit,
+): Promise<goodsReceiptsUpdateResponse> => {
+  return fetchClient<goodsReceiptsUpdateResponse>(
+    getGoodsReceiptsUpdateUrl(goodsReceipt),
+    {
+      ...options,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(updateGoodsReceiptRequest),
+    },
+  );
+};
+
+export const getGoodsReceiptsUpdateMutationOptions = <
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof goodsReceiptsUpdate>>,
+    TError,
+    { goodsReceipt: number; data: UpdateGoodsReceiptRequest },
+    TContext
+  >;
+  request?: SecondParameter<typeof fetchClient>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof goodsReceiptsUpdate>>,
+  TError,
+  { goodsReceipt: number; data: UpdateGoodsReceiptRequest },
+  TContext
+> => {
+  const mutationKey = ["goodsReceiptsUpdate"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof goodsReceiptsUpdate>>,
+    { goodsReceipt: number; data: UpdateGoodsReceiptRequest }
+  > = (props) => {
+    const { goodsReceipt, data } = props ?? {};
+
+    return goodsReceiptsUpdate(goodsReceipt, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type GoodsReceiptsUpdateMutationResult = NonNullable<
+  Awaited<ReturnType<typeof goodsReceiptsUpdate>>
+>;
+export type GoodsReceiptsUpdateMutationBody = UpdateGoodsReceiptRequest;
+export type GoodsReceiptsUpdateMutationError =
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ModelNotFoundExceptionResponse
+  | ValidationExceptionResponse;
+
+export const useGoodsReceiptsUpdate = <
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof goodsReceiptsUpdate>>,
+      TError,
+      { goodsReceipt: number; data: UpdateGoodsReceiptRequest },
+      TContext
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof goodsReceiptsUpdate>>,
+  TError,
+  { goodsReceipt: number; data: UpdateGoodsReceiptRequest },
+  TContext
+> => {
+  const mutationOptions = getGoodsReceiptsUpdateMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
 export type goodsReceiptsPostResponse200 = {
   data: GoodsReceiptsPost200;
   status: 200;

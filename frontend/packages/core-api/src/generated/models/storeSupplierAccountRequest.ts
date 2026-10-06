@@ -6,6 +6,7 @@
  */
 import type { StoreSupplierAccountRequestLeadTimeDays } from "./storeSupplierAccountRequestLeadTimeDays";
 import type { StoreSupplierAccountRequestDefaultCurrencyId } from "./storeSupplierAccountRequestDefaultCurrencyId";
+import type { StoreSupplierAccountRequestCustomFields } from "./storeSupplierAccountRequestCustomFields";
 import type { Status } from "./status";
 
 export interface StoreSupplierAccountRequest {
@@ -27,6 +28,6 @@ the generic conflict response once it reaches the DB constraint. */
   lead_time_days?: StoreSupplierAccountRequestLeadTimeDays;
   payable_account_id: number;
   default_currency_id?: StoreSupplierAccountRequestDefaultCurrencyId;
-  custom_fields?: string;
+  custom_fields?: StoreSupplierAccountRequestCustomFields;
   status?: Status;
 }

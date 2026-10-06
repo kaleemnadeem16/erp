@@ -36,7 +36,7 @@ class ValidCustomFields implements ValidationRule
             ->keyBy('code');
 
         foreach ($definitions as $code => $definition) {
-            if ($definition->is_required && ! array_key_exists($code, $value)) {
+            if ($definition->is_required && (! array_key_exists($code, $value) || $value[$code] === null || (is_string($value[$code]) && trim($value[$code]) === ''))) {
                 $fail("The {$attribute}.{$code} field is required.");
             }
         }

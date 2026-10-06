@@ -22,6 +22,13 @@ class StoreCustomerAccountRequest extends FormRequest
             && AccountTermsAccess::canWrite($this->user(), $this->all());
     }
 
+    protected function prepareForValidation(): void
+    {
+        if (! $this->exists('custom_fields')) {
+            $this->merge(['custom_fields' => []]);
+        }
+    }
+
     /**
      * @return array<string, mixed>
      */

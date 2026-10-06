@@ -128,6 +128,17 @@ Delegated/unit administration still waits for Q26.
   editing an assigned role. Consult role history for the latter; do not infer it from the member
   timestamp. `updated_at` includes unrelated profile/credential edits.
 
+## Company custom-field setup
+
+Settings → Custom Fields uses `administration.custom-field.manage`, separate from maintaining
+Item or Party values. The new configuration Request and Action both require it; entity-specific
+maintainers can read only their own supported entity's definitions. Lists and uniqueness remain
+company-scoped, with no organisation-unit delegation or approval transition. An additive rollout
+grants the capability to existing full access-administration bundles (role/manage and access/assign
+in the same role or direct company grant set); other grants use normal Access Administration.
+Supported entities/types, fixed code/type behaviour, required-value validation and demo coverage
+are documented in [extensibility](../architecture/extensibility.md#implemented-custom-field-settings-2026-10-06).
+
 ## Related
 
 - [ADR 0062](../decisions/0062-company-member-and-access-administration.md)

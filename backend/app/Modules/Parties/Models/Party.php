@@ -22,7 +22,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null $registration_no
  * @property string|null $tax_id
  * @property string|null $website
- * @property array<string, mixed>|null $custom_fields
+ * @property array<string, string|int|float|bool>|null $custom_fields
  * @property Status $status
  */
 class Party extends Model

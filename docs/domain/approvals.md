@@ -168,6 +168,14 @@ but have no fabricated review document. Demo Technical Reviewer has only the tec
 the 95,000 base-currency example requires a separate commercial review afterwards and is replenished
 idempotently on reseeding. Existing active credentials are preserved.
 
+The UI starts with the request summary, stages and decision controls. The saved document has an
+animated Show/Hide review details control; its projected print tree remains available independently.
+On a pending PO with an available submitted review, live order details also start collapsed behind
+a separate animated control. The frontend derives this from the returned status and availability;
+restricted or missing reviews retain the normal live order view. Embedded approval panels omit the
+repeated order identity and status, and decisions refresh both the request and order presentation.
+These controls change presentation only: server projection and decision eligibility remain unchanged.
+
 ## Who reads limits and written reasons (ADR 0087, Q35)
 
 **Limits.** `GET approval-authorities` needs `approvals.authority.manage` or `approvals.authority.view`; history alone answers 403.

@@ -40,7 +40,8 @@ class ItemResource extends JsonResource
             'income_account_id' => $this->when(AccountMappingAccess::canView($request->user()), fn () => $item->income_account_id),
             'expense_account_id' => $this->when(AccountMappingAccess::canView($request->user()), fn () => $item->expense_account_id),
             'inventory_account_id' => $this->when(AccountMappingAccess::canView($request->user()), fn () => $item->inventory_account_id),
-            'custom_fields' => $item->custom_fields,
+            /** @var array<string, string|int|float|bool>|null */
+            'custom_fields' => (object) ($item->custom_fields ?? []),
             'status' => $item->status->value,
             'category' => $this->whenLoaded('category', fn () => new CategoryResource($item->category)),
             'created_at' => $item->created_at?->toIso8601String(),

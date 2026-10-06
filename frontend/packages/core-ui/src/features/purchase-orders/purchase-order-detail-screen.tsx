@@ -1,3 +1,4 @@
+import { Collapse } from "../../components/ui/collapse";
 import { useEffect, useState, type ReactNode } from "react";
 import { useLocation, useNavigate, useParams } from "react-router";
 import {
@@ -5,6 +6,7 @@ import {
   usePurchaseOrdersCancel,
   usePurchaseOrdersIssue,
   usePurchaseOrdersShow,
+  useApprovalRequestsShow,
   useCurrenciesShow,
   useSupplierAccountsShow,
   useUomsIndex,
@@ -109,6 +111,26 @@ export function PurchaseOrderDetailScreen({
   });
   const order =
     orderQuery.data?.status === 200 ? orderQuery.data.data.data : undefined;
+  const approvalForPresentation = (
+    order as unknown as { approval?: PurchaseOrderApproval } | undefined
+  )?.approval;
+  const submittedReviewQuery = useApprovalRequestsShow(
+    approvalForPresentation?.request_id ?? 0,
+    { query: { enabled: !!approvalForPresentation?.request_id, retry: false } },
+  );
+  const submittedReview =
+    submittedReviewQuery.data?.status === 200
+      ? submittedReviewQuery.data.data.data.document_review
+      : undefined;
+  const hasPendingSubmittedReview =
+    approvalForPresentation?.status === "PENDING" &&
+    submittedReview?.available === true;
+  const [expandedOrderRequest, setExpandedOrderRequest] = useState<
+    number | null
+  >(null);
+  const orderDetailsOpen =
+    !hasPendingSubmittedReview ||
+    expandedOrderRequest === approvalForPresentation?.request_id;
   const supplierQuery = useSupplierAccountsShow(
     order?.supplier_account_id ?? 0,
     { include: "party" },
@@ -136,7 +158,8 @@ export function PurchaseOrderDetailScreen({
   const issue = usePurchaseOrdersIssue();
   const cancel = usePurchaseOrdersCancel();
   const shortClose = usePurchaseOrderLinesShortClose();
-  const { view: linesView, setView: setLinesView } = useListViewPreference("po-detail-lines");
+  const { view: linesView, setView: setLinesView } =
+    useListViewPreference("po-detail-lines");
   const [cancelReason, setCancelReason] = useState("");
   const [showIssueConfirmation, setShowIssueConfirmation] = useState(false);
   const [showCancel, setShowCancel] = useState(false);
@@ -151,7 +174,11 @@ export function PurchaseOrderDetailScreen({
   const shortCloseHeadingRef = useFocusOnOpen<HTMLHeadingElement>(
     pendingShortCloseLineId !== null,
   );
-  const refetch = () => orderQuery.refetch();
+  const refetch = () => {
+    void orderQuery.refetch();
+    if (approvalForPresentation?.request_id)
+      void submittedReviewQuery.refetch();
+  };
   // The list's row menu can hand over "issue" or "cancel": open that confirmation here, where the approval rules
   // and the confirmation already live, but only when it is currently allowed — and only once.
   const { pathname: currentPath, state: navigationState } = useLocation();
@@ -678,334 +705,249 @@ export function PurchaseOrderDetailScreen({
           </div>
         </section>
       )}
-      <DetailPageLayout equalHeight>
-        <DetailSection title="Order">
-          <DetailField label="PO number">
-            <span className="font-semibold">
-              {order.number ?? `Draft #${order.id}`}
-            </span>
-          </DetailField>
-          <DetailField label="Status">
-            <PurchaseOrderStatusBadge status={order.status} />
-          </DetailField>
-          <DetailField label="Order date">{order.order_date}</DetailField>
-          <DetailField label="Expected delivery">
-            {order.expected_delivery_date ?? "Not set"}
-          </DetailField>
-          {order.issued_at && (
-            <DetailField label="Issued at">
-              {formatDateTime(order.issued_at)}
+      {hasPendingSubmittedReview && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-card p-3">
+          <p className="text-sm text-muted-foreground">
+            The approval above refers to the submitted version of this order.
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            aria-expanded={orderDetailsOpen}
+            aria-controls={`po-order-details-${order.id}`}
+            onClick={() =>
+              setExpandedOrderRequest(
+                orderDetailsOpen
+                  ? null
+                  : (approvalForPresentation?.request_id ?? null),
+              )
+            }
+          >
+            {orderDetailsOpen ? "Hide order details" : "Show order details"}
+          </Button>
+        </div>
+      )}
+      <Collapse open={orderDetailsOpen} id={`po-order-details-${order.id}`}>
+        <DetailPageLayout equalHeight>
+          <DetailSection title="Order">
+            <DetailField label="PO number">
+              <span className="font-semibold">
+                {order.number ?? `Draft #${order.id}`}
+              </span>
             </DetailField>
-          )}
-          {order.closed_at && (
-            <DetailField label="Closed at">
-              {formatDateTime(order.closed_at)}
+            <DetailField label="Status">
+              <PurchaseOrderStatusBadge status={order.status} />
             </DetailField>
-          )}
-          {order.cancelled_at && (
-            <DetailField label="Cancelled at">
-              {formatDateTime(order.cancelled_at)}
+            <DetailField label="Order date">{order.order_date}</DetailField>
+            <DetailField label="Expected delivery">
+              {order.expected_delivery_date ?? "Not set"}
             </DetailField>
-          )}
-          {order.cancellation_reason && (
-            <DetailField label="Cancellation reason" fullWidth>
-              {order.cancellation_reason}
-            </DetailField>
-          )}
-          {order.notes && (
-            <DetailField label="Notes" fullWidth>
-              {order.notes}
-            </DetailField>
-          )}
-        </DetailSection>
-        <DetailSection title="Supplier">
-          <DetailField label="Supplier">{supplierLabel}</DetailField>
-          {order.supplier_site && (
-            <DetailField
-              label={SITE_ROLE_LABEL[order.supplier_site.role] ?? "Site"}
-            >
-              <div>{order.supplier_site.party_site.name}</div>
-              {siteAddressLine(order.supplier_site) && (
-                <div className="text-xs text-muted-foreground">
-                  {siteAddressLine(order.supplier_site)}
-                </div>
-              )}
-            </DetailField>
-          )}
-          <DetailField label="Payment terms">
-            {supplier ? `${supplier.payment_terms_days} days` : undefined}
-          </DetailField>
-          {supplier?.party?.tax_id && (
-            <DetailField label="Tax ID">{supplier.party.tax_id}</DetailField>
-          )}
-          {supplier?.party?.registration_no && (
-            <DetailField label="Registration no.">
-              {supplier.party.registration_no}
-            </DetailField>
-          )}
-          {supplier?.party?.website && (
-            <DetailField label="Website">{supplier.party.website}</DetailField>
-          )}
-          {supplier?.lead_time_days != null && (
-            <DetailField label="Lead time">
-              {supplier.lead_time_days} days
-            </DetailField>
-          )}
-        </DetailSection>
-        {mayViewCommercialCost && (
-          <DetailSection title="Commercial">
-            <DetailField label="Currency">
-              {currency
-                ? `${currency.code} — ${currency.name}`
-                : `Currency #${order.currency_id}`}
-            </DetailField>
-            <DetailField label="FX policy">{order.fx_policy}</DetailField>
-            <DetailField label="FX rate">
-              {order.fx_rate}
-              {order.fx_rate_date && (
-                <span className="ml-1 text-xs text-muted-foreground">
-                  ({order.fx_rate_date}
-                  {order.fx_rate_source ? `, ${order.fx_rate_source}` : ""})
-                </span>
-              )}
-            </DetailField>
-            <DetailField label="Order total">
-              {order.total_amount ?? "—"} {currency?.code ?? ""}
-            </DetailField>
-            <DetailField label="Base-currency total">
-              {order.base_total_amount ?? "—"}
-            </DetailField>
+            {order.issued_at && (
+              <DetailField label="Issued at">
+                {formatDateTime(order.issued_at)}
+              </DetailField>
+            )}
+            {order.closed_at && (
+              <DetailField label="Closed at">
+                {formatDateTime(order.closed_at)}
+              </DetailField>
+            )}
+            {order.cancelled_at && (
+              <DetailField label="Cancelled at">
+                {formatDateTime(order.cancelled_at)}
+              </DetailField>
+            )}
+            {order.cancellation_reason && (
+              <DetailField label="Cancellation reason" fullWidth>
+                {order.cancellation_reason}
+              </DetailField>
+            )}
+            {order.notes && (
+              <DetailField label="Notes" fullWidth>
+                {order.notes}
+              </DetailField>
+            )}
           </DetailSection>
-        )}
-        <DetailSection title="Record information">
-          <DetailField label="Created at">
-            {formatDateTime(order.created_at)}
-          </DetailField>
-          {order.inventory_cutover_id && (
-            <DetailField label="Cutover origin">
-              Opening inventory commitment
-            </DetailField>
-          )}
-          {order.source_system && (
-            <DetailField label="Source system">
-              {order.source_system}
-            </DetailField>
-          )}
-          {order.source_record_id && (
-            <DetailField label="Legacy reference">
-              {order.source_record_id}
-            </DetailField>
-          )}
-        </DetailSection>
-        <DetailSection
-          title="Lines"
-          description={
-            mayViewCommercialCost
-              ? "Ordered quantities and commercial values are immutable after issue. Line amount = quantity × unit price − line discount + line tax (discount and tax are fixed amounts for the line)."
-              : "Ordered quantities are immutable after issue."
-          }
-          fullWidth
-        >
-          <div className="flex justify-end sm:col-span-2 md:hidden">
-            <DataTableViewToggle value={linesView} onChange={setLinesView} />
-          </div>
-          {linesView === "cards" ? (
-          <ol className="grid gap-3 @lg:grid-cols-2 sm:col-span-2">
-            {(order.lines ?? []).map((line) => {
-              const closed = Number(line.short_closed_stock_qty) > 0;
-              const fullyReceived = Number(line.outstanding_stock_qty) <= 0;
-              const purchaseCode = line.order_unit_label ?? uomCode(line.purchase_uom_id);
-              const stockCode = uomCode(line.stock_uom_id);
-              const stat = (name: string, value: ReactNode) => (
-                <div className="min-w-0">
-                  <dt className="text-xs text-muted-foreground">{name}</dt>
-                  <dd className="text-sm tabular-nums">{value}</dd>
-                </div>
-              );
-              return (
-                <li key={line.id} className="space-y-3 rounded-lg border border-border bg-card p-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-xs text-muted-foreground">Line {line.line_number}</p>
-                      <p className="font-medium">{line.item_code ?? `#${line.item_id}`}</p>
-                      <p className="text-sm">{line.description}</p>
-                      {line.supplier_item_code && <p className="text-xs text-muted-foreground">SKU: {line.supplier_item_code}</p>}
-                    </div>
-                    {mayViewCommercialCost && (
-                      <p className="shrink-0 text-right text-sm font-semibold tabular-nums">
-                        {line.line_amount} {currency?.code ?? ""}
-                      </p>
-                    )}
+          <DetailSection title="Supplier">
+            <DetailField label="Supplier">{supplierLabel}</DetailField>
+            {order.supplier_site && (
+              <DetailField
+                label={SITE_ROLE_LABEL[order.supplier_site.role] ?? "Site"}
+              >
+                <div>{order.supplier_site.party_site.name}</div>
+                {siteAddressLine(order.supplier_site) && (
+                  <div className="text-xs text-muted-foreground">
+                    {siteAddressLine(order.supplier_site)}
                   </div>
-                  <dl className="grid grid-cols-2 gap-x-4 gap-y-2">
-                    {stat("Ordered", `${line.ordered_qty} ${purchaseCode ?? ""}`)}
-                    {stat("Received", `${line.received_stock_qty} ${stockCode ?? ""}`)}
-                    {stat("Outstanding", `${line.outstanding_stock_qty} ${stockCode ?? ""}`)}
-                    {line.purchase_uom_id !== line.stock_uom_id && stat("In stock units", `${line.ordered_stock_qty} ${stockCode ?? ""}`)}
-                    {mayViewCommercialCost &&
-                      stat(
-                        "Price",
-                        `${line.unit_price} ${currency?.code ?? ""} / ${line.price_quantity ?? "1"} ${line.price_unit_label ?? purchaseCode ?? ""}`,
-                      )}
-                    {mayViewCommercialCost && Number(line.discount_amount) > 0 && stat("Line discount", `−${line.discount_amount}`)}
-                    {mayViewCommercialCost && Number(line.tax_amount) > 0 && stat("Line tax", `+${line.tax_amount}`)}
-                    {line.expected_delivery_date && line.expected_delivery_date !== order.expected_delivery_date && stat("Expected", line.expected_delivery_date)}
-                    {stat("QA", line.qa_required ? "Required" : "Not required")}
-                  </dl>
-                  {(closed || (isIssued && !fullyReceived && mayShortClose)) && (
-                    <div className="flex items-center justify-between gap-2">
-                      {closed ? (
-                        <Badge variant="secondary">Short-closed · {line.short_closed_stock_qty} {stockCode}</Badge>
-                      ) : (
-                        <Button size="sm" variant="outline" onClick={() => setPendingShortCloseLineId(line.id)} disabled={shortClose.isPending}>
-                          Short-close
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                </li>
-              );
-            })}
-          </ol>
-          ) : (
-          <div className="po-detail-table overflow-hidden rounded-md border sm:col-span-2">
-            <Table scrollRegionLabel="Order lines">
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Line</TableHead>
-                  <TableHead>Item</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead className="text-right">Ordered</TableHead>
-                  <TableHead className="text-right">Received</TableHead>
-                  <TableHead className="text-right">Outstanding</TableHead>
-                  {mayViewCommercialCost && (
-                    <TableHead className="text-right">Amount</TableHead>
-                  )}
-                  <TableHead>QA</TableHead>
-                  <TableHead />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+                )}
+              </DetailField>
+            )}
+            <DetailField label="Payment terms">
+              {supplier ? `${supplier.payment_terms_days} days` : undefined}
+            </DetailField>
+            {supplier?.party?.tax_id && (
+              <DetailField label="Tax ID">{supplier.party.tax_id}</DetailField>
+            )}
+            {supplier?.party?.registration_no && (
+              <DetailField label="Registration no.">
+                {supplier.party.registration_no}
+              </DetailField>
+            )}
+            {supplier?.party?.website && (
+              <DetailField label="Website">
+                {supplier.party.website}
+              </DetailField>
+            )}
+            {supplier?.lead_time_days != null && (
+              <DetailField label="Lead time">
+                {supplier.lead_time_days} days
+              </DetailField>
+            )}
+          </DetailSection>
+          {mayViewCommercialCost && (
+            <DetailSection title="Commercial">
+              <DetailField label="Currency">
+                {currency
+                  ? `${currency.code} — ${currency.name}`
+                  : `Currency #${order.currency_id}`}
+              </DetailField>
+              <DetailField label="FX policy">{order.fx_policy}</DetailField>
+              <DetailField label="FX rate">
+                {order.fx_rate}
+                {order.fx_rate_date && (
+                  <span className="ml-1 text-xs text-muted-foreground">
+                    ({order.fx_rate_date}
+                    {order.fx_rate_source ? `, ${order.fx_rate_source}` : ""})
+                  </span>
+                )}
+              </DetailField>
+              <DetailField label="Order total">
+                {order.total_amount ?? "—"} {currency?.code ?? ""}
+              </DetailField>
+              <DetailField label="Base-currency total">
+                {order.base_total_amount ?? "—"}
+              </DetailField>
+            </DetailSection>
+          )}
+          <DetailSection title="Record information">
+            <DetailField label="Created at">
+              {formatDateTime(order.created_at)}
+            </DetailField>
+            {order.inventory_cutover_id && (
+              <DetailField label="Cutover origin">
+                Opening inventory commitment
+              </DetailField>
+            )}
+            {order.source_system && (
+              <DetailField label="Source system">
+                {order.source_system}
+              </DetailField>
+            )}
+            {order.source_record_id && (
+              <DetailField label="Legacy reference">
+                {order.source_record_id}
+              </DetailField>
+            )}
+          </DetailSection>
+          <DetailSection
+            title="Lines"
+            description={
+              mayViewCommercialCost
+                ? "Ordered quantities and commercial values are immutable after issue. Line amount = quantity × unit price − line discount + line tax (discount and tax are fixed amounts for the line)."
+                : "Ordered quantities are immutable after issue."
+            }
+            fullWidth
+          >
+            <div className="flex justify-end sm:col-span-2 md:hidden">
+              <DataTableViewToggle value={linesView} onChange={setLinesView} />
+            </div>
+            {linesView === "cards" ? (
+              <ol className="grid gap-3 @lg:grid-cols-2 sm:col-span-2">
                 {(order.lines ?? []).map((line) => {
                   const closed = Number(line.short_closed_stock_qty) > 0;
                   const fullyReceived = Number(line.outstanding_stock_qty) <= 0;
                   const purchaseCode =
                     line.order_unit_label ?? uomCode(line.purchase_uom_id);
                   const stockCode = uomCode(line.stock_uom_id);
-                  const hasUomConversion =
-                    line.purchase_uom_id !== line.stock_uom_id;
-                  const hasLineDelivery = Boolean(
-                    line.expected_delivery_date &&
-                    line.expected_delivery_date !==
-                      order.expected_delivery_date,
+                  const stat = (name: string, value: ReactNode) => (
+                    <div className="min-w-0">
+                      <dt className="text-xs text-muted-foreground">{name}</dt>
+                      <dd className="text-sm tabular-nums">{value}</dd>
+                    </div>
                   );
-                  const hasDiscount = Number(line.discount_amount) > 0;
-                  const hasTax = Number(line.tax_amount) > 0;
-
                   return (
-                    <TableRow key={line.id}>
-                      <TableCell>{line.line_number}</TableCell>
-                      <TableCell>
-                        <div className="font-medium">
-                          {line.item_code ?? `#${line.item_id}`}
+                    <li
+                      key={line.id}
+                      className="space-y-3 rounded-lg border border-border bg-card p-3"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-xs text-muted-foreground">
+                            Line {line.line_number}
+                          </p>
+                          <p className="font-medium">
+                            {line.item_code ?? `#${line.item_id}`}
+                          </p>
+                          <p className="text-sm">{line.description}</p>
+                          {line.supplier_item_code && (
+                            <p className="text-xs text-muted-foreground">
+                              SKU: {line.supplier_item_code}
+                            </p>
+                          )}
                         </div>
-                        {line.supplier_item_code && (
-                          <div className="text-xs text-muted-foreground">
-                            SKU: {line.supplier_item_code}
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell
-                        className={compact ? "whitespace-normal" : undefined}
-                      >
-                        <div>{line.description}</div>
-                        {hasLineDelivery && (
-                          <div className="text-xs text-muted-foreground">
-                            Expected: {line.expected_delivery_date}
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        <div>
-                          {line.ordered_qty}{" "}
-                          <span
-                            className="text-muted-foreground"
-                            title={purchaseUomLabel(line.purchase_uom_id)}
-                          >
-                            {purchaseCode}
-                          </span>
-                        </div>
-                        {hasUomConversion && (
-                          <div className="text-xs text-muted-foreground">
-                            = {line.ordered_stock_qty} {stockCode} (1{" "}
-                            {purchaseCode} = {line.uom_factor} {stockCode})
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        <div>
-                          {line.received_stock_qty}{" "}
-                          <span
-                            className="text-muted-foreground"
-                            title={uomLabels.get(line.stock_uom_id)}
-                          >
-                            {stockCode}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        <div>
-                          {line.outstanding_stock_qty}{" "}
-                          <span
-                            className="text-muted-foreground"
-                            title={uomLabels.get(line.stock_uom_id)}
-                          >
-                            {stockCode}
-                          </span>
-                        </div>
-                        {closed && (
-                          <div className="text-xs text-muted-foreground">
-                            Short-closed: {line.short_closed_stock_qty}{" "}
-                            {stockCode}
-                          </div>
-                        )}
-                      </TableCell>
-                      {mayViewCommercialCost && (
-                        <TableCell className="text-right tabular-nums">
-                          <div className="font-medium">
+                        {mayViewCommercialCost && (
+                          <p className="shrink-0 text-right text-sm font-semibold tabular-nums">
                             {line.line_amount} {currency?.code ?? ""}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            <span>
-                              {line.unit_price} {currency?.code ?? ""} /{" "}
-                              {line.price_quantity ?? "1"}{" "}
-                              {line.price_unit_label ?? purchaseCode}
-                            </span>
-                            {hasDiscount && (
-                              <span>
-                                {" "}
-                                · Line discount −{line.discount_amount}{" "}
-                                {currency?.code ?? ""}
-                              </span>
-                            )}
-                            {hasTax && (
-                              <span>
-                                {" "}
-                                · Line tax +{line.tax_amount}{" "}
-                                {currency?.code ?? ""}
-                              </span>
-                            )}
-                          </div>
-                        </TableCell>
-                      )}
-                      <TableCell>
-                        {line.qa_required ? "Required" : "Not required"}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {isIssued &&
-                          !closed &&
-                          !fullyReceived &&
-                          mayShortClose && (
+                          </p>
+                        )}
+                      </div>
+                      <dl className="grid grid-cols-2 gap-x-4 gap-y-2">
+                        {stat(
+                          "Ordered",
+                          `${line.ordered_qty} ${purchaseCode ?? ""}`,
+                        )}
+                        {stat(
+                          "Received",
+                          `${line.received_stock_qty} ${stockCode ?? ""}`,
+                        )}
+                        {stat(
+                          "Outstanding",
+                          `${line.outstanding_stock_qty} ${stockCode ?? ""}`,
+                        )}
+                        {line.purchase_uom_id !== line.stock_uom_id &&
+                          stat(
+                            "In stock units",
+                            `${line.ordered_stock_qty} ${stockCode ?? ""}`,
+                          )}
+                        {mayViewCommercialCost &&
+                          stat(
+                            "Price",
+                            `${line.unit_price} ${currency?.code ?? ""} / ${line.price_quantity ?? "1"} ${line.price_unit_label ?? purchaseCode ?? ""}`,
+                          )}
+                        {mayViewCommercialCost &&
+                          Number(line.discount_amount) > 0 &&
+                          stat("Line discount", `−${line.discount_amount}`)}
+                        {mayViewCommercialCost &&
+                          Number(line.tax_amount) > 0 &&
+                          stat("Line tax", `+${line.tax_amount}`)}
+                        {line.expected_delivery_date &&
+                          line.expected_delivery_date !==
+                            order.expected_delivery_date &&
+                          stat("Expected", line.expected_delivery_date)}
+                        {stat(
+                          "QA",
+                          line.qa_required ? "Required" : "Not required",
+                        )}
+                      </dl>
+                      {(closed ||
+                        (isIssued && !fullyReceived && mayShortClose)) && (
+                        <div className="flex items-center justify-between gap-2">
+                          {closed ? (
+                            <Badge variant="secondary">
+                              Short-closed · {line.short_closed_stock_qty}{" "}
+                              {stockCode}
+                            </Badge>
+                          ) : (
                             <Button
                               size="sm"
                               variant="outline"
@@ -1017,24 +959,184 @@ export function PurchaseOrderDetailScreen({
                               Short-close
                             </Button>
                           )}
-                        {closed && (
-                          <div className="flex flex-col items-end gap-0.5">
-                            <Badge variant="secondary">Short-closed</Badge>
-                            <span className="text-[11px] text-muted-foreground">
-                              {line.short_closed_stock_qty} {stockCode}
-                            </span>
-                          </div>
-                        )}
-                      </TableCell>
-                    </TableRow>
+                        </div>
+                      )}
+                    </li>
                   );
                 })}
-              </TableBody>
-            </Table>
-          </div>
-          )}
-        </DetailSection>
-      </DetailPageLayout>
+              </ol>
+            ) : (
+              <div className="po-detail-table overflow-hidden rounded-md border sm:col-span-2">
+                <Table scrollRegionLabel="Order lines">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Line</TableHead>
+                      <TableHead>Item</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead className="text-right">Ordered</TableHead>
+                      <TableHead className="text-right">Received</TableHead>
+                      <TableHead className="text-right">Outstanding</TableHead>
+                      {mayViewCommercialCost && (
+                        <TableHead className="text-right">Amount</TableHead>
+                      )}
+                      <TableHead>QA</TableHead>
+                      <TableHead />
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(order.lines ?? []).map((line) => {
+                      const closed = Number(line.short_closed_stock_qty) > 0;
+                      const fullyReceived =
+                        Number(line.outstanding_stock_qty) <= 0;
+                      const purchaseCode =
+                        line.order_unit_label ?? uomCode(line.purchase_uom_id);
+                      const stockCode = uomCode(line.stock_uom_id);
+                      const hasUomConversion =
+                        line.purchase_uom_id !== line.stock_uom_id;
+                      const hasLineDelivery = Boolean(
+                        line.expected_delivery_date &&
+                        line.expected_delivery_date !==
+                          order.expected_delivery_date,
+                      );
+                      const hasDiscount = Number(line.discount_amount) > 0;
+                      const hasTax = Number(line.tax_amount) > 0;
+
+                      return (
+                        <TableRow key={line.id}>
+                          <TableCell>{line.line_number}</TableCell>
+                          <TableCell>
+                            <div className="font-medium">
+                              {line.item_code ?? `#${line.item_id}`}
+                            </div>
+                            {line.supplier_item_code && (
+                              <div className="text-xs text-muted-foreground">
+                                SKU: {line.supplier_item_code}
+                              </div>
+                            )}
+                          </TableCell>
+                          <TableCell
+                            className={
+                              compact ? "whitespace-normal" : undefined
+                            }
+                          >
+                            <div>{line.description}</div>
+                            {hasLineDelivery && (
+                              <div className="text-xs text-muted-foreground">
+                                Expected: {line.expected_delivery_date}
+                              </div>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            <div>
+                              {line.ordered_qty}{" "}
+                              <span
+                                className="text-muted-foreground"
+                                title={purchaseUomLabel(line.purchase_uom_id)}
+                              >
+                                {purchaseCode}
+                              </span>
+                            </div>
+                            {hasUomConversion && (
+                              <div className="text-xs text-muted-foreground">
+                                = {line.ordered_stock_qty} {stockCode} (1{" "}
+                                {purchaseCode} = {line.uom_factor} {stockCode})
+                              </div>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            <div>
+                              {line.received_stock_qty}{" "}
+                              <span
+                                className="text-muted-foreground"
+                                title={uomLabels.get(line.stock_uom_id)}
+                              >
+                                {stockCode}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            <div>
+                              {line.outstanding_stock_qty}{" "}
+                              <span
+                                className="text-muted-foreground"
+                                title={uomLabels.get(line.stock_uom_id)}
+                              >
+                                {stockCode}
+                              </span>
+                            </div>
+                            {closed && (
+                              <div className="text-xs text-muted-foreground">
+                                Short-closed: {line.short_closed_stock_qty}{" "}
+                                {stockCode}
+                              </div>
+                            )}
+                          </TableCell>
+                          {mayViewCommercialCost && (
+                            <TableCell className="text-right tabular-nums">
+                              <div className="font-medium">
+                                {line.line_amount} {currency?.code ?? ""}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                <span>
+                                  {line.unit_price} {currency?.code ?? ""} /{" "}
+                                  {line.price_quantity ?? "1"}{" "}
+                                  {line.price_unit_label ?? purchaseCode}
+                                </span>
+                                {hasDiscount && (
+                                  <span>
+                                    {" "}
+                                    · Line discount −{line.discount_amount}{" "}
+                                    {currency?.code ?? ""}
+                                  </span>
+                                )}
+                                {hasTax && (
+                                  <span>
+                                    {" "}
+                                    · Line tax +{line.tax_amount}{" "}
+                                    {currency?.code ?? ""}
+                                  </span>
+                                )}
+                              </div>
+                            </TableCell>
+                          )}
+                          <TableCell>
+                            {line.qa_required ? "Required" : "Not required"}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {isIssued &&
+                              !closed &&
+                              !fullyReceived &&
+                              mayShortClose && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() =>
+                                    setPendingShortCloseLineId(line.id)
+                                  }
+                                  disabled={shortClose.isPending}
+                                >
+                                  Short-close
+                                </Button>
+                              )}
+                            {closed && (
+                              <div className="flex flex-col items-end gap-0.5">
+                                <Badge variant="secondary">Short-closed</Badge>
+                                <span className="text-[11px] text-muted-foreground">
+                                  {line.short_closed_stock_qty} {stockCode}
+                                </span>
+                              </div>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </DetailSection>
+        </DetailPageLayout>
+      </Collapse>
 
       {/* Quick Print — a dedicated print-only layout, hidden until react-to-print clones it. */}
       <div className="hidden">

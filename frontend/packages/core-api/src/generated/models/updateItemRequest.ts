@@ -13,6 +13,7 @@ import type { ItemTracking } from "./itemTracking";
 import type { UpdateItemRequestIncomeAccountId } from "./updateItemRequestIncomeAccountId";
 import type { UpdateItemRequestExpenseAccountId } from "./updateItemRequestExpenseAccountId";
 import type { UpdateItemRequestInventoryAccountId } from "./updateItemRequestInventoryAccountId";
+import type { UpdateItemRequestCustomFields } from "./updateItemRequestCustomFields";
 import type { Status } from "./status";
 
 export interface UpdateItemRequest {
@@ -35,6 +36,6 @@ export interface UpdateItemRequest {
   income_account_id?: UpdateItemRequestIncomeAccountId;
   expense_account_id?: UpdateItemRequestExpenseAccountId;
   inventory_account_id?: UpdateItemRequestInventoryAccountId;
-  custom_fields?: string;
+  custom_fields?: UpdateItemRequestCustomFields;
   status?: Status;
 }

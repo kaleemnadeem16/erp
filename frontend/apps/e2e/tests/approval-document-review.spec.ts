@@ -6,7 +6,10 @@ const operational = [
     fields: [
       { label: 'Supplier', value: 'Review supplier' },
       { label: 'Ordered quantity', value: '7.0000' },
-      { label: 'Description / specification', value: 'Exterior coating specification' },
+      {
+        label: 'Description / specification',
+        value: 'Exterior coating specification',
+      },
     ],
   },
 ];
@@ -64,7 +67,9 @@ async function mockReview(page: import('@playwright/test').Page, profile: 'COMME
   };
   await page.route('**/api/v1/approval-requests/inbox', (route) => route.fulfill({ json: { data: [request] } }));
   await page.route('**/api/v1/approval-requests/880085/decide', (route) =>
-    route.fulfill({ json: { data: { ...request, status: 'APPROVED', can_decide: false } } }),
+    route.fulfill({
+      json: { data: { ...request, status: 'APPROVED', can_decide: false } },
+    }),
   );
   // No live PO fetch is part of review: detect accidental broad document access.
   const poReads: string[] = [];
@@ -79,7 +84,11 @@ test('commercial review shows submitted lines and pricing in the screen and prin
   page,
 }) => {
   const poReads = await mockReview(page, 'COMMERCIAL');
-  const review = page.getByRole('region', { name: 'Submitted document review' });
+  const review = page.getByRole('region', {
+    name: 'Submitted document review',
+  });
+  await expect(review.getByText('Exterior coating specification').first()).not.toBeVisible();
+  await review.getByRole('button', { name: 'Show review details' }).click();
   await expect(review.getByText('Exterior coating specification').first()).toBeVisible();
   await expect(review.getByText('123.4500').first()).toBeVisible();
   await expect(review.locator('div.hidden')).toContainText('123.4500');
@@ -87,17 +96,26 @@ test('commercial review shows submitted lines and pricing in the screen and prin
   await expect(page.getByRole('button', { name: 'Approve', exact: true })).toBeEnabled();
   const decision = page.waitForRequest('**/api/v1/approval-requests/880085/decide');
   await page.getByRole('button', { name: 'Approve', exact: true }).click();
-  expect((await decision).postDataJSON()).toMatchObject({ decision: 'APPROVED', step_id: 85 });
+  expect((await decision).postDataJSON()).toMatchObject({
+    decision: 'APPROVED',
+    step_id: 85,
+  });
   expect(poReads).toEqual([]);
 });
 
 test('technical review has operational evidence but no prices in either the screen or print tree', async ({ page }) => {
   await mockReview(page, 'OPERATIONAL');
-  const review = page.getByRole('region', { name: 'Submitted document review' });
+  const review = page.getByRole('region', {
+    name: 'Submitted document review',
+  });
+  await expect(review.getByText('Exterior coating specification').first()).not.toBeVisible();
+  await review.getByRole('button', { name: 'Show review details' }).click();
   await expect(review.getByText('Exterior coating specification').first()).toBeVisible();
   await expect(review.getByText('Unit price', { exact: true })).toHaveCount(0);
   await expect(review).not.toContainText('123.4500');
   await expect(review.locator('div.hidden')).toContainText('Exterior coating specification');
+  await review.getByRole('button', { name: 'Hide review details' }).click();
+  await expect(review.getByText('Exterior coating specification').first()).not.toBeVisible();
 });
 
 test('missing document evidence disables decisions and explains how to obtain a fresh review', async ({ page }) => {
@@ -105,4 +123,46 @@ test('missing document evidence disables decisions and explains how to obtain a 
   await expect(page.getByText(/Ask the submitter to withdraw and submit/)).toBeVisible();
   await expect(page.getByRole('button', { name: 'Approve', exact: true })).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Reject', exact: true })).toBeDisabled();
+});
+
+test('pending PO starts compact, expands both versions and keeps the members API healthy', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  const members = page.waitForResponse(
+    (response) => response.url().includes('/api/v1/members?') && response.request().method() === 'GET',
+  );
+  await page.goto('/settings/members');
+  expect((await members).status()).toBe(200);
+  await page.goto('/purchase-orders/173');
+  const review = page.getByRole('region', {
+    name: 'Submitted document review',
+  });
+  await expect(review.getByRole('button', { name: 'Show review details' })).toBeVisible();
+  const live = page.locator('#po-order-details-173');
+  await expect(live).toHaveAttribute('aria-hidden', 'true');
+  await page.getByRole('button', { name: 'Show order details' }).click();
+  await expect(live).toHaveAttribute('aria-hidden', 'false');
+  await expect(live.getByText('Lines', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Hide order details' }).click();
+  await expect(live).toHaveAttribute('inert', '');
+  await review.getByRole('button', { name: 'Show review details' }).click();
+  await expect(review.getByText('Ordered quantity', { exact: true }).first()).toBeVisible();
+  await review.getByRole('button', { name: 'Hide review details' }).click();
+  await expect(review.getByText('Ordered quantity', { exact: true }).first()).not.toBeVisible();
+  await page.route('**/api/v1/approval-requests/*', async (route) => {
+    const response = await route.fetch();
+    const body = await response.json();
+    body.data.document_review = {
+      available: false,
+      profile: null,
+      captured_at: null,
+      sections: [],
+    };
+    await route.fulfill({ response, json: body });
+  });
+  await page.reload();
+  await expect(page.getByText('Document review is restricted to authorised reviewers.')).toBeVisible();
+  await expect(live).toHaveAttribute('aria-hidden', 'false');
+  await expect(page.getByRole('button', { name: 'Show order details' })).toHaveCount(0);
+  expect(errors).toEqual([]);
 });

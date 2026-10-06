@@ -60,7 +60,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int|null $income_account_id
  * @property int|null $expense_account_id
  * @property int|null $inventory_account_id
- * @property array<string, mixed>|null $custom_fields
+ * @property array<string, string|int|float|bool>|null $custom_fields
  * @property Status $status
  */
 class Item extends Model

@@ -428,6 +428,23 @@ pricing, partial receipts, changed-offer history, quantity increments and warnin
 
 Item detail exposes the existing ItemSupplier relationship contract: create with a fixed current item; edit sourcing terms; archive/restore without changing identity. Its list includes active and archived relationships and preserves item scope across pagination. Read exposure follows supplier view/manage or PO view/create reference access; writes require the existing purchasing.item-supplier.manage HTTP permission. No monetary fields or new commercial-cost permissions are introduced. Offer selection only uses active relationships. Dedicated browser checks cover scope, mutations, read-only/denied UI access, errors and pagination.
 
+### Correcting a draft receipt (2026-10-06)
+
+Receipt detail offers **Edit draft** at `/goods-receipts/{id}/edit` to holders of
+`purchasing.goods-receipt.create`, the existing draft-entry duty (matching PO create/edit).
+`PATCH /api/v1/goods-receipts/{id}` checks that capability in the Request and UpdateGoodsReceipt
+Action, locks/re-resolves the company-scoped receipt, and refuses posted/reversed receipts.
+The full header/line replacement is atomic: invalid lines roll back the prior header and lines.
+Posting remains a distinct duty, with the existing cumulative/tolerance and Inventory checks.
+
+The edit form resolves its saved purchase orders by id and retains their selected lines even if
+the draft has allocated all outstanding quantity or the orders are outside the first lookup page.
+Optional line ids must belong to this draft. Hidden commercial values are preserved for matching
+lines; a changed receiving unit or order line derives defaults from the issued agreement.
+Unchanged saved amounts retain their rounding residual. A draft with recorded package composition
+is refused rather than deleting that physical evidence; that internal workflow has no exposed UI.
+No new permission, grant or approval transition is needed for this update surface.
+
 ## Related
 
 - [Material resolution](material-resolution.md) — Phase 3 reports internal-stock shortages;

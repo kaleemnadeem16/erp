@@ -6,6 +6,7 @@
  */
 import type { UpdateSupplierAccountRequestLeadTimeDays } from "./updateSupplierAccountRequestLeadTimeDays";
 import type { UpdateSupplierAccountRequestDefaultCurrencyId } from "./updateSupplierAccountRequestDefaultCurrencyId";
+import type { UpdateSupplierAccountRequestCustomFields } from "./updateSupplierAccountRequestCustomFields";
 import type { Status } from "./status";
 
 export interface UpdateSupplierAccountRequest {
@@ -24,6 +25,6 @@ export interface UpdateSupplierAccountRequest {
   lead_time_days?: UpdateSupplierAccountRequestLeadTimeDays;
   payable_account_id?: number;
   default_currency_id?: UpdateSupplierAccountRequestDefaultCurrencyId;
-  custom_fields?: string;
+  custom_fields?: UpdateSupplierAccountRequestCustomFields;
   status?: Status;
 }

@@ -4,5 +4,7 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
+import type { CustomerAccountResourceCustomFieldsAnyOf } from "./customerAccountResourceCustomFieldsAnyOf";
 
-export type CustomerAccountResourceCustomFields = unknown[] | null;
+export type CustomerAccountResourceCustomFields =
+  CustomerAccountResourceCustomFieldsAnyOf | null;

@@ -30,7 +30,8 @@ class SupplierAccountResource extends JsonResource
             'lead_time_days' => $account->lead_time_days,
             'payable_account_id' => $this->when(AccountMappingAccess::canView($request->user()), fn () => $account->payable_account_id),
             'default_currency_id' => $account->default_currency_id,
-            'custom_fields' => $account->custom_fields,
+            /** @var array<string, string|int|float|bool>|null */
+            'custom_fields' => (object) ($account->custom_fields ?? []),
             'status' => $account->status->value,
             'party' => $this->whenLoaded('party', fn () => new PartyResource($account->party)),
             'created_at' => $account->created_at?->toIso8601String(),

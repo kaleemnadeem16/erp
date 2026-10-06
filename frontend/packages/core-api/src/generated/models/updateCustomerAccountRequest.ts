@@ -7,6 +7,7 @@
 import type { UpdateCustomerAccountRequestCreditLimit } from "./updateCustomerAccountRequestCreditLimit";
 import type { UpdateCustomerAccountRequestTaxCodeId } from "./updateCustomerAccountRequestTaxCodeId";
 import type { UpdateCustomerAccountRequestDefaultCurrencyId } from "./updateCustomerAccountRequestDefaultCurrencyId";
+import type { UpdateCustomerAccountRequestCustomFields } from "./updateCustomerAccountRequestCustomFields";
 import type { Status } from "./status";
 
 export interface UpdateCustomerAccountRequest {
@@ -23,6 +24,6 @@ export interface UpdateCustomerAccountRequest {
   tax_code_id?: UpdateCustomerAccountRequestTaxCodeId;
   receivable_account_id?: number;
   default_currency_id?: UpdateCustomerAccountRequestDefaultCurrencyId;
-  custom_fields?: string;
+  custom_fields?: UpdateCustomerAccountRequestCustomFields;
   status?: Status;
 }

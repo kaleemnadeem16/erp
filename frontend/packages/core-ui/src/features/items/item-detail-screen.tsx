@@ -1,3 +1,4 @@
+import { ItemCustomFieldDisplay } from "../custom-fields/custom-field-inputs";
 import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router";
 import { Archive, ArchiveRestore, Pencil, ArrowLeft } from "lucide-react";
@@ -225,6 +226,8 @@ export function ItemDetailScreen() {
             {item.is_sellable ? "Yes" : "No"}
           </DetailField>
         </DetailSection>
+
+        <ItemCustomFieldDisplay value={item.custom_fields} />
 
         {formulations.length > 0 && (
           <DetailSection

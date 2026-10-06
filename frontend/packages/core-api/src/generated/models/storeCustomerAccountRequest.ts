@@ -7,6 +7,7 @@
 import type { StoreCustomerAccountRequestCreditLimit } from "./storeCustomerAccountRequestCreditLimit";
 import type { StoreCustomerAccountRequestTaxCodeId } from "./storeCustomerAccountRequestTaxCodeId";
 import type { StoreCustomerAccountRequestDefaultCurrencyId } from "./storeCustomerAccountRequestDefaultCurrencyId";
+import type { StoreCustomerAccountRequestCustomFields } from "./storeCustomerAccountRequestCustomFields";
 import type { Status } from "./status";
 
 export interface StoreCustomerAccountRequest {
@@ -40,6 +41,6 @@ would create dangling references that cannot be constrained later. */
   /** Currency is global, not company-scoped (docs/architecture/multi-tenancy.md
 rule 1) — a plain exists() is correct here, unlike the company-scoped FKs above. */
   default_currency_id?: StoreCustomerAccountRequestDefaultCurrencyId;
-  custom_fields?: string;
+  custom_fields?: StoreCustomerAccountRequestCustomFields;
   status?: Status;
 }

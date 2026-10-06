@@ -1,4 +1,4 @@
-import { useEffect, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { useEffect, useState, type KeyboardEvent, type ReactNode } from "react";
 import {
   flexRender,
   getCoreRowModel,
@@ -9,19 +9,26 @@ import {
   type RowSelectionState,
   type SortingState,
   type VisibilityState,
-} from '@tanstack/react-table';
+} from "@tanstack/react-table";
 
-import { cn } from '../../lib/utils';
-import type { ListView } from '../../lib/use-view-preference';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
-import { Skeleton } from '../ui/skeleton';
-import { DataTableCards } from './data-table-cards';
-import { ListError } from './list-error';
-import { DataTablePagination } from './data-table-pagination';
-import { DataTableSortSelect } from './data-table-sort-select';
-import { DataTableViewOptions } from './data-table-view-options';
-import { DataTableViewToggle } from './data-table-view-toggle';
-import type { DataColumn } from './types';
+import { cn } from "../../lib/utils";
+import type { ListView } from "../../lib/use-view-preference";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../ui/table";
+import { Skeleton } from "../ui/skeleton";
+import { DataTableCards } from "./data-table-cards";
+import { ListError } from "./list-error";
+import { DataTablePagination } from "./data-table-pagination";
+import { DataTableSortSelect } from "./data-table-sort-select";
+import { DataTableViewOptions } from "./data-table-view-options";
+import { DataTableViewToggle } from "./data-table-view-toggle";
+import type { DataColumn } from "./types";
 
 export interface DataTableProps<TRow> {
   columns: ColumnDef<TRow, unknown>[];
@@ -106,7 +113,7 @@ export function DataTable<TRow>({
   errorMessage,
   error,
   onRetry,
-  emptyMessage = 'No records found.',
+  emptyMessage = "No records found.",
   pageSizeOptions,
   view,
   onViewChange,
@@ -123,7 +130,10 @@ export function DataTable<TRow>({
   // While a new page, sort or search is on its way, keep showing the last rows (dimmed) instead of flashing skeletons and
   // a "0 records" count: the screen changes at once and the figures settle when the answer arrives. Skeletons are only for
   // the very first load, when there is nothing to keep.
-  const [lastLoaded, setLastLoaded] = useState<{ data: TRow[]; rowCount: number } | null>(null);
+  const [lastLoaded, setLastLoaded] = useState<{
+    data: TRow[];
+    rowCount: number;
+  } | null>(null);
   useEffect(() => {
     if (!isLoading && !isError) setLastLoaded({ data, rowCount });
   }, [data, rowCount, isLoading, isError]);
@@ -135,7 +145,10 @@ export function DataTable<TRow>({
     data: shownData,
     columns,
     state: { pagination, sorting, rowSelection, columnVisibility },
-    pageCount: Math.max(1, Math.ceil(shownRowCount / Math.max(1, pagination.pageSize))),
+    pageCount: Math.max(
+      1,
+      Math.ceil(shownRowCount / Math.max(1, pagination.pageSize)),
+    ),
     rowCount: shownRowCount,
     manualPagination: true,
     manualSorting: true,
@@ -149,31 +162,48 @@ export function DataTable<TRow>({
     getCoreRowModel: getCoreRowModel(),
   });
 
-  const columnCount = table.getVisibleFlatColumns().length + (rowActions ? 1 : 0);
+  const columnCount =
+    table.getVisibleFlatColumns().length + (rowActions ? 1 : 0);
 
   return (
     <div className="space-y-3">
       {(onColumnVisibilityChange || onViewChange || toolbarStart) && (
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {onViewChange && (
             <div className="md:hidden">
-              <DataTableViewToggle value={view ?? 'table'} onChange={onViewChange} />
+              <DataTableViewToggle
+                value={view ?? "table"}
+                onChange={onViewChange}
+              />
             </div>
           )}
-          {view === 'cards' && cardColumns && (
+          {view === "cards" && cardColumns && (
             <div className="min-w-0 flex-1 md:hidden">
-              <DataTableSortSelect columns={cardColumns} sorting={sorting} onSortingChange={onSortingChange} />
+              <DataTableSortSelect
+                columns={cardColumns}
+                sorting={sorting}
+                onSortingChange={onSortingChange}
+              />
             </div>
           )}
-          {toolbarStart && <div className="min-w-0 flex-1">{toolbarStart}</div>}
+          {toolbarStart && (
+            <div className="order-first w-full min-w-0 md:order-none md:w-auto md:flex-1">
+              {toolbarStart}
+            </div>
+          )}
           {onColumnVisibilityChange && (
             <div className="ml-auto">
-              <DataTableViewOptions table={table} contentClassName={viewOptionsMenuClassName} icon={viewOptionsIcon} triggerClassName={viewOptionsTriggerClassName} />
+              <DataTableViewOptions
+                table={table}
+                contentClassName={viewOptionsMenuClassName}
+                icon={viewOptionsIcon}
+                triggerClassName={viewOptionsTriggerClassName}
+              />
             </div>
           )}
         </div>
       )}
-      {view === 'cards' && cardColumns ? (
+      {view === "cards" && cardColumns ? (
         <DataTableCards
           columns={cardColumns}
           data={data}
@@ -190,89 +220,138 @@ export function DataTable<TRow>({
           skeletonCount={Math.min(pagination.pageSize, 8)}
         />
       ) : (
-      <div className="rounded-md border border-border" aria-busy={refreshing || undefined}>
-        <Table className={refreshing ? 'opacity-60 transition-opacity' : 'transition-opacity'}>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                  </TableHead>
-                ))}
-                {rowActions && (
-                  <TableHead className={actionsHeader ? 'text-right' : 'w-px'}>
-                    <span className={actionsHeader ? undefined : 'sr-only'}>{actionsHeader ?? 'Actions'}</span>
-                  </TableHead>
-                )}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {isLoading && !refreshing ? (
-              Array.from({ length: Math.min(pagination.pageSize, 8) }).map((_, index) => (
-                <TableRow key={`skeleton-${index}`}>
-                  {Array.from({ length: columnCount }).map((__, cellIndex) => (
-                    <TableCell key={cellIndex}>
-                      <Skeleton className="h-4 w-full max-w-32" />
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : isError ? (
-              <TableRow>
-                <TableCell colSpan={columnCount}>
-                  <ListError message={errorMessage} error={error} onRetry={onRetry} />
-                </TableCell>
-              </TableRow>
-            ) : table.getRowModel().rows.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={columnCount} className="h-24 text-center text-muted-foreground">
-                  {emptyMessage}
-                </TableCell>
-              </TableRow>
-            ) : (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() ? 'selected' : undefined}
-                  // No role="button" override: this row can carry a real nested
-                  // link/button via rowActions, and ARIA forbids one interactive
-                  // widget containing another — Chrome's own accessibility tree
-                  // collapsed the whole row (rowActions text included) into a
-                  // single button name when this was tried, burying "View ledger"
-                  // as a second, redundant tab stop instead of its own control.
-                  // Keeping the native row role and just adding tabIndex/onKeyDown
-                  // still makes it focusable and Enter/Space-activatable.
-                  tabIndex={onRowClick ? 0 : undefined}
-                  className={cn(onRowClick && 'cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset')}
-                  onClick={() => onRowClick?.(row.original)}
-                  onKeyDown={(event: KeyboardEvent<HTMLTableRowElement>) => {
-                    if (!onRowClick) return;
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      event.preventDefault();
-                      onRowClick(row.original);
-                    }
-                  }}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+        <div
+          className="rounded-md border border-border"
+          aria-busy={refreshing || undefined}
+        >
+          <Table
+            className={
+              refreshing
+                ? "opacity-60 transition-opacity"
+                : "transition-opacity"
+            }
+          >
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <TableHead key={header.id}>
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
+                    </TableHead>
                   ))}
                   {rowActions && (
-                    <TableCell className="text-right" onClick={(event) => event.stopPropagation()}>
-                      <div className="flex items-center justify-end gap-1">{rowActions(row.original)}</div>
-                    </TableCell>
+                    <TableHead
+                      className={actionsHeader ? "text-right" : "w-px"}
+                    >
+                      <span className={actionsHeader ? undefined : "sr-only"}>
+                        {actionsHeader ?? "Actions"}
+                      </span>
+                    </TableHead>
                   )}
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {isLoading && !refreshing ? (
+                Array.from({ length: Math.min(pagination.pageSize, 8) }).map(
+                  (_, index) => (
+                    <TableRow key={`skeleton-${index}`}>
+                      {Array.from({ length: columnCount }).map(
+                        (__, cellIndex) => (
+                          <TableCell key={cellIndex}>
+                            <Skeleton className="h-4 w-full max-w-32" />
+                          </TableCell>
+                        ),
+                      )}
+                    </TableRow>
+                  ),
+                )
+              ) : isError ? (
+                <TableRow>
+                  <TableCell colSpan={columnCount}>
+                    <ListError
+                      message={errorMessage}
+                      error={error}
+                      onRetry={onRetry}
+                    />
+                  </TableCell>
+                </TableRow>
+              ) : table.getRowModel().rows.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={columnCount}
+                    className="h-24 text-center text-muted-foreground"
+                  >
+                    {emptyMessage}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    data-state={row.getIsSelected() ? "selected" : undefined}
+                    // No role="button" override: this row can carry a real nested
+                    // link/button via rowActions, and ARIA forbids one interactive
+                    // widget containing another — Chrome's own accessibility tree
+                    // collapsed the whole row (rowActions text included) into a
+                    // single button name when this was tried, burying "View ledger"
+                    // as a second, redundant tab stop instead of its own control.
+                    // Keeping the native row role and just adding tabIndex/onKeyDown
+                    // still makes it focusable and Enter/Space-activatable.
+                    tabIndex={onRowClick ? 0 : undefined}
+                    className={cn(
+                      onRowClick &&
+                        "cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
+                    )}
+                    onClick={() => onRowClick?.(row.original)}
+                    onKeyDown={(event: KeyboardEvent<HTMLTableRowElement>) => {
+                      if (!onRowClick) return;
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        onRowClick(row.original);
+                      }
+                    }}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
+                      </TableCell>
+                    ))}
+                    {rowActions && (
+                      <TableCell
+                        className="text-right"
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        <div className="flex items-center justify-end gap-1">
+                          {rowActions(row.original)}
+                        </div>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       )}
 
       {/* A failed load has no count to show — "0 records" would read as "nothing found". */}
-      {!isError && <DataTablePagination table={table} pageSizeOptions={pageSizeOptions} recordNoun={recordNoun} numbered={numberedPagination} />}
+      {!isError && (
+        <DataTablePagination
+          table={table}
+          pageSizeOptions={pageSizeOptions}
+          recordNoun={recordNoun}
+          numbered={numberedPagination}
+        />
+      )}
     </div>
   );
 }

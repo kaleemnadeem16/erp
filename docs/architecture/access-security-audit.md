@@ -42,6 +42,22 @@ is a confirmed unconditional response field, not a claim that an account
 ID alone discloses balances. Request validation, company scoping and workflow rules may still
 apply; a missing capability check is a separate issue.
 
+## Master-data and draft UI additions (2026-10-06)
+
+Supplier list/registration/edit reuse Parties' existing HTTP/Action and tenant guards; bookmarked
+creation requires supplier, terms and mapping management, and edit omits protected keys without
+field management. Item forms now expose their existing protected account fields only to mapping
+maintainers. No financial projection or commercial-read grant is widened.
+
+Custom-field definition list/create is company/entity-scoped: reads require configuration or the
+entity's maintenance duty, and creation checks administration.custom-field.manage twice. Its
+additive rollout grants only existing full access-administration bundles, per company. Definition
+codes/types cannot be changed or deleted through this initial UI. Reference targets are reserved.
+Draft receipt PATCH uses receipt/create at Request and Action, locks state, rejects non-drafts and
+foreign ids, and preserves hidden commercial evidence. No print/export endpoint is introduced.
+The new browser spec covers mobile layout, typed fields, supplier retry and saved-order editing;
+API/Action tests cover denied actors, tenant scoping, required values, rollout and atomic rollback.
+
 ## Coverage map and next inspection
 
 | Area | First-pass state | Still to verify |

@@ -78,7 +78,10 @@ const rules: readonly Rule[] = [
     anyOf: ["inventory.warehouse.manage", "inventory.location.manage"],
   },
   // Stock reads are their own capabilities (ADR 0083): the summary needs availability or stock, the ledger needs movement.
-  { path: "/inventory-overview", anyOf: ["inventory.availability.view", "inventory.stock.view"] },
+  {
+    path: "/inventory-overview",
+    anyOf: ["inventory.availability.view", "inventory.stock.view"],
+  },
   { path: "/stock-moves", anyOf: ["inventory.movement.view"] },
   { path: "/physical-counts", anyOf: physicalCount },
   { path: "/inventory-cutovers", anyOf: cutover },
@@ -87,12 +90,25 @@ const rules: readonly Rule[] = [
   { path: "/rate-dimensions", anyOf: ["estimating.rate-dimension.manage"] },
   {
     path: "/application-rates",
-    anyOf: ["estimating.application-rate.manage", "estimating.material_preview.run", "estimating.recipe.view"],
+    anyOf: [
+      "estimating.application-rate.manage",
+      "estimating.material_preview.run",
+      "estimating.recipe.view",
+    ],
   },
-  { path: "/formulations", anyOf: ["estimating.formulation.manage", "estimating.recipe.view"] },
+  {
+    path: "/formulations",
+    anyOf: ["estimating.formulation.manage", "estimating.recipe.view"],
+  },
   { path: "/assembly-groups", anyOf: ["estimating.assembly-group.manage"] },
-  { path: "/assemblies", anyOf: ["estimating.assembly.manage", "estimating.recipe.view"] },
-  { path: "/resource-rates", anyOf: ["estimating.resource-rate.manage", "estimating.internal_cost.view"] },
+  {
+    path: "/assemblies",
+    anyOf: ["estimating.assembly.manage", "estimating.recipe.view"],
+  },
+  {
+    path: "/resource-rates",
+    anyOf: ["estimating.resource-rate.manage", "estimating.internal_cost.view"],
+  },
   { path: "/material-preview", anyOf: ["estimating.material_preview.run"] },
   {
     path: "/settings/purchasing",
@@ -121,7 +137,11 @@ const rules: readonly Rule[] = [
   },
   {
     path: "/settings/material-selection",
-    anyOf: ["estimating.selection-policy.manage", "estimating.stock_mix_policy.manage", "estimating.policy-history.view"],
+    anyOf: [
+      "estimating.selection-policy.manage",
+      "estimating.stock_mix_policy.manage",
+      "estimating.policy-history.view",
+    ],
   },
   // Everyone can read the company; each field enforces its own edit permission.
   { path: "/settings/company" },
@@ -145,6 +165,28 @@ const rules: readonly Rule[] = [
   },
   { path: "/settings/members", anyOf: ["administration.member.view"] },
   { path: "/settings/roles", anyOf: ["administration.role.view"] },
+  {
+    path: "/suppliers/new",
+    allOf: [
+      "parties.supplier-account.manage",
+      "parties.payment-terms.manage",
+      "accounting.account-mapping.manage",
+    ],
+  },
+  {
+    path: "/suppliers",
+    anyOf: [
+      "parties.supplier-account.manage",
+      "purchasing.purchase-order.view",
+      "purchasing.purchase-order.create",
+      "purchasing.goods-receipt.create",
+      "purchasing.item-supplier.manage",
+    ],
+  },
+  {
+    path: "/settings/custom-fields",
+    allOf: ["administration.custom-field.manage"],
+  },
   { path: "/settings/account" },
   { path: "/settings/appearance" },
   { path: "/settings/printing", allOf: legacySetup },
@@ -165,9 +207,14 @@ export function canAccessScreen(
   ) {
     return permissions.has("purchasing.purchase-order.create");
   }
-  if (pathname === "/goods-receipts/new" || /^\/goods-receipts\/[^/]+\/edit$/.test(pathname)) {
+  if (
+    pathname === "/goods-receipts/new" ||
+    /^\/goods-receipts\/[^/]+\/edit$/.test(pathname)
+  ) {
     return permissions.has("purchasing.goods-receipt.create");
   }
+  if (/^\/suppliers\/[^/]+\/edit$/.test(pathname))
+    return permissions.has("parties.supplier-account.manage");
   if (pathname === "/recalculation-requests/new") {
     return permissions.has("inventory.recalculation.request");
   }

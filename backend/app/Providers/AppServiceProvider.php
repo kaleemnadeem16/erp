@@ -6,6 +6,7 @@ use App\Contracts\NumberingScheme;
 use App\Support\CompanyContext;
 use App\Support\CompanyLocks\FinancialActivity;
 use App\Support\DefaultNumberingScheme;
+use App\Support\OpenApi\CustomFieldsRuleTransformer;
 use App\Support\OpenApi\DecimalAsStringRuleTransformer;
 use App\Support\PermissionRegistry;
 use Dedoc\Scramble\Scramble;
@@ -44,6 +45,6 @@ class AppServiceProvider extends ServiceProvider
         ));
 
         // Invariant 6: decimals cross the wire as strings in both directions.
-        Scramble::configure()->withRuleTransformers(DecimalAsStringRuleTransformer::class);
+        Scramble::configure()->withRuleTransformers([DecimalAsStringRuleTransformer::class, CustomFieldsRuleTransformer::class]);
     }
 }

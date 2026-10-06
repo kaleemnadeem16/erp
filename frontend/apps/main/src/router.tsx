@@ -28,6 +28,10 @@ import {
   FormulationEditScreen,
   FormulationsListScreen,
   GoodsReceiptCreateScreen,
+  GoodsReceiptEditScreen,
+  SuppliersListScreen,
+  SupplierFormScreen,
+  CustomFieldsSettingsScreen,
   GoodsReceiptDetailScreen,
   GoodsReceiptsListScreen,
   InventoryCutoverCreateScreen,
@@ -486,7 +490,12 @@ export function AppRouter() {
           {purchaseOrderCreateAsSheet && (
             <Route
               path="new"
-              element={<PurchaseOrderCreateScreen presentation="sheet" optionsStyle={purchaseOrderOptionsStyle} />}
+              element={
+                <PurchaseOrderCreateScreen
+                  presentation="sheet"
+                  optionsStyle={purchaseOrderOptionsStyle}
+                />
+              }
             />
           )}
           {purchaseOrderDetailAsSheet && (
@@ -498,7 +507,12 @@ export function AppRouter() {
           {purchaseOrderEditAsSheet && (
             <Route
               path=":id/edit"
-              element={<PurchaseOrderEditScreen presentation="sheet" optionsStyle={purchaseOrderOptionsStyle} />}
+              element={
+                <PurchaseOrderEditScreen
+                  presentation="sheet"
+                  optionsStyle={purchaseOrderOptionsStyle}
+                />
+              }
             />
           )}
         </Route>
@@ -508,12 +522,55 @@ export function AppRouter() {
             element={
               <ProtectedRoute>
                 <AppShell>
-                  <PurchaseOrderCreateScreen presentation="page" optionsStyle={purchaseOrderOptionsStyle} />
+                  <PurchaseOrderCreateScreen
+                    presentation="page"
+                    optionsStyle={purchaseOrderOptionsStyle}
+                  />
                 </AppShell>
               </ProtectedRoute>
             }
           />
         )}
+        <Route
+          path="/suppliers"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <SuppliersListScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/suppliers/new"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <SupplierFormScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/suppliers/:id/edit"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <SupplierFormScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings/custom-fields"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <CustomFieldsSettingsScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/goods-receipts"
           element={
@@ -530,6 +587,16 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <GoodsReceiptCreateScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/goods-receipts/:id/edit"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <GoodsReceiptEditScreen />
               </AppShell>
             </ProtectedRoute>
           }
@@ -562,7 +629,10 @@ export function AppRouter() {
             element={
               <ProtectedRoute>
                 <AppShell>
-                  <PurchaseOrderEditScreen presentation="page" optionsStyle={purchaseOrderOptionsStyle} />
+                  <PurchaseOrderEditScreen
+                    presentation="page"
+                    optionsStyle={purchaseOrderOptionsStyle}
+                  />
                 </AppShell>
               </ProtectedRoute>
             }

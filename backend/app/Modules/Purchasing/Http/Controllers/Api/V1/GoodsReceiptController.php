@@ -8,9 +8,11 @@ use App\Http\Controllers\Controller;
 use App\Modules\Purchasing\Actions\CreateGoodsReceipt;
 use App\Modules\Purchasing\Actions\PostGoodsReceipt;
 use App\Modules\Purchasing\Actions\ReverseGoodsReceipt;
+use App\Modules\Purchasing\Actions\UpdateGoodsReceipt;
 use App\Modules\Purchasing\Http\Requests\GoodsReceipt\IndexGoodsReceiptRequest;
 use App\Modules\Purchasing\Http\Requests\GoodsReceipt\ReverseGoodsReceiptRequest;
 use App\Modules\Purchasing\Http\Requests\GoodsReceipt\StoreGoodsReceiptRequest;
+use App\Modules\Purchasing\Http\Requests\GoodsReceipt\UpdateGoodsReceiptRequest;
 use App\Modules\Purchasing\Http\Resources\GoodsReceiptResource;
 use App\Modules\Purchasing\Models\GoodsReceipt;
 use App\Modules\Purchasing\Support\PurchasingReadAccess;
@@ -50,6 +52,13 @@ class GoodsReceiptController extends Controller
         $receipt->load(['lines' => fn ($query) => $query->withQaAggregates()]);
 
         return (new GoodsReceiptResource($receipt))->response()->setStatusCode(201);
+    }
+
+    public function update(UpdateGoodsReceiptRequest $request, GoodsReceipt $goodsReceipt, UpdateGoodsReceipt $update): GoodsReceiptResource
+    {
+        $receipt = $update($goodsReceipt, $request->validated(), $request->user());
+
+        return new GoodsReceiptResource($receipt->load(['lines' => fn ($query) => $query->withQaAggregates()]));
     }
 
     public function show(Request $request, GoodsReceipt $goodsReceipt): GoodsReceiptResource

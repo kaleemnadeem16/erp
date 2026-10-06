@@ -245,6 +245,7 @@ function QualityPanel({
 
 export function GoodsReceiptDetailScreen() {
   const mayViewCommercialCost = usePurchasingCommercialCost();
+  const mayEdit = usePermission("purchasing.goods-receipt.create");
   const mayPost = usePermission("purchasing.goods-receipt.post");
   const mayReverse = usePermission("purchasing.goods-receipt.reverse");
   const { id } = useParams<{ id: string }>();
@@ -401,6 +402,14 @@ export function GoodsReceiptDetailScreen() {
         actions={
           <>
             <PrintTrigger onPrint={() => print()} />
+            {receipt.status === "DRAFT" && mayEdit && (
+              <Button
+                variant="outline"
+                onClick={() => navigate(`/goods-receipts/${receipt.id}/edit`)}
+              >
+                Edit draft
+              </Button>
+            )}
             {receipt.status === "DRAFT" && mayPost && (
               <Button onClick={() => setConfirmPost(true)}>Post receipt</Button>
             )}

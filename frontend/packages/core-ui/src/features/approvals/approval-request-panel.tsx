@@ -24,6 +24,8 @@ interface ApprovalRequestPanelProps {
   onChanged?: () => void;
   /** The submitter (or a manager) may take a pending request back. */
   mayWithdraw?: boolean;
+  /** The owning document already supplies identity and the outer card. */
+  embedded?: boolean;
 }
 
 /**
@@ -31,7 +33,12 @@ interface ApprovalRequestPanelProps {
  * was routed on — the steps and who decided each, and, for someone who can decide right now, the decision form. A rejection
  * needs a reason. Deciding as a delegate is shown as such; nobody is ever shown a button they cannot use.
  */
-export function ApprovalRequestPanel({ request, onChanged, mayWithdraw = false }: ApprovalRequestPanelProps) {
+export function ApprovalRequestPanel({
+  request,
+  onChanged,
+  mayWithdraw = false,
+  embedded = false,
+}: ApprovalRequestPanelProps) {
   const [reason, setReason] = useState('');
   const [error, setError] = useState<string | null>(null);
   const decide = useApprovalRequestsDecide();
@@ -92,15 +99,17 @@ export function ApprovalRequestPanel({ request, onChanged, mayWithdraw = false }
 
   return (
     <section
-      className="space-y-3 rounded-lg border p-4"
+      className={embedded ? 'space-y-3' : 'space-y-3 rounded-lg border p-4'}
       aria-label={`Approval of ${summary.number ?? `#${request.subject_id}`}`}
     >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h3 className="font-semibold">
-            {summary.number ?? `#${request.subject_id}`}
-            {summary.supplier ? ` — ${summary.supplier}` : ''}
-          </h3>
+          {!embedded && (
+            <h3 className="font-semibold">
+              {summary.number ?? `#${request.subject_id}`}
+              {summary.supplier ? ` — ${summary.supplier}` : ''}
+            </h3>
+          )}
           <p className="text-sm text-muted-foreground">
             Submitted by {request.submitted_by.name} on {formatDateTime(request.submitted_at)} · policy{' '}
             {request.policy.name} (v{request.policy.version_no})
@@ -132,8 +141,8 @@ export function ApprovalRequestPanel({ request, onChanged, mayWithdraw = false }
         </p>
       )}
 
+      <ApprovalDocumentReview key={request.id} request={request} />
       <ol className="space-y-2">
-        <ApprovalDocumentReview request={request} />
         {request.steps.map((step) => (
           <li key={step.id} className="rounded-md border p-3 text-sm">
             <div className="flex flex-wrap items-center justify-between gap-2">

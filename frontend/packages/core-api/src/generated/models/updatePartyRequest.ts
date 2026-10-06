@@ -7,6 +7,7 @@
 import type { UpdatePartyRequestRegistrationNo } from "./updatePartyRequestRegistrationNo";
 import type { UpdatePartyRequestTaxId } from "./updatePartyRequestTaxId";
 import type { UpdatePartyRequestWebsite } from "./updatePartyRequestWebsite";
+import type { UpdatePartyRequestCustomFields } from "./updatePartyRequestCustomFields";
 import type { Status } from "./status";
 
 export interface UpdatePartyRequest {
@@ -20,6 +21,6 @@ export interface UpdatePartyRequest {
   tax_id?: UpdatePartyRequestTaxId;
   /** @maxLength 255 */
   website?: UpdatePartyRequestWebsite;
-  custom_fields?: string;
+  custom_fields?: UpdatePartyRequestCustomFields;
   status?: Status;
 }

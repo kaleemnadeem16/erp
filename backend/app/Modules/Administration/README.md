@@ -59,6 +59,16 @@ must be identified by the owner. The sign-off template lives in the access-secur
 All member/role mutation Actions also refuse hydrated foreign targets; profile maintenance accepts
 name/email only. Scoped history response assertions accompany the existing API isolation tests.
 
+## Custom-field configuration
+
+Owns the settings API/UI over the existing company-scoped CustomFieldDefinition foundation.
+CreateCustomField checks administration.custom-field.manage and validates the same safe entity,
+type and uniqueness contract for non-HTTP callers. Definition reads require that capability or
+maintenance authority for the requested entity. The rollout grants full administration bundles
+only, per company; existing master-data maintainers gain no configuration authority.
+Supported forms, reserved reference types, demo data and the authorisation checklist are recorded
+in [extensibility](../../../../docs/architecture/extensibility.md#implemented-custom-field-settings-2026-10-06).
+
 ## Related
 
 - [`docs/domain/access-administration.md`](../../../../docs/domain/access-administration.md)

@@ -9,6 +9,7 @@ import {
   useSupplierAccountsIndex,
   useUomsIndex,
   type StoreGoodsReceiptRequest,
+  type PurchaseOrderResource,
 } from "@erp/core-api";
 
 import { Button } from "../../components/ui/button";
@@ -37,6 +38,7 @@ const positiveDecimal = decimal.refine(
   "Enter a value greater than zero.",
 );
 const lineSchema = z.object({
+  receipt_line_id: z.string().optional(),
   purchase_order_line_id: z.string().min(1, "Select an order line."),
   location_id: z.string().min(1, "Select a stock location."),
   item_packaging_id: z.string().optional(),
@@ -61,7 +63,8 @@ const schema = z.object({
       const firstIndexById = new Map<string, number>();
       lines.forEach((line, index) => {
         if (!line.purchase_order_line_id) return;
-        const firstIndex = firstIndexById.get(line.purchase_order_line_id);
+        const identity = `${line.purchase_order_line_id}:${line.serial_no.trim()}`;
+        const firstIndex = firstIndexById.get(identity);
         if (firstIndex !== undefined) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
@@ -69,7 +72,7 @@ const schema = z.object({
             path: [index, "purchase_order_line_id"],
           });
         } else {
-          firstIndexById.set(line.purchase_order_line_id, index);
+          firstIndexById.set(identity, index);
         }
       });
     }),
@@ -101,6 +104,9 @@ export function GoodsReceiptForm({
   onSubmit,
   isSubmitting,
   formError,
+  defaultValues,
+  preserveCommercialSnapshot = false,
+  pinnedOrders = [],
 }: {
   onSubmit: (
     payload: StoreGoodsReceiptRequest,
@@ -108,6 +114,9 @@ export function GoodsReceiptForm({
   ) => void;
   isSubmitting: boolean;
   formError?: string | null;
+  defaultValues?: Partial<GoodsReceiptFormValues>;
+  preserveCommercialSnapshot?: boolean;
+  pinnedOrders?: PurchaseOrderResource[];
 }) {
   const mayViewCommercialCost = usePurchasingCommercialCost();
   const now = new Date();
@@ -124,6 +133,7 @@ export function GoodsReceiptForm({
         .toISOString()
         .slice(0, 10),
       lines: [{ ...emptyLine }],
+      ...defaultValues,
     },
   });
   const { fields, append, remove } = useFieldArray({
@@ -156,13 +166,27 @@ export function GoodsReceiptForm({
     },
     { query: { enabled: supplierId > 0 } },
   );
-  const orders =
+  const listedOrders =
     ordersQuery.data?.status === 200 ? ordersQuery.data.data.data : [];
+  const orders = [
+    ...listedOrders,
+    ...pinnedOrders.filter(
+      (order) =>
+        order.supplier_account_id === supplierId &&
+        !listedOrders.some((listed) => listed.id === order.id),
+    ),
+  ];
   const eligibleLines = useMemo(
     () =>
       orders.flatMap((order) =>
         (order.lines ?? [])
-          .filter((line) => line.outstanding_stock_qty !== "0.0000")
+          .filter(
+            (line) =>
+              line.outstanding_stock_qty !== "0.0000" ||
+              defaultValues?.lines?.some(
+                (saved) => Number(saved.purchase_order_line_id) === line.id,
+              ),
+          )
           .map((line) => ({ order, line })),
       ),
     [orders],
@@ -216,14 +240,23 @@ export function GoodsReceiptForm({
       <form
         className="space-y-6"
         onSubmit={form.handleSubmit((values) => {
-          const lines = values.lines.map((line) => {
+          const lines = values.lines.map((line, index) => {
             const selected = eligibleLines.find(
               ({ line: candidate }) =>
                 candidate.id === Number(line.purchase_order_line_id),
             );
-            if (!selected)
-              throw new Error("Selected purchase-order line is unavailable.");
+            if (!selected) {
+              form.setError(`lines.${index}.purchase_order_line_id`, {
+                type: "manual",
+                message:
+                  "This order line is unavailable. Select an issued purchase-order line.",
+              });
+              return null;
+            }
             return {
+              ...(line.receipt_line_id
+                ? { id: Number(line.receipt_line_id) }
+                : {}),
               purchase_order_line_id: selected.line.id,
               item_id: selected.line.item_id,
               location_id: Number(line.location_id),
@@ -237,18 +270,22 @@ export function GoodsReceiptForm({
                     ...(line.provisional_unit_cost
                       ? { provisional_unit_cost: line.provisional_unit_cost }
                       : {}),
-                    currency_id: selected.order.currency_id,
-                    ...(selected.order.fx_rate
-                      ? { fx_rate: selected.order.fx_rate }
-                      : {}),
-                    ...(selected.order.fx_rate_date
-                      ? { fx_rate_date: selected.order.fx_rate_date }
-                      : {}),
-                    ...(selected.order.fx_rate_type
-                      ? { fx_rate_type: selected.order.fx_rate_type }
-                      : {}),
-                    ...(selected.order.fx_rate_source
-                      ? { fx_rate_source: selected.order.fx_rate_source }
+                    ...(!preserveCommercialSnapshot
+                      ? {
+                          currency_id: selected.order.currency_id,
+                          ...(selected.order.fx_rate
+                            ? { fx_rate: selected.order.fx_rate }
+                            : {}),
+                          ...(selected.order.fx_rate_date
+                            ? { fx_rate_date: selected.order.fx_rate_date }
+                            : {}),
+                          ...(selected.order.fx_rate_type
+                            ? { fx_rate_type: selected.order.fx_rate_type }
+                            : {}),
+                          ...(selected.order.fx_rate_source
+                            ? { fx_rate_source: selected.order.fx_rate_source }
+                            : {}),
+                        }
                       : {}),
                   }
                 : {}),
@@ -256,6 +293,7 @@ export function GoodsReceiptForm({
               serial_no: line.serial_no || null,
             };
           });
+          if (lines.some((line) => line === null)) return;
           onSubmit(
             {
               supplier_account_id: Number(values.supplier_account_id),
@@ -263,7 +301,7 @@ export function GoodsReceiptForm({
                 values.physical_arrival_at,
               ).toISOString(),
               posting_date: values.posting_date,
-              lines,
+              lines: lines.filter((line) => line !== null),
             },
             form,
           );
@@ -359,7 +397,9 @@ export function GoodsReceiptForm({
                 .filter(Boolean),
             );
             const availableLines = eligibleLines.filter(
-              ({ line }) => !usedByOtherRows.has(String(line.id)),
+              ({ line }) =>
+                line.id === selected?.line.id ||
+                !usedByOtherRows.has(String(line.id)),
             );
             return (
               <div

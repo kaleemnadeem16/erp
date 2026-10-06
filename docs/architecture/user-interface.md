@@ -288,6 +288,18 @@ Supplier invoicing/matching remains Phase 6; job material issue remains Phase 5.
 must show those boundaries honestly rather than offering actions whose owning documents do not yet
 exist.
 
+## Mobile filter and form clarity (2026-10-06)
+
+DataTable's optional toolbar-start content takes its own full-width row before view/sort/Columns
+controls below `md`. PO active chips wrap at the available width; their count and Clear all stay
+visible while a Show/Hide control animates the chip block through shared Collapse tokens.
+Hiding keeps filters live, makes the chips inert and honours reduced-motion settings. Desktop
+always shows the chip block, including after a mobile-to-desktop resize.
+
+Mobile create/edit DetailSection cards have an accent-colour top border and tinted section header;
+editable surfaces use background and navigation-accent/border tokens for clearer separation. Semantic
+tokens retain dark mode and the selected accent; read-only section styling is unchanged.
+
 ## Related
 
 - [UI building blocks](ui-building-blocks.md) — inventory of the reusable pieces and kept alternatives

@@ -1,5 +1,6 @@
 <?php
 
+use App\Modules\Administration\Http\Controllers\CustomFieldDefinitionController;
 use App\Modules\Administration\Http\Controllers\MemberController;
 use App\Modules\Administration\Http\Controllers\RoleController;
 use Illuminate\Support\Facades\Route;
@@ -17,3 +18,6 @@ Route::post('members/{member}/issue-temporary-password', [MemberController::clas
 Route::get('members/{member}/history', [MemberController::class, 'history'])->name('members.history');
 Route::get('permissions', [RoleController::class, 'permissions'])->name('permissions.index');
 Route::apiResource('roles', RoleController::class);
+
+Route::get('custom-field-definitions', [CustomFieldDefinitionController::class, 'index'])->name('custom-field-definitions.index');
+Route::post('custom-field-definitions', [CustomFieldDefinitionController::class, 'store'])->name('custom-field-definitions.store');

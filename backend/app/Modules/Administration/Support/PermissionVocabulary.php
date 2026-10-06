@@ -15,6 +15,7 @@ final class PermissionVocabulary
             'administration.role.view',
             'administration.role.manage',
             'administration.access.assign',
+            'administration.custom-field.manage',
         ];
     }
 }

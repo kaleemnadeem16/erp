@@ -13,6 +13,7 @@ import type { ItemTracking } from "./itemTracking";
 import type { StoreItemRequestIncomeAccountId } from "./storeItemRequestIncomeAccountId";
 import type { StoreItemRequestExpenseAccountId } from "./storeItemRequestExpenseAccountId";
 import type { StoreItemRequestInventoryAccountId } from "./storeItemRequestInventoryAccountId";
+import type { StoreItemRequestCustomFields } from "./storeItemRequestCustomFields";
 import type { Status } from "./status";
 
 export interface StoreItemRequest {
@@ -35,6 +36,6 @@ export interface StoreItemRequest {
   income_account_id?: StoreItemRequestIncomeAccountId;
   expense_account_id?: StoreItemRequestExpenseAccountId;
   inventory_account_id?: StoreItemRequestInventoryAccountId;
-  custom_fields?: string;
+  custom_fields?: StoreItemRequestCustomFields;
   status?: Status;
 }

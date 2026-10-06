@@ -32,7 +32,8 @@ class CustomerAccountResource extends JsonResource
             'tax_code_id' => $account->tax_code_id,
             'receivable_account_id' => $this->when(AccountMappingAccess::canView($request->user()), fn () => $account->receivable_account_id),
             'default_currency_id' => $account->default_currency_id,
-            'custom_fields' => $account->custom_fields,
+            /** @var array<string, string|int|float|bool>|null */
+            'custom_fields' => (object) ($account->custom_fields ?? []),
             'status' => $account->status->value,
             'party' => $this->whenLoaded('party', fn () => new PartyResource($account->party)),
             'created_at' => $account->created_at?->toIso8601String(),

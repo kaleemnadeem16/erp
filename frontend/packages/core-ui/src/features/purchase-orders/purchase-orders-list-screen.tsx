@@ -1,3 +1,5 @@
+import { MD_BREAKPOINT_QUERY, useMediaQuery } from "../../lib/use-media-query";
+import { Collapse } from "../../components/ui/collapse";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router";
 import {
@@ -14,7 +16,11 @@ import {
   Tag,
   X,
 } from "lucide-react";
-import type { PaginationState, RowSelectionState, SortingState } from "@tanstack/react-table";
+import type {
+  PaginationState,
+  RowSelectionState,
+  SortingState,
+} from "@tanstack/react-table";
 import {
   useCurrenciesIndex,
   useItemsIndex,
@@ -105,8 +111,21 @@ interface PurchaseOrderFilters {
 const STATUSES = ["DRAFT", "ISSUED", "CLOSED", "CANCELLED"] as const;
 
 // Approval states in which a draft cannot be issued yet, and the ones from which it can be (re)submitted.
-const BLOCKS_ISSUE = new Set(["NOT_SUBMITTED", "PENDING", "REJECTED", "WITHDRAWN", "INVALIDATED", "EXPIRED"]);
-const SUBMITTABLE = new Set(["NOT_SUBMITTED", "REJECTED", "WITHDRAWN", "INVALIDATED", "EXPIRED"]);
+const BLOCKS_ISSUE = new Set([
+  "NOT_SUBMITTED",
+  "PENDING",
+  "REJECTED",
+  "WITHDRAWN",
+  "INVALIDATED",
+  "EXPIRED",
+]);
+const SUBMITTABLE = new Set([
+  "NOT_SUBMITTED",
+  "REJECTED",
+  "WITHDRAWN",
+  "INVALIDATED",
+  "EXPIRED",
+]);
 
 // The approval filter judges an order by its latest approval request; NONE is "never sent for approval".
 const APPROVAL_FILTER_LABELS: Record<string, string> = {
@@ -126,6 +145,8 @@ export function PurchaseOrdersListScreen() {
   const maySubmit = usePermission("purchasing.purchase-order.submit");
   const submitForApproval = usePurchaseOrdersSubmit();
   const mayViewCommercialCost = usePurchasingCommercialCost();
+  const isDesktop = useMediaQuery(MD_BREAKPOINT_QUERY);
+  const [showActiveFilters, setShowActiveFilters] = useState(true);
   const navigate = useNavigate();
   const { search } = useLocation();
   const query = useListQueryState<PurchaseOrderFilters>({
@@ -133,21 +154,23 @@ export function PurchaseOrdersListScreen() {
     defaultPerPage: 25,
   });
   // The search box answers at once but only asks the server once typing pauses (see useDebouncedSearch).
-  const searchBox = useDebouncedSearch(query.filters.search, (value) => query.setFilter("search", value));
+  const searchBox = useDebouncedSearch(query.filters.search, (value) =>
+    query.setFilter("search", value),
+  );
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(() =>
     Boolean(
       query.filters.order_date_from ||
-        query.filters.order_date_to ||
-        query.filters.expected_delivery_from ||
-        query.filters.expected_delivery_to ||
-        query.filters.issued_from ||
-        query.filters.issued_to ||
-        query.filters.item_id ||
-        query.filters.supplier_site_id ||
-        query.filters.currency_id ||
-        query.filters.total_min ||
-        query.filters.total_max,
+      query.filters.order_date_to ||
+      query.filters.expected_delivery_from ||
+      query.filters.expected_delivery_to ||
+      query.filters.issued_from ||
+      query.filters.issued_to ||
+      query.filters.item_id ||
+      query.filters.supplier_site_id ||
+      query.filters.currency_id ||
+      query.filters.total_min ||
+      query.filters.total_max,
     ),
   );
   const { view, setView } = useListViewPreference("purchase-orders-list");
@@ -190,9 +213,7 @@ export function PurchaseOrdersListScreen() {
     itemsQuery.data?.status === 200 ? itemsQuery.data.data.data : [];
   const itemLabels = useMemo(
     () =>
-      new Map(
-        items.map((item) => [item.id, `${item.code} — ${item.name}`]),
-      ),
+      new Map(items.map((item) => [item.id, `${item.code} — ${item.name}`])),
     [items],
   );
 
@@ -205,8 +226,7 @@ export function PurchaseOrdersListScreen() {
     [currenciesQuery.data],
   );
   const currencyLabels = useMemo(
-    () =>
-      new Map(currencies.map((currency) => [currency.id, currency.code])),
+    () => new Map(currencies.map((currency) => [currency.id, currency.code])),
     [currencies],
   );
   const ordersQuery = usePurchaseOrdersIndex({
@@ -219,8 +239,8 @@ export function PurchaseOrdersListScreen() {
       (query.filters.status as (typeof STATUSES)[number] | undefined) ||
       undefined,
     "filter[approval]":
-      (query.filters.approval as PurchaseOrdersIndexFilterApproval | undefined) ||
-      undefined,
+      (query.filters.approval as
+        PurchaseOrdersIndexFilterApproval | undefined) || undefined,
     "filter[currency_id]": query.filters.currency_id
       ? Number(query.filters.currency_id)
       : undefined,
@@ -259,7 +279,8 @@ export function PurchaseOrdersListScreen() {
   // switched off). It stays on once seen, so the column and filter do not blink away when a filter empties the page.
   const [approvalsSeen, setApprovalsSeen] = useState(false);
   useEffect(() => {
-    if (orders.some((order) => order.approval_status != null)) setApprovalsSeen(true);
+    if (orders.some((order) => order.approval_status != null))
+      setApprovalsSeen(true);
   }, [orders]);
   const approvalsInUse = approvalsSeen || Boolean(query.filters.approval);
   const columns = useMemo(
@@ -280,7 +301,10 @@ export function PurchaseOrdersListScreen() {
   );
 
   const tanStackColumns = useMemo(
-    () => [selectionColumn<PurchaseOrderResource>(), ...toTanStackColumns(columns)],
+    () => [
+      selectionColumn<PurchaseOrderResource>(),
+      ...toTanStackColumns(columns),
+    ],
     [columns],
   );
   // Ticked rows are for bulk actions on the page in view, so any change of page, sort or filters starts a new selection.
@@ -303,7 +327,8 @@ export function PurchaseOrdersListScreen() {
     query.filters.item_id,
     query.filters.supplier_site_id,
     query.filters.currency_id,
-    mayViewCommercialCost && (query.filters.total_min || query.filters.total_max),
+    mayViewCommercialCost &&
+      (query.filters.total_min || query.filters.total_max),
   ].filter(Boolean).length;
 
   const mobileActiveFilterCount = [
@@ -316,7 +341,8 @@ export function PurchaseOrdersListScreen() {
     query.filters.item_id,
     query.filters.supplier_site_id,
     query.filters.currency_id,
-    mayViewCommercialCost && (query.filters.total_min || query.filters.total_max),
+    mayViewCommercialCost &&
+      (query.filters.total_min || query.filters.total_max),
   ].filter(Boolean).length;
 
   const clearAdvancedFilters = () => {
@@ -370,7 +396,12 @@ export function PurchaseOrdersListScreen() {
   });
 
   const activeChips = useMemo(() => {
-    const chips: { id: string; label: string; icon: ReactNode; onRemove: () => void }[] = [];
+    const chips: {
+      id: string;
+      label: string;
+      icon: ReactNode;
+      onRemove: () => void;
+    }[] = [];
     if (query.filters.supplier_account_id) {
       const name =
         supplierLabels.get(Number(query.filters.supplier_account_id)) ??
@@ -540,15 +571,27 @@ export function PurchaseOrdersListScreen() {
             query={query}
           />
           <Button
-            variant={advancedOpen || advancedFilterCount > 0 ? "secondary" : "outline"}
+            variant={
+              advancedOpen || advancedFilterCount > 0 ? "secondary" : "outline"
+            }
             size="sm"
-            className={cn("relative h-10 px-4", (advancedOpen || advancedFilterCount > 0) && "po-btn-filters-active")}
+            className={cn(
+              "relative h-10 px-4",
+              (advancedOpen || advancedFilterCount > 0) &&
+                "po-btn-filters-active",
+            )}
             onClick={() => setAdvancedOpen((open) => !open)}
           >
             <SlidersHorizontal className="mr-1.5 h-[18px] w-[18px]" />
             Filters
             {advancedFilterCount > 0 && (
-              <Badge className={cn("absolute -right-2 -top-2 h-5 min-w-5 justify-center rounded-full px-1 text-[11px]", (advancedOpen || advancedFilterCount > 0) && "po-filter-badge")}>
+              <Badge
+                className={cn(
+                  "absolute -right-2 -top-2 h-5 min-w-5 justify-center rounded-full px-1 text-[11px]",
+                  (advancedOpen || advancedFilterCount > 0) &&
+                    "po-filter-badge",
+                )}
+              >
                 {advancedFilterCount}
               </Badge>
             )}
@@ -625,7 +668,10 @@ export function PurchaseOrdersListScreen() {
       </div>
 
       <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
-        <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto md:hidden">
+        <SheetContent
+          side="bottom"
+          className="max-h-[85vh] overflow-y-auto md:hidden"
+        >
           <SheetHeader>
             <SheetTitle>Filters</SheetTitle>
           </SheetHeader>
@@ -738,26 +784,61 @@ export function PurchaseOrdersListScreen() {
         numberedPagination
         toolbarStart={
           activeChips.length > 0 ? (
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm font-medium text-[var(--po-text-secondary)]">
-                Active filters
-              </span>
-              {activeChips.map((chip) => (
-                <span key={chip.id} className="po-chip-active">
-                  {chip.icon}
-                  <span>{chip.label}</span>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2 md:hidden">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  aria-expanded={showActiveFilters}
+                  aria-controls="po-active-filters"
+                  onClick={() => setShowActiveFilters(!showActiveFilters)}
+                >
+                  Active filters ({activeChips.length}) ·{" "}
+                  {showActiveFilters ? "Hide" : "Show"}
+                </Button>
+                <button
+                  type="button"
+                  className="po-link-action shrink-0"
+                  onClick={clearAllFilters}
+                >
+                  Clear all
+                </button>
+              </div>
+              <Collapse
+                open={isDesktop || showActiveFilters}
+                id="po-active-filters"
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="hidden text-sm font-medium md:inline">
+                    Active filters
+                  </span>
+                  {activeChips.map((chip) => (
+                    <span
+                      key={chip.id}
+                      className="po-chip-active inline-flex max-w-full items-center rounded-full border bg-primary/5 px-3 py-1.5 text-xs text-primary !gap-2 [&>svg]:shrink-0"
+                    >
+                      {chip.icon}
+                      <span className="min-w-0 break-words">{chip.label}</span>
+                      <button
+                        type="button"
+                        className="shrink-0"
+                        aria-label={`Remove filter ${chip.label}`}
+                        onClick={chip.onRemove}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ))}
                   <button
                     type="button"
-                    aria-label={`Remove filter ${chip.label}`}
-                    onClick={chip.onRemove}
+                    className="po-link-action hidden md:inline"
+                    onClick={clearAllFilters}
                   >
-                    <X className="h-3 w-3" />
+                    Clear all
                   </button>
-                </span>
-              ))}
-              <button type="button" className="po-link-action" onClick={clearAllFilters}>
-                Clear all
-              </button>
+                </div>
+              </Collapse>
             </div>
           ) : undefined
         }
@@ -786,33 +867,42 @@ export function PurchaseOrdersListScreen() {
               {order.status === "DRAFT" && mayCreate && (
                 <DropdownMenuItem
                   onSelect={() =>
-                    navigate({ pathname: `/purchase-orders/${order.id}/edit`, search })
+                    navigate({
+                      pathname: `/purchase-orders/${order.id}/edit`,
+                      search,
+                    })
                   }
                 >
                   Edit draft
                 </DropdownMenuItem>
               )}
               {/* A draft that must be approved first is sent for approval from here; it can only be issued once approved. */}
-              {order.status === "DRAFT" && maySubmit && SUBMITTABLE.has(order.approval_status ?? "") && (
-                <DropdownMenuItem
-                  disabled={submitForApproval.isPending}
-                  onSelect={() => submitForApproval.mutate({ purchaseOrder: order.id })}
-                >
-                  Submit for approval
-                </DropdownMenuItem>
-              )}
-              {order.status === "DRAFT" && mayIssue && !BLOCKS_ISSUE.has(order.approval_status ?? "") && (
-                <DropdownMenuItem
-                  onSelect={() =>
-                    navigate(
-                      { pathname: `/purchase-orders/${order.id}`, search },
-                      { state: { quickAction: "issue" } },
-                    )
-                  }
-                >
-                  Issue order…
-                </DropdownMenuItem>
-              )}
+              {order.status === "DRAFT" &&
+                maySubmit &&
+                SUBMITTABLE.has(order.approval_status ?? "") && (
+                  <DropdownMenuItem
+                    disabled={submitForApproval.isPending}
+                    onSelect={() =>
+                      submitForApproval.mutate({ purchaseOrder: order.id })
+                    }
+                  >
+                    Submit for approval
+                  </DropdownMenuItem>
+                )}
+              {order.status === "DRAFT" &&
+                mayIssue &&
+                !BLOCKS_ISSUE.has(order.approval_status ?? "") && (
+                  <DropdownMenuItem
+                    onSelect={() =>
+                      navigate(
+                        { pathname: `/purchase-orders/${order.id}`, search },
+                        { state: { quickAction: "issue" } },
+                      )
+                    }
+                  >
+                    Issue order…
+                  </DropdownMenuItem>
+                )}
               {order.status === "ISSUED" && mayCancel && (
                 <DropdownMenuItem
                   onSelect={() =>
@@ -827,7 +917,9 @@ export function PurchaseOrdersListScreen() {
               )}
               {order.number && (
                 <DropdownMenuItem
-                  onSelect={() => void navigator.clipboard?.writeText(order.number ?? "")}
+                  onSelect={() =>
+                    void navigator.clipboard?.writeText(order.number ?? "")
+                  }
                 >
                   Copy order number
                 </DropdownMenuItem>
@@ -844,7 +936,12 @@ export function PurchaseOrdersListScreen() {
             title="PURCHASE ORDER LIST"
             printedAt={new Date()}
             recordCount={selectedOrders.length}
-            meta={[{ label: "Selection", value: `${selectedOrders.length} selected purchase orders` }]}
+            meta={[
+              {
+                label: "Selection",
+                value: `${selectedOrders.length} selected purchase orders`,
+              },
+            ]}
           >
             <PrintableTable
               columns={columns}
@@ -903,7 +1000,10 @@ function describeFilters(
     );
   }
   if (filters.status) lines.push(`Status = ${filters.status}`);
-  if (filters.approval) lines.push(`Approval = ${APPROVAL_FILTER_LABELS[filters.approval] ?? filters.approval}`);
+  if (filters.approval)
+    lines.push(
+      `Approval = ${APPROVAL_FILTER_LABELS[filters.approval] ?? filters.approval}`,
+    );
   if (filters.order_date_from || filters.order_date_to) {
     lines.push(
       `Order Date = ${filters.order_date_from ?? "…"} to ${filters.order_date_to ?? "…"}`,
@@ -986,7 +1086,11 @@ function PurchaseOrderFilterControls({
         emptyText="No suppliers found."
         className={full ? "h-9 w-full" : "h-10 w-56"}
         popoverClassName="po-popover-content"
-        icon={full ? undefined : <Building2 className="po-field-icon h-[18px] w-[18px]" />}
+        icon={
+          full ? undefined : (
+            <Building2 className="po-field-icon h-[18px] w-[18px]" />
+          )
+        }
       />
       <Select
         value={query.filters.status ?? "all"}
@@ -999,7 +1103,12 @@ function PurchaseOrderFilterControls({
           aria-label="Status"
         >
           <div className="flex min-w-0 items-center gap-2">
-            {!full && <Tag aria-hidden="true" className="po-field-icon h-[18px] w-[18px] shrink-0" />}
+            {!full && (
+              <Tag
+                aria-hidden="true"
+                className="po-field-icon h-[18px] w-[18px] shrink-0"
+              />
+            )}
             <SelectValue placeholder="Status" />
           </div>
         </SelectTrigger>
@@ -1024,7 +1133,12 @@ function PurchaseOrderFilterControls({
             aria-label="Approval"
           >
             <div className="flex min-w-0 items-center gap-2">
-              {!full && <ShieldCheck aria-hidden="true" className="po-field-icon h-[18px] w-[18px] shrink-0" />}
+              {!full && (
+                <ShieldCheck
+                  aria-hidden="true"
+                  className="po-field-icon h-[18px] w-[18px] shrink-0"
+                />
+              )}
               <SelectValue placeholder="Approval" />
             </div>
           </SelectTrigger>
@@ -1075,14 +1189,14 @@ function AdvancedFilterFields({
   return (
     <>
       <div className="space-y-1.5">
-        <Label className="text-sm font-medium">
-          Order date range
-        </Label>
+        <Label className="text-sm font-medium">Order date range</Label>
         <div className="flex items-center gap-1.5">
           <DateField
             aria-label="Order date from"
             value={query.filters.order_date_from ?? ""}
-            onChange={(val) => query.setFilter("order_date_from", val || undefined)}
+            onChange={(val) =>
+              query.setFilter("order_date_from", val || undefined)
+            }
             className={cn(fieldH, "w-full")}
             popoverClassName="po-popover-content"
             pickerPosition={full ? "end" : "start"}
@@ -1091,7 +1205,9 @@ function AdvancedFilterFields({
           <DateField
             aria-label="Order date to"
             value={query.filters.order_date_to ?? ""}
-            onChange={(val) => query.setFilter("order_date_to", val || undefined)}
+            onChange={(val) =>
+              query.setFilter("order_date_to", val || undefined)
+            }
             className={cn(fieldH, "w-full")}
             popoverClassName="po-popover-content"
             pickerPosition={full ? "end" : "start"}
@@ -1100,9 +1216,7 @@ function AdvancedFilterFields({
       </div>
 
       <div className="space-y-1.5">
-        <Label className="text-sm font-medium">
-          Expected delivery range
-        </Label>
+        <Label className="text-sm font-medium">Expected delivery range</Label>
         <div className="flex items-center gap-1.5">
           <DateField
             aria-label="Expected delivery from"
@@ -1129,9 +1243,7 @@ function AdvancedFilterFields({
       </div>
 
       <div className="space-y-1.5">
-        <Label className="text-sm font-medium">
-          Issued date range
-        </Label>
+        <Label className="text-sm font-medium">Issued date range</Label>
         <div className="flex items-center gap-1.5">
           <DateField
             aria-label="Issued date from"
@@ -1154,9 +1266,7 @@ function AdvancedFilterFields({
       </div>
 
       <div className="space-y-1.5">
-        <Label className="text-sm font-medium">
-          Contains item
-        </Label>
+        <Label className="text-sm font-medium">Contains item</Label>
         <Combobox
           {...itemsLookup}
           value={query.filters.item_id ?? "all"}
@@ -1170,14 +1280,16 @@ function AdvancedFilterFields({
           emptyText="No items found."
           className={cn(fieldH, "w-full")}
           popoverClassName="po-popover-content"
-          icon={full ? undefined : <Search className="po-field-icon h-[18px] w-[18px]" />}
+          icon={
+            full ? undefined : (
+              <Search className="po-field-icon h-[18px] w-[18px]" />
+            )
+          }
         />
       </div>
 
       <div className="space-y-1.5">
-        <Label className="text-sm font-medium">
-          Supplier site
-        </Label>
+        <Label className="text-sm font-medium">Supplier site</Label>
         {selectedSupplierId ? (
           <Select
             value={query.filters.supplier_site_id ?? "all"}
@@ -1193,7 +1305,12 @@ function AdvancedFilterFields({
               aria-label="Supplier site"
             >
               <div className="flex min-w-0 items-center gap-2">
-                {!full && <Building2 aria-hidden="true" className="po-field-icon h-[18px] w-[18px] shrink-0" />}
+                {!full && (
+                  <Building2
+                    aria-hidden="true"
+                    className="po-field-icon h-[18px] w-[18px] shrink-0"
+                  />
+                )}
                 <SelectValue placeholder="All sites" />
               </div>
             </SelectTrigger>
@@ -1208,8 +1325,15 @@ function AdvancedFilterFields({
             </SelectContent>
           </Select>
         ) : (
-          <div className={cn("po-field-disabled flex items-center gap-2 rounded-md border border-dashed px-3 text-sm text-muted-foreground", fieldH)}>
-            {!full && <Building2 aria-hidden="true" className="h-4 w-4 shrink-0" />}
+          <div
+            className={cn(
+              "po-field-disabled flex items-center gap-2 rounded-md border border-dashed px-3 text-sm text-muted-foreground",
+              fieldH,
+            )}
+          >
+            {!full && (
+              <Building2 aria-hidden="true" className="h-4 w-4 shrink-0" />
+            )}
             Select supplier above
           </div>
         )}
@@ -1218,9 +1342,7 @@ function AdvancedFilterFields({
       {mayViewCommercialCost && (
         <>
           <div className="space-y-1.5">
-            <Label className="text-sm font-medium">
-              Total value range
-            </Label>
+            <Label className="text-sm font-medium">Total value range</Label>
             <div className="flex items-center gap-1.5">
               <Input
                 type="number"
@@ -1247,9 +1369,7 @@ function AdvancedFilterFields({
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-sm font-medium">
-              Currency
-            </Label>
+            <Label className="text-sm font-medium">Currency</Label>
             <Select
               value={query.filters.currency_id ?? "all"}
               onValueChange={(val) =>
@@ -1261,7 +1381,12 @@ function AdvancedFilterFields({
                 aria-label="Currency"
               >
                 <div className="flex min-w-0 items-center gap-2">
-                  {!full && <Database aria-hidden="true" className="po-field-icon h-[18px] w-[18px] shrink-0" />}
+                  {!full && (
+                    <Database
+                      aria-hidden="true"
+                      className="po-field-icon h-[18px] w-[18px] shrink-0"
+                    />
+                  )}
                   <SelectValue placeholder="All currencies" />
                 </div>
               </SelectTrigger>

@@ -81,6 +81,15 @@ Commercial package/price snapshots remain unchanged. Observations freeze after p
 with initially held evidence for QA. No composition endpoint or screen is exposed yet.
 [Contract, tests and limits](../../../../docs/domain/receipt-package-evidence.md).
 
+## Draft receipt editing
+
+UpdateGoodsReceipt and its Request use the existing receipt/create duty, re-resolve and lock the
+company receipt, and atomically replace only draft header/lines. DraftGoodsReceiptLines is the
+shared internal snapshot builder used by create/update; both Actions guard their caller.
+Saved commercial values and exact amounts survive matching-line operational edits. Recorded
+package composition prevents replacement. Posted corrections still use reversal.
+See [the contract](../../../../docs/domain/purchasing.md#correcting-a-draft-receipt-2026-10-06).
+
 ## Related
 
 - [Packaged purchasing demo](../../../../docs/journeys/packaged-purchasing-demo.md) — opt-in PackagedPurchasingDemoSeeder; creates definitions and workflow examples once, preserving receiver progress on reruns.

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Modules\Purchasing;
 
+use App\Exceptions\DomainInvariantException;
 use App\Models\Currency;
 use App\Models\Uom;
 use App\Models\User;
@@ -22,10 +23,14 @@ use App\Modules\Parties\Models\PartySite;
 use App\Modules\Parties\Models\SupplierAccount;
 use App\Modules\Parties\Models\SupplierSite;
 use App\Modules\Purchasing\Actions\IssuePurchaseOrder;
+use App\Modules\Purchasing\Actions\UpdateGoodsReceipt;
+use App\Modules\Purchasing\Models\GoodsReceipt;
 use App\Modules\Purchasing\Models\GoodsReceiptLine;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Modules\Purchasing\Models\PurchaseOrderLine;
 use App\Modules\Purchasing\Support\OverReceiptMode;
+use App\Modules\Purchasing\Support\PurchaseOrderStatus;
+use App\Support\CompanyContext;
 use App\Support\UomDimension;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
@@ -33,6 +38,77 @@ use Tests\Support\PurchasingActor;
 
 class GoodsReceiptPostingTest extends PurchaseOrderFoundationTest
 {
+    public function test_draft_receipt_can_be_corrected_then_posted_and_is_immutable_after_post(): void
+    {
+        [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Avco, ItemTracking::Batch);
+        $location = $this->locationId();
+        $id = $this->createReceipt($order->lines->sole()->id, $item->id, $uom->id, $location);
+        $payload = ['supplier_account_id' => $order->supplier_account_id, 'physical_arrival_at' => now()->toIso8601String(), 'posting_date' => now()->format('Y-m-d'),
+            'lines' => [['purchase_order_line_id' => $order->lines->sole()->id, 'item_id' => $item->id, 'location_id' => $location, 'received_qty' => '1.0000', 'received_uom_id' => $uom->id, 'batch_no' => 'corrected']]];
+        $receiver = PurchasingActor::make(['purchasing.goods-receipt.create', 'purchasing.goods-receipt.post']);
+        $this->actingAsUnprivileged($receiver)->patchJson("/api/v1/goods-receipts/{$id}", $payload)->assertOk()
+            ->assertJsonPath('data.lines.0.received_qty', '1.0000')->assertJsonPath('data.lines.0.batch_no', 'corrected')
+            ->assertJsonMissingPath('data.lines.0.provisional_unit_cost');
+        $this->assertSame('10.0000', GoodsReceiptLine::query()->where('goods_receipt_id', $id)->sole()->provisional_unit_cost);
+        $this->postJson("/api/v1/goods-receipts/{$id}/post")->assertOk();
+        $this->patchJson("/api/v1/goods-receipts/{$id}", $payload)->assertUnprocessable();
+        $this->assertSame('1.0000', GoodsReceiptLine::query()->where('goods_receipt_id', $id)->sole()->received_qty);
+    }
+
+    public function test_draft_receipt_update_checks_permission_and_rolls_back_invalid_lines(): void
+    {
+        [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Avco);
+        $location = $this->locationId();
+        $id = $this->createReceipt($order->lines->sole()->id, $item->id, $uom->id, $location);
+        $payload = ['supplier_account_id' => $order->supplier_account_id, 'physical_arrival_at' => now()->toIso8601String(), 'posting_date' => now()->format('Y-m-d'),
+            'lines' => [['purchase_order_line_id' => $order->lines->sole()->id, 'item_id' => $item->id, 'location_id' => $location, 'received_qty' => '1.0000', 'received_uom_id' => $uom->id]]];
+        $denied = User::factory()->create();
+        $this->actingAsUnprivileged($denied)->patchJson("/api/v1/goods-receipts/{$id}", $payload)->assertForbidden();
+        try {
+            app(UpdateGoodsReceipt::class)(GoodsReceipt::findOrFail($id), $payload, $denied);
+            $this->fail('An unprivileged non-HTTP actor must be refused.');
+        } catch (DomainInvariantException) {
+            $this->assertSame('2.0000', GoodsReceiptLine::query()->where('goods_receipt_id', $id)->sole()->received_qty);
+        }
+        $receiver = PurchasingActor::make(['purchasing.goods-receipt.create']);
+        $this->actingAsUnprivileged($receiver)->patchJson("/api/v1/goods-receipts/{$id}", array_replace_recursive($payload, ['lines' => [['provisional_unit_cost' => '1.0000']]]))->assertUnprocessable();
+        $order->update(['status' => PurchaseOrderStatus::Cancelled]);
+        $this->patchJson("/api/v1/goods-receipts/{$id}", $payload)->assertUnprocessable();
+        $this->assertSame('2.0000', GoodsReceiptLine::query()->where('goods_receipt_id', $id)->sole()->received_qty);
+    }
+
+    public function test_operational_edit_preserves_exact_amount_and_rejects_another_drafts_line_id(): void
+    {
+        [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Avco);
+        $location = $this->locationId();
+        $id = $this->createReceipt($order->lines->sole()->id, $item->id, $uom->id, $location);
+        $line = GoodsReceiptLine::query()->where('goods_receipt_id', $id)->sole();
+        // An independent price basis can carry a residual not recoverable from its rounded per-unit cost.
+        $line->update(['provisional_unit_cost' => '3.3333', 'provisional_amount' => '6.6667']);
+        $payload = ['supplier_account_id' => $order->supplier_account_id, 'physical_arrival_at' => now()->toIso8601String(), 'posting_date' => now()->format('Y-m-d'),
+            'lines' => [['id' => $line->id, 'purchase_order_line_id' => $order->lines->sole()->id, 'item_id' => $item->id, 'location_id' => $location, 'received_qty' => '2.0000', 'received_uom_id' => $uom->id]]];
+        $receiver = PurchasingActor::make(['purchasing.goods-receipt.create']);
+        $this->actingAsUnprivileged($receiver)->patchJson("/api/v1/goods-receipts/{$id}", $payload)->assertOk();
+        $this->assertSame('6.6667', GoodsReceiptLine::query()->where('goods_receipt_id', $id)->sole()->provisional_amount);
+        $this->patchJson("/api/v1/goods-receipts/{$id}", array_replace_recursive($payload, ['lines' => [['id' => 999999]]]))->assertUnprocessable();
+        $this->assertSame('6.6667', GoodsReceiptLine::query()->where('goods_receipt_id', $id)->sole()->provisional_amount);
+    }
+
+    public function test_draft_receipt_update_cannot_resolve_a_different_company_record(): void
+    {
+        [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Avco);
+        $id = $this->createReceipt($order->lines->sole()->id, $item->id, $uom->id, $this->locationId());
+        $this->app->instance(CompanyContext::class, new class extends CompanyContext
+        {
+            public function id(): int
+            {
+                return 2;
+            }
+        });
+        $this->patchJson("/api/v1/goods-receipts/{$id}", [])->assertNotFound();
+        $this->getJson("/api/v1/goods-receipts/{$id}")->assertNotFound();
+    }
+
     public function test_issued_pack_factor_and_default_cost_survive_master_change(): void
     {
         [$order, $item, $uom] = $this->makeOrder();

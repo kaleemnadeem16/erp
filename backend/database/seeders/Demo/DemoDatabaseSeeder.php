@@ -65,6 +65,7 @@ final class DemoDatabaseSeeder extends Seeder
                 RecipeAccessDemoSeeder::class,
                 // After ApprovalsDemoSeeder: the auditors read the approvals it leaves in every state.
                 ApprovalAuditorsDemoSeeder::class,
+                CustomFieldsDemoSeeder::class,
             ]);
         });
     }

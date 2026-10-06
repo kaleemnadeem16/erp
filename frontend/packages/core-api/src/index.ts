@@ -67,3 +67,6 @@ export * from "./generated/company-change/company-change";
 
 export * from "./generated/item-packaging/item-packaging";
 export * from "./generated/supplier-offer/supplier-offer";
+
+export * from "./generated/custom-field-definition/custom-field-definition";
+export * from "./generated/party/party";

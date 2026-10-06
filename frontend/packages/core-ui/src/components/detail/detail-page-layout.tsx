@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react';
+import type { ReactNode } from "react";
 
-import { cn } from '../../lib/utils';
+import { cn } from "../../lib/utils";
 
 export interface DetailSectionProps {
   title?: string;
@@ -25,22 +25,32 @@ export interface DetailSectionProps {
  * `sm:col-span-2` inside those forms rewritten. `fullWidth` below only
  * controls this section's own width *within* `DetailPageLayout`'s grid.
  */
-export function DetailSection({ title, description, children, className, fullWidth }: DetailSectionProps) {
+export function DetailSection({
+  title,
+  description,
+  children,
+  className,
+  fullWidth,
+}: DetailSectionProps) {
   return (
     <section
       className={cn(
-        'min-w-0 rounded-lg border border-border bg-card p-4 text-card-foreground',
-        fullWidth && 'col-span-full',
-        className
+        "detail-section min-w-0 rounded-lg border border-border bg-card p-4 text-card-foreground",
+        fullWidth && "col-span-full",
+        className,
       )}
     >
       {title && (
         <div className="mb-3">
           <h2 className="text-sm font-semibold">{title}</h2>
-          {description && <p className="text-xs text-muted-foreground">{description}</p>}
+          {description && (
+            <p className="text-xs text-muted-foreground">{description}</p>
+          )}
         </div>
       )}
-      <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 [&>*]:min-w-0">{children}</div>
+      <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 [&>*]:min-w-0">
+        {children}
+      </div>
     </section>
   );
 }
@@ -67,7 +77,13 @@ export function DetailPageLayout({
   equalHeight?: boolean;
 }) {
   return (
-    <div className={cn('@container grid min-w-0 grid-cols-1 gap-4 @2xl:grid-cols-2', equalHeight ? 'items-stretch' : 'items-start', className)}>
+    <div
+      className={cn(
+        "@container grid min-w-0 grid-cols-1 gap-4 @2xl:grid-cols-2",
+        equalHeight ? "items-stretch" : "items-start",
+        className,
+      )}
+    >
       {children}
     </div>
   );

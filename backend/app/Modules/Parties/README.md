@@ -61,6 +61,14 @@ management), including nested/mutation responses. Requests and all four account 
 protected key presence without field management; omitted values are preserved. Mandatory account
 creation needs terms/mapping management as well as account maintenance. See the domain access section.
 
+## Supplier registration UI
+
+Purchasing → Suppliers exposes existing Party and supplier-account create/update Actions.
+Creation requires supplier maintenance plus terms/mapping management; registering a new identity
+also requires Party maintenance. Retry retains a successfully created Party. Custom inputs use
+company/entity definitions; addresses reuse the supplier-site workflow. No new Parties permission,
+endpoint or approval transition is added. See [the screens](../../../../docs/domain/parties.md#supplier-registration-screens-2026-10-06).
+
 ## Related
 
 - [domain/parties.md](../../../../docs/domain/parties.md)

@@ -310,6 +310,13 @@ activate tracking or infer composition from agreement fields. Serial/debt-settle
 are guarded; later stock operations still need integration.
 [Receipt contract](../../../../docs/domain/receipt-package-evidence.md).
 
+## Item form fields
+
+Item create/edit now expose status, generic custom values and permitted account mappings.
+The existing item/manage and mapping/manage boundaries remain authoritative; omitted protected
+keys preserve stored mappings. Packages, supplier offers and conversions need the saved Item.
+See [Items](../../../../docs/domain/items.md#item-form-completeness-2026-10-06).
+
 ## Related
 
 - [domain/items.md](../../../../docs/domain/items.md)

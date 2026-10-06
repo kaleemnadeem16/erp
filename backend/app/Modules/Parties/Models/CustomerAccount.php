@@ -29,7 +29,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int|null $tax_code_id
  * @property int $receivable_account_id
  * @property int|null $default_currency_id
- * @property array<string, mixed>|null $custom_fields
+ * @property array<string, string|int|float|bool>|null $custom_fields
  * @property Status $status
  */
 class CustomerAccount extends Model

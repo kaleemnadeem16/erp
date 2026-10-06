@@ -253,6 +253,24 @@ needs a separate row per legal entity if that ever exists. See
 [Q10](../OPEN-QUESTIONS.md#q10--sharing-master-data-across-a-customers-own-legal-entities) and
 the alternatives section of [ADR 0030](../decisions/0030-unified-party-model.md#alternatives-considered).
 
+### Supplier registration screens (2026-10-06)
+
+Purchasing → **Suppliers** (`/suppliers`) provides search and server pagination; **New supplier**
+selects an existing trading partner or registers one with code, business name, tax/registration
+identifiers and website. It then creates the supplier account with code, terms, lead time,
+payable account, optional default currency, status and company-defined fields. If account creation
+fails after identity creation, the saved partner stays selected and retry reuses it.
+
+Create requires `parties.supplier-account.manage`, `parties.payment-terms.manage` and
+`accounting.account-mapping.manage`, since the existing API requires both terms and a payable
+account. Creating a new identity additionally needs `parties.party.manage`; users without it can
+reuse an existing identity. Edit requires supplier maintenance; terms/mapping controls and payload
+keys follow their separate management capabilities. Identity stays fixed on account edit.
+The existing Request/Action and company guards enforce all writes; no new Parties capability or
+approval step is introduced. Edit also lists addresses; **Add address** uses the existing
+`parties.supplier-site.manage` workflow. Contacts and independent Party/customer forms remain
+unexposed capabilities, not implied by supplier registration.
+
 ## Related
 
 - [items.md](items.md) — the same shared-table-with-discriminator precedent; Purchasing's

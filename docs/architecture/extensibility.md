@@ -105,8 +105,9 @@ rung 3 a real alternative to a plugin instead of a slow one.
 Laravel's `where('custom_fields->x', …)` remains the default; raw JSONB operators are for
 containment searches where they earn their place.
 
-The frontend renders these generically from the definitions, so a new field appears in forms,
-tables and filters with no deploy.
+The frontend renders supported fields generically from their definitions, so adding a field
+to an exposed form needs no deploy. Current form coverage and the deferred generic table/filter
+surfaces are recorded in the implementation section below.
 
 #### Config-driven workflow
 
@@ -248,6 +249,36 @@ any evidence of where variation actually occurs.
 **Mitigation: build seams only at the extension points listed above.** Everything else stays
 concrete until a real second customer creates real evidence. See
 [Q8](../OPEN-QUESTIONS.md#q8--second-customer-profile).
+
+### Implemented custom-field settings (2026-10-06)
+
+Settings → **Custom Fields** (`/settings/custom-fields`) lists and adds company-scoped definitions
+through `/api/v1/custom-field-definitions`. Administration owns configuration;
+`administration.custom-field.manage` is required at HTTP and Action boundaries. Existing full
+administration bundles (both role management and access assignment, held in the same role or
+as direct grants in the same company) receive that one new capability through an additive,
+idempotent migration. Other grants are assigned through Access Administration; no role name is
+hardcoded. Run `permission:register` and the usual administrator sync during release.
+
+The entity registry admits `items`, `parties`, `supplier_accounts` and `customer_accounts`, the
+four models with implemented storage and validation. Definition reads require configuration
+management or maintenance authority for the requested entity; lists remain company-scoped.
+The setting supports text, number, date, yes/no and bounded choice. Reference definitions remain
+reserved until there is a tenant-safe target registry/picker. Codes/types are fixed: the initial
+UI adds definitions, without deletion or type changes that could invalidate stored values.
+
+Items create/edit and supplier registration/edit render definitions generically; new trading
+partners created during supplier registration use their own definitions. Customer and independent
+Party forms do not exist yet, so configuring those definitions does not invent a new screen.
+Item detail displays saved values. Creation validates even omitted custom-field payloads;
+blank required text is refused, while `false` and numeric zero are valid. Omitted values on a
+partial update preserve existing data. Existing records are not backfilled when a required field
+is defined; entering their custom fields subsequently validates the complete value object.
+
+These are descriptive extension fields, not an alternative to governed money, pricing, stock or
+approval fields. Generic list columns/search/filter UI and reference editing remain later work.
+The opt-in `CustomFieldsDemoSeeder` installs three optional Item fields and values on
+`demo-pack-thinner`; reruns preserve operator values and definition labels.
 
 ## Related
 

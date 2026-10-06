@@ -28,7 +28,8 @@ class PartyResource extends JsonResource
             'registration_no' => $party->registration_no,
             'tax_id' => $party->tax_id,
             'website' => $party->website,
-            'custom_fields' => $party->custom_fields,
+            /** @var array<string, string|int|float|bool>|null */
+            'custom_fields' => (object) ($party->custom_fields ?? []),
             'status' => $party->status->value,
             'customer_account' => $this->whenLoaded('customerAccount', fn () => new CustomerAccountResource($party->customerAccount)),
             'supplier_account' => $this->whenLoaded('supplierAccount', fn () => new SupplierAccountResource($party->supplierAccount)),

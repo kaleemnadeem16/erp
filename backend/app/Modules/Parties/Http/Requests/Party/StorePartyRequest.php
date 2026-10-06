@@ -18,6 +18,13 @@ class StorePartyRequest extends FormRequest
         return $this->user()?->can('parties.party.manage') === true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if (! $this->exists('custom_fields')) {
+            $this->merge(['custom_fields' => []]);
+        }
+    }
+
     /**
      * @return array<string, mixed>
      */

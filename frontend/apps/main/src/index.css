@@ -156,3 +156,29 @@
     color: var(--foreground);
   }
 }
+
+/* Give mobile forms a clear section hierarchy and distinct editable surfaces.
+   Semantic tokens retain the user's accent and dark-mode palette. */
+@media (width < 48rem) {
+  form .detail-section {
+    border-top: 3px solid var(--nav-active-foreground);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--foreground) 5%, transparent);
+  }
+  form .detail-section > div:first-child:has(h2) {
+    margin: -0.375rem -0.375rem 0.75rem;
+    border-radius: 0.375rem;
+    background-color: var(--nav-active);
+    padding: 0.625rem 0.75rem;
+  }
+  form .detail-section h2 {
+    color: var(--nav-active-foreground);
+  }
+  form :is(input:not([type="checkbox"]), textarea, button[role="combobox"]) {
+    background-color: var(--background);
+    border-color: color-mix(
+      in srgb,
+      var(--nav-active-foreground) 22%,
+      var(--border)
+    );
+  }
+}

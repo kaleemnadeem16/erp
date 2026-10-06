@@ -68,6 +68,15 @@ class ValidCustomFieldsRuleTest extends TestCase
         $this->assertTrue($this->validate(['terms' => 'Net 30'])->fails());
     }
 
+    public function test_required_values_reject_blank_text_but_accept_false_and_zero(): void
+    {
+        CustomFieldDefinition::create(['entity_type' => 'items', 'code' => 'text', 'label' => 'Text', 'data_type' => CustomFieldDataType::String, 'is_required' => true]);
+        CustomFieldDefinition::create(['entity_type' => 'items', 'code' => 'flag', 'label' => 'Flag', 'data_type' => CustomFieldDataType::Bool, 'is_required' => true]);
+        CustomFieldDefinition::create(['entity_type' => 'items', 'code' => 'size', 'label' => 'Size', 'data_type' => CustomFieldDataType::Number, 'is_required' => true]);
+        $this->assertTrue($this->validate(['text' => ' ', 'flag' => false, 'size' => 0])->fails());
+        $this->assertFalse($this->validate(['text' => 'Valid', 'flag' => false, 'size' => 0])->fails());
+    }
+
     public function test_a_date_field_requires_y_m_d_format(): void
     {
         CustomFieldDefinition::create(['entity_type' => 'items', 'code' => 'expiry', 'label' => 'Expiry', 'data_type' => CustomFieldDataType::Date]);

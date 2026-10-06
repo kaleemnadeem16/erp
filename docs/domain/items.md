@@ -255,6 +255,20 @@ also pair each referenced id with `company_id`, so raw SQL cannot attach an item
 company's category, UoM or GL account. `item_suppliers` applies the same protection to its item,
 supplier-account and optional purchase-UoM references.
 
+### Item form completeness (2026-10-06)
+
+Create and edit expose status, stock quantity increment, the existing stock/tracking/valuation
+options and generic custom-field inputs. Account mappings are shown and submitted only with
+`accounting.account-mapping.manage`; omitted keys preserve existing mappings. Blank mapping values
+inherit category defaults. `inventory.item.manage` still gates the form and its backend writes;
+there is no new Item permission or approval consequence. The API validates custom values against
+company/entity definitions, including required fields on creation.
+
+Pack conversions, packages and supplier offers still belong to the saved item's detail workspace:
+creation explains that next step rather than offering child records without an item identity.
+Custom-field configuration and its supported types are described in
+[extensibility](../architecture/extensibility.md#implemented-custom-field-settings-2026-10-06).
+
 ## Related
 
 - [material-resolution.md](material-resolution.md) — accepted quantity, package, cost and phase

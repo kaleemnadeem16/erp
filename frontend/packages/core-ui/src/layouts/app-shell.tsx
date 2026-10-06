@@ -109,6 +109,7 @@ const navGroups: NavGroup[] = [
       { to: "/purchase-orders", label: "Purchase Orders", icon: FileText },
       { to: "/goods-receipts", label: "Goods Receipts", icon: PackageCheck },
       { to: "/item-suppliers", label: "Item Suppliers", icon: Boxes },
+      { to: "/suppliers", label: "Suppliers", icon: Users },
     ],
   },
   {
@@ -164,6 +165,11 @@ const navGroups: NavGroup[] = [
 const settingsNavGroup: NavGroup = {
   label: "Settings",
   items: [
+    {
+      to: "/settings/custom-fields",
+      label: "Custom Fields",
+      icon: SlidersHorizontal,
+    },
     {
       to: "/settings/company",
       label: "Company",
@@ -234,6 +240,11 @@ const SETTINGS_MENU: { label: string; items: NavItem[] }[] = [
   {
     label: "Company",
     items: [
+      {
+        to: "/settings/custom-fields",
+        label: "Custom Fields",
+        icon: SlidersHorizontal,
+      },
       { to: "/settings/company", label: "Company profile", icon: Building2 },
       { to: "/settings/purchasing", label: "Purchasing", icon: Settings },
       {
