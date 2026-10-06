@@ -125,7 +125,7 @@ test('missing document evidence disables decisions and explains how to obtain a 
   await expect(page.getByRole('button', { name: 'Reject', exact: true })).toBeDisabled();
 });
 
-test('pending PO starts compact, expands both versions and keeps the members API healthy', async ({ page }) => {
+test('pending PO keeps live details open and submitted review collapsed', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   const members = page.waitForResponse(
@@ -139,12 +139,8 @@ test('pending PO starts compact, expands both versions and keeps the members API
   });
   await expect(review.getByRole('button', { name: 'Show review details' })).toBeVisible();
   const live = page.locator('#po-order-details-173');
-  await expect(live).toHaveAttribute('aria-hidden', 'true');
-  await page.getByRole('button', { name: 'Show order details' }).click();
-  await expect(live).toHaveAttribute('aria-hidden', 'false');
   await expect(live.getByText('Lines', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Hide order details' }).click();
-  await expect(live).toHaveAttribute('inert', '');
+  await expect(page.getByRole('button', { name: /^(Show|Hide) order details$/ })).toHaveCount(0);
   await review.getByRole('button', { name: 'Show review details' }).click();
   await expect(review.getByText('Ordered quantity', { exact: true }).first()).toBeVisible();
   await review.getByRole('button', { name: 'Hide review details' }).click();
@@ -162,7 +158,7 @@ test('pending PO starts compact, expands both versions and keeps the members API
   });
   await page.reload();
   await expect(page.getByText('Document review is restricted to authorised reviewers.')).toBeVisible();
-  await expect(live).toHaveAttribute('aria-hidden', 'false');
+  await expect(live.getByText('Lines', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Show order details' })).toHaveCount(0);
   expect(errors).toEqual([]);
 });

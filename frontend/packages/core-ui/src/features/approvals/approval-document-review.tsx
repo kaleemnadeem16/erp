@@ -38,7 +38,7 @@ export function ApprovalDocumentReview({ request }: { request: ApprovalRequestRe
     <section aria-label="Submitted document review" className="space-y-3 rounded-md border p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h4 className="font-semibold">Document to review</h4>
+          <h4 className="font-semibold">Submitted approval version</h4>
           <p className="text-xs text-muted-foreground">
             {review.profile === 'OPERATIONAL'
               ? 'Technical review — financial fields are restricted'

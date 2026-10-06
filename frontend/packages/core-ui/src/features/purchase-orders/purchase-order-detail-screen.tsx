@@ -1,4 +1,3 @@
-import { Collapse } from "../../components/ui/collapse";
 import { useEffect, useState, type ReactNode } from "react";
 import { useLocation, useNavigate, useParams } from "react-router";
 import {
@@ -6,7 +5,6 @@ import {
   usePurchaseOrdersCancel,
   usePurchaseOrdersIssue,
   usePurchaseOrdersShow,
-  useApprovalRequestsShow,
   useCurrenciesShow,
   useSupplierAccountsShow,
   useUomsIndex,
@@ -111,26 +109,6 @@ export function PurchaseOrderDetailScreen({
   });
   const order =
     orderQuery.data?.status === 200 ? orderQuery.data.data.data : undefined;
-  const approvalForPresentation = (
-    order as unknown as { approval?: PurchaseOrderApproval } | undefined
-  )?.approval;
-  const submittedReviewQuery = useApprovalRequestsShow(
-    approvalForPresentation?.request_id ?? 0,
-    { query: { enabled: !!approvalForPresentation?.request_id, retry: false } },
-  );
-  const submittedReview =
-    submittedReviewQuery.data?.status === 200
-      ? submittedReviewQuery.data.data.data.document_review
-      : undefined;
-  const hasPendingSubmittedReview =
-    approvalForPresentation?.status === "PENDING" &&
-    submittedReview?.available === true;
-  const [expandedOrderRequest, setExpandedOrderRequest] = useState<
-    number | null
-  >(null);
-  const orderDetailsOpen =
-    !hasPendingSubmittedReview ||
-    expandedOrderRequest === approvalForPresentation?.request_id;
   const supplierQuery = useSupplierAccountsShow(
     order?.supplier_account_id ?? 0,
     { include: "party" },
@@ -174,11 +152,7 @@ export function PurchaseOrderDetailScreen({
   const shortCloseHeadingRef = useFocusOnOpen<HTMLHeadingElement>(
     pendingShortCloseLineId !== null,
   );
-  const refetch = () => {
-    void orderQuery.refetch();
-    if (approvalForPresentation?.request_id)
-      void submittedReviewQuery.refetch();
-  };
+  const refetch = () => orderQuery.refetch();
   // The list's row menu can hand over "issue" or "cancel": open that confirmation here, where the approval rules
   // and the confirmation already live, but only when it is currently allowed — and only once.
   const { pathname: currentPath, state: navigationState } = useLocation();
@@ -705,29 +679,7 @@ export function PurchaseOrderDetailScreen({
           </div>
         </section>
       )}
-      {hasPendingSubmittedReview && (
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-card p-3">
-          <p className="text-sm text-muted-foreground">
-            The approval above refers to the submitted version of this order.
-          </p>
-          <Button
-            type="button"
-            variant="outline"
-            aria-expanded={orderDetailsOpen}
-            aria-controls={`po-order-details-${order.id}`}
-            onClick={() =>
-              setExpandedOrderRequest(
-                orderDetailsOpen
-                  ? null
-                  : (approvalForPresentation?.request_id ?? null),
-              )
-            }
-          >
-            {orderDetailsOpen ? "Hide order details" : "Show order details"}
-          </Button>
-        </div>
-      )}
-      <Collapse open={orderDetailsOpen} id={`po-order-details-${order.id}`}>
+      <div id={`po-order-details-${order.id}`}>
         <DetailPageLayout equalHeight>
           <DetailSection title="Order">
             <DetailField label="PO number">
@@ -1136,7 +1088,7 @@ export function PurchaseOrderDetailScreen({
             )}
           </DetailSection>
         </DetailPageLayout>
-      </Collapse>
+      </div>
 
       {/* Quick Print — a dedicated print-only layout, hidden until react-to-print clones it. */}
       <div className="hidden">

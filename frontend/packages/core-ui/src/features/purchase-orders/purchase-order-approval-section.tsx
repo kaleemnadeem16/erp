@@ -107,7 +107,15 @@ export function PurchaseOrderApprovalSection({ orderId, approval, isDraft, maySu
         </div>
       )}
       {detail && (
-        <ApprovalRequestPanel embedded request={detail} onChanged={onChanged} mayWithdraw={maySubmit && isDraft} />
+        <ApprovalRequestPanel
+          embedded
+          request={detail}
+          onChanged={() => {
+            void request.refetch();
+            onChanged();
+          }}
+          mayWithdraw={maySubmit && isDraft}
+        />
       )}
     </section>
   );

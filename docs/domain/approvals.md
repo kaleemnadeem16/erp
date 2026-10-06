@@ -170,10 +170,10 @@ idempotently on reseeding. Existing active credentials are preserved.
 
 The UI starts with the request summary, stages and decision controls. The saved document has an
 animated Show/Hide review details control; its projected print tree remains available independently.
-On a pending PO with an available submitted review, live order details also start collapsed behind
-a separate animated control. The frontend derives this from the returned status and availability;
-restricted or missing reviews retain the normal live order view. Embedded approval panels omit the
-repeated order identity and status, and decisions refresh both the request and order presentation.
+Live order details remain open with no hide control. The submitted review starts collapsed and
+is labelled as the saved approval version, avoiding duplicate expanded documents while preserving
+access to the exact reviewed evidence. Embedded approval panels omit the repeated order identity
+and status, and decisions refresh both the request and order presentation.
 These controls change presentation only: server projection and decision eligibility remain unchanged.
 
 ## Who reads limits and written reasons (ADR 0087, Q35)
