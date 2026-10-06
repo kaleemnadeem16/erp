@@ -10,7 +10,7 @@ class RecordPhysicalCountLineRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('inventory.physical_count.count') === true;
     }
 
     /** @return array<string, mixed> */

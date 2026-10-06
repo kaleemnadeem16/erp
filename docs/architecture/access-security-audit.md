@@ -143,7 +143,10 @@ added to that administrator only; no Buyer or operational role was broadened.
   architecture tests pass. **Sweep of Inventory (Part 1) done the same day:** six more write requests had the same gap and now check the
   Action's capability first — recalculation create (`.request`) and decide (`.approve`), cutover create, physical-count create, add-line and
   post; two tests that asserted a 422 for an unpermitted actor now expect 403 and validate shape as a permitted user. The inventory
-  settings request was already per-field-group guarded. **Still to do (Part 2 modules and Estimating/Purchasing/Numbering sweep):** the
+  settings request was already per-field-group guarded. A second pass closed four more write requests (cutover batch attach and
+  negative-opening request, counting a line, resuming regeneration) and the unguarded physical-count cancel route (new request class), and
+  **gated physical-count list/show** (`PhysicalCountReadAccess`: a count duty, `inventory.stock.view` or `inventory.valuation.view`) — they
+  were open to every signed-in user and returned counted quantities per item and location; the SPA rule gained `inventory.stock.view`. **Still to do (Part 2 modules and Estimating/Purchasing/Numbering sweep):** the
   remaining Form Requests that return `true` on a write (Accounting 2, Company 1, Parties 7 at the time of counting) and consider having
   `WriteRouteGuardTest` require the request-layer guard too.
 - [ ] **Information-flow review (continuing):** complete the module inspections above and update this matrix with endpoint/Action/test

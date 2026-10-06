@@ -11,7 +11,7 @@ class AttachInventoryCutoverBatchRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('inventory.cutover.stage') === true;
     }
 
     /** @return array<string, mixed> */

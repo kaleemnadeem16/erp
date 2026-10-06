@@ -10,7 +10,7 @@ class ResumeRecalculationRegenerationRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('inventory.recalculation.review-regeneration') === true;
     }
 
     /** @return array<string, mixed> */

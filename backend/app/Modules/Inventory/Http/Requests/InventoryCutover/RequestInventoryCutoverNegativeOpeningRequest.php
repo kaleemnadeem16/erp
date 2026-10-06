@@ -17,7 +17,7 @@ class RequestInventoryCutoverNegativeOpeningRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('inventory.cutover.negative_opening.request') === true;
     }
 
     /** @return array<string, mixed> */

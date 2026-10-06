@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Inventory\Http\Requests\PhysicalCount;
 
 use App\Http\Requests\Concerns\ValidatesListQuery;
+use App\Modules\Inventory\Support\PhysicalCountReadAccess;
 use App\Modules\Inventory\Support\PhysicalCountStatus;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -15,7 +16,7 @@ class IndexPhysicalCountRequest extends FormRequest
 
     public function authorize(): bool
     {
-        return true;
+        return PhysicalCountReadAccess::allows($this->user());
     }
 
     /** @return array<string, mixed> */

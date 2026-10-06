@@ -121,6 +121,18 @@ route requires create even when a user can otherwise read counts. This applies t
 [valuation visibility decision](../decisions/0073-separate-inventory-valuation-visibility-from-stock-operations.md)
 to the physical-count workflow; it does not change how the found cost is chosen.
 
+### Who may read and act on a count (2026-10-06)
+
+Listing or opening a count needs **any one of** `inventory.physical_count.create`, `.count` or
+`.post`, `inventory.stock.view` (read-only audit of positions, ADR 0083) or
+`inventory.valuation.view` (audit of the cost effect). Before this, any signed-in user could read
+every count's items, locations and counted quantities. What each reader sees inside a line is still
+projected separately: the book quantity only for set-up, posting or stock-position holders (blind
+counting), and the found cost only for posters and valuation readers. Item-level availability and
+ledger-only holders are refused. Every write now also checks its capability at the request layer
+(create, add line `.create`; count a line `.count`; post `.post`; cancel `.create`, which gained a
+request class), answering 403 instead of the Action's 422; the Actions keep their own checks.
+
 ## Related
 
 - [stock.md](stock.md) — the movement/valuation model this posts into

@@ -30,6 +30,7 @@ const goodsReceipt = [
 ] as const;
 const physicalCount = [
   "inventory.valuation.view",
+  "inventory.stock.view",
   "inventory.physical_count.create",
   "inventory.physical_count.count",
   "inventory.physical_count.post",

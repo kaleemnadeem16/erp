@@ -10,6 +10,7 @@ use App\Modules\Inventory\Actions\CancelPhysicalCount;
 use App\Modules\Inventory\Actions\CreatePhysicalCount;
 use App\Modules\Inventory\Actions\PostPhysicalCount;
 use App\Modules\Inventory\Actions\RecordPhysicalCountLine;
+use App\Modules\Inventory\Http\Requests\PhysicalCount\CancelPhysicalCountRequest;
 use App\Modules\Inventory\Http\Requests\PhysicalCount\IndexPhysicalCountRequest;
 use App\Modules\Inventory\Http\Requests\PhysicalCount\PostPhysicalCountRequest;
 use App\Modules\Inventory\Http\Requests\PhysicalCount\RecordPhysicalCountLineRequest;
@@ -22,7 +23,6 @@ use App\Modules\Inventory\Models\PhysicalCount;
 use App\Modules\Inventory\Models\PhysicalCountLine;
 use App\Support\Concerns\AppliesApiQuery;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 /**
@@ -101,7 +101,7 @@ class PhysicalCountController extends Controller
         return new PhysicalCountResource($post($physicalCount, $foundCosts, $request->user()));
     }
 
-    public function cancel(Request $request, PhysicalCount $physicalCount, CancelPhysicalCount $cancel): PhysicalCountResource
+    public function cancel(CancelPhysicalCountRequest $request, PhysicalCount $physicalCount, CancelPhysicalCount $cancel): PhysicalCountResource
     {
         return new PhysicalCountResource($cancel($physicalCount, $request->user()));
     }

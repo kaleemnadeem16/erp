@@ -46,7 +46,7 @@ class PhysicalCountApiTest extends TestCase
     {
         parent::setUp();
         app(PermissionRegistrar::class)->setPermissionsTeamId(1);
-        foreach (['inventory.physical_count.create', 'inventory.physical_count.count', 'inventory.physical_count.post', 'inventory.valuation.view', 'inventory.stock.view'] as $permission) {
+        foreach (['inventory.physical_count.create', 'inventory.physical_count.count', 'inventory.physical_count.post', 'inventory.valuation.view', 'inventory.stock.view', 'inventory.availability.view', 'inventory.movement.view'] as $permission) {
             Permission::findOrCreate($permission);
         }
 
@@ -151,7 +151,7 @@ class PhysicalCountApiTest extends TestCase
             'found_costs' => [['physical_count_line_id' => $lineId, 'unit_cost' => '6.0000']],
         ])->assertOk()->assertJsonPath('data.lines.0.found_unit_cost', '6.0000');
 
-        foreach ([$creator, $counter, User::factory()->create()] as $reader) {
+        foreach ([$creator, $counter, $this->permittedUser('inventory.stock.view')] as $reader) {
             $this->actingAs($reader)->getJson("/api/v1/physical-counts/{$countId}?include=lines")
                 ->assertOk()->assertJsonPath('data.lines.0.counted_qty', '12.0000')
                 ->assertJsonMissingPath('data.lines.0.found_unit_cost');
@@ -198,6 +198,25 @@ class PhysicalCountApiTest extends TestCase
 
         // Refused at the request layer (403) before validation; the Action keeps its own check for non-HTTP callers.
         $this->actingAs(User::factory()->create())->postJson('/api/v1/physical-counts', ['warehouse_id' => $this->warehouseId])->assertForbidden();
+    }
+
+    public function test_count_reads_and_cancel_are_refused_to_users_without_a_count_duty_or_stock_access(): void
+    {
+        $creator = $this->permittedUser('inventory.physical_count.create');
+        $countId = $this->actingAs($creator)->postJson('/api/v1/physical-counts', ['warehouse_id' => $this->warehouseId])->json('data.id');
+
+        foreach ([User::factory()->create(), $this->permittedUser('inventory.availability.view'), $this->permittedUser('inventory.movement.view')] as $outsider) {
+            $this->actingAs($outsider)->getJson('/api/v1/physical-counts')->assertForbidden();
+            $this->actingAs($outsider)->getJson("/api/v1/physical-counts/{$countId}?include=lines")->assertForbidden();
+            $this->actingAs($outsider)->postJson("/api/v1/physical-counts/{$countId}/cancel")->assertForbidden();
+        }
+
+        // Read-only stock access can audit a count but not change it; a counter or poster cannot cancel it either.
+        $viewer = $this->permittedUser('inventory.stock.view');
+        $this->actingAs($viewer)->getJson("/api/v1/physical-counts/{$countId}")->assertOk();
+        $this->actingAs($viewer)->postJson("/api/v1/physical-counts/{$countId}/cancel")->assertForbidden();
+        $this->actingAs($this->permittedUser('inventory.physical_count.count'))->postJson("/api/v1/physical-counts/{$countId}/cancel")->assertForbidden();
+        $this->actingAs($creator)->postJson("/api/v1/physical-counts/{$countId}/cancel")->assertOk();
     }
 
     public function test_index_filters_by_warehouse_and_status(): void
