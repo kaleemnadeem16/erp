@@ -155,34 +155,53 @@ asked to decide or has decided that request (`ApprovalEvidenceAccess`). Confirm 
 front of them without seeing the PO's line prices — and decide who may list per-person authority ceilings (`approvals.history.view` holders can
 today). Free-text decision reasons are not filtered; decide whether that is acceptable.
 
-**Decision brief (2026-10-06; proposed, awaiting owner):** Options: retain the current exception
-and history-wide ceilings/reasons; remove the exception and require document-cost access;
-or retain request-specific amount evidence while separately protecting ceilings and free text.
-**Recommend the third:** actionable/past deciders keep the pinned request total and FX evidence,
-never PO line prices through approval evidence; all-company ceilings require authority management
-or a separate read capability, while `mine` stays self-only. Project decision/closing reasons to the same audience as that request's amount (subject evidence
-readers, current actionable approver, recorded decider/principal); do not attempt numeric-text
-scrubbing. Consequences: less context for non-financial auditors, explicit ceiling-reader rollout,
-and consistent reason projection across list/show/inbox/decide/withdraw. Finance/owner must confirm
-whether past-decider access persists after reassignment and which reason audiences are legitimate.
-Basis: [ADR 0070](decisions/0070-shared-configurable-approval-engine.md) and existing
-`ApprovalEvidenceVisibilityTest`; vendor approval limits govern eligibility, not our read policy.
-No exception, ceiling or reason policy changed by this audit.
+**Revised decision brief (2026-10-06; proposed, awaiting owner):** The owner correctly
+challenged total-only review: an approver must inspect what is being approved. Options are
+(1) retain total-only evidence plus separately assigned document access; (2) give every approver
+unrestricted document/module financial access; or (3) provide request-specific document review
+with a simple full-commercial default and optional specialist evidence profiles.
+**Recommend the third:** a normal PO approval includes supplier, lines/specifications, quantities,
+units, delivery details, payment terms, prices, discounts, taxes, totals and currency evidence.
+Small companies use one full-commercial approval step. Larger companies may add operational/
+technical review (specifications, quantities and delivery; monetary fields withheld where the
+company explicitly requires it) before commercial/spend approval, which must expose the full
+relevant pricing breakdown. These are review purposes, not hard-coded job titles. Use a small
+set of subject-defined profiles; defer arbitrary per-field configuration and line-level routing.
 
-**Research refresh for the next owner decision (2026-10-06):** Reused ADR 0070's workflow
-comparison. [NetSuite's official approval-limit guidance](https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_N2395573.html)
-routes a transaction by its amount and the approver's limit, with currency conversion;
-[Dynamics field security](https://learn.microsoft.com/en-us/dynamics365/fin-ops-core/dev-itpro/data-entities/security-data-entities#sensitive-data)
-permits separate privileges for nonessential sensitive fields. These support amount-based
-eligibility plus distinct data access, but neither prescribes our past-decider or reason audience.
-Recommended scope: current actionable approver and recorded decider/principal retain the pinned
-request total/FX evidence; ordinary history readers receive outcome/identity/time but no monetary
-free-text reasons without subject evidence authority. Proposed `approvals.authority.view` permits
-company ceiling lists; authority managers also read them, and `mine` remains self-only. History
-readers who legitimately audit ceilings need explicit field-duty assignment/backfill approval.
-A request author may insert figures into reasons, so hiding totals alone is insufficient; numeric
-scrubbing cannot reliably remove all disclosures. This remains a proposal, with no Q35 code change.
+Access is read-only for the specific request/document version, not a permanent module-wide
+commercial grant or a bypass of company scope. Attachments, nested includes, print, exports and
+free-text comments must follow the selected evidence boundary; do not pass raw documents through
+an approval exception. Missing mandatory evidence makes an approver ineligible to decide and
+must be surfaced as a setup problem. Relevant changes invalidate approval (ADR 0070).
+Past deciders/principals retain only the historical evidence they were authorised to review,
+not newly edited documents or later expanded profiles. Future subjects define their own required
+review evidence; a stock exception is not automatically a full financial-document review.
 
+Keep ceiling readership separate: self-only `mine`, authority managers or proposed
+`approvals.authority.view` for the company list; no ceiling read merely from history permission.
+Ordinary history readers receive outcome/identity/time, with confidential reasons omitted unless
+authorised for that evidence; an unrestricted reason can disclose figures that structured fields
+hide. Avoid numeric-text scrubbing. Auditors needing complete evidence require explicit grants.
+Existing ceiling-reader assignments need an owner-approved rollout/backfill plan.
+
+**Research basis (primary sources verified 2026-10-06):** Reused ADR 0070's engine/eligibility,
+version invalidation and delegation decisions, then researched document review specifically:
+
+| Mature system | Observed approach |
+|---|---|
+| [Business Central, official source](https://github.com/microsoft/BCApps/blob/main/src/Layers/W1/BaseApp/System/Workflow/RequeststoApprove.Page.al) | Its caller-scoped approval inbox shows amounts/comments and provides Open Record for the underlying document, journal or card. The rendered guide was unavailable; Microsoft's official application source was verified. |
+| [Dynamics Supply Chain](https://learn.microsoft.com/en-us/dynamics365/supply-chain/procurement/purchase-requisitions-workflow) | Requisition workflows distinguish procurement, managerial, expenditure and signature reviews; whole-document and line review can be combined. This is requisition evidence, not a claim about identical PO field security. |
+| [Oracle Fusion Procurement](https://docs.oracle.com/en/cloud/saas/procurement/25d/oaprc/how-purchase-order-approval-is-processed.html) | PO approvers inspect document details, comments and attachments; rules/stages can distinguish categories, terms, projects and other responsibilities. |
+
+Convergence: approval is a document/evidence review, with routing suited to business responsibility.
+Divergence: direct record opening versus richer staged/line review. None of these sources mandates
+our proposed operational/commercial field split or proves all approvers automatically bypass
+normal security. Translate the pattern into company-scoped, subject-defined projections rather
+than copying vendor roles or granting blanket commercial authority.
+Consequences: useful simple approval for small teams; specialist separation without a second
+engine for larger companies; additional subject evidence/version and safe attachment work before
+claiming complete review. This revises the earlier total-only recommendation. **No Q35 policy
+or code is implemented until the owner decides.**
 
 ### Q36 — Bearer-token lifetime and device sessions
 **Blocks:** Any mobile client or integration using bearer tokens (Phase 7)

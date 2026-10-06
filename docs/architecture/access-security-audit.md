@@ -253,6 +253,15 @@ Close an item only when its policy, registration, assignment plan, backend check
 allowed/denied/cross-company tests, field-presence tests and deployment verification are linked
 here. Until then, “permission-complete ERP” is not an accurate status.
 
+### Q35 document-review research refinement — 2026-10-06
+
+The owner challenged total-only review. The [revised Q35 brief](../OPEN-QUESTIONS.md#q35--approval-evidence-exception-and-authority-ceiling-visibility)
+compares official Business Central, Dynamics Supply Chain and Oracle Fusion evidence. It proposes
+full-commercial request-specific PO review by default, with optional technical review for larger
+companies, safe versioned evidence and separate ceiling readership. This remains an owner
+choice; the current amount exception, ceilings and reasons are unchanged. No Purchasing code
+or Part 1 coverage row was changed by this research.
+
 ### Q34 / A3–A4 accepted field split — 2026-10-06
 
 The owner accepted [ADR 0084](../decisions/0084-separate-financial-master-data-fields.md).
