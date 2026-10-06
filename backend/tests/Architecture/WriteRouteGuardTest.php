@@ -137,4 +137,31 @@ class WriteRouteGuardTest extends TestCase
         $this->assertSame([], array_values(array_diff($withoutActionGate, $known)), 'New write route(s) whose Action has no capability gate of its own. Gate the Action (CLI, jobs and integrations call Actions without HTTP), do not extend the ratchet list.');
         $this->assertSame([], array_values(array_diff($known, $withoutActionGate)), 'These routes now have an Action-level gate (or are gone): remove them from ACTION_WITHOUT_GATE so the ratchet tightens.');
     }
+
+    /**
+     * Write routes guarded only inside their Action, with no capability check at the request layer (R1 in authorization.md asks for
+     * both, so an HTTP caller gets a 403, not a domain error). Ratchet: a route may not join; shrinking it is the open request-layer
+     * sweep in the tracker.
+     */
+    private const REQUEST_WITHOUT_GATE = [];
+
+    public function test_no_new_write_route_is_guarded_only_inside_its_action(): void
+    {
+        $actionOnly = [];
+        foreach ($this->writeRoutes() as ['key' => $key, 'route' => $route]) {
+            if (isset(self::NO_CAPABILITY_NEEDED[$key])) {
+                continue;
+            }
+            $g = $this->guards($route);
+            if ($g['request'] !== true && ! $g['controller']) {
+                $actionOnly[] = $key;
+            }
+        }
+        sort($actionOnly);
+        $known = self::REQUEST_WITHOUT_GATE;
+        sort($known);
+
+        $this->assertSame([], array_values(array_diff($actionOnly, $known)), 'New write route(s) with no capability check in the Form Request or controller. Check the capability in authorize() so an HTTP caller gets a 403 (authorization.md R1); do not extend the ratchet list.');
+        $this->assertSame([], array_values(array_diff($known, $actionOnly)), 'These routes now have a request-layer gate (or are gone): remove them from REQUEST_WITHOUT_GATE so the ratchet tightens.');
+    }
 }

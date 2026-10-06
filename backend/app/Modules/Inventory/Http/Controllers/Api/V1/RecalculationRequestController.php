@@ -10,6 +10,7 @@ use App\Modules\Inventory\Actions\ExecuteRecalculation;
 use App\Modules\Inventory\Actions\RequestStockRecalculation;
 use App\Modules\Inventory\Actions\ResumeRecalculationRegeneration;
 use App\Modules\Inventory\Http\Requests\Recalculation\DecideRecalculationRequestRequest;
+use App\Modules\Inventory\Http\Requests\Recalculation\ExecuteRecalculationRequest;
 use App\Modules\Inventory\Http\Requests\Recalculation\IndexRecalculationRequestRequest;
 use App\Modules\Inventory\Http\Requests\Recalculation\ResumeRecalculationRegenerationRequest;
 use App\Modules\Inventory\Http\Requests\Recalculation\ShowRecalculationRequestRequest;
@@ -100,7 +101,7 @@ class RecalculationRequestController extends Controller
         return $this->reloadedRequest($recalculationImpactVersion);
     }
 
-    public function execute(Request $request, RecalculationImpactVersion $recalculationImpactVersion, ExecuteRecalculation $execute): RecalculationRequestResource
+    public function execute(ExecuteRecalculationRequest $request, RecalculationImpactVersion $recalculationImpactVersion, ExecuteRecalculation $execute): RecalculationRequestResource
     {
         $execute($recalculationImpactVersion, $request->user());
 

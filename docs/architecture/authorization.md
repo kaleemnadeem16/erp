@@ -193,7 +193,8 @@ Required automated controls:
 6. generated UI/client code does not invent permission strings independently;
 7. every API write route has a visible capability guard or a recorded reason it needs none—enforced by
    `tests/Architecture/WriteRouteGuardTest.php`, which also fails any write route whose Action has no gate of its own (the ratchet list
-   is empty; an Action called without HTTP must stop itself — see `ActionAuthorization`).
+   is empty; an Action called without HTTP must stop itself — see `ActionAuthorization`) **and** has a capability check at the request layer
+   or in the controller, so an HTTP caller gets a 403 and not a domain error (`REQUEST_WITHOUT_GATE`, also empty and to stay empty).
 
 ## Per-feature authorisation checklist
 

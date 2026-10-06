@@ -15,6 +15,7 @@ use App\Modules\Purchasing\Actions\ShortClosePurchaseOrderLine;
 use App\Modules\Purchasing\Actions\SubmitPurchaseOrder;
 use App\Modules\Purchasing\Actions\UpdatePurchaseOrder;
 use App\Modules\Purchasing\Http\Requests\PurchaseOrder\CancelPurchaseOrderRequest;
+use App\Modules\Purchasing\Http\Requests\PurchaseOrder\CommitInventoryCutoverOpenPurchaseOrdersRequest;
 use App\Modules\Purchasing\Http\Requests\PurchaseOrder\IndexPurchaseOrderRequest;
 use App\Modules\Purchasing\Http\Requests\PurchaseOrder\ShowPurchaseOrderRequest;
 use App\Modules\Purchasing\Http\Requests\PurchaseOrder\StorePurchaseOrderRequest;
@@ -208,7 +209,7 @@ class PurchaseOrderController extends Controller
         return new PurchaseOrderLineResource(PurchaseOrderLine::query()->withReceiptProgress()->findOrFail($line->id));
     }
 
-    public function commitCutover(Request $request, InventoryCutover $inventoryCutover, CommitInventoryCutoverOpenPurchaseOrders $commit): AnonymousResourceCollection
+    public function commitCutover(CommitInventoryCutoverOpenPurchaseOrdersRequest $request, InventoryCutover $inventoryCutover, CommitInventoryCutoverOpenPurchaseOrders $commit): AnonymousResourceCollection
     {
         return PurchaseOrderResource::collection($commit($inventoryCutover, $request->user()));
     }

@@ -147,8 +147,11 @@ added to that administrator only; no Buyer or operational role was broadened.
   negative-opening request, counting a line, resuming regeneration) and the unguarded physical-count cancel route (new request class), and
   **gated physical-count list/show** (`PhysicalCountReadAccess`: a count duty, `inventory.stock.view` or `inventory.valuation.view`) — they
   were open to every signed-in user and returned counted quantities per item and location; the SPA rule gained `inventory.stock.view`. **Still to do (Part 2 modules and Estimating/Purchasing/Numbering sweep):** the
-  remaining Form Requests that return `true` on a write (Accounting 2, Company 1, Parties 7 at the time of counting) and consider having
-  `WriteRouteGuardTest` require the request-layer guard too.
+  remaining Form Requests that return `true` on a write (Accounting 2, Company 1, Parties 7 at the time of counting) and `WriteRouteGuardTest` now
+  requires the request-layer guard too (`REQUEST_WITHOUT_GATE`, 2026-10-06): it found seven more Inventory/Purchasing write routes guarded only
+  inside their Action — cutover validate, approve, commit, finalise, negative-opening approve, commit-open-purchase-orders and recalculation
+  execute — each now has a Form Request checking the capability its Action enforces. The six Accounting/Parties/FX DELETEs it also found were
+  closed by Part 2; the list is empty and must stay empty.
 - [x] **Open-read sweep (2026-10-06, Part 1):** a user holding no capability was sent to every id-less API read; 28 answered 200.
   `tests/Feature/Support/OpenReadRoutesTest.php` now names each with a reason (15 shared reference lookups or the caller's own data, the
   estimating lookups whose cost fields are already projected, and the two settings endpoints whose only sensitive figure is projected) and

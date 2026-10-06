@@ -15,12 +15,17 @@ use App\Modules\Inventory\Actions\FinaliseInventoryCutover;
 use App\Modules\Inventory\Actions\PreviewInventoryCutover;
 use App\Modules\Inventory\Actions\RequestInventoryCutoverNegativeOpening;
 use App\Modules\Inventory\Actions\ValidateInventoryCutover;
+use App\Modules\Inventory\Http\Requests\InventoryCutover\ApproveInventoryCutoverNegativeOpeningRequest;
+use App\Modules\Inventory\Http\Requests\InventoryCutover\ApproveInventoryCutoverRequest;
 use App\Modules\Inventory\Http\Requests\InventoryCutover\AttachInventoryCutoverBatchRequest;
+use App\Modules\Inventory\Http\Requests\InventoryCutover\CommitInventoryCutoverRequest;
+use App\Modules\Inventory\Http\Requests\InventoryCutover\FinaliseInventoryCutoverRequest;
 use App\Modules\Inventory\Http\Requests\InventoryCutover\IndexInventoryCutoverRequest;
 use App\Modules\Inventory\Http\Requests\InventoryCutover\PreviewInventoryCutoverRequest;
 use App\Modules\Inventory\Http\Requests\InventoryCutover\RequestInventoryCutoverNegativeOpeningRequest;
 use App\Modules\Inventory\Http\Requests\InventoryCutover\ShowInventoryCutoverRequest;
 use App\Modules\Inventory\Http\Requests\InventoryCutover\StoreInventoryCutoverRequest;
+use App\Modules\Inventory\Http\Requests\InventoryCutover\ValidateInventoryCutoverRequest;
 use App\Modules\Inventory\Http\Resources\InventoryCutoverBatchResource;
 use App\Modules\Inventory\Http\Resources\InventoryCutoverNegativeOpeningResource;
 use App\Modules\Inventory\Http\Resources\InventoryCutoverResource;
@@ -28,7 +33,6 @@ use App\Modules\Inventory\Models\InventoryCutover;
 use App\Modules\Inventory\Models\InventoryCutoverNegativeOpening;
 use App\Support\Concerns\AppliesApiQuery;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 /**
@@ -96,7 +100,7 @@ class InventoryCutoverController extends Controller
         return (new InventoryCutoverBatchResource($link))->response()->setStatusCode(201);
     }
 
-    public function validateCutover(Request $request, InventoryCutover $inventoryCutover, ValidateInventoryCutover $validate): InventoryCutoverResource
+    public function validateCutover(ValidateInventoryCutoverRequest $request, InventoryCutover $inventoryCutover, ValidateInventoryCutover $validate): InventoryCutoverResource
     {
         return new InventoryCutoverResource($validate($inventoryCutover, $request->user()));
     }
@@ -106,17 +110,17 @@ class InventoryCutoverController extends Controller
         return response()->json(['data' => $preview($inventoryCutover)]);
     }
 
-    public function approve(Request $request, InventoryCutover $inventoryCutover, ApproveInventoryCutover $approve): InventoryCutoverResource
+    public function approve(ApproveInventoryCutoverRequest $request, InventoryCutover $inventoryCutover, ApproveInventoryCutover $approve): InventoryCutoverResource
     {
         return new InventoryCutoverResource($approve($inventoryCutover, $request->user()));
     }
 
-    public function commit(Request $request, InventoryCutover $inventoryCutover, CommitInventoryCutoverOpeningState $commit): InventoryCutoverResource
+    public function commit(CommitInventoryCutoverRequest $request, InventoryCutover $inventoryCutover, CommitInventoryCutoverOpeningState $commit): InventoryCutoverResource
     {
         return new InventoryCutoverResource($commit($inventoryCutover, $request->user()));
     }
 
-    public function finalise(Request $request, InventoryCutover $inventoryCutover, FinaliseInventoryCutover $finalise): InventoryCutoverResource
+    public function finalise(FinaliseInventoryCutoverRequest $request, InventoryCutover $inventoryCutover, FinaliseInventoryCutover $finalise): InventoryCutoverResource
     {
         return new InventoryCutoverResource($finalise($inventoryCutover, $request->user()));
     }
@@ -128,7 +132,7 @@ class InventoryCutoverController extends Controller
         return (new InventoryCutoverNegativeOpeningResource($exception))->response()->setStatusCode(201);
     }
 
-    public function approveNegativeOpening(Request $request, InventoryCutoverNegativeOpening $inventoryCutoverNegativeOpening, ApproveInventoryCutoverNegativeOpening $approve): InventoryCutoverNegativeOpeningResource
+    public function approveNegativeOpening(ApproveInventoryCutoverNegativeOpeningRequest $request, InventoryCutoverNegativeOpening $inventoryCutoverNegativeOpening, ApproveInventoryCutoverNegativeOpening $approve): InventoryCutoverNegativeOpeningResource
     {
         return new InventoryCutoverNegativeOpeningResource($approve($inventoryCutoverNegativeOpening, $request->user()));
     }
