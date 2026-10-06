@@ -14,6 +14,7 @@ use App\Modules\Inventory\Models\PhysicalCountLine;
 use App\Modules\Inventory\Models\StockLayer;
 use App\Modules\Inventory\Support\ItemTracking;
 use App\Modules\Inventory\Support\PhysicalCountStatus;
+use App\Modules\Inventory\Support\WarehouseScope;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -35,6 +36,7 @@ final class AddPhysicalCountLine
         if (! $actor->can('inventory.physical_count.create')) {
             throw new DomainInvariantException('The actor is not permitted to add a physical count line.', 'created_by');
         }
+        WarehouseScope::requireWarehouse($actor, 'inventory.physical_count.create', (int) $count->warehouse_id, 'add a physical count line');
 
         return DB::transaction(function () use ($count, $input): PhysicalCountLine {
             $count = PhysicalCount::query()->whereKey($count->id)->lockForUpdate()->firstOrFail();

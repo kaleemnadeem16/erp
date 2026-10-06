@@ -6,6 +6,7 @@ namespace App\Modules\Administration\Actions;
 
 use App\Exceptions\DomainInvariantException;
 use App\Models\User;
+use App\Modules\Administration\Models\AccessScopeLimit;
 use App\Modules\Administration\Support\AccessAssignmentGuard;
 use Illuminate\Support\Facades\DB;
 
@@ -30,11 +31,56 @@ final class SyncMemberAccess
             $before = ['roles' => $member->getRoleNames()->values(), 'direct_permissions' => $member->getDirectPermissions()->pluck('name')->values()];
             $member->syncRoles($access['roles']);
             $member->syncPermissions($access['permissions']);
+            $limitsBefore = $this->limits($member);
+            $this->syncLimits($member, $attributes, collect($access['roles'])->map->getKey()->all(), $access['permissions'], $actor);
             $member->forceFill(['access_updated_at' => now()])->save();
-            $after = ['roles' => $member->getRoleNames()->values(), 'direct_permissions' => $member->getDirectPermissions()->pluck('name')->values()];
+            $before['scope_limits'] = $limitsBefore;
+            $after = ['roles' => $member->getRoleNames()->values(), 'direct_permissions' => $member->getDirectPermissions()->pluck('name')->values(), 'scope_limits' => $this->limits($member)];
             activity()->performedOn($member)->causedBy($actor)->withProperties(['reason' => $attributes['reason'] ?? null, 'before' => $before, 'after' => $after])->log('member access changed');
 
             return $member->refresh();
         });
+    }
+
+    /**
+     * "Only my units" on an assignment (ADR 0089). Sent limits replace the person's limits; omitted ones are kept. Either way a limit
+     * whose role or direct permission is no longer assigned is dropped, so a restriction never outlives what it restricted.
+     *
+     * @param  array<string, mixed>  $attributes
+     * @param  list<int|string>  $roleIds
+     * @param  list<string>  $permissions
+     */
+    private function syncLimits(User $member, array $attributes, array $roleIds, array $permissions, User $actor): void
+    {
+        $roleIds = array_map('intval', $roleIds);
+        $desired = array_key_exists('scope_limits', $attributes) ? $attributes['scope_limits'] : $this->limits($member);
+        $rows = [];
+        foreach ($desired as $limit) {
+            $roleId = isset($limit['role_id']) ? (int) $limit['role_id'] : null;
+            $permission = $limit['permission'] ?? null;
+            if (($roleId === null) === ($permission === null)) {
+                throw new DomainInvariantException('A limit applies to exactly one role or one direct permission.', 'scope_limits');
+            }
+            $assigned = $roleId !== null ? in_array($roleId, $roleIds, true) : in_array($permission, $permissions, true);
+            if (! $assigned) {
+                if (array_key_exists('scope_limits', $attributes)) {
+                    throw new DomainInvariantException('A limit can only apply to a role or permission this person is being given.', 'scope_limits');
+                }
+
+                continue; // a stale limit from before the role or permission was removed
+            }
+            $rows[] = ['role_id' => $roleId, 'permission' => $permission, 'scope' => $limit['scope'] ?? AccessScopeLimit::MY_UNITS];
+        }
+        AccessScopeLimit::query()->where('user_id', $member->id)->delete();
+        foreach ($rows as $row) {
+            AccessScopeLimit::query()->create($row + ['user_id' => $member->id, 'created_by' => $actor->id]);
+        }
+    }
+
+    /** @return list<array{role_id: int|null, permission: string|null, scope: string}> */
+    private function limits(User $member): array
+    {
+        return AccessScopeLimit::query()->where('user_id', $member->id)->orderBy('id')->get()
+            ->map(fn (AccessScopeLimit $l): array => ['role_id' => $l->role_id, 'permission' => $l->permission, 'scope' => $l->scope])->all();
     }
 }

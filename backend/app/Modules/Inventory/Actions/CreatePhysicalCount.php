@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Modules\Inventory\Models\PhysicalCount;
 use App\Modules\Inventory\Models\Warehouse;
 use App\Modules\Inventory\Support\PhysicalCountStatus;
+use App\Modules\Inventory\Support\WarehouseScope;
 use Illuminate\Support\Facades\DB;
 
 final class CreatePhysicalCount
@@ -19,6 +20,7 @@ final class CreatePhysicalCount
         if (! $actor->can('inventory.physical_count.create')) {
             throw new DomainInvariantException('The actor is not permitted to create a physical count.', 'created_by');
         }
+        WarehouseScope::requireWarehouse($actor, 'inventory.physical_count.create', (int) $input['warehouse_id'], 'create a physical count');
 
         return DB::transaction(function () use ($input, $actor): PhysicalCount {
             $warehouse = Warehouse::query()->findOrFail($input['warehouse_id']);

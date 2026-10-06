@@ -6,6 +6,8 @@ namespace App\Providers;
 
 use App\Models\PersonalAccessToken;
 use App\Support\Auth\SignInRequirements;
+use App\Support\Scope\RecordScope;
+use App\Support\Scope\ScopedResourceTypes;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
@@ -23,6 +25,10 @@ class AuthServiceProvider extends ServiceProvider
     {
         // The checks that stand between a correct password and a signed-in person; empty today (docs/decisions/0088-*.md, Q37).
         $this->app->singleton(SignInRequirements::class);
+
+        // Record scope (ADR 0089): the resolver, and the kinds of resource an organisation unit can own, registered by the modules that own them.
+        $this->app->singleton(RecordScope::class);
+        $this->app->singleton(ScopedResourceTypes::class);
     }
 
     public function boot(): void

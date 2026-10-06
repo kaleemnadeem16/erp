@@ -9,6 +9,8 @@ use App\Modules\Inventory\Http\Requests\StockMove\IndexStockMoveRequest;
 use App\Modules\Inventory\Http\Requests\StockMove\ShowStockMoveRequest;
 use App\Modules\Inventory\Http\Resources\StockMoveResource;
 use App\Modules\Inventory\Models\StockMove;
+use App\Modules\Inventory\Support\StockVisibility;
+use App\Modules\Inventory\Support\WarehouseScope;
 use App\Support\Concerns\AppliesApiQuery;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -39,6 +41,8 @@ class StockMoveController extends Controller
     public function index(IndexStockMoveRequest $request): AnonymousResourceCollection
     {
         $query = StockMove::query();
+        // A movement is reached when either side is in a warehouse the person's units own (ADR 0089).
+        WarehouseScope::limitToEitherLocation($query, $request->user(), StockVisibility::MOVEMENT);
 
         $this->applyIncludes($query, $request, self::INCLUDABLE);
 
@@ -89,6 +93,12 @@ class StockMoveController extends Controller
 
     public function show(ShowStockMoveRequest $request, StockMove $stockMove): StockMoveResource
     {
+        abort_unless(
+            WarehouseScope::permitsLocation($request->user(), StockVisibility::MOVEMENT, $stockMove->from_location_id)
+            || WarehouseScope::permitsLocation($request->user(), StockVisibility::MOVEMENT, $stockMove->to_location_id),
+            404,
+        );
+
         return new StockMoveResource($stockMove->load($this->requestedIncludes($request, self::INCLUDABLE)));
     }
 }

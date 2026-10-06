@@ -65,6 +65,8 @@ final class DemoDatabaseSeeder extends Seeder
                 RecipeAccessDemoSeeder::class,
                 // After ApprovalsDemoSeeder: the auditors read the approvals it leaves in every state.
                 ApprovalAuditorsDemoSeeder::class,
+                // Needs the demo warehouses (InventoryDemoSeeder, StockTransfersDemoSeeder): two sites that own them, and a limited clerk for each.
+                OrganisationDemoSeeder::class,
                 CustomFieldsDemoSeeder::class,
             ]);
         });

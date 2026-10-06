@@ -6,6 +6,7 @@ namespace App\Modules\Inventory\Http\Requests\AvcoPool;
 
 use App\Http\Requests\Concerns\ValidatesIncludes;
 use App\Modules\Inventory\Support\StockVisibility;
+use App\Modules\Inventory\Support\WarehouseScope;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ShowAvcoPoolRequest extends FormRequest
@@ -14,7 +15,8 @@ class ShowAvcoPoolRequest extends FormRequest
 
     public function authorize(): bool
     {
-        return StockVisibility::stock($this->user());
+        // A pool's quantity and value span warehouses, so it is not shown to a person limited to their units (ADR 0089).
+        return StockVisibility::stock($this->user()) && WarehouseScope::unrestricted($this->user(), StockVisibility::STOCK);
     }
 
     /** @return array<string, mixed> */

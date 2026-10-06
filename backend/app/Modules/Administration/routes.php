@@ -2,6 +2,7 @@
 
 use App\Modules\Administration\Http\Controllers\CustomFieldDefinitionController;
 use App\Modules\Administration\Http\Controllers\MemberController;
+use App\Modules\Administration\Http\Controllers\OrganisationUnitController;
 use App\Modules\Administration\Http\Controllers\RoleController;
 use Illuminate\Support\Facades\Route;
 
@@ -21,3 +22,12 @@ Route::apiResource('roles', RoleController::class);
 
 Route::get('custom-field-definitions', [CustomFieldDefinitionController::class, 'index'])->name('custom-field-definitions.index');
 Route::post('custom-field-definitions', [CustomFieldDefinitionController::class, 'store'])->name('custom-field-definitions.store');
+
+// The company's own organisation tree, its members and the resources each unit owns (ADR 0089, Q26).
+Route::get('organisation-units', [OrganisationUnitController::class, 'index'])->name('organisation-units.index');
+Route::post('organisation-units', [OrganisationUnitController::class, 'store'])->name('organisation-units.store');
+Route::get('organisation-units/{organisation_unit}', [OrganisationUnitController::class, 'show'])->name('organisation-units.show');
+Route::patch('organisation-units/{organisation_unit}', [OrganisationUnitController::class, 'update'])->name('organisation-units.update');
+Route::delete('organisation-units/{organisation_unit}', [OrganisationUnitController::class, 'destroy'])->name('organisation-units.destroy');
+Route::put('organisation-units/{organisation_unit}/members', [OrganisationUnitController::class, 'members'])->name('organisation-units.members');
+Route::put('organisation-units/{organisation_unit}/resources', [OrganisationUnitController::class, 'resources'])->name('organisation-units.resources');

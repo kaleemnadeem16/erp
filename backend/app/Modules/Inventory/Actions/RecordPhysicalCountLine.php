@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Modules\Inventory\Models\PhysicalCount;
 use App\Modules\Inventory\Models\PhysicalCountLine;
 use App\Modules\Inventory\Support\PhysicalCountStatus;
+use App\Modules\Inventory\Support\WarehouseScope;
 use Brick\Math\BigDecimal;
 use Illuminate\Support\Facades\DB;
 
@@ -26,6 +27,7 @@ final class RecordPhysicalCountLine
         if (! $actor->can('inventory.physical_count.count')) {
             throw new DomainInvariantException('The actor is not permitted to record a physical count.', 'counted_by');
         }
+        WarehouseScope::requireWarehouse($actor, 'inventory.physical_count.count', (int) PhysicalCount::query()->whereKey($line->physical_count_id)->value('warehouse_id'), 'record a count');
 
         return DB::transaction(function () use ($line, $countedQty, $actor): PhysicalCountLine {
             $line = PhysicalCountLine::query()->whereKey($line->id)->lockForUpdate()->firstOrFail();

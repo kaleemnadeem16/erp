@@ -11,6 +11,7 @@ use App\Modules\Inventory\Support\PhysicalCountReadAccess;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\Support\PermissionedActor;
 use Tests\TestCase;
 
@@ -59,6 +60,28 @@ class AccessInventoryCommandTest extends TestCase
         $this->assertContains('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY', $queries);
         $this->assertSame($before, $this->snapshot());
         $this->assertSame(AuditAccessInventory::CAPABILITIES, $report['audit_capabilities']);
+    }
+
+    public function test_it_reports_who_is_limited_to_their_units_and_which_units_they_belong_to(): void
+    {
+        app(PermissionRegistrar::class)->setPermissionsTeamId(1);
+        $limited = User::factory()->create();
+        $role = Role::create(['team_id' => 1, 'name' => 'Warehouse clerk']);
+        $limited->assignRole($role);
+        $free = User::factory()->create();
+        $unit = DB::table('organisation_units')->insertGetId(['company_id' => 1, 'code' => 'khi', 'name' => 'Karachi site', 'status' => 'ACTIVE', 'created_at' => now(), 'updated_at' => now()]);
+        DB::table('organisation_unit_members')->insert(['company_id' => 1, 'unit_id' => $unit, 'user_id' => $limited->id, 'created_at' => now(), 'updated_at' => now()]);
+        DB::table('access_scope_limits')->insert(['company_id' => 1, 'user_id' => $limited->id, 'role_id' => $role->id, 'scope' => 'MY_UNITS', 'created_at' => now(), 'updated_at' => now()]);
+        $before = $this->snapshot();
+
+        $this->assertSame(0, Artisan::call('erp:audit-access-inventory'));
+        $report = json_decode(Artisan::output(), true, flags: JSON_THROW_ON_ERROR);
+        $members = collect($report['companies'][0]['members']);
+
+        $this->assertSame([['role_id' => $role->id, 'permission' => null, 'scope' => 'MY_UNITS']], $members->firstWhere('id', $limited->id)['scope_limits']);
+        $this->assertSame([['id' => $unit, 'name' => 'Karachi site']], $members->firstWhere('id', $limited->id)['organisation_units']);
+        $this->assertSame([], $members->firstWhere('id', $free->id)['scope_limits'], 'no limit means company-wide');
+        $this->assertSame($before, $this->snapshot(), 'still read-only');
     }
 
     public function test_it_flags_members_who_lost_a_read_that_used_to_be_open_to_everyone_without_mutating_anything(): void

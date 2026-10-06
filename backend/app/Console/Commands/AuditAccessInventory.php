@@ -50,6 +50,10 @@ final class AuditAccessInventory extends Command
             $rolePermissions = DB::table('role_has_permissions')->get()->groupBy('role_id');
             $roleAssignments = DB::table('model_has_roles')->get();
             $directGrants = DB::table('model_has_permissions')->get();
+            // Record scope (ADR 0089): which assignments are limited to "only my units", and which units each person belongs to.
+            $scopeLimits = DB::table('access_scope_limits')->get()->groupBy('user_id');
+            $unitNames = DB::table('organisation_units')->pluck('name', 'id');
+            $unitMembers = DB::table('organisation_unit_members')->get()->groupBy('user_id');
             $tokens = DB::table('personal_access_tokens')->select('id', 'tokenable_type', 'tokenable_id', 'name', 'created_at', 'last_used_at', 'expires_at')->orderBy('id')->get();
             $userType = (new User)->getMorphClass();
             $required = array_merge(...array_values(self::CAPABILITIES));
@@ -78,6 +82,8 @@ final class AuditAccessInventory extends Command
                         'missing_audit_capabilities' => array_values(array_diff($required, $effective->all())),
                         // Reads that were open to every signed-in user and that this member can no longer make (holds none of the gate's capabilities).
                         'read_access_lost' => collect(self::READ_GATES)->filter(fn (array $anyOf): bool => array_intersect($anyOf, $effective->all()) === [])->keys()->values()->all(),
+                        'scope_limits' => collect($scopeLimits->get($member->id, []))->map(fn ($limit): array => ['role_id' => $limit->role_id, 'permission' => $limit->permission, 'scope' => $limit->scope])->values()->all(),
+                        'organisation_units' => collect($unitMembers->get($member->id, []))->map(fn ($m): array => ['id' => $m->unit_id, 'name' => $unitNames->get($m->unit_id)])->values()->all(),
                         'service_actor_classification' => 'OWNER_CONFIRMATION_REQUIRED', 'bearer_tokens' => $memberTokens,
                         'foreign_team_role_assignments' => $assignments->where('team_id', '!=', $company->id)->values()->all(),
                         'foreign_team_direct_grants' => $grants->where('team_id', '!=', $company->id)->map(fn ($row) => ['team_id' => $row->team_id, 'permission_id' => $row->permission_id])->values()->all(),
@@ -96,6 +102,7 @@ final class AuditAccessInventory extends Command
                 'read_gates' => self::READ_GATES,
                 'notes' => [
                     'Missing capabilities are review flags, not recommended grants. Verify intended duty with the company owner.',
+                    'scope_limits lists the assignments limited to "only my units" (ADR 0089) and organisation_units the units each person belongs to; a limited person who belongs to no unit reaches no record. Only inventory stock, ledger and counts apply scope so far (RecordScopeCoverageTest lists the rest).',
                     'read_access_lost lists reads that were open to every signed-in user (A8 override requests and physical counts, A9 recipes) and that the member can no longer make because they hold none of the gate\'s capabilities. Each gate is an any-of rule; decide per person whether they need the read, then grant a narrow capability through a role. Active and suspended members are both listed.',
                     'A3/A4 use ADR 0084 field capabilities; field management supplies minimum field read. A5 still needs request-specific checks.',
                     'No service-account marker exists. Owners must classify every member, including service actors without tokens.',

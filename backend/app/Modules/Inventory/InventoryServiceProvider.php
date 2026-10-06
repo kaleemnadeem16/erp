@@ -8,10 +8,12 @@ use App\Modules\Imports\Support\ImportTargetRegistry;
 use App\Modules\Inventory\Imports\OpeningStateImportTarget;
 use App\Modules\Inventory\Models\InventoryCutover;
 use App\Modules\Inventory\Models\StockMove;
+use App\Modules\Inventory\Models\Warehouse;
 use App\Modules\Inventory\Support\PermissionVocabulary;
 use App\Support\CompanyLocks\ExistsProbe;
 use App\Support\CompanyLocks\FinancialActivity;
 use App\Support\PermissionRegistry;
+use App\Support\Scope\ScopedResourceTypes;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
@@ -36,6 +38,11 @@ class InventoryServiceProvider extends ServiceProvider
 
         $this->app->afterResolving(PermissionRegistry::class, static function (PermissionRegistry $registry): void {
             $registry->registerVocabulary('inventory', PermissionVocabulary::all());
+        });
+
+        // A warehouse can belong to an organisation unit, so access can follow it (ADR 0089).
+        $this->app->afterResolving(ScopedResourceTypes::class, static function (ScopedResourceTypes $types): void {
+            $types->register('warehouse', 'Warehouse', fn (int $id): bool => Warehouse::query()->whereKey($id)->exists(), fn (int $id): ?string => Warehouse::query()->whereKey($id)->value('name'));
         });
     }
 

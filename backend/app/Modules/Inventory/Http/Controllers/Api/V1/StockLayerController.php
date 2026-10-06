@@ -9,6 +9,8 @@ use App\Modules\Inventory\Http\Requests\StockLayer\IndexStockLayerRequest;
 use App\Modules\Inventory\Http\Requests\StockLayer\ShowStockLayerRequest;
 use App\Modules\Inventory\Http\Resources\StockLayerResource;
 use App\Modules\Inventory\Models\StockLayer;
+use App\Modules\Inventory\Support\StockVisibility;
+use App\Modules\Inventory\Support\WarehouseScope;
 use App\Support\Concerns\AppliesApiQuery;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
@@ -32,6 +34,8 @@ class StockLayerController extends Controller
     public function index(IndexStockLayerRequest $request): AnonymousResourceCollection
     {
         $query = StockLayer::query();
+        // Only the warehouses the person's units own (ADR 0089); the same WHERE serves filter, search, sort, include and the paging.
+        WarehouseScope::limitToLocation($query, $request->user(), StockVisibility::STOCK);
         $this->applyIncludes($query, $request, self::INCLUDABLE);
 
         if ($request->filled('filter.item_id')) {
@@ -57,6 +61,9 @@ class StockLayerController extends Controller
 
     public function show(ShowStockLayerRequest $request, StockLayer $stockLayer): StockLayerResource
     {
+        // Out of scope is a 404, so the layer's existence is not confirmed.
+        abort_unless(WarehouseScope::permitsLocation($request->user(), StockVisibility::STOCK, $stockLayer->location_id), 404);
+
         return new StockLayerResource($stockLayer->load($this->requestedIncludes($request, self::INCLUDABLE)));
     }
 }

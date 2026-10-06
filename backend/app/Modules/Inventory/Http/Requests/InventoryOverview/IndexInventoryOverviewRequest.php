@@ -6,6 +6,7 @@ namespace App\Modules\Inventory\Http\Requests\InventoryOverview;
 
 use App\Http\Requests\Concerns\ValidatesListQuery;
 use App\Modules\Inventory\Support\StockVisibility;
+use App\Modules\Inventory\Support\WarehouseScope;
 use Illuminate\Foundation\Http\FormRequest;
 
 class IndexInventoryOverviewRequest extends FormRequest
@@ -14,7 +15,10 @@ class IndexInventoryOverviewRequest extends FormRequest
 
     public function authorize(): bool
     {
-        return StockVisibility::availability($this->user());
+        // The overview adds company-wide purchase-order quantities and pool-level values to what is on hand, so it cannot be limited to a
+        // warehouse without misleading: a person limited to their units gets 403, not a figure that includes other warehouses (ADR 0089).
+        return StockVisibility::availability($this->user())
+            && WarehouseScope::unrestricted($this->user(), [StockVisibility::AVAILABILITY, StockVisibility::STOCK]);
     }
 
     /** @return array<string, mixed> */

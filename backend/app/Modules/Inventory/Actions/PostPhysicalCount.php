@@ -12,6 +12,7 @@ use App\Modules\Inventory\Models\PhysicalCount;
 use App\Modules\Inventory\Models\PhysicalCountLine;
 use App\Modules\Inventory\Models\StockBatch;
 use App\Modules\Inventory\Support\PhysicalCountStatus;
+use App\Modules\Inventory\Support\WarehouseScope;
 use App\Support\CompanyContext;
 use Brick\Math\BigDecimal;
 use Illuminate\Support\Facades\DB;
@@ -42,6 +43,7 @@ final class PostPhysicalCount
         if (! $actor->can('inventory.physical_count.post')) {
             throw new DomainInvariantException('The actor is not permitted to post a physical count.', 'posted_by');
         }
+        WarehouseScope::requireWarehouse($actor, 'inventory.physical_count.post', (int) $count->warehouse_id, 'post a physical count');
 
         return DB::transaction(function () use ($count, $foundCosts, $actor): PhysicalCount {
             $count = PhysicalCount::query()->whereKey($count->id)->lockForUpdate()->firstOrFail();

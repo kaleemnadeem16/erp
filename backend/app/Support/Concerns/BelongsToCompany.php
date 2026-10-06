@@ -21,7 +21,9 @@ trait BelongsToCompany
     protected static function bootBelongsToCompany(): void
     {
         static::addGlobalScope('company', function (Builder $query): void {
-            $query->where('company_id', app(CompanyContext::class)->id());
+            // Qualified, so a query that joins another company-scoped table (a many-to-many through a pivot that also carries company_id)
+            // is not ambiguous.
+            $query->where($query->qualifyColumn('company_id'), app(CompanyContext::class)->id());
         });
 
         static::creating(function (Model $model): void {

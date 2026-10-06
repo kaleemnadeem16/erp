@@ -21,6 +21,8 @@ use App\Modules\Inventory\Http\Resources\PhysicalCountLineResource;
 use App\Modules\Inventory\Http\Resources\PhysicalCountResource;
 use App\Modules\Inventory\Models\PhysicalCount;
 use App\Modules\Inventory\Models\PhysicalCountLine;
+use App\Modules\Inventory\Support\PhysicalCountReadAccess;
+use App\Modules\Inventory\Support\WarehouseScope;
 use App\Support\Concerns\AppliesApiQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -49,6 +51,8 @@ class PhysicalCountController extends Controller
     public function index(IndexPhysicalCountRequest $request): AnonymousResourceCollection
     {
         $query = PhysicalCount::query();
+        // Only the warehouses the person's units own (ADR 0089).
+        WarehouseScope::limitToWarehouse($query, $request->user(), PhysicalCountReadAccess::PERMISSIONS);
         $this->applyIncludes($query, $request, self::INCLUDABLE);
 
         if ($request->filled('filter.warehouse_id')) {
@@ -68,6 +72,7 @@ class PhysicalCountController extends Controller
 
     public function store(StorePhysicalCountRequest $request, CreatePhysicalCount $create): JsonResponse
     {
+        abort_unless(WarehouseScope::permitsWarehouse($request->user(), 'inventory.physical_count.create', $request->integer('warehouse_id')), 403, 'You cannot count in that warehouse.');
         $count = $create($request->validated(), $request->user());
 
         return (new PhysicalCountResource($count))->response()->setStatusCode(201);
@@ -75,11 +80,14 @@ class PhysicalCountController extends Controller
 
     public function show(ShowPhysicalCountRequest $request, PhysicalCount $physicalCount): PhysicalCountResource
     {
+        abort_unless(WarehouseScope::permitsWarehouse($request->user(), PhysicalCountReadAccess::PERMISSIONS, $physicalCount->warehouse_id), 404);
+
         return new PhysicalCountResource($physicalCount->load($this->requestedIncludes($request, self::INCLUDABLE)));
     }
 
     public function storeLine(StorePhysicalCountLineRequest $request, PhysicalCount $physicalCount, AddPhysicalCountLine $add): JsonResponse
     {
+        abort_unless(WarehouseScope::permitsWarehouse($request->user(), 'inventory.physical_count.create', $physicalCount->warehouse_id), 404);
         $line = $add($physicalCount, $request->validated(), $request->user());
 
         return (new PhysicalCountLineResource($line))->response()->setStatusCode(201);
@@ -87,6 +95,7 @@ class PhysicalCountController extends Controller
 
     public function count(RecordPhysicalCountLineRequest $request, PhysicalCountLine $physicalCountLine, RecordPhysicalCountLine $record): PhysicalCountLineResource
     {
+        abort_unless(WarehouseScope::permitsWarehouse($request->user(), 'inventory.physical_count.count', (int) PhysicalCount::query()->whereKey($physicalCountLine->physical_count_id)->value('warehouse_id')), 404);
         $line = $record($physicalCountLine, $request->string('counted_qty')->toString(), $request->user());
 
         return new PhysicalCountLineResource($line);
@@ -94,6 +103,7 @@ class PhysicalCountController extends Controller
 
     public function post(PostPhysicalCountRequest $request, PhysicalCount $physicalCount, PostPhysicalCount $post): PhysicalCountResource
     {
+        abort_unless(WarehouseScope::permitsWarehouse($request->user(), 'inventory.physical_count.post', $physicalCount->warehouse_id), 404);
         /** @var array<int, array{physical_count_line_id: int, unit_cost: string}> $pairs */
         $pairs = $request->validated('found_costs', []);
         $foundCosts = array_column($pairs, 'unit_cost', 'physical_count_line_id');
@@ -103,6 +113,8 @@ class PhysicalCountController extends Controller
 
     public function cancel(CancelPhysicalCountRequest $request, PhysicalCount $physicalCount, CancelPhysicalCount $cancel): PhysicalCountResource
     {
+        abort_unless(WarehouseScope::permitsWarehouse($request->user(), 'inventory.physical_count.create', $physicalCount->warehouse_id), 404);
+
         return new PhysicalCountResource($cancel($physicalCount, $request->user()));
     }
 }
