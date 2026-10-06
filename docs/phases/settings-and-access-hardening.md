@@ -181,8 +181,9 @@ Several agents work in one checkout, and on 2026-10-06 another workstream (goods
 changes) had uncommitted work in progress. Its regenerated API client dropped `usePurchaseOrdersUpdate`, a second `PATCH purchase-orders` route
 had appeared, and the dev app's login page crashed. That is not this workstream's change, but it blocked verification, so these steps are owed:
 
-1. **Re-run the browser specs against the live dev stack** once the tree builds again: `recipe-access.spec.ts`, `approval-reason-visibility.spec.ts`,
-   `approval-document-review.spec.ts`, `financial-master-data-visibility.spec.ts` and `approvals.spec.ts`
+1. **Re-run the browser specs against the live dev stack** once the tree builds again. **Done 2026-10-06 (11 checks pass):** `recipe-access.spec.ts`,
+   `approval-reason-visibility.spec.ts` and `signed-in-devices.spec.ts`. **Still to re-run:** `approval-document-review.spec.ts`,
+   `financial-master-data-visibility.spec.ts` and `approvals.spec.ts`
    (`cd frontend/apps/e2e && npx playwright test <spec> --project=chromium --workers=1`; sign-in is throttled to 5 a minute, so leave a minute between runs).
    Backend tests passed; only the browser check against the live app is outstanding for ADR 0087.
 2. **Bring the dev database up to date** (not done, because `migrate` would also run another workstream's pending migrations): `php artisan migrate`,
@@ -194,8 +195,8 @@ had appeared, and the dev app's login page crashed. That is not this workstream'
    `approvals.reason.view` and the other A8/A9 reads (the report's `read_access_lost` section lists who lost one).
 5. **Pushing `develop` is paused** until the owner says otherwise.
 6. **Q36 (ADR 0088) release steps:** `php artisan migrate` (adds `meta` to `personal_access_tokens`); count bearer tokens in production before release
-   (`erp:audit-access-inventory`, or `select count(*) from personal_access_tokens`) — existing tokens expire 30 days after creation; re-run the browser spec
-   `signed-in-devices.spec.ts` against the live stack (the dev server was too slow to finish it on 2026-10-06; the backend and typecheck pass).
+   (`erp:audit-access-inventory`, or `select count(*) from personal_access_tokens`) — existing tokens expire 30 days after creation; the browser spec
+   `signed-in-devices.spec.ts` passes against the live stack (3 checks, the API mocked).
 7. **Found while doing Q36, not changed:** the scheduler container runs every minute, but until Q36 nothing was scheduled, and `ExpireOverdueApprovals`
    (flagging and expiring overdue approval steps) is called by nothing but tests, so an approval only expires lazily when someone tries to decide it. Decide
    whether to schedule it (ADR 0070 designed it to run on a timer); it changes what happens to overdue requests in production, so it is the owner's call.
