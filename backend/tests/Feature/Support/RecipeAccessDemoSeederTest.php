@@ -54,6 +54,20 @@ final class RecipeAccessDemoSeederTest extends TestCase
         $this->actingAs($buyer)->getJson('/api/v1/application-rates')->assertForbidden();
     }
 
+    public function test_the_steward_maintains_items_but_cannot_read_recipes(): void
+    {
+        $steward = User::query()->where('email', RecipeAccessDemoSeeder::STEWARD_EMAIL)->firstOrFail();
+        $role = Role::query()->where('team_id', 1)->where('name', RecipeAccessDemoSeeder::STEWARD_ROLE)->sole();
+        $this->assertEqualsCanonicalizing(['inventory.category.manage', 'inventory.item.manage'], $role->permissions()->pluck('name')->all());
+        $this->assertSame([RecipeAccessDemoSeeder::STEWARD_ROLE], $steward->getRoleNames()->all());
+
+        $this->actingAs($steward)->getJson('/api/v1/items')->assertOk();
+        $this->actingAs($steward)->getJson('/api/v1/formulations')->assertForbidden();
+        $this->actingAs($steward)->getJson('/api/v1/application-rates')->assertForbidden();
+        $this->actingAs($steward)->getJson('/api/v1/assemblies?include=activeVersion.components')->assertOk()
+            ->assertJsonMissingPath('data.0.active_version.components');
+    }
+
     public function test_reseeding_neither_duplicates_the_role_nor_changes_the_assignment(): void
     {
         $this->artisan('demo:seed')->assertSuccessful();
@@ -61,5 +75,8 @@ final class RecipeAccessDemoSeederTest extends TestCase
 
         $this->assertSame(1, Role::query()->where('team_id', 1)->where('name', RecipeAccessDemoSeeder::ROLE)->count());
         $this->assertSame([RecipeAccessDemoSeeder::ROLE], $this->planner()->getRoleNames()->all());
+        $this->assertSame(1, Role::query()->where('team_id', 1)->where('name', RecipeAccessDemoSeeder::STEWARD_ROLE)->count());
+        $steward = User::query()->where('email', RecipeAccessDemoSeeder::STEWARD_EMAIL)->firstOrFail();
+        $this->assertSame([RecipeAccessDemoSeeder::STEWARD_ROLE], $steward->getRoleNames()->all());
     }
 }

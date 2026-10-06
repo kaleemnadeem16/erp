@@ -8,6 +8,8 @@ import { expect, test, type Page } from "@playwright/test";
  */
 const PLANNER = "demo-planner@erp.x1techs.com";
 const BUYER = "demo-buyer@erp.x1techs.com";
+const STEWARD = "demo-steward@erp.x1techs.com";
+const ITEM_WITH_RECIPE = "demo-paint-white";
 const PASSWORD = process.env.E2E_USER_PASSWORD ?? "!User@Erp@123";
 
 async function signIn(page: Page, email: string) {
@@ -78,4 +80,50 @@ test.describe("a Buyer (no recipe access)", () => {
 
     expect(recipeRequests).toEqual([]);
   });
+});
+
+async function openItem(page: Page, code: string) {
+  await page.goto(`/items?filter.search=${code}`);
+  await page.locator("tbody tr").filter({ hasText: code }).first().click();
+  await expect(page).toHaveURL(/\/items\/\d+/);
+  await expect(
+    page.getByRole("heading", { name: "Pack conversions", exact: true }),
+  ).toBeVisible();
+}
+
+test.describe("a Master data steward (items, no recipe access)", () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+
+  test("opens an item that has a recipe without being shown it or asking the server for it", async ({
+    page,
+  }) => {
+    const recipeRequests: string[] = [];
+    page.on("request", (request) => {
+      if (/\/api\/v1\/formulations/.test(request.url()))
+        recipeRequests.push(request.url());
+    });
+    await signIn(page, STEWARD);
+
+    await openItem(page, ITEM_WITH_RECIPE);
+    await page.waitForLoadState("networkidle");
+    await expect(
+      page.locator('a[href^="/formulations/"][href$="/edit"]'),
+    ).toHaveCount(0);
+    expect(recipeRequests).toEqual([]);
+
+    await page.goto("/formulations");
+    await expect(
+      page.getByRole("heading", { name: "You don’t have access" }),
+    ).toBeVisible();
+  });
+});
+
+test("the administrator sees the same item with its formulations", async ({
+  page,
+}) => {
+  await openItem(page, ITEM_WITH_RECIPE);
+  // The card lists each formulation as a link to its edit screen; the sidebar link to the list does not match.
+  await expect(
+    page.locator('a[href^="/formulations/"][href$="/edit"]').first(),
+  ).toBeVisible();
 });
