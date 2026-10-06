@@ -107,7 +107,20 @@ still cannot approve something they submitted.
 - Domain: [approvals.md](../domain/approvals.md); ADR: [0070](../decisions/0070-shared-configurable-approval-engine.md)
 - UI: `frontend/packages/core-ui/src/features/approvals/`, `.../purchase-orders/purchase-order-approval-section.tsx`
 
+## Reviewing the document
+
+Open a request from the inbox. A normal PO step shows saved supplier, terms, item/specification,
+quantity, delivery and pricing sections. Print uses those same saved sections. General PO access
+is not needed. For specialist review, configure a technical step and assign the technical-review
+duty, then a separate commercial step; the technical view and print omit monetary fields.
+Missing saved evidence disables approval/rejection and explains withdrawal/resubmission. Changes
+to quantities, terms or pricing require fresh approval, even if the total stays the same. Past
+reviewers see their saved version and original profile. Older completed requests may have no
+saved review document; the UI says so rather than reconstructing it from current data.
+
 ## Related
+
+- [Document-review decision](../decisions/0085-request-specific-document-review-for-approvals.md)
 
 - [Product journeys](README.md)
 - [Phase 2 operational journey](phase-2-operational-journey.md)

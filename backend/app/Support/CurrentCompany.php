@@ -31,6 +31,12 @@ class CurrentCompany
         return $this->row()->code;
     }
 
+    /** The code used to label frozen base-currency evidence; null before currency setup. */
+    public function baseCurrencyCode(): ?string
+    {
+        return $this->row()->baseCurrency?->code;
+    }
+
     /** The IANA time zone of the company's books and business day (default UTC). */
     public function timezone(): string
     {

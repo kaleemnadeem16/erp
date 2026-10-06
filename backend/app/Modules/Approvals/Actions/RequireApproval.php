@@ -10,6 +10,7 @@ use App\Modules\Approvals\Support\ApprovalMode;
 use App\Modules\Approvals\Support\ApprovalModes;
 use App\Modules\Approvals\Support\ApprovalRequestStatus;
 use App\Modules\Approvals\Support\ApprovalSubjectRegistry;
+use App\Modules\Approvals\Support\Review\ApprovalReviewRegistry;
 
 /**
  * The guard a consuming module calls before it acts on a document (issue a purchase order, adopt a plan): it passes
@@ -35,7 +36,7 @@ final class RequireApproval
 
         $routing = $this->subjects->get($subjectType)->routing($subjectId);
         $latest = ApprovalRequest::query()->where('subject_type', $subjectType)->where('subject_id', $subjectId)->orderByDesc('id')->first();
-        if ($latest !== null && $latest->status === ApprovalRequestStatus::Approved && $latest->facts_hash !== $routing->hash()) {
+        if ($latest !== null && $latest->status === ApprovalRequestStatus::Approved && ($latest->facts_hash !== $routing->hash() || ! app(ApprovalReviewRegistry::class)->unchanged($latest))) {
             ($this->invalidate)($latest, 'The document changed after it was approved; it must be submitted again.');
             $latest = null;
         }

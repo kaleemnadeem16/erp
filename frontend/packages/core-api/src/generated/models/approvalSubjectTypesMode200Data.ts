@@ -4,9 +4,11 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
+import type { ApprovalSubjectTypesMode200DataTechnicalReviewPermission } from "./approvalSubjectTypesMode200DataTechnicalReviewPermission";
 import type { ApprovalSubjectTypesMode200DataFactsItem } from "./approvalSubjectTypesMode200DataFactsItem";
 
 export type ApprovalSubjectTypesMode200Data = {
+  technical_review_permission: ApprovalSubjectTypesMode200DataTechnicalReviewPermission;
   code: string;
   label: string;
   approve_permission: string;

@@ -27,7 +27,7 @@ final class UpdateApprovalPolicy
             throw new DomainInvariantException('Only a draft can be edited. Start a new version instead.', 'status');
         }
         $conditions = $attributes['conditions'] ?? $policy->conditions->map(fn ($c): array => ['fact' => $c->fact, 'operator' => $c->operator->value, 'value' => $c->value])->all();
-        $steps = $attributes['steps'] ?? $policy->steps->map(fn ($s): array => $s->only(['stage', 'name', 'required_approvals', 'permission', 'use_authority_limit', 'allow_submitter', 'expires_after_hours', 'escalation_permission']) + ['on_expiry' => $s->on_expiry->value])->all();
+        $steps = $attributes['steps'] ?? $policy->steps->map(fn ($s): array => $s->only(['review_profile', 'stage', 'name', 'required_approvals', 'permission', 'use_authority_limit', 'allow_submitter', 'expires_after_hours', 'escalation_permission']) + ['on_expiry' => $s->on_expiry->value])->all();
         $this->guard->assertValid($policy->subject_type, $conditions, $steps);
 
         return DB::transaction(function () use ($policy, $attributes, $conditions, $steps, $actorId): ApprovalPolicy {

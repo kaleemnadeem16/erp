@@ -29,6 +29,13 @@ final class ApprovalInbox
 
     public function actionableStep(User $user, ApprovalRequest $request): ?ApprovalRequestStep
     {
+        return $this->actionableSteps($user, $request)->first();
+    }
+
+    /** @return Collection<int, ApprovalRequestStep> */
+    public function actionableSteps(User $user, ApprovalRequest $request): Collection
+    {
+        $steps = collect();
         foreach ($request->steps->where('status', ApprovalStepStatus::Open) as $step) {
             $grant = $this->eligibility->grantFor($user, $request, $step);
             if ($grant === null) {
@@ -36,10 +43,10 @@ final class ApprovalInbox
             }
             $taken = $step->decisions->contains(fn ($d): bool => in_array($user->id, [$d->decided_by, $d->principal_id], true) || in_array($grant->principal->id, [$d->decided_by, $d->principal_id], true));
             if (! $taken && ($step->policyStep->allow_submitter || ! in_array($request->submitted_by, [$user->id, $grant->principal->id], true))) {
-                return $step;
+                $steps->push($step);
             }
         }
 
-        return null;
+        return $steps;
     }
 }

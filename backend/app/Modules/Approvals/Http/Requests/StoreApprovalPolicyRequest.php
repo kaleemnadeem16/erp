@@ -7,6 +7,7 @@ namespace App\Modules\Approvals\Http\Requests;
 use App\Modules\Approvals\Support\ApprovalOperator;
 use App\Modules\Approvals\Support\ApprovalSubjectRegistry;
 use App\Modules\Approvals\Support\ExpiryAction;
+use App\Modules\Approvals\Support\Review\ReviewProfile;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -31,6 +32,7 @@ class StoreApprovalPolicyRequest extends FormRequest
             'conditions.*.operator' => ['required', Rule::enum(ApprovalOperator::class)],
             'conditions.*.value' => ['required'],
             'steps' => ['required', 'array', 'min:1', 'max:20'],
+            'steps.*.review_profile' => ['sometimes', Rule::enum(ReviewProfile::class)],
             'steps.*.name' => ['required', 'string', 'max:255'],
             'steps.*.stage' => ['sometimes', 'integer', 'between:1,50'],
             'steps.*.required_approvals' => ['required', 'integer', 'between:1,20'],

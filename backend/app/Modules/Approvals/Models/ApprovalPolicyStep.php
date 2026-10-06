@@ -6,11 +6,13 @@ namespace App\Modules\Approvals\Models;
 
 use App\Models\Model;
 use App\Modules\Approvals\Support\ExpiryAction;
+use App\Modules\Approvals\Support\Review\ReviewProfile;
 use App\Support\Concerns\BelongsToCompany;
 use App\Support\Concerns\GuardsRelatedCompanyScope;
 
 /**
  * @property int $policy_id
+ * @property ReviewProfile $review_profile
  * @property int $stage steps sharing a stage run in parallel
  * @property string $name
  * @property int $required_approvals distinct approvers needed
@@ -38,6 +40,7 @@ class ApprovalPolicyStep extends Model
     protected function casts(): array
     {
         return [
+            'review_profile' => ReviewProfile::class,
             'use_authority_limit' => 'bool',
             'allow_submitter' => 'bool',
             'on_expiry' => ExpiryAction::class,

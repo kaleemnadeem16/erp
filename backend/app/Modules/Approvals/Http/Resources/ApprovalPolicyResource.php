@@ -29,7 +29,7 @@ class ApprovalPolicyResource extends JsonResource
                 'operator' => $c->operator->value, 'operator_label' => $c->operator->label(), 'value' => $c->value,
             ])->values()->all() : [],
             'steps' => $row->relationLoaded('steps') ? $row->steps->map(fn ($s): array => [
-                'id' => $s->id, 'stage' => $s->stage, 'name' => $s->name, 'required_approvals' => $s->required_approvals,
+                'review_profile' => $s->review_profile->value, 'id' => $s->id, 'stage' => $s->stage, 'name' => $s->name, 'required_approvals' => $s->required_approvals,
                 'permission' => $s->permission, 'use_authority_limit' => $s->use_authority_limit, 'allow_submitter' => $s->allow_submitter,
                 'expires_after_hours' => $s->expires_after_hours, 'on_expiry' => $s->on_expiry->value, 'escalation_permission' => $s->escalation_permission,
             ])->values()->all() : [],

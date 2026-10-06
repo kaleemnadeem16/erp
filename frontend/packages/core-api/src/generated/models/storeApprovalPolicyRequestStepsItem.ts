@@ -4,12 +4,14 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
+import type { ReviewProfile } from "./reviewProfile";
 import type { StoreApprovalPolicyRequestStepsItemPermission } from "./storeApprovalPolicyRequestStepsItemPermission";
 import type { StoreApprovalPolicyRequestStepsItemExpiresAfterHours } from "./storeApprovalPolicyRequestStepsItemExpiresAfterHours";
 import type { ExpiryAction } from "./expiryAction";
 import type { StoreApprovalPolicyRequestStepsItemEscalationPermission } from "./storeApprovalPolicyRequestStepsItemEscalationPermission";
 
 export type StoreApprovalPolicyRequestStepsItem = {
+  review_profile?: ReviewProfile;
   /** @maxLength 255 */
   name: string;
   /**

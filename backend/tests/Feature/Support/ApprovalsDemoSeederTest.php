@@ -146,6 +146,28 @@ final class ApprovalsDemoSeederTest extends TestCase
         $this->assertSame($counts, [ApprovalAuthority::query()->count(), ApprovalDelegation::query()->count()]);
     }
 
+    public function test_technical_demo_persona_reviews_without_prices_then_commercial_approval_is_separate(): void
+    {
+        $technical = $this->user('demo-technical@erp.x1techs.com');
+        $this->assertSame(['approvals.document.technical-review'], $technical->getAllPermissions()->pluck('name')->all());
+        $request = $this->request('F');
+        $response = $this->actingAs($technical)->getJson('/api/v1/approval-requests/'.$request->id)->assertOk()
+            ->assertJsonPath('data.document_review.profile', 'OPERATIONAL')->assertJsonPath('data.amount_base', null);
+        $this->assertStringNotContainsString('Unit price', $response->getContent());
+        app(DecideApproval::class)($request, $technical, ApprovalDecisionKind::Approved);
+        $this->assertNull(app(ApprovalInbox::class)->actionableStep($technical, $request->fresh()));
+        $manager = $this->user('demo-manager@erp.x1techs.com');
+        $this->actingAs($manager)->getJson('/api/v1/approval-requests/'.$request->id)->assertOk()
+            ->assertJsonPath('data.document_review.profile', 'COMMERCIAL');
+        app(DecideApproval::class)($request->fresh(), $manager, ApprovalDecisionKind::Approved);
+        $this->artisan('demo:seed')->assertSuccessful();
+        $waiting = app(ApprovalInbox::class)->forUser($technical->fresh());
+        $this->assertCount(1, $waiting);
+        $this->assertNotSame($request->id, $waiting->first()->id);
+        $this->artisan('demo:seed')->assertSuccessful();
+        $this->assertCount(1, app(ApprovalInbox::class)->forUser($technical->fresh()));
+    }
+
     public function test_reseeding_changes_nothing(): void
     {
         $counts = fn (): array => [ApprovalRequest::query()->count(), PurchaseOrder::query()->count(), ApprovalDelegation::query()->count(), ApprovalPolicy::query()->count(), MaterialVariancePolicy::query()->count()];

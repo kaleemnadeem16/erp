@@ -14,6 +14,7 @@ use App\Modules\Approvals\Support\ApprovalRequestStatus;
 use App\Modules\Approvals\Support\ApprovalRouting;
 use App\Modules\Approvals\Support\ApprovalStepStatus;
 use App\Modules\Approvals\Support\ApprovalSubjectRegistry;
+use App\Modules\Approvals\Support\Review\ApprovalReviewRegistry;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -55,7 +56,7 @@ final class SubmitForApproval
             $open = ApprovalRequest::query()->where('subject_type', $subjectType)->where('subject_id', $subjectId)
                 ->where('status', ApprovalRequestStatus::Pending)->lockForUpdate()->first();
             if ($open !== null) {
-                if ($open->facts_hash === $routing->hash()) {
+                if ($open->facts_hash === $routing->hash() && app(ApprovalReviewRegistry::class)->unchanged($open)) {
                     return $open;
                 }
                 throw new DomainInvariantException('This already has an approval in progress for different figures. Withdraw it first.', 'approval');
@@ -67,14 +68,19 @@ final class SubmitForApproval
 
     private function create(ApprovalPolicy $policy, string $subjectType, int $subjectId, ApprovalRouting $routing, User $actor): ApprovalRequest
     {
+        $snapshot = $routing->snapshot();
+        $review = app(ApprovalReviewRegistry::class)->capture($subjectType, $subjectId);
+        if ($review !== null) {
+            $snapshot['document_review'] = $review;
+        }
         $request = ApprovalRequest::query()->create([
             'subject_type' => $subjectType, 'subject_id' => $subjectId, 'policy_id' => $policy->id,
             'status' => ApprovalRequestStatus::Pending, 'submitted_by' => $actor->id, 'submitted_at' => now(),
-            'facts' => $routing->snapshot(), 'facts_hash' => $routing->hash(), 'summary' => $routing->summary,
+            'facts' => $snapshot, 'facts_hash' => $routing->hash(), 'summary' => $routing->summary,
         ]);
         foreach ($policy->steps as $step) {
             $request->steps()->create([
-                'policy_step_id' => $step->id, 'stage' => $step->stage, 'name' => $step->name,
+                'review_profile' => $step->review_profile->value, 'policy_step_id' => $step->id, 'stage' => $step->stage, 'name' => $step->name,
                 'required_approvals' => $step->required_approvals, 'status' => ApprovalStepStatus::Waiting,
             ]);
         }

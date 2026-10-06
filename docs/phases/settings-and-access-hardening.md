@@ -55,8 +55,7 @@ Practical commands (WSL, repository root `/home/kaleem/projects/erp`):
 ### Needs an owner decision first
 
 1. ~~**A3/A4 — Finance field visibility**~~ — accepted and implemented under ADR 0084; staging readership sign-off remains open.
-2. **Approvals** (open question [Q35](../OPEN-QUESTIONS.md#q35--approval-evidence-exception-and-authority-ceiling-visibility)): confirm that an approver sees the amount of the
-   request they must decide without seeing PO line prices, and decide who may list per-person authority ceilings.
+2. **Approvals** (open question [Q35](../OPEN-QUESTIONS.md#q35--approval-evidence-exception-and-authority-ceiling-visibility)): document review is implemented under ADR 0085; decide who may list per-person authority ceilings and read confidential decision reasons.
 3. **Bearer-token lifetime** (open question [Q36](../OPEN-QUESTIONS.md#q36--bearer-token-lifetime-and-device-sessions)) — before any mobile client ships.
 4. **Record-level scope and delegated administration** — already [Q26](../OPEN-QUESTIONS.md#q26--organisational-and-record-level-access-scope); the stock-read capabilities are company-wide until it is decided.
 
@@ -165,6 +164,16 @@ temporary-password approval-denial tests pass. Explicit-path Pint and PHPStan pa
 test databases were dropped. No real application-flow failure was found, no production eligibility
 or persona capability was relaxed, and no owner decision is needed for this fixture repair.
 No API contract changed, so there is no client regeneration.
+
+### Q35 document-review delivery — 2026-10-06
+
+Full commercial PO review is the default; optional technical steps omit money from API bodies
+and print. Frozen sections, immutable decision profiles and fingerprint invalidation protect
+historical and same-total changes. The additive migration preserves existing full approvers,
+adds no broad role and prepares only current pending requests. Legacy completed reviews are not
+reconstructed. The narrow technical demo includes a separate commercial step and idempotent
+replenishment. Client regeneration changes only approval schemas. Staging sign-off remains open;
+Q35 ceiling/reason access, Q26 and Q36 remain owner decisions. See [ADR 0085](../decisions/0085-request-specific-document-review-for-approvals.md).
 
 ## Related
 

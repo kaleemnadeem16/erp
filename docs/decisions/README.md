@@ -99,9 +99,10 @@ in the same commit.
 | [0082](0082-reconcile-package-balances-with-stock-operations.md) | Reconcile package balances with stock operations | proposed | 2026-10-03 |
 | [0083](0083-layered-stock-read-capabilities-and-blind-counting.md) | Layered stock-read capabilities (availability / stock / movement), and blind counting by role | accepted | 2026-10-03 |
 | [0084](0084-separate-financial-master-data-fields.md) | Separate financial master-data fields from ordinary maintenance | accepted | 2026-10-06 |
+| [0085](0085-request-specific-document-review-for-approvals.md) | Request-specific document review with commercial and technical approval profiles | accepted | 2026-10-06 |
 | [0086](0086-gate-recipe-reads-by-capability.md) | Gate recipe reads behind a capability administrators grant through roles | accepted | 2026-10-06 |
 
-**Next number: 0087** (0085 is reserved by the Approvals document-review work)
+**Next number: 0087**
 
 ## By theme
 

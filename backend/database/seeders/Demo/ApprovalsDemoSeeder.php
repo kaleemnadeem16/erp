@@ -34,6 +34,8 @@ use App\Modules\Purchasing\Actions\IssuePurchaseOrder;
 use App\Modules\Purchasing\Actions\SubmitPurchaseOrder;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Support\PermissionRegistry;
+use Brick\Math\BigDecimal;
+use Brick\Math\RoundingMode;
 use Database\Seeders\Demo\Concerns\EnsuresDemoEnvironment;
 use Illuminate\Database\Seeder;
 
@@ -86,6 +88,8 @@ final class ApprovalsDemoSeeder extends Seeder
         $this->manager = $this->persona('demo-manager@erp.x1techs.com', 'Demo Purchasing Manager', ['purchasing.purchase-order.view', self::PO_APPROVE, 'purchasing.commercial-cost.view']);
         $this->finance = $this->persona('demo-finance@erp.x1techs.com', 'Demo Finance Controller', ['purchasing.purchase-order.view', self::PO_APPROVE, 'purchasing.purchase-order.issue', 'purchasing.commercial-cost.view']);
 
+        $this->persona('demo-technical@erp.x1techs.com', 'Demo Technical Reviewer', ['approvals.document.technical-review']);
+
         $save = app(SaveApprovalSubjectSetting::class);
         $save('PURCHASE_ORDER', ApprovalMode::Policy, $this->admin);
         $save('MATERIAL_VARIANCE', ApprovalMode::Policy, $this->admin);
@@ -114,6 +118,10 @@ final class ApprovalsDemoSeeder extends Seeder
         $this->ensurePolicy('PURCHASE_ORDER', 'po-over-500k', 'Orders of 500,000 and over', 20, [['amount_base', 'GTE', '500000']], [
             ['name' => 'Purchasing manager', 'stage' => 1, 'required_approvals' => 1, 'use_authority_limit' => true],
             ['name' => 'Finance', 'stage' => 2, 'required_approvals' => 2, 'use_authority_limit' => true, 'expires_after_hours' => 48, 'on_expiry' => 'FLAG_OVERDUE'],
+        ]);
+        $this->ensurePolicy('PURCHASE_ORDER', 'po-technical-demo', 'Technical then commercial review (95,000 demo)', 30, [['amount_base', 'EQ', '95000']], [
+            ['name' => 'Technical review', 'stage' => 1, 'required_approvals' => 1, 'review_profile' => 'OPERATIONAL'],
+            ['name' => 'Commercial approval', 'stage' => 2, 'required_approvals' => 1, 'review_profile' => 'COMMERCIAL', 'use_authority_limit' => true],
         ]);
         $this->ensurePolicy('MATERIAL_VARIANCE', 'variance-signoff', 'Variance sign-off', 0, [], [
             ['name' => 'Estimating lead', 'stage' => 1, 'required_approvals' => 1, 'permission' => 'estimating.material_variance.approve'],
@@ -169,6 +177,8 @@ final class ApprovalsDemoSeeder extends Seeder
         };
         $this->order('A', '250000', $waiting);
         $this->keepOneOrderWaiting($waiting);
+        $this->order('F', '95000', $waiting);
+        $this->keepOneOrderWaiting($waiting, 'F', '95000');
 
         $this->order('B', '650000', function (PurchaseOrder $order) use ($decide): void {
             $request = app(SubmitPurchaseOrder::class)($order, $this->buyer);
@@ -199,16 +209,16 @@ final class ApprovalsDemoSeeder extends Seeder
      * point of the demo) uses it up, so when none is waiting any more a fresh one — same amount, next marker — is
      * submitted. While one is waiting nothing is created, so re-running changes nothing.
      */
-    private function keepOneOrderWaiting(callable $scenario): void
+    private function keepOneOrderWaiting(callable $scenario, string $marker = 'A', string $amount = '250000'): void
     {
-        $orders = PurchaseOrder::query()->where('notes', 'like', '%DEMO_APPROVAL_A%')->get();
+        $orders = PurchaseOrder::query()->where('notes', 'like', "%DEMO_APPROVAL_{$marker}%")->get();
         $stillWaiting = ApprovalRequest::query()
             ->where('subject_type', 'PURCHASE_ORDER')
             ->whereIn('subject_id', $orders->modelKeys())
             ->where('status', ApprovalRequestStatus::Pending)
             ->exists();
         if (! $stillWaiting) {
-            $this->order('A'.($orders->count() + 1), '250000', $scenario);
+            $this->order($marker.($orders->count() + 1), $amount, $scenario);
         }
     }
 
@@ -231,7 +241,7 @@ final class ApprovalsDemoSeeder extends Seeder
             'notes' => "Demo approval scenario {$marker} ({$note}): a bulk pigment order worth {$amount}.",
             'lines' => [[
                 'line_number' => 1, 'item_id' => $item->getKey(), 'description' => $item->name, 'ordered_qty' => '1000.0000',
-                'purchase_uom_id' => $item->stock_uom_id, 'unit_price' => number_format((float) $amount / 1000, 4, '.', ''),
+                'purchase_uom_id' => $item->stock_uom_id, 'unit_price' => (string) BigDecimal::of($amount)->dividedBy('1000', 4, RoundingMode::HALF_UP),
             ]],
         ], $this->buyer);
         $scenario($order);

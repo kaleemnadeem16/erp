@@ -13,6 +13,7 @@ use App\Modules\Approvals\Support\ApprovalModes;
 use App\Modules\Approvals\Support\ApprovalOperator;
 use App\Modules\Approvals\Support\ApprovalSubject;
 use App\Modules\Approvals\Support\ApprovalSubjectRegistry;
+use App\Modules\Approvals\Support\Review\ApprovalReviewRegistry;
 use Illuminate\Http\JsonResponse;
 
 /** The kinds of document that can be approved, what a policy may route on for each, and each one's approval mode. */
@@ -34,6 +35,7 @@ class ApprovalSubjectTypeController extends Controller
     private function describe(ApprovalSubject $subject, ApprovalMode $mode): array
     {
         return [
+            'technical_review_permission' => ($technical = app(ApprovalReviewRegistry::class)->technicalPermission($subject->code())) === null ? null : (string) $technical,
             'code' => $subject->code(), 'label' => $subject->label(), 'approve_permission' => $subject->approvePermission(), 'mode' => $mode->value,
             'facts' => collect($subject->facts())->map(fn (array $fact, string $key): array => [
                 'key' => $key, 'label' => $fact['label'], 'type' => $fact['type']->value,

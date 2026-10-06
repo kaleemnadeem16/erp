@@ -8,6 +8,7 @@ import type { ApprovalRequestResourcePolicy } from "./approvalRequestResourcePol
 import type { ApprovalRequestResourceSubmittedBy } from "./approvalRequestResourceSubmittedBy";
 import type { ApprovalRequestResourceClosedAt } from "./approvalRequestResourceClosedAt";
 import type { ApprovalRequestResourceClosingReason } from "./approvalRequestResourceClosingReason";
+import type { ApprovalDocumentReviewResource } from "./approvalDocumentReviewResource";
 import type { ApprovalRequestResourceMyStepId } from "./approvalRequestResourceMyStepId";
 import type { ApprovalRequestResourceStepsItem } from "./approvalRequestResourceStepsItem";
 
@@ -27,6 +28,9 @@ the document's figures, or is asked to decide (ApprovalEvidenceAccess); an audit
   amount_base: unknown;
   evidence: unknown;
   evidence_visible: boolean;
+  document_review_required: boolean;
+  document_review_ready: boolean;
+  document_review?: ApprovalDocumentReviewResource;
   can_decide: boolean;
   my_step_id: ApprovalRequestResourceMyStepId;
   steps: ApprovalRequestResourceStepsItem[];

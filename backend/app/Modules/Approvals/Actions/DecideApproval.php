@@ -16,6 +16,7 @@ use App\Modules\Approvals\Support\ApprovalRequestStatus;
 use App\Modules\Approvals\Support\ApprovalStepStatus;
 use App\Modules\Approvals\Support\ApprovalSubjectRegistry;
 use App\Modules\Approvals\Support\ExpiryAction;
+use App\Modules\Approvals\Support\Review\ApprovalReviewRegistry;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -63,7 +64,7 @@ final class DecideApproval
             ApprovalDecision::query()->create([
                 'request_id' => $request->id, 'request_step_id' => $step->id, 'decision' => $decision,
                 'decided_by' => $actor->id, 'principal_id' => $grant->principal->id, 'delegation_id' => $grant->delegation?->id,
-                'reason' => $reason === null ? null : trim($reason), 'authority_snapshot' => $grant->snapshot, 'decided_at' => now(),
+                'reason' => $reason === null ? null : trim($reason), 'authority_snapshot' => $grant->snapshot + ['review_profile' => $step->review_profile->value], 'decided_at' => now(),
             ]);
 
             return $this->advance($request, $step, $decision, $reason);
@@ -99,7 +100,7 @@ final class DecideApproval
     private function assertUnchanged(ApprovalRequest $request): void
     {
         $current = $this->subjects->get($request->subject_type)->routing($request->subject_id);
-        if ($current->hash() !== $request->facts_hash) {
+        if ($current->hash() !== $request->facts_hash || ! app(ApprovalReviewRegistry::class)->unchanged($request)) {
             ($this->invalidate)($request, 'The document changed after it was submitted for approval; it must be submitted again.');
             throw new DomainInvariantException('The document changed after it was submitted, so this approval was cancelled. It must be submitted again.', 'approval');
         }

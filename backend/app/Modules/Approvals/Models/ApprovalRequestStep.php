@@ -6,6 +6,7 @@ namespace App\Modules\Approvals\Models;
 
 use App\Models\Model;
 use App\Modules\Approvals\Support\ApprovalStepStatus;
+use App\Modules\Approvals\Support\Review\ReviewProfile;
 use App\Support\Concerns\BelongsToCompany;
 use App\Support\Concerns\GuardsRelatedCompanyScope;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,6 +16,7 @@ use Illuminate\Support\Carbon;
 /**
  * @property int $request_id
  * @property int $policy_step_id
+ * @property ReviewProfile $review_profile
  * @property int $stage
  * @property string $name
  * @property int $required_approvals
@@ -41,6 +43,7 @@ class ApprovalRequestStep extends Model
     protected function casts(): array
     {
         return [
+            'review_profile' => ReviewProfile::class,
             'status' => ApprovalStepStatus::class,
             'opened_at' => 'datetime',
             'deadline_at' => 'datetime',

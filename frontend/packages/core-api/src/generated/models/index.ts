@@ -3,7 +3,7 @@
  * Do not edit manually.
  *
  * Pure-type schemas are re-exported with `export type *` so a browser never requests them;
- * only the 122 schemas that export a runtime value use `export *`.
+ * only the 123 schemas that export a runtime value use `export *`.
  */
 export type * from "./accountShow200";
 export * from "./accountType";
@@ -53,6 +53,9 @@ export type * from "./approvalDelegationsDestroy200";
 export type * from "./approvalDelegationsDestroy403";
 export type * from "./approvalDelegationsIndex200";
 export type * from "./approvalDelegationsStore201";
+export type * from "./approvalDocumentReviewResource";
+export type * from "./approvalDocumentReviewResourceCapturedAt";
+export type * from "./approvalDocumentReviewResourceProfile";
 export * from "./approvalMode";
 export * from "./approvalOperator";
 export type * from "./approvalPoliciesActivate200";
@@ -116,16 +119,21 @@ export type * from "./approvalRequestsIndexParams";
 export type * from "./approvalRequestsShow200";
 export type * from "./approvalRequestsShow403";
 export type * from "./approvalRequestsWithdraw200";
+export type * from "./approvalReviewFieldResource";
+export type * from "./approvalReviewFieldResourceValue";
+export type * from "./approvalReviewSectionResource";
 export type * from "./approvalSubjectTypesIndex200";
 export type * from "./approvalSubjectTypesIndex200DataItem";
 export type * from "./approvalSubjectTypesIndex200DataItemFactsItem";
 export type * from "./approvalSubjectTypesIndex200DataItemFactsItemOperatorsItem";
 export * from "./approvalSubjectTypesIndex200DataItemFactsItemOperatorsItemLabel";
+export type * from "./approvalSubjectTypesIndex200DataItemTechnicalReviewPermission";
 export type * from "./approvalSubjectTypesMode200";
 export type * from "./approvalSubjectTypesMode200Data";
 export type * from "./approvalSubjectTypesMode200DataFactsItem";
 export type * from "./approvalSubjectTypesMode200DataFactsItemOperatorsItem";
 export * from "./approvalSubjectTypesMode200DataFactsItemOperatorsItemLabel";
+export type * from "./approvalSubjectTypesMode200DataTechnicalReviewPermission";
 export type * from "./assembliesDestroy403";
 export type * from "./assembliesIndex200";
 export type * from "./assembliesIndex200Links";
@@ -1466,6 +1474,7 @@ export type * from "./resourceRatesStore201";
 export type * from "./resumeRecalculationRegenerationRequest";
 export type * from "./reverseGoodsReceiptRequest";
 export type * from "./reviewNegativeStockOverrideRequestRequest";
+export * from "./reviewProfile";
 export type * from "./roleResource";
 export type * from "./roleResourceDescription";
 export type * from "./rolesDestroy403";

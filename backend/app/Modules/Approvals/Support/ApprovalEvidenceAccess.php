@@ -5,8 +5,12 @@ declare(strict_types=1);
 namespace App\Modules\Approvals\Support;
 
 use App\Models\User;
+use App\Modules\Administration\Support\MemberStatus;
 use App\Modules\Approvals\Models\ApprovalRequest;
 use App\Modules\Approvals\Models\ApprovalRequestStep;
+use App\Modules\Approvals\Support\Review\ApprovalReviewAccess;
+use App\Modules\Approvals\Support\Review\ApprovalReviewRegistry;
+use App\Modules\Approvals\Support\Review\ReviewProfile;
 
 /**
  * Who may see the money in an approval (the routed amount and its currency evidence). Seeing *that an approval exists and how it
@@ -27,6 +31,10 @@ final class ApprovalEvidenceAccess
     {
         if ($user === null) {
             return false;
+        }
+        if (app(ApprovalReviewRegistry::class)->has($request->subject_type)) {
+            return $user->status === MemberStatus::Active && ! $user->must_change_password && (($this->subjects->has($request->subject_type) && $this->subjects->get($request->subject_type)->canViewEvidence($user))
+                || app(ApprovalReviewAccess::class)->profile($user, $request) === ReviewProfile::Commercial);
         }
         if ($actionable !== null) {
             return true;

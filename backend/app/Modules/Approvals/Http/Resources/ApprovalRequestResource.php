@@ -8,6 +8,7 @@ use App\Modules\Approvals\Models\ApprovalRequest;
 use App\Modules\Approvals\Support\ApprovalDecisionKind;
 use App\Modules\Approvals\Support\ApprovalEvidenceAccess;
 use App\Modules\Approvals\Support\ApprovalInbox;
+use App\Modules\Approvals\Support\Review\ApprovalReviewRegistry;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -35,9 +36,12 @@ class ApprovalRequestResource extends JsonResource
             'amount_base' => $showMoney ? ($row->facts['amount_base'] ?? null) : null,
             'evidence' => $showMoney ? ($row->facts['evidence'] ?? []) : [],
             'evidence_visible' => (bool) $showMoney,
+            'document_review_required' => (bool) app(ApprovalReviewRegistry::class)->has($row->subject_type),
+            'document_review_ready' => (bool) app(ApprovalReviewRegistry::class)->available($row),
+            'document_review' => $this->when(app(ApprovalReviewRegistry::class)->has($row->subject_type), fn () => new ApprovalDocumentReviewResource($row)),
             'can_decide' => $actionable !== null, 'my_step_id' => $actionable?->id,
             'steps' => $row->steps->map(fn ($s): array => [
-                'id' => $s->id, 'stage' => $s->stage, 'name' => $s->name, 'status' => $s->status->value,
+                'review_profile' => $s->review_profile->value, 'id' => $s->id, 'stage' => $s->stage, 'name' => $s->name, 'status' => $s->status->value,
                 'required_approvals' => $s->required_approvals,
                 'approved_count' => $s->decisions->where('decision', ApprovalDecisionKind::Approved)->count(),
                 'deadline_at' => $s->deadline_at?->toIso8601String(), 'overdue' => $s->overdue_at !== null,

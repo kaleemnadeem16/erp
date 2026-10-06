@@ -8,6 +8,7 @@ import type { ApprovalRequestResourceStepsItemDeadlineAt } from "./approvalReque
 import type { ApprovalRequestResourceStepsItemDecisionsItem } from "./approvalRequestResourceStepsItemDecisionsItem";
 
 export type ApprovalRequestResourceStepsItem = {
+  review_profile: string;
   id: number;
   stage: number;
   name: string;

@@ -20,7 +20,7 @@ final class AuditAccessInventory extends Command
         'A2' => ['accounting.chart-of-account.manage'],
         'A3' => ['parties.party.manage', 'parties.customer-account.manage', 'parties.supplier-account.manage', 'parties.supplier-site.manage', 'parties.credit-limit.view', 'parties.credit-limit.manage', 'parties.payment-terms.manage'],
         'A4' => ['accounting.account-mapping.view', 'accounting.account-mapping.manage'], // ADR 0084.
-        'A5' => [], // Projection follows subject capabilities and workflow eligibility; no new capability.
+        'A5' => ['approvals.document.technical-review'], // ADR 0085 optional specialist duty; commercial approval stays subject-owned.
         'A6' => ['inventory.availability.view', 'inventory.stock.view', 'inventory.movement.view'],
     ];
 

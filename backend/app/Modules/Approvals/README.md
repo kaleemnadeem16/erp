@@ -33,6 +33,16 @@ Delegation lists show the caller's own involvement unless they hold delegation m
 Decision eligibility requires an active actor and active delegated principal, each past any
 mandatory temporary-password change; suspension cannot be bypassed through retained authority.
 
+## Document review
+
+`Support/Review` owns the versioned whitelist registry, frozen snapshots and request-specific
+projection ([ADR 0085](../../../../docs/decisions/0085-request-specific-document-review-for-approvals.md)).
+The PO adapter lives here and never changes Purchasing data. New consumers register their own
+provider and optional technical-duty capability; do not reuse a PO permission for another subject.
+Missing mandatory evidence prevents decisions. Relevant changes invalidate approval even when
+routing totals are unchanged. `approvals.document.technical-review` is additive and narrowly
+backfilled from existing full PO approval grants; it grants no ordinary PO or pricing read.
+
 ## Does not own
 
 Departments or record-level scope (Q26), notifications (deliberately deferred to the shared ERP-wide capability, Q33 — do not add

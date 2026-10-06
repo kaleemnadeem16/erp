@@ -7,6 +7,8 @@ namespace App\Modules\Approvals\Support;
 /** Approvals-owned capabilities registered through the shared permission registry. */
 final class PermissionVocabulary
 {
+    public const TECHNICAL_REVIEW = 'approvals.document.technical-review';
+
     /** @return list<string> */
     public static function all(): array
     {
@@ -16,6 +18,7 @@ final class PermissionVocabulary
             'approvals.delegation.manage',
             'approvals.settings.manage',
             'approvals.history.view',
+            self::TECHNICAL_REVIEW,
         ];
     }
 }

@@ -14,6 +14,7 @@ use App\Modules\Approvals\Http\Resources\ApprovalRequestResource;
 use App\Modules\Approvals\Models\ApprovalRequest;
 use App\Modules\Approvals\Support\ApprovalDecisionKind;
 use App\Modules\Approvals\Support\ApprovalInbox;
+use App\Modules\Approvals\Support\ApprovalRequestAccess;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
@@ -43,10 +44,7 @@ class ApprovalRequestController extends Controller
     {
         $user = $request->user();
         $approval_request->load(['steps.policyStep', 'steps.decisions']);
-        $involved = $approval_request->submitted_by === $user->id
-            || $user->can('approvals.history.view')
-            || $approval_request->steps->flatMap->decisions->contains(fn ($d): bool => in_array($user->id, [$d->decided_by, $d->principal_id], true))
-            || ($approval_request->isOpen() && $inbox->actionableStep($user, $approval_request) !== null);
+        $involved = app(ApprovalRequestAccess::class)->canView($user, $approval_request);
         abort_unless($involved, 403, 'This approval is not yours to see.');
 
         return new ApprovalRequestResource($approval_request);

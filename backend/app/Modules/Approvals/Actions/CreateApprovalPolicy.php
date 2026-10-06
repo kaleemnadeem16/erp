@@ -58,6 +58,7 @@ final class CreateApprovalPolicy
         foreach ($steps as $i => $step) {
             $policy->steps()->create([
                 'stage' => $step['stage'] ?? $i + 1, 'name' => $step['name'], 'required_approvals' => $step['required_approvals'],
+                'review_profile' => $step['review_profile'] ?? 'COMMERCIAL',
                 'permission' => $step['permission'] ?? null, 'use_authority_limit' => (bool) ($step['use_authority_limit'] ?? false),
                 'allow_submitter' => (bool) ($step['allow_submitter'] ?? false), 'expires_after_hours' => $step['expires_after_hours'] ?? null,
                 'on_expiry' => $step['on_expiry'] ?? 'FLAG_OVERDUE', 'escalation_permission' => $step['escalation_permission'] ?? null,

@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\Approvals\Support;
 
 use App\Exceptions\DomainInvariantException;
+use App\Modules\Approvals\Support\Review\ApprovalReviewRegistry;
+use App\Modules\Approvals\Support\Review\ReviewProfile;
 
 /**
  * What a policy version may contain (ADR 0070 §3–§5). Conditions must use facts the subject type declares with
@@ -44,6 +46,11 @@ final class ApprovalPolicyGuard
             throw new DomainInvariantException('An approval policy needs at least one step.', 'steps');
         }
         foreach ($steps as $i => $step) {
+            $value = $step['review_profile'] ?? 'COMMERCIAL';
+            $profile = $value instanceof ReviewProfile ? $value : ReviewProfile::tryFrom((string) $value);
+            if ($profile === null || ($profile->value === 'OPERATIONAL' && (app(ApprovalReviewRegistry::class)->technicalPermission($subjectType) === null || ! empty($step['use_authority_limit'])))) {
+                throw new DomainInvariantException('Operational review needs a registered technical duty and cannot use spending authority limits.', "steps.{$i}.review_profile");
+            }
             if (((int) ($step['required_approvals'] ?? 0)) < 1) {
                 throw new DomainInvariantException('A step needs at least one approval.', "steps.{$i}.required_approvals");
             }

@@ -40,13 +40,14 @@ design baseline and per-workflow checklist are in
   again. An approval given at 80,000 cannot be used to issue an 800,000 order.
 - **Currency evidence.** Amounts are routed in base currency at the document's own pinned rate. The request keeps the original
   amount and currency, the rate, its date and source, and the converted amount, so an approval never moves when a rate does.
-- **Who sees the money.** Authority to approve is not a licence to read commercial or cost data. The routed amount and the currency
-  evidence are returned only to (1) whoever the document's own module says may see its figures — each subject answers
-  `ApprovalSubject::canViewEvidence` (a purchase order: `purchasing.commercial-cost.view` or `purchasing.purchase-order.create`;
-  stock-mix and material-variance: `estimating.internal_cost.view`); (2) the person currently asked to decide an open step, for that
-  request only; (3) a person who has decided or acted on it. Everyone else — including a pure auditor with `approvals.history.view`
-  and the submitter — gets the status, steps and decisions with `amount_base: null`, `evidence: []` and `evidence_visible: false`
-  (`ApprovalEvidenceAccess`). A subject's `summary` must never carry a cost figure. Free-text decision reasons are not filtered.
+- **Who sees the money.** For registered document-review subjects, commercial reviewers receive the
+  saved document's prices and currency evidence; technical reviewers receive operational sections only.
+  Ordinary financial readers still need the subject's existing field capability and request access.
+  History permission alone reveals no document snapshot. A PO's full-commercial step is the default;
+  an operational step uses `approvals.document.technical-review` without spending-authority limits.
+  Past deciders retain the profile recorded with their decision, never later expanded evidence.
+  Other subjects keep ADR 0070's amount-only evidence rules until they register a review provider.
+  Free-text decision/closing reasons and ceiling readership remain unchanged pending Q35.
 - **Expiry never decides.** A step may have `expires_after_hours`. On expiry it is marked *overdue* (still decidable; an optional
   `escalation_permission` starts to count) or, if configured, the request ends as `EXPIRED` and must be resubmitted.
   `ExpireOverdueApprovals` applies this; nothing is ever auto-approved or auto-rejected.
@@ -91,8 +92,8 @@ changed-document evidence or settling expiry; those preflight checks can cancel 
 not be triggered by an unrelated caller. Eligibility is checked again inside the decision transaction.
 `ApprovalInformationFlowTest` verifies foreign list/detail/Action paths and that an ineligible
 response neither discloses document-change state nor cancels a stale request. Existing engine tests
-retain eligible stale/expired handling. Q35's amount exception, ceiling-reader and free-text reason
-policies are unchanged; see the [decision brief](../OPEN-QUESTIONS.md#q35--approval-evidence-exception-and-authority-ceiling-visibility).
+retain eligible stale/expired handling. Q35 document review follows ADR 0085; ceiling-reader and free-text reason
+policies remain unchanged; see the [decision brief](../OPEN-QUESTIONS.md#q35--approval-evidence-exception-and-authority-ceiling-visibility).
 
 ## Screens
 
@@ -146,7 +147,29 @@ it retains the live request and becomes idempotent again after renewal. Producti
 is unchanged. Regression tests cover fresh seeding, normal self-service password preservation,
 restricted personas, historical states, live approval consumption and lapsed-authority renewal.
 
+## Request-specific document review (ADR 0085)
+
+Policy and request steps store `review_profile varchar(16)` (`COMMERCIAL` by default or
+`OPERATIONAL`); operational policy steps cannot use authority limits. The versioned whitelist
+in `facts.document_review` stores company/subject identity, capture time, fingerprint and separate
+operational/commercial sections. Decisions freeze `authority_snapshot.review_profile`.
+The Approvals-owned PO adapter reads supplier/site, terms, lines/specifications, quantities, units,
+delivery, pricing, tax, totals and pinned FX. It exposes no GL mappings, credit limits, passwords
+or unrelated offers. The same projection powers inbox, detail, decision response and print.
+Relevant same-total changes invalidate decisions and the final transition guard.
+
+The migration grants the technical duty only to existing full PO approvers through their existing
+company role/direct grant; technical-only newcomers receive only that duty. It prepares still-open
+PO requests only when saved routing facts match current facts, without reconstructing completed
+history. Missing/mismatched mandatory evidence prevents a decision; withdraw and resubmit stale
+requests. Historical approvals without a snapshot preserve their previous transition validity,
+but have no fabricated review document. Demo Technical Reviewer has only the technical duty;
+the 95,000 base-currency example requires a separate commercial review afterwards and is replenished
+idempotently on reseeding. Existing active credentials are preserved.
+
 ## Related
+
+- [ADR 0085](../decisions/0085-request-specific-document-review-for-approvals.md)
 
 - [ADR 0070](../decisions/0070-shared-configurable-approval-engine.md), [approval-workflows.md](../architecture/approval-workflows.md)
 - [Purchasing](purchasing.md), [Material resolution](material-resolution.md)

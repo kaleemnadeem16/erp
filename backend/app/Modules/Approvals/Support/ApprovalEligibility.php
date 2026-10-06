@@ -10,6 +10,9 @@ use App\Modules\Approvals\Models\ApprovalAuthority;
 use App\Modules\Approvals\Models\ApprovalDelegation;
 use App\Modules\Approvals\Models\ApprovalRequest;
 use App\Modules\Approvals\Models\ApprovalRequestStep;
+use App\Modules\Approvals\Support\Review\ApprovalReviewRegistry;
+use App\Modules\Approvals\Support\Review\ReviewProfile;
+use App\Support\CompanyContext;
 use Brick\Math\BigDecimal;
 use Illuminate\Support\Carbon;
 
@@ -24,7 +27,7 @@ final class ApprovalEligibility
 
     public function grantFor(User $actor, ApprovalRequest $request, ApprovalRequestStep $step): ?ApprovalGrant
     {
-        if (! $this->canAct($actor)) {
+        if ($actor->company_id !== $request->company_id || $request->company_id !== app(CompanyContext::class)->id() || ! $this->canAct($actor) || ! app(ApprovalReviewRegistry::class)->available($request)) {
             return null;
         }
         $own = $this->directGrant($actor, $request, $step);
@@ -52,11 +55,14 @@ final class ApprovalEligibility
 
     private function directGrant(User $person, ApprovalRequest $request, ApprovalRequestStep $step): ?ApprovalGrant
     {
-        if (! $this->canAct($person)) {
+        if ($person->company_id !== $request->company_id || ! $this->canAct($person)) {
             return null;
         }
         $policyStep = $step->policyStep;
-        $permission = $policyStep->permission ?? $this->subjects->get($request->subject_type)->approvePermission();
+        $permission = $policyStep->permission ?? ($step->review_profile === ReviewProfile::Operational ? app(ApprovalReviewRegistry::class)->technicalPermission($request->subject_type) : $this->subjects->get($request->subject_type)->approvePermission());
+        if ($permission === null) {
+            return null;
+        }
         $viaEscalation = false;
         if (! $person->can($permission)) {
             // A step that has gone overdue may widen to people holding its escalation capability (ADR 0070 §9).

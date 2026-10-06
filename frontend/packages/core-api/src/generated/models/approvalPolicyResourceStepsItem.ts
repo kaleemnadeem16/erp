@@ -9,6 +9,7 @@ import type { ApprovalPolicyResourceStepsItemExpiresAfterHours } from "./approva
 import type { ApprovalPolicyResourceStepsItemEscalationPermission } from "./approvalPolicyResourceStepsItemEscalationPermission";
 
 export type ApprovalPolicyResourceStepsItem = {
+  review_profile: string;
   id: number;
   stage: number;
   name: string;
