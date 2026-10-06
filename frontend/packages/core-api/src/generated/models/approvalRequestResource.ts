@@ -23,6 +23,7 @@ export interface ApprovalRequestResource {
   submitted_at: string;
   closed_at: ApprovalRequestResourceClosedAt;
   closing_reason: ApprovalRequestResourceClosingReason;
+  closing_reason_visible: boolean;
   /** The routing evidence an approver decides on — including the pinned currency conversion — only for whoever may see
 the document's figures, or is asked to decide (ApprovalEvidenceAccess); an auditor sees the decisions without it. */
   amount_base: unknown;

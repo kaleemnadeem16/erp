@@ -138,6 +138,7 @@ const rules: readonly Rule[] = [
       "approvals.policy.manage",
       "approvals.settings.manage",
       "approvals.authority.manage",
+      "approvals.authority.view",
       "approvals.delegation.manage",
       "approvals.history.view",
     ],
@@ -164,7 +165,7 @@ export function canAccessScreen(
   ) {
     return permissions.has("purchasing.purchase-order.create");
   }
-  if (pathname === "/goods-receipts/new") {
+  if (pathname === "/goods-receipts/new" || /^\/goods-receipts\/[^/]+\/edit$/.test(pathname)) {
     return permissions.has("purchasing.goods-receipt.create");
   }
   if (pathname === "/recalculation-requests/new") {

@@ -189,6 +189,15 @@ added to that administrator only; no Buyer or operational role was broadened.
   category screen, print and edit form passes (its `/user` route handler raced a navigation and aborted the test; fixed in the spec, the
   assertions themselves unchanged). Limits: GET responses only (mutation responses use the same Resources and have their own tests); a new
   include that nests these entities needs adding to `INCLUDES` in the test. **Add any new protected field to `FIELDS` there.**
+- [x] **Q35 remainder — approval limits and written reasons (2026-10-06, [ADR 0087](../decisions/0087-approval-limits-and-reasons-are-separate-auditor-capabilities.md)):**
+  the owner accepted all three recommendations. The authority list now needs `approvals.authority.manage` or the new `approvals.authority.view`
+  (history alone answers 403); person-written reasons (a decision's reason; the closing reason of a rejection or withdrawal) follow the
+  evidence — evidence-entitled readers, `approvals.reason.view` holders and the author — with `reason_visible`/`closing_reason_visible` so the
+  screen can say "reason not shown to you"; system-written reasons quote no figures and stay visible. A migration gives both capabilities to
+  every current history reader (per company, additive, idempotent) so nothing is lost on release. Tests read response bodies for each reader,
+  a delegator, a withdrawal and system reasons (mutation-checked: reopening either rule fails four tests); rollout, demo-seeder and browser
+  checks pass. **Needs staging:** review who the backfill gave both reads to, and revoke per person where they do not need them. **Known
+  effect:** a submitter without evidence entitlement does not read why their request was rejected.
 - [ ] **Information-flow review (continuing):** complete the module inspections above and update this matrix with endpoint/Action/test
   references. New Inventory/Purchasing/Estimating features need their own check before sign-off.
 - [ ] **Deployment verification:** enumerate each active company member, role, direct grant and

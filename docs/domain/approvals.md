@@ -68,8 +68,9 @@ Recalculation, negative-stock and cutover approvals keep their own module-specif
 ## Capabilities
 
 `approvals.settings.manage` (modes), `approvals.policy.manage` (policies; also withdraw any request), `approvals.authority.manage`
-(ceilings), `approvals.delegation.manage` (delegate on someone's behalf and see everyone's delegations — anyone may delegate their
-own), `approvals.history.view` (see every request). Per-subject capabilities live with the module:
+(ceilings), `approvals.authority.view` (read everyone's ceilings, nothing more), `approvals.reason.view` (read person-written reasons on
+every request), `approvals.delegation.manage` (delegate on someone's behalf and see everyone's delegations — anyone may delegate their
+own), `approvals.history.view` (see every request — its outcome, who decided and when; not the limits or the written reasons, see below). Per-subject capabilities live with the module:
 `purchasing.purchase-order.submit`, `purchasing.purchase-order.approve`, `estimating.material_variance.approve`.
 Delegation list responses contain only records involving the caller unless they hold
 `approvals.delegation.manage`; this is the existing ADR 0070 boundary, not a Q35 policy decision.
@@ -92,8 +93,8 @@ changed-document evidence or settling expiry; those preflight checks can cancel 
 not be triggered by an unrelated caller. Eligibility is checked again inside the decision transaction.
 `ApprovalInformationFlowTest` verifies foreign list/detail/Action paths and that an ineligible
 response neither discloses document-change state nor cancels a stale request. Existing engine tests
-retain eligible stale/expired handling. Q35 document review follows ADR 0085; ceiling-reader and free-text reason
-policies remain unchanged; see the [decision brief](../OPEN-QUESTIONS.md#q35--approval-evidence-exception-and-authority-ceiling-visibility).
+retain eligible stale/expired handling. Q35 document review follows ADR 0085; limit and reason readership follow
+[ADR 0087](../decisions/0087-approval-limits-and-reasons-are-separate-auditor-capabilities.md) (next section).
 
 ## Screens
 
@@ -167,7 +168,30 @@ but have no fabricated review document. Demo Technical Reviewer has only the tec
 the 95,000 base-currency example requires a separate commercial review afterwards and is replenished
 idempotently on reseeding. Existing active credentials are preserved.
 
+## Who reads limits and written reasons (ADR 0087, Q35)
+
+**Limits.** `GET approval-authorities` needs `approvals.authority.manage` or `approvals.authority.view`; history alone answers 403.
+Everyone reads their own through `approval-authorities/mine`. The decision's frozen `authority_snapshot` (which holds the ceiling) is
+never returned. The settings screen shows the Authorities panel only to those who may read it.
+
+**Reasons.** The reason on a decision, and the closing reason when a person rejected or withdrew the request, are person-written free
+text and can repeat a figure the structured fields withhold, so `ApprovalReasonAccess` makes them follow the evidence: shown to anyone
+entitled to the request's evidence (`ApprovalEvidenceAccess`), to `approvals.reason.view` holders, and to the author (a decider and the
+principal they acted for; the submitter for their own withdrawal). Otherwise the response carries `reason: null` with
+`reason_visible: false` (and `closing_reason_visible: false`), and the screen says "reason not shown to you"; the outcome, decider and
+time stay visible. Reasons the system writes (expiry, "document changed", "order cancelled") quote no figures and stay visible. A
+submitter without evidence entitlement therefore does not read why their request was rejected.
+
+**Rollout.** One migration gives `approvals.authority.view` and `approvals.reason.view` to every role and person that holds
+`approvals.history.view` today (per company, additive, idempotent), so no one loses a read on release. Demo roles "Approvals auditor"
+(history + both) and "Approvals history reader" (history only) are built through the role Actions for
+`demo-auditor@erp.x1techs.com` and `demo-historian@erp.x1techs.com`. Tests: `ApprovalCeilingAndReasonAccessTest` (response bodies for each
+reader, a delegator, a withdrawal and system reasons), `ApprovalAuditorReadsRolloutTest`, `ApprovalAuditorsDemoSeederTest`, and a browser
+spec for the withheld note.
+
 ## Related
+
+- [ADR 0087](../decisions/0087-approval-limits-and-reasons-are-separate-auditor-capabilities.md)
 
 - [ADR 0085](../decisions/0085-request-specific-document-review-for-approvals.md)
 

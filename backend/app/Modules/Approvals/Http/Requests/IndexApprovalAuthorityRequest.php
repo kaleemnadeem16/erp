@@ -10,7 +10,7 @@ class IndexApprovalAuthorityRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->canAny(['approvals.authority.manage', 'approvals.history.view']) === true;
+        return $this->user()?->canAny(['approvals.authority.manage', 'approvals.authority.view']) === true;
     }
 
     /** @return array<string, mixed> */

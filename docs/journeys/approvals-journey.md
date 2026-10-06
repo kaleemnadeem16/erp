@@ -125,3 +125,10 @@ saved review document; the UI says so rather than reconstructing it from current
 - [Product journeys](README.md)
 - [Phase 2 operational journey](phase-2-operational-journey.md)
 - [Phase 3 material-planning journey](phase-3-material-planning-journey.md)
+
+## Who may read limits and written reasons
+
+An auditor holding `approvals.history.view` sees what was decided, by whom and when. A person's spending limit and the free-text reason
+written on a decision need their own capabilities, `approvals.authority.view` and `approvals.reason.view`, so a history reader
+alone sees "reason not shown to you" where the Approvals auditor sees the text. Reviewers entitled to the request's figures, and the
+author of a reason, read it as well. See [ADR 0087](../decisions/0087-approval-limits-and-reasons-are-separate-auditor-capabilities.md).

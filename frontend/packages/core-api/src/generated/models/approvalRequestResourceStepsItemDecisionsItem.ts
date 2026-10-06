@@ -12,6 +12,7 @@ export type ApprovalRequestResourceStepsItemDecisionsItem = {
   id: number;
   decision: string;
   reason: ApprovalRequestResourceStepsItemDecisionsItemReason;
+  reason_visible: boolean;
   decided_by: ApprovalRequestResourceStepsItemDecisionsItemDecidedBy;
   acting_for: ApprovalRequestResourceStepsItemDecisionsItemActingFor;
   decided_at: string;

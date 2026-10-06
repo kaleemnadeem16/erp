@@ -147,28 +147,6 @@ digest delivery. Those are prompts, not a predetermined architecture. Consumers 
 expiries, overdue steps and escalation capabilities, recalculation and negative-stock reviews past their SLA, and the
 purchase-order and quotation workflows.
 
-### Q35 — Approval evidence exception and authority-ceiling visibility
-**Blocks:** Finalising the access audit's information-flow review for approvals (not any build)
-
-**Document review decided:** [ADR 0085](decisions/0085-request-specific-document-review-for-approvals.md)
-accepts full commercial PO review by default, optional technical-only steps, request-specific
-frozen evidence and invalidation on relevant changes. The implementation covers inbox, detail,
-decision responses and print without granting general document access. The primary-source
-comparison and rejected alternatives are preserved in that ADR.
-
-**Remaining decision brief (2026-10-06; awaiting owner):** Decide who may read per-person
-spending ceilings and confidential decision/closing reasons. Options: (1) retain the current
-history-reader access and unrestricted reasons; (2) restrict ceilings to self and authority
-managers and reasons to authorised evidence reviewers; (3) add explicit auditor capabilities
-for ceiling and confidential-reason readership, alongside self/manager access.
-**Recommend option 3:** history permission alone should reveal outcomes, identities and dates;
-complete governance evidence needs an explicit grant. Do not scrub numbers from text: reasons
-can reveal sensitive information without containing numbers. Consequences: existing readers
-need an owner-approved assignment/backfill plan; ordinary history loses confidential detail;
-audit users can retain complete evidence through narrow capabilities. These boundaries remain
-unchanged until decided. Reuse ADR 0070 and ADR 0085's research; technical document review does
-not resolve confidential comments or authority-ceiling access.
-
 ### Q36 — Bearer-token lifetime and device sessions
 **Blocks:** Any mobile client or integration using bearer tokens (Phase 7)
 
@@ -206,6 +184,14 @@ existing ADR research were used, without treating unverified detail as policy.
 ## Answered---
 
 ## Answered
+
+<a id="q35--approval-evidence-exception-and-authority-ceiling-visibility"></a>
+
+Q35 was resolved on 2026-10-06 in two steps: [ADR 0085](decisions/0085-request-specific-document-review-for-approvals.md)
+(what an approver inspects: the full purchase order by default, optional technical-only review) and
+[ADR 0087](decisions/0087-approval-limits-and-reasons-are-separate-auditor-capabilities.md) (everyone's
+spending limits need `approvals.authority.manage` or `approvals.authority.view`; person-written reasons
+follow the evidence, plus `approvals.reason.view` for an auditor and the author's own words).
 
 <a id="q34--finance-owned-field-visibility-for-accounts-and-credit-terms"></a>
 

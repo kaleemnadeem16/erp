@@ -63,6 +63,8 @@ final class DemoDatabaseSeeder extends Seeder
                 ApprovalsDemoSeeder::class,
                 // Needs the demo administrator's full permission set (synced by StockDemoSeeder) and the registered recipe capability.
                 RecipeAccessDemoSeeder::class,
+                // After ApprovalsDemoSeeder: the auditors read the approvals it leaves in every state.
+                ApprovalAuditorsDemoSeeder::class,
             ]);
         });
     }

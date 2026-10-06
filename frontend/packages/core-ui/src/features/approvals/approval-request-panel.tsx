@@ -163,6 +163,7 @@ export function ApprovalRequestPanel({ request, onChanged, mayWithdraw = false }
                     {d.decision === 'APPROVED' ? 'Approved' : 'Rejected'} by {d.decided_by.name}
                     {d.acting_for !== null ? ' (acting as a delegate)' : ''} on {formatDateTime(d.decided_at)}
                     {d.reason ? ` — “${d.reason}”` : ''}
+                    {d.reason_visible === false && <span className="italic"> — reason not shown to you</span>}
                   </li>
                 ))}
               </ul>
@@ -175,6 +176,12 @@ export function ApprovalRequestPanel({ request, onChanged, mayWithdraw = false }
         <p className="text-sm text-muted-foreground">
           <AlertTriangle className="mr-1 inline size-4" aria-hidden="true" />
           {request.closing_reason}
+        </p>
+      )}
+      {request.closing_reason_visible === false && (
+        <p className="text-sm italic text-muted-foreground">
+          <AlertTriangle className="mr-1 inline size-4" aria-hidden="true" />
+          The reason this request was closed is not shown to you.
         </p>
       )}
 

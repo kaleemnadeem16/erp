@@ -101,8 +101,9 @@ in the same commit.
 | [0084](0084-separate-financial-master-data-fields.md) | Separate financial master-data fields from ordinary maintenance | accepted | 2026-10-06 |
 | [0085](0085-request-specific-document-review-for-approvals.md) | Request-specific document review with commercial and technical approval profiles | accepted | 2026-10-06 |
 | [0086](0086-gate-recipe-reads-by-capability.md) | Gate recipe reads behind a capability administrators grant through roles | accepted | 2026-10-06 |
+| [0087](0087-approval-limits-and-reasons-are-separate-auditor-capabilities.md) | Approval limits and written reasons are separate auditor capabilities | accepted | 2026-10-06 |
 
-**Next number: 0087**
+**Next number: 0088**
 
 ## By theme
 

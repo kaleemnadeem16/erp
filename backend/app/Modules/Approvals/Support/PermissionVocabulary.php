@@ -18,6 +18,8 @@ final class PermissionVocabulary
             'approvals.delegation.manage',
             'approvals.settings.manage',
             'approvals.history.view',
+            'approvals.authority.view',
+            'approvals.reason.view',
             self::TECHNICAL_REVIEW,
         ];
     }

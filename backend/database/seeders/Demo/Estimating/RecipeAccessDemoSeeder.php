@@ -4,11 +4,8 @@ declare(strict_types=1);
 
 namespace Database\Seeders\Demo\Estimating;
 
-use App\Models\Role;
 use App\Models\User;
-use App\Modules\Administration\Actions\SaveRole;
-use App\Modules\Administration\Actions\SyncMemberAccess;
-use App\Support\CompanyContext;
+use Database\Seeders\Demo\Concerns\CreatesDemoRolePersonas;
 use Database\Seeders\Demo\Concerns\EnsuresDemoEnvironment;
 use Illuminate\Database\Seeder;
 
@@ -26,6 +23,7 @@ use Illuminate\Database\Seeder;
  */
 final class RecipeAccessDemoSeeder extends Seeder
 {
+    use CreatesDemoRolePersonas;
     use EnsuresDemoEnvironment;
 
     public const ROLE = 'Production planner';
@@ -41,31 +39,9 @@ final class RecipeAccessDemoSeeder extends Seeder
         $this->ensureDemoEnvironment();
         $admin = User::query()->where('email', config('demo.user.email'))->firstOrFail();
 
-        $this->persona($admin, self::ROLE, 'Reads formulation recipes, application rates and assembly components, without changing them.',
+        $this->rolePersona($admin, self::ROLE, 'Reads formulation recipes, application rates and assembly components, without changing them.',
             ['estimating.recipe.view'], self::PERSONA_EMAIL, 'Demo Production Planner');
-        $this->persona($admin, self::STEWARD_ROLE, 'Maintain item and category master data.',
+        $this->rolePersona($admin, self::STEWARD_ROLE, 'Maintain item and category master data.',
             ['inventory.item.manage', 'inventory.category.manage'], self::STEWARD_EMAIL, 'Demo Master Data Steward');
-    }
-
-    /** @param  list<string>  $permissions */
-    private function persona(User $admin, string $roleName, string $description, array $permissions, string $email, string $name): void
-    {
-        $company = app(CompanyContext::class)->id();
-        $role = Role::query()->where('team_id', $company)->where('name', $roleName)->first()
-            ?? app(SaveRole::class)(null, [
-                'name' => $roleName,
-                'description' => $description,
-                'permissions' => $permissions,
-                'reason' => 'Demo: an example role — a real company builds its own from the registered capabilities.',
-            ], $admin);
-
-        $member = $this->demoMember($email, $name);
-        if ($member->roles()->doesntExist() && $member->permissions()->doesntExist()) {
-            app(SyncMemberAccess::class)($member, [
-                'role_ids' => [$role->id],
-                'direct_permissions' => [],
-                'reason' => "Demo persona: {$name}.",
-            ], $admin);
-        }
     }
 }
