@@ -100,8 +100,7 @@ final class ApprovalsDemoSeeder extends Seeder
     /** @param  list<string>  $permissions */
     private function persona(string $email, string $name, array $permissions): User
     {
-        $user = User::query()->updateOrCreate(['email' => $email], ['name' => $name, 'password' => config('demo.user.password')]);
-        $user->forceFill(['email_verified_at' => now()])->save();
+        $user = $this->demoMember($email, $name);
         $user->syncPermissions($permissions);
 
         return $user;
@@ -140,7 +139,7 @@ final class ApprovalsDemoSeeder extends Seeder
     private function authorities(): void
     {
         foreach ([[$this->manager, '300000', false], [$this->finance, null, true], [$this->admin, null, true]] as [$user, $ceiling, $unlimited]) {
-            if (ApprovalAuthority::query()->where('user_id', $user->id)->where('subject_type', 'PURCHASE_ORDER')->whereNull('revoked_at')->exists()) {
+            if (ApprovalAuthority::query()->inForce()->where('user_id', $user->id)->where('subject_type', 'PURCHASE_ORDER')->exists()) {
                 continue;
             }
             app(CreateApprovalAuthority::class)([

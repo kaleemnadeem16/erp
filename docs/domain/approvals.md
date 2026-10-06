@@ -129,6 +129,23 @@ the way.
 - Submitting a material plan for approval (Phase 4 adoption).
 - Migrating recalculation, negative-stock and cutover approvals onto the engine.
 
+## Demo approval members and reruns
+
+Demo approval personas are created once by the shared `EnsuresDemoEnvironment::demoMember`
+helper, using an active member and the normal hashed-password model path. It reloads persisted
+PostgreSQL defaults before eligibility checks: Eloquent does not hydrate those defaults after
+inserting a new row. Reruns preserve existing passwords and credential versions, and refuse
+suspended/invited/temporary-password members rather than activating them or clearing restrictions.
+Complete the normal account activation/password flow for those members before reseeding.
+Existing narrow buyer/manager/Finance capability sets remain unchanged; granting a capability
+never repairs credential state. Test factories already supply active password-backed actors,
+so `PermissionedActor` remains a grant-only helper and preserves negative lifecycle cases.
+
+The demo reconciles lapsed authority/delegation through the existing governance Actions;
+it retains the live request and becomes idempotent again after renewal. Production eligibility
+is unchanged. Regression tests cover fresh seeding, normal self-service password preservation,
+restricted personas, historical states, live approval consumption and lapsed-authority renewal.
+
 ## Related
 
 - [ADR 0070](../decisions/0070-shared-configurable-approval-engine.md), [approval-workflows.md](../architecture/approval-workflows.md)

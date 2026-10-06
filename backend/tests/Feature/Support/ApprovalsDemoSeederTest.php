@@ -7,6 +7,7 @@ namespace Tests\Feature\Support;
 use App\Exceptions\DomainInvariantException;
 use App\Models\User;
 use App\Modules\Approvals\Actions\DecideApproval;
+use App\Modules\Approvals\Models\ApprovalAuthority;
 use App\Modules\Approvals\Models\ApprovalDelegation;
 use App\Modules\Approvals\Models\ApprovalPolicy;
 use App\Modules\Approvals\Models\ApprovalRequest;
@@ -126,6 +127,23 @@ final class ApprovalsDemoSeederTest extends TestCase
 
         $this->artisan('demo:seed')->assertSuccessful();
         $this->assertCount(1, $waiting(), 'a second re-seed must not add another while one is waiting');
+    }
+
+    public function test_lapsed_authority_and_delegation_are_renewed_without_replacing_the_live_request(): void
+    {
+        $manager = $this->user('demo-manager@erp.x1techs.com');
+        $request = $this->request('A');
+        ApprovalAuthority::query()->where('user_id', $manager->id)->update(['valid_to' => today()->subDay()]);
+        ApprovalDelegation::query()->where('delegator_id', $manager->id)->update(['valid_from' => today()->subDays(8), 'valid_to' => today()->subDay()]);
+        $this->assertNull(app(ApprovalInbox::class)->actionableStep($manager, $request));
+        $this->artisan('demo:seed')->assertSuccessful();
+        $this->assertSame($request->id, $this->request('A')->id);
+        $this->assertNotNull(app(ApprovalInbox::class)->actionableStep($manager->fresh(), $request->fresh()));
+        $this->assertSame(1, ApprovalAuthority::query()->inForce()->where('user_id', $manager->id)->count());
+        $this->assertSame(1, ApprovalDelegation::query()->inForce()->where('delegator_id', $manager->id)->count());
+        $counts = [ApprovalAuthority::query()->count(), ApprovalDelegation::query()->count()];
+        $this->artisan('demo:seed')->assertSuccessful();
+        $this->assertSame($counts, [ApprovalAuthority::query()->count(), ApprovalDelegation::query()->count()]);
     }
 
     public function test_reseeding_changes_nothing(): void

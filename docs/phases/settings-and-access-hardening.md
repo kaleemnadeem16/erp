@@ -148,6 +148,24 @@ migration and normal designated-admin sync, then complete the staging assignment
 Staging Finance/sales readership and service-actor verification remain open. The earlier checkpoints
 are historical evidence; Q34 is resolved, while Q26/Q35/Q36 remain undecided.
 
+## Approval demo fixture repair — 2026-10-06
+
+The stricter actor/principal eligibility exposed unhydrated database defaults on newly created
+demo approvers. The shared demo-member helper creates once, loads persisted lifecycle state,
+preserves password changes on reruns and refuses restricted personas. Approval seeding keeps
+its narrow persona permissions and renews lapsed authority through `CreateApprovalAuthority`,
+without replacing the live request. `PermissionedActor` and production eligibility are unchanged.
+Final requested full run (`tests/Feature/Modules tests/Feature/Support tests/Architecture`):
+**1,676 passed, one remaining known failure, 8,582 assertions** (416.36 seconds).
+The sole failure is `TestingEnvironmentIsolationTest.php:24`, which expects `erp_testing` while
+the required wrapper deliberately selects the private `erp_codex_fixture_probe` database.
+The package-opening concurrency reproduction now passes; fresh/rerun/live-drift demo suites,
+`DemoMemberLifecycleTest`, authority/delegation renewal and the existing suspended/invited/
+temporary-password approval-denial tests pass. Explicit-path Pint and PHPStan pass; both private
+test databases were dropped. No real application-flow failure was found, no production eligibility
+or persona capability was relaxed, and no owner decision is needed for this fixture repair.
+No API contract changed, so there is no client regeneration.
+
 ## Related
 
 - [STATUS.md](../STATUS.md), [access-security-audit.md](../architecture/access-security-audit.md), [authorization.md](../architecture/authorization.md)
