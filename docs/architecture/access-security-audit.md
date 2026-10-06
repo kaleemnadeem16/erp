@@ -155,16 +155,23 @@ added to that administrator only; no Buyer or operational role was broadened.
 - [x] **Open-read sweep (2026-10-06, Part 1):** a user holding no capability was sent to every id-less API read; 28 answered 200.
   `tests/Feature/Support/OpenReadRoutesTest.php` now names each with a reason (15 shared reference lookups or the caller's own data, the
   estimating lookups whose cost fields are already projected, and the two settings endpoints whose only sensitive figure is projected) and
-  lists **eight still pending review**: `company` (registration/tax numbers — Core), `parties`, `customer-accounts`, `supplier-accounts`
-  (Q34), `chart-of-accounts` (A2/Finance), `approval-delegations` (Approvals), and `formulations` and `application-rates` (A9, recipe visibility) — those belong to Part 2 and the owner decisions, and
+  lists **six still pending review**: `company` (registration/tax numbers — Core), `parties`, `customer-accounts`, `supplier-accounts`
+  (Q34), `chart-of-accounts` (A2/Finance) and `approval-delegations` (Approvals); formulations and application rates left the list when A9 was fixed — those belong to Part 2 and the owner decisions, and
   each is removed from the pending list when decided. A new open read now fails the test (mutation-checked); so does a listed route that
   is no longer open. Limit: id-less routes only; `show` routes rely on each module's own denied tests.
-- [ ] **A9 recipe visibility (found 2026-10-06, owner decision):** formulation list/show/resolve and application-rate list/show/resolve are open
-  to every signed-in user, and they return each recipe's input items, quantities and wastage (and the material quantity per unit of work).
-  Cost, rate and margin fields are already projected by capability; the recipe itself is not. For a manufacturer the formulation may be the
-  most sensitive thing in the system. Decide whether recipes are confidential and to whom (formulators/estimators, buyers needing totals,
-  everyone), then gate by a read capability or project the lines, with response-body tests and the SPA screen rule. Until then the two routes
-  are listed as pending review in `OpenReadRoutesTest`. Nothing was changed in code.
+- [x] **A9 recipe visibility (found and fixed 2026-10-06, [ADR 0086](../decisions/0086-gate-recipe-reads-by-capability.md)):** formulation and
+  application-rate list/show/resolve answered every signed-in user, and assembly versions returned their components (items, quantities,
+  wastage). Cost, rate and margin were already projected; the recipe was not. The owner chose a dynamic model: one registered capability,
+  `estimating.recipe.view`, granted through company roles or directly in Access Administration, never named in code. Reading a recipe needs
+  it **or** a duty that cannot work without recipes (formulation, application-rate or assembly management, the Material Preview, internal-cost
+  reading — the cost breakdown lists every component, so withholding the recipe from a cost reader protects nothing). `RecipeReadAccess` holds
+  the rule; the six formulation/application-rate requests enforce it before any query; `AssemblyVersionResource` omits `components` (the key,
+  not an empty list) without it; the SPA screen rules admit the capability. Demo: company role "Production planner" (recipe capability only)
+  given to `demo-planner@erp.x1techs.com` through `SaveRole`/`SyncMemberAccess`; the Buyer persona is refused. Tests: denied outsiders
+  (unrelated, stock-only, purchasing-only, policy-history) and each allowing capability on both endpoints and formulation `include`s; an
+  assembly test that checks the response body for the absence of quantities; the seeder test drives the API as planner and buyer. No grant
+  migration: existing maintainers, estimators and cost readers are covered by their current capabilities; a Buyer who read recipes by accident
+  now needs an explicit grant — check with `erp:audit-access-inventory` before release.
 - [x] **Rollout check for the A8 read gates (2026-10-06, development database only):** `erp:audit-access-inventory` (read-only) over the 12
   demo members shows who has none of the capabilities now needed to read override requests or physical counts: Buyer, Receiver, Manager,
   Finance and two unrelated demo accounts (the counter loses override reads only). The SPA screen-access map already hid both screens from

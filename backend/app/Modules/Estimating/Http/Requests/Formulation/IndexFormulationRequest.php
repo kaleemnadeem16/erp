@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Estimating\Http\Requests\Formulation;
 
 use App\Http\Requests\Concerns\ValidatesListQuery;
+use App\Modules\Estimating\Support\RecipeReadAccess;
 use Illuminate\Foundation\Http\FormRequest;
 
 class IndexFormulationRequest extends FormRequest
@@ -13,7 +14,7 @@ class IndexFormulationRequest extends FormRequest
 
     public function authorize(): bool
     {
-        return true;
+        return RecipeReadAccess::allows($this->user());
     }
 
     /** @return array<string, mixed> */

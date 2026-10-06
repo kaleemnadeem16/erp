@@ -27,8 +27,12 @@ Built in [Phase 3](../phases/README.md); consumed by [sales-pipeline.md](sales-p
 
 ## Assembly access
 
-Authenticated company users can list and inspect assemblies and their versions as shared
-estimating lookups. Creating, editing, archiving or activating an assembly or version requires
+Authenticated company users can list and inspect assemblies and their version metadata as shared
+estimating lookups. A version's **components** (item, quantity per unit of work, wastage) are the
+assembly's recipe and are returned only to callers with recipe access — `estimating.recipe.view`, or
+assembly/formulation/application-rate management, the Material Preview or internal-cost reading
+([ADR 0086](../decisions/0086-gate-recipe-reads-by-capability.md)); everyone else receives the assembly
+without a `components` list. Creating, editing, archiving or activating an assembly or version requires
 `estimating.assembly.manage` at the API and non-HTTP Action boundary. The assembly setup screen
 uses the same effective capability, supplied by company roles or direct grants rather than a
 hardcoded role name. The version cost-breakdown endpoint exposes resolved internal costs and

@@ -24,6 +24,7 @@ final class PermissionVocabulary
             'estimating.stock_mix.choose',
             'estimating.stock_mix.approve',
             'estimating.policy-history.view',
+            'estimating.recipe.view',
             'estimating.material_preview.run',
             'estimating.inventory_availability.view',
             'estimating.internal_cost.view',

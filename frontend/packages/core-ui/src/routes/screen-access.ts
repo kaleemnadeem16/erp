@@ -87,11 +87,11 @@ const rules: readonly Rule[] = [
   { path: "/rate-dimensions", anyOf: ["estimating.rate-dimension.manage"] },
   {
     path: "/application-rates",
-    anyOf: ["estimating.application-rate.manage", "estimating.material_preview.run"],
+    anyOf: ["estimating.application-rate.manage", "estimating.material_preview.run", "estimating.recipe.view"],
   },
-  { path: "/formulations", anyOf: ["estimating.formulation.manage"] },
+  { path: "/formulations", anyOf: ["estimating.formulation.manage", "estimating.recipe.view"] },
   { path: "/assembly-groups", anyOf: ["estimating.assembly-group.manage"] },
-  { path: "/assemblies", anyOf: ["estimating.assembly.manage"] },
+  { path: "/assemblies", anyOf: ["estimating.assembly.manage", "estimating.recipe.view"] },
   { path: "/resource-rates", anyOf: ["estimating.resource-rate.manage", "estimating.internal_cost.view"] },
   { path: "/material-preview", anyOf: ["estimating.material_preview.run"] },
   {

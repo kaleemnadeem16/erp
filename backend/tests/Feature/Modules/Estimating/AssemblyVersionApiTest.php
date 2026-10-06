@@ -207,10 +207,11 @@ class AssemblyVersionApiTest extends TestCase
             'kind' => 'SUBCONTRACT', 'qty_per_work_unit' => '1', 'uom_id' => $this->sqm->id,
             'rate_override' => '15.0000', 'sequence' => 0,
         ]);
-        $viewer = User::factory()->create();
+        $viewer = PermissionedActor::grant(User::factory()->create(), ['estimating.recipe.view']);
         $url = "/api/v1/assemblies/{$this->assembly->id}?include=versions,versions.components";
 
         $this->actingAs($viewer)->getJson($url)->assertOk()
+            ->assertJsonPath('data.versions.0.components.0.qty_per_work_unit', '1.000000')
             ->assertJsonMissingPath('data.versions.0.components.0.rate_override');
 
         $manager = PermissionedActor::grant(User::factory()->create(), ['estimating.assembly.manage']);
@@ -220,6 +221,27 @@ class AssemblyVersionApiTest extends TestCase
         $costViewer = PermissionedActor::grant(User::factory()->create(), ['estimating.internal_cost.view']);
         $this->actingAs($costViewer)->getJson($url)->assertOk()
             ->assertJsonPath('data.versions.0.components.0.rate_override', '15.0000');
+    }
+
+    public function test_component_quantities_are_withheld_from_users_without_recipe_access(): void
+    {
+        $version = $this->assembly->versions()->create(['version_no' => 1]);
+        $version->components()->create([
+            'kind' => 'SUBCONTRACT', 'qty_per_work_unit' => '1', 'uom_id' => $this->sqm->id,
+            'rate_override' => '15.0000', 'sequence' => 0,
+        ]);
+        $url = "/api/v1/assemblies/{$this->assembly->id}?include=versions,versions.components,activeVersion,activeVersion.components";
+
+        // The assembly itself stays a shared lookup (code, name, group, versions); its component quantities are the recipe.
+        foreach ([User::factory()->create(), PermissionedActor::grant(User::factory()->create(), ['inventory.stock.view'])] as $outsider) {
+            $response = $this->actingAs($outsider)->getJson($url)->assertOk()->assertJsonPath('data.code', $this->assembly->code);
+            $response->assertJsonMissingPath('data.versions.0.components');
+            $this->assertStringNotContainsString('qty_per_work_unit', $response->getContent());
+            $this->assertStringNotContainsString('15.0000', $response->getContent());
+        }
+
+        $planner = PermissionedActor::grant(User::factory()->create(), ['estimating.recipe.view']);
+        $this->actingAs($planner)->getJson($url)->assertOk()->assertJsonCount(1, 'data.versions.0.components');
     }
 
     public function test_version_writes_require_assembly_manage(): void

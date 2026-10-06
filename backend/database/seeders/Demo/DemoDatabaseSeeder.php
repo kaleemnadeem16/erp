@@ -13,6 +13,7 @@ use Database\Seeders\Demo\Estimating\MaterialSelectionDemoSeeder;
 use Database\Seeders\Demo\Estimating\MaterialVarianceDemoSeeder;
 use Database\Seeders\Demo\Estimating\OverheadPoliciesDemoSeeder;
 use Database\Seeders\Demo\Estimating\RateDimensionsDemoSeeder;
+use Database\Seeders\Demo\Estimating\RecipeAccessDemoSeeder;
 use Database\Seeders\Demo\Estimating\ResourceRatesDemoSeeder;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -60,6 +61,8 @@ final class DemoDatabaseSeeder extends Seeder
                 StockMixControlDemoSeeder::class,
                 // Last: it uses the demo supplier and pigment, the demo variance rules and the personas' permissions.
                 ApprovalsDemoSeeder::class,
+                // Needs the demo administrator's full permission set (synced by StockDemoSeeder) and the registered recipe capability.
+                RecipeAccessDemoSeeder::class,
             ]);
         });
     }

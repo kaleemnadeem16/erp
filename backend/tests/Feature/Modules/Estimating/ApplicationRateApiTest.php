@@ -116,7 +116,7 @@ class ApplicationRateApiTest extends TestCase
 
     public function test_resolve_fails_loudly_with_no_match_and_no_default(): void
     {
-        $user = User::factory()->create();
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.recipe.view']);
 
         $this->actingAs($user)->getJson('/api/v1/application-rates/resolve?item_id='.$this->item->id
             .'&work_uom_id='.$this->sqm->id.'&dimension_value_ids[]='.$this->smoothId)
@@ -151,14 +151,42 @@ class ApplicationRateApiTest extends TestCase
         $this->getJson("/api/v1/application-rates/{$rate['id']}")->assertNotFound();
     }
 
-    public function test_application_rate_writes_require_manage_but_reads_and_resolution_remain_available(): void
+    public function test_application_rates_are_refused_to_users_without_recipe_access(): void
+    {
+        $rate = ApplicationRate::create([
+            'item_id' => $this->item->id, 'work_uom_id' => $this->sqm->id,
+            'qty_per_work_unit' => '0.0833', 'uom_id' => $this->litre->id, 'is_default' => true,
+        ]);
+        $resolve = '/api/v1/application-rates/resolve?item_id='.$this->item->id.'&work_uom_id='.$this->sqm->id;
+
+        // Unrelated duties see no material quantities, however much else they may do.
+        foreach ([
+            User::factory()->create(),
+            PermissionedActor::grant(User::factory()->create(), ['inventory.stock.view']),
+            PermissionedActor::grant(User::factory()->create(), ['purchasing.purchase-order.create']),
+            PermissionedActor::grant(User::factory()->create(), ['estimating.policy-history.view']),
+        ] as $outsider) {
+            $this->actingAs($outsider)->getJson('/api/v1/application-rates')->assertForbidden();
+            $this->actingAs($outsider)->getJson("/api/v1/application-rates/{$rate->id}")->assertForbidden();
+            $this->actingAs($outsider)->getJson($resolve)->assertForbidden();
+        }
+
+        // The recipe capability, or a duty that cannot work without recipes, opens the read.
+        foreach (['estimating.recipe.view', 'estimating.application-rate.manage', 'estimating.formulation.manage', 'estimating.assembly.manage', 'estimating.material_preview.run', 'estimating.internal_cost.view'] as $permission) {
+            $reader = PermissionedActor::grant(User::factory()->create(), [$permission]);
+            $this->actingAs($reader)->getJson('/api/v1/application-rates')->assertOk()->assertJsonPath('data.0.qty_per_work_unit', '0.083300');
+            $this->actingAs($reader)->getJson($resolve)->assertOk();
+        }
+    }
+
+    public function test_application_rate_reads_need_recipe_access_and_resolution_follows_them(): void
     {
         $rate = ApplicationRate::create([
             'item_id' => $this->item->id, 'work_uom_id' => $this->sqm->id,
             'qty_per_work_unit' => '0.0833', 'uom_id' => $this->litre->id,
             'is_default' => true,
         ]);
-        $reader = User::factory()->create();
+        $reader = PermissionedActor::grant(User::factory()->create(), ['estimating.recipe.view']);
 
         $this->actingAs($reader)->getJson('/api/v1/application-rates')->assertOk();
         $this->getJson("/api/v1/application-rates/{$rate->id}")->assertOk();

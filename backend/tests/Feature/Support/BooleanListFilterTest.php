@@ -41,6 +41,9 @@ class BooleanListFilterTest extends TestCase
         if ($url === '/api/v1/item-suppliers') {
             PermissionedActor::grant($user, ['purchasing.item-supplier.view']);
         }
+        if ($url === '/api/v1/application-rates') {
+            PermissionedActor::grant($user, ['estimating.recipe.view']);
+        }
 
         foreach (['true', 'false', 'TRUE', '1', '0'] as $value) {
             $this->actingAs($user)->getJson("{$url}?filter[{$filter}]={$value}")
@@ -54,6 +57,9 @@ class BooleanListFilterTest extends TestCase
         $user = PermissionedActor::grant(User::factory()->create(), ['inventory.stock.view', 'inventory.movement.view']);
         if ($url === '/api/v1/item-suppliers') {
             PermissionedActor::grant($user, ['purchasing.item-supplier.view']);
+        }
+        if ($url === '/api/v1/application-rates') {
+            PermissionedActor::grant($user, ['estimating.recipe.view']);
         }
 
         $this->actingAs($user)->getJson("{$url}?filter[{$filter}]=yes")

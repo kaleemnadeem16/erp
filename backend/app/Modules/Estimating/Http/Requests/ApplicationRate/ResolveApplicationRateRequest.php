@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Estimating\Http\Requests\ApplicationRate;
 
 use App\Modules\Estimating\Models\RateDimension;
+use App\Modules\Estimating\Support\RecipeReadAccess;
 use App\Rules\Support\CompanyScoped;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -13,7 +14,7 @@ class ResolveApplicationRateRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return RecipeReadAccess::allows($this->user());
     }
 
     /** @return array<string, mixed> */

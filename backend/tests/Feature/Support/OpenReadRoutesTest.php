@@ -51,8 +51,6 @@ class OpenReadRoutesTest extends TestCase
 
     /** Open today and NOT yet decided — each is an open item in the audit tracker, not an approval. `uri => where it is tracked`. */
     private const OPEN_PENDING_REVIEW = [
-        'api/v1/formulations' => 'A9: costs are projected, but every signed-in user can read each recipe\'s input items, quantities and wastage; the owner decides whether recipes are confidential.',
-        'api/v1/application-rates' => 'A9: costs are projected, but the quantity of material per unit of work is readable by every signed-in user; same owner decision as formulations.',
         'api/v1/company' => 'Company profile incl. registration/tax numbers: confirm what a non-administrator should see (Core, Part 2).',
     ];
 

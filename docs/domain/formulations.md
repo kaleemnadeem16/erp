@@ -142,9 +142,13 @@ costing ever runs at bulk/hot-path scale.
 `estimating.formulation.manage` permits creating and editing formulation headers and versions,
 deleting drafts, archiving headers, and activating a draft. It is checked in the request and the
 underlying Action; a background caller must supply an authorised actor. Listing, showing and
-resolving technical recipes remain authenticated company reads because they serve other
-Estimating lookups. The Formulations setup screen requires the manage capability and does not
-offer a read-only detail mode yet.
+resolving a formulation requires recipe access ([ADR 0086](../decisions/0086-gate-recipe-reads-by-capability.md)):
+`estimating.recipe.view`, or a duty that needs recipes — formulation, application-rate or assembly
+management, running the Material Preview, or reading internal costs. Without it the API answers 403
+(before this, any signed-in user could read every recipe's inputs, quantities and wastage). An
+administrator grants the capability through a company role or directly; no role is built in. The
+Formulations screen admits those users, read-only unless they also hold the manage capability, and
+the demo company has a "Production planner" role holding only the recipe capability.
 
 The existing Formulations list exposes its API's code/name search, output-item,
 customer and status filters. They are URL-backed, so a filtered list survives refresh

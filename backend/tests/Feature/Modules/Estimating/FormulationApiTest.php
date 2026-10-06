@@ -283,7 +283,7 @@ class FormulationApiTest extends TestCase
             ->assertOk()->assertJsonPath('data.status', 'ARCHIVED');
     }
 
-    public function test_formulation_and_version_writes_require_manage_while_reads_remain_available(): void
+    public function test_formulation_recipes_are_refused_to_users_without_recipe_access(): void
     {
         $formulation = Formulation::create([
             'output_item_id' => $this->shade->id, 'code' => 'F-SHADE',
@@ -294,7 +294,37 @@ class FormulationApiTest extends TestCase
             'input_item_id' => $this->pigment->id, 'qty' => '0.500000',
             'uom_id' => $this->kg->id, 'sequence' => 0,
         ]);
-        $reader = User::factory()->create();
+        $show = "/api/v1/formulations/{$formulation->id}?include=versions.lines";
+
+        foreach ([
+            User::factory()->create(),
+            PermissionedActor::grant(User::factory()->create(), ['inventory.stock.view']),
+            PermissionedActor::grant(User::factory()->create(), ['purchasing.purchase-order.create']),
+            PermissionedActor::grant(User::factory()->create(), ['estimating.policy-history.view']),
+        ] as $outsider) {
+            $this->actingAs($outsider)->getJson('/api/v1/formulations')->assertForbidden();
+            $this->actingAs($outsider)->getJson($show)->assertForbidden();
+            $this->actingAs($outsider)->getJson('/api/v1/formulations/resolve?output_item_id='.$this->shade->id)->assertForbidden();
+        }
+
+        foreach (['estimating.recipe.view', 'estimating.formulation.manage', 'estimating.application-rate.manage', 'estimating.assembly.manage', 'estimating.material_preview.run', 'estimating.internal_cost.view'] as $permission) {
+            $reader = PermissionedActor::grant(User::factory()->create(), [$permission]);
+            $this->actingAs($reader)->getJson($show)->assertOk()->assertJsonPath('data.versions.0.lines.0.qty', '0.500000');
+        }
+    }
+
+    public function test_formulation_and_version_writes_require_manage_and_reads_need_recipe_access(): void
+    {
+        $formulation = Formulation::create([
+            'output_item_id' => $this->shade->id, 'code' => 'F-SHADE',
+            'name' => 'Shade #4471', 'output_uom_id' => $this->litre->id,
+        ]);
+        $version = $formulation->versions()->create(['version_no' => 1])->refresh();
+        $version->lines()->create([
+            'input_item_id' => $this->pigment->id, 'qty' => '0.500000',
+            'uom_id' => $this->kg->id, 'sequence' => 0,
+        ]);
+        $reader = PermissionedActor::grant(User::factory()->create(), ['estimating.recipe.view']);
 
         $this->actingAs($reader)->getJson('/api/v1/formulations')->assertOk();
         $this->getJson("/api/v1/formulations/{$formulation->id}?include=versions.lines")->assertOk();

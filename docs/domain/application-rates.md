@@ -117,9 +117,12 @@ offers a card view on mobile; this does not alter the shared lookup read authori
 ### Access to application rates
 
 Creating, changing or deleting an application rate requires `estimating.application-rate.manage`
-at both the HTTP and Action boundaries. Listing, showing and resolving rates remain authenticated
-company reads, because estimators need to inspect and test the consumption rule without gaining
-authority to alter it. In the SPA, a material-preview user can reach the rate list and resolution
+at both the HTTP and Action boundaries. Listing, showing and resolving rates require recipe access
+([ADR 0086](../decisions/0086-gate-recipe-reads-by-capability.md)): `estimating.recipe.view`, or a
+duty that needs recipes (formulation, application-rate or assembly management, the Material Preview,
+internal-cost reading). A rate states how much material a unit of work consumes, which is recipe
+information; unrelated users receive 403. Estimators can still inspect and test the consumption rule
+without gaining authority to alter it. In the SPA, a material-preview user can reach the rate list and resolution
 tester but not the New/edit forms; managers can use both. Existing maintainers need an explicit
 role or direct grant before deployment. The configured administrator receives new capabilities
 through normal deploy-time permission sync; no other role gains one simply because it is named

@@ -27,6 +27,7 @@ import { getApiErrorMessage } from "../../lib/api-errors";
 import { ItemPurchasingPanel } from "./item-purchasing-panel";
 import { ItemQuantityUnitsListScreen } from "../item-quantity-units/item-quantity-units-list-screen";
 import { usePermission } from "../../hooks/use-permission";
+import { useRecipeAccess } from "../../hooks/use-recipe-access";
 
 export function ItemDetailScreen() {
   const mayManage = usePermission("inventory.item.manage");
@@ -44,11 +45,16 @@ export function ItemDetailScreen() {
   });
   const uom =
     uomQuery.data?.status === 200 ? uomQuery.data.data.data : undefined;
-  const formulationsQuery = useFormulationsIndex({
-    "filter[output_item_id]": itemId,
-    include: "customer",
-    per_page: 100,
-  });
+  // Recipes are readable only with recipe access (ADR 0086); without it the card is simply absent, and no request is made.
+  const mayReadRecipes = useRecipeAccess();
+  const formulationsQuery = useFormulationsIndex(
+    {
+      "filter[output_item_id]": itemId,
+      include: "customer",
+      per_page: 100,
+    },
+    { query: { enabled: mayReadRecipes } },
+  );
   const formulations =
     formulationsQuery.data?.status === 200
       ? formulationsQuery.data.data.data
