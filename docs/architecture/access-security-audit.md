@@ -224,6 +224,16 @@ added to that administrator only; no Buyer or operational role was broadened.
   own-only sign-out, the switch and the seam; breaking the seam or the own-only scoping fails it (mutation-checked); the write-route and
   open-read ratchets name the two new routes. **Before release:** count tokens in production (`erp:audit-access-inventory` lists them per
   member) — tokens that exist expire 30 days after their creation.
+- [x] **Q26 record scope, first slice — inventory by warehouse (2026-10-06, [ADR 0089](../decisions/0089-organisation-units-and-record-scope.md)):**
+  every read and write was company-wide: a person who may view stock saw every warehouse (A6 recorded this "until Q26"). Built: a company-defined
+  tree of organisation units with memberships and warehouse ownership, the "only my units" limit on an existing assignment (so every current
+  assignment stays company-wide, no backfill), one resolver (`RecordScope`), and enforcement at the API boundary on stock layers, the stock ledger
+  and physical counts (Actions guard themselves too); the overview and AVCO pools refuse a limited person (403) because they cannot be limited to a
+  warehouse. Proven on response bodies for a limited person, one in two units, one in none, an unowned warehouse and a person with no limit; breaking
+  any of four enforcement points fails the tests (mutation-checked); `RecordScopeCoverageTest` forces every stock-bearing route into a declared
+  status, so what is **not yet scoped is a named list, not a hidden gap**: negative-stock overrides, recalculation, cutover (company-wide today),
+  purchasing documents (no creator or ship-to recorded yet), Estimating availability, approvals. The access inventory lists who is limited and their units.
+  **Needs staging:** nobody is limited automatically; define units and limit people deliberately and verify with real warehouse staff first.
 - [ ] **Information-flow review (continuing):** complete the module inspections above and update this matrix with endpoint/Action/test
   references. New Inventory/Purchasing/Estimating features need their own check before sign-off.
 - [ ] **Deployment verification:** enumerate each active company member, role, direct grant and

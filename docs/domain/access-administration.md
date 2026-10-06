@@ -113,6 +113,33 @@ never automatic grants. Every member's human/service classification requires own
 because no service-account marker exists. See the [audit sign-off template](../architecture/access-security-audit.md#part-2-evidence-and-staging-sign-off-2026-10-06).
 Delegated/unit administration still waits for Q26.
 
+## Organisation units and record scope (ADR 0089, Q26)
+
+Capabilities say what a person may do; **record scope** says to which records. A company defines its own tree of organisation units
+(`organisation_units`: code, name, parent, status; Settings → Organisation), people belong to one or several
+(`organisation_unit_members`), and a unit owns resources — today warehouses (`organisation_unit_resources`; a warehouse belongs to at most
+one unit). Spatie Teams stays the company boundary; units are separate.
+
+**Scope is a limit on an existing assignment, never a new permission.** A role given to a person, or a direct permission, is company-wide
+unless an administrator marks it **"only my units"** (`access_scope_limits`, set with the member-access action under
+`administration.access.assign`; the Members screen offers it per assigned role, and only to a company that has defined units). Every
+existing assignment is therefore company-wide with no backfill. `RecordScope` resolves the effective scope over additive grants: any
+unrestricted grant → all; none confers the capability → none; otherwise the union of the person's units and their descendants. A limited
+person who belongs to no unit reaches nothing, never everything; a warehouse owned by no unit is reached only by unrestricted people;
+an archived unit gives nothing.
+
+**Capabilities:** `administration.organisation.view` (read the tree) and `administration.organisation.manage` (units, memberships,
+resource bindings). Units, members and bindings are company-scoped with composite foreign keys; another company's unit is a 404.
+
+**Enforcement is explicit and at the boundary, never a global model scope** (internal costing and posting must read every layer on behalf
+of whoever triggered them). First slice, applied to inventory by warehouse: stock layers, the stock ledger (a movement is visible when
+either side is in scope) and physical counts (list, show, create, add line, count, post, cancel; the Actions guard themselves too).
+The inventory overview and AVCO pools cannot be limited to a warehouse, so a limited person gets **403** there. Out of scope is a 404.
+Every other stock-bearing route is declared in `RecordScopeCoverageTest` (scoped, refused when limited, shared reference, or pending), so
+a new surface cannot ship silently company-wide. Pending: negative-stock overrides, recalculation, cutover, purchasing documents (they
+record no creator or ship-to yet), Estimating availability, approvals; and delegated administration, own/assigned scopes and time-bounded
+task access. Demo: Head office > Main site / Karachi site, each owning a demo warehouse, and a limited "Warehouse clerk" for each.
+
 ## Landmines
 
 - Registration is not assignment. A newly shipped permission grants nobody access until a role or

@@ -104,7 +104,7 @@ not be collapsed into ordinary purchased consumption because ownership, value an
 differ.
 
 ### Q26 — Organisational and record-level access scope
-**Blocks:** Department/site/warehouse/assigned-record visibility and delegated administration
+**Blocks:** Remaining record-scope slices (see below) and delegated administration; the first slice (inventory by warehouse) is built
 
 What organisational structure should access follow: departments, branches, sites, warehouses,
 cost centres, project teams or a composable organisation-unit hierarchy? Define whether users may
@@ -113,6 +113,14 @@ Define bounded delegated administration—what a department head may assign to s
 routine cross-department assigned/task-scoped access without creating one role per department pair.
 Spatie Teams currently scopes assignments by `company_id`; it is groundwork, not this record-scope
 model. See [authorization.md](architecture/authorization.md#teams-and-organisational-scope).
+
+**Decided in part (2026-10-06, [ADR 0089](decisions/0089-organisation-units-and-record-scope.md)):** the owner chose organisation units as a
+company-defined tree, inventory by warehouse as the first slice, and delegated administration later. Built: units, memberships, warehouse
+ownership, the "only my units" limit on an assignment, one resolver, enforcement on stock layers, the ledger and physical counts. **Still open
+(each its own slice):** the other stock-bearing surfaces (negative-stock overrides, recalculation, cutover), purchasing documents (needs a
+creator and ship-to recorded and a backfill first), Estimating availability, approvals; a warehouse-limited inventory overview and AVCO pool view;
+own-record and assigned-record scopes; time-bounded task access; delegated administration (a unit head assigning access to their people). The
+original brief and research follow.
 
 **Decision brief (2026-10-06; proposed, awaiting owner):** Options: keep company-wide records;
 use Spatie Teams as organisation units (migrate assignments); or retain Teams for company and add

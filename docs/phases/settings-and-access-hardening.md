@@ -57,7 +57,7 @@ Practical commands (WSL, repository root `/home/kaleem/projects/erp`):
 1. ~~**A3/A4 — Finance field visibility**~~ — accepted and implemented under ADR 0084; staging readership sign-off remains open.
 2. ~~**Approvals** (Q35)~~ — resolved: document review under ADR 0085, limits and reasons under [ADR 0087](../decisions/0087-approval-limits-and-reasons-are-separate-auditor-capabilities.md). The original wording follows for history: decide who may list per-person authority ceilings and read confidential decision reasons.
 3. ~~**Bearer-token lifetime** (Q36)~~ — resolved by [ADR 0088](../decisions/0088-device-tokens-expire-and-sign-in-has-seams-for-stronger-authentication.md); two-factor, step-up and mobile re-authentication are researched later as [Q37](../OPEN-QUESTIONS.md#q37--two-factor-step-up-and-mobile-re-authentication).
-4. **Record-level scope and delegated administration** — already [Q26](../OPEN-QUESTIONS.md#q26--organisational-and-record-level-access-scope); the stock-read capabilities are company-wide until it is decided.
+4. **Record-level scope and delegated administration** — [Q26](../OPEN-QUESTIONS.md#q26--organisational-and-record-level-access-scope) is decided in part ([ADR 0089](../decisions/0089-organisation-units-and-record-scope.md)): inventory by warehouse is built; the remaining slices and delegated administration stay open there. Other stock-bearing surfaces are company-wide until their slice lands (`RecordScopeCoverageTest` names them).
 
 ### Ready to implement
 
@@ -194,6 +194,10 @@ had appeared, and the dev app's login page crashed. That is not this workstream'
 4. **Staging sign-off for A1–A9 and ADR 0087:** run `erp:audit-access-inventory` on staging and decide per person who keeps `approvals.authority.view`,
    `approvals.reason.view` and the other A8/A9 reads (the report's `read_access_lost` section lists who lost one).
 5. **Pushing `develop` is paused** until the owner says otherwise.
+   **Q26 (ADR 0089) release steps:** `php artisan migrate` (organisation tables), `permission:register` and the administrator sync (two new capabilities); nobody
+   is limited by the release, so access is unchanged. Before limiting anyone on staging: define the units, bind each warehouse to one, put people in
+   them, and limit assignments one person at a time, checking with real warehouse staff; `erp:audit-access-inventory` lists who is limited and their units.
+   Remember the overview and AVCO pools refuse a limited person, and that the pending surfaces are still company-wide.
 6. **Q36 (ADR 0088) release steps:** `php artisan migrate` (adds `meta` to `personal_access_tokens`); count bearer tokens in production before release
    (`erp:audit-access-inventory`, or `select count(*) from personal_access_tokens`) — existing tokens expire 30 days after creation; the browser spec
    `signed-in-devices.spec.ts` passes against the live stack (3 checks, the API mocked).
