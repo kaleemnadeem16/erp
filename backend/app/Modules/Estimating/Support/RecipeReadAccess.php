@@ -18,15 +18,18 @@ use App\Models\User;
  */
 final class RecipeReadAccess
 {
+    /** Any one of these opens the read. Public so the access-inventory command reports from the same list the gate uses. */
+    public const PERMISSIONS = [
+        'estimating.recipe.view',
+        'estimating.formulation.manage',
+        'estimating.application-rate.manage',
+        'estimating.assembly.manage',
+        'estimating.material_preview.run',
+        'estimating.internal_cost.view',
+    ];
+
     public static function allows(?User $user): bool
     {
-        return $user?->hasAnyPermission([
-            'estimating.recipe.view',
-            'estimating.formulation.manage',
-            'estimating.application-rate.manage',
-            'estimating.assembly.manage',
-            'estimating.material_preview.run',
-            'estimating.internal_cost.view',
-        ]) === true;
+        return $user?->hasAnyPermission(self::PERMISSIONS) === true;
     }
 }

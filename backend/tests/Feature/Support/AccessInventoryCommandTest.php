@@ -5,6 +5,9 @@ namespace Tests\Feature\Support;
 use App\Console\Commands\AuditAccessInventory;
 use App\Models\Role;
 use App\Models\User;
+use App\Modules\Estimating\Support\RecipeReadAccess;
+use App\Modules\Inventory\Support\NegativeStockReadAccess;
+use App\Modules\Inventory\Support\PhysicalCountReadAccess;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -56,6 +59,43 @@ class AccessInventoryCommandTest extends TestCase
         $this->assertContains('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY', $queries);
         $this->assertSame($before, $this->snapshot());
         $this->assertSame(AuditAccessInventory::CAPABILITIES, $report['audit_capabilities']);
+    }
+
+    public function test_it_flags_members_who_lost_a_read_that_used_to_be_open_to_everyone_without_mutating_anything(): void
+    {
+        $stockViewer = PermissionedActor::grant(User::factory()->create(), ['inventory.stock.view']);
+        $formulator = PermissionedActor::grant(User::factory()->create(), ['estimating.formulation.manage']);
+        $nobody = User::factory()->create();
+        $planner = User::factory()->create();
+        $role = Role::create(['team_id' => 1, 'name' => 'Production planner']);
+        $role->givePermissionTo(PermissionedActor::grant(User::factory()->create(), ['estimating.recipe.view'])->getAllPermissions());
+        $planner->assignRole($role);
+        DB::table('companies')->insert(['id' => 2, 'name' => 'Second company']);
+        $foreignId = DB::table('users')->insertGetId(['company_id' => 2, 'name' => 'Foreign', 'email' => 'foreign@example.com', 'password' => 'x']);
+        $before = $this->snapshot();
+
+        $this->assertSame(0, Artisan::call('erp:audit-access-inventory'));
+        $report = json_decode(Artisan::output(), true, flags: JSON_THROW_ON_ERROR);
+
+        // The report is built from the gates' own capability lists, so it cannot drift from what the application enforces.
+        $this->assertSame(AuditAccessInventory::READ_GATES, $report['read_gates']);
+        $this->assertSame(NegativeStockReadAccess::PERMISSIONS, $report['read_gates']['A8-negative-stock-override-requests']);
+        $this->assertSame(PhysicalCountReadAccess::PERMISSIONS, $report['read_gates']['A8-physical-counts']);
+        $this->assertSame(RecipeReadAccess::PERMISSIONS, $report['read_gates']['A9-recipes']);
+
+        $lost = fn (User $user): array => collect($report['companies'][0]['members'])->firstWhere('id', $user->id)['read_access_lost'];
+        $this->assertSame(['A9-recipes'], $lost($stockViewer), 'stock access keeps override and count reads but not recipes');
+        $this->assertSame(['A8-negative-stock-override-requests', 'A8-physical-counts'], $lost($formulator), 'recipe maintenance keeps recipes only');
+        $this->assertSame(['A8-negative-stock-override-requests', 'A8-physical-counts', 'A9-recipes'], $lost($nobody));
+        $this->assertContains('A8-negative-stock-override-requests', $lost($planner));
+        $this->assertNotContains('A9-recipes', $lost($planner), 'access through a role counts');
+
+        $summary = $report['companies'][0]['read_gate_summary'];
+        $this->assertContains($nobody->id, $summary['A9-recipes']['members_without_access']);
+        $this->assertNotContains($planner->id, $summary['A9-recipes']['members_without_access']);
+        $this->assertNotContains($foreignId, $summary['A9-recipes']['members_without_access'], 'another company is reported under its own entry');
+        $this->assertContains($foreignId, $report['companies'][1]['read_gate_summary']['A9-recipes']['members_without_access']);
+        $this->assertSame($before, $this->snapshot());
     }
 
     /** @return array<string, mixed> */

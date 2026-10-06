@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Models\User;
+use App\Modules\Estimating\Support\RecipeReadAccess;
+use App\Modules\Inventory\Support\NegativeStockReadAccess;
+use App\Modules\Inventory\Support\PhysicalCountReadAccess;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -13,7 +16,7 @@ final class AuditAccessInventory extends Command
 {
     protected $signature = 'erp:audit-access-inventory';
 
-    protected $description = 'Read-only JSON inventory of company members, roles, direct grants and token actors for audit A1–A6';
+    protected $description = 'Read-only JSON inventory of company members, roles, direct grants and token actors for audit A1–A9';
 
     public const CAPABILITIES = [
         'A1' => ['currency.exchange-rate.manage'],
@@ -22,6 +25,17 @@ final class AuditAccessInventory extends Command
         'A4' => ['accounting.account-mapping.view', 'accounting.account-mapping.manage'], // ADR 0084.
         'A5' => ['approvals.document.technical-review'], // ADR 0085 optional specialist duty; commercial approval stays subject-owned.
         'A6' => ['inventory.availability.view', 'inventory.stock.view', 'inventory.movement.view'],
+    ];
+
+    /**
+     * Reads that were open to every signed-in user and now need any one of a list of capabilities (audit A8, A9). The lists come from the
+     * gates themselves, so this report cannot drift from what the application enforces. Unlike CAPABILITIES (every capability a role
+     * might need), these are any-of rules, so a member is flagged only when they hold none of them.
+     */
+    public const READ_GATES = [
+        'A8-negative-stock-override-requests' => NegativeStockReadAccess::PERMISSIONS,
+        'A8-physical-counts' => PhysicalCountReadAccess::PERMISSIONS,
+        'A9-recipes' => RecipeReadAccess::PERMISSIONS,
     ];
 
     public function handle(): int
@@ -62,19 +76,27 @@ final class AuditAccessInventory extends Command
                         'id' => $member->id, 'name' => $member->name, 'email' => $member->email, 'status' => $member->status,
                         'roles' => $assigned->all(), 'direct_grants' => $direct->all(), 'effective_capabilities' => $effective->all(),
                         'missing_audit_capabilities' => array_values(array_diff($required, $effective->all())),
+                        // Reads that were open to every signed-in user and that this member can no longer make (holds none of the gate's capabilities).
+                        'read_access_lost' => collect(self::READ_GATES)->filter(fn (array $anyOf): bool => array_intersect($anyOf, $effective->all()) === [])->keys()->values()->all(),
                         'service_actor_classification' => 'OWNER_CONFIRMATION_REQUIRED', 'bearer_tokens' => $memberTokens,
                         'foreign_team_role_assignments' => $assignments->where('team_id', '!=', $company->id)->values()->all(),
                         'foreign_team_direct_grants' => $grants->where('team_id', '!=', $company->id)->map(fn ($row) => ['team_id' => $row->team_id, 'permission_id' => $row->permission_id])->values()->all(),
                         'unresolved_role_ids' => $ownAssignments->pluck('role_id')->diff($assigned->pluck('id'))->values()->all(),
                     ];
                 }
-                $companyReports[] = ['id' => $company->id, 'name' => $company->name, 'roles' => $companyRoles->all(), 'members' => $companyMembers];
+                $readGateSummary = [];
+                foreach (array_keys(self::READ_GATES) as $gate) {
+                    $readGateSummary[$gate] = ['members_without_access' => collect($companyMembers)->filter(fn (array $m): bool => in_array($gate, $m['read_access_lost'], true))->pluck('id')->values()->all()];
+                }
+                $companyReports[] = ['id' => $company->id, 'name' => $company->name, 'roles' => $companyRoles->all(), 'members' => $companyMembers, 'read_gate_summary' => $readGateSummary];
             }
 
             return [
                 'audit_capabilities' => self::CAPABILITIES,
+                'read_gates' => self::READ_GATES,
                 'notes' => [
                     'Missing capabilities are review flags, not recommended grants. Verify intended duty with the company owner.',
+                    'read_access_lost lists reads that were open to every signed-in user (A8 override requests and physical counts, A9 recipes) and that the member can no longer make because they hold none of the gate\'s capabilities. Each gate is an any-of rule; decide per person whether they need the read, then grant a narrow capability through a role. Active and suspended members are both listed.',
                     'A3/A4 use ADR 0084 field capabilities; field management supplies minimum field read. A5 still needs request-specific checks.',
                     'No service-account marker exists. Owners must classify every member, including service actors without tokens.',
                     'Token expiry shown here is per-token only; Sanctum global expiration also applies.',

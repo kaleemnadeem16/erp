@@ -97,7 +97,7 @@ New response-body/Action tests accompany reused allowed/denied suites; no new gr
 The four [decision briefs](../OPEN-QUESTIONS.md) are recommendations awaiting the owner:
 Q34 Finance fields, Q35 amount exception/ceilings/reasons, Q36 tokens, Q26 scope/delegated administration.
 No policy implementation is included; A3/A4 field projections wait for Q34. The read-only
-`erp:audit-access-inventory` command and staging sign-off template are delivered; no live staging
+`erp:audit-access-inventory` command (now also flagging members who lost the A8/A9 reads that used to be open to everyone) and staging sign-off template are delivered; no live staging
 assignments have been reviewed or changed. API response contracts are unchanged, so no client regeneration.
 
 ## Part 2 follow-up — remaining request/delegation boundaries (2026-10-06)

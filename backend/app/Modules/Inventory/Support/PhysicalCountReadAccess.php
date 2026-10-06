@@ -14,14 +14,17 @@ use App\Models\User;
  */
 final class PhysicalCountReadAccess
 {
+    /** Any one of these opens the read. Public so the access-inventory command reports from the same list the gate uses. */
+    public const PERMISSIONS = [
+        'inventory.physical_count.create',
+        'inventory.physical_count.count',
+        'inventory.physical_count.post',
+        StockVisibility::STOCK,
+        'inventory.valuation.view',
+    ];
+
     public static function allows(?User $user): bool
     {
-        return $user?->hasAnyPermission([
-            'inventory.physical_count.create',
-            'inventory.physical_count.count',
-            'inventory.physical_count.post',
-            StockVisibility::STOCK,
-            'inventory.valuation.view',
-        ]) === true;
+        return $user?->hasAnyPermission(self::PERMISSIONS) === true;
     }
 }

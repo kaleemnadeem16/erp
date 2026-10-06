@@ -203,6 +203,12 @@ The command reads every company, including unassigned roles, direct grants, effe
 direct capabilities and token-holder metadata; PostgreSQL enforces a read-only repeatable snapshot.
 `AccessInventoryCommandTest` compares all relevant tables before/after and asserts no token secrets.
 It neither registers permissions nor syncs administrators, grants access or updates last-use times.
+**Reads that were open to everyone (2026-10-06):** each member also carries `read_access_lost`, and each company a `read_gate_summary`, for the
+three gated reads — A8 override requests, A8 physical counts and A9 recipes. These are *any-of* rules, so a member is listed only when they
+hold none of the gate's capabilities (a recipe maintainer or cost reader is not flagged for recipes). The capability lists are the gates' own
+public constants (`NegativeStockReadAccess`, `PhysicalCountReadAccess`, `RecipeReadAccess`), so the report cannot drift from what is enforced.
+Use it before release: for each listed member decide whether they need the read, then grant a narrow capability through a role — never a broad
+role to clear the flag. Suspended members are listed too, so a later reactivation does not surprise anyone.
 A4 now checks the ADR 0084 account-mapping capabilities; A5 checks the optional ADR 0085 technical
 duty. Representative requests must also verify commercial review and authority routing. Missing-capability flags indicate review, not an instruction to
 grant all of them. `inventory.stock.view` also supplies availability at runtime; review that

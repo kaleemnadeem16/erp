@@ -14,14 +14,17 @@ use App\Models\User;
  */
 final class NegativeStockReadAccess
 {
+    /** Any one of these opens the read. Public so the access-inventory command reports from the same list the gate uses. */
+    public const PERMISSIONS = [
+        'inventory.negative-stock.request',
+        'inventory.negative-stock.override',
+        'inventory.negative-stock.approve',
+        'inventory.negative-stock.review',
+        StockVisibility::STOCK,
+    ];
+
     public static function allows(?User $user): bool
     {
-        return $user?->hasAnyPermission([
-            'inventory.negative-stock.request',
-            'inventory.negative-stock.override',
-            'inventory.negative-stock.approve',
-            'inventory.negative-stock.review',
-            StockVisibility::STOCK,
-        ]) === true;
+        return $user?->hasAnyPermission(self::PERMISSIONS) === true;
     }
 }
