@@ -155,9 +155,11 @@ added to that administrator only; no Buyer or operational role was broadened.
 - [x] **Open-read sweep (2026-10-06, Part 1):** a user holding no capability was sent to every id-less API read; 28 answered 200.
   `tests/Feature/Support/OpenReadRoutesTest.php` now names each with a reason (15 shared reference lookups or the caller's own data, the
   estimating lookups whose cost fields are already projected, and the two settings endpoints whose only sensitive figure is projected) and
-  lists **six still pending review**: `company` (registration/tax numbers — Core), `parties`, `customer-accounts`, `supplier-accounts`
-  (Q34), `chart-of-accounts` (A2/Finance) and `approval-delegations` (Approvals); formulations and application rates left the list when A9 was fixed — those belong to Part 2 and the owner decisions, and
-  each is removed from the pending list when decided. A new open read now fails the test (mutation-checked); so does a listed route that
+  kept a *pending review* list for reads nobody had decided. **That list is now empty (2026-10-06):** formulations and application rates left it
+  when A9 was fixed; the trading-partner, customer/supplier-account and chart reads when ADR 0084 projected their financial fields (now proved by
+  `ProtectedFinancialFieldsNeverLeakTest`); `approval-delegations` because it returns only the caller's own delegations unless they manage
+  them (two tests); and `company` because ADR 0081 already says any signed-in user may read it (registration and tax numbers are business
+  identifiers printed on documents; an owner may narrow that later). The list is kept in the test, empty, for the next undecided read. A new open read now fails the test (mutation-checked); so does a listed route that
   is no longer open. Limit: id-less routes only; `show` routes rely on each module's own denied tests.
 - [x] **A9 recipe visibility (found and fixed 2026-10-06, [ADR 0086](../decisions/0086-gate-recipe-reads-by-capability.md)):** formulation and
   application-rate list/show/resolve answered every signed-in user, and assembly versions returned their components (items, quantities,
@@ -177,6 +179,16 @@ added to that administrator only; no Buyer or operational role was broadened.
   Finance and two unrelated demo accounts (the counter loses override reads only). The SPA screen-access map already hid both screens from
   all of them, so no one loses a screen they could open; only direct API reads change. **Not a staging verification:** repeat on staging
   with real members, and decide whether read-only auditors such as Finance should be granted `inventory.stock.view`.
+- [x] **Independent review of ADR 0084 / Q34 (2026-10-06, Part 1):** reused the ADR's research and implemented decision (no new market comparison).
+  Static: only five Resources emit the protected columns (`credit_limit`, income/expense/inventory, receivable, payable account IDs) and each is
+  gated; no filter, sort, activity log, history endpoint or raw-model serialisation carries them. Empirical:
+  `tests/Feature/Support/ProtectedFinancialFieldsNeverLeakTest.php` signs in as a user holding **every registered capability except the four that
+  open the fields**, calls every id-less GET, a show for the first rows of each list, and the includes that nest items, categories, customers and
+  suppliers, and scans each body at any depth for the six keys: none appear. A second sweep as a holder of the capabilities finds all six, so
+  the scan is not blind; ungating `credit_limit` made it fail with the exact URLs (mutation-checked). The existing browser spec for the
+  category screen, print and edit form passes (its `/user` route handler raced a navigation and aborted the test; fixed in the spec, the
+  assertions themselves unchanged). Limits: GET responses only (mutation responses use the same Resources and have their own tests); a new
+  include that nests these entities needs adding to `INCLUDES` in the test. **Add any new protected field to `FIELDS` there.**
 - [ ] **Information-flow review (continuing):** complete the module inspections above and update this matrix with endpoint/Action/test
   references. New Inventory/Purchasing/Estimating features need their own check before sign-off.
 - [ ] **Deployment verification:** enumerate each active company member, role, direct grant and

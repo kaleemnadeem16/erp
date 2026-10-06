@@ -17,13 +17,19 @@ const category = {
 
 async function setup(page: import('@playwright/test').Page, finance: 'none' | 'read' | 'manage') {
   await page.route('**/api/v1/user', async (route) => {
-    const response = await route.fetch();
-    const body = await response.json();
-    body.data.permissions = body.data.permissions.filter((p: string) => !p.startsWith('accounting.account-mapping.'));
-    body.data.permissions.push('inventory.category.manage');
-    if (finance !== 'none')
-      body.data.permissions.push(`accounting.account-mapping.${finance === 'read' ? 'view' : 'manage'}`);
-    await route.fulfill({ response, body: JSON.stringify(body) });
+    // A navigation can abort this request while the handler is still reading it ("Response has been disposed"); the
+    // next page load makes the request again, so an aborted one is simply dropped rather than failing the test.
+    try {
+      const response = await route.fetch();
+      const body = await response.json();
+      body.data.permissions = body.data.permissions.filter((p: string) => !p.startsWith('accounting.account-mapping.'));
+      body.data.permissions.push('inventory.category.manage');
+      if (finance !== 'none')
+        body.data.permissions.push(`accounting.account-mapping.${finance === 'read' ? 'view' : 'manage'}`);
+      await route.fulfill({ response, body: JSON.stringify(body) });
+    } catch {
+      await route.abort().catch(() => undefined);
+    }
   });
   // Deliberately return mappings even to a restricted browser: API tests prove omission,
   // these assertions ensure controls and the hidden print tree also honour permissions.

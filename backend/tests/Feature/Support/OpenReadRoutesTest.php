@@ -26,9 +26,9 @@ class OpenReadRoutesTest extends TestCase
         'api/v1/account' => 'The caller\'s own profile.',
         'api/v1/currencies' => 'Reference data every document form needs.',
         'api/v1/exchange-rates' => 'Shared rate lookup (writes need currency.exchange-rate.manage, A1); a Finance decision may narrow it later.',
-        'api/v1/parties' => 'Shared trading-partner identities; nested financial fields are projected under ADR 0084.',
-        'api/v1/customer-accounts' => 'Shared account references/terms; credit and control mappings are projected under ADR 0084.',
-        'api/v1/supplier-accounts' => 'Shared account references/terms; control mappings are projected under ADR 0084.',
+        'api/v1/parties' => 'Shared trading-partner identities; nested financial fields are projected under ADR 0084 (ProtectedFinancialFieldsNeverLeakTest).',
+        'api/v1/customer-accounts' => 'Shared account references/terms; credit and control mappings are projected under ADR 0084 (ProtectedFinancialFieldsNeverLeakTest).',
+        'api/v1/supplier-accounts' => 'Shared account references/terms; control mappings are projected under ADR 0084 (ProtectedFinancialFieldsNeverLeakTest).',
         'api/v1/chart-of-accounts' => 'Shared account identity/structure catalogue, without balances or trading-partner/item mappings (ADR 0084).',
         'api/v1/uoms' => 'Reference data every quantity field needs.',
         'api/v1/item-packagings' => 'Reference data: the pack-size catalogue every item form offers; carries no price or stock figure.',
@@ -42,6 +42,7 @@ class OpenReadRoutesTest extends TestCase
         'api/v1/purchasing-settings' => 'Operational switches (over-receipt mode and tolerance, PO required) that shape receiving forms; no price.',
         'api/v1/approval-authorities/mine' => 'The caller\'s own approval authority only.',
         'api/v1/approval-requests/inbox' => 'Scoped to the caller\'s own assignments.',
+        'api/v1/company' => 'The company profile: any signed-in user may read it (ADR 0081); each field enforces its own change permission. Registration and tax numbers are business identifiers printed on documents, so they are readable too — an owner may narrow that later.',
         'api/v1/approval-delegations' => 'Only delegations involving the caller; approvals.delegation.manage permits the company list (ADR 0070).',
         'api/v1/assembly-groups' => 'Shared estimating lookup; carries no cost (writes need estimating.assembly-group.manage).',
         'api/v1/assemblies' => 'Shared estimating lookup; commercial configuration is projected by capability (audit, 2026-09-30).',
@@ -50,9 +51,7 @@ class OpenReadRoutesTest extends TestCase
     ];
 
     /** Open today and NOT yet decided — each is an open item in the audit tracker, not an approval. `uri => where it is tracked`. */
-    private const OPEN_PENDING_REVIEW = [
-        'api/v1/company' => 'Company profile incl. registration/tax numbers: confirm what a non-administrator should see (Core, Part 2).',
-    ];
+    private const OPEN_PENDING_REVIEW = [];
 
     public function test_every_id_less_read_open_to_a_user_with_no_capability_is_named_with_a_reason(): void
     {
