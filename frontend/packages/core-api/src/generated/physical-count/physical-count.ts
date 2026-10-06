@@ -22,6 +22,7 @@ import type {
 
 import type {
   AuthenticationExceptionResponse,
+  AuthorizationExceptionResponse,
   ModelNotFoundExceptionResponse,
   PhysicalCountLinesCount200,
   PhysicalCountsCancel200,
@@ -53,6 +54,11 @@ export type physicalCountsIndexResponse401 = {
   status: 401;
 };
 
+export type physicalCountsIndexResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type physicalCountsIndexResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -63,7 +69,9 @@ export type physicalCountsIndexResponseSuccess =
     headers: Headers;
   };
 export type physicalCountsIndexResponseError = (
-  physicalCountsIndexResponse401 | physicalCountsIndexResponse422
+  | physicalCountsIndexResponse401
+  | physicalCountsIndexResponse403
+  | physicalCountsIndexResponse422
 ) & {
   headers: Headers;
 };
@@ -110,7 +118,10 @@ export const getPhysicalCountsIndexQueryKey = (
 
 export const getPhysicalCountsIndexQueryOptions = <
   TData = Awaited<ReturnType<typeof physicalCountsIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: PhysicalCountsIndexParams,
   options?: {
@@ -144,11 +155,16 @@ export type PhysicalCountsIndexQueryResult = NonNullable<
   Awaited<ReturnType<typeof physicalCountsIndex>>
 >;
 export type PhysicalCountsIndexQueryError =
-  AuthenticationExceptionResponse | ValidationExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
 
 export function usePhysicalCountsIndex<
   TData = Awaited<ReturnType<typeof physicalCountsIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params: undefined | PhysicalCountsIndexParams,
   options: {
@@ -175,7 +191,10 @@ export function usePhysicalCountsIndex<
 };
 export function usePhysicalCountsIndex<
   TData = Awaited<ReturnType<typeof physicalCountsIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: PhysicalCountsIndexParams,
   options?: {
@@ -202,7 +221,10 @@ export function usePhysicalCountsIndex<
 };
 export function usePhysicalCountsIndex<
   TData = Awaited<ReturnType<typeof physicalCountsIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: PhysicalCountsIndexParams,
   options?: {
@@ -222,7 +244,10 @@ export function usePhysicalCountsIndex<
 
 export function usePhysicalCountsIndex<
   TData = Awaited<ReturnType<typeof physicalCountsIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: PhysicalCountsIndexParams,
   options?: {
@@ -261,6 +286,11 @@ export type physicalCountsStoreResponse401 = {
   status: 401;
 };
 
+export type physicalCountsStoreResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type physicalCountsStoreResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -271,7 +301,9 @@ export type physicalCountsStoreResponseSuccess =
     headers: Headers;
   };
 export type physicalCountsStoreResponseError = (
-  physicalCountsStoreResponse401 | physicalCountsStoreResponse422
+  | physicalCountsStoreResponse401
+  | physicalCountsStoreResponse403
+  | physicalCountsStoreResponse422
 ) & {
   headers: Headers;
 };
@@ -296,7 +328,10 @@ export const physicalCountsStore = async (
 };
 
 export const getPhysicalCountsStoreMutationOptions = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -338,10 +373,15 @@ export type PhysicalCountsStoreMutationResult = NonNullable<
 >;
 export type PhysicalCountsStoreMutationBody = StorePhysicalCountRequest;
 export type PhysicalCountsStoreMutationError =
-  AuthenticationExceptionResponse | ValidationExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
 
 export const usePhysicalCountsStore = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(
   options?: {
@@ -374,6 +414,11 @@ export type physicalCountsShowResponse401 = {
   status: 401;
 };
 
+export type physicalCountsShowResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type physicalCountsShowResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -390,6 +435,7 @@ export type physicalCountsShowResponseSuccess =
   };
 export type physicalCountsShowResponseError = (
   | physicalCountsShowResponse401
+  | physicalCountsShowResponse403
   | physicalCountsShowResponse404
   | physicalCountsShowResponse422
 ) & {
@@ -446,6 +492,7 @@ export const getPhysicalCountsShowQueryOptions = <
   TData = Awaited<ReturnType<typeof physicalCountsShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -489,6 +536,7 @@ export type PhysicalCountsShowQueryResult = NonNullable<
 >;
 export type PhysicalCountsShowQueryError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
@@ -496,6 +544,7 @@ export function usePhysicalCountsShow<
   TData = Awaited<ReturnType<typeof physicalCountsShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -527,6 +576,7 @@ export function usePhysicalCountsShow<
   TData = Awaited<ReturnType<typeof physicalCountsShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -558,6 +608,7 @@ export function usePhysicalCountsShow<
   TData = Awaited<ReturnType<typeof physicalCountsShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -582,6 +633,7 @@ export function usePhysicalCountsShow<
   TData = Awaited<ReturnType<typeof physicalCountsShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -627,6 +679,11 @@ export type physicalCountsLinesStoreResponse401 = {
   status: 401;
 };
 
+export type physicalCountsLinesStoreResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type physicalCountsLinesStoreResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -643,6 +700,7 @@ export type physicalCountsLinesStoreResponseSuccess =
   };
 export type physicalCountsLinesStoreResponseError = (
   | physicalCountsLinesStoreResponse401
+  | physicalCountsLinesStoreResponse403
   | physicalCountsLinesStoreResponse404
   | physicalCountsLinesStoreResponse422
 ) & {
@@ -676,6 +734,7 @@ export const physicalCountsLinesStore = async (
 export const getPhysicalCountsLinesStoreMutationOptions = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -721,12 +780,14 @@ export type PhysicalCountsLinesStoreMutationBody =
   StorePhysicalCountLineRequest;
 export type PhysicalCountsLinesStoreMutationError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
 export const usePhysicalCountsLinesStore = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -761,6 +822,11 @@ export type physicalCountLinesCountResponse401 = {
   status: 401;
 };
 
+export type physicalCountLinesCountResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type physicalCountLinesCountResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -777,6 +843,7 @@ export type physicalCountLinesCountResponseSuccess =
   };
 export type physicalCountLinesCountResponseError = (
   | physicalCountLinesCountResponse401
+  | physicalCountLinesCountResponse403
   | physicalCountLinesCountResponse404
   | physicalCountLinesCountResponse422
 ) & {
@@ -809,6 +876,7 @@ export const physicalCountLinesCount = async (
 export const getPhysicalCountLinesCountMutationOptions = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -854,12 +922,14 @@ export type PhysicalCountLinesCountMutationBody =
   RecordPhysicalCountLineRequest;
 export type PhysicalCountLinesCountMutationError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
 export const usePhysicalCountLinesCount = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -894,6 +964,11 @@ export type physicalCountsPostResponse401 = {
   status: 401;
 };
 
+export type physicalCountsPostResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type physicalCountsPostResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -910,6 +985,7 @@ export type physicalCountsPostResponseSuccess =
   };
 export type physicalCountsPostResponseError = (
   | physicalCountsPostResponse401
+  | physicalCountsPostResponse403
   | physicalCountsPostResponse404
   | physicalCountsPostResponse422
 ) & {
@@ -942,6 +1018,7 @@ export const physicalCountsPost = async (
 export const getPhysicalCountsPostMutationOptions = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -986,12 +1063,14 @@ export type PhysicalCountsPostMutationResult = NonNullable<
 export type PhysicalCountsPostMutationBody = PostPhysicalCountRequest;
 export type PhysicalCountsPostMutationError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
 export const usePhysicalCountsPost = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -1026,9 +1105,19 @@ export type physicalCountsCancelResponse401 = {
   status: 401;
 };
 
+export type physicalCountsCancelResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type physicalCountsCancelResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
+};
+
+export type physicalCountsCancelResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
 };
 
 export type physicalCountsCancelResponseSuccess =
@@ -1036,7 +1125,10 @@ export type physicalCountsCancelResponseSuccess =
     headers: Headers;
   };
 export type physicalCountsCancelResponseError = (
-  physicalCountsCancelResponse401 | physicalCountsCancelResponse404
+  | physicalCountsCancelResponse401
+  | physicalCountsCancelResponse403
+  | physicalCountsCancelResponse404
+  | physicalCountsCancelResponse422
 ) & {
   headers: Headers;
 };
@@ -1062,7 +1154,11 @@ export const physicalCountsCancel = async (
 };
 
 export const getPhysicalCountsCancelMutationOptions = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -1104,10 +1200,17 @@ export type PhysicalCountsCancelMutationResult = NonNullable<
 >;
 
 export type PhysicalCountsCancelMutationError =
-  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ModelNotFoundExceptionResponse
+  | ValidationExceptionResponse;
 
 export const usePhysicalCountsCancel = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(
   options?: {

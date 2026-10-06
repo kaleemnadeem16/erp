@@ -57,6 +57,11 @@ export type applicationRatesResolveResponse401 = {
   status: 401;
 };
 
+export type applicationRatesResolveResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type applicationRatesResolveResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -67,7 +72,9 @@ export type applicationRatesResolveResponseSuccess =
     headers: Headers;
   };
 export type applicationRatesResolveResponseError = (
-  applicationRatesResolveResponse401 | applicationRatesResolveResponse422
+  | applicationRatesResolveResponse401
+  | applicationRatesResolveResponse403
+  | applicationRatesResolveResponse422
 ) & {
   headers: Headers;
 };
@@ -126,7 +133,10 @@ export const getApplicationRatesResolveQueryKey = (
 
 export const getApplicationRatesResolveQueryOptions = <
   TData = Awaited<ReturnType<typeof applicationRatesResolve>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params: ApplicationRatesResolveParams,
   options?: {
@@ -160,11 +170,16 @@ export type ApplicationRatesResolveQueryResult = NonNullable<
   Awaited<ReturnType<typeof applicationRatesResolve>>
 >;
 export type ApplicationRatesResolveQueryError =
-  AuthenticationExceptionResponse | ValidationExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
 
 export function useApplicationRatesResolve<
   TData = Awaited<ReturnType<typeof applicationRatesResolve>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params: ApplicationRatesResolveParams,
   options: {
@@ -191,7 +206,10 @@ export function useApplicationRatesResolve<
 };
 export function useApplicationRatesResolve<
   TData = Awaited<ReturnType<typeof applicationRatesResolve>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params: ApplicationRatesResolveParams,
   options?: {
@@ -218,7 +236,10 @@ export function useApplicationRatesResolve<
 };
 export function useApplicationRatesResolve<
   TData = Awaited<ReturnType<typeof applicationRatesResolve>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params: ApplicationRatesResolveParams,
   options?: {
@@ -243,7 +264,10 @@ exists to reference one (Phase 4)
 
 export function useApplicationRatesResolve<
   TData = Awaited<ReturnType<typeof applicationRatesResolve>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params: ApplicationRatesResolveParams,
   options?: {
@@ -282,6 +306,11 @@ export type applicationRatesIndexResponse401 = {
   status: 401;
 };
 
+export type applicationRatesIndexResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type applicationRatesIndexResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -292,7 +321,9 @@ export type applicationRatesIndexResponseSuccess =
     headers: Headers;
   };
 export type applicationRatesIndexResponseError = (
-  applicationRatesIndexResponse401 | applicationRatesIndexResponse422
+  | applicationRatesIndexResponse401
+  | applicationRatesIndexResponse403
+  | applicationRatesIndexResponse422
 ) & {
   headers: Headers;
 };
@@ -339,7 +370,10 @@ export const getApplicationRatesIndexQueryKey = (
 
 export const getApplicationRatesIndexQueryOptions = <
   TData = Awaited<ReturnType<typeof applicationRatesIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: ApplicationRatesIndexParams,
   options?: {
@@ -373,11 +407,16 @@ export type ApplicationRatesIndexQueryResult = NonNullable<
   Awaited<ReturnType<typeof applicationRatesIndex>>
 >;
 export type ApplicationRatesIndexQueryError =
-  AuthenticationExceptionResponse | ValidationExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
 
 export function useApplicationRatesIndex<
   TData = Awaited<ReturnType<typeof applicationRatesIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params: undefined | ApplicationRatesIndexParams,
   options: {
@@ -404,7 +443,10 @@ export function useApplicationRatesIndex<
 };
 export function useApplicationRatesIndex<
   TData = Awaited<ReturnType<typeof applicationRatesIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: ApplicationRatesIndexParams,
   options?: {
@@ -431,7 +473,10 @@ export function useApplicationRatesIndex<
 };
 export function useApplicationRatesIndex<
   TData = Awaited<ReturnType<typeof applicationRatesIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: ApplicationRatesIndexParams,
   options?: {
@@ -451,7 +496,10 @@ export function useApplicationRatesIndex<
 
 export function useApplicationRatesIndex<
   TData = Awaited<ReturnType<typeof applicationRatesIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: ApplicationRatesIndexParams,
   options?: {
@@ -621,6 +669,11 @@ export type applicationRatesShowResponse401 = {
   status: 401;
 };
 
+export type applicationRatesShowResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type applicationRatesShowResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -637,6 +690,7 @@ export type applicationRatesShowResponseSuccess =
   };
 export type applicationRatesShowResponseError = (
   | applicationRatesShowResponse401
+  | applicationRatesShowResponse403
   | applicationRatesShowResponse404
   | applicationRatesShowResponse422
 ) & {
@@ -693,6 +747,7 @@ export const getApplicationRatesShowQueryOptions = <
   TData = Awaited<ReturnType<typeof applicationRatesShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -736,6 +791,7 @@ export type ApplicationRatesShowQueryResult = NonNullable<
 >;
 export type ApplicationRatesShowQueryError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
@@ -743,6 +799,7 @@ export function useApplicationRatesShow<
   TData = Awaited<ReturnType<typeof applicationRatesShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -774,6 +831,7 @@ export function useApplicationRatesShow<
   TData = Awaited<ReturnType<typeof applicationRatesShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -805,6 +863,7 @@ export function useApplicationRatesShow<
   TData = Awaited<ReturnType<typeof applicationRatesShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -829,6 +888,7 @@ export function useApplicationRatesShow<
   TData = Awaited<ReturnType<typeof applicationRatesShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(

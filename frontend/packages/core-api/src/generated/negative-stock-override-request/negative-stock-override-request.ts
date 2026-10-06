@@ -22,6 +22,7 @@ import type {
 
 import type {
   AuthenticationExceptionResponse,
+  AuthorizationExceptionResponse,
   DecideNegativeStockOverrideRequestRequest,
   ModelNotFoundExceptionResponse,
   NegativeStockOverrideRequestsDecide200,
@@ -50,6 +51,11 @@ export type negativeStockOverrideRequestsIndexResponse401 = {
   status: 401;
 };
 
+export type negativeStockOverrideRequestsIndexResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type negativeStockOverrideRequestsIndexResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -61,6 +67,7 @@ export type negativeStockOverrideRequestsIndexResponseSuccess =
   };
 export type negativeStockOverrideRequestsIndexResponseError = (
   | negativeStockOverrideRequestsIndexResponse401
+  | negativeStockOverrideRequestsIndexResponse403
   | negativeStockOverrideRequestsIndexResponse422
 ) & {
   headers: Headers;
@@ -112,7 +119,10 @@ export const getNegativeStockOverrideRequestsIndexQueryKey = (
 
 export const getNegativeStockOverrideRequestsIndexQueryOptions = <
   TData = Awaited<ReturnType<typeof negativeStockOverrideRequestsIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: NegativeStockOverrideRequestsIndexParams,
   options?: {
@@ -147,11 +157,16 @@ export type NegativeStockOverrideRequestsIndexQueryResult = NonNullable<
   Awaited<ReturnType<typeof negativeStockOverrideRequestsIndex>>
 >;
 export type NegativeStockOverrideRequestsIndexQueryError =
-  AuthenticationExceptionResponse | ValidationExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
 
 export function useNegativeStockOverrideRequestsIndex<
   TData = Awaited<ReturnType<typeof negativeStockOverrideRequestsIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params: undefined | NegativeStockOverrideRequestsIndexParams,
   options: {
@@ -178,7 +193,10 @@ export function useNegativeStockOverrideRequestsIndex<
 };
 export function useNegativeStockOverrideRequestsIndex<
   TData = Awaited<ReturnType<typeof negativeStockOverrideRequestsIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: NegativeStockOverrideRequestsIndexParams,
   options?: {
@@ -205,7 +223,10 @@ export function useNegativeStockOverrideRequestsIndex<
 };
 export function useNegativeStockOverrideRequestsIndex<
   TData = Awaited<ReturnType<typeof negativeStockOverrideRequestsIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: NegativeStockOverrideRequestsIndexParams,
   options?: {
@@ -225,7 +246,10 @@ export function useNegativeStockOverrideRequestsIndex<
 
 export function useNegativeStockOverrideRequestsIndex<
   TData = Awaited<ReturnType<typeof negativeStockOverrideRequestsIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: NegativeStockOverrideRequestsIndexParams,
   options?: {
@@ -267,6 +291,11 @@ export type negativeStockOverrideRequestsStoreResponse401 = {
   status: 401;
 };
 
+export type negativeStockOverrideRequestsStoreResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type negativeStockOverrideRequestsStoreResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -278,6 +307,7 @@ export type negativeStockOverrideRequestsStoreResponseSuccess =
   };
 export type negativeStockOverrideRequestsStoreResponseError = (
   | negativeStockOverrideRequestsStoreResponse401
+  | negativeStockOverrideRequestsStoreResponse403
   | negativeStockOverrideRequestsStoreResponse422
 ) & {
   headers: Headers;
@@ -307,7 +337,10 @@ export const negativeStockOverrideRequestsStore = async (
 };
 
 export const getNegativeStockOverrideRequestsStoreMutationOptions = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -350,10 +383,15 @@ export type NegativeStockOverrideRequestsStoreMutationResult = NonNullable<
 export type NegativeStockOverrideRequestsStoreMutationBody =
   StoreNegativeStockOverrideRequestRequest;
 export type NegativeStockOverrideRequestsStoreMutationError =
-  AuthenticationExceptionResponse | ValidationExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
 
 export const useNegativeStockOverrideRequestsStore = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(
   options?: {
@@ -387,6 +425,11 @@ export type negativeStockOverrideRequestsShowResponse401 = {
   status: 401;
 };
 
+export type negativeStockOverrideRequestsShowResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type negativeStockOverrideRequestsShowResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -403,6 +446,7 @@ export type negativeStockOverrideRequestsShowResponseSuccess =
   };
 export type negativeStockOverrideRequestsShowResponseError = (
   | negativeStockOverrideRequestsShowResponse401
+  | negativeStockOverrideRequestsShowResponse403
   | negativeStockOverrideRequestsShowResponse404
   | negativeStockOverrideRequestsShowResponse422
 ) & {
@@ -463,6 +507,7 @@ export const getNegativeStockOverrideRequestsShowQueryOptions = <
   TData = Awaited<ReturnType<typeof negativeStockOverrideRequestsShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -514,6 +559,7 @@ export type NegativeStockOverrideRequestsShowQueryResult = NonNullable<
 >;
 export type NegativeStockOverrideRequestsShowQueryError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
@@ -521,6 +567,7 @@ export function useNegativeStockOverrideRequestsShow<
   TData = Awaited<ReturnType<typeof negativeStockOverrideRequestsShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -552,6 +599,7 @@ export function useNegativeStockOverrideRequestsShow<
   TData = Awaited<ReturnType<typeof negativeStockOverrideRequestsShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -583,6 +631,7 @@ export function useNegativeStockOverrideRequestsShow<
   TData = Awaited<ReturnType<typeof negativeStockOverrideRequestsShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -607,6 +656,7 @@ export function useNegativeStockOverrideRequestsShow<
   TData = Awaited<ReturnType<typeof negativeStockOverrideRequestsShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -652,6 +702,11 @@ export type negativeStockOverrideRequestsDecideResponse401 = {
   status: 401;
 };
 
+export type negativeStockOverrideRequestsDecideResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type negativeStockOverrideRequestsDecideResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -668,6 +723,7 @@ export type negativeStockOverrideRequestsDecideResponseSuccess =
   };
 export type negativeStockOverrideRequestsDecideResponseError = (
   | negativeStockOverrideRequestsDecideResponse401
+  | negativeStockOverrideRequestsDecideResponse403
   | negativeStockOverrideRequestsDecideResponse404
   | negativeStockOverrideRequestsDecideResponse422
 ) & {
@@ -703,6 +759,7 @@ export const negativeStockOverrideRequestsDecide = async (
 export const getNegativeStockOverrideRequestsDecideMutationOptions = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -761,12 +818,14 @@ export type NegativeStockOverrideRequestsDecideMutationBody =
   DecideNegativeStockOverrideRequestRequest;
 export type NegativeStockOverrideRequestsDecideMutationError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
 export const useNegativeStockOverrideRequestsDecide = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -808,6 +867,11 @@ export type negativeStockOverrideRequestsReviewResponse401 = {
   status: 401;
 };
 
+export type negativeStockOverrideRequestsReviewResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type negativeStockOverrideRequestsReviewResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -824,6 +888,7 @@ export type negativeStockOverrideRequestsReviewResponseSuccess =
   };
 export type negativeStockOverrideRequestsReviewResponseError = (
   | negativeStockOverrideRequestsReviewResponse401
+  | negativeStockOverrideRequestsReviewResponse403
   | negativeStockOverrideRequestsReviewResponse404
   | negativeStockOverrideRequestsReviewResponse422
 ) & {
@@ -859,6 +924,7 @@ export const negativeStockOverrideRequestsReview = async (
 export const getNegativeStockOverrideRequestsReviewMutationOptions = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -917,12 +983,14 @@ export type NegativeStockOverrideRequestsReviewMutationBody =
   ReviewNegativeStockOverrideRequestRequest;
 export type NegativeStockOverrideRequestsReviewMutationError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
 export const useNegativeStockOverrideRequestsReview = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,

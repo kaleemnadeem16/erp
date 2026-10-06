@@ -57,6 +57,11 @@ export type formulationsResolveResponse401 = {
   status: 401;
 };
 
+export type formulationsResolveResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type formulationsResolveResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -67,7 +72,9 @@ export type formulationsResolveResponseSuccess =
     headers: Headers;
   };
 export type formulationsResolveResponseError = (
-  formulationsResolveResponse401 | formulationsResolveResponse422
+  | formulationsResolveResponse401
+  | formulationsResolveResponse403
+  | formulationsResolveResponse422
 ) & {
   headers: Headers;
 };
@@ -114,7 +121,10 @@ export const getFormulationsResolveQueryKey = (
 
 export const getFormulationsResolveQueryOptions = <
   TData = Awaited<ReturnType<typeof formulationsResolve>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params: FormulationsResolveParams,
   options?: {
@@ -148,11 +158,16 @@ export type FormulationsResolveQueryResult = NonNullable<
   Awaited<ReturnType<typeof formulationsResolve>>
 >;
 export type FormulationsResolveQueryError =
-  AuthenticationExceptionResponse | ValidationExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
 
 export function useFormulationsResolve<
   TData = Awaited<ReturnType<typeof formulationsResolve>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params: FormulationsResolveParams,
   options: {
@@ -179,7 +194,10 @@ export function useFormulationsResolve<
 };
 export function useFormulationsResolve<
   TData = Awaited<ReturnType<typeof formulationsResolve>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params: FormulationsResolveParams,
   options?: {
@@ -206,7 +224,10 @@ export function useFormulationsResolve<
 };
 export function useFormulationsResolve<
   TData = Awaited<ReturnType<typeof formulationsResolve>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params: FormulationsResolveParams,
   options?: {
@@ -231,7 +252,10 @@ once that slice lands
 
 export function useFormulationsResolve<
   TData = Awaited<ReturnType<typeof formulationsResolve>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params: FormulationsResolveParams,
   options?: {
@@ -270,6 +294,11 @@ export type formulationsIndexResponse401 = {
   status: 401;
 };
 
+export type formulationsIndexResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type formulationsIndexResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -279,7 +308,9 @@ export type formulationsIndexResponseSuccess = formulationsIndexResponse200 & {
   headers: Headers;
 };
 export type formulationsIndexResponseError = (
-  formulationsIndexResponse401 | formulationsIndexResponse422
+  | formulationsIndexResponse401
+  | formulationsIndexResponse403
+  | formulationsIndexResponse422
 ) & {
   headers: Headers;
 };
@@ -324,7 +355,10 @@ export const getFormulationsIndexQueryKey = (
 
 export const getFormulationsIndexQueryOptions = <
   TData = Awaited<ReturnType<typeof formulationsIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: FormulationsIndexParams,
   options?: {
@@ -358,11 +392,16 @@ export type FormulationsIndexQueryResult = NonNullable<
   Awaited<ReturnType<typeof formulationsIndex>>
 >;
 export type FormulationsIndexQueryError =
-  AuthenticationExceptionResponse | ValidationExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
 
 export function useFormulationsIndex<
   TData = Awaited<ReturnType<typeof formulationsIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params: undefined | FormulationsIndexParams,
   options: {
@@ -389,7 +428,10 @@ export function useFormulationsIndex<
 };
 export function useFormulationsIndex<
   TData = Awaited<ReturnType<typeof formulationsIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: FormulationsIndexParams,
   options?: {
@@ -416,7 +458,10 @@ export function useFormulationsIndex<
 };
 export function useFormulationsIndex<
   TData = Awaited<ReturnType<typeof formulationsIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: FormulationsIndexParams,
   options?: {
@@ -436,7 +481,10 @@ export function useFormulationsIndex<
 
 export function useFormulationsIndex<
   TData = Awaited<ReturnType<typeof formulationsIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: FormulationsIndexParams,
   options?: {
@@ -602,6 +650,11 @@ export type formulationsShowResponse401 = {
   status: 401;
 };
 
+export type formulationsShowResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type formulationsShowResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -617,6 +670,7 @@ export type formulationsShowResponseSuccess = formulationsShowResponse200 & {
 };
 export type formulationsShowResponseError = (
   | formulationsShowResponse401
+  | formulationsShowResponse403
   | formulationsShowResponse404
   | formulationsShowResponse422
 ) & {
@@ -673,6 +727,7 @@ export const getFormulationsShowQueryOptions = <
   TData = Awaited<ReturnType<typeof formulationsShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -715,6 +770,7 @@ export type FormulationsShowQueryResult = NonNullable<
 >;
 export type FormulationsShowQueryError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
@@ -722,6 +778,7 @@ export function useFormulationsShow<
   TData = Awaited<ReturnType<typeof formulationsShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -753,6 +810,7 @@ export function useFormulationsShow<
   TData = Awaited<ReturnType<typeof formulationsShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -784,6 +842,7 @@ export function useFormulationsShow<
   TData = Awaited<ReturnType<typeof formulationsShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(
@@ -808,6 +867,7 @@ export function useFormulationsShow<
   TData = Awaited<ReturnType<typeof formulationsShow>>,
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
 >(

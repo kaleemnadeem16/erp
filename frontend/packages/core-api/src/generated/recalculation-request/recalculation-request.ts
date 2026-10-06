@@ -288,6 +288,11 @@ export type recalculationRequestsStoreResponse401 = {
   status: 401;
 };
 
+export type recalculationRequestsStoreResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type recalculationRequestsStoreResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -298,7 +303,9 @@ export type recalculationRequestsStoreResponseSuccess =
     headers: Headers;
   };
 export type recalculationRequestsStoreResponseError = (
-  recalculationRequestsStoreResponse401 | recalculationRequestsStoreResponse422
+  | recalculationRequestsStoreResponse401
+  | recalculationRequestsStoreResponse403
+  | recalculationRequestsStoreResponse422
 ) & {
   headers: Headers;
 };
@@ -327,7 +334,10 @@ export const recalculationRequestsStore = async (
 };
 
 export const getRecalculationRequestsStoreMutationOptions = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -370,10 +380,15 @@ export type RecalculationRequestsStoreMutationResult = NonNullable<
 export type RecalculationRequestsStoreMutationBody =
   StoreRecalculationRequestRequest;
 export type RecalculationRequestsStoreMutationError =
-  AuthenticationExceptionResponse | ValidationExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
 
 export const useRecalculationRequestsStore = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(
   options?: {
@@ -673,6 +688,11 @@ export type recalculationImpactVersionsDecideResponse401 = {
   status: 401;
 };
 
+export type recalculationImpactVersionsDecideResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type recalculationImpactVersionsDecideResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -689,6 +709,7 @@ export type recalculationImpactVersionsDecideResponseSuccess =
   };
 export type recalculationImpactVersionsDecideResponseError = (
   | recalculationImpactVersionsDecideResponse401
+  | recalculationImpactVersionsDecideResponse403
   | recalculationImpactVersionsDecideResponse404
   | recalculationImpactVersionsDecideResponse422
 ) & {
@@ -724,6 +745,7 @@ export const recalculationImpactVersionsDecide = async (
 export const getRecalculationImpactVersionsDecideMutationOptions = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -782,12 +804,14 @@ export type RecalculationImpactVersionsDecideMutationBody =
   DecideRecalculationRequestRequest;
 export type RecalculationImpactVersionsDecideMutationError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
 export const useRecalculationImpactVersionsDecide = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -829,9 +853,19 @@ export type recalculationImpactVersionsExecuteResponse401 = {
   status: 401;
 };
 
+export type recalculationImpactVersionsExecuteResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type recalculationImpactVersionsExecuteResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
+};
+
+export type recalculationImpactVersionsExecuteResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
 };
 
 export type recalculationImpactVersionsExecuteResponseSuccess =
@@ -840,7 +874,9 @@ export type recalculationImpactVersionsExecuteResponseSuccess =
   };
 export type recalculationImpactVersionsExecuteResponseError = (
   | recalculationImpactVersionsExecuteResponse401
+  | recalculationImpactVersionsExecuteResponse403
   | recalculationImpactVersionsExecuteResponse404
+  | recalculationImpactVersionsExecuteResponse422
 ) & {
   headers: Headers;
 };
@@ -869,7 +905,11 @@ export const recalculationImpactVersionsExecute = async (
 };
 
 export const getRecalculationImpactVersionsExecuteMutationOptions = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -914,10 +954,17 @@ export type RecalculationImpactVersionsExecuteMutationResult = NonNullable<
 >;
 
 export type RecalculationImpactVersionsExecuteMutationError =
-  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ModelNotFoundExceptionResponse
+  | ValidationExceptionResponse;
 
 export const useRecalculationImpactVersionsExecute = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(
   options?: {
@@ -951,6 +998,11 @@ export type recalculationImpactVersionsResumeRegenerationResponse401 = {
   status: 401;
 };
 
+export type recalculationImpactVersionsResumeRegenerationResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type recalculationImpactVersionsResumeRegenerationResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -967,6 +1019,7 @@ export type recalculationImpactVersionsResumeRegenerationResponseSuccess =
   };
 export type recalculationImpactVersionsResumeRegenerationResponseError = (
   | recalculationImpactVersionsResumeRegenerationResponse401
+  | recalculationImpactVersionsResumeRegenerationResponse403
   | recalculationImpactVersionsResumeRegenerationResponse404
   | recalculationImpactVersionsResumeRegenerationResponse422
 ) & {
@@ -1004,6 +1057,7 @@ export const recalculationImpactVersionsResumeRegeneration = async (
 export const getRecalculationImpactVersionsResumeRegenerationMutationOptions = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -1063,12 +1117,14 @@ export type RecalculationImpactVersionsResumeRegenerationMutationBody =
   ResumeRecalculationRegenerationRequest;
 export type RecalculationImpactVersionsResumeRegenerationMutationError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
 export const useRecalculationImpactVersionsResumeRegeneration = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,

@@ -289,6 +289,11 @@ export type inventoryCutoversStoreResponse401 = {
   status: 401;
 };
 
+export type inventoryCutoversStoreResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type inventoryCutoversStoreResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -299,7 +304,9 @@ export type inventoryCutoversStoreResponseSuccess =
     headers: Headers;
   };
 export type inventoryCutoversStoreResponseError = (
-  inventoryCutoversStoreResponse401 | inventoryCutoversStoreResponse422
+  | inventoryCutoversStoreResponse401
+  | inventoryCutoversStoreResponse403
+  | inventoryCutoversStoreResponse422
 ) & {
   headers: Headers;
 };
@@ -327,7 +334,10 @@ export const inventoryCutoversStore = async (
 };
 
 export const getInventoryCutoversStoreMutationOptions = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -369,10 +379,15 @@ export type InventoryCutoversStoreMutationResult = NonNullable<
 >;
 export type InventoryCutoversStoreMutationBody = StoreInventoryCutoverRequest;
 export type InventoryCutoversStoreMutationError =
-  AuthenticationExceptionResponse | ValidationExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
 
 export const useInventoryCutoversStore = <
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(
   options?: {
@@ -670,6 +685,11 @@ export type inventoryCutoversBatchesStoreResponse401 = {
   status: 401;
 };
 
+export type inventoryCutoversBatchesStoreResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type inventoryCutoversBatchesStoreResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -686,6 +706,7 @@ export type inventoryCutoversBatchesStoreResponseSuccess =
   };
 export type inventoryCutoversBatchesStoreResponseError = (
   | inventoryCutoversBatchesStoreResponse401
+  | inventoryCutoversBatchesStoreResponse403
   | inventoryCutoversBatchesStoreResponse404
   | inventoryCutoversBatchesStoreResponse422
 ) & {
@@ -721,6 +742,7 @@ export const inventoryCutoversBatchesStore = async (
 export const getInventoryCutoversBatchesStoreMutationOptions = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -770,12 +792,14 @@ export type InventoryCutoversBatchesStoreMutationBody =
   AttachInventoryCutoverBatchRequest;
 export type InventoryCutoversBatchesStoreMutationError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
 export const useInventoryCutoversBatchesStore = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -811,9 +835,19 @@ export type inventoryCutoversValidateResponse401 = {
   status: 401;
 };
 
+export type inventoryCutoversValidateResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type inventoryCutoversValidateResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
+};
+
+export type inventoryCutoversValidateResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
 };
 
 export type inventoryCutoversValidateResponseSuccess =
@@ -821,7 +855,10 @@ export type inventoryCutoversValidateResponseSuccess =
     headers: Headers;
   };
 export type inventoryCutoversValidateResponseError = (
-  inventoryCutoversValidateResponse401 | inventoryCutoversValidateResponse404
+  | inventoryCutoversValidateResponse401
+  | inventoryCutoversValidateResponse403
+  | inventoryCutoversValidateResponse404
+  | inventoryCutoversValidateResponse422
 ) & {
   headers: Headers;
 };
@@ -848,7 +885,11 @@ export const inventoryCutoversValidate = async (
 };
 
 export const getInventoryCutoversValidateMutationOptions = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -890,10 +931,17 @@ export type InventoryCutoversValidateMutationResult = NonNullable<
 >;
 
 export type InventoryCutoversValidateMutationError =
-  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ModelNotFoundExceptionResponse
+  | ValidationExceptionResponse;
 
 export const useInventoryCutoversValidate = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(
   options?: {
@@ -1154,9 +1202,19 @@ export type inventoryCutoversApproveResponse401 = {
   status: 401;
 };
 
+export type inventoryCutoversApproveResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type inventoryCutoversApproveResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
+};
+
+export type inventoryCutoversApproveResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
 };
 
 export type inventoryCutoversApproveResponseSuccess =
@@ -1164,7 +1222,10 @@ export type inventoryCutoversApproveResponseSuccess =
     headers: Headers;
   };
 export type inventoryCutoversApproveResponseError = (
-  inventoryCutoversApproveResponse401 | inventoryCutoversApproveResponse404
+  | inventoryCutoversApproveResponse401
+  | inventoryCutoversApproveResponse403
+  | inventoryCutoversApproveResponse404
+  | inventoryCutoversApproveResponse422
 ) & {
   headers: Headers;
 };
@@ -1191,7 +1252,11 @@ export const inventoryCutoversApprove = async (
 };
 
 export const getInventoryCutoversApproveMutationOptions = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -1233,10 +1298,17 @@ export type InventoryCutoversApproveMutationResult = NonNullable<
 >;
 
 export type InventoryCutoversApproveMutationError =
-  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ModelNotFoundExceptionResponse
+  | ValidationExceptionResponse;
 
 export const useInventoryCutoversApprove = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(
   options?: {
@@ -1269,9 +1341,19 @@ export type inventoryCutoversCommitResponse401 = {
   status: 401;
 };
 
+export type inventoryCutoversCommitResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type inventoryCutoversCommitResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
+};
+
+export type inventoryCutoversCommitResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
 };
 
 export type inventoryCutoversCommitResponseSuccess =
@@ -1279,7 +1361,10 @@ export type inventoryCutoversCommitResponseSuccess =
     headers: Headers;
   };
 export type inventoryCutoversCommitResponseError = (
-  inventoryCutoversCommitResponse401 | inventoryCutoversCommitResponse404
+  | inventoryCutoversCommitResponse401
+  | inventoryCutoversCommitResponse403
+  | inventoryCutoversCommitResponse404
+  | inventoryCutoversCommitResponse422
 ) & {
   headers: Headers;
 };
@@ -1305,7 +1390,11 @@ export const inventoryCutoversCommit = async (
 };
 
 export const getInventoryCutoversCommitMutationOptions = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -1347,10 +1436,17 @@ export type InventoryCutoversCommitMutationResult = NonNullable<
 >;
 
 export type InventoryCutoversCommitMutationError =
-  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ModelNotFoundExceptionResponse
+  | ValidationExceptionResponse;
 
 export const useInventoryCutoversCommit = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(
   options?: {
@@ -1383,9 +1479,19 @@ export type inventoryCutoversFinaliseResponse401 = {
   status: 401;
 };
 
+export type inventoryCutoversFinaliseResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type inventoryCutoversFinaliseResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
+};
+
+export type inventoryCutoversFinaliseResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
 };
 
 export type inventoryCutoversFinaliseResponseSuccess =
@@ -1393,7 +1499,10 @@ export type inventoryCutoversFinaliseResponseSuccess =
     headers: Headers;
   };
 export type inventoryCutoversFinaliseResponseError = (
-  inventoryCutoversFinaliseResponse401 | inventoryCutoversFinaliseResponse404
+  | inventoryCutoversFinaliseResponse401
+  | inventoryCutoversFinaliseResponse403
+  | inventoryCutoversFinaliseResponse404
+  | inventoryCutoversFinaliseResponse422
 ) & {
   headers: Headers;
 };
@@ -1420,7 +1529,11 @@ export const inventoryCutoversFinalise = async (
 };
 
 export const getInventoryCutoversFinaliseMutationOptions = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -1462,10 +1575,17 @@ export type InventoryCutoversFinaliseMutationResult = NonNullable<
 >;
 
 export type InventoryCutoversFinaliseMutationError =
-  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ModelNotFoundExceptionResponse
+  | ValidationExceptionResponse;
 
 export const useInventoryCutoversFinalise = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(
   options?: {
@@ -1498,6 +1618,11 @@ export type inventoryCutoversNegativeOpeningsStoreResponse401 = {
   status: 401;
 };
 
+export type inventoryCutoversNegativeOpeningsStoreResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type inventoryCutoversNegativeOpeningsStoreResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
@@ -1514,6 +1639,7 @@ export type inventoryCutoversNegativeOpeningsStoreResponseSuccess =
   };
 export type inventoryCutoversNegativeOpeningsStoreResponseError = (
   | inventoryCutoversNegativeOpeningsStoreResponse401
+  | inventoryCutoversNegativeOpeningsStoreResponse403
   | inventoryCutoversNegativeOpeningsStoreResponse404
   | inventoryCutoversNegativeOpeningsStoreResponse422
 ) & {
@@ -1549,6 +1675,7 @@ export const inventoryCutoversNegativeOpeningsStore = async (
 export const getInventoryCutoversNegativeOpeningsStoreMutationOptions = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -1607,12 +1734,14 @@ export type InventoryCutoversNegativeOpeningsStoreMutationBody =
   RequestInventoryCutoverNegativeOpeningRequest;
 export type InventoryCutoversNegativeOpeningsStoreMutationError =
   | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
   | ModelNotFoundExceptionResponse
   | ValidationExceptionResponse;
 
 export const useInventoryCutoversNegativeOpeningsStore = <
   TError =
     | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
     | ModelNotFoundExceptionResponse
     | ValidationExceptionResponse,
   TContext = unknown,
@@ -1654,9 +1783,19 @@ export type inventoryCutoverNegativeOpeningsApproveResponse401 = {
   status: 401;
 };
 
+export type inventoryCutoverNegativeOpeningsApproveResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type inventoryCutoverNegativeOpeningsApproveResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
+};
+
+export type inventoryCutoverNegativeOpeningsApproveResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
 };
 
 export type inventoryCutoverNegativeOpeningsApproveResponseSuccess =
@@ -1665,7 +1804,9 @@ export type inventoryCutoverNegativeOpeningsApproveResponseSuccess =
   };
 export type inventoryCutoverNegativeOpeningsApproveResponseError = (
   | inventoryCutoverNegativeOpeningsApproveResponse401
+  | inventoryCutoverNegativeOpeningsApproveResponse403
   | inventoryCutoverNegativeOpeningsApproveResponse404
+  | inventoryCutoverNegativeOpeningsApproveResponse422
 ) & {
   headers: Headers;
 };
@@ -1696,7 +1837,11 @@ export const inventoryCutoverNegativeOpeningsApprove = async (
 };
 
 export const getInventoryCutoverNegativeOpeningsApproveMutationOptions = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -1741,10 +1886,17 @@ export type InventoryCutoverNegativeOpeningsApproveMutationResult = NonNullable<
 >;
 
 export type InventoryCutoverNegativeOpeningsApproveMutationError =
-  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ModelNotFoundExceptionResponse
+  | ValidationExceptionResponse;
 
 export const useInventoryCutoverNegativeOpeningsApprove = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(
   options?: {

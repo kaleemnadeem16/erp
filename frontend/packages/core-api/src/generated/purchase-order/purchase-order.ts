@@ -1495,9 +1495,19 @@ export type inventoryCutoversOpenPurchaseOrdersCommitResponse401 = {
   status: 401;
 };
 
+export type inventoryCutoversOpenPurchaseOrdersCommitResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type inventoryCutoversOpenPurchaseOrdersCommitResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
+};
+
+export type inventoryCutoversOpenPurchaseOrdersCommitResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
 };
 
 export type inventoryCutoversOpenPurchaseOrdersCommitResponseSuccess =
@@ -1506,7 +1516,9 @@ export type inventoryCutoversOpenPurchaseOrdersCommitResponseSuccess =
   };
 export type inventoryCutoversOpenPurchaseOrdersCommitResponseError = (
   | inventoryCutoversOpenPurchaseOrdersCommitResponse401
+  | inventoryCutoversOpenPurchaseOrdersCommitResponse403
   | inventoryCutoversOpenPurchaseOrdersCommitResponse404
+  | inventoryCutoversOpenPurchaseOrdersCommitResponse422
 ) & {
   headers: Headers;
 };
@@ -1535,7 +1547,11 @@ export const inventoryCutoversOpenPurchaseOrdersCommit = async (
 };
 
 export const getInventoryCutoversOpenPurchaseOrdersCommitMutationOptions = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -1581,10 +1597,17 @@ export type InventoryCutoversOpenPurchaseOrdersCommitMutationResult =
   >;
 
 export type InventoryCutoversOpenPurchaseOrdersCommitMutationError =
-  AuthenticationExceptionResponse | ModelNotFoundExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ModelNotFoundExceptionResponse
+  | ValidationExceptionResponse;
 
 export const useInventoryCutoversOpenPurchaseOrdersCommit = <
-  TError = AuthenticationExceptionResponse | ModelNotFoundExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
   TContext = unknown,
 >(
   options?: {
