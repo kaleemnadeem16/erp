@@ -103,8 +103,9 @@ in the same commit.
 | [0086](0086-gate-recipe-reads-by-capability.md) | Gate recipe reads behind a capability administrators grant through roles | accepted | 2026-10-06 |
 | [0087](0087-approval-limits-and-reasons-are-separate-auditor-capabilities.md) | Approval limits and written reasons are separate auditor capabilities | accepted | 2026-10-06 |
 | [0088](0088-device-tokens-expire-and-sign-in-has-seams-for-stronger-authentication.md) | Device tokens expire, people manage their devices, and sign-in leaves room for stronger authentication | accepted | 2026-10-06 |
+| [0089](0089-organisation-units-and-record-scope.md) | Organisation units and record scope, first applied to inventory by warehouse | accepted | 2026-10-06 |
 
-**Next number: 0089**
+**Next number: 0090**
 
 ## By theme
 
