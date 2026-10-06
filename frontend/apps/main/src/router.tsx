@@ -73,6 +73,7 @@ import {
   RateDimensionsListScreen,
   RecalculationRequestCreateScreen,
   RecalculationRequestDetailScreen,
+  OrganisationSettingsScreen,
   RecalculationRequestsListScreen,
   ResourceRatesListScreen,
   RolesSettingsScreen,
@@ -677,6 +678,18 @@ export function AppRouter() {
               <AppShell>
                 <PermissionRoute permission="administration.role.view">
                   <RolesSettingsScreen />
+                </PermissionRoute>
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings/organisation"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <PermissionRoute permission="administration.organisation.view">
+                  <OrganisationSettingsScreen />
                 </PermissionRoute>
               </AppShell>
             </ProtectedRoute>

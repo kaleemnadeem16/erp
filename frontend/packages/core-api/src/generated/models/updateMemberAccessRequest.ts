@@ -4,11 +4,14 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
+import type { UpdateMemberAccessRequestScopeLimitsItem } from "./updateMemberAccessRequestScopeLimitsItem";
 import type { UpdateMemberAccessRequestReason } from "./updateMemberAccessRequestReason";
 
 export interface UpdateMemberAccessRequest {
   role_ids: number[];
   direct_permissions: string[];
+  /** "Only my units" on an assignment (ADR 0089): each entry names exactly one role or one direct permission. Omitted keeps the current limits. */
+  scope_limits?: UpdateMemberAccessRequestScopeLimitsItem[];
   /** @maxLength 1000 */
   reason?: UpdateMemberAccessRequestReason;
 }

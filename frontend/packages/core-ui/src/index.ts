@@ -59,6 +59,7 @@ export { PrintingSettingsScreen } from "./features/settings/printing-settings-sc
 export { AccountSettingsScreen } from "./features/settings/account-settings-screen";
 export { MembersSettingsScreen } from "./features/access-administration/members-settings-screen";
 export { RolesSettingsScreen } from "./features/access-administration/roles-settings-screen";
+export { OrganisationSettingsScreen } from "./features/organisation/organisation-settings-screen";
 export {
   usePrintSettingsStore,
   DEFAULT_PRINT_SETTINGS,

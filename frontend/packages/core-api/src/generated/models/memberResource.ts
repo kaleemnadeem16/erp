@@ -11,6 +11,8 @@ import type { MemberResourceUpdatedAt } from "./memberResourceUpdatedAt";
 import type { MemberResourceLastLoginAt } from "./memberResourceLastLoginAt";
 import type { MemberResourceAccessUpdatedAt } from "./memberResourceAccessUpdatedAt";
 import type { MemberResourceRolesItem } from "./memberResourceRolesItem";
+import type { MemberResourceOrganisationUnitsItem } from "./memberResourceOrganisationUnitsItem";
+import type { MemberResourceScopeLimitsItem } from "./memberResourceScopeLimitsItem";
 
 export interface MemberResource {
   id: number;
@@ -26,4 +28,7 @@ export interface MemberResource {
   roles: MemberResourceRolesItem[];
   direct_permissions: unknown[];
   effective_permissions: unknown[];
+  /** Where the person works and which of their assignments are limited to it (ADR 0089); shown to those who administer access. */
+  organisation_units?: MemberResourceOrganisationUnitsItem[];
+  scope_limits?: MemberResourceScopeLimitsItem[];
 }

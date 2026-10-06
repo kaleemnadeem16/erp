@@ -166,6 +166,10 @@ const rules: readonly Rule[] = [
   { path: "/settings/members", anyOf: ["administration.member.view"] },
   { path: "/settings/roles", anyOf: ["administration.role.view"] },
   {
+    path: "/settings/organisation",
+    anyOf: ["administration.organisation.view", "administration.organisation.manage"],
+  },
+  {
     path: "/suppliers/new",
     allOf: [
       "parties.supplier-account.manage",

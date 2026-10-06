@@ -3,6 +3,7 @@ import { Pencil, Plus } from "lucide-react";
 import type { PaginationState, SortingState } from "@tanstack/react-table";
 import {
   useMembersAccess,
+  useOrganisationUnitsIndex,
   useMembersHistory,
   useMembersIndex,
   useMembersReactivate,
@@ -64,6 +65,12 @@ interface Member {
   roles: Role[];
   direct_permissions: string[];
   effective_permissions: string[];
+  organisation_units?: Array<{ id: number; code: string; name: string }>;
+  scope_limits?: Array<{
+    role_id: number | null;
+    permission: string | null;
+    scope: string;
+  }>;
 }
 interface HistoryEntry {
   id: number;
@@ -126,6 +133,13 @@ export function MembersSettingsScreen() {
   const mayManage = usePermission("administration.member.manage");
   const mayAssign = usePermission("administration.access.assign");
   const mayViewRoles = usePermission("administration.role.view");
+  // "Only my units" on an assignment (ADR 0089) is offered only to a company that has defined units, so one that never does never sees it.
+  const mayViewOrganisation = usePermission("administration.organisation.view");
+  const unitsQuery = useOrganisationUnitsIndex({
+    query: { enabled: mayViewOrganisation, retry: false },
+  });
+  const companyHasUnits =
+    unitsQuery.data?.status === 200 && unitsQuery.data.data.data.length > 0;
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("ALL");
   const [page, setPage] = useState(1);
@@ -185,6 +199,7 @@ export function MembersSettingsScreen() {
   const [email, setEmail] = useState("");
   const [roleIds, setRoleIds] = useState<number[]>([]);
   const [directPermissions, setDirectPermissions] = useState<string[]>([]);
+  const [limitedRoleIds, setLimitedRoleIds] = useState<number[]>([]);
   const [showCustom, setShowCustom] = useState(false);
   const [accessReason, setAccessReason] = useState("");
   const [createName, setCreateName] = useState("");
@@ -210,6 +225,11 @@ export function MembersSettingsScreen() {
     setEmail(selected.email);
     setRoleIds(selected.roles.map((role) => role.id));
     setDirectPermissions(selected.direct_permissions);
+    setLimitedRoleIds(
+      (selected.scope_limits ?? [])
+        .map((limit) => limit.role_id)
+        .filter((id): id is number => id !== null),
+    );
     setShowCustom(false);
     setAccessReason("");
     setError(null);
@@ -274,7 +294,18 @@ export function MembersSettingsScreen() {
           .sort((a, b) => a - b)
           .join(",") ||
       [...directPermissions].sort().join(",") !==
-        [...selected.direct_permissions].sort().join(",")
+        [...selected.direct_permissions].sort().join(",") ||
+      (companyHasUnits &&
+        [...limitedRoleIds.filter((id) => roleIds.includes(id))]
+          .sort((a, b) => a - b)
+          .join(",") !==
+          [
+            ...(selected.scope_limits ?? [])
+              .map((limit) => limit.role_id)
+              .filter((id): id is number => id !== null),
+          ]
+            .sort((a, b) => a - b)
+            .join(","))
     : false;
   const rolePermissionCount = new Set(
     roles
@@ -370,6 +401,26 @@ export function MembersSettingsScreen() {
         data: {
           role_ids: roleIds,
           direct_permissions: directPermissions,
+          // Sent only where the limits are shown; omitting them keeps what is stored. Limits on direct permissions are carried over.
+          ...(companyHasUnits
+            ? {
+                scope_limits: [
+                  ...limitedRoleIds
+                    .filter((id) => roleIds.includes(id))
+                    .map((id) => ({ role_id: id, scope: "MY_UNITS" as const })),
+                  ...(selected.scope_limits ?? [])
+                    .filter(
+                      (limit) =>
+                        limit.permission !== null &&
+                        directPermissions.includes(limit.permission),
+                    )
+                    .map((limit) => ({
+                      permission: limit.permission as string,
+                      scope: "MY_UNITS" as const,
+                    })),
+                ],
+              }
+            : {}),
           reason: accessReason,
         },
       },
@@ -612,6 +663,47 @@ export function MembersSettingsScreen() {
                         onChange={setRoleIds}
                         disabled={!canEditAccess}
                       />
+                      {companyHasUnits && roleIds.length > 0 && (
+                        <div
+                          className="space-y-2 rounded-md border p-3"
+                          aria-label="Where each role applies"
+                        >
+                          <p className="text-sm font-medium">
+                            Where each role applies
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            A role applies company-wide unless limited to “only
+                            my units”: then it reaches only what the units they
+                            belong to own.{" "}
+                            {(selected.organisation_units ?? []).length > 0
+                              ? `Belongs to: ${(selected.organisation_units ?? []).map((u) => u.name).join(", ")}.`
+                              : "Belongs to no unit yet (add them on the Organisation screen)."}
+                          </p>
+                          {roles
+                            .filter((role) => roleIds.includes(role.id))
+                            .map((role) => (
+                              <label
+                                key={role.id}
+                                className="flex items-center gap-2 text-sm"
+                              >
+                                <Checkbox
+                                  checked={limitedRoleIds.includes(role.id)}
+                                  disabled={!canEditAccess}
+                                  onCheckedChange={(on) =>
+                                    setLimitedRoleIds(
+                                      on === true
+                                        ? [...limitedRoleIds, role.id]
+                                        : limitedRoleIds.filter(
+                                            (id) => id !== role.id,
+                                          ),
+                                    )
+                                  }
+                                />
+                                {role.name}: only my units
+                              </label>
+                            ))}
+                        </div>
+                      )}
                       {directPermissions.length > 0 && !showCustom && (
                         <p className="text-xs text-muted-foreground">
                           {directPermissions.length} existing custom
