@@ -126,6 +126,16 @@ Basis: [ADR 0028](decisions/0028-dynamic-namespaced-permissions.md),
 [ADR 0062 research](decisions/0062-company-member-and-access-administration.md#research-basis),
 and the Odoo/Dynamics comparison below. No organisation or delegated-access model implemented.
 
+**Research supplement (accessed 2026-10-06; relocated here from an earlier block it was filed under by mistake):**
+[Odoo record rules](https://www.odoo.com/documentation/19.0/developer/tutorials/restrict_data_access.html)
+and [Dynamics extensible data security](https://learn.microsoft.com/en-us/dynamics365/fin-ops-core/dev-itpro/sysadmin/extensible-data-security-policies)
+separate record scope from operation rights; Odoo rules are default-allow when none applies, whereas Dynamics applies
+constrained-table policies. Neither decides our organisation structure. Both enforce on the server, and Dynamics warns that
+imports and services need explicit security. [Odoo field groups](https://www.odoo.com/documentation/15.0/developer/reference/backend/security.html#field-access)
+and [Dynamics field/data-entity security](https://learn.microsoft.com/en-us/dynamics365/fin-ops-core/dev-itpro/data-entities/security-data-entities)
+are the contrasting field-level boundary, already applied here by ADR 0084 and ADR 0087. Odoo 19 page fetch timed out; its
+indexed official text and existing ADR research were used, without treating unverified detail as policy.
+
 ### Q28 — Purchase-order approval policy
 **Blocks:** Introducing PO submission/approval before operational purchasing relies on issuance
 
