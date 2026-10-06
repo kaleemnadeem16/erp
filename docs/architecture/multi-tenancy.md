@@ -148,6 +148,15 @@ sees nothing or, worse, sees everything.
 
 ---
 
+### Joining two company-scoped tables
+
+Every company-scoped model adds `WHERE <table>.company_id = ?` to its queries (`BelongsToCompany`), and most tables, including
+link tables such as `organisation_unit_members`, carry their own `company_id`. This is **one company, two tables**, not two companies: a
+query that joins two such tables (a many-to-many through a pivot, `whereHas` over one) used to say plain `company_id`, which the
+database rejects as *ambiguous column reference* because both tables have a column of that name. The scope now qualifies the column with
+the model's own table (found 2026-10-06 when organisation-unit members were the first many-to-many between two company-scoped tables).
+When writing a raw join or a query builder that bypasses the models, qualify `company_id` yourself.
+
 ## What enabling multi-tenancy later actually requires
 
 Given the rules above are held:

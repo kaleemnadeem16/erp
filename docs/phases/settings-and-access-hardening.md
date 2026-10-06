@@ -8,7 +8,39 @@ redesign and the access-security audit. It is scoped to this workstream; the pac
 Update this file when one of its open items is picked up, alongside [STATUS.md](../STATUS.md) and the
 [audit tracker](../architecture/access-security-audit.md).
 
-## Resume here
+## Resume here (checkpoint 2026-10-06, end of session)
+
+**Read this first when continuing on another machine.**
+
+- **Nothing here is pushed.** `develop` holds about 22 commits that exist only on the machine they were made on; the owner has paused pushing
+  until told. To continue elsewhere the commits must first leave this machine: either the owner says "push" (then `git push origin develop`), or
+  copy the repository (`git bundle create erp-develop.bundle origin/develop..develop`, then `git pull erp-develop.bundle develop` on the other
+  machine). Do not start on another machine without one of these, or the work below will not exist there.
+- **What this workstream delivered since the 2026-10-03 checkpoint** (each has an ADR and a row in [STATUS.md](../STATUS.md)): recipe visibility
+  as a capability ([0086](../decisions/0086-gate-recipe-reads-by-capability.md), A9); document review for approvals
+  ([0085](../decisions/0085-request-specific-document-review-for-approvals.md), Q35); approval limits and written reasons as auditor capabilities
+  ([0087](../decisions/0087-approval-limits-and-reasons-are-separate-auditor-capabilities.md), Q35); device tokens that expire and sign-in seams for
+  stronger authentication ([0088](../decisions/0088-device-tokens-expire-and-sign-in-has-seams-for-stronger-authentication.md), Q36); organisation
+  units and record scope for inventory by warehouse ([0089](../decisions/0089-organisation-units-and-record-scope.md), Q26 first slice).
+- **Q26 next steps** (record scope; the resolver and pattern exist, so each slice is mostly applying them):
+  - *Needs an owner decision:* (1) whether to start recording a **creator and ship-to on purchase orders and receipts**, with a backfill, which
+    is what lets buyers be limited to their own or their site's documents (they cannot be scoped without it); (2) when to build **delegated
+    administration** (a unit head assigning access to their people); (3) whether a limited person should get a **warehouse-limited inventory
+    overview and AVCO pool view** instead of today's 403.
+  - *Can be done without a new decision, in this order:* apply warehouse scope to **negative-stock overrides, recalculation and cutover** (still
+    company-wide; `RecordScopeCoverageTest` lists them as PENDING; move each to SCOPED as its slice lands), then Estimating stock availability
+    and approvals. For each: apply the scope at the API boundary (list, count, search, filter, sort, include, show, and the entry of writes; a
+    404 when out of scope), never as a global model scope; prove it on response bodies as `WarehouseRecordScopeTest` does, including a limited
+    person in no unit and a warehouse owned by no unit; mutation-check it.
+  - *Not mine to do:* the staging check. Nobody is limited automatically; define units, bind warehouses and limit people one at a time with real
+    warehouse staff.
+- **Also still open:** Q28 (purchase-order approval policy), Q37 (two-factor, step-up and mobile re-authentication: research first), the
+  staging sign-off for A1–A9 and ADRs 0084–0089, and the owed release steps in the section below.
+- **Working agreements still in force:** commit only your own files by explicit path (other agents share the checkout, so check the diff of a shared
+  file before committing it and commit from the HEAD content plus only your lines when it holds someone else's edits); never `git stash`; no push to
+  `main`; research before design; the owner decides policy, the agent builds and proves it.
+
+The original 2026-10-03 note follows.
 
 Nothing is half-done or uncommitted from this workstream. Pick any item under **Still to do**; the two things that need *a decision from
 the owner first* are marked. The order the owner last confirmed for this workstream was: A6 → governance Action guards → master-data Action
