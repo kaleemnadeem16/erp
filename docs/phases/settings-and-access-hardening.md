@@ -55,7 +55,7 @@ Practical commands (WSL, repository root `/home/kaleem/projects/erp`):
 ### Needs an owner decision first
 
 1. ~~**A3/A4 — Finance field visibility**~~ — accepted and implemented under ADR 0084; staging readership sign-off remains open.
-2. **Approvals** (open question [Q35](../OPEN-QUESTIONS.md#q35--approval-evidence-exception-and-authority-ceiling-visibility)): document review is implemented under ADR 0085; decide who may list per-person authority ceilings and read confidential decision reasons.
+2. ~~**Approvals** (Q35)~~ — resolved: document review under ADR 0085, limits and reasons under [ADR 0087](../decisions/0087-approval-limits-and-reasons-are-separate-auditor-capabilities.md). The original wording follows for history: decide who may list per-person authority ceilings and read confidential decision reasons.
 3. **Bearer-token lifetime** (open question [Q36](../OPEN-QUESTIONS.md#q36--bearer-token-lifetime-and-device-sessions)) — before any mobile client ships.
 4. **Record-level scope and delegated administration** — already [Q26](../OPEN-QUESTIONS.md#q26--organisational-and-record-level-access-scope); the stock-read capabilities are company-wide until it is decided.
 
@@ -174,6 +174,25 @@ adds no broad role and prepares only current pending requests. Legacy completed 
 reconstructed. The narrow technical demo includes a separate commercial step and idempotent
 replenishment. Client regeneration changes only approval schemas. Staging sign-off remains open;
 Q35 ceiling/reason access, Q26 and Q36 remain owner decisions. See [ADR 0085](../decisions/0085-request-specific-document-review-for-approvals.md).
+
+## To do when the shared checkout is stable (recorded 2026-10-06)
+
+Several agents work in one checkout, and on 2026-10-06 another workstream (goods-receipt editing in Purchasing, with Administration and Item
+changes) had uncommitted work in progress. Its regenerated API client dropped `usePurchaseOrdersUpdate`, a second `PATCH purchase-orders` route
+had appeared, and the dev app's login page crashed. That is not this workstream's change, but it blocked verification, so these steps are owed:
+
+1. **Re-run the browser specs against the live dev stack** once the tree builds again: `recipe-access.spec.ts`, `approval-reason-visibility.spec.ts`,
+   `approval-document-review.spec.ts`, `financial-master-data-visibility.spec.ts` and `approvals.spec.ts`
+   (`cd frontend/apps/e2e && npx playwright test <spec> --project=chromium --workers=1`; sign-in is throttled to 5 a minute, so leave a minute between runs).
+   Backend tests passed; only the browser check against the live app is outstanding for ADR 0087.
+2. **Bring the dev database up to date** (not done, because `migrate` would also run another workstream's pending migrations): `php artisan migrate`,
+   `php artisan permission:register`, `php artisan erp:sync-admin-permissions user@erp.x1techs.com`, then `php artisan demo:seed`. That creates the
+   ADR 0087 backfill and the demo personas `demo-auditor@erp.x1techs.com` and `demo-historian@erp.x1techs.com`.
+3. **Check the generated client** after the other workstream lands: regenerate (`scramble:export`, then `orval`) and confirm `git status` shows no drift;
+   CI fails on drift. Commit only what your change moved.
+4. **Staging sign-off for A1–A9 and ADR 0087:** run `erp:audit-access-inventory` on staging and decide per person who keeps `approvals.authority.view`,
+   `approvals.reason.view` and the other A8/A9 reads (the report's `read_access_lost` section lists who lost one).
+5. **Pushing `develop` is paused** until the owner says otherwise.
 
 ## Related
 
