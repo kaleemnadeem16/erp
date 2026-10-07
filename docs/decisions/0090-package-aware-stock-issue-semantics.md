@@ -1,6 +1,6 @@
 # 0090 — Package-aware stock issue: one contract at three levels of detail; quantity, packaging and cost stay separate
 
-- **Status:** proposed (revised twice on 2026-10-07 after owner review; the owner's confirmations are listed under Decision)
+- **Status:** accepted (2026-10-07; revised twice the same day after owner review)
 - **Date:** 2026-10-07
 - **Affects:** Inventory (issue/transfer posting, package kernel), Phase 5 job issue, Phase 3 material proposals
 
