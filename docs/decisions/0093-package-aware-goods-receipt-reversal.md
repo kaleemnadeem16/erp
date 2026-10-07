@@ -1,6 +1,6 @@
 # 0093 — Package-aware goods receipt reversal: remove what is declared, never restore or invent a past composition
 
-- **Status:** proposed
+- **Status:** accepted (2026-10-08)
 - **Date:** 2026-10-08
 - **Affects:** Purchasing (goods receipt reversal), Inventory (receipt reversal posting, package kernel)
 

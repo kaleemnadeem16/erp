@@ -107,7 +107,7 @@ in the same commit.
 | [0090](0090-package-aware-stock-issue-semantics.md) | Package-aware stock issue: one contract at three levels of detail; quantity, packaging and cost stay separate | accepted | 2026-10-07 |
 | [0091](0091-activate-grouped-package-tracking-and-fail-closed-enforcement.md) | Activate grouped package tracking atomically, and enforce it fail-closed in the database | accepted | 2026-10-07 |
 | [0092](0092-package-aware-physical-count-posting.md) | Package-aware physical count: recount the composition, reconcile the quantity through a governed movement | accepted | 2026-10-08 |
-| [0093](0093-package-aware-goods-receipt-reversal.md) | Package-aware goods receipt reversal: remove what is declared, never restore or invent a past composition | proposed | 2026-10-08 |
+| [0093](0093-package-aware-goods-receipt-reversal.md) | Package-aware goods receipt reversal: remove what is declared, never restore or invent a past composition | accepted | 2026-10-08 |
 
 **Next number: 0094**
 
