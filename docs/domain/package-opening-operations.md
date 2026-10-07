@@ -92,6 +92,7 @@ demo seeder ran successfully in local development.
 
 ## Related
 
+- [Grouped package-aware issue](package-issue-operations.md)
 - [Opening preview](package-opening-preview.md)
 - [Inventory packages](inventory-packages.md)
 - [Package kernel](package-balance-integration.md)

@@ -88,9 +88,11 @@ migrations were also applied. Do not discard history or relax QUANTITY_ONLY gate
 
 ## Next slice: concrete starting work
 
-**2026-10-07:** the issue semantics are now drafted as [proposed ADR 0090](../decisions/0090-package-aware-stock-issue-semantics.md)
-(explicit physical draw, allocator-led cost, allocation vector stored for AVCO too, preconditions for transfers and activation).
-It supersedes the 'physical vector must equal the allocator' rule below once accepted; do not implement until the owner accepts it.
+**2026-10-07:** ADR 0090 is accepted and the grouped issue slice is built: the allocation-vector seam (`PostInventoryMovement::issuePosted()` /
+`transferPosted()`), the `ISSUE` evidence kind with migration `2026_10_07_100000`, `IssuePackagedStock` and `PackageIssueDemoSeeder`.
+See [package-issue-operations.md](../domain/package-issue-operations.md). **Next: transfer** — source and destination successors in one
+transaction (the vector already carries destination layer ids), then composition-only count correction, then the remaining writer guards and
+activation. The steps below this note describe the issue design as it was before this slice and are historical.
 
 1. Re-read the writer audit/contribution contract in package-balance-integration and inspect
    PostInventoryMovement with Actions/Movements/LayerAllocator and the issue collaborator.

@@ -25,6 +25,7 @@ final class PermissionRegistrationTest extends TestCase
             $this->assertContains($capability, $vocabularies['parties']);
         }
         $this->assertContains('inventory.package-state.open', $vocabularies['inventory']);
+        $this->assertContains('inventory.package-state.issue', $vocabularies['inventory']);
         foreach ([
             'estimating.rate-dimension.manage',
             'estimating.application-rate.manage',

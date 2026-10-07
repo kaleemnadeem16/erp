@@ -56,8 +56,9 @@ issue/transfer work. Consult it before resuming this workstream; it does not rep
    now calculates exact layer-preserving proposals and has a dedicated counted demo.
    [Saved open/unpack successors](../domain/package-opening-operations.md) now persist complete
    composition with lineage, locking, retries and a separate history demo. Tracking stays inactive.
-   Remaining: issue/transfer composition and count correction; QA, reversal, cutover
-   and recalculation adapters or explicit first-release guards. Cover every direct Action writer,
+   [Grouped package-aware issue](../domain/package-issue-operations.md) (ADR 0090, 2026-10-07) now posts the stock issue with its allocation
+   vector and writes `ISSUE` evidence atomically. Remaining: transfer composition and count correction; QA, reversal, cutover
+   and recalculation adapters or explicit first-release guards; refusing scalar issues once a mode is authoritative (activation slice). Cover every direct Action writer,
    not only public HTTP controllers. Preserve QUANTITY_ONLY behaviour.
 7. [ ] **Permissions and workflows.** Register only enforcing capabilities; grant demo personas
    and include administrator assignment instructions. Requests and Actions both check authority.

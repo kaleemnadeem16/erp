@@ -80,6 +80,11 @@ package-state.view authority, preserving exact layer contributions and immutable
 There is no HTTP/UI or tracking activation; [saved operations](../../../../docs/domain/package-opening-operations.md)
 describe locking, freshness, conservation and demo history.
 
+`IssuePackagedStock` posts a stock issue through `PostInventoryMovement::issuePosted()` and, in the same transaction, writes the grouped
+successor evidence (ISSUE kind, draw lines, the allocator's actual layer vector) under package-state.issue plus package-state.view (and
+.open for an opening step). Quantity stays in the ledger and cost stays with the allocator; there is no HTTP/UI or tracking activation. See
+[grouped package-aware issue](../../../../docs/domain/package-issue-operations.md).
+
 `CreateCategory`/`UpdateCategory`/`ArchiveCategory` and
 `CreateItem`/`UpdateItem`/`ArchiveItem` own the transactional write boundary used by HTTP and
 future non-HTTP entry points. Model guards still enforce tenant, hierarchy and valuation
