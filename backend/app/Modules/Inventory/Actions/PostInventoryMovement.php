@@ -8,6 +8,7 @@ use App\Modules\Inventory\Actions\Movements\IssuePoster;
 use App\Modules\Inventory\Actions\Movements\ReceiptPoster;
 use App\Modules\Inventory\Actions\Movements\TransferPoster;
 use App\Modules\Inventory\Models\StockMove;
+use App\Modules\Inventory\Support\PostedMovement;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -49,7 +50,18 @@ final class PostInventoryMovement
      */
     public function issue(array $input): StockMove
     {
-        return DB::transaction(fn (): StockMove => $this->issues->post($input));
+        return $this->issuePosted($input)->move;
+    }
+
+    /**
+     * The same atomic issue, returning the allocation vector it actually used (ADR 0090 §5) alongside the move. Adapters that must tie
+     * other evidence to the posting call this inside their own transaction; ordinary callers use issue().
+     *
+     * @param  array{item_id:int, location_id:int, qty:string, uom_id:int, moved_at:mixed, source_type:string, source_id:int, batch_no?:string|null, serial_no?:string|null, override_request_id?:int|null}  $input
+     */
+    public function issuePosted(array $input): PostedMovement
+    {
+        return DB::transaction(fn (): PostedMovement => $this->issues->post($input));
     }
 
     /**
@@ -59,7 +71,17 @@ final class PostInventoryMovement
      */
     public function transfer(array $input): StockMove
     {
-        return DB::transaction(fn (): StockMove => $this->transfers->post($input));
+        return $this->transferPosted($input)->move;
+    }
+
+    /**
+     * The same atomic transfer, returning each source layer drawn on and the destination layer created for it (ADR 0090 §5).
+     *
+     * @param  array{item_id:int, from_location_id:int, to_location_id:int, qty:string, uom_id:int, moved_at:mixed, source_type:string, source_id:int, batch_no?:string|null, serial_no?:string|null}  $input
+     */
+    public function transferPosted(array $input): PostedMovement
+    {
+        return DB::transaction(fn (): PostedMovement => $this->transfers->post($input));
     }
 
     /**

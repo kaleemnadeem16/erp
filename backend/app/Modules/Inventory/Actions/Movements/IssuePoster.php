@@ -16,6 +16,8 @@ use App\Modules\Inventory\Models\StockLayer;
 use App\Modules\Inventory\Models\StockMove;
 use App\Modules\Inventory\Support\NegativeStockApprovalDecision;
 use App\Modules\Inventory\Support\NegativeStockAuthorisationMode;
+use App\Modules\Inventory\Support\PostedMovement;
+use App\Modules\Inventory\Support\StockLayerAllocation;
 use App\Modules\Inventory\Support\ValuationMethod;
 use App\Support\CompanyContext;
 use Brick\Math\BigDecimal;
@@ -36,11 +38,11 @@ final class IssuePoster
     ) {}
 
     /** @param array{item_id:int, location_id:int, qty:string, uom_id:int, moved_at:mixed, source_type:string, source_id:int, batch_no?:string|null, serial_no?:string|null, override_request_id?:int|null} $input */
-    public function post(array $input): StockMove
+    public function post(array $input): PostedMovement
     {
         $existing = StockMove::query()->where('source_type', $input['source_type'])->where('source_id', $input['source_id'])->first();
         if ($existing !== null) {
-            return $existing->load(['valuationEntries', 'negativeStockShortage']);
+            return new PostedMovement($existing->load(['valuationEntries', 'negativeStockShortage']), null);
         }
 
         $item = Item::query()->findOrFail($input['item_id']);
@@ -73,7 +75,7 @@ final class IssuePoster
         // same-stock path; re-check before allocating or mutating anything.
         $existing = StockMove::query()->where('source_type', $input['source_type'])->where('source_id', $input['source_id'])->first();
         if ($existing !== null) {
-            return $existing->load(['valuationEntries', 'negativeStockShortage']);
+            return new PostedMovement($existing->load(['valuationEntries', 'negativeStockShortage']), null);
         }
         $allocations = $this->layers->allocate($layers, $qty);
         $availableQty = $allocations->reduce(
@@ -160,7 +162,11 @@ final class IssuePoster
             ]);
         }
 
-        return $move->load(['valuationEntries', 'negativeStockShortage']);
+        return new PostedMovement(
+            $move->load(['valuationEntries', 'negativeStockShortage']),
+            $allocations->map(fn (array $allocation): StockLayerAllocation => new StockLayerAllocation($allocation['layer']->id, (string) $allocation['qty']->toScale(4, RoundingMode::HALF_UP)))->values()->all(),
+            (string) $shortageQty->toScale(4, RoundingMode::HALF_UP),
+        );
     }
 
     /**

@@ -12,6 +12,8 @@ use App\Modules\Inventory\Models\Location;
 use App\Modules\Inventory\Models\StockLayer;
 use App\Modules\Inventory\Models\StockMove;
 use App\Modules\Inventory\Models\StockTransferDetail;
+use App\Modules\Inventory\Support\PostedMovement;
+use App\Modules\Inventory\Support\StockLayerAllocation;
 use App\Modules\Inventory\Support\ValuationMethod;
 use App\Support\CompanyContext;
 use Brick\Math\BigDecimal;
@@ -33,11 +35,11 @@ final class TransferPoster
     ) {}
 
     /** @param array{item_id:int, from_location_id:int, to_location_id:int, qty:string, uom_id:int, moved_at:mixed, source_type:string, source_id:int, batch_no?:string|null, serial_no?:string|null} $input */
-    public function post(array $input): StockMove
+    public function post(array $input): PostedMovement
     {
         $existing = StockMove::query()->where('source_type', $input['source_type'])->where('source_id', $input['source_id'])->first();
         if ($existing !== null) {
-            return $existing->load(['valuationEntries', 'transferDetail']);
+            return new PostedMovement($existing->load(['valuationEntries', 'transferDetail']), null);
         }
         if ($input['from_location_id'] === $input['to_location_id']) {
             throw new DomainInvariantException('A stock transfer requires different source and destination locations.', 'to_location_id');
@@ -55,7 +57,7 @@ final class TransferPoster
         // returns the committed move instead of tripping the unique source key.
         $existing = StockMove::query()->where('source_type', $input['source_type'])->where('source_id', $input['source_id'])->first();
         if ($existing !== null) {
-            return $existing->load(['valuationEntries', 'transferDetail']);
+            return new PostedMovement($existing->load(['valuationEntries', 'transferDetail']), null);
         }
         foreach ([$source, $destination] as $location) {
             if (! $location->active || ! $location->allows_stock || ! $location->warehouse->active) {
@@ -116,10 +118,11 @@ final class TransferPoster
             'unit_cost' => (string) $unitCost, 'currency_id' => $company->base_currency_id, 'fx_rate' => '1.000000000',
             'batch_id' => $batch?->id, 'serial_no' => $serialNo,
         ]);
+        $destinationLayers = [];
         foreach ($allocations as $index => $allocation) {
             $layer = $allocation['layer'];
             $layer->update(['qty_remaining' => (string) BigDecimal::of($layer->qty_remaining)->minus($allocation['qty'])]);
-            StockLayer::query()->create([
+            $destinationLayers[$index] = StockLayer::query()->create([
                 'item_id' => $item->id, 'location_id' => $destination->id,
                 'qty_received' => (string) $allocation['qty'], 'qty_remaining' => (string) $allocation['qty'],
                 'unit_cost' => $layer->unit_cost, 'currency_id' => $layer->currency_id, 'fx_rate' => $layer->fx_rate,
@@ -146,7 +149,11 @@ final class TransferPoster
         $repair = $this->settler->applyTransferSettlements($move, $settlements, $this->costSlices($allocations, $sourcePool, $qty, $unitCost), $destinationPool, $accountId);
         $this->updateTransferPools($sourcePool, $destinationPool, $qty, $baseAmount, $repair);
 
-        return $move->load(['valuationEntries', 'transferDetail']);
+        return new PostedMovement(
+            $move->load(['valuationEntries', 'transferDetail']),
+            $allocations->values()->map(fn (array $allocation, int $index): StockLayerAllocation => new StockLayerAllocation($allocation['layer']->id, (string) $allocation['qty']->toScale(4, RoundingMode::HALF_UP), $destinationLayers[$index]->id))->all(),
+            (string) $settledQty->toScale(4, RoundingMode::HALF_UP),
+        );
     }
 
     /**
