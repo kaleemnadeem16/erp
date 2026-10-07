@@ -1,10 +1,14 @@
+import { ScreenTemplate } from "../../components/page/screen-template";
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import type { FieldPath, UseFormReturn } from "react-hook-form";
 import { FilePlus2 } from "lucide-react";
 import { usePurchaseOrdersStore } from "@erp/core-api";
 
-import { AdvancedOptionsMenu, type AdvancedOption } from "../../components/ui/advanced-options-menu";
+import {
+  AdvancedOptionsMenu,
+  type AdvancedOption,
+} from "../../components/ui/advanced-options-menu";
 import { PageHeader } from "../../components/page/page-header";
 import { RecordSheet } from "../../components/page/record-sheet";
 import type { OptionsStyle, Presentation } from "../../lib/presentation";
@@ -17,7 +21,8 @@ import {
 } from "./purchase-order-form";
 
 const TITLE = "New purchase order";
-const DESCRIPTION = "Create a draft supplier commitment. Nothing is frozen until issue.";
+const DESCRIPTION =
+  "Create a draft supplier commitment. Nothing is frozen until issue.";
 
 /**
  * Both presentations are kept on purpose — switch with one word in
@@ -51,7 +56,10 @@ export function PurchaseOrderCreateScreen({
         onSuccess: (result) => {
           if (result.status === 201) {
             clearUnfinishedPurchaseOrder();
-            navigate({ pathname: `/purchase-orders/${result.data.data.id}`, search });
+            navigate({
+              pathname: `/purchase-orders/${result.data.data.id}`,
+              search,
+            });
           }
         },
         onError: (error) => {
@@ -95,7 +103,7 @@ export function PurchaseOrderCreateScreen({
     );
   }
   return (
-    <div className="po-detail space-y-4 p-6">
+    <ScreenTemplate kind="form" className="po-detail">
       <PageHeader
         title={TITLE}
         description={DESCRIPTION}
@@ -106,6 +114,6 @@ export function PurchaseOrderCreateScreen({
         actions={advancedOptionsMenu}
       />
       {form}
-    </div>
+    </ScreenTemplate>
   );
 }

@@ -13,10 +13,19 @@ Paths are relative to `frontend/`.
 
 ## Appearance (light/dark, theme)
 
+**Approved baseline, 2026-10-07:** the owner has locked the current light and refined dark
+ERP Blue palettes. Reuse central tokens and adopt the shared standard one screen at a time.
+Later palette revisions remain possible through an explicit owner instruction.
+See the [baseline rule](erp-blue-design-standard.md#approved-colour-baseline-2026-10-07).
+
 `packages/core-ui/src/lib/appearance.ts` is the registry: a `ColorMode`
-(`'light' | 'dark' | 'system'`) and a `ThemeId` (`THEMES` array — `slate`/`ocean`/`amber` today).
-What a theme actually *looks like* lives in `apps/main/src/themes.css` as CSS variables, not here —
-this file only says which ones exist and how they're picked.
+(`'light' | 'dark' | 'system'`) and a `ThemeId` (`THEMES` array — ERP Blue, Ocean and Amber today;
+ERP Blue retains the stored `slate` ID for compatibility).
+The default light/dark surfaces, text, borders and status colours live in
+`apps/main/src/palette-erp-blue.css`; accent alternatives and motion live in `themes.css`.
+Dark canvas/cards/fields use neutral black and charcoal; the accent is reserved for interactions
+and selected/active elements. Shared screen geometry/role rules live in `screen-templates.css`. The registry only names the
+choices and their preview swatches. See the [screen standard](erp-blue-design-standard.md).
 
 `resolveAppearance(company, user)` implements the layering; `stores/appearance-store.ts` holds the
 `company` (empty until a server endpoint exists) and `user` (persisted to `localStorage` under
@@ -27,8 +36,8 @@ an inline pre-paint `<script>` that does the same read synchronously before firs
 no flash of the wrong theme on load.
 
 Every colour a screen uses is a semantic token (`bg-card`, `text-muted-foreground`,
-`bg-primary-soft`, …), never a literal Tailwind palette colour — `themes.css` redefines the same
-token set under `.dark` and under each theme's selector, so nothing that reads a token needs to
+`bg-primary-soft`, …), never a literal Tailwind palette colour — `palette-erp-blue.css` pairs the default light/dark
+tokens and `themes.css` overrides the accent family under each theme's selector, so nothing that reads a token needs to
 know which mode or theme is active. A hard-coded colour (`text-emerald-600`, `bg-red-100`) is a bug
 to fix by mapping it to the nearest `status-*` token, not a one-off to leave alone.
 
@@ -43,10 +52,17 @@ the sun/moon toggle in the desktop top bar for the common light/dark flip alone.
 2. Add its light and dark variable blocks to `themes.css`, following `ocean`/`amber` — only the
    handful of accent-bearing tokens (`--primary`, `--primary-foreground`, `--ring`,
    `--primary-soft`, `--primary-soft-foreground`, `--nav-active`, `--nav-active-foreground`) need
-   overriding; everything else inherits the base palette.
+   overriding; everything else inherits the paired base palette. The shared `--ui-*` interactions
+   resolve against these values, so focused controls, selected rows and portalled menus follow it.
 
 Nothing else changes — the settings screen, the store and `AppearanceProvider` all read the
 registry, not a hard-coded list.
+
+Screen overrides use `ScreenTemplate.variables` or `RecordSheet.variables`. Their design provider
+merges nested overrides and forwards them into shared Radix portals; selectors depending on a DOM
+ancestor alone cannot theme a body-portalled menu. Default colours now reach all screens through
+semantic tokens, while layout adoption remains incremental. The company/user preference layering
+is unchanged; this work adds no backend persistence endpoint.
 
 ## Quick Print branding
 
@@ -80,39 +96,61 @@ split and when to reach for which.
 
 ## Default purchase-order format (2026-10-06)
 
-PO Quick Print has a dedicated A4 layout in `features/purchase-orders/purchase-order-print.tsx`
-and its stylesheet. It uses a spacious letterhead, supplier and PO details in separate panels
-side by side, repeatable item-table headings, notes, one authoritative total and a footer. Company identity/address/contact and tax
-identifiers come from the Company profile, with the existing browser logo/accent/footer and
-signature choices. Missing optional fields are omitted. The PO has no delivery destination,
-contact person, Incoterms or agreed legal terms today: the reference image's values are not
-fabricated, company address is not assumed to be a ship-to, and generic conditions are not inserted.
-Signatures are blank and follow the existing print setting; no current user is invented as buyer
-or approver. Drafts explicitly say they are not issued. Browser page numbering remains a browser
-print-dialog choice, not a fabricated “1 of 1”.
+PO Quick Print uses **Template 1 — Classic purchase order**, the default A4 template in
+`features/purchase-orders/purchase-order-print.tsx`. It follows the owner's two-page reference:
+demo/company logo and letterhead at left, PO identity and metadata at right, supplier and delivery
+panels, dark item-heading bands, shaded column headings, notes, an emphasised total and signatures.
+The reference supersedes the earlier request for an entirely unboxed format. The demo logo is an
+inline vector mark used only when no logo is configured; a configured company logo replaces it.
+Company name/address/contact/tax identifiers still come from the Company profile.
 
-`buildPurchaseOrderPrintDocument` adapts the current projected API resources to a versioned,
-JSON-compatible `PurchaseOrderPrintDocument`. `PurchaseOrderPrintTemplate` consumes only that
-model and a versioned list of named sections. Each section renderer can be replaced independently
-through `overrides`; optional delivery and terms sections already accept supplied data. A future
-authorised backend document/template projection can feed that boundary without modifying the
-renderer or constructing HTML in the screen. This is a reversible frontend default, not an
-implemented backend template service or a stable archival PDF. Submitted approval print remains
-its separately projected frozen evidence; live PO print does not substitute for it.
+**Settings → Printing → Purchase order template** saves the selected registry ID in the existing
+browser-local print preferences. `PURCHASE_ORDER_PRINT_TEMPLATES` registers the available formats;
+`resolvePurchaseOrderPrintTemplate` falls back to Template 1 for unknown IDs. Each versioned
+format declares an ID, label, section order and optional section renderers. Per-call overrides
+remain available; the rendered document and measurement tree share the template ID for scoped
+styles. Adding another format means registering its definition/renderers/styles, without changing
+the PO detail screen or its API adapter. Only Template 1 exists today. The Settings preview uses
+the actual selected renderer with explicitly labelled demo data. PO signature lines default on,
+with their own saved toggle; generic master-data print signature choices remain separate.
 
-The existing commercial-read gate and API omissions both apply. Decimal strings get grouping
-separators without float conversion or loss of precision. Discount/tax are labelled whole-line
-amounts, rates retain their price quantity/unit basis, and totals are read from the API; no
-frontend subtotal arithmetic is introduced. Unsupported aggregate subtotal/discount/tax rows are
-omitted rather than reconstructed. Section headers have a shaded band, labels/values have explicit
-spacing and font weights, and notes/total use separate panels. Only line items use a table; other
-fields use definition lists. Available supplier site, tax/registration/website, lead time and
-created/issued timestamps are included. No new business action, grant or print endpoint is added.
+`buildPurchaseOrderPrintDocument` adapts the current projected resources to a versioned,
+JSON-compatible `PurchaseOrderPrintDocument`. A future authorised backend document/template
+projection can feed that boundary without constructing HTML in the screen. This remains browser
+Quick Print, not a stable archival PDF or backend template service. Submitted approval print stays
+its separate frozen evidence; the live PO never substitutes for it.
 
-Browser verification covers company-profile branding without repeated addresses, amount labels,
-missing optional sections, draft identification, quantity-only visibility and a 55-line order.
-The generated one-page and multi-page PDFs were inspected: headings repeat on every page,
-all lines are retained and the precise server total appears once at the end.
+**Pagination:** a hidden, off-screen measurement tree outside the hidden print container measures
+sections and item rows at the same A4 width as the paper. Rows are allocated to explicit A4 sheets;
+continuation sheets repeat a compact company/order header and item column headings. A footer appears
+on every sheet; page X of Y uses the calculated sheet count. Notes/total/signatures appear only on
+the final sheet, with an additional closing sheet when they do not fit beside the last item rows.
+Fonts and configured logo loading trigger measurement again. The table fills spare vertical room
+on each item sheet. PO printing requests zero browser page margins; each sheet supplies its own
+8mm inset. Disable browser **Headers and footers** if a browser still supplies its own furniture.
+A browser's paper-size/scaling settings must preserve A4 for the measured sheet layout.
+
+**Data and authorisation:** existing document-read and commercial-read gates and projected API
+omissions still apply; no endpoint, company-data write, approval transition or permission is added.
+The template selector changes only browser preferences. Monetary values retain decimal-string
+precision, whole-line tax/discount labels and the server total; unsupported aggregate subtotal,
+discount and tax rows are omitted. No frontend total arithmetic is introduced. Discount/tax columns
+appear when non-zero amounts exist on the printed lines.
+
+Supplier/site address, tax/registration/website, payment terms and lead time appear when available.
+Optional line details include expected delivery, supplier item code, package name/code, QA,
+stock equivalent and differing priced quantity/unit. PO lines have tax amounts, not a tax-rate or
+tax-classification field. Draft item codes may fall back to internal IDs until issue snapshots them.
+Supplier details/terms remain current master data, not issue-time snapshots. Missing delivery shows
+“Delivery address not specified”; company address is never assumed to be the destination. Contacts,
+attention names and legal terms are not invented. Blank signature lines follow the PO toggle.
+Internal FX/base amounts, receipt progress/tolerances, exception reasons and arbitrary custom fields
+remain outside this supplier-facing default.
+
+Browser checks cover company branding, optional line/supplier details, quantity-only visibility,
+Template 1 selection/persistence, signatures and a 55-line order. They verify row retention, footer
+clearance, repeated continuation headings and physical PDF sheet counts matching the displayed count.
+One-page and continuation-page screenshots are reviewed alongside the generated PDFs.
 
 ### Format comparison
 

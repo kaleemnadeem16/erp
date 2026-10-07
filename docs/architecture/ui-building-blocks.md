@@ -6,7 +6,7 @@ What reusable UI already exists in `frontend/packages/core-ui/src`, what it is f
 alternatives we are deliberately **keeping** while the design is still being tried. **Check here
 before building a control, layout or behaviour** — most of what a new screen needs is below.
 Why the interaction rules are what they are lives in [user-interface.md](user-interface.md); this
-file is only the inventory.
+file is only the inventory. Every new/restyled screen follows the [screen design standard](erp-blue-design-standard.md).
 
 Paths are relative to `frontend/packages/core-ui/src`.
 
@@ -34,6 +34,8 @@ date) — `DateField` is date-only.
 
 | Block | File | Use it for |
 |---|---|---|
+| `ScreenTemplate` / `ScreenDesignProvider` | `components/page/screen-template.tsx` | Required shell for new list/detail/form pages. Central geometry/type/role styles; `variables` provides per-screen overrides, carried into shared portalled controls. `RecordSheet` accepts the same overrides for record sheets. See the [standard](erp-blue-design-standard.md). |
+| `StatusBadge` | `components/ui/status-badge.tsx` | Labelled draft/pending/active/progress/success/danger visual roles; each domain maps its own states. Light/dark state colours are independent of the accent. |
 | `PageHeader` (+ `MobileFab`) | `components/page/page-header.tsx` | Title, breadcrumbs, actions; `primaryAction` becomes a FAB below `md`. |
 | `DetailPageLayout` / `DetailSection` / `DetailField` | `components/detail/` | Read-only record views: cards of label/value pairs. `DetailPageLayout` is a `@container` grid — short sections (a handful of fields) share a row from `@2xl` up instead of each stacking full-width; mark a section `fullWidth` (a table, a long-text-heavy section) to keep it on its own row. `DetailSection`'s own field grid stays viewport- (not container-) based, since the same component is also used standalone, at full width, inside every create/edit form. |
 | `WizardShell` | `components/page/wizard-shell.tsx` | Any multi-step create flow: step indicator, the active step's content, a sticky Back/Next footer. Presentational — the caller owns step state and validation. | `freeNavigation` lets any step be opened at any time — used when **editing** (Purchase Orders edit walks the same three steps as create).
@@ -79,7 +81,7 @@ named switch; everything else is already wired.
 |---|---|---|
 | Purchase order — create | Side-sheet wizard (current) · the same wizard on a full page | `presentation.purchaseOrderCreate` |
 | Purchase order — detail | Side sheet (current) · full page | `presentation.purchaseOrderDetail` |
-| Purchase order — edit | Side sheet (current; the flat form, every section at once, with the order summary beside it) · full page | `presentation.purchaseOrderEdit` |
+| Purchase order — edit | Side-sheet wizard (current; the same steps as create, with free navigation) · full page | `presentation.purchaseOrderEdit` |
 | Document numbering — editor | Side sheet over the list (current; the child route `/settings/document-numbering/:type`) | — |
 | Date entry | `DateField` (current) · native `<input type="date">` via `Input` (still available; its Tab walks the browser's own segments) | swap the component at the call site |
 

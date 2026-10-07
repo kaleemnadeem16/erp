@@ -69,7 +69,7 @@ export function PageHeader({ title, description, breadcrumbs, backTo, actions, p
             ))}
           </nav>
         )}
-        <h1 className="text-xl font-semibold">{title}</h1>
+        <h1 className="page-header-title text-xl font-semibold">{title}</h1>
         {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
       </div>
       {(actions || primaryAction) && (

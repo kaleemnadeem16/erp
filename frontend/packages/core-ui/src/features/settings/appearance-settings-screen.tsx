@@ -1,46 +1,79 @@
-import type { ReactNode } from 'react';
-import { RotateCcw } from 'lucide-react';
+import { ScreenTemplate } from "../../components/page/screen-template";
+import type { ReactNode } from "react";
+import { RotateCcw } from "lucide-react";
 
-import { DetailPageLayout, DetailSection } from '../../components/detail/detail-page-layout';
-import { PageHeader } from '../../components/page/page-header';
-import { Button } from '../../components/ui/button';
-import { OptionCards } from '../../components/ui/option-cards';
-import { THEMES, type ColorMode } from '../../lib/appearance';
-import { useAppearance, useAppearanceStore } from '../../stores/appearance-store';
+import {
+  DetailPageLayout,
+  DetailSection,
+} from "../../components/detail/detail-page-layout";
+import { PageHeader } from "../../components/page/page-header";
+import { Button } from "../../components/ui/button";
+import { OptionCards } from "../../components/ui/option-cards";
+import { THEMES, type ColorMode } from "../../lib/appearance";
+import {
+  useAppearance,
+  useAppearanceStore,
+} from "../../stores/appearance-store";
 
 // Miniatures of the mode, so the choice is made by looking: a page with a card on it.
-function ModePreview({ page, card, text }: { page: string; card: string; text: string }) {
+function ModePreview({
+  page,
+  card,
+  text,
+}: {
+  page: string;
+  card: string;
+  text: string;
+}) {
   return (
-    <div className="h-14 rounded-md border p-2" style={{ background: page }} aria-hidden="true">
+    <div
+      className="h-14 rounded-md border p-2"
+      style={{ background: page }}
+      aria-hidden="true"
+    >
       <div className="h-full rounded-sm p-1.5" style={{ background: card }}>
-        <div className="h-1.5 w-2/3 rounded-full" style={{ background: text }} />
-        <div className="mt-1 h-1.5 w-1/2 rounded-full opacity-50" style={{ background: text }} />
+        <div
+          className="h-1.5 w-2/3 rounded-full"
+          style={{ background: text }}
+        />
+        <div
+          className="mt-1 h-1.5 w-1/2 rounded-full opacity-50"
+          style={{ background: text }}
+        />
       </div>
     </div>
   );
 }
 
-const MODE_OPTIONS: { value: ColorMode; label: string; description: string; preview: ReactNode }[] = [
+const MODE_OPTIONS: {
+  value: ColorMode;
+  label: string;
+  description: string;
+  preview: ReactNode;
+}[] = [
   {
-    value: 'light',
-    label: 'Light',
-    description: 'Dark text on a light page.',
-    preview: <ModePreview page="oklch(0.985 0 0)" card="oklch(1 0 0)" text="oklch(0.25 0 0)" />,
+    value: "light",
+    label: "Light",
+    description: "Dark text on a light page.",
+    preview: <ModePreview page="var(--appearance-preview-light-canvas)" card="var(--appearance-preview-light-card)" text="var(--appearance-preview-light-text)" />,
   },
   {
-    value: 'dark',
-    label: 'Dark',
-    description: 'Light text on a dark page — easier on the eyes at night.',
-    preview: <ModePreview page="oklch(0.15 0 0)" card="oklch(0.22 0 0)" text="oklch(0.9 0 0)" />,
+    value: "dark",
+    label: "Dark",
+    description: "Light text on a dark page — easier on the eyes at night.",
+    preview: <ModePreview page="var(--appearance-preview-dark-canvas)" card="var(--appearance-preview-dark-card)" text="var(--appearance-preview-dark-text)" />,
   },
   {
-    value: 'system',
-    label: 'Match my device',
-    description: 'Follows your operating system, switching with it.',
+    value: "system",
+    label: "Match my device",
+    description: "Follows your operating system, switching with it.",
     preview: (
-      <div className="flex h-14 overflow-hidden rounded-md border" aria-hidden="true">
-        <div className="w-1/2" style={{ background: 'oklch(0.985 0 0)' }} />
-        <div className="w-1/2" style={{ background: 'oklch(0.15 0 0)' }} />
+      <div
+        className="flex h-14 overflow-hidden rounded-md border"
+        aria-hidden="true"
+      >
+        <div className="w-1/2" style={{ background: "var(--appearance-preview-light-canvas)" }} />
+        <div className="w-1/2" style={{ background: "var(--appearance-preview-dark-canvas)" }} />
       </div>
     ),
   },
@@ -60,7 +93,7 @@ export function AppearanceSettingsScreen() {
   const resetUser = useAppearanceStore((state) => state.resetUser);
 
   return (
-    <div className="space-y-4 p-6">
+    <ScreenTemplate kind="detail">
       <PageHeader
         title="Appearance"
         description="Colour mode and theme. These apply to this browser; company and per-person defaults will come from the server later."
@@ -72,7 +105,10 @@ export function AppearanceSettingsScreen() {
         }
       />
       <DetailPageLayout>
-        <DetailSection title="Colour mode" description="Turn dark mode on or off, or let your device decide.">
+        <DetailSection
+          title="Colour mode"
+          description="Turn dark mode on or off, or let your device decide."
+        >
           <div className="sm:col-span-2">
             <OptionCards
               label="Colour mode"
@@ -82,7 +118,10 @@ export function AppearanceSettingsScreen() {
             />
           </div>
         </DetailSection>
-        <DetailSection title="Theme" description="The accent colour used for buttons, the active step and highlights.">
+        <DetailSection
+          title="Theme"
+          description="The accent colour used for buttons, the active step and highlights."
+        >
           <div className="sm:col-span-2">
             <OptionCards
               label="Theme"
@@ -104,6 +143,6 @@ export function AppearanceSettingsScreen() {
           </div>
         </DetailSection>
       </DetailPageLayout>
-    </div>
+    </ScreenTemplate>
   );
 }

@@ -1,3 +1,4 @@
+import { ScreenTemplate } from "../../components/page/screen-template";
 import { useState, type ReactNode } from "react";
 import { useLocation, useNavigate, useParams } from "react-router";
 import type { FieldPath, UseFormReturn } from "react-hook-form";
@@ -105,7 +106,7 @@ export function PurchaseOrderEditScreen({
       );
     }
     return (
-      <div className="po-detail space-y-4 p-6">
+      <ScreenTemplate kind="form" className="po-detail">
         {header && (
           <PageHeader
             title={header.title}
@@ -115,7 +116,7 @@ export function PurchaseOrderEditScreen({
           />
         )}
         {content}
-      </div>
+      </ScreenTemplate>
     );
   }
 

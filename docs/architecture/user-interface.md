@@ -2,6 +2,9 @@
 
 # User-interface delivery
 
+Every new or restyled screen follows the [shared screen design standard](erp-blue-design-standard.md):
+list/detail/form shells, scoped overrides and paired light/dark colours.
+
 The React SPA is an operational ERP interface, not a collection of CRUD forms. Each phase ships
 the screens needed to perform and understand the backend workflows it introduces. A phase is not
 UI-complete merely because its endpoints have generated hooks.

@@ -1,3 +1,4 @@
+import { ScreenTemplate } from "../../components/page/screen-template";
 import { PurchaseOrderQuickPrint } from "./purchase-order-print";
 import { useEffect, useState, type ReactNode } from "react";
 import { useLocation, useNavigate, useParams } from "react-router";
@@ -26,10 +27,7 @@ import {
   type PageHeaderBreadcrumb,
 } from "../../components/page/page-header";
 import { RecordSheet } from "../../components/page/record-sheet";
-import {
-  PrintTrigger,
-  useQuickPrint,
-} from "../../components/print";
+import { PrintTrigger, useQuickPrint } from "../../components/print";
 import { Skeleton } from "../../components/ui/skeleton";
 import {
   Table,
@@ -176,7 +174,7 @@ export function PurchaseOrderDetailScreen({
   }, [quickAction, order, mayIssue, mayCancel, navigate, currentPath, search]);
   const fail = (error: unknown) => setActionError(getApiErrorMessage(error));
   const { contentRef: printRef, print } = useQuickPrint({
-    pageStyle: "@page { size: A4; margin: 10mm; }",
+    pageStyle: "@page { size: A4; margin: 0; }",
     documentTitle: order?.number
       ? `Purchase Order ${order.number}`
       : `Draft Purchase Order #${orderId}`,
@@ -249,7 +247,7 @@ export function PurchaseOrderDetailScreen({
       );
     }
     return (
-      <div className="po-detail space-y-4 p-6">
+      <ScreenTemplate kind="detail" className="po-detail">
         {header && (
           <PageHeader
             title={header.title}
@@ -259,7 +257,7 @@ export function PurchaseOrderDetailScreen({
           />
         )}
         {content}
-      </div>
+      </ScreenTemplate>
     );
   }
 

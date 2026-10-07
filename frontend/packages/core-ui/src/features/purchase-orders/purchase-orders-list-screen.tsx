@@ -1,3 +1,4 @@
+import { ScreenTemplate } from "../../components/page/screen-template";
 import { MD_BREAKPOINT_QUERY, useMediaQuery } from "../../lib/use-media-query";
 import { Collapse } from "../../components/ui/collapse";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
@@ -530,7 +531,7 @@ export function PurchaseOrdersListScreen() {
   return (
     // Extra bottom padding below `md` clears the fixed MobileFab — see
     // PageHeader's `primaryAction` note in docs/architecture/user-interface.md.
-    <div className="po-screen min-h-full space-y-4 p-4 pb-24 md:p-6 bg-[var(--po-bg-canvas)] text-[var(--po-text-primary)]">
+    <ScreenTemplate kind="list" className="po-screen">
       <PageHeader
         title="Purchase Orders"
         description="Raise supplier commitments, track their lifecycle and continue into receiving."
@@ -981,7 +982,7 @@ export function PurchaseOrdersListScreen() {
           </PrintLayout>
         </div>
       </div>
-    </div>
+    </ScreenTemplate>
   );
 }
 

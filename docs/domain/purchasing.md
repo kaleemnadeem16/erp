@@ -452,6 +452,10 @@ It includes the company profile once, actual supplier/site, agreed price bases a
 tax amounts, with the API total and existing field visibility. Drafts are marked not issued;
 missing destination/contact/terms are omitted. The frontend default and later backend template
 boundary are documented in [printing](../architecture/appearance-and-printing.md#default-purchase-order-format-2026-10-06).
+Template 1 is the browser-local default selected under Settings → Printing. Its measured A4
+continuation sheets repeat order identity and item headings, retain the final server total once,
+and show calculated page counts. A PO-specific toggle controls blank signature lines; no new
+permission or transition is introduced. A missing delivery destination is explicitly unspecified.
 
 ## Related
 

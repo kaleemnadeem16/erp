@@ -1,22 +1,11 @@
 import type { PurchaseOrderResource } from "@erp/core-api";
 
-import { Badge } from "../../components/ui/badge";
+import { StatusBadge, type StatusTone } from "../../components/ui/status-badge";
 import type { DataColumn } from "../../components/data-table/types";
 import { formatDate } from "../../lib/format-date";
 import { REQUEST_STATUS_LABELS } from "../approvals/approval-labels";
 
-// The shared Badge variant is the base look (dark mode and anywhere the PO palette is not active);
-// the po-status-* class restyles it from the erp-blue status tokens inside the light PO screen.
-const STATUS_VARIANT: Record<
-  string,
-  "secondary" | "default" | "success" | "destructive"
-> = {
-  DRAFT: "secondary",
-  ISSUED: "default",
-  CLOSED: "success",
-  CANCELLED: "destructive",
-};
-
+// Domain states map to shared visual roles in both colour modes.
 const STATUS_CLASS: Record<string, string> = {
   DRAFT: "po-status-draft",
   WAITING_APPROVAL: "po-status-pending",
@@ -31,10 +20,16 @@ const STATUS_CLASS: Record<string, string> = {
  * "PKR 250,000.00": thousands separators and at least two decimals, but never fewer digits than the
  * stored value needs (totals carry up to four), so a figure is grouped for reading and not rounded.
  */
-function formatAmount(amount: string | number, currencyCode: string | undefined): string {
+function formatAmount(
+  amount: string | number,
+  currencyCode: string | undefined,
+): string {
   const number = Number(amount);
   const text = Number.isFinite(number)
-    ? number.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 4 })
+    ? number.toLocaleString("en-US", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 4,
+      })
     : String(amount);
   return currencyCode ? `${currencyCode} ${text}` : text;
 }
@@ -42,12 +37,17 @@ function formatAmount(amount: string | number, currencyCode: string | undefined)
 /** One status pill for every Purchase Orders view (list and order screen), so the two cannot drift apart. */
 export function PurchaseOrderStatusBadge({ status }: { status: string }) {
   return (
-    <Badge
-      variant={STATUS_VARIANT[status] ?? "secondary"}
+    <StatusBadge
+      tone={
+        (STATUS_CLASS[status] ?? "po-status-draft").replace(
+          "po-status-",
+          "",
+        ) as StatusTone
+      }
       className={`po-status-badge ${STATUS_CLASS[status] ?? "po-status-draft"}`}
     >
       {status.replace(/_/g, " ")}
-    </Badge>
+    </StatusBadge>
   );
 }
 
@@ -71,12 +71,25 @@ const APPROVAL_CLASS: Record<string, string> = {
   INVALIDATED: "po-status-pending",
 };
 
-export function PurchaseOrderApprovalBadge({ status }: { status: string | null | undefined }) {
-  if (!status || status === "NOT_REQUIRED") return <span className="text-muted-foreground">—</span>;
+export function PurchaseOrderApprovalBadge({
+  status,
+}: {
+  status: string | null | undefined;
+}) {
+  if (!status || status === "NOT_REQUIRED")
+    return <span className="text-muted-foreground">—</span>;
   return (
-    <Badge variant="secondary" className={`po-status-badge ${APPROVAL_CLASS[status] ?? "po-status-draft"}`}>
+    <StatusBadge
+      tone={
+        (APPROVAL_CLASS[status] ?? "po-status-draft").replace(
+          "po-status-",
+          "",
+        ) as StatusTone
+      }
+      className={`po-status-badge ${APPROVAL_CLASS[status] ?? "po-status-draft"}`}
+    >
       {APPROVAL_STATUS_LABELS[status] ?? status}
-    </Badge>
+    </StatusBadge>
   );
 }
 
@@ -139,7 +152,10 @@ export function purchaseOrderColumns(
                 "—"
               ) : (
                 <span className="tabular-nums font-medium text-[var(--po-text-primary)]">
-                  {formatAmount(order.total_amount, currencies.get(order.currency_id))}
+                  {formatAmount(
+                    order.total_amount,
+                    currencies.get(order.currency_id),
+                  )}
                 </span>
               ),
             align: "right",
@@ -161,9 +177,12 @@ export function purchaseOrderColumns(
             header: "Approval",
             value: (order) =>
               order.approval_status && order.approval_status !== "NOT_REQUIRED"
-                ? (APPROVAL_STATUS_LABELS[order.approval_status] ?? order.approval_status)
+                ? (APPROVAL_STATUS_LABELS[order.approval_status] ??
+                  order.approval_status)
                 : null,
-            cell: (order) => <PurchaseOrderApprovalBadge status={order.approval_status} />,
+            cell: (order) => (
+              <PurchaseOrderApprovalBadge status={order.approval_status} />
+            ),
             filterable: true,
           } satisfies DataColumn<PurchaseOrderResource>,
         ]

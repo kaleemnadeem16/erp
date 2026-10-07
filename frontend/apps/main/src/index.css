@@ -1,14 +1,15 @@
 @import "tailwindcss";
 @import "./themes.css";
 @import "./palette-erp-blue.css";
+@import "./screen-templates.css";
 
 /* Tailwind's auto content detection stops at package boundaries, so classes used
    inside the @erp/core-ui workspace package (a sibling package, not a subdirectory
    of this app) are invisible unless scanned explicitly. */
 @source "../../../packages/core-ui/src";
 
-/* Base (light, "slate") tokens. Dark mode and the accent themes are overrides of
-   these same variables in themes.css; how they're selected at runtime, and how a
+/* Semantic colour mappings come from palette-erp-blue.css; alternate accents
+   and motion come from themes.css; how they're selected at runtime, and how a
    company or user default layers on top, is in
    docs/architecture/appearance-and-printing.md. */
 
@@ -62,74 +63,6 @@
   --collapse-close-duration: 260ms;
   --collapse-close-ease: cubic-bezier(0.4, 0, 0.2, 1);
   --radius: 0.5rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  /* card: a raised surface (a detail section); panel: a quiet side surface (the
-     order-summary column). Same as the page in light, distinct in dark. */
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --panel: oklch(0.978 0.004 250);
-  --panel-foreground: oklch(0.145 0 0);
-  /* A tint of the accent for soft surfaces (banners, icon tiles, active steps). */
-  --primary-soft: oklch(0.96 0 0);
-  --primary-soft-foreground: oklch(0.205 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  /* Slightly darker than the common 0.556 default: that value clears 4.5:1
-     against pure white but falls just short (4.45:1) against --panel, which
-     is a hair off-white — this keeps every muted-foreground use readable on
-     both without a per-component override. */
-  --muted-foreground: oklch(0.52 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-
-  /* Base accent for the active nav item — a stand-in ahead of Phase 4's
-     company-wide theming, deliberately isolated to these two tokens so
-     replacing it later is a one-place edit, not a hunt through app-shell.tsx. */
-  --nav-active: oklch(0.94 0.03 258);
-  --nav-active-foreground: oklch(0.48 0.19 258);
-
-  /* Semantic status colors — same stand-in status as --nav-active above: a
-     base neutral-hue default for every company until Phase 4's company-wide
-     theming can override them, kept to these token names so that override is
-     a one-place edit. Distinct from --destructive (a *destructive action*,
-     e.g. "delete this record") even where the value is close today — these
-     name a *business state* (a shortage, a QA hold, an in-flight order), a
-     different axis that shouldn't move just because a button's color does.
-     Each has a "-soft" tint for a badge/tile fill with the base color as its
-     text, and the base itself is meant for a solid fill needing the
-     "-foreground" text on top (a stat-card accent bar, a solid chip).
-
-     Lightness on success/warning/info is picked for contrast, not aesthetics:
-     the base color doubles as text (Badge's soft-fill variants, StatCard's
-     value text), so it needs to clear WCAG 2.2 AA's 4.5:1 against both its
-     own "-soft" background and a plain white page background — the original
-     values (0.6/0.65/0.55) landed at 3.14:1/2.77:1/4.16:1 against their soft
-     tint, all failures. Danger's lightness was already low enough to pass
-     (3.75:1 soft / 4.76:1 white) and is unchanged. */
-  --status-success: oklch(0.5 0.16 149);
-  --status-success-foreground: oklch(0.98 0 0);
-  --status-success-soft: oklch(0.94 0.05 149);
-  --status-warning: oklch(0.52 0.16 70);
-  --status-warning-foreground: oklch(0.98 0 0);
-  --status-warning-soft: oklch(0.94 0.06 80);
-  --status-danger: oklch(0.577 0.245 27.325);
-  --status-danger-foreground: oklch(0.98 0 0);
-  --status-danger-soft: oklch(0.94 0.06 27);
-  --status-info: oklch(0.52 0.18 258);
-  --status-info-foreground: oklch(0.98 0 0);
-  --status-info-soft: oklch(0.94 0.03 258);
-
   /* Mobile bottom-tab-nav content height (excludes the safe-area inset, which
      callers add separately) — the one place this is defined; everything that
      needs to clear or sit above the fixed bottom nav reads this instead of a

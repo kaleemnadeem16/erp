@@ -92,7 +92,9 @@ See [the contract](../../../../docs/domain/purchasing.md#correcting-a-draft-rece
 
 ## Default PO Quick Print
 
-The frontend uses a dedicated modular A4 default over existing projected PO/supplier/company data.
+The frontend uses registered Template 1 as its modular A4 default over existing projected PO/supplier/company data.
+Printing settings select the template and PO signature lines; measured continuation sheets repeat
+order identity/item headings and show calculated page counts without browser header/footer furniture.
 It preserves commercial visibility and server totals, distinguishes drafts, and offers a typed
 section/data boundary for later backend document templates. No new endpoint or print permission.
 See [printing](../../../../docs/architecture/appearance-and-printing.md#default-purchase-order-format-2026-10-06).

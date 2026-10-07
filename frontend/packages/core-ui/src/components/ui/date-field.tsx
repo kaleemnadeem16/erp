@@ -229,6 +229,7 @@ export const DateField = React.forwardRef<HTMLInputElement, DateFieldProps>(func
     <div
       id={id}
       role="group"
+      data-slot="date-field"
       aria-label={ariaLabel}
       aria-labelledby={ariaLabelledBy}
       aria-describedby={ariaDescribedBy}

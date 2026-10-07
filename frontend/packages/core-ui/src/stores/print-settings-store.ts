@@ -2,6 +2,8 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 export interface PrintSettings {
+  purchaseOrderTemplateId: string;
+  purchaseOrderShowSignatureLines: boolean;
   /** Shown in every document's header until a company-settings endpoint exists. */
   companyName: string;
   companyLogoUrl: string;
@@ -14,6 +16,8 @@ export interface PrintSettings {
 }
 
 export const DEFAULT_PRINT_SETTINGS: PrintSettings = {
+  purchaseOrderTemplateId: "template-1",
+  purchaseOrderShowSignatureLines: true,
   companyName: "",
   companyLogoUrl: "",
   accentColor: "#0f172a",

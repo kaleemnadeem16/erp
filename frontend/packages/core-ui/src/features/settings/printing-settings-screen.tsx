@@ -1,10 +1,16 @@
+import {
+  PurchaseOrderPrintTemplate,
+  resolvePurchaseOrderPrintTemplate,
+  PURCHASE_ORDER_PRINT_TEMPLATES,
+} from "../purchase-orders/purchase-order-print";
 import { RotateCcw } from "lucide-react";
 import { Link } from "react-router";
 
-import { DetailPageLayout, DetailSection } from "../../components/detail/detail-page-layout";
+import {
+  DetailPageLayout,
+  DetailSection,
+} from "../../components/detail/detail-page-layout";
 import { PageHeader } from "../../components/page/page-header";
-import { DetailPrintLayout } from "../../components/print/detail-print-layout";
-import { PrintableTable } from "../../components/print/printable-table";
 import { Button } from "../../components/ui/button";
 import { Checkbox } from "../../components/ui/checkbox";
 import { Input } from "../../components/ui/input";
@@ -18,21 +24,6 @@ const ACCENT_PRESETS = [
   { label: "Amber", value: "#b45309" },
   { label: "Forest", value: "#15803d" },
   { label: "Wine", value: "#9f1239" },
-];
-
-interface PreviewRow {
-  item: string;
-  qty: string;
-  price: string;
-}
-const PREVIEW_ROWS: PreviewRow[] = [
-  { item: "Grey Primer Paint 20L", qty: "10 DRM", price: "1,000.00" },
-  { item: "Industrial Thinner", qty: "5 DRM", price: "500.00" },
-];
-const PREVIEW_COLUMNS = [
-  { key: "item", header: "Item", value: (row: PreviewRow) => row.item },
-  { key: "qty", header: "Qty", value: (row: PreviewRow) => row.qty, align: "right" as const },
-  { key: "price", header: "Amount", value: (row: PreviewRow) => row.price, align: "right" as const },
 ];
 
 /**
@@ -63,22 +54,78 @@ export function PrintingSettingsScreen() {
         <DetailPageLayout>
           <DetailSection title="Company">
             <div className="sm:col-span-2">
-              <label className="mb-1 block text-sm font-medium">Company name</label>
+              <label className="mb-1 block text-sm font-medium">
+                Company name
+              </label>
               <p className="text-sm">{companyName ?? "—"}</p>
               <p className="text-xs text-muted-foreground">
-                Printed documents use the company name from <Link className="underline" to="/settings/company">Settings → Company</Link>.
+                Printed documents use the company name from{" "}
+                <Link className="underline" to="/settings/company">
+                  Settings → Company
+                </Link>
+                .
               </p>
             </div>
             <div className="sm:col-span-2">
               <label className="mb-1 block text-sm font-medium">Logo URL</label>
               <Input
                 value={settings.companyLogoUrl}
-                onChange={(event) => settings.set({ companyLogoUrl: event.target.value })}
+                onChange={(event) =>
+                  settings.set({ companyLogoUrl: event.target.value })
+                }
                 placeholder="https://…/logo.png"
               />
             </div>
           </DetailSection>
-          <DetailSection title="Appearance" description="The accent colour used for headings, rules and table headers.">
+          <DetailSection title="Purchase order template">
+            <div className="sm:col-span-2">
+              <label
+                htmlFor="po-template"
+                className="mb-1 block text-sm font-medium"
+              >
+                Default template
+              </label>
+              <select
+                id="po-template"
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={
+                  resolvePurchaseOrderPrintTemplate(
+                    settings.purchaseOrderTemplateId,
+                  ).id
+                }
+                onChange={(event) =>
+                  settings.set({ purchaseOrderTemplateId: event.target.value })
+                }
+              >
+                {PURCHASE_ORDER_PRINT_TEMPLATES.map((template) => (
+                  <option key={template.id} value={template.id}>
+                    {template.label}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Used when printing purchase orders. Your choice is saved in this
+                browser.
+              </p>
+              <label className="mt-3 flex items-center gap-2">
+                <Checkbox
+                  checked={settings.purchaseOrderShowSignatureLines}
+                  onCheckedChange={(checked) =>
+                    settings.set({
+                      purchaseOrderShowSignatureLines: checked === true,
+                    })
+                  }
+                />
+                <span className="text-sm">
+                  Show purchase order signature lines
+                </span>
+              </label>
+            </div>
+          </DetailSection>
+          <DetailSection
+            title="Appearance"
+            description="The accent colour used for headings, rules and table headers."
+          >
             <div className="flex flex-wrap gap-2 sm:col-span-2">
               {ACCENT_PRESETS.map((preset) => (
                 <button
@@ -91,8 +138,14 @@ export function PrintingSettingsScreen() {
                   className="flex size-8 items-center justify-center rounded-full border-2 transition-colors"
                   style={{
                     background: preset.value,
-                    borderColor: settings.accentColor === preset.value ? preset.value : "transparent",
-                    outline: settings.accentColor === preset.value ? "2px solid var(--ring)" : undefined,
+                    borderColor:
+                      settings.accentColor === preset.value
+                        ? preset.value
+                        : "transparent",
+                    outline:
+                      settings.accentColor === preset.value
+                        ? "2px solid var(--ring)"
+                        : undefined,
                     outlineOffset: 2,
                   }}
                 />
@@ -103,7 +156,9 @@ export function PrintingSettingsScreen() {
                 <input
                   type="color"
                   value={settings.accentColor}
-                  onChange={(event) => settings.set({ accentColor: event.target.value })}
+                  onChange={(event) =>
+                    settings.set({ accentColor: event.target.value })
+                  }
                   className="sr-only"
                 />
               </label>
@@ -111,51 +166,99 @@ export function PrintingSettingsScreen() {
           </DetailSection>
           <DetailSection title="Footer">
             <div className="sm:col-span-2">
-              <label className="mb-1 block text-sm font-medium">Footer note</label>
+              <label className="mb-1 block text-sm font-medium">
+                Footer note
+              </label>
               <Textarea
                 rows={2}
                 value={settings.footerNote}
-                onChange={(event) => settings.set({ footerNote: event.target.value })}
+                onChange={(event) =>
+                  settings.set({ footerNote: event.target.value })
+                }
                 placeholder="A registration number, a standard terms line, or anything else that belongs on every document."
               />
             </div>
             <label className="flex items-center gap-2 sm:col-span-2">
               <Checkbox
                 checked={settings.showSignatureLines}
-                onCheckedChange={(checked) => settings.set({ showSignatureLines: checked === true })}
+                onCheckedChange={(checked) =>
+                  settings.set({ showSignatureLines: checked === true })
+                }
               />
-              <span className="text-sm">Show "Prepared by / Approved by / Received by" signature lines</span>
+              <span className="text-sm">
+                Show "Prepared by / Approved by / Received by" signature lines
+              </span>
             </label>
           </DetailSection>
         </DetailPageLayout>
 
         <div className="min-w-0">
-          <div className="mb-2 text-sm font-medium text-muted-foreground">Preview</div>
-          <div className="origin-top rounded-lg border border-border bg-muted/30 p-4 shadow-sm">
-            <div className="rounded-sm bg-white p-6 shadow-md">
-              <DetailPrintLayout
-                title="Purchase order"
-                subtitle="No. 0042 · ISSUED"
-                printedAt={new Date()}
-                sections={[
-                  {
-                    title: "Order",
+          <div className="mb-2 text-sm font-medium text-muted-foreground">
+            Purchase order preview · demo data
+          </div>
+          <div className="overflow-auto rounded-lg border border-border bg-muted/30 p-4 shadow-sm">
+            <div
+              className="w-fit rounded-sm bg-white shadow-md"
+              style={{ zoom: 0.6 }}
+            >
+              <PurchaseOrderPrintTemplate
+                template={resolvePurchaseOrderPrintTemplate(
+                  settings.purchaseOrderTemplateId,
+                )}
+                accentColor={settings.accentColor}
+                document={{
+                  version: 1,
+                  number: "DEMO-0042",
+                  status: "DRAFT",
+                  draft: true,
+                  company: {
+                    name: companyName || "Demo Company",
+                    address: ["12 Industrial Estate Road", "Lahore, Pakistan"],
+                    logoUrl: settings.companyLogoUrl || undefined,
                     fields: [
-                      { label: "Status", value: "ISSUED" },
-                      { label: "Order date", value: "2026-09-21" },
+                      { label: "Phone", value: "+92 42 111 000 111" },
+                      { label: "Email", value: "info@example.com" },
                     ],
                   },
-                  {
-                    title: "Supplier",
+                  supplier: {
+                    name: "Example supplier",
+                    address: ["18 Supplier Road", "Lahore, Pakistan"],
                     fields: [
-                      { label: "Supplier", value: "sup-punjab — Punjab Pigments" },
-                      { label: "Payment terms", value: "30 days" },
+                      { label: "Supplier code", value: "DEMO-SUPPLIER" },
                     ],
                   },
-                ]}
-              >
-                <PrintableTable columns={PREVIEW_COLUMNS} rows={PREVIEW_ROWS} getRowKey={(row) => row.item} />
-              </DetailPrintLayout>
+                  metadata: [
+                    { label: "Order date", value: "2026-10-07" },
+                    { label: "Currency", value: "PKR" },
+                  ],
+                  currency: "PKR",
+                  commercial: true,
+                  lines: [
+                    {
+                      number: 1,
+                      item: "DEMO-ITEM",
+                      description: "Industrial coating",
+                      details: [],
+                      quantity: "10.0000",
+                      unit: "drum",
+                      price: "1000.0000",
+                      priceBasis: "1 drum",
+                      amount: "10000.0000",
+                    },
+                  ],
+                  total: "10000.0000",
+                  notes: "Demo document for previewing the selected template.",
+                  signatures: settings.purchaseOrderShowSignatureLines
+                    ? [
+                        "Prepared by",
+                        "Authorised signature",
+                        "Supplier acknowledgement",
+                      ]
+                    : [],
+                  footerNote: settings.footerNote,
+                  printedAt: "Preview",
+                }}
+              />
             </div>
           </div>
         </div>

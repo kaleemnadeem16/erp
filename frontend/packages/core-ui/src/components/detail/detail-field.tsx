@@ -14,8 +14,8 @@ export interface DetailFieldProps {
 export function DetailField({ label, children, className, fullWidth }: DetailFieldProps) {
   return (
     <div className={cn('space-y-0.5', fullWidth && 'sm:col-span-2', className)}>
-      <div className="text-xs font-medium text-muted-foreground">{label}</div>
-      <div className="text-sm">{children ?? <span className="text-muted-foreground">—</span>}</div>
+      <div className="detail-field-label text-xs font-medium text-muted-foreground">{label}</div>
+      <div className="detail-field-value text-sm">{children ?? <span className="text-muted-foreground">—</span>}</div>
     </div>
   );
 }

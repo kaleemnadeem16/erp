@@ -30,6 +30,7 @@ three relevant ones without pulling in the rest.
 | Design a new feature or materially extend one | [research-and-design.md](docs/architecture/research-and-design.md), then reuse any research linked by the relevant domain doc/ADR |
 | Find where something lives | The module `README.md`, then `docs/reference/` *(generated in Phase 0; does not exist yet)* |
 | Write a migration | [database.md](docs/architecture/database.md) + [multi-tenancy.md](docs/architecture/multi-tenancy.md) |
+| Build or restyle any screen | [erp-blue-design-standard.md](docs/architecture/erp-blue-design-standard.md) + [ui-building-blocks.md](docs/architecture/ui-building-blocks.md) — shared list/detail/form templates, semantic light/dark tokens, scoped overrides and the screen checklist |
 | Add an API endpoint | [api-conventions.md](docs/architecture/api-conventions.md) |
 | Add/change any business action, endpoint or screen | [authorization.md](docs/architecture/authorization.md) — complete the checklist even when no new permission is needed, and follow its [build rules R1–R11](docs/architecture/authorization.md#build-rules-every-new-feature-follows) (guard twice, protect fields not buttons, ship the grant, test cross-company). Never ship a new surface authenticated-only |
 | Add an approval or controlled transition | [approval-workflows.md](docs/architecture/approval-workflows.md) |

@@ -1,6 +1,6 @@
 # Project Status
 
-**Updated:** 2026-10-06
+**Updated:** 2026-10-07
 **Current phase:** Phase 3 — Estimating core (in progress; two vertical slices shipped
 2026-09-23 — rate dimensions/application rates, then formulations with versioning, customer
 overrides and nested cost roll-up, now followed by the 2026-09-24 draft-editing, human-readable
@@ -50,7 +50,8 @@ and shared-checkout boundaries; other workstreams retain their own priorities.
 
 | Item | Date |
 |---|---|
-| **Default PO print format** — spacious A4 letterhead and shaded sections put supplier and PO details side by side, with readable item rows, notes, server total and footer; replaceable sections retain the backend template seam → [printing](architecture/appearance-and-printing.md#default-purchase-order-format-2026-10-06). | 2026-10-06 |
+| **Shared screen standard** — PO list/detail/form patterns now define reusable screen shells, scoped overrides carried into portals, and common status roles. The owner approved and locked both ERP Blue palettes, including the sharper neutral black/charcoal dark mode; new/restyled screens must follow the [standard](architecture/erp-blue-design-standard.md), with existing layout adoption proceeding one screen at a time. | 2026-10-07 |
+| **Default PO print format — Template 1** — the owner's reference now drives logo/letterhead, PO metadata and supplier/delivery panels, item bands, notes/total and signatures. A saved template selector and measured A4 continuation sheets retain all rows with repeated identity/headings, per-sheet footers and calculated page counts → [printing](architecture/appearance-and-printing.md#default-purchase-order-format-2026-10-06). | 2026-10-07 |
 | **Expired sessions redirect to sign-in** — central transport handling sends protected screens to `/login` on 401/419, including saves, while public credential errors and permission denials stay inline → [access administration](domain/access-administration.md#expired-browser-sessions). | 2026-10-06 |
 | **Compact pending PO review** — normal order details remain permanently open; only the submitted approval version expands with animation. Permissions distinguish live commercial data from request-specific technical/commercial review → [approvals](domain/approvals.md#request-specific-document-review-adr-0085). | 2026-10-06 |
 | **Master-data and mobile UI** — supplier registration/edit, draft receipt editing, custom-field settings/inputs and complete Item fields are available with their capability gates; mobile PO filter chips have a separate animated row and form cards have clearer colour accents. Demo fields preserve operator edits → [journey](journeys/phase-2-operational-journey.md), [custom fields](architecture/extensibility.md#implemented-custom-field-settings-2026-10-06). | 2026-10-06 |
