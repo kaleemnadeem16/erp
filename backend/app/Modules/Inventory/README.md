@@ -94,6 +94,9 @@ then on `PackageWriteScope` is the only door through which its stock can change,
 `RecordPhysicalCountComposition`, `RefreshPhysicalCountLine` and `PostGroupedCountLine` (via `PostPhysicalCount`, package-state.recount) count a grouped item by composition: equal totals
 replace the composition with no movement, a variance posts the governed issue or receipt and a `COUNT_VARIANCE` successor. Counts may only use the tracked levels fixed at activation.
 
+`ReverseGroupedReceiptLine` (via `ReverseGoodsReceipt`, package-state.reverse) reverses a grouped receipt line by removing the declared, on-hand physical draw (default the observed arrival) and
+writing a `RECEIPT_REVERSAL` successor; a consumed layer or an uncoverable draw refuses the reversal.
+
 `CreateCategory`/`UpdateCategory`/`ArchiveCategory` and
 `CreateItem`/`UpdateItem`/`ArchiveItem` own the transactional write boundary used by HTTP and
 future non-HTTP entry points. Model guards still enforce tenant, hierarchy and valuation

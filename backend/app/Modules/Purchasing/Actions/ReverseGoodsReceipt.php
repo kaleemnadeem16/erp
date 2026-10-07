@@ -7,6 +7,7 @@ namespace App\Modules\Purchasing\Actions;
 use App\Exceptions\DomainInvariantException;
 use App\Models\User;
 use App\Modules\Inventory\Actions\PostInventoryMovement;
+use App\Modules\Inventory\Actions\ReverseGroupedReceiptLine;
 use App\Modules\Inventory\Support\PackageWriteScope;
 use App\Modules\Purchasing\Models\GoodsReceipt;
 use App\Modules\Purchasing\Models\GoodsReceiptLine;
@@ -33,14 +34,15 @@ final class ReverseGoodsReceipt
 {
     public function __construct(private readonly PostInventoryMovement $postMovement) {}
 
-    public function __invoke(GoodsReceipt $receipt, string $reason, int $actorId): GoodsReceipt
+    /** @param array<int, list<array<string,mixed>>> $packageDraws receipt line id => the sealed packages and loose quantity physically going back, for items with grouped package tracking; omitted means what the receipt's evidence says arrived */
+    public function __invoke(GoodsReceipt $receipt, string $reason, int $actorId, array $packageDraws = []): GoodsReceipt
     {
         $actor = User::withoutGlobalScopes()->findOrFail($actorId);
         if (! $actor->can('purchasing.goods-receipt.reverse')) {
             throw new DomainInvariantException('The actor is not permitted to reverse a goods receipt.', 'reversed_by');
         }
 
-        return DB::transaction(function () use ($receipt, $reason, $actorId): GoodsReceipt {
+        return DB::transaction(function () use ($receipt, $reason, $actorId, $actor, $packageDraws): GoodsReceipt {
             $receipt = GoodsReceipt::query()->lockForUpdate()->findOrFail($receipt->id);
             if ($receipt->status === GoodsReceiptStatus::Reversed) {
                 return $receipt->load('lines');
@@ -56,7 +58,6 @@ final class ReverseGoodsReceipt
             // mutation. Layer-consumption and pool-sufficiency are Inventory-owned
             // facts, checked and enforced atomically inside reverseReceipt() below.
             foreach ($lines as $line) {
-                PackageWriteScope::refuse($line->item_id, 'reversing a goods receipt');
                 if (QualityDisposition::query()->where('goods_receipt_line_id', $line->id)->exists()) {
                     throw new DomainInvariantException('This receipt has a posted QA disposition and cannot be reversed.', 'goods_receipt_line_id');
                 }
@@ -73,6 +74,11 @@ final class ReverseGoodsReceipt
 
             $reversedAt = now();
             foreach ($lines as $line) {
+                if (PackageWriteScope::isAuthoritative($line->item_id)) {
+                    app(ReverseGroupedReceiptLine::class)($line, $packageDraws[$line->id] ?? null, $reason, $reversedAt, $actor);
+
+                    continue;
+                }
                 $this->postMovement->reverseReceipt('GOODS_RECEIPT_LINE', $line->id, 'GOODS_RECEIPT_LINE_REVERSAL', $line->id, $reversedAt);
             }
 

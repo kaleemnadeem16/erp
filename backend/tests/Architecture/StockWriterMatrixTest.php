@@ -54,7 +54,6 @@ class StockWriterMatrixTest extends TestCase
             'Modules/Inventory/Actions/RequestStockRecalculation.php' => 1,
             'Modules/Inventory/Actions/ExecuteRecalculation.php' => 1,
             'Modules/Inventory/Actions/RequestNegativeStockOverride.php' => 1,
-            'Modules/Purchasing/Actions/ReverseGoodsReceipt.php' => 1,
             'Modules/Purchasing/Actions/PostQualityDisposition.php' => 1,
         ];
         foreach ($guards as $file => $expected) {

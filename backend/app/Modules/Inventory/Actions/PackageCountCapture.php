@@ -26,7 +26,7 @@ final class PackageCountCapture
             throw new DomainInvariantException('Package-state view authority is required to count an item with grouped package tracking.');
         }
         $latest = PackageOperation::query()->where(['item_id' => $item->id, 'location_id' => $locationId, 'batch_id' => $batchId])
-            ->whereIn('evidence_kind', ['COUNTED', 'OPEN', 'UNPACK', 'ISSUE', 'TRANSFER_OUT', 'TRANSFER_IN', 'RECEIPT_IN', 'COUNT_VARIANCE'])->orderByDesc('id')->first();
+            ->whereIn('evidence_kind', ['COUNTED', 'OPEN', 'UNPACK', 'ISSUE', 'TRANSFER_OUT', 'TRANSFER_IN', 'RECEIPT_IN', 'COUNT_VARIANCE', 'RECEIPT_REVERSAL'])->orderByDesc('id')->first();
         $watermark = StockMove::query()->where(['item_id' => $item->id, 'batch_id' => $batchId, 'serial_no' => null])
             ->where(fn ($q) => $q->where('to_location_id', $locationId)->orWhere('from_location_id', $locationId))->max('id');
         if (bccomp($bookQty, '0', 4) === 0) {

@@ -57,7 +57,7 @@ issue/transfer work. Consult it before resuming this workstream; it does not rep
    [Saved open/unpack successors](../domain/package-opening-operations.md) now persist complete
    composition with lineage, locking, retries and a separate history demo. Tracking stays inactive.
    [Grouped package-aware issue](../domain/package-issue-operations.md) (ADR 0090, 2026-10-07) now posts the stock issue with its allocation
-   vector and writes `ISSUE` evidence atomically. Grouped package-aware **transfer** (two evidence legs) followed the same day. **Activation and fail-closed enforcement** (ADR 0091) and the package-aware **receipt** followed on 2026-10-08. **Package-aware physical count** (ADR 0092) followed. Remaining: QA, reversal, cutover
+   vector and writes `ISSUE` evidence atomically. Grouped package-aware **transfer** (two evidence legs) followed the same day. **Activation and fail-closed enforcement** (ADR 0091) and the package-aware **receipt** followed on 2026-10-08. **Package-aware physical count** (ADR 0092) and **receipt reversal** (ADR 0093) followed. Remaining: QA, reversal, cutover
    and recalculation adapters or explicit first-release guards; refusing scalar issues once a mode is authoritative (activation slice). Cover every direct Action writer,
    not only public HTTP controllers. Preserve QUANTITY_ONLY behaviour.
 7. [ ] **Permissions and workflows.** Register only enforcing capabilities; grant demo personas

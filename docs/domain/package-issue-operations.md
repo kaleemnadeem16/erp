@@ -135,9 +135,28 @@ trigger refuses it for every writer, and counts and receipts say so first. Chang
 
 Demo: `PackageCountDemoSeeder` — a recount (1 can + 7 L, ledger right, no movement) and then a 1 L loss (1 can + 6 L, governed issue at 8.00) on XYZ's emulsion.
 
+## Receipt reversal of a grouped item (2026-10-08)
+
+[ADR 0093](../decisions/0093-package-aware-goods-receipt-reversal.md). `ReverseGoodsReceipt` keeps its whole-receipt, full-quantity semantics; for a line of an item
+with grouped tracking it calls `ReverseGroupedReceiptLine` (needs `purchasing.goods-receipt.reverse` plus `inventory.package-state.reverse` and `.view`, a mandatory
+reason, warehouse scope). The existing stock reversal runs unchanged — only while the receipt's layer is untouched, AVCO pool sufficiency, the same valuation
+entry reversed — and a `RECEIPT_REVERSAL` successor **removes the declared physical draw** from the scope's latest evidence. It never restores the pre-receipt
+composition and never invents state.
+
+The draw is sealed packages and loose quantity (no opening), must total exactly the line's received quantity and must be on hand now. Omitted, it defaults to
+the composition the receipt's own `RECEIPT_IN` evidence recorded; a receipt that predates activation has none, so the draw must be stated. Passing
+`$packageDraws[lineId]` to `ReverseGoodsReceipt` declares it. Anything that cannot be safely unwound is refused with nothing posted: a layer already
+drawn on (use a package-aware issue or return plus a count), a draw that exceeds the current sealed counts or loose quantity, a stale scope.
+
+The database checks (migration `2026_10_08_130000`) that the move is the `REVERSAL` of an inbound move at this scope, that the evidence names the `RECEIPT_IN` leg it undoes
+(unique, so one reversal per receipt line), that draws and allocation equal the move quantity, per-layer and composition conservation, and that every reversal
+move of a grouped item carries this evidence. A retry is idempotent and any failure rolls back the whole reversal. Quantity-only receipts reverse exactly as before.
+
+Demo: `PackageReceiptReversalDemoSeeder` reverses a wrong delivery of 2 sealed cans back to the supplier while a second delivery stays.
+
 ## Not yet
 
-Receipt-reversal replacement, changing tracked levels, receipt reversal / QA split / negative-stock settlement / cutover / recalculation adapters, container-level tracking, screens.
+Changing tracked levels, line-level or partial receipt reversal, receipt reversal / QA split / negative-stock settlement / cutover / recalculation adapters, container-level tracking, screens.
 
 ## Demo and verification
 

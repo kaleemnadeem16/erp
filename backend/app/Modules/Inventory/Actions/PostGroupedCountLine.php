@@ -37,7 +37,7 @@ final class PostGroupedCountLine
     {
         $scope = ['item_id' => $line->item_id, 'location_id' => $line->location_id, 'batch_id' => $line->batch_id];
         $latest = PackageOperation::query()->where($scope)
-            ->whereIn('evidence_kind', ['COUNTED', 'OPEN', 'UNPACK', 'ISSUE', 'TRANSFER_OUT', 'TRANSFER_IN', 'RECEIPT_IN', 'COUNT_VARIANCE'])->max('id');
+            ->whereIn('evidence_kind', ['COUNTED', 'OPEN', 'UNPACK', 'ISSUE', 'TRANSFER_OUT', 'TRANSFER_IN', 'RECEIPT_IN', 'COUNT_VARIANCE', 'RECEIPT_REVERSAL'])->max('id');
         $watermark = StockMove::query()->where(['item_id' => $line->item_id, 'batch_id' => $line->batch_id, 'serial_no' => null])
             ->where(fn ($q) => $q->where('to_location_id', $line->location_id)->orWhere('from_location_id', $line->location_id))->max('id');
         if (($line->package_operation_id ?? 0) !== (int) $latest || (int) ($line->package_watermark ?? 0) !== (int) $watermark) {

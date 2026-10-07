@@ -70,7 +70,7 @@ final class RecordReceiptPackageEvidence
             return;
         }
         $latest = PackageOperation::query()->where(['item_id' => $line->item_id, 'location_id' => $line->location_id, 'batch_id' => $batch?->id])
-            ->whereIn('evidence_kind', ['COUNTED', 'OPEN', 'UNPACK', 'ISSUE', 'TRANSFER_OUT', 'TRANSFER_IN', 'RECEIPT_IN', 'COUNT_VARIANCE'])->orderByDesc('id')->first();
+            ->whereIn('evidence_kind', ['COUNTED', 'OPEN', 'UNPACK', 'ISSUE', 'TRANSFER_OUT', 'TRANSFER_IN', 'RECEIPT_IN', 'COUNT_VARIANCE', 'RECEIPT_REVERSAL'])->orderByDesc('id')->first();
         if ($latest === null) {
             throw new DomainInvariantException('This location already holds stock without package evidence: a counted checkpoint is required before receiving.');
         }
