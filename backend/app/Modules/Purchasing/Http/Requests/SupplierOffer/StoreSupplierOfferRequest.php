@@ -12,6 +12,7 @@ class StoreSupplierOfferRequest extends FormRequest
         return $this->user()?->can('purchasing.item-supplier.manage') === true;
     }
 
+    /** @return array<string, mixed> */
     public function rules(): array
     {
         return MaintainSupplierOffer::rules();

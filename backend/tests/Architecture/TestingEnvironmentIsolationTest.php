@@ -16,6 +16,9 @@ class TestingEnvironmentIsolationTest extends TestCase
                 'APP_ENV' => 'local',
                 'DB_CONNECTION' => 'pgsql',
                 'DB_DATABASE' => 'erp',
+                // This subprocess checks the default isolation contract, even when
+                // the parent suite uses a private tmpfs database.
+                'TEST_DB_DATABASE' => false,
             ],
         );
         $process->mustRun();

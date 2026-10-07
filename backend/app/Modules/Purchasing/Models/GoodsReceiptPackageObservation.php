@@ -22,6 +22,7 @@ class GoodsReceiptPackageObservation extends Model
         return 'goodsReceiptLine';
     }
 
+    /** @return BelongsTo<GoodsReceiptLine, $this> */
     public function goodsReceiptLine(): BelongsTo
     {
         return $this->belongsTo(GoodsReceiptLine::class);

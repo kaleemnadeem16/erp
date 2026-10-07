@@ -12,6 +12,7 @@ class StoreItemPackagingRequest extends FormRequest
         return $this->user()?->can('inventory.item.manage') === true;
     }
 
+    /** @return array<string, mixed> */
     public function rules(): array
     {
         return MaintainItemPackaging::rules();

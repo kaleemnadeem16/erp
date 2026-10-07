@@ -16,7 +16,6 @@ class ItemPackagingController extends Controller
 {
     public function index(IndexItemPackagingRequest $request): AnonymousResourceCollection
     {
-        abort_unless(true, 403);
         $request->validate(['per_page' => ['sometimes', 'integer', 'between:1,100']]);
         $q = ItemPackaging::query();
         if ($request->filled('filter.item_id')) {

@@ -4,6 +4,7 @@ namespace App\Modules\Purchasing\Http\Requests\SupplierOffer;
 
 class UpdateSupplierOfferRequest extends StoreSupplierOfferRequest
 {
+    /** @return array<string, mixed> */
     public function rules(): array
     {
         $rules = parent::rules();

@@ -60,7 +60,7 @@ final class BuildPurchaseOrderLineAttributes
             }
             $factor = BigDecimal::of($package->stock_quantity);
         }
-        $increment = $package?->quantity_precision ?? ItemQuantityUnit::query()
+        $increment = $package->quantity_precision ?? ItemQuantityUnit::query()
             ->where('item_id', $item->id)->where('uom_id', $purchaseUom->id)->value('quantity_precision');
         if ($increment !== null && ! $qty->remainder($increment)->isZero()) {
             throw new DomainInvariantException('Order quantity violates the selected package/unit increment.', 'ordered_qty');
@@ -77,7 +77,7 @@ final class BuildPurchaseOrderLineAttributes
         } catch (InvalidArgumentException) {
             throw new DomainInvariantException('No fixed conversion exists for the pricing unit.', 'price_uom_id');
         }
-        $priceQuantity = BigDecimal::of((string) ($input['price_quantity'] ?? $offer?->price_quantity ?? '1'));
+        $priceQuantity = BigDecimal::of((string) ($input['price_quantity'] ?? $offer->price_quantity ?? '1'));
         if (! $priceQuantity->isPositive()) {
             throw new DomainInvariantException('Price denominator must be positive.', 'price_quantity');
         }
@@ -91,8 +91,8 @@ final class BuildPurchaseOrderLineAttributes
         }
         $input = array_merge($input, [
             'package_name' => $package?->name, 'package_code' => $package?->code,
-            'package_increment' => $increment, 'order_unit_label' => $package?->name ?? $purchaseUom->code,
-            'price_uom_id' => $priceUom?->id, 'price_unit_label' => $priceUom?->code ?? $package?->name ?? $purchaseUom->code,
+            'package_increment' => $increment, 'order_unit_label' => $package->name ?? $purchaseUom->code,
+            'price_uom_id' => $priceUom?->id, 'price_unit_label' => $priceUom->code ?? $package->name ?? $purchaseUom->code,
             'price_quantity' => (string) $priceQuantity, 'price_stock_factor' => (string) $priceFactor,
             'priced_qty' => (string) $pricedQty, 'minimum_order_qty' => $minimum, 'order_multiple' => $multiple,
             'offer_snapshot' => $offer ? array_merge($offer->getAttributes(), ['supplier_account_id' => $order->supplier_account_id, 'item_id' => $item->id, 'constraint_warning' => $violatesTerms]) : null,

@@ -94,7 +94,10 @@ final class WarehouseScope
             ->orWhereIn($toColumn, fn (QueryBuilder $sub) => $sub->select('id')->from('locations')->whereIn('warehouse_id', $ids)));
     }
 
-    /** @param  Builder<*>  $query @param  string|list<string>  $permissions */
+    /**
+     * @param Builder<*> $query
+     * @param  string|list<string>  $permissions
+     */
     public static function limitToWarehouse(Builder $query, ?User $user, string|array $permissions, string $column = 'warehouse_id'): void
     {
         $ids = self::warehouseIds($user, $permissions);
@@ -103,7 +106,11 @@ final class WarehouseScope
         }
     }
 
-    /** The guard a write makes for itself, so a console command or job is stopped as a request is. @param  string|list<string>  $permissions */
+    /**
+     * The guard a write makes for itself, so a console command or job is stopped as a request is.
+     *
+     * @param  string|list<string>  $permissions
+     */
     public static function requireWarehouse(User $actor, string|array $permissions, int $warehouseId, string $action): void
     {
         if (! self::permitsWarehouse($actor, $permissions, $warehouseId)) {

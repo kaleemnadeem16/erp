@@ -22,6 +22,7 @@ use Illuminate\Support\Carbon;
  * the seam that changes then, not this model. base_currency_id/fiscal_year_start_month
  * implement docs/decisions/0024-onboarding-base-currency-and-fiscal-year.md.
  *
+ * @property PackageTrackingMode|null $default_package_tracking_mode
  * @property string $name
  * @property int|null $base_currency_id
  * @property int $fiscal_year_start_month

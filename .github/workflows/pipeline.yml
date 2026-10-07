@@ -36,7 +36,7 @@ jobs:
         run: vendor/bin/pint --test
       - name: Larastan
         working-directory: backend
-        run: vendor/bin/phpstan analyse --no-progress
+        run: vendor/bin/phpstan analyse --no-progress --memory-limit=1G
 
   lint-frontend:
     runs-on: ubuntu-latest

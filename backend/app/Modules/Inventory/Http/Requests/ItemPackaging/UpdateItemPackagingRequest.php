@@ -4,6 +4,7 @@ namespace App\Modules\Inventory\Http\Requests\ItemPackaging;
 
 class UpdateItemPackagingRequest extends StoreItemPackagingRequest
 {
+    /** @return array<string, mixed> */
     public function rules(): array
     {
         $rules = parent::rules();

@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Validator;
 
 final class MaintainItemPackaging
 {
+    /** @return array<string, mixed> */
     public static function rules(): array
     {
         return ['item_id' => ['required', 'integer', CompanyScoped::exists('items')], 'code' => ['required', 'string', 'max:100', 'lowercase'],
@@ -21,6 +22,7 @@ final class MaintainItemPackaging
             'inner_packaging_id' => ['nullable', 'integer', CompanyScoped::exists('item_packagings')], 'inner_count' => ['nullable', 'integer', 'min:1'], 'active' => ['sometimes', 'boolean']];
     }
 
+    /** @param array<string, mixed> $input */
     public function __invoke(array $input, User $actor, ?ItemPackaging $package = null): ItemPackaging
     {
         if (! $actor->can('inventory.item.manage')) {

@@ -32,7 +32,11 @@ class OrganisationUnit extends Model
 
     protected $guarded = ['id'];
 
-    /** Codes are the company's own short names and compare case-insensitively, as warehouse codes do. @return Attribute<string, string> */
+    /**
+     * Codes are the company's own short names and compare case-insensitively, as warehouse codes do.
+     *
+     * @return Attribute<string, string>
+     */
     protected function code(): Attribute
     {
         return Attribute::make(set: fn (string $value) => strtolower($value));

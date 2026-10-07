@@ -34,10 +34,11 @@ final class RecordPackageCheckpoint
     /**
      * expected_layers is the counted snapshot's positive remaining layer vector.
      * Composition rows are ordered bookkeeping cohorts, not individual vessels.
+     * Count and packaging inputs remain untrusted until the runtime integer checks below.
      *
      * @param array{item_id:int,location_id:int,batch_id?:int|null,request_key:string,reason:string,
-     * expected_quantity:string,expected_layers:array<int,string>,
-     * composition:list<array{packaging_id?:int|null,count?:int,quantity?:string}>} $input
+     * expected_quantity:string,expected_layers:array<int|string,string>,
+     * composition:list<array{packaging_id?:mixed,count?:mixed,quantity?:string}>} $input
      */
     public function __invoke(array $input, User $actor): PackageOperation
     {

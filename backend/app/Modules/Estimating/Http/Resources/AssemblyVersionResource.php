@@ -12,7 +12,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 /** @mixin AssemblyVersion */
 class AssemblyVersionResource extends JsonResource
 {
-    /** @return array<string, mixed> */
+    /** @return array<int|string, mixed> */
     public function toArray(Request $request): array
     {
         /** @var AssemblyVersion $row */

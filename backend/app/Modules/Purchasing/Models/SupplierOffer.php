@@ -45,6 +45,7 @@ class SupplierOffer extends Model
         return ['item_supplier_id' => ItemSupplier::class, 'item_packaging_id' => ItemPackaging::class, 'purchase_uom_id' => Uom::class, 'price_uom_id' => Uom::class];
     }
 
+    /** @return BelongsTo<ItemSupplier, $this> */
     public function relationship(): BelongsTo
     {
         return $this->belongsTo(ItemSupplier::class, 'item_supplier_id');

@@ -27,6 +27,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * parent_id is — see GuardsRelatedCompanyScope.
  *
  * @property string $code
+ * @property PackageTrackingMode|null $default_package_tracking_mode
  * @property string $name
  * @property int|null $parent_id
  * @property ValuationMethod|null $default_valuation_method

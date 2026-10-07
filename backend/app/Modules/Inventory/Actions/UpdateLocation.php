@@ -48,7 +48,7 @@ final class UpdateLocation
             unset($attributes['counts_as_usable_reason']);
             $usabilityChanged = array_key_exists('counts_as_usable', $attributes)
                 && $attributes['counts_as_usable'] !== $location->counts_as_usable;
-            if ($usabilityChanged && ($actorId === null || $reason === '')) {
+            if ($usabilityChanged && $reason === '') {
                 throw new DomainInvariantException('Changing what counts as usable stock requires an actor and a reason.', 'counts_as_usable_reason');
             }
             $before = $location->counts_as_usable;

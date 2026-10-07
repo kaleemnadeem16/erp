@@ -21,6 +21,7 @@ use Illuminate\Support\Carbon;
 
 /**
  * @property int|null $item_packaging_id
+ * @property array<string, mixed>|null $offer_snapshot
  * @property int|null $supplier_offer_id
  * @property string|null $package_name
  * @property string|null $package_code

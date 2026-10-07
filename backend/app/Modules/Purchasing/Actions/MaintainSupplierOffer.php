@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Validator;
 
 final class MaintainSupplierOffer
 {
+    /** @return array<string, mixed> */
     public static function rules(): array
     {
         return ['item_supplier_id' => ['required', 'integer', CompanyScoped::exists('item_suppliers')], 'item_packaging_id' => ['nullable', 'integer', CompanyScoped::exists('item_packagings')],
@@ -27,6 +28,7 @@ final class MaintainSupplierOffer
             'valid_from' => ['nullable', 'date_format:Y-m-d'], 'valid_to' => ['nullable', 'date_format:Y-m-d']];
     }
 
+    /** @param array<string, mixed> $input */
     public function __invoke(array $input, User $actor, ?SupplierOffer $offer = null): SupplierOffer
     {
         if (! $actor->can('purchasing.item-supplier.manage') || ! PurchasingCommercialAccess::canView($actor)) {

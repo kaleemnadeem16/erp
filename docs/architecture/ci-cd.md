@@ -87,6 +87,25 @@ Its scripted page loads exceed the production limit of 120/min and otherwise mak
 identity endpoint return 429, redirecting valid browser sessions to sign-in. Production
 continues to use the default limit.
 
+The 2026-10-07 pipeline repair formats the packaged-purchasing migrations, corrects
+Larastan annotations (including JSON offer snapshots, model relations and record scopes),
+and removes a demo receipt's unsupported `notes` attribute. Receipt scenarios remain
+identified by their idempotency keys and the linked purchase order's explanatory notes;
+no receipt schema extension is needed. Verify the complete demo seeder against a freshly
+migrated isolated database as well as its existing outcome/rerun tests: this is the setup
+the browser job actually runs. Removing the always-true catalogue abort also removes its
+unreachable 403 response from the regenerated client. Permission vocabulary and access
+behaviour are unchanged: the package catalogue remains open reference data, as recorded
+in `OpenReadRoutesTest`; maintenance retains its capability guards. No new grant is needed.
+The Artisan isolation test clears an inherited `TEST_DB_DATABASE` in its subprocess so
+its default-database assertion also works when the parent suite uses a private test database.
+Larastan runs with `--memory-limit=1G`: a fresh analysis of the expanded backend can
+exceed PHP's default 256 MB worker limit even when an incremental analysis passes.
+Validation: Pint and Larastan pass; frontend typechecks/build, fresh migration/seed,
+unseeded rollback/reapply and repeat client generation pass. The full backend run passed
+2,155 tests; its one inherited-database assertion passed on a focused rerun after the
+isolation fix. Playwright itself was not rerun.
+
 What replaced the portability matrix as a discipline: migrations are reviewed for lock duration,
 and any query against a table expected to exceed ~100k rows gets an `EXPLAIN` in review — dbvm
 has 1 vCPU.

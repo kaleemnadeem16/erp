@@ -7,6 +7,7 @@ namespace App\Support\Scope;
 use App\Models\User;
 use App\Support\CompanyContext;
 use Illuminate\Support\Facades\DB;
+use Spatie\Permission\Models\Role;
 
 /**
  * The one place that decides which records a person may reach for a capability (ADR 0089, Q26).
@@ -31,13 +32,14 @@ final class RecordScope
         if ($user === null) {
             return ResolvedScope::none();
         }
-        $wanted = array_values((array) $permissions);
+        $wanted = (array) $permissions;
         $limits = DB::table('access_scope_limits')->where('company_id', $user->company_id)->where('user_id', $user->id)->get();
         $limitedRoles = $limits->whereNotNull('role_id')->pluck('role_id')->map(fn ($id): int => (int) $id)->all();
         $limitedPermissions = $limits->whereNotNull('permission')->pluck('permission')->all();
 
         $confers = false;
         foreach ($user->roles()->with('permissions:id,name')->get() as $role) {
+            /** @var Role $role */
             if (array_intersect($wanted, $role->permissions->pluck('name')->all()) === []) {
                 continue;
             }

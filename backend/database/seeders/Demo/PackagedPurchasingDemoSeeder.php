@@ -157,6 +157,7 @@ final class PackagedPurchasingDemoSeeder extends Seeder
             ['supplier_item_code' => 'DEMO-PACK-THINNER', 'purchase_uom_id' => $this->litre->id, 'active' => true]);
     }
 
+    /** @param array<string, mixed> $extra */
     private function offer(ItemSupplier $rel, string $sku, ?ItemPackaging $package, string $price, ?int $priceUnit, string $denominator = '1', array $extra = []): SupplierOffer
     {
         return SupplierOffer::query()->where('item_supplier_id', $rel->id)->where('supplier_item_code', $sku)->first()
@@ -165,6 +166,7 @@ final class PackagedPurchasingDemoSeeder extends Seeder
                 'currency_id' => $this->currency->id, 'price_uom_id' => $priceUnit, 'price_quantity' => $denominator], $this->actor);
     }
 
+    /** @return array<string, mixed> */
     private function line(SupplierOffer $offer, string $qty): array
     {
         return ['line_number' => 1, 'item_id' => $this->item->id, 'description' => $this->item->name,
@@ -173,6 +175,7 @@ final class PackagedPurchasingDemoSeeder extends Seeder
             'price_uom_id' => $offer->price_uom_id, 'price_quantity' => $offer->price_quantity, 'qa_required' => false];
     }
 
+    /** @return array<string, mixed> */
     private function manualLine(ItemPackaging $package, string $qty): array
     {
         return ['line_number' => 1, 'item_id' => $this->item->id, 'description' => $this->item->name,
@@ -180,6 +183,7 @@ final class PackagedPurchasingDemoSeeder extends Seeder
             'unit_price' => '850', 'price_uom_id' => $this->litre->id, 'price_quantity' => '1', 'qa_required' => false];
     }
 
+    /** @param array<string, mixed> $line */
     private function order(string $key, string $explanation, array $line, ?callable $transition = null, ?PurchaseOrder $replaces = null): PurchaseOrder
     {
         $marker = '[Pack demo:'.$key.']';
@@ -210,7 +214,6 @@ final class PackagedPurchasingDemoSeeder extends Seeder
         $line = $order->lines->sole();
         $receipt = app(CreateGoodsReceipt::class)(['supplier_account_id' => $order->supplier_account_id,
             'physical_arrival_at' => now()->toIso8601String(), 'posting_date' => now()->toDateString(),
-            'notes' => 'Pack demo: '.$key.' — '.$qty.($packed ? ' agreed packages' : ' loose litres').'; priced from the issued agreement.',
             'lines' => [['purchase_order_line_id' => $line->id, 'item_id' => $this->item->id, 'location_id' => $this->location->id,
                 'received_qty' => $qty, 'received_uom_id' => $this->litre->id, 'item_packaging_id' => $packed ? $line->item_packaging_id : null]]], $this->actor, $marker);
         if ($post) {

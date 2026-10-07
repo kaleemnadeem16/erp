@@ -20,7 +20,11 @@ use Illuminate\Support\Facades\DB;
 
 final class RecordReceiptComposition
 {
-    /** @param list<array{packaging_id?:int|null,count?:int,quantity?:string}> $composition */
+    /**
+     * Counts remain untrusted until the runtime integer check below.
+     *
+     * @param  list<array{packaging_id?:int|null,count?:mixed,quantity?:string}>  $composition
+     */
     public function __invoke(GoodsReceiptLine $line, array $composition, string $reason, User $actor): void
     {
         if (! $actor->can('purchasing.goods-receipt.create') || (int) $actor->company_id !== app(CompanyContext::class)->id()) {
