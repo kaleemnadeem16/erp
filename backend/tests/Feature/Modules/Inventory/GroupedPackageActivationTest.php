@@ -8,21 +8,16 @@ use App\Exceptions\DomainInvariantException;
 use App\Models\Company;
 use App\Models\User;
 use App\Modules\Inventory\Actions\ActivateGroupedPackageTracking;
-use App\Modules\Inventory\Actions\AddPhysicalCountLine;
-use App\Modules\Inventory\Actions\CreatePhysicalCount;
 use App\Modules\Inventory\Actions\IssuePackagedStock;
 use App\Modules\Inventory\Actions\PostInventoryMovement;
-use App\Modules\Inventory\Actions\PostPhysicalCount;
 use App\Modules\Inventory\Actions\PreviewGroupedActivation;
 use App\Modules\Inventory\Actions\RecordPackageCheckpoint;
-use App\Modules\Inventory\Actions\RecordPhysicalCountLine;
 use App\Modules\Inventory\Actions\ReplayPackageCheckpoint;
 use App\Modules\Inventory\Actions\RequestNegativeStockOverride;
 use App\Modules\Inventory\Actions\RequestStockRecalculation;
 use App\Modules\Inventory\Actions\TransferPackagedStock;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Models\ItemPackaging;
-use App\Modules\Inventory\Models\Location;
 use App\Modules\Inventory\Models\PackageActivation;
 use App\Modules\Inventory\Models\PackageOperation;
 use App\Modules\Inventory\Models\StockLayer;
@@ -33,6 +28,7 @@ use App\Modules\Purchasing\Actions\PostGoodsReceipt;
 use App\Modules\Purchasing\Actions\RecordReceiptComposition;
 use App\Modules\Purchasing\Models\GoodsReceipt;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Support\PurchasingActor;
@@ -45,6 +41,19 @@ class GroupedPackageActivationTest extends RecordPackageCheckpointTest
 {
     /** @var array<string, mixed> */
     private array $world = [];
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // The stock tables keep whole seconds and round, so two postings inside one second could look back-dated; hold the clock on a whole second.
+        Carbon::setTestNow(Carbon::now()->startOfSecond());
+    }
+
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+        parent::tearDown();
+    }
 
     /** @return array<string, array{ValuationMethod}> */
     public static function methods(): array
@@ -222,16 +231,12 @@ class GroupedPackageActivationTest extends RecordPackageCheckpointTest
         Company::query()->findOrFail(1)->update(['authorised_forward_recalculation_enabled' => true, 'negative_stock_mode' => 'AUTHORISED_OVERRIDE',
             'negative_stock_authorisation_mode' => 'PRIOR_APPROVAL', 'negative_stock_material_consumption_enabled' => true]);
         $moves = StockMove::query()->count();
-        $count = app(CreatePhysicalCount::class)(['warehouse_id' => Location::query()->findOrFail($this->world['a'])->warehouse_id], $actor);
-        $line = app(AddPhysicalCountLine::class)($count, ['item_id' => $item->id, 'location_id' => $this->world['a']], $actor);
-        app(RecordPhysicalCountLine::class)($line, '19', $actor);
 
         $cases = [
             'scalar issue' => [fn () => app(PostInventoryMovement::class)->issue($this->issueInput($item->id, $this->world['unit']->id, $this->world['a'], '1', 99401)), 'scalar issue'],
             'scalar transfer' => [fn () => app(PostInventoryMovement::class)->transfer($this->transferInput($item->id, $this->world['unit']->id, $this->world['a'], $b, '1', 99402)), 'scalar transfer'],
             'scalar receipt' => [fn () => $this->directReceipt($item->id, $this->world['unit']->id, $this->world['a'], $this->world['currency'], '1', '9', 99403), 'scalar receipt'],
             'receipt reversal' => [fn () => app(PostInventoryMovement::class)->reverseReceipt('DIRECT_RECEIPT', 99101, 'X', 1, now()), 'reversing a receipt'],
-            'physical count' => [fn () => app(PostPhysicalCount::class)($count, [], $actor), 'posting a physical count'],
             'recalculation' => [fn () => app(RequestStockRecalculation::class)(['item_id' => $item->id, 'location_id' => $this->world['a'], 'qty' => '1', 'moved_at' => now(),
                 'source_type' => 'X', 'source_id' => 1], $actor), 'a stock recalculation'],
             'negative-stock override' => [fn () => app(RequestNegativeStockOverride::class)(['item_id' => $item->id, 'location_id' => $this->world['a'], 'movement_class' => 'MATERIAL_CONSUMPTION',

@@ -108,9 +108,36 @@ tracking, screens. Activation scans for an unfinished cutover only where it incl
 
 Demo: `PackageActivationDemoSeeder` counts a new item (3 cans + 5 L loose), activates it, then issues 7 L through the package-aware door.
 
+## Physical count of a grouped item (2026-10-08)
+
+[ADR 0092](../decisions/0092-package-aware-physical-count-posting.md). A count line of an item with grouped tracking counts a **composition**: whole sealed
+packages of the item's *tracked levels* plus one open/loose quantity (`RecordPhysicalCountComposition`; the counted quantity is derived and blind counting is
+unchanged). The line captures the scope's latest evidence and movement watermark when added (`AddPhysicalCountLine` via `PackageCountCapture`); a stale line is
+re-snapshotted and recounted with `RefreshPhysicalCountLine`, never rebased. A scalar `RecordPhysicalCountLine` is refused for a grouped line.
+
+`PostPhysicalCount` (needs `inventory.physical_count.post`, a poster distinct from the creator, and `inventory.package-state.recount` + `.view` for grouped
+lines) proves every grouped line fresh first, so one stale line refuses the whole count and names it. Then, per line, in the count's single transaction:
+
+| Counted vs book | Stock | Evidence |
+|---|---|---|
+| equal | **no movement** | a `COUNTED` operation linked to the line replaces the composition over the same layers |
+| less | the governed issue of the difference (allocator-led cost, never an override) | a `COUNT_VARIANCE` operation anchored on that move whose successor is the counted composition |
+| more | the governed receipt of the difference at the reviewer-supplied found cost | the same, with the new layer in its allocation |
+
+`COUNT_VARIANCE` is checked by the database at commit like the other movement legs, except that its composition is the count's finding rather than a declared
+draw: allocations equal the move, per-layer totals equal the predecessor less (loss) or plus (gain) the allocation, and the successor total equals the
+predecessor total adjusted by the variance. Nothing is backdated, a retry cannot double-post (evidence is unique per count line), and any failed line rolls
+back every earlier line's movement and evidence. Quantity-only items count exactly as before.
+
+**Tracked levels (ADR 0092 §1a).** Activation fixes the sealed definitions an item tracks (`inventory_package_tracked_levels`; by default what the opening
+count used, closed over the packages inside; an explicit list may add outer levels). After that no evidence state may name any other definition: a database
+trigger refuses it for every writer, and counts and receipts say so first. Changing tracked levels is not a count outcome and is not built.
+
+Demo: `PackageCountDemoSeeder` — a recount (1 can + 7 L, ledger right, no movement) and then a 1 L loss (1 can + 6 L, governed issue at 8.00) on XYZ's emulsion.
+
 ## Not yet
 
-Composition-only count correction and receipt-reversal replacements, receipt reversal / QA split / negative-stock settlement / cutover / recalculation adapters, container-level tracking, screens.
+Receipt-reversal replacement, changing tracked levels, receipt reversal / QA split / negative-stock settlement / cutover / recalculation adapters, container-level tracking, screens.
 
 ## Demo and verification
 

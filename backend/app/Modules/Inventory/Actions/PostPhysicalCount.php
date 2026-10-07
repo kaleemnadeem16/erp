@@ -8,6 +8,7 @@ use App\Exceptions\DomainInvariantException;
 use App\Models\Company;
 use App\Models\User;
 use App\Modules\Inventory\Models\Item;
+use App\Modules\Inventory\Models\Location;
 use App\Modules\Inventory\Models\PhysicalCount;
 use App\Modules\Inventory\Models\PhysicalCountLine;
 use App\Modules\Inventory\Models\StockBatch;
@@ -51,9 +52,6 @@ final class PostPhysicalCount
             if ($count->status === PhysicalCountStatus::Posted) {
                 return $count->refresh()->load('lines');
             }
-            foreach ($count->lines()->pluck('item_id')->unique() as $itemId) {
-                PackageWriteScope::refuse((int) $itemId, 'posting a physical count');
-            }
             if ($count->status !== PhysicalCountStatus::Draft) {
                 throw new DomainInvariantException('Only a draft physical count can be posted.', 'status');
             }
@@ -74,7 +72,37 @@ final class PostPhysicalCount
                 throw new DomainInvariantException('A company base currency is required to post a physical count.', 'currency_id');
             }
 
+            // Lines of items with grouped package tracking are counted as compositions and posted by their own Action (ADR 0092). Proving every one
+            // fresh comes first, so a stale count refuses whole, naming the lines, before anything is posted.
+            $grouped = $lines->filter(fn (PhysicalCountLine $line): bool => $line->grouped);
+            foreach ($lines->reject(fn (PhysicalCountLine $line): bool => $line->grouped) as $line) {
+                PackageWriteScope::refuse($line->item_id, 'posting a physical count line that was not captured for it', 're-add the line so its package composition is counted');
+            }
+            if ($grouped->isNotEmpty()) {
+                if (! $actor->can('inventory.package-state.recount') || ! $actor->can('inventory.package-state.view')) {
+                    throw new DomainInvariantException('Package recount and view authority is required to post a count of an item with grouped package tracking.', 'posted_by');
+                }
+                $locations = $grouped->pluck('location_id')->unique()->sort()->values()->all();
+                Location::query()->whereIn('id', $locations)->orderBy('id')->lockForUpdate()->get();
+                $postGrouped = app(PostGroupedCountLine::class);
+                $stale = [];
+                foreach ($grouped as $line) {
+                    $reason = $postGrouped->staleReason($line, $actor);
+                    if ($reason !== null) {
+                        $stale[] = "line {$line->id}: {$reason}";
+                    }
+                }
+                if ($stale !== []) {
+                    throw new DomainInvariantException('Recount before posting — '.implode('; ', $stale).'.', 'counted_qty');
+                }
+            }
+
             foreach ($lines as $line) {
+                if ($line->grouped) {
+                    app(PostGroupedCountLine::class)($line, $foundCosts[$line->id] ?? null, $company, $actor);
+
+                    continue;
+                }
                 $this->postLine($line, $company, $foundCosts[$line->id] ?? null);
             }
 

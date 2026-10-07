@@ -7,9 +7,13 @@ namespace App\Modules\Inventory\Actions;
 use App\Exceptions\DomainInvariantException;
 use App\Models\User;
 use App\Modules\Inventory\Models\Item;
+use App\Modules\Inventory\Models\ItemPackaging;
 use App\Modules\Inventory\Models\PackageActivation;
 use App\Modules\Inventory\Models\PackageActivationScope;
+use App\Modules\Inventory\Models\PackageState;
+use App\Modules\Inventory\Models\PackageTrackedLevel;
 use App\Modules\Inventory\Models\StockLayer;
+use App\Modules\Inventory\Support\PackageTrackedLevels;
 use App\Support\CompanyContext;
 use Illuminate\Support\Facades\DB;
 
@@ -24,7 +28,7 @@ final class ActivateGroupedPackageTracking
     public function __construct(private readonly PreviewGroupedActivation $preview) {}
 
     /**
-     * @param  array{item_id:int, request_key:string, reason:string, checkpoints:list<int>}  $input
+     * @param  array{item_id:int, request_key:string, reason:string, checkpoints:list<int>, tracked_levels?:list<int>}  $input
      */
     public function __invoke(array $input, User $actor): PackageActivation
     {
@@ -39,9 +43,11 @@ final class ActivateGroupedPackageTracking
         if ($key === '' || strlen($key) > 100 || $reason === '' || $input['item_id'] < 1 || $checkpoints === []) {
             throw new DomainInvariantException('An item, a request key, a reason and the opening count are required.');
         }
-        $hash = hash('sha256', json_encode(['actor' => $actor->id, 'item' => $input['item_id'], 'reason' => $reason, 'checkpoints' => $checkpoints], JSON_THROW_ON_ERROR));
+        $explicit = array_values(array_unique(array_map('intval', $input['tracked_levels'] ?? [])));
+        sort($explicit);
+        $hash = hash('sha256', json_encode(['actor' => $actor->id, 'item' => $input['item_id'], 'reason' => $reason, 'checkpoints' => $checkpoints, 'levels' => $explicit], JSON_THROW_ON_ERROR));
 
-        return DB::transaction(function () use ($input, $actor, $company, $key, $reason, $hash, $checkpoints): PackageActivation {
+        return DB::transaction(function () use ($input, $actor, $company, $key, $reason, $hash, $checkpoints, $explicit): PackageActivation {
             DB::select('SELECT pg_advisory_xact_lock(hashtextextended(?, 0))', ["package-checkpoint:{$company}:{$key}"]);
             $existing = PackageActivation::query()->where('request_key', $key)->first();
             if ($existing !== null) {
@@ -68,6 +74,18 @@ final class ActivateGroupedPackageTracking
                 throw new DomainInvariantException('Grouped package tracking cannot be activated: '.implode(' ', $reasons), 'package_tracking_mode');
             }
 
+            // Tracked levels (ADR 0092 §1a): what the opening count used, closed over the packages inside; an explicit list may add outer levels but not drop counted ones.
+            $counted = PackageState::query()->whereIn('operation_id', array_column($report['scopes'], 'operation_id'))->whereNotNull('item_packaging_id')->distinct()->pluck('item_packaging_id')->map(fn ($id) => (int) $id)->all();
+            $tracked = PackageTrackedLevels::closure(array_merge($counted, $explicit));
+            if ($explicit !== [] && array_diff($counted, $explicit) !== []) {
+                throw new DomainInvariantException('The tracked levels must include every package level used in the opening count.', 'tracked_levels');
+            }
+            foreach ($tracked as $packagingId) {
+                if (! ItemPackaging::query()->where('item_id', $input['item_id'])->whereKey($packagingId)->exists()) {
+                    throw new DomainInvariantException('A tracked package level must be a definition of this item.', 'tracked_levels');
+                }
+            }
+
             $activation = PackageActivation::query()->create([
                 'item_id' => $input['item_id'], 'request_key' => $key, 'payload_hash' => $hash, 'actor_id' => $actor->id, 'reason' => $reason,
                 'prior_mode' => 'QUANTITY_ONLY', 'new_mode' => 'PACKAGE_BALANCE', 'activated_at' => now(),
@@ -78,6 +96,9 @@ final class ActivateGroupedPackageTracking
                     'activation_id' => $activation->id, 'location_id' => $scope['location_id'], 'batch_id' => $scope['batch_id'],
                     'operation_id' => $scope['operation_id'], 'quantity' => $scope['quantity'],
                 ]);
+            }
+            foreach ($tracked as $packagingId) {
+                PackageTrackedLevel::query()->create(['activation_id' => $activation->id, 'item_id' => $input['item_id'], 'item_packaging_id' => $packagingId]);
             }
             // Written directly: the database trigger, not the model, is the authority on this transition (and re-checks the evidence).
             DB::table('items')->where('id', $input['item_id'])->update(['package_tracking_mode' => 'PACKAGE_BALANCE', 'package_tracking_activation_id' => $activation->id]);

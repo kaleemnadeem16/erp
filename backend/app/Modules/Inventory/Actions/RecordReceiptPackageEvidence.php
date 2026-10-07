@@ -18,6 +18,7 @@ use App\Modules\Inventory\Models\StockBatch;
 use App\Modules\Inventory\Models\StockLayer;
 use App\Modules\Inventory\Models\StockMove;
 use App\Modules\Inventory\Support\ItemTracking;
+use App\Modules\Inventory\Support\PackageTrackedLevels;
 use App\Modules\Inventory\Support\PackageTransferComposition;
 use App\Modules\Inventory\Support\PackageWriteScope;
 use App\Modules\Purchasing\Models\GoodsReceiptLine;
@@ -60,6 +61,7 @@ final class RecordReceiptPackageEvidence
         if (NegativeStockShortage::query()->where('item_id', $line->item_id)->where('qty_open', '>', 0)->exists()) {
             throw new DomainInvariantException('An open stock shortage must be settled before package stock is received.');
         }
+        PackageTrackedLevels::require($line->item_id, $observed->pluck('item_packaging_id')->filter()->map(fn ($id) => (int) $id)->all(), 'a receipt');
         $batch = $line->batch_no === null ? null : StockBatch::query()->where('item_id', $line->item_id)->where('code', $line->batch_no)->first();
         $holds = StockLayer::query()->where(['item_id' => $line->item_id, 'location_id' => $line->location_id, 'batch_id' => $batch?->id, 'serial_no' => null])->where('qty_remaining', '>', 0)->exists();
         if (! $holds) {
@@ -68,7 +70,7 @@ final class RecordReceiptPackageEvidence
             return;
         }
         $latest = PackageOperation::query()->where(['item_id' => $line->item_id, 'location_id' => $line->location_id, 'batch_id' => $batch?->id])
-            ->whereIn('evidence_kind', ['COUNTED', 'OPEN', 'UNPACK', 'ISSUE', 'TRANSFER_OUT', 'TRANSFER_IN', 'RECEIPT_IN'])->orderByDesc('id')->first();
+            ->whereIn('evidence_kind', ['COUNTED', 'OPEN', 'UNPACK', 'ISSUE', 'TRANSFER_OUT', 'TRANSFER_IN', 'RECEIPT_IN', 'COUNT_VARIANCE'])->orderByDesc('id')->first();
         if ($latest === null) {
             throw new DomainInvariantException('This location already holds stock without package evidence: a counted checkpoint is required before receiving.');
         }

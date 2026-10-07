@@ -13,6 +13,7 @@ use App\Modules\Inventory\Models\PhysicalCount;
 use App\Modules\Inventory\Models\PhysicalCountLine;
 use App\Modules\Inventory\Models\StockLayer;
 use App\Modules\Inventory\Support\ItemTracking;
+use App\Modules\Inventory\Support\PackageWriteScope;
 use App\Modules\Inventory\Support\PhysicalCountStatus;
 use App\Modules\Inventory\Support\WarehouseScope;
 use Illuminate\Support\Facades\DB;
@@ -38,7 +39,7 @@ final class AddPhysicalCountLine
         }
         WarehouseScope::requireWarehouse($actor, 'inventory.physical_count.create', (int) $count->warehouse_id, 'add a physical count line');
 
-        return DB::transaction(function () use ($count, $input): PhysicalCountLine {
+        return DB::transaction(function () use ($count, $input, $actor): PhysicalCountLine {
             $count = PhysicalCount::query()->whereKey($count->id)->lockForUpdate()->firstOrFail();
             if ($count->status !== PhysicalCountStatus::Draft) {
                 throw new DomainInvariantException('Lines can only be added to a draft physical count.', 'status');
@@ -71,10 +72,14 @@ final class AddPhysicalCountLine
             $bookQty = StockLayer::query()->where('item_id', $item->id)->where('location_id', $location->id)
                 ->where('batch_id', $batch?->id)->where('serial_no', $serialNo)->sum('qty_remaining');
 
-            return PhysicalCountLine::query()->create([
+            $capture = PackageWriteScope::isAuthoritative($item->id)
+                ? app(PackageCountCapture::class)($item, $location->id, $batch?->id, $serialNo, (string) $bookQty, $actor)
+                : [];
+
+            return PhysicalCountLine::query()->create(array_merge([
                 'physical_count_id' => $count->id, 'item_id' => $item->id, 'location_id' => $location->id,
                 'batch_id' => $batch?->id, 'serial_no' => $serialNo, 'book_qty' => (string) $bookQty,
-            ]);
+            ], $capture));
         });
     }
 

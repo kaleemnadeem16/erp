@@ -23,6 +23,7 @@ use App\Modules\Inventory\Models\StockMove;
 use App\Modules\Inventory\Support\PackageIssueComposition;
 use App\Modules\Inventory\Support\ValuationMethod;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Spatie\Permission\Models\Permission;
@@ -37,6 +38,19 @@ class IssuePackagedStockTest extends RecordPackageCheckpointTest
 {
     /** @var array<string, mixed> */
     private array $world = [];
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // The stock tables keep whole seconds and round, so two postings inside one second could look back-dated; hold the clock on a whole second.
+        Carbon::setTestNow(Carbon::now()->startOfSecond());
+    }
+
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+        parent::tearDown();
+    }
 
     /** @return array<string, array{ValuationMethod}> */
     public static function methods(): array

@@ -25,6 +25,9 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $counted_at
  * @property string|null $found_unit_cost
  * @property int|null $posted_stock_move_id
+ * @property bool $grouped
+ * @property int|null $package_operation_id
+ * @property int|null $package_watermark
  */
 class PhysicalCountLine extends Model
 {
@@ -36,6 +39,10 @@ class PhysicalCountLine extends Model
     {
         static::updating(function (PhysicalCountLine $line): void {
             $allowed = ['counted_qty', 'counted_by', 'counted_at', 'found_unit_cost', 'posted_stock_move_id', 'updated_at'];
+            // A grouped line may be refreshed (ADR 0092): re-snapshotted against current evidence, never silently rebased.
+            if ($line->grouped) {
+                $allowed = array_merge($allowed, ['book_qty', 'package_operation_id', 'package_watermark']);
+            }
             if (array_diff(array_keys($line->getDirty()), $allowed) !== []) {
                 throw new DomainInvariantException('Physical count line identity is immutable.');
             }
@@ -54,7 +61,7 @@ class PhysicalCountLine extends Model
     protected function casts(): array
     {
         return [
-            'book_qty' => 'decimal:4', 'counted_qty' => 'decimal:4', 'found_unit_cost' => 'decimal:4',
+            'book_qty' => 'decimal:4', 'grouped' => 'boolean', 'counted_qty' => 'decimal:4', 'found_unit_cost' => 'decimal:4',
             'counted_at' => 'immutable_datetime',
         ];
     }

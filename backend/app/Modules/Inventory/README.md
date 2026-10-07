@@ -91,6 +91,9 @@ whole sealed packages arriving sealed and opened or loose quantity arriving loos
 `ActivateGroupedPackageTracking` (package-state.activate) makes an item's grouped tracking authoritative from a counted checkpoint per stocked scope; from
 then on `PackageWriteScope` is the only door through which its stock can change, the other writers refuse, and database triggers stop anything that forgets.
 
+`RecordPhysicalCountComposition`, `RefreshPhysicalCountLine` and `PostGroupedCountLine` (via `PostPhysicalCount`, package-state.recount) count a grouped item by composition: equal totals
+replace the composition with no movement, a variance posts the governed issue or receipt and a `COUNT_VARIANCE` successor. Counts may only use the tracked levels fixed at activation.
+
 `CreateCategory`/`UpdateCategory`/`ArchiveCategory` and
 `CreateItem`/`UpdateItem`/`ArchiveItem` own the transactional write boundary used by HTTP and
 future non-HTTP entry points. Model guards still enforce tenant, hierarchy and valuation

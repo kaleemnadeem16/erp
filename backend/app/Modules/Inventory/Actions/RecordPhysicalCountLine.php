@@ -36,6 +36,10 @@ final class RecordPhysicalCountLine
                 throw new DomainInvariantException('A line can only be counted while its physical count is draft.', 'status');
             }
 
+            if ($line->grouped) {
+                throw new DomainInvariantException('This item uses grouped package tracking: record the counted composition (sealed packages and loose quantity) instead of a single quantity.', 'counted_qty');
+            }
+
             $qty = BigDecimal::of($countedQty);
             if ($qty->isNegative()) {
                 throw new DomainInvariantException('Counted quantity cannot be negative.', 'counted_qty');
