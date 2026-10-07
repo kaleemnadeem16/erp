@@ -1,6 +1,6 @@
 [← Domain index](README.md)
 
-# Grouped package-aware stock issue
+# Grouped package-aware stock issue and transfer
 
 Implemented backend slice of [ADR 0090](../decisions/0090-package-aware-stock-issue-semantics.md) (accepted). `IssuePackagedStock` posts an
 ordinary stock issue and writes the successor package evidence in one transaction. Tracking activation is **not** part of this slice: the
@@ -53,9 +53,40 @@ SERIAL/SPECIFIC items, held or QA-dependent layers, open shortages, a stale pred
 evidence to stock already issued for the same source. It never takes an override request, so no negative stock.
 An equal retry returns the original move and evidence; a changed payload on the same key is refused.
 
+## Transfer (2026-10-07)
+
+`TransferPackagedStock` applies the same draw lines to a transfer and writes **two legs of evidence for one stock move**: `TRANSFER_OUT` at
+the source (an issue-shaped successor of the source's evidence) and `TRANSFER_IN` at the destination (the destination's evidence plus what
+arrived). It needs `inventory.package-state.transfer` and `.view` (and `.open` for an opening step), and scope at **both** ends.
+
+| What moves | What arrives |
+|---|---|
+| whole sealed packages | the same packages, still sealed |
+| loose quantity | loose quantity |
+| part of a package opened at the source (`OPEN_AND_DRAW`) | **loose** at the destination; the unmoved remainder stays loose at the source |
+| a tracked box (`SEALED` box) | a sealed box; or `UNPACK` it at the source first and the cans arrive sealed |
+
+Nested levels follow the item's tracked levels: an untracked outer carton never exists as a state, so nothing about it moves. Arrivals merge
+into the destination's existing states of the same identity, so there is still one open/loose quantity per scope.
+
+The destination must either hold fresh, reconciled evidence (pass its latest operation as `destination_predecessor_id`) or hold no stock at
+all (pass null; its chain then starts with the arrival). A destination holding stock without evidence, or with an open shortage, is refused
+with "count first" and nothing posts. The destination's contributions are mapped, line by line in allocator order, onto the destination layers
+the transfer actually created (`PostedMovement` carries each source layer and its destination layer); the source side is relabelled to the
+source layers exactly as for an issue. Both locations are locked in ascending id order. Back-dated transfers, shortage settlement consuming
+the arrival, serial/SPECIFIC items and stale evidence are refused; an equal retry returns both legs and the original move.
+
+Database checks (migration `2026_10_07_110000`): each leg's lineage (latest evidence, its move the only later movement, destination chain may
+start empty only where nothing else sits), and per-leg conservation — draws and allocations equal the move quantity, per-layer totals equal the
+predecessor less (out) or plus (in) the allocation, composition equals predecessor less/plus the draw. The draw and allocation tables carry each
+leg's lines despite their "issue" names. Quantity-only items transfer exactly as before.
+
+Demo: `PackageTransferDemoSeeder` moves 7 L from the main depot to Karachi (one sealed can plus 2 L from a second can opened for it): source 1 can +
+8 L loose, Karachi 1 can + 2 L loose, FIFO cost 58.00.
+
 ## Not yet
 
-Refusing scalar issues once a mode is authoritative (needs the activation slice that persists the mode), transfers, composition-only count
+Refusing scalar issues and transfers once a mode is authoritative (needs the activation slice that persists the mode), composition-only count
 correction, receipt reversal / QA split / negative-stock settlement / cutover / recalculation adapters, container-level tracking, screens.
 
 ## Demo and verification

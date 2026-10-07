@@ -46,6 +46,7 @@ final class PermissionVocabulary
             'inventory.package-state.view',
             'inventory.package-state.open',
             'inventory.package-state.issue',
+            'inventory.package-state.transfer',
             'inventory.negative-stock-policy.manage',
             'inventory.backdating-horizon-policy.manage',
             'inventory.recalculation-policy.manage',

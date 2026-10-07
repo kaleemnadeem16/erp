@@ -85,6 +85,9 @@ successor evidence (ISSUE kind, draw lines, the allocator's actual layer vector)
 .open for an opening step). Quantity stays in the ledger and cost stays with the allocator; there is no HTTP/UI or tracking activation. See
 [grouped package-aware issue](../../../../docs/domain/package-issue-operations.md).
 
+`TransferPackagedStock` does the same for a transfer under package-state.transfer: one stock move, two evidence legs (TRANSFER_OUT / TRANSFER_IN),
+whole sealed packages arriving sealed and opened or loose quantity arriving loose, atomically and idempotently.
+
 `CreateCategory`/`UpdateCategory`/`ArchiveCategory` and
 `CreateItem`/`UpdateItem`/`ArchiveItem` own the transactional write boundary used by HTTP and
 future non-HTTP entry points. Model guards still enforce tenant, hierarchy and valuation

@@ -90,9 +90,9 @@ migrations were also applied. Do not discard history or relax QUANTITY_ONLY gate
 
 **2026-10-07:** ADR 0090 is accepted and the grouped issue slice is built: the allocation-vector seam (`PostInventoryMovement::issuePosted()` /
 `transferPosted()`), the `ISSUE` evidence kind with migration `2026_10_07_100000`, `IssuePackagedStock` and `PackageIssueDemoSeeder`.
-See [package-issue-operations.md](../domain/package-issue-operations.md). **Next: transfer** — source and destination successors in one
-transaction (the vector already carries destination layer ids), then composition-only count correction, then the remaining writer guards and
-activation. The steps below this note describe the issue design as it was before this slice and are historical.
+See [package-issue-operations.md](../domain/package-issue-operations.md). **Transfer is done too** (`TransferPackagedStock`, migration `2026_10_07_110000`, `PackageTransferDemoSeeder`). **Next: the activation/enforcement slice** —
+persist an authoritative grouped mode per item, then refuse scalar issue/transfer/receipt-reversal/count/QA/cutover/recalculation writers for authoritative items
+with a clear message (guard every direct writer), then composition-only count correction. The steps below this note describe the issue design as it was before this slice and are historical.
 
 1. Re-read the writer audit/contribution contract in package-balance-integration and inspect
    PostInventoryMovement with Actions/Movements/LayerAllocator and the issue collaborator.

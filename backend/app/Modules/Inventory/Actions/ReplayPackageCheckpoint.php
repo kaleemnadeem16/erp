@@ -43,7 +43,7 @@ final class ReplayPackageCheckpoint
             $vector = [];
             $composition = [];
             // An issue that drew everything on hand legitimately leaves no states; the quantity check below still ties it to the ledger.
-            $integrity = $states->isNotEmpty() || $operation->evidence_kind === 'ISSUE';
+            $integrity = $states->isNotEmpty() || in_array($operation->evidence_kind, ['ISSUE', 'TRANSFER_OUT'], true);
             foreach ($states as $state) {
                 $sum = BigDecimal::zero();
                 $contributions = [];
@@ -79,7 +79,7 @@ final class ReplayPackageCheckpoint
                 ->where(fn ($q) => $q->where('to_location_id', $operation->location_id)->orWhere('from_location_id', $operation->location_id))->max('id');
             $latest = PackageOperation::query()->where([
                 'item_id' => $operation->item_id, 'location_id' => $operation->location_id, 'batch_id' => $operation->batch_id,
-            ])->whereIn('evidence_kind', ['COUNTED', 'OPEN', 'UNPACK', 'ISSUE'])->max('id');
+            ])->whereIn('evidence_kind', ['COUNTED', 'OPEN', 'UNPACK', 'ISSUE', 'TRANSFER_OUT', 'TRANSFER_IN'])->max('id');
             $reasons = [];
             if (! $integrity) {
                 $reasons[] = 'INCOMPLETE_EVIDENCE';
@@ -89,13 +89,13 @@ final class ReplayPackageCheckpoint
             } elseif ((int) $operation->stock_move_watermark !== (int) $watermark) {
                 $reasons[] = 'LATER_STOCK_MOVEMENT';
             }
-            if (in_array($operation->evidence_kind, ['COUNTED', 'OPEN', 'UNPACK', 'ISSUE'], true) && (int) $latest !== $operation->id) {
+            if (in_array($operation->evidence_kind, ['COUNTED', 'OPEN', 'UNPACK', 'ISSUE', 'TRANSFER_OUT', 'TRANSFER_IN'], true) && (int) $latest !== $operation->id) {
                 $reasons[] = 'SUPERSEDED_CHECKPOINT';
             }
             if ($recordedVector !== $currentVector || ! $total->isEqualTo($currentQty)) {
                 $reasons[] = 'STOCK_QUANTITIES_CHANGED';
             }
-            if (! in_array($operation->evidence_kind, ['COUNTED', 'OPEN', 'UNPACK', 'ISSUE'], true) || $item->tracking === ItemTracking::Serial || $item->valuation_method === ValuationMethod::Specific) {
+            if (! in_array($operation->evidence_kind, ['COUNTED', 'OPEN', 'UNPACK', 'ISSUE', 'TRANSFER_OUT', 'TRANSFER_IN'], true) || $item->tracking === ItemTracking::Serial || $item->valuation_method === ValuationMethod::Specific) {
                 $reasons[] = 'UNSUPPORTED_EVIDENCE_SCOPE';
             }
             if (NegativeStockShortage::query()->where('item_id', $item->id)->where('qty_open', '>', 0)->exists()) {
