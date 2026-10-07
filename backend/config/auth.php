@@ -4,6 +4,8 @@ use App\Models\User;
 
 return [
 
+    'login_rate_limit_per_minute' => (int) env('LOGIN_RATE_LIMIT_PER_MINUTE', 5),
+
     /*
     |--------------------------------------------------------------------------
     | Authentication Defaults

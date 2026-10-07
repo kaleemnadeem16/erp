@@ -1,4 +1,10 @@
 import { expect, test } from "@playwright/test";
+import { createPrintOrder } from "./purchasing-test-support";
+
+let orderId: number;
+test.beforeEach(async ({ page }) => {
+  orderId = await createPrintOrder(page);
+});
 
 test("PO print uses real company data, amount columns and one authoritative total", async ({
   page,
@@ -16,7 +22,7 @@ test("PO print uses real company data, amount columns and one authoritative tota
     });
     await route.fulfill({ response, json: body });
   });
-  await page.route("**/api/v1/purchase-orders/173?*", async (route) => {
+  await page.route(`**/api/v1/purchase-orders/${orderId}?*`, async (route) => {
     const response = await route.fetch();
     const body = await response.json();
     body.data.supplier_site = {
@@ -50,7 +56,7 @@ test("PO print uses real company data, amount columns and one authoritative tota
     });
     await route.fulfill({ response, json: body });
   });
-  await page.goto("/purchase-orders/173");
+  await page.goto(`/purchase-orders/${orderId}`);
   const print = page.getByTestId("purchase-order-print");
   await expect(print).toContainText("Coating Works");
   await expect(print).toContainText("Punjab Pigments");
@@ -136,7 +142,7 @@ test("PO print omits commercial fields for a quantity-only reader", async ({
     body.data.permissions = ["purchasing.purchase-order.view"];
     await route.fulfill({ response, json: body });
   });
-  await page.goto("/purchase-orders/173");
+  await page.goto(`/purchase-orders/${orderId}`);
   const print = page.getByTestId("purchase-order-print");
   await expect(print).toContainText("Punjab Pigments");
   await expect(
@@ -152,7 +158,7 @@ test("PO print omits commercial fields for a quantity-only reader", async ({
 test("long PO print repeats table headings and preserves exact decimal totals", async ({
   page,
 }) => {
-  await page.route("**/api/v1/purchase-orders/173?*", async (route) => {
+  await page.route(`**/api/v1/purchase-orders/${orderId}?*`, async (route) => {
     const response = await route.fetch();
     const body = await response.json();
     const line = body.data.lines[0];
@@ -168,13 +174,13 @@ test("long PO print repeats table headings and preserves exact decimal totals", 
     body.data.total_amount = "999999999999999.0001";
     await route.fulfill({ response, json: body });
   });
-  await page.goto("/purchase-orders/173");
+  await page.goto(`/purchase-orders/${orderId}`);
   const print = page.getByTestId("purchase-order-print");
   await expect(print).toHaveAttribute("data-pagination-ready", "true");
   await expect(print.locator("tbody tr")).toHaveCount(55);
   expect(await print.locator(".po-print-page").count()).toBeGreaterThan(1);
   await expect(print.locator(".po-print-continuation").first()).toContainText(
-    "Draft #173",
+    `Draft #${orderId}`,
   );
   await expect(print.locator(".po-print-total")).toContainText(
     "999,999,999,999,999.0001",
@@ -235,14 +241,14 @@ test("long PO print repeats table headings and preserves exact decimal totals", 
 test("PO print includes non-zero whole-line discount and tax columns", async ({
   page,
 }) => {
-  await page.route("**/api/v1/purchase-orders/173?*", async (route) => {
+  await page.route(`**/api/v1/purchase-orders/${orderId}?*`, async (route) => {
     const response = await route.fetch();
     const body = await response.json();
     body.data.lines[0].discount_amount = "125.0000";
     body.data.lines[0].tax_amount = "75.0000";
     await route.fulfill({ response, json: body });
   });
-  await page.goto("/purchase-orders/173");
+  await page.goto(`/purchase-orders/${orderId}`);
   const print = page.getByTestId("purchase-order-print");
   await expect(
     print.getByRole("columnheader", {
@@ -263,7 +269,7 @@ test("PO print includes non-zero whole-line discount and tax columns", async ({
 test("PO print retains optional line specifications and supplier identifiers", async ({
   page,
 }) => {
-  await page.route("**/api/v1/purchase-orders/173?*", async (route) => {
+  await page.route(`**/api/v1/purchase-orders/${orderId}?*`, async (route) => {
     const response = await route.fetch();
     const body = await response.json();
     Object.assign(body.data.lines[0], {
@@ -296,7 +302,7 @@ test("PO print retains optional line specifications and supplier identifiers", a
     });
     await route.fulfill({ response, json: body });
   });
-  await page.goto("/purchase-orders/173");
+  await page.goto(`/purchase-orders/${orderId}`);
   const print = page.getByTestId("purchase-order-print");
   for (const detail of [
     "Item PIGMENT-01",
@@ -349,7 +355,7 @@ test("Printing settings keeps Template 1 selected and previews the actual PO ren
 test("Template 1 produces a two-page PO with one closing total", async ({
   page,
 }) => {
-  await page.route("**/api/v1/purchase-orders/173?*", async (route) => {
+  await page.route(`**/api/v1/purchase-orders/${orderId}?*`, async (route) => {
     const response = await route.fetch();
     const body = await response.json();
     const line = body.data.lines[0];
@@ -361,7 +367,7 @@ test("Template 1 produces a two-page PO with one closing total", async ({
     }));
     await route.fulfill({ response, json: body });
   });
-  await page.goto("/purchase-orders/173");
+  await page.goto(`/purchase-orders/${orderId}`);
   const print = page.getByTestId("purchase-order-print");
   await expect(print).toHaveAttribute("data-pagination-ready", "true");
   await expect(print.locator(".po-print-page")).toHaveCount(2);

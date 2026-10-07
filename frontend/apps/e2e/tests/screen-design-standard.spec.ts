@@ -1,3 +1,4 @@
+import { createPrintOrder } from "./purchasing-test-support";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
@@ -121,7 +122,8 @@ test("dark mobile record/form screens preserve layout and field hierarchy", asyn
       JSON.stringify({ mode: "dark", theme: "slate" }),
     ),
   );
-  await page.goto("/purchase-orders/173");
+  const orderId = await createPrintOrder(page);
+  await page.goto(`/purchase-orders/${orderId}`);
   const sheet = page.locator('.erp-record[role="dialog"]');
   await expect(sheet).toBeVisible();
   await expect(sheet.locator(".detail-section").first()).toHaveCSS(

@@ -229,6 +229,7 @@ jobs:
       # the development stack's raised limit so /api/v1/user does not return
       # 429 and send otherwise authenticated tests back to the sign-in page.
       API_RATE_LIMIT_PER_MINUTE: 10000
+      LOGIN_RATE_LIMIT_PER_MINUTE: 10000
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
@@ -258,7 +259,7 @@ jobs:
       - name: Start backend
         working-directory: backend
         run: |
-          php artisan serve --host=127.0.0.1 --port=8090 &
+          php artisan serve --host=127.0.0.1 --port=8090 --no-reload &
           npx --yes wait-on@7 http://127.0.0.1:8090/up --timeout 30000
       - name: Build frontend
         working-directory: frontend

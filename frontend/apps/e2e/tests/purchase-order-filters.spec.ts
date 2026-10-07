@@ -46,9 +46,9 @@ test.describe('Purchase Orders list search and advanced filters', () => {
 
     // 8a. Test close and re-open animation transition
     await page.getByRole('button', { name: 'Close filters' }).click();
-    await expect(page.locator('div[aria-hidden="true"]')).toHaveClass(/grid-rows-\[0fr\]/);
+    await expect(page.locator('div.hidden.md\\:grid[aria-hidden="true"]')).toHaveClass(/grid-rows-\[0fr\]/);
     await filtersBtn.click();
-    await expect(page.locator('div[aria-hidden="false"]')).toHaveClass(/grid-rows-\[1fr\]/);
+    await expect(page.locator('div.hidden.md\\:grid[aria-hidden="false"]')).toHaveClass(/grid-rows-\[1fr\]/);
 
     // URL query state updated
     await expect(page).toHaveURL(/total_min=500000/);

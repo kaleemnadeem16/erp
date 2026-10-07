@@ -19,10 +19,10 @@ async function signIn(page: Page, email: string) {
 
 /** GET an API path with this browser's own session, so the answer is exactly what that signed-in person receives. */
 async function get(page: Page, path: string) {
-  return page.evaluate(async (url) => {
-    // The API host is derived from the page's host, exactly as the SPA does (apps/main/src/main.tsx).
+  return page.evaluate(async ({ url, origin }) => {
+    // Match the configured test stack, or derive the default API host as the SPA does.
     const response = await fetch(
-      `http://${window.location.hostname}:8090${url}`,
+      `${origin ?? `http://${window.location.hostname}:8090`}${url}`,
       {
         credentials: "include",
         headers: { Accept: "application/json" },
@@ -32,7 +32,7 @@ async function get(page: Page, path: string) {
       status: response.status,
       body: response.ok ? await response.json() : null,
     };
-  }, path);
+  }, { url: path, origin: process.env.E2E_API_URL ? new URL(process.env.E2E_API_URL).origin : null });
 }
 
 async function warehousesOfLayers(page: Page): Promise<string[]> {

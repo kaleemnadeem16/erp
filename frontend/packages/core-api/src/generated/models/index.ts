@@ -802,7 +802,6 @@ export type * from "./itemPackagingsIndex200MetaLinksItem";
 export type * from "./itemPackagingsIndex200MetaLinksItemUrl";
 export type * from "./itemPackagingsIndex200MetaPath";
 export type * from "./itemPackagingsIndex200MetaTo";
-export type * from "./itemPackagingsIndex403";
 export * from "./itemPackagingsIndexFilterActive";
 export type * from "./itemPackagingsIndexParams";
 export type * from "./itemPackagingsStore201";

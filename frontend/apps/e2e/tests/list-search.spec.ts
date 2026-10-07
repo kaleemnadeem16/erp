@@ -34,21 +34,24 @@ for (const { name, path, placeholder, api } of [
 }
 
 test('Purchase Orders: Enter searches at once and emptying the box restores the list at once', async ({ page }) => {
-  await page.goto('/purchase-orders');
+  await page.goto('/purchase-orders?filter.status=ISSUED');
   const box = page.getByPlaceholder('Search orders, suppliers, items…');
   const table = page.locator('.po-screen table').first();
   await expect(table.locator('tbody tr').first()).toBeVisible();
 
-  // Search for an order that really exists in whatever data this run has: the number shown in the last row
-  const wanted = (await table.locator('tbody tr').last().locator('.po-order-link').innerText()).trim();
+  // Search an issued number, not a draft's display-only "Draft #id" label.
+  await expect(table.locator('.po-order-link').first()).toBeVisible();
+  const labels = await table.locator('.po-order-link').allTextContents();
+  const wanted = labels.map(label => label.trim()).find(label => !label.startsWith('Draft #'))!;
+  expect(wanted).toBeTruthy();
 
   // Enter does not wait out the pause
   await box.fill(wanted);
   await box.press('Enter');
-  await expect(page).toHaveURL(new RegExp(`filter\\.search=${wanted.replace(/[^A-Za-z0-9]/g, '.')}`), { timeout: 250 });
+  await expect(page).toHaveURL(url => url.searchParams.get('filter.search') === wanted, { timeout: 250 });
   await expect(table.locator('tbody')).toContainText(wanted);
 
-  // Emptying the box restores the full list at once (no pause) — and the footer never reads "0 records" on the way
+  // Emptying the box restores the issued list at once (no pause) — and the footer never reads "0 records" on the way
   await box.fill('');
   await expect(page).not.toHaveURL(/filter\.search/, { timeout: 250 });
   await expect(page.getByRole('status').filter({ hasText: /of \d+ purchase orders/ })).toBeVisible();

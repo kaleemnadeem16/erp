@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { thinnerDraftReceipt } from './purchasing-test-support';
 
 /**
  * ADR 0069: a Receiving Clerk works with quantities and identity and never sees supplier economics, while
@@ -28,7 +29,8 @@ test.describe('a Receiving Clerk', () => {
 
     await page.goto('/goods-receipts');
     await expect(page.getByRole('heading', { name: 'Goods Receipts' })).toBeVisible();
-    await page.getByRole('row').filter({ hasText: /Draft|DRAFT/ }).first().click();
+    const receiptId = await thinnerDraftReceipt(page);
+    await page.goto(`/goods-receipts/${receiptId}`);
     await expect(page.getByRole('heading', { name: /demo-thinner/ })).toBeVisible();
     await expect(page.getByText(/^\d+\.0000 l$/).first()).toBeVisible();
     await expect(page.getByText('Provisional cost')).toHaveCount(0);

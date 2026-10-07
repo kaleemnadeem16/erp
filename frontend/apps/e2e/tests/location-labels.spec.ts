@@ -7,7 +7,7 @@ import { expect, test } from '@playwright/test';
  * Every screen now labels a location `warehouse / location` through one shared formatter.
  */
 test('a transfer in the stock ledger names the warehouse at each end', async ({ page }) => {
-  await page.goto('/stock-moves');
+  await page.goto('/stock-moves?filter.search=demo-xfer-emulsion&filter.source_type=DEMO_TRANSFER');
   await expect(page.getByRole('heading', { name: /Stock Ledger/i }).first()).toBeVisible();
 
   // StockTransfersDemoSeeder: 25 kg of Matt Emulsion Base from Main Stock to Karachi Stock.

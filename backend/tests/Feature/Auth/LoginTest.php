@@ -121,4 +121,16 @@ class LoginTest extends TestCase
         $this->assertNotNull($route);
         $this->assertContains('throttle:5,1', $route->gatherMiddleware());
     }
+
+    public function test_login_refuses_attempts_after_the_default_budget_is_exhausted(): void
+    {
+        $this->withMiddleware([ThrottleRequests::class]);
+        $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.42']);
+        foreach (range(1, 5) as $_) {
+            $this->postJson('/api/v1/login', ['email' => 'missing@example.test', 'password' => 'incorrect'])
+                ->assertUnprocessable();
+        }
+        $this->postJson('/api/v1/login', ['email' => 'missing@example.test', 'password' => 'incorrect'])
+            ->assertStatus(429);
+    }
 }

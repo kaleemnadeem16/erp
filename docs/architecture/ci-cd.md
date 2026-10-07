@@ -86,6 +86,9 @@ The Playwright job sets `API_RATE_LIMIT_PER_MINUTE=10000`, as the development st
 Its scripted page loads exceed the production limit of 120/min and otherwise make the
 identity endpoint return 429, redirecting valid browser sessions to sign-in. Production
 continues to use the default limit.
+It also sets `LOGIN_RATE_LIMIT_PER_MINUTE=10000` for its repeated persona sign-ins;
+production retains five authentication attempts per minute per IP. `artisan serve --no-reload`
+keeps the job's process environment in the PHP server subprocess.
 
 The 2026-10-07 pipeline repair formats the packaged-purchasing migrations, corrects
 Larastan annotations (including JSON offer snapshots, model relations and record scopes),
@@ -105,6 +108,16 @@ Validation: Pint and Larastan pass; frontend typechecks/build, fresh migration/s
 unseeded rollback/reapply and repeat client generation pass. The full backend run passed
 2,155 tests; its one inherited-database assertion passed on a focused rerun after the
 isolation fix. Playwright itself was not rerun.
+
+The follow-up fixes the client drift left by the removed catalogue abort. Browser fixtures
+create their own print draft, find submitted reviews and thinner receipts by business identity,
+filter the ledger before checking transfer labels, and supply an overflowing non-draft picker
+list. Search tests use issued numbers and decoded URL parameters. Filter animation
+assertions target the filter panel alone. The stock-mix recalculation
+button uses the semantic outline variant for adequate text contrast without changing the palette.
+These screen/test repairs add no permission or grant; field visibility checks remain intact.
+Validation: all 185 Playwright tests pass against a freshly seeded isolated stack; 15
+auth tests (53 assertions), Pint, Larastan, typechecks/build and repeat generation pass.
 
 What replaced the portability matrix as a discipline: migrations are reviewed for lock duration,
 and any query against a table expected to exceed ~100k rows gets an `EXPLAIN` in review — dbvm

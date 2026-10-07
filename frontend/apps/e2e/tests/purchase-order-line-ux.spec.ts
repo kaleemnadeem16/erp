@@ -71,6 +71,16 @@ test('"replaces" is a picker of the supplier\'s earlier orders, behind the order
 });
 
 test('a picker list inside the side sheet scrolls with the wheel or touch pad, not only the scrollbar', async ({ page }) => {
+  // The scroll test needs an overflowing list even on a freshly seeded CI database.
+  await page.route('**/api/v1/purchase-orders?*', async (route) => {
+    const response = await route.fetch();
+    const body = await response.json();
+    expect(body.data.length).toBeGreaterThan(0);
+    body.data = Array.from({ length: 40 }, (_, index) => ({
+      ...body.data[0], status: 'ISSUED', id: 880000 + index, number: `SCROLL-${index + 1}`,
+    }));
+    await route.fulfill({ response, json: body });
+  });
   const sheet = await openNew(page);
   await pickCombobox(page, 'Supplier', 'Punjab Pigments', { within: sheet });
   await sheet.getByRole('button', { name: 'More options' }).click();

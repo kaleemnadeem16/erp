@@ -166,7 +166,7 @@ export function StockMixEditor({ item, draft, onChange, uoms, unitsLookup, mayVi
             : 'The total is checked, and converted to the stock unit, when you calculate.'}
         </p>
         {onCalculate && (
-          <Button type="button" size="sm" onClick={onCalculate} disabled={isCalculating}>
+          <Button type="button" variant="outline" size="sm" onClick={onCalculate} disabled={isCalculating}>
             {isCalculating ? 'Calculating…' : 'Calculate with my mix'}
           </Button>
         )}

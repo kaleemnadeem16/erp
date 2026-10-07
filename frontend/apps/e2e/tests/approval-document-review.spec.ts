@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { pendingReviewOrder } from './purchasing-test-support';
 
 const operational = [
   {
@@ -136,12 +137,13 @@ test('pending PO keeps live details open and submitted review collapsed', async 
   );
   await page.goto('/settings/members');
   expect((await members).status()).toBe(200);
-  await page.goto('/purchase-orders/173');
+  const orderId = await pendingReviewOrder(page);
+  await page.goto(`/purchase-orders/${orderId}`);
   const review = page.getByRole('region', {
     name: 'Submitted document review',
   });
   await expect(review.getByRole('button', { name: 'Show review details' })).toBeVisible();
-  const live = page.locator('#po-order-details-173');
+  const live = page.locator(`#po-order-details-${orderId}`);
   await expect(live.getByText('Lines', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: /^(Show|Hide) order details$/ })).toHaveCount(0);
   await review.getByRole('button', { name: 'Show review details' }).click();

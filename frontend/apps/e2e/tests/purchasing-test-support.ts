@@ -1,0 +1,79 @@
+import { expect, type Page } from "@playwright/test";
+import { api } from "./package-stock-support";
+
+/** Create the print test's own draft instead of relying on a long-lived local database ID. */
+export async function createPrintOrder(page: Page): Promise<number> {
+  await page.goto("/");
+  const items = (await api(page, "GET", "/items?per_page=100")).data;
+  const suppliers = (await api(page, "GET", "/supplier-accounts?per_page=100"))
+    .data;
+  const currencies = (await api(page, "GET", "/currencies?per_page=100")).data;
+  const item = items.find(
+    (row: { code: string }) => row.code === "demo-pig-blue",
+  );
+  const supplier = suppliers.find(
+    (row: { code: string }) => row.code === "sup-punjab",
+  );
+  const currency = currencies.find(
+    (row: { code: string }) => row.code === "PKR",
+  );
+  expect(item && supplier && currency).toBeTruthy();
+  const date = new Date().toISOString().slice(0, 10);
+  const order = (
+    await api(page, "POST", "/purchase-orders", {
+      supplier_account_id: supplier.id,
+      currency_id: currency.id,
+      fx_rate: "1.000000000",
+      fx_rate_date: date,
+      fx_rate_type: "SPOT",
+      fx_rate_source: "manual",
+      order_date: date,
+      notes: "Browser print fixture: one pigment line worth exactly 95,000.",
+      lines: [
+        {
+          line_number: 1,
+          item_id: item.id,
+          description: item.name,
+          ordered_qty: "200.0000",
+          purchase_uom_id: item.stock_uom_id,
+          unit_price: "475.0000",
+        },
+      ],
+    })
+  ).data;
+  return order.id;
+}
+
+/** Find the seeded submitted approval scenario by its marker, not its database sequence. */
+export async function pendingReviewOrder(page: Page): Promise<number> {
+  await page.goto("/");
+  const orders = (await api(page, "GET", "/purchase-orders?per_page=100")).data;
+  const order = orders.find(
+    (row: { notes: string; approval_status: string }) =>
+      row.notes?.includes("DEMO_APPROVAL_A") &&
+      row.approval_status === "PENDING",
+  );
+  expect(order, "Seeded pending purchase-order review").toBeTruthy();
+  return order.id;
+}
+
+/** Locate the thinner draft by its line item; later seeders may add other draft receipts. */
+export async function thinnerDraftReceipt(page: Page): Promise<number> {
+  const items = (await api(page, "GET", "/items?per_page=100")).data;
+  const thinner = items.find(
+    (row: { code: string }) => row.code === "demo-thinner",
+  );
+  expect(thinner).toBeTruthy();
+  const receipts = (
+    await api(
+      page,
+      "GET",
+      "/goods-receipts?filter[status]=DRAFT&include=lines&per_page=100",
+    )
+  ).data;
+  const receipt = receipts.find((row: { lines: { item_id: number }[] }) =>
+    row.lines?.some((line) => line.item_id === thinner.id),
+  );
+  expect(receipt, "Seeded thinner draft receipt").toBeTruthy();
+  return receipt.id;
+}

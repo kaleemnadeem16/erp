@@ -24,7 +24,6 @@ import type {
   AuthenticationExceptionResponse,
   AuthorizationExceptionResponse,
   ItemPackagingsIndex200,
-  ItemPackagingsIndex403,
   ItemPackagingsIndexParams,
   ItemPackagingsStore201,
   ItemPackagingsUpdate200,
@@ -48,11 +47,6 @@ export type itemPackagingsIndexResponse401 = {
   status: 401;
 };
 
-export type itemPackagingsIndexResponse403 = {
-  data: ItemPackagingsIndex403;
-  status: 403;
-};
-
 export type itemPackagingsIndexResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -63,9 +57,7 @@ export type itemPackagingsIndexResponseSuccess =
     headers: Headers;
   };
 export type itemPackagingsIndexResponseError = (
-  | itemPackagingsIndexResponse401
-  | itemPackagingsIndexResponse403
-  | itemPackagingsIndexResponse422
+  itemPackagingsIndexResponse401 | itemPackagingsIndexResponse422
 ) & {
   headers: Headers;
 };
@@ -112,10 +104,7 @@ export const getItemPackagingsIndexQueryKey = (
 
 export const getItemPackagingsIndexQueryOptions = <
   TData = Awaited<ReturnType<typeof itemPackagingsIndex>>,
-  TError =
-    | AuthenticationExceptionResponse
-    | ItemPackagingsIndex403
-    | ValidationExceptionResponse,
+  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
 >(
   params?: ItemPackagingsIndexParams,
   options?: {
@@ -149,16 +138,11 @@ export type ItemPackagingsIndexQueryResult = NonNullable<
   Awaited<ReturnType<typeof itemPackagingsIndex>>
 >;
 export type ItemPackagingsIndexQueryError =
-  | AuthenticationExceptionResponse
-  | ItemPackagingsIndex403
-  | ValidationExceptionResponse;
+  AuthenticationExceptionResponse | ValidationExceptionResponse;
 
 export function useItemPackagingsIndex<
   TData = Awaited<ReturnType<typeof itemPackagingsIndex>>,
-  TError =
-    | AuthenticationExceptionResponse
-    | ItemPackagingsIndex403
-    | ValidationExceptionResponse,
+  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
 >(
   params: undefined | ItemPackagingsIndexParams,
   options: {
@@ -185,10 +169,7 @@ export function useItemPackagingsIndex<
 };
 export function useItemPackagingsIndex<
   TData = Awaited<ReturnType<typeof itemPackagingsIndex>>,
-  TError =
-    | AuthenticationExceptionResponse
-    | ItemPackagingsIndex403
-    | ValidationExceptionResponse,
+  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
 >(
   params?: ItemPackagingsIndexParams,
   options?: {
@@ -215,10 +196,7 @@ export function useItemPackagingsIndex<
 };
 export function useItemPackagingsIndex<
   TData = Awaited<ReturnType<typeof itemPackagingsIndex>>,
-  TError =
-    | AuthenticationExceptionResponse
-    | ItemPackagingsIndex403
-    | ValidationExceptionResponse,
+  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
 >(
   params?: ItemPackagingsIndexParams,
   options?: {
@@ -238,10 +216,7 @@ export function useItemPackagingsIndex<
 
 export function useItemPackagingsIndex<
   TData = Awaited<ReturnType<typeof itemPackagingsIndex>>,
-  TError =
-    | AuthenticationExceptionResponse
-    | ItemPackagingsIndex403
-    | ValidationExceptionResponse,
+  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
 >(
   params?: ItemPackagingsIndexParams,
   options?: {
