@@ -59,10 +59,13 @@ return Application::configure(basePath: dirname(__DIR__))
                 return null;
             }
 
-            return response()->json([
+            // reason_code (when the refusal has one) is the stable, machine-readable cause a client may act on;
+            // the message is the human explanation. Both travel together.
+            return response()->json(array_filter([
                 'message' => $e->getMessage(),
+                'reason_code' => $e->reasonCode,
                 'errors' => [($e->field ?? 'id') => [$e->getMessage()]],
-            ], 422);
+            ], fn ($value) => $value !== null), 422);
         });
 
         // Generic backstop for a concurrent-insert race on a unique constraint that a

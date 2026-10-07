@@ -49,7 +49,7 @@ class GoodsReceiptController extends Controller
     public function store(StoreGoodsReceiptRequest $request, CreateGoodsReceipt $create): JsonResponse
     {
         $receipt = $create($request->validated(), $request->user(), $request->header('Idempotency-Key'));
-        $receipt->load(['lines' => fn ($query) => $query->withQaAggregates()]);
+        $receipt->load(['lines' => fn ($query) => $query->withQaAggregates()->with('packageObservations')]);
 
         return (new GoodsReceiptResource($receipt))->response()->setStatusCode(201);
     }
@@ -58,21 +58,21 @@ class GoodsReceiptController extends Controller
     {
         $receipt = $update($goodsReceipt, $request->validated(), $request->user());
 
-        return new GoodsReceiptResource($receipt->load(['lines' => fn ($query) => $query->withQaAggregates()]));
+        return new GoodsReceiptResource($receipt->load(['lines' => fn ($query) => $query->withQaAggregates()->with('packageObservations')]));
     }
 
     public function show(Request $request, GoodsReceipt $goodsReceipt): GoodsReceiptResource
     {
         abort_unless(PurchasingReadAccess::goodsReceipts($request->user()), 403);
 
-        return new GoodsReceiptResource($goodsReceipt->load(['lines' => fn ($query) => $query->withQaAggregates()]));
+        return new GoodsReceiptResource($goodsReceipt->load(['lines' => fn ($query) => $query->withQaAggregates()->with('packageObservations')]));
     }
 
     public function post(Request $request, GoodsReceipt $goodsReceipt, PostGoodsReceipt $post): GoodsReceiptResource
     {
         abort_unless($request->user()?->can('purchasing.goods-receipt.post'), 403);
         $receipt = $post($goodsReceipt, $request->user());
-        $receipt->load(['lines' => fn ($query) => $query->withQaAggregates()]);
+        $receipt->load(['lines' => fn ($query) => $query->withQaAggregates()->with('packageObservations')]);
 
         return new GoodsReceiptResource($receipt);
     }
@@ -80,7 +80,7 @@ class GoodsReceiptController extends Controller
     public function reverse(ReverseGoodsReceiptRequest $request, GoodsReceipt $goodsReceipt, ReverseGoodsReceipt $reverse): GoodsReceiptResource
     {
         $receipt = $reverse($goodsReceipt, $request->string('reason')->toString(), $request->user()->id);
-        $receipt->load(['lines' => fn ($query) => $query->withQaAggregates()]);
+        $receipt->load(['lines' => fn ($query) => $query->withQaAggregates()->with('packageObservations')]);
 
         return new GoodsReceiptResource($receipt);
     }

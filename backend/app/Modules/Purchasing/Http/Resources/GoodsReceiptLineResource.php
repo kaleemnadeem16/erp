@@ -34,6 +34,11 @@ class GoodsReceiptLineResource extends JsonResource
             'fx_rate_source' => $this->when($commercial, fn () => $this->fx_rate_source),
             'batch_no' => $this->batch_no, 'serial_no' => $this->serial_no,
             'qa_unallocated_qty' => $this->qaUnallocatedQty(), 'qa_unresolved_qty' => $this->qaUnresolvedQty(),
+            // What was physically observed arriving (sealed packages and loose quantity); empty when nothing was recorded.
+            'package_composition' => $this->whenLoaded('packageObservations', fn () => $this->packageObservations->map(fn ($row) => [
+                'item_packaging_id' => $row->item_packaging_id, 'form' => $row->form, 'sealed_count' => $row->sealed_count,
+                'content_quantity' => $row->content_quantity, 'stock_quantity' => $row->stock_quantity, 'reason' => $row->reason,
+            ])->values()->all(), []),
         ];
     }
 

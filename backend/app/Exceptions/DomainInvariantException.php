@@ -20,7 +20,7 @@ use RuntimeException;
  */
 class DomainInvariantException extends RuntimeException
 {
-    public function __construct(string $message, public readonly ?string $field = null)
+    public function __construct(string $message, public readonly ?string $field = null, public readonly ?string $reasonCode = null)
     {
         parent::__construct($message);
     }

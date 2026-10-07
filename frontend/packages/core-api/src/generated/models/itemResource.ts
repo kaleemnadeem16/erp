@@ -29,6 +29,7 @@ export interface ItemResource {
   valuation_method: string;
   avco_pool_scope: ItemResourceAvcoPoolScope;
   tracking: string;
+  package_tracking_mode: string;
   category_id: number;
   income_account_id?: ItemResourceIncomeAccountId;
   expense_account_id?: ItemResourceExpenseAccountId;

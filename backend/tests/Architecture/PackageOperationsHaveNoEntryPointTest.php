@@ -14,6 +14,13 @@ use Tests\TestCase;
  */
 class PackageOperationsHaveNoEntryPointTest extends TestCase
 {
+    /**
+     * HTTP entry points that have been given what this test demands (docs/phases/package-balance-ui.md): a request-layer capability guard
+     * (`StorePackageCheckpointRequest`: `inventory.physical_count.create`, re-checked by the Action), stock-position-scoped reads, cross-company
+     * coverage in `PackageStockApiTest` and an audit-tracker row. Anything else that reaches these Actions still fails.
+     */
+    private const GUARDED_ENTRY_POINTS = ['app/Modules/Inventory/Http/Controllers/Api/V1/PackageCheckpointController.php' => 'RecordPackageCheckpoint'];
+
     private const ACTIONS = ['PostPackageOpening', 'PreviewPackageOpening', 'RecordPackageCheckpoint', 'ReplayPackageCheckpoint'];
 
     public function test_no_http_console_or_job_code_reaches_the_package_operations(): void
@@ -28,7 +35,7 @@ class PackageOperationsHaveNoEntryPointTest extends TestCase
             }
             $source = (string) file_get_contents($file->getPathname());
             foreach (self::ACTIONS as $action) {
-                if (str_contains($source, $action)) {
+                if (str_contains($source, $action) && (self::GUARDED_ENTRY_POINTS[$path] ?? null) !== $action) {
                     $callers[] = "{$path} calls {$action}";
                 }
             }

@@ -52,11 +52,11 @@ final class RecordReceiptPackageEvidence
             throw new DomainInvariantException('Serial stock cannot be received into grouped package tracking.');
         }
         if ($line->purchaseOrderLine?->qa_required) {
-            throw new DomainInvariantException('A QA-required line cannot be received into grouped package tracking yet.');
+            throw new DomainInvariantException('A QA-required line cannot be received into grouped package tracking yet.', null, 'SUPPLIER_QA_UNSUPPORTED');
         }
         $observed = GoodsReceiptPackageObservation::query()->where('goods_receipt_line_id', $line->id)->get();
         if ($observed->isEmpty() || ! $observed->reduce(fn (BigDecimal $sum, $row) => $sum->plus($row->stock_quantity), BigDecimal::zero())->isEqualTo($line->stock_qty)) {
-            throw new DomainInvariantException('This item uses grouped package tracking: record the observed package composition of the whole received quantity before posting.');
+            throw new DomainInvariantException('This item uses grouped package tracking: record the observed package composition of the whole received quantity before posting.', null, 'NEEDS_OBSERVED_COMPOSITION');
         }
         if (NegativeStockShortage::query()->where('item_id', $line->item_id)->where('qty_open', '>', 0)->exists()) {
             throw new DomainInvariantException('An open stock shortage must be settled before package stock is received.');
@@ -72,7 +72,7 @@ final class RecordReceiptPackageEvidence
         $latest = PackageOperation::query()->where(['item_id' => $line->item_id, 'location_id' => $line->location_id, 'batch_id' => $batch?->id])
             ->whereIn('evidence_kind', ['COUNTED', 'OPEN', 'UNPACK', 'ISSUE', 'TRANSFER_OUT', 'TRANSFER_IN', 'RECEIPT_IN', 'COUNT_VARIANCE', 'RECEIPT_REVERSAL'])->orderByDesc('id')->first();
         if ($latest === null) {
-            throw new DomainInvariantException('This location already holds stock without package evidence: a counted checkpoint is required before receiving.');
+            throw new DomainInvariantException('This location already holds stock without package evidence: a counted checkpoint is required before receiving.', null, 'NEEDS_COUNT_FIRST');
         }
         $snapshot = app(PackageDrawPlanner::class)->fresh($latest->id, $actor);
         $this->pending[$line->id] = ['predecessor' => $latest->id, 'composition' => $snapshot['composition']];

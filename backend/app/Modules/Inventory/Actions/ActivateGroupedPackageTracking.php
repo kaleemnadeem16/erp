@@ -71,7 +71,7 @@ final class ActivateGroupedPackageTracking
                         $reasons[] = "location {$scope['location_id']}: {$problem}";
                     }
                 }
-                throw new DomainInvariantException('Grouped package tracking cannot be activated: '.implode(' ', $reasons), 'package_tracking_mode');
+                throw new DomainInvariantException('Grouped package tracking cannot be activated: '.implode(' ', $reasons), 'package_tracking_mode', 'ACTIVATION_BLOCKED');
             }
 
             // Tracked levels (ADR 0092 §1a): what the opening count used, closed over the packages inside; an explicit list may add outer levels but not drop counted ones.

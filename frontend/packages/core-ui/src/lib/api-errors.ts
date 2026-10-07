@@ -2,6 +2,8 @@ import type { FieldPath, FieldValues, UseFormSetError } from 'react-hook-form';
 
 export interface ApiErrorBody {
   message?: string;
+  /** A stable, machine-readable cause (e.g. NEEDS_COUNT_FIRST) a screen may act on; `message` stays the human explanation. */
+  reason_code?: string;
   errors?: Record<string, string[]>;
 }
 
@@ -13,6 +15,11 @@ export interface ApiError extends Error {
 /** `fetchClient` (packages/core-api/src/mutator/fetch-client.ts) throws exactly this shape for every non-2xx response. */
 export function isApiError(error: unknown): error is ApiError {
   return error instanceof Error && 'status' in error;
+}
+
+/** The stable cause of a refused request, when the server gave one. */
+export function getApiReasonCode(error: unknown): string | null {
+  return isApiError(error) ? (error.body?.reason_code ?? null) : null;
 }
 
 export function getApiErrorMessage(error: unknown): string | null {

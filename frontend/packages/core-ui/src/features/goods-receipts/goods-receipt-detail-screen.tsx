@@ -45,6 +45,10 @@ import { getApiErrorMessage } from "../../lib/api-errors";
 import { formatDateTime } from "../../lib/format-date";
 import { useFocusOnOpen } from "../../lib/use-focus-on-open";
 import { formatLocationOption } from "../../lib/format-location";
+import {
+  ReceiptCompositionPanel,
+  type ObservedRow,
+} from "../package-stock/receipt-composition-panel";
 import { usePermission } from "../../hooks/use-permission";
 import { usePurchasingCommercialCost } from "../../hooks/use-purchasing-commercial-cost";
 
@@ -276,6 +280,12 @@ export function GoodsReceiptDetailScreen() {
   const post = useGoodsReceiptsPost();
   const reverse = useGoodsReceiptsReverse();
   const [confirmPost, setConfirmPost] = useState(false);
+  // A package-tracked line cannot post until what physically arrived has been recorded (the server enforces this too).
+  const [needsComposition, setNeedsComposition] = useState<
+    Record<number, boolean>
+  >({});
+  const missingComposition = Object.values(needsComposition).some(Boolean);
+
   const [showReverse, setShowReverse] = useState(false);
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -411,7 +421,17 @@ export function GoodsReceiptDetailScreen() {
               </Button>
             )}
             {receipt.status === "DRAFT" && mayPost && (
-              <Button onClick={() => setConfirmPost(true)}>Post receipt</Button>
+              <Button
+                onClick={() => setConfirmPost(true)}
+                disabled={missingComposition}
+                title={
+                  missingComposition
+                    ? "Record what arrived for each package-tracked line first"
+                    : undefined
+                }
+              >
+                Post receipt
+              </Button>
             )}
             {receipt.status === "POSTED" && mayReverse && (
               <div className="flex flex-col items-end gap-1">
@@ -627,6 +647,27 @@ export function GoodsReceiptDetailScreen() {
                   </div>
                 )}
               </div>
+              <ReceiptCompositionPanel
+                lineId={line.id}
+                itemId={line.item_id}
+                stockQty={line.stock_qty}
+                unit={stockUom?.code ?? ""}
+                editable={receipt.status === "DRAFT" && mayEdit}
+                observed={
+                  (line as unknown as { package_composition?: ObservedRow[] })
+                    .package_composition ?? []
+                }
+                commercialPackagingId={line.item_packaging_id ?? null}
+                commercialPackageCount={line.received_package_qty ?? null}
+                onChanged={refetch}
+                onNeedsComposition={(lineId, needs) =>
+                  setNeedsComposition((current) =>
+                    current[lineId] === needs
+                      ? current
+                      : { ...current, [lineId]: needs },
+                  )
+                }
+              />
               <QualityPanel
                 line={line}
                 enabled={receipt.status === "POSTED"}

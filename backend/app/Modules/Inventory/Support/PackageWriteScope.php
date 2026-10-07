@@ -59,6 +59,7 @@ final class PackageWriteScope
             throw new DomainInvariantException(
                 "This item uses grouped package tracking, so {$operation} is not available for it".($instead === null ? ' yet.' : "; {$instead}"),
                 'package_tracking_mode',
+                'PACKAGE_TRACKED_ITEM',
             );
         }
     }

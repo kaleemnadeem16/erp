@@ -93,7 +93,7 @@ final class PostPhysicalCount
                     }
                 }
                 if ($stale !== []) {
-                    throw new DomainInvariantException('Recount before posting — '.implode('; ', $stale).'.', 'counted_qty');
+                    throw new DomainInvariantException('Recount before posting — '.implode('; ', $stale).'.', 'counted_qty', 'STALE_EVIDENCE');
                 }
             }
 

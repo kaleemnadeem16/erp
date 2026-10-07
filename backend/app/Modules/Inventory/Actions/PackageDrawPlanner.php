@@ -84,7 +84,7 @@ final class PackageDrawPlanner
     {
         $snapshot = app(ReplayPackageCheckpoint::class)($operationId, $actor);
         if (! $snapshot['matches_current_stock']) {
-            throw new DomainInvariantException('Grouped package stock is not authoritative for this item and location: a fresh counted checkpoint is required ('.implode(', ', $snapshot['mismatch_reasons']).').');
+            throw new DomainInvariantException('Grouped package stock is not authoritative for this item and location: a fresh counted checkpoint is required ('.implode(', ', $snapshot['mismatch_reasons']).').', null, 'STALE_EVIDENCE');
         }
 
         return $snapshot;
@@ -161,14 +161,14 @@ final class PackageDrawPlanner
             if ($draw['kind'] === 'SEALED') {
                 $available = $sealed[$draw['packaging_id']] ?? null;
                 if ($available === null || $draw['count'] > $available['count']) {
-                    throw new DomainInvariantException('The draw takes more sealed packages than are on hand.');
+                    throw new DomainInvariantException('The draw takes more sealed packages than are on hand.', null, 'DRAW_NOT_ON_HAND');
                 }
                 $sealed[$draw['packaging_id']]['count'] -= $draw['count'];
                 $draw['quantity'] = $available['content']->multipliedBy($draw['count'])->toScale(4);
             } else {
                 $draw['quantity'] = BigDecimal::of($draw['quantity'])->toScale(4);
                 if ($draw['quantity']->isGreaterThan($loose)) {
-                    throw new DomainInvariantException('The draw takes more open/loose quantity than is on hand.');
+                    throw new DomainInvariantException('The draw takes more open/loose quantity than is on hand.', null, 'DRAW_NOT_ON_HAND');
                 }
                 $loose = $loose->minus($draw['quantity']);
             }

@@ -33,7 +33,7 @@ final class PackageTrackedLevels
         }
         foreach ($packagingIds as $id) {
             if (! in_array($id, $tracked, true)) {
-                throw new DomainInvariantException("This item does not track that package level, so {$what} cannot use it; record the tracked packages instead (changing tracked levels is a separate governed change).", 'item_packaging_id');
+                throw new DomainInvariantException("This item does not track that package level, so {$what} cannot use it; record the tracked packages instead (changing tracked levels is a separate governed change).", 'item_packaging_id', 'UNTRACKED_LEVEL');
             }
         }
     }

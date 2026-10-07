@@ -13,6 +13,7 @@ import type { GoodsReceiptLineResourceBatchNo } from "./goodsReceiptLineResource
 import type { GoodsReceiptLineResourceSerialNo } from "./goodsReceiptLineResourceSerialNo";
 import type { GoodsReceiptLineResourceQaUnallocatedQty } from "./goodsReceiptLineResourceQaUnallocatedQty";
 import type { GoodsReceiptLineResourceQaUnresolvedQty } from "./goodsReceiptLineResourceQaUnresolvedQty";
+import type { GoodsReceiptLineResourcePackageCompositionItem } from "./goodsReceiptLineResourcePackageCompositionItem";
 
 export interface GoodsReceiptLineResource {
   id: number;
@@ -39,4 +40,6 @@ export interface GoodsReceiptLineResource {
   serial_no: GoodsReceiptLineResourceSerialNo;
   qa_unallocated_qty: GoodsReceiptLineResourceQaUnallocatedQty;
   qa_unresolved_qty: GoodsReceiptLineResourceQaUnresolvedQty;
+  /** What was physically observed arriving (sealed packages and loose quantity); empty when nothing was recorded. */
+  package_composition: GoodsReceiptLineResourcePackageCompositionItem[];
 }

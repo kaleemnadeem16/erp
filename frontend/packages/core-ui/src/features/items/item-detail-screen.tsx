@@ -26,6 +26,7 @@ import {
 } from "../../components/print";
 import { getApiErrorMessage } from "../../lib/api-errors";
 import { ItemPurchasingPanel } from "./item-purchasing-panel";
+import { ItemPackageTrackingCard } from "../package-stock/item-package-tracking-card";
 import { ItemQuantityUnitsListScreen } from "../item-quantity-units/item-quantity-units-list-screen";
 import { usePermission } from "../../hooks/use-permission";
 import { useRecipeAccess } from "../../hooks/use-recipe-access";
@@ -285,6 +286,17 @@ export function ItemDetailScreen() {
             itemLabel={item.code + " — " + item.name}
             stockUomId={item.stock_uom_id}
             stockUnit={uom?.code}
+          />
+        </div>
+      </DetailSection>
+
+      <DetailSection title="Package tracking" fullWidth>
+        <div className="col-span-full">
+          <ItemPackageTrackingCard
+            itemId={item.id}
+            itemLabel={item.code + " — " + item.name}
+            unit={uom?.code ?? ""}
+            isStocked={item.is_stocked}
           />
         </div>
       </DetailSection>

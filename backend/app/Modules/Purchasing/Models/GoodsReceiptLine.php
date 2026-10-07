@@ -76,6 +76,12 @@ class GoodsReceiptLine extends Model
         return $this->belongsTo(GoodsReceipt::class);
     }
 
+    /** @return HasMany<GoodsReceiptPackageObservation, $this> */
+    public function packageObservations(): HasMany
+    {
+        return $this->hasMany(GoodsReceiptPackageObservation::class);
+    }
+
     /** @return BelongsTo<PurchaseOrderLine, $this> */
     public function purchaseOrderLine(): BelongsTo
     {

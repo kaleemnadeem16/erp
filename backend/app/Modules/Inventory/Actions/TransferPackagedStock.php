@@ -161,7 +161,7 @@ final class TransferPackagedStock
         $holds = StockLayer::query()->where(['item_id' => $source->item_id, 'location_id' => $toLocation, 'batch_id' => $source->batch_id, 'serial_no' => null])
             ->where('qty_remaining', '>', 0)->exists();
         if ($holds) {
-            throw new DomainInvariantException('The destination already holds stock without fresh package evidence: a counted checkpoint there is required first.');
+            throw new DomainInvariantException('The destination already holds stock without fresh package evidence: a counted checkpoint there is required first.', null, 'NEEDS_COUNT_FIRST');
         }
         if (NegativeStockShortage::query()->where('item_id', $source->item_id)->where('qty_open', '>', 0)->exists()) {
             throw new DomainInvariantException('An open stock shortage must be settled before package stock is transferred.');

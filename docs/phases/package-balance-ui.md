@@ -2,7 +2,7 @@
 
 # Grouped package tracking — screens and API (design)
 
-Design pass 2026-10-08; nothing here is built. The backend (ADRs 0090–0093) is internal Actions only: no HTTP route records a receipt composition, issues, transfers
+Design pass 2026-10-08. **First slice built 2026-10-08** (item card, activation wizard, receipt composition panel, issue dialog, the read/draw/issue/checkpoint/composition endpoints and stable `reason_code`s; see the status table below); the rest is still design. The backend (ADRs 0090–0093) is internal Actions only: no HTTP route records a receipt composition, issues, transfers
 or activates, and the only package read is the replay Action. Use this with [user-interface.md](../architecture/user-interface.md),
 [ui-building-blocks.md](../architecture/ui-building-blocks.md) and [api-conventions.md](../architecture/api-conventions.md); container-level screens are out of scope.
 
@@ -148,6 +148,17 @@ Goal: in the browser, take XYZ's emulsion from quantity-only to grouped, receive
 That is one new read resource, two small action endpoints, two composition endpoints and four UI pieces; it exercises activation, the observed receipt, an issue with an opened can, and the
 live breakdown, and it can be driven by one Playwright spec on the dev stack. **Next slices** reuse the editor and card: ② transfer sheet + count composition entry (they share the draw editor and
 `PackageBreakdown`), ③ reversal dialog, ④ standalone Issue/Transfer menu screens and quantity-only forms once their capabilities are decided.
+
+## Status of the first slice (built 2026-10-08)
+
+| Piece | Where |
+|---|---|
+| `GET /package-balances`, `GET /items/{item}/package-tracking`, `POST …/package-tracking/preview` and `…/activate`, `POST /package-checkpoints`, `POST /package-draws/suggest`, `POST /stock-issues`, `PUT /goods-receipt-lines/{line}/package-composition` | `Inventory/Http/Controllers/Api/V1` (PackageStock requests), `Purchasing/Http/Controllers/Api/V1/GoodsReceiptLineCompositionController` |
+| `reason_code` beside `message` on 422s | `DomainInvariantException::$reasonCode`, rendered in `bootstrap/app.php`; codes include `NEEDS_COUNT_FIRST`, `STALE_EVIDENCE`, `DRAW_NOT_ON_HAND`, `UNTRACKED_LEVEL`, `LAYER_CONSUMED`, `NEEDS_OBSERVED_COMPOSITION`, `SUPPLIER_QA_UNSUPPORTED`, `ACTIVATION_BLOCKED`, `PACKAGE_TRACKED_ITEM` |
+| `PackageBreakdown`, `PackageDrawEditor`, `ItemPackageTrackingCard`, `ActivationWizard`, `ReceiptCompositionPanel`, `IssuePackageStockDialog` | `frontend/packages/core-ui/src/features/package-stock/` (card on Item detail; panel on the goods receipt detail; the wizard and issue are centred dialogs) |
+| Acceptance test | `frontend/apps/e2e/tests/package-tracking-lifecycle.spec.ts` — quantity only → activate → receive observed packages → issue with an opened can → balance 4 cans + 2 L loose = 22 L |
+
+Deviations from the design: the wizard and issue use `Dialog` (a task started from the item card) rather than `RecordSheet`; the receipt panel sits on the receipt **detail** screen of a draft (lines must exist to record against) and holds the Post button until each package-tracked line is recorded; `GET …/package-tracking` is also readable by people who create receipts, issue or count (it exposes only the package structure). Not built yet: transfer, count, reversal screens and the standalone Issue menu screen.
 
 ## Open decisions
 

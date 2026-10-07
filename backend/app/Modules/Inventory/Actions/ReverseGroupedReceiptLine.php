@@ -62,7 +62,7 @@ final class ReverseGroupedReceiptLine
         $layer = StockLayer::query()->where('source_type', 'GOODS_RECEIPT_LINE')->where('source_id', $line->id)->lockForUpdate()->firstOrFail();
         $location = Location::query()->lockForUpdate()->findOrFail($layer->location_id);
         if (! BigDecimal::of($layer->qty_remaining)->isEqualTo($layer->qty_received)) {
-            throw new DomainInvariantException('This receipt has already been partly consumed and cannot be reversed; correct it with a package-aware issue or return and a count.', 'source_id');
+            throw new DomainInvariantException('This receipt has already been partly consumed and cannot be reversed; correct it with a package-aware issue or return and a count.', 'source_id', 'LAYER_CONSUMED');
         }
         WarehouseScope::requireLocation($actor, 'inventory.package-state.reverse', $location->id, 'reverse package-tracked stock');
         $predecessor = PackageOperation::query()->where(['item_id' => $item->id, 'location_id' => $location->id, 'batch_id' => $layer->batch_id])

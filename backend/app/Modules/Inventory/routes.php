@@ -7,12 +7,17 @@ use App\Modules\Inventory\Http\Controllers\Api\V1\InventoryOverviewController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\InventoryPolicyChangeController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\InventorySettingsController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\ItemController;
+use App\Modules\Inventory\Http\Controllers\Api\V1\ItemPackageTrackingController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\ItemPackagingController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\ItemQuantityUnitController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\LocationController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\NegativeStockOverrideRequestController;
+use App\Modules\Inventory\Http\Controllers\Api\V1\PackageBalanceController;
+use App\Modules\Inventory\Http\Controllers\Api\V1\PackageCheckpointController;
+use App\Modules\Inventory\Http\Controllers\Api\V1\PackageDrawController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\PhysicalCountController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\RecalculationRequestController;
+use App\Modules\Inventory\Http\Controllers\Api\V1\StockIssueController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\StockLayerController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\StockMoveController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\WarehouseController;
@@ -20,6 +25,13 @@ use App\Modules\Inventory\Http\Controllers\Api\V1\WarehouseLocationAssignmentCon
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth:sanctum')->group(function () {
+    Route::get('package-balances', [PackageBalanceController::class, 'index'])->name('package-balances.index');
+    Route::post('package-draws/suggest', [PackageDrawController::class, 'suggest'])->name('package-draws.suggest');
+    Route::post('package-checkpoints', [PackageCheckpointController::class, 'store'])->name('package-checkpoints.store');
+    Route::post('stock-issues', [StockIssueController::class, 'store'])->name('stock-issues.store');
+    Route::get('items/{item}/package-tracking', [ItemPackageTrackingController::class, 'show'])->name('items.package-tracking.show');
+    Route::post('items/{item}/package-tracking/preview', [ItemPackageTrackingController::class, 'preview'])->name('items.package-tracking.preview');
+    Route::post('items/{item}/package-tracking/activate', [ItemPackageTrackingController::class, 'activate'])->name('items.package-tracking.activate');
     Route::get('item-packagings', [ItemPackagingController::class, 'index'])->name('item-packagings.index');
     Route::post('item-packagings', [ItemPackagingController::class, 'store'])->name('item-packagings.store');
     Route::patch('item-packagings/{item_packaging}', [ItemPackagingController::class, 'update'])->name('item-packagings.update');

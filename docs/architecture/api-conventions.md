@@ -38,6 +38,8 @@ Versioning is in the path. `v1` stays stable; breaking changes create `v2`.
 
 ## Responses
 
+A business-rule refusal (422) may carry a stable `reason_code` (for example `NEEDS_COUNT_FIRST`, `DRAW_NOT_ON_HAND`) beside `message`. The message is the human explanation; clients switch behaviour on the code, never on the text. Codes are added where a screen can offer a remedy, and listed in the relevant domain doc.
+
 Single resource:
 
 ```json

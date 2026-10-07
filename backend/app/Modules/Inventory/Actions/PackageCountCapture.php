@@ -33,7 +33,7 @@ final class PackageCountCapture
             return ['grouped' => true, 'package_operation_id' => null, 'package_watermark' => $watermark === null ? null : (int) $watermark];
         }
         if ($latest === null) {
-            throw new DomainInvariantException('This location holds package-tracked stock without package evidence: a counted checkpoint is required first.');
+            throw new DomainInvariantException('This location holds package-tracked stock without package evidence: a counted checkpoint is required first.', null, 'NEEDS_COUNT_FIRST');
         }
         app(PackageDrawPlanner::class)->fresh($latest->id, $actor);
 

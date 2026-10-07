@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\Purchasing\Http\Controllers\Api\V1\GoodsReceiptController;
+use App\Modules\Purchasing\Http\Controllers\Api\V1\GoodsReceiptLineCompositionController;
 use App\Modules\Purchasing\Http\Controllers\Api\V1\ItemSupplierController;
 use App\Modules\Purchasing\Http\Controllers\Api\V1\PurchaseOrderController;
 use App\Modules\Purchasing\Http\Controllers\Api\V1\PurchasingPolicyChangeController;
@@ -25,6 +26,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('inventory-cutovers/{inventoryCutover}/commit-open-purchase-orders', [PurchaseOrderController::class, 'commitCutover'])->name('inventory-cutovers.open-purchase-orders.commit');
     Route::apiResource('goods-receipts', GoodsReceiptController::class)->only(['index', 'store', 'show']);
     Route::patch('goods-receipts/{goodsReceipt}', [GoodsReceiptController::class, 'update'])->name('goods-receipts.update');
+    Route::put('goods-receipt-lines/{goodsReceiptLine}/package-composition', [GoodsReceiptLineCompositionController::class, 'update'])->name('goods-receipt-lines.package-composition.update');
     Route::post('goods-receipts/{goodsReceipt}/post', [GoodsReceiptController::class, 'post'])->name('goods-receipts.post');
     Route::post('goods-receipts/{goodsReceipt}/reverse', [GoodsReceiptController::class, 'reverse'])->name('goods-receipts.reverse');
     Route::post('goods-receipt-lines/{goodsReceiptLine}/quality-dispositions', [QualityDispositionController::class, 'store'])->name('quality-dispositions.store');

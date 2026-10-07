@@ -36,6 +36,7 @@ class ItemResource extends JsonResource
             'valuation_method' => $item->valuation_method->value,
             'avco_pool_scope' => $item->avco_pool_scope?->value,
             'tracking' => $item->tracking->value,
+            'package_tracking_mode' => $item->package_tracking_mode->value,
             'category_id' => $item->category_id,
             'income_account_id' => $this->when(AccountMappingAccess::canView($request->user()), fn () => $item->income_account_id),
             'expense_account_id' => $this->when(AccountMappingAccess::canView($request->user()), fn () => $item->expense_account_id),
