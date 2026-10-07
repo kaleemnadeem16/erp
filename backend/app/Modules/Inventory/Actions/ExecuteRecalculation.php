@@ -24,6 +24,7 @@ use App\Modules\Inventory\Models\RecalculationRequest;
 use App\Modules\Inventory\Models\StockBatch;
 use App\Modules\Inventory\Models\StockLayer;
 use App\Modules\Inventory\Models\StockMove;
+use App\Modules\Inventory\Support\PackageWriteScope;
 use App\Modules\Inventory\Support\RecalculationMovementKind;
 use App\Modules\Inventory\Support\ValuationMethod;
 use App\Modules\Inventory\Support\WarehouseScope;
@@ -104,6 +105,7 @@ final class ExecuteRecalculation
         $outcome = DB::transaction(function () use ($version, $actor): RecalculationExecution|null {
             $company = Company::query()->lockForUpdate()->findOrFail(app(CompanyContext::class)->id());
             $request = RecalculationRequest::query()->lockForUpdate()->findOrFail($version->recalculation_request_id);
+            PackageWriteScope::refuse($request->item_id, 'executing a stock recalculation');
             $version = RecalculationImpactVersion::query()->lockForUpdate()->with('approvals')->findOrFail($version->id);
 
             $existing = RecalculationExecution::query()->where('recalculation_request_id', $request->id)->first();

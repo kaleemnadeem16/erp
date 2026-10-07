@@ -15,6 +15,7 @@ use App\Modules\Inventory\Models\Location;
 use App\Modules\Inventory\Models\RecalculationRequest;
 use App\Modules\Inventory\Models\StockBatch;
 use App\Modules\Inventory\Models\StockMove;
+use App\Modules\Inventory\Support\PackageWriteScope;
 use App\Modules\Inventory\Support\RecalculationMovementKind;
 use App\Modules\Inventory\Support\WarehouseScope;
 use App\Support\CompanyContext;
@@ -48,6 +49,7 @@ final class RequestStockRecalculation
                 throw new DomainInvariantException('The actor is not permitted to request stock recalculation.', 'requested_by');
             }
             WarehouseScope::requireUnrestricted($actor, 'inventory.recalculation.request', 'request a stock recalculation');
+            PackageWriteScope::refuse((int) $input['item_id'], 'a stock recalculation');
 
             $existing = RecalculationRequest::query()->where('source_type', $input['source_type'])->where('source_id', $input['source_id'])->first();
             if ($existing !== null) {

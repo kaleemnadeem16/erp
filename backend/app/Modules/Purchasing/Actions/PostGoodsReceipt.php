@@ -8,6 +8,7 @@ use App\Exceptions\DomainInvariantException;
 use App\Models\User;
 use App\Modules\Inventory\Actions\PostInventoryMovement;
 use App\Modules\Inventory\Actions\RecordReceiptPackageEvidence;
+use App\Modules\Inventory\Support\PackageWriteScope;
 use App\Modules\Numbering\Services\NumberingService;
 use App\Modules\Purchasing\Models\GoodsReceipt;
 use App\Modules\Purchasing\Models\GoodsReceiptLine;
@@ -118,7 +119,9 @@ final class PostGoodsReceipt
                 $amount = $line->provisional_amount !== null ? BigDecimal::of($line->provisional_amount) : BigDecimal::of($line->received_qty)->multipliedBy(BigDecimal::of($line->provisional_unit_cost))->toScale(4, RoundingMode::HALF_UP);
                 $baseAmount = $amount->multipliedBy(BigDecimal::of($line->fx_rate))->toScale(4, RoundingMode::HALF_UP);
 
-                ($this->postMovement)([
+                // An item with grouped package tracking is checked first and posts through the package-aware door (ADR 0091).
+                $this->packageEvidence->preflight($line, $actor);
+                PackageWriteScope::run(PackageWriteScope::isAuthoritative($line->item_id) ? $line->item_id : null, fn () => ($this->postMovement)([
                     'item_id' => $line->item_id, 'location_id' => $line->location_id,
                     'qty' => $line->stock_qty, 'uom_id' => $line->stock_uom_id,
                     'moved_at' => $receipt->physical_arrival_at,
@@ -127,7 +130,7 @@ final class PostGoodsReceipt
                     'fx_rate' => $line->fx_rate, 'base_unit_cost' => (string) $baseUnitCost,
                     'amount' => (string) $amount, 'base_amount' => (string) $baseAmount,
                     'batch_no' => $line->batch_no, 'serial_no' => $line->serial_no,
-                ]);
+                ]));
                 ($this->packageEvidence)($line, $actor);
             }
 

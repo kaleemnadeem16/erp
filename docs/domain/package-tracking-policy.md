@@ -57,6 +57,14 @@ requires developer model inspection. All remain quantity-only and do not post st
 Module/command local-testing guards and create-once checks preserve manual edits/archives on rerun.
 The additive local migration and module seeder ran successfully.
 
+## Activation (2026-10-08, ADR 0091)
+
+Grouped tracking is now activated per item by `ActivateGroupedPackageTracking` (capability `inventory.package-state.activate`, a mandatory
+reason, and `PreviewGroupedActivation` for a read-only readiness report). The item's mode becomes `PACKAGE_BALANCE` only together with an
+immutable activation record and a fresh counted checkpoint for **every location and batch that holds stock**; the database re-proves that at the
+flip, so raw SQL or stale evidence cannot switch it on. There is no pending state and no deactivation. Company and category defaults still
+refuse advanced modes. See [grouped issue, transfer and activation](package-issue-operations.md#activation-and-enforcement-2026-10-08).
+
 ## Delivery boundary
 
 The inactive checkpoint kernel, on-demand reconstruction and guarded creation-time policy

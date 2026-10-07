@@ -11,6 +11,7 @@ use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Models\PhysicalCount;
 use App\Modules\Inventory\Models\PhysicalCountLine;
 use App\Modules\Inventory\Models\StockBatch;
+use App\Modules\Inventory\Support\PackageWriteScope;
 use App\Modules\Inventory\Support\PhysicalCountStatus;
 use App\Modules\Inventory\Support\WarehouseScope;
 use App\Support\CompanyContext;
@@ -49,6 +50,9 @@ final class PostPhysicalCount
             $count = PhysicalCount::query()->whereKey($count->id)->lockForUpdate()->firstOrFail();
             if ($count->status === PhysicalCountStatus::Posted) {
                 return $count->refresh()->load('lines');
+            }
+            foreach ($count->lines()->pluck('item_id')->unique() as $itemId) {
+                PackageWriteScope::refuse((int) $itemId, 'posting a physical count');
             }
             if ($count->status !== PhysicalCountStatus::Draft) {
                 throw new DomainInvariantException('Only a draft physical count can be posted.', 'status');

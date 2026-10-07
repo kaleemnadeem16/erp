@@ -8,6 +8,7 @@ use App\Modules\Inventory\Actions\Movements\IssuePoster;
 use App\Modules\Inventory\Actions\Movements\ReceiptPoster;
 use App\Modules\Inventory\Actions\Movements\TransferPoster;
 use App\Modules\Inventory\Models\StockMove;
+use App\Modules\Inventory\Support\PackageWriteScope;
 use App\Modules\Inventory\Support\PostedMovement;
 use Illuminate\Support\Facades\DB;
 
@@ -39,6 +40,8 @@ final class PostInventoryMovement
      */
     public function __invoke(array $input): StockMove
     {
+        PackageWriteScope::refuse((int) $input['item_id'], 'a scalar receipt', 'receive it through its package-aware receipt');
+
         return DB::transaction(fn (): StockMove => $this->receipts->post($input));
     }
 
@@ -61,6 +64,8 @@ final class PostInventoryMovement
      */
     public function issuePosted(array $input): PostedMovement
     {
+        PackageWriteScope::refuse((int) $input['item_id'], 'a scalar issue', 'issue it through the grouped package issue');
+
         return DB::transaction(fn (): PostedMovement => $this->issues->post($input));
     }
 
@@ -81,6 +86,8 @@ final class PostInventoryMovement
      */
     public function transferPosted(array $input): PostedMovement
     {
+        PackageWriteScope::refuse((int) $input['item_id'], 'a scalar transfer', 'transfer it through the grouped package transfer');
+
         return DB::transaction(fn (): PostedMovement => $this->transfers->post($input));
     }
 
@@ -96,6 +103,11 @@ final class PostInventoryMovement
         int $reversalSourceId,
         mixed $reversedAt,
     ): StockMove {
+        $original = StockMove::query()->where('source_type', $originalSourceType)->where('source_id', $originalSourceId)->first();
+        if ($original !== null) {
+            PackageWriteScope::refuse($original->item_id, 'reversing a receipt');
+        }
+
         return DB::transaction(fn (): StockMove => $this->receipts->reverse(
             $originalSourceType, $originalSourceId, $reversalSourceType, $reversalSourceId, $reversedAt,
         ));

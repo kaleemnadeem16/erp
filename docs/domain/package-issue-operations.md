@@ -84,10 +84,33 @@ leg's lines despite their "issue" names. Quantity-only items transfer exactly as
 Demo: `PackageTransferDemoSeeder` moves 7 L from the main depot to Karachi (one sealed can plus 2 L from a second can opened for it): source 1 can +
 8 L loose, Karachi 1 can + 2 L loose, FIFO cost 58.00.
 
+## Activation and enforcement (2026-10-08)
+
+[ADR 0091](../decisions/0091-activate-grouped-package-tracking-and-fail-closed-enforcement.md). Activation is one transaction: lock the item, then its
+locations in id order; refuse unless the item is a stocked NONE/BATCH FIFO/AVCO item with no open shortage, no unfinished cutover that includes it and
+no unexecuted recalculation request; every stocked scope has exactly one fresh counted checkpoint (the existing replay rules); write the activation, its
+scopes and the item update. An equal retry returns the original; a changed payload, a second activation or a missing count writes nothing.
+
+**After activation nothing can change the item's stock without package evidence or an explicit refusal:**
+
+| Writer | Result for a grouped item |
+|---|---|
+| grouped issue, grouped transfer | allowed (they run inside `PackageWriteScope`) |
+| goods receipt posting | package-aware: the observed composition is mandatory and becomes a `RECEIPT_IN` leg of the scope's chain (a scope holding nothing starts its chain there); QA-required lines and unobserved receipts are refused before anything posts |
+| scalar issue, transfer, receipt; receipt reversal; physical count posting; cutover opening-state posting; recalculation request and execution; negative-stock override request; QA disposition; edits to valuation method, tracking, unit or stocked flag | refused with a message naming the operation |
+| any other writer | stopped by the database |
+
+The database guard is the guarantee: triggers on `stock_moves` and `stock_layers` reject any write to a grouped item's quantities unless the transaction
+carries that item's flag (`erp.package_aware_item`, set only around a package-aware Action's own posting call), and a deferred trigger requires every
+later move to have package evidence anchored on it by commit (issue; both transfer legs; a `RECEIPT_IN`). `StockWriterMatrixTest` lists every code path
+that creates stock rows so a new writer must be given a decision. Not yet: count and receipt-reversal replacements, QA splitting, deactivation, container
+tracking, screens. Activation scans for an unfinished cutover only where it includes the item, and for an unexecuted recalculation request for the item.
+
+Demo: `PackageActivationDemoSeeder` counts a new item (3 cans + 5 L loose), activates it, then issues 7 L through the package-aware door.
+
 ## Not yet
 
-Refusing scalar issues and transfers once a mode is authoritative (needs the activation slice that persists the mode), composition-only count
-correction, receipt reversal / QA split / negative-stock settlement / cutover / recalculation adapters, container-level tracking, screens.
+Composition-only count correction and receipt-reversal replacements, receipt reversal / QA split / negative-stock settlement / cutover / recalculation adapters, container-level tracking, screens.
 
 ## Demo and verification
 

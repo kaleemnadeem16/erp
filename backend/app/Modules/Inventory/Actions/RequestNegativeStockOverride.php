@@ -17,6 +17,7 @@ use App\Modules\Inventory\Support\NegativeStockAuthorisationMode;
 use App\Modules\Inventory\Support\NegativeStockMode;
 use App\Modules\Inventory\Support\NegativeStockMovementClass;
 use App\Modules\Inventory\Support\NegativeStockReasonCode;
+use App\Modules\Inventory\Support\PackageWriteScope;
 use App\Modules\Inventory\Support\ValuationMethod;
 use App\Modules\Inventory\Support\WarehouseScope;
 use App\Support\CompanyContext;
@@ -39,6 +40,7 @@ final class RequestNegativeStockOverride
                 throw new DomainInvariantException('This movement class is not eligible for negative stock.', 'movement_class');
             }
             $item = Item::query()->findOrFail($input['item_id']);
+            PackageWriteScope::refuse($item->id, 'a negative-stock override', 'tracked stock cannot go negative');
             Location::query()->findOrFail($input['location_id']);
             if (($input['batch_id'] ?? null) !== null && ! StockBatch::query()->where('item_id', $item->id)->whereKey($input['batch_id'])->exists()) {
                 throw new DomainInvariantException('The batch must belong to the requested item.', 'batch_id');

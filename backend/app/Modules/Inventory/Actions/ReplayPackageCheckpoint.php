@@ -15,6 +15,7 @@ use App\Modules\Inventory\Models\PackageState;
 use App\Modules\Inventory\Models\StockLayer;
 use App\Modules\Inventory\Models\StockMove;
 use App\Modules\Inventory\Support\ItemTracking;
+use App\Modules\Inventory\Support\PackageWriteScope;
 use App\Modules\Inventory\Support\ValuationMethod;
 use App\Modules\Purchasing\Models\GoodsReceiptLine;
 use App\Support\CompanyContext;
@@ -79,7 +80,7 @@ final class ReplayPackageCheckpoint
                 ->where(fn ($q) => $q->where('to_location_id', $operation->location_id)->orWhere('from_location_id', $operation->location_id))->max('id');
             $latest = PackageOperation::query()->where([
                 'item_id' => $operation->item_id, 'location_id' => $operation->location_id, 'batch_id' => $operation->batch_id,
-            ])->whereIn('evidence_kind', ['COUNTED', 'OPEN', 'UNPACK', 'ISSUE', 'TRANSFER_OUT', 'TRANSFER_IN'])->max('id');
+            ])->whereIn('evidence_kind', ['COUNTED', 'OPEN', 'UNPACK', 'ISSUE', 'TRANSFER_OUT', 'TRANSFER_IN', 'RECEIPT_IN'])->max('id');
             $reasons = [];
             if (! $integrity) {
                 $reasons[] = 'INCOMPLETE_EVIDENCE';
@@ -89,13 +90,13 @@ final class ReplayPackageCheckpoint
             } elseif ((int) $operation->stock_move_watermark !== (int) $watermark) {
                 $reasons[] = 'LATER_STOCK_MOVEMENT';
             }
-            if (in_array($operation->evidence_kind, ['COUNTED', 'OPEN', 'UNPACK', 'ISSUE', 'TRANSFER_OUT', 'TRANSFER_IN'], true) && (int) $latest !== $operation->id) {
+            if (in_array($operation->evidence_kind, ['COUNTED', 'OPEN', 'UNPACK', 'ISSUE', 'TRANSFER_OUT', 'TRANSFER_IN', 'RECEIPT_IN'], true) && (int) $latest !== $operation->id) {
                 $reasons[] = 'SUPERSEDED_CHECKPOINT';
             }
             if ($recordedVector !== $currentVector || ! $total->isEqualTo($currentQty)) {
                 $reasons[] = 'STOCK_QUANTITIES_CHANGED';
             }
-            if (! in_array($operation->evidence_kind, ['COUNTED', 'OPEN', 'UNPACK', 'ISSUE', 'TRANSFER_OUT', 'TRANSFER_IN'], true) || $item->tracking === ItemTracking::Serial || $item->valuation_method === ValuationMethod::Specific) {
+            if (! in_array($operation->evidence_kind, ['COUNTED', 'OPEN', 'UNPACK', 'ISSUE', 'TRANSFER_OUT', 'TRANSFER_IN', 'RECEIPT_IN'], true) || $item->tracking === ItemTracking::Serial || $item->valuation_method === ValuationMethod::Specific) {
                 $reasons[] = 'UNSUPPORTED_EVIDENCE_SCOPE';
             }
             if (NegativeStockShortage::query()->where('item_id', $item->id)->where('qty_open', '>', 0)->exists()) {
@@ -111,7 +112,7 @@ final class ReplayPackageCheckpoint
                 'source_receipt_line_id' => $operation->source_receipt_line_id,
                 'predecessor_id' => $operation->predecessor_id, 'selected_state_id' => $operation->selected_state_id,
                 'selected_count' => $operation->selected_count, 'stock_move_id' => $operation->stock_move_id,
-                'tracking_active' => false, 'integrity_valid' => $integrity,
+                'tracking_active' => PackageWriteScope::isAuthoritative($operation->item_id), 'integrity_valid' => $integrity,
                 'matches_current_stock' => $reasons === [], 'mismatch_reasons' => $reasons,
                 'latest_checkpoint_id' => (int) $latest,
                 'recorded_quantity' => (string) $total->toScale(4), 'current_quantity' => (string) $currentQty,

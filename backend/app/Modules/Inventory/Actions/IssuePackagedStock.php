@@ -16,6 +16,7 @@ use App\Modules\Inventory\Models\PackageState;
 use App\Modules\Inventory\Models\StockBatch;
 use App\Modules\Inventory\Models\StockMove;
 use App\Modules\Inventory\Support\PackageIssueComposition;
+use App\Modules\Inventory\Support\PackageWriteScope;
 use App\Modules\Inventory\Support\PostedMovement;
 use App\Modules\Inventory\Support\WarehouseScope;
 use App\Support\CompanyContext;
@@ -100,10 +101,10 @@ final class IssuePackagedStock
             $predecessor = PackageOperation::query()->findOrFail($current['operation_id']);
 
             $batchNo = $predecessor->batch_id === null ? null : StockBatch::query()->findOrFail($predecessor->batch_id)->code;
-            $posted = app(PostInventoryMovement::class)->issuePosted([
+            $posted = PackageWriteScope::run($item->id, fn () => app(PostInventoryMovement::class)->issuePosted([
                 'item_id' => $item->id, 'location_id' => $predecessor->location_id, 'qty' => (string) $total, 'uom_id' => $item->stock_uom_id,
                 'moved_at' => $input['moved_at'], 'source_type' => $input['source_type'], 'source_id' => $input['source_id'], 'batch_no' => $batchNo,
-            ]);
+            ]));
             $this->assertCaptured($posted);
             $vector = [];
             foreach ($posted->allocations as $allocation) {

@@ -62,6 +62,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int|null $inventory_account_id
  * @property array<string, string|int|float|bool>|null $custom_fields
  * @property Status $status
+ * @property PackageTrackingMode $package_tracking_mode
+ * @property int|null $package_tracking_activation_id
  */
 class Item extends Model
 {
@@ -84,9 +86,16 @@ class Item extends Model
                 $item->package_tracking_source = $policy['source'];
                 $item->package_tracking_source_category_id = $policy['category_id'];
             } else {
-                $item->package_tracking_mode?->requireImplemented();
-                if ($item->isDirty(['package_tracking_mode', 'package_tracking_source', 'package_tracking_source_category_id'])) {
-                    throw new DomainInvariantException('Item package policy is pinned; governed transitions are not implemented.', 'package_tracking_mode');
+                // Grouped tracking exists only through an activation record; activation itself is written by its own Action, not through this model.
+                if ($item->package_tracking_mode !== PackageTrackingMode::PackageBalance || $item->package_tracking_activation_id === null) {
+                    $item->package_tracking_mode->requireImplemented();
+                }
+                if ($item->isDirty(['package_tracking_mode', 'package_tracking_source', 'package_tracking_source_category_id', 'package_tracking_activation_id'])) {
+                    throw new DomainInvariantException('Item package policy is pinned; it changes only through activation.', 'package_tracking_mode');
+                }
+                if ($item->package_tracking_mode === PackageTrackingMode::PackageBalance
+                    && $item->isDirty(['valuation_method', 'tracking', 'stock_uom_id', 'avco_pool_scope', 'is_stocked'])) {
+                    throw new DomainInvariantException('An item with grouped package tracking cannot change how its stock is measured, valued or traced.', 'package_tracking_mode');
                 }
             }
             // Resolve valuation_method here (not in a separate creating hook): Eloquent

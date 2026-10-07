@@ -88,6 +88,9 @@ successor evidence (ISSUE kind, draw lines, the allocator's actual layer vector)
 `TransferPackagedStock` does the same for a transfer under package-state.transfer: one stock move, two evidence legs (TRANSFER_OUT / TRANSFER_IN),
 whole sealed packages arriving sealed and opened or loose quantity arriving loose, atomically and idempotently.
 
+`ActivateGroupedPackageTracking` (package-state.activate) makes an item's grouped tracking authoritative from a counted checkpoint per stocked scope; from
+then on `PackageWriteScope` is the only door through which its stock can change, the other writers refuse, and database triggers stop anything that forgets.
+
 `CreateCategory`/`UpdateCategory`/`ArchiveCategory` and
 `CreateItem`/`UpdateItem`/`ArchiveItem` own the transactional write boundary used by HTTP and
 future non-HTTP entry points. Model guards still enforce tenant, hierarchy and valuation

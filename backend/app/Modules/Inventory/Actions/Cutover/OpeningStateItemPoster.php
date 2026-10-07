@@ -22,6 +22,7 @@ use App\Modules\Inventory\Models\StockLayer;
 use App\Modules\Inventory\Models\StockMove;
 use App\Modules\Inventory\Support\AvcoPoolScope;
 use App\Modules\Inventory\Support\InventoryCutoverNegativeOpeningStatus;
+use App\Modules\Inventory\Support\PackageWriteScope;
 use App\Modules\Inventory\Support\ValuationMethod;
 use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
@@ -70,6 +71,7 @@ final class OpeningStateItemPoster
      */
     public function post(InventoryCutover $cutover, Item $item, Collection $facts, Collection $transitions, Company $company): void
     {
+        PackageWriteScope::refuse($item->id, 'cutover opening-state posting');
         if (! $item->is_stocked) {
             throw new DomainInvariantException("Item {$item->code} is not a stocked item and cannot hold opening stock.", 'item_id');
         }

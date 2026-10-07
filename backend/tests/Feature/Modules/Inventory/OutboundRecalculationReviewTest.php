@@ -142,6 +142,9 @@ class OutboundRecalculationReviewTest extends TestCase
         // The ledger is database-immutable (stock_moves_immutable), so the only way to fake
         // rows that by definition predate that guard is to switch it off for exactly this one
         // statement — never a pattern for application code.
+        // Run the commit-time checks queued by the postings above first: PostgreSQL will not ALTER a table that has pending trigger events.
+        DB::statement('SET CONSTRAINTS ALL IMMEDIATE');
+        DB::statement('SET CONSTRAINTS ALL DEFERRED');
         DB::statement('ALTER TABLE stock_moves DISABLE TRIGGER stock_moves_immutable');
         DB::table('stock_moves')->whereNotNull('from_location_id')->update(['movement_kind' => 'LEGACY', 'reverses_move_id' => null]);
         DB::statement('ALTER TABLE stock_moves ENABLE TRIGGER stock_moves_immutable');

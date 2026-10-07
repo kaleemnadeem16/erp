@@ -7,6 +7,7 @@ namespace App\Modules\Purchasing\Actions;
 use App\Exceptions\DomainInvariantException;
 use App\Models\User;
 use App\Modules\Inventory\Actions\PostInventoryMovement;
+use App\Modules\Inventory\Support\PackageWriteScope;
 use App\Modules\Purchasing\Models\GoodsReceipt;
 use App\Modules\Purchasing\Models\GoodsReceiptLine;
 use App\Modules\Purchasing\Models\PurchaseOrder;
@@ -55,6 +56,7 @@ final class ReverseGoodsReceipt
             // mutation. Layer-consumption and pool-sufficiency are Inventory-owned
             // facts, checked and enforced atomically inside reverseReceipt() below.
             foreach ($lines as $line) {
+                PackageWriteScope::refuse($line->item_id, 'reversing a goods receipt');
                 if (QualityDisposition::query()->where('goods_receipt_line_id', $line->id)->exists()) {
                     throw new DomainInvariantException('This receipt has a posted QA disposition and cannot be reversed.', 'goods_receipt_line_id');
                 }

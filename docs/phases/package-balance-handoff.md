@@ -90,9 +90,7 @@ migrations were also applied. Do not discard history or relax QUANTITY_ONLY gate
 
 **2026-10-07:** ADR 0090 is accepted and the grouped issue slice is built: the allocation-vector seam (`PostInventoryMovement::issuePosted()` /
 `transferPosted()`), the `ISSUE` evidence kind with migration `2026_10_07_100000`, `IssuePackagedStock` and `PackageIssueDemoSeeder`.
-See [package-issue-operations.md](../domain/package-issue-operations.md). **Transfer is done too** (`TransferPackagedStock`, migration `2026_10_07_110000`, `PackageTransferDemoSeeder`). **Next: the activation/enforcement slice, planned in [proposed ADR 0091](../decisions/0091-activate-grouped-package-tracking-and-fail-closed-enforcement.md)** —
-persist an authoritative grouped mode per item, then refuse scalar issue/transfer/receipt-reversal/count/QA/cutover/recalculation writers for authoritative items
-with a clear message (guard every direct writer), then composition-only count correction. The steps below this note describe the issue design as it was before this slice and are historical.
+See [package-issue-operations.md](../domain/package-issue-operations.md). **Transfer, activation and receipt are done too** (`TransferPackagedStock`; `ActivateGroupedPackageTracking`, fail-closed database guards and the `RECEIPT_IN` leg, ADR 0091, migrations `2026_10_07_110000`, `2026_10_08_100000`, `2026_10_08_110000`; demos for each). **Next:** package-aware physical-count correction (composition-only recount plus governed variance), then receipt reversal, QA splitting, a governed collapse/deactivation decision, and container-level tracking. The steps below this note describe the issue design as it was before this slice and are historical.
 
 1. Re-read the writer audit/contribution contract in package-balance-integration and inspect
    PostInventoryMovement with Actions/Movements/LayerAllocator and the issue collaborator.

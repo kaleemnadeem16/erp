@@ -19,6 +19,7 @@ use App\Modules\Inventory\Models\StockLayer;
 use App\Modules\Inventory\Models\StockMove;
 use App\Modules\Inventory\Support\PackageIssueComposition;
 use App\Modules\Inventory\Support\PackageTransferComposition;
+use App\Modules\Inventory\Support\PackageWriteScope;
 use App\Modules\Inventory\Support\WarehouseScope;
 use App\Support\CompanyContext;
 use Brick\Math\BigDecimal;
@@ -110,11 +111,11 @@ final class TransferPackagedStock
             $predecessor = PackageOperation::query()->findOrFail($current['operation_id']);
 
             $batchNo = $predecessor->batch_id === null ? null : StockBatch::query()->findOrFail($predecessor->batch_id)->code;
-            $posted = app(PostInventoryMovement::class)->transferPosted([
+            $posted = PackageWriteScope::run($item->id, fn () => app(PostInventoryMovement::class)->transferPosted([
                 'item_id' => $item->id, 'from_location_id' => $predecessor->location_id, 'to_location_id' => $toLocation, 'qty' => (string) $total,
                 'uom_id' => $item->stock_uom_id, 'moved_at' => $input['moved_at'], 'source_type' => $input['source_type'], 'source_id' => $input['source_id'],
                 'batch_no' => $batchNo,
-            ]);
+            ]));
             if ($posted->wasReplayed()) {
                 throw new DomainInvariantException('Stock was already transferred for this source without package evidence; it cannot be attached afterwards.');
             }

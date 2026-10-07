@@ -6,6 +6,7 @@ namespace App\Modules\Purchasing\Actions;
 
 use App\Exceptions\DomainInvariantException;
 use App\Models\User;
+use App\Modules\Inventory\Support\PackageWriteScope;
 use App\Modules\Purchasing\Models\GoodsReceiptLine;
 use App\Modules\Purchasing\Models\QualityDisposition;
 use App\Modules\Purchasing\Support\GoodsReceiptStatus;
@@ -43,6 +44,7 @@ final class PostQualityDisposition
                 }
             }
 
+            PackageWriteScope::refuse($line->item_id, 'a quality disposition');
             if ($line->goodsReceipt->status !== GoodsReceiptStatus::Posted) {
                 throw new DomainInvariantException('QA dispositions require a posted goods receipt.', 'goods_receipt_line_id');
             }
