@@ -1,6 +1,6 @@
 # 0091 — Activate grouped package tracking atomically, and enforce it fail-closed in the database
 
-- **Status:** proposed
+- **Status:** accepted (2026-10-07)
 - **Date:** 2026-10-07
 - **Affects:** Inventory (item policy, every stock writer, package kernel), Purchasing receipts/QA/reversal, cutover, recalculation, negative stock
 
