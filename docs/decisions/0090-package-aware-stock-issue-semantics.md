@@ -1,6 +1,6 @@
 # 0090 — Package-aware stock issue: one contract at three levels of detail; quantity, packaging and cost stay separate
 
-- **Status:** proposed (revised 2026-10-07 after owner review: not one mandatory level of detail)
+- **Status:** proposed (revised twice on 2026-10-07 after owner review; the owner's confirmations are listed under Decision)
 - **Date:** 2026-10-07
 - **Affects:** Inventory (issue/transfer posting, package kernel), Phase 5 job issue, Phase 3 material proposals
 
@@ -24,6 +24,12 @@ Verified in code 2026-10-07:
   no container-identity table. No issue screen exists (Phase 5), so the adapter is an internal Action first.
 
 ## Decision
+
+Owner confirmations, 2026-10-07: keep the three per-item levels; quantity stays authoritative in the stock unit and packaging
+explains form only; costing is independent and allocator-led; grouped mode forgets a package's origin once opened; container mode
+keeps the individual container and its remaining quantity; strict package rules apply only after the mode becomes authoritative
+through a reconciled count; scalar-only issues are refused once a package mode is authoritative; opening during an issue is allowed
+with the proper permission; inner packages are tracked by default and outer cartons are opt-in.
 
 ### 1. Three things that never merge
 
@@ -54,8 +60,9 @@ transaction, or be guarded with a clear message.
 
 ### 3. Which packaging levels are tracked (nesting) — `PACKAGE_BALANCE` only
 
-An item with nested definitions (box → can) tracks a **chain of levels starting from the innermost sealed level**. Recommended
-default: the innermost level only (cans). Outer levels (boxes) are opt-in, because they cost counting effort.
+An item with nested definitions (box → can) tracks a **chain of levels starting from the innermost sealed level**. The normal
+default is the innermost level only (cans): 5 L cans are tracked without tracking the cartons they arrived in. Outer levels
+(boxes, cartons) are opt-in, because they cost counting effort.
 
 | Tracked levels | 59 L at XYZ |
 |---|---|
@@ -63,10 +70,26 @@ default: the innermost level only (cans). Outer levels (boxes) are opt-in, becau
 | cans | 10 sealed cans + 9 L loose |
 | boxes + cans | 2 sealed boxes + 2 sealed cans + 9 L loose |
 
-Rules: an untracked outer level **dissolves on receipt** (receiving 3 boxes records 12 sealed cans); tracking boxes without cans is
+Rules: an untracked outer level **dissolves on receipt** (receiving 3 boxes records 12 sealed cans in the receipt's physical evidence; the commercial carton, its price basis and the
+purchase order are unchanged, ADR 0080); tracking boxes without cans is
 refused, because the loose pool must mean "open", not "sealed but uncounted"; unpacking a tracked box is an existing `UNPACK`
 (box → 4 sealed cans) and opening a can is an existing `OPEN` (can → loose). Tracked levels are set at the reconciled
 checkpoint; adding an outer level needs a new count, removing one is refused while sealed stock exists at it (unpack first, ADR 0052).
+
+### 3a. What grouped mode records — and deliberately refuses to record
+
+Grouped mode reports the useful physical **forms**, nothing finer:
+
+| Recorded | Not recorded, and not accepted as input |
+|---|---|
+| sealed count per tracked level (sealed cans; sealed boxes if opted in) | an identity, code or barcode for one can |
+| **one** open/loose quantity per scope (item, location, batch) | how many cans were opened, or how much each holds |
+| availability class (usable / held) as a separate fact | "this litre came from that can or that receipt" |
+
+It must not drift into container tracking. Enforced, not merely documented: grouped evidence has no container column and a database
+check requires it to be empty; draw lines in grouped mode name only a level and a count or a quantity; a line naming a container is
+refused; and no read model groups loose stock by origin. Anything that needs "which can" is a container-mode requirement, reached
+only by the upgrade in §10.
 
 ### 4. One issue contract, mode-specific draw lines
 
@@ -139,7 +162,7 @@ own contribution; SPECIFIC/serial are out of scope).
 
 | Record | Holds |
 |---|---|
-| `inventory_package_operations` (kind `ISSUE`) | predecessor, `stock_move_id` (unique), actor, reason, request key, payload hash |
+| `inventory_package_operations` (kind `ISSUE`) | predecessor, `stock_move_id` (unique), the item's `tracking_mode` at the time, actor, reason, request key, payload hash |
 | `inventory_package_issue_draws` (new) | operation, line kind, tracked level or definition, whole count, quantity taken, quantity left loose, nullable `container_id` |
 | `inventory_package_issue_allocations` (new) | operation, stock layer, quantity — the allocator's actual vector |
 | complete successor states and contributions | as today; immutable |
@@ -160,6 +183,42 @@ contributions mapped to the destination layers the poster actually created, and 
 until each writer is integrated or guarded: issue, transfer, composition-only count correction, receipt reversal and QA split,
 negative-stock settlement, cutover and recalculation, a hard refusal of scalar issue/transfer for authoritative items, registered
 permissions, demo scenarios, a journey and activation reconciliation.
+
+### 10. The upgrade path — always through a count, never by inference
+
+Quantity only → Grouped → Container-level. Each step is a **counted, reconciled checkpoint**; until it commits, the item behaves in
+its old mode and nothing about the new one is enforced.
+
+| Step | What must be counted | Reconciliation | Result |
+|---|---|---|---|
+| Quantity only → Grouped | sealed packages per tracked level and the open/loose quantity, per location and batch (the existing counted checkpoint) | decomposition must equal the ledger quantity exactly at four decimals, under the location lock | grouped mode authoritative from that checkpoint |
+| Grouped → Container-level | each sealed state is expanded into *n* registered containers (a code or barcode, confirmed physically) and every litre of loose stock is declared in a named container or bulk vessel with its remaining quantity | Σ container remaining must equal the same ledger quantity | container mode authoritative from that checkpoint |
+| Quantity only → Container-level | the container count above, taken directly | same | same (no hidden pass through grouped) |
+
+Common rules (ADR 0082 §5, ADR 0052 §2): a reason and actor, a stale-stock refusal if any movement posted after the count was
+taken, a non-zero discrepancy resolved first by the existing physical-count adjustment path, no open shortage, and **no state is
+ever derived by dividing old scalar stock into packages**. Receipts, issues and transfers posted before the checkpoint stay scalar
+history; their evidence is not back-filled. The previous snapshots remain readable. Downgrades follow ADR 0052: refused while the
+finer detail would be lost; a deliberate "collapse" needs its own decision and is not designed here.
+
+### 11. The container seam — what this slice must not hard-code
+
+The grouped build must leave container mode as an addition, not a rewrite of the posting model. The contracts that guarantee it:
+
+- The stock-anchored flow in §6 (lock, replay, validate, post the move, capture the vector, write evidence, check at commit) and
+  the `ISSUE` operation, allocation lines, request key and payload hash are **mode-agnostic**; only "validate" and "conserve" differ.
+- Every operation records the item's `tracking_mode` at the time it was written, so replay applies the right invariants even if the
+  item's mode later changes.
+- A container is later one more *state* in the same immutable full-scope snapshot: a `CONTAINER` form with a nullable
+  `container_id`, count one and its remaining quantity. It therefore reuses the existing per-state contributions, per-layer
+  conservation, append-only guards and successor model. Adding it is an additive migration: a nullable column, a new form value
+  and an identity registry (`inventory_containers`: company, item, definition, code, creating operation).
+- `inventory_package_issue_draws` already has a nullable `container_id` and a line kind that can be `CONTAINER`; grouped mode
+  forbids both (§3a), container mode requires them.
+- The poster's returned allocation vector, the stock-move anchor and the permission model (view / open / issue authority) do not
+  mention packages' form at all.
+
+Container-mode build is deferred, but nothing above is a grouped-only shortcut that it would have to undo.
 
 ## Consequences
 
