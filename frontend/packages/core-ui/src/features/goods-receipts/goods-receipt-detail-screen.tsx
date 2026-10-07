@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ReceiptReversalPanel, type ReversalDraws } from "../package-stock/receipt-reversal-panel";
 import { useNavigate, useParams } from "react-router";
 import {
   useCurrenciesIndex,
@@ -287,6 +288,7 @@ export function GoodsReceiptDetailScreen() {
   const missingComposition = Object.values(needsComposition).some(Boolean);
 
   const [showReverse, setShowReverse] = useState(false);
+  const [packageReversal, setPackageReversal] = useState<ReversalDraws>({ draws: [], blocked: false });
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
   const postHeadingRef = useFocusOnOpen<HTMLHeadingElement>(confirmPost);
@@ -513,6 +515,16 @@ export function GoodsReceiptDetailScreen() {
             Reversal posts opposite inventory effects. It is blocked after
             downstream consumption or any QA disposition.
           </p>
+          <ReceiptReversalPanel
+            receiptId={receipt.id}
+            describe={(itemId) => {
+              const item = items.find((candidate) => candidate.id === itemId);
+              const unit = uoms.find((candidate) => candidate.id === item?.stock_uom_id)?.code ?? "";
+
+              return { label: item ? `${item.code} — ${item.name}` : `Item #${itemId}`, unit };
+            }}
+            onChange={setPackageReversal}
+          />
           <Textarea
             value={reason}
             onChange={(event) => setReason(event.target.value)}
@@ -521,11 +533,17 @@ export function GoodsReceiptDetailScreen() {
           <div className="flex gap-2">
             <Button
               variant="destructive"
-              disabled={!reason.trim() || reverse.isPending}
+              disabled={!reason.trim() || reverse.isPending || packageReversal.blocked}
               onClick={() => {
                 setError(null);
                 reverse.mutate(
-                  { goodsReceipt: receipt.id, data: { reason: reason.trim() } },
+                  {
+                    goodsReceipt: receipt.id,
+                    data: {
+                      reason: reason.trim(),
+                      ...(packageReversal.draws.length > 0 ? { package_draws: packageReversal.draws } : {}),
+                    },
+                  },
                   {
                     onSuccess: () => {
                       setShowReverse(false);

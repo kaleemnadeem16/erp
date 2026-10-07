@@ -33,7 +33,7 @@ class RecordScopeCoverageTest extends TestCase
     private const SCOPED = [
         'GET api/v1/stock-layers', 'GET api/v1/stock-layers/{}', 'GET api/v1/stock-moves', 'GET api/v1/stock-moves/{}',
         'POST api/v1/stock-issues', 'POST api/v1/stock-transfers', 'GET api/v1/physical-counts', 'POST api/v1/physical-counts', 'GET api/v1/physical-counts/{}',
-        'POST api/v1/physical-counts/{}/lines', 'POST api/v1/physical-count-lines/{}/count',
+        'POST api/v1/physical-counts/{}/lines', 'POST api/v1/physical-count-lines/{}/count', 'POST api/v1/physical-count-lines/{}/composition', 'POST api/v1/physical-count-lines/{}/refresh',
         'POST api/v1/physical-counts/{}/post', 'POST api/v1/physical-counts/{}/cancel',
         'GET api/v1/negative-stock-override-requests',
         'POST api/v1/negative-stock-override-requests',

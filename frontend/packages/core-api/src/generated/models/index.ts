@@ -3,7 +3,7 @@
  * Do not edit manually.
  *
  * Pure-type schemas are re-exported with `export type *` so a browser never requests them;
- * only the 132 schemas that export a runtime value use `export *`.
+ * only the 133 schemas that export a runtime value use `export *`.
  */
 export type * from "./accountDevicesIndex200";
 export type * from "./accountShow200";
@@ -663,6 +663,11 @@ export type * from "./goodsReceiptsPost200";
 export type * from "./goodsReceiptsPost200Data";
 export type * from "./goodsReceiptsPost200DataAllOf";
 export type * from "./goodsReceiptsPost403";
+export type * from "./goodsReceiptsReversalPreview200";
+export type * from "./goodsReceiptsReversalPreview200Data";
+export type * from "./goodsReceiptsReversalPreview200DataLinesItem";
+export type * from "./goodsReceiptsReversalPreview200DataLinesItemAnyOf";
+export type * from "./goodsReceiptsReversalPreview200DataLinesItemAnyOfBlockersItem";
 export type * from "./goodsReceiptsReverse200";
 export type * from "./goodsReceiptsReverse200Data";
 export type * from "./goodsReceiptsReverse200DataAllOf";
@@ -1243,13 +1248,19 @@ export type * from "./permissionsIndex200Data";
 export type * from "./permissionsIndex403";
 export type * from "./physicalCountLineEntryResource";
 export type * from "./physicalCountLineResource";
+export type * from "./physicalCountLineResourceCompositionItem";
+export type * from "./physicalCountLineResourceCompositionItemCount";
+export type * from "./physicalCountLineResourceCompositionItemPackagingId";
 export type * from "./physicalCountLineResourceBatchId";
 export type * from "./physicalCountLineResourceCountedAt";
 export type * from "./physicalCountLineResourceCountedBy";
 export type * from "./physicalCountLineResourceCountedQty";
 export type * from "./physicalCountLineResourceFoundUnitCost";
 export type * from "./physicalCountLineResourcePostedStockMoveId";
+export type * from "./physicalCountLineResourceStaleReason";
+export type * from "./physicalCountLinesComposition200";
 export type * from "./physicalCountLineResourceSerialNo";
+export type * from "./physicalCountLinesRefresh200";
 export type * from "./physicalCountLinesCount200";
 export type * from "./physicalCountResource";
 export type * from "./physicalCountResourceCancelledAt";
@@ -1519,6 +1530,11 @@ export type * from "./recordGoodsReceiptLineCompositionRequest";
 export type * from "./recordGoodsReceiptLineCompositionRequestCompositionItem";
 export type * from "./recordGoodsReceiptLineCompositionRequestCompositionItemCount";
 export type * from "./recordGoodsReceiptLineCompositionRequestCompositionItemPackagingId";
+export type * from "./recordPhysicalCountCompositionRequest";
+export type * from "./recordPhysicalCountCompositionRequestCompositionItem";
+export type * from "./recordPhysicalCountCompositionRequestCompositionItemCount";
+export type * from "./recordPhysicalCountCompositionRequestCompositionItemPackagingId";
+export type * from "./recordPhysicalCountCompositionRequestCompositionItemQuantity";
 export type * from "./recordGoodsReceiptLineCompositionRequestCompositionItemQuantity";
 export type * from "./recordPhysicalCountLineRequest";
 export type * from "./requestInventoryCutoverNegativeOpeningRequest";
@@ -1550,6 +1566,12 @@ export type * from "./resourceRatesShow200";
 export type * from "./resourceRatesShowParams";
 export type * from "./resourceRatesStore201";
 export type * from "./resumeRecalculationRegenerationRequest";
+export type * from "./reverseGoodsReceiptRequestPackageDrawsItem";
+export type * from "./reverseGoodsReceiptRequestPackageDrawsItemLinesItem";
+export type * from "./reverseGoodsReceiptRequestPackageDrawsItemLinesItemCount";
+export * from "./reverseGoodsReceiptRequestPackageDrawsItemLinesItemKind";
+export type * from "./reverseGoodsReceiptRequestPackageDrawsItemLinesItemPackagingId";
+export type * from "./reverseGoodsReceiptRequestPackageDrawsItemLinesItemQuantity";
 export type * from "./reverseGoodsReceiptRequest";
 export type * from "./reviewNegativeStockOverrideRequestRequest";
 export * from "./reviewProfile";

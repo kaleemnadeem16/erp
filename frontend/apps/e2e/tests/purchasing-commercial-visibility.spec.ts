@@ -27,7 +27,8 @@ test.describe('a Receiving Clerk', () => {
     await expect(page.getByText(/FX rate/)).toHaveCount(0);
     await expect(page.getByText(/Unit price|Line amount/)).toHaveCount(0);
 
-    await page.goto('/goods-receipts');
+    // Filtered to drafts: newer posted receipts (other specs, manual work) fill the first page of the unfiltered list.
+    await page.goto('/goods-receipts?filter.status=DRAFT');
     await expect(page.getByRole('heading', { name: 'Goods Receipts' })).toBeVisible();
     const receiptId = await thinnerDraftReceipt(page);
     await page.goto(`/goods-receipts/${receiptId}`);
@@ -39,7 +40,7 @@ test.describe('a Receiving Clerk', () => {
 });
 
 test('the administrator sees the same receipt priced', async ({ page }) => {
-  await page.goto('/goods-receipts');
+  await page.goto('/goods-receipts?filter.status=DRAFT');
   await page.getByRole('row').filter({ hasText: /Draft|DRAFT/ }).first().click();
   await expect(page.getByText('Provisional cost').first()).toBeVisible();
 });

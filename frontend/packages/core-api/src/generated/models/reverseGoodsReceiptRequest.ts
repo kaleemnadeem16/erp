@@ -4,8 +4,14 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
+import type { ReverseGoodsReceiptRequestPackageDrawsItem } from "./reverseGoodsReceiptRequestPackageDrawsItem";
 
 export interface ReverseGoodsReceiptRequest {
   /** @maxLength 1000 */
   reason: string;
+  /**
+   * Grouped items only: per receipt line, the whole sealed packages and loose quantity that are physically going back.
+   * @maxItems 200
+   */
+  package_draws?: ReverseGoodsReceiptRequestPackageDrawsItem[];
 }

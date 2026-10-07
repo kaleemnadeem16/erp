@@ -90,3 +90,25 @@ export async function activateGrouped(page: Page, world: PackageStockWorld): Pro
   ).data;
   await api(page, 'POST', `/items/${world.item.id}/package-tracking/activate`, { request_key: `e2e-activate-${world.item.code}`, reason: 'E2E', checkpoints: [count.operation_id] });
 }
+
+/** A second person in their own browser session (the demo count reviewer posts counts that the demo user created; nobody posts their own). */
+export async function signInAs(browser: import('@playwright/test').Browser, email: string): Promise<Page> {
+  const context = await browser.newContext({ storageState: { cookies: [], origins: [] }, baseURL: ORIGIN });
+  const page = await context.newPage();
+  await page.goto('/login');
+  await page.getByLabel('Email', { exact: true }).fill(email);
+  await page.getByLabel('Password', { exact: true }).fill(process.env.E2E_USER_PASSWORD ?? '!User@Erp@123');
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await expect(page).not.toHaveURL(/\/login/);
+
+  return page;
+}
+
+/** A draft physical count of the main warehouse holding one line for the item, made through the API as the signed-in person. */
+export async function draftCountWithLine(page: Page, world: PackageStockWorld): Promise<{ countId: number; lineId: number }> {
+  const warehouseId = (await list(page, '/locations')).find((l) => l.id === world.main.id).warehouse_id;
+  const count = (await api(page, 'POST', '/physical-counts', { warehouse_id: warehouseId })).data;
+  const line = (await api(page, 'POST', `/physical-counts/${count.id}/lines`, { item_id: world.item.id, location_id: world.main.id })).data;
+
+  return { countId: count.id, lineId: line.id };
+}
