@@ -1,6 +1,6 @@
 # 0092 — Package-aware physical count: recount the composition, reconcile the quantity through a governed movement
 
-- **Status:** proposed
+- **Status:** accepted (2026-10-08, with the tracked-level refinement in §1a)
 - **Date:** 2026-10-08
 - **Affects:** Inventory (physical count, package kernel), Phase 2 stock counting
 
@@ -28,6 +28,20 @@ definition plus one open/loose quantity (no container identities, no per-vessel 
 typed separately. A line also captures, when it is added, the scope's latest package evidence and movement watermark (`package_operation_id`,
 `package_watermark`); an authoritative scope that holds nothing captures none. The blind-count rule is unchanged: entering a composition shows
 the counter nothing of the book.
+
+### 1a. A count may only use the item's tracked levels
+
+The tracked package levels of a grouped item are part of its **authoritative configuration**, fixed at activation (ADR 0090 §3: the innermost sealed level
+by default, outer cartons opt-in, and tracking an outer level requires tracking the level inside it). They are stored on the activation as immutable
+`inventory_package_tracked_levels` rows. If the activation does not name them, they default to the sealed definitions in the counted checkpoints,
+closed over their inner definitions, and any explicit list must contain at least those. A scope's activation count may use only tracked levels.
+
+From then on **no evidence state of that item may name an untracked definition**: this is enforced by a database trigger on package states (so a count,
+a receipt observation, an issue, a transfer or any future writer all fail closed) and reported with a friendly message by the count and receipt
+Actions. A count of an item that tracks 5 L cans may therefore record sealed 5 L cans and loose quantity, and cannot introduce carton balances; a
+delivery of cartons is observed in terms of the tracked cans inside them. **Changing the tracked levels is not a count outcome.** It needs its own governed
+configuration-and-reconciliation transition, which is not built here (like deactivation, it needs its own decision). Existing activations are backfilled
+from the sealed definitions in their activation checkpoints.
 
 ### 2. Posting: three outcomes per line, all in the count's one transaction
 
@@ -91,8 +105,8 @@ other refused writer from ADR 0091 stays refused.
   "right litres, wrong cans" case posts nothing to the ledger.
 - **Negative:** a grouped line is stricter than a quantity-only one (freshness, composition entry), and a stale count must be refreshed line by line. More
   evidence kinds and one more table.
-- **Requires:** additive migration (composition table, line capture columns, operation link, `COUNT_VARIANCE` kind and its database function, widened
-  evidence anchor); capability `inventory.package-state.recount` registered and granted to the demo persona; tests for each example here, staleness, rollback
+- **Requires:** additive migration (tracked-level table with backfill and the state trigger, composition table, line capture columns, operation link, `COUNT_VARIANCE` kind and its
+  database function, widened evidence anchor); capability `inventory.package-state.recount` registered and granted to the demo persona; tests for each example here, staleness, rollback
   of a mixed count, idempotency, blind counting, scope and quantity-only parity; a demo.
 
 ## Alternatives considered
