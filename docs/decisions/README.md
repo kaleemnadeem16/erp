@@ -106,8 +106,9 @@ in the same commit.
 | [0089](0089-organisation-units-and-record-scope.md) | Organisation units and record scope, first applied to inventory by warehouse | accepted | 2026-10-06 |
 | [0090](0090-package-aware-stock-issue-semantics.md) | Package-aware stock issue: one contract at three levels of detail; quantity, packaging and cost stay separate | accepted | 2026-10-07 |
 | [0091](0091-activate-grouped-package-tracking-and-fail-closed-enforcement.md) | Activate grouped package tracking atomically, and enforce it fail-closed in the database | accepted | 2026-10-07 |
+| [0092](0092-package-aware-physical-count-posting.md) | Package-aware physical count: recount the composition, reconcile the quantity through a governed movement | proposed | 2026-10-08 |
 
-**Next number: 0092**
+**Next number: 0093**
 
 ## By theme
 
