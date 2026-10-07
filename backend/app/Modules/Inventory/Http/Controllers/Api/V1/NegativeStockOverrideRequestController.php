@@ -16,7 +16,9 @@ use App\Modules\Inventory\Http\Requests\NegativeStockOverride\StoreNegativeStock
 use App\Modules\Inventory\Http\Resources\NegativeStockOverrideRequestResource;
 use App\Modules\Inventory\Models\NegativeStockOverrideRequest;
 use App\Modules\Inventory\Support\NegativeStockApprovalDecision;
+use App\Modules\Inventory\Support\NegativeStockReadAccess;
 use App\Modules\Inventory\Support\NegativeStockReviewOutcome;
+use App\Modules\Inventory\Support\WarehouseScope;
 use App\Support\Concerns\AppliesApiQuery;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -40,11 +42,15 @@ class NegativeStockOverrideRequestController extends Controller
     ];
 
     /** @var array<string, string> */
+    /** The permissions that let a person raise a request; the company's workflow picks which one applies. */
+    private const REQUEST_PERMISSIONS = ['inventory.negative-stock.request', 'inventory.negative-stock.override'];
+
     private const SORTABLE = ['requested_at' => 'requested_at'];
 
     public function index(IndexNegativeStockOverrideRequestRequest $request): AnonymousResourceCollection
     {
         $query = NegativeStockOverrideRequest::query();
+        WarehouseScope::limitToLocation($query, $request->user(), NegativeStockReadAccess::PERMISSIONS);
         $this->applyIncludes($query, $request, self::INCLUDABLE);
 
         if ($request->filled('filter.movement_class')) {
@@ -66,6 +72,7 @@ class NegativeStockOverrideRequestController extends Controller
 
     public function store(StoreNegativeStockOverrideRequestRequest $request, RequestNegativeStockOverride $requestOverride): JsonResponse
     {
+        abort_unless(WarehouseScope::permitsLocation($request->user(), self::REQUEST_PERMISSIONS, $request->integer('location_id')), 403, 'You cannot request a negative-stock override in that warehouse.');
         $override = $requestOverride($request->validated(), $request->user());
 
         return (new NegativeStockOverrideRequestResource($override))->response()->setStatusCode(201);
@@ -73,11 +80,14 @@ class NegativeStockOverrideRequestController extends Controller
 
     public function show(ShowNegativeStockOverrideRequestRequest $request, NegativeStockOverrideRequest $negativeStockOverrideRequest): NegativeStockOverrideRequestResource
     {
+        abort_unless(WarehouseScope::permitsLocation($request->user(), NegativeStockReadAccess::PERMISSIONS, $negativeStockOverrideRequest->location_id), 404);
+
         return new NegativeStockOverrideRequestResource($negativeStockOverrideRequest->load($this->requestedIncludes($request, self::INCLUDABLE)));
     }
 
     public function decide(DecideNegativeStockOverrideRequestRequest $request, NegativeStockOverrideRequest $negativeStockOverrideRequest, DecideNegativeStockOverride $decide): NegativeStockOverrideRequestResource
     {
+        abort_unless(WarehouseScope::permitsLocation($request->user(), 'inventory.negative-stock.approve', $negativeStockOverrideRequest->location_id), 404);
         $decide(
             $negativeStockOverrideRequest,
             NegativeStockApprovalDecision::from($request->validated('decision')),
@@ -90,6 +100,7 @@ class NegativeStockOverrideRequestController extends Controller
 
     public function review(ReviewNegativeStockOverrideRequestRequest $request, NegativeStockOverrideRequest $negativeStockOverrideRequest, ReviewNegativeStockOverride $review): NegativeStockOverrideRequestResource
     {
+        abort_unless(WarehouseScope::permitsLocation($request->user(), 'inventory.negative-stock.review', $negativeStockOverrideRequest->location_id), 404);
         $review(
             $negativeStockOverrideRequest,
             NegativeStockReviewOutcome::from($request->validated('outcome')),

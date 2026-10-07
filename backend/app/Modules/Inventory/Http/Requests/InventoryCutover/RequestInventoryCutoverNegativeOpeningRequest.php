@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Inventory\Http\Requests\InventoryCutover;
 
+use App\Modules\Inventory\Support\WarehouseScope;
 use App\Rules\Support\CompanyScoped;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -17,7 +18,8 @@ class RequestInventoryCutoverNegativeOpeningRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('inventory.cutover.negative_opening.request') === true;
+        return $this->user()?->can('inventory.cutover.negative_opening.request') === true
+            && WarehouseScope::unrestricted($this->user(), 'inventory.cutover.negative_opening.request');
     }
 
     /** @return array<string, mixed> */

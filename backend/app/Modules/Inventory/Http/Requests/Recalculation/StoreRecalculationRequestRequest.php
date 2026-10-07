@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Inventory\Http\Requests\Recalculation;
 
 use App\Modules\Inventory\Support\RecalculationMovementKind;
+use App\Modules\Inventory\Support\WarehouseScope;
 use App\Rules\Support\CompanyScoped;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -19,7 +20,8 @@ class StoreRecalculationRequestRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('inventory.recalculation.request') === true;
+        return $this->user()?->can('inventory.recalculation.request') === true
+            && WarehouseScope::unrestricted($this->user(), 'inventory.recalculation.request');
     }
 
     /** @return array<string, mixed> */

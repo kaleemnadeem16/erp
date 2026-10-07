@@ -10,6 +10,7 @@ use App\Modules\Inventory\Models\NegativeStockOverrideRequest;
 use App\Modules\Inventory\Models\NegativeStockOverrideReview;
 use App\Modules\Inventory\Support\NegativeStockAuthorisationMode;
 use App\Modules\Inventory\Support\NegativeStockReviewOutcome;
+use App\Modules\Inventory\Support\WarehouseScope;
 use Illuminate\Support\Facades\DB;
 
 final class ReviewNegativeStockOverride
@@ -30,6 +31,7 @@ final class ReviewNegativeStockOverride
             if (! $actor->can('inventory.negative-stock.review')) {
                 throw new DomainInvariantException('The actor is not permitted to review negative-stock overrides.', 'reviewed_by');
             }
+            WarehouseScope::requireLocation($actor, 'inventory.negative-stock.review', $request->location_id, 'review a negative-stock override');
             $existing = NegativeStockOverrideReview::query()->where('request_id', $request->id)->first();
             if ($existing !== null) {
                 if ($existing->outcome !== $outcome || $existing->reviewed_by !== $actor->id || $existing->notes !== trim($notes)) {

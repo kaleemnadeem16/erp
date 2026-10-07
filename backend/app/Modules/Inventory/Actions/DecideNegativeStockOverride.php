@@ -10,6 +10,7 @@ use App\Modules\Inventory\Models\NegativeStockOverrideApproval;
 use App\Modules\Inventory\Models\NegativeStockOverrideRequest;
 use App\Modules\Inventory\Support\NegativeStockApprovalDecision;
 use App\Modules\Inventory\Support\NegativeStockAuthorisationMode;
+use App\Modules\Inventory\Support\WarehouseScope;
 use Illuminate\Support\Facades\DB;
 
 final class DecideNegativeStockOverride
@@ -30,6 +31,7 @@ final class DecideNegativeStockOverride
             if (! $actor->can('inventory.negative-stock.approve')) {
                 throw new DomainInvariantException('The actor is not permitted to decide negative-stock requests.', 'decided_by');
             }
+            WarehouseScope::requireLocation($actor, 'inventory.negative-stock.approve', $request->location_id, 'decide a negative-stock request');
             $existing = NegativeStockOverrideApproval::query()->where('request_id', $request->id)->first();
             if ($existing !== null) {
                 if ($existing->decision !== $decision || $existing->decided_by !== $actor->id || $existing->notes !== trim($notes)) {

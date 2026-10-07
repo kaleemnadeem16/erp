@@ -10,9 +10,10 @@ use Tests\TestCase;
  * company-wide (the way every surface was before scope existed), and the pending list is the tracked work, not a hidden gap.
  *
  *  - SCOPED: limited to the warehouses a person's units own (WarehouseRecordScopeTest proves each on response bodies);
- *  - REFUSED_WHEN_LIMITED: a limited person gets 403 because the figure cannot be limited to a warehouse;
+ *  - REFUSED_WHEN_LIMITED: a limited person gets 403 because the figure cannot be limited to a warehouse (overview, AVCO pools, and the company-wide
+ *    cutover and recalculation workflows);
  *  - SHARED_REFERENCE_OR_CONFIGURATION: names, codes and company settings, open to whoever may read them by design;
- *  - PENDING: still company-wide, carries stock facts, and is the next slices of Q26.
+ *  - PENDING: still company-wide, carries stock facts, and is the next slices of Q26 (empty: every inventory surface now has a status).
  * A route that is not listed fails; so does a listed route that no longer exists.
  */
 class RecordScopeCoverageTest extends TestCase
@@ -24,10 +25,33 @@ class RecordScopeCoverageTest extends TestCase
         'GET api/v1/physical-counts', 'POST api/v1/physical-counts', 'GET api/v1/physical-counts/{}',
         'POST api/v1/physical-counts/{}/lines', 'POST api/v1/physical-count-lines/{}/count',
         'POST api/v1/physical-counts/{}/post', 'POST api/v1/physical-counts/{}/cancel',
+        'GET api/v1/negative-stock-override-requests',
+        'POST api/v1/negative-stock-override-requests',
+        'GET api/v1/negative-stock-override-requests/{}',
+        'POST api/v1/negative-stock-override-requests/{}/decide',
+        'POST api/v1/negative-stock-override-requests/{}/review',
     ];
 
     private const REFUSED_WHEN_LIMITED = [
         'GET api/v1/inventory-overview', 'GET api/v1/inventory-overview/summary', 'GET api/v1/avco-pools', 'GET api/v1/avco-pools/{}',
+        'GET api/v1/recalculation-requests',
+        'POST api/v1/recalculation-requests',
+        'GET api/v1/recalculation-requests/{}',
+        'POST api/v1/recalculation-impact-versions/{}/decide',
+        'POST api/v1/recalculation-impact-versions/{}/execute',
+        'POST api/v1/recalculation-impact-versions/{}/resume-regeneration',
+        'GET api/v1/inventory-cutovers',
+        'POST api/v1/inventory-cutovers',
+        'GET api/v1/inventory-cutovers/{}',
+        'GET api/v1/inventory-cutovers/{}/preview',
+        'POST api/v1/inventory-cutovers/{}/approve',
+        'POST api/v1/inventory-cutovers/{}/batches',
+        'POST api/v1/inventory-cutovers/{}/commit',
+        'POST api/v1/inventory-cutovers/{}/commit-open-purchase-orders',
+        'POST api/v1/inventory-cutovers/{}/finalise',
+        'POST api/v1/inventory-cutovers/{}/negative-openings',
+        'POST api/v1/inventory-cutovers/{}/validate',
+        'POST api/v1/inventory-cutover-negative-openings/{}/approve',
     ];
 
     private const SHARED_REFERENCE_OR_CONFIGURATION = [
@@ -41,15 +65,6 @@ class RecordScopeCoverageTest extends TestCase
     ];
 
     private const PENDING = [
-        'GET api/v1/negative-stock-override-requests', 'POST api/v1/negative-stock-override-requests', 'GET api/v1/negative-stock-override-requests/{}',
-        'POST api/v1/negative-stock-override-requests/{}/decide', 'POST api/v1/negative-stock-override-requests/{}/review',
-        'GET api/v1/recalculation-requests', 'POST api/v1/recalculation-requests', 'GET api/v1/recalculation-requests/{}',
-        'POST api/v1/recalculation-impact-versions/{}/decide', 'POST api/v1/recalculation-impact-versions/{}/execute', 'POST api/v1/recalculation-impact-versions/{}/resume-regeneration',
-        'GET api/v1/inventory-cutovers', 'POST api/v1/inventory-cutovers', 'GET api/v1/inventory-cutovers/{}', 'GET api/v1/inventory-cutovers/{}/preview',
-        'POST api/v1/inventory-cutovers/{}/approve', 'POST api/v1/inventory-cutovers/{}/batches', 'POST api/v1/inventory-cutovers/{}/commit',
-        'POST api/v1/inventory-cutovers/{}/commit-open-purchase-orders', 'POST api/v1/inventory-cutovers/{}/finalise',
-        'POST api/v1/inventory-cutovers/{}/negative-openings', 'POST api/v1/inventory-cutovers/{}/validate',
-        'POST api/v1/inventory-cutover-negative-openings/{}/approve',
     ];
 
     /** @return list<string> */

@@ -9,13 +9,18 @@ use App\Models\User;
 /** Economic impact is inseparable from the decision this workflow presents. */
 final class RecalculationReadAccess
 {
+    /** Any one of these opens the read. Public so record scope resolves over the same list the gate uses. */
+    public const PERMISSIONS = [
+        'inventory.recalculation.request',
+        'inventory.recalculation.approve',
+        'inventory.recalculation.approve-high-risk',
+        'inventory.recalculation.execute',
+        'inventory.recalculation.review-regeneration',
+        'inventory.valuation.view',
+    ];
+
     public static function allows(?User $user): bool
     {
-        return $user?->can('inventory.recalculation.request')
-            || $user?->can('inventory.recalculation.approve')
-            || $user?->can('inventory.recalculation.approve-high-risk')
-            || $user?->can('inventory.recalculation.execute')
-            || $user?->can('inventory.recalculation.review-regeneration')
-            || $user?->can('inventory.valuation.view');
+        return $user?->hasAnyPermission(self::PERMISSIONS) === true;
     }
 }

@@ -18,6 +18,7 @@ use App\Modules\Inventory\Support\NegativeStockMode;
 use App\Modules\Inventory\Support\NegativeStockMovementClass;
 use App\Modules\Inventory\Support\NegativeStockReasonCode;
 use App\Modules\Inventory\Support\ValuationMethod;
+use App\Modules\Inventory\Support\WarehouseScope;
 use App\Support\CompanyContext;
 use Brick\Math\BigDecimal;
 use Illuminate\Support\Facades\DB;
@@ -70,6 +71,7 @@ final class RequestNegativeStockOverride
             if (! $actor->can($permission)) {
                 throw new DomainInvariantException('The actor is not permitted to request this negative-stock workflow.', 'requested_by');
             }
+            WarehouseScope::requireLocation($actor, $permission, $input['location_id'], 'request a negative-stock override');
             $existing = NegativeStockOverrideRequest::query()->where('source_type', $input['source_type'])->where('source_id', $input['source_id'])->first();
             if ($existing !== null) {
                 $same = $existing->item_id === $item->id

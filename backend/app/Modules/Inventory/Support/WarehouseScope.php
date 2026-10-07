@@ -110,4 +110,16 @@ final class WarehouseScope
             throw new DomainInvariantException("The actor is not permitted to {$action} in this warehouse.");
         }
     }
+
+    /**
+     * The same guard for a write that names a location rather than a warehouse.
+     *
+     * @param  string|list<string>  $permissions
+     */
+    public static function requireLocation(User $actor, string|array $permissions, ?int $locationId, string $action): void
+    {
+        if (! self::permitsLocation($actor, $permissions, $locationId)) {
+            throw new DomainInvariantException("The actor is not permitted to {$action} in this warehouse.");
+        }
+    }
 }

@@ -7,6 +7,7 @@ namespace App\Modules\Inventory\Http\Requests\InventoryCutover;
 use App\Modules\Inventory\Support\AvcoPoolScope;
 use App\Modules\Inventory\Support\InventoryCutoverMode;
 use App\Modules\Inventory\Support\ValuationMethod;
+use App\Modules\Inventory\Support\WarehouseScope;
 use Closure;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -27,7 +28,8 @@ class StoreInventoryCutoverRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('inventory.cutover.create') === true;
+        return $this->user()?->can('inventory.cutover.create') === true
+            && WarehouseScope::unrestricted($this->user(), 'inventory.cutover.create');
     }
 
     /** @return array<string, mixed> */

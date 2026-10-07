@@ -6,6 +6,7 @@ namespace App\Modules\Inventory\Http\Requests\Recalculation;
 
 use App\Http\Requests\Concerns\ValidatesIncludes;
 use App\Modules\Inventory\Support\RecalculationReadAccess;
+use App\Modules\Inventory\Support\WarehouseScope;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ShowRecalculationRequestRequest extends FormRequest
@@ -14,7 +15,8 @@ class ShowRecalculationRequestRequest extends FormRequest
 
     public function authorize(): bool
     {
-        return RecalculationReadAccess::allows($this->user());
+        return RecalculationReadAccess::allows($this->user())
+            && WarehouseScope::unrestricted($this->user(), RecalculationReadAccess::PERMISSIONS);
     }
 
     /** @return array<string, mixed> */

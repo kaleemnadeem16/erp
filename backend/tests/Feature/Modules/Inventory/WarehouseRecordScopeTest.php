@@ -3,15 +3,19 @@
 namespace Tests\Feature\Modules\Inventory;
 
 use App\Exceptions\DomainInvariantException;
+use App\Models\Company;
 use App\Models\Role;
 use App\Models\User;
 use App\Modules\Administration\Models\AccessScopeLimit;
 use App\Modules\Administration\Models\OrganisationUnit;
 use App\Modules\Administration\Models\OrganisationUnitResource;
 use App\Modules\Inventory\Actions\CreatePhysicalCount;
+use App\Modules\Inventory\Actions\ReviewNegativeStockOverride;
 use App\Modules\Inventory\Models\Location;
+use App\Modules\Inventory\Models\NegativeStockOverrideRequest;
 use App\Modules\Inventory\Models\StockLayer;
 use App\Modules\Inventory\Models\StockMove;
+use App\Modules\Inventory\Support\NegativeStockReviewOutcome;
 use App\Modules\Inventory\Support\ValuationMethod;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -30,7 +34,9 @@ class WarehouseRecordScopeTest extends TestCase
 {
     use BuildsOutboundRecalculation, RefreshDatabase;
 
-    private const CAPS = ['inventory.stock.view', 'inventory.movement.view', 'inventory.physical_count.create', 'inventory.physical_count.count', 'inventory.physical_count.post', 'inventory.availability.view'];
+    private const CAPS = ['inventory.stock.view', 'inventory.movement.view', 'inventory.physical_count.create', 'inventory.physical_count.count', 'inventory.physical_count.post', 'inventory.availability.view',
+        'inventory.negative-stock.override', 'inventory.negative-stock.review', 'inventory.negative-stock.approve',
+        'inventory.recalculation.request', 'inventory.recalculation.execute', 'inventory.cutover.create', 'inventory.cutover.stage'];
 
     private Location $khi;
 
@@ -188,6 +194,77 @@ class WarehouseRecordScopeTest extends TestCase
         $this->expectExceptionMessage('not permitted to create a physical count in this warehouse');
 
         app(CreatePhysicalCount::class)(['warehouse_id' => $this->lhe->warehouse_id], $this->khiClerk);
+    }
+
+    /** @return array<string, mixed> */
+    private function overrideInput(Location $location, int $sourceId): array
+    {
+        return [
+            'item_id' => $this->item->id, 'location_id' => $location->id, 'movement_class' => 'MATERIAL_CONSUMPTION',
+            'requested_qty' => '500.0000', 'source_type' => 'TEST_ISSUE', 'source_id' => $sourceId,
+            'reason_code' => 'PAPERWORK_DELAY', 'explanation' => 'Receipt paperwork is delayed',
+        ];
+    }
+
+    public function test_negative_stock_override_requests_follow_the_warehouse_of_their_location(): void
+    {
+        Company::query()->findOrFail(1)->update([
+            'negative_stock_mode' => 'AUTHORISED_OVERRIDE', 'negative_stock_authorisation_mode' => 'IMMEDIATE_WITH_REVIEW',
+            'negative_stock_material_consumption_enabled' => true,
+        ]);
+        $khiRequest = $this->actingAs($this->boss)->postJson('/api/v1/negative-stock-override-requests', $this->overrideInput($this->khi, 101))->assertCreated()->json('data.id');
+        $lheRequest = $this->postJson('/api/v1/negative-stock-override-requests', $this->overrideInput($this->lhe, 102))->assertCreated()->json('data.id');
+
+        // The list, its total and the includes follow the scope; a person in no unit sees nothing.
+        $list = $this->actingAs($this->khiClerk)->getJson('/api/v1/negative-stock-override-requests?include=location')->assertOk();
+        $this->assertSame([$khiRequest], $list->json('data.*.id'));
+        $this->assertSame(1, $list->json('meta.total'));
+        $this->assertStringNotContainsString('"lhe"', $list->getContent());
+        $this->assertSame(2, $this->actingAs($this->boss)->getJson('/api/v1/negative-stock-override-requests')->json('meta.total'));
+        $this->assertSame(0, $this->actingAs($this->lostClerk)->getJson('/api/v1/negative-stock-override-requests')->json('meta.total'));
+
+        // A request elsewhere is a 404 to read and to review; raising one there is refused, in the person's own warehouse it works.
+        $this->actingAs($this->khiClerk)->getJson("/api/v1/negative-stock-override-requests/{$khiRequest}")->assertOk();
+        $this->getJson("/api/v1/negative-stock-override-requests/{$lheRequest}")->assertNotFound();
+        $this->postJson("/api/v1/negative-stock-override-requests/{$lheRequest}/review", ['outcome' => 'JUSTIFIED', 'notes' => 'ok'])->assertNotFound();
+        $this->postJson('/api/v1/negative-stock-override-requests', $this->overrideInput($this->lhe, 103))->assertForbidden();
+        $this->postJson('/api/v1/negative-stock-override-requests', $this->overrideInput($this->orphan, 104))->assertForbidden();
+        $this->postJson('/api/v1/negative-stock-override-requests', $this->overrideInput($this->khi, 105))->assertCreated();
+        $this->assertSame(0, DB::table('negative_stock_override_reviews')->where('request_id', $lheRequest)->count(), 'nothing happened to the request they could not reach');
+
+        $this->postJson("/api/v1/negative-stock-override-requests/{$khiRequest}/review", ['outcome' => 'JUSTIFIED', 'notes' => 'checked'])->assertOk();
+        $this->actingAs($this->boss)->getJson("/api/v1/negative-stock-override-requests/{$lheRequest}")->assertOk();
+    }
+
+    public function test_a_console_command_or_job_cannot_decide_a_negative_stock_request_outside_the_scope(): void
+    {
+        Company::query()->findOrFail(1)->update([
+            'negative_stock_mode' => 'AUTHORISED_OVERRIDE', 'negative_stock_authorisation_mode' => 'IMMEDIATE_WITH_REVIEW',
+            'negative_stock_material_consumption_enabled' => true,
+        ]);
+        $this->actingAs($this->boss)->postJson('/api/v1/negative-stock-override-requests', $this->overrideInput($this->lhe, 201))->assertCreated();
+        $request = NegativeStockOverrideRequest::query()->sole();
+
+        $this->expectException(DomainInvariantException::class);
+        $this->expectExceptionMessage('not permitted to review a negative-stock override in this warehouse');
+
+        app(ReviewNegativeStockOverride::class)($request, NegativeStockReviewOutcome::Justified, 'ok', $this->khiClerk);
+    }
+
+    public function test_cutover_and_recalculation_are_company_wide_so_a_limited_person_is_refused(): void
+    {
+        $surfaces = ['/api/v1/inventory-cutovers', '/api/v1/recalculation-requests'];
+
+        foreach ([$this->khiClerk, $this->lostClerk, $this->bothClerk] as $limited) {
+            foreach ($surfaces as $url) {
+                $this->actingAs($limited)->getJson($url)->assertForbidden();
+            }
+            $this->postJson('/api/v1/inventory-cutovers', [])->assertForbidden();
+            $this->postJson('/api/v1/recalculation-requests', [])->assertForbidden();
+        }
+        foreach ($surfaces as $url) {
+            $this->actingAs($this->boss)->getJson($url)->assertOk();
+        }
     }
 
     public function test_the_overview_and_avco_pools_refuse_a_limited_person_because_they_cannot_be_limited_to_a_warehouse(): void

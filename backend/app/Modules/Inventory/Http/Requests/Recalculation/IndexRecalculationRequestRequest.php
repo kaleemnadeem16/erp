@@ -7,6 +7,7 @@ namespace App\Modules\Inventory\Http\Requests\Recalculation;
 use App\Http\Requests\Concerns\ValidatesListQuery;
 use App\Modules\Inventory\Support\RecalculationMovementKind;
 use App\Modules\Inventory\Support\RecalculationReadAccess;
+use App\Modules\Inventory\Support\WarehouseScope;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -16,7 +17,8 @@ class IndexRecalculationRequestRequest extends FormRequest
 
     public function authorize(): bool
     {
-        return RecalculationReadAccess::allows($this->user());
+        return RecalculationReadAccess::allows($this->user())
+            && WarehouseScope::unrestricted($this->user(), RecalculationReadAccess::PERMISSIONS);
     }
 
     /** @return array<string, mixed> */
