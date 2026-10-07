@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Modules\Administration\Models\AccessScopeLimit;
 use App\Modules\Inventory\Http\Requests\PackageStock\ShowItemPackageTrackingRequest;
 use App\Modules\Inventory\Models\ItemPackaging;
+use App\Modules\Inventory\Models\Location;
 use App\Modules\Inventory\Models\PackageOperation;
 use App\Modules\Inventory\Models\StockMove;
 use App\Modules\Inventory\Support\PackageWriteScope;
@@ -287,6 +288,88 @@ class PackageStockApiTest extends RecordPackageCheckpointTest
         $this->postJson('/api/v1/stock-transfers', ['item_id' => $this->w['item']->id, 'from_location_id' => $this->w['a'], 'to_location_id' => $to, 'request_key' => 'blocked', 'reason' => 'Restock',
             'draw' => [['kind' => 'LOOSE', 'quantity' => '1']]])->assertUnprocessable()->assertJsonPath('reason_code', 'NEEDS_COUNT_FIRST');
         $this->assertSame($moves, StockMove::query()->count());
+    }
+
+    public function test_a_grouped_count_line_is_counted_by_composition_goes_stale_when_stock_moves_and_is_refreshed_then_posted(): void
+    {
+        $this->world();
+        $this->actingAs($this->w['manager']);
+        $this->activate();
+        $warehouse = Location::query()->findOrFail($this->w['a'])->warehouse_id;
+        $creator = PurchasingActor::make(['inventory.physical_count.create', 'inventory.package-state.view']);
+        $counter = PurchasingActor::make(['inventory.physical_count.count', 'inventory.package-state.view']);
+        $poster = PurchasingActor::make(['inventory.physical_count.post', 'inventory.package-state.recount', 'inventory.package-state.view']);
+        $can = $this->w['can']->id;
+
+        $countId = $this->actingAs($creator)->postJson('/api/v1/physical-counts', ['warehouse_id' => $warehouse])->assertCreated()->json('data.id');
+        $line = $this->postJson("/api/v1/physical-counts/{$countId}/lines", ['item_id' => $this->w['item']->id, 'location_id' => $this->w['a']])->assertCreated()
+            ->assertJsonPath('data.grouped', true)->assertJsonPath('data.stale_reason', null)->json('data.id');
+
+        // A scalar count of a grouped line is refused; the counter records a composition (4 cans = 20 L, the same litres as the book: composition only).
+        $this->actingAs($counter)->postJson("/api/v1/physical-count-lines/{$line}/count", ['counted_qty' => '20'])->assertUnprocessable();
+        $this->postJson("/api/v1/physical-count-lines/{$line}/composition", ['composition' => [['packaging_id' => $can, 'count' => 4]]])->assertOk()
+            ->assertJsonPath('data.counted_qty', '20.0000')->assertJsonPath('data.composition.0.count', 4)->assertJsonMissingPath('data.book_qty');
+        $this->postJson("/api/v1/physical-count-lines/{$line}/composition", ['composition' => [['packaging_id' => 999999, 'count' => 1]]])->assertUnprocessable();
+
+        // Stock moves after capture (a grouped issue): the line is stale, the count cannot post, refresh clears the count and re-snapshots.
+        $this->actingAs($this->w['manager'])->postJson('/api/v1/stock-issues', ['item_id' => $this->w['item']->id, 'location_id' => $this->w['a'], 'request_key' => 'issue-between', 'reason' => 'Job',
+            'draw' => [['kind' => 'LOOSE', 'quantity' => '2']]])->assertCreated();
+        $show = $this->actingAs($creator)->getJson("/api/v1/physical-counts/{$countId}?include=lines")->assertOk();
+        $this->assertNotNull($show->json('data.lines.0.stale_reason'));
+        $this->actingAs($poster)->postJson("/api/v1/physical-counts/{$countId}/post")->assertUnprocessable()->assertJsonPath('reason_code', 'STALE_EVIDENCE');
+
+        $this->actingAs($counter)->postJson("/api/v1/physical-count-lines/{$line}/refresh")->assertForbidden();
+        $this->actingAs($creator)->postJson("/api/v1/physical-count-lines/{$line}/refresh")->assertOk()
+            ->assertJsonPath('data.stale_reason', null)->assertJsonPath('data.counted_qty', null)->assertJsonPath('data.composition', []);
+
+        // Recounted against the 18 L now on the book (3 cans + 3 L loose, counted as 2 cans + 8 L): same litres, so no stock movement.
+        $this->actingAs($counter)->postJson("/api/v1/physical-count-lines/{$line}/composition", ['composition' => [['packaging_id' => $can, 'count' => 2], ['quantity' => '8']]])->assertOk();
+        $moves = StockMove::query()->count();
+        $this->actingAs($creator)->postJson("/api/v1/physical-counts/{$countId}/post")->assertForbidden();
+        $this->actingAs($poster)->postJson("/api/v1/physical-counts/{$countId}/post")->assertOk()->assertJsonPath('data.status', 'POSTED');
+        $this->assertSame($moves, StockMove::query()->count());
+        $balance = $this->getJson('/api/v1/package-balances?item_id='.$this->w['item']->id)->assertOk()->json('data.0');
+        $this->assertSame([2, '8.0000', '18.0000'], [$balance['sealed'][0]['count'], $balance['loose'], $balance['total']]);
+    }
+
+    public function test_a_receipt_reversal_previews_the_arrived_composition_offers_the_nearest_draw_and_reverses_with_a_declared_one(): void
+    {
+        $this->world();
+        $this->actingAs($this->w['manager']);
+        $this->activate();
+        $receipt = $this->draftReceipt('12');
+        $line = $receipt->lines()->sole()->id;
+        $can = $this->w['can']->id;
+        $this->putJson("/api/v1/goods-receipt-lines/{$line}/package-composition", ['reason' => 'Counted on arrival', 'composition' => [['packaging_id' => $can, 'count' => 2], ['quantity' => '2']]])->assertOk();
+        $this->postJson("/api/v1/goods-receipts/{$receipt->id}/post")->assertOk();
+        $reverser = PurchasingActor::make(['purchasing.goods-receipt.reverse', 'inventory.package-state.reverse', 'inventory.package-state.view']);
+
+        // As received, nothing touched: the observed composition is proposed and covered.
+        $preview = $this->actingAs($reverser)->getJson("/api/v1/goods-receipts/{$receipt->id}/reversal-preview")->assertOk()->json('data.lines.0');
+        $this->assertTrue($preview['coverable']);
+        $this->assertFalse($preview['suggested_changed']);
+        $this->assertSame([], $preview['blockers']);
+        $this->assertSame([['kind' => 'SEALED', 'packaging_id' => $can, 'count' => 2, 'quantity' => null], ['kind' => 'LOOSE', 'packaging_id' => null, 'count' => null, 'quantity' => '2.0000']], $preview['suggested']);
+        $this->assertSame([5, '7.0000'], [$preview['on_hand']['sealed'][0]['count'], $preview['on_hand']['loose']]);
+
+        // 4 of the 5 cans are used (charged to the older layers, so the receipt's own layer is untouched): the stock has changed form.
+        $this->actingAs($this->w['manager'])->postJson('/api/v1/stock-issues', ['item_id' => $this->w['item']->id, 'location_id' => $this->w['a'], 'request_key' => 'use-cans', 'reason' => 'Job',
+            'draw' => [['kind' => 'SEALED', 'packaging_id' => $can, 'count' => 4]]])->assertCreated();
+        $changed = $this->actingAs($reverser)->getJson("/api/v1/goods-receipts/{$receipt->id}/reversal-preview")->assertOk()->json('data.lines.0');
+        $this->assertFalse($changed['coverable']);
+        $this->assertTrue($changed['suggested_changed']);
+        $this->assertNotSame([], $changed['shortfall']);
+        $this->assertSame([['kind' => 'SEALED', 'packaging_id' => $can, 'count' => 1, 'quantity' => null], ['kind' => 'LOOSE', 'packaging_id' => null, 'count' => null, 'quantity' => '7.0000']], $changed['suggested']);
+
+        // The undeclared (observed) draw is refused; the declared one reverses it.
+        $this->postJson("/api/v1/goods-receipts/{$receipt->id}/reverse", ['reason' => 'Wrong delivery'])->assertUnprocessable();
+        $this->postJson("/api/v1/goods-receipts/{$receipt->id}/reverse", ['reason' => 'Wrong delivery', 'package_draws' => [['goods_receipt_line_id' => $line, 'lines' => [
+            ['kind' => 'SEALED', 'packaging_id' => $can, 'count' => 1], ['kind' => 'LOOSE', 'quantity' => '7'],
+        ]]]])->assertOk()->assertJsonPath('data.status', 'REVERSED');
+        $this->assertSame('RECEIPT_REVERSAL', PackageOperation::query()->orderByDesc('id')->firstOrFail()->evidence_kind);
+
+        // Authority: without the package-reverse capability the preview refuses (the receipt-reverse capability alone is not enough for a grouped line).
+        $this->actingAs($this->w['manager'])->getJson("/api/v1/goods-receipts/{$receipt->id}/reversal-preview")->assertUnprocessable();
     }
 
     public function test_a_transfer_needs_its_capability_a_different_destination_and_suggestion_works_for_transfer_only_users(): void

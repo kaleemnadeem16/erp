@@ -24,7 +24,9 @@ import type {
   AuthenticationExceptionResponse,
   AuthorizationExceptionResponse,
   ModelNotFoundExceptionResponse,
+  PhysicalCountLinesComposition200,
   PhysicalCountLinesCount200,
+  PhysicalCountLinesRefresh200,
   PhysicalCountsCancel200,
   PhysicalCountsIndex200,
   PhysicalCountsIndexParams,
@@ -34,6 +36,7 @@ import type {
   PhysicalCountsShowParams,
   PhysicalCountsStore201,
   PostPhysicalCountRequest,
+  RecordPhysicalCountCompositionRequest,
   RecordPhysicalCountLineRequest,
   StorePhysicalCountLineRequest,
   StorePhysicalCountRequest,
@@ -951,6 +954,298 @@ export const usePhysicalCountLinesCount = <
   TContext
 > => {
   const mutationOptions = getPhysicalCountLinesCountMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+export type physicalCountLinesCompositionResponse200 = {
+  data: PhysicalCountLinesComposition200;
+  status: 200;
+};
+
+export type physicalCountLinesCompositionResponse401 = {
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
+
+export type physicalCountLinesCompositionResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
+export type physicalCountLinesCompositionResponse404 = {
+  data: ModelNotFoundExceptionResponse;
+  status: 404;
+};
+
+export type physicalCountLinesCompositionResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
+};
+
+export type physicalCountLinesCompositionResponseSuccess =
+  physicalCountLinesCompositionResponse200 & {
+    headers: Headers;
+  };
+export type physicalCountLinesCompositionResponseError = (
+  | physicalCountLinesCompositionResponse401
+  | physicalCountLinesCompositionResponse403
+  | physicalCountLinesCompositionResponse404
+  | physicalCountLinesCompositionResponse422
+) & {
+  headers: Headers;
+};
+
+export type physicalCountLinesCompositionResponse =
+  | physicalCountLinesCompositionResponseSuccess
+  | physicalCountLinesCompositionResponseError;
+
+export const getPhysicalCountLinesCompositionUrl = (
+  physicalCountLine: number,
+) => {
+  return `/v1/physical-count-lines/${physicalCountLine}/composition`;
+};
+
+export const physicalCountLinesComposition = async (
+  physicalCountLine: number,
+  recordPhysicalCountCompositionRequest: RecordPhysicalCountCompositionRequest,
+  options?: RequestInit,
+): Promise<physicalCountLinesCompositionResponse> => {
+  return fetchClient<physicalCountLinesCompositionResponse>(
+    getPhysicalCountLinesCompositionUrl(physicalCountLine),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(recordPhysicalCountCompositionRequest),
+    },
+  );
+};
+
+export const getPhysicalCountLinesCompositionMutationOptions = <
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof physicalCountLinesComposition>>,
+    TError,
+    { physicalCountLine: number; data: RecordPhysicalCountCompositionRequest },
+    TContext
+  >;
+  request?: SecondParameter<typeof fetchClient>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof physicalCountLinesComposition>>,
+  TError,
+  { physicalCountLine: number; data: RecordPhysicalCountCompositionRequest },
+  TContext
+> => {
+  const mutationKey = ["physicalCountLinesComposition"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof physicalCountLinesComposition>>,
+    { physicalCountLine: number; data: RecordPhysicalCountCompositionRequest }
+  > = (props) => {
+    const { physicalCountLine, data } = props ?? {};
+
+    return physicalCountLinesComposition(
+      physicalCountLine,
+      data,
+      requestOptions,
+    );
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PhysicalCountLinesCompositionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof physicalCountLinesComposition>>
+>;
+export type PhysicalCountLinesCompositionMutationBody =
+  RecordPhysicalCountCompositionRequest;
+export type PhysicalCountLinesCompositionMutationError =
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ModelNotFoundExceptionResponse
+  | ValidationExceptionResponse;
+
+export const usePhysicalCountLinesComposition = <
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof physicalCountLinesComposition>>,
+      TError,
+      {
+        physicalCountLine: number;
+        data: RecordPhysicalCountCompositionRequest;
+      },
+      TContext
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof physicalCountLinesComposition>>,
+  TError,
+  { physicalCountLine: number; data: RecordPhysicalCountCompositionRequest },
+  TContext
+> => {
+  const mutationOptions =
+    getPhysicalCountLinesCompositionMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+export type physicalCountLinesRefreshResponse200 = {
+  data: PhysicalCountLinesRefresh200;
+  status: 200;
+};
+
+export type physicalCountLinesRefreshResponse401 = {
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
+
+export type physicalCountLinesRefreshResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
+export type physicalCountLinesRefreshResponse404 = {
+  data: ModelNotFoundExceptionResponse;
+  status: 404;
+};
+
+export type physicalCountLinesRefreshResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
+};
+
+export type physicalCountLinesRefreshResponseSuccess =
+  physicalCountLinesRefreshResponse200 & {
+    headers: Headers;
+  };
+export type physicalCountLinesRefreshResponseError = (
+  | physicalCountLinesRefreshResponse401
+  | physicalCountLinesRefreshResponse403
+  | physicalCountLinesRefreshResponse404
+  | physicalCountLinesRefreshResponse422
+) & {
+  headers: Headers;
+};
+
+export type physicalCountLinesRefreshResponse =
+  | physicalCountLinesRefreshResponseSuccess
+  | physicalCountLinesRefreshResponseError;
+
+export const getPhysicalCountLinesRefreshUrl = (physicalCountLine: number) => {
+  return `/v1/physical-count-lines/${physicalCountLine}/refresh`;
+};
+
+export const physicalCountLinesRefresh = async (
+  physicalCountLine: number,
+  options?: RequestInit,
+): Promise<physicalCountLinesRefreshResponse> => {
+  return fetchClient<physicalCountLinesRefreshResponse>(
+    getPhysicalCountLinesRefreshUrl(physicalCountLine),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
+
+export const getPhysicalCountLinesRefreshMutationOptions = <
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof physicalCountLinesRefresh>>,
+    TError,
+    { physicalCountLine: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof fetchClient>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof physicalCountLinesRefresh>>,
+  TError,
+  { physicalCountLine: number },
+  TContext
+> => {
+  const mutationKey = ["physicalCountLinesRefresh"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof physicalCountLinesRefresh>>,
+    { physicalCountLine: number }
+  > = (props) => {
+    const { physicalCountLine } = props ?? {};
+
+    return physicalCountLinesRefresh(physicalCountLine, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PhysicalCountLinesRefreshMutationResult = NonNullable<
+  Awaited<ReturnType<typeof physicalCountLinesRefresh>>
+>;
+
+export type PhysicalCountLinesRefreshMutationError =
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ModelNotFoundExceptionResponse
+  | ValidationExceptionResponse;
+
+export const usePhysicalCountLinesRefresh = <
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof physicalCountLinesRefresh>>,
+      TError,
+      { physicalCountLine: number },
+      TContext
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof physicalCountLinesRefresh>>,
+  TError,
+  { physicalCountLine: number },
+  TContext
+> => {
+  const mutationOptions = getPhysicalCountLinesRefreshMutationOptions(options);
 
   return useMutation(mutationOptions, queryClient);
 };

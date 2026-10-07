@@ -7,9 +7,11 @@ namespace App\Modules\Purchasing\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Modules\Purchasing\Actions\CreateGoodsReceipt;
 use App\Modules\Purchasing\Actions\PostGoodsReceipt;
+use App\Modules\Purchasing\Actions\PreviewGoodsReceiptReversal;
 use App\Modules\Purchasing\Actions\ReverseGoodsReceipt;
 use App\Modules\Purchasing\Actions\UpdateGoodsReceipt;
 use App\Modules\Purchasing\Http\Requests\GoodsReceipt\IndexGoodsReceiptRequest;
+use App\Modules\Purchasing\Http\Requests\GoodsReceipt\PreviewGoodsReceiptReversalRequest;
 use App\Modules\Purchasing\Http\Requests\GoodsReceipt\ReverseGoodsReceiptRequest;
 use App\Modules\Purchasing\Http\Requests\GoodsReceipt\StoreGoodsReceiptRequest;
 use App\Modules\Purchasing\Http\Requests\GoodsReceipt\UpdateGoodsReceiptRequest;
@@ -79,9 +81,20 @@ class GoodsReceiptController extends Controller
 
     public function reverse(ReverseGoodsReceiptRequest $request, GoodsReceipt $goodsReceipt, ReverseGoodsReceipt $reverse): GoodsReceiptResource
     {
-        $receipt = $reverse($goodsReceipt, $request->string('reason')->toString(), $request->user()->id);
+        // Per receipt line, the sealed packages and loose quantity physically going back (grouped items only; omitted means what the receipt's evidence says arrived).
+        $draws = [];
+        foreach ($request->validated('package_draws') ?? [] as $entry) {
+            $draws[(int) $entry['goods_receipt_line_id']] = array_map(fn (array $row): array => array_filter($row, fn ($value): bool => $value !== null), $entry['lines']);
+        }
+        $receipt = $reverse($goodsReceipt, $request->string('reason')->toString(), $request->user()->id, $draws);
         $receipt->load(['lines' => fn ($query) => $query->withQaAggregates()->with('packageObservations')]);
 
         return new GoodsReceiptResource($receipt);
+    }
+
+    /** What reversing this receipt would do, per line, and what stands in the way; posts nothing. */
+    public function reversalPreview(PreviewGoodsReceiptReversalRequest $request, GoodsReceipt $goodsReceipt, PreviewGoodsReceiptReversal $preview): JsonResponse
+    {
+        return response()->json(['data' => $preview($goodsReceipt, $request->user())]);
     }
 }

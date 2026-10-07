@@ -58,6 +58,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('physical-counts', PhysicalCountController::class)->only(['index', 'store', 'show']);
     Route::post('physical-counts/{physicalCount}/lines', [PhysicalCountController::class, 'storeLine'])->name('physical-counts.lines.store');
     Route::post('physical-count-lines/{physicalCountLine}/count', [PhysicalCountController::class, 'count'])->name('physical-count-lines.count');
+    Route::post('physical-count-lines/{physicalCountLine}/composition', [PhysicalCountController::class, 'composition'])->name('physical-count-lines.composition');
+    Route::post('physical-count-lines/{physicalCountLine}/refresh', [PhysicalCountController::class, 'refresh'])->name('physical-count-lines.refresh');
     Route::post('physical-counts/{physicalCount}/post', [PhysicalCountController::class, 'post'])->name('physical-counts.post');
     Route::post('physical-counts/{physicalCount}/cancel', [PhysicalCountController::class, 'cancel'])->name('physical-counts.cancel');
     Route::apiResource('inventory-cutovers', InventoryCutoverController::class)->only(['index', 'store', 'show']);

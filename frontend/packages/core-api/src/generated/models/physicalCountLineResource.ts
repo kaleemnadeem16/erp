@@ -13,6 +13,8 @@ import type { PhysicalCountLineResourceCountedBy } from "./physicalCountLineReso
 import type { PhysicalCountLineResourceCountedAt } from "./physicalCountLineResourceCountedAt";
 import type { PhysicalCountLineResourceFoundUnitCost } from "./physicalCountLineResourceFoundUnitCost";
 import type { PhysicalCountLineResourcePostedStockMoveId } from "./physicalCountLineResourcePostedStockMoveId";
+import type { PhysicalCountLineResourceCompositionItem } from "./physicalCountLineResourceCompositionItem";
+import type { PhysicalCountLineResourceStaleReason } from "./physicalCountLineResourceStaleReason";
 import type { PhysicalCountLineEntryResource } from "./physicalCountLineEntryResource";
 
 export interface PhysicalCountLineResource {
@@ -31,5 +33,10 @@ export interface PhysicalCountLineResource {
   counted_at: PhysicalCountLineResourceCountedAt;
   found_unit_cost?: PhysicalCountLineResourceFoundUnitCost;
   posted_stock_move_id: PhysicalCountLineResourcePostedStockMoveId;
+  grouped: boolean;
+  /** What was counted, by tracked package size plus the open/loose quantity (grouped lines only; never the book). */
+  composition?: PhysicalCountLineResourceCompositionItem[];
+  /** Whether stock or package evidence moved since the line was captured, so it must be refreshed and recounted. Says nothing of the book figure. */
+  stale_reason?: PhysicalCountLineResourceStaleReason;
   entries?: PhysicalCountLineEntryResource[];
 }

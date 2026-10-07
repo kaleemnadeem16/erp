@@ -27,6 +27,8 @@ import { formatDateTime } from '../../lib/format-date';
 import { cn } from '../../lib/utils';
 import { useAuthStore } from '../../stores/auth-store';
 import { formatLocation } from '../../lib/format-location';
+import { GroupedCountedCell, countVerdict } from '../package-stock/grouped-count-line';
+import { FoundCostField } from '../package-stock/found-cost-field';
 import { usePermission } from '../../hooks/use-permission';
 
 const STATUS_VARIANT: Record<string, 'secondary' | 'success' | 'destructive'> = {
@@ -55,6 +57,7 @@ export function PhysicalCountDetailScreen() {
   const mayCount = usePermission('inventory.physical_count.count');
   const mayPost = usePermission('inventory.physical_count.post');
   const mayViewValuation = usePermission('inventory.valuation.view');
+  const mayRecount = usePermission('inventory.package-state.recount');
   const maySeeFoundCost = mayPost || mayViewValuation;
   // Mirrors the server (StockVisibility::bookQuantity): a counter who holds only the count capability counts blind.
   const mayStockView = usePermission('inventory.stock.view');
@@ -93,6 +96,9 @@ export function PhysicalCountDetailScreen() {
 
   const isDraft = count?.status === 'DRAFT';
   const everyLineCounted = lines.length > 0 && lines.every((line) => line.counted_qty !== null);
+  const staleLines = lines.filter((line) => typeof line.stale_reason === 'string' && line.stale_reason !== '');
+  const needsRecount = lines.some((line) => line.grouped) && !mayRecount;
+  const missingFoundCost = lines.some((line) => (lineVariance(line) ?? 0) > 0 && Number(foundCostDrafts[line.id] ?? line.found_unit_cost ?? 0) <= 0);
 
   function handleAddLine(event: FormEvent) {
     event.preventDefault();
@@ -189,13 +195,24 @@ export function PhysicalCountDetailScreen() {
               {mayPost && <div className="flex flex-col items-end gap-1">
                 <Button
                   onClick={handlePost}
-                  disabled={!everyLineCounted || postCount.isPending || isOwnCount}
+                  disabled={!everyLineCounted || postCount.isPending || isOwnCount || staleLines.length > 0 || needsRecount || missingFoundCost}
                   title={isOwnCount ? "You can't post a physical count you created" : undefined}
                 >
                   {postCount.isPending ? 'Posting…' : 'Post count'}
                 </Button>
                 {isOwnCount && (
                   <span className="text-xs text-muted-foreground">You can't post your own count</span>
+                )}
+                {staleLines.length > 0 && (
+                  <span className="text-xs text-destructive" data-testid="post-blocked-stale">
+                    Stock changed since {staleLines.length} line{staleLines.length === 1 ? ' was' : 's were'} captured — refresh and recount before posting
+                  </span>
+                )}
+                {needsRecount && (
+                  <span className="text-xs text-muted-foreground">Posting a package count needs the package recount permission</span>
+                )}
+                {missingFoundCost && maySeeFoundCost && !staleLines.length && (
+                  <span className="text-xs text-muted-foreground">Enter a cost for the stock found</span>
                 )}
               </div>}
             </>
@@ -252,7 +269,16 @@ export function PhysicalCountDetailScreen() {
                         <TableCell>{line.batch_id ? `Batch #${line.batch_id}` : (line.serial_no ?? '—')}</TableCell>
                         {maySeeBook && <TableCell className="text-right tabular-nums">{line.book_qty}</TableCell>}
                         <TableCell className="text-right">
-                          {isDraft && mayCount ? (
+                          {line.grouped ? (
+                            <GroupedCountedCell
+                              line={line}
+                              isDraft={isDraft}
+                              mayCount={mayCount}
+                              mayRefresh={mayCreate}
+                              onChanged={() => countQuery.refetch()}
+                              onError={setActionError}
+                            />
+                          ) : isDraft && mayCount ? (
                             <div className="flex items-center justify-end gap-1">
                               <Input
                                 type="number"
@@ -291,10 +317,27 @@ export function PhysicalCountDetailScreen() {
                             )}
                           >
                             {varianceValue === null ? '—' : varianceValue.toFixed(4)}
+                            {line.grouped && (
+                              <div
+                                className={cn(
+                                  'mt-1 text-xs font-normal',
+                                  countVerdict(varianceValue, line.counted_qty !== null).kind === 'composition' && 'text-muted-foreground'
+                                )}
+                                data-testid="count-verdict"
+                              >
+                                {countVerdict(varianceValue, line.counted_qty !== null).text}
+                              </div>
+                            )}
                           </TableCell>
                         )}
                         {maySeeFoundCost && <TableCell className="text-right">
-                          {needsFoundCost && mayPost ? (
+                          {needsFoundCost && mayPost && line.grouped ? (
+                            <FoundCostField
+                              itemId={line.item_id}
+                              value={foundCostDrafts[line.id] ?? line.found_unit_cost ?? ''}
+                              onChange={(value) => setFoundCostDrafts((prev) => ({ ...prev, [line.id]: value }))}
+                            />
+                          ) : needsFoundCost && mayPost ? (
                             <Input
                               type="number"
                               step="0.0001"

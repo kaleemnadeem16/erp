@@ -41,6 +41,7 @@ final class PackageCountDemoSeeder extends Seeder
         app(PermissionRegistry::class)->registerForTeam(1);
         $actor = User::query()->where('email', config('demo.user.email'))->firstOrFail();
         $actor->givePermissionTo(['inventory.package-state.view', 'inventory.package-state.open', 'inventory.package-state.activate', 'inventory.physical_count.create', 'inventory.physical_count.count']);
+        $this->seedReviewer();
         if (PackageOperation::query()->where('request_key', 'demo-xyz-count-opening')->exists()) {
             return; // Immutable history and later manual progress are preserved.
         }
@@ -81,5 +82,16 @@ final class PackageCountDemoSeeder extends Seeder
             app(RecordPhysicalCountComposition::class)($line, [['packaging_id' => $can->id, 'count' => 1], ['quantity' => '6']], $actor);
             app(PostPhysicalCount::class)($second, [], $supervisor);
         });
+    }
+
+    /**
+     * A second person who may post counts, replace a package composition and see costs, and who signs in with the demo password: the demo user creates
+     * and counts, and nobody posts their own count (the browser tests sign this person in to post).
+     */
+    private function seedReviewer(): void
+    {
+        $reviewer = User::query()->updateOrCreate(['email' => 'demo-count-reviewer@erp.x1techs.com'], ['name' => 'Demo Stock Reviewer', 'password' => config('demo.user.password')]);
+        $reviewer->forceFill(['email_verified_at' => now()])->save();
+        $reviewer->syncPermissions(['inventory.physical_count.post', 'inventory.package-state.recount', 'inventory.package-state.view', 'inventory.stock.view', 'inventory.valuation.view', 'inventory.movement.view']);
     }
 }

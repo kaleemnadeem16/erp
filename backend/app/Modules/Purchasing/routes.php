@@ -28,6 +28,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('goods-receipts/{goodsReceipt}', [GoodsReceiptController::class, 'update'])->name('goods-receipts.update');
     Route::put('goods-receipt-lines/{goodsReceiptLine}/package-composition', [GoodsReceiptLineCompositionController::class, 'update'])->name('goods-receipt-lines.package-composition.update');
     Route::post('goods-receipts/{goodsReceipt}/post', [GoodsReceiptController::class, 'post'])->name('goods-receipts.post');
+    Route::get('goods-receipts/{goodsReceipt}/reversal-preview', [GoodsReceiptController::class, 'reversalPreview'])->name('goods-receipts.reversal-preview');
     Route::post('goods-receipts/{goodsReceipt}/reverse', [GoodsReceiptController::class, 'reverse'])->name('goods-receipts.reverse');
     Route::post('goods-receipt-lines/{goodsReceiptLine}/quality-dispositions', [QualityDispositionController::class, 'store'])->name('quality-dispositions.store');
     Route::get('goods-receipt-lines/{goodsReceiptLine}/quality-dispositions', [QualityDispositionController::class, 'index'])->name('quality-dispositions.index');

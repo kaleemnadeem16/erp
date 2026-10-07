@@ -27,6 +27,7 @@ import type {
   GoodsReceiptsIndexParams,
   GoodsReceiptsPost200,
   GoodsReceiptsPost403,
+  GoodsReceiptsReversalPreview200,
   GoodsReceiptsReverse200,
   GoodsReceiptsShow200,
   GoodsReceiptsShow403,
@@ -890,6 +891,252 @@ export const useGoodsReceiptsPost = <
 
   return useMutation(mutationOptions, queryClient);
 };
+/**
+ * @summary What reversing this receipt would do, per line, and what stands in the way; posts nothing
+ */
+export type goodsReceiptsReversalPreviewResponse200 = {
+  data: GoodsReceiptsReversalPreview200;
+  status: 200;
+};
+
+export type goodsReceiptsReversalPreviewResponse401 = {
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
+
+export type goodsReceiptsReversalPreviewResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
+export type goodsReceiptsReversalPreviewResponse404 = {
+  data: ModelNotFoundExceptionResponse;
+  status: 404;
+};
+
+export type goodsReceiptsReversalPreviewResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
+};
+
+export type goodsReceiptsReversalPreviewResponseSuccess =
+  goodsReceiptsReversalPreviewResponse200 & {
+    headers: Headers;
+  };
+export type goodsReceiptsReversalPreviewResponseError = (
+  | goodsReceiptsReversalPreviewResponse401
+  | goodsReceiptsReversalPreviewResponse403
+  | goodsReceiptsReversalPreviewResponse404
+  | goodsReceiptsReversalPreviewResponse422
+) & {
+  headers: Headers;
+};
+
+export type goodsReceiptsReversalPreviewResponse =
+  | goodsReceiptsReversalPreviewResponseSuccess
+  | goodsReceiptsReversalPreviewResponseError;
+
+export const getGoodsReceiptsReversalPreviewUrl = (goodsReceipt: number) => {
+  return `/v1/goods-receipts/${goodsReceipt}/reversal-preview`;
+};
+
+export const goodsReceiptsReversalPreview = async (
+  goodsReceipt: number,
+  options?: RequestInit,
+): Promise<goodsReceiptsReversalPreviewResponse> => {
+  return fetchClient<goodsReceiptsReversalPreviewResponse>(
+    getGoodsReceiptsReversalPreviewUrl(goodsReceipt),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGoodsReceiptsReversalPreviewQueryKey = (
+  goodsReceipt?: number,
+) => {
+  return [`/v1/goods-receipts/${goodsReceipt}/reversal-preview`] as const;
+};
+
+export const getGoodsReceiptsReversalPreviewQueryOptions = <
+  TData = Awaited<ReturnType<typeof goodsReceiptsReversalPreview>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  goodsReceipt: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof goodsReceiptsReversalPreview>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getGoodsReceiptsReversalPreviewQueryKey(goodsReceipt);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof goodsReceiptsReversalPreview>>
+  > = () => goodsReceiptsReversalPreview(goodsReceipt, requestOptions);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!goodsReceipt,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof goodsReceiptsReversalPreview>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type GoodsReceiptsReversalPreviewQueryResult = NonNullable<
+  Awaited<ReturnType<typeof goodsReceiptsReversalPreview>>
+>;
+export type GoodsReceiptsReversalPreviewQueryError =
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ModelNotFoundExceptionResponse
+  | ValidationExceptionResponse;
+
+export function useGoodsReceiptsReversalPreview<
+  TData = Awaited<ReturnType<typeof goodsReceiptsReversalPreview>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  goodsReceipt: number,
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof goodsReceiptsReversalPreview>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof goodsReceiptsReversalPreview>>,
+          TError,
+          Awaited<ReturnType<typeof goodsReceiptsReversalPreview>>
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useGoodsReceiptsReversalPreview<
+  TData = Awaited<ReturnType<typeof goodsReceiptsReversalPreview>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  goodsReceipt: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof goodsReceiptsReversalPreview>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof goodsReceiptsReversalPreview>>,
+          TError,
+          Awaited<ReturnType<typeof goodsReceiptsReversalPreview>>
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useGoodsReceiptsReversalPreview<
+  TData = Awaited<ReturnType<typeof goodsReceiptsReversalPreview>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  goodsReceipt: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof goodsReceiptsReversalPreview>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+/**
+ * @summary What reversing this receipt would do, per line, and what stands in the way; posts nothing
+ */
+
+export function useGoodsReceiptsReversalPreview<
+  TData = Awaited<ReturnType<typeof goodsReceiptsReversalPreview>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  goodsReceipt: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof goodsReceiptsReversalPreview>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getGoodsReceiptsReversalPreviewQueryOptions(
+    goodsReceipt,
+    options,
+  );
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
 export type goodsReceiptsReverseResponse200 = {
   data: GoodsReceiptsReverse200;
   status: 200;

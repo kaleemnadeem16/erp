@@ -9,11 +9,15 @@ use App\Modules\Inventory\Actions\AddPhysicalCountLine;
 use App\Modules\Inventory\Actions\CancelPhysicalCount;
 use App\Modules\Inventory\Actions\CreatePhysicalCount;
 use App\Modules\Inventory\Actions\PostPhysicalCount;
+use App\Modules\Inventory\Actions\RecordPhysicalCountComposition;
 use App\Modules\Inventory\Actions\RecordPhysicalCountLine;
+use App\Modules\Inventory\Actions\RefreshPhysicalCountLine;
 use App\Modules\Inventory\Http\Requests\PhysicalCount\CancelPhysicalCountRequest;
 use App\Modules\Inventory\Http\Requests\PhysicalCount\IndexPhysicalCountRequest;
 use App\Modules\Inventory\Http\Requests\PhysicalCount\PostPhysicalCountRequest;
+use App\Modules\Inventory\Http\Requests\PhysicalCount\RecordPhysicalCountCompositionRequest;
 use App\Modules\Inventory\Http\Requests\PhysicalCount\RecordPhysicalCountLineRequest;
+use App\Modules\Inventory\Http\Requests\PhysicalCount\RefreshPhysicalCountLineRequest;
 use App\Modules\Inventory\Http\Requests\PhysicalCount\ShowPhysicalCountRequest;
 use App\Modules\Inventory\Http\Requests\PhysicalCount\StorePhysicalCountLineRequest;
 use App\Modules\Inventory\Http\Requests\PhysicalCount\StorePhysicalCountRequest;
@@ -43,6 +47,7 @@ class PhysicalCountController extends Controller
         'lines.item' => 'lines.item',
         'lines.location' => 'lines.location',
         'lines.entries' => 'lines.entries',
+        'lines.composition' => 'lines.composition',
     ];
 
     /** @var array<string, string> */
@@ -99,6 +104,22 @@ class PhysicalCountController extends Controller
         $line = $record($physicalCountLine, $request->string('counted_qty')->toString(), $request->user());
 
         return new PhysicalCountLineResource($line);
+    }
+
+    public function composition(RecordPhysicalCountCompositionRequest $request, PhysicalCountLine $physicalCountLine, RecordPhysicalCountComposition $record): PhysicalCountLineResource
+    {
+        abort_unless(WarehouseScope::permitsWarehouse($request->user(), 'inventory.physical_count.count', (int) PhysicalCount::query()->whereKey($physicalCountLine->physical_count_id)->value('warehouse_id')), 404);
+        /** @var list<array{packaging_id?: int|null, count?: int, quantity?: string}> $rows */
+        $rows = array_map(fn (array $row): array => array_filter($row, fn ($value): bool => $value !== null), $request->validated('composition'));
+
+        return new PhysicalCountLineResource($record($physicalCountLine, $rows, $request->user())->load('composition'));
+    }
+
+    public function refresh(RefreshPhysicalCountLineRequest $request, PhysicalCountLine $physicalCountLine, RefreshPhysicalCountLine $refresh): PhysicalCountLineResource
+    {
+        abort_unless(WarehouseScope::permitsWarehouse($request->user(), 'inventory.physical_count.create', (int) PhysicalCount::query()->whereKey($physicalCountLine->physical_count_id)->value('warehouse_id')), 404);
+
+        return new PhysicalCountLineResource($refresh($physicalCountLine, $request->user())->load('composition'));
     }
 
     public function post(PostPhysicalCountRequest $request, PhysicalCount $physicalCount, PostPhysicalCount $post): PhysicalCountResource

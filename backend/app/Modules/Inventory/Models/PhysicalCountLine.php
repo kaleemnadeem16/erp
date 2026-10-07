@@ -89,4 +89,10 @@ class PhysicalCountLine extends Model
     {
         return $this->hasMany(PhysicalCountLineEntry::class);
     }
+
+    /** @return HasMany<PhysicalCountLineComposition, $this> */
+    public function composition(): HasMany
+    {
+        return $this->hasMany(PhysicalCountLineComposition::class)->orderBy('line_no');
+    }
 }

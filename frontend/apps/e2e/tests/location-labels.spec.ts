@@ -10,6 +10,9 @@ test('a transfer in the stock ledger names the warehouse at each end', async ({ 
   await page.goto('/stock-moves');
   await expect(page.getByRole('heading', { name: /Stock Ledger/i }).first()).toBeVisible();
 
+  // Newer movements (other specs, manual work) can push the seeded transfer off the first page, so find it by its item.
+  await page.getByPlaceholder('Search item…').fill('demo-xfer-emulsion');
+
   // StockTransfersDemoSeeder: 25 kg of Matt Emulsion Base from Main Stock to Karachi Stock.
   const transfer = page.locator('tbody tr', { hasText: 'demo-xfer-emulsion' }).filter({ hasText: 'DEMO_TRANSFER #1' }).first();
   await expect(transfer).toContainText('demo-main / stock');
