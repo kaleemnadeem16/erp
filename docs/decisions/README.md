@@ -104,8 +104,9 @@ in the same commit.
 | [0087](0087-approval-limits-and-reasons-are-separate-auditor-capabilities.md) | Approval limits and written reasons are separate auditor capabilities | accepted | 2026-10-06 |
 | [0088](0088-device-tokens-expire-and-sign-in-has-seams-for-stronger-authentication.md) | Device tokens expire, people manage their devices, and sign-in leaves room for stronger authentication | accepted | 2026-10-06 |
 | [0089](0089-organisation-units-and-record-scope.md) | Organisation units and record scope, first applied to inventory by warehouse | accepted | 2026-10-06 |
+| [0090](0090-package-aware-stock-issue-semantics.md) | Package-aware stock issue: the person declares what was physically taken, the allocator still decides cost | proposed | 2026-10-07 |
 
-**Next number: 0090**
+**Next number: 0091**
 
 ## By theme
 

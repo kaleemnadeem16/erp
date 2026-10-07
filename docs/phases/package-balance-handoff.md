@@ -88,6 +88,10 @@ migrations were also applied. Do not discard history or relax QUANTITY_ONLY gate
 
 ## Next slice: concrete starting work
 
+**2026-10-07:** the issue semantics are now drafted as [proposed ADR 0090](../decisions/0090-package-aware-stock-issue-semantics.md)
+(explicit physical draw, allocator-led cost, allocation vector stored for AVCO too, preconditions for transfers and activation).
+It supersedes the 'physical vector must equal the allocator' rule below once accepted; do not implement until the owner accepts it.
+
 1. Re-read the writer audit/contribution contract in package-balance-integration and inspect
    PostInventoryMovement with Actions/Movements/LayerAllocator and the issue collaborator.
 2. Design the smallest enforcing issue adapter: an explicit package/loose selection from fresh
