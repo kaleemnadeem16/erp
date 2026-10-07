@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Modules\Inventory\Models\InventoryCutover;
 use App\Modules\Inventory\Support\InventoryCutoverBatchStatus;
 use App\Modules\Inventory\Support\InventoryCutoverStatus;
+use App\Modules\Inventory\Support\WarehouseScope;
 use Brick\Math\BigDecimal;
 use Illuminate\Support\Facades\DB;
 
@@ -24,6 +25,7 @@ final class ValidateInventoryCutover
         if (! $actor->can('inventory.cutover.validate')) {
             throw new DomainInvariantException('The actor is not permitted to validate an inventory cutover.', 'validated_by');
         }
+        WarehouseScope::requireUnrestricted($actor, 'inventory.cutover.validate', 'validate an inventory cutover');
 
         return DB::transaction(function () use ($cutover, $actor): InventoryCutover {
             $cutover = InventoryCutover::query()->whereKey($cutover->id)->lockForUpdate()->firstOrFail();

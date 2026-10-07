@@ -14,6 +14,7 @@ use App\Modules\Inventory\Models\RecalculationApproval;
 use App\Modules\Inventory\Models\RecalculationImpactVersion;
 use App\Modules\Inventory\Models\RecalculationRequest;
 use App\Modules\Inventory\Support\RecalculationApprovalDecision;
+use App\Modules\Inventory\Support\WarehouseScope;
 use App\Support\CompanyContext;
 use Illuminate\Support\Facades\DB;
 
@@ -71,6 +72,7 @@ final class DecideRecalculationApproval
         if (trim($notes) === '') {
             throw new DomainInvariantException('An approval decision requires notes.', 'notes');
         }
+        WarehouseScope::requireUnrestricted($actor, ['inventory.recalculation.approve', 'inventory.recalculation.approve-high-risk'], 'decide a recalculation request');
 
         // Revalidation may need to commit a stale-flip + replacement version
         // even on the path that ultimately still refuses the decision — a

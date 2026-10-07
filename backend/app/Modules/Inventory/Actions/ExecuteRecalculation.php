@@ -26,6 +26,7 @@ use App\Modules\Inventory\Models\StockLayer;
 use App\Modules\Inventory\Models\StockMove;
 use App\Modules\Inventory\Support\RecalculationMovementKind;
 use App\Modules\Inventory\Support\ValuationMethod;
+use App\Modules\Inventory\Support\WarehouseScope;
 use App\Support\CompanyContext;
 use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
@@ -98,6 +99,7 @@ final class ExecuteRecalculation
         if (! $actor->can('inventory.recalculation.execute')) {
             throw new DomainInvariantException('The actor is not permitted to execute recalculation requests.', 'executed_by');
         }
+        WarehouseScope::requireUnrestricted($actor, 'inventory.recalculation.execute', 'execute a recalculation');
 
         $outcome = DB::transaction(function () use ($version, $actor): RecalculationExecution|null {
             $company = Company::query()->lockForUpdate()->findOrFail(app(CompanyContext::class)->id());

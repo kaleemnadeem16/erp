@@ -12,6 +12,7 @@ use App\Modules\Inventory\Actions\Recalculation\RegenerationLimit;
 use App\Modules\Inventory\Models\RecalculationImpactVersion;
 use App\Modules\Inventory\Models\RecalculationRegenerationReview;
 use App\Modules\Inventory\Models\RecalculationRequest;
+use App\Modules\Inventory\Support\WarehouseScope;
 use App\Support\CompanyContext;
 use Illuminate\Support\Facades\DB;
 
@@ -22,6 +23,8 @@ final class ResumeRecalculationRegeneration
 
     public function __invoke(RecalculationImpactVersion $pausedVersion, string $notes, User $actor): RecalculationImpactVersion
     {
+        WarehouseScope::requireUnrestricted($actor, 'inventory.recalculation.review-regeneration', 'resume a recalculation regeneration');
+
         return DB::transaction(function () use ($pausedVersion, $notes, $actor): RecalculationImpactVersion {
             $company = Company::query()->lockForUpdate()->findOrFail(app(CompanyContext::class)->id());
             $request = RecalculationRequest::query()->lockForUpdate()->findOrFail($pausedVersion->recalculation_request_id);

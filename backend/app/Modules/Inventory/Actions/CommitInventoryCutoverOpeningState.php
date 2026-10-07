@@ -13,6 +13,7 @@ use App\Modules\Inventory\Models\InventorySourceFact;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Support\InventoryCutoverBatchStatus;
 use App\Modules\Inventory\Support\InventoryCutoverStatus;
+use App\Modules\Inventory\Support\WarehouseScope;
 use App\Support\CompanyContext;
 use Illuminate\Support\Facades\DB;
 
@@ -37,6 +38,7 @@ final class CommitInventoryCutoverOpeningState
         if (! $actor->can('inventory.cutover.commit')) {
             throw new DomainInvariantException('The actor is not permitted to commit an inventory cutover opening state.', 'status');
         }
+        WarehouseScope::requireUnrestricted($actor, 'inventory.cutover.commit', 'commit an inventory cutover opening state');
 
         return DB::transaction(function () use ($cutover): InventoryCutover {
             $cutover = InventoryCutover::query()->whereKey($cutover->id)->lockForUpdate()->firstOrFail();

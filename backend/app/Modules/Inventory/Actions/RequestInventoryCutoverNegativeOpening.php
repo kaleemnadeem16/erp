@@ -17,6 +17,7 @@ use App\Modules\Inventory\Support\InventoryCutoverNegativeOpeningStatus;
 use App\Modules\Inventory\Support\InventoryCutoverStatus;
 use App\Modules\Inventory\Support\ItemTracking;
 use App\Modules\Inventory\Support\ValuationMethod;
+use App\Modules\Inventory\Support\WarehouseScope;
 use Brick\Math\BigDecimal;
 use Illuminate\Support\Facades\DB;
 
@@ -43,6 +44,7 @@ final class RequestInventoryCutoverNegativeOpening
         if (! $actor->can('inventory.cutover.negative_opening.request')) {
             throw new DomainInvariantException('The actor is not permitted to request an inventory cutover negative-opening exception.', 'requested_by');
         }
+        WarehouseScope::requireUnrestricted($actor, 'inventory.cutover.negative_opening.request', 'request a cutover negative-opening exception');
 
         return DB::transaction(function () use ($cutover, $input, $actor): InventoryCutoverNegativeOpening {
             $cutover = InventoryCutover::query()->whereKey($cutover->id)->lockForUpdate()->firstOrFail();

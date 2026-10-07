@@ -122,4 +122,17 @@ final class WarehouseScope
             throw new DomainInvariantException("The actor is not permitted to {$action} in this warehouse.");
         }
     }
+
+    /**
+     * The guard for work that is company-wide by nature (cutover, recalculation): it cannot be limited to a warehouse, so a person whose
+     * grant is limited to their units is refused outright, as a request is.
+     *
+     * @param  string|list<string>  $permissions
+     */
+    public static function requireUnrestricted(User $actor, string|array $permissions, string $action): void
+    {
+        if (! self::unrestricted($actor, $permissions)) {
+            throw new DomainInvariantException("The actor is limited to their organisation units and cannot {$action}, which is company-wide.");
+        }
+    }
 }

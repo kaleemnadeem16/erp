@@ -9,16 +9,36 @@ use App\Models\User;
 use App\Modules\Administration\Models\AccessScopeLimit;
 use App\Modules\Administration\Models\OrganisationUnit;
 use App\Modules\Administration\Models\OrganisationUnitResource;
+use App\Modules\Imports\Models\ImportBatch;
+use App\Modules\Inventory\Actions\ApproveInventoryCutover;
+use App\Modules\Inventory\Actions\ApproveInventoryCutoverNegativeOpening;
+use App\Modules\Inventory\Actions\AttachInventoryCutoverBatch;
+use App\Modules\Inventory\Actions\CommitInventoryCutoverOpeningState;
+use App\Modules\Inventory\Actions\CreateInventoryCutover;
 use App\Modules\Inventory\Actions\CreatePhysicalCount;
+use App\Modules\Inventory\Actions\DecideRecalculationApproval;
+use App\Modules\Inventory\Actions\ExecuteRecalculation;
+use App\Modules\Inventory\Actions\FinaliseInventoryCutover;
+use App\Modules\Inventory\Actions\RequestInventoryCutoverNegativeOpening;
+use App\Modules\Inventory\Actions\RequestStockRecalculation;
+use App\Modules\Inventory\Actions\ResumeRecalculationRegeneration;
 use App\Modules\Inventory\Actions\ReviewNegativeStockOverride;
+use App\Modules\Inventory\Actions\ValidateInventoryCutover;
+use App\Modules\Inventory\Models\InventoryCutover;
+use App\Modules\Inventory\Models\InventoryCutoverNegativeOpening;
 use App\Modules\Inventory\Models\Location;
 use App\Modules\Inventory\Models\NegativeStockOverrideRequest;
+use App\Modules\Inventory\Models\RecalculationImpactVersion;
 use App\Modules\Inventory\Models\StockLayer;
 use App\Modules\Inventory\Models\StockMove;
 use App\Modules\Inventory\Support\NegativeStockReviewOutcome;
+use App\Modules\Inventory\Support\RecalculationApprovalDecision;
 use App\Modules\Inventory\Support\ValuationMethod;
+use App\Modules\Purchasing\Actions\CommitInventoryCutoverOpenPurchaseOrders;
+use App\Modules\Purchasing\Http\Requests\PurchaseOrder\CommitInventoryCutoverOpenPurchaseOrdersRequest;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\Feature\Modules\Inventory\Concerns\BuildsOutboundRecalculation;
@@ -36,7 +56,9 @@ class WarehouseRecordScopeTest extends TestCase
 
     private const CAPS = ['inventory.stock.view', 'inventory.movement.view', 'inventory.physical_count.create', 'inventory.physical_count.count', 'inventory.physical_count.post', 'inventory.availability.view',
         'inventory.negative-stock.override', 'inventory.negative-stock.review', 'inventory.negative-stock.approve',
-        'inventory.recalculation.request', 'inventory.recalculation.execute', 'inventory.cutover.create', 'inventory.cutover.stage'];
+        'inventory.recalculation.request', 'inventory.recalculation.execute', 'inventory.recalculation.approve', 'inventory.recalculation.review-regeneration',
+        'inventory.cutover.create', 'inventory.cutover.stage', 'inventory.cutover.validate', 'inventory.cutover.approve', 'inventory.cutover.commit',
+        'inventory.cutover.finalise', 'inventory.cutover.negative_opening.request', 'inventory.cutover.negative_opening.approve', 'purchasing.cutover.commit'];
 
     private Location $khi;
 
@@ -264,6 +286,63 @@ class WarehouseRecordScopeTest extends TestCase
         }
         foreach ($surfaces as $url) {
             $this->actingAs($this->boss)->getJson($url)->assertOk();
+        }
+    }
+
+    /** @return array<string, array{class-string, list<mixed>}> */
+    public static function companyWideActions(): array
+    {
+        $cutover = fn () => new InventoryCutover;
+
+        return [
+            'create cutover' => [CreateInventoryCutover::class, [[]]],
+            'stage cutover data' => [AttachInventoryCutoverBatch::class, [$cutover(), new ImportBatch]],
+            'validate cutover' => [ValidateInventoryCutover::class, [$cutover()]],
+            'approve cutover' => [ApproveInventoryCutover::class, [$cutover()]],
+            'commit cutover' => [CommitInventoryCutoverOpeningState::class, [$cutover()]],
+            'finalise cutover' => [FinaliseInventoryCutover::class, [$cutover()]],
+            'request negative opening' => [RequestInventoryCutoverNegativeOpening::class, [$cutover(), []]],
+            'approve negative opening' => [ApproveInventoryCutoverNegativeOpening::class, [new InventoryCutoverNegativeOpening]],
+            'commit cutover purchase orders' => [CommitInventoryCutoverOpenPurchaseOrders::class, [$cutover()]],
+            'request recalculation' => [RequestStockRecalculation::class, [[]]],
+            'decide recalculation' => [DecideRecalculationApproval::class, [new RecalculationImpactVersion, RecalculationApprovalDecision::Approved, 'ok']],
+            'execute recalculation' => [ExecuteRecalculation::class, [new RecalculationImpactVersion]],
+            'resume regeneration' => [ResumeRecalculationRegeneration::class, [new RecalculationImpactVersion, 'ok']],
+        ];
+    }
+
+    /** @param class-string $action @param list<mixed> $arguments */
+    #[DataProvider('companyWideActions')]
+    public function test_company_wide_actions_refuse_a_limited_actor_even_without_a_request(string $action, array $arguments): void
+    {
+        $this->expectException(DomainInvariantException::class);
+        $this->expectExceptionMessage('is company-wide');
+
+        app($action)(...$arguments, ...[$this->khiClerk]);
+    }
+
+    public function test_the_purchase_order_cutover_commit_request_refuses_a_limited_person(): void
+    {
+        $authorises = function (User $user): bool {
+            $request = CommitInventoryCutoverOpenPurchaseOrdersRequest::create('/', 'POST');
+            $request->setUserResolver(fn () => $user);
+
+            return $request->authorize();
+        };
+
+        $this->assertFalse($authorises($this->khiClerk));
+        $this->assertFalse($authorises($this->lostClerk));
+        $this->assertTrue($authorises($this->boss));
+    }
+
+    public function test_the_unlimited_actor_passes_the_scope_guard_on_those_actions(): void
+    {
+        // The scope guard must not be what stops a person with no limit: the same call fails later, on the missing record, not on scope.
+        try {
+            app(ExecuteRecalculation::class)(new RecalculationImpactVersion, $this->boss);
+            $this->fail('An empty version cannot be executed.');
+        } catch (\Throwable $e) {
+            $this->assertStringNotContainsString('is company-wide', $e->getMessage());
         }
     }
 

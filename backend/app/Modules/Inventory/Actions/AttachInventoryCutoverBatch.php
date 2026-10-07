@@ -19,6 +19,7 @@ use App\Modules\Inventory\Models\Location;
 use App\Modules\Inventory\Models\Warehouse;
 use App\Modules\Inventory\Support\InventoryCutoverMode;
 use App\Modules\Inventory\Support\InventoryCutoverStatus;
+use App\Modules\Inventory\Support\WarehouseScope;
 use Brick\Math\BigDecimal;
 use Illuminate\Support\Facades\DB;
 
@@ -29,6 +30,7 @@ final class AttachInventoryCutoverBatch
         if (! $actor->can('inventory.cutover.stage')) {
             throw new DomainInvariantException('The actor is not permitted to stage inventory cutover data.', 'created_by');
         }
+        WarehouseScope::requireUnrestricted($actor, 'inventory.cutover.stage', 'stage inventory cutover data');
 
         return DB::transaction(function () use ($cutover, $importBatch): InventoryCutoverBatch {
             $cutover = InventoryCutover::query()->whereKey($cutover->id)->lockForUpdate()->firstOrFail();

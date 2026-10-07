@@ -10,6 +10,7 @@ use App\Modules\Inventory\Models\InventoryCutover;
 use App\Modules\Inventory\Support\AvcoPoolScope;
 use App\Modules\Inventory\Support\InventoryCutoverMode;
 use App\Modules\Inventory\Support\ValuationMethod;
+use App\Modules\Inventory\Support\WarehouseScope;
 use Illuminate\Support\Facades\DB;
 
 final class CreateInventoryCutover
@@ -20,6 +21,7 @@ final class CreateInventoryCutover
         if (! $actor->can('inventory.cutover.create')) {
             throw new DomainInvariantException('The actor is not permitted to create an inventory cutover.', 'created_by');
         }
+        WarehouseScope::requireUnrestricted($actor, 'inventory.cutover.create', 'create an inventory cutover');
         if (trim($input['source_system']) === '' || $input['target_valuation_policy'] === []) {
             throw new DomainInvariantException('Source system and target valuation policy are required.');
         }

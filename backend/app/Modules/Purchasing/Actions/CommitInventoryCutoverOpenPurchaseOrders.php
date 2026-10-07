@@ -13,6 +13,7 @@ use App\Modules\Inventory\Models\InventoryCutover;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Support\InventoryCutoverBatchStatus;
 use App\Modules\Inventory\Support\InventoryCutoverStatus;
+use App\Modules\Inventory\Support\WarehouseScope;
 use App\Modules\Parties\Models\SupplierAccount;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use Illuminate\Support\Collection;
@@ -41,6 +42,7 @@ final class CommitInventoryCutoverOpenPurchaseOrders
         if (! $actor->can('purchasing.cutover.commit')) {
             throw new DomainInvariantException('The actor is not permitted to commit cutover purchase orders.', 'status');
         }
+        WarehouseScope::requireUnrestricted($actor, 'purchasing.cutover.commit', 'commit cutover purchase orders');
 
         return DB::transaction(function () use ($actor, $cutover): Collection {
             $cutover = InventoryCutover::query()->whereKey($cutover->id)->lockForUpdate()->firstOrFail();

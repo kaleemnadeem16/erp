@@ -8,6 +8,7 @@ use App\Exceptions\DomainInvariantException;
 use App\Models\User;
 use App\Modules\Inventory\Models\InventoryCutoverNegativeOpening;
 use App\Modules\Inventory\Support\InventoryCutoverNegativeOpeningStatus;
+use App\Modules\Inventory\Support\WarehouseScope;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -23,6 +24,7 @@ final class ApproveInventoryCutoverNegativeOpening
         if (! $actor->can('inventory.cutover.negative_opening.approve')) {
             throw new DomainInvariantException('The actor is not permitted to approve an inventory cutover negative-opening exception.', 'approved_by');
         }
+        WarehouseScope::requireUnrestricted($actor, 'inventory.cutover.negative_opening.approve', 'approve a cutover negative-opening exception');
 
         return DB::transaction(function () use ($exception, $actor): InventoryCutoverNegativeOpening {
             $exception = InventoryCutoverNegativeOpening::query()->whereKey($exception->id)->lockForUpdate()->firstOrFail();

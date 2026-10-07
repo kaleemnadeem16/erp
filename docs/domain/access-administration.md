@@ -137,7 +137,8 @@ either side is in scope) and physical counts (list, show, create, add line, coun
 The inventory overview and AVCO pools cannot be limited to a warehouse, so a limited person gets **403** there. Out of scope is a 404.
 Second slice (2026-10-07): a negative-stock override request is scoped by the warehouse of its location — list, show, raise, decide and
 review, with the three Actions guarding themselves — while cutover and recalculation, which are company-wide by nature, are refused to a
-limited person (403) like the overview. Every stock-bearing route is declared in `RecordScopeCoverageTest` (scoped, refused when limited,
+limited person (403) like the overview — at the request and again in every Action (`WarehouseScope::requireUnrestricted`), including the
+Purchasing route that commits open purchase orders at cutover. Every stock-bearing route is declared in `RecordScopeCoverageTest` (scoped, refused when limited,
 shared reference, or pending), so a new surface cannot ship silently company-wide; its pending list is now empty. Still pending outside
 inventory: purchasing documents (they record no creator or ship-to yet), Estimating availability, approvals; and delegated administration,
 own/assigned scopes and time-bounded task access. Demo: Head office > Main site / Karachi site, each owning a demo warehouse, and a limited "Warehouse clerk" for each.

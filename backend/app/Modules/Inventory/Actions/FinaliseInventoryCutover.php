@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Modules\Inventory\Models\InventoryCutover;
 use App\Modules\Inventory\Support\InventoryCutoverBatchStatus;
 use App\Modules\Inventory\Support\InventoryCutoverStatus;
+use App\Modules\Inventory\Support\WarehouseScope;
 use Illuminate\Support\Facades\DB;
 
 final class FinaliseInventoryCutover
@@ -20,6 +21,7 @@ final class FinaliseInventoryCutover
         if (! $actor->can('inventory.cutover.finalise')) {
             throw new DomainInvariantException('The actor is not permitted to finalise an inventory cutover.', 'finalised_by');
         }
+        WarehouseScope::requireUnrestricted($actor, 'inventory.cutover.finalise', 'finalise an inventory cutover');
 
         return DB::transaction(function () use ($cutover, $actor): InventoryCutover {
             $cutover = InventoryCutover::query()->whereKey($cutover->id)->lockForUpdate()->firstOrFail();
