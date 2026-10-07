@@ -21,8 +21,8 @@ final class SuggestPackageDraw
      */
     public function __invoke(int $itemId, int $locationId, ?int $batchId, string $quantity, User $actor): array
     {
-        if (! $actor->can('inventory.package-state.issue') || ! $actor->can('inventory.package-state.view')) {
-            throw new DomainInvariantException('Package issue and view authority in the current company is required.');
+        if (! $actor->hasAnyPermission(['inventory.package-state.issue', 'inventory.package-state.transfer']) || ! $actor->can('inventory.package-state.view')) {
+            throw new DomainInvariantException('Package issue or transfer, and view, authority in the current company is required.');
         }
         $wanted = BigDecimal::of($quantity)->toScale(4, RoundingMode::UNNECESSARY);
         if ($wanted->isLessThanOrEqualTo(0)) {

@@ -112,3 +112,33 @@ export function drawTotal(
 
   return fromUnits(total);
 }
+
+/**
+ * What a destination looks like after a draw arrives (the same rules the server applies): whole sealed packages arrive sealed, loose quantity arrives
+ * loose, and what is taken from an opened package arrives loose. A package size the destination did not hold yet appears as a new sealed row.
+ */
+export function applyArrival(
+  destination: Pick<PackageBalance, "sealed" | "loose" | "total">,
+  source: Pick<PackageBalance, "sealed">,
+  lines: DrawLine[],
+): { sealed: SealedRow[]; loose: string; total: string } {
+  const sealed = destination.sealed.map((row) => ({ ...row }));
+  let loose = toUnits(destination.loose);
+  let arriving = 0n;
+  for (const line of lines) {
+    if (line.kind === "LOOSE" || line.kind === "OPEN_AND_DRAW") {
+      const quantity = toUnits(line.quantity);
+      loose += quantity;
+      arriving += quantity;
+      continue;
+    }
+    const identity = source.sealed.find((row) => row.item_packaging_id === line.packaging_id);
+    if (!identity) continue;
+    const existing = sealed.find((row) => row.item_packaging_id === line.packaging_id);
+    if (existing) existing.count += line.count;
+    else sealed.push({ ...identity, count: line.count, quantity: "0" });
+    arriving += toUnits(identity.content_quantity) * BigInt(line.count);
+  }
+
+  return { sealed, loose: fromUnits(loose), total: fromUnits(toUnits(destination.total) + arriving) };
+}

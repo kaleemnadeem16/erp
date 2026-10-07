@@ -11,6 +11,7 @@ use App\Modules\Inventory\Http\Requests\PackageStock\ShowItemPackageTrackingRequ
 use App\Modules\Inventory\Models\ItemPackaging;
 use App\Modules\Inventory\Models\PackageOperation;
 use App\Modules\Inventory\Models\StockMove;
+use App\Modules\Inventory\Support\PackageWriteScope;
 use App\Modules\Inventory\Support\ValuationMethod;
 use App\Modules\Purchasing\Actions\CreateGoodsReceipt;
 use App\Modules\Purchasing\Models\GoodsReceipt;
@@ -49,7 +50,7 @@ class PackageStockApiTest extends RecordPackageCheckpointTest
         $this->directReceipt($item->id, $unit->id, $a, $order->currency_id, '6', '8', 99101);
         $this->directReceipt($item->id, $unit->id, $a, $order->currency_id, '14', '10', 99102);
         $can = ItemPackaging::query()->create(['item_id' => $item->id, 'code' => 'can', 'name' => '5 L can', 'stock_quantity' => '5', 'active' => true]);
-        $manager = PurchasingActor::make(['inventory.package-state.view', 'inventory.package-state.activate', 'inventory.physical_count.create', 'inventory.package-state.issue', 'inventory.package-state.open',
+        $manager = PurchasingActor::make(['inventory.package-state.view', 'inventory.package-state.activate', 'inventory.physical_count.create', 'inventory.package-state.issue', 'inventory.package-state.open', 'inventory.package-state.transfer',
             'purchasing.goods-receipt.create', 'purchasing.goods-receipt.post']);
         $this->w = ['item' => $item, 'unit' => $unit, 'a' => $a, 'can' => $can, 'manager' => $manager, 'order' => $order];
     }
@@ -249,5 +250,59 @@ class PackageStockApiTest extends RecordPackageCheckpointTest
         Permission::findOrCreate('inventory.package-state.issue', 'web');
         $bare->givePermissionTo('inventory.package-state.issue');
         $this->assertTrue($request->authorize());
+    }
+
+    public function test_a_grouped_transfer_sends_whole_cans_sealed_and_opened_stock_loose_and_is_idempotent(): void
+    {
+        $this->world();
+        $this->actingAs($this->w['manager']);
+        $this->activate();
+        $to = $this->otherLocationId('lahore');
+        $payload = ['item_id' => $this->w['item']->id, 'from_location_id' => $this->w['a'], 'to_location_id' => $to, 'request_key' => 'xfer-1', 'reason' => 'Restock Lahore', 'draw' => [
+            ['kind' => 'SEALED', 'packaging_id' => $this->w['can']->id, 'count' => 1],
+            ['kind' => 'OPEN_AND_DRAW', 'packaging_id' => $this->w['can']->id, 'count' => 1, 'quantity' => '2'],
+        ]];
+
+        $first = $this->postJson('/api/v1/stock-transfers', $payload)->assertCreated();
+        $source = $first->json('data.source_balance');
+        $destination = $first->json('data.destination_balance');
+        $this->assertSame(['7.0000', '13.0000', 1, '8.0000', true], [$first->json('data.quantity'), $source['total'], $source['sealed'][0]['count'], $source['loose'], $source['fresh']]);
+        $this->assertSame(['7.0000', 1, '2.0000', true], [$destination['total'], $destination['sealed'][0]['count'], $destination['loose'], $destination['fresh']]);
+        $moves = StockMove::query()->count();
+
+        $retry = $this->postJson('/api/v1/stock-transfers', $payload)->assertCreated();
+        $this->assertSame($first->json('data.source_operation_id'), $retry->json('data.source_operation_id'));
+        $this->assertSame($moves, StockMove::query()->count());
+    }
+
+    public function test_a_destination_holding_stock_without_fresh_evidence_blocks_with_a_reason_code_and_posts_nothing(): void
+    {
+        $this->world();
+        $this->actingAs($this->w['manager']);
+        $this->activate();
+        $to = $this->otherLocationId('lahore');
+        PackageWriteScope::run($this->w['item']->id, fn () => $this->directReceipt($this->w['item']->id, $this->w['unit']->id, $to, $this->w['order']->currency_id, '4', '9', 99701));
+        $moves = StockMove::query()->count();
+
+        $this->postJson('/api/v1/stock-transfers', ['item_id' => $this->w['item']->id, 'from_location_id' => $this->w['a'], 'to_location_id' => $to, 'request_key' => 'blocked', 'reason' => 'Restock',
+            'draw' => [['kind' => 'LOOSE', 'quantity' => '1']]])->assertUnprocessable()->assertJsonPath('reason_code', 'NEEDS_COUNT_FIRST');
+        $this->assertSame($moves, StockMove::query()->count());
+    }
+
+    public function test_a_transfer_needs_its_capability_a_different_destination_and_suggestion_works_for_transfer_only_users(): void
+    {
+        $this->world();
+        $this->actingAs($this->w['manager']);
+        $this->activate();
+        $to = $this->otherLocationId('lahore');
+        $base = ['item_id' => $this->w['item']->id, 'from_location_id' => $this->w['a'], 'to_location_id' => $to, 'request_key' => 'k', 'reason' => 'r', 'draw' => [['kind' => 'LOOSE', 'quantity' => '1']]];
+
+        $this->postJson('/api/v1/stock-transfers', array_replace($base, ['to_location_id' => $this->w['a']]))->assertUnprocessable();
+        $viewOnly = PurchasingActor::make(['inventory.package-state.view']);
+        $this->actingAs($viewOnly)->postJson('/api/v1/stock-transfers', $base)->assertForbidden();
+        $this->actingAs(User::factory()->create(['company_id' => 1]))->postJson('/api/v1/stock-transfers', $base)->assertForbidden();
+
+        $mover = PurchasingActor::make(['inventory.package-state.view', 'inventory.package-state.transfer']);
+        $this->actingAs($mover)->postJson('/api/v1/package-draws/suggest', ['item_id' => $this->w['item']->id, 'location_id' => $this->w['a'], 'quantity' => '3'])->assertOk()->assertJsonPath('data.lines.0.kind', 'LOOSE');
     }
 }

@@ -3,7 +3,7 @@
  * Do not edit manually.
  *
  * Pure-type schemas are re-exported with `export type *` so a browser never requests them;
- * only the 131 schemas that export a runtime value use `export *`.
+ * only the 132 schemas that export a runtime value use `export *`.
  */
 export type * from "./accountDevicesIndex200";
 export type * from "./accountShow200";
@@ -1639,6 +1639,10 @@ export type * from "./stockMovesIndexParams";
 export * from "./stockMovesIndexSort";
 export type * from "./stockMovesShow200";
 export type * from "./stockMovesShowParams";
+export type * from "./stockTransfersStore201";
+export type * from "./stockTransfersStore201Data";
+export type * from "./stockTransfersStore201DataDestinationBalance";
+export type * from "./stockTransfersStore201DataSourceBalance";
 export type * from "./stockValuationEntryResource";
 export type * from "./stockValuationEntryResourceAvcoPoolId";
 export type * from "./stockValuationEntryResourcePoolEffect";
@@ -1807,6 +1811,15 @@ export type * from "./storeStockMixPolicyRequest";
 export type * from "./storeStockMixPolicyRequestLevel";
 export * from "./storeStockMixPolicyRequestScopeType";
 export type * from "./storeStockMixPolicyRequestThresholdPercent";
+export type * from "./storeStockTransferRequest";
+export type * from "./storeStockTransferRequestBatchId";
+export type * from "./storeStockTransferRequestDrawItem";
+export type * from "./storeStockTransferRequestDrawItemCount";
+export * from "./storeStockTransferRequestDrawItemKind";
+export type * from "./storeStockTransferRequestDrawItemPackagingId";
+export type * from "./storeStockTransferRequestDrawItemQuantity";
+export type * from "./storeStockTransferRequestQuantity";
+export type * from "./storeStockTransferRequestReference";
 export type * from "./storeSupplierAccountRequest";
 export type * from "./storeSupplierAccountRequestCustomFields";
 export type * from "./storeSupplierAccountRequestDefaultCurrencyId";

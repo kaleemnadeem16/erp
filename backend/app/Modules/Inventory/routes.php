@@ -20,6 +20,7 @@ use App\Modules\Inventory\Http\Controllers\Api\V1\RecalculationRequestController
 use App\Modules\Inventory\Http\Controllers\Api\V1\StockIssueController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\StockLayerController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\StockMoveController;
+use App\Modules\Inventory\Http\Controllers\Api\V1\StockTransferController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\WarehouseController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\WarehouseLocationAssignmentController;
 use Illuminate\Support\Facades\Route;
@@ -29,6 +30,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('package-draws/suggest', [PackageDrawController::class, 'suggest'])->name('package-draws.suggest');
     Route::post('package-checkpoints', [PackageCheckpointController::class, 'store'])->name('package-checkpoints.store');
     Route::post('stock-issues', [StockIssueController::class, 'store'])->name('stock-issues.store');
+    Route::post('stock-transfers', [StockTransferController::class, 'store'])->name('stock-transfers.store');
     Route::get('items/{item}/package-tracking', [ItemPackageTrackingController::class, 'show'])->name('items.package-tracking.show');
     Route::post('items/{item}/package-tracking/preview', [ItemPackageTrackingController::class, 'preview'])->name('items.package-tracking.preview');
     Route::post('items/{item}/package-tracking/activate', [ItemPackageTrackingController::class, 'activate'])->name('items.package-tracking.activate');

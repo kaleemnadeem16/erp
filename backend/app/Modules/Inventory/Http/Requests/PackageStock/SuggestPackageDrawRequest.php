@@ -10,7 +10,7 @@ class SuggestPackageDrawRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('inventory.package-state.view') === true && $this->user()->can('inventory.package-state.issue') === true;
+        return $this->user()->can('inventory.package-state.view') === true && $this->user()->hasAnyPermission(['inventory.package-state.issue', 'inventory.package-state.transfer']);
     }
 
     /** @return array<string, mixed> */

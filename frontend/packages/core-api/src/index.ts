@@ -20,6 +20,7 @@ export * from "./generated/package-balance/package-balance";
 export * from "./generated/package-checkpoint/package-checkpoint";
 export * from "./generated/package-draw/package-draw";
 export * from "./generated/stock-issue/stock-issue";
+export * from "./generated/stock-transfer/stock-transfer";
 export * from "./generated/goods-receipt-line-composition/goods-receipt-line-composition";
 export * from "./generated/inventory-cutover/inventory-cutover";
 export * from "./generated/negative-stock-override-request/negative-stock-override-request";

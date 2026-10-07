@@ -7,6 +7,7 @@ import { Button } from "../../components/ui/button";
 import { usePermission } from "../../hooks/use-permission";
 import { ActivationWizard } from "./activation-wizard";
 import { IssuePackageStockDialog } from "./issue-package-stock-dialog";
+import { TransferPackageStockDialog } from "./transfer-package-stock-dialog";
 import { PackageBreakdown } from "./package-breakdown";
 import { packageLabel } from "./quantity";
 import type { PackageBalance, TrackingState } from "./types";
@@ -29,6 +30,8 @@ export function ItemPackageTrackingCard({
   const mayIssue = usePermission("inventory.package-state.issue");
   const mayOpen = usePermission("inventory.package-state.open");
   const mayView = usePermission("inventory.package-state.view");
+  const mayTransfer = usePermission("inventory.package-state.transfer");
+  const mayCount = usePermission("inventory.physical_count.create");
   const tracking = useItemsPackageTrackingShow(itemId, {
     query: { enabled: isStocked, retry: false },
   });
@@ -51,6 +54,7 @@ export function ItemPackageTrackingCard({
   ).filter((row) => Number(row.total) > 0 || row.operation_id !== null);
   const [wizard, setWizard] = useState(false);
   const [issuing, setIssuing] = useState<PackageBalance | null>(null);
+  const [transferring, setTransferring] = useState<PackageBalance | null>(null);
 
   if (!isStocked || !state) return null;
 
@@ -106,15 +110,18 @@ export function ItemPackageTrackingCard({
                   fresh={row.fresh}
                 />
               </div>
-              {mayIssue && row.fresh && Number(row.total) > 0 && (
-                <Button
-                  size="sm"
-                  onClick={() => setIssuing(row)}
-                  data-testid="issue-stock"
-                >
-                  Issue stock…
-                </Button>
-              )}
+              <div className="flex flex-wrap gap-2">
+                {mayIssue && row.fresh && Number(row.total) > 0 && (
+                  <Button size="sm" onClick={() => setIssuing(row)} data-testid="issue-stock">
+                    Issue stock…
+                  </Button>
+                )}
+                {mayTransfer && row.fresh && Number(row.total) > 0 && (
+                  <Button size="sm" variant="outline" onClick={() => setTransferring(row)} data-testid="transfer-stock">
+                    Transfer stock…
+                  </Button>
+                )}
+              </div>
             </div>
           ))}
         </>
@@ -127,6 +134,19 @@ export function ItemPackageTrackingCard({
           itemLabel={itemLabel}
           unit={unit}
           state={state}
+        />
+      )}
+      {transferring && (
+        <TransferPackageStockDialog
+          open
+          onOpenChange={(open) => !open && setTransferring(null)}
+          itemId={itemId}
+          itemLabel={itemLabel}
+          unit={unit}
+          source={transferring}
+          canOpen={mayOpen}
+          canCount={mayCount}
+          tracked={state.tracked_levels}
         />
       )}
       {issuing && (
