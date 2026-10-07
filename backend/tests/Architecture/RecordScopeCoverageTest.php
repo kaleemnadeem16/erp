@@ -2,6 +2,13 @@
 
 namespace Tests\Architecture;
 
+use App\Models\Role;
+use App\Models\User;
+use App\Modules\Administration\Models\AccessScopeLimit;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Routing\Middleware\SubstituteBindings;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 /**
@@ -14,10 +21,13 @@ use Tests\TestCase;
  *    cutover and recalculation workflows);
  *  - SHARED_REFERENCE_OR_CONFIGURATION: names, codes and company settings, open to whoever may read them by design;
  *  - PENDING: still company-wide, carries stock facts, and is the next slices of Q26 (empty: every inventory surface now has a status).
- * A route that is not listed fails; so does a listed route that no longer exists.
+ * A route that is not listed fails; so does a listed route that no longer exists. A route listed REFUSED_WHEN_LIMITED is also called, as a
+ * limited person who holds every capability, and must answer 403 (and a person with the same capabilities but no limit must not).
  */
 class RecordScopeCoverageTest extends TestCase
 {
+    use RefreshDatabase;
+
     private const PATTERN = '#^api/v1/(stock-|avco-|inventory-|physical-count|negative-stock|recalculation|warehouse|locations|item-packag)#';
 
     private const SCOPED = [
@@ -102,6 +112,73 @@ class RecordScopeCoverageTest extends TestCase
         $stale = array_values(array_diff($this->declared(), $this->stockRoutes()));
         $this->assertSame([], $stale, "Declared but no longer a route: remove it.\n".implode("\n", $stale));
         $this->assertSame([], array_values(array_diff_assoc($this->declared(), array_unique($this->declared()))), 'A route is declared under two statuses.');
+    }
+
+    /** Every capability any module registers, so a call can only be refused for scope and never for a missing grant. @return list<string> */
+    private function everyCapability(): array
+    {
+        $names = [];
+        foreach (glob(base_path('app/Modules/*/Support/PermissionVocabulary.php')) ?: [] as $file) {
+            $class = 'App\\Modules\\'.basename(dirname($file, 2)).'\\Support\\PermissionVocabulary';
+            if (method_exists($class, 'all')) {
+                array_push($names, ...$class::all());
+            }
+        }
+
+        return array_values(array_unique($names));
+    }
+
+    private function holder(array $capabilities, bool $limited): User
+    {
+        $user = User::factory()->create();
+        $role = Role::create(['team_id' => 1, 'name' => ($limited ? 'Limited' : 'Unlimited').' holder of everything']);
+        $role->givePermissionTo($capabilities);
+        $user->assignRole($role);
+        if ($limited) {
+            AccessScopeLimit::create(['user_id' => $user->id, 'role_id' => $role->id, 'scope' => 'MY_UNITS']);
+        }
+
+        return $user;
+    }
+
+    public function test_every_route_declared_refused_when_limited_really_refuses_a_limited_person(): void
+    {
+        app(PermissionRegistrar::class)->setPermissionsTeamId(1);
+        $capabilities = $this->everyCapability();
+        $this->assertNotSame([], $capabilities, 'no capabilities found; the check would pass for the wrong reason');
+        foreach ($capabilities as $name) {
+            Permission::findOrCreate($name);
+        }
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        $limited = $this->holder($capabilities, true);
+        $unlimited = $this->holder($capabilities, false);
+
+        // Authorisation runs before the controller; a placeholder id would otherwise be a 404 from model binding before it is reached.
+        $this->withoutMiddleware(SubstituteBindings::class);
+
+        $notRefused = [];
+        $refusedForOtherReasons = [];
+        foreach (app('router')->getRoutes() as $route) {
+            foreach (array_diff($route->methods(), ['HEAD']) as $method) {
+                $key = $method.' '.preg_replace('/\{[^}]+\}/', '{}', $route->uri());
+                if (! in_array($key, self::REFUSED_WHEN_LIMITED, true)) {
+                    continue;
+                }
+                $url = '/'.preg_replace('/\{[^}]+\}/', '1', $route->uri());
+                $call = fn (User $user) => $this->actingAs($user)->json($method, $url, $method === 'GET' ? [] : [])->getStatusCode();
+
+                if ($call($limited) !== 403) {
+                    $notRefused[] = $key;
+                }
+                // The control: the same capabilities with no limit are not refused, so the 403 above came from scope and not from a missing grant.
+                if ($call($unlimited) === 403) {
+                    $refusedForOtherReasons[] = $key;
+                }
+            }
+        }
+
+        $this->assertSame([], $notRefused, "Listed REFUSED_WHEN_LIMITED but a limited person is not answered 403: the real guard is missing. Guard the request with WarehouseScope::unrestricted.\n".implode("\n", $notRefused));
+        $this->assertSame([], $refusedForOtherReasons, "Answered 403 even with no limit, so the check cannot show scope is the reason.\n".implode("\n", $refusedForOtherReasons));
     }
 
     public function test_the_scoped_surfaces_still_apply_the_warehouse_scope(): void
