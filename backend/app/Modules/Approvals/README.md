@@ -43,6 +43,16 @@ Missing mandatory evidence prevents decisions. Relevant changes invalidate appro
 routing totals are unchanged. `approvals.document.technical-review` is additive and narrowly
 backfilled from existing full PO approval grants; it grants no ordinary PO or pricing read.
 
+## Workspace presentation
+
+`/approvals` uses the shared list template, neutral request cards and a request-specific record
+sheet for evidence and decisions. Saved table/card layouts share a paginated footer. The complete
+actionable inbox supports local text/type/ID and overdue filtering before pagination; audit history uses the existing status/type/ID filters and pagination. History
+text search is labelled as page-local. Approval coverage uses animated disclosure and create/revoke
+dialogs; revoke controls follow the existing delegator/management gate. All existing eligibility, evidence/reason projection and
+`approvals.history.view` gates remain unchanged. See the
+[workspace specification](../../../../docs/domain/approvals.md#approval-workspace-first-draft-2026-10-07).
+
 ## Does not own
 
 Departments or record-level scope (Q26), notifications (deliberately deferred to the shared ERP-wide capability, Q33 — do not add

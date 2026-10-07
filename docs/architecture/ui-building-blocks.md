@@ -15,6 +15,7 @@ Paths are relative to `frontend/packages/core-ui/src`.
 | Block | File | Use it for |
 |---|---|---|
 | `Combobox` | `components/ui/combobox.tsx` | A searchable single-select over reference data that grows (items, suppliers, categories, UoMs, currencies, locations, warehouses, accounts). Takes `options: {value,label}[]`; forward its `ref` from `field.ref` so RHF can focus it. |
+| `RemoteLookupCombobox` | `components/ui/remote-lookup-combobox.tsx` | Server-searched reference choices that span many pages. Keeps the selected label independent of search results; accepts an optional `id` for label association and `placeholder`/`searchPlaceholder` for the lookup's wording. Reuse `lookupState` for load/failure feedback. |
 | `Select` | `components/ui/select.tsx` | A bounded enum of a handful of fixed values (status, type, policy). Not for data that grows. |
 | `DateField` | `components/ui/date-field.tsx` | Any date. Typed `mm/dd/yyyy` segments plus a calendar popup; Tab leaves the field, ←/→ move between segments, ↑/↓ step. ISO `yyyy-mm-dd` / `''` value, so it replaces `<Input type="date">` with no schema change. Takes `aria-label` when there is no `FormLabel`. |
 | `Calendar` | `components/ui/calendar.tsx` | The month grid inside `DateField`'s popup; usable on its own. |
@@ -47,7 +48,7 @@ date) — `DateField` is date-only.
 
 | Block | File | Use it for |
 |---|---|---|
-| `useListViewPreference` + `DataTableViewToggle` for document lines | `lib/use-view-preference.ts` | Table or cards for the **lines of a document** (PO review and order detail) follows the list rule: a wide screen always gets the table, a phone starts on cards and shows the toggle (`md:hidden`). |
+| `useListViewPreference` + `DataTableViewToggle` for document lines | `lib/use-view-preference.ts` | Table or cards for the **lines of a document** (PO review and order detail) follows the list rule: a wide screen always gets the table, a phone starts on cards and shows the toggle (`md:hidden`). An explicit `allowDesktopCards` opt-in supports an owner-requested desktop comparison (Approvals); defaults on other screens are unchanged. |
 | `Presentation` + the switch | `lib/presentation.ts`, `apps/main/src/presentation.ts` | Showing a record screen as a page **or** a side sheet, chosen per screen in one place. |
 | `session-draft` | `lib/session-draft.ts` | Keeping unfinished form work for the tab's lifetime, per user (`readDraft` / `writeDraft` / `clearDraft`). Used by the PO create form; any create form can adopt it. |
 | `useFocusOnOpen` | `lib/use-focus-on-open.ts` | Move focus to a just-opened confirmation panel's heading. |

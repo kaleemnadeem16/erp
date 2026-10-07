@@ -16,18 +16,13 @@ function readStored(screenKey: string): ListView | null {
 }
 
 /**
- * Resolves a list screen's table/card rendering mode. Desktop (`md` and up)
- * is always 'table' — cards are the small-screen fallback per ADR 0015, not
- * a desktop option. Below `md`, the visitor's own choice (persisted in
- * localStorage) wins; absent a stored choice, 'cards' is the default the
- * first time a screen is opened on a small screen, per the same ADR.
- *
- * `screenKey` must be unique per screen (e.g. 'items-list') so two screens'
- * choices never collide in storage. Client-only preference — no cookies, no
- * backend — swappable for a DB-backed user-settings table later without
- * changing call sites.
+ * Resolves a saved per-screen list layout. Ordinary screens keep desktop tables
+ * and default mobile cards (ADR 0015). Explicit `allowDesktopCards` opts a screen
+ * into the same saved choice on desktop, with table as its desktop default.
+ * Preferences stay browser-local and can later move to user settings without
+ * changing screen call sites. Each screen uses its own stable storage key.
  */
-export function useListViewPreference(screenKey: string) {
+export function useListViewPreference(screenKey: string, options?: { allowDesktopCards?: boolean }) {
   const isDesktop = useMediaQuery(MD_BREAKPOINT_QUERY);
   const [stored, setStored] = useState<ListView | null>(() => readStored(screenKey));
 
@@ -44,6 +39,7 @@ export function useListViewPreference(screenKey: string) {
     [screenKey],
   );
 
-  return { view: isDesktop ? ('table' as const) : (stored ?? 'cards'), setView, isDesktop };
+  const view: ListView = isDesktop && !options?.allowDesktopCards ? 'table' : (stored ?? (isDesktop ? 'table' : 'cards'));
+  return { view, setView, isDesktop };
 }
 

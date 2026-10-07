@@ -48,3 +48,9 @@ export function trimZeros(value: string | null | undefined): string {
   if (value === null || value === undefined) return '';
   return value.includes('.') ? value.replace(/0+$/, '').replace(/\.$/, '') : value;
 }
+
+/** Group the integer portion for scanning without converting a financial decimal to a float. */
+export function readableApprovalAmount(value: string): string {
+  const [integer, fraction] = trimZeros(value).split('.');
+  return integer!.replace(/\B(?=(\d{3})+(?!\d))/g, ',') + (fraction ? `.${fraction}` : '');
+}

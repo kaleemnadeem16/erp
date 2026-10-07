@@ -75,6 +75,8 @@ shared FAB and secondary tools stay in the toolbar/filter sheet.
   value when search results change. Never assume the first 100 rows are the complete catalogue.
 - Use a desktop table and default mobile cards, with the saved table/cards choice where relevant.
   Numeric cells align right and use tabular numerals; identity links have stronger weight.
+  PO and Approvals use the shared mobile Table/Card switcher with 36px icon controls, a solid
+  brand selected fill and neutral inactive fill. Their search/Filters controls align at 40px.
 - Enable selection/bulk actions only when there are relevant safe actions. Clear selection when
   page, sort or filters change; show a selected surface/edge and a count, not only tick boxes.
 - Row menus contain permitted, state-valid actions. Controlled transitions open the record's own
@@ -164,6 +166,24 @@ Known inherited limitation: light-mode field borders `#CBD5E1` and hover `#94A3B
 reference values, below 3:1 on white. The darker focus boundary is visible; this does not make the
 resting boundary compliant. Do not claim full WCAG conformance based only on an axe pass.
 
+## Motion and control states
+
+Opening and closing a disclosure, filter panel, dialog, sheet or menu must animate in both
+directions unless the owner explicitly specifies an exception. Honour the user's reduced-motion
+preference. Use shared `Collapse` for inline sections (keep it mounted while closed), and existing
+portal primitives for dialogs/sheets/menus. Do not conditionally unmount a disclosure before its
+exit animation can run. Shared motion tokens own duration/easing; screen overrides remain bounded.
+
+Focus belongs to the operable control, not its surrounding tab/button group. Composite date fields
+are the specific exception: their segmented inputs share the field boundary. Active views use a
+solid brand fill in PO/Approvals list selectors, keyboard focus remains visible, and ordinary pointer clicks do not highlight an
+entire toolbar. Primary decision/save actions use solid brand colour; repeatable review/navigation
+actions in Approvals use text links; neutral tools use solid neutral fills; revoke/reject semantics stay distinct.
+
+Approvals explicitly allows saved table/card selection on desktop as requested for comparison;
+other screens retain the existing desktop-table/mobile-card default. Both layouts must share the
+same query, page, count and pagination controls. Changing layout must not reset filters or page.
+
 ## Overrides and portal inheritance
 
 ```tsx
@@ -217,8 +237,8 @@ PO Template 1 is a document template, not the list/detail/form screen template.
    successful refresh), not merely that a class exists. Keep fixtures independent of mutable demos.
 7. Update the matching domain/module/journey docs and STATUS alongside the work. Describe exceptions.
 
-Adoption is incremental: PO list/page/sheets and Appearance settings use the shared templates now;
-all screens receive the revised default semantic colours. Other screens' layout/behaviour retrofit
+Adoption is incremental: PO list/page/sheets, the Approvals inbox/history/review workspace and
+Appearance settings use the shared templates now; all screens receive the revised default semantic colours. Other screens' layout/behaviour retrofit
 is a separate feature-by-feature pass. New screens must start on this standard.
 
 ## Related

@@ -10,6 +10,9 @@ import type { ComboboxOption } from './combobox';
 
 interface RemoteLookupComboboxProps extends LookupState {
   label: string;
+  id?: string;
+  searchPlaceholder?: string;
+  placeholder?: string;
   allLabel?: string;
   value: string;
   selectedLabel?: string;
@@ -23,6 +26,9 @@ interface RemoteLookupComboboxProps extends LookupState {
 /** A server-filtered single-select lookup. The selected label is independent of the current results page. */
 export function RemoteLookupCombobox({
   label,
+  id,
+  searchPlaceholder,
+  placeholder,
   allLabel,
   value,
   selectedLabel,
@@ -49,6 +55,7 @@ export function RemoteLookupCombobox({
       <PopoverTrigger asChild>
         <button
           type="button"
+          id={id}
           role="combobox"
           aria-label={label}
           aria-expanded={open}
@@ -59,7 +66,7 @@ export function RemoteLookupCombobox({
           )}
         >
           <span className={cn('truncate text-left', !displayLabel && 'text-muted-foreground')}>
-            {displayLabel ?? (loading ? 'Loading…' : label)}
+            {displayLabel ?? (loading ? 'Loading…' : (placeholder ?? label))}
           </span>
           <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
         </button>
@@ -76,7 +83,7 @@ export function RemoteLookupCombobox({
         ) : (
           <Command shouldFilter={false}>
             <CommandInput
-              placeholder={`Search ${label.toLowerCase()}…`}
+              placeholder={searchPlaceholder ?? `Search ${label.toLowerCase()}…`}
               value={search}
               onValueChange={onSearchChange}
             />

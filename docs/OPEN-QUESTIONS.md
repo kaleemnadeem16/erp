@@ -40,6 +40,13 @@ method) resolved 2026-08-20 — see [ADR 0032](decisions/0032-per-item-valuation
 (multi-supplier catalog) resolved 2026-08-20 — see
 [ADR 0033](decisions/0033-item-suppliers-relationship.md).
 
+### UI follow-up — header avatar hover contrast
+
+The approval workspace audit (2026-10-07) found the existing light-mode account avatar's
+`hover:opacity-90` can blend white text / primary blue to roughly 4.35:1 on the header. This is
+outside the approval workspace and the approved palette was left unchanged. Review the shared
+header's hover treatment in its own adoption pass; it does not block resting-state approval UI.
+
 ### Q8 — Second customer profile
 **Blocks:** Nothing yet — but shapes Phase 3 and the plugin design
 

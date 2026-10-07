@@ -10,11 +10,13 @@ export function DataTablePagination<TRow>({
   pageSizeOptions = [10, 25, 50, 100],
   recordNoun,
   numbered,
+  navigationLabel,
 }: {
   table: Table<TRow>;
   pageSizeOptions?: number[];
   recordNoun?: string;
   numbered?: boolean;
+  navigationLabel?: string;
 }) {
   const { pageIndex, pageSize } = table.getState().pagination;
   const rowCount = table.getRowCount();
@@ -23,13 +25,13 @@ export function DataTablePagination<TRow>({
   const selected = table.getSelectedRowModel().rows.length;
 
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div role={navigationLabel ? "navigation" : undefined} aria-label={navigationLabel} className="ui-list-pagination flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       {/* A polite live region: the count is the "N results" status message a screen-reader user otherwise never hears (WCAG 4.1.3). */}
       <div role="status" className="text-sm text-muted-foreground">
         {selected > 0 ? (
           <span>{selected} selected</span>
         ) : rowCount === 0 ? (
-          <span>0 records</span>
+          <span>{recordNoun ? `0 ${recordNoun}` : "0 records"}</span>
         ) : (
           <span>
             {recordNoun ? `${from}–${to} of ${rowCount} ${recordNoun}` : `Showing ${from}–${to} of ${rowCount}`}

@@ -19,7 +19,8 @@ export function ApprovalsSettingsScreen() {
   const mayManagePolicies = usePermission('approvals.policy.manage');
   const mayManageAuthorities = usePermission('approvals.authority.manage');
   // Everyone's limits are readable only with the manage capability or the auditor one (ADR 0087); history alone no longer shows them.
-  const mayViewAuthorities = mayManageAuthorities || usePermission('approvals.authority.view');
+  const mayReadAuthorities = usePermission('approvals.authority.view');
+  const mayViewAuthorities = mayManageAuthorities || mayReadAuthorities;
   const subjects = useApprovalSubjectTypesIndex({ query: { retry: false } });
   const rows = subjects.data?.status === 200 ? subjects.data.data.data : [];
   const updateMode = useApprovalSubjectTypesMode();

@@ -75,6 +75,8 @@ export interface DataTableProps<TRow> {
   recordNoun?: string;
   /** Opt-in: show the current page as a numbered button instead of "Page 1 of N". */
   numberedPagination?: boolean;
+  paginationLabel?: string;
+  scrollRegionLabel?: string;
   /** Opt-in: replaces the default icon on the Columns button. */
   viewOptionsIcon?: ReactNode;
   /** Opt-in: extra classes for the Columns button (e.g. a taller control). */
@@ -122,6 +124,8 @@ export function DataTable<TRow>({
   toolbarStart,
   recordNoun,
   numberedPagination,
+  paginationLabel,
+  scrollRegionLabel,
   viewOptionsIcon,
   viewOptionsTriggerClassName,
   actionsHeader,
@@ -225,6 +229,7 @@ export function DataTable<TRow>({
           aria-busy={refreshing || undefined}
         >
           <Table
+            scrollRegionLabel={scrollRegionLabel}
             className={
               refreshing
                 ? "opacity-60 transition-opacity"
@@ -350,6 +355,7 @@ export function DataTable<TRow>({
           pageSizeOptions={pageSizeOptions}
           recordNoun={recordNoun}
           numbered={numberedPagination}
+          navigationLabel={paginationLabel}
         />
       )}
     </div>

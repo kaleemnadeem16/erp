@@ -6,7 +6,11 @@ import { expect, test } from '@playwright/test';
  * amount-banded policies, and orders wait in each state. Everything here is read-only except authoring and discarding a draft
  * policy, so the specs stay repeatable. The demo login holds every capability and has no approval ceiling.
  */
+test.beforeEach(async ({ page }) => { await page.addInitScript(() => localStorage.setItem('erp.list-view.approvals-workspace', 'cards')); });
+
 async function noSeriousViolations(page: import('@playwright/test').Page) {
+  // Closing the sheet can leave the pointer over the header avatar. Audit the resting screen.
+  await page.mouse.move(0, 0);
   const results = await new AxeBuilder({ page }).analyze();
   const serious = results.violations.filter((violation) => violation.impact === 'critical' || violation.impact === 'serious');
   expect(serious, JSON.stringify(serious, null, 2)).toEqual([]);
@@ -49,7 +53,9 @@ test('the inbox shows what waits for this person, with the amount, its steps and
   await page.goto('/approvals');
   await expect(page.getByRole('heading', { name: 'Approvals', level: 1 })).toBeVisible();
 
-  const waiting = page.getByRole('region', { name: /Approval of Draft #\d+/ }).filter({ hasText: '250000' });
+  const card = page.getByRole('article', { name: /Approval of Draft #\d+/ }).filter({ hasText: '250,000' });
+  await card.getByRole('button', { name: 'Review & decide' }).click();
+  const waiting = page.getByRole('region', { name: /Approval of Draft #\d+/ }).filter({ hasText: '250,000' });
   await expect(waiting.getByText('Waiting for approval')).toBeVisible();
   await expect(waiting.getByText('Purchasing manager')).toBeVisible();
   await expect(waiting.getByRole('button', { name: 'Approve' })).toBeVisible();
@@ -57,6 +63,8 @@ test('the inbox shows what waits for this person, with the amount, its steps and
   await waiting.getByRole('button', { name: 'Reject' }).click();
   await expect(waiting.getByText('Say why you are rejecting this.')).toBeVisible();
 
+  await page.getByRole('button', { name: 'Close', exact: true }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Cover while you are away' })).toBeVisible();
   await noSeriousViolations(page);
 });

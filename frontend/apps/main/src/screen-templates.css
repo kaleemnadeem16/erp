@@ -506,7 +506,7 @@
 
 /* DateField is a bordered group of segments: focus it like any other field */
 :is(.erp-screen, .po-screen, .po-detail):not(.po-print)
-  div[role="group"]:focus-within {
+  [data-slot="date-field"]:focus-within {
   border-color: var(--ui-field-border-focus);
   box-shadow: 0 0 0 3px var(--ui-focus-halo);
 }
@@ -779,4 +779,158 @@
 }
 .erp-screen [data-slot="date-field"][aria-invalid="true"] {
   border-color: var(--status-danger);
+}
+
+/* Approval workspace: compact presentations with semantic actions and neutral boundaries. */
+.approval-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; }
+.approval-view-tabs { display: flex; flex-wrap: wrap; gap: .375rem; }
+.approval-count { margin-left: .25rem; padding: .125rem .375rem; border-radius: .375rem; background: var(--ui-bg-surface-subtle); color: var(--ui-text-primary); font-size: .75rem; font-variant-numeric: tabular-nums; }
+.erp-screen.approvals-screen .approval-view-button { border: 1px solid transparent; background: transparent; color: var(--ui-text-secondary); }
+.erp-screen.approvals-screen .approval-view-button[aria-pressed="true"],
+.erp-screen.approvals-screen .approval-layout-button[aria-pressed="true"],
+.erp-screen.approvals-screen .approval-filter-chip { background: var(--ui-brand-subtle); border-color: var(--ui-chip-active-border); color: var(--ui-brand-text); border-radius: .5rem; }
+.approval-layout-toggle { display: inline-flex; flex-wrap: wrap; gap: .25rem; padding: .25rem; border: 1px solid var(--ui-border-hairline); border-radius: .625rem; background: var(--ui-bg-surface); }
+.approval-card-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; }
+.approval-card { display: flex; flex-direction: column; gap: .875rem; min-width: 0; padding: 1rem; border: 1px solid var(--ui-border-hairline); border-radius: .75rem; background: var(--ui-bg-surface); }
+.approval-card-icon, .approval-coverage-icon { display: flex; align-items: center; justify-content: center; width: 2.25rem; height: 2.25rem; flex-shrink: 0; border-radius: .5rem; background: var(--ui-brand-subtle); color: var(--ui-brand-text); }
+.approval-card-stage { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem; padding: .625rem .75rem; border-radius: .5rem; background: var(--ui-bg-surface-subtle); }
+.approval-coverage { padding: 1rem; border: 1px solid var(--ui-border-hairline); border-radius: .75rem; background: var(--ui-bg-surface); }
+.approval-coverage-icon { background: var(--ui-bg-surface-subtle); color: var(--ui-text-secondary); }
+.approval-coverage-list { display: flex; flex-direction: column; gap: .5rem; }
+.approval-coverage-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; padding: .75rem; border: 1px solid var(--ui-border-hairline); border-radius: .5rem; }
+@keyframes approval-results-enter { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.approval-results-enter { animation: approval-results-enter var(--collapse-open-duration) var(--collapse-open-ease) both; }
+@media (min-width: 1200px) { .approval-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 767px) { .approval-toolbar > div { width: 100%; } }
+@media (prefers-reduced-motion: reduce) { .approval-results-enter { animation: none; } }
+
+.erp-screen.approvals-screen .approval-view-button:hover,
+.erp-screen.approvals-screen .approval-layout-button:hover { background: var(--ui-bg-hover); color: var(--ui-text-primary); }
+.erp-screen.approvals-screen .approval-view-button[aria-pressed="true"]:hover,
+.erp-screen.approvals-screen .approval-layout-button[aria-pressed="true"]:hover { background: var(--ui-brand-subtle-hover); color: var(--ui-brand-text); }
+
+/* Approvals button draft: opaque fills; interaction changes colour, not opacity. */
+.erp-screen.approvals-screen :is(.approval-view-button, .approval-layout-button) {
+  background: var(--ui-bg-surface);
+  color: var(--ui-text-primary);
+  border: 1px solid var(--ui-border-default);
+}
+.erp-screen.approvals-screen :is(.approval-view-button, .approval-layout-button)[aria-pressed="true"] {
+  background: var(--ui-brand-primary);
+  color: var(--ui-text-inverse);
+  border-color: var(--ui-brand-primary);
+  opacity: 1;
+}
+.erp-screen.approvals-screen :is(.approval-view-button, .approval-layout-button)[aria-pressed="true"]:hover {
+  background: var(--ui-brand-hover);
+  color: var(--ui-text-inverse);
+  border-color: var(--ui-brand-hover);
+}
+.erp-screen.approvals-screen :is(.approval-view-button, .approval-layout-button)[aria-pressed="true"]:active {
+  background: var(--ui-brand-pressed);
+  border-color: var(--ui-brand-pressed);
+}
+.erp-screen.approval-controls button:disabled:not([role="combobox"]) {
+  background: var(--ui-field-bg-disabled);
+  color: var(--ui-text-disabled);
+  border-color: var(--ui-border-disabled);
+  opacity: 1;
+}
+.erp-screen.approval-controls button.bg-destructive:hover {
+  background-color: var(--destructive);
+}
+
+/* Reviewing opens a panel; reserve filled actions for decisions and creation. */
+.erp-screen.approvals-screen .approval-review-button,
+.erp-screen.approvals-screen .approval-review-button:is(:hover, :active) {
+  background: transparent;
+  color: var(--ui-text-link);
+  border: 0;
+  box-shadow: none;
+}
+.erp-screen.approvals-screen .approval-review-button:focus-visible {
+  outline: 2px solid var(--ui-focus-ring);
+  outline-offset: 3px;
+}
+
+/* Mobile approval workspace: compact controls, readable evidence summaries and touch targets. */
+@media (max-width: 767px) {
+  .approvals-screen .approval-toolbar { gap: .75rem; }
+  .approvals-screen .approval-view-tabs {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: .375rem; width: 100%;
+  }
+  .approvals-screen .approval-view-tabs:has(> :last-child:nth-child(2)) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .approvals-screen .approval-view-button {
+    height: 36px; min-height: 36px; padding: .375rem; font-size: .75rem; gap: .375rem;
+  }
+  .approvals-screen .approval-view-button > svg { margin-right: 0; flex-shrink: 0; }
+  .approvals-screen .approval-count { margin-left: 0; padding: .125rem .25rem; }
+  .approvals-screen .approval-search-controls { flex-wrap: nowrap; }
+  .approvals-screen .approval-search-controls input,
+  .approvals-screen .approval-search-controls > button { height: 40px; min-height: 40px; }
+  .approvals-screen .approval-results-toolbar { flex-wrap: wrap; font-size: .75rem; }
+  .approvals-screen .approval-results-toolbar > p { flex: 1; min-width: 0; }
+  .approvals-screen .approval-layout-toggle { display: none; }
+  .approvals-screen .approval-layout-button { width: 44px; min-height: 44px; padding: .5rem; }
+  .approvals-screen .approval-card { padding: .875rem; gap: .75rem; }
+  .approvals-screen .approval-card-heading { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .5rem; align-items: start; }
+  .approvals-screen .approval-card-heading > div:first-child { flex: 1; }
+  .approvals-screen .approval-card-heading > div:last-child { flex-direction: column; align-items: flex-end; gap: .25rem; }
+  .approvals-screen .approval-card-heading .ui-status-badge { font-size: .625rem; }
+  .approvals-screen .approval-card-heading > div:first-child { gap: .5rem; align-items: flex-start; }
+  .approvals-screen .approval-card-heading h2 { overflow-wrap: anywhere; }
+  .approvals-screen .approval-card-icon { width: 1.75rem; height: 1.75rem; }
+  .approvals-screen .approval-card-facts { display: flex; flex-direction: column; gap: .625rem; }
+  .approvals-screen .approval-card-policy { white-space: normal; overflow-wrap: anywhere; line-height: 1.5; }
+  .approvals-screen .approval-card-amount {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: .75rem; width: 100%; text-align: left;
+  }
+  .approvals-screen .approval-card-amount p:last-child { margin-top: 0; }
+  .approvals-screen .approval-card-stage { gap: .375rem; }
+  .approvals-screen .approval-card-stage > p { flex-basis: 100%; line-height: 1.5; }
+  .approvals-screen .approval-card-footer { gap: .5rem; }
+  .approvals-screen .approval-review-button { min-height: 44px; }
+  .approvals-screen .approval-coverage { padding: .875rem; }
+  .approvals-screen .approval-coverage > div:first-child > div:last-child { width: 100%; }
+  .approvals-screen .approval-coverage > div:first-child > div:last-child > button { flex: 1; min-height: 44px; }
+}
+
+.erp-screen.approval-mobile-filters .ui-filter-panel { border: 0; padding: 1rem 0; background: transparent; }
+
+/* Shared mobile list switcher, adopted by PO and Approvals. */
+:is(.po-screen, .approvals-screen) .ui-list-view-toggle {
+  gap: .25rem; padding: .25rem; border-radius: .625rem;
+  border-color: var(--ui-border-hairline); background: var(--ui-bg-surface);
+}
+:is(.po-screen, .approvals-screen) .ui-list-view-toggle button {
+  height: 36px; width: 36px; border-radius: .5rem;
+  border: 1px solid var(--ui-border-default);
+  background: var(--ui-bg-surface); color: var(--ui-text-primary);
+  transition: background-color 150ms ease, color 150ms ease;
+}
+:is(.po-screen, .approvals-screen) .ui-list-view-toggle button:hover {
+  background: var(--ui-bg-hover);
+}
+:is(.po-screen, .approvals-screen) .ui-list-view-toggle button[aria-pressed="true"] {
+  background: var(--ui-brand-primary); color: var(--ui-text-inverse);
+  border-color: var(--ui-brand-primary);
+}
+:is(.po-screen, .approvals-screen) .ui-list-view-toggle button[aria-pressed="true"]:hover {
+  background: var(--ui-brand-hover); border-color: var(--ui-brand-hover);
+}
+:is(.po-screen, .approvals-screen) .ui-list-view-toggle button[aria-pressed="true"]:active {
+  background: var(--ui-brand-pressed); border-color: var(--ui-brand-pressed);
+}
+:is(.po-screen, .approvals-screen) .ui-list-view-toggle button:focus-visible {
+  outline: 2px solid var(--ui-focus-ring); outline-offset: 2px;
+}
+
+@media (max-width: 767px) {
+  :is(.po-screen, .approvals-screen) .ui-list-pagination > div:last-child {
+    flex-wrap: wrap; justify-content: space-between; width: 100%; gap: .75rem;
+  }
 }

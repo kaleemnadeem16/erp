@@ -56,7 +56,10 @@ async function mockClosedRequest(page: Page, visible: boolean) {
   await page.route("**/api/v1/approval-requests/inbox", (route) =>
     route.fulfill({ json: { data: [request] } }),
   );
+  await page.route("**/api/v1/approval-requests/880087", (route) => route.fulfill({ json: { data: request } }));
+  await page.addInitScript(() => localStorage.setItem("erp.list-view.approvals-workspace", "cards"));
   await page.goto("/approvals");
+  await page.getByRole("button", { name: "View details", exact: true }).click();
 }
 
 test("a reason the viewer may not read is replaced by a plain note, with the outcome and decider still shown", async ({

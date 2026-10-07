@@ -7,7 +7,7 @@ import { Button } from '../../components/ui/button';
 import { Textarea } from '../../components/ui/textarea';
 import { formatDateTime } from '../../lib/format-date';
 import { getApiErrorMessage } from '../../lib/api-errors';
-import { REQUEST_STATUS_LABELS, REQUEST_STATUS_VARIANT, STEP_STATUS_LABELS, trimZeros } from './approval-labels';
+import { REQUEST_STATUS_LABELS, REQUEST_STATUS_VARIANT, STEP_STATUS_LABELS, trimZeros, readableApprovalAmount } from './approval-labels';
 
 interface Evidence {
   original_amount?: string;
@@ -123,7 +123,7 @@ export function ApprovalRequestPanel({
       {request.amount_base !== null && request.amount_base !== undefined && (
         <div className="text-sm">
           <span className="text-muted-foreground">Amount routed (base currency): </span>
-          <span className="font-medium">{trimZeros(String(request.amount_base))}</span>
+          <span className="font-medium">{readableApprovalAmount(String(request.amount_base))}</span>
           {foreign && (
             <p className="text-xs text-muted-foreground">
               {trimZeros(evidence.original_amount)} {evidence.currency_code} at {trimZeros(evidence.fx_rate)} on{' '}
@@ -160,6 +160,9 @@ export function ApprovalRequestPanel({
                 )}
               </span>
             </div>
+            {step.deadline_at && step.status === 'OPEN' && (
+              <p className="mt-2 text-xs text-muted-foreground">Due {formatDateTime(step.deadline_at)}</p>
+            )}
             {step.decisions.length > 0 && (
               <ul className="mt-2 space-y-1 text-muted-foreground">
                 {step.decisions.map((d) => (

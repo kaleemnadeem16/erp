@@ -235,6 +235,22 @@ packages and supplier offers. The Thinner demo shows three populated custom valu
 customer definitions does not imply a customer form has shipped. See
 [the implemented scope](../architecture/extensibility.md#implemented-custom-field-settings-2026-10-06).
 
+## Review an approval
+
+Open Approvals → **Waiting for me** (including delegated work), or **Overdue** to prioritise late
+open steps. Search by document/supplier, submitter or policy; use Filters for document type/ID and
+sorting. Choose Table view or Card view; both retain the same page and filters, with shared
+rows-per-page and first/previous/next/last controls. Filters animate open and closed. **Review & decide** opens the submitted request in a side panel. Inspect the frozen
+review, step progress and permitted decision notes before approving or rejecting; rejection
+requires a reason. The existing subject capability and eligibility checks still govern decisions.
+Closing restores the same filtered list. Auditors with `approvals.history.view` can use
+**All approvals & history**, filter by outcome and inspect previous decisions. Its text search
+covers the current page; outcome/type/ID filters cover all history. Manage approval cover through
+the compact **Cover while you are away** section: expand **Manage coverage**, or open the separate
+**Delegate my approvals** dialog. Ending coverage asks for confirmation; incoming coverage does not
+grant revoke authority. See the
+[approval workspace](../domain/approvals.md#approval-workspace-first-draft-2026-10-07).
+
 ## Related
 
 - [Product journeys index](README.md)

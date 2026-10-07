@@ -356,6 +356,11 @@ future acceptance or direct-invoice workflow.
 
 ### Search and filtering
 
+The mobile list aligns search and Filters at 40px and uses the shared 36px Table/Card
+icon switcher with solid brand selected fill, matching Approvals. Layout preference,
+filter-sheet behaviour and permission gates are unchanged.
+
+
 Purchase orders provide multi-attribute search and structured filters:
 - **Global search (`filter[search]`)**: Matches across PO number, legacy cutover/import source
   reference (`source_record_id`), supplier account code and party name, line item code and

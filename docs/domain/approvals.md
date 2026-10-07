@@ -102,6 +102,64 @@ retain eligible stale/expired handling. Q35 document review follows ADR 0085; li
 `/approvals` — the inbox (including what a person may decide as someone's delegate), an audit tab for those who may, and
 "Cover while you are away" (delegations). The purchase-order detail screen shows the approval state, submit/withdraw and the
 decision history, and disables Issue/Edit with the reason rather than failing after a click.
+
+### Approval workspace first draft (2026-10-07)
+
+The inbox adopts the [shared screen standard](../architecture/erp-blue-design-standard.md).
+Desktop defaults to a compact table; mobile defaults to cards. A saved table/card choice is
+available at every width for this screen (an explicit owner-requested exception to the ordinary
+desktop table-only default). Cards use a compact grid and summarise the current step; the full
+workflow remains in the review sheet. There are no coloured left rails. View buttons have their
+own active/focus states; the shared date focus rule targets date fields, not every button group.
+
+**Waiting for me** includes delegated eligibility; **Overdue** contains only currently actionable
+requests whose open step is flagged overdue by the server. Text search covers the complete eligible
+inbox (document/supplier, submitter, policy and step names). Its existing API is an unpaginated,
+already-authorised collection: filter/sort that complete collection before local pagination.
+Both presentations reuse the shared list footer with result ranges, first/previous/next/last and
+10/25/50/100 rows per page. History retains server pagination; layout switching preserves its page.
+Changing inbox filters/sort/page size resets pagination; a successful decision clamps a page that
+has become empty. Filters use mounted `Collapse` with opening/closing animation and reduced-motion
+support. The current button draft uses text links for review/detail navigation, solid brand fills for selected views and creation/decision actions, solid
+neutral fills for secondary tools, and opaque muted disabled states. Hover/pressed states change
+colour rather than opacity. The approved palette and server validation remain unchanged; this
+button treatment awaits visual review before becoming a shared standard.
+
+On phones the tabs use compact 36px controls matching the PO toolbar, the view switcher reuses the PO labelled-icon control with solid selected fill, and 40px search stays
+beside Filters, which opens an animated bottom sheet with Clear filters and Done; desktop
+filters retain their inline collapse. Card status badges stay at the top right. Cards separate supplier/policy from the amount, wrap policy text, and retain
+44px review targets. Coverage actions wrap within the viewport; pagination uses PO’s shared rows-per-page size and
+page controls, including the same responsive wrapping in inbox and history; desktop controls
+keep their full labels. This is a responsive draft; permissions and data scopes are unchanged.
+
+**All approvals & history** requires `approvals.history.view`. Outcome, document type and document
+ID filters run on the existing history API; pagination covers the whole result set. History text
+search is explicitly limited to the current page, because the API has no full-history text search.
+The registered subject catalogue supplies document-type choices for auditors; inbox users get
+the types already present in their complete actionable inbox. Counts never imply company-wide
+visibility for non-auditors. A separate personal-decision-history collection is not exposed by
+the current API; the draft does not fetch company history to simulate one for an ordinary user.
+
+**Review & decide / View details** opens a URL-addressable record sheet over the same list. It
+fetches the existing request-specific projection, showing frozen evidence, workflow and recorded
+deciders/times/reasons where permitted. Decisions remain in the existing guarded reason form,
+not on the summary card. Closing retains search, filters and pagination. Approval coverage is a compact summary below the workspace, with an animated management
+section. Adding cover opens a separate animated dialog with validated dates/reason and a remote,
+server-searchable colleague picker (selected names survive search changes). The type choices reuse
+the caller's existing subject projection. Ending coverage has its own confirmation dialog. Revoke
+controls require the delegator or `approvals.delegation.manage`; incoming cover alone cannot revoke.
+The backend remains authoritative for all creation/revocation and authority rules. No new workflow, permission, endpoint or grant is introduced. The existing settings authority
+readership check now calls its permission hook unconditionally, avoiding a hook-order crash when
+the authenticated user loads.
+
+Authorisation checklist: the inbox is deliberately personal/eligible; company history remains
+audit-gated. Request `show` retains its submitter/auditor/eligible-or-prior-actor rule; monetary and
+written-reason visibility remains server-projected (ADRs 0085/0087). Decision capability, maker/checker,
+current-step/delegation checks and Action guards are unchanged. The SPA uses server permissions;
+bookmarked history URLs cannot trigger audit reads for non-auditors. Existing permission registration
+and cross-company backend coverage remain applicable; browser checks cover review visibility,
+missing evidence, reason validation, history gating and filter requests. Research is reused from
+ADRs 0070/0085/0087: this draft exposes the decided model without changing its business semantics.
 The **purchase-order list** has an **Approval** column, a filter (*All approvals · Waiting · Approved · Rejected · Withdrawn · No
 longer valid · Expired · Not sent for approval*) and a chip, shown only for a company that uses approvals. The API sends
 `approval_status` per row (one query for the page; `null` for every row while approvals are off) and `filter[approval]` judges

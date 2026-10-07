@@ -96,6 +96,7 @@ workflows; this feature only makes their eventual stock boundary package-consist
 
 ## Related
 
+- [Screens and API design](package-balance-ui.md)
 - [Inventory packages](../domain/inventory-packages.md)
 - [ADR 0052](../decisions/0052-progressive-inventory-package-tracking.md)
 - [Proposed ADR 0082](../decisions/0082-reconcile-package-balances-with-stock-operations.md)

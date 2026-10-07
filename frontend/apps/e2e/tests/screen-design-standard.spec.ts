@@ -184,3 +184,68 @@ test("system colour mode and saved theme selection use the default dark palette"
   await page.reload();
   await expect(page.getByRole("radio", { name: /Amber/ })).toBeChecked();
 });
+
+for (const mode of ["light", "dark"] as const) {
+  test(`PO mobile controls match Approvals: ${mode}`, async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.addInitScript((mode) => {
+      localStorage.setItem("erp.appearance", JSON.stringify({ mode, theme: "slate" }));
+      localStorage.setItem("erp.list-view.purchase-orders-list", "cards");
+    }, mode);
+    await page.goto("/purchase-orders");
+    const search = page.getByPlaceholder("Search orders, suppliers, items…");
+    const filters = page.getByRole("button", { name: /^Filters/ }).filter({ visible: true });
+    await expect(search).toHaveCSS("height", "40px");
+    await expect(filters).toHaveCSS("height", "40px");
+    const toggle = page.locator(".ui-list-view-toggle");
+    await expect(toggle).toBeVisible();
+    for (const name of ["Table view", "Card view"]) {
+      const button = toggle.getByRole("button", { name });
+      await button.click();
+      await expect(button).toHaveAttribute("aria-pressed", "true");
+      await expect(button).toHaveCSS("height", "36px");
+      await page.mouse.move(0, 0);
+      await expect.poll(() => button.evaluate(element => {
+        const probe = document.createElement("span");
+        probe.style.backgroundColor = getComputedStyle(element).getPropertyValue("--ui-brand-primary");
+        element.appendChild(probe);
+        const expected = getComputedStyle(probe).backgroundColor;
+        probe.remove();
+        return getComputedStyle(element).backgroundColor === expected;
+      })).toBe(true);
+    }
+    await page.screenshot({ path: `/tmp/erp-po-mobile-switcher-${mode}.png`, fullPage: true, animations: "disabled" });
+    await filters.click();
+    await expect(page.getByRole("dialog", { name: "Filters" })).toBeVisible();
+  });
+}
+
+for (const mode of ["light", "dark"] as const) {
+  test(`mobile pagination matches PO and Approvals: ${mode}`, async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 812 });
+    await page.addInitScript((mode) => {
+      localStorage.setItem("erp.appearance", JSON.stringify({ mode, theme: "slate" }));
+      localStorage.setItem("erp.list-view.purchase-orders-list", "cards");
+      localStorage.setItem("erp.list-view.approvals-workspace", "cards");
+    }, mode);
+    const sizes: unknown[] = [];
+    for (const route of ["/purchase-orders", "/approvals", "/approvals?view=history"]) {
+      await page.goto(route);
+      const footer = page.locator(".ui-list-pagination");
+      const size = footer.getByRole("combobox", { name: "Rows per page" });
+      await size.scrollIntoViewIfNeeded();
+      await expect(size).toBeVisible();
+      sizes.push(await size.evaluate(element => {
+        const style = getComputedStyle(element);
+        return { height: style.height, width: style.width, fontSize: style.fontSize, borderRadius: style.borderRadius };
+      }));
+      await size.click();
+      await page.getByRole("option", { name: "25", exact: true }).click();
+      await expect(size).toHaveText("25");
+      expect(await footer.evaluate(element => element.scrollWidth - element.clientWidth)).toBeLessThanOrEqual(1);
+      await page.screenshot({ path: `/tmp/erp-pagination-${route.includes("purchase") ? "po" : route.includes("history") ? "history" : "approvals"}-${mode}.png`, animations: "disabled" });
+    }
+    expect(sizes[1]).toEqual(sizes[0]);
+    expect(sizes[2]).toEqual(sizes[0]);
+  });
+}

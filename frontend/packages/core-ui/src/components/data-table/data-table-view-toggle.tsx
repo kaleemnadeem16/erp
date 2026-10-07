@@ -12,24 +12,7 @@ export interface DataTableViewToggleProps {
 /** Table/cards segmented control — mobile only, next to `DataTableViewOptions` on desktop. */
 export function DataTableViewToggle({ value, onChange }: DataTableViewToggleProps) {
   return (
-    <div className="inline-flex items-center rounded-md border border-border p-0.5">
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <button
-            type="button"
-            aria-pressed={value === 'cards'}
-            aria-label="Card view"
-            onClick={() => onChange('cards')}
-            className={cn(
-              'flex h-8 w-8 items-center justify-center rounded-sm',
-              value === 'cards' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'
-            )}
-          >
-            <LayoutGrid className="h-4 w-4" />
-          </button>
-        </TooltipTrigger>
-        <TooltipContent>Card view</TooltipContent>
-      </Tooltip>
+    <div role="group" aria-label="List layout" className="ui-list-view-toggle inline-flex items-center rounded-md border border-border p-0.5">
       <Tooltip>
         <TooltipTrigger asChild>
           <button
@@ -46,6 +29,23 @@ export function DataTableViewToggle({ value, onChange }: DataTableViewToggleProp
           </button>
         </TooltipTrigger>
         <TooltipContent>Table view</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            aria-pressed={value === 'cards'}
+            aria-label="Card view"
+            onClick={() => onChange('cards')}
+            className={cn(
+              'flex h-8 w-8 items-center justify-center rounded-sm',
+              value === 'cards' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'
+            )}
+          >
+            <LayoutGrid className="h-4 w-4" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>Card view</TooltipContent>
       </Tooltip>
     </div>
   );

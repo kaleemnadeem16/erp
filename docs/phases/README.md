@@ -154,6 +154,7 @@ real second customer ([Q8](../OPEN-QUESTIONS.md#q8--second-customer-profile)).
 - [Package feature continuation handoff](package-balance-handoff.md) — scoped checkpoint and exact
   next implementation step, independent of other agents' workstreams
 
+- [Grouped package tracking — screens and API design](package-balance-ui.md) — workflows, endpoints, permissions and the smallest first UI slice
 - [STATUS.md](../STATUS.md) — current progress
 - [OPEN-QUESTIONS.md](../OPEN-QUESTIONS.md) — what's blocking what
 - [templates/phase.md](../templates/phase.md)

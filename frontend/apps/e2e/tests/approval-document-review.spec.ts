@@ -66,6 +66,7 @@ async function mockReview(page: import('@playwright/test').Page, profile: 'COMME
     ],
   };
   await page.route('**/api/v1/approval-requests/inbox', (route) => route.fulfill({ json: { data: [request] } }));
+  await page.route('**/api/v1/approval-requests/880085', (route) => route.fulfill({ json: { data: request } }));
   await page.route('**/api/v1/approval-requests/880085/decide', (route) =>
     route.fulfill({
       json: { data: { ...request, status: 'APPROVED', can_decide: false } },
@@ -76,7 +77,9 @@ async function mockReview(page: import('@playwright/test').Page, profile: 'COMME
   page.on('request', (request) => {
     if (request.url().includes('/api/v1/purchase-orders')) poReads.push(request.url());
   });
+  await page.addInitScript(() => localStorage.setItem('erp.list-view.approvals-workspace', 'cards'));
   await page.goto('/approvals');
+  await page.getByRole('button', { name: 'Review & decide' }).click();
   return poReads;
 }
 

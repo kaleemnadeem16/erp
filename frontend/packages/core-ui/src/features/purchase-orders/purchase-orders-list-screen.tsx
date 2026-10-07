@@ -602,7 +602,7 @@ export function PurchaseOrdersListScreen() {
         <Button
           variant="outline"
           size="sm"
-          className="h-9 shrink-0 md:hidden"
+          className="h-10 shrink-0 md:hidden"
           onClick={() => setFiltersOpen(true)}
         >
           <SlidersHorizontal className="h-4 w-4" />
