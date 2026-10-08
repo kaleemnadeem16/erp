@@ -2,7 +2,7 @@
 
 # R1-B3 — Forecast basis with independent and competing offers
 
-- **Status:** MAINTAINED/SELECTED_OFFERS owner-reviewed in proposed ADR 0101; staleness/FX discussion pending; not accepted or complete.
+- **Status:** MAINTAINED/SELECTED_OFFERS owner-reviewed in proposed ADR 0101; trust/dated FX direction reviewed in proposed ADR 0102; bounded scope ready for acceptance review, not accepted.
 - **Access date:** 2026-10-08.
 - **Question:** what should initially forecast a deal when several scopes can be bought but
   alternatives and revisions cannot be counted as additional business?
@@ -178,11 +178,10 @@ handover; R1-F: partial win/closure; R9: duties, visibility, reporting dates/his
 Keep all unresolved: post-issue regrouping, cancelling/changing accepted scope, dependencies,
 partially won outcomes, one/multiple jobs, closure interactions and forecast eligibility/recalculation.
 
-**Next discussion:** [staleness](phase-4-r1-b3-forecast-staleness.md#small-next-decisions), then
-[FX valuation](phase-4-r1-b3-forecast-fx.md#small-next-decisions). The two-method business direction
-is owner-reviewed in proposed ADR 0101; persistent provisional trust and SPOT/explicit date are owner-reviewed in proposed ADR 0102.
-Remaining trigger, partial/overlap, fallback/age and historical-report dependencies need
-reconciliation before acceptance; decide FX-change warning vs review next.
+**Next discussion:** R1-C customer/prospect onboarding. Methods, persistent provisional trust and
+ordinary later-date FX movement now have sufficient owner-reviewed direction in proposed ADRs
+0101/0102. The [scope reconciliation](phase-4-r1-b3-reconciliation.md) assigns remaining delivery
+questions to R2/R4/R5/R6/R7/R9. Formal acceptance is still required; whole R1/Q39 remain open.
 
 ## Related
 

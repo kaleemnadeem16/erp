@@ -55,7 +55,8 @@ separate evidence, preserving source currencies, the applied rate/value/date and
 Reuse ADR 0012's historical dual-amount invariant and ADR 0031's manual-rate foundation; forecast
 SPOT/explicit valuation date and persistent provisional review now have owner-reviewed direction
 in [proposed ADR 0102](0102-govern-forecast-trust-and-explicit-valuation.md); exact fallback-age,
-accepted management conversion and FX-change review classification remain research questions.
+accepted management conversion and used-rate correction assessment remain R4/R9 questions.
+Ordinary later-date FX movement is non-invalidating under proposed ADR 0102.
 
 Guard forecast operations at request and Action boundaries, with current actor authority,
 company isolation and appropriate record/field scope. Forecast maintenance is not permission to
@@ -112,9 +113,11 @@ acceptance. Existing currency/audit decisions are reused rather than reopened.
 ## Still open
 
 Persistent review/exclusion and explicit SPOT/date publication are owner-reviewed in proposed
-ADR 0102. Still open: exact triggers/expiry, trust-plus-diagnostics representation and review duties;
-fallback/age, FX movement vs rate corrections and accepted management conversion; partial/
-overlap/corrections, regrouping/dependencies, closure/jobs and as-of reporting. No R1-B3 completion.
+ADR 0102, including non-invalidating ordinary later-date FX movement and coexisting diagnostics.
+Exact triggers/expiry, physical trust representation and review duties; fallback/age, historical rate
+correction assessment and accepted conversion; partial/overlap/corrections, regrouping/dependencies,
+closure/jobs and as-of reporting remain delegated delivery gates. See the
+[bounded acceptance assessment](../phases/phase-4-r1-b3-reconciliation.md); no formal acceptance or whole R1 completion.
 
 ## Related
 

@@ -151,12 +151,11 @@ not be silently mixed with net forecasts.
 
 ## Question reconciliation after owner review
 
-Multiple independent accepted scopes and explicit exclusive groups now have owner-reviewed
-direction in proposed ADR 0100. Forecasting choices move to the
-[forecast research](phase-4-r1-b3-forecast-basis.md#dependencies-and-next-decision), starting
-with manual remaining-value vs a selected combination. Still unresolved: post-issue regrouping,
-partial acceptance, accepted-scope corrections, dependencies, partial win/closure, job multiplicity,
-association scope per family/revision and selected-basis eligibility/recalculation.
+Multiple independent scopes/exclusive groups, MAINTAINED/SELECTED_OFFERS and persistent trust/
+explicit-date FX direction are owner-reviewed in proposed ADRs 0100–0102. The
+[bounded reconciliation](phase-4-r1-b3-reconciliation.md) finds no remaining blocking B3 business
+choice and assigns scope, lifecycle, acceptance, handover and reporting details to their packages.
+Formal owner acceptance remains outstanding; do not treat later research gates as implied permission.
 
 ## Related
 

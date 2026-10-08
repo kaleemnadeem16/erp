@@ -52,9 +52,11 @@ The [staleness](phases/phase-4-r1-b3-forecast-staleness.md) and
 [FX](phases/phase-4-r1-b3-forecast-fx.md) review now records persistent provisional trust and
 explicit-date SPOT publication as owner-reviewed direction
 in [proposed ADR 0102](decisions/0102-govern-forecast-trust-and-explicit-valuation.md).
-Next small choice: FX changes alone as a warning or mandatory review. Exact rate fallback/age
-belongs to R4, acceptance valuation to R6/R4, and review/diagnostics/as-of governance to R9;
-R5 owns expiry/supersession. R1-B3 and Q39 remain open until these dependencies reconcile.
+Ordinary later-date FX movement is now owner-reviewed as non-invalidating; used-rate corrections
+require separate R4/R9 impact assessment. The [bounded B3 reconciliation](phases/phase-4-r1-b3-reconciliation.md)
+finds no genuinely blocking B3 business decision; ADRs 0100–0102 can proceed to explicit owner
+acceptance review with assigned delivery dependencies. They remain proposed. Q39/whole R1 remain
+open; R1-C customer/prospect onboarding is the next recommended discussion.
 Keep open post-issue grouping/regrouping, partial acceptance, cancelling/changing accepted scope,
 offer dependencies, partially won outcomes, one/multiple jobs, closure interactions and forecast
 eligibility/refresh, currency and as-of reporting rules (R2/R4/R5/R6/R7/R9). R1-D–G (person customers, ownership/scope, closure, duplicates/CRM

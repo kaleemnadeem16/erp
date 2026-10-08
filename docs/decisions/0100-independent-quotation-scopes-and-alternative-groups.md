@@ -138,7 +138,10 @@ distinguishes vendor behaviour from proposed combination selection; its two meth
 Grouping/regrouping after issue; group scope/direct quote membership; partial acceptance within a
 quote; changing/cancelling accepted scope and releasing an exclusive claim; dependencies between
 offers; partially won outcomes; one vs multiple jobs; acceptance/closure interactions; forecast
-recalculation, eligibility, FX and as-of policy. Exact family/revision association and number shape
+implementation of recalculation/eligibility and detailed FX/as-of policy. Forecast business
+direction is reviewed in proposed ADRs 0101/0102. The
+[bounded reconciliation](../phases/phase-4-r1-b3-reconciliation.md) distinguishes acceptance readiness
+from these delivery gates. Exact family/revision association and number shape
 remain R2/R5. These questions remain in Q39 and their owning research topics.
 
 ## Related

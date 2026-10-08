@@ -16,7 +16,9 @@ can also change an apparent total without any new business or reviewed valuation
 
 The owner reviewed [staleness](../phases/phase-4-r1-b3-forecast-staleness.md) and
 [FX research](../phases/phase-4-r1-b3-forecast-fx.md). This record preserves that direction;
-topic-specific questions remain open before final acceptance.
+The owner also reviewed ordinary later-date FX movement on 2026-10-08. Topic-specific
+implementation questions are delegated in the [scope reconciliation](../phases/phase-4-r1-b3-reconciliation.md);
+this ADR remains proposed pending explicit owner acceptance.
 
 ## Decision — owner-reviewed proposed direction
 
@@ -38,9 +40,9 @@ Example: furniture `500000.0000` PKR plus installation `300000.0000` produces a 
 trusted status. An authorised review and a new valid publication are required, even if the
 reviewer confirms the same number. Historical publication remains unchanged.
 
-### Trust and diagnoses — recommendation, not accepted state schema
+### Trust and diagnoses — owner-reviewed meaning, no accepted state schema
 
-Prefer a **trust/review condition plus multiple diagnostic reasons** over a single mutually
+Retain a **trust/review condition plus multiple diagnostic reasons** over a single mutually
 exclusive status. A forecast may need review, contain an invalid selected offer and lack an FX
 rate simultaneously. CURRENT can describe a trusted, currently valid publication;
 NEEDS_REVIEW describes review obligation; INVALID_BASIS and INCOMPLETE_VALUATION explain
@@ -98,10 +100,25 @@ a convertible subtotal as a complete forecast. Show fallback rate age/effective 
 quotation issue FX, forecast valuation FX and accepted commercial commitment evidence separately;
 forecast management views are not accounting revenue recognition or GL revaluation.
 
-The owner's preferred direction is that FX changes alone do not silently revalue/republish. Whether
-new rates should create an informational warning or a mandatory review condition is still open.
-Exact fallback resolution, maximum age, accepted-commitment management conversion and refresh of
-already stale bases remain R4/R6/R9 questions. Changing a rate source row cannot rewrite snapshots.
+### Ordinary movements and historical rate corrections
+
+An ordinary new rate effective on a later date is **not a staleness event**. The 8 October
+publication remains trusted at that valuation date and remains `580000.0000` PKR after the
+15 October rate becomes `285.000000000`, provided no other business/evidence issue requires review.
+An optional indicative current-rate value must be clearly separate from that authoritative amount.
+An explicit authorised refresh creates new publication/valuation evidence, applying the existing
+commercial, eligibility, review and approval checks; FX calculation alone cannot clear review.
+
+A correction or invalidation of a rate actually relied upon is a different event. R4/R9 must
+research impact assessment, materiality and review/correction consequences; no universal automatic
+invalidation or republication rule is chosen here. Preserve the actual values, dates and sources
+used, even if reference data is corrected or deleted. Never rewrite historical publications.
+Exact fallback, maximum age, rounding and accepted-commitment valuation remain R4/R6/R9 questions.
+
+Reports must distinguish published historical evidence, currently trusted forecasts, provisional
+forecasts awaiting review and optional indicative current-rate valuations. Historical views identify
+valuation dates and currencies. Do not aggregate different valuation bases without an explicit,
+consistently applied reporting rule; accepted-plus-remaining totals are not an implicit exception.
 
 ## Technical/reporting invariants — proposed application of existing standards
 
@@ -149,7 +166,9 @@ correction/deletion, so snapshots must copy actual rate/date, not rely on a live
   accurate provisional/unknown handling before implementation.
 
 **Automatic recovery or automatic latest-offer substitution** — rejected by owner direction.
-**One exclusive diagnostic status** — not recommended; loses coexisting issue explanations.
+**One exclusive diagnostic status** — rejected at the business level; loses coexisting explanations.
+**Mandatory review for every later-date rate movement** — rejected; a dated publication remains
+trusted at its date. **Treat every historical rate correction identically** — deferred; assess impact in R4/R9.
 **Every forecast needs a manager's approval** — rejected; permission-based review is sufficient
 unless a configured approval policy says otherwise. **Live revaluation on read** — rejected as
 publication behaviour. **Automatically reduce manual estimates on acceptance** — rejected.
@@ -163,17 +182,20 @@ alternatives. Persistent review is the owner's chosen control, not a universal v
 Existing currency/audit/domain-integrity decisions supply evidence/transaction invariants; no
 ceremonial repeat search is needed to record this review.
 
-- **R1-B3 remaining small choice:** does FX movement alone warrant a review obligation, or an
-  informational indication while the reviewed business basis stays trusted at its published date?
-- **R4:** exact fallback/type/pair/date/age, rounding, reporting currency and revaluation semantics.
+- **R1-B3:** ordinary later-date rate movement is settled as non-invalidating; no genuinely
+  blocking business decision remains in this bounded forecasting scope.
+- **R4:** FX fallback, rate age, rounding, corrections and accepted-commitment valuation;
+  correction impact assessment is shared with R9.
 - **R5:** issue, renewal/revision/supersession and expiry boundary/eligible states.
 - **R6/R2:** acceptance/partial/overlap/correction and group/dependency consequences.
 - **R7/R1-F:** job handover and partial-win/closure; no decision made here.
 - **R9:** mandatory review triggers vs warnings, duties/approval exposure, trust diagnostics,
   publication/report as-of/recorded-at and scope, concurrency/history implementation design.
 
-R1-B3 stays open until these dependencies have an explicit reconciliation path; topic-specific
-implementation detail need not be designed inside R1. No premature final acceptance.
+R1-B3 has sufficient researched and owner-reviewed business direction to proceed towards formal
+acceptance, with the [explicit dependency/acceptance assessment](../phases/phase-4-r1-b3-reconciliation.md).
+It remains proposed, not formally closed or implemented. Later research gates dependent delivery;
+whole R1 and Q39 remain open. No decision is accepted automatically.
 
 ## Related
 

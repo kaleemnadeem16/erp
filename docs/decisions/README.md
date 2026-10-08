@@ -116,7 +116,7 @@ in the same commit.
 | [0099](0099-separate-quotation-issue-and-crm-association.md) | Separate quotation issue evidence from current CRM association | proposed (R1-B1/B2 owner-reviewed) | 2026-10-08 |
 | [0100](0100-independent-quotation-scopes-and-alternative-groups.md) | Distinguish independent quotation scopes from exclusive alternative groups | proposed (owner-reviewed R1-B3 direction) | 2026-10-08 |
 | [0101](0101-separate-accepted-business-and-remaining-forecast.md) | Separate accepted business from evidence-based remaining forecasts | proposed (owner-reviewed forecast methods) | 2026-10-08 |
-| [0102](0102-govern-forecast-trust-and-explicit-valuation.md) | Restore forecast trust only through explicit review and publication | proposed (owner-reviewed staleness/FX) | 2026-10-08 |
+| [0102](0102-govern-forecast-trust-and-explicit-valuation.md) | Restore forecast trust only through explicit review and publication | proposed (owner-reviewed trust/dated FX; acceptance pending) | 2026-10-08 |
 
 **Next number: 0103**
 

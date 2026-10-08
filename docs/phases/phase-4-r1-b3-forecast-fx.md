@@ -2,7 +2,7 @@
 
 # R1-B3-FX — Forecast conversion and historical valuation
 
-- **Status:** SPOT/date/explicit publication owner-reviewed in proposed ADR 0102; exact fallback/age/management valuation open.
+- **Status:** SPOT/date/explicit publication owner-reviewed in proposed ADR 0102; ordinary later-date movement reviewed as non-invalidating; R4/R9 details delegated.
 - **Access date:** 2026-10-08.
 - **Question:** how should foreign-currency remaining estimates/selected offers be valued without
   changing issued prices or historical forecast amounts when rates are corrected or updated?
@@ -14,8 +14,10 @@ explicit-date SPOT valuation and new immutable publication on explicit FX refres
 reporting currency/rates/evidence, incomplete-rate handling and fallback age/effective date.
 No view-time/latest-rate mutation or silent republication is permitted. Source quoted/accepted
 commercial evidence remains separate from management valuation and accounting recognition.
-Exact fallback, maximum age, FX-change warning vs review and accepted management valuation remain
-open. Earlier alternatives below are retained research, not competing current decisions.
+Ordinary later-date rate movement does not invalidate the published forecast or require review
+by itself. Previously relied-upon rate corrections require separate R4/R9 impact assessment.
+Exact fallback, maximum age and accepted valuation remain delegated questions. Earlier alternatives
+below are retained research, not competing current decisions.
 
 ## Reuse existing decisions and actual runtime
 
@@ -79,7 +81,8 @@ Pending USD offer `1000.0000` plus PKR offer `300000.0000`:
 
 - Forecast date 8 October, manual USD→PKR SPOT `280.000000000`: published remaining base
   `580000.0000` PKR, preserving both source amounts and that rate/date.
-- Later rate `285.000000000`: the recorded forecast stays `580000.0000`. Explicit valuation
+- Later rate `285.000000000`: the recorded forecast stays `580000.0000` and trusted at 8 October if no other issue
+  requires review. Explicit authorised valuation
   refresh publishes a new version of `585000.0000`, even though quoted source prices are unchanged.
 - No usable USD→PKR rate: PKR contribution `300000.0000` can be shown, with USD `1000.0000`
   unconverted and the total clearly incomplete. Do not report the PKR subtotal as full potential.
@@ -92,8 +95,9 @@ Separate source-business change from FX-only movement in history so salespeople 
 Accepted business retains authoritative source amounts and pinned commercial/acceptance basis.
 The exact acceptance-date vs inherited issue basis is an R4/R6 decision; acceptance must not
 silently recompute issue evidence. Recommend keeping accepted baseline and pending forecast-date
-valuation separately labelled. Combining them produces a mixed-basis management outlook, not a
-new all-at-current-rate figure. A comparable-date revaluation of accepted amounts, if required,
+valuation separately labelled. Aggregating different valuation bases requires an explicit,
+consistently applied reporting rule under R4/R6/R9; labels alone do not authorise a mixed-basis total.
+A comparable-date revaluation of accepted amounts, if required,
 would be an additional labelled management view preserving original evidence and without GL posting.
 
 Initial display: source currencies per contribution and company-base consolidated result. Defer
@@ -123,10 +127,10 @@ UI, totals and exports. No scheduler is authorised by this research.
 
 ## Remaining decisions — assigned to their proper topics
 
-- **R1-B3:** decide FX movement alone as informational warning or mandatory business review;
-  recommend warning while preserving the trusted as-of publication, with any revaluation explicit.
-  Corrected/deleted rates used in a publication differ from ordinary later-date rates: history
-  remains pinned but the operational warning/review classification needs R4/R9.
+- **R1-B3 settled:** ordinary later-date movement alone is not staleness; the dated publication
+  remains trusted. An indicative current-rate display is optional and separate.
+- **R4/R9:** assess corrections/invalidation of previously used rates separately, preserving the
+  original evidence; do not presume every correction has the same consequence.
 - **R4:** exact resolution (candidate: same-company/directed-pair/SPOT, latest eligible date at or
   before requested date), visible requested/actual date; inverse/triangulation and missing-rate
   rules; maximum age and authorised exceptions; monetary rounding. No global fallback policy is
@@ -138,9 +142,9 @@ UI, totals and exports. No scheduler is authorised by this research.
 - **R5/R9:** interaction of explicit FX refresh and stale commercial basis. A candidate valuation
   cannot clear review obligation or publish trusted evidence without current authorised review.
 
-Recommended next research is bounded R4 fallback/age and rate-correction semantics, after agreeing
-whether ordinary new FX rates create warning or mandatory review. No need to design the complete
-forecast engine to record these topic ownership boundaries. R1-B3 and Q39 stay open.
+The [scope reconciliation](phase-4-r1-b3-reconciliation.md) records acceptance readiness and
+implementation gates. Do not extend R1-B3 into R4/R9. Next recommended discussion is R1-C
+customer/prospect onboarding; whole R1 and Q39 remain open and all ADRs remain proposed.
 
 ## Related
 

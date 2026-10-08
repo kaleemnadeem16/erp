@@ -2,7 +2,7 @@
 
 # R1-B3-S — Forecast staleness and review
 
-- **Status:** persistent provisional trust direction owner-reviewed in proposed ADR 0102; trigger/diagnostic details open; not complete.
+- **Status:** persistent provisional trust direction owner-reviewed in proposed ADR 0102; ordinary later-date FX movement reviewed as non-invalidating; detailed triggers delegated.
 - **Access date:** 2026-10-08.
 - **Question:** how should current forecasts respond when their selected evidence or maintained
   assumptions change without rewriting published history or silently changing sales intent?
@@ -17,8 +17,8 @@ show eligible components informationally, without adding them to the provisional
 MAINTAINED stays unchanged; confirming the same amount still creates a new publication version.
 No universal managerial approval is required; future configured approval uses the shared engine.
 
-Recommend trust/review obligation plus coexisting diagnostic reasons instead of one exclusive
-status. This representation is not approved; no enums/tables are selected. Earlier comparison
+The owner-reviewed business meaning allows coexisting diagnostic reasons alongside persistent
+review obligation. Physical representation remains undecided; no enums/tables are selected. Earlier comparison
 and reporting options remain research history; reviewed direction takes precedence.
 
 ## Existing behaviour and evidence reused
@@ -57,7 +57,8 @@ The options and triggers below are project-specific recommendations, not vendor 
 | Partial acceptance or scope correction/cancellation | Mark unresolved affected contribution for review until R2/R6 identity rules can determine the remainder | Keep amount; review required for potentially affected assumptions |
 | Group, CRM association, recipient identity or visibility changes | Revalidate eligibility/non-competition/scope; no automatic substitute | Review material assumption changes; no automatic re-assignment |
 | Time since last review | Show reviewed-at age; configurable reminder threshold possible | Show reviewed-at age; suggest review, not automatic numeric reduction |
-| FX/source-rate change | Warning vs mandatory review remains open; never auto-revalue/republish | Same open classification; source-currency estimate unchanged |
+| Ordinary later-date FX movement | Remains trusted at its published date if otherwise valid; no automatic review or revaluation | Same; source-currency estimate unchanged |
+| Correction/invalidation of a used rate | Separate R4/R9 impact assessment; preserve original evidence | Same; no universal consequence assumed |
 
 Expiry is a date-based fact even if no background task has changed a status. R5 decides company
 business-date/time-zone boundary (end of valid-until day is a candidate); current reads must check
@@ -123,7 +124,8 @@ Current-state fingerprints alone can miss that history. R5/R9 must define event/
 checks without scheduling anything implicitly. Distinguish a viewer's limited visibility from
 a company-wide invalid commercial assumption.
 
-R1-B3's smallest remaining business choice is FX-change warning vs mandatory review. R4 owns
+Ordinary later-date FX movement is settled as non-invalidating in proposed ADR 0102. No further
+blocking R1-B3 business choice is identified; see the [reconciliation](phase-4-r1-b3-reconciliation.md). R4 owns
 rate age/fallback; R5 owns lifecycle/expiry; R2/R6 owns overlap/acceptance; R9 owns trigger
 classification, trust plus diagnostic representation, review/approval duties and as-of reports.
 Also open: whether stale-basis FX refresh is candidate-only or blocked until combined review;

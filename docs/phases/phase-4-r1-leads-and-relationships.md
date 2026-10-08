@@ -2,7 +2,7 @@
 
 # R1 — Leads, opportunities and customer relationships
 
-- **Status:** R1-A and R1-B1/B2 owner-reviewed proposals recorded; R1-B3 scope/group direction reviewed; forecast methods/trust/SPOT direction reviewed; FX-change review classification and topic reconciliation next. Not accepted or complete.
+- **Status:** R1-A and R1-B1/B2 owner-reviewed proposals recorded; R1-B3 scope/group direction reviewed; forecast methods/trust/SPOT direction reviewed; ordinary FX movement reviewed; B3 reconciliation ready for acceptance review. Whole R1 not accepted or complete.
 - **Research/access date:** 2026-10-08.
 - **Question:** how do we qualify enquiries and track independent deals without forcing CRM or
   financial-account setup onto every quotation, duplicating Parties or restricting future scale?
@@ -61,7 +61,8 @@ in [proposed ADR 0101](../decisions/0101-separate-accepted-business-and-remainin
 Persistent provisional review and explicit-date SPOT are now owner-reviewed in
 [proposed ADR 0102](../decisions/0102-govern-forecast-trust-and-explicit-valuation.md);
 remaining operational choices stay open. R1-B remains incomplete;
-accepted/job-linked restrictions and physical schema are unresolved. Discuss FX-change warning vs review and reconcile topic ownership next, before R1-C.
+accepted/job-linked restrictions and physical schema are unresolved. B3 has no remaining blocking business choice within its bounded scope; see the
+[acceptance/dependency reconciliation](phase-4-r1-b3-reconciliation.md). R1-C onboarding is next.
 
 ## Alternatives and initial recommendations
 
@@ -176,7 +177,7 @@ requiring them to use a quotation.
 | ID | Choice for discussion | Current recommendation / dependency |
 |---|---|---|
 | R1-A | Hybrid workflow and policy requirements | Owner-reviewed direction in proposed ADR 0098; remaining architecture questions prevent final acceptance |
-| R1-B | Direct quotation relationships and multiple offers | B1/B2 owner-reviewed proposed ADR 0099; B3 independent scopes/groups owner-reviewed in proposed ADR 0100; forecast methods reviewed in proposed ADR 0101; staleness/FX pending; R2/R5/R6/R7/R9 dependencies |
+| R1-B | Direct quotation relationships and multiple offers | B1/B2 owner-reviewed proposed ADR 0099; B3 independent scopes/groups owner-reviewed in proposed ADR 0100; forecast methods reviewed in proposed ADR 0101; trust/dated FX reviewed in proposed ADR 0102; B3 ready for bounded acceptance review; R2/R4/R5/R6/R7/R9 delivery dependencies |
 | R1-C | Can we quote a prospect Party before financial customer setup; when is setup mandatory? | Prefer Party-backed prospect quoting; agree the gate with R6/R7 |
 | R1-D | Organisation customers only, or individual consumers in Phase 4? | Keep established B2B boundary unless real requirements justify extension |
 | R1-E | Initial pipeline/ownership exposure and visibility? | Single owner, company stages, optional lead queue; own/team/company access needs R9 decision |
@@ -193,7 +194,8 @@ Initial evidence covers identity, optional qualification, direct quotes, multipl
 closure patterns. Configurable stage governance, detailed Sales scope, consent/retention,
 forecast accounting, quote recipient/contact evidence and conversion concurrency need deeper
 validation during the relevant topic. No legal retention rule is inferred from vendor features.
-Next decide FX-change review vs warning and reconcile R4/R6/R9 dependencies; R1-C onboarding follows.
+Next discuss R1-C onboarding. B3 business direction is sufficiently researched/reviewed for formal
+acceptance consideration; its detailed dependencies are assigned, not silently resolved.
 Resolve ADR 0098's flagged edge cases before final acceptance; do not mark all R1 complete.
 
 ## Related

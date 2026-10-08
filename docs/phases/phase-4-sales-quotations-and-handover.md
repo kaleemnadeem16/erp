@@ -96,6 +96,8 @@ OPEN-QUESTIONS when a recorded question is resolved; journeys alongside eventual
 
 ## Related
 
+- [R1-B3 bounded reconciliation and acceptance readiness](phase-4-r1-b3-reconciliation.md)
+
 - [Research rules](../architecture/research-and-design.md) · [Feature checklist](../architecture/feature-completion-checklist.md)
 - [Sales pipeline](../domain/sales-pipeline.md) · [Sales pricing](../domain/sales-pricing.md)
 - [Parties](../domain/parties.md) · [Job costing](../domain/job-costing.md)
