@@ -102,6 +102,9 @@ const supplierEditAsSheet = presentation.supplierEdit === "sheet";
 const goodsReceiptCreateAsSheet = presentation.goodsReceiptCreate === "sheet";
 const goodsReceiptDetailAsSheet = presentation.goodsReceiptDetail === "sheet";
 const goodsReceiptEditAsSheet = presentation.goodsReceiptEdit === "sheet";
+const itemSupplierCreateAsSheet = presentation.itemSupplierCreate === "sheet";
+const itemSupplierDetailAsSheet = presentation.itemSupplierDetail === "sheet";
+const itemSupplierEditAsSheet = presentation.itemSupplierEdit === "sheet";
 
 export function AppRouter() {
   return (
@@ -263,40 +266,66 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <ItemSuppliersListScreen />
+                <Outlet />
               </AppShell>
             </ProtectedRoute>
           }
-        />
-        <Route
-          path="/item-suppliers/new"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <ItemSupplierCreateScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/item-suppliers/:id"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <ItemSupplierDetailScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/item-suppliers/:id/edit"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <ItemSupplierEditScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
+        >
+          {itemSupplierCreateAsSheet && (
+            <Route
+              path="new"
+              element={<ItemSupplierCreateScreen presentation="sheet" />}
+            />
+          )}
+          {itemSupplierDetailAsSheet && (
+            <Route
+              path=":id"
+              element={<ItemSupplierDetailScreen presentation="sheet" />}
+            />
+          )}
+          {itemSupplierEditAsSheet && (
+            <Route
+              path=":id/edit"
+              element={<ItemSupplierEditScreen presentation="sheet" />}
+            />
+          )}
+        </Route>
+        {!itemSupplierCreateAsSheet && (
+          <Route
+            path="/item-suppliers/new"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <ItemSupplierCreateScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!itemSupplierDetailAsSheet && (
+          <Route
+            path="/item-suppliers/:id"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <ItemSupplierDetailScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!itemSupplierEditAsSheet && (
+          <Route
+            path="/item-suppliers/:id/edit"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <ItemSupplierEditScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
         <Route
           path="/stock-moves"
           element={

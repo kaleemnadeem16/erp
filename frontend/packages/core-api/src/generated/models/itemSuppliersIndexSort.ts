@@ -11,7 +11,17 @@ export type ItemSuppliersIndexSort =
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const ItemSuppliersIndexSort = {
   priority: "priority",
+  supplier_item_code: "supplier_item_code",
+  lead_time_days: "lead_time_days",
+  minimum_order_qty: "minimum_order_qty",
+  active: "active",
   created_at: "created_at",
+  updated_at: "updated_at",
   "-priority": "-priority",
+  "-supplier_item_code": "-supplier_item_code",
+  "-lead_time_days": "-lead_time_days",
+  "-minimum_order_qty": "-minimum_order_qty",
+  "-active": "-active",
   "-created_at": "-created_at",
+  "-updated_at": "-updated_at",
 } as const;

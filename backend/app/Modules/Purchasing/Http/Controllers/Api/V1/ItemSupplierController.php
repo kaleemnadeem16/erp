@@ -25,9 +25,17 @@ class ItemSupplierController extends Controller
 {
     use AppliesApiQuery;
 
-    private const INCLUDABLE = ['item' => 'item', 'supplierAccount' => 'supplierAccount', 'purchaseUom' => 'purchaseUom'];
+    private const INCLUDABLE = ['item' => 'item', 'supplierAccount' => 'supplierAccount.party', 'purchaseUom' => 'purchaseUom'];
 
-    private const SORTABLE = ['priority' => 'priority', 'created_at' => 'created_at'];
+    private const SORTABLE = [
+        'priority' => 'priority',
+        'supplier_item_code' => 'supplier_item_code',
+        'lead_time_days' => 'lead_time_days',
+        'minimum_order_qty' => 'minimum_order_qty',
+        'active' => 'active',
+        'created_at' => 'created_at',
+        'updated_at' => 'updated_at',
+    ];
 
     public function index(IndexItemSupplierRequest $request): AnonymousResourceCollection
     {
@@ -41,13 +49,30 @@ class ItemSupplierController extends Controller
         if ($request->boolean('filter.preferred')) {
             $query->where('priority', 1)->where('active', true);
         }
+        if ($request->filled('filter.supplier_item_code')) {
+            $query->where('supplier_item_code', 'ilike', '%'.$request->string('filter.supplier_item_code')->toString().'%');
+        }
+        if ($request->filled('filter.lead_time_min')) {
+            $query->where('lead_time_days', '>=', $request->integer('filter.lead_time_min'));
+        }
+        if ($request->filled('filter.lead_time_max')) {
+            $query->where('lead_time_days', '<=', $request->integer('filter.lead_time_max'));
+        }
+        if ($request->filled('filter.moq_min')) {
+            $query->where('minimum_order_qty', '>=', $request->input('filter.moq_min'));
+        }
+        if ($request->filled('filter.moq_max')) {
+            $query->where('minimum_order_qty', '<=', $request->input('filter.moq_max'));
+        }
         if ($request->filled('filter.search')) {
             $search = $request->string('filter.search')->toString();
             $query->where(fn (Builder $q) => $q
                 ->where('supplier_item_code', 'ilike', "%{$search}%")
                 ->orWhereHas('item', fn (Builder $iq) => $iq->where('code', 'ilike', "%{$search}%")
                     ->orWhere('name', 'ilike', "%{$search}%"))
-                ->orWhereHas('supplierAccount', fn (Builder $sq) => $sq->where('code', 'ilike', "%{$search}%")));
+                ->orWhereHas('supplierAccount', fn (Builder $sq) => $sq
+                    ->where('code', 'ilike', "%{$search}%")
+                    ->orWhereHas('party', fn (Builder $pq) => $pq->where('name', 'ilike', "%{$search}%"))));
         }
         $this->applySort($query, $request, self::SORTABLE, 'priority');
 

@@ -21,6 +21,26 @@ export type ItemSuppliersIndexParams = {
    * @maxLength 255
    */
   "filter[search]"?: string;
+  /**
+   * @maxLength 255
+   */
+  "filter[supplier_item_code]"?: string;
+  /**
+   * @minimum 0
+   */
+  "filter[lead_time_min]"?: number;
+  /**
+   * @minimum 0
+   */
+  "filter[lead_time_max]"?: number;
+  /**
+   * @minimum 0
+   */
+  "filter[moq_min]"?: number;
+  /**
+   * @minimum 0
+   */
+  "filter[moq_max]"?: number;
   sort?: ItemSuppliersIndexSort;
   include?: string;
   /**

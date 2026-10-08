@@ -16,6 +16,9 @@ export const presentation: {
   goodsReceiptCreate: Presentation;
   goodsReceiptDetail: Presentation;
   goodsReceiptEdit: Presentation;
+  itemSupplierCreate: Presentation;
+  itemSupplierDetail: Presentation;
+  itemSupplierEdit: Presentation;
 } = {
   purchaseOrderCreate: "sheet",
   purchaseOrderDetail: "sheet",
@@ -26,6 +29,9 @@ export const presentation: {
   goodsReceiptCreate: "sheet",
   goodsReceiptDetail: "sheet",
   goodsReceiptEdit: "sheet",
+  itemSupplierCreate: "sheet",
+  itemSupplierDetail: "sheet",
+  itemSupplierEdit: "sheet",
 };
 
 /**

@@ -1,78 +1,156 @@
-import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
-import type { UseFormReturn } from 'react-hook-form';
-import { useItemSuppliersShow, useItemSuppliersUpdate } from '@erp/core-api';
-import { Button } from '../../components/ui/button';
-import { Skeleton } from '../../components/ui/skeleton';
-import { PageHeader } from '../../components/page/page-header';
-import { applyApiErrorsToForm } from '../../lib/api-errors';
+import { useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router";
+import type { UseFormReturn } from "react-hook-form";
+import { useItemSuppliersShow, useItemSuppliersUpdate } from "@erp/core-api";
+import { Button } from "../../components/ui/button";
+import { Skeleton } from "../../components/ui/skeleton";
+import { PageHeader } from "../../components/page/page-header";
+import { RecordSheet } from "../../components/page/record-sheet";
+import { ScreenTemplate } from "../../components/page/screen-template";
+import { applyApiErrorsToForm } from "../../lib/api-errors";
+import type { Presentation } from "../../lib/presentation";
 import {
   ITEM_SUPPLIER_FORM_FIELDS,
   ItemSupplierForm,
   itemSupplierPayload,
   type ItemSupplierFormValues,
-} from './item-supplier-form';
-export function ItemSupplierEditScreen() {
-  const id = Number(useParams<{ id: string }>().id);
+} from "./item-supplier-form";
+
+export interface ItemSupplierEditScreenProps {
+  presentation?: Presentation;
+}
+
+export function ItemSupplierEditScreen({
+  presentation = "sheet",
+}: ItemSupplierEditScreenProps) {
+  const { id } = useParams<{ id: string }>();
+  const relationshipId = Number(id);
   const navigate = useNavigate();
-  const query = useItemSuppliersShow(id, { include: 'item,supplierAccount,purchaseUom' });
+  const { search } = useLocation();
+  const query = useItemSuppliersShow(relationshipId, {
+    include: "item,supplierAccount,purchaseUom",
+  });
   const row = query.data?.status === 200 ? query.data.data.data : undefined;
   const mutation = useItemSuppliersUpdate();
   const [error, setError] = useState<string | null>(null);
-  const submit = (v: ItemSupplierFormValues, form: UseFormReturn<ItemSupplierFormValues>) => {
+
+  const handleClose = () => {
+    navigate({ pathname: `/item-suppliers/${relationshipId}`, search });
+  };
+
+  const submit = (
+    v: ItemSupplierFormValues,
+    form: UseFormReturn<ItemSupplierFormValues>,
+  ) => {
     setError(null);
     mutation.mutate(
-      { itemSupplier: id, data: itemSupplierPayload(v) },
+      { itemSupplier: relationshipId, data: itemSupplierPayload(v) },
       {
         onSuccess: (r) => {
-          if (r.status === 200) navigate(`/item-suppliers/${r.data.data.id}`);
+          if (r.status === 200) {
+            navigate({ pathname: `/item-suppliers/${r.data.data.id}`, search });
+          }
         },
-        onError: (e) => setError(applyApiErrorsToForm(e, form.setError, ITEM_SUPPLIER_FORM_FIELDS)),
-      }
+        onError: (e) =>
+          setError(
+            applyApiErrorsToForm(e, form.setError, ITEM_SUPPLIER_FORM_FIELDS),
+          ),
+      },
     );
   };
-  if (query.isLoading)
+
+  function wrap(
+    content: React.ReactNode,
+    title: string = `Edit sourcing terms`,
+  ) {
+    if (presentation === "sheet") {
+      return (
+        <RecordSheet
+          title={title}
+          description={
+            row
+              ? `${row.item?.code ?? row.item_id} • ${row.supplier_account?.code ?? row.supplier_account_id}`
+              : undefined
+          }
+          size="lg"
+          className="erp-record"
+          dismissOnOutsideClick={false}
+          onClose={handleClose}
+        >
+          <div className="space-y-4 p-4 pb-6">{content}</div>
+        </RecordSheet>
+      );
+    }
     return (
-      <div className="space-y-4 p-6">
+      <ScreenTemplate kind="form" className="erp-screen">
+        <div className="space-y-4">
+          <PageHeader
+            title={title}
+            description={
+              row
+                ? `${row.item?.code ?? row.item_id} • ${row.supplier_account?.code ?? row.supplier_account_id}`
+                : undefined
+            }
+            backTo={`/item-suppliers/${relationshipId}`}
+            breadcrumbs={[
+              { label: "Item suppliers", to: "/item-suppliers" },
+              {
+                label: String(relationshipId),
+                to: `/item-suppliers/${relationshipId}`,
+              },
+              { label: "Edit" },
+            ]}
+          />
+          {content}
+        </div>
+      </ScreenTemplate>
+    );
+  }
+
+  if (query.isLoading) {
+    return wrap(
+      <div className="space-y-4">
         <Skeleton className="h-9 w-64" />
         <Skeleton className="h-64 w-full" />
-      </div>
+      </div>,
     );
-  if (!row || query.isError)
-    return (
-      <div className="p-6">
-        <Button variant="outline" onClick={() => navigate('/item-suppliers')}>
+  }
+
+  if (!row || query.isError) {
+    return wrap(
+      <div className="space-y-4">
+        <p className="text-sm text-destructive">
+          Couldn't load this item-supplier relationship.
+        </p>
+        <Button
+          variant="outline"
+          onClick={() => navigate({ pathname: "/item-suppliers", search })}
+        >
           Back to item suppliers
         </Button>
-      </div>
+      </div>,
     );
-  return (
-    <div className="space-y-4 p-6">
-      <PageHeader
-        title="Edit item supplier"
-        description={`${row.item?.code ?? row.item_id} / ${row.supplier_account?.code ?? row.supplier_account_id}`}
-        breadcrumbs={[
-          { label: 'Item suppliers', to: '/item-suppliers' },
-          { label: String(row.id), to: `/item-suppliers/${id}` },
-          { label: 'Edit' },
-        ]}
-      />
-      <ItemSupplierForm
-        mode="edit"
-        defaultValues={{
-          item_id: String(row.item_id),
-          supplier_account_id: String(row.supplier_account_id),
-          supplier_item_code: row.supplier_item_code ?? '',
-          priority: row.priority == null ? '' : String(row.priority),
-          lead_time_days: row.lead_time_days == null ? '' : String(row.lead_time_days),
-          minimum_order_qty: row.minimum_order_qty ?? '',
-          purchase_uom_id: row.purchase_uom_id == null ? 'NONE' : String(row.purchase_uom_id),
-          active: row.active,
-        }}
-        onSubmit={submit}
-        isSubmitting={mutation.isPending}
-        formError={error}
-      />
-    </div>
+  }
+
+  return wrap(
+    <ItemSupplierForm
+      mode="edit"
+      defaultValues={{
+        item_id: String(row.item_id),
+        supplier_account_id: String(row.supplier_account_id),
+        supplier_item_code: row.supplier_item_code ?? "",
+        priority: row.priority == null ? "" : String(row.priority),
+        lead_time_days:
+          row.lead_time_days == null ? "" : String(row.lead_time_days),
+        minimum_order_qty: row.minimum_order_qty ?? "",
+        purchase_uom_id:
+          row.purchase_uom_id == null ? "NONE" : String(row.purchase_uom_id),
+        active: row.active,
+      }}
+      onSubmit={submit}
+      onCancel={handleClose}
+      isSubmitting={mutation.isPending}
+      formError={error}
+    />,
   );
 }

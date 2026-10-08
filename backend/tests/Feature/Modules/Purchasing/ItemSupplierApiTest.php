@@ -179,4 +179,79 @@ class ItemSupplierApiTest extends TestCase
         $this->expectException(RuntimeException::class);
         ItemSupplier::create(['item_id' => $this->item->id, 'supplier_account_id' => $otherSupplier->id]);
     }
+
+    public function test_index_supports_advanced_search_filters_and_sorting(): void
+    {
+        $user = User::factory()->create();
+        $partyA = Party::create(['code' => 'SUP-ALPHA', 'name' => 'Acme Chemicals Inc']);
+        $supplierA = SupplierAccount::create([
+            'party_id' => $partyA->id,
+            'code' => 'SUP-ALPHA',
+            'payment_terms_days' => 30,
+            'lead_time_days' => 7,
+            'payable_account_id' => $this->payable->id,
+        ]);
+
+        $partyB = Party::create(['code' => 'SUP-BETA', 'name' => 'Beta Logistics Ltd']);
+        $supplierB = SupplierAccount::create([
+            'party_id' => $partyB->id,
+            'code' => 'SUP-BETA',
+            'payment_terms_days' => 30,
+            'lead_time_days' => 21,
+            'payable_account_id' => $this->payable->id,
+        ]);
+
+        $relA = ItemSupplier::create([
+            'item_id' => $this->item->id,
+            'supplier_account_id' => $supplierA->id,
+            'supplier_item_code' => 'ACM-999',
+            'priority' => 1,
+            'lead_time_days' => 5,
+            'minimum_order_qty' => '100.0000',
+            'active' => true,
+        ]);
+
+        $relB = ItemSupplier::create([
+            'item_id' => $this->item->id,
+            'supplier_account_id' => $supplierB->id,
+            'supplier_item_code' => 'BET-111',
+            'priority' => 2,
+            'lead_time_days' => 25,
+            'minimum_order_qty' => '500.0000',
+            'active' => false,
+        ]);
+
+        // Search by party name
+        $res = $this->actingAs($user)->getJson('/api/v1/item-suppliers?filter[search]=Acme')->assertOk();
+        $this->assertCount(1, $res->json('data'));
+        $this->assertSame($relA->id, $res->json('data.0.id'));
+
+        // Search by supplier item code
+        $res = $this->actingAs($user)->getJson('/api/v1/item-suppliers?filter[search]=BET-111')->assertOk();
+        $this->assertCount(1, $res->json('data'));
+        $this->assertSame($relB->id, $res->json('data.0.id'));
+
+        // Filter by supplier_item_code
+        $res = $this->actingAs($user)->getJson('/api/v1/item-suppliers?filter[supplier_item_code]=ACM')->assertOk();
+        $this->assertCount(1, $res->json('data'));
+
+        // Filter by lead time range
+        $res = $this->actingAs($user)->getJson('/api/v1/item-suppliers?filter[lead_time_min]=10')->assertOk();
+        $this->assertCount(1, $res->json('data'));
+        $this->assertSame($relB->id, $res->json('data.0.id'));
+
+        // Filter by MOQ range
+        $res = $this->actingAs($user)->getJson('/api/v1/item-suppliers?filter[moq_max]=200')->assertOk();
+        $this->assertCount(1, $res->json('data'));
+        $this->assertSame($relA->id, $res->json('data.0.id'));
+
+        // Sort by minimum_order_qty desc
+        $res = $this->actingAs($user)->getJson('/api/v1/item-suppliers?sort=-minimum_order_qty')->assertOk();
+        $this->assertSame($relB->id, $res->json('data.0.id'));
+        $this->assertSame($relA->id, $res->json('data.1.id'));
+
+        // Includable supplierAccount loads party
+        $res = $this->actingAs($user)->getJson("/api/v1/item-suppliers/{$relA->id}?include=supplierAccount")->assertOk();
+        $this->assertSame('Acme Chemicals Inc', $res->json('data.supplier_account.party.name'));
+    }
 }
