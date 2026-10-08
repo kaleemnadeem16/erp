@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router";
 import {
   useItemsPackageTrackingShow,
   usePackageBalancesIndex,
@@ -32,6 +33,8 @@ export function ItemPackageTrackingCard({
   const mayView = usePermission("inventory.package-state.view");
   const mayTransfer = usePermission("inventory.package-state.transfer");
   const mayCount = usePermission("inventory.physical_count.create");
+  const mayReturn = usePermission("purchasing.supplier-return.create");
+  const mayScrap = usePermission("inventory.scrap.create");
   const tracking = useItemsPackageTrackingShow(itemId, {
     query: { enabled: isStocked, retry: false },
   });
@@ -121,6 +124,17 @@ export function ItemPackageTrackingCard({
                 {mayTransfer && row.fresh && Number(row.usable_total ?? row.total) > 0 && (
                   <Button size="sm" variant="outline" onClick={() => setTransferring(row)} data-testid="transfer-stock">
                     Transfer stock…
+                  </Button>
+                )}
+                {/* Rejected stock has no other exit (ADR 0097); the delivery is chosen on the document itself. */}
+                {mayReturn && Number(row.rejected?.total ?? 0) > 0 && (
+                  <Button asChild size="sm" variant="outline">
+                    <Link to="/supplier-returns/new" data-testid="return-rejected-stock">Return rejected stock…</Link>
+                  </Button>
+                )}
+                {mayScrap && Number(row.rejected?.total ?? 0) > 0 && (
+                  <Button asChild size="sm" variant="outline">
+                    <Link to="/stock-scraps/new" data-testid="scrap-rejected-stock">Scrap rejected stock…</Link>
                   </Button>
                 )}
               </div>

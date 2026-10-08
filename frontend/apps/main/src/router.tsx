@@ -58,6 +58,12 @@ import {
   PhysicalCountCreateScreen,
   PhysicalCountDetailScreen,
   PhysicalCountsListScreen,
+  StockScrapDetailScreen,
+  StockScrapFormScreen,
+  StockScrapsListScreen,
+  SupplierReturnDetailScreen,
+  SupplierReturnFormScreen,
+  SupplierReturnsListScreen,
   PurchaseOrdersListScreen,
   PurchaseOrderDetailScreen,
   PurchaseOrderCreateScreen,
@@ -800,6 +806,86 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <PhysicalCountDetailScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/supplier-returns"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <SupplierReturnsListScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/supplier-returns/new"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <SupplierReturnFormScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/supplier-returns/:id/edit"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <SupplierReturnFormScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/supplier-returns/:id"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <SupplierReturnDetailScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/stock-scraps"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <StockScrapsListScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/stock-scraps/new"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <StockScrapFormScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/stock-scraps/:id/edit"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <StockScrapFormScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/stock-scraps/:id"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <StockScrapDetailScreen />
               </AppShell>
             </ProtectedRoute>
           }

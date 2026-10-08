@@ -213,6 +213,14 @@ export { StockMoveDetailScreen } from "./features/stock-ledger/stock-move-detail
 export { PhysicalCountsListScreen } from "./features/physical-counts/physical-counts-list-screen";
 export { PhysicalCountDetailScreen } from "./features/physical-counts/physical-count-detail-screen";
 export { PhysicalCountCreateScreen } from "./features/physical-counts/physical-count-create-screen";
+export {
+  SupplierReturnsListScreen,
+  SupplierReturnFormScreen,
+  SupplierReturnDetailScreen,
+  StockScrapsListScreen,
+  StockScrapFormScreen,
+  StockScrapDetailScreen,
+} from "./features/rejected-exit/rejected-exit-screens";
 export { InventoryCutoversListScreen } from "./features/inventory-cutovers/inventory-cutovers-list-screen";
 export { InventoryCutoverDetailScreen } from "./features/inventory-cutovers/inventory-cutover-detail-screen";
 export { InventoryCutoverCreateScreen } from "./features/inventory-cutovers/inventory-cutover-create-screen";

@@ -6,6 +6,8 @@ import {
   Boxes,
   Calculator,
   ClipboardList,
+  Trash2,
+  Undo2,
   Component,
   FileText,
   FlaskConical,
@@ -109,6 +111,7 @@ const navGroups: NavGroup[] = [
     items: [
       { to: "/purchase-orders", label: "Purchase Orders", icon: FileText },
       { to: "/goods-receipts", label: "Goods Receipts", icon: PackageCheck },
+      { to: "/supplier-returns", label: "Supplier Returns", icon: Undo2 },
       { to: "/item-suppliers", label: "Item Suppliers", icon: Boxes },
       { to: "/suppliers", label: "Suppliers", icon: Users },
     ],
@@ -132,6 +135,7 @@ const navGroups: NavGroup[] = [
     label: "Stock Operations",
     items: [
       { to: "/physical-counts", label: "Physical Counts", icon: ClipboardList },
+      { to: "/stock-scraps", label: "Scrap", icon: Trash2 },
       { to: "/inventory-cutovers", label: "Inventory Cutovers", icon: History },
       {
         to: "/negative-stock-overrides",

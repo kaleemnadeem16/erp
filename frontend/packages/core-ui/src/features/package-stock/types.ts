@@ -100,4 +100,14 @@ export const REASON_HINTS: Record<string, string> = {
     "This location has packages under QA inspection or rejected: finish the QA decisions before counting it.",
   PACKAGE_TRACKED_ITEM:
     "This item is package-tracked; use its package-aware operation.",
+  NOTHING_REJECTED_TO_EXIT:
+    "There is no rejected stock left on this delivery line.",
+  OUTCOME_CHANGE_REASON_REQUIRED:
+    "This differs from the quality decision — say why.",
+  DOCUMENT_NOT_DRAFT: "This document is no longer a draft, so it cannot be changed.",
+  EMPTY_DOCUMENT: "Add at least one delivery line.",
+  DUPLICATE_RECEIPT_LINE: "That delivery line is already on this document.",
+  MIXED_SUPPLIERS: "A supplier return goes to one supplier — remove the lines from the other supplier.",
+  MIXED_WAREHOUSES: "A document covers one warehouse — remove the lines from the other warehouse.",
+  OUT_OF_SCOPE: "That stock is outside the warehouses you can work in.",
 };

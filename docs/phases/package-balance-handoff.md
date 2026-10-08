@@ -8,7 +8,7 @@ other agents' work continues independently. Update it, STATUS and the delivery p
 
 ## Resume here
 
-**Next build, when the owner says go:** slice 3 of the rejected-stock exit (screens) — [rejected-stock-exit-plan.md](rejected-stock-exit-plan.md). Slices 1 (shared exit core) and 2 (Supplier Return and Scrap documents, permissions, API) are built and proven; nothing is in flight.
+**Next build, when the owner says go:** slice 4 of the rejected-stock exit (demo seeder, role recipes, rollout notes, close-out) — [rejected-stock-exit-plan.md](rejected-stock-exit-plan.md). Slices 1 (shared exit core), 2 (Supplier Return and Scrap documents, permissions, API) and 3 (screens, browser-proven) are built; nothing is in flight.
 
 **Nothing is in flight. Do not start container-level tracking, and do not extend v1 implicitly.** Each enhancement below is a **new design slice**: draft the
 proposal (an ADR where a decision is needed), get the owner's answers, then implement. The owner's stated priority is **supplier return / scrap for rejected
@@ -28,7 +28,7 @@ transfer and reversal; Playwright coverage of each flow and of quantity-only par
 
 ## 2. Known limitations (accepted, each refused or explained in the product)
 
-- **Rejected stock** stays on hand — shown apart, never usable — until a return/scrap movement exists (the same is true of quantity-only stock).
+- **Rejected stock** stays on hand — shown apart, never usable — until a Supplier Return or Scrap document is posted (the same is true of quantity-only stock); the screens for both are built.
 - **QA / count restrictions:** a location holding held or rejected packages cannot be counted until QA has decided them; a QA line with any disposition cannot be reversed.
 - **Held-package restrictions:** held packages cannot be issued, transferred, opened or counted; a sealed held can is released or rejected whole, never opened or split.
 - **Unsupported writers** (refused with a message and by the database): cutover opening state, recalculation, negative-stock overrides and shortage settlement, scalar issue/transfer/count of a grouped item; serial, SPECIFIC-valued and QA-dependent-layer stock cannot be activated or counted; activation, deactivation and tracked-level changes are one-way for now.
@@ -36,7 +36,7 @@ transfer and reversal; Playwright coverage of each flow and of quantity-only par
 
 ## 3. Future enhancements (each a new design slice; none started)
 
-1. **Supplier return / scrap of rejected stock — next, owner priority.** Decided in [ADR 0097](../decisions/0097-supplier-return-and-scrap-of-rejected-stock.md) (accepted 2026-10-08); the build plan is [rejected-stock-exit-plan.md](rejected-stock-exit-plan.md); **slices 1–2 of 4 built**. It also gives
+1. **Supplier return / scrap of rejected stock — next, owner priority.** Decided in [ADR 0097](../decisions/0097-supplier-return-and-scrap-of-rejected-stock.md) (accepted 2026-10-08); the build plan is [rejected-stock-exit-plan.md](rejected-stock-exit-plan.md); **slices 1–3 of 4 built**. It also gives
    rejected quantity-only stock an exit.
 2. A governed **change of tracked levels**.
 3. **Deactivation / collapse** back to quantity-only.

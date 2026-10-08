@@ -28,6 +28,11 @@ const goodsReceipt = [
   "purchasing.goods-receipt.reverse",
   "purchasing.quality-disposition.post",
 ] as const;
+const supplierReturn = [
+  "purchasing.supplier-return.create",
+  "purchasing.supplier-return.post",
+] as const;
+const stockScrap = ["inventory.scrap.create", "inventory.scrap.post"] as const;
 const physicalCount = [
   "inventory.valuation.view",
   "inventory.stock.view",
@@ -84,6 +89,8 @@ const rules: readonly Rule[] = [
   },
   { path: "/stock-moves", anyOf: ["inventory.movement.view"] },
   { path: "/physical-counts", anyOf: physicalCount },
+  { path: "/supplier-returns", anyOf: supplierReturn },
+  { path: "/stock-scraps", anyOf: stockScrap },
   { path: "/inventory-cutovers", anyOf: cutover },
   { path: "/negative-stock-overrides", anyOf: negativeStock },
   { path: "/recalculation-requests", anyOf: recalculation },
@@ -224,6 +231,18 @@ export function canAccessScreen(
   }
   if (pathname === "/inventory-cutovers/new") {
     return permissions.has("inventory.cutover.create");
+  }
+  if (
+    pathname === "/supplier-returns/new" ||
+    /^\/supplier-returns\/[^/]+\/edit$/.test(pathname)
+  ) {
+    return permissions.has("purchasing.supplier-return.create");
+  }
+  if (
+    pathname === "/stock-scraps/new" ||
+    /^\/stock-scraps\/[^/]+\/edit$/.test(pathname)
+  ) {
+    return permissions.has("inventory.scrap.create");
   }
   if (pathname === "/physical-counts/new") {
     return permissions.has("inventory.physical_count.create");
