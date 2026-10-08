@@ -240,5 +240,11 @@ export { createAppQueryClient } from "./lib/query-client";
 export { GoodsReceiptEditScreen } from "./features/goods-receipts/goods-receipt-edit-screen";
 
 export { SuppliersListScreen } from "./features/suppliers/suppliers-list-screen";
+export { SupplierDetailScreen } from "./features/suppliers/supplier-detail-screen";
 export { SupplierFormScreen } from "./features/suppliers/supplier-form-screen";
+export {
+  supplierColumns,
+  getSupplierColumns,
+  SupplierStatusBadge,
+} from "./features/suppliers/suppliers-columns";
 export { CustomFieldsSettingsScreen } from "./features/custom-fields/custom-fields-settings-screen";

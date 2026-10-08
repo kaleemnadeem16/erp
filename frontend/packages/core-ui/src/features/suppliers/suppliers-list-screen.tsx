@@ -1,107 +1,602 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router";
-import { useSupplierAccountsIndex } from "@erp/core-api";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router";
+import { useQueryClient } from "@tanstack/react-query";
+import type { PaginationState, SortingState } from "@tanstack/react-table";
+import {
+  useCurrenciesIndex,
+  usePartiesIndex,
+  useSupplierAccountsIndex,
+  useSupplierAccountsUpdate,
+  type SupplierAccountResource,
+  type SupplierAccountsIndexSort,
+} from "@erp/core-api";
+import {
+  Archive,
+  Building2,
+  ChevronUp,
+  EllipsisVertical,
+  ExternalLink,
+  Package,
+  Pencil,
+  RefreshCw,
+  Search,
+  ShoppingBag,
+  SlidersHorizontal,
+  X,
+} from "lucide-react";
+
+import { cn } from "../../lib/utils";
+import { ScreenTemplate } from "../../components/page/screen-template";
 import { PageHeader } from "../../components/page/page-header";
-import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
+import { Button } from "../../components/ui/button";
+import { Badge } from "../../components/ui/badge";
+import { Combobox } from "../../components/ui/combobox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "../../components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "../../components/ui/dropdown-menu";
+import {
+  DataTable,
+  isColumnVisibleByDefault,
+  toTanStackColumns,
+} from "../../components/data-table";
+import {
+  PrintLayout,
+  PrintableTable,
+  PrintTrigger,
+  useQuickPrint,
+} from "../../components/print";
+import {
+  apiSortToTableSorting,
+  tableSortingToApiSort,
+  useListQueryState,
+} from "../../lib/list-query-state";
+import { useColumnVisibilityPreference } from "../../lib/use-column-visibility-preference";
+import { useDebouncedSearch } from "../../lib/use-debounced-search";
+import { useListViewPreference } from "../../lib/use-view-preference";
 import { usePermission } from "../../hooks/use-permission";
+import { lookupState } from "../../lib/api-errors";
+import { getSupplierColumns } from "./suppliers-columns";
+
+interface SupplierFilters {
+  search: string;
+  status: string;
+  party_id: string;
+  [key: string]: string;
+}
 
 export function SuppliersListScreen() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
   const mayManage = usePermission("parties.supplier-account.manage");
   const maySetTerms = usePermission("parties.payment-terms.manage");
   const mayMap = usePermission("accounting.account-mapping.manage");
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const query = useSupplierAccountsIndex({
-    include: "party",
-    "filter[search]": search || undefined,
-    sort: "code",
-    page,
-    per_page: 25,
+
+  const query = useListQueryState<SupplierFilters>({
+    defaultSort: "code",
+    defaultPerPage: 25,
   });
-  const response = query.data?.status === 200 ? query.data.data : undefined;
+
+  const searchBox = useDebouncedSearch(query.filters.search, (value) =>
+    query.setFilter("search", value)
+  );
+
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(() => Boolean(query.filters.party_id));
+  const { view, setView } = useListViewPreference("suppliers-list");
+
+  const currenciesQuery = useCurrenciesIndex({ per_page: 100, sort: "code" });
+  const currencies = currenciesQuery.data?.status === 200 ? currenciesQuery.data.data.data : [];
+  const currencyLabels = useMemo(
+    () => new Map(currencies.map((c) => [c.id, `${c.code} — ${c.name}`])),
+    [currencies]
+  );
+
+  const partiesQuery = usePartiesIndex({
+    per_page: 100,
+    sort: "name",
+  });
+  const parties = partiesQuery.data?.status === 200 ? partiesQuery.data.data.data : [];
+  const partyLabels = useMemo(
+    () => new Map(parties.map((p) => [p.id, `${p.code} — ${p.name}`])),
+    [parties]
+  );
+
+  const columns = useMemo(
+    () => getSupplierColumns(currencyLabels),
+    [currencyLabels]
+  );
+
+  const [columnVisibility, setColumnVisibility] = useColumnVisibilityPreference(
+    "suppliers-list",
+    Object.fromEntries(columns.map((col) => [col.key, isColumnVisibleByDefault(col)]))
+  );
+
+  const suppliersQuery = useSupplierAccountsIndex({
+    include: "party",
+    "filter[search]": query.filters.search || undefined,
+    "filter[status]":
+      (query.filters.status as "ACTIVE" | "ARCHIVED" | undefined) || undefined,
+    "filter[party_id]": query.filters.party_id
+      ? Number(query.filters.party_id)
+      : undefined,
+    sort: query.sort as SupplierAccountsIndexSort | undefined,
+    page: query.page,
+    per_page: query.perPage,
+  });
+
+  const suppliers =
+    suppliersQuery.data?.status === 200 ? suppliersQuery.data.data.data : [];
+  const meta =
+    suppliersQuery.data?.status === 200 ? suppliersQuery.data.data.meta : undefined;
+
+  const updateSupplier = useSupplierAccountsUpdate();
+
+  const tanStackColumns = useMemo(
+    () => toTanStackColumns(columns),
+    [columns]
+  );
+
+  const sorting: SortingState = apiSortToTableSorting(query.sort, columns);
+  const pagination: PaginationState = {
+    pageIndex: query.page - 1,
+    pageSize: query.perPage,
+  };
+
+  const { contentRef: printRef, print } = useQuickPrint({
+    documentTitle: "Supplier Directory",
+  });
+
+  const activeAdvancedFilterCount = [query.filters.party_id].filter(Boolean).length;
+  const mobileActiveFilterCount = [
+    query.filters.status,
+    query.filters.party_id,
+  ].filter(Boolean).length;
+
+  const activeChips = useMemo(() => {
+    const chips: Array<{ id: string; label: string; onRemove: () => void }> = [];
+    if (query.filters.search) {
+      chips.push({
+        id: "search",
+        label: `Search: "${query.filters.search}"`,
+        onRemove: () => query.setFilter("search", undefined),
+      });
+    }
+    if (query.filters.status) {
+      chips.push({
+        id: "status",
+        label: `Status: ${query.filters.status === "ACTIVE" ? "Active" : "Archived"}`,
+        onRemove: () => query.setFilter("status", undefined),
+      });
+    }
+    if (query.filters.party_id) {
+      const partyIdNum = Number(query.filters.party_id);
+      const partyName = partyLabels.get(partyIdNum) ?? `Partner #${partyIdNum}`;
+      chips.push({
+        id: "party",
+        label: `Partner: ${partyName}`,
+        onRemove: () => query.setFilter("party_id", undefined),
+      });
+    }
+    return chips;
+  }, [query.filters, partyLabels, query]);
+
+  async function handleToggleStatus(supplier: SupplierAccountResource) {
+    const nextStatus = supplier.status === "ACTIVE" ? "ARCHIVED" : "ACTIVE";
+    await updateSupplier.mutateAsync({
+      supplierAccount: supplier.id,
+      data: { status: nextStatus },
+    });
+    await queryClient.invalidateQueries();
+  }
+
   return (
-    <div className="space-y-4 p-4 pb-24 md:p-6">
-      <PageHeader
-        title="Suppliers"
-        description="Register trading partners as suppliers for purchasing."
-        primaryAction={
-          mayManage && maySetTerms && mayMap
-            ? {
-                label: "New supplier",
-                onClick: () => navigate("/suppliers/new"),
+    <ScreenTemplate kind="list" className="erp-screen">
+      <div className="space-y-4 p-4 pb-24 md:p-6">
+        <PageHeader
+          title="Suppliers"
+          description="Register and manage trading partners as suppliers for purchasing."
+          primaryAction={
+            mayManage && maySetTerms && mayMap
+              ? {
+                  label: "New supplier",
+                  onClick: () => navigate("/suppliers/new"),
+                }
+              : undefined
+          }
+        />
+
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative flex-1 md:w-80 md:flex-none">
+            <Search
+              aria-hidden="true"
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+            />
+            <Input
+              className="h-10 w-full pl-10"
+              placeholder="Search supplier code or name…"
+              {...searchBox.searchProps}
+            />
+          </div>
+
+          <div className="hidden items-center gap-2 md:flex md:flex-wrap">
+            <Select
+              value={query.filters.status || "ALL"}
+              onValueChange={(val) =>
+                query.setFilter("status", val === "ALL" ? undefined : val)
               }
-            : undefined
-        }
-      />
-      <Input
-        aria-label="Search suppliers"
-        placeholder="Search supplier code or name…"
-        value={search}
-        onChange={(event) => {
-          setSearch(event.target.value);
-          setPage(1);
-        }}
-      />
-      {query.isLoading ? (
-        <p role="status">Loading suppliers…</p>
-      ) : query.isError ? (
-        <p role="alert">
-          Couldn't load suppliers.{" "}
-          <Button variant="outline" onClick={() => void query.refetch()}>
-            Retry
-          </Button>
-        </p>
-      ) : (
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {response?.data.map((supplier) => (
-            <article
-              key={supplier.id}
-              className="space-y-2 rounded-lg border bg-card p-4"
             >
-              <h2 className="font-semibold">
-                {mayManage ? (
-                  <Link
-                    className="text-primary underline"
-                    to={`/suppliers/${supplier.id}/edit`}
-                  >
-                    {supplier.code} — {supplier.party?.name}
-                  </Link>
-                ) : (
-                  `${supplier.code} — ${supplier.party?.name ?? ""}`
-                )}
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                {supplier.status} · Payment terms: {supplier.payment_terms_days}{" "}
-                days · Lead time: {supplier.lead_time_days ?? "—"} days
-              </p>
-            </article>
-          ))}
-          {response?.data.length === 0 && (
-            <p>No suppliers match this search.</p>
-          )}
+              <SelectTrigger className="h-10 w-36">
+                <SelectValue placeholder="All statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All statuses</SelectItem>
+                <SelectItem value="ACTIVE">Active</SelectItem>
+                <SelectItem value="ARCHIVED">Archived</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Button
+              variant={
+                advancedOpen || activeAdvancedFilterCount > 0
+                  ? "secondary"
+                  : "outline"
+              }
+              size="sm"
+              className={cn(
+                "relative h-10 px-4",
+                (advancedOpen || activeAdvancedFilterCount > 0) &&
+                  "ui-btn-filters-active"
+              )}
+              onClick={() => setAdvancedOpen((open) => !open)}
+            >
+              <SlidersHorizontal className="mr-1.5 h-4 w-4" />
+              Filters
+              {activeAdvancedFilterCount > 0 && (
+                <Badge
+                  className="absolute -right-2 -top-2 h-5 min-w-5 justify-center rounded-full px-1 text-[11px]"
+                >
+                  {activeAdvancedFilterCount}
+                </Badge>
+              )}
+            </Button>
+
+            <PrintTrigger onPrint={() => print()} className="h-10 px-4" />
+          </div>
+
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-10 shrink-0 md:hidden"
+            onClick={() => setFiltersOpen(true)}
+          >
+            <SlidersHorizontal className="h-4 w-4 mr-1" />
+            Filters
+            {mobileActiveFilterCount > 0 && (
+              <Badge className="ml-1">{mobileActiveFilterCount}</Badge>
+            )}
+          </Button>
         </div>
-      )}
-      <div className="flex items-center justify-between gap-2">
-        <Button
-          variant="outline"
-          disabled={page <= 1}
-          onClick={() => setPage(page - 1)}
+
+        <div
+          className={cn(
+            "hidden md:grid transition-[grid-template-rows,opacity,transform] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none",
+            advancedOpen
+              ? "grid-rows-[1fr] opacity-100 translate-y-0"
+              : "grid-rows-[0fr] opacity-0 -translate-y-2 pointer-events-none"
+          )}
+          aria-hidden={!advancedOpen}
         >
-          Previous
-        </Button>
-        <span className="text-sm">
-          Page {page} of {response?.meta.last_page ?? 1}
-        </span>
-        <Button
-          variant="outline"
-          disabled={!response || page >= response.meta.last_page}
-          onClick={() => setPage(page + 1)}
-        >
-          Next
-        </Button>
+          <div className="overflow-hidden">
+            <div className="rounded-lg border bg-card p-4 text-card-foreground shadow-xs">
+              <div className="mb-4 flex items-center justify-between">
+                <span className="flex items-center gap-2 text-sm font-semibold">
+                  <SlidersHorizontal aria-hidden="true" className="h-4 w-4" />
+                  Advanced filters
+                </span>
+                <div className="flex items-center gap-2">
+                  {activeAdvancedFilterCount > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs text-muted-foreground hover:text-foreground"
+                      onClick={() => query.setFilter("party_id", undefined)}
+                    >
+                      Reset filters
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 gap-1 px-2 text-xs"
+                    onClick={() => setAdvancedOpen(false)}
+                    aria-label="Close filters"
+                  >
+                    Hide filters
+                    <ChevronUp aria-hidden="true" className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">
+                    Trading partner
+                  </label>
+                  <Combobox
+                    {...lookupState(partiesQuery, "trading partners")}
+                    value={query.filters.party_id ?? "all"}
+                    onValueChange={(val) =>
+                      query.setFilter("party_id", val === "all" ? undefined : val)
+                    }
+                    searchPlaceholder="Search trading partners…"
+                    emptyText="No trading partners found."
+                    options={[
+                      { value: "all", label: "All trading partners" },
+                      ...parties.map((p) => ({
+                        value: String(p.id),
+                        label: `${p.code} — ${p.name}`,
+                      })),
+                    ]}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
+          <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto md:hidden">
+            <SheetHeader>
+              <SheetTitle>Filters</SheetTitle>
+            </SheetHeader>
+            <div className="flex flex-col gap-4 py-4">
+              <div className="space-y-2">
+                <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Status
+                </label>
+                <Select
+                  value={query.filters.status || "ALL"}
+                  onValueChange={(val) =>
+                    query.setFilter("status", val === "ALL" ? undefined : val)
+                  }
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="All statuses" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">All statuses</SelectItem>
+                    <SelectItem value="ACTIVE">Active</SelectItem>
+                    <SelectItem value="ARCHIVED">Archived</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2 border-t pt-3">
+                <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Trading partner
+                </label>
+                <Combobox
+                  {...lookupState(partiesQuery, "trading partners")}
+                  value={query.filters.party_id ?? "all"}
+                  onValueChange={(val) =>
+                    query.setFilter("party_id", val === "all" ? undefined : val)
+                  }
+                  searchPlaceholder="Search trading partners…"
+                  emptyText="No trading partners found."
+                  options={[
+                    { value: "all", label: "All trading partners" },
+                    ...parties.map((p) => ({
+                      value: String(p.id),
+                      label: `${p.code} — ${p.name}`,
+                    })),
+                  ]}
+                />
+              </div>
+            </div>
+            <SheetFooter className="gap-2 sm:space-x-0">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  query.setFilters({ status: undefined, party_id: undefined });
+                  setFiltersOpen(false);
+                }}
+              >
+                Clear filters
+              </Button>
+              <Button onClick={() => setFiltersOpen(false)}>Done</Button>
+            </SheetFooter>
+          </SheetContent>
+        </Sheet>
+
+        {activeChips.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5 pt-1">
+            {activeChips.map((chip) => (
+              <Badge
+                key={chip.id}
+                variant="secondary"
+                className="h-7 gap-1 px-2.5 text-xs font-normal"
+              >
+                {chip.label}
+                <button
+                  type="button"
+                  onClick={chip.onRemove}
+                  className="rounded-full p-0.5 hover:bg-muted"
+                  aria-label={`Remove filter: ${chip.label}`}
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            ))}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs text-muted-foreground hover:text-foreground"
+              onClick={() =>
+                query.setFilters({
+                  search: undefined,
+                  status: undefined,
+                  party_id: undefined,
+                })
+              }
+            >
+              Clear all
+            </Button>
+          </div>
+        )}
+
+        <DataTable
+          columns={tanStackColumns}
+          data={suppliers}
+          rowCount={meta?.total ?? 0}
+          pagination={pagination}
+          onPaginationChange={(updater) => {
+            const next =
+              typeof updater === "function" ? updater(pagination) : updater;
+            if (next.pageSize !== pagination.pageSize) {
+              query.setPerPage(next.pageSize);
+            } else {
+              query.setPage(next.pageIndex + 1);
+            }
+          }}
+          sorting={sorting}
+          onSortingChange={(updater) => {
+            const next =
+              typeof updater === "function" ? updater(sorting) : updater;
+            query.setSort(tableSortingToApiSort(next, columns));
+          }}
+          columnVisibility={columnVisibility}
+          onColumnVisibilityChange={setColumnVisibility}
+          onRowClick={(supplier: SupplierAccountResource) =>
+            navigate(`/suppliers/${supplier.id}`)
+          }
+          isLoading={suppliersQuery.isLoading}
+          isError={suppliersQuery.isError}
+          error={suppliersQuery.error}
+          onRetry={() => void suppliersQuery.refetch()}
+          errorMessage="Couldn't load suppliers."
+          emptyMessage="No suppliers match these filters."
+          view={view}
+          onViewChange={setView}
+          cardColumns={columns}
+          recordNoun="suppliers"
+          numberedPagination
+          rowActions={(supplier: SupplierAccountResource) => (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  aria-label={`Actions for ${supplier.code}`}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <EllipsisVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/suppliers/${supplier.id}`);
+                  }}
+                >
+                  <Building2 className="mr-2 h-4 w-4 text-muted-foreground" />
+                  View details
+                </DropdownMenuItem>
+                {mayManage && (
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/suppliers/${supplier.id}/edit`);
+                    }}
+                  >
+                    <Pencil className="mr-2 h-4 w-4 text-muted-foreground" />
+                    Edit supplier
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/purchase-orders?supplier_account_id=${supplier.id}`);
+                  }}
+                >
+                  <ShoppingBag className="mr-2 h-4 w-4 text-muted-foreground" />
+                  Purchase orders
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/item-suppliers?supplier_account_id=${supplier.id}`);
+                  }}
+                >
+                  <Package className="mr-2 h-4 w-4 text-muted-foreground" />
+                  Supplied items
+                </DropdownMenuItem>
+                {mayManage && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void handleToggleStatus(supplier);
+                      }}
+                    >
+                      {supplier.status === "ACTIVE" ? (
+                        <>
+                          <Archive className="mr-2 h-4 w-4 text-muted-foreground" />
+                          Archive supplier
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="mr-2 h-4 w-4 text-muted-foreground" />
+                          Activate supplier
+                        </>
+                      )}
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        />
+
+        <div className="hidden">
+          <div ref={printRef}>
+            <PrintLayout
+              title="SUPPLIER DIRECTORY"
+              printedAt={new Date()}
+              recordCount={suppliers.length}
+            >
+              <PrintableTable
+                columns={columns}
+                rows={suppliers}
+                getRowKey={(supplier) => supplier.id}
+              />
+            </PrintLayout>
+          </div>
+        </div>
       </div>
-    </div>
+    </ScreenTemplate>
   );
 }

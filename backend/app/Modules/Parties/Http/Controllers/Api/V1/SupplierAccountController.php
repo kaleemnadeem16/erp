@@ -46,7 +46,11 @@ class SupplierAccountController extends Controller
             $query->where('status', $request->input('filter.status'));
         }
         if ($request->filled('filter.search')) {
-            $query->where('code', 'ilike', '%'.$request->string('filter.search')->toString().'%');
+            $search = $request->string('filter.search')->toString();
+            $query->where(function ($q) use ($search) {
+                $q->where('code', 'ilike', '%'.$search.'%')
+                    ->orWhereHas('party', fn ($pq) => $pq->where('name', 'ilike', '%'.$search.'%')->orWhere('code', 'ilike', '%'.$search.'%'));
+            });
         }
         $this->applySort($query, $request, self::SORTABLE, 'code');
 

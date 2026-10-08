@@ -30,6 +30,7 @@ import {
   GoodsReceiptCreateScreen,
   GoodsReceiptEditScreen,
   SuppliersListScreen,
+  SupplierDetailScreen,
   SupplierFormScreen,
   CustomFieldsSettingsScreen,
   GoodsReceiptDetailScreen,
@@ -548,6 +549,16 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <SupplierFormScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/suppliers/:id"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <SupplierDetailScreen />
               </AppShell>
             </ProtectedRoute>
           }

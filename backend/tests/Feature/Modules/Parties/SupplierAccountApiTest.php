@@ -72,6 +72,24 @@ class SupplierAccountApiTest extends TestCase
         $this->assertDatabaseHas('supplier_accounts', ['id' => $account->id, 'payment_terms_days' => 30, 'deleted_at' => null]);
     }
 
+    public function test_index_can_search_by_code_and_party_name(): void
+    {
+        $account = SupplierAccount::create($this->payload(['code' => 'SUP-001']));
+        $user = User::factory()->create();
+
+        // Search by supplier code
+        $resCode = $this->actingAs($user)->getJson('/api/v1/supplier-accounts?filter[search]=SUP-001')->assertOk();
+        $this->assertCount(1, $resCode->json('data'));
+
+        // Search by party name "Acme Corp"
+        $resName = $this->actingAs($user)->getJson('/api/v1/supplier-accounts?filter[search]=Acme')->assertOk();
+        $this->assertCount(1, $resName->json('data'));
+
+        // Non-matching search
+        $resNone = $this->actingAs($user)->getJson('/api/v1/supplier-accounts?filter[search]=NonExistent')->assertOk();
+        $this->assertCount(0, $resNone->json('data'));
+    }
+
     public function test_a_supplier_account_can_be_created_and_fetched(): void
     {
         $user = $this->maintainer();
