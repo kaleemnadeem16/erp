@@ -90,6 +90,8 @@ final class PackageCountDemoSeeder extends Seeder
      */
     private function seedReviewer(): void
     {
+        // The warehouse assistant handles grouped stock day to day: sees the breakdown, issues, opens and transfers (the role recipe in docs/domain/package-issue-operations.md).
+        User::query()->where('email', 'demo-ops@erp.x1techs.com')->first()?->givePermissionTo(['inventory.package-state.view', 'inventory.package-state.issue', 'inventory.package-state.open', 'inventory.package-state.transfer']);
         $reviewer = User::query()->updateOrCreate(['email' => 'demo-count-reviewer@erp.x1techs.com'], ['name' => 'Demo Stock Reviewer', 'password' => config('demo.user.password')]);
         $reviewer->forceFill(['email_verified_at' => now()])->save();
         $reviewer->syncPermissions(['inventory.physical_count.post', 'inventory.package-state.recount', 'inventory.package-state.view', 'inventory.stock.view', 'inventory.valuation.view', 'inventory.movement.view']);

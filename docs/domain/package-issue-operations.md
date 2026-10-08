@@ -170,3 +170,9 @@ conservation, container refusal, invalid draws, stale-evidence-then-recount tran
 - [ADR 0090](../decisions/0090-package-aware-stock-issue-semantics.md), [ADR 0082](../decisions/0082-reconcile-package-balances-with-stock-operations.md)
 - [Saved opening and unpacking](package-opening-operations.md), [package kernel](package-balance-integration.md)
 - [Delivery plan](../phases/package-balance-delivery.md), [handoff](../phases/package-balance-handoff.md)
+
+## Granting the package capabilities (rollout, 2026-10-08)
+
+Capabilities are ordinary role permissions (company roles via the Access screens); there are no package-specific role semantics. Release steps are the standard ones: `permission:register`, `erp:sync-admin-permissions` for the administrator, and migration `2026_10_08_140000`, which **continues existing duties only**: holders of `inventory.stock.view`, `inventory.physical_count.post` or `purchasing.goods-receipt.reverse` get `inventory.package-state.view`; `physical_count.post` holders also get `.recount`; `goods-receipt.reverse` holders also get `.reverse`. A count-only role is never granted `.view` (it counts blind). `.activate` (one-way) and the new duties `.issue`, `.open`, `.transfer` are never granted by inference.
+
+Suggested role recipes, built in the role editor: **Grouped stock handler** — `view`, `issue`, `open`, `transfer`; **Grouped stock controller** — the handler's set plus `recount` (with `physical_count.post`) and `reverse` (with `purchasing.goods-receipt.reverse`); **Grouped tracking owner** — `activate`. The demo assistant (`demo-ops`) holds the handler recipe and `demo-count-reviewer` the reviewer set.

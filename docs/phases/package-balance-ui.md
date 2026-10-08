@@ -180,9 +180,9 @@ destination-needs-count block (`package-transfer`), count — composition-only, 
 (`package-count`), receipt reversal — as received, changed form, delivery already used (`package-reversal`), and a quantity-only item untouched by all of it (`package-quantity-only`).
 
 **True v1 gaps** (things a company doing grouped tracking day to day can still hit):
-- Roles must be given the new capabilities (`inventory.package-state.{view,activate,issue,open,transfer,recount,reverse}`); until a role template exists this is a manual grant, and the demo grants only cover the demo personas.
-- Receiving from a supplier whose delivery needs QA inspection is refused for a grouped item (`SUPPLIER_QA_UNSUPPORTED`). A company that inspects most deliveries cannot use grouped tracking for those items until QA splitting exists.
-- Phone width: the count dialog and count page are checked at 390 px (no sideways scroll); the transfer, issue and reversal dialogs have not been.
+- ~~Roles must be given the new capabilities~~ **Closed 2026-10-08:** a rollout migration continues existing duties (view, recount, reverse); activation and the new issue/open/transfer duties are deliberate role grants with documented recipes ([rollout](../domain/package-issue-operations.md#granting-the-package-capabilities-rollout-2026-10-08)).
+- Receiving from a supplier whose delivery needs QA inspection is refused for a grouped item (`SUPPLIER_QA_UNSUPPORTED`). **Design proposed 2026-10-08 as [ADR 0094](../decisions/0094-package-aware-supplier-qa-receipts.md), awaiting five decisions before implementation.** Until it is accepted and built, a company that inspects most deliveries cannot use grouped tracking for those items.
+- ~~Phone width~~ **Closed 2026-10-08:** count, issue, transfer and reversal are checked at 390 px (fit, no sideways scroll, primary action topmost and reachable) in `package-mobile` and `package-count`; no layout defect was found.
 
 **Polish, not blocking:** Issue and Transfer are reached from the item page, one location at a time (quantity-only items have no issue form at all, so there is no parity gap); standalone menu screens would be faster for a storeman. Found-cost suggestions need cost visibility; without it the reviewer types the cost.
 
