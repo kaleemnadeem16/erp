@@ -1,5 +1,6 @@
 import type { GoodsReceiptResource } from "@erp/core-api";
 
+import { RecordLink } from "../../components/ui/record-link";
 import { StatusBadge, type StatusTone } from "../../components/ui/status-badge";
 import type { DataColumn } from "../../components/data-table/types";
 import { formatDateTime } from "../../lib/format-date";
@@ -45,9 +46,7 @@ export function goodsReceiptColumns(
       header: "Receipt",
       value: (receipt) => receipt.number ?? `Draft #${receipt.id}`,
       cell: (receipt) => (
-        <span className="font-semibold text-primary hover:underline cursor-pointer">
-          {receipt.number ?? `Draft #${receipt.id}`}
-        </span>
+        <RecordLink>{receipt.number ?? `Draft #${receipt.id}`}</RecordLink>
       ),
       sortable: true,
       cardRole: "title",
@@ -79,7 +78,7 @@ export function goodsReceiptColumns(
               receipt.total_amount === null ? (
                 "—"
               ) : (
-                <span className="tabular-nums font-medium text-foreground">
+                <span className="tabular-nums font-medium text-[var(--po-text-primary)]">
                   {formatAmount(
                     receipt.total_amount,
                     currencies.get(Number(receipt.currency_id ?? 0)),
@@ -96,6 +95,11 @@ export function goodsReceiptColumns(
       header: "Lines",
       value: (receipt) =>
         `${receipt.lines_count ?? receipt.lines?.length ?? 0}`,
+      cell: (receipt) => (
+        <span className="tabular-nums">
+          {receipt.lines_count ?? receipt.lines?.length ?? 0}
+        </span>
+      ),
       align: "right",
     },
     {

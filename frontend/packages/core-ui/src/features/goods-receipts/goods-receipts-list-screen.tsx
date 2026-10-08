@@ -541,7 +541,7 @@ export function GoodsReceiptsListScreen() {
           {activeChips.map((chip) => (
             <span
               key={chip.id}
-              className="inline-flex max-w-full items-center rounded-full border bg-primary/5 px-3 py-1.5 text-xs text-primary !gap-2 [&>svg]:shrink-0"
+              className="ui-chip-active inline-flex max-w-full items-center rounded-full border bg-primary/5 px-3 py-1.5 text-xs text-primary !gap-2 [&>svg]:shrink-0"
             >
               {chip.icon}
               <span className="min-w-0 break-words">{chip.label}</span>
@@ -557,7 +557,7 @@ export function GoodsReceiptsListScreen() {
           ))}
           <button
             type="button"
-            className="text-xs font-medium text-primary hover:underline ml-1"
+            className="ui-link-action shrink-0 cursor-pointer text-xs ml-1"
             onClick={clearAllFilters}
           >
             Clear all
@@ -836,7 +836,7 @@ function GoodsReceiptFilterControls({
             <SelectValue placeholder="Status" />
           </div>
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="ui-select-content">
           <SelectItem value="ALL">All statuses</SelectItem>
           {STATUSES.map((status) => (
             <SelectItem key={status} value={status}>

@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
-import { useItemsById, useLocationsById, useUomsById } from "./use-line-lookups";
+import {
+  useItemsById,
+  useLocationsById,
+  useUomsById,
+} from "./use-line-lookups";
 import {
   QaPortionStep,
   decidesPackages,
@@ -326,7 +330,10 @@ export function GoodsReceiptDetailScreen({
     itemsQuery.data?.status === 200 ? itemsQuery.data.data.data : [];
   const receiptLines = receipt?.lines ?? [];
   // A list page is not a lookup table: fetch whatever the lines name that the page does not hold.
-  const items = useItemsById(receiptLines.map((line) => line.item_id), itemList);
+  const items = useItemsById(
+    receiptLines.map((line) => line.item_id),
+    itemList,
+  );
   const locationsQuery = useLocationsIndex({ per_page: 100, sort: "code" });
   const locations = useLocationsById(
     receiptLines.map((line) => line.location_id),
@@ -334,7 +341,13 @@ export function GoodsReceiptDetailScreen({
   );
   const uomsQuery = useUomsIndex({ per_page: 100, sort: "name" });
   const uoms = useUomsById(
-    [...receiptLines.flatMap((line) => [line.received_uom_id, line.stock_uom_id]), ...items.map((item) => item.stock_uom_id)],
+    [
+      ...receiptLines.flatMap((line) => [
+        line.received_uom_id,
+        line.stock_uom_id,
+      ]),
+      ...items.map((item) => item.stock_uom_id),
+    ],
     uomsQuery.data?.status === 200 ? uomsQuery.data.data.data : [],
   );
   const currenciesQuery = useCurrenciesIndex({ per_page: 100, sort: "code" });
@@ -621,17 +634,19 @@ export function GoodsReceiptDetailScreen({
       )}
       {showReverse && receipt.status === "POSTED" && (
         <section className="space-y-3 rounded-lg border border-destructive/40 bg-card p-4 shadow-xs">
-          <h2
-            ref={reverseHeadingRef}
-            tabIndex={-1}
-            className="text-sm font-semibold text-foreground outline-none"
-          >
-            Reverse this receipt?
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Reversal posts opposite inventory effects. It is blocked after
-            downstream consumption or any QA disposition.
-          </p>
+          <div>
+            <h2
+              ref={reverseHeadingRef}
+              tabIndex={-1}
+              className="font-medium outline-none"
+            >
+              Reverse this receipt?
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Reversal posts opposite inventory effects. It is blocked after
+              downstream consumption or any QA disposition.
+            </p>
+          </div>
           <ReceiptReversalPanel
             receiptId={receipt.id}
             describe={(itemId) => {
@@ -694,7 +709,7 @@ export function GoodsReceiptDetailScreen({
             <GoodsReceiptStatusBadge status={receipt.status} />
           </DetailField>
           <DetailField label="Receipt number">
-            <span className="font-semibold text-foreground">
+            <span className="font-semibold">
               {receipt.number ?? `Draft #${receipt.id}`}
             </span>
           </DetailField>
@@ -733,7 +748,7 @@ export function GoodsReceiptDetailScreen({
                 href={supplier.party.website}
                 target="_blank"
                 rel="noreferrer"
-                className="text-primary hover:underline"
+                className="ui-order-link"
               >
                 {supplier.party.website}
               </a>
@@ -752,7 +767,7 @@ export function GoodsReceiptDetailScreen({
                   : "—"}
             </DetailField>
             <DetailField label="Total value">
-              <span className="tabular-nums font-semibold text-foreground">
+              <span className="tabular-nums font-semibold">
                 {receipt.total_amount
                   ? `${(receipt.currency_id && currencies.find((c) => c.id === Number(receipt.currency_id))?.code) ?? ""} ${Number(receipt.total_amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`
                   : "—"}
@@ -791,9 +806,7 @@ export function GoodsReceiptDetailScreen({
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-base font-semibold text-foreground">
-              Receipt lines
-            </h2>
+            <h2 className="text-sm font-semibold">Receipt lines</h2>
             <p className="text-xs text-muted-foreground">
               Posted quantities are on the stock-UoM basis; inspection-required
               lines remain held until terminal dispositions cover them.
@@ -826,7 +839,7 @@ export function GoodsReceiptDetailScreen({
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <h3 className="font-semibold text-foreground">
+                  <h3 className="font-semibold">
                     {item
                       ? `${item.code} — ${item.name}`
                       : `Item #${line.item_id}`}
@@ -853,7 +866,7 @@ export function GoodsReceiptDetailScreen({
                   <span className="text-xs font-medium text-muted-foreground">
                     Received
                   </span>
-                  <div className="tabular-nums font-semibold mt-0.5">
+                  <div className="tabular-nums font-medium mt-0.5">
                     {line.received_qty} {line.package_name ?? receivedUom?.code}
                   </div>
                 </div>
@@ -861,7 +874,7 @@ export function GoodsReceiptDetailScreen({
                   <span className="text-xs font-medium text-muted-foreground">
                     Stock quantity
                   </span>
-                  <div className="tabular-nums font-semibold mt-0.5">
+                  <div className="tabular-nums font-medium mt-0.5">
                     {line.stock_qty} {stockUom?.code}
                   </div>
                 </div>
@@ -870,7 +883,7 @@ export function GoodsReceiptDetailScreen({
                     <span className="text-xs font-medium text-muted-foreground">
                       Provisional unit cost
                     </span>
-                    <div className="tabular-nums font-semibold mt-0.5">
+                    <div className="tabular-nums font-medium mt-0.5">
                       {line.provisional_unit_cost !== undefined &&
                       line.provisional_unit_cost !== null
                         ? `${Number(line.provisional_unit_cost).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 4 })} ${lineCurrency?.code ?? ""}`
@@ -883,7 +896,7 @@ export function GoodsReceiptDetailScreen({
                     <span className="text-xs font-medium text-muted-foreground">
                       Provisional line amount
                     </span>
-                    <div className="tabular-nums font-semibold mt-0.5">
+                    <div className="tabular-nums font-medium mt-0.5">
                       {line.provisional_amount !== undefined &&
                       line.provisional_amount !== null
                         ? `${Number(line.provisional_amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 4 })} ${lineCurrency?.code ?? ""}`
