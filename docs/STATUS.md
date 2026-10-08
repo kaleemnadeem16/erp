@@ -42,11 +42,11 @@ history is [STATUS-LOG.md](STATUS-LOG.md).
 
 ## Recently done
 
-Opening/unpacking now saves immutable complete snapshots with lineage, fresh-stock checks,
-duplicate/conflict protection and a dedicated history demo. Issue/transfer integration and
-tracking activation remain next → [saved operations](domain/package-opening-operations.md).
-The scoped [continuation handoff](phases/package-balance-handoff.md) records the exact resume point
-and shared-checkout boundaries; other workstreams retain their own priorities.
+**Grouped package tracking v1 is complete** (commit `1c73d81`, accepted 2026-10-08): activation, receipt, QA-held receipt, issue, transfer, physical count, receipt reversal,
+QA disposition, fail-closed database enforcement, permissions and phone-width verification. Known limitations (rejected stock stays on hand until a return/scrap movement exists;
+QA, count and held-package restrictions; unsupported writers) and future enhancements (rejected-stock return/scrap first, tracked-level changes, deactivation/collapse,
+container-level tracking, line-level reversal, count approval thresholds, QA/count reconciliation, standalone Issue/Transfer screens) are separated in the
+[handoff](phases/package-balance-handoff.md) and the [v1 sign-off](phases/package-balance-ui.md#v1-sign-off-2026-10-08). Container-level tracking has not started; each enhancement is a new design slice.
 
 | Item | Date |
 |---|---|

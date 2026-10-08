@@ -2,54 +2,51 @@
 
 # Package feature — continuation handoff
 
-Recorded 2026-10-03 after feature commit **2df3c84**. This is the continuation point for
-Item/Packaging/Purchasing and physical package evidence. It is scoped to this workstream;
-other agents' work and the project's overall next phase continue independently.
-Update this handoff when the next package slice lands, alongside STATUS and the delivery plan.
+Rewritten 2026-10-08 at the **grouped package tracking v1 completion point: commit `1c73d81`**, accepted as complete by the owner. The v1 sign-off in
+[package-balance-ui.md](package-balance-ui.md#v1-sign-off-2026-10-08) is the authority for what v1 is. This file is scoped to the package workstream;
+other agents' work continues independently. Update it, STATUS and the delivery plan when the next package slice lands.
 
 ## Resume here
 
-**Next implementation: package-aware stock issues, then transfers.** Saved opening/unpacking
-is complete as an internal backend evidence slice. No issue/transfer package adapter is started
-or left uncommitted at this checkpoint. Do not repeat the opening work or enable tracking yet.
+**Nothing is in flight. Do not start container-level tracking, and do not extend v1 implicitly.** Each enhancement below is a **new design slice**: draft the
+proposal (an ADR where a decision is needed), get the owner's answers, then implement. The owner's stated priority is **supplier return / scrap for rejected
+grouped stock first**, because it closes the most obvious remaining operational dead end (rejected packages stay on hand today).
 
-The user authorised incremental implementation, wants meaningful demo scenarios with each slice,
-and explicitly requires committing changes because other agents share the checkout. The user
-confirmed unopened package counts plus combined open/loose leftovers are enough; individual
-container IDs are not required. No further answer is currently needed to start the next slice.
+Use the WSL repository **/home/kaleem/projects/erp**, branch develop; another agent works in the same tree, so commit your own files by explicit path and never
+stash. Read AGENTS.md, STATUS, the invariants and ADRs 0090–0094 before editing; treat this handoff as a dated baseline, not proof the tree is unchanged.
 
-Use the WSL repository **/home/kaleem/projects/erp**, currently branch develop. The Windows
-conversation workspace is C:\Users\Kaleem\Documents\ChatGPT\erp; it is not the implementation
-checkout. From PowerShell:
+## 1. v1 complete
 
-```powershell
-wsl.exe -d Ubuntu --exec /bin/bash -lc 'cd ~/projects/erp && git status --short && git log -5 --oneline'
-```
+Activation (one atomic, database-validated transition from a reconciled count); receipt with observed physical composition; **QA-held receipt** (inspection-required
+deliveries arrive held); issue and transfer by physical draw; physical count by composition (composition-only versus governed variance, found cost); whole-receipt
+reversal with a declared draw; **QA disposition** by declared portion (usable or rejected); **fail-closed database enforcement** for every stock writer;
+**permissions** (capabilities, rollout migration `2026_10_08_140000`, role recipes, warehouse scope, reason codes); **mobile verification** at about 390 px for count, issue,
+transfer and reversal; Playwright coverage of each flow and of quantity-only parity. Decisions: ADRs 0090 (issue/transfer), 0091 (activation/enforcement), 0092 (count),
+0093 (reversal), 0094 (supplier QA). Screens and API: [package-balance-ui.md](package-balance-ui.md).
 
-Read AGENTS.md, STATUS, invariants and the relevant module/domain docs again before editing.
-Treat this handoff as a dated baseline, not proof the shared tree has remained unchanged.
+## 2. Known limitations (accepted, each refused or explained in the product)
 
-## Completed versus still unavailable
+- **Rejected stock** stays on hand — shown apart, never usable — until a return/scrap movement exists (the same is true of quantity-only stock).
+- **QA / count restrictions:** a location holding held or rejected packages cannot be counted until QA has decided them; a QA line with any disposition cannot be reversed.
+- **Held-package restrictions:** held packages cannot be issued, transferred, opened or counted; a sealed held can is released or rejected whole, never opened or split.
+- **Unsupported writers** (refused with a message and by the database): cutover opening state, recalculation, negative-stock overrides and shortage settlement, scalar issue/transfer/count of a grouped item; serial, SPECIFIC-valued and QA-dependent-layer stock cannot be activated or counted; activation, deactivation and tracked-level changes are one-way for now.
+- **Reach:** Issue and Transfer are launched from the item page, one location at a time; role recipes are documented, not shipped as templates.
 
-| Capability | Current state |
-|---|---|
-| Named item packages, nested definitions, supplier offers | Delivered; commercial purchasing UI/demo exists |
-| Independent purchasing and price basis | Delivered; issued agreements remain frozen; future offer changes affect future orders |
-| Supplier changes the current agreement | Existing replacement-order workflow; physical observation does not rewrite price/package agreement |
-| Creation-time package policy | Explicit item > nearest category > company, persisted provenance; advanced modes blocked |
-| Counted composition checkpoint | Authorised immutable full-scope evidence with layer contributions and stock watermark |
-| Historical replay/freshness | Reconstructs stored snapshots; detects newer movement, changed layers, newer full-scope evidence and unsupported scope |
-| Observed receipt composition | Internal draft capture plus atomic evidence posting through normal receipt post; initially HELD for QA |
-| Open/unpack preview | Read-only exact contribution split against a fresh full-scope snapshot |
-| Saved open/unpack | Immutable complete successor, predecessor/selection, reason/actor, duplicate/conflict protection |
-| Package-aware issue/transfer/count correction | Not implemented |
-| QA split/release, reversal dependency, cutover/recalculation adapters | Not implemented for package state |
-| Receipt composition capture and package history/opening screens | Not implemented; current physical slices are internal Actions |
-| Live package balances, activation and physical package proposals | Not enabled; all stored item/company modes remain QUANTITY_ONLY |
+## 3. Future enhancements (each a new design slice; none started)
 
-ADRs 0052/0053/0080 are accepted. Operational refinement **ADR 0082 is still proposed**;
-its research and exclusions are the design basis, not permission to advertise completed tracking.
-Never edit an accepted ADR to change a decision.
+1. **Rejected-stock return / scrap movement** — priority. Needs its own Purchasing/Inventory decision (supplier return as a movement, scrap write-off, cost, GL feed).
+2. A governed **change of tracked levels**.
+3. **Deactivation / collapse** back to quantity-only.
+4. **Container-level tracking** (individual vessel identity) — only after the above are settled and the owner asks.
+5. **Line-level or partial receipt reversal** (a Purchasing decision).
+6. **Count approval thresholds** (value-based, through the shared approval engine, for both kinds of item).
+7. **QA / count reconciliation** of held stock.
+8. **Standalone Issue / Transfer screens** (menu entries, multi-location).
+
+## Historical baseline (2026-10-03)
+
+The sections below describe the package work as it stood before the grouped issue, transfer, activation, count, reversal and QA slices. They are kept for the
+reasoning and the kernel boundary, not as current state; where they say "not implemented", the sign-off above supersedes them.
 
 ## Exact implementation boundary
 
