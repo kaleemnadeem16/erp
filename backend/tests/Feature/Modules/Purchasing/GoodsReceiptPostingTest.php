@@ -506,7 +506,8 @@ class GoodsReceiptPostingTest extends PurchaseOrderFoundationTest
         $this->postJson("/api/v1/goods-receipts/{$receiptB}/post")->assertOk();
 
         $this->getJson('/api/v1/goods-receipts?filter[supplier_account_id]='.$orderA->supplier_account_id)
-            ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $receiptA);
+            ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $receiptA)
+            ->assertJsonPath('data.0.lines_count', 1);
 
         $this->getJson('/api/v1/goods-receipts?filter[status]=POSTED')
             ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $receiptB);
@@ -514,6 +515,15 @@ class GoodsReceiptPostingTest extends PurchaseOrderFoundationTest
         $this->getJson('/api/v1/goods-receipts?filter[search]=0001')
             ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $receiptB);
 
+        $this->getJson('/api/v1/goods-receipts?filter[search]='.urlencode($orderA->supplierAccount->code))
+            ->assertOk()->assertJsonPath('data.0.id', $receiptA);
+
+        $this->getJson('/api/v1/goods-receipts?filter[posting_date_from]='.now()->subDay()->format('Y-m-d'))
+            ->assertOk()->assertJsonCount(2, 'data');
+
+        $this->getJson('/api/v1/goods-receipts?sort=status')->assertOk();
+        $this->getJson('/api/v1/goods-receipts?sort=-posted_at')->assertOk();
+        $this->getJson('/api/v1/goods-receipts?sort=-recorded_at')->assertOk();
         $this->getJson('/api/v1/goods-receipts?sort=unknown')->assertUnprocessable();
     }
 

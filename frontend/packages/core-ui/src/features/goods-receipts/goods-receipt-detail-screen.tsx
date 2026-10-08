@@ -1,8 +1,19 @@
 import { useEffect, useState } from "react";
-import { QaPortionStep, decidesPackages, type QaPortion } from "../package-stock/qa-portion-step";
+import {
+  QaPortionStep,
+  decidesPackages,
+  type QaPortion,
+} from "../package-stock/qa-portion-step";
+import { RejectedStockActions } from "../rejected-exit/rejected-stock-actions";
 import { useTrackingState } from "../package-stock/use-tracking-state";
-import { ReceiptReversalPanel, type ReversalDraws } from "../package-stock/receipt-reversal-panel";
-import { useNavigate, useParams } from "react-router";
+import {
+  ReceiptReversalPanel,
+  type ReversalDraws,
+} from "../package-stock/receipt-reversal-panel";
+import { useLocation, useNavigate, useParams } from "react-router";
+import { RecordSheet } from "../../components/page/record-sheet";
+import { ScreenTemplate } from "../../components/page/screen-template";
+import type { Presentation } from "../../lib/presentation";
 import {
   useCurrenciesIndex,
   useGoodsReceiptsPost,
@@ -99,10 +110,16 @@ function QualityPanel({
   // A grouped item states which held packages the decision applies to (ADR 0094); a quantity-only item shows nothing extra.
   const tracking = useTrackingState(line.item_id, enabled);
   const grouped = tracking?.mode === "PACKAGE_BALANCE";
-  const uomQuery = useUomsShow(tracking?.stock_uom_id ?? 0, { query: { enabled: !!tracking } });
-  const unit = uomQuery.data?.status === 200 ? uomQuery.data.data.data.code : "";
+  const uomQuery = useUomsShow(tracking?.stock_uom_id ?? 0, {
+    query: { enabled: !!tracking },
+  });
+  const unit =
+    uomQuery.data?.status === 200 ? uomQuery.data.data.data.code : "";
   const needsPortion = grouped && decidesPackages(outcome);
-  const [portion, setPortion] = useState<QaPortion>({ portion: [], ready: false });
+  const [portion, setPortion] = useState<QaPortion>({
+    portion: [],
+    ready: false,
+  });
   const parents = dispositions.filter(
     (item) =>
       !TERMINAL.has(item.disposition) && item.remaining_qty !== "0.0000",
@@ -220,14 +237,25 @@ function QualityPanel({
             placeholder="Reason / evidence"
           />
           {needsPortion && (
-            <QaPortionStep lineId={line.id} outcome={outcome} quantity={qty} unit={unit} onChange={setPortion} />
+            <QaPortionStep
+              lineId={line.id}
+              outcome={outcome}
+              quantity={qty}
+              unit={unit}
+              onChange={setPortion}
+            />
           )}
           {error && (
             <p className="text-sm text-destructive md:col-span-4">{error}</p>
           )}
           <div className="md:col-span-4">
             <Button
-              disabled={!qty || !reason.trim() || create.isPending || (needsPortion && !portion.ready)}
+              disabled={
+                !qty ||
+                !reason.trim() ||
+                create.isPending ||
+                (needsPortion && !portion.ready)
+              }
               onClick={() => {
                 setError(null);
                 create.mutate(
@@ -239,7 +267,9 @@ function QualityPanel({
                       reason: reason.trim(),
                       source_disposition_id:
                         source === "root" ? null : Number(source),
-                      ...(needsPortion ? { package_portion: portion.portion } : {}),
+                      ...(needsPortion
+                        ? { package_portion: portion.portion }
+                        : {}),
                     },
                   },
                   {
@@ -262,7 +292,13 @@ function QualityPanel({
   );
 }
 
-export function GoodsReceiptDetailScreen() {
+export interface GoodsReceiptDetailScreenProps {
+  presentation?: Presentation;
+}
+
+export function GoodsReceiptDetailScreen({
+  presentation = "sheet",
+}: GoodsReceiptDetailScreenProps) {
   const mayViewCommercialCost = usePurchasingCommercialCost();
   const mayEdit = usePermission("purchasing.goods-receipt.create");
   const mayPost = usePermission("purchasing.goods-receipt.post");
@@ -270,6 +306,7 @@ export function GoodsReceiptDetailScreen() {
   const { id } = useParams<{ id: string }>();
   const receiptId = Number(id);
   const navigate = useNavigate();
+  const { search } = useLocation();
   const query = useGoodsReceiptsShow(receiptId);
   const receipt = query.data?.status === 200 ? query.data.data.data : undefined;
   const supplierQuery = useSupplierAccountsShow(
@@ -302,7 +339,10 @@ export function GoodsReceiptDetailScreen() {
   const missingComposition = Object.values(needsComposition).some(Boolean);
 
   const [showReverse, setShowReverse] = useState(false);
-  const [packageReversal, setPackageReversal] = useState<ReversalDraws>({ draws: [], blocked: false });
+  const [packageReversal, setPackageReversal] = useState<ReversalDraws>({
+    draws: [],
+    blocked: false,
+  });
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
   const postHeadingRef = useFocusOnOpen<HTMLHeadingElement>(confirmPost);
@@ -313,24 +353,73 @@ export function GoodsReceiptDetailScreen() {
       : `Draft Goods Receipt #${receiptId}`,
   });
 
-  if (query.isLoading)
+  if (query.isLoading) {
+    if (presentation === "sheet") {
+      return (
+        <RecordSheet
+          title="Loading receipt…"
+          size="xl"
+          className="erp-record"
+          dismissOnOutsideClick={false}
+          onClose={() => navigate({ pathname: "/goods-receipts", search })}
+        >
+          <div className="space-y-4 p-4">
+            <Skeleton className="h-9 w-64" />
+            <Skeleton className="h-64 w-full" />
+          </div>
+        </RecordSheet>
+      );
+    }
     return (
-      <div className="space-y-4 p-6">
-        <Skeleton className="h-9 w-64" />
-        <Skeleton className="h-64 w-full" />
-      </div>
+      <ScreenTemplate kind="detail" className="erp-screen">
+        <div className="space-y-4">
+          <Skeleton className="h-9 w-64" />
+          <Skeleton className="h-64 w-full" />
+        </div>
+      </ScreenTemplate>
     );
-  if (!receipt || query.isError)
+  }
+
+  if (!receipt || query.isError) {
+    if (presentation === "sheet") {
+      return (
+        <RecordSheet
+          title="Error"
+          size="xl"
+          className="erp-record"
+          dismissOnOutsideClick={false}
+          onClose={() => navigate({ pathname: "/goods-receipts", search })}
+        >
+          <div className="space-y-4 p-4">
+            <p className="text-sm text-destructive">
+              Couldn't load this goods receipt.
+            </p>
+            <Button
+              variant="outline"
+              onClick={() => navigate({ pathname: "/goods-receipts", search })}
+            >
+              Back to receipts
+            </Button>
+          </div>
+        </RecordSheet>
+      );
+    }
     return (
-      <div className="space-y-4 p-6">
-        <p className="text-sm text-destructive">
-          Couldn't load this goods receipt.
-        </p>
-        <Button variant="outline" onClick={() => navigate("/goods-receipts")}>
-          Back to receipts
-        </Button>
-      </div>
+      <ScreenTemplate kind="detail" className="erp-screen">
+        <div className="space-y-4">
+          <p className="text-sm text-destructive">
+            Couldn't load this goods receipt.
+          </p>
+          <Button
+            variant="outline"
+            onClick={() => navigate({ pathname: "/goods-receipts", search })}
+          >
+            Back to receipts
+          </Button>
+        </div>
+      </ScreenTemplate>
     );
+  }
   const supplierLabel = supplier
     ? `${supplier.code}${supplier.party?.name ? ` — ${supplier.party.name}` : ""}`
     : `Supplier #${receipt.supplier_account_id}`;
@@ -416,63 +505,58 @@ export function GoodsReceiptDetailScreen() {
     },
   ];
 
-  return (
-    <div className="space-y-4 p-6">
-      <PageHeader
-        title={label}
-        description={supplierLabel}
-        breadcrumbs={[
-          { label: "Goods Receipts", to: "/goods-receipts" },
-          { label: receipt.number ?? `Draft #${receipt.id}` },
-        ]}
-        actions={
-          <>
-            <PrintTrigger onPrint={() => print()} />
-            {receipt.status === "DRAFT" && mayEdit && (
-              <Button
-                variant="outline"
-                onClick={() => navigate(`/goods-receipts/${receipt.id}/edit`)}
-              >
-                Edit draft
-              </Button>
-            )}
-            {receipt.status === "DRAFT" && mayPost && (
-              <Button
-                onClick={() => setConfirmPost(true)}
-                disabled={missingComposition}
-                title={
-                  missingComposition
-                    ? "Record what arrived for each package-tracked line first"
-                    : undefined
-                }
-              >
-                Post receipt
-              </Button>
-            )}
-            {receipt.status === "POSTED" && mayReverse && (
-              <div className="flex flex-col items-end gap-1">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowReverse((value) => !value)}
-                  disabled={hasQaDisposition}
-                  title={
-                    hasQaDisposition
-                      ? "This receipt has a posted QA disposition and cannot be reversed"
-                      : undefined
-                  }
-                >
-                  Reverse receipt
-                </Button>
-                {hasQaDisposition && (
-                  <span className="text-xs text-muted-foreground">
-                    Blocked by a posted QA disposition
-                  </span>
-                )}
-              </div>
-            )}
-          </>
-        }
-      />
+  const headerActions = (
+    <>
+      <PrintTrigger onPrint={() => print()} />
+      {receipt.status === "DRAFT" && mayEdit && (
+        <Button
+          variant="outline"
+          onClick={() =>
+            navigate({ pathname: `/goods-receipts/${receipt.id}/edit`, search })
+          }
+        >
+          Edit draft
+        </Button>
+      )}
+      {receipt.status === "DRAFT" && mayPost && (
+        <Button
+          onClick={() => setConfirmPost(true)}
+          disabled={missingComposition}
+          title={
+            missingComposition
+              ? "Record what arrived for each package-tracked line first"
+              : undefined
+          }
+        >
+          Post receipt
+        </Button>
+      )}
+      {receipt.status === "POSTED" && mayReverse && (
+        <div className="flex flex-col items-end gap-1">
+          <Button
+            variant="outline"
+            onClick={() => setShowReverse((value) => !value)}
+            disabled={hasQaDisposition}
+            title={
+              hasQaDisposition
+                ? "This receipt has a posted QA disposition and cannot be reversed"
+                : undefined
+            }
+          >
+            Reverse receipt
+          </Button>
+          {hasQaDisposition && (
+            <span className="text-xs text-muted-foreground">
+              Blocked by a posted QA disposition
+            </span>
+          )}
+        </div>
+      )}
+    </>
+  );
+
+  const detailBody = (
+    <>
       {error && (
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
           {error}
@@ -533,9 +617,14 @@ export function GoodsReceiptDetailScreen() {
             receiptId={receipt.id}
             describe={(itemId) => {
               const item = items.find((candidate) => candidate.id === itemId);
-              const unit = uoms.find((candidate) => candidate.id === item?.stock_uom_id)?.code ?? "";
+              const unit =
+                uoms.find((candidate) => candidate.id === item?.stock_uom_id)
+                  ?.code ?? "";
 
-              return { label: item ? `${item.code} — ${item.name}` : `Item #${itemId}`, unit };
+              return {
+                label: item ? `${item.code} — ${item.name}` : `Item #${itemId}`,
+                unit,
+              };
             }}
             onChange={setPackageReversal}
           />
@@ -547,7 +636,9 @@ export function GoodsReceiptDetailScreen() {
           <div className="flex gap-2">
             <Button
               variant="destructive"
-              disabled={!reason.trim() || reverse.isPending || packageReversal.blocked}
+              disabled={
+                !reason.trim() || reverse.isPending || packageReversal.blocked
+              }
               onClick={() => {
                 setError(null);
                 reverse.mutate(
@@ -555,7 +646,9 @@ export function GoodsReceiptDetailScreen() {
                     goodsReceipt: receipt.id,
                     data: {
                       reason: reason.trim(),
-                      ...(packageReversal.draws.length > 0 ? { package_draws: packageReversal.draws } : {}),
+                      ...(packageReversal.draws.length > 0
+                        ? { package_draws: packageReversal.draws }
+                        : {}),
                     },
                   },
                   {
@@ -705,6 +798,11 @@ export function GoodsReceiptDetailScreen() {
                 enabled={receipt.status === "POSTED"}
                 onChanged={refetch}
               />
+              <RejectedStockActions
+                receiptId={receipt.id}
+                lineId={line.id}
+                enabled={receipt.status === "POSTED"}
+              />
             </article>
           );
         })}
@@ -730,6 +828,38 @@ export function GoodsReceiptDetailScreen() {
           </DetailPrintLayout>
         </div>
       </div>
-    </div>
+    </>
+  );
+
+  if (presentation === "sheet") {
+    return (
+      <RecordSheet
+        title={label}
+        description={supplierLabel}
+        actions={headerActions}
+        size="xl"
+        className="erp-record"
+        onClose={() => navigate({ pathname: "/goods-receipts", search })}
+      >
+        <div className="space-y-4 pb-6">{detailBody}</div>
+      </RecordSheet>
+    );
+  }
+
+  return (
+    <ScreenTemplate kind="detail" className="erp-screen">
+      <div className="space-y-4">
+        <PageHeader
+          title={label}
+          description={supplierLabel}
+          breadcrumbs={[
+            { label: "Goods Receipts", to: "/goods-receipts" },
+            { label: receipt.number ?? `Draft #${receipt.id}` },
+          ]}
+          actions={headerActions}
+        />
+        {detailBody}
+      </div>
+    </ScreenTemplate>
   );
 }

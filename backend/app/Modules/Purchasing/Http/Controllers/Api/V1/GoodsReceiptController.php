@@ -29,19 +29,49 @@ class GoodsReceiptController extends Controller
 
     private const INCLUDABLE = ['lines' => 'lines', 'supplierAccount' => 'supplierAccount'];
 
-    private const SORTABLE = ['number' => 'number', 'posting_date' => 'posting_date', 'physical_arrival_at' => 'physical_arrival_at', 'created_at' => 'created_at'];
+    private const SORTABLE = [
+        'number' => 'number',
+        'posting_date' => 'posting_date',
+        'physical_arrival_at' => 'physical_arrival_at',
+        'recorded_at' => 'recorded_at',
+        'posted_at' => 'posted_at',
+        'status' => 'status',
+        'created_at' => 'created_at',
+        'updated_at' => 'updated_at',
+    ];
 
     public function index(IndexGoodsReceiptRequest $request): AnonymousResourceCollection
     {
-        $query = GoodsReceipt::query();
+        $query = GoodsReceipt::query()->withCount('lines');
         $this->applyIncludes($query, $request, self::INCLUDABLE);
         foreach (['supplier_account_id', 'status'] as $field) {
             if ($request->filled("filter.{$field}")) {
                 $query->where($field, $request->input("filter.{$field}"));
             }
         }
+        if ($request->filled('filter.posting_date_from')) {
+            $query->where('posting_date', '>=', $request->input('filter.posting_date_from'));
+        }
+        if ($request->filled('filter.posting_date_to')) {
+            $query->where('posting_date', '<=', $request->input('filter.posting_date_to'));
+        }
+        if ($request->filled('filter.physical_arrival_from')) {
+            $query->where('physical_arrival_at', '>=', $request->input('filter.physical_arrival_from'));
+        }
+        if ($request->filled('filter.physical_arrival_to')) {
+            $query->where('physical_arrival_at', '<=', $request->input('filter.physical_arrival_to'));
+        }
         if ($request->filled('filter.search')) {
-            $query->where('number', 'ilike', '%'.$request->string('filter.search')->toString().'%');
+            $term = $request->string('filter.search')->toString();
+            $query->where(function ($q) use ($term): void {
+                $q->where('number', 'ilike', '%'.$term.'%')
+                    ->orWhereHas('supplierAccount', function ($sq) use ($term): void {
+                        $sq->where('code', 'ilike', '%'.$term.'%')
+                            ->orWhereHas('party', function ($pq) use ($term): void {
+                                $pq->where('name', 'ilike', '%'.$term.'%');
+                            });
+                    });
+            });
         }
         $this->applySort($query, $request, self::SORTABLE, 'created_at');
 

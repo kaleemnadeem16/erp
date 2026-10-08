@@ -93,6 +93,9 @@ const purchaseOrderEditAsSheet = presentation.purchaseOrderEdit === "sheet";
 const supplierCreateAsSheet = presentation.supplierCreate === "sheet";
 const supplierDetailAsSheet = presentation.supplierDetail === "sheet";
 const supplierEditAsSheet = presentation.supplierEdit === "sheet";
+const goodsReceiptCreateAsSheet = presentation.goodsReceiptCreate === "sheet";
+const goodsReceiptDetailAsSheet = presentation.goodsReceiptDetail === "sheet";
+const goodsReceiptEditAsSheet = presentation.goodsReceiptEdit === "sheet";
 
 export function AppRouter() {
   return (
@@ -618,40 +621,66 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <GoodsReceiptsListScreen />
+                <Outlet />
               </AppShell>
             </ProtectedRoute>
           }
-        />
-        <Route
-          path="/goods-receipts/new"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <GoodsReceiptCreateScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/goods-receipts/:id/edit"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <GoodsReceiptEditScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/goods-receipts/:id"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <GoodsReceiptDetailScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
+        >
+          {goodsReceiptCreateAsSheet && (
+            <Route
+              path="new"
+              element={<GoodsReceiptCreateScreen presentation="sheet" />}
+            />
+          )}
+          {goodsReceiptDetailAsSheet && (
+            <Route
+              path=":id"
+              element={<GoodsReceiptDetailScreen presentation="sheet" />}
+            />
+          )}
+          {goodsReceiptEditAsSheet && (
+            <Route
+              path=":id/edit"
+              element={<GoodsReceiptEditScreen presentation="sheet" />}
+            />
+          )}
+        </Route>
+        {!goodsReceiptCreateAsSheet && (
+          <Route
+            path="/goods-receipts/new"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <GoodsReceiptCreateScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!goodsReceiptDetailAsSheet && (
+          <Route
+            path="/goods-receipts/:id"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <GoodsReceiptDetailScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!goodsReceiptEditAsSheet && (
+          <Route
+            path="/goods-receipts/:id/edit"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <GoodsReceiptEditScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
         {!purchaseOrderDetailAsSheet && (
           <Route
             path="/purchase-orders/:id"

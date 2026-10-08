@@ -1,7 +1,8 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useFieldArray, useForm, type UseFormReturn } from "react-hook-form";
 import { z } from "zod";
+import { History, RotateCcw } from "lucide-react";
 import {
   useItemsIndex,
   useLocationsIndex,
@@ -16,6 +17,7 @@ import { Button } from "../../components/ui/button";
 import { Combobox } from "../../components/ui/combobox";
 import { DateField } from "../../components/ui/date-field";
 import { Input } from "../../components/ui/input";
+import { clearDraft, readDraft, writeDraft } from "../../lib/session-draft";
 import {
   Form,
   FormControl,
@@ -79,6 +81,54 @@ const schema = z.object({
 });
 export type GoodsReceiptFormValues = z.infer<typeof schema>;
 
+const DRAFT_NAME = "goods-receipt";
+
+export function isPristine(values: GoodsReceiptFormValues): boolean {
+  if (values.supplier_account_id) return false;
+  if (!values.lines || values.lines.length === 0) return true;
+  if (values.lines.length > 1) return false;
+  const line = values.lines[0];
+  if (!line) return true;
+  return (
+    !line.purchase_order_line_id &&
+    !line.location_id &&
+    !line.received_qty &&
+    !line.received_uom_id &&
+    !line.batch_no &&
+    !line.serial_no
+  );
+}
+
+export function readUnfinishedGoodsReceipt(): GoodsReceiptFormValues | null {
+  const stored = readDraft<GoodsReceiptFormValues>(DRAFT_NAME)?.value;
+  if (!stored || !Array.isArray(stored.lines)) return null;
+  const values: GoodsReceiptFormValues = {
+    ...stored,
+    supplier_account_id: stored.supplier_account_id ?? "",
+    physical_arrival_at: stored.physical_arrival_at ?? "",
+    posting_date: stored.posting_date ?? "",
+    lines: stored.lines.length
+      ? stored.lines.map((line) => ({
+          purchase_order_line_id: line?.purchase_order_line_id ?? "",
+          location_id: line?.location_id ?? "",
+          received_qty: line?.received_qty ?? "",
+          received_uom_id: line?.received_uom_id ?? "",
+          provisional_unit_cost: line?.provisional_unit_cost ?? "",
+          batch_no: line?.batch_no ?? "",
+          serial_no: line?.serial_no ?? "",
+          receipt_line_id: line?.receipt_line_id,
+          item_packaging_id: line?.item_packaging_id,
+        }))
+      : [],
+  };
+  if (isPristine(values)) return null;
+  return values;
+}
+
+export const hasUnfinishedGoodsReceipt = () =>
+  readUnfinishedGoodsReceipt() !== null;
+export const clearUnfinishedGoodsReceipt = () => clearDraft(DRAFT_NAME);
+
 const emptyLine = {
   purchase_order_line_id: "",
   location_id: "",
@@ -100,6 +150,7 @@ function packageQuantity(stock: string, factor: string): string {
   const q = (scaled(stock, 4) * 1000000000n + content / 2n) / content;
   return String(q / 10000n) + "." + String(q % 10000n).padStart(4, "0");
 }
+
 export function GoodsReceiptForm({
   onSubmit,
   isSubmitting,
@@ -119,10 +170,18 @@ export function GoodsReceiptForm({
   pinnedOrders?: PurchaseOrderResource[];
 }) {
   const mayViewCommercialCost = usePurchasingCommercialCost();
+  const isCreate = !defaultValues?.lines?.some((l) =>
+    Boolean(l.receipt_line_id),
+  );
+  const [unfinished] = useState(() =>
+    isCreate ? readUnfinishedGoodsReceipt() : null,
+  );
+  const [resumed, setResumed] = useState(unfinished !== null);
+  const [confirmingStartOver, setConfirmingStartOver] = useState(false);
+
   const now = new Date();
-  const form = useForm<GoodsReceiptFormValues>({
-    resolver: zodResolver(schema),
-    defaultValues: {
+  const initialValues: GoodsReceiptFormValues = useMemo(() => {
+    const base: GoodsReceiptFormValues = {
       supplier_account_id: "",
       physical_arrival_at: new Date(
         now.getTime() - now.getTimezoneOffset() * 60000,
@@ -133,9 +192,66 @@ export function GoodsReceiptForm({
         .toISOString()
         .slice(0, 10),
       lines: [{ ...emptyLine }],
-      ...defaultValues,
-    },
+    };
+    if (defaultValues) {
+      return {
+        ...base,
+        ...defaultValues,
+        lines: defaultValues.lines?.length
+          ? defaultValues.lines.map((line) => ({ ...emptyLine, ...line }))
+          : base.lines,
+      };
+    }
+    if (unfinished) {
+      return {
+        ...base,
+        ...unfinished,
+        lines: unfinished.lines?.length
+          ? unfinished.lines.map((line) => ({ ...emptyLine, ...line }))
+          : base.lines,
+      };
+    }
+    return base;
+  }, []);
+
+  const form = useForm<GoodsReceiptFormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: initialValues,
   });
+
+  useEffect(() => {
+    if (!isCreate) return;
+    const persist = () => {
+      const values = form.getValues();
+      if (isPristine(values)) {
+        clearDraft(DRAFT_NAME);
+      } else {
+        writeDraft<GoodsReceiptFormValues>(DRAFT_NAME, values);
+      }
+    };
+    persist();
+    const subscription = form.watch(persist);
+    return () => subscription.unsubscribe();
+  }, [form, isCreate]);
+
+  function startOver() {
+    clearDraft(DRAFT_NAME);
+    const resetValues: GoodsReceiptFormValues = {
+      supplier_account_id: "",
+      physical_arrival_at: new Date(
+        now.getTime() - now.getTimezoneOffset() * 60000,
+      )
+        .toISOString()
+        .slice(0, 16),
+      posting_date: new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+        .toISOString()
+        .slice(0, 10),
+      lines: [{ ...emptyLine }],
+    };
+    form.reset(resetValues);
+    setResumed(false);
+    setConfirmingStartOver(false);
+  }
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: "lines",
@@ -307,6 +423,60 @@ export function GoodsReceiptForm({
           );
         })}
       >
+        {isCreate && resumed && (
+          <div
+            role="status"
+            className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/20 bg-primary-soft px-4 py-3 text-primary-soft-foreground"
+          >
+            <div className="flex min-w-0 items-start gap-3">
+              <History aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+              <div className="min-w-0 text-sm">
+                <p className="font-medium">
+                  {confirmingStartOver
+                    ? "Discard everything you've entered?"
+                    : "Continuing your unfinished goods receipt"}
+                </p>
+                <p className="text-xs opacity-80">
+                  {confirmingStartOver
+                    ? "What you entered will be cleared and cannot be brought back."
+                    : "What you entered last time is still here."}
+                </p>
+              </div>
+            </div>
+            {confirmingStartOver ? (
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="destructive"
+                  onClick={startOver}
+                >
+                  <RotateCcw className="mr-1 h-3.5 w-3.5" />
+                  Yes, start over
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setConfirmingStartOver(false)}
+                >
+                  Keep it
+                </Button>
+              </div>
+            ) : (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setConfirmingStartOver(true)}
+              >
+                <RotateCcw className="mr-1 h-3.5 w-3.5" />
+                Start over
+              </Button>
+            )}
+          </div>
+        )}
+
         {formError && (
           <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
             {formError}

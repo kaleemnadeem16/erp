@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useLocation, useNavigate, useParams } from "react-router";
 import { useQueryClient, useQueries } from "@tanstack/react-query";
 import {
   useGoodsReceiptsShow,
@@ -11,12 +11,22 @@ import {
   type GoodsReceiptFormValues,
 } from "./goods-receipt-form";
 import { PageHeader } from "../../components/page/page-header";
+import { ScreenTemplate } from "../../components/page/screen-template";
+import { RecordSheet } from "../../components/page/record-sheet";
 import { Button } from "../../components/ui/button";
 import { getApiErrorMessage } from "../../lib/api-errors";
+import type { Presentation } from "../../lib/presentation";
 
-export function GoodsReceiptEditScreen() {
+export interface GoodsReceiptEditScreenProps {
+  presentation?: Presentation;
+}
+
+export function GoodsReceiptEditScreen({
+  presentation = "sheet",
+}: GoodsReceiptEditScreenProps) {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { search } = useLocation();
   const cache = useQueryClient();
   const query = useGoodsReceiptsShow(Number(id));
   const update = useGoodsReceiptsUpdate();
@@ -37,35 +47,76 @@ export function GoodsReceiptEditScreen() {
   const pinnedOrders = orderQueries.flatMap((result) =>
     result.data?.status === 200 ? [result.data.data.data] : [],
   );
-  if (query.isLoading)
+
+  function wrap(
+    content: React.ReactNode,
+    title: string = `Edit draft receipt #${id}`,
+  ) {
+    if (presentation === "sheet") {
+      return (
+        <RecordSheet
+          title={title}
+          description="Correct the arrival details and lines before posting into stock."
+          size="xl"
+          className="erp-record"
+          dismissOnOutsideClick={false}
+          onClose={() =>
+            navigate({ pathname: `/goods-receipts/${id}`, search })
+          }
+        >
+          <div className="space-y-4 p-4 pb-6">{content}</div>
+        </RecordSheet>
+      );
+    }
     return (
-      <div className="p-4" role="status">
+      <ScreenTemplate kind="form" className="erp-screen">
+        <div className="space-y-4">
+          <PageHeader
+            title={title}
+            backTo={`/goods-receipts/${id}`}
+            description="Correct the arrival details and lines before posting into stock."
+          />
+          {content}
+        </div>
+      </ScreenTemplate>
+    );
+  }
+
+  if (query.isLoading)
+    return wrap(
+      <div className="text-muted-foreground" role="status">
         Loading receipt…
-      </div>
+      </div>,
     );
   if (!receipt)
-    return (
-      <div className="p-4 text-destructive">Couldn't load this receipt.</div>
+    return wrap(
+      <div className="text-destructive">Couldn't load this receipt.</div>,
     );
   if (receipt.status !== "DRAFT")
-    return (
-      <div className="space-y-3 p-4">
+    return wrap(
+      <div className="space-y-3">
         <p>Only draft receipts can be edited.</p>
-        <Button onClick={() => navigate(`/goods-receipts/${id}`)}>
+        <Button
+          onClick={() =>
+            navigate({ pathname: `/goods-receipts/${id}`, search })
+          }
+        >
           Back to receipt
         </Button>
-      </div>
+      </div>,
     );
   if (orderQueries.some((result) => result.isPending))
-    return (
-      <div className="p-4" role="status">
+    return wrap(
+      <div className="text-muted-foreground" role="status">
         Loading saved purchase orders…
-      </div>
+      </div>,
     );
   if (orderQueries.some((result) => result.isError))
-    return (
-      <div className="space-y-3 p-4">
-        <p role="alert">Couldn't load the saved purchase orders.</p>
+    return wrap(
+      <div className="space-y-3">
+        <p role="alert" className="text-destructive">
+          Couldn't load the saved purchase orders.
+        </p>
         <Button
           variant="outline"
           onClick={() =>
@@ -74,8 +125,9 @@ export function GoodsReceiptEditScreen() {
         >
           Retry
         </Button>
-      </div>
+      </div>,
     );
+
   const arrival = new Date(receipt.physical_arrival_at);
   const defaults: Partial<GoodsReceiptFormValues> = {
     supplier_account_id: String(receipt.supplier_account_id),
@@ -99,36 +151,32 @@ export function GoodsReceiptEditScreen() {
       serial_no: line.serial_no ?? "",
     })),
   };
-  return (
-    <div className="space-y-4 p-4 md:p-6">
-      <PageHeader
-        title={`Edit draft receipt #${id}`}
-        backTo={`/goods-receipts/${id}`}
-        description="Correct the arrival details and lines before posting into stock."
-      />
-      <GoodsReceiptForm
-        pinnedOrders={pinnedOrders}
-        preserveCommercialSnapshot
-        key={receipt.id}
-        defaultValues={defaults}
-        isSubmitting={update.isPending}
-        formError={error}
-        onSubmit={(data) => {
-          setError(null);
-          update.mutate(
-            { goodsReceipt: receipt.id, data },
-            {
-              onSuccess: async (result) => {
-                if (result.status === 200) {
-                  await cache.invalidateQueries();
-                  navigate(`/goods-receipts/${id}`);
-                }
-              },
-              onError: (failure) => setError(getApiErrorMessage(failure)),
+
+  const formElement = (
+    <GoodsReceiptForm
+      pinnedOrders={pinnedOrders}
+      preserveCommercialSnapshot
+      key={receipt.id}
+      defaultValues={defaults}
+      isSubmitting={update.isPending}
+      formError={error}
+      onSubmit={(data) => {
+        setError(null);
+        update.mutate(
+          { goodsReceipt: receipt.id, data },
+          {
+            onSuccess: async (result) => {
+              if (result.status === 200) {
+                await cache.invalidateQueries();
+                navigate({ pathname: `/goods-receipts/${id}`, search });
+              }
             },
-          );
-        }}
-      />
-    </div>
+            onError: (failure) => setError(getApiErrorMessage(failure)),
+          },
+        );
+      }}
+    />
   );
+
+  return wrap(formElement);
 }

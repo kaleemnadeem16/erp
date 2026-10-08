@@ -17,6 +17,10 @@ export type GoodsReceiptsIndexParams = {
    * @maxLength 255
    */
   "filter[search]"?: string;
+  "filter[posting_date_from]"?: string;
+  "filter[posting_date_to]"?: string;
+  "filter[physical_arrival_from]"?: string;
+  "filter[physical_arrival_to]"?: string;
   sort?: GoodsReceiptsIndexSort;
   include?: string;
   /**
