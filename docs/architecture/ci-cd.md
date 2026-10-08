@@ -90,6 +90,8 @@ It also sets `LOGIN_RATE_LIMIT_PER_MINUTE=10000` for its repeated persona sign-i
 production retains five authentication attempts per minute per IP. `artisan serve --no-reload`
 keeps the job's process environment in the PHP server subprocess.
 
+#### History: the 2026-10-07 pipeline repair (not a current rule)
+
 The 2026-10-07 pipeline repair formats the packaged-purchasing migrations, corrects
 Larastan annotations (including JSON offer snapshots, model relations and record scopes),
 and removes a demo receipt's unsupported `notes` attribute. Receipt scenarios remain

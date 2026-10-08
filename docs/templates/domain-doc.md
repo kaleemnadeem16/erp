@@ -33,6 +33,11 @@ Permissions for read/write/transition/override/history; which records and sensit
 visible; and any maker/checker or multi-stage approval requirements. Explicitly say when no
 separate permission is intended.
 
+## Integrity and refusals
+
+For any write that changes business facts, say how it is idempotent (the request key), what it locks and in what order, what makes it stale, which invariants the database enforces, and which refusals carry a stable
+`reason_code` ([domain-integrity.md](../architecture/domain-integrity.md), [api-conventions.md](../architecture/api-conventions.md#refusal-reason-codes)). Write "not applicable" if the topic is read-only.
+
 ## Landmines
 
 Things that are easy to get wrong and expensive to fix. Be specific about the failure mode, not

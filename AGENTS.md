@@ -31,10 +31,12 @@ three relevant ones without pulling in the rest.
 | Find where something lives | The module `README.md`, then `docs/reference/` *(generated in Phase 0; does not exist yet)* |
 | Write a migration | [database.md](docs/architecture/database.md) + [multi-tenancy.md](docs/architecture/multi-tenancy.md) |
 | Build or restyle any screen | [erp-blue-design-standard.md](docs/architecture/erp-blue-design-standard.md) + [ui-building-blocks.md](docs/architecture/ui-building-blocks.md) — shared list/detail/form templates, semantic light/dark tokens, scoped overrides and the screen checklist |
-| Add an API endpoint | [api-conventions.md](docs/architecture/api-conventions.md) |
+| Add an API endpoint | [api-conventions.md](docs/architecture/api-conventions.md) — errors, `reason_code`s, idempotency, scope semantics, the new-endpoint checklist |
 | Add/change any business action, endpoint or screen | [authorization.md](docs/architecture/authorization.md) — complete the checklist even when no new permission is needed, and follow its [build rules R1–R11](docs/architecture/authorization.md#build-rules-every-new-feature-follows) (guard twice, protect fields not buttons, ship the grant, test cross-company). Never ship a new surface authenticated-only |
 | Add an approval or controlled transition | [approval-workflows.md](docs/architecture/approval-workflows.md) |
-| Write backend code | [code-structure.md](docs/architecture/code-structure.md) |
+| Write backend code | [code-structure.md](docs/architecture/code-structure.md), and for any write that changes business facts [domain-integrity.md](docs/architecture/domain-integrity.md) |
+| Write tests | [testing-standards.md](docs/architecture/testing-standards.md) — an applicability checklist, plus the ratchet tests |
+| Finish a feature | [feature-completion-checklist.md](docs/architecture/feature-completion-checklist.md) — answer every line before declaring done |
 | Start a phase | The matching file in [docs/phases/](docs/phases/) |
 | Change an existing decision | The relevant ADR in [docs/decisions/](docs/decisions/) |
 | Handle a per-customer difference | [extensibility.md](docs/architecture/extensibility.md) |
@@ -42,6 +44,29 @@ three relevant ones without pulling in the rest.
 | Understand a term | [docs/GLOSSARY.md](docs/GLOSSARY.md) |
 
 Start at [docs/README.md](docs/README.md) if unsure — it is the map.
+
+---
+
+## Before you call a feature complete
+
+A feature is not done when the happy path works. The same gaps — an HTTP-only guard, an unscoped list, no grant for a new permission, a screen that overflows on a phone, a missing journey, a stale status — were
+found repeatedly *after* features shipped. Do these in the first commit, not in a later hardening pass. Details are in the linked canonical docs; if a line genuinely does not apply, say so in one line
+([ADR 0096](docs/decisions/0096-cross-cutting-feature-standards.md)).
+
+1. **Settle the semantics first** — users, lifecycle, what is irreversible, cost effects; an ADR for a real decision; research before shaping unfamiliar ERP behaviour.
+2. **Tenant, scope, permissions** — company isolation by id; record/warehouse scope and what a limited person gets; reuse an existing capability before adding one; sensitive *reads*, not only writes.
+   **HTTP-only security is insufficient:** guard in the Form Request *and* in the Action ([authorization.md](docs/architecture/authorization.md) R1–R14).
+3. **Domain integrity** — logic in an Action, one transaction, idempotency key for retryable writes, stable locks and stale-state refusal, append-only evidence, database constraints for money, quantity and
+   tenancy, fail-closed advanced modes ([domain-integrity.md](docs/architecture/domain-integrity.md)).
+4. **API and client** — Resource, validation, stable `reason_code` where the UI acts on a refusal, no breaking change, OpenAPI correct, generated client regenerated and committed ([api-conventions.md](docs/architecture/api-conventions.md)).
+5. **Migration and rollout** — additive, company-scoped, a real `down()`, rollback/re-apply checked; new permissions registered and granted to those who already do the duty ([database.md](docs/architecture/database.md#migration-standards)).
+6. **UI/UX** — shared shell, components and hooks; semantic tokens in light and dark; every state; advanced controls hidden when they do not apply; permission-aware controls; phone width with no horizontal
+   overflow ([erp-blue-design-standard.md](docs/architecture/erp-blue-design-standard.md)).
+7. **Tests** — the applicable rows, including a ratchet registration where one applies ([testing-standards.md](docs/architecture/testing-standards.md)).
+8. **Demo and docs** — a module demo seeder for a meaningful new capability; domain doc, journey and ADR at the right level; STATUS only at a workstream milestone; no duplicated or stale current-state text
+   ([feature-completion-checklist.md](docs/architecture/feature-completion-checklist.md)).
+
+Run the checks you claim (Pint, Larastan, tests incl. architecture, three typechecks, build, client drift, the relevant browser specs) and report honestly what you did not run.
 
 ---
 

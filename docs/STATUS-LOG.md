@@ -402,3 +402,10 @@ consolidated ADR is accepted; implementation is next. [OPEN-QUESTIONS.md](OPEN-Q
 
 **Owed once the shared checkout builds again** (browser re-runs for the access work, dev-database update, client-drift check, staging sign-off; the owner authorises pushing completed `develop` commits from all agents (2026-10-07); merged generated model exports are regenerated in deterministic order): see [settings-and-access-hardening.md](phases/settings-and-access-hardening.md#to-do-when-the-shared-checkout-is-stable-recorded-2026-10-06).
 ```
+
+### Entries after the 2026-10-08 rotation
+
+| Item | Date |
+|---|---|
+| **Documentation reconciliation** — STATUS.md rewritten short and current; 104 rows and the old narratives rotated here; ADR 0095 supersedes ADR 0044; stale "next / not implemented" text corrected or marked historical across phase docs, package docs, handoffs, open questions, ADR index and README; a grouped-package-tracking journey added; Q38 records owner decisions (commit `0d776dd`) | 2026-10-08 |
+| **Cross-cutting feature standards codified (ADR 0096)** — new `feature-completion-checklist.md`, `domain-integrity.md` and `testing-standards.md`; authorization R1 made explicit that HTTP-only security is insufficient and R12–R14 added; api-conventions gained scope semantics, `reason_code` rules, retryable writes and a new-endpoint checklist; database.md gained migration standards; the ERP Blue standard gained workflow behaviour standards (progressive exposure, permission-aware controls, confirmations, phone width, language, reuse); invariants 12–14 added (and a duplicated "10" renumbered); demo-seeder conventions added to environments.md; AGENTS.md gained a short "before you call a feature complete" section | 2026-10-08 |

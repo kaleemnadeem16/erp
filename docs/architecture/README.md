@@ -8,13 +8,16 @@ these choices were made, see [decisions/](../decisions/).
 | Doc | Covers | Read before |
 |---|---|---|
 | [invariants.md](invariants.md) | Rules that must never be broken | **Every session** |
+| [feature-completion-checklist.md](feature-completion-checklist.md) | The checklist a feature passes before it is done, with the canonical doc for each line | **Before declaring any feature complete** |
+| [domain-integrity.md](domain-integrity.md) | Building write operations: Actions, transactions, idempotency, locking, fail-closed modes, evidence, precision | Writing any operation that changes business facts |
+| [testing-standards.md](testing-standards.md) | What a feature's tests must cover (applicability checklist), ratchet tests, browser and phone-width checks | Writing tests for a feature |
 | [research-and-design.md](research-and-design.md) | Research reuse, primary-source comparison and recording standard | Designing a new feature or materially changing its business model |
 | [environments.md](environments.md) | The actual VMs, versions, disk, what's already running | Deploying, choosing a version |
 | [ci-cd.md](ci-cd.md) | Pipeline, runners, image retention | Touching CI or deploy |
 | [ci-runner-setup.md](ci-runner-setup.md) | Step-by-step: registering the second self-hosted runner | Setting up the ERP CI runner |
 | [tech-stack.md](tech-stack.md) | Every library and why it's there | Setting up, adding a dependency |
 | [code-structure.md](code-structure.md) | Module layout, Actions, events | Writing any backend code |
-| [database.md](database.md) | Postgres conventions and what to use | Writing a migration or query |
+| [database.md](database.md) | Postgres conventions, migration standards and what to use | Writing a migration or query |
 | [multi-tenancy.md](multi-tenancy.md) | `company_id`, scoping, the escape hatch | Writing a migration or model |
 | [extensibility.md](extensibility.md) | Variation ladder, plugins, custom fields | Handling a per-customer difference |
 | [authorization.md](authorization.md) | Roles, permissions, namespacing, Teams | Adding a permission or gating an action |

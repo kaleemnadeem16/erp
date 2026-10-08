@@ -51,7 +51,7 @@ ADR 0082 or mark it superseded by 0090–0094, whether Phases 2 and 3 are formal
 ## Where to look
 
 [docs/README.md](README.md) is the map · [phases/README.md](phases/README.md) the roadmap and phase state · [decisions/](decisions/) the ADRs (immutable) ·
-[architecture/invariants.md](architecture/invariants.md) the rules that must not be broken · [journeys/](journeys/README.md) how users complete tasks.
+[architecture/invariants.md](architecture/invariants.md) the rules that must not be broken · [architecture/feature-completion-checklist.md](architecture/feature-completion-checklist.md) what every new feature must pass before it is done · [journeys/](journeys/README.md) how users complete tasks.
 
 ## Updating this file
 

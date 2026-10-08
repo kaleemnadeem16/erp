@@ -162,6 +162,26 @@ Never run `migrate:fresh` without the explicit testing environment. The developm
 also migrates the named `testing` connection directly and fails startup if that migration fails;
 it must not hide a broken test schema behind `|| true`.
 
+## Migration standards
+
+Every migration, and the pull request that adds it, follows these. They exist because migrations here also carry **invariants** (triggers, constraints) and **rollout** (permissions, backfills), not
+just columns.
+
+1. **Additive first.** Add columns, tables, nullable fields, new constraint kinds. A change that removes, retypes or tightens something existing needs a compatibility plan (add beside, migrate, remove later)
+   and never assumes the table is empty — dev, staging and production hold real rows, and old rows must still satisfy a new `CHECK`.
+2. **Company scoping on every independently-queried table:** a `company_id` column, composite unique constraints and composite company foreign keys ([multi-tenancy.md](multi-tenancy.md); the two architecture tests fail otherwise).
+3. **Constraints and triggers for domain invariants** (money, quantity conservation, immutability, tenancy): written in the migration, covered by a test that attacks them with raw SQL
+   ([domain-integrity.md §7](domain-integrity.md#7-put-invariants-in-the-database-then-prove-them)). Replace a function by versioning its name (`…_v7`) and recreate its trigger in the same migration; remember
+   a re-created trigger must also re-create **every** trigger that shared the dropped statement (a half-recreated pair once left a table unguarded).
+4. **Indexes and uniqueness:** index the foreign keys and filters the feature queries; unique indexes are partial where appropriate and always include `company_id`. A table expected to exceed ~100k rows gets
+   an `EXPLAIN` in review; dbvm has one vCPU.
+5. **A real `down()`.** It reverses exactly what `up()` did, or **refuses** (throws with a clear message) when data written since would be lost or become inconsistent — never silently drops evidence. CI runs a full
+   rollback-then-re-migrate cycle; also run `migrate:rollback --step=1` and `migrate` yourself on a database that holds data.
+6. **Separate backfills from schema changes** (lock duration), and make a backfill idempotent and per-company.
+7. **Rollout state travels with the migration:** a new permission needs registration plus a grant/continuity migration and the administrator re-sync ([authorization.md](authorization.md) R5); a new setting has a safe
+   default that preserves today's behaviour; a new mode starts off ([extensibility.md](extensibility.md#progressive-capability-modes)).
+8. **Test the migration:** the schema test database is built by running migrations, so the migration is exercised by the whole suite; add a focused test for any trigger, backfill or rollout logic.
+
 ## Related
 
 - [ADR 0020](../decisions/0020-postgresql-only.md) — the decision and what it unlocks

@@ -203,6 +203,12 @@ semi-finished formulation as the base consumed by a named derived formulation. C
 `demo-...` establish ownership and idempotency; they do not explain the scenario to a person
 exploring the application.
 
+**Conventions every demo seeder follows** (the checklist's demo line): it is a module seeder registered in `DemoDatabaseSeeder` in dependency order and refuses to run outside `local`/`testing`; it is **idempotent**
+(stable codes or keys; mutable reference data reconciled, **immutable history created once and recognised-and-skipped on rerun — never recomputed, never mutated**); it builds the scenario through the real Actions
+(never raw inserts that bypass the rules) with a named actor who holds the needed capabilities; it creates a small number of named, explained scenarios that exercise the feature's decision points, verified by a
+test that also proves the rerun adds nothing (`…DemoSeederTest`); and it leaves another developer able to exercise the workflow by hand from the UI. Anything a demo grants (a capability, a persona) is documented
+here or in the domain doc; a persona that must sign in gets the demo password, one that only supplies a second actor does not.
+
 **File layout**: default to one flat `Demo/{Module}DemoSeeder.php`, matching
 Foundation/Accounting/Parties/Inventory/Purchasing/Stock above. Promote to a `Demo/{Module}/`
 folder with one seeder per business capability only once a module's demo data will span more

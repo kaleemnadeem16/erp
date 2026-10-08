@@ -11,7 +11,7 @@
 | [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) | Decisions still needed, and what each one blocks | Before planning work |
 | [GLOSSARY.md](GLOSSARY.md) | Domain vocabulary | A term is unfamiliar |
 | [decisions/](decisions/) | ADRs — **why** things are the way they are | Before changing a decision |
-| [architecture/](architecture/) | **How** the system is built | Before writing code |
+| [architecture/](architecture/) | **How** the system is built — including the cross-cutting standards every feature follows ([checklist](architecture/feature-completion-checklist.md)) | Before writing code |
 | [architecture/research-and-design.md](architecture/research-and-design.md) | When existing research is enough and when new ERP comparison is required | Designing a new feature or workflow |
 | [domain/](domain/) | **What** the system models | Building a feature |
 | [phases/](phases/) | Build plan, scope and acceptance criteria | Starting a phase |

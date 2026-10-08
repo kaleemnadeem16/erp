@@ -179,7 +179,7 @@ core-ui/src/
   lib/
 ```
 
-Organised by **feature**, not by file type. A feature folder holds everything for that screen so
+Organised by **feature**, not by file type (`features/<feature>/` holds its components, hooks and routes; repeated behaviour moves to `components/` or a shared hook — [erp-blue-design-standard.md](erp-blue-design-standard.md#workflow-behaviour-standards-every-screen-that-does-something)). A feature folder holds everything for that screen so
 work stays local.
 
 ---
@@ -221,11 +221,14 @@ A module README is required before a module's first feature merges. Template:
 | Unit | Actions and calculations — especially cost roll-up |
 | Architecture | Module boundaries, no single-column unique indexes, no `float` on money |
 
+What a feature's tests must cover — permissions, cross-company, scope, idempotency, rollback, browser and phone width — is the applicability checklist in [testing-standards.md](testing-standards.md); write-operation conventions are in [domain-integrity.md](domain-integrity.md).
+
 Cost roll-up, FX and allocation logic need genuine unit coverage. They are the parts where a
 subtle error produces plausible-looking wrong numbers rather than a crash.
 
 ## Related
 
+- [feature-completion-checklist.md](feature-completion-checklist.md)
 - [extensibility.md](extensibility.md)
 - [api-conventions.md](api-conventions.md)
 - [ADR 0014](../decisions/0014-modular-monolith.md)

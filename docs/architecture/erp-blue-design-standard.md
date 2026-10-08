@@ -225,17 +225,61 @@ Paper remains white and independently branded. Reuse the shared print layouts or
 formal document template; do not print the application DOM or apply dark-mode tokens to paper.
 PO Template 1 is a document template, not the list/detail/form screen template.
 
+## Workflow behaviour standards (every screen that does something)
+
+The sections above fix how a screen *looks*. These fix how it *behaves*, so a new workflow feels like the rest of the ERP without being redesigned each time.
+
+**Hierarchy and density.** Page → section → card → table/panel → dialog, each one level of emphasis; do not nest a card in a card to add weight. Density is ERP-dense (compact controls, tabular figures,
+right-aligned quantities, tabular numerals) but never below the 24 px target minimum (44 px for frequent mobile actions). Use the shared shells for spacing instead of ad-hoc margins.
+
+**Colour and themes.** Semantic tokens only (`--ui-*`, `--status-*`, `--card`, `--primary`); never a literal hex or a Tailwind colour for meaning. Status is a `StatusBadge` with a visible label — colour alone is
+not meaning. Every new screen is checked in light and dark and at the chosen accent; contrast targets are 4.5:1 for text and 3:1 for control boundaries and focus.
+
+**Mode decides what appears (progressive exposure).** A control, column or message that belongs to an optional capability or mode renders **only when it applies**: an item that was never switched to grouped
+tracking shows nothing package-related anywhere. The advanced *start* of a capability sits behind an advanced disclosure and its permission. Gate with one shared hook (`useItemPackageMode` is the pattern), never
+scattered conditionals ([extensibility.md](extensibility.md#progressive-capability-modes)).
+
+**Permission-aware, server-authoritative.** Read effective capability from `GET /api/v1/user` (`usePermission`), hide controls a person can never use, and **disable with a reason** a control whose precondition is
+unmet (stale count, own count). The backend still refuses; the UI is a convenience layer ([authorization.md](authorization.md) R10). Protected fields never reach the browser in the first place.
+
+**Actions and confirmations.** Consequential actions are named for what they do (*Reverse receipt*, *Post count*), explain what changes before an irreversible step, ask for the reason the domain requires,
+and show the recorded result afterwards. Destructive actions are never one-click unless the server proves they are safe; "delete" is not offered where records reference the item (archive instead).
+
+**Validation and refusals.** Field errors are text, associated with their control, shown as soon as they are knowable — not only on submit. A server refusal shows its human `message`; when it carries a stable
+`reason_code` ([api-conventions.md](api-conventions.md#refusal-reason-codes)), the screen offers the fix (a "Count this location" button, a refresh) through the single code→hint map. Never parse message text.
+
+**States.** Every data surface has loading, empty, error (say why, offer retry — ADR 0061/0064), denied and success states from the shared patterns; tables keep their frame while loading.
+
+**Responsive and overflow.** Dense tables have a card alternative on narrow screens; filters become a sheet. A dialog or sheet has a maximum height with its own scroll, fills the width on phones without overflowing
+it, keeps its primary action reachable and not hidden under the bottom navigation, and never produces horizontal page scroll at supported widths (about 390 px and up). Check it with a phone-width Playwright test
+([testing-standards.md](testing-standards.md#browser-playwright--user-facing-workflows)).
+
+**Language.** Operational screens use the operator's words (sealed can, loose litres, held for inspection), not accounting or implementation terms (layer, FIFO, AVCO, evidence, watermark) — cost appears only where a
+person must supply or approve it, and only to people with the cost capability.
+
+**Reuse, not copies.** Compose shared components and **shared hooks** for repeated workflow behaviour (`PackageBreakdown`, `PackageDrawEditor`, `usePackageDrawPlan` serve issue, transfer, reversal and QA). A defect is
+fixed once in the shared component or global CSS, never per screen. A reusable behaviour belongs in `components/` or a feature hook, not in a copy of another screen's JSX; alternatives the owner may want back stay
+switchable and catalogued ([ui-building-blocks.md](ui-building-blocks.md#alternatives-kept-on-purpose)).
+
+**Data and contracts.** Use the generated client and its types; a narrow cast is allowed only where the OpenAPI document cannot type a response, with a comment saying why. Quantities and money are strings and big-integer
+helpers, never floats. Features live in `core-ui/src/features/<feature>/`; shared pieces in `components/`; the app (`apps/main`) only wires routes and presentation choices.
+
+**Accessibility.** Keyboard operation and visible, unobscured focus for every new control and dialog (focus moves into a dialog and returns on close); labels for every input; text alternatives for icon-only buttons;
+errors announced. The axe and contrast specs run on new pages.
+
 ## Required checklist before shipping a screen
 
-1. Choose list/detail/form and page/sheet; reuse the shared shell and controls.
+0. Settle the workflow first ([user-interface.md](user-interface.md#design-gate-before-a-workflow-is-built)): users, lifecycle, permission matrix, journey.
+1. Choose list/detail/form and page/sheet; reuse the shared shell, controls and hooks.
 2. Map every visible action/field/filter/print projection to existing capability and record scope;
    complete [authorisation](authorization.md)'s checklist, even when no new permission is needed.
 3. Keep query context, defaults, input and appropriate view/column preferences across navigation.
 4. Cover loading, empty, validation, denied, failed and successful states with the shared patterns.
-5. Verify default light and dark, the chosen accent, keyboard/focus, mobile width and open portals.
+5. Verify default light and dark, the chosen accent, keyboard/focus, **phone width (no horizontal overflow, primary action reachable)** and open portals.
 6. Test important behaviours (filter request, selection, disclosure/default preservation, review,
    successful refresh), not merely that a class exists. Keep fixtures independent of mutable demos.
-7. Update the matching domain/module/journey docs and STATUS alongside the work. Describe exceptions.
+7. Apply the workflow behaviour standards above (progressive exposure, permission-aware controls, reason codes, confirmations, language).
+8. Update the matching domain/module/journey docs alongside the work ([feature-completion-checklist.md](feature-completion-checklist.md)); STATUS only at a workstream milestone. Describe exceptions.
 
 Adoption is incremental: PO list/page/sheets, the Approvals inbox/history/review workspace and
 Appearance settings use the shared templates now; all screens receive the revised default semantic colours. Other screens' layout/behaviour retrofit
@@ -247,4 +291,5 @@ is a separate feature-by-feature pass. New screens must start on this standard.
 - [User-interface delivery](user-interface.md)
 - [Appearance and printing](appearance-and-printing.md)
 - [Authorisation](authorization.md)
+- [Feature-completion checklist](feature-completion-checklist.md) · [Testing standards](testing-standards.md)
 - [Tech stack](tech-stack.md)

@@ -110,8 +110,9 @@ in the same commit.
 | [0093](0093-package-aware-goods-receipt-reversal.md) | Package-aware goods receipt reversal: remove what is declared, never restore or invent a past composition | accepted | 2026-10-08 |
 | [0094](0094-package-aware-supplier-qa-receipts.md) | Package-aware supplier QA: held packages stay in on-hand, a disposition relabels a declared physical portion | accepted | 2026-10-08 |
 | [0095](0095-status-is-short-current-and-purpose-limited.md) | STATUS.md is short, current and limited by purpose, not by a row count (supersedes 0044) | accepted | 2026-10-08 |
+| [0096](0096-cross-cutting-feature-standards.md) | Cross-cutting feature standards live in canonical docs and a completion checklist | accepted | 2026-10-08 |
 
-**Next number: 0096**
+**Next number: 0097**
 
 ## By theme
 
@@ -123,7 +124,7 @@ in the same commit.
 
 - **Physical package tracking:** [0052](0052-progressive-inventory-package-tracking.md) · [0053](0053-explainable-inventory-package-selection-presets.md) · [0080](0080-packaged-purchasing-and-independent-price-basis.md) · [0082](0082-reconcile-package-balances-with-stock-operations.md) *(proposed — see its note below)* · [0090](0090-package-aware-stock-issue-semantics.md) · [0091](0091-activate-grouped-package-tracking-and-fail-closed-enforcement.md) · [0092](0092-package-aware-physical-count-posting.md) · [0093](0093-package-aware-goods-receipt-reversal.md) · [0094](0094-package-aware-supplier-qa-receipts.md)
 - **Access, approvals and security:** [0028](0028-dynamic-namespaced-permissions.md) · [0062](0062-company-member-and-access-administration.md) · [0065](0065-role-first-member-access-and-manual-credential-recovery.md) · [0066](0066-capability-driven-screen-navigation.md) · [0070](0070-shared-configurable-approval-engine.md) · [0083](0083-layered-stock-read-capabilities-and-blind-counting.md) · [0085](0085-request-specific-document-review-for-approvals.md) · [0088](0088-device-tokens-expire-and-sign-in-has-seams-for-stronger-authentication.md) · [0089](0089-organisation-units-and-record-scope.md)
-- **Documentation process:** [0022](0022-code-documentation-strategy.md) · [0095](0095-status-is-short-current-and-purpose-limited.md)
+- **Documentation process and standards:** [0022](0022-code-documentation-strategy.md) · [0095](0095-status-is-short-current-and-purpose-limited.md) · [0096](0096-cross-cutting-feature-standards.md)
 
 **Note on ADR 0082 (proposed).** Its principles — physical and availability state are separate, held stock is on-hand but not usable, every writer must be integrated or guarded — were
 adopted and built by the accepted ADRs 0090–0094, but 0082 itself was never accepted or superseded. Whether to accept it as the umbrella record, or mark it superseded by the

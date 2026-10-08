@@ -44,7 +44,8 @@ in, receives a token, and an unauthenticated request to a protected route return
 
 ## Docs to update on completion
 
-- [ ] `docs/STATUS.md`
+- [ ] `docs/STATUS.md` (the phase row only) and `docs/STATUS-LOG.md` ([ADR 0095](../decisions/0095-status-is-short-current-and-purpose-limited.md))
+- [ ] Every slice passed the [feature-completion checklist](../architecture/feature-completion-checklist.md)
 - [ ] Any domain doc whose schema this phase implements
 - [ ] New ADRs for decisions made during the phase
 

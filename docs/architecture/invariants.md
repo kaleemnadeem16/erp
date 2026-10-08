@@ -112,7 +112,7 @@ The base currency can change only while no financial record exists: every module
 `FinancialActivity` probe for its tables, and the `Company` model refuses the change while any probe finds a row. **A module
 that starts carrying money without registering a probe silently removes the lock** — add the probe in the same change.
 
-## 10. Consumption basis is not pricing basis
+## 11. Consumption basis is not pricing basis
 
 250 sqm of wall at 2 coats consumes 500 sqm of material but is priced per sqm of wall.
 
@@ -120,6 +120,26 @@ The component `multiplier` handles consumption; the document line quantity handl
 Conflating them makes every estimate wrong by the coat count.
 
 → [domain/assemblies.md](../domain/assemblies.md)
+
+## 12. Authority is enforced where the work is done, not only at the HTTP edge
+
+Every mutation checks its capability (and record scope) inside its Action, as well as in its Form Request. A job, console command, seeder or other Action reaches the same operation without HTTP, so a
+route-only guard is not a guard. Sensitive data is omitted from the response unless the caller holds its capability. A new surface is never shipped "authenticated-only".
+
+→ [authorization.md](authorization.md#build-rules-every-new-feature-follows) R1–R3, R12
+
+## 13. Retried writes do nothing twice, and evidence is only ever appended
+
+A write that can be repeated carries an idempotency key and returns the original result for an identical retry; facts that explain money or stock are append-only and corrected by new records, never edited.
+Atomic: the movement and its evidence commit together or not at all.
+
+→ [domain-integrity.md](domain-integrity.md#3-retryable-writes-are-idempotent)
+
+## 14. An advanced mode fails closed and is enforced in the database
+
+When a mode makes new evidence authoritative, every writer is integrated or refused, the database rejects the rest, and items or companies that never opt in behave exactly as before. A mode is never half-enabled.
+
+→ [domain-integrity.md](domain-integrity.md#5-advanced-modes-are-enforced-in-the-database-and-fail-closed), [ADR 0091](../decisions/0091-activate-grouped-package-tracking-and-fail-closed-enforcement.md)
 
 ---
 
@@ -138,6 +158,8 @@ Softer, but they shape design. Production runs alongside three other application
 
 ## Related
 
+- [feature-completion-checklist.md](feature-completion-checklist.md) — how these are checked before a feature is done
+- [domain-integrity.md](domain-integrity.md)
 - [database.md](database.md)
 - [multi-tenancy.md](multi-tenancy.md)
 - [Decision index](../decisions/README.md)
