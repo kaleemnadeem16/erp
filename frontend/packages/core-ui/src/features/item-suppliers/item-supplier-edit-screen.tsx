@@ -135,6 +135,30 @@ export function ItemSupplierEditScreen({
   return wrap(
     <ItemSupplierForm
       mode="edit"
+      itemDetails={
+        row.item
+          ? {
+              id: row.item.id,
+              code: row.item.code,
+              name: row.item.name,
+              stock_uom_id: row.item.stock_uom_id,
+              category: row.item.category
+                ? { name: row.item.category.name, code: row.item.category.code }
+                : null,
+            }
+          : undefined
+      }
+      supplierDetails={
+        row.supplier_account
+          ? {
+              id: row.supplier_account.id,
+              code: row.supplier_account.code,
+              party_name: row.supplier_account.party?.name,
+              payment_terms_days: row.supplier_account.payment_terms_days,
+              lead_time_days: row.supplier_account.lead_time_days,
+            }
+          : undefined
+      }
       defaultValues={{
         item_id: String(row.item_id),
         supplier_account_id: String(row.supplier_account_id),

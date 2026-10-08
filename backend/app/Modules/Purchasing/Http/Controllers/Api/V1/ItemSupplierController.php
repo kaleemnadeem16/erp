@@ -25,7 +25,7 @@ class ItemSupplierController extends Controller
 {
     use AppliesApiQuery;
 
-    private const INCLUDABLE = ['item' => 'item', 'supplierAccount' => 'supplierAccount.party', 'purchaseUom' => 'purchaseUom'];
+    private const INCLUDABLE = ['item' => 'item.category', 'supplierAccount' => 'supplierAccount.party', 'purchaseUom' => 'purchaseUom'];
 
     private const SORTABLE = [
         'priority' => 'priority',
