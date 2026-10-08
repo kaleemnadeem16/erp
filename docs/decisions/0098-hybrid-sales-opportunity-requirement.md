@@ -161,6 +161,10 @@ opportunities, backdate a new issue or reuse this MANAGED capability for migrati
   STRICT unlink interpretation, revisions and opportunity eligibility. Recipient/onboarding, person customers, team visibility,
   closure and duplicate rules remain undecided. R1 as a whole is not complete.
 
+Multiple independent accepted scopes and explicit exclusive groups are now owner-reviewed in
+[proposed ADR 0100](0100-independent-quotation-scopes-and-alternative-groups.md). They do not
+replace opportunity entry/issue rules, approve forecasts, close a deal or decide job multiplicity.
+
 ## Consequences
 
 - **Positive:** small companies avoid unnecessary CRM; managed companies get auditable controls.

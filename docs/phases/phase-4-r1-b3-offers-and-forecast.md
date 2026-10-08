@@ -2,14 +2,29 @@
 
 # R1-B3 — Multiple offers, revisions and opportunity forecast
 
-- **Status:** initial research and recommendation for owner discussion; not accepted or complete.
+- **Status:** multiple accepted scopes and explicit alternative groups owner-reviewed; forecasting discussion ongoing; not accepted or complete.
 - **Access date:** 2026-10-08. Compared Dynamics 365 Sales, Odoo 19 and ERPNext official guidance.
 - **Question:** how can one deal have several offers and separately acceptable scopes without
   counting alternatives, prior revisions or accepted scope twice in pipeline reporting?
 - **Existing foundation:** [review](phase-4-existing-system-review.md); Sales remains documented-only.
 - **Owner-reviewed directions:** [ADR 0098](../decisions/0098-hybrid-sales-opportunity-requirement.md)
   and [proposed ADR 0099](../decisions/0099-separate-quotation-issue-and-crm-association.md).
+- **Owner-reviewed extension:** [proposed ADR 0100](../decisions/0100-independent-quotation-scopes-and-alternative-groups.md).
 - **Accepted R1-B3 decisions:** none. No physical table boundaries are chosen.
+
+## Discussion update — 2026-10-08
+
+The owner reviewed multiple accepted quotation revisions for independent scopes under one
+opportunity, and explicit exclusive groups of competing families (independent by default).
+Revisions retain their family's group relationship and are not extra offers. Proposed ADR 0100
+records the rules and concurrency/history implications; this does not decide closure or jobs.
+
+[Forecast-basis research](phase-4-r1-b3-forecast-basis.md) now assesses manual estimates, a single
+selected revision and a controlled non-competing set. Its recommendation broadens the initial
+single-offer suggestion below to support multiple independent scopes. Earlier examples and
+comparisons are retained as research history; earlier "must we support multiple scopes/groups?"
+questions have owner-reviewed direction, not final ADR acceptance. Forecast business meaning,
+eligibility, FX, weighting and refresh remain for discussion; R1-B3 is not complete.
 
 ## Business distinctions
 
@@ -68,7 +83,7 @@ An expected budget is not a reason to cap or inflate quoted amounts. Partial acc
 to R6; accepted and remaining forecast must then be shown separately, without counting the same
 scope again. Nothing about these numbers is an automatic posting or recognised revenue.
 
-## Options and trade-offs
+## Initial options and trade-offs — historical proposal
 
 | Option | Benefit | Risk / limitation |
 |---|---|---|
@@ -132,20 +147,18 @@ not be silently mixed with net forecasts.
   as-of data. Proposed ADR 0099 provides retry/concurrency boundaries for relationship edits;
   basis changes need the same transactional stale/retry-safe pattern.
 
-## Questions for owner discussion
+## Question reconciliation after owner review
 
-1. Default to a maintained opportunity estimate, with optional explicit issued-revision selection?
-2. Must the first release support several separately acceptable scopes in one opportunity, or
-   may independent buying events use separate opportunities while grouped-scope planning matures?
-3. How explicitly should mutually exclusive quotation families be marked/grouped initially?
-4. When a selected offer becomes ineligible, retain its last estimate with a visible review flag,
-   exclude it from active forecast, or require immediate reselection? Reports must show the choice.
-5. Can alternatives remain live after one is accepted, and what prevents conflicting acceptance?
-   This is jointly an R6/R7 decision, not finalised by this research.
-6. Should a current CRM association apply to the entire family or independently to each revision?
-   Both issue-time relationships remain immutable; investigate historical reporting consequences.
+Multiple independent accepted scopes and explicit exclusive groups now have owner-reviewed
+direction in proposed ADR 0100. Forecasting choices move to the
+[forecast research](phase-4-r1-b3-forecast-basis.md#dependencies-and-next-decision), starting
+with manual remaining-value vs a selected combination. Still unresolved: post-issue regrouping,
+partial acceptance, accepted-scope corrections, dependencies, partial win/closure, job multiplicity,
+association scope per family/revision and selected-basis eligibility/recalculation.
 
 ## Related
+
+- [Forecast research](phase-4-r1-b3-forecast-basis.md) · [Proposed ADR 0100](../decisions/0100-independent-quotation-scopes-and-alternative-groups.md)
 
 - [Phase 4 plan](phase-4-sales-quotations-and-handover.md) · [R1](phase-4-r1-leads-and-relationships.md)
 - [Existing review](phase-4-existing-system-review.md) · [Proposed ADR 0099](../decisions/0099-separate-quotation-issue-and-crm-association.md)

@@ -129,7 +129,10 @@ and project invariants. No vendor schema or post-issue mutability is copied.
 STRICT temporary unlink interpretation; unknown/opportunity Party identity rules (R1-C);
 closed opportunity eligibility and accepted/job-linked association restrictions (R5/R6/R7);
 association scope per family/revision (R2); permissions/visibility and report as-of policy (R9).
-R1-B3's alternatives and forecast recommendation await discussion; no R1-B completion claim.
+R1-B3 independent accepted scopes and explicit exclusive groups now have owner-reviewed direction
+in [proposed ADR 0100](0100-independent-quotation-scopes-and-alternative-groups.md). Post-issue
+grouping/accepted-scope corrections and [forecast rules](../phases/phase-4-r1-b3-forecast-basis.md)
+remain open; no R1-B completion claim.
 
 ## Related
 

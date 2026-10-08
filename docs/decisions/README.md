@@ -114,8 +114,9 @@ in the same commit.
 | [0097](0097-supplier-return-and-scrap-of-rejected-stock.md) | Supplier return and scrap of rejected stock: one exit movement from the receipt's own layer | accepted | 2026-10-08 |
 | [0098](0098-hybrid-sales-opportunity-requirement.md) | Govern opportunity requirements through one hybrid Sales workflow | proposed (owner-reviewed direction) | 2026-10-08 |
 | [0099](0099-separate-quotation-issue-and-crm-association.md) | Separate quotation issue evidence from current CRM association | proposed (R1-B1/B2 owner-reviewed) | 2026-10-08 |
+| [0100](0100-independent-quotation-scopes-and-alternative-groups.md) | Distinguish independent quotation scopes from exclusive alternative groups | proposed (owner-reviewed R1-B3 direction) | 2026-10-08 |
 
-**Next number: 0100**
+**Next number: 0101**
 
 ## By theme
 

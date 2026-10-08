@@ -44,8 +44,13 @@ coordination remain flagged for resolution. Keep Q39 open.
 R1-B1/B2 now have owner-reviewed direction in [proposed ADR 0099](decisions/0099-separate-quotation-issue-and-crm-association.md): draft relationship corrections and governed post-issue
 CRM association separate from immutable issue linkage. STRICT temporary unlinking, closed-state
 eligibility, association scope per family/revision and accepted/job-linked restrictions remain open.
-Next: discuss [**R1-B3** offers/revisions/forecast](phases/phase-4-r1-b3-offers-and-forecast.md),
-whose initial recommendation is not approved; then **R1-C**, prospect/customer readiness. R1-D–G (person customers, ownership/scope, closure, duplicates/CRM
+R1-B3 now has owner-reviewed multiple independent acceptances and explicit alternative-family
+groups in [proposed ADR 0100](decisions/0100-independent-quotation-scopes-and-alternative-groups.md).
+Forecasting is not approved: next discuss [manual remaining estimate vs controlled selected offer
+set](phases/phase-4-r1-b3-forecast-basis.md), then **R1-C** prospect/customer readiness.
+Keep open post-issue grouping/regrouping, partial acceptance, cancelling/changing accepted scope,
+offer dependencies, partially won outcomes, one/multiple jobs, closure interactions and forecast
+eligibility/refresh, currency and as-of reporting rules (R2/R4/R5/R6/R7/R9). R1-D–G (person customers, ownership/scope, closure, duplicates/CRM
 extent) remain open. Detailed question tracking is in
 [R1-A–G](phases/phase-4-r1-leads-and-relationships.md#decisions-needed-from-the-owner).
 Record accepted answers in ADRs and remove only resolved questions; do not close all Q39 or R1

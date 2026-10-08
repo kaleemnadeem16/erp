@@ -11,6 +11,9 @@ R1-A's hybrid entry and opportunity policy direction is in
 [proposed ADR 0098](../decisions/0098-hybrid-sales-opportunity-requirement.md), owner-reviewed
 but not accepted. Draft linking and separate post-issue CRM association are proposed in
 [ADR 0099](../decisions/0099-separate-quotation-issue-and-crm-association.md); [R1-B3](../phases/phase-4-r1-b3-offers-and-forecast.md) researches multiple offers and forecast.
+Independent accepted scopes and explicit alternative groups have owner-reviewed direction in
+[proposed ADR 0100](../decisions/0100-independent-quotation-scopes-and-alternative-groups.md).
+[Forecast research](../phases/phase-4-r1-b3-forecast-basis.md) remains pending discussion.
 The schema below is historical planning: one opportunity field must not become both immutable
 issue linkage and editable current CRM association. Customer-only recipients, conversion and closure are unresolved. The historical numbering
 paragraph below must be reconciled with ADR 0079's implemented central framework before build.
