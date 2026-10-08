@@ -10,6 +10,7 @@ use App\Modules\Inventory\Models\StockBatch;
 use App\Modules\Inventory\Models\StockLayer;
 use App\Modules\Inventory\Models\StockLayerConsumption;
 use App\Modules\Inventory\Models\StockMove;
+use App\Modules\Inventory\Support\RejectedStockBalance;
 use App\Modules\Purchasing\Models\GoodsReceiptLine;
 use App\Modules\Purchasing\Models\QualityDisposition;
 use App\Modules\Purchasing\Support\DispositionOutcome;
@@ -79,6 +80,26 @@ final class LayerAllocator
         }
     }
 
+    /**
+     * The one named layer an authorised rejected-stock exit consumes, ignoring what is issuable (rejected quantity never is). Ordinary issues never
+     * call this; the exit Action proves the quantity is final-rejected and uncapped before it does (ADR 0097 §2).
+     *
+     * @param  Collection<int, StockLayer>  $layers
+     * @return Collection<int, array{layer:StockLayer, qty:BigDecimal}>
+     */
+    public function allocateFromLayer(Collection $layers, int $layerId, BigDecimal $required): Collection
+    {
+        $layer = $layers->firstWhere('id', $layerId);
+        if ($layer === null || BigDecimal::of($layer->qty_remaining)->isLessThan($required)) {
+            return collect();
+        }
+
+        /** @var Collection<int, array{layer:StockLayer, qty:BigDecimal}> $one */
+        $one = collect([['layer' => $layer, 'qty' => $required]]);
+
+        return $one;
+    }
+
     public function issuableQuantity(StockLayer $layer): BigDecimal
     {
         if ($layer->source_type !== 'GOODS_RECEIPT_LINE') {
@@ -94,7 +115,9 @@ final class LayerAllocator
             ->where('goods_receipt_line_id', $receiptLine->id)
             ->whereIn('disposition', [DispositionOutcome::Pass->value, DispositionOutcome::AcceptWithConcession->value])
             ->sum('qty');
-        $alreadyConsumed = BigDecimal::of($layer->qty_received)->minus(BigDecimal::of($layer->qty_remaining));
+        // Rejected stock that has left for good (a supplier return or scrap, ADR 0097) reduced the layer without consuming accepted quantity.
+        $alreadyConsumed = BigDecimal::of($layer->qty_received)->minus(BigDecimal::of($layer->qty_remaining))
+            ->minus(RejectedStockBalance::exitedFor($receiptLine->id));
         $available = BigDecimal::of((string) $accepted)->minus($alreadyConsumed);
 
         return $available->isGreaterThan(0) ? $available : BigDecimal::zero();

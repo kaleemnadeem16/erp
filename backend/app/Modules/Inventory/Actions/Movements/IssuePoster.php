@@ -37,7 +37,7 @@ final class IssuePoster
         private readonly AvcoPoolManager $pools,
     ) {}
 
-    /** @param array{item_id:int, location_id:int, qty:string, uom_id:int, moved_at:mixed, source_type:string, source_id:int, batch_no?:string|null, serial_no?:string|null, override_request_id?:int|null} $input */
+    /** @param array{item_id:int, location_id:int, qty:string, uom_id:int, moved_at:mixed, source_type:string, source_id:int, batch_no?:string|null, serial_no?:string|null, override_request_id?:int|null, from_layer_id?:int|null} $input */
     public function post(array $input): PostedMovement
     {
         $existing = StockMove::query()->where('source_type', $input['source_type'])->where('source_id', $input['source_id'])->first();
@@ -77,7 +77,10 @@ final class IssuePoster
         if ($existing !== null) {
             return new PostedMovement($existing->load(['valuationEntries', 'negativeStockShortage']), null);
         }
-        $allocations = $this->layers->allocate($layers, $qty);
+        // A rejected-stock exit (ADR 0097) consumes exactly one named layer; every other issue allocates oldest-first over what is issuable.
+        $allocations = isset($input['from_layer_id'])
+            ? $this->layers->allocateFromLayer($layers, (int) $input['from_layer_id'], $qty)
+            : $this->layers->allocate($layers, $qty);
         $availableQty = $allocations->reduce(
             fn (BigDecimal $total, array $allocation): BigDecimal => $total->plus($allocation['qty']),
             BigDecimal::zero(),

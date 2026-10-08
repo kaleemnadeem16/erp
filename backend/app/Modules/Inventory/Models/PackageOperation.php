@@ -12,7 +12,7 @@ use App\Support\Concerns\BelongsToCompany;
 class PackageOperation extends Model
 {
     /** The evidence kinds that form a scope's chain: each is a complete successor of the one before it, and the latest of them is the scope's current state. */
-    public const CHAIN = ['COUNTED', 'OPEN', 'UNPACK', 'ISSUE', 'TRANSFER_OUT', 'TRANSFER_IN', 'RECEIPT_IN', 'COUNT_VARIANCE', 'RECEIPT_REVERSAL', 'QA_DISPOSITION'];
+    public const CHAIN = ['COUNTED', 'OPEN', 'UNPACK', 'ISSUE', 'TRANSFER_OUT', 'TRANSFER_IN', 'RECEIPT_IN', 'COUNT_VARIANCE', 'RECEIPT_REVERSAL', 'QA_DISPOSITION', 'REJECTED_EXIT'];
 
     use BelongsToCompany;
 

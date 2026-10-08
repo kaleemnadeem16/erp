@@ -2,26 +2,27 @@
 
 # Rejected-stock exit (supplier return and scrap) — implementation plan
 
-- **Status:** planned — not started. Decision: [ADR 0097](../decisions/0097-supplier-return-and-scrap-of-rejected-stock.md) (accepted 2026-10-08). Workstream: grouped package tracking follow-on ([handoff](package-balance-handoff.md)).
+- **Status:** **Slice 1 built (2026-10-08, backend core, no HTTP/UI)**; slices 2–4 not started. Decision: [ADR 0097](../decisions/0097-supplier-return-and-scrap-of-rejected-stock.md) (accepted 2026-10-08). Workstream: grouped package tracking follow-on ([handoff](package-balance-handoff.md)).
 - **Depends on:** QA disposition and held/rejected package evidence ([ADR 0094](../decisions/0094-package-aware-supplier-qa-receipts.md)); the sole movement boundary; the central numbering framework.
 - **Goal:** rejected stock — grouped or quantity-only — gets a normal, audited, atomic exit through two separate documents, **Supplier Return** and **Scrap**, over one shared posting path. Nothing financial is settled (no AP/GL).
 
 Every slice passes the [feature-completion checklist](../architecture/feature-completion-checklist.md); the lines below name what is specific here. Slices land in order, each committed with its tests, docs and (where user-facing) browser coverage.
 
-## Facts to verify before coding
+## Facts verified before coding (2026-10-08)
 
-1. How `IssuePoster` and `LayerAllocator` consume a layer, so a **named-layer outbound** can be added without touching allocation for ordinary issues (the pattern is `ReceiptPoster::reverse`, which locks and consumes a specific layer).
-2. That FIFO/SPECIFIC exact-cost consumption and the AVCO pool outflow work for a layer whose quantity is excluded from `issuableQuantity`.
-3. The `stock_moves.source_type` constraints and the deferred "move needs evidence" trigger's evidence list (it must learn the new evidence kind).
-4. The numbering framework's document-type registration, the Purchasing and Inventory permission vocabularies, and `RecordScopeCoverageTest`/`StockWriterMatrixTest` entry format.
+1. **Named-layer outbound without disturbing allocation — confirmed, with a seam.** `IssuePoster` allocates oldest-first over `issuableQuantity`; a single optional input, `from_layer_id`, now makes it consume exactly one named layer (`LayerAllocator::allocateFromLayer`), reachable only through `PostInventoryMovement::issueRejectedPosted`, whose single permitted caller is `PostRejectedStockExit` (ratchet: `RejectedExitHasOneCallerTest`). Ordinary issues are unchanged.
+2. **Cost — confirmed.** FIFO/SPECIFIC use the consumed layer's own `base_unit_cost` (a SPECIFIC serial item exits its unit); AVCO goes through the pool's normal outflow at the pool average. Both proven in tests.
+3. **Two correctness traps found and fixed in the same slice.** (a) `issuableQuantity` computed "already consumed" as `received − remaining`, so an exit would have silently eaten usable quantity; it now subtracts what has exited. (b) the held-stock arithmetic in the inventory overview and `QueryStockAvailability` (`stock_qty − released`) would have counted exited rejected stock as still held and under-reported availability; both subtract exits. The deferred "move needs evidence" trigger was widened to accept `REJECTED_EXIT`.
+4. **Registration — done.** Capabilities `purchasing.supplier-return.create/.post` and `inventory.scrap.create/.post` are registered in the module vocabularies (the Action enforces the two `.post` capabilities now; `.create` belongs to slice 2's drafts). Numbering types and routes wait for slice 2.
 
-## Slice 1 — shared exit core (backend, no HTTP)
+## Slice 1 — shared exit core (backend, no HTTP) — BUILT
 
 - **Ledger:** an immutable `rejected_stock_exits` table (company-scoped, composite keys): kind `SUPPLIER_RETURN | SCRAP`, document type and line id, `goods_receipt_line_id`, `stock_move_id`, quantity, the QA decision it relates to, `differs_from_qa` and the **outcome-change reason** (required when it differs), request key + payload hash (unique per company). It is the single source for the cap: `available to exit = Σ rejected dispositions − Σ exited`.
 - **Read model:** `RejectedStockBalance` (per receipt line: rejected, exited, available, and the per-kind balance that decides "differs"), used by previews and posting.
 - **Posting Action:** `PostRejectedStockExit` — locks location and receipt layer in the stable order, re-reads the cap, posts the outbound move **from the receipt layer** through the movement boundary (`PostInventoryMovement` gains a layer-specific entry; FIFO/SPECIFIC at the layer cost, AVCO through the normal engine), writes the valuation feed row with `source_type SUPPLIER_RETURN` or `SCRAP_WRITE_OFF`, the ledger row, and — for a grouped item — the package evidence, all in one transaction. Idempotent per request key; retry reuses the original moment.
 - **Package evidence:** a new `REJECTED_EXIT` kind, issue-shaped and anchored on the move, drawing whole `REJECTED` sealed packages and `REJECTED` loose quantity (never opening or splitting). Migration: kind and link column, draw availability allowed for `REJECTED`, a conservation function (composition = predecessor − draw, single allocation = the receipt layer, `REJECTED` at that layer = decided − exited), and the evidence requirement for the two new `source_type`s of a grouped item. Reuses `PackageIssueComposition` with `$from = 'REJECTED'`. `down()` refuses once exits exist.
-- **Tests:** FIFO, AVCO and SPECIFIC cost; grouped (sealed whole, loose, mixed usable/held/rejected untouched) and quantity-only parity; cap and over-exit refusal; differing outcome needs a reason; idempotent retry and changed-payload refusal; rollback of a mixed multi-line post; raw-SQL attacks on the new checks; stale evidence; cross-company; the writer matrix entry.
+- **As built:** migration `2026_10_09_100000` (ledger with shape checks, immutability, commit-time cap/consistency/evidence triggers; `stock_moves` anti-bypass for the two exit `source_type`s; `REJECTED_EXIT` evidence with lineage v8, conservation v5, scope guard v5, evidence requirement v4 and a rejected-conservation check; `rejected_stock_exits` rows judged as of their own id so several exits in one transaction each prove their state; the QA conservation check likewise judges dispositions as of their own id). `RejectedStockBalance` is the cap read model; `PostRejectedStockExit` is the single posting Action (authority, scope, idempotency, differing-outcome reason, whole-package declaration, layer-specific move, ledger, evidence). 47 focused tests in `RejectedStockExitTest` plus the ratchet.
+- **Tests (as planned, all passing):** FIFO, AVCO and SPECIFIC cost; grouped (sealed whole, loose, mixed usable/held/rejected untouched) and quantity-only parity; cap and over-exit refusal; differing outcome needs a reason; idempotent retry and changed-payload refusal; rollback of a mixed multi-line post; raw-SQL attacks on the new checks; stale evidence; cross-company; the writer matrix entry.
 
 ## Slice 2 — documents, permissions and API
 

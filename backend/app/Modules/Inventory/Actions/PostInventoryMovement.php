@@ -70,6 +70,19 @@ final class PostInventoryMovement
     }
 
     /**
+     * Posts the outbound move of a rejected-stock exit (ADR 0097): the same issue, but consuming exactly one named layer — the receipt's own — whose
+     * quantity QA has finally rejected. **Only `PostRejectedStockExit` may call this** (`RejectedExitHasOneCallerTest`): it proves the cap first.
+     *
+     * @param  array{item_id:int, location_id:int, qty:string, uom_id:int, moved_at:mixed, source_type:string, source_id:int, from_layer_id:int, batch_no?:string|null, serial_no?:string|null}  $input
+     */
+    public function issueRejectedPosted(array $input): PostedMovement
+    {
+        PackageWriteScope::refuse((int) $input['item_id'], 'a scalar issue', 'exit it through the package-aware rejected-stock exit');
+
+        return DB::transaction(fn (): PostedMovement => $this->issues->post($input));
+    }
+
+    /**
      * Posts a physical location-to-location transfer.
      *
      * @param  array{item_id:int, from_location_id:int, to_location_id:int, qty:string, uom_id:int, moved_at:mixed, source_type:string, source_id:int, batch_no?:string|null, serial_no?:string|null}  $input

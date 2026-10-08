@@ -24,6 +24,9 @@ final class PermissionVocabulary
             'purchasing.goods-receipt.post',
             'purchasing.goods-receipt.reverse',
             'purchasing.quality-disposition.post',
+            // Supplier return of QA-rejected stock (ADR 0097): dedicated duties, never inferred from QA or stock capabilities.
+            'purchasing.supplier-return.create',
+            'purchasing.supplier-return.post',
             'purchasing.item-supplier.view',
             'purchasing.item-supplier.manage',
             'purchasing.over-receipt-policy.manage',

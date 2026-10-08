@@ -75,12 +75,19 @@ final class QueryStockAvailability
             ->selectRaw('goods_receipt_line_id, SUM(qty) AS released_qty')
             ->groupBy('goods_receipt_line_id');
 
+        // Rejected stock that has left for good no longer counts as held (ADR 0097).
+        $exited = DB::table('rejected_stock_exits')
+            ->where('company_id', $companyId)
+            ->selectRaw('goods_receipt_line_id, SUM(quantity) AS exited_qty')
+            ->groupBy('goods_receipt_line_id');
+
         $held = DB::table('goods_receipt_lines as grl')
             ->join('purchase_order_lines as pol', 'pol.id', '=', 'grl.purchase_order_line_id')
             ->where('pol.company_id', $companyId)
             ->where('pol.qa_required', true)
             ->leftJoinSub($released, 'rel', 'rel.goods_receipt_line_id', '=', 'grl.id')
-            ->selectRaw('grl.id AS grl_id, GREATEST(grl.stock_qty - COALESCE(rel.released_qty, 0), 0) AS held_qty');
+            ->leftJoinSub($exited, 'ex', 'ex.goods_receipt_line_id', '=', 'grl.id')
+            ->selectRaw('grl.id AS grl_id, GREATEST(grl.stock_qty - COALESCE(rel.released_qty, 0) - COALESCE(ex.exited_qty, 0), 0) AS held_qty');
 
         $query = DB::table('stock_layers as sl')
             ->join('items as it', 'it.id', '=', 'sl.item_id')

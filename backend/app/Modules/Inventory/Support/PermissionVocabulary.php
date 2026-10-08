@@ -50,6 +50,9 @@ final class PermissionVocabulary
             'inventory.package-state.activate',
             'inventory.package-state.recount',
             'inventory.package-state.reverse',
+            // Scrap / write-off of QA-rejected stock (ADR 0097).
+            'inventory.scrap.create',
+            'inventory.scrap.post',
             'inventory.negative-stock-policy.manage',
             'inventory.backdating-horizon-policy.manage',
             'inventory.recalculation-policy.manage',

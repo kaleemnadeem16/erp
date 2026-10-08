@@ -96,6 +96,11 @@ final class BuildInventoryOverviewQuery
             ->selectRaw('goods_receipt_line_id, SUM(qty) as released_qty')
             ->groupBy('goods_receipt_line_id');
 
+        // Rejected stock that has left for good no longer counts as held (ADR 0097).
+        $exited = $this->scoped('rejected_stock_exits', $companyId)
+            ->selectRaw('goods_receipt_line_id, SUM(quantity) as exited_qty')
+            ->groupBy('goods_receipt_line_id');
+
         // goods_receipt_lines carries no company_id of its own (scoped only via its
         // parent goods_receipt / purchase_order_line) — company-scope through
         // whichever of those two is already being joined, per query.
@@ -103,8 +108,9 @@ final class BuildInventoryOverviewQuery
             ->join('purchase_order_lines as pol', 'pol.id', '=', 'grl.purchase_order_line_id')
             ->where('pol.company_id', $companyId)
             ->leftJoinSub($released, 'released', 'released.goods_receipt_line_id', '=', 'grl.id')
+            ->leftJoinSub($exited, 'exited', 'exited.goods_receipt_line_id', '=', 'grl.id')
             ->where('pol.qa_required', true)
-            ->selectRaw('grl.item_id, SUM(GREATEST(grl.stock_qty - COALESCE(released.released_qty, 0), 0)) as qty')
+            ->selectRaw('grl.item_id, SUM(GREATEST(grl.stock_qty - COALESCE(released.released_qty, 0) - COALESCE(exited.exited_qty, 0), 0)) as qty')
             ->groupBy('grl.item_id');
 
         $postedReceipts = DB::table('goods_receipt_lines as grl2')
