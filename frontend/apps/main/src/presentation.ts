@@ -10,10 +10,16 @@ export const presentation: {
   purchaseOrderCreate: Presentation;
   purchaseOrderDetail: Presentation;
   purchaseOrderEdit: Presentation;
+  supplierCreate: Presentation;
+  supplierDetail: Presentation;
+  supplierEdit: Presentation;
 } = {
   purchaseOrderCreate: "sheet",
   purchaseOrderDetail: "sheet",
   purchaseOrderEdit: "sheet",
+  supplierCreate: "sheet",
+  supplierDetail: "sheet",
+  supplierEdit: "sheet",
 };
 
 /**

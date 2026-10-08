@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Modules\Parties;
 
+use App\Models\Currency;
 use App\Models\User;
 use App\Modules\Accounting\Models\ChartOfAccount;
 use App\Modules\Accounting\Support\AccountType;
@@ -46,6 +47,10 @@ class SupplierAccountApiTest extends TestCase
         ]);
     }
 
+    /**
+     * @param  array<string, mixed>  $overrides
+     * @return array<string, mixed>
+     */
     private function payload(array $overrides = []): array
     {
         return array_merge([
@@ -191,5 +196,53 @@ class SupplierAccountApiTest extends TestCase
         $user = $this->maintainer();
 
         $this->actingAs($user)->getJson("/api/v1/supplier-accounts/{$otherSupplierAccount->id}")->assertNotFound();
+    }
+
+    public function test_index_supports_filtering_by_currency_and_payable_account_and_sorting(): void
+    {
+        $usd = Currency::firstOrCreate(['code' => 'USD'], ['name' => 'US Dollar', 'symbol' => '$']);
+        $eur = Currency::firstOrCreate(['code' => 'EUR'], ['name' => 'Euro', 'symbol' => '€']);
+
+        $partyB = Party::create(['code' => 'BETA', 'name' => 'Beta Ltd']);
+        $accountB = ChartOfAccount::create(['code' => '2101', 'name' => 'Other AP', 'type' => AccountType::Liability]);
+
+        SupplierAccount::create($this->payload([
+            'code' => 'SUP-A',
+            'payment_terms_days' => 10,
+            'lead_time_days' => 5,
+            'default_currency_id' => $usd->id,
+            'payable_account_id' => $this->payableAccount->id,
+        ]));
+
+        SupplierAccount::create([
+            'party_id' => $partyB->id,
+            'code' => 'SUP-B',
+            'payment_terms_days' => 60,
+            'lead_time_days' => 15,
+            'default_currency_id' => $eur->id,
+            'payable_account_id' => $accountB->id,
+        ]);
+
+        $user = $this->maintainer();
+
+        // Filter by currency
+        $resCurr = $this->actingAs($user)->getJson("/api/v1/supplier-accounts?filter[default_currency_id]={$usd->id}")->assertOk();
+        $this->assertCount(1, $resCurr->json('data'));
+        $this->assertSame('SUP-A', $resCurr->json('data.0.code'));
+
+        // Filter by payable_account_id
+        $resAcc = $this->actingAs($user)->getJson("/api/v1/supplier-accounts?filter[payable_account_id]={$accountB->id}")->assertOk();
+        $this->assertCount(1, $resAcc->json('data'));
+        $this->assertSame('SUP-B', $resAcc->json('data.0.code'));
+
+        // Sort by payment_terms_days asc
+        $resSortAsc = $this->actingAs($user)->getJson('/api/v1/supplier-accounts?sort=payment_terms_days')->assertOk();
+        $this->assertSame('SUP-A', $resSortAsc->json('data.0.code'));
+        $this->assertSame('SUP-B', $resSortAsc->json('data.1.code'));
+
+        // Sort by payment_terms_days desc
+        $resSortDesc = $this->actingAs($user)->getJson('/api/v1/supplier-accounts?sort=-payment_terms_days')->assertOk();
+        $this->assertSame('SUP-B', $resSortDesc->json('data.0.code'));
+        $this->assertSame('SUP-A', $resSortDesc->json('data.1.code'));
     }
 }

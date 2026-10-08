@@ -90,6 +90,9 @@ import { presentation, purchaseOrderOptionsStyle } from "./presentation";
 const purchaseOrderCreateAsSheet = presentation.purchaseOrderCreate === "sheet";
 const purchaseOrderDetailAsSheet = presentation.purchaseOrderDetail === "sheet";
 const purchaseOrderEditAsSheet = presentation.purchaseOrderEdit === "sheet";
+const supplierCreateAsSheet = presentation.supplierCreate === "sheet";
+const supplierDetailAsSheet = presentation.supplierDetail === "sheet";
+const supplierEditAsSheet = presentation.supplierEdit === "sheet";
 
 export function AppRouter() {
   return (
@@ -539,40 +542,66 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <SuppliersListScreen />
+                <Outlet />
               </AppShell>
             </ProtectedRoute>
           }
-        />
-        <Route
-          path="/suppliers/new"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <SupplierFormScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/suppliers/:id"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <SupplierDetailScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/suppliers/:id/edit"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <SupplierFormScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
+        >
+          {supplierCreateAsSheet && (
+            <Route
+              path="new"
+              element={<SupplierFormScreen presentation="sheet" />}
+            />
+          )}
+          {supplierDetailAsSheet && (
+            <Route
+              path=":id"
+              element={<SupplierDetailScreen presentation="sheet" />}
+            />
+          )}
+          {supplierEditAsSheet && (
+            <Route
+              path=":id/edit"
+              element={<SupplierFormScreen presentation="sheet" />}
+            />
+          )}
+        </Route>
+        {!supplierCreateAsSheet && (
+          <Route
+            path="/suppliers/new"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <SupplierFormScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!supplierDetailAsSheet && (
+          <Route
+            path="/suppliers/:id"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <SupplierDetailScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!supplierEditAsSheet && (
+          <Route
+            path="/suppliers/:id/edit"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <SupplierFormScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
         <Route
           path="/settings/custom-fields"
           element={

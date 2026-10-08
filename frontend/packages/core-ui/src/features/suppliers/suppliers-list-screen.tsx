@@ -1,8 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import type { PaginationState, SortingState } from "@tanstack/react-table";
+import type {
+  PaginationState,
+  RowSelectionState,
+  SortingState,
+} from "@tanstack/react-table";
 import {
+  useChartOfAccountsIndex,
   useCurrenciesIndex,
   usePartiesIndex,
   useSupplierAccountsIndex,
@@ -15,7 +20,6 @@ import {
   Building2,
   ChevronUp,
   EllipsisVertical,
-  ExternalLink,
   Package,
   Pencil,
   RefreshCw,
@@ -56,6 +60,7 @@ import {
 import {
   DataTable,
   isColumnVisibleByDefault,
+  selectionColumn,
   toTanStackColumns,
 } from "../../components/data-table";
 import {
@@ -80,11 +85,14 @@ interface SupplierFilters {
   search: string;
   status: string;
   party_id: string;
+  default_currency_id: string;
+  payable_account_id: string;
   [key: string]: string;
 }
 
 export function SuppliersListScreen() {
   const navigate = useNavigate();
+  const { search } = useLocation();
   const queryClient = useQueryClient();
 
   const mayManage = usePermission("parties.supplier-account.manage");
@@ -101,11 +109,18 @@ export function SuppliersListScreen() {
   );
 
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [advancedOpen, setAdvancedOpen] = useState(() => Boolean(query.filters.party_id));
+  const [advancedOpen, setAdvancedOpen] = useState(() =>
+    Boolean(
+      query.filters.party_id ||
+        query.filters.default_currency_id ||
+        query.filters.payable_account_id
+    )
+  );
   const { view, setView } = useListViewPreference("suppliers-list");
 
   const currenciesQuery = useCurrenciesIndex({ per_page: 100, sort: "code" });
-  const currencies = currenciesQuery.data?.status === 200 ? currenciesQuery.data.data.data : [];
+  const currencies =
+    currenciesQuery.data?.status === 200 ? currenciesQuery.data.data.data : [];
   const currencyLabels = useMemo(
     () => new Map(currencies.map((c) => [c.id, `${c.code} — ${c.name}`])),
     [currencies]
@@ -115,20 +130,34 @@ export function SuppliersListScreen() {
     per_page: 100,
     sort: "name",
   });
-  const parties = partiesQuery.data?.status === 200 ? partiesQuery.data.data.data : [];
+  const parties =
+    partiesQuery.data?.status === 200 ? partiesQuery.data.data.data : [];
   const partyLabels = useMemo(
     () => new Map(parties.map((p) => [p.id, `${p.code} — ${p.name}`])),
     [parties]
   );
 
+  const accountsQuery = useChartOfAccountsIndex(
+    { per_page: 100, sort: "code" },
+    { query: { enabled: mayMap } }
+  );
+  const accounts =
+    accountsQuery.data?.status === 200 ? accountsQuery.data.data.data : [];
+  const accountLabels = useMemo(
+    () => new Map(accounts.map((a) => [a.id, `${a.code} — ${a.name}`])),
+    [accounts]
+  );
+
   const columns = useMemo(
-    () => getSupplierColumns(currencyLabels),
-    [currencyLabels]
+    () => getSupplierColumns(currencyLabels, accountLabels),
+    [currencyLabels, accountLabels]
   );
 
   const [columnVisibility, setColumnVisibility] = useColumnVisibilityPreference(
     "suppliers-list",
-    Object.fromEntries(columns.map((col) => [col.key, isColumnVisibleByDefault(col)]))
+    Object.fromEntries(
+      columns.map((col) => [col.key, isColumnVisibleByDefault(col)])
+    )
   );
 
   const suppliersQuery = useSupplierAccountsIndex({
@@ -139,6 +168,13 @@ export function SuppliersListScreen() {
     "filter[party_id]": query.filters.party_id
       ? Number(query.filters.party_id)
       : undefined,
+    "filter[default_currency_id]": query.filters.default_currency_id
+      ? Number(query.filters.default_currency_id)
+      : undefined,
+    "filter[payable_account_id]":
+      mayMap && query.filters.payable_account_id
+        ? Number(query.filters.payable_account_id)
+        : undefined,
     sort: query.sort as SupplierAccountsIndexSort | undefined,
     page: query.page,
     per_page: query.perPage,
@@ -152,8 +188,19 @@ export function SuppliersListScreen() {
   const updateSupplier = useSupplierAccountsUpdate();
 
   const tanStackColumns = useMemo(
-    () => toTanStackColumns(columns),
+    () => [
+      selectionColumn<SupplierAccountResource>(),
+      ...toTanStackColumns(columns),
+    ],
     [columns]
+  );
+
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  useEffect(() => setRowSelection({}), [search]);
+
+  const selectedSuppliers = useMemo(
+    () => suppliers.filter((supplier) => rowSelection[String(supplier.id)]),
+    [suppliers, rowSelection]
   );
 
   const sorting: SortingState = apiSortToTableSorting(query.sort, columns);
@@ -166,10 +213,21 @@ export function SuppliersListScreen() {
     documentTitle: "Supplier Directory",
   });
 
-  const activeAdvancedFilterCount = [query.filters.party_id].filter(Boolean).length;
+  const { contentRef: selectedPrintRef, print: printSelected } = useQuickPrint({
+    documentTitle: "Supplier Directory (Selected)",
+  });
+
+  const activeAdvancedFilterCount = [
+    query.filters.party_id,
+    query.filters.default_currency_id,
+    mayMap && query.filters.payable_account_id,
+  ].filter(Boolean).length;
+
   const mobileActiveFilterCount = [
     query.filters.status,
     query.filters.party_id,
+    query.filters.default_currency_id,
+    mayMap && query.filters.payable_account_id,
   ].filter(Boolean).length;
 
   const activeChips = useMemo(() => {
@@ -197,8 +255,38 @@ export function SuppliersListScreen() {
         onRemove: () => query.setFilter("party_id", undefined),
       });
     }
+    if (query.filters.default_currency_id) {
+      const currencyIdNum = Number(query.filters.default_currency_id);
+      const currencyName =
+        currencyLabels.get(currencyIdNum) ?? `Currency #${currencyIdNum}`;
+      chips.push({
+        id: "currency",
+        label: `Currency: ${currencyName}`,
+        onRemove: () => query.setFilter("default_currency_id", undefined),
+      });
+    }
+    if (mayMap && query.filters.payable_account_id) {
+      const accountIdNum = Number(query.filters.payable_account_id);
+      const accountName =
+        accountLabels.get(accountIdNum) ?? `Account #${accountIdNum}`;
+      chips.push({
+        id: "payable_account",
+        label: `Account: ${accountName}`,
+        onRemove: () => query.setFilter("payable_account_id", undefined),
+      });
+    }
     return chips;
-  }, [query.filters, partyLabels, query]);
+  }, [query.filters, partyLabels, currencyLabels, accountLabels, mayMap, query]);
+
+  function clearAllFilters() {
+    query.setFilters({
+      search: undefined,
+      status: undefined,
+      party_id: undefined,
+      default_currency_id: undefined,
+      payable_account_id: undefined,
+    });
+  }
 
   async function handleToggleStatus(supplier: SupplierAccountResource) {
     const nextStatus = supplier.status === "ACTIVE" ? "ARCHIVED" : "ACTIVE";
@@ -219,7 +307,7 @@ export function SuppliersListScreen() {
             mayManage && maySetTerms && mayMap
               ? {
                   label: "New supplier",
-                  onClick: () => navigate("/suppliers/new"),
+                  onClick: () => navigate({ pathname: "/suppliers/new", search }),
                 }
               : undefined
           }
@@ -272,9 +360,7 @@ export function SuppliersListScreen() {
               <SlidersHorizontal className="mr-1.5 h-4 w-4" />
               Filters
               {activeAdvancedFilterCount > 0 && (
-                <Badge
-                  className="absolute -right-2 -top-2 h-5 min-w-5 justify-center rounded-full px-1 text-[11px]"
-                >
+                <Badge className="absolute -right-2 -top-2 h-5 min-w-5 justify-center rounded-full px-1 text-[11px]">
                   {activeAdvancedFilterCount}
                 </Badge>
               )}
@@ -319,7 +405,13 @@ export function SuppliersListScreen() {
                       variant="ghost"
                       size="sm"
                       className="h-7 text-xs text-muted-foreground hover:text-foreground"
-                      onClick={() => query.setFilter("party_id", undefined)}
+                      onClick={() =>
+                        query.setFilters({
+                          party_id: undefined,
+                          default_currency_id: undefined,
+                          payable_account_id: undefined,
+                        })
+                      }
                     >
                       Reset filters
                     </Button>
@@ -346,7 +438,10 @@ export function SuppliersListScreen() {
                     {...lookupState(partiesQuery, "trading partners")}
                     value={query.filters.party_id ?? "all"}
                     onValueChange={(val) =>
-                      query.setFilter("party_id", val === "all" ? undefined : val)
+                      query.setFilter(
+                        "party_id",
+                        val === "all" ? undefined : val
+                      )
                     }
                     searchPlaceholder="Search trading partners…"
                     emptyText="No trading partners found."
@@ -359,13 +454,68 @@ export function SuppliersListScreen() {
                     ]}
                   />
                 </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">
+                    Default currency
+                  </label>
+                  <Combobox
+                    {...lookupState(currenciesQuery, "currencies")}
+                    value={query.filters.default_currency_id ?? "all"}
+                    onValueChange={(val) =>
+                      query.setFilter(
+                        "default_currency_id",
+                        val === "all" ? undefined : val
+                      )
+                    }
+                    searchPlaceholder="Search currencies…"
+                    emptyText="No currencies found."
+                    options={[
+                      { value: "all", label: "All currencies" },
+                      ...currencies.map((c) => ({
+                        value: String(c.id),
+                        label: `${c.code} — ${c.name}`,
+                      })),
+                    ]}
+                  />
+                </div>
+
+                {mayMap && (
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Payable control account
+                    </label>
+                    <Combobox
+                      {...lookupState(accountsQuery, "payable accounts")}
+                      value={query.filters.payable_account_id ?? "all"}
+                      onValueChange={(val) =>
+                        query.setFilter(
+                          "payable_account_id",
+                          val === "all" ? undefined : val
+                        )
+                      }
+                      searchPlaceholder="Search accounts…"
+                      emptyText="No accounts found."
+                      options={[
+                        { value: "all", label: "All accounts" },
+                        ...accounts.map((a) => ({
+                          value: String(a.id),
+                          label: `${a.code} — ${a.name}`,
+                        })),
+                      ]}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </div>
 
         <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
-          <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto md:hidden">
+          <SheetContent
+            side="bottom"
+            className="max-h-[85vh] overflow-y-auto md:hidden"
+          >
             <SheetHeader>
               <SheetTitle>Filters</SheetTitle>
             </SheetHeader>
@@ -399,7 +549,10 @@ export function SuppliersListScreen() {
                   {...lookupState(partiesQuery, "trading partners")}
                   value={query.filters.party_id ?? "all"}
                   onValueChange={(val) =>
-                    query.setFilter("party_id", val === "all" ? undefined : val)
+                    query.setFilter(
+                      "party_id",
+                      val === "all" ? undefined : val
+                    )
                   }
                   searchPlaceholder="Search trading partners…"
                   emptyText="No trading partners found."
@@ -412,12 +565,69 @@ export function SuppliersListScreen() {
                   ]}
                 />
               </div>
+
+              <div className="space-y-2 border-t pt-3">
+                <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Default currency
+                </label>
+                <Combobox
+                  {...lookupState(currenciesQuery, "currencies")}
+                  value={query.filters.default_currency_id ?? "all"}
+                  onValueChange={(val) =>
+                    query.setFilter(
+                      "default_currency_id",
+                      val === "all" ? undefined : val
+                    )
+                  }
+                  searchPlaceholder="Search currencies…"
+                  emptyText="No currencies found."
+                  options={[
+                    { value: "all", label: "All currencies" },
+                    ...currencies.map((c) => ({
+                      value: String(c.id),
+                      label: `${c.code} — ${c.name}`,
+                    })),
+                  ]}
+                />
+              </div>
+
+              {mayMap && (
+                <div className="space-y-2 border-t pt-3">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Payable control account
+                  </label>
+                  <Combobox
+                    {...lookupState(accountsQuery, "payable accounts")}
+                    value={query.filters.payable_account_id ?? "all"}
+                    onValueChange={(val) =>
+                      query.setFilter(
+                        "payable_account_id",
+                        val === "all" ? undefined : val
+                      )
+                    }
+                    searchPlaceholder="Search accounts…"
+                    emptyText="No accounts found."
+                    options={[
+                      { value: "all", label: "All accounts" },
+                      ...accounts.map((a) => ({
+                        value: String(a.id),
+                        label: `${a.code} — ${a.name}`,
+                      })),
+                    ]}
+                  />
+                </div>
+              )}
             </div>
             <SheetFooter className="gap-2 sm:space-x-0">
               <Button
                 variant="outline"
                 onClick={() => {
-                  query.setFilters({ status: undefined, party_id: undefined });
+                  query.setFilters({
+                    status: undefined,
+                    party_id: undefined,
+                    default_currency_id: undefined,
+                    payable_account_id: undefined,
+                  });
                   setFiltersOpen(false);
                 }}
               >
@@ -451,15 +661,34 @@ export function SuppliersListScreen() {
               variant="ghost"
               size="sm"
               className="h-7 text-xs text-muted-foreground hover:text-foreground"
-              onClick={() =>
-                query.setFilters({
-                  search: undefined,
-                  status: undefined,
-                  party_id: undefined,
-                })
-              }
+              onClick={clearAllFilters}
             >
               Clear all
+            </Button>
+          </div>
+        )}
+
+        {selectedSuppliers.length > 0 && (
+          <div
+            role="region"
+            aria-label="Bulk actions"
+            className="ui-bulk-bar flex flex-wrap items-center gap-3 rounded-md border bg-muted/40 px-3 py-2 text-sm"
+          >
+            <span className="font-medium">
+              {selectedSuppliers.length} selected
+            </span>
+            <PrintTrigger
+              onPrint={() => printSelected()}
+              label="Print selected"
+              className="h-8"
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8"
+              onClick={() => setRowSelection({})}
+            >
+              Clear selection
             </Button>
           </div>
         )}
@@ -486,8 +715,11 @@ export function SuppliersListScreen() {
           }}
           columnVisibility={columnVisibility}
           onColumnVisibilityChange={setColumnVisibility}
+          rowSelection={rowSelection}
+          onRowSelectionChange={setRowSelection}
+          getRowId={(row) => String(row.id)}
           onRowClick={(supplier: SupplierAccountResource) =>
-            navigate(`/suppliers/${supplier.id}`)
+            navigate({ pathname: `/suppliers/${supplier.id}`, search })
           }
           isLoading={suppliersQuery.isLoading}
           isError={suppliersQuery.isError}
@@ -499,6 +731,7 @@ export function SuppliersListScreen() {
           onViewChange={setView}
           cardColumns={columns}
           recordNoun="suppliers"
+          actionsHeader="Actions"
           numberedPagination
           rowActions={(supplier: SupplierAccountResource) => (
             <DropdownMenu>
@@ -517,7 +750,7 @@ export function SuppliersListScreen() {
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.stopPropagation();
-                    navigate(`/suppliers/${supplier.id}`);
+                    navigate({ pathname: `/suppliers/${supplier.id}`, search });
                   }}
                 >
                   <Building2 className="mr-2 h-4 w-4 text-muted-foreground" />
@@ -527,7 +760,10 @@ export function SuppliersListScreen() {
                   <DropdownMenuItem
                     onClick={(e) => {
                       e.stopPropagation();
-                      navigate(`/suppliers/${supplier.id}/edit`);
+                      navigate({
+                        pathname: `/suppliers/${supplier.id}/edit`,
+                        search,
+                      });
                     }}
                   >
                     <Pencil className="mr-2 h-4 w-4 text-muted-foreground" />
@@ -538,7 +774,9 @@ export function SuppliersListScreen() {
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.stopPropagation();
-                    navigate(`/purchase-orders?supplier_account_id=${supplier.id}`);
+                    navigate(
+                      `/purchase-orders?supplier_account_id=${supplier.id}`
+                    );
                   }}
                 >
                   <ShoppingBag className="mr-2 h-4 w-4 text-muted-foreground" />
@@ -547,7 +785,9 @@ export function SuppliersListScreen() {
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.stopPropagation();
-                    navigate(`/item-suppliers?supplier_account_id=${supplier.id}`);
+                    navigate(
+                      `/item-suppliers?supplier_account_id=${supplier.id}`
+                    );
                   }}
                 >
                   <Package className="mr-2 h-4 w-4 text-muted-foreground" />
@@ -591,6 +831,28 @@ export function SuppliersListScreen() {
               <PrintableTable
                 columns={columns}
                 rows={suppliers}
+                getRowKey={(supplier) => supplier.id}
+              />
+            </PrintLayout>
+          </div>
+        </div>
+
+        <div className="hidden">
+          <div ref={selectedPrintRef}>
+            <PrintLayout
+              title="SUPPLIER DIRECTORY (SELECTED)"
+              printedAt={new Date()}
+              recordCount={selectedSuppliers.length}
+              meta={[
+                {
+                  label: "Selection",
+                  value: `${selectedSuppliers.length} selected suppliers`,
+                },
+              ]}
+            >
+              <PrintableTable
+                columns={columns}
+                rows={selectedSuppliers}
                 getRowKey={(supplier) => supplier.id}
               />
             </PrintLayout>

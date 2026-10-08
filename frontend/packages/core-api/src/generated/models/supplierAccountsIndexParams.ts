@@ -17,6 +17,14 @@ export type SupplierAccountsIndexParams = {
    * @maxLength 255
    */
   "filter[search]"?: string;
+  /**
+   * @minimum 1
+   */
+  "filter[default_currency_id]"?: number;
+  /**
+   * @minimum 1
+   */
+  "filter[payable_account_id]"?: number;
   sort?: SupplierAccountsIndexSort;
   include?: string;
   /**
