@@ -8,6 +8,7 @@ use App\Modules\Purchasing\Http\Controllers\Api\V1\PurchasingPolicyChangeControl
 use App\Modules\Purchasing\Http\Controllers\Api\V1\PurchasingSettingsController;
 use App\Modules\Purchasing\Http\Controllers\Api\V1\QualityDispositionController;
 use App\Modules\Purchasing\Http\Controllers\Api\V1\SupplierOfferController;
+use App\Modules\Purchasing\Http\Controllers\Api\V1\SupplierReturnController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -31,6 +32,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('goods-receipts/{goodsReceipt}/reversal-preview', [GoodsReceiptController::class, 'reversalPreview'])->name('goods-receipts.reversal-preview');
     Route::post('goods-receipts/{goodsReceipt}/reverse', [GoodsReceiptController::class, 'reverse'])->name('goods-receipts.reverse');
     Route::post('goods-receipt-lines/{goodsReceiptLine}/quality-dispositions', [QualityDispositionController::class, 'store'])->name('quality-dispositions.store');
+    // Supplier returns of QA-rejected stock (ADR 0097): draft → post over the shared rejected-stock exit core.
+    Route::post('supplier-returns/preview', [SupplierReturnController::class, 'preview'])->name('supplier-returns.preview');
+    Route::apiResource('supplier-returns', SupplierReturnController::class)->parameters(['supplier-returns' => 'supplierReturn'])->only(['index', 'store', 'show', 'update']);
+    Route::post('supplier-returns/{supplierReturn}/post', [SupplierReturnController::class, 'post'])->name('supplier-returns.post');
+    Route::post('supplier-returns/{supplierReturn}/cancel', [SupplierReturnController::class, 'cancel'])->name('supplier-returns.cancel');
     Route::get('goods-receipt-lines/{goodsReceiptLine}/quality-disposition-portion', [QualityDispositionController::class, 'portionPreview'])->name('quality-dispositions.portion-preview');
     Route::get('goods-receipt-lines/{goodsReceiptLine}/quality-dispositions', [QualityDispositionController::class, 'index'])->name('quality-dispositions.index');
     Route::get('quality-dispositions/{qualityDisposition}', [QualityDispositionController::class, 'show'])->name('quality-dispositions.show');

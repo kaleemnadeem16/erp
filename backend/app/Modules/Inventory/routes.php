@@ -17,9 +17,11 @@ use App\Modules\Inventory\Http\Controllers\Api\V1\PackageCheckpointController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\PackageDrawController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\PhysicalCountController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\RecalculationRequestController;
+use App\Modules\Inventory\Http\Controllers\Api\V1\RejectedStockController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\StockIssueController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\StockLayerController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\StockMoveController;
+use App\Modules\Inventory\Http\Controllers\Api\V1\StockScrapController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\StockTransferController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\WarehouseController;
 use App\Modules\Inventory\Http\Controllers\Api\V1\WarehouseLocationAssignmentController;
@@ -30,6 +32,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('package-draws/suggest', [PackageDrawController::class, 'suggest'])->name('package-draws.suggest');
     Route::post('package-checkpoints', [PackageCheckpointController::class, 'store'])->name('package-checkpoints.store');
     Route::post('stock-issues', [StockIssueController::class, 'store'])->name('stock-issues.store');
+    // Rejected-stock exits (ADR 0097): a Scrap document over the shared exit core, plus what is rejected and still on hand for a delivery line.
+    Route::get('goods-receipt-lines/{goodsReceiptLine}/rejected-stock', [RejectedStockController::class, 'show'])->name('rejected-stock.show');
+    Route::post('stock-scraps/preview', [StockScrapController::class, 'preview'])->name('stock-scraps.preview');
+    Route::apiResource('stock-scraps', StockScrapController::class)->parameters(['stock-scraps' => 'stockScrap'])->only(['index', 'store', 'show', 'update']);
+    Route::post('stock-scraps/{stockScrap}/post', [StockScrapController::class, 'post'])->name('stock-scraps.post');
+    Route::post('stock-scraps/{stockScrap}/cancel', [StockScrapController::class, 'cancel'])->name('stock-scraps.cancel');
     Route::post('stock-transfers', [StockTransferController::class, 'store'])->name('stock-transfers.store');
     Route::get('items/{item}/package-tracking', [ItemPackageTrackingController::class, 'show'])->name('items.package-tracking.show');
     Route::post('items/{item}/package-tracking/preview', [ItemPackageTrackingController::class, 'preview'])->name('items.package-tracking.preview');

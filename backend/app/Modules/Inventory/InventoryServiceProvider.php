@@ -9,7 +9,9 @@ use App\Modules\Inventory\Imports\OpeningStateImportTarget;
 use App\Modules\Inventory\Models\InventoryCutover;
 use App\Modules\Inventory\Models\StockMove;
 use App\Modules\Inventory\Models\Warehouse;
+use App\Modules\Inventory\Numbering\StockScrapNumbering;
 use App\Modules\Inventory\Support\PermissionVocabulary;
+use App\Modules\Numbering\Support\NumberingRegistry;
 use App\Support\CompanyLocks\ExistsProbe;
 use App\Support\CompanyLocks\FinancialActivity;
 use App\Support\PermissionRegistry;
@@ -34,6 +36,11 @@ class InventoryServiceProvider extends ServiceProvider
         $this->app->afterResolving(FinancialActivity::class, static function (FinancialActivity $activity): void {
             $activity->register(new ExistsProbe('stock movements', fn (): bool => StockMove::query()->exists()));
             $activity->register(new ExistsProbe('inventory cutovers', fn (): bool => InventoryCutover::query()->exists()));
+        });
+
+        // A scrap document is numbered by the central framework when it is posted (ADR 0079, ADR 0097).
+        $this->app->afterResolving(NumberingRegistry::class, static function (NumberingRegistry $registry): void {
+            $registry->register(new StockScrapNumbering);
         });
 
         $this->app->afterResolving(PermissionRegistry::class, static function (PermissionRegistry $registry): void {

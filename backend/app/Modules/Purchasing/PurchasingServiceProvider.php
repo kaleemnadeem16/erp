@@ -12,6 +12,7 @@ use App\Modules\Purchasing\Models\GoodsReceipt;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Modules\Purchasing\Numbering\GoodsReceiptNumbering;
 use App\Modules\Purchasing\Numbering\PurchaseOrderNumbering;
+use App\Modules\Purchasing\Numbering\SupplierReturnNumbering;
 use App\Modules\Purchasing\Support\PermissionVocabulary;
 use App\Modules\Purchasing\Support\PurchaseOrderApprovalSubject;
 use App\Support\CompanyLocks\ExistsProbe;
@@ -36,6 +37,7 @@ class PurchasingServiceProvider extends ServiceProvider
         $this->app->afterResolving(NumberingRegistry::class, static function (NumberingRegistry $registry): void {
             $registry->register(new PurchaseOrderNumbering);
             $registry->register(new GoodsReceiptNumbering);
+            $registry->register(new SupplierReturnNumbering);
         });
 
         // Purchase orders and receipts pin base-currency amounts when they are saved, so they lock the company's base currency.

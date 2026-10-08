@@ -26,7 +26,7 @@ History is in [STATUS-LOG.md](STATUS-LOG.md); resume points are in the workstrea
 
 ## In progress
 
-The rejected-stock exit (ADR 0097) has its slice 1 built; no slice is mid-way. Other agents share the checkout: run `git status` and `git log` before assuming the tree is idle.
+The rejected-stock exit (ADR 0097) has slices 1–2 built; no slice is mid-way. Other agents share the checkout: run `git status` and `git log` before assuming the tree is idle.
 
 ## Release state
 
@@ -39,7 +39,7 @@ record scope, the access audit follow-ups, the approvals workspace, grouped pack
 Each is a new slice: propose first, get the owner's answers, then build. Optional enhancements are kept apart from required work.
 
 - **Required for the roadmap:** Phase 4 research/discussion starts with R1 (leads, opportunities and relationships), then the dependent topics in its [plan](phases/phase-4-sales-quotations-and-handover.md); implementation waits for agreed decisions. It also owes the multi-owner correction package carried from Phase 2.
-- **Next package slice — supplier return and scrap for rejected stock** (owner priority). **Decided** ([ADR 0097](decisions/0097-supplier-return-and-scrap-of-rejected-stock.md), accepted 2026-10-08: two separate documents, draft → post, dedicated permissions, informational supplier credit). **Slice 1 of 4 built** (the shared backend exit core, no routes or screens yet); slices 2–4 (documents and API, screens, demo) follow the plan in [rejected-stock-exit-plan.md](phases/rejected-stock-exit-plan.md). It closes the one operational dead end: rejected stock, grouped or quantity-only, has no exit today.
+- **Next package slice — supplier return and scrap for rejected stock** (owner priority). **Decided** ([ADR 0097](decisions/0097-supplier-return-and-scrap-of-rejected-stock.md), accepted 2026-10-08: two separate documents, draft → post, dedicated permissions, informational supplier credit). **Slices 1 and 2 of 4 built** (the shared backend exit core, then the Supplier Return and Scrap documents with their API; no screens yet); slices 3–4 (screens, demo) follow the plan in [rejected-stock-exit-plan.md](phases/rejected-stock-exit-plan.md). It closes the one operational dead end: rejected stock, grouped or quantity-only, has no exit today.
 - **Later package enhancements** (none started; each a new design slice): governed change of tracked levels; deactivation/collapse; container-level tracking (not before the owner asks); line-level receipt reversal; count approval thresholds; QA/count reconciliation; standalone Issue/Transfer screens. **Deferred estimating enhancement:** package-aware proposals in the Material Preview (owner decision: not ahead of return/scrap).
 - **Access and security:** the remaining record-scope slices (purchasing documents, Estimating availability, approvals, delegated administration) — Q26; two-factor and step-up sign-in — Q37.
 

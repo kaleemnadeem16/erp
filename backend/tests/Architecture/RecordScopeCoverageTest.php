@@ -28,11 +28,16 @@ class RecordScopeCoverageTest extends TestCase
 {
     use RefreshDatabase;
 
-    private const PATTERN = '#^api/v1/(stock-|avco-|inventory-|physical-count|negative-stock|recalculation|warehouse|locations|item-packag)#';
+    private const PATTERN = '#^api/v1/(stock-|avco-|inventory-|physical-count|negative-stock|recalculation|warehouse|locations|item-packag|supplier-return|goods-receipt-lines/\{[^}]+\}/rejected-stock)#';
 
     private const SCOPED = [
         'GET api/v1/stock-layers', 'GET api/v1/stock-layers/{}', 'GET api/v1/stock-moves', 'GET api/v1/stock-moves/{}',
-        'POST api/v1/stock-issues', 'POST api/v1/stock-transfers', 'GET api/v1/physical-counts', 'POST api/v1/physical-counts', 'GET api/v1/physical-counts/{}',
+        'POST api/v1/stock-issues', 'POST api/v1/stock-transfers',
+        // Rejected-stock exits (ADR 0097): documents are one-warehouse; a limited person sees and acts on their own warehouses only.
+        'GET api/v1/stock-scraps', 'POST api/v1/stock-scraps', 'POST api/v1/stock-scraps/preview', 'GET api/v1/stock-scraps/{}', 'PUT api/v1/stock-scraps/{}', 'PATCH api/v1/stock-scraps/{}',
+        'POST api/v1/stock-scraps/{}/post', 'POST api/v1/stock-scraps/{}/cancel', 'GET api/v1/supplier-returns', 'POST api/v1/supplier-returns', 'POST api/v1/supplier-returns/preview',
+        'GET api/v1/supplier-returns/{}', 'PUT api/v1/supplier-returns/{}', 'PATCH api/v1/supplier-returns/{}', 'POST api/v1/supplier-returns/{}/post', 'POST api/v1/supplier-returns/{}/cancel',
+        'GET api/v1/goods-receipt-lines/{}/rejected-stock', 'GET api/v1/physical-counts', 'POST api/v1/physical-counts', 'GET api/v1/physical-counts/{}',
         'POST api/v1/physical-counts/{}/lines', 'POST api/v1/physical-count-lines/{}/count', 'POST api/v1/physical-count-lines/{}/composition', 'POST api/v1/physical-count-lines/{}/refresh',
         'POST api/v1/physical-counts/{}/post', 'POST api/v1/physical-counts/{}/cancel',
         'GET api/v1/negative-stock-override-requests',
