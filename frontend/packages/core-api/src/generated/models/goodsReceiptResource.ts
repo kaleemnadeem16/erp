@@ -11,6 +11,8 @@ import type { GoodsReceiptResourceReversedBy } from "./goodsReceiptResourceRever
 import type { GoodsReceiptResourceReversalOfId } from "./goodsReceiptResourceReversalOfId";
 import type { GoodsReceiptResourceCorrectionReason } from "./goodsReceiptResourceCorrectionReason";
 import type { GoodsReceiptResourceLinesCount } from "./goodsReceiptResourceLinesCount";
+import type { GoodsReceiptResourceTotalAmount } from "./goodsReceiptResourceTotalAmount";
+import type { GoodsReceiptResourceCurrencyId } from "./goodsReceiptResourceCurrencyId";
 import type { GoodsReceiptResourceCreatedAt } from "./goodsReceiptResourceCreatedAt";
 import type { GoodsReceiptResourceUpdatedAt } from "./goodsReceiptResourceUpdatedAt";
 import type { GoodsReceiptLineResource } from "./goodsReceiptLineResource";
@@ -30,6 +32,8 @@ export interface GoodsReceiptResource {
   reversal_of_id: GoodsReceiptResourceReversalOfId;
   correction_reason: GoodsReceiptResourceCorrectionReason;
   lines_count?: GoodsReceiptResourceLinesCount;
+  total_amount?: GoodsReceiptResourceTotalAmount;
+  currency_id: GoodsReceiptResourceCurrencyId;
   created_at: GoodsReceiptResourceCreatedAt;
   updated_at: GoodsReceiptResourceUpdatedAt;
   lines?: GoodsReceiptLineResource[];

@@ -23,7 +23,7 @@ class IndexGoodsReceiptRequest extends FormRequest
     public function rules(): array
     {
         return array_merge([
-            'filter' => ['sometimes', 'array:supplier_account_id,status,search,posting_date_from,posting_date_to,physical_arrival_from,physical_arrival_to'],
+            'filter' => ['sometimes', 'array:supplier_account_id,status,search,posting_date_from,posting_date_to,physical_arrival_from,physical_arrival_to,total_min,total_max'],
             'filter.supplier_account_id' => ['sometimes', 'integer', 'min:1'],
             'filter.status' => ['sometimes', Rule::enum(GoodsReceiptStatus::class)],
             'filter.search' => ['sometimes', 'string', 'max:255'],
@@ -31,6 +31,8 @@ class IndexGoodsReceiptRequest extends FormRequest
             'filter.posting_date_to' => ['sometimes', 'date'],
             'filter.physical_arrival_from' => ['sometimes', 'date'],
             'filter.physical_arrival_to' => ['sometimes', 'date'],
+            'filter.total_min' => ['sometimes', 'numeric', 'min:0'],
+            'filter.total_max' => ['sometimes', 'numeric', 'min:0'],
         ], $this->listQueryRules([
             'number',
             'posting_date',
@@ -38,6 +40,7 @@ class IndexGoodsReceiptRequest extends FormRequest
             'recorded_at',
             'posted_at',
             'status',
+            'total_amount',
             'created_at',
             'updated_at',
         ], ['lines', 'supplierAccount']));

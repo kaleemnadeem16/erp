@@ -7,6 +7,7 @@ namespace App\Modules\Purchasing\Http\Resources;
 use App\Modules\Purchasing\Models\GoodsReceiptLine;
 use App\Modules\Purchasing\Support\PurchasingCommercialAccess;
 use Brick\Math\BigDecimal;
+use Brick\Math\RoundingMode;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -26,6 +27,7 @@ class GoodsReceiptLineResource extends JsonResource
             'received_qty' => $this->received_qty, 'received_uom_id' => $this->received_uom_id,
             'stock_qty' => $this->stock_qty, 'stock_uom_id' => $this->stock_uom_id, 'uom_factor' => $this->uom_factor,
             'provisional_unit_cost' => $this->when($commercial, fn () => $this->provisional_unit_cost),
+            'provisional_amount' => $this->when($commercial, fn () => $this->provisional_amount ?? (string) BigDecimal::of((string) $this->received_qty)->multipliedBy(BigDecimal::of((string) $this->provisional_unit_cost))->toScale(4, RoundingMode::HALF_UP)),
             'currency_id' => $this->currency_id,
             'fx_rate' => $this->when($commercial, fn () => $this->fx_rate),
             'base_unit_cost' => $this->when($commercial, fn () => $this->base_unit_cost),

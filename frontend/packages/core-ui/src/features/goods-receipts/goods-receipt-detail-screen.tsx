@@ -64,6 +64,8 @@ import {
   ReceiptCompositionPanel,
   type ObservedRow,
 } from "../package-stock/receipt-composition-panel";
+import { AlertCircle } from "lucide-react";
+import { GoodsReceiptStatusBadge } from "./goods-receipt-columns";
 import { usePermission } from "../../hooks/use-permission";
 import { usePurchasingCommercialCost } from "../../hooks/use-purchasing-commercial-cost";
 
@@ -532,25 +534,18 @@ export function GoodsReceiptDetailScreen({
         </Button>
       )}
       {receipt.status === "POSTED" && mayReverse && (
-        <div className="flex flex-col items-end gap-1">
-          <Button
-            variant="outline"
-            onClick={() => setShowReverse((value) => !value)}
-            disabled={hasQaDisposition}
-            title={
-              hasQaDisposition
-                ? "This receipt has a posted QA disposition and cannot be reversed"
-                : undefined
-            }
-          >
-            Reverse receipt
-          </Button>
-          {hasQaDisposition && (
-            <span className="text-xs text-muted-foreground">
-              Blocked by a posted QA disposition
-            </span>
-          )}
-        </div>
+        <Button
+          variant="outline"
+          onClick={() => setShowReverse((value) => !value)}
+          disabled={hasQaDisposition}
+          title={
+            hasQaDisposition
+              ? "This receipt has a posted QA disposition and cannot be reversed"
+              : undefined
+          }
+        >
+          Reverse receipt
+        </Button>
       )}
     </>
   );
@@ -562,12 +557,27 @@ export function GoodsReceiptDetailScreen({
           {error}
         </div>
       )}
+      {receipt.status === "POSTED" && hasQaDisposition && (
+        <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3.5 text-sm text-amber-900 dark:text-amber-200">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+          <div>
+            <div className="font-semibold">
+              Reversal locked by QA disposition
+            </div>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              A quality disposition has already been recorded against lines in
+              this receipt. Receipts with active QA dispositions cannot be
+              reversed.
+            </p>
+          </div>
+        </div>
+      )}
       {confirmPost && receipt.status === "DRAFT" && (
-        <section className="space-y-3 rounded-md border p-4">
+        <section className="space-y-3 rounded-lg border bg-card p-4 shadow-xs">
           <h2
             ref={postHeadingRef}
             tabIndex={-1}
-            className="font-medium outline-none"
+            className="text-sm font-semibold text-foreground outline-none"
           >
             Post this physical receipt?
           </h2>
@@ -601,11 +611,11 @@ export function GoodsReceiptDetailScreen({
         </section>
       )}
       {showReverse && receipt.status === "POSTED" && (
-        <section className="space-y-3 rounded-md border border-destructive/40 p-4">
+        <section className="space-y-3 rounded-lg border border-destructive/40 bg-card p-4 shadow-xs">
           <h2
             ref={reverseHeadingRef}
             tabIndex={-1}
-            className="font-medium outline-none"
+            className="text-sm font-semibold text-foreground outline-none"
           >
             Reverse this receipt?
           </h2>
@@ -669,40 +679,121 @@ export function GoodsReceiptDetailScreen({
           </div>
         </section>
       )}
-      <DetailPageLayout>
+      <DetailPageLayout equalHeight>
         <DetailSection title="Receipt">
           <DetailField label="Status">
-            <Badge
-              variant={
-                receipt.status === "REVERSED"
-                  ? "destructive"
-                  : receipt.status === "POSTED"
-                    ? "default"
-                    : "secondary"
-              }
-            >
-              {receipt.status}
-            </Badge>
+            <GoodsReceiptStatusBadge status={receipt.status} />
           </DetailField>
-          <DetailField label="Supplier">{supplierLabel}</DetailField>
+          <DetailField label="Receipt number">
+            <span className="font-semibold text-foreground">
+              {receipt.number ?? `Draft #${receipt.id}`}
+            </span>
+          </DetailField>
           <DetailField label="Physical arrival">
             {formatDateTime(receipt.physical_arrival_at)}
           </DetailField>
           <DetailField label="Posting date">{receipt.posting_date}</DetailField>
+          {receipt.reversal_of_id && (
+            <DetailField label="Reversal of">
+              Receipt #{receipt.reversal_of_id}
+            </DetailField>
+          )}
           {receipt.correction_reason && (
-            <DetailField label="Correction reason">
+            <DetailField label="Correction reason" fullWidth>
               {receipt.correction_reason}
             </DetailField>
           )}
         </DetailSection>
+
+        <DetailSection title="Supplier">
+          <DetailField label="Supplier">{supplierLabel}</DetailField>
+          <DetailField label="Payment terms">
+            {supplier ? `${supplier.payment_terms_days} days` : undefined}
+          </DetailField>
+          {supplier?.party?.tax_id && (
+            <DetailField label="Tax ID">{supplier.party.tax_id}</DetailField>
+          )}
+          {supplier?.party?.registration_no && (
+            <DetailField label="Registration no.">
+              {supplier.party.registration_no}
+            </DetailField>
+          )}
+          {supplier?.party?.website && (
+            <DetailField label="Website">
+              <a
+                href={supplier.party.website}
+                target="_blank"
+                rel="noreferrer"
+                className="text-primary hover:underline"
+              >
+                {supplier.party.website}
+              </a>
+            </DetailField>
+          )}
+        </DetailSection>
+
+        {mayViewCommercialCost && (
+          <DetailSection title="Commercial">
+            <DetailField label="Currency">
+              {receipt.currency_id &&
+              currencies.find((c) => c.id === Number(receipt.currency_id))
+                ? `${currencies.find((c) => c.id === Number(receipt.currency_id))?.code} — ${currencies.find((c) => c.id === Number(receipt.currency_id))?.name}`
+                : receipt.currency_id
+                  ? `Currency #${receipt.currency_id}`
+                  : "—"}
+            </DetailField>
+            <DetailField label="Total value">
+              <span className="tabular-nums font-semibold text-foreground">
+                {receipt.total_amount
+                  ? `${(receipt.currency_id && currencies.find((c) => c.id === Number(receipt.currency_id))?.code) ?? ""} ${Number(receipt.total_amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`
+                  : "—"}
+              </span>
+            </DetailField>
+            <DetailField label="Total lines">
+              <span className="tabular-nums font-medium">
+                {receipt.lines?.length ?? receipt.lines_count ?? 0}
+              </span>
+            </DetailField>
+          </DetailSection>
+        )}
+
+        <DetailSection title="Record information">
+          <DetailField label="Recorded at">
+            {formatDateTime(receipt.recorded_at)}
+          </DetailField>
+          {receipt.posted_at && (
+            <DetailField label="Posted at">
+              {formatDateTime(receipt.posted_at)}
+            </DetailField>
+          )}
+          {receipt.reversed_at && (
+            <DetailField label="Reversed at">
+              {formatDateTime(receipt.reversed_at)}
+            </DetailField>
+          )}
+          {receipt.created_at && (
+            <DetailField label="Created at">
+              {formatDateTime(receipt.created_at)}
+            </DetailField>
+          )}
+        </DetailSection>
       </DetailPageLayout>
+
       <section className="space-y-4">
-        <div>
-          <h2 className="text-lg font-semibold">Receipt lines</h2>
-          <p className="text-sm text-muted-foreground">
-            Posted quantities are on the stock-UoM basis; inspection-required
-            lines remain held until terminal dispositions cover them.
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-base font-semibold text-foreground">
+              Receipt lines
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Posted quantities are on the stock-UoM basis; inspection-required
+              lines remain held until terminal dispositions cover them.
+            </p>
+          </div>
+          <Badge variant="secondary" className="text-xs font-normal">
+            {receipt.lines?.length ?? 0}{" "}
+            {receipt.lines?.length === 1 ? "line" : "lines"}
+          </Badge>
         </div>
         {(receipt.lines ?? []).map((line) => {
           const item = items.find((candidate) => candidate.id === line.item_id);
@@ -715,60 +806,80 @@ export function GoodsReceiptDetailScreen({
           const stockUom = uoms.find(
             (candidate) => candidate.id === line.stock_uom_id,
           );
-          const currency = currencies.find(
-            (candidate) => candidate.id === line.currency_id,
+          const lineCurrency = currencies.find(
+            (candidate) =>
+              candidate.id === Number(line.currency_id ?? receipt.currency_id),
           );
           return (
-            <article key={line.id} className="space-y-3 rounded-md border p-4">
+            <article
+              key={line.id}
+              className="space-y-3 rounded-lg border bg-card p-4 shadow-xs"
+            >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <h3 className="font-medium">
+                  <h3 className="font-semibold text-foreground">
                     {item
                       ? `${item.code} — ${item.name}`
                       : `Item #${line.item_id}`}
                   </h3>
-                  <p className="text-sm text-muted-foreground">
-                    PO line #{line.purchase_order_line_id} ·{" "}
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {line.purchase_order_line_id
+                      ? `PO line #${line.purchase_order_line_id} · `
+                      : ""}
                     {location
                       ? formatLocationOption(location)
                       : `Location #${line.location_id}`}
                   </p>
                 </div>
                 {(line.batch_no || line.serial_no) && (
-                  <Badge variant="outline">
+                  <Badge variant="outline" className="text-xs font-mono">
                     {line.batch_no
                       ? `Batch ${line.batch_no}`
                       : `Serial ${line.serial_no}`}
                   </Badge>
                 )}
               </div>
-              <div className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4 rounded-md bg-muted/40 p-3">
                 <div>
-                  <span className="text-muted-foreground">Received</span>
-                  <div className="tabular-nums">
+                  <span className="text-xs font-medium text-muted-foreground">
+                    Received
+                  </span>
+                  <div className="tabular-nums font-semibold mt-0.5">
                     {line.received_qty} {line.package_name ?? receivedUom?.code}
                   </div>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">Stock quantity</span>
-                  <div className="tabular-nums">
+                  <span className="text-xs font-medium text-muted-foreground">
+                    Stock quantity
+                  </span>
+                  <div className="tabular-nums font-semibold mt-0.5">
                     {line.stock_qty} {stockUom?.code}
                   </div>
                 </div>
                 {mayViewCommercialCost && (
                   <div>
-                    <span className="text-muted-foreground">
-                      Provisional cost
+                    <span className="text-xs font-medium text-muted-foreground">
+                      Provisional unit cost
                     </span>
-                    <div className="tabular-nums">
-                      {line.provisional_unit_cost} {currency?.code}
+                    <div className="tabular-nums font-semibold mt-0.5">
+                      {line.provisional_unit_cost !== undefined &&
+                      line.provisional_unit_cost !== null
+                        ? `${Number(line.provisional_unit_cost).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 4 })} ${lineCurrency?.code ?? ""}`
+                        : "—"}
                     </div>
                   </div>
                 )}
                 {mayViewCommercialCost && (
                   <div>
-                    <span className="text-muted-foreground">FX rate</span>
-                    <div className="tabular-nums">{line.fx_rate}</div>
+                    <span className="text-xs font-medium text-muted-foreground">
+                      Provisional line amount
+                    </span>
+                    <div className="tabular-nums font-semibold mt-0.5">
+                      {line.provisional_amount !== undefined &&
+                      line.provisional_amount !== null
+                        ? `${Number(line.provisional_amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 4 })} ${lineCurrency?.code ?? ""}`
+                        : "—"}
+                    </div>
                   </div>
                 )}
               </div>

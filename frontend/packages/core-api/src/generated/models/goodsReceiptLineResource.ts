@@ -30,6 +30,7 @@ export interface GoodsReceiptLineResource {
   stock_uom_id: number;
   uom_factor: string;
   provisional_unit_cost?: string;
+  provisional_amount?: string;
   currency_id: number;
   fx_rate?: string;
   base_unit_cost?: string;

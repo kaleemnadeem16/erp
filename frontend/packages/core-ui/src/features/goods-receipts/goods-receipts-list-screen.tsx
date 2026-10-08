@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import type {
@@ -7,6 +7,7 @@ import type {
   SortingState,
 } from "@tanstack/react-table";
 import {
+  useCurrenciesIndex,
   useGoodsReceiptsIndex,
   useSupplierAccountsIndex,
   type GoodsReceiptResource,
@@ -16,6 +17,7 @@ import {
   Building2,
   CalendarDays,
   ChevronUp,
+  CircleDollarSign,
   EllipsisVertical,
   Pencil,
   Search,
@@ -30,6 +32,7 @@ import { PageHeader } from "../../components/page/page-header";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
 import { Combobox } from "../../components/ui/combobox";
+import { DateField } from "../../components/ui/date-field";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import {
@@ -75,7 +78,8 @@ import { useColumnVisibilityPreference } from "../../lib/use-column-visibility-p
 import { useDebouncedSearch } from "../../lib/use-debounced-search";
 import { useListViewPreference } from "../../lib/use-view-preference";
 import { usePermission } from "../../hooks/use-permission";
-import { lookupState } from "../../lib/api-errors";
+import { usePurchasingCommercialCost } from "../../hooks/use-purchasing-commercial-cost";
+import { lookupState, type LookupState } from "../../lib/api-errors";
 import { goodsReceiptColumns } from "./goods-receipt-columns";
 import { hasUnfinishedGoodsReceipt } from "./goods-receipt-form";
 
@@ -87,6 +91,8 @@ interface ReceiptFilters {
   posting_date_to: string;
   physical_arrival_from: string;
   physical_arrival_to: string;
+  total_min: string;
+  total_max: string;
   [key: string]: string;
 }
 
@@ -94,6 +100,7 @@ const STATUSES = ["DRAFT", "POSTED", "REVERSED"] as const;
 
 export function GoodsReceiptsListScreen() {
   const mayCreate = usePermission("purchasing.goods-receipt.create");
+  const mayViewCommercialCost = usePurchasingCommercialCost();
   const navigate = useNavigate();
   const { search } = useLocation();
   const queryClient = useQueryClient();
@@ -110,11 +117,12 @@ export function GoodsReceiptsListScreen() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(() =>
     Boolean(
-      query.filters.supplier_account_id ||
       query.filters.posting_date_from ||
       query.filters.posting_date_to ||
       query.filters.physical_arrival_from ||
-      query.filters.physical_arrival_to,
+      query.filters.physical_arrival_to ||
+      query.filters.total_min ||
+      query.filters.total_max,
     ),
   );
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
@@ -142,9 +150,30 @@ export function GoodsReceiptsListScreen() {
     [suppliers],
   );
 
+  const currenciesQuery = useCurrenciesIndex(
+    { per_page: 100, sort: "code" },
+    { query: { enabled: mayViewCommercialCost } },
+  );
+  const currencies = useMemo(
+    () =>
+      currenciesQuery.data?.status === 200
+        ? currenciesQuery.data.data.data
+        : [],
+    [currenciesQuery.data],
+  );
+  const currencyLabels = useMemo(
+    () => new Map(currencies.map((currency) => [currency.id, currency.code])),
+    [currencies],
+  );
+
   const columns = useMemo(
-    () => goodsReceiptColumns(supplierLabels),
-    [supplierLabels],
+    () =>
+      goodsReceiptColumns(
+        supplierLabels,
+        currencyLabels,
+        mayViewCommercialCost,
+      ),
+    [supplierLabels, currencyLabels, mayViewCommercialCost],
   );
 
   const [columnVisibility, setColumnVisibility] = useColumnVisibilityPreference(
@@ -169,7 +198,18 @@ export function GoodsReceiptsListScreen() {
       query.filters.physical_arrival_from || undefined,
     "filter[physical_arrival_to]":
       query.filters.physical_arrival_to || undefined,
-    sort: query.sort as GoodsReceiptsIndexSort | undefined,
+    "filter[total_min]":
+      mayViewCommercialCost && query.filters.total_min
+        ? Number(query.filters.total_min)
+        : undefined,
+    "filter[total_max]":
+      mayViewCommercialCost && query.filters.total_max
+        ? Number(query.filters.total_max)
+        : undefined,
+    sort: (!mayViewCommercialCost &&
+    query.sort?.replace(/^-/, "") === "total_amount"
+      ? "-created_at"
+      : query.sort) as GoodsReceiptsIndexSort | undefined,
     per_page: query.perPage,
     page: query.page,
   });
@@ -199,31 +239,61 @@ export function GoodsReceiptsListScreen() {
     [receipts, rowSelection],
   );
 
-  const activeAdvancedFilterCount = [
-    query.filters.supplier_account_id,
-    query.filters.posting_date_from,
-    query.filters.posting_date_to,
-    query.filters.physical_arrival_from,
-    query.filters.physical_arrival_to,
+  const advancedFilterCount = [
+    query.filters.posting_date_from || query.filters.posting_date_to,
+    query.filters.physical_arrival_from || query.filters.physical_arrival_to,
+    mayViewCommercialCost &&
+      (query.filters.total_min || query.filters.total_max),
   ].filter(Boolean).length;
 
   const mobileActiveFilterCount = [
     query.filters.supplier_account_id,
     query.filters.status && query.filters.status !== "ALL",
-    query.filters.posting_date_from,
-    query.filters.posting_date_to,
-    query.filters.physical_arrival_from,
-    query.filters.physical_arrival_to,
+    query.filters.posting_date_from || query.filters.posting_date_to,
+    query.filters.physical_arrival_from || query.filters.physical_arrival_to,
+    mayViewCommercialCost &&
+      (query.filters.total_min || query.filters.total_max),
   ].filter(Boolean).length;
 
+  const clearAdvancedFilters = () => {
+    query.setFilters({
+      posting_date_from: undefined,
+      posting_date_to: undefined,
+      physical_arrival_from: undefined,
+      physical_arrival_to: undefined,
+      total_min: undefined,
+      total_max: undefined,
+    });
+  };
+
+  const clearAllFilters = () => {
+    query.setFilters({
+      search: undefined,
+      supplier_account_id: undefined,
+      status: undefined,
+      posting_date_from: undefined,
+      posting_date_to: undefined,
+      physical_arrival_from: undefined,
+      physical_arrival_to: undefined,
+      total_min: undefined,
+      total_max: undefined,
+    });
+  };
+
   const activeChips = useMemo(() => {
-    const chips: { id: string; label: string; onRemove: () => void }[] = [];
+    const chips: {
+      id: string;
+      label: string;
+      icon: ReactNode;
+      onRemove: () => void;
+    }[] = [];
     if (query.filters.supplier_account_id) {
       const name =
         supplierLabels.get(Number(query.filters.supplier_account_id)) ??
         `#${query.filters.supplier_account_id}`;
       chips.push({
         id: "supplier",
+        icon: <Building2 className="h-3.5 w-3.5" />,
         label: `Supplier: ${name}`,
         onRemove: () => query.setFilter("supplier_account_id", undefined),
       });
@@ -231,6 +301,7 @@ export function GoodsReceiptsListScreen() {
     if (query.filters.status && query.filters.status !== "ALL") {
       chips.push({
         id: "status",
+        icon: <Tag className="h-3.5 w-3.5" />,
         label: `Status: ${query.filters.status}`,
         onRemove: () => query.setFilter("status", undefined),
       });
@@ -238,6 +309,7 @@ export function GoodsReceiptsListScreen() {
     if (query.filters.posting_date_from || query.filters.posting_date_to) {
       chips.push({
         id: "posting_date",
+        icon: <CalendarDays className="h-3.5 w-3.5" />,
         label: `Posting: ${query.filters.posting_date_from ?? "…"} – ${query.filters.posting_date_to ?? "…"}`,
         onRemove: () =>
           query.setFilters({
@@ -252,6 +324,7 @@ export function GoodsReceiptsListScreen() {
     ) {
       chips.push({
         id: "arrival_date",
+        icon: <CalendarDays className="h-3.5 w-3.5" />,
         label: `Arrival: ${query.filters.physical_arrival_from ?? "…"} – ${query.filters.physical_arrival_to ?? "…"}`,
         onRemove: () =>
           query.setFilters({
@@ -260,22 +333,29 @@ export function GoodsReceiptsListScreen() {
           }),
       });
     }
+    if (
+      mayViewCommercialCost &&
+      (query.filters.total_min || query.filters.total_max)
+    ) {
+      chips.push({
+        id: "total",
+        icon: <CircleDollarSign className="h-3.5 w-3.5" />,
+        label: `Total: ${query.filters.total_min ?? "0"} – ${query.filters.total_max ?? "…"}`,
+        onRemove: () =>
+          query.setFilters({
+            total_min: undefined,
+            total_max: undefined,
+          }),
+      });
+    }
     return chips;
-  }, [query.filters, supplierLabels, query]);
+  }, [query.filters, supplierLabels, mayViewCommercialCost, query]);
 
-  function clearAllFilters() {
-    query.setFilters({
-      search: undefined,
-      status: undefined,
-      supplier_account_id: undefined,
-      posting_date_from: undefined,
-      posting_date_to: undefined,
-      physical_arrival_from: undefined,
-      physical_arrival_to: undefined,
-    });
-  }
-
-  const activeFilterLines = describeFilters(query.filters, supplierLabels);
+  const activeFilterLines = describeFilters(
+    query.filters,
+    supplierLabels,
+    mayViewCommercialCost,
+  );
   const { contentRef: printRef, print } = useQuickPrint({
     documentTitle: "Goods Receipt List",
   });
@@ -315,44 +395,36 @@ export function GoodsReceiptsListScreen() {
         </div>
 
         <div className="hidden items-center gap-2 md:flex md:flex-wrap">
-          <Select
-            value={query.filters.status || "ALL"}
-            onValueChange={(val) =>
-              query.setFilter("status", val === "ALL" ? undefined : val)
-            }
-          >
-            <SelectTrigger className="h-10 w-36">
-              <SelectValue placeholder="All statuses" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">All statuses</SelectItem>
-              {STATUSES.map((status) => (
-                <SelectItem key={status} value={status}>
-                  {status}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <GoodsReceiptFilterControls
+            suppliersLookup={lookupState(suppliersQuery, "suppliers")}
+            suppliers={suppliers}
+            supplierLabels={supplierLabels}
+            query={query}
+          />
 
           <Button
             variant={
-              advancedOpen || activeAdvancedFilterCount > 0
-                ? "secondary"
-                : "outline"
+              advancedOpen || advancedFilterCount > 0 ? "secondary" : "outline"
             }
             size="sm"
             className={cn(
               "relative h-10 px-4",
-              (advancedOpen || activeAdvancedFilterCount > 0) &&
+              (advancedOpen || advancedFilterCount > 0) &&
                 "ui-btn-filters-active",
             )}
             onClick={() => setAdvancedOpen((open) => !open)}
           >
             <SlidersHorizontal className="mr-1.5 h-4 w-4" />
             Filters
-            {activeAdvancedFilterCount > 0 && (
-              <Badge className="absolute -right-2 -top-2 h-5 min-w-5 justify-center rounded-full px-1 text-[11px]">
-                {activeAdvancedFilterCount}
+            {advancedFilterCount > 0 && (
+              <Badge
+                className={cn(
+                  "absolute -right-2 -top-2 h-5 min-w-5 justify-center rounded-full px-1 text-[11px]",
+                  (advancedOpen || advancedFilterCount > 0) &&
+                    "ui-filter-badge",
+                )}
+              >
+                {advancedFilterCount}
               </Badge>
             )}
           </Button>
@@ -382,29 +454,22 @@ export function GoodsReceiptsListScreen() {
             : "grid-rows-[0fr] opacity-0 -translate-y-2 pointer-events-none",
         )}
         aria-hidden={!advancedOpen}
+        inert={!advancedOpen}
       >
         <div className="overflow-hidden">
-          <div className="rounded-lg border bg-card p-4 text-card-foreground shadow-xs">
+          <div className="rounded-lg border bg-card p-4 text-card-foreground shadow-xs ui-filter-panel">
             <div className="mb-4 flex items-center justify-between">
               <span className="flex items-center gap-2 text-sm font-semibold">
                 <SlidersHorizontal aria-hidden="true" className="h-4 w-4" />
                 Advanced filters
               </span>
               <div className="flex items-center gap-2">
-                {activeAdvancedFilterCount > 0 && (
+                {advancedFilterCount > 0 && (
                   <Button
                     variant="ghost"
                     size="sm"
                     className="h-7 text-xs text-muted-foreground hover:text-foreground"
-                    onClick={() =>
-                      query.setFilters({
-                        supplier_account_id: undefined,
-                        posting_date_from: undefined,
-                        posting_date_to: undefined,
-                        physical_arrival_from: undefined,
-                        physical_arrival_to: undefined,
-                      })
-                    }
+                    onClick={clearAdvancedFilters}
                   >
                     Reset filters
                   </Button>
@@ -423,98 +488,10 @@ export function GoodsReceiptsListScreen() {
             </div>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">
-                  Supplier
-                </Label>
-                <Combobox
-                  {...lookupState(suppliersQuery, "suppliers")}
-                  value={query.filters.supplier_account_id ?? "all"}
-                  onValueChange={(val) =>
-                    query.setFilter(
-                      "supplier_account_id",
-                      val === "all" ? undefined : val,
-                    )
-                  }
-                  searchPlaceholder="Search suppliers…"
-                  emptyText="No suppliers found."
-                  options={[
-                    { value: "all", label: "All suppliers" },
-                    ...suppliers.map((s) => ({
-                      value: String(s.id),
-                      label: `${s.code}${s.party?.name ? ` — ${s.party.name}` : ""}`,
-                    })),
-                  ]}
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">
-                  Posting date from
-                </Label>
-                <Input
-                  type="date"
-                  className="h-10"
-                  value={query.filters.posting_date_from ?? ""}
-                  onChange={(e) =>
-                    query.setFilter(
-                      "posting_date_from",
-                      e.target.value || undefined,
-                    )
-                  }
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">
-                  Posting date to
-                </Label>
-                <Input
-                  type="date"
-                  className="h-10"
-                  value={query.filters.posting_date_to ?? ""}
-                  onChange={(e) =>
-                    query.setFilter(
-                      "posting_date_to",
-                      e.target.value || undefined,
-                    )
-                  }
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">
-                  Arrival date from
-                </Label>
-                <Input
-                  type="date"
-                  className="h-10"
-                  value={query.filters.physical_arrival_from ?? ""}
-                  onChange={(e) =>
-                    query.setFilter(
-                      "physical_arrival_from",
-                      e.target.value || undefined,
-                    )
-                  }
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">
-                  Arrival date to
-                </Label>
-                <Input
-                  type="date"
-                  className="h-10"
-                  value={query.filters.physical_arrival_to ?? ""}
-                  onChange={(e) =>
-                    query.setFilter(
-                      "physical_arrival_to",
-                      e.target.value || undefined,
-                    )
-                  }
-                />
-              </div>
+              <AdvancedReceiptFilterFields
+                query={query}
+                mayViewCommercialCost={mayViewCommercialCost}
+              />
             </div>
           </div>
         </div>
@@ -526,113 +503,19 @@ export function GoodsReceiptsListScreen() {
             <SheetTitle>Filters</SheetTitle>
           </SheetHeader>
           <div className="flex flex-col gap-4 py-4">
-            <div className="space-y-2">
-              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Status
-              </label>
-              <Select
-                value={query.filters.status || "ALL"}
-                onValueChange={(val) =>
-                  query.setFilter("status", val === "ALL" ? undefined : val)
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="All statuses" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">All statuses</SelectItem>
-                  {STATUSES.map((status) => (
-                    <SelectItem key={status} value={status}>
-                      {status}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2 border-t pt-3">
-              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Supplier
-              </label>
-              <Combobox
-                {...lookupState(suppliersQuery, "suppliers")}
-                value={query.filters.supplier_account_id ?? "all"}
-                onValueChange={(val) =>
-                  query.setFilter(
-                    "supplier_account_id",
-                    val === "all" ? undefined : val,
-                  )
-                }
-                searchPlaceholder="Search suppliers…"
-                emptyText="No suppliers found."
-                options={[
-                  { value: "all", label: "All suppliers" },
-                  ...suppliers.map((s) => ({
-                    value: String(s.id),
-                    label: `${s.code}${s.party?.name ? ` — ${s.party.name}` : ""}`,
-                  })),
-                ]}
+            <GoodsReceiptFilterControls
+              suppliersLookup={lookupState(suppliersQuery, "suppliers")}
+              suppliers={suppliers}
+              supplierLabels={supplierLabels}
+              query={query}
+              full
+            />
+            <div className="border-t pt-3 space-y-4">
+              <AdvancedReceiptFilterFields
+                query={query}
+                mayViewCommercialCost={mayViewCommercialCost}
+                full
               />
-            </div>
-
-            <div className="space-y-2 border-t pt-3">
-              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Posting date
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                <Input
-                  type="date"
-                  placeholder="From"
-                  value={query.filters.posting_date_from ?? ""}
-                  onChange={(e) =>
-                    query.setFilter(
-                      "posting_date_from",
-                      e.target.value || undefined,
-                    )
-                  }
-                />
-                <Input
-                  type="date"
-                  placeholder="To"
-                  value={query.filters.posting_date_to ?? ""}
-                  onChange={(e) =>
-                    query.setFilter(
-                      "posting_date_to",
-                      e.target.value || undefined,
-                    )
-                  }
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2 border-t pt-3">
-              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Arrival date
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                <Input
-                  type="date"
-                  placeholder="From"
-                  value={query.filters.physical_arrival_from ?? ""}
-                  onChange={(e) =>
-                    query.setFilter(
-                      "physical_arrival_from",
-                      e.target.value || undefined,
-                    )
-                  }
-                />
-                <Input
-                  type="date"
-                  placeholder="To"
-                  value={query.filters.physical_arrival_to ?? ""}
-                  onChange={(e) =>
-                    query.setFilter(
-                      "physical_arrival_to",
-                      e.target.value || undefined,
-                    )
-                  }
-                />
-              </div>
             </div>
           </div>
           <SheetFooter className="gap-2 sm:space-x-0">
@@ -651,32 +534,34 @@ export function GoodsReceiptsListScreen() {
       </Sheet>
 
       {activeChips.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1.5 pt-1">
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          <span className="hidden text-sm font-medium md:inline">
+            Active filters
+          </span>
           {activeChips.map((chip) => (
-            <Badge
+            <span
               key={chip.id}
-              variant="secondary"
-              className="h-7 gap-1 px-2.5 text-xs font-normal"
+              className="inline-flex max-w-full items-center rounded-full border bg-primary/5 px-3 py-1.5 text-xs text-primary !gap-2 [&>svg]:shrink-0"
             >
-              {chip.label}
+              {chip.icon}
+              <span className="min-w-0 break-words">{chip.label}</span>
               <button
                 type="button"
+                className="shrink-0"
+                aria-label={`Remove filter ${chip.label}`}
                 onClick={chip.onRemove}
-                className="rounded-full p-0.5 hover:bg-muted"
-                aria-label={`Remove filter: ${chip.label}`}
               >
                 <X className="h-3 w-3" />
               </button>
-            </Badge>
+            </span>
           ))}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 text-xs text-muted-foreground"
+          <button
+            type="button"
+            className="text-xs font-medium text-primary hover:underline ml-1"
             onClick={clearAllFilters}
           >
             Clear all
-          </Button>
+          </button>
         </div>
       )}
 
@@ -853,6 +738,7 @@ export function GoodsReceiptsListScreen() {
 function describeFilters(
   filters: Partial<ReceiptFilters>,
   supplierLabels: ReadonlyMap<number, string>,
+  mayViewCommercialCost: boolean,
 ): string[] {
   const lines: string[] = [];
   if (filters.supplier_account_id) {
@@ -873,7 +759,189 @@ function describeFilters(
       `Arrival = ${filters.physical_arrival_from ?? "…"} – ${filters.physical_arrival_to ?? "…"}`,
     );
   }
+  if (mayViewCommercialCost && (filters.total_min || filters.total_max)) {
+    lines.push(
+      `Total = ${filters.total_min ?? "0"} – ${filters.total_max ?? "…"}`,
+    );
+  }
   if (filters.search) lines.push(`Search = "${filters.search}"`);
 
   return lines;
+}
+
+interface GoodsReceiptFilterControlsProps {
+  suppliersLookup: LookupState;
+  suppliers: { id: number; code: string; party?: { name: string } | null }[];
+  supplierLabels: ReadonlyMap<number, string>;
+  query: ReturnType<typeof useListQueryState<ReceiptFilters>>;
+  full?: boolean;
+}
+
+/** Supplier & Status selects — shared by the always-visible desktop bar and the mobile Filters sheet. */
+function GoodsReceiptFilterControls({
+  suppliersLookup,
+  suppliers,
+  supplierLabels,
+  query,
+  full,
+}: GoodsReceiptFilterControlsProps) {
+  const supplierOptions = [
+    { value: "all", label: "All suppliers" },
+    ...suppliers.map((supplier) => ({
+      value: String(supplier.id),
+      label: supplierLabels.get(supplier.id) ?? `#${supplier.id}`,
+    })),
+  ];
+
+  return (
+    <>
+      <Combobox
+        {...suppliersLookup}
+        value={query.filters.supplier_account_id ?? "all"}
+        onValueChange={(value) =>
+          query.setFilter(
+            "supplier_account_id",
+            value === "all" ? undefined : value,
+          )
+        }
+        options={supplierOptions}
+        placeholder="Supplier"
+        aria-label="Supplier"
+        searchPlaceholder="Search suppliers…"
+        emptyText="No suppliers found."
+        className={full ? "h-9 w-full" : "h-10 w-56"}
+        icon={
+          full ? undefined : (
+            <Building2 className="h-[18px] w-[18px] text-muted-foreground" />
+          )
+        }
+      />
+      <Select
+        value={query.filters.status ?? "ALL"}
+        onValueChange={(value) =>
+          query.setFilter("status", value === "ALL" ? undefined : value)
+        }
+      >
+        <SelectTrigger
+          className={full ? "h-9 w-full" : "h-10 w-44"}
+          aria-label="Status"
+        >
+          <div className="flex min-w-0 items-center gap-2">
+            {!full && (
+              <Tag
+                aria-hidden="true"
+                className="h-[18px] w-[18px] shrink-0 text-muted-foreground"
+              />
+            )}
+            <SelectValue placeholder="Status" />
+          </div>
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="ALL">All statuses</SelectItem>
+          {STATUSES.map((status) => (
+            <SelectItem key={status} value={status}>
+              {status}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </>
+  );
+}
+
+interface AdvancedReceiptFilterFieldsProps {
+  query: ReturnType<typeof useListQueryState<ReceiptFilters>>;
+  mayViewCommercialCost: boolean;
+  full?: boolean;
+}
+
+function AdvancedReceiptFilterFields({
+  query,
+  mayViewCommercialCost,
+  full,
+}: AdvancedReceiptFilterFieldsProps) {
+  const fieldH = full ? "h-9" : "h-10";
+
+  return (
+    <>
+      <div className="space-y-1.5">
+        <Label className="text-sm font-medium">Posting date range</Label>
+        <div className="flex items-center gap-1.5">
+          <DateField
+            aria-label="Posting date from"
+            value={query.filters.posting_date_from ?? ""}
+            onChange={(val) =>
+              query.setFilter("posting_date_from", val || undefined)
+            }
+            className={cn(fieldH, "w-full")}
+            pickerPosition={full ? "end" : "start"}
+          />
+          <span className="text-xs text-muted-foreground">–</span>
+          <DateField
+            aria-label="Posting date to"
+            value={query.filters.posting_date_to ?? ""}
+            onChange={(val) =>
+              query.setFilter("posting_date_to", val || undefined)
+            }
+            className={cn(fieldH, "w-full")}
+            pickerPosition={full ? "end" : "start"}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label className="text-sm font-medium">Arrival date range</Label>
+        <div className="flex items-center gap-1.5">
+          <DateField
+            aria-label="Arrival date from"
+            value={query.filters.physical_arrival_from ?? ""}
+            onChange={(val) =>
+              query.setFilter("physical_arrival_from", val || undefined)
+            }
+            className={cn(fieldH, "w-full")}
+            pickerPosition={full ? "end" : "start"}
+          />
+          <span className="text-xs text-muted-foreground">–</span>
+          <DateField
+            aria-label="Arrival date to"
+            value={query.filters.physical_arrival_to ?? ""}
+            onChange={(val) =>
+              query.setFilter("physical_arrival_to", val || undefined)
+            }
+            className={cn(fieldH, "w-full")}
+            pickerPosition={full ? "end" : "start"}
+          />
+        </div>
+      </div>
+
+      {mayViewCommercialCost && (
+        <div className="space-y-1.5">
+          <Label className="text-sm font-medium">Total value range</Label>
+          <div className="flex items-center gap-1.5">
+            <Input
+              type="number"
+              placeholder="Min"
+              aria-label="Min total value"
+              value={query.filters.total_min ?? ""}
+              onChange={(e) =>
+                query.setFilter("total_min", e.target.value || undefined)
+              }
+              className={cn(fieldH, "w-full")}
+            />
+            <span className="text-xs text-muted-foreground">–</span>
+            <Input
+              type="number"
+              placeholder="Max"
+              aria-label="Max total value"
+              value={query.filters.total_max ?? ""}
+              onChange={(e) =>
+                query.setFilter("total_max", e.target.value || undefined)
+              }
+              className={cn(fieldH, "w-full")}
+            />
+          </div>
+        </div>
+      )}
+    </>
+  );
 }

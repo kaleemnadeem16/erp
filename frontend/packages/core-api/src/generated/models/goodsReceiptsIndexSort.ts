@@ -16,6 +16,7 @@ export const GoodsReceiptsIndexSort = {
   recorded_at: "recorded_at",
   posted_at: "posted_at",
   status: "status",
+  total_amount: "total_amount",
   created_at: "created_at",
   updated_at: "updated_at",
   "-number": "-number",
@@ -24,6 +25,7 @@ export const GoodsReceiptsIndexSort = {
   "-recorded_at": "-recorded_at",
   "-posted_at": "-posted_at",
   "-status": "-status",
+  "-total_amount": "-total_amount",
   "-created_at": "-created_at",
   "-updated_at": "-updated_at",
 } as const;

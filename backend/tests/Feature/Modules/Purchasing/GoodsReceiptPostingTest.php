@@ -521,9 +521,14 @@ class GoodsReceiptPostingTest extends PurchaseOrderFoundationTest
         $this->getJson('/api/v1/goods-receipts?filter[posting_date_from]='.now()->subDay()->format('Y-m-d'))
             ->assertOk()->assertJsonCount(2, 'data');
 
+        $this->getJson('/api/v1/goods-receipts?filter[total_min]=0')
+            ->assertOk()->assertJsonCount(2, 'data')
+            ->assertJsonStructure(['data' => [['total_amount', 'currency_id']]]);
+
         $this->getJson('/api/v1/goods-receipts?sort=status')->assertOk();
         $this->getJson('/api/v1/goods-receipts?sort=-posted_at')->assertOk();
         $this->getJson('/api/v1/goods-receipts?sort=-recorded_at')->assertOk();
+        $this->getJson('/api/v1/goods-receipts?sort=-total_amount')->assertOk();
         $this->getJson('/api/v1/goods-receipts?sort=unknown')->assertUnprocessable();
     }
 

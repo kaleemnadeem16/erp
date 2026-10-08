@@ -10,5 +10,8 @@ import type { GoodsReceiptsStore201DataAllOf } from "./goodsReceiptsStore201Data
 export type GoodsReceiptsStore201Data = GoodsReceiptResource &
   GoodsReceiptsStore201DataAllOf &
   Required<
-    Pick<GoodsReceiptResource & GoodsReceiptsStore201DataAllOf, "lines">
+    Pick<
+      GoodsReceiptResource & GoodsReceiptsStore201DataAllOf,
+      "lines" | "supplier_account"
+    >
   >;

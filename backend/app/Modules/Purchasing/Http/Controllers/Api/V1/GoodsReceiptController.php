@@ -36,13 +36,22 @@ class GoodsReceiptController extends Controller
         'recorded_at' => 'recorded_at',
         'posted_at' => 'posted_at',
         'status' => 'status',
+        'total_amount' => 'total_amount',
         'created_at' => 'created_at',
         'updated_at' => 'updated_at',
     ];
 
     public function index(IndexGoodsReceiptRequest $request): AnonymousResourceCollection
     {
-        $query = GoodsReceipt::query()->withCount('lines');
+        $query = GoodsReceipt::query()
+            ->select('goods_receipts.*')
+            ->withCount('lines')
+            ->selectRaw(
+                '(SELECT COALESCE(SUM(COALESCE(provisional_amount, received_qty * provisional_unit_cost)), 0) FROM goods_receipt_lines WHERE goods_receipt_lines.goods_receipt_id = goods_receipts.id) as total_amount'
+            )
+            ->selectRaw(
+                '(SELECT currency_id FROM goods_receipt_lines WHERE goods_receipt_lines.goods_receipt_id = goods_receipts.id LIMIT 1) as currency_id'
+            );
         $this->applyIncludes($query, $request, self::INCLUDABLE);
         foreach (['supplier_account_id', 'status'] as $field) {
             if ($request->filled("filter.{$field}")) {
@@ -61,6 +70,18 @@ class GoodsReceiptController extends Controller
         if ($request->filled('filter.physical_arrival_to')) {
             $query->where('physical_arrival_at', '<=', $request->input('filter.physical_arrival_to'));
         }
+        if ($request->filled('filter.total_min')) {
+            $query->whereRaw(
+                '(SELECT COALESCE(SUM(COALESCE(provisional_amount, received_qty * provisional_unit_cost)), 0) FROM goods_receipt_lines WHERE goods_receipt_lines.goods_receipt_id = goods_receipts.id) >= ?',
+                [$request->input('filter.total_min')]
+            );
+        }
+        if ($request->filled('filter.total_max')) {
+            $query->whereRaw(
+                '(SELECT COALESCE(SUM(COALESCE(provisional_amount, received_qty * provisional_unit_cost)), 0) FROM goods_receipt_lines WHERE goods_receipt_lines.goods_receipt_id = goods_receipts.id) <= ?',
+                [$request->input('filter.total_max')]
+            );
+        }
         if ($request->filled('filter.search')) {
             $term = $request->string('filter.search')->toString();
             $query->where(function ($q) use ($term): void {
@@ -73,7 +94,15 @@ class GoodsReceiptController extends Controller
                     });
             });
         }
-        $this->applySort($query, $request, self::SORTABLE, 'created_at');
+        $sort = $request->string('sort', 'created_at')->toString();
+        if (ltrim($sort, '-') === 'total_amount') {
+            $query->orderByRaw(
+                '(SELECT COALESCE(SUM(COALESCE(provisional_amount, received_qty * provisional_unit_cost)), 0) FROM goods_receipt_lines WHERE goods_receipt_lines.goods_receipt_id = goods_receipts.id) '
+                .(str_starts_with($sort, '-') ? 'DESC' : 'ASC')
+            )->orderBy('id');
+        } else {
+            $this->applySort($query, $request, self::SORTABLE, 'created_at');
+        }
 
         return GoodsReceiptResource::collection($query->paginate($request->integer('per_page', 25)));
     }
@@ -81,7 +110,7 @@ class GoodsReceiptController extends Controller
     public function store(StoreGoodsReceiptRequest $request, CreateGoodsReceipt $create): JsonResponse
     {
         $receipt = $create($request->validated(), $request->user(), $request->header('Idempotency-Key'));
-        $receipt->load(['lines' => fn ($query) => $query->withQaAggregates()->with('packageObservations')]);
+        $receipt->load(['lines' => fn ($query) => $query->withQaAggregates()->with('packageObservations'), 'supplierAccount.party']);
 
         return (new GoodsReceiptResource($receipt))->response()->setStatusCode(201);
     }
@@ -90,14 +119,14 @@ class GoodsReceiptController extends Controller
     {
         $receipt = $update($goodsReceipt, $request->validated(), $request->user());
 
-        return new GoodsReceiptResource($receipt->load(['lines' => fn ($query) => $query->withQaAggregates()->with('packageObservations')]));
+        return new GoodsReceiptResource($receipt->load(['lines' => fn ($query) => $query->withQaAggregates()->with('packageObservations'), 'supplierAccount.party']));
     }
 
     public function show(Request $request, GoodsReceipt $goodsReceipt): GoodsReceiptResource
     {
         abort_unless(PurchasingReadAccess::goodsReceipts($request->user()), 403);
 
-        return new GoodsReceiptResource($goodsReceipt->load(['lines' => fn ($query) => $query->withQaAggregates()->with('packageObservations')]));
+        return new GoodsReceiptResource($goodsReceipt->load(['lines' => fn ($query) => $query->withQaAggregates()->with('packageObservations'), 'supplierAccount.party']));
     }
 
     public function post(Request $request, GoodsReceipt $goodsReceipt, PostGoodsReceipt $post): GoodsReceiptResource

@@ -9,4 +9,9 @@ import type { GoodsReceiptsShow200DataAllOf } from "./goodsReceiptsShow200DataAl
 
 export type GoodsReceiptsShow200Data = GoodsReceiptResource &
   GoodsReceiptsShow200DataAllOf &
-  Required<Pick<GoodsReceiptResource & GoodsReceiptsShow200DataAllOf, "lines">>;
+  Required<
+    Pick<
+      GoodsReceiptResource & GoodsReceiptsShow200DataAllOf,
+      "lines" | "supplier_account"
+    >
+  >;

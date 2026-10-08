@@ -21,6 +21,14 @@ export type GoodsReceiptsIndexParams = {
   "filter[posting_date_to]"?: string;
   "filter[physical_arrival_from]"?: string;
   "filter[physical_arrival_to]"?: string;
+  /**
+   * @minimum 0
+   */
+  "filter[total_min]"?: number;
+  /**
+   * @minimum 0
+   */
+  "filter[total_max]"?: number;
   sort?: GoodsReceiptsIndexSort;
   include?: string;
   /**
