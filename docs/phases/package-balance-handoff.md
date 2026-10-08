@@ -8,7 +8,7 @@ other agents' work continues independently. Update it, STATUS and the delivery p
 
 ## Resume here
 
-**Next build, when the owner says go:** slice 4 of the rejected-stock exit (demo seeder, role recipes, rollout notes, close-out) — [rejected-stock-exit-plan.md](rejected-stock-exit-plan.md). Slices 1 (shared exit core), 2 (Supplier Return and Scrap documents, permissions, API) and 3 (screens, browser-proven) are built; nothing is in flight.
+**The rejected-stock exit (ADR 0097) is complete** — all four slices (shared exit core; Supplier Return and Scrap documents and API; screens; demo, role recipes and release notes) are built and browser-proven; see [rejected-stock-exit-plan.md](rejected-stock-exit-plan.md). Nothing is in flight.
 
 **Nothing is in flight. Do not start container-level tracking, and do not extend v1 implicitly.** Each enhancement below is a **new design slice**: draft the
 proposal (an ADR where a decision is needed), get the owner's answers, then implement. The owner's stated priority is **supplier return / scrap for rejected
@@ -36,7 +36,7 @@ transfer and reversal; Playwright coverage of each flow and of quantity-only par
 
 ## 3. Future enhancements (each a new design slice; none started)
 
-1. **Supplier return / scrap of rejected stock — next, owner priority.** Decided in [ADR 0097](../decisions/0097-supplier-return-and-scrap-of-rejected-stock.md) (accepted 2026-10-08); the build plan is [rejected-stock-exit-plan.md](rejected-stock-exit-plan.md); **slices 1–3 of 4 built**. It also gives
+1. **Supplier return / scrap of rejected stock — done.** Decided in [ADR 0097](../decisions/0097-supplier-return-and-scrap-of-rejected-stock.md) (accepted 2026-10-08); the build plan is [rejected-stock-exit-plan.md](rejected-stock-exit-plan.md); **complete (all 4 slices)**. It also gives
    rejected quantity-only stock an exit.
 2. A governed **change of tracked levels**.
 3. **Deactivation / collapse** back to quantity-only.

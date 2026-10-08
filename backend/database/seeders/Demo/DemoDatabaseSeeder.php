@@ -49,6 +49,7 @@ final class DemoDatabaseSeeder extends Seeder
                 PackageCountDemoSeeder::class,
                 PackageReceiptReversalDemoSeeder::class,
                 PackageQaDemoSeeder::class,
+                RejectedStockExitDemoSeeder::class,
                 // After StockDemoSeeder: reuses its demo-ops/demo-supervisor actors and resting policy.
                 NegativeStockLifecycleDemoSeeder::class,
                 RecalculationLifecycleDemoSeeder::class,

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { activateGrouped, api, createStockedItem, ensureMoreThanOneHundredItemsAhead, type PackageStockWorld } from './package-stock-support';
+import { activateGrouped, api, createStockedItem, withMoreThanOneHundredItemsAhead, type PackageStockWorld } from './package-stock-support';
 
 /**
  * Package-aware goods-receipt reversal (docs/phases/package-balance-ui.md §6): the arrived composition is the default, what is on hand now is shown,
@@ -81,15 +81,19 @@ test('a delivery that was already used from its own stock cannot be reversed and
 });
 
 test('the reversal panel names the item and its unit even when more than 100 items sort ahead of it', async ({ page }) => {
-  test.setTimeout(240_000);
-  await ensureMoreThanOneHundredItemsAhead(page);
-  const world = await createStockedItem(page, 'e2e-rev-many');
-  await activateGrouped(page, world);
-  const { id } = await postedReceipt(page, world);
+  test.setTimeout(300_000);
+  const removeFillers = await withMoreThanOneHundredItemsAhead(page);
+  try {
+    const world = await createStockedItem(page, 'e2e-rev-many');
+    await activateGrouped(page, world);
+    const { id } = await postedReceipt(page, world);
 
-  await openReversal(page, id);
-  const line = page.getByTestId('reversal-line');
-  // The item is not on the first page of 100 (sorted by name), yet its label and unit come from its own lookup.
-  await expect(line).toContainText(world.item.code);
-  await expect(line.getByTestId('reversal-draw')).toContainText('2 sealed Sealed 5 L can + 2 l loose = 12 l');
+    await openReversal(page, id);
+    const line = page.getByTestId('reversal-line');
+    // The item is not on the first page of 100 (sorted by name), yet its label and unit come from its own lookup.
+    await expect(line).toContainText(world.item.code);
+    await expect(line.getByTestId('reversal-draw')).toContainText('2 sealed Sealed 5 L can + 2 l loose = 12 l');
+  } finally {
+    await removeFillers();
+  }
 });

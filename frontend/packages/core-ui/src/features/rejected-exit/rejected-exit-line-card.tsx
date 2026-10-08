@@ -82,7 +82,8 @@ export function lineProblem(line: DraftLine, preview: PreviewLine | undefined): 
   if (!isExactQuantity(line.quantity) || Number(line.quantity) <= 0) return 'Enter the quantity to take out.';
   if (!preview) return null;
   if (preview.outcome_change_required && line.outcomeChangeReason.trim() === '') return REASON_HINTS.OUTCOME_CHANGE_REASON_REQUIRED ?? null;
-  if (!portionAddsUp(line, preview)) return 'Choose the rejected packages that add up to the quantity.';
+  // Only a hand-picked list is checked here; the system's own proposal is checked by the server's preview (and may be a moment behind a changed quantity).
+  if (line.portion !== null && !portionAddsUp(line, preview)) return 'Choose the rejected packages that add up to the quantity.';
 
   return null;
 }

@@ -1,11 +1,10 @@
-import { execFileSync } from 'node:child_process';
 import { expect, type Page } from '@playwright/test';
 
 /** API-side setup shared by the package-tracking specs: a fresh item with stock, optionally already on grouped tracking. */
 const API = process.env.E2E_API_URL ?? 'http://127.0.0.1:8090/api/v1';
 const ORIGIN = process.env.E2E_BASE_URL ?? 'http://127.0.0.1:5176';
 
-export async function api<T = any>(page: Page, method: 'GET' | 'POST' | 'PUT', path: string, data?: unknown): Promise<T> {
+export async function api<T = any>(page: Page, method: 'GET' | 'POST' | 'PUT' | 'DELETE', path: string, data?: unknown): Promise<T> {
   const cookies = await page.context().cookies(API);
   const xsrf = decodeURIComponent(cookies.find((cookie) => cookie.name === 'XSRF-TOKEN')?.value ?? '');
   const response = await page.request.fetch(`${API}${path}`, {
@@ -15,7 +14,7 @@ export async function api<T = any>(page: Page, method: 'GET' | 'POST' | 'PUT', p
   });
   expect(response.ok(), `${method} ${path} → ${response.status()} ${await response.text()}`).toBeTruthy();
 
-  return (await response.json()) as T;
+  return (response.status() === 204 ? {} : await response.json()) as T;
 }
 
 export interface PackageStockWorld {
@@ -159,10 +158,10 @@ export async function rejectedDelivery(
   world: PackageStockWorld,
   draftDelivery: (quantity: string) => Promise<{ id: number }>,
   outcome: 'RETURN_TO_SUPPLIER' | 'SCRAP',
-  options: { grouped?: boolean; rejectedQuantity?: string } = {},
+  options: { grouped?: boolean; rejectedQuantity?: string; /** Grouped only: reject one can and the 2 L loose (7 L) instead of one can. */ withLoose?: boolean } = {},
 ): Promise<RejectedDelivery> {
   const grouped = options.grouped ?? false;
-  const rejectedQuantity = options.rejectedQuantity ?? (grouped ? '5' : '4');
+  const rejectedQuantity = options.rejectedQuantity ?? (options.withLoose ? '7' : grouped ? '5' : '4');
   const total = grouped ? '12' : '10';
   const draft = await draftDelivery(total);
   const lineId = (await api(page, 'GET', `/goods-receipts/${draft.id}`)).data.lines[0].id;
@@ -173,8 +172,14 @@ export async function rejectedDelivery(
   const decide = (disposition: string, qty: string, package_portion?: unknown) =>
     api(page, 'POST', `/goods-receipt-lines/${lineId}/quality-dispositions`, { disposition, qty, reason: 'E2E inspection', source_disposition_id: null, ...(package_portion ? { package_portion } : {}) });
   if (grouped) {
-    await decide('PASS', '7', [{ kind: 'SEALED', packaging_id: world.can.id, count: 1 }, { kind: 'LOOSE', quantity: '2' }]);
-    await decide(outcome, rejectedQuantity, [{ kind: 'SEALED', packaging_id: world.can.id, count: 1 }]);
+    const can = { kind: 'SEALED', packaging_id: world.can.id, count: 1 };
+    if (options.withLoose) {
+      await decide('PASS', '5', [can]);
+      await decide(outcome, '7', [can, { kind: 'LOOSE', quantity: '2' }]);
+    } else {
+      await decide('PASS', '7', [can, { kind: 'LOOSE', quantity: '2' }]);
+      await decide(outcome, rejectedQuantity, [can]);
+    }
   } else {
     await decide('PASS', String(Number(total) - Number(rejectedQuantity)));
     await decide(outcome, rejectedQuantity);
@@ -183,65 +188,36 @@ export async function rejectedDelivery(
   return { receiptId: draft.id, lineId, number: posted.number };
 }
 
+/** The people `RejectedStockExitDemoSeeder` creates (demo password): a preparer, a controller who also posts, and a clerk limited to their own units. */
 export const EXIT_PERSONAS = {
-  /** May prepare Supplier Returns and Scrap but not post them. */
-  preparer: 'e2e-exit-preparer@erp.x1techs.com',
-  /** May prepare and post, but is limited to their own organisation units (and so sees no warehouse's stock). */
-  limited: 'e2e-exit-limited@erp.x1techs.com',
+  preparer: 'demo-exit-preparer@erp.x1techs.com',
+  controller: 'demo-exit-controller@erp.x1techs.com',
+  limited: 'demo-exit-clerk@erp.x1techs.com',
 } as const;
 
 /**
- * Creates (or refreshes) the two people the rejected-stock exit specs sign in as, by running PHP in the dev `app` container — the same route the other
- * specs avoid, but record scope can only be assigned through the access tables, not the API a spec can reach. Returns false when the container is not
- * reachable (for example a CI job that runs the backend natively), so the spec can skip rather than fail.
+ * Creates enough items sorting ahead of the specs' own (by name, "AAA filler …") that more than 100 items precede them, so a screen that looks an item up
+ * in the first list page of 100 cannot find it. They would also push the demo items out of every picker's first page, so the caller must remove them:
+ * the returned function deletes exactly the ones created here.
  */
-export function ensureExitPersonas(): boolean {
-  const code = `
-    $registrar = app(\\Spatie\\Permission\\PermissionRegistrar::class);
-    $registrar->setPermissionsTeamId(1);
-    $password = config('demo.user.password');
-    $make = function (string $email, string $name, array $permissions) use ($password) {
-      foreach ($permissions as $permission) { \\Spatie\\Permission\\Models\\Permission::findOrCreate($permission, 'web'); }
-      $user = \\App\\Models\\User::query()->updateOrCreate(['email' => $email], ['name' => $name, 'password' => $password, 'company_id' => 1]);
-      $user->forceFill(['email_verified_at' => now()])->save();
-      $user->syncPermissions($permissions);
-      return $user;
-    };
-    $read = ['purchasing.goods-receipt.view', 'inventory.package-state.view', 'inventory.stock.view'];
-    $make('${EXIT_PERSONAS.preparer}', 'E2E Exit Preparer', array_merge($read, ['purchasing.supplier-return.create', 'inventory.scrap.create']));
-    $granted = array_merge($read, ['purchasing.supplier-return.create', 'purchasing.supplier-return.post', 'inventory.scrap.create', 'inventory.scrap.post']);
-    $limited = $make('${EXIT_PERSONAS.limited}', 'E2E Exit Limited', []);
-    // Record scope limits what a *role* grants, so this person holds the capabilities only through the limited role (a direct grant would bypass the limit).
-    $role = \\Spatie\\Permission\\Models\\Role::query()->firstOrCreate(['team_id' => 1, 'name' => 'E2E limited exits', 'guard_name' => 'web']);
-    foreach ($granted as $permission) { \\Spatie\\Permission\\Models\\Permission::findOrCreate($permission, 'web'); }
-    $role->syncPermissions($granted);
-    $limited->assignRole($role);
-    \\App\\Modules\\Administration\\Models\\AccessScopeLimit::query()->updateOrCreate(['user_id' => $limited->id, 'role_id' => $role->id], ['scope' => 'MY_UNITS']);
-    echo 'ok';
-  `;
-  try {
-    const output = execFileSync('docker', ['compose', 'exec', '-T', 'app', 'php', 'artisan', 'tinker', '--execute', code], { cwd: new URL('../../../../', import.meta.url).pathname, encoding: 'utf8', timeout: 90_000 });
-
-    return output.includes('ok');
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Makes sure more than 100 items sort ahead of the items the specs create (by name), so a screen that looks an item up in the first list page of 100
- * cannot find it. Idempotent: it only creates the fillers that are missing, named "AAA filler …".
- */
-export async function ensureMoreThanOneHundredItemsAhead(page: Page): Promise<void> {
-  const existing = (await api(page, 'GET', '/items?filter[search]=aaa-filler&per_page=1')).meta.total as number;
-  if (existing >= 105) return;
+export async function withMoreThanOneHundredItemsAhead(page: Page): Promise<() => Promise<void>> {
   const litre = (await list(page, '/uoms')).find((uom) => uom.code === 'l');
   const base = (await list(page, '/items?filter[search]=demo-pack-thinner')).find((item) => item.code === 'demo-pack-thinner');
   const stamp = Date.now().toString(36);
-  for (let n = existing; n < 105; n++) {
-    await api(page, 'POST', '/items', {
-      code: `aaa-filler-${stamp}-${n}`, name: `AAA filler ${stamp} ${n}`, type: 'RAW', stock_uom_id: litre.id, category_id: base.category_id, valuation_method: 'FIFO', tracking: 'NONE',
-      inventory_account_id: base.inventory_account_id, is_stocked: true, is_purchasable: true, is_sellable: false,
-    });
+  const total = (await api(page, 'GET', '/items?per_page=1')).meta.total as number;
+  const created: number[] = [];
+  for (let n = 0; n < Math.max(0, 105 - total) + 105; n++) {
+    created.push(
+      (
+        await api(page, 'POST', '/items', {
+          code: `aaa-filler-${stamp}-${n}`, name: `AAA filler ${stamp} ${n}`, type: 'RAW', stock_uom_id: litre.id, category_id: base.category_id, valuation_method: 'FIFO', tracking: 'NONE',
+          inventory_account_id: base.inventory_account_id, is_stocked: true, is_purchasable: true, is_sellable: false,
+        })
+      ).data.id,
+    );
   }
+
+  return async () => {
+    for (const id of created) await api(page, 'DELETE', `/items/${id}`);
+  };
 }

@@ -159,7 +159,7 @@ export function ExitFormScreen({ kind }: { kind: ExitKind }) {
           ? 'Enter the expected credit amount, or clear the currency.'
           : 'Enter the amount as a number, up to four decimals.'
       : null;
-  const canSave = lines.length > 0 && !reasonMissing && creditProblem === null && mixed === null && problems.every((problem) => problem === null) && blockers.length === 0;
+  const readyToSend = lines.length > 0 && !reasonMissing && creditProblem === null && mixed === null && problems.every((problem) => problem === null);
 
   function setField(name: string, value: string) {
     setHeader((current) => ({ ...current, [name]: value }));
@@ -185,16 +185,21 @@ export function ExitFormScreen({ kind }: { kind: ExitKind }) {
     setShowErrors(true);
     setFormError(null);
     if (creditProblem) setOptionsOpen(true);
-    if (!canSave) return;
-    // The proposal is sent explicitly so what is saved is exactly what the person saw.
-    const toSave: ExitLineInput[] = lines.map((line) => ({
-      goods_receipt_line_id: line.goods_receipt_line_id,
-      quantity: line.quantity.trim(),
-      outcome_change_reason: line.outcomeChangeReason.trim() || undefined,
-      package_portion: effectivePortion(line, previews[line.goods_receipt_line_id]) ?? undefined,
-    }));
+    // What the person controls must be right; what the server decides (the proposed packages, remaining stock) is asked again below, so a preview that is
+    // a moment behind the last keystroke can neither block nor wrongly allow the save.
+    if (!readyToSend) return;
     try {
-      // The preview on screen may be a moment behind the last keystroke; ask again so nothing is saved that the server would refuse.
+      const manual = lines.map((line) => ({
+        goods_receipt_line_id: line.goods_receipt_line_id,
+        quantity: line.quantity.trim(),
+        outcome_change_reason: line.outcomeChangeReason.trim() || undefined,
+        package_portion: line.portion ?? undefined,
+      }));
+      const proposed = await api.preview.run(manual);
+      const toSave: ExitLineInput[] = manual.map((entry) => ({
+        ...entry,
+        package_portion: entry.package_portion ?? proposed.find((row) => row.goods_receipt_line_id === entry.goods_receipt_line_id)?.proposed_portion ?? undefined,
+      }));
       const fresh = await api.preview.run(toSave);
       setPreviews(Object.fromEntries(fresh.map((row) => [row.goods_receipt_line_id, row])));
       const stopped = fresh.flatMap((row) => row.blockers)[0];
@@ -341,7 +346,7 @@ export function ExitFormScreen({ kind }: { kind: ExitKind }) {
         </DetailSection>
 
         <div className="sticky bottom-0 -mx-4 flex flex-wrap items-center justify-end gap-2 border-t bg-background p-3 md:static md:mx-0 md:border-0 md:p-0">
-          {showErrors && !canSave && <span className="mr-auto text-sm text-destructive">Fix the points above to save.</span>}
+          {showErrors && !readyToSend && <span className="mr-auto text-sm text-destructive">Fix the points above to save.</span>}
           <Button variant="outline" onClick={() => navigate(editingId ? `${config.basePath}/${editingId}` : config.basePath)}>Cancel</Button>
           <Button onClick={() => void save()} disabled={api.store.isPending || api.update.isPending} data-testid="exit-save">
             {api.store.isPending || api.update.isPending ? 'Saving…' : 'Save draft'}

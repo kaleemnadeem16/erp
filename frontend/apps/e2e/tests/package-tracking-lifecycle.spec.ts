@@ -38,7 +38,7 @@ test('quantity only → grouped tracking → receive observed packages → issue
   const supplier = (await list('/supplier-accounts'))[0];
   const warehouse = (await list('/warehouses')).find((w) => w.code === 'demo-main');
   const location = (await list('/locations')).find((l) => l.warehouse_id === warehouse.id && l.code === 'stock');
-  const base = (await list('/items')).find((item) => item.code === 'demo-pack-thinner');
+  const base = (await list('/items?filter[search]=demo-pack-thinner')).find((item) => item.code === 'demo-pack-thinner');
   expect([litre, currency, supplier, warehouse, location, base].every(Boolean)).toBeTruthy();
 
   const code = `e2e-xyz-${stamp}`;

@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
-import { activateGrouped, api, createQaOrder, createStockedItem, ensureExitPersonas, EXIT_PERSONAS, rejectedDelivery, signInAs } from './package-stock-support';
+import { activateGrouped, api, createQaOrder, createStockedItem, EXIT_PERSONAS, rejectedDelivery, signInAs } from './package-stock-support';
 
 /**
  * Supplier Return and Scrap for rejected stock (ADR 0097): the screens over the documents API. A QA decision moves nothing; these documents are the
@@ -190,10 +190,6 @@ test('one document refuses deliveries from two suppliers and from two warehouses
 });
 
 test.describe('people with part of the capability', () => {
-  test.beforeAll(() => {
-    test.skip(!ensureExitPersonas(), 'the dev app container is not reachable, so the two exit personas cannot be created');
-  });
-
   test('someone who may only prepare a document can save a draft but not post it', async ({ page, browser }) => {
     test.setTimeout(180_000);
     const world = await createStockedItem(page, 'e2e-prep');
@@ -267,3 +263,37 @@ for (const mode of ['light', 'dark'] as const) {
     await scan('list');
   });
 }
+
+test('rejected loose litres leave in part: 1 L of 2 L loose is scrapped and the rest stays rejected', async ({ page }) => {
+  test.setTimeout(240_000);
+  const world = await createStockedItem(page, 'e2e-loose');
+  await activateGrouped(page, world);
+  // 12 L arrive (2 cans + 2 L loose); QA passes a can and rejects the other can plus the 2 L loose for scrap.
+  const delivery = await rejectedDelivery(page, world, await createQaOrder(page, world), 'SCRAP', { grouped: true, withLoose: true });
+
+  await page.goto(`/goods-receipts/${delivery.receiptId}`);
+  await expect(page.getByTestId('rejected-stock-actions')).toContainText('7 rejected, still to scrap');
+  await page.getByTestId('start-scrap').click();
+  await expect(page.getByTestId('exit-line-remaining')).toBeVisible();
+  await expect(page.getByTestId('exit-portion')).toContainText('1 × Sealed 5 L can');
+  await expect(page.getByTestId('exit-portion')).toContainText('2 l loose');
+
+  // Take out just 1 L: it can only be loose litres, so the portion becomes 1 L loose.
+  await page.getByLabel('Quantity to scrap').fill('1');
+  await expect(page.getByTestId('exit-portion-chosen')).toContainText('1 l loose');
+  await expect(page.getByTestId('exit-portion-check')).toContainText('adds up');
+  await expect(page.getByTestId('exit-line-remaining')).toContainText('6');
+  await page.getByLabel('Reason', { exact: true }).fill('Skinned over');
+  await page.getByTestId('exit-save').click();
+  await expect(page).toHaveURL(/\/stock-scraps\/\d+$/);
+  await expect(page.getByTestId('exit-line')).toContainText('1 l loose');
+  await page.getByTestId('exit-post').click();
+  await page.getByTestId('exit-confirm-action').click();
+  await expect(page.getByTestId('exit-frozen-line')).toContainText('1 loose');
+
+  // The can and 1 L loose are still rejected, awaiting their own exit; the sealed can was not touched.
+  const balance = (await api(page, 'GET', `/package-balances?item_id=${world.item.id}`)).data[0];
+  expect([balance.rejected.total, balance.rejected.loose, balance.rejected.sealed[0].count]).toEqual(['6.0000', '1.0000', 1]);
+  await page.goto(`/goods-receipts/${delivery.receiptId}`);
+  await expect(page.getByTestId('rejected-stock-actions')).toContainText('6 rejected, still to scrap');
+});

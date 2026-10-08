@@ -20,13 +20,14 @@ History is in [STATUS-LOG.md](STATUS-LOG.md); resume points are in the workstrea
 | Workstream | State | Resume / detail |
 |---|---|---|
 | **Grouped package tracking v1** | **Complete** (commit `1c73d81`): activation, receipt, QA-held receipt, issue, transfer, physical count, receipt reversal, QA disposition, fail-closed database enforcement, permissions, phone-width verification | [handoff](phases/package-balance-handoff.md) · [v1 sign-off](phases/package-balance-ui.md#v1-sign-off-2026-10-08) · ADRs 0090–0094 |
+| **Rejected-stock exit — Supplier Return and Scrap** (ADR 0097) | **Complete**: shared exit core, the two documents and API, screens, demo seeder and personas, role recipes, release notes | [plan](phases/rejected-stock-exit-plan.md) · [handoff](phases/package-balance-handoff.md) · [ADR 0097](decisions/0097-supplier-return-and-scrap-of-rejected-stock.md) |
 | Packaged purchasing (named packages, supplier offers, price basis) | Complete | [item-purchasing-improvements.md](phases/item-purchasing-improvements.md) · [ADR 0080](decisions/0080-packaged-purchasing-and-independent-price-basis.md) |
 | Shared approval engine and approvals workspace | Engine complete; workspace first UI draft shipped | [approvals.md](domain/approvals.md) · [ADR 0070](decisions/0070-shared-configurable-approval-engine.md) |
 | Settings, forms and access hardening (company settings, document numbering, PO form, access audit, record scope) | Delivered through a checkpoint; further slices are owner-prioritised | [handoff and open items](phases/settings-and-access-hardening.md) · [audit tracker](architecture/access-security-audit.md) |
 
 ## In progress
 
-The rejected-stock exit (ADR 0097) has slices 1–3 built; no slice is mid-way. Other agents share the checkout: run `git status` and `git log` before assuming the tree is idle.
+Nothing of the package workstreams is in flight (the rejected-stock exit, ADR 0097, is complete). Other agents share the checkout: run `git status` and `git log` before assuming the tree is idle.
 
 ## Release state
 
@@ -39,7 +40,6 @@ record scope, the access audit follow-ups, the approvals workspace, grouped pack
 Each is a new slice: propose first, get the owner's answers, then build. Optional enhancements are kept apart from required work.
 
 - **Required for the roadmap:** Phase 4 research/discussion starts with R1 (leads, opportunities and relationships), then the dependent topics in its [plan](phases/phase-4-sales-quotations-and-handover.md); implementation waits for agreed decisions. It also owes the multi-owner correction package carried from Phase 2.
-- **Next package slice — supplier return and scrap for rejected stock** (owner priority). **Decided** ([ADR 0097](decisions/0097-supplier-return-and-scrap-of-rejected-stock.md), accepted 2026-10-08: two separate documents, draft → post, dedicated permissions, informational supplier credit). **Slices 1–3 of 4 built and browser-proven** (the shared backend exit core; the Supplier Return and Scrap documents with their API; their screens, entered from a delivery's QA panel and the item's package card); slice 4 (demo seeder, role recipes, release notes) follows the plan in [rejected-stock-exit-plan.md](phases/rejected-stock-exit-plan.md). Rejected stock, grouped or quantity-only, now has an exit.
 - **Later package enhancements** (none started; each a new design slice): governed change of tracked levels; deactivation/collapse; container-level tracking (not before the owner asks); line-level receipt reversal; count approval thresholds; QA/count reconciliation; standalone Issue/Transfer screens. **Deferred estimating enhancement:** package-aware proposals in the Material Preview (owner decision: not ahead of return/scrap).
 - **Access and security:** the remaining record-scope slices (purchasing documents, Estimating availability, approvals, delegated administration) — Q26; two-factor and step-up sign-in — Q37.
 
