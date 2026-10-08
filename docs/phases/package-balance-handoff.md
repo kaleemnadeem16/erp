@@ -34,14 +34,16 @@ transfer and reversal; Playwright coverage of each flow and of quantity-only par
 
 ## 3. Future enhancements (each a new design slice; none started)
 
-1. **Rejected-stock return / scrap movement** — priority. Needs its own Purchasing/Inventory decision (supplier return as a movement, scrap write-off, cost, GL feed).
+1. **Supplier return / scrap of rejected stock — next, owner priority.** The design is [ADR 0097](../decisions/0097-supplier-return-and-scrap-of-rejected-stock.md) (proposed; awaiting the owner's answers). It also gives
+   rejected quantity-only stock an exit.
 2. A governed **change of tracked levels**.
 3. **Deactivation / collapse** back to quantity-only.
-4. **Container-level tracking** (individual vessel identity) — only after the above are settled and the owner asks.
+4. **Container-level tracking** (individual vessels and remnants) — only after the above are settled and the owner asks.
 5. **Line-level or partial receipt reversal** (a Purchasing decision).
 6. **Count approval thresholds** (value-based, through the shared approval engine, for both kinds of item).
 7. **QA / count reconciliation** of held stock.
 8. **Standalone Issue / Transfer screens** (menu entries, multi-location).
+9. **Package-aware proposals in the Material Preview** — a *deferred estimating enhancement* (owner decision 2026-10-08: not ahead of return/scrap); also needs the residual/waste variance bands.
 
 ## Historical baseline (2026-10-03)
 

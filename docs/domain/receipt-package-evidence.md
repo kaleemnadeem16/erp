@@ -6,7 +6,7 @@
 
 Implemented backend slice 2026-10-03. Physical arrival is recorded independently of the
 immutable purchasing agreement under [ADR 0080](../decisions/0080-packaged-purchasing-and-independent-price-basis.md)
-and proposed [ADR 0082](../decisions/0082-reconcile-package-balances-with-stock-operations.md).
+and [ADR 0082 (superseded by 0090–0094)](../decisions/0082-reconcile-package-balances-with-stock-operations.md).
 This is historical inbound evidence, not enabled package tracking or a live balance.
 
 ## Capture and posting

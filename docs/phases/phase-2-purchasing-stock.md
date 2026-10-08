@@ -2,19 +2,22 @@
 
 # Phase 2 — Purchasing & stock
 
-- **Status:** operationally complete — purchasing, receipts, QA and reversal, the stock-movement and valuation engine, cutover, negative-stock overrides, backdated recalculation and physical counts are built with their screens; the items still unchecked below are deferred dependencies, not unfinished Phase 2 build (see the reconciliation note)
+- **Status:** **complete (closed 2026-10-08).** Purchasing, receipts, QA and reversal, the stock-movement and valuation engine, cutover, negative-stock overrides, backdated recalculation and physical counts are built with their screens. The few items still unchecked below are **carried forward** to named later owners (see the close-out note); none is unfinished Phase 2 build
 - **Depends on:** [Phase 1 — Master data](phase-1-master-data.md) (items, supplier accounts,
   currencies, UoMs and chart-of-account references)
 - **Blocked by:** nothing currently; negative stock is fixed by
   [ADR 0037](../decisions/0037-controlled-negative-stock-overrides.md) and backdated receipts by
   [ADR 0040](../decisions/0040-control-backdated-stock-recalculation-and-corrections.md)
 
-> **Reconciliation note (2026-10-08).** The still-unchecked items below fall into three groups. **Waiting on later phases:** the cross-module parts of the backdated-correction
-> package (Sales/COGS, Job Execution, GL allocation — ADR 0040) and the acceptance criteria that depend on them; they cannot be built until Phases 4–6 exist. **Infrastructure
-> follow-ups:** the first automated production deploy run and removing mainvm's emergency GHCR credential ([deployment.md](../architecture/deployment.md)), and PO fields with no
-> schema yet (ship-to, per-PO payment terms). **Owner call:** whether the "agree the Phase 2 interaction specification" item is closed by the journeys and the
-> [ERP Blue standard](../architecture/erp-blue-design-standard.md) or kept open. Package-aware inventory (grouped tracking, QA-held stock) shipped as its own workstream:
-> [package-balance-handoff.md](package-balance-handoff.md).
+> **Close-out (2026-10-08, owner decision).** Phase 2 is formally closed. Every item still shown unchecked below is **carried forward** and marked *Carried forward* at its place — none keeps Phase 2 open:
+> - **To the Phase 4–6 correction package** (needs Sales/COGS, Job Execution and Accounting to exist; [ADR 0040](../decisions/0040-control-backdated-stock-recalculation-and-corrections.md)): cross-module correction packages and
+>   the acceptance criteria that depend on them, and the valuation-policy boundary of the backdating horizon (Phase 6).
+> - **To later Purchasing/operations slices:** PO fields with no schema yet (ship-to, per-PO payment terms, buyer, shipping method — ship-to also unlocks Q26 purchasing record scope); the first automated production deploy
+>   run and removing mainvm's emergency GHCR credential ([deployment.md](../architecture/deployment.md)).
+> - **Closed by other documents:** the "agree the interaction specification" item is satisfied by the [journeys](../journeys/README.md), the [ERP Blue standard](../architecture/erp-blue-design-standard.md), the design gate in
+>   [user-interface.md](../architecture/user-interface.md#design-gate-before-a-workflow-is-built) and the [feature-completion checklist](../architecture/feature-completion-checklist.md); recalculation requests with replacement
+>   versions are implemented ([stock-recalculation.md](../domain/stock-recalculation.md)).
+> Package-aware inventory (grouped tracking, QA-held stock) shipped as its own workstream: [package-balance-handoff.md](package-balance-handoff.md). New correction work is a Phase 4 dependency or its own slice, not a reason to reopen this phase.
 
 ## Goal
 
@@ -181,7 +184,7 @@ The order matters because later work needs stable document and stock boundaries:
       `ExecuteRecalculation` re-evaluates the horizon before acting, so a tightened policy, a newly
       closed period or a cutover approved after the request all stop execution
       (`ExecuteRecalculationTest`)
-- [ ] Build recalculation requests with immutable append-only impact versions, exact-version
+- [x] Build recalculation requests with immutable append-only impact versions, exact-version
       approvals, state-based staleness and automatic replacement-version generation per
       [ADR 0040](../decisions/0040-control-backdated-stock-recalculation-and-corrections.md). Receipt,
       issue and transfer previews are implemented for supported histories;
@@ -213,7 +216,7 @@ The order matters because later work needs stable document and stock boundaries:
       issues and any depth of transfer chain, and for backdated issues/transfers whether or not
       their replay reprices other history (`OutboundRecalculationExecutor`, same real-layer-id
       correction engine as the receipt case for FIFO/SPECIFIC, multi-pool convergence for AVCO)
-- [ ] Build idempotent append-only correction packages preserving exact approved deltas, historical
+- [ ] **Carried forward → Phase 4–6 correction package.** Build idempotent append-only correction packages preserving exact approved deltas, historical
       FX bases, deterministic downstream allocation, explicit pending owners and zero-residual
       reconciliation per
       [ADR 0040](../decisions/0040-control-backdated-stock-recalculation-and-corrections.md).
@@ -375,7 +378,7 @@ purchasing and inventory operating UI; that remaining boundary is listed below:
       required approvers), with computed convenience flags (`is_fully_approved`,
       `has_unexpired_full_approval`, etc.) added to the API response rather than pushed onto the
       frontend, unlike every earlier derived-status screen
-- [ ] Research and agree the Phase 2 interaction specification before adding more screens. Cover
+- [x] *(Closed 2026-10-08 by the journeys, ERP Blue standard, design gate and completion checklist.)* Research and agree the Phase 2 interaction specification before adding more screens. Cover
       user roles and task frequency, document status/permission actions, keyboard-efficient line
       entry, responsive table/card behaviour, validation recovery, consequential-action review,
       accessibility and realistic end-to-end prototypes per
@@ -433,7 +436,7 @@ purchasing and inventory operating UI; that remaining boundary is listed below:
       identity, never just the foreign keys. Covered by
       `InventoryCutoverApiTest`'s existing negative-opening workflow test, extended to assert both
       fields on the approve response and on `GET .../inventory-cutovers/{id}?include=negativeOpenings`.
-- [ ] PO fields with no schema, API or UI yet, surfaced while building supplier sites
+- [ ] **Carried forward → a later Purchasing slice.** PO fields with no schema, API or UI yet, surfaced while building supplier sites
       (2026-09-22): a ship-to/deliver-to location on the PO (today only the supplier's own
       order-from/ship-from site is captured, see [parties.md](../domain/parties.md#shared-sites));
       a per-PO payment-terms override (`payment_terms_days` lives only on `supplier_accounts`
@@ -454,12 +457,12 @@ purchasing and inventory operating UI; that remaining boundary is listed below:
       environment and idempotently registers it, while `erp:create-admin --permissions=all`
       registers before assigning. Fresh-database and repeat-registration behaviour are covered by
       `PermissionRegistrationTest`; the deployment runbook no longer needs an ad hoc tinker call.
-- [ ] Deploy automation — the self-hosted production job is now implemented after the image
+- [ ] **Carried forward → operations.** Deploy automation — the self-hosted production job is now implemented after the image
       manifest: it will pull from GHCR with the workflow token, run migrations, recreate the
       Compose services, register permissions and check both public endpoints. The first release
       was manually verified against the real VMs; the first automated `main` run remains to be
       verified.
-- [ ] mainvm's persistent GHCR pull credential can be removed after the automated job succeeds —
+- [ ] **Carried forward → operations.** mainvm's persistent GHCR pull credential can be removed after the automated job succeeds —
       the job authenticates with its short-lived workflow token. Keep the manual credential as
       emergency fallback until that verification is complete.
 - [x] ~~Second production database check-in: re-confirm dbvm's `REDIS_DB=3`/`REDIS_CACHE_DB=4`
@@ -526,19 +529,19 @@ Tick these in the same commit as the work.
 - [x] Authorised backdated replay follows affected configured AVCO pools and real cross-pool
       dependencies while excluding unrelated pools (`MovementReplayScope`;
       `OutboundRecalculationReviewTest`, `OutboundRecalculationTest`, `ExecuteRecalculationTest`)
-- [ ] Horizon eligibility uses the configured period/floor mode, snapshots trusted rolling context,
+- [ ] **Carried forward → Phase 6 (valuation policy).** Horizon eligibility uses the configured period/floor mode, snapshots trusted rolling context,
       cannot cross stricter cutover/period/policy boundaries and routes outside-horizon differences
       to the explicit correction workflow without falsifying physical dates. Mode/floor/timezone,
       the request-time snapshot and the **cutover** boundary are all proven
       (`BackdatingHorizonEvaluatorTest`); the valuation-policy boundary is still uncomposed because
       that subsystem does not exist yet
-- [ ] A backdated correction package is idempotent, preserves approved historical FX/deltas,
+- [ ] **Carried forward → Phase 4–6 correction package.** A backdated correction package is idempotent, preserves approved historical FX/deltas,
       allocates its economic lines without changing physical quantity, reconciles GL representation
       without double counting, reconciles Tax/integration/ancillary obligations on their own bases,
       and cannot finish with an unexplained residual or unresolved required obligation
-- [ ] Retrying after a correction commit/response timeout resolves the unique existing package and
+- [ ] **Carried forward → Phase 4–6 correction package.** Retrying after a correction commit/response timeout resolves the unique existing package and
       never duplicates value; an unlinked manual journal cannot resolve its Accounting obligation
-- [ ] A failure by any synchronous implemented participant rolls the declared internal transaction
+- [ ] **Carried forward → Phase 4–6 correction package.** A failure by any synchronous implemented participant rolls the declared internal transaction
       back in full; only deliberately deferred/asynchronous/external obligations may remain pending
 - [x] A posted physical count creates auditable variance moves and cannot be posted twice
 - [x] Cross-company access and raw cross-company foreign-key writes fail for every new table

@@ -1,6 +1,6 @@
 # 0082 — Reconcile package balances with stock operations
 
-- **Status:** proposed
+- **Status:** superseded by [0090](0090-package-aware-stock-issue-semantics.md), [0091](0091-activate-grouped-package-tracking-and-fail-closed-enforcement.md), [0092](0092-package-aware-physical-count-posting.md), [0093](0093-package-aware-goods-receipt-reversal.md) and [0094](0094-package-aware-supplier-qa-receipts.md) (2026-10-08) — it was never accepted; those accepted, implemented ADRs are the authoritative decisions. Kept for the research and the early reasoning.
 - **Date:** 2026-10-03
 - **Affects:** Inventory, receipt/QA/reversal integration, physical counts, material availability
 

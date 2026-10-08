@@ -4,8 +4,7 @@
 
 Started 2026-10-03 under accepted ADR 0052. **Status (2026-10-08): grouped package tracking v1 is complete** — see the [handoff](package-balance-handoff.md) and the
 [v1 sign-off](package-balance-ui.md#v1-sign-off-2026-10-08). The operational semantics were decided and built by accepted ADRs 0090–0094;
-[ADR 0082](../decisions/0082-reconcile-package-balances-with-stock-operations.md) (the early proposed refinement whose principles they adopted) was never accepted or superseded —
-an owner decision, see [OPEN-QUESTIONS.md](../OPEN-QUESTIONS.md). The owner confirmed counts of unopened packages plus combined open/loose quantity are sufficient. This plan extends
+[ADR 0082](../decisions/0082-reconcile-package-balances-with-stock-operations.md) (the early proposal whose principles they adopted) is **superseded by 0090–0094** (owner decision, 2026-10-08). The owner confirmed counts of unopened packages plus combined open/loose quantity are sufficient. This plan extends
 the delivered purchasing package masters; it is not Phase 5 job execution. The scope table below is the original acceptance set and is kept as design history.
 
 ## Scope and examples
@@ -43,8 +42,7 @@ the original ten steps ended.
 7. [x] **Permissions and workflows**: `inventory.package-state.*` capabilities enforced at request and Action, rollout migration, role recipes, reason codes, screens
    ([package-balance-ui.md](package-balance-ui.md)).
 8. [x] **Activation for existing stock**: counted opening state, stale detection, atomic validated transition (ADR 0091); no deactivation (future).
-9. [ ] **Advisory proposals** — extending the ADR 0053 allocator with exact sealed/open evidence for the Material Preview. **Not built;** a future enhancement that is not in the
-   handoff's v1 scope. Owner to prioritise.
+9. [ ] **Advisory proposals** — extending the ADR 0053 allocator with exact sealed/open evidence for the Material Preview. **Not built — a deferred estimating enhancement** (owner decision 2026-10-08: not ahead of rejected-stock return/scrap).
 10. [x] **Demo and journey in each enforcing slice**: create-once demo seeders and Playwright specs exist; the [user journey](../journeys/grouped-package-tracking-journey.md) was added in the 2026-10-08 reconciliation.
 
 No slice may advertise exact operational package balances while an enabled writer can bypass them.
@@ -74,7 +72,7 @@ workflows; this feature only makes their eventual stock boundary package-consist
 - [Screens and API design](package-balance-ui.md)
 - [Inventory packages](../domain/inventory-packages.md)
 - [ADR 0052](../decisions/0052-progressive-inventory-package-tracking.md)
-- [ADR 0082 (still proposed — see note above)](../decisions/0082-reconcile-package-balances-with-stock-operations.md)
+- [ADR 0082 (superseded by 0090–0094)](../decisions/0082-reconcile-package-balances-with-stock-operations.md)
 - [Package feature handoff](package-balance-handoff.md)
 - [Purchasing delivery](item-purchasing-improvements.md)
 - [Stock](../domain/stock.md)

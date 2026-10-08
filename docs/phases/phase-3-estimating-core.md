@@ -2,7 +2,7 @@
 
 # Phase 3 — Estimating core
 
-- **Status:** core delivered (rate dimensions, application rates, formulations, assemblies, overhead, Material Preview with stock proposals, what-if variance control and approvals); the unchecked items below wait on other features — formal close-out is the owner's call
+- **Status:** **core complete (closed 2026-10-08).** Rate dimensions, application rates, formulations, assemblies, overhead, the Material Preview with stock proposals, what-if variance control and approvals are delivered. The unchecked items under *Deferred and blocked work* are **not unfinished Phase 3 implementation**: each is deferred to Phase 4 (quotation adoption), to a later enhancement or to another workstream, as marked
 - **Depends on:** Phase 1 (items, categories, parties) · Phase 2 (stock valuation — AVCO cost is
   the ingredient-cost input to every formulation roll-up)
 - **Blocked by:** nothing. [OPEN-QUESTIONS.md](../OPEN-QUESTIONS.md) has no blocking questions.
@@ -270,9 +270,11 @@ item here in the same commit that delivers it; add new ones as they are found.
 
 ### Waiting on another feature
 
-> **Reconciliation note (2026-10-08).** The package items below were written before the package workstream existed. Grouped `PACKAGE_BALANCE` tracking has since shipped as a separate
-> Inventory workstream (ADRs 0090–0094; [handoff](package-balance-handoff.md)), so the *Inventory-side* dependency is met for sealed/open-loose stock. What remains **unbuilt here** is
-> Estimating's use of it: package-level proposals and equivalents in the Material Preview, residual/waste variance bands, and everything that needs `CONTAINER_TRACKED`.
+> **Close-out (2026-10-08, owner decision).** Phase 3's core is formally closed. What remains is deferred, by owner:
+> - **Phase 4 (quotation adoption):** persisted adoption, approval and history; generic material cost resolution (ADR 0077); variance reporting; the enforcement half of ADR 0076.
+> - **Deferred estimating enhancements** (not ahead of the package workstream's rejected-stock return/scrap, owner decision): package-aware proposals and equivalents in the Material Preview, residual/waste variance bands, and anything that
+>   needs `CONTAINER_TRACKED`. Grouped `PACKAGE_BALANCE` tracking itself shipped as a separate Inventory workstream (ADRs 0090–0094; [handoff](package-balance-handoff.md)), so the Inventory-side dependency is met.
+> - **Access slice:** department-limited availability waits on [Q26](../OPEN-QUESTIONS.md#q26--organisational-and-record-level-access-scope).
 
 - [x] **`APPROVAL_REQUIRED` variance band** — delivered 2026-09-30 through the shared approval engine
       ([ADR 0070](../decisions/0070-shared-configurable-approval-engine.md), which resolves Q27). The effect is
@@ -280,12 +282,12 @@ item here in the same commit that delivers it; add new ones as they are found.
       `BLOCKED` if they are switched off later, and the Material Preview names the approval a plan would need and
       marks it not adoptable. *Submitting* a plan for that approval still waits for adoption on a quotation
       revision (Phase 4), because a plan is hypothetical until then. See [approvals.md](../domain/approvals.md).
-- [ ] **Waste/residual variance bands** — ADR 0054 lists expected package residual as a controlled
+- [ ] **Deferred → estimating enhancement (needs container tracking and package-aware proposals).** **Waste/residual variance bands** — ADR 0054 lists expected package residual as a controlled
       measure, but residual needs sealed-pack and remnant state that only `PACKAGE_BALANCE` /
       `CONTAINER_TRACKED` tracking ([ADR 0052](../decisions/0052-progressive-inventory-package-tracking.md))
       provides. Shown as "not available yet"; bands configured before it exists must keep working
       unchanged when it does. Waits on those Inventory modes and `item_packagings`.
-- [ ] **Package-level proposals** — the `PACKAGE_BALANCE` / `CONTAINER_TRACKED` modes, package
+- [ ] **Deferred → estimating enhancement (package-aware Material Preview; after rejected-stock return/scrap).** **Package-level proposals** — the `PACKAGE_BALANCE` / `CONTAINER_TRACKED` modes, package
       definitions, package equivalents of a quantity ("about two 5 L cans") and open-remnant / expiry /
       surplus criteria in the ADR 0053 presets. See
       [inventory-packages.md](../domain/inventory-packages.md#first-implementation-quantity_only-availability-and-allocation).
@@ -302,20 +304,20 @@ item here in the same commit that delivers it; add new ones as they are found.
       a company-managed control — not allowed / show the cost / reason above X% / approval above X% — company-wide now, shaped for
       category and item scope later, plus a `stock_mix.choose` capability; enforcement waits for Phase 4 adoption.
 - [x] **Short mix** — decided 2026-10-01: a mix covering less than the requirement stays accepted and is reported as a shortage.
-- [ ] **Package tracking and everything that needs it** — `item_packagings`, `PACKAGE_BALANCE` / `CONTAINER_TRACKED`, sealed/opened
+- [ ] **Deferred → grouped tracking is delivered elsewhere; the rest is an enhancement.** **Package tracking and everything that needs it** — `item_packagings`, `PACKAGE_BALANCE` / `CONTAINER_TRACKED`, sealed/opened
       package state and remnants, package-aware proposals and equivalents, expiry/remnant/surplus criteria, waste/residual
       variance bands, per-unit precision. All extend the base-quantity mix; none needs it redesigned. Dependency and the
       owner (confirmed 2026-10-01: an Inventory package-tracking design before Phase 5 material issue) are in
       [ADR 0072](../decisions/0072-hand-built-stock-mix-in-base-quantity.md#deferred-with-what-each-depends-on) and
       [phases/README.md](README.md). Variable-content packages: [Q23](../OPEN-QUESTIONS.md#q23--variable-content-and-catch-weight-packages).
-- [ ] **Generic material cost resolution (FIFO, SPECIFIC, warehouse-scoped AVCO in assembly costing)** — designed, not built, by
+- [ ] **Deferred → Phase 4 adoption.** **Generic material cost resolution (FIFO, SPECIFIC, warehouse-scoped AVCO in assembly costing)** — designed, not built, by
       [ADR 0077](../decisions/0077-generic-material-cost-resolution-with-a-configurable-costing-scope.md) (2026-10-01): strategies per
       valuation method behind one contract, a configurable costing scope (chosen stock → document → company default → unknown),
       a snapshot-ready result, `unknown` never zero. The runtime stays AVCO-only and fails loudly until the Phase 4 adoption design
       uses it. Owner of the build: the Phase 4 adoption work.
-- [ ] **Department-limited availability** — company-wide only until
+- [ ] **Deferred → Q26 record-scope slice.** **Department-limited availability** — company-wide only until
       [Q26](../OPEN-QUESTIONS.md#q26--organisational-and-record-level-access-scope).
-- [ ] **Persisted adoption, approval and history** (`material_plan.adjust`, `package_plan.adopt`,
+- [ ] **Deferred → Phase 4.** **Persisted adoption, approval and history** (`material_plan.adjust`, `package_plan.adopt`,
       `material_variance.request/approve`, `material_resolution_history.view`) — registered but not
       actionable; they belong to a Phase 4 quotation revision, not a temporary Phase 3 draft.
 
@@ -329,7 +331,7 @@ item here in the same commit that delivers it; add new ones as they are found.
       STRUCTURED company can mark a location as counting or not, as a governed policy. Demo data: `StructuredLocationsDemoSeeder`
       switches the demo company to STRUCTURED and gives the Main Warehouse a hierarchy, one location of each
       type with its role, two governed marks and pigment stock placed to show every way a location counts.
-- [ ] **Variance reporting** (ADR 0054 §8) — distinguishing one-off justified exceptions from repeated
+- [ ] **Deferred → Phase 4.** **Variance reporting** (ADR 0054 §8) — distinguishing one-off justified exceptions from repeated
       deviations that should trigger a standards review. Needs adopted history, so it follows Phase 4.
 
 ### Demo-data gaps

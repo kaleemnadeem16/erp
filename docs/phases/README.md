@@ -9,8 +9,8 @@ Eight phases, each independently shippable. Current state is in
 |---|---|---|---|
 | 0 | Foundation | Complete | [phase-0-foundation.md](phase-0-foundation.md) |
 | 1 | Master data | Complete | [phase-1-master-data.md](phase-1-master-data.md) |
-| 2 | Purchasing & stock | Operationally complete; multi-owner correction package outstanding (needs Phases 4–6) | [phase-2-purchasing-stock.md](phase-2-purchasing-stock.md) |
-| 3 | Estimating core | Core delivered; remaining items wait on other features | [phase-3-estimating-core.md](phase-3-estimating-core.md) |
+| 2 | Purchasing & stock | **Complete** (closed 2026-10-08); the multi-owner correction package is carried to Phases 4–6 | [phase-2-purchasing-stock.md](phase-2-purchasing-stock.md) |
+| 3 | Estimating core | **Core complete** (closed 2026-10-08); adoption and enhancements deferred to Phase 4 / later | [phase-3-estimating-core.md](phase-3-estimating-core.md) |
 | 4 | Sales pipeline | Not started | *expanded when reached* |
 | 5 | Job execution | Not started | *expanded when reached* |
 | 6 | Finance | Not started | *expanded when reached* |

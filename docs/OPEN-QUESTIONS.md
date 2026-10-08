@@ -184,14 +184,6 @@ sign-in is represented and completed (the provisional 401 `challenge` shape), st
 service credentials for integrations are separate. Also open from the same review: a security-event audit trail for sign-ins, failed
 attempts and device changes.
 
-### Q38 — Status of ADR 0082 and the Phase 3 / Phase 2 close-out
-**Blocks:** Nothing; a documentation decision recorded by the 2026-10-08 reconciliation
-
-Three small owner decisions the docs cannot make: (1) [ADR 0082](decisions/0082-reconcile-package-balances-with-stock-operations.md) is still `proposed`, although its principles were adopted
-and built by the accepted ADRs 0090–0094 — accept it as the umbrella record, or mark it superseded by that set; (2) whether Phase 3 (Estimating core) is formally closed, its open items being
-dependencies on Phase 4 adoption and package-aware proposals; (3) whether Phase 2's "agree the interaction specification" item is closed by the journeys and the ERP Blue standard.
-Also open from the package workstream: whether Estimating's package-aware proposals (the one delivery-plan step not built) should be prioritised ahead of the rejected-stock return/scrap slice.
-
 ---
 
 ## Answered---

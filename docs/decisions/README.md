@@ -96,7 +96,7 @@ in the same commit.
 | [0080](0080-packaged-purchasing-and-independent-price-basis.md) | Separate named packages, supplier offers and purchasing price basis | accepted | 2026-10-02 |
 | [0081](0081-central-company-profile-and-company-wide-settings.md) | A central Company screen: profile, company-wide settings, a stable code, and lifecycle locks | accepted | 2026-10-02 |
 
-| [0082](0082-reconcile-package-balances-with-stock-operations.md) | Reconcile package balances with stock operations | proposed | 2026-10-03 |
+| [0082](0082-reconcile-package-balances-with-stock-operations.md) | Reconcile package balances with stock operations | ~~superseded by 0090–0094~~ | 2026-10-03 |
 | [0083](0083-layered-stock-read-capabilities-and-blind-counting.md) | Layered stock-read capabilities (availability / stock / movement), and blind counting by role | accepted | 2026-10-03 |
 | [0084](0084-separate-financial-master-data-fields.md) | Separate financial master-data fields from ordinary maintenance | accepted | 2026-10-06 |
 | [0085](0085-request-specific-document-review-for-approvals.md) | Request-specific document review with commercial and technical approval profiles | accepted | 2026-10-06 |
@@ -111,8 +111,9 @@ in the same commit.
 | [0094](0094-package-aware-supplier-qa-receipts.md) | Package-aware supplier QA: held packages stay in on-hand, a disposition relabels a declared physical portion | accepted | 2026-10-08 |
 | [0095](0095-status-is-short-current-and-purpose-limited.md) | STATUS.md is short, current and limited by purpose, not by a row count (supersedes 0044) | accepted | 2026-10-08 |
 | [0096](0096-cross-cutting-feature-standards.md) | Cross-cutting feature standards live in canonical docs and a completion checklist | accepted | 2026-10-08 |
+| [0097](0097-supplier-return-and-scrap-of-rejected-stock.md) | Supplier return and scrap of rejected stock: one exit movement from the receipt's own layer | proposed | 2026-10-08 |
 
-**Next number: 0097**
+**Next number: 0098**
 
 ## By theme
 
@@ -122,13 +123,9 @@ in the same commit.
 - **Domain:** [0007](0007-avco-valuation.md) · [0008](0008-assembly-abstraction.md) · [0009](0009-company-defined-rate-dimensions.md) · [0030](0030-unified-party-model.md) · [0032](0032-per-item-valuation-method.md) · [0033](0033-item-suppliers-relationship.md) · [0034](0034-party-child-tables-inherit-company-scope.md) · [0035](0035-separate-purchasing-operational-and-financial-facts.md) · [0036](0036-controlled-inventory-cutover.md) · [0037](0037-controlled-negative-stock-overrides.md) · [0038](0038-company-wide-per-item-avco-pool.md) · [0039](0039-configurable-avco-valuation-pools.md) · [0040](0040-control-backdated-stock-recalculation-and-corrections.md) · [0041](0041-progressive-inventory-location-capabilities.md) · [0042](0042-immutable-item-supplier-identity.md) · [0043](0043-control-purchase-order-receipt-and-qa-posting.md) · [0045](0045-avco-transfer-rate-final-not-provisional.md) · [0046](0046-strict-staged-inventory-cutover-reconciliation.md) · [0047](0047-govern-inventory-structure-and-default-valuation-policies.md) · [0048](0048-configurable-hierarchical-overhead-allocation.md) · [0049](0049-assembly-group-overhead-scope.md) · [0050](0050-item-specific-uom-conversion-and-divisibility.md) · [0051](0051-phase-3-commercial-packaging-and-supplier-cost-scenarios.md) · [0052](0052-progressive-inventory-package-tracking.md) · [0053](0053-explainable-inventory-package-selection-presets.md) · [0054](0054-risk-based-material-plan-variance-controls.md) · [0055](0055-progressive-sales-pricing-and-controlled-formulas.md) · [0058](0058-phase-3-material-resolution-preview-contract.md) · [0059](0059-name-a-location-as-warehouse-and-location.md)
 - **Finance:** [0011](0011-double-entry-open-item-ar.md) · [0012](0012-multi-currency-dual-amounts.md) · [0023](0023-retention-retainage-enabled.md) · [0024](0024-onboarding-base-currency-and-fiscal-year.md) · [0025](0025-configurable-tax-engine.md) · [0031](0031-manual-exchange-rate-entry.md) · [0056](0056-progressive-tax-calculation-and-recovery.md)
 
-- **Physical package tracking:** [0052](0052-progressive-inventory-package-tracking.md) · [0053](0053-explainable-inventory-package-selection-presets.md) · [0080](0080-packaged-purchasing-and-independent-price-basis.md) · [0082](0082-reconcile-package-balances-with-stock-operations.md) *(proposed — see its note below)* · [0090](0090-package-aware-stock-issue-semantics.md) · [0091](0091-activate-grouped-package-tracking-and-fail-closed-enforcement.md) · [0092](0092-package-aware-physical-count-posting.md) · [0093](0093-package-aware-goods-receipt-reversal.md) · [0094](0094-package-aware-supplier-qa-receipts.md)
+- **Physical package tracking:** [0052](0052-progressive-inventory-package-tracking.md) · [0053](0053-explainable-inventory-package-selection-presets.md) · [0080](0080-packaged-purchasing-and-independent-price-basis.md) · [0082](0082-reconcile-package-balances-with-stock-operations.md) *(superseded by 0090–0094)* · [0090](0090-package-aware-stock-issue-semantics.md) · [0091](0091-activate-grouped-package-tracking-and-fail-closed-enforcement.md) · [0092](0092-package-aware-physical-count-posting.md) · [0093](0093-package-aware-goods-receipt-reversal.md) · [0094](0094-package-aware-supplier-qa-receipts.md) · [0097](0097-supplier-return-and-scrap-of-rejected-stock.md) *(proposed)*
 - **Access, approvals and security:** [0028](0028-dynamic-namespaced-permissions.md) · [0062](0062-company-member-and-access-administration.md) · [0065](0065-role-first-member-access-and-manual-credential-recovery.md) · [0066](0066-capability-driven-screen-navigation.md) · [0070](0070-shared-configurable-approval-engine.md) · [0083](0083-layered-stock-read-capabilities-and-blind-counting.md) · [0085](0085-request-specific-document-review-for-approvals.md) · [0088](0088-device-tokens-expire-and-sign-in-has-seams-for-stronger-authentication.md) · [0089](0089-organisation-units-and-record-scope.md)
 - **Documentation process and standards:** [0022](0022-code-documentation-strategy.md) · [0095](0095-status-is-short-current-and-purpose-limited.md) · [0096](0096-cross-cutting-feature-standards.md)
-
-**Note on ADR 0082 (proposed).** Its principles — physical and availability state are separate, held stock is on-hand but not usable, every writer must be integrated or guarded — were
-adopted and built by the accepted ADRs 0090–0094, but 0082 itself was never accepted or superseded. Whether to accept it as the umbrella record, or mark it superseded by the
-0090–0094 set, is an owner decision (recorded in [OPEN-QUESTIONS.md](../OPEN-QUESTIONS.md)); until then treat 0090–0094 as authoritative where they differ.
 
 ## Superseded chain
 
@@ -147,6 +144,8 @@ customer control-account wording were corrected after implementation exposed the
 `0039` → **`0045`** — the AVCO pool-scope decision remains, but its transfer section's
 provisional-repair provision was corrected once review established a transfer's quantity is
 always fully physically backed and can never itself be shortage-backed.
+
+`0082` → **`0090`–`0094`** — the early, never-accepted proposal for package balances; its principles (physical and availability state are separate, held stock is on hand but not usable, every writer integrated or guarded) were decided and built by the five accepted package ADRs. Read those; 0082 is kept for the research.
 
 `0044` → **`0095`** — the fixed row/line budget for STATUS.md failed in practice (104 rows by 2026-10-08); replaced by purpose limits, with the append-only status log kept.
 

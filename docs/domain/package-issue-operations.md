@@ -177,7 +177,7 @@ A QA-required receipt line of a grouped item still needs its observed compositio
 
 ## Related
 
-- [ADR 0090](../decisions/0090-package-aware-stock-issue-semantics.md), [0091](../decisions/0091-activate-grouped-package-tracking-and-fail-closed-enforcement.md), [0092](../decisions/0092-package-aware-physical-count-posting.md), [0093](../decisions/0093-package-aware-goods-receipt-reversal.md), [0094](../decisions/0094-package-aware-supplier-qa-receipts.md); [ADR 0082](../decisions/0082-reconcile-package-balances-with-stock-operations.md) (proposed)
+- [ADR 0090](../decisions/0090-package-aware-stock-issue-semantics.md), [0091](../decisions/0091-activate-grouped-package-tracking-and-fail-closed-enforcement.md), [0092](../decisions/0092-package-aware-physical-count-posting.md), [0093](../decisions/0093-package-aware-goods-receipt-reversal.md), [0094](../decisions/0094-package-aware-supplier-qa-receipts.md); [ADR 0082](../decisions/0082-reconcile-package-balances-with-stock-operations.md) (superseded by 0090–0094)
 - [Saved opening and unpacking](package-opening-operations.md), [package kernel](package-balance-integration.md)
 - [Screens and API, with the v1 sign-off](../phases/package-balance-ui.md), [delivery plan](../phases/package-balance-delivery.md), [handoff](../phases/package-balance-handoff.md)
 - [User journey](../journeys/grouped-package-tracking-journey.md)

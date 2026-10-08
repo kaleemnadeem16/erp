@@ -266,7 +266,7 @@ This implements package masters only: PACKAGE_BALANCE and CONTAINER_TRACKED rema
 ## Physical-balance design started — 2026-10-03
 
 The owner confirmed sealed counts plus grouped open/loose quantity are sufficient for the first
-physical release. [Proposed ADR 0082](../decisions/0082-reconcile-package-balances-with-stock-operations.md)
+physical release. [ADR 0082 (superseded by 0090–0094)](../decisions/0082-reconcile-package-balances-with-stock-operations.md)
 distinguishes unpacking an outer box into still-sealed inner packages from opening the contents
 into loose stock. Both preserve quantity and value. Availability/QA status remains a separate
 axis, and different locations/batches/hold provenance must not be pooled together. Existing
