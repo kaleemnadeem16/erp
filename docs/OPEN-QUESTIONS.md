@@ -31,6 +31,17 @@ Q1, Q2 and Q3 were resolved on 2026-08-10 — see
 
 ## Non-blocking
 
+### Q39 — Phase 4 R1: enquiry, deal and customer-onboarding boundaries
+**Blocks:** finalising R1's Sales model and dependent quotation-recipient/acceptance design;
+not research or the other agents' existing workstreams.
+
+The owner must settle optional lead intake and distinct enquiry/deal records, direct quotations,
+prospect recipient and customer-account readiness gates, organisation/person customer scope,
+ownership/visibility, closure/reopening semantics and duplicate/CRM scope. Initial alternatives,
+recommendations and dependencies are recorded once in
+[R1-A–G](phases/phase-4-r1-leads-and-relationships.md#decisions-needed-from-the-owner).
+No answer is accepted yet. Agreed rules become ADRs; remove this entry when resolved.
+
 Q6 (data import mechanism) and Q7 (permissions mechanism) resolved 2026-08-10 — see
 [ADR 0027](decisions/0027-generic-column-mapping-import.md) and
 [ADR 0028](decisions/0028-dynamic-namespaced-permissions.md). Q7's actual role/permission

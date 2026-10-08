@@ -11,7 +11,7 @@ Eight phases, each independently shippable. Current state is in
 | 1 | Master data | Complete | [phase-1-master-data.md](phase-1-master-data.md) |
 | 2 | Purchasing & stock | **Complete** (closed 2026-10-08); the multi-owner correction package is carried to Phases 4–6 | [phase-2-purchasing-stock.md](phase-2-purchasing-stock.md) |
 | 3 | Estimating core | **Core complete** (closed 2026-10-08); adoption and enhancements deferred to Phase 4 / later | [phase-3-estimating-core.md](phase-3-estimating-core.md) |
-| 4 | Sales pipeline | Not started | *expanded when reached* |
+| 4 | Sales, quotations and job handover | Research/discussion; implementation not started | [Phase 4 plan](phase-4-sales-quotations-and-handover.md) |
 | 5 | Job execution | Not started | *expanded when reached* |
 | 6 | Finance | Not started | *expanded when reached* |
 | 7 | Mobile & integrations | Not started | *expanded when reached* |
@@ -77,6 +77,11 @@ scoped through Assembly Groups ([ADR 0049](../decisions/0049-assembly-group-over
 → [phase-3-estimating-core.md](phase-3-estimating-core.md) · [formulations.md](../domain/formulations.md) · [application-rates.md](../domain/application-rates.md) · [assemblies.md](../domain/assemblies.md)
 
 ### Phase 4 — Sales pipeline
+
+Research and discussion have started; see the [research plan](phase-4-sales-quotations-and-handover.md),
+[existing-system review](phase-4-existing-system-review.md) and [R1](phase-4-r1-leads-and-relationships.md).
+No new Phase 4 decisions are accepted and implementation has not started.
+
 Leads, opportunities, quotations with revisions, cost snapshotting, PDF output. Mobile layout
 patterns should be settled before this. RTL is not needed — English only
 ([ADR 0026](../decisions/0026-english-only-no-rtl.md)).

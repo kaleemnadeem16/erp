@@ -4,6 +4,12 @@
 
 From first contact to a confirmed job.
 
+**Planning note (2026-10-08):** this is a documented proposal, not implemented Sales behaviour.
+The [Phase 4 research plan](../phases/phase-4-sales-quotations-and-handover.md) and
+[R1 discussion](../phases/phase-4-r1-leads-and-relationships.md) assess the model before decisions.
+Customer-only recipients, conversion and closure are unresolved. The historical numbering
+paragraph below must be reconciled with ADR 0079's implemented central framework before build.
+
 ```
 Lead → Opportunity → Quotation (revisions) → Job
 ```

@@ -1,0 +1,51 @@
+[← Phase 4 planning](phase-4-sales-quotations-and-handover.md)
+
+# Phase 4 — Existing-system review
+
+Inspection date: 2026-10-08; committed baseline `a5540bc`. Other agents have uncommitted Inventory
+work; it is outside this review and is not counted as delivered. Static code/test inspection only;
+no application tests were run for this documentation exercise. Paths below are repository-relative.
+Statuses distinguish runtime capability from a documented future contract.
+
+## R1 foundations — verified first
+
+| Capability/state | What exists and evidence | Reuse, missing work and constraints |
+|---|---|---|
+| **Party identity — implemented** | `backend/app/Modules/Parties/Models/Party.php`; `Actions/CreateParty.php`, `UpdateParty.php`, `ArchiveParty.php`; `routes.php` exposes list/show/create/update/archive. Party creation does not create either account. Contacts/sites are relations; PartyResource currently exposes identity and optional account includes, not contact maintenance. | Reuse identity for known prospects/customers/suppliers. Do not create a parallel Sales customer master. Parties can have neither role. ADR 0034 corrects ADR 0030's child scoping without discarding unified identity. |
+| **Customer role — implemented API, UI missing** | `Models/CustomerAccount.php`, `Actions/CreateCustomerAccount.php`, `Http/Requests/CustomerAccount/StoreCustomerAccountRequest.php`: party, code, payment terms and receivable mapping required; currency optional. Customer API is in Parties routes. `frontend/apps/main/src/router.tsx` has supplier registration, no customer maintenance routes. | Add role through Parties Actions; Sales qualification cannot bypass financial-field permissions. Decide when quoting requires this financial setup, rather than silently making fields optional. |
+| **Contacts/addresses — partially implemented** | `Models/PartyContact.php`, `PartySite.php`, `CustomerSite.php`; migrations `2026_08_19_090100`, `090200`, `2026_08_20_120700`. Contacts have name/email/phone/title/primary flag. Customer-site joins use BILL_TO/SHIP_TO. SupplierSiteController/Actions expose supplier-side address maintenance. | Reuse parent-owned identity/sites. No contact CRUD or equivalent customer-site endpoints in Parties routes; Phase 4 needs appropriate write/read surfaces and same-party guards. Contacts are not login users. |
+| **Duplicates — structural checks implemented, matching absent** | Party migration `2026_08_19_090000`: company/code uniqueness, no name/tax-id uniqueness. Customer migration `2026_08_20_120600`: company/party and company/code uniqueness; request checks both. `PartyTest`, `PartyApiTest`, `CustomerAccountTest` cover codes, relationships and tenancy. | Same code or second customer role is refused, but two codes may name the same real organisation. Candidate matching, controlled linking and merge workflow do not exist. Shared email/phone must not imply automatic identity merge. |
+| **Relationship lifecycle — implemented role archive, Sales conversion absent** | Party/role models soft-delete; ArchiveParty locks identity and refuses while non-deleted accounts remain. `PartyTest` proves independent roles and shared sites. | Qualification is a new transaction/transition, not renaming a Party or moving a supplier into Sales. Archived-account restoration and conflicting identities need a deliberate conversion policy. |
+| **Lead/opportunity/quotation — documented-only** | `docs/domain/sales-pipeline.md` sketches entities and behaviour. No Sales module/provider, matching migrations, Actions, routes or frontend screens found. | Treat schema as a proposal, not an accepted lifecycle. Separate enquiry, deal and commercial document meanings; choose storage after discussion. |
+| **Sales owner/stage/history — nonexistent** | No Sales assignment, pipeline-stage configuration or conversion/closure Actions found. Generic users and company memberships exist under Administration. | Reuse eligible company members, not new sales-user identities. Owner denotes responsibility; access needs an explicit scoped policy. |
+| **B2C/person customer — deferred design** | ADR 0030 organisation-only initial boundary retained by ADR 0034; Party has no individual/organisation discriminator. | Generic industries do not automatically imply B2C delivery. Decide whether Phase 4 extends person customers; an ADR would change the recorded boundary. |
+
+## Broader Phase 4 foundations — scoped inventory
+
+| Area/state and code evidence | Reuse and missing/constraint |
+|---|---|
+| **Estimating implemented:** `backend/app/Modules/Estimating/Models`, `Actions/ResolveApplicationRate.php`, `ResolveFormulation.php`, `ExplodeAssemblyVersion.php`; `Support/IngredientCostResolver.php`; `tests/Feature/Modules/Estimating/MaterialPreviewApiTest.php`; frontend Estimating/Material Preview screens. Resource rates and overhead are runtime capabilities. | Reuse cost/quantity evidence, version selection and explainability. Material Preview is ephemeral. Sales pricing and persisted quotation adoption are absent. Ingredient costing supports company-wide AVCO only and refuses FIFO/SPECIFIC or narrower pools; ADR 0077 is accepted **design only** for Phase 4 extension. |
+| **Pricing documented-only:** ADR 0055 and `domain/sales-pricing.md`. Assembly margin/markup arithmetic exists in roll-up. | Reuse cost evidence, not Assembly sell figure as the entire Sales engine. No implemented price lists, customer agreements, controlled formula pipeline or Sales override workflow found. SIMPLE is the accepted initial pricing mode. |
+| **Currency/FX implemented:** `backend/app/Models/Currency.php`, `ExchangeRate.php`, `Actions/ManageExchangeRate.php`, currency/rate controllers and `tests/Feature/Support/ExchangeRate*Test.php`. | Reuse reference currency and effective-rate records. Quote rate date, authorised override, rounding and issue evidence remain R4 decisions; decimal money and dual pinned amounts are established invariants. |
+| **Tax documented-only engine:** ADRs 0025/0056, `domain/tax.md`; no tax-engine module/tax-code migrations found. Customer request explicitly prohibits non-null tax_code_id. Purchasing accepts line tax amounts; this is not tax determination. | Phase 4 must implement the appropriate tax-estimate foundation; preserve separate net price/tax, defer financial posting/reporting to Phase 6. Do not claim tax master references currently work. |
+| **Numbering implemented:** `backend/app/Modules/Numbering/Services/NumberingService.php`, `Support/NumberingRegistry.php`, engine/API/concurrency tests and frontend numbering screens; IssuePurchaseOrder calls engine. | Register a Sales document adapter. The Sales draft's old sequences/gapless wording is superseded by ADR 0079 and invariant 8: central allocation; gap policy belongs to the series. Decide quotation-family/revision numbering in R2/R5. |
+| **Approvals implemented shared engine:** Approvals README, SubjectRegistry, SubmitForApproval/RequireApproval; PO subject adapter and frozen request-specific review; engine/evidence/visibility tests. | Register Sales subject/evidence providers and duties, not a new engine. Estimating MaterialVarianceApprovalSubject/StockMixApprovalSubject explicitly refuse submission before adopted plans exist. Quotation approvals and invalidation are missing; no PO permission reuse. |
+| **Permissions/audit/scope implemented foundations:** Parties PartyWriteAccess and financial-field access; Administration members/roles; `backend/app/Support/Scope/RecordScope.php`; `app/Models/Concerns/LogsActivityWithDefaults.php`. | Reuse company-scoped additive capabilities, actor checks and tenant-tagged change logs. ADR 0089 implements warehouse/unit scope; own/assigned Sales visibility is not implemented. Generic logs do not replace immutable conversion/closure/snapshot evidence. |
+| **Printing partially reusable:** `frontend/packages/core-ui/src/features/purchase-orders/purchase-order-print-model.ts`, print component/CSS, settings/printing screen; `architecture/appearance-and-printing.md`. | Existing PO browser print/PDF workflow, A4 pagination and branding are reusable patterns. No quotation PDF model or delivery/signature record exists. Browser-local preferences are not server-governed templates. Restrict customer output independently of internal cost. |
+| **Inventory/Purchasing implemented:** stock layers and AVCO pools, grouped package evidence and movement Actions; issued PO offer evidence and retry/locking patterns. | Reuse read-only availability/cost interfaces and integrity patterns. Quotation evidence must not reserve stock. The Sales/COGS correction participant of ADR 0040 is carried work, not implemented by Inventory alone. |
+| **Jobs documented-only:** `domain/job-costing.md`; no domain job module/confirmation Actions found. `0001_01_01_000002_create_jobs_table.php` is Laravel's background-job queue. | Do not mistake framework jobs for customer jobs. Define minimal confirmed baseline/handover in R7; scheduling, issue, timesheets and actual cost belong to Phase 5. |
+| **Company/configuration implemented:** Company module UpdateCompany, fields, change history; `Support/CompanyLocks/FinancialActivity.php`; global company scope and parent-scope traits. | Reuse governed settings, accounting time zone/base currency and financial-activity lock registry. Sales records must register appropriate probes. Never share prospects across tenants to solve duplicate matching; Q10 remains separate. |
+
+## Governing decisions to preserve
+
+ADRs 0030/0034 (shared identity/parent scope), 0084 (financial-field boundaries), 0089 (unit scope),
+0008/0049 (Assembly and overhead), 0054/0058/0072/0076/0077 (planning/adoption/cost),
+0055 (Sales pricing), 0012/0025/0056 (FX/tax), 0040 (corrections), 0070/0085 (approvals/review),
+0079 (numbering), 0095/0096 (documentation/completion). Existing accepted research is reused;
+these records do not by themselves settle R1's new semantics.
+
+## Related
+
+- [Phase 4 plan](phase-4-sales-quotations-and-handover.md) · [R1 research](phase-4-r1-leads-and-relationships.md)
+- [Parties](../domain/parties.md) · [Sales pipeline](../domain/sales-pipeline.md)
+- [Authorisation](../architecture/authorization.md) · [Research rules](../architecture/research-and-design.md)

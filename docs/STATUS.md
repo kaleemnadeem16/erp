@@ -12,7 +12,8 @@ History is in [STATUS-LOG.md](STATUS-LOG.md); resume points are in the workstrea
 | 1 Master data | **Complete** | [phase-1-master-data.md](phases/phase-1-master-data.md) |
 | 2 Purchasing & stock | **Complete** (closed 2026-10-08): purchase orders, receipts, QA, reversal, the stock-movement and valuation engine (AVCO/FIFO/SPECIFIC), cutover, negative-stock overrides, backdated recalculation, physical counts, with their screens. Carried forward: the multi-owner correction package (needs Phases 4–6), a few Purchasing PO fields and two operations follow-ups | [phase-2-purchasing-stock.md](phases/phase-2-purchasing-stock.md) |
 | 3 Estimating core | **Core complete** (closed 2026-10-08): rate dimensions, application rates, formulations (versioning, overrides, roll-up), assemblies and overhead, the read-only Material Preview with stock proposals, what-if variance control and approvals. Deferred, not unfinished: quotation adoption and generic cost resolution (Phase 4), package-aware proposals (enhancement), department-limited availability (Q26) | [phase-3-estimating-core.md](phases/phase-3-estimating-core.md) |
-| 4 Sales pipeline · 5 Job execution · 6 Finance · 7 Mobile & integrations | Not started | [phases/README.md](phases/README.md) |
+| 4 Sales, quotations and job handover | **Research/discussion in progress**; initial R1 evidence recorded, no new decisions accepted; implementation not started | [Phase 4 research plan](phases/phase-4-sales-quotations-and-handover.md) |
+| 5 Job execution · 6 Finance · 7 Mobile & integrations | Not started | [phases/README.md](phases/README.md) |
 
 ## Workstreams outside the phase list
 
@@ -37,14 +38,14 @@ record scope, the access audit follow-ups, the approvals workspace, grouped pack
 
 Each is a new slice: propose first, get the owner's answers, then build. Optional enhancements are kept apart from required work.
 
-- **Required for the roadmap:** Phase 4 (sales pipeline: quotations, adoption of material plans, cost snapshots) — it also owes the multi-owner correction package carried from Phase 2.
+- **Required for the roadmap:** Phase 4 research/discussion starts with R1 (leads, opportunities and relationships), then the dependent topics in its [plan](phases/phase-4-sales-quotations-and-handover.md); implementation waits for agreed decisions. It also owes the multi-owner correction package carried from Phase 2.
 - **Next package slice — supplier return and scrap for rejected stock** (owner priority). **Decided** ([ADR 0097](decisions/0097-supplier-return-and-scrap-of-rejected-stock.md), accepted 2026-10-08: two separate documents, draft → post, dedicated permissions, informational supplier credit); **not started** — the build plan is [rejected-stock-exit-plan.md](phases/rejected-stock-exit-plan.md). It closes the one operational dead end: rejected stock, grouped or quantity-only, has no exit today.
 - **Later package enhancements** (none started; each a new design slice): governed change of tracked levels; deactivation/collapse; container-level tracking (not before the owner asks); line-level receipt reversal; count approval thresholds; QA/count reconciliation; standalone Issue/Transfer screens. **Deferred estimating enhancement:** package-aware proposals in the Material Preview (owner decision: not ahead of return/scrap).
 - **Access and security:** the remaining record-scope slices (purchasing documents, Estimating availability, approvals, delegated administration) — Q26; two-factor and step-up sign-in — Q37.
 
 ## Blocked / awaiting input
 
-No open question blocks work. Non-blocking questions: [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) (Q8, Q10, Q16, Q23, Q24, Q26, Q28, Q33, Q37). **Still pending, and not closable by documentation:** the staging sign-off for the access work (A1–A9,
+No open question blocks existing delivery work; Q39 gates dependent Phase 4 design. Other questions: [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) (Q8, Q10, Q16, Q23, Q24, Q26, Q28, Q33, Q37); R1 model decisions are pending as [Q39](OPEN-QUESTIONS.md#q39--phase-4-r1-enquiry-deal-and-customer-onboarding-boundaries). **Still pending, and not closable by documentation:** the staging sign-off for the access work (A1–A9,
 ADRs 0084–0089) — it needs staging access and a person to run `erp:audit-access-inventory` and decide per person; see the [settings and access handoff](phases/settings-and-access-hardening.md). 
 
 ## Where to look
