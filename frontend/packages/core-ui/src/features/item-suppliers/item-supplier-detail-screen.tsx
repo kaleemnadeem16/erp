@@ -64,7 +64,7 @@ export function ItemSupplierDetailScreen({
   const { search } = useLocation();
 
   const query = useItemSuppliersShow(relationshipId, {
-    include: "item.category,supplierAccount.party,purchaseUom",
+    include: "item,supplierAccount,purchaseUom",
   });
   const row = query.data?.status === 200 ? query.data.data.data : undefined;
 

@@ -1,5 +1,13 @@
 export { StatusBadge, type StatusTone } from "./components/ui/status-badge";
-export { ScreenTemplate, ScreenDesignProvider, SCREEN_TEMPLATES, type ScreenTemplateKind, type ScreenTemplateProps, type ScreenDesignVariables } from "./components/page/screen-template";
+export { RecordLink, type RecordLinkProps } from "./components/ui/record-link";
+export {
+  ScreenTemplate,
+  ScreenDesignProvider,
+  SCREEN_TEMPLATES,
+  type ScreenTemplateKind,
+  type ScreenTemplateProps,
+  type ScreenDesignVariables,
+} from "./components/page/screen-template";
 export { AppShell } from "./layouts/app-shell";
 export { ProtectedRoute } from "./routes/protected-route";
 export { PermissionRoute } from "./routes/permission-route";

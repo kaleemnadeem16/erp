@@ -1,7 +1,6 @@
 import type { ItemSupplierResource } from "@erp/core-api";
 import { Clock, Copy, MoreHorizontal, Pencil, Power, Star } from "lucide-react";
 import type { DataColumn } from "../../components/data-table/types";
-import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
 import {
   DropdownMenu,
@@ -10,15 +9,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../../components/ui/dropdown-menu";
+import { RecordLink } from "../../components/ui/record-link";
 import { StatusBadge } from "../../components/ui/status-badge";
 import { formatDate } from "../../lib/format-date";
 
 export function ItemSupplierStatusBadge({ active }: { active: boolean }) {
   return (
-    <StatusBadge
-      tone={active ? "success" : "draft"}
-      className="ui-status-badge"
-    >
+    <StatusBadge tone={active ? "active" : "draft"} className="ui-status-badge">
       {active ? "Active" : "Inactive"}
     </StatusBadge>
   );
@@ -49,8 +46,7 @@ export function getItemSupplierColumns(
         row.item ? `${row.item.code} — ${row.item.name}` : String(row.item_id),
       cell: (row) => (
         <div className="flex flex-col min-w-0">
-          <span
-            className="font-semibold text-primary hover:underline cursor-pointer truncate"
+          <RecordLink
             onClick={(e) => {
               if (onRowClick) {
                 e.stopPropagation();
@@ -59,7 +55,7 @@ export function getItemSupplierColumns(
             }}
           >
             {row.item?.name ?? `Item #${row.item_id}`}
-          </span>
+          </RecordLink>
           {row.item?.code && (
             <span className="text-xs font-mono text-muted-foreground">
               {row.item.code}
@@ -79,7 +75,7 @@ export function getItemSupplierColumns(
           : (row.supplier_account?.code ?? `#${row.supplier_account_id}`),
       cell: (row) => (
         <div className="flex flex-col min-w-0">
-          <span className="font-medium text-foreground truncate">
+          <span className="truncate text-[var(--ui-table-row-text)] font-medium">
             {row.supplier_account?.party?.name ??
               row.supplier_account?.code ??
               `Supplier #${row.supplier_account_id}`}
@@ -114,13 +110,13 @@ export function getItemSupplierColumns(
       value: (row) => row.priority ?? null,
       cell: (row) =>
         row.priority === 1 ? (
-          <Badge
-            variant="outline"
-            className="border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-semibold gap-1 inline-flex items-center"
+          <StatusBadge
+            tone="success"
+            className="font-semibold gap-1 inline-flex items-center"
           >
-            <Star className="h-3 w-3 fill-emerald-500 text-emerald-500" />
+            <Star className="h-3 w-3 fill-current" />
             #1 Preferred
-          </Badge>
+          </StatusBadge>
         ) : row.priority != null ? (
           <span className="tabular-nums font-medium text-muted-foreground">
             #{row.priority}
@@ -142,7 +138,7 @@ export function getItemSupplierColumns(
         row.resolved_lead_time_days != null ? (
           <div className="inline-flex items-center gap-1.5 text-sm tabular-nums">
             <Clock className="h-3.5 w-3.5 text-muted-foreground/70" />
-            <span>
+            <span className="text-[var(--ui-table-row-text)] font-medium">
               {row.resolved_lead_time_days}{" "}
               {row.resolved_lead_time_days === 1 ? "day" : "days"}
             </span>
@@ -168,7 +164,7 @@ export function getItemSupplierColumns(
         row.minimum_order_qty ? Number(row.minimum_order_qty) : null,
       cell: (row) =>
         row.minimum_order_qty ? (
-          <span className="tabular-nums font-medium text-foreground">
+          <span className="tabular-nums font-medium text-[var(--ui-table-row-text)]">
             {Number(row.minimum_order_qty).toLocaleString("en-US", {
               maximumFractionDigits: 4,
             })}
@@ -189,9 +185,9 @@ export function getItemSupplierColumns(
           : "Stock unit",
       cell: (row) =>
         row.purchase_uom ? (
-          <span className="text-xs font-medium text-foreground">
+          <span className="text-xs font-medium text-[var(--ui-table-row-text)]">
             {row.purchase_uom.code}{" "}
-            <span className="text-muted-foreground text-[11px]">
+            <span className="text-[11px] text-muted-foreground">
               ({row.purchase_uom.name})
             </span>
           </span>

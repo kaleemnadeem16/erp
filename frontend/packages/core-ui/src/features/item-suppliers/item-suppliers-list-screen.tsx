@@ -597,7 +597,7 @@ export function ItemSuppliersListScreen() {
           ))}
           <button
             type="button"
-            className="text-xs font-medium text-primary hover:underline ml-1 cursor-pointer"
+            className="ui-link-action text-xs ml-1 cursor-pointer"
             onClick={clearAllFilters}
           >
             Clear all
