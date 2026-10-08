@@ -8,6 +8,8 @@ other agents' work continues independently. Update it, STATUS and the delivery p
 
 ## Resume here
 
+**Next build, when the owner says go:** the rejected-stock exit — [rejected-stock-exit-plan.md](rejected-stock-exit-plan.md), four slices, starting with the shared exit core. Until then nothing is in flight.
+
 **Nothing is in flight. Do not start container-level tracking, and do not extend v1 implicitly.** Each enhancement below is a **new design slice**: draft the
 proposal (an ADR where a decision is needed), get the owner's answers, then implement. The owner's stated priority is **supplier return / scrap for rejected
 grouped stock first**, because it closes the most obvious remaining operational dead end (rejected packages stay on hand today).
@@ -34,7 +36,7 @@ transfer and reversal; Playwright coverage of each flow and of quantity-only par
 
 ## 3. Future enhancements (each a new design slice; none started)
 
-1. **Supplier return / scrap of rejected stock — next, owner priority.** The design is [ADR 0097](../decisions/0097-supplier-return-and-scrap-of-rejected-stock.md) (proposed; awaiting the owner's answers). It also gives
+1. **Supplier return / scrap of rejected stock — next, owner priority.** Decided in [ADR 0097](../decisions/0097-supplier-return-and-scrap-of-rejected-stock.md) (accepted 2026-10-08); the build plan is [rejected-stock-exit-plan.md](rejected-stock-exit-plan.md); **not started**. It also gives
    rejected quantity-only stock an exit.
 2. A governed **change of tracked levels**.
 3. **Deactivation / collapse** back to quantity-only.

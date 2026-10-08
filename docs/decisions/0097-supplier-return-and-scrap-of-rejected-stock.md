@@ -1,6 +1,6 @@
 # 0097 — Supplier return and scrap of rejected stock: one exit movement from the receipt's own layer
 
-- **Status:** proposed (2026-10-08) — design only; awaiting the owner's answers to *Decisions requested* below
+- **Status:** accepted (2026-10-08) — owner decisions recorded below; the implementation plan is [rejected-stock-exit-plan.md](../phases/rejected-stock-exit-plan.md); nothing is built yet
 - **Date:** 2026-10-08
 - **Affects:** Inventory (movement boundary, valuation feed, package evidence), Purchasing (supplier return document, QA), Accounting boundary (Phase 6 feed), grouped package tracking, quantity-only stock
 
@@ -21,21 +21,33 @@ A QA disposition of `RETURN_TO_SUPPLIER` or `SCRAP` is **terminal and final but 
 
 This ADR settles the business semantics and the accounting boundary so the exit can be built once, correctly, for both grouped and quantity-only stock.
 
-## Decision (proposed)
+## Decision
 
-### 1. One business operation, two named exits
+### 0. Four layers, kept distinct
 
-A **rejected-stock exit** removes rejected quantity from stock permanently. It has two named kinds, which differ in documents, permissions and accounting class but share one posting path:
+| Layer | What it is | Where it lives |
+|---|---|---|
+| **QA disposition** | the *quality decision* (`RETURN_TO_SUPPLIER`, `SCRAP`, …); immutable; moves nothing | `quality_dispositions` (ADR 0043/0094) |
+| **Supplier Return / Scrap document** | the *actual later business outcome* — what was really done with the rejected stock, and why | new documents (this ADR) |
+| **Inventory movement** | the *stock and valuation effect* of that outcome, with its package evidence | `stock_moves`, `stock_valuation_entries`, package evidence |
+| **Future AP / GL** | the *financial settlement* (credit note, supplier balance, journals) | Phase 6; not built here |
+
+A document never rewrites a disposition, a movement never carries financial meaning beyond the feed, and nothing here creates a financial settlement.
+
+
+### 1. Two separate documents over one shared posting path
+
+A **rejected-stock exit** removes rejected quantity from stock permanently. **Supplier Return** and **Scrap** are separate business documents at the domain, API, permission and screen level; only the lower-level rejected-stock exit posting logic (movement, valuation feed, package evidence) is shared:
 
 | | **Supplier return** | **Scrap / write-off** |
 |---|---|---|
 | Physical meaning | the goods go back to the supplier | the goods are destroyed or disposed of |
-| Document | `Supplier Return` (Purchasing): supplier, RMA/reference, carrier note, lines | `Scrap Record` (Inventory): lines, disposal method/reference |
+| Document | `Supplier Return` (Purchasing): supplier, supplier reference/RMA, carrier note, lines | `Scrap` (Inventory): lines, disposal method/reference |
 | Movement `source_type` | `SUPPLIER_RETURN` | `SCRAP_WRITE_OFF` |
 | Accounting class (feed, §5) | recoverable from the supplier | loss |
 | Permission | `purchasing.supplier-return.post` | `inventory.scrap.post` |
 
-The movement is an ordinary outbound move (`from_location` = where the rejected stock sits, `to` = NULL) posted through the **sole movement boundary**, never a bespoke writer. It happens at the moment of posting; there is
+Each document is **draft → post**: a draft records the intent (lines, quantities, proposed package portion, reason) and **moves no stock and reserves nothing**; *posting* is the single atomic point at which the stock movement, the valuation effect, the package evidence and the audit record are committed together, re-checking everything at that moment (a draft can therefore be refused at post if the stock changed). A draft may be edited or cancelled; a posted document is immutable. The movement is an ordinary outbound move (`from_location` = where the rejected stock sits, `to` = NULL) posted through the **sole movement boundary**, never a bespoke writer. It happens at the moment of posting; there is
 no backdating, as for counts and QA decisions.
 
 ### 2. It consumes the receipt's own layer — never the allocator
@@ -45,7 +57,9 @@ is limited to the quantity QA has finally rejected and not yet removed:
 
 `available to exit (receipt line) = Σ qty of RETURN_TO_SUPPLIER + SCRAP dispositions of the line − Σ qty already exited`
 
-An exit cannot exceed it, cannot touch usable, held or pending quantity, and cannot create stock. Each exit line references the receipt line it comes from, so the supplier, PO, price basis and batch/serial identity are known
+An exit cannot exceed it, cannot touch usable, held or pending quantity, and cannot create stock.
+
+**The final outcome need not match the QA decision.** QA records the quality decision; the physical outcome may later change (QA said return, the supplier instructs local scrap). Either document may take any rejected quantity. The document records, per line, the QA decision it relates to and whether the exit kind differs from it (a quantity beyond the remaining balance of its own kind — decided `RETURN_TO_SUPPLIER` quantity not yet returned for a return, decided `SCRAP` quantity not yet scrapped for a scrap — counts as differing); **a differing quantity requires an explicit outcome-change reason**, stored with the document and the evidence. Nothing is rewritten: the disposition stays as posted. Each exit line references the receipt line it comes from, so the supplier, PO, price basis and batch/serial identity are known
 without inference; an exit line can never mix receipt lines, and a document may carry lines from several receipt lines of the **same supplier** (return) or the same warehouse scope (scrap).
 
 ### 3. Grouped package evidence
@@ -75,8 +89,8 @@ This also gives quantity-only stock the exit it never had.
 - **Intended GL treatment (Phase 6, recorded now so the feed is shaped correctly):** *Supplier return* — credit Inventory at cost; debit the supplier liability / GR-IR (a credit the supplier owes or has not yet invoiced), plus
   a price-variance line where an AVCO average differs from the invoiced cost. *Scrap* — credit Inventory at cost; debit a scrap / inventory write-off **expense** (a loss). The two are distinguished by `source_type`, never by a flag buried in a
   note; changing the class later is not possible (a new correcting document is).
-- **Supplier credit.** A supplier return records an **expected credit** snapshot (quantity × the receipt line's price basis, and currency) and an optional supplier RMA / credit-note reference as *information*. It creates no
-  credit note, no AP entry and no matching: those arrive with supplier invoices in Phase 6. The return's status does not wait for them.
+- **Costing is separate from supplier credit.** Inventory is valued only by the movement engine — the layer cost (FIFO/SPECIFIC) or the normal AVCO engine (pool average) — **never** by the supplier's expected credit.
+- **Expected supplier credit is informational only.** A Supplier Return may store an expected credit amount, its currency and a supplier reference (credit-note or RMA number) **when known**; the screen may pre-fill an amount from the receipt line's price basis, always editable. It is displayed as "expected credit (information only)" and **does not create an AP credit note, change a supplier balance or post to the GL**. That connection — matching the credit note, recording the supplier balance, price variance — arrives with supplier invoices in Phase 6.
 - **PO.** A return does not reopen or alter the PO or the receipt (ADR 0043); the receipt's quantities and the disposition rows stay exactly as posted. A replacement delivery is a normal new order/receipt (the existing replacement-order linkage).
 
 ### 6. Scope, batch and location
@@ -86,13 +100,12 @@ sees and posts exits for their warehouses (404 outside, as for every scoped stoc
 
 ### 7. Permissions, reasons and approvals
 
-- **Capabilities** (new — physically removing stock and writing it off is a different duty from deciding QA, R14): `purchasing.supplier-return.create`/`.post` and `inventory.scrap.create`/`.post`, plus `inventory.package-state.view` for a
-  grouped line; no new package capability. `purchasing.quality-disposition.post` is **not** reused: deciding that stock is bad and disposing of it are separately assignable (and separable duties for audit).
-- **Mandatory reason** on every exit, stored on the document and the evidence; a supplier return also takes the supplier's reference where known, scrap a disposal method.
-- **Approvals.** No new approval workflow in this slice. Existing purchasing/inventory policy does not require approval for QA decisions or physical counts; an approval threshold for scrap (a value limit through the shared approval
-  engine, [ADR 0070](0070-shared-configurable-approval-engine.md)) is a later company policy decision, the same one deferred for count variances. Separation of duties is enforced where it is cheap and meaningful: the person who
-  creates the document may not be the person who posts it only if the company sets that policy (decision below); the default is create-and-post allowed.
-- **Rollout (R5):** register the capabilities; grant continuity to people who already hold the QA disposition and stock-adjustment duties only where the owner agrees (decision below); administrator re-sync; role recipe documented.
+- **Dedicated capabilities** (R14; physically removing stock and writing it off is not the QA duty): `purchasing.supplier-return.create` / `.post` and `inventory.scrap.create` / `.post`, plus `inventory.package-state.view` for a grouped line; no new package capability. They are **not** inferred from generic stock, count or
+  QA capabilities, and `purchasing.quality-disposition.post` is not reused. A grant migration is added **only for roles that already perform the equivalent duty**; since no return or scrap duty exists today, the migration grants nothing by inference — administrators receive them through the re-sync and companies assign them to roles
+  (role recipes in the domain doc).
+- **Mandatory reason** on every document, stored with the document and the evidence; a differing outcome additionally needs the outcome-change reason (§2).
+- **No new approval workflow in this slice.** Governance is: permissions, warehouse scope, mandatory reason, draft → post, idempotency and immutable audit. A value threshold for scrap or return through the shared approval engine ([ADR 0070](0070-shared-configurable-approval-engine.md)) is a later company-policy decision, the same one
+  deferred for count variances; creating and posting by the same person is allowed.
 
 ### 8. Retries, rollback and evidence
 
@@ -102,18 +115,18 @@ their evidence are immutable; a mistake is corrected by a new, named correcting 
 
 ### 9. Documents and screens
 
-Both documents are numbered by the central numbering framework ([ADR 0079](0079-document-numbering-system-templates-over-a-variable-registry.md)) and listed under their module. Entry points, in order of need: the receipt's QA panel and the item card show
+Both documents (`SRN`-style and `SCR`-style types, registered with the numbering framework) are numbered by the central numbering framework ([ADR 0079](0079-document-numbering-system-templates-over-a-variable-registry.md)) and listed under their module. Entry points, in order of need: the receipt's QA panel and the item card show
 *Rejected awaiting exit* with **Return to supplier…** and **Scrap…** (a dialog proposing the declared portion for grouped stock, one editable quantity for quantity-only); a rejected-stock list later. Operator language: "returned to
 supplier", "scrapped", "rejected, awaiting return or scrap" — no valuation or evidence terms. Phone width and the shared draw editor apply.
 
 ## Examples
 
-1. **2 rejected sealed 5 L cans returned.** QA rejected 10 L (`RETURN_TO_SUPPLIER`). The person starts a Supplier Return for the receipt line, quantity 10 L; the screen proposes *2 sealed 5 L cans* from the rejected group; they confirm. One move leaves 10 L at the
+1. **2 rejected sealed 5 L cans returned.** QA rejected 10 L (`RETURN_TO_SUPPLIER`). The person drafts a Supplier Return for the receipt line, quantity 10 L; the screen proposes *2 sealed 5 L cans* from the rejected group and they confirm it; on **post**, one move leaves 10 L at the
    receipt layer's cost; `REJECTED_EXIT` evidence removes 2 cans; the expected credit (10 L × PO price) is recorded; the PO is untouched.
-2. **1 rejected sealed 5 L can scrapped.** A Scrap Record for 5 L, portion *1 sealed can*, reason "damaged in storage". Same movement shape with `source_type SCRAP_WRITE_OFF`; the valuation feed marks it a loss; no supplier credit.
+2. **1 rejected sealed 5 L can scrapped.** A Scrap document for 5 L, portion *1 sealed can*, reason "damaged in storage". Same movement shape with `source_type SCRAP_WRITE_OFF`; the valuation feed marks it a loss; no supplier credit.
 3. **Rejected loose litres.** 3 L were rejected from an opened delivery (loose). The exit takes 3 L loose from the rejected loose group; nothing sealed moves. Taking 3 L out of a rejected sealed can is refused ("a sealed can leaves whole").
 4. **Usable and rejected together.** A location holds 3 usable cans + 5 L usable loose and 1 rejected can. Scrapping the rejected can leaves usable stock exactly as it was (3 cans + 5 L); the location can now be counted.
-5. **Quantity-only item.** 8 kg were rejected and scrapped by QA. The same Scrap Record posts 8 kg out of the receipt layer; no packages, no portion.
+5. **Quantity-only item.** 8 kg were rejected and scrapped by QA. The same Scrap document posts 8 kg out of the receipt layer; no packages, no portion.
 
 ## Consequences
 
@@ -131,21 +144,25 @@ supplier", "scrapped", "rejected, awaiting return or scrap" — no valuation or 
 **Let a rejected sealed can be opened and part returned** — rejected: opening/splitting held or rejected material is a separate governed operation (ADR 0094 decision 5).
 **Move rejected stock to a quarantine location instead of removing it** — rejected: ADR 0043 — location never substitutes for QA state; it would leave the stock on hand.
 **Reuse `purchasing.quality-disposition.post` for the exit** — rejected: deciding quality and physically disposing of or writing off stock are different duties (R14).
+**Force the exit to match the QA disposition** — rejected: the quality decision and the physical outcome are different facts and the outcome can legitimately change; the difference is allowed and audited instead.
+**Post at draft time or reserve stock for drafts** — rejected: a draft is intent; the atomic commit at post time is the only point of truth.
 
-## Decisions requested
+## Decisions (accepted by the owner, 2026-10-08)
 
-1. **Two documents or one?** Recommended: two (Supplier Return in Purchasing, Scrap Record in Inventory) over one shared posting path. Alternative: a single "Rejected stock disposal" document with a kind.
-2. **Must the exit kind match the QA outcome?** Recommended: **no** — a `RETURN_TO_SUPPLIER` quantity may later be scrapped (supplier refused it) and the reverse, with a mandatory reason; the cap is the total rejected. Alternative: strict match via separate rejected labels.
-3. **New capabilities and grants:** four new capabilities (create/post for each) as above — agree; and whether existing holders of `purchasing.quality-disposition.post` / `inventory.physical_count.post` are given continuity grants or everything is granted deliberately (recommended: deliberate, with recipes).
-4. **Create-and-post or draft then post?** Recommended: draft then post for both (a return needs paperwork), with same-person posting allowed unless the company sets a maker/checker policy.
-5. **AVCO returns:** leave at the pool average and defer the price difference to AP (recommended) versus returning at the layer's original cost for AVCO items (would break the pool's average rule).
-6. **Expected credit snapshot:** record quantity × price basis and an optional reference as information only (recommended) versus not recording it until AP exists.
-7. **Scrap approvals:** none now; threshold policy through the approval engine later (recommended) versus a threshold now.
-8. **Return reversal** (goods come back): not built; separate decision when needed (recommended).
+1. **Two separate documents** — Supplier Return and Scrap — over shared lower-level exit posting.
+2. **The final exit need not match the QA disposition**; a differing outcome requires an explicit reason and audit note.
+3. **Dedicated capabilities** for return and scrap, not inferred from generic stock or QA permissions; existing roles are mapped only where they already perform the equivalent duty (none do today).
+4. **Draft → post**: drafting moves no stock; posting is the atomic commit of movement, valuation effect, package evidence and audit record.
+5. **Costing is separate from supplier credit**: FIFO/SPECIFIC at the layer cost, AVCO through the normal AVCO engine; inventory is never valued by the expected credit.
+6. **Expected supplier credit is informational only** — amount, currency and reference when known; no AP credit note, supplier balance change or GL posting.
+7. **Rejected sealed packages leave whole**; no opening or splitting; rejected loose quantity may leave as loose; usable and held stock in the same scope is untouched.
+8. **No new approval workflow in this slice**; permissions, warehouse scope, mandatory reason, draft/post, idempotency and audit only; thresholds may later use the shared approval engine.
+
+Not built and not decided here: a return reversal (goods coming back), and any AP/GL settlement.
 
 ## Related
 
 - [ADR 0043](0043-control-purchase-order-receipt-and-qa-posting.md) · [ADR 0094](0094-package-aware-supplier-qa-receipts.md) · [ADR 0093](0093-package-aware-goods-receipt-reversal.md) · [ADR 0091](0091-activate-grouped-package-tracking-and-fail-closed-enforcement.md) · [ADR 0089](0089-organisation-units-and-record-scope.md)
 - [stock.md](../domain/stock.md) · [purchasing.md](../domain/purchasing.md) · [general-ledger.md](../domain/general-ledger.md) · [package-issue-operations.md](../domain/package-issue-operations.md)
 - [domain-integrity.md](../architecture/domain-integrity.md) · [authorization.md](../architecture/authorization.md) · [feature-completion-checklist.md](../architecture/feature-completion-checklist.md)
-- [Package feature handoff](../phases/package-balance-handoff.md)
+- [Implementation plan](../phases/rejected-stock-exit-plan.md) · [Package feature handoff](../phases/package-balance-handoff.md)

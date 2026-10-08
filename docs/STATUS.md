@@ -38,15 +38,14 @@ record scope, the access audit follow-ups, the approvals workspace, grouped pack
 Each is a new slice: propose first, get the owner's answers, then build. Optional enhancements are kept apart from required work.
 
 - **Required for the roadmap:** Phase 4 (sales pipeline: quotations, adoption of material plans, cost snapshots) — it also owes the multi-owner correction package carried from Phase 2.
-- **Next package slice — supplier return / scrap for rejected grouped stock** (owner priority; the ADR is **proposed**, awaiting the owner's answers: [ADR 0097](decisions/0097-supplier-return-and-scrap-of-rejected-stock.md)). It closes the one operational dead end: rejected packages and rejected quantity-only stock currently stay on hand with no exit.
+- **Next package slice — supplier return and scrap for rejected stock** (owner priority). **Decided** ([ADR 0097](decisions/0097-supplier-return-and-scrap-of-rejected-stock.md), accepted 2026-10-08: two separate documents, draft → post, dedicated permissions, informational supplier credit); **not started** — the build plan is [rejected-stock-exit-plan.md](phases/rejected-stock-exit-plan.md). It closes the one operational dead end: rejected stock, grouped or quantity-only, has no exit today.
 - **Later package enhancements** (none started; each a new design slice): governed change of tracked levels; deactivation/collapse; container-level tracking (not before the owner asks); line-level receipt reversal; count approval thresholds; QA/count reconciliation; standalone Issue/Transfer screens. **Deferred estimating enhancement:** package-aware proposals in the Material Preview (owner decision: not ahead of return/scrap).
 - **Access and security:** the remaining record-scope slices (purchasing documents, Estimating availability, approvals, delegated administration) — Q26; two-factor and step-up sign-in — Q37.
 
 ## Blocked / awaiting input
 
 No open question blocks work. Non-blocking questions: [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) (Q8, Q10, Q16, Q23, Q24, Q26, Q28, Q33, Q37). **Still pending, and not closable by documentation:** the staging sign-off for the access work (A1–A9,
-ADRs 0084–0089) — it needs staging access and a person to run `erp:audit-access-inventory` and decide per person; see the [settings and access handoff](phases/settings-and-access-hardening.md). Answers needed on the
-return/scrap proposal ([ADR 0097](decisions/0097-supplier-return-and-scrap-of-rejected-stock.md)).
+ADRs 0084–0089) — it needs staging access and a person to run `erp:audit-access-inventory` and decide per person; see the [settings and access handoff](phases/settings-and-access-hardening.md). 
 
 ## Where to look
 

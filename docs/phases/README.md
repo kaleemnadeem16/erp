@@ -151,6 +151,7 @@ real second customer ([Q8](../OPEN-QUESTIONS.md#q8--second-customer-profile)).
 
 ## Related
 
+- [Rejected-stock exit (supplier return and scrap) — implementation plan](rejected-stock-exit-plan.md) — ADR 0097, accepted, not started
 - [Package feature handoff](package-balance-handoff.md) — grouped package tracking v1 is complete; lists known limitations and future enhancements, independent of other agents' workstreams
 
 - [Grouped package tracking — screens and API design](package-balance-ui.md) — workflows, endpoints, permissions and the smallest first UI slice
