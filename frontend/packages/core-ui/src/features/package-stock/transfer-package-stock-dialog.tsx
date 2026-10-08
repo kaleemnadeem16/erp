@@ -9,7 +9,7 @@ import { formatLocationOption } from "../../lib/format-location";
 import { CountLocationDialog } from "./count-location-dialog";
 import { DrawPlanSection } from "./draw-plan-section";
 import { PackageBreakdown } from "./package-breakdown";
-import { applyArrival, trimQty } from "./quantity";
+import { applyArrival, trimQty, usableOf } from "./quantity";
 import { usePackageDrawPlan } from "./use-package-draw-plan";
 import { REASON_HINTS, type PackageBalance, type PackagingOption } from "./types";
 
@@ -28,7 +28,7 @@ export function TransferPackageStockDialog({
   itemId,
   itemLabel,
   unit,
-  source,
+  source: fullSource,
   canOpen,
   canCount,
   tracked,
@@ -45,6 +45,7 @@ export function TransferPackageStockDialog({
 }) {
   const queryClient = useQueryClient();
   const transfer = useStockTransfersStore();
+  const source = usableOf(fullSource);
   const plan = usePackageDrawPlan({ open, itemId, balance: source, canOpen });
   const requestKey = useRef(newKey());
   const [destinationId, setDestinationId] = useState<number | null>(null);
@@ -76,7 +77,7 @@ export function TransferPackageStockDialog({
   const holdsStock = Number(destination.total) > 0;
   const needsCount = destinationId !== null && !destinationQuery.isLoading && holdsStock && !destination.fresh;
   const destinationLabel = options.find((row) => row.id === destinationId);
-  const arrival = applyArrival(destination, source, plan.lines);
+  const arrival = applyArrival(usableOf(destination), source, plan.lines);
 
   const canSubmit = plan.valid && destinationId !== null && !destinationQuery.isLoading && !needsCount && reason.trim() !== "" && !transfer.isPending;
   const submit = () => {

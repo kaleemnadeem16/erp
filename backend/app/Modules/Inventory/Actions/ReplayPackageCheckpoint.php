@@ -80,7 +80,7 @@ final class ReplayPackageCheckpoint
                 ->where(fn ($q) => $q->where('to_location_id', $operation->location_id)->orWhere('from_location_id', $operation->location_id))->max('id');
             $latest = PackageOperation::query()->where([
                 'item_id' => $operation->item_id, 'location_id' => $operation->location_id, 'batch_id' => $operation->batch_id,
-            ])->whereIn('evidence_kind', ['COUNTED', 'OPEN', 'UNPACK', 'ISSUE', 'TRANSFER_OUT', 'TRANSFER_IN', 'RECEIPT_IN', 'COUNT_VARIANCE', 'RECEIPT_REVERSAL'])->max('id');
+            ])->whereIn('evidence_kind', PackageOperation::CHAIN)->max('id');
             $reasons = [];
             if (! $integrity) {
                 $reasons[] = 'INCOMPLETE_EVIDENCE';
@@ -90,20 +90,22 @@ final class ReplayPackageCheckpoint
             } elseif ((int) $operation->stock_move_watermark !== (int) $watermark) {
                 $reasons[] = 'LATER_STOCK_MOVEMENT';
             }
-            if (in_array($operation->evidence_kind, ['COUNTED', 'OPEN', 'UNPACK', 'ISSUE', 'TRANSFER_OUT', 'TRANSFER_IN', 'RECEIPT_IN', 'COUNT_VARIANCE', 'RECEIPT_REVERSAL'], true) && (int) $latest !== $operation->id) {
+            if (in_array($operation->evidence_kind, PackageOperation::CHAIN, true) && (int) $latest !== $operation->id) {
                 $reasons[] = 'SUPERSEDED_CHECKPOINT';
             }
             if ($recordedVector !== $currentVector || ! $total->isEqualTo($currentQty)) {
                 $reasons[] = 'STOCK_QUANTITIES_CHANGED';
             }
-            if (! in_array($operation->evidence_kind, ['COUNTED', 'OPEN', 'UNPACK', 'ISSUE', 'TRANSFER_OUT', 'TRANSFER_IN', 'RECEIPT_IN', 'COUNT_VARIANCE', 'RECEIPT_REVERSAL'], true) || $item->tracking === ItemTracking::Serial || $item->valuation_method === ValuationMethod::Specific) {
+            if (! in_array($operation->evidence_kind, PackageOperation::CHAIN, true) || $item->tracking === ItemTracking::Serial || $item->valuation_method === ValuationMethod::Specific) {
                 $reasons[] = 'UNSUPPORTED_EVIDENCE_SCOPE';
             }
             if (NegativeStockShortage::query()->where('item_id', $item->id)->where('qty_open', '>', 0)->exists()) {
                 $reasons[] = 'OPEN_STOCK_SHORTAGE';
             }
             $receiptIds = $layers->where('source_type', 'GOODS_RECEIPT_LINE')->pluck('source_id');
-            if (GoodsReceiptLine::query()->whereIn('id', $receiptIds)->whereHas('purchaseOrderLine', fn ($q) => $q->where('qa_required', true))->exists()) {
+            // Once an item is on grouped tracking, QA is carried by the evidence itself (held / usable / rejected packages, ADR 0094).
+            if (! PackageWriteScope::isAuthoritative($operation->item_id)
+                && GoodsReceiptLine::query()->whereIn('id', $receiptIds)->whereHas('purchaseOrderLine', fn ($q) => $q->where('qa_required', true))->exists()) {
                 $reasons[] = 'QA_ADAPTER_REQUIRED';
             }
 

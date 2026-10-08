@@ -20,6 +20,7 @@ use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Models\ItemPackaging;
 use App\Modules\Inventory\Models\PackageActivation;
 use App\Modules\Inventory\Models\PackageOperation;
+use App\Modules\Inventory\Models\PackageState;
 use App\Modules\Inventory\Models\StockLayer;
 use App\Modules\Inventory\Models\StockMove;
 use App\Modules\Inventory\Support\ValuationMethod;
@@ -335,7 +336,7 @@ class GroupedPackageActivationTest extends RecordPackageCheckpointTest
         $this->assertSame('1.0000', $next['move']->qty);
     }
 
-    public function test_a_grouped_item_cannot_receive_without_observed_composition_or_into_qa_hold_and_nothing_posts(): void
+    public function test_a_grouped_item_cannot_receive_without_observed_composition_and_nothing_posts(): void
     {
         [$actor] = $this->activated();
         $moves = StockMove::query()->count();
@@ -351,21 +352,18 @@ class GroupedPackageActivationTest extends RecordPackageCheckpointTest
         $this->assertSame(0, PackageOperation::query()->where('evidence_kind', 'RECEIPT_IN')->count());
     }
 
-    public function test_a_qa_required_line_cannot_be_received_into_a_grouped_item(): void
+    public function test_a_qa_required_line_is_received_into_a_grouped_item_as_held_packages(): void
     {
         [$actor, $can] = $this->xyz(qa: true);
         app(ActivateGroupedPackageTracking::class)($this->activation(PackageOperation::query()->where('request_key', 'xyz-count')->sole()), $actor);
         $receipt = $this->draftReceipt('5');
         app(RecordReceiptComposition::class)($receipt->lines()->sole(), [['packaging_id' => $can->id, 'count' => 1]], 'One sealed can', $actor);
-        $moves = StockMove::query()->count();
 
-        try {
-            app(PostGoodsReceipt::class)($receipt, $actor);
-            $this->fail('A QA-required line must be refused.');
-        } catch (DomainInvariantException $error) {
-            $this->assertStringContainsString('QA-required line', $error->getMessage());
-        }
-        $this->assertSame($moves, StockMove::query()->count());
+        app(PostGoodsReceipt::class)($receipt, $actor);
+
+        $leg = PackageOperation::query()->where('evidence_kind', 'RECEIPT_IN')->sole();
+        $this->assertSame(['HELD'], PackageState::query()->where('operation_id', $leg->id)->whereNotNull('item_packaging_id')->where('stock_quantity', '5.0000')->pluck('availability')->all());
+        $this->assertSame(['HELD'], DB::table('inventory_package_issue_draws')->where('operation_id', $leg->id)->pluck('availability')->all());
     }
 
     public function test_a_grouped_item_receives_into_an_empty_location_and_its_chain_starts_there(): void

@@ -36,7 +36,7 @@ final class RecordReceiptPackageEvidence
 
     /**
      * For an item with grouped package tracking: checked before the receipt posts (ADR 0091 §4). The arrival must be fully described by observed
-     * composition, must not be QA-held, and the scope it lands in must either hold nothing or hold stock with fresh reconciled evidence.
+     * composition, may be inspection-required (it then arrives HELD, ADR 0094), and the scope it lands in must either hold nothing or hold stock with fresh reconciled evidence.
      */
     public function preflight(GoodsReceiptLine $line, User $actor): void
     {
@@ -50,9 +50,6 @@ final class RecordReceiptPackageEvidence
         $item = Item::query()->findOrFail($line->item_id);
         if ($item->tracking === ItemTracking::Serial || $line->serial_no !== null) {
             throw new DomainInvariantException('Serial stock cannot be received into grouped package tracking.');
-        }
-        if ($line->purchaseOrderLine?->qa_required) {
-            throw new DomainInvariantException('A QA-required line cannot be received into grouped package tracking yet.', null, 'SUPPLIER_QA_UNSUPPORTED');
         }
         $observed = GoodsReceiptPackageObservation::query()->where('goods_receipt_line_id', $line->id)->get();
         if ($observed->isEmpty() || ! $observed->reduce(fn (BigDecimal $sum, $row) => $sum->plus($row->stock_quantity), BigDecimal::zero())->isEqualTo($line->stock_qty)) {
@@ -70,7 +67,7 @@ final class RecordReceiptPackageEvidence
             return;
         }
         $latest = PackageOperation::query()->where(['item_id' => $line->item_id, 'location_id' => $line->location_id, 'batch_id' => $batch?->id])
-            ->whereIn('evidence_kind', ['COUNTED', 'OPEN', 'UNPACK', 'ISSUE', 'TRANSFER_OUT', 'TRANSFER_IN', 'RECEIPT_IN', 'COUNT_VARIANCE', 'RECEIPT_REVERSAL'])->orderByDesc('id')->first();
+            ->whereIn('evidence_kind', PackageOperation::CHAIN)->orderByDesc('id')->first();
         if ($latest === null) {
             throw new DomainInvariantException('This location already holds stock without package evidence: a counted checkpoint is required before receiving.', null, 'NEEDS_COUNT_FIRST');
         }
@@ -107,19 +104,21 @@ final class RecordReceiptPackageEvidence
 
             return $existing;
         }
+        // An inspection-required line arrives held; a QA disposition later relabels declared portions (ADR 0094).
+        $availability = $line->purchaseOrderLine?->qa_required ? 'HELD' : 'USABLE';
         $draws = [];
         $source = [];
         foreach ($observed as $row) {
             if ($row->form === 'SEALED') {
                 $pack = ItemPackaging::query()->where('item_id', $line->item_id)->findOrFail($row->item_packaging_id);
-                $source[] = ['form' => 'SEALED', 'availability_evidence' => 'USABLE', 'packaging_id' => $pack->id, 'packaging_code' => $pack->code,
+                $source[] = ['form' => 'SEALED', 'availability_evidence' => $availability, 'packaging_id' => $pack->id, 'packaging_code' => $pack->code,
                     'packaging_name' => $pack->name, 'content_quantity' => (string) $row->content_quantity];
-                $draws[] = ['kind' => 'SEALED', 'packaging_id' => $pack->id, 'count' => (int) $row->sealed_count, 'quantity' => BigDecimal::of($row->stock_quantity)->toScale(4)];
+                $draws[] = ['kind' => 'SEALED', 'packaging_id' => $pack->id, 'count' => (int) $row->sealed_count, 'quantity' => BigDecimal::of($row->stock_quantity)->toScale(4), 'availability' => $availability];
             } else {
-                $draws[] = ['kind' => 'LOOSE', 'packaging_id' => null, 'count' => null, 'quantity' => BigDecimal::of($row->stock_quantity)->toScale(4)];
+                $draws[] = ['kind' => 'LOOSE', 'packaging_id' => null, 'count' => null, 'quantity' => BigDecimal::of($row->stock_quantity)->toScale(4), 'availability' => $availability];
             }
         }
-        $rows = app(PackageTransferComposition::class)($pending['composition'], $source, $draws, [['layer_id' => $layer->id, 'quantity' => (string) $total->toScale(4)]]);
+        $rows = app(PackageTransferComposition::class)($pending['composition'], $source, $draws, [['layer_id' => $layer->id, 'quantity' => (string) $total->toScale(4)]], $availability);
         $operation = PackageOperation::query()->create([
             'item_id' => $line->item_id, 'location_id' => $line->location_id, 'batch_id' => $layer->batch_id, 'source_receipt_line_id' => $line->id,
             'request_key' => $key, 'payload_hash' => $hash, 'evidence_kind' => 'RECEIPT_IN', 'actor_id' => $actor->id,
@@ -139,7 +138,7 @@ final class RecordReceiptPackageEvidence
         }
         foreach ($draws as $number => $draw) {
             PackageIssueDraw::query()->create(['operation_id' => $operation->id, 'line_no' => $number + 1, 'kind' => $draw['kind'],
-                'item_packaging_id' => $draw['packaging_id'], 'whole_count' => $draw['count'], 'quantity' => (string) $draw['quantity']]);
+                'item_packaging_id' => $draw['packaging_id'], 'whole_count' => $draw['count'], 'quantity' => (string) $draw['quantity'], 'availability' => $draw['availability']]);
         }
         PackageIssueAllocation::query()->create(['operation_id' => $operation->id, 'stock_layer_id' => $layer->id, 'quantity' => (string) $total->toScale(4)]);
         unset($this->pending[$line->id]);

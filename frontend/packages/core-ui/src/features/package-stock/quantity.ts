@@ -142,3 +142,8 @@ export function applyArrival(
 
   return { sealed, loose: fromUnits(loose), total: fromUnits(toUnits(destination.total) + arriving) };
 }
+
+/** The usable part of a balance (what can be issued, transferred or opened): the total less stock held for QA or rejected (ADR 0094). */
+export function usableOf<T extends { total: string; usable_total?: string }>(balance: T): T {
+  return balance.usable_total === undefined ? balance : { ...balance, total: balance.usable_total };
+}

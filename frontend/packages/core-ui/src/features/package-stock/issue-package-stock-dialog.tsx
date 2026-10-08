@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { getApiErrorMessage, getApiReasonCode } from "../../lib/api-errors";
 import { DrawPlanSection } from "./draw-plan-section";
 import { PackageBreakdown } from "./package-breakdown";
-import { trimQty } from "./quantity";
+import { trimQty, usableOf } from "./quantity";
 import { usePackageDrawPlan } from "./use-package-draw-plan";
 import { REASON_HINTS, type PackageBalance } from "./types";
 
@@ -25,7 +25,7 @@ export function IssuePackageStockDialog({
   itemId,
   itemLabel,
   unit,
-  balance,
+  balance: fullBalance,
   canOpen,
 }: {
   open: boolean;
@@ -38,6 +38,7 @@ export function IssuePackageStockDialog({
 }) {
   const queryClient = useQueryClient();
   const issue = useStockIssuesStore();
+  const balance = usableOf(fullBalance);
   const plan = usePackageDrawPlan({ open, itemId, balance, canOpen });
   const requestKey = useRef(newKey());
   const [reason, setReason] = useState("Stock issue");

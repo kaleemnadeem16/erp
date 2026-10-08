@@ -27,7 +27,7 @@ final class PackageIssueComposition
      * @param  array<int,string>  $vector  layer id => quantity the allocator drew
      * @return list<array<string,mixed>> successor rows; retained rows carry origin_state_id
      */
-    public function __invoke(array $composition, array $draws, array $vector): array
+    public function __invoke(array $composition, array $draws, array $vector, string $from = 'USABLE'): array
     {
         $sealed = [];
         $loose = BigDecimal::zero();
@@ -42,10 +42,11 @@ final class PackageIssueComposition
         $original = [];
         $rows = [];
         foreach ($composition as $row) {
-            foreach ($row['contributions'] as $part) {
+            // Only the rows the draw acts on are re-attributed to the allocator's layers; held and rejected rows keep exactly what they hold (ADR 0094).
+            foreach ($row['availability_evidence'] === $from ? $row['contributions'] : [] as $part) {
                 $original[$part['layer_id']] = ($original[$part['layer_id']] ?? BigDecimal::zero())->plus($part['quantity']);
             }
-            $next = $this->draw($row, $sealed, $loose);
+            $next = $this->draw($row, $sealed, $loose, $from);
             if ($next !== null) {
                 $rows[] = $next;
             }
@@ -59,7 +60,7 @@ final class PackageIssueComposition
             throw new DomainInvariantException('The draw takes more open/loose quantity than is on hand.');
         }
 
-        return $this->attribute($rows, $original, $vector);
+        return $this->attribute($rows, $original, $vector, $from);
     }
 
     /**
@@ -67,11 +68,11 @@ final class PackageIssueComposition
      * @param  array<int,int>  $sealed  packaging id => whole packages still to take (decremented here)
      * @return array<string,mixed>|null
      */
-    private function draw(array $row, array &$sealed, BigDecimal &$loose): ?array
+    private function draw(array $row, array &$sealed, BigDecimal &$loose, string $from): ?array
     {
         $row['origin_state_id'] = $row['state_id'];
         unset($row['state_id']);
-        if ($row['availability_evidence'] !== 'USABLE') {
+        if ($row['availability_evidence'] !== $from) {
             return $row;
         }
         if ($row['form'] === 'SEALED' && isset($sealed[$row['packaging_id']]) && $sealed[$row['packaging_id']] > 0) {
@@ -104,7 +105,7 @@ final class PackageIssueComposition
      * @param  array<int,string>  $vector
      * @return list<array<string,mixed>>
      */
-    private function attribute(array $rows, array $original, array $vector): array
+    private function attribute(array $rows, array $original, array $vector, string $from): array
     {
         $target = $original;
         foreach ($vector as $layer => $quantity) {
@@ -115,7 +116,7 @@ final class PackageIssueComposition
         }
         $current = [];
         foreach ($rows as $row) {
-            foreach ($row['contributions'] as $part) {
+            foreach ($row['availability_evidence'] === $from ? $row['contributions'] : [] as $part) {
                 $current[$part['layer_id']] = ($current[$part['layer_id']] ?? BigDecimal::zero())->plus($part['quantity']);
             }
         }
@@ -133,6 +134,9 @@ final class PackageIssueComposition
         ksort($under);
 
         foreach ($rows as $index => $row) {
+            if ($row['availability_evidence'] !== $from) {
+                continue;
+            }
             $parts = $row['contributions'];
             foreach ($over as $layer => $excess) {
                 if ($excess->isZero()) {

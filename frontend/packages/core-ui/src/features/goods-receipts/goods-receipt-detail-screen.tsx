@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { QaPortionStep, decidesPackages, type QaPortion } from "../package-stock/qa-portion-step";
+import { useTrackingState } from "../package-stock/use-tracking-state";
 import { ReceiptReversalPanel, type ReversalDraws } from "../package-stock/receipt-reversal-panel";
 import { useNavigate, useParams } from "react-router";
 import {
@@ -12,6 +14,7 @@ import {
   useQualityDispositionsStore,
   useSupplierAccountsShow,
   useUomsIndex,
+  useUomsShow,
   type GoodsReceiptLineResource,
   type StoreQualityDispositionRequestDisposition,
 } from "@erp/core-api";
@@ -93,6 +96,13 @@ function QualityPanel({
   const [qty, setQty] = useState(line.qa_unallocated_qty ?? "");
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
+  // A grouped item states which held packages the decision applies to (ADR 0094); a quantity-only item shows nothing extra.
+  const tracking = useTrackingState(line.item_id, enabled);
+  const grouped = tracking?.mode === "PACKAGE_BALANCE";
+  const uomQuery = useUomsShow(tracking?.stock_uom_id ?? 0, { query: { enabled: !!tracking } });
+  const unit = uomQuery.data?.status === 200 ? uomQuery.data.data.data.code : "";
+  const needsPortion = grouped && decidesPackages(outcome);
+  const [portion, setPortion] = useState<QaPortion>({ portion: [], ready: false });
   const parents = dispositions.filter(
     (item) =>
       !TERMINAL.has(item.disposition) && item.remaining_qty !== "0.0000",
@@ -209,12 +219,15 @@ function QualityPanel({
             onChange={(event) => setReason(event.target.value)}
             placeholder="Reason / evidence"
           />
+          {needsPortion && (
+            <QaPortionStep lineId={line.id} outcome={outcome} quantity={qty} unit={unit} onChange={setPortion} />
+          )}
           {error && (
             <p className="text-sm text-destructive md:col-span-4">{error}</p>
           )}
           <div className="md:col-span-4">
             <Button
-              disabled={!qty || !reason.trim() || create.isPending}
+              disabled={!qty || !reason.trim() || create.isPending || (needsPortion && !portion.ready)}
               onClick={() => {
                 setError(null);
                 create.mutate(
@@ -226,6 +239,7 @@ function QualityPanel({
                       reason: reason.trim(),
                       source_disposition_id:
                         source === "root" ? null : Number(source),
+                      ...(needsPortion ? { package_portion: portion.portion } : {}),
                     },
                   },
                   {

@@ -19,11 +19,22 @@ export interface PackageBalance {
   package_tracking_mode:
     "QUANTITY_ONLY" | "PACKAGE_BALANCE" | "CONTAINER_TRACKED";
   total: string;
+  /** Total of the usable breakdown; equals `total` unless some stock is held for QA or rejected. */
+  usable_total?: string;
   sealed: SealedRow[];
   loose: string;
+  held?: PackageGroup;
+  rejected?: PackageGroup;
   fresh: boolean;
   reasons: string[];
   operation_id: number | null;
+}
+
+/** Held (awaiting QA) or rejected packages at a location (ADR 0094). */
+export interface PackageGroup {
+  sealed: SealedRow[];
+  loose: string;
+  total: string;
 }
 
 export interface PackagingOption {
@@ -82,9 +93,11 @@ export const REASON_HINTS: Record<string, string> = {
     "That is no longer on the shelf — review what is available.",
   UNTRACKED_LEVEL: "This item does not track that package size.",
   NEEDS_OBSERVED_COMPOSITION: "Record what physically arrived before posting.",
-  SUPPLIER_QA_UNSUPPORTED:
-    "Inspection-held deliveries cannot be received into package-tracked stock yet.",
   ACTIVATION_BLOCKED: "Something is blocking activation.",
+  NEEDS_DECLARED_PORTION:
+    "State which held packages this QA decision applies to.",
+  QA_STOCK_HELD:
+    "This location has packages under QA inspection or rejected: finish the QA decisions before counting it.",
   PACKAGE_TRACKED_ITEM:
     "This item is package-tracked; use its package-aware operation.",
 };

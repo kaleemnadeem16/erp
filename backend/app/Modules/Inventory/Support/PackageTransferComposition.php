@@ -24,7 +24,7 @@ final class PackageTransferComposition
      * @param  list<array{layer_id:int, quantity:string}>  $incoming  destination layers created by the transfer, in allocator order
      * @return list<array<string,mixed>> successor rows; retained rows carry origin_state_id
      */
-    public function __invoke(array $destination, array $source, array $draws, array $incoming): array
+    public function __invoke(array $destination, array $source, array $draws, array $incoming, string $availability = 'USABLE'): array
     {
         $rows = [];
         foreach ($destination as $row) {
@@ -37,10 +37,10 @@ final class PackageTransferComposition
         foreach ($draws as $draw) {
             $contributions = $this->take($queue, BigDecimal::of($draw['quantity']));
             if ($draw['kind'] === 'SEALED') {
-                $identity = $this->identity($source, (int) $draw['packaging_id']);
-                $index = $this->find($rows, $identity);
+                $identity = $this->identity($source, (int) $draw['packaging_id'], $availability);
+                $index = $this->find($rows, $identity, $availability);
                 if ($index === null) {
-                    $rows[] = ['origin_state_id' => null, 'form' => 'SEALED', 'availability_evidence' => 'USABLE', 'packaging_id' => $identity['packaging_id'],
+                    $rows[] = ['origin_state_id' => null, 'form' => 'SEALED', 'availability_evidence' => $availability, 'packaging_id' => $identity['packaging_id'],
                         'packaging_code' => $identity['packaging_code'], 'packaging_name' => $identity['packaging_name'], 'sealed_count' => $draw['count'],
                         'content_quantity' => $identity['content_quantity'], 'quantity' => (string) $draw['quantity']->toScale(4), 'contributions' => $this->number($contributions)];
                 } else {
@@ -50,9 +50,9 @@ final class PackageTransferComposition
 
                 continue;
             }
-            $index = $this->find($rows, null);
+            $index = $this->find($rows, null, $availability);
             if ($index === null) {
-                $rows[] = ['origin_state_id' => null, 'form' => 'OPEN_LOOSE', 'availability_evidence' => 'USABLE', 'packaging_id' => null, 'packaging_code' => null,
+                $rows[] = ['origin_state_id' => null, 'form' => 'OPEN_LOOSE', 'availability_evidence' => $availability, 'packaging_id' => null, 'packaging_code' => null,
                     'packaging_name' => null, 'sealed_count' => null, 'content_quantity' => null, 'quantity' => (string) $draw['quantity']->toScale(4), 'contributions' => $this->number($contributions)];
             } else {
                 $rows[$index] = $this->merge($rows[$index], $draw['quantity'], $contributions);
@@ -71,10 +71,10 @@ final class PackageTransferComposition
      * @param  list<array<string,mixed>>  $source
      * @return array{packaging_id:int, packaging_code:string, packaging_name:string, content_quantity:string}
      */
-    private function identity(array $source, int $packagingId): array
+    private function identity(array $source, int $packagingId, string $availability): array
     {
         foreach ($source as $row) {
-            if ($row['form'] === 'SEALED' && $row['availability_evidence'] === 'USABLE' && $row['packaging_id'] === $packagingId) {
+            if ($row['form'] === 'SEALED' && $row['availability_evidence'] === $availability && $row['packaging_id'] === $packagingId) {
                 return ['packaging_id' => $packagingId, 'packaging_code' => $row['packaging_code'], 'packaging_name' => $row['packaging_name'], 'content_quantity' => $row['content_quantity']];
             }
         }
@@ -85,10 +85,10 @@ final class PackageTransferComposition
      * @param  list<array<string,mixed>>  $rows
      * @param  array{packaging_id:int, packaging_code:string, packaging_name:string, content_quantity:string}|null  $identity  null selects the open/loose row
      */
-    private function find(array $rows, ?array $identity): ?int
+    private function find(array $rows, ?array $identity, string $availability): ?int
     {
         foreach ($rows as $index => $row) {
-            if ($row['availability_evidence'] !== 'USABLE') {
+            if ($row['availability_evidence'] !== $availability) {
                 continue;
             }
             if ($identity === null && $row['form'] === 'OPEN_LOOSE') {

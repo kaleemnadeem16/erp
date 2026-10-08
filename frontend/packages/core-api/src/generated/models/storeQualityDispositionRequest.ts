@@ -6,6 +6,7 @@
  */
 import type { StoreQualityDispositionRequestDisposition } from "./storeQualityDispositionRequestDisposition";
 import type { StoreQualityDispositionRequestSourceDispositionId } from "./storeQualityDispositionRequestSourceDispositionId";
+import type { StoreQualityDispositionRequestPackagePortionItem } from "./storeQualityDispositionRequestPackagePortionItem";
 
 export interface StoreQualityDispositionRequest {
   disposition: StoreQualityDispositionRequestDisposition;
@@ -14,4 +15,9 @@ export interface StoreQualityDispositionRequest {
   /** @maxLength 500 */
   reason: string;
   source_disposition_id?: StoreQualityDispositionRequestSourceDispositionId;
+  /**
+   * Grouped items only: the held whole sealed packages and loose quantity this disposition applies to (ADR 0094).
+   * @maxItems 50
+   */
+  package_portion?: StoreQualityDispositionRequestPackagePortionItem[];
 }

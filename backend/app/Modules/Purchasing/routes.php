@@ -31,6 +31,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('goods-receipts/{goodsReceipt}/reversal-preview', [GoodsReceiptController::class, 'reversalPreview'])->name('goods-receipts.reversal-preview');
     Route::post('goods-receipts/{goodsReceipt}/reverse', [GoodsReceiptController::class, 'reverse'])->name('goods-receipts.reverse');
     Route::post('goods-receipt-lines/{goodsReceiptLine}/quality-dispositions', [QualityDispositionController::class, 'store'])->name('quality-dispositions.store');
+    Route::get('goods-receipt-lines/{goodsReceiptLine}/quality-disposition-portion', [QualityDispositionController::class, 'portionPreview'])->name('quality-dispositions.portion-preview');
     Route::get('goods-receipt-lines/{goodsReceiptLine}/quality-dispositions', [QualityDispositionController::class, 'index'])->name('quality-dispositions.index');
     Route::get('quality-dispositions/{qualityDisposition}', [QualityDispositionController::class, 'show'])->name('quality-dispositions.show');
     Route::get('purchasing-settings', [PurchasingSettingsController::class, 'show'])->name('purchasing-settings.show');

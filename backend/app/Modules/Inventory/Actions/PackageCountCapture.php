@@ -26,7 +26,7 @@ final class PackageCountCapture
             throw new DomainInvariantException('Package-state view authority is required to count an item with grouped package tracking.');
         }
         $latest = PackageOperation::query()->where(['item_id' => $item->id, 'location_id' => $locationId, 'batch_id' => $batchId])
-            ->whereIn('evidence_kind', ['COUNTED', 'OPEN', 'UNPACK', 'ISSUE', 'TRANSFER_OUT', 'TRANSFER_IN', 'RECEIPT_IN', 'COUNT_VARIANCE', 'RECEIPT_REVERSAL'])->orderByDesc('id')->first();
+            ->whereIn('evidence_kind', PackageOperation::CHAIN)->orderByDesc('id')->first();
         $watermark = StockMove::query()->where(['item_id' => $item->id, 'batch_id' => $batchId, 'serial_no' => null])
             ->where(fn ($q) => $q->where('to_location_id', $locationId)->orWhere('from_location_id', $locationId))->max('id');
         if (bccomp($bookQty, '0', 4) === 0) {
@@ -35,7 +35,13 @@ final class PackageCountCapture
         if ($latest === null) {
             throw new DomainInvariantException('This location holds package-tracked stock without package evidence: a counted checkpoint is required first.', null, 'NEEDS_COUNT_FIRST');
         }
-        app(PackageDrawPlanner::class)->fresh($latest->id, $actor);
+        $snapshot = app(PackageDrawPlanner::class)->fresh($latest->id, $actor);
+        // A normal count would merge usable, held and rejected stock into one composition (ADR 0094 §5), so a scope under QA is not counted until it is decided.
+        foreach ($snapshot['composition'] as $row) {
+            if ($row['availability_evidence'] !== 'USABLE') {
+                throw new DomainInvariantException('This location holds packages that are under QA inspection or rejected: finish the QA dispositions before counting it.', null, 'QA_STOCK_HELD');
+            }
+        }
 
         return ['grouped' => true, 'package_operation_id' => $latest->id, 'package_watermark' => (int) $latest->stock_move_watermark];
     }

@@ -6,6 +6,7 @@ namespace App\Modules\Purchasing\Actions;
 
 use App\Exceptions\DomainInvariantException;
 use App\Models\User;
+use App\Modules\Inventory\Actions\RecordQaDispositionEvidence;
 use App\Modules\Inventory\Support\PackageWriteScope;
 use App\Modules\Purchasing\Models\GoodsReceiptLine;
 use App\Modules\Purchasing\Models\QualityDisposition;
@@ -16,7 +17,7 @@ use Illuminate\Support\Facades\DB;
 
 final class PostQualityDisposition
 {
-    /** @param array{disposition:string, qty:string, reason:string, source_disposition_id?:int|null} $attributes */
+    /** @param array{disposition:string, qty:string, reason:string, source_disposition_id?:int|null, package_portion?:list<array<string,mixed>>} $attributes */
     public function __invoke(GoodsReceiptLine $line, array $attributes, int $actorId, ?string $idempotencyKey = null): QualityDisposition
     {
         $actor = User::withoutGlobalScopes()->findOrFail($actorId);
@@ -24,7 +25,7 @@ final class PostQualityDisposition
             throw new DomainInvariantException('The actor is not permitted to post a quality disposition.', 'disposed_by');
         }
 
-        return DB::transaction(function () use ($line, $attributes, $actorId, $idempotencyKey): QualityDisposition {
+        return DB::transaction(function () use ($line, $attributes, $actor, $actorId, $idempotencyKey): QualityDisposition {
             $sourceDispositionId = $attributes['source_disposition_id'] ?? null;
 
             // Locking the line first, then re-checking the idempotency key, is what
@@ -44,7 +45,6 @@ final class PostQualityDisposition
                 }
             }
 
-            PackageWriteScope::refuse($line->item_id, 'a quality disposition');
             if ($line->goodsReceipt->status !== GoodsReceiptStatus::Posted) {
                 throw new DomainInvariantException('QA dispositions require a posted goods receipt.', 'goods_receipt_line_id');
             }
@@ -79,16 +79,30 @@ final class PostQualityDisposition
                 // fallback lookup below a bare catch would also fail — nesting in its
                 // own DB::transaction() gives Laravel a SAVEPOINT to roll back to
                 // instead, leaving the outer transaction (and the line lock) intact.
-                return DB::transaction(fn () => QualityDisposition::query()->create([
-                    'goods_receipt_line_id' => $line->id,
-                    'source_disposition_id' => $sourceDispositionId,
-                    'disposition' => $attributes['disposition'],
-                    'qty' => (string) $qty,
-                    'reason' => $attributes['reason'],
-                    'disposed_by' => $actorId,
-                    'disposed_at' => now(),
-                    'idempotency_key' => $idempotencyKey,
-                ]));
+                return DB::transaction(function () use ($line, $attributes, $sourceDispositionId, $qty, $actor, $actorId, $idempotencyKey): QualityDisposition {
+                    $disposition = QualityDisposition::query()->create([
+                        'goods_receipt_line_id' => $line->id,
+                        'source_disposition_id' => $sourceDispositionId,
+                        'disposition' => $attributes['disposition'],
+                        'qty' => (string) $qty,
+                        'reason' => $attributes['reason'],
+                        'disposed_by' => $actorId,
+                        'disposed_at' => now(),
+                        'idempotency_key' => $idempotencyKey,
+                    ]);
+                    // A grouped item states which physical packages the disposition concerns, in the same transaction (ADR 0094). A quantity-only item is untouched.
+                    if (PackageWriteScope::isAuthoritative($line->item_id) && RecordQaDispositionEvidence::decides($disposition->disposition)) {
+                        $portion = $attributes['package_portion'] ?? [];
+                        if ($portion === []) {
+                            throw new DomainInvariantException('This item uses grouped package tracking: state which sealed packages and loose quantity this disposition applies to.', 'package_portion', 'NEEDS_DECLARED_PORTION');
+                        }
+                        app(RecordQaDispositionEvidence::class)($disposition, $line, $portion, $actor);
+                    } elseif (($attributes['package_portion'] ?? []) !== [] && PackageWriteScope::isAuthoritative($line->item_id)) {
+                        throw new DomainInvariantException('Only a deciding outcome (pass, concession, return, scrap) is applied to packages; the stock stays held for now.', 'package_portion');
+                    }
+
+                    return $disposition;
+                });
             } catch (UniqueConstraintViolationException $e) {
                 if ($idempotencyKey === null) {
                     throw $e;

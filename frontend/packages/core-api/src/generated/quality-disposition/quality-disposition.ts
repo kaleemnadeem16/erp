@@ -26,6 +26,8 @@ import type {
   ModelNotFoundExceptionResponse,
   QualityDispositionsIndex200,
   QualityDispositionsIndexParams,
+  QualityDispositionsPortionPreview200,
+  QualityDispositionsPortionPreviewParams,
   QualityDispositionsShow200,
   QualityDispositionsShow403,
   QualityDispositionsStore201,
@@ -431,6 +433,279 @@ export function useQualityDispositionsIndex<
   queryKey: DataTag<QueryKey, TData, TError>;
 } {
   const queryOptions = getQualityDispositionsIndexQueryOptions(
+    goodsReceiptLine,
+    params,
+    options,
+  );
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary The held packages of this line and the proposed portion for a disposition of the given quantity; posts nothing (ADR 0094)
+ */
+export type qualityDispositionsPortionPreviewResponse200 = {
+  data: QualityDispositionsPortionPreview200;
+  status: 200;
+};
+
+export type qualityDispositionsPortionPreviewResponse401 = {
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
+
+export type qualityDispositionsPortionPreviewResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
+export type qualityDispositionsPortionPreviewResponse404 = {
+  data: ModelNotFoundExceptionResponse;
+  status: 404;
+};
+
+export type qualityDispositionsPortionPreviewResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
+};
+
+export type qualityDispositionsPortionPreviewResponseSuccess =
+  qualityDispositionsPortionPreviewResponse200 & {
+    headers: Headers;
+  };
+export type qualityDispositionsPortionPreviewResponseError = (
+  | qualityDispositionsPortionPreviewResponse401
+  | qualityDispositionsPortionPreviewResponse403
+  | qualityDispositionsPortionPreviewResponse404
+  | qualityDispositionsPortionPreviewResponse422
+) & {
+  headers: Headers;
+};
+
+export type qualityDispositionsPortionPreviewResponse =
+  | qualityDispositionsPortionPreviewResponseSuccess
+  | qualityDispositionsPortionPreviewResponseError;
+
+export const getQualityDispositionsPortionPreviewUrl = (
+  goodsReceiptLine: number,
+  params: QualityDispositionsPortionPreviewParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/v1/goods-receipt-lines/${goodsReceiptLine}/quality-disposition-portion?${stringifiedParams}`
+    : `/v1/goods-receipt-lines/${goodsReceiptLine}/quality-disposition-portion`;
+};
+
+export const qualityDispositionsPortionPreview = async (
+  goodsReceiptLine: number,
+  params: QualityDispositionsPortionPreviewParams,
+  options?: RequestInit,
+): Promise<qualityDispositionsPortionPreviewResponse> => {
+  return fetchClient<qualityDispositionsPortionPreviewResponse>(
+    getQualityDispositionsPortionPreviewUrl(goodsReceiptLine, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getQualityDispositionsPortionPreviewQueryKey = (
+  goodsReceiptLine?: number,
+  params?: QualityDispositionsPortionPreviewParams,
+) => {
+  return [
+    `/v1/goods-receipt-lines/${goodsReceiptLine}/quality-disposition-portion`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getQualityDispositionsPortionPreviewQueryOptions = <
+  TData = Awaited<ReturnType<typeof qualityDispositionsPortionPreview>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  goodsReceiptLine: number,
+  params: QualityDispositionsPortionPreviewParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof qualityDispositionsPortionPreview>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getQualityDispositionsPortionPreviewQueryKey(goodsReceiptLine, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof qualityDispositionsPortionPreview>>
+  > = () =>
+    qualityDispositionsPortionPreview(goodsReceiptLine, params, requestOptions);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!goodsReceiptLine,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof qualityDispositionsPortionPreview>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type QualityDispositionsPortionPreviewQueryResult = NonNullable<
+  Awaited<ReturnType<typeof qualityDispositionsPortionPreview>>
+>;
+export type QualityDispositionsPortionPreviewQueryError =
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ModelNotFoundExceptionResponse
+  | ValidationExceptionResponse;
+
+export function useQualityDispositionsPortionPreview<
+  TData = Awaited<ReturnType<typeof qualityDispositionsPortionPreview>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  goodsReceiptLine: number,
+  params: QualityDispositionsPortionPreviewParams,
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof qualityDispositionsPortionPreview>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof qualityDispositionsPortionPreview>>,
+          TError,
+          Awaited<ReturnType<typeof qualityDispositionsPortionPreview>>
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useQualityDispositionsPortionPreview<
+  TData = Awaited<ReturnType<typeof qualityDispositionsPortionPreview>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  goodsReceiptLine: number,
+  params: QualityDispositionsPortionPreviewParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof qualityDispositionsPortionPreview>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof qualityDispositionsPortionPreview>>,
+          TError,
+          Awaited<ReturnType<typeof qualityDispositionsPortionPreview>>
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useQualityDispositionsPortionPreview<
+  TData = Awaited<ReturnType<typeof qualityDispositionsPortionPreview>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  goodsReceiptLine: number,
+  params: QualityDispositionsPortionPreviewParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof qualityDispositionsPortionPreview>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+/**
+ * @summary The held packages of this line and the proposed portion for a disposition of the given quantity; posts nothing (ADR 0094)
+ */
+
+export function useQualityDispositionsPortionPreview<
+  TData = Awaited<ReturnType<typeof qualityDispositionsPortionPreview>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  goodsReceiptLine: number,
+  params: QualityDispositionsPortionPreviewParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof qualityDispositionsPortionPreview>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getQualityDispositionsPortionPreviewQueryOptions(
     goodsReceiptLine,
     params,
     options,

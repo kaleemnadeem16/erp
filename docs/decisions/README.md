@@ -108,7 +108,7 @@ in the same commit.
 | [0091](0091-activate-grouped-package-tracking-and-fail-closed-enforcement.md) | Activate grouped package tracking atomically, and enforce it fail-closed in the database | accepted | 2026-10-07 |
 | [0092](0092-package-aware-physical-count-posting.md) | Package-aware physical count: recount the composition, reconcile the quantity through a governed movement | accepted | 2026-10-08 |
 | [0093](0093-package-aware-goods-receipt-reversal.md) | Package-aware goods receipt reversal: remove what is declared, never restore or invent a past composition | accepted | 2026-10-08 |
-| [0094](0094-package-aware-supplier-qa-receipts.md) | Package-aware supplier QA: held packages stay in on-hand, a disposition relabels a declared physical portion | proposed | 2026-10-08 |
+| [0094](0094-package-aware-supplier-qa-receipts.md) | Package-aware supplier QA: held packages stay in on-hand, a disposition relabels a declared physical portion | accepted | 2026-10-08 |
 
 **Next number: 0095**
 

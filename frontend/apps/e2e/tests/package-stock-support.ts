@@ -112,3 +112,25 @@ export async function draftCountWithLine(page: Page, world: PackageStockWorld): 
 
   return { countId: count.id, lineId: line.id };
 }
+
+/** An issued purchase order whose line requires QA inspection, for the same item; returns a function that drafts a receipt against it. */
+export async function createQaOrder(page: Page, world: PackageStockWorld): Promise<(quantity: string) => Promise<{ id: number }>> {
+  const today = new Date().toISOString().slice(0, 10);
+  const order = (
+    await api(page, 'POST', '/purchase-orders', {
+      supplier_account_id: world.supplier.id, currency_id: world.currency.id, fx_rate: '1.000000000', fx_rate_date: today, fx_rate_type: 'SPOT', fx_rate_source: 'manual', order_date: today,
+      lines: [{ line_number: 1, item_id: world.item.id, description: world.item.name, ordered_qty: '100', purchase_uom_id: world.litre.id, unit_price: '12', price_uom_id: world.litre.id, price_quantity: '1', qa_required: true }],
+    })
+  ).data;
+  await api(page, 'POST', `/purchase-orders/${order.id}/issue`);
+  const poLine = (await api(page, 'GET', `/purchase-orders/${order.id}?include=lines`)).data.lines[0];
+
+  return async (quantity: string) =>
+    (
+      await api(page, 'POST', '/goods-receipts', {
+        supplier_account_id: world.supplier.id, physical_arrival_at: new Date().toISOString(), posting_date: today,
+        lines: [{ purchase_order_line_id: poLine.id, item_id: world.item.id, location_id: world.main.id, received_qty: quantity, received_uom_id: world.litre.id, provisional_unit_cost: '12',
+          currency_id: world.currency.id, fx_rate: '1.000000000', fx_rate_date: today, fx_rate_type: 'SPOT', fx_rate_source: 'manual' }],
+      })
+    ).data;
+}

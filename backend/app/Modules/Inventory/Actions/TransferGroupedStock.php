@@ -17,7 +17,7 @@ use App\Support\CompanyContext;
  */
 final class TransferGroupedStock
 {
-    private const CHAIN = ['COUNTED', 'OPEN', 'UNPACK', 'ISSUE', 'TRANSFER_OUT', 'TRANSFER_IN', 'RECEIPT_IN', 'COUNT_VARIANCE', 'RECEIPT_REVERSAL'];
+    private const CHAIN = PackageOperation::CHAIN;
 
     /**
      * @param  array{item_id:int, from_location_id:int, to_location_id:int, batch_id?:int|null, request_key:string, reason:string, reference?:string|null, draw:list<array<string,mixed>>, quantity?:string|null}  $input

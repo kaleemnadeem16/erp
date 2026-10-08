@@ -44,9 +44,9 @@ class PackageStockApiTest extends RecordPackageCheckpointTest
         parent::tearDown();
     }
 
-    private function world(): void
+    private function world(bool $qa = false): void
     {
-        [$order, $item, $unit] = $this->issuedOrder(ValuationMethod::Fifo, qty: '60.0000');
+        [$order, $item, $unit] = $this->issuedOrder(ValuationMethod::Fifo, qty: '60.0000', qaRequired: $qa);
         $a = $this->locationId();
         $this->directReceipt($item->id, $unit->id, $a, $order->currency_id, '6', '8', 99101);
         $this->directReceipt($item->id, $unit->id, $a, $order->currency_id, '14', '10', 99102);
@@ -370,6 +370,33 @@ class PackageStockApiTest extends RecordPackageCheckpointTest
 
         // Authority: without the package-reverse capability the preview refuses (the receipt-reverse capability alone is not enough for a grouped line).
         $this->actingAs($this->w['manager'])->getJson("/api/v1/goods-receipts/{$receipt->id}/reversal-preview")->assertUnprocessable();
+    }
+
+    public function test_a_qa_disposition_of_a_grouped_line_is_previewed_declared_and_applied_over_http(): void
+    {
+        $this->world(qa: true);
+        $this->actingAs($this->w['manager']);
+        $this->activate();
+        $receipt = $this->draftReceipt('12');
+        $line = $receipt->lines()->sole()->id;
+        $can = $this->w['can']->id;
+        $this->putJson("/api/v1/goods-receipt-lines/{$line}/package-composition", ['reason' => 'Counted on arrival', 'composition' => [['packaging_id' => $can, 'count' => 2], ['quantity' => '2']]])->assertOk();
+        $this->postJson("/api/v1/goods-receipts/{$receipt->id}/post")->assertOk();
+        $inspector = PurchasingActor::make(['purchasing.quality-disposition.post', 'inventory.package-state.view']);
+
+        $balance = $this->actingAs($inspector)->getJson('/api/v1/package-balances?item_id='.$this->w['item']->id)->assertOk()->json('data.0');
+        $this->assertSame(['32.0000', '20.0000', '12.0000'], [$balance['total'], $balance['usable_total'], $balance['held']['total']]);
+
+        $preview = $this->getJson("/api/v1/goods-receipt-lines/{$line}/quality-disposition-portion?quantity=7")->assertOk()->json('data');
+        $this->assertSame([['kind' => 'SEALED', 'packaging_id' => $can, 'count' => 1, 'quantity' => null], ['kind' => 'LOOSE', 'packaging_id' => null, 'count' => null, 'quantity' => '2.0000']], $preview['suggested']);
+        $this->assertNull($this->getJson("/api/v1/goods-receipt-lines/{$line}/quality-disposition-portion?quantity=3")->json('data.suggested'));
+
+        $payload = ['disposition' => 'PASS', 'qty' => '7', 'reason' => 'Inspected and passed'];
+        $this->postJson("/api/v1/goods-receipt-lines/{$line}/quality-dispositions", $payload)->assertUnprocessable()->assertJsonPath('reason_code', 'NEEDS_DECLARED_PORTION');
+        $this->postJson("/api/v1/goods-receipt-lines/{$line}/quality-dispositions", $payload + ['package_portion' => $preview['suggested']])->assertCreated();
+
+        $after = $this->getJson('/api/v1/package-balances?item_id='.$this->w['item']->id)->assertOk()->json('data.0');
+        $this->assertSame([4, '7.0000', '27.0000', '5.0000'], [$after['sealed'][0]['count'], $after['loose'], $after['usable_total'], $after['held']['total']]);
     }
 
     public function test_a_transfer_needs_its_capability_a_different_destination_and_suggestion_works_for_transfer_only_users(): void

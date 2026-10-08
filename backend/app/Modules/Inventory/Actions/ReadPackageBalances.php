@@ -20,7 +20,7 @@ use Brick\Math\BigDecimal;
  */
 final class ReadPackageBalances
 {
-    private const CHAIN = ['COUNTED', 'OPEN', 'UNPACK', 'ISSUE', 'TRANSFER_OUT', 'TRANSFER_IN', 'RECEIPT_IN', 'COUNT_VARIANCE', 'RECEIPT_REVERSAL'];
+    private const CHAIN = PackageOperation::CHAIN;
 
     /**
      * @return list<array<string,mixed>>
@@ -69,19 +69,26 @@ final class ReadPackageBalances
             'package_tracking_mode' => $item->package_tracking_mode->value,
         ];
         if ($head === null) {
-            return $base + ['total' => (string) BigDecimal::of($ledger)->toScale(4), 'sealed' => [], 'loose' => '0.0000', 'fresh' => false, 'reasons' => ['NO_EVIDENCE'], 'operation_id' => null];
+            return $base + ['total' => (string) BigDecimal::of($ledger)->toScale(4), 'usable_total' => '0.0000', 'sealed' => [], 'loose' => '0.0000', 'held' => ['sealed' => [], 'loose' => '0.0000', 'total' => '0.0000'], 'rejected' => ['sealed' => [], 'loose' => '0.0000', 'total' => '0.0000'], 'fresh' => false, 'reasons' => ['NO_EVIDENCE'], 'operation_id' => null];
         }
         $snapshot = app(ReplayPackageCheckpoint::class)($head->id, $actor);
-        $sealed = [];
+        // Usable stock is the top-level breakdown (what can be issued, transferred, opened); held and rejected packages (QA, ADR 0094) are reported beside it.
+        $groups = ['USABLE' => ['sealed' => [], 'loose' => BigDecimal::zero()], 'HELD' => ['sealed' => [], 'loose' => BigDecimal::zero()], 'REJECTED' => ['sealed' => [], 'loose' => BigDecimal::zero()]];
         foreach ($snapshot['composition'] as $row) {
+            $group = $row['availability_evidence'];
             if ($row['form'] === 'SEALED') {
-                $sealed[] = ['item_packaging_id' => $row['packaging_id'], 'code' => $row['packaging_code'], 'name' => $row['packaging_name'],
-                    'count' => (int) $row['sealed_count'], 'content_quantity' => $row['content_quantity'], 'quantity' => $row['quantity'], 'availability' => $row['availability_evidence']];
+                $groups[$group]['sealed'][] = ['item_packaging_id' => $row['packaging_id'], 'code' => $row['packaging_code'], 'name' => $row['packaging_name'],
+                    'count' => (int) $row['sealed_count'], 'content_quantity' => $row['content_quantity'], 'quantity' => $row['quantity'], 'availability' => $group];
+            } else {
+                $groups[$group]['loose'] = $groups[$group]['loose']->plus($row['quantity']);
             }
         }
+        $sum = fn (array $g): BigDecimal => array_reduce($g['sealed'], fn (BigDecimal $c, array $r) => $c->plus($r['quantity']), $g['loose']);
+        $shape = fn (array $g): array => ['sealed' => $g['sealed'], 'loose' => (string) $g['loose']->toScale(4), 'total' => (string) $sum($g)->toScale(4)];
 
         return $base + [
-            'total' => $snapshot['current_quantity'], 'sealed' => $sealed, 'loose' => $snapshot['open_loose_quantity'],
+            'total' => $snapshot['current_quantity'], 'usable_total' => (string) $sum($groups['USABLE'])->toScale(4), 'sealed' => $groups['USABLE']['sealed'], 'loose' => (string) $groups['USABLE']['loose']->toScale(4),
+            'held' => $shape($groups['HELD']), 'rejected' => $shape($groups['REJECTED']),
             'fresh' => $snapshot['matches_current_stock'], 'reasons' => $snapshot['mismatch_reasons'], 'operation_id' => $head->id,
         ];
     }

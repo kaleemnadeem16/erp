@@ -1,6 +1,6 @@
 # 0094 — Package-aware supplier QA: held packages stay in on-hand, a disposition relabels a declared physical portion
 
-- **Status:** proposed (2026-10-08)
+- **Status:** accepted (2026-10-08)
 - **Date:** 2026-10-08
 - **Affects:** Purchasing (receipt posting, QA disposition), Inventory (package kernel, issue/transfer/count/reversal planners)
 
@@ -83,13 +83,15 @@ The receipt composition panel stops refusing QA lines and says the delivery will
 **A separate QA capability for the package step** — rejected: the QA authority already decides the outcome; the evidence is its consequence.
 **Move rejected stock out at disposition** — rejected here: ADR 0043 posts no movement at disposition today; a supplier-return/scrap movement is its own Purchasing/Inventory decision.
 
-## Decisions requested
+## Decisions (all five recommendations accepted, 2026-10-08)
 
-1. Label terminal non-releasing portions `REJECTED` (recommended) versus leaving them `HELD`.
-2. Refuse physical counts while a scope holds held or rejected packages (recommended) versus counting them separately now.
-3. Require the declared physical portion on every grouped disposition, proposed by the server (recommended) versus deriving it silently when the whole line is disposed.
-4. Reuse `purchasing.quality-disposition.post` + `inventory.package-state.view` with no new capability (recommended).
-5. Refuse releasing a sealed package that is not wholly held (recommended) versus allowing opening of held packages.
+1. Final non-usable decisions (return, scrap) label the declared portion `REJECTED`. `HELD` means QA is unresolved; `REJECTED` means QA has finally decided the packages are not usable.
+2. A physical count is refused while the scope holds held or rejected packages (`QA_STOCK_HELD`). Specialised QA/count reconciliation is a later decision.
+3. Every deciding grouped disposition declares its physical portion. The server proposes it; the person confirms what it applies to (`NEEDS_DECLARED_PORTION` when absent).
+4. The existing `purchasing.quality-disposition.post` (plus `inventory.package-state.view`) is the only authority; no package-specific QA capability.
+5. A sealed held package moves whole or not at all. Opening or splitting held material is a separate governed QA/package operation, never hidden inside a disposition.
+
+**Built 2026-10-08** (migration `2026_10_08_150000`): `REJECTED` availability and a per-draw availability; `QA_DISPOSITION` evidence linked one-to-one to the disposition; database checks for the relabelling, for held stock equalling the quantity QA has not finally decided, for held receipt legs of QA lines, and for evidence on every deciding disposition of a grouped item; `RecordQaDispositionEvidence`/`PreviewQaDispositionPortion`; balances report `usable_total`, `held` and `rejected` beside the usable breakdown; reversal of an untouched QA line draws from its held packages. Issue and transfer re-attribute only usable rows, so held stock is never disturbed.
 
 ## Related
 

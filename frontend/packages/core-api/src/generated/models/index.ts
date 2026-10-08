@@ -3,7 +3,7 @@
  * Do not edit manually.
  *
  * Pure-type schemas are re-exported with `export type *` so a browser never requests them;
- * only the 133 schemas that export a runtime value use `export *`.
+ * only the 134 schemas that export a runtime value use `export *`.
  */
 export type * from "./accountDevicesIndex200";
 export type * from "./accountShow200";
@@ -1425,6 +1425,18 @@ export type * from "./qualityDispositionsIndex200MetaPath";
 export type * from "./qualityDispositionsIndex200MetaTo";
 export type * from "./qualityDispositionsIndexParams";
 export * from "./qualityDispositionsIndexSort";
+export type * from "./qualityDispositionsPortionPreview200";
+export type * from "./qualityDispositionsPortionPreview200Data";
+export type * from "./qualityDispositionsPortionPreview200DataHeld";
+export type * from "./qualityDispositionsPortionPreview200DataHeldAnyOf";
+export type * from "./qualityDispositionsPortionPreview200DataMessage";
+export type * from "./qualityDispositionsPortionPreview200DataSuggested";
+export type * from "./qualityDispositionsPortionPreview200DataSuggestedAnyOfItem";
+export type * from "./qualityDispositionsPortionPreview200DataSuggestedAnyOfItemAnyOf";
+export type * from "./qualityDispositionsPortionPreview200DataSuggestedAnyOfItemAnyOfCount";
+export type * from "./qualityDispositionsPortionPreview200DataSuggestedAnyOfItemAnyOfCountAnyOf";
+export type * from "./qualityDispositionsPortionPreview200DataSuggestedAnyOfItemAnyOfFour";
+export type * from "./qualityDispositionsPortionPreviewParams";
 export type * from "./qualityDispositionsShow200";
 export type * from "./qualityDispositionsShow403";
 export type * from "./qualityDispositionsStore201";
@@ -1804,6 +1816,11 @@ export type * from "./storePurchaseOrderRequestReplacesPurchaseOrderId";
 export type * from "./storePurchaseOrderRequestSupplierSiteId";
 export type * from "./storeQualityDispositionRequest";
 export * from "./storeQualityDispositionRequestDisposition";
+export type * from "./storeQualityDispositionRequestPackagePortionItem";
+export type * from "./storeQualityDispositionRequestPackagePortionItemCount";
+export * from "./storeQualityDispositionRequestPackagePortionItemKind";
+export type * from "./storeQualityDispositionRequestPackagePortionItemPackagingId";
+export type * from "./storeQualityDispositionRequestPackagePortionItemQuantity";
 export type * from "./storeQualityDispositionRequestSourceDispositionId";
 export type * from "./storeRateDimensionRequest";
 export type * from "./storeRateDimensionValueRequest";

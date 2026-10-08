@@ -39,6 +39,10 @@ final class PreviewGroupedReceiptReversal
                 }
             }
         }
+        // A delivery QA has not touched is still held, so what can go back is the held packages (ADR 0094).
+        if ($onHand !== null && $line->purchaseOrderLine()->value('qa_required')) {
+            $onHand = ['operation_id' => $onHand['operation_id'], 'fresh' => $onHand['fresh'], 'total' => $onHand['held']['total'], 'sealed' => $onHand['held']['sealed'], 'loose' => $onHand['held']['loose']];
+        }
         if ($onHand === null || $onHand['operation_id'] === null) {
             $blockers[] = ['code' => 'NEEDS_COUNT_FIRST', 'message' => 'This location has no package count to take the returned packages from: count it first.'];
         } elseif (! $onHand['fresh']) {

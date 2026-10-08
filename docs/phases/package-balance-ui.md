@@ -173,17 +173,17 @@ Deviations from the design: the wizard and issue use `Dialog` (a task started fr
   [0092](../decisions/0092-package-aware-physical-count-posting.md), [0093](../decisions/0093-package-aware-goods-receipt-reversal.md)
 - [UI building blocks](../architecture/ui-building-blocks.md), [user interface](../architecture/user-interface.md)
 
-## v1 reconciliation (2026-10-08)
+## v1 sign-off (2026-10-08)
 
-Verified in the browser against the dev stack (Playwright, each on a fresh item): activation → receipt composition → issue (`package-tracking-lifecycle`), transfer including the
-destination-needs-count block (`package-transfer`), count — composition-only, stale line refreshed and recounted, found stock with a confirmed cost, posted by a second person
-(`package-count`), receipt reversal — as received, changed form, delivery already used (`package-reversal`), and a quantity-only item untouched by all of it (`package-quantity-only`).
+**Grouped package tracking v1 is complete.** Verified end to end in the browser against the dev stack (Playwright, each on a fresh item): activation → receipt composition → issue (`package-tracking-lifecycle`); transfer with the destination-needs-count block (`package-transfer`); count — composition-only, stale line refreshed and recounted, found stock with a confirmed cost, posted by a second person (`package-count`); receipt reversal — as received, changed form, delivery already used (`package-reversal`); supplier QA — held delivery, partial release by declared portion, rejection, impossible portion refused (`package-qa`); phone width for count, issue, transfer and reversal (`package-mobile`); and a quantity-only item untouched by all of it (`package-quantity-only`). Backend: the architecture ratchets, grouped issue/transfer/count/reversal/QA suites and the database-level conservation checks pass; capabilities roll out through migration `2026_10_08_140000`.
 
-**True v1 gaps** (things a company doing grouped tracking day to day can still hit):
-- ~~Roles must be given the new capabilities~~ **Closed 2026-10-08:** a rollout migration continues existing duties (view, recount, reverse); activation and the new issue/open/transfer duties are deliberate role grants with documented recipes ([rollout](../domain/package-issue-operations.md#granting-the-package-capabilities-rollout-2026-10-08)).
-- Receiving from a supplier whose delivery needs QA inspection is refused for a grouped item (`SUPPLIER_QA_UNSUPPORTED`). **Design proposed 2026-10-08 as [ADR 0094](../decisions/0094-package-aware-supplier-qa-receipts.md), awaiting five decisions before implementation.** Until it is accepted and built, a company that inspects most deliveries cannot use grouped tracking for those items.
-- ~~Phone width~~ **Closed 2026-10-08:** count, issue, transfer and reversal are checked at 390 px (fit, no sideways scroll, primary action topmost and reachable) in `package-mobile` and `package-count`; no layout defect was found.
+**v1 capabilities:** per-item opt-in activation from a reconciled count; physical-composition receipt (usable or, for inspection-required lines, held); issue and transfer by physical draw with server proposal; physical count by composition (composition-only versus governed variance, found cost); whole-receipt reversal of untouched deliveries with a declared draw; supplier QA release/rejection by declared portion; fail-closed database enforcement for every stock writer; capability rollout and role recipes; reason codes on every refusal.
 
-**Polish, not blocking:** Issue and Transfer are reached from the item page, one location at a time (quantity-only items have no issue form at all, so there is no parity gap); standalone menu screens would be faster for a storeman. Found-cost suggestions need cost visibility; without it the reviewer types the cost.
+**Known operational limitations** (accepted for v1, each with its refusal or workaround):
+- Rejected stock stays on hand (shown apart, never usable) until a supplier-return/scrap movement exists; the same is true of quantity-only stock today.
+- A scope holding held or rejected packages cannot be counted until QA has decided them.
+- A sealed held can is released or rejected whole; opening or splitting held material needs a future governed operation. A dispositioned QA line cannot be reversed.
+- Counts and activation refuse serial, SPECIFIC-valued and QA-dependent-layer stock; recalculation, cutover and negative-stock overrides are refused for grouped items.
+- Issue and Transfer are reached from the item page, one location at a time; the transfer, issue and reversal dialogs are checked at phone width but not redesigned for it; role recipes are documented, not shipped as templates.
 
-**Later features, deliberately not v1:** QA splitting of grouped receipts, a governed change of tracked levels, deactivation/collapse back to quantity-only, container-level tracking, line-level or partial receipt reversal, and a value-threshold approval for counts (all recorded in ADRs 0090–0093).
+**Later enhancements, deliberately not v1:** supplier return/scrap movement for rejected stock, a governed change of tracked levels, deactivation/collapse back to quantity-only, container-level tracking, line-level or partial receipt reversal, a value-threshold approval for counts, QA/count reconciliation of held stock, standalone Issue/Transfer menu screens.

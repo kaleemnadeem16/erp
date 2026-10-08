@@ -97,9 +97,9 @@ final class PackageDrawPlanner
      * @param  list<array<string,mixed>>  $composition
      * @return list<array{kind:string, packaging_id:int|null, count:int|null, quantity:BigDecimal}>
      */
-    public function quantify(array $draws, array $composition): array
+    public function quantify(array $draws, array $composition, string $availability = 'USABLE'): array
     {
-        return $this->withQuantities($draws, $composition);
+        return $this->withQuantities($draws, $composition, $availability);
     }
 
     public function exact(string $quantity, string $what): BigDecimal
@@ -142,12 +142,12 @@ final class PackageDrawPlanner
      * @param  list<array<string,mixed>>  $composition
      * @return list<array{kind:string, packaging_id:int|null, count:int|null, quantity:BigDecimal}>
      */
-    private function withQuantities(array $draws, array $composition): array
+    private function withQuantities(array $draws, array $composition, string $availability = 'USABLE'): array
     {
         $sealed = [];
         $loose = BigDecimal::zero();
         foreach ($composition as $row) {
-            if ($row['availability_evidence'] !== 'USABLE') {
+            if ($row['availability_evidence'] !== $availability) {
                 continue;
             }
             if ($row['form'] === 'SEALED') {

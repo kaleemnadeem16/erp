@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Modules\Purchasing\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Modules\Inventory\Actions\PreviewQaDispositionPortion;
 use App\Modules\Purchasing\Actions\PostQualityDisposition;
 use App\Modules\Purchasing\Http\Requests\QualityDisposition\IndexQualityDispositionRequest;
+use App\Modules\Purchasing\Http\Requests\QualityDisposition\PreviewQaPortionRequest;
 use App\Modules\Purchasing\Http\Requests\QualityDisposition\StoreQualityDispositionRequest;
 use App\Modules\Purchasing\Http\Resources\QualityDispositionResource;
 use App\Modules\Purchasing\Models\GoodsReceiptLine;
@@ -25,10 +27,20 @@ class QualityDispositionController extends Controller
 
     public function store(StoreQualityDispositionRequest $request, GoodsReceiptLine $goodsReceiptLine, PostQualityDisposition $post): JsonResponse
     {
-        $disposition = $post($goodsReceiptLine, $request->validated(), $request->user()->id, $request->header('Idempotency-Key'));
+        $attributes = $request->validated();
+        if (isset($attributes['package_portion'])) {
+            $attributes['package_portion'] = array_map(fn (array $row): array => array_filter($row, fn ($value): bool => $value !== null), $attributes['package_portion']);
+        }
+        $disposition = $post($goodsReceiptLine, $attributes, $request->user()->id, $request->header('Idempotency-Key'));
         $disposition->loadSum('childDispositions as children_qty_sum', 'qty');
 
         return (new QualityDispositionResource($disposition))->response()->setStatusCode(201);
+    }
+
+    /** The held packages of this line and the proposed portion for a disposition of the given quantity; posts nothing (ADR 0094). */
+    public function portionPreview(PreviewQaPortionRequest $request, GoodsReceiptLine $goodsReceiptLine, PreviewQaDispositionPortion $preview): JsonResponse
+    {
+        return response()->json(['data' => $preview($goodsReceiptLine, $request->string('quantity')->toString(), $request->user())]);
     }
 
     public function index(IndexQualityDispositionRequest $request, GoodsReceiptLine $goodsReceiptLine): AnonymousResourceCollection

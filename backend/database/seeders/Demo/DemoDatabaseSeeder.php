@@ -48,6 +48,7 @@ final class DemoDatabaseSeeder extends Seeder
                 // After StockDemoSeeder: the count is posted by its demo-supervisor persona (the creator may not post).
                 PackageCountDemoSeeder::class,
                 PackageReceiptReversalDemoSeeder::class,
+                PackageQaDemoSeeder::class,
                 // After StockDemoSeeder: reuses its demo-ops/demo-supervisor actors and resting policy.
                 NegativeStockLifecycleDemoSeeder::class,
                 RecalculationLifecycleDemoSeeder::class,

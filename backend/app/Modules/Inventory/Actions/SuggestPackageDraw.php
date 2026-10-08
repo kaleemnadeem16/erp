@@ -43,7 +43,7 @@ final class SuggestPackageDraw
         if (! $balance['fresh']) {
             throw new DomainInvariantException('The package count for this location is out of date; recount it first.', null, 'STALE_EVIDENCE');
         }
-        $total = BigDecimal::of($balance['total']);
+        $total = BigDecimal::of($balance['usable_total']);
         if ($wanted->isGreaterThan($total)) {
             throw new DomainInvariantException("Only {$total->toScale(4)} is on hand here.", 'quantity', 'DRAW_NOT_ON_HAND');
         }

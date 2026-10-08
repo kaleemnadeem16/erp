@@ -66,12 +66,14 @@ final class ReverseGroupedReceiptLine
         }
         WarehouseScope::requireLocation($actor, 'inventory.package-state.reverse', $location->id, 'reverse package-tracked stock');
         $predecessor = PackageOperation::query()->where(['item_id' => $item->id, 'location_id' => $location->id, 'batch_id' => $layer->batch_id])
-            ->whereIn('evidence_kind', ['COUNTED', 'OPEN', 'UNPACK', 'ISSUE', 'TRANSFER_OUT', 'TRANSFER_IN', 'RECEIPT_IN', 'COUNT_VARIANCE', 'RECEIPT_REVERSAL'])->orderByDesc('id')->first();
+            ->whereIn('evidence_kind', PackageOperation::CHAIN)->orderByDesc('id')->first();
         if ($predecessor === null) {
             throw new DomainInvariantException('This location holds package-tracked stock without package evidence: a counted checkpoint is required first.');
         }
         $current = $this->draw->fresh($predecessor->id, $actor);
-        $draws = $this->draw->quantify($lines, $current['composition']);
+        // An inspection-required delivery that QA has not touched is still held, so what goes back comes out of the held packages (ADR 0094).
+        $availability = $line->purchaseOrderLine()->value('qa_required') ? 'HELD' : 'USABLE';
+        $draws = $this->draw->quantify($lines, $current['composition'], $availability);
         $total = array_reduce($draws, fn (BigDecimal $sum, array $draw) => $sum->plus($draw['quantity']), BigDecimal::zero());
         if (! $total->isEqualTo($line->stock_qty)) {
             throw new DomainInvariantException('The returned packages must add up to the whole received quantity ('.BigDecimal::of($line->stock_qty)->toScale(4).').');
@@ -81,7 +83,7 @@ final class ReverseGroupedReceiptLine
             'GOODS_RECEIPT_LINE', $line->id, 'GOODS_RECEIPT_LINE_REVERSAL', $line->id, $reversedAt,
         ));
         $vector = [$layer->id => (string) BigDecimal::of($move->qty)->toScale(4)];
-        $successor = app(PackageIssueComposition::class)($current['composition'], $draws, $vector);
+        $successor = app(PackageIssueComposition::class)($current['composition'], $draws, $vector, $availability);
         $operation = PackageOperation::query()->create([
             'item_id' => $item->id, 'location_id' => $location->id, 'batch_id' => $layer->batch_id, 'request_key' => $key, 'payload_hash' => $hash,
             'evidence_kind' => 'RECEIPT_REVERSAL', 'actor_id' => $actor->id, 'reason' => $reason, 'recorded_at' => now(),
@@ -99,7 +101,7 @@ final class ReverseGroupedReceiptLine
         }
         foreach ($draws as $number => $draw) {
             PackageIssueDraw::query()->create(['operation_id' => $operation->id, 'line_no' => $number + 1, 'kind' => $draw['kind'],
-                'item_packaging_id' => $draw['packaging_id'], 'whole_count' => $draw['count'], 'quantity' => (string) $draw['quantity']]);
+                'item_packaging_id' => $draw['packaging_id'], 'whole_count' => $draw['count'], 'quantity' => (string) $draw['quantity'], 'availability' => $availability]);
         }
         foreach ($vector as $layerId => $quantity) {
             PackageIssueAllocation::query()->create(['operation_id' => $operation->id, 'stock_layer_id' => $layerId, 'quantity' => $quantity]);

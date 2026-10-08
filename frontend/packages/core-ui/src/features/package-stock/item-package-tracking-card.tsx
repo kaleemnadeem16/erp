@@ -103,20 +103,22 @@ export function ItemPackageTrackingCard({
                   {row.location.warehouse_name} — {row.location.name}
                 </p>
                 <PackageBreakdown
-                  total={row.total}
+                  total={row.usable_total ?? row.total}
                   sealed={row.sealed}
                   loose={row.loose}
                   unit={unit}
                   fresh={row.fresh}
+                  held={row.held}
+                  rejected={row.rejected}
                 />
               </div>
               <div className="flex flex-wrap gap-2">
-                {mayIssue && row.fresh && Number(row.total) > 0 && (
+                {mayIssue && row.fresh && Number(row.usable_total ?? row.total) > 0 && (
                   <Button size="sm" onClick={() => setIssuing(row)} data-testid="issue-stock">
                     Issue stock…
                   </Button>
                 )}
-                {mayTransfer && row.fresh && Number(row.total) > 0 && (
+                {mayTransfer && row.fresh && Number(row.usable_total ?? row.total) > 0 && (
                   <Button size="sm" variant="outline" onClick={() => setTransferring(row)} data-testid="transfer-stock">
                     Transfer stock…
                   </Button>
