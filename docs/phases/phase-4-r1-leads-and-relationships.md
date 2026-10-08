@@ -2,7 +2,7 @@
 
 # R1 — Leads, opportunities and customer relationships
 
-- **Status:** initial evidence captured; owner discussion pending. Not accepted or complete.
+- **Status:** R1-A owner-reviewed proposal recorded; R1-B–G discussion pending. Not accepted or complete.
 - **Research/access date:** 2026-10-08.
 - **Question:** how do we qualify enquiries and track independent deals without forcing CRM or
   financial-account setup onto every quotation, duplicating Parties or restricting future scale?
@@ -30,6 +30,20 @@ known identities; preserve qualification/closure history; support repeat custome
 multiplicity and how commercial documents drive CRM state. Sources do not settle our financial
 onboarding, identity matching rules or definition of an abandoned deal.
 
+## Owner-reviewed R1-A direction — 2026-10-08
+
+[Proposed ADR 0098](../decisions/0098-hybrid-sales-opportunity-requirement.md) is the canonical
+record of the owner's hybrid workflow direction, three company presets, narrow MANAGED exception,
+policy transitions, issue evidence and remaining architectural questions. It is **proposed**, not
+accepted; no code or migration is authorised. Earlier recommendations below remain initial
+research where they differ from that direction.
+
+R1-B now discusses direct quotation linkage within those presets rather than assuming quotations
+are always free of an opportunity requirement. R1-C's customer readiness is independent and cannot
+be bypassed. R1-D person customers, R1-E owners/visibility/teams, R1-F deal closure and R1-G
+identity/CRM extent remain open. Multiple opportunities per lead is direction reviewed in R1-A;
+its conversion/duplicate mechanics are not settled.
+
 ## Alternatives and initial recommendations
 
 ### 1. Enquiry and deal are distinct; storage remains open
@@ -48,12 +62,13 @@ about annual maintenance. One enquiry may lead to two independently won/lost dea
 for initial design because of multiple-deal provenance. Do not decide physical tables before
 agreement. A small company should be able to start at Opportunity or Quotation.
 
-### 2. Opportunity is optional on a quotation
+### 2. Direct quotation path — initial recommendation, now qualified by R1-A
 
 A returning customer asks for a routine service price: forcing a dummy opportunity adds little.
 A negotiated equipment purchase benefits from one opportunity tracking alternative quotes.
 
-**Propose:** direct quotation allowed, optional opportunity link; both paths use the same pricing,
+**Initial recommendation (qualified by proposed ADR 0098):** direct quotation allowed according
+to company preset, with linkage rules still under R1-B; both paths use the same pricing,
 approval, snapshot and issue rules. Mandatory opportunity improves pipeline coverage but creates
 fictitious deals for routine quotes. Quotations linked to one deal may be alternatives or revisions:
 R2 must distinguish these and R9 must prevent forecast double-counting.
@@ -141,15 +156,15 @@ requiring them to use a quotation.
 
 | ID | Choice for discussion | Current recommendation / dependency |
 |---|---|---|
-| R1-A | Optional leads and distinct enquiry/deal records? | Yes; direct opportunity remains available |
-| R1-B | Direct quotes with no opportunity? | Yes; same controls as pipeline quotes; R2 links/families |
+| R1-A | Hybrid workflow and policy requirements | Owner-reviewed direction in proposed ADR 0098; remaining architecture questions prevent final acceptance |
+| R1-B | Direct quotation relationship to opportunities within R1-A presets? | Next discussion: links/relinks, eligibility, revisions, multiple quote families and reporting; R2/R5 dependencies |
 | R1-C | Can we quote a prospect Party before financial customer setup; when is setup mandatory? | Prefer Party-backed prospect quoting; agree the gate with R6/R7 |
 | R1-D | Organisation customers only, or individual consumers in Phase 4? | Keep established B2B boundary unless real requirements justify extension |
 | R1-E | Initial pipeline/ownership exposure and visibility? | Single owner, company stages, optional lead queue; own/team/company access needs R9 decision |
 | R1-F | What makes a deal won; can closure be manual; how do lost/abandoned deals reopen? | Evidence-backed closure; agree acceptance link and partial-win handling with R6/R7 |
 | R1-G | Duplicate handling and initial CRM extent? | Warn/reuse without automatic merge; minimal follow-up, defer full CRM automation |
 
-These are unresolved research questions, not approvals inferred from this document. Accepted
+R1-A has an owner-reviewed proposed direction; the remaining choices are unresolved. Accepted
 answers will become ADRs; this record retains the evidence and links to them. The decision set is tracked as
 [Q39](../OPEN-QUESTIONS.md#q39--phase-4-r1-enquiry-deal-and-customer-onboarding-boundaries); it gates dependent Sales design, not other workstreams.
 
@@ -159,7 +174,8 @@ Initial evidence covers identity, optional qualification, direct quotes, multipl
 closure patterns. Configurable stage governance, detailed Sales scope, consent/retention,
 forecast accounting, quote recipient/contact evidence and conversion concurrency need deeper
 validation during the relevant topic. No legal retention rule is inferred from vendor features.
-Discuss R1-A–G; investigate any changed assumptions before proposing the formal decision.
+Next discuss R1-B (direct quotations and opportunity relationships), then R1-C onboarding.
+Resolve ADR 0098's flagged edge cases before final acceptance; do not mark all R1 complete.
 
 ## Related
 

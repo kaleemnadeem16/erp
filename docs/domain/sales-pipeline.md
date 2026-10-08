@@ -7,7 +7,9 @@ From first contact to a confirmed job.
 **Planning note (2026-10-08):** this is a documented proposal, not implemented Sales behaviour.
 The [Phase 4 research plan](../phases/phase-4-sales-quotations-and-handover.md) and
 [R1 discussion](../phases/phase-4-r1-leads-and-relationships.md) assess the model before decisions.
-Customer-only recipients, conversion and closure are unresolved. The historical numbering
+R1-A's hybrid entry and opportunity policy direction is in
+[proposed ADR 0098](../decisions/0098-hybrid-sales-opportunity-requirement.md), owner-reviewed
+but not accepted. Customer-only recipients, conversion and closure are unresolved. The historical numbering
 paragraph below must be reconciled with ADR 0079's implemented central framework before build.
 
 ```

@@ -38,7 +38,7 @@ its consolidated review comes last. R6 and R7 inform R5 before lifecycle decisio
 
 | Topic | Questions and dependencies | Existing basis to reuse | Research state |
 |---|---|---|---|
-| R1 Leads, opportunities and relationships | Enquiry vs deal; optional pipeline; identity/conversion; duplicates; owners, stages and closure | Parties; ADRs 0030/0034, 0084/0089 | Initial comparison recorded; discussion pending |
+| R1 Leads, opportunities and relationships | Enquiry vs deal; optional pipeline; identity/conversion; duplicates; owners, stages and closure | Parties; ADRs 0030/0034, 0084/0089 | R1-A owner-reviewed proposal (ADR 0098); R1-B next |
 | R2 Quotation structure and scope | Assemblies, work units, sections, alternatives, optional/non-priced lines; identity of a quotation vs revision | Sales pipeline draft; ADR 0008; Estimating | Not researched; follows R1 |
 | R3 Sales pricing | SIMPLE first boundary, overrides, discounts, agreements and margin controls | Accepted ADR 0055; sales-pricing.md | Existing design to assess; follows R2 |
 | R4 Tax, currency and FX | Quotation tax estimate, rules/exemptions, rounding, rate date and evidence | ADRs 0012, 0025, 0056; currency APIs | Existing design to assess; follows R2/R3 |
@@ -67,7 +67,8 @@ proposal is never "researched", "accepted" or "complete" merely because it exist
 
 - [x] Establish this research structure and inspect the existing foundations.
 - [x] Capture initial R1 evidence from three mature products.
-- [ ] Discuss R1 questions and obtain explicit agreement; write the governing ADR(s).
+- [x] Record R1-A owner-reviewed direction in [proposed ADR 0098](../decisions/0098-hybrid-sales-opportunity-requirement.md); architecture and edge-case review remains pending.
+- [ ] Discuss R1-B then R1-C, resolve flagged questions and obtain acceptance of governing ADR(s).
 - [ ] Investigate R2–R9 in the dependency order above, reusing sufficient accepted research.
 - [ ] Reconcile the historical Sales domain proposal against accepted decisions.
 - [ ] Define implementation slices, demos and observable acceptance criteria only after decisions.

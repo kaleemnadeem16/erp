@@ -35,12 +35,18 @@ Q1, Q2 and Q3 were resolved on 2026-08-10 — see
 **Blocks:** finalising R1's Sales model and dependent quotation-recipient/acceptance design;
 not research or the other agents' existing workstreams.
 
-The owner must settle optional lead intake and distinct enquiry/deal records, direct quotations,
-prospect recipient and customer-account readiness gates, organisation/person customer scope,
-ownership/visibility, closure/reopening semantics and duplicate/CRM scope. Initial alternatives,
-recommendations and dependencies are recorded once in
+R1-A now has an **owner-reviewed proposed direction**, recorded in
+[proposed ADR 0098](decisions/0098-hybrid-sales-opportunity-requirement.md): optional leads,
+direct opportunities and one quotation workflow governed by FLEXIBLE/MANAGED/STRICT presets.
+It is not accepted; historical migration exceptions, policy governance and issue/authority/retry
+coordination remain flagged for resolution. Keep Q39 open.
+
+Next: **R1-B**, direct quotation/opportunity relationships within these presets; then **R1-C**,
+prospect/customer readiness. R1-D–G (person customers, ownership/scope, closure, duplicates/CRM
+extent) remain open. Detailed question tracking is in
 [R1-A–G](phases/phase-4-r1-leads-and-relationships.md#decisions-needed-from-the-owner).
-No answer is accepted yet. Agreed rules become ADRs; remove this entry when resolved.
+Record accepted answers in ADRs and remove only resolved questions; do not close all Q39 or R1
+because one direction was reviewed.
 
 Q6 (data import mechanism) and Q7 (permissions mechanism) resolved 2026-08-10 — see
 [ADR 0027](decisions/0027-generic-column-mapping-import.md) and
