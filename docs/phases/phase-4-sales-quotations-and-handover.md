@@ -38,7 +38,7 @@ its consolidated review comes last. R6 and R7 inform R5 before lifecycle decisio
 
 | Topic | Questions and dependencies | Existing basis to reuse | Research state |
 |---|---|---|---|
-| R1 Leads, opportunities and relationships | Enquiry vs deal; optional pipeline; identity/conversion; duplicates; owners, stages and closure | Parties; ADRs 0030/0034, 0084/0089 | R1-A/B1/B2 and B3 scopes/groups reviewed; forecast basis next |
+| R1 Leads, opportunities and relationships | Enquiry vs deal; optional pipeline; identity/conversion; duplicates; owners, stages and closure | Parties; ADRs 0030/0034, 0084/0089 | R1-A/B1/B2, B3 scopes/groups/methods reviewed; staleness/FX next |
 | R2 Quotation structure and scope | Assemblies, work units, sections, alternatives, optional/non-priced lines; identity of a quotation vs revision | Sales pipeline draft; ADR 0008; Estimating | Not researched; follows R1 |
 | R3 Sales pricing | SIMPLE first boundary, overrides, discounts, agreements and margin controls | Accepted ADR 0055; sales-pricing.md | Existing design to assess; follows R2 |
 | R4 Tax, currency and FX | Quotation tax estimate, rules/exemptions, rounding, rate date and evidence | ADRs 0012, 0025, 0056; currency APIs | Existing design to assess; follows R2/R3 |
@@ -63,6 +63,7 @@ proposal is never "researched", "accepted" or "complete" merely because it exist
 - [R1 evidence and discussion](phase-4-r1-leads-and-relationships.md) — proposals and open choices.
 - [R1-B3 offers and forecast](phase-4-r1-b3-offers-and-forecast.md) — retained evidence and reviewed scope/group direction.
 - [Forecast-basis research](phase-4-r1-b3-forecast-basis.md) — selection sets, accepted/pending, FX/history; recommendations not approved.
+- [Forecast staleness](phase-4-r1-b3-forecast-staleness.md) · [Forecast FX](phase-4-r1-b3-forecast-fx.md) — alternatives pending discussion.
 - Later topic records are added when investigated; do not generate empty speculative documents.
 
 ## Tasks
@@ -72,7 +73,8 @@ proposal is never "researched", "accepted" or "complete" merely because it exist
 - [x] Record R1-A owner-reviewed direction in [proposed ADR 0098](../decisions/0098-hybrid-sales-opportunity-requirement.md); architecture and edge-case review remains pending.
 - [x] Record R1-B1/B2 owner-reviewed direction in proposed ADR 0099 and capture initial B3 evidence.
 - [x] Record owner-reviewed independent scopes/exclusive groups in proposed ADR 0100; compare forecast bases.
-- [ ] Discuss R1-B3 forecast business meaning and remaining rules, then R1-C; obtain acceptance of governing ADR(s).
+- [x] Record owner-reviewed MAINTAINED/SELECTED_OFFERS methods in proposed ADR 0101; investigate staleness/FX separately.
+- [ ] Discuss forecast staleness and FX rules, then R1-C; reconcile dependencies before accepting governing ADR(s).
 - [ ] Investigate R2–R9 in the dependency order above, reusing sufficient accepted research.
 - [ ] Reconcile the historical Sales domain proposal against accepted decisions.
 - [ ] Define implementation slices, demos and observable acceptance criteria only after decisions.

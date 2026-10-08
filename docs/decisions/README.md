@@ -115,8 +115,9 @@ in the same commit.
 | [0098](0098-hybrid-sales-opportunity-requirement.md) | Govern opportunity requirements through one hybrid Sales workflow | proposed (owner-reviewed direction) | 2026-10-08 |
 | [0099](0099-separate-quotation-issue-and-crm-association.md) | Separate quotation issue evidence from current CRM association | proposed (R1-B1/B2 owner-reviewed) | 2026-10-08 |
 | [0100](0100-independent-quotation-scopes-and-alternative-groups.md) | Distinguish independent quotation scopes from exclusive alternative groups | proposed (owner-reviewed R1-B3 direction) | 2026-10-08 |
+| [0101](0101-separate-accepted-business-and-remaining-forecast.md) | Separate accepted business from evidence-based remaining forecasts | proposed (owner-reviewed forecast methods) | 2026-10-08 |
 
-**Next number: 0101**
+**Next number: 0102**
 
 ## By theme
 

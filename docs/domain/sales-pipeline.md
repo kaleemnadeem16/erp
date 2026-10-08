@@ -13,7 +13,8 @@ but not accepted. Draft linking and separate post-issue CRM association are prop
 [ADR 0099](../decisions/0099-separate-quotation-issue-and-crm-association.md); [R1-B3](../phases/phase-4-r1-b3-offers-and-forecast.md) researches multiple offers and forecast.
 Independent accepted scopes and explicit alternative groups have owner-reviewed direction in
 [proposed ADR 0100](../decisions/0100-independent-quotation-scopes-and-alternative-groups.md).
-[Forecast research](../phases/phase-4-r1-b3-forecast-basis.md) remains pending discussion.
+[Forecast methods](../decisions/0101-separate-accepted-business-and-remaining-forecast.md) are owner-reviewed/proposed;
+[staleness](../phases/phase-4-r1-b3-forecast-staleness.md) and [FX](../phases/phase-4-r1-b3-forecast-fx.md) remain pending discussion.
 The schema below is historical planning: one opportunity field must not become both immutable
 issue linkage and editable current CRM association. Customer-only recipients, conversion and closure are unresolved. The historical numbering
 paragraph below must be reconciled with ADR 0079's implemented central framework before build.

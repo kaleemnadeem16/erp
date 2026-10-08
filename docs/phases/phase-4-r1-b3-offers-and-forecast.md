@@ -23,8 +23,10 @@ records the rules and concurrency/history implications; this does not decide clo
 selected revision and a controlled non-competing set. Its recommendation broadens the initial
 single-offer suggestion below to support multiple independent scopes. Earlier examples and
 comparisons are retained as research history; earlier "must we support multiple scopes/groups?"
-questions have owner-reviewed direction, not final ADR acceptance. Forecast business meaning,
-eligibility, FX, weighting and refresh remain for discussion; R1-B3 is not complete.
+questions have owner-reviewed direction, not final ADR acceptance. Forecast business meaning now has owner-reviewed direction in
+[proposed ADR 0101](../decisions/0101-separate-accepted-business-and-remaining-forecast.md).
+[Staleness](phase-4-r1-b3-forecast-staleness.md) and [FX](phase-4-r1-b3-forecast-fx.md),
+eligibility and refresh remain for discussion; R1-B3 is not complete.
 
 ## Business distinctions
 

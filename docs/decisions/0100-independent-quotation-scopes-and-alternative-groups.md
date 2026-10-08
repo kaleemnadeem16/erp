@@ -131,7 +131,7 @@ accessed 2026-10-08: Dynamics revisions and distinct deal value, Odoo multiple q
 ERPNext item alternatives/ordered provenance. None supplies a universal alternative-family rule.
 Independent-by-default groups and multiple accepted scopes are the owner's reviewed direction;
 concurrency/history implications follow project invariants. [Forecast research](../phases/phase-4-r1-b3-forecast-basis.md)
-distinguishes vendor behaviour from proposed combination selection; its recommendation is not accepted.
+distinguishes vendor behaviour from proposed combination selection; its two methods now have owner-reviewed direction in [proposed ADR 0101](0101-separate-accepted-business-and-remaining-forecast.md); staleness/FX and operational rules are not accepted.
 
 ## Open questions — do not finalise implicitly
 

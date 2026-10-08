@@ -2,7 +2,7 @@
 
 # R1-B3 — Forecast basis with independent and competing offers
 
-- **Status:** forecasting evidence and recommendation for discussion; not accepted or complete.
+- **Status:** MAINTAINED/SELECTED_OFFERS owner-reviewed in proposed ADR 0101; staleness/FX discussion pending; not accepted or complete.
 - **Access date:** 2026-10-08.
 - **Question:** what should initially forecast a deal when several scopes can be bought but
   alternatives and revisions cannot be counted as additional business?
@@ -11,6 +11,17 @@
   Dynamics manual/calculated revenue and duplicate quote-join warning; ERPNext ordered scope.
 - **Runtime:** currency/FX, company audit and immutable evidence foundations exist. No Sales
   forecast, acceptance ledger, quote selection or historical forecast calculation is implemented.
+
+## Owner review update — 2026-10-08
+
+[Proposed ADR 0101](../decisions/0101-separate-accepted-business-and-remaining-forecast.md) records
+the owner's MAINTAINED default and SELECTED_OFFERS direction, accepted-business separation,
+acceptance safeguards, selected-reference history and separate forecast FX evidence. Earlier
+recommendations below are retained as research history; the method choice is owner-reviewed but
+not finalised. Partial acceptance/overlap and the remaining lifecycle dependencies stay open.
+
+Next bounded topics: [staleness and review](phase-4-r1-b3-forecast-staleness.md), then
+[FX valuation](phase-4-r1-b3-forecast-fx.md). Their operational rules are not approved.
 
 ## Fresh primary evidence and comparison
 
@@ -41,7 +52,7 @@ Historical forecast guarantees and exact eligibility remain project decisions, n
 | Automatically sum linked/current quotes | Low user effort | Counts alternatives, overlapping scope or copies; family deduplication alone is insufficient |
 | Probability-weighted view | Distinguishes gross potential from risk-adjusted pipeline | False precision if input probability is poor; must not weight accepted commitments |
 
-## Recommendation — initial Phase 4, not approved
+## Initial recommendation — historical research before the owner refinement
 
 Support **two basis modes** through one forecast service:
 
@@ -164,10 +175,10 @@ handover; R1-F: partial win/closure; R9: duties, visibility, reporting dates/his
 Keep all unresolved: post-issue regrouping, cancelling/changing accepted scope, dependencies,
 partially won outcomes, one/multiple jobs, closure interactions and forecast eligibility/recalculation.
 
-**Smallest next decision:** should initial Phase 4 offer a maintained **remaining-business**
-estimate plus an explicitly selected set of non-competing issued revisions, while displaying
-accepted business separately? Settle this business meaning first, then choose invalid-basis/FX/
-weighting rules before any forecasting implementation or final ADR acceptance.
+**Next discussion:** [staleness](phase-4-r1-b3-forecast-staleness.md#small-next-decisions), then
+[FX valuation](phase-4-r1-b3-forecast-fx.md#small-next-decisions). The two-method business direction
+is owner-reviewed in proposed ADR 0101; invalid-basis aggregate treatment, partial/overlapping
+accepted work, valuation date/rate age and historical reporting need agreement before acceptance.
 
 ## Related
 

@@ -46,8 +46,11 @@ CRM association separate from immutable issue linkage. STRICT temporary unlinkin
 eligibility, association scope per family/revision and accepted/job-linked restrictions remain open.
 R1-B3 now has owner-reviewed multiple independent acceptances and explicit alternative-family
 groups in [proposed ADR 0100](decisions/0100-independent-quotation-scopes-and-alternative-groups.md).
-Forecasting is not approved: next discuss [manual remaining estimate vs controlled selected offer
-set](phases/phase-4-r1-b3-forecast-basis.md), then **R1-C** prospect/customer readiness.
+The two forecast methods now have owner-reviewed direction in [proposed ADR 0101](decisions/0101-separate-accepted-business-and-remaining-forecast.md): MAINTAINED remaining estimate and
+SELECTED_OFFERS, with accepted commitments separate and manual estimates unchanged on acceptance.
+Next discuss [staleness/active aggregate treatment](phases/phase-4-r1-b3-forecast-staleness.md)
+and [forecast FX valuation](phases/phase-4-r1-b3-forecast-fx.md); then R1-C onboarding. These
+operational rules are not accepted. R1-B3 and Q39 remain open until dependencies reconcile.
 Keep open post-issue grouping/regrouping, partial acceptance, cancelling/changing accepted scope,
 offer dependencies, partially won outcomes, one/multiple jobs, closure interactions and forecast
 eligibility/refresh, currency and as-of reporting rules (R2/R4/R5/R6/R7/R9). R1-D–G (person customers, ownership/scope, closure, duplicates/CRM
