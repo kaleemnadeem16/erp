@@ -131,7 +131,7 @@ export function SupplierDetailScreen({
 
     return (
       <ScreenTemplate kind="detail" className="erp-screen">
-        <div className="space-y-4 p-4 pb-24 md:p-6">
+        <div className="space-y-4">
           {header && (
             <PageHeader
               title={header.title}

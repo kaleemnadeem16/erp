@@ -1,4 +1,4 @@
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { useLocation, useNavigate, useParams } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -14,6 +14,7 @@ import {
   useCurrenciesIndex,
   type SupplierAccountResource,
 } from "@erp/core-api";
+import { History, RotateCcw } from "lucide-react";
 
 import { ScreenTemplate } from "../../components/page/screen-template";
 import { PageHeader } from "../../components/page/page-header";
@@ -40,12 +41,69 @@ import { AdvancedOptionSection } from "../../components/ui/advanced-option-secti
 import type { Presentation } from "../../lib/presentation";
 import { usePermission } from "../../hooks/use-permission";
 import { getApiErrorMessage, lookupState } from "../../lib/api-errors";
+import { clearDraft, readDraft, writeDraft } from "../../lib/session-draft";
 import {
   CustomFieldInputs,
   customFieldValues,
   type CustomFieldValues,
 } from "../custom-fields/custom-field-inputs";
 import { SupplierSiteDialog } from "../purchase-orders/supplier-site-form";
+
+const DRAFT_NAME = "supplier";
+
+export interface UnfinishedSupplier {
+  newParty: boolean;
+  partyId: string;
+  partyCode: string;
+  partyName: string;
+  taxId: string;
+  registration: string;
+  website: string;
+  partyFields: CustomFieldValues;
+  code: string;
+  terms: string;
+  lead: string;
+  account: string;
+  currency: string;
+  status: string;
+  fields: CustomFieldValues;
+  showLeadTime: boolean;
+  showCurrency: boolean;
+  showCustomFields: boolean;
+}
+
+function isPristine(values: Partial<UnfinishedSupplier>): boolean {
+  return (
+    !values.newParty &&
+    !values.partyId &&
+    !values.partyCode &&
+    !values.partyName &&
+    !values.taxId &&
+    !values.registration &&
+    !values.website &&
+    (!values.partyFields || Object.keys(values.partyFields).length === 0) &&
+    !values.code &&
+    (!values.terms || values.terms === "0" || values.terms === "30") &&
+    !values.lead &&
+    !values.account &&
+    !values.currency &&
+    (!values.status || values.status === "ACTIVE") &&
+    (!values.fields || Object.keys(values.fields).length === 0) &&
+    !values.showLeadTime &&
+    !values.showCurrency &&
+    !values.showCustomFields
+  );
+}
+
+export function readUnfinishedSupplier(): UnfinishedSupplier | null {
+  const stored = readDraft<UnfinishedSupplier>(DRAFT_NAME)?.value;
+  if (!stored) return null;
+  if (isPristine(stored)) return null;
+  return stored;
+}
+
+export const hasUnfinishedSupplier = () => readUnfinishedSupplier() !== null;
+export const clearUnfinishedSupplier = () => clearDraft(DRAFT_NAME);
 
 export interface SupplierFormScreenProps {
   presentation?: Presentation;
@@ -137,6 +195,11 @@ function SupplierEditor({
   const { search } = useLocation();
   const queryClient = useQueryClient();
 
+  const isCreate = !supplier;
+  const [unfinished] = useState(() => (isCreate ? readUnfinishedSupplier() : null));
+  const [resumed, setResumed] = useState(unfinished !== null);
+  const [confirmingStartOver, setConfirmingStartOver] = useState(false);
+
   const mayManageSites = usePermission("parties.supplier-site.manage");
   const mayCreateParty = usePermission("parties.party.manage");
   const maySetTerms = usePermission("parties.payment-terms.manage");
@@ -151,46 +214,159 @@ function SupplierEditor({
   const sites =
     sitesQuery.data?.status === 200 ? sitesQuery.data.data.data : [];
 
-  const [newParty, setNewParty] = useState(false);
-  const [partyId, setPartyId] = useState(
-    supplier ? String(supplier.party_id) : ""
+  const [newParty, setNewParty] = useState(
+    supplier ? false : (unfinished?.newParty ?? false)
   );
-  const [partyCode, setPartyCode] = useState("");
-  const [partyName, setPartyName] = useState("");
-  const [taxId, setTaxId] = useState("");
-  const [registration, setRegistration] = useState("");
-  const [website, setWebsite] = useState("");
-  const [partyFields, setPartyFields] = useState<CustomFieldValues>({});
+  const [partyId, setPartyId] = useState(
+    supplier ? String(supplier.party_id) : (unfinished?.partyId ?? "")
+  );
+  const [partyCode, setPartyCode] = useState(
+    supplier ? "" : (unfinished?.partyCode ?? "")
+  );
+  const [partyName, setPartyName] = useState(
+    supplier ? "" : (unfinished?.partyName ?? "")
+  );
+  const [taxId, setTaxId] = useState(
+    supplier ? "" : (unfinished?.taxId ?? "")
+  );
+  const [registration, setRegistration] = useState(
+    supplier ? "" : (unfinished?.registration ?? "")
+  );
+  const [website, setWebsite] = useState(
+    supplier ? "" : (unfinished?.website ?? "")
+  );
+  const [partyFields, setPartyFields] = useState<CustomFieldValues>(
+    supplier ? {} : (unfinished?.partyFields ?? {})
+  );
 
-  const [code, setCode] = useState(supplier?.code ?? "");
-  const [terms, setTerms] = useState(String(supplier?.payment_terms_days ?? 0));
+  const [code, setCode] = useState(
+    supplier ? supplier.code : (unfinished?.code ?? "")
+  );
+  const [terms, setTerms] = useState(
+    supplier
+      ? String(supplier.payment_terms_days ?? 0)
+      : (unfinished?.terms ?? "30")
+  );
   const [lead, setLead] = useState(
-    supplier?.lead_time_days == null ? "" : String(supplier.lead_time_days)
+    supplier
+      ? (supplier.lead_time_days == null ? "" : String(supplier.lead_time_days))
+      : (unfinished?.lead ?? "")
   );
   const [account, setAccount] = useState(
-    supplier?.payable_account_id ? String(supplier.payable_account_id) : ""
+    supplier
+      ? (supplier.payable_account_id ? String(supplier.payable_account_id) : "")
+      : (unfinished?.account ?? "")
   );
   const [currency, setCurrency] = useState(
-    supplier?.default_currency_id ? String(supplier.default_currency_id) : ""
+    supplier
+      ? (supplier.default_currency_id ? String(supplier.default_currency_id) : "")
+      : (unfinished?.currency ?? "")
   );
-  const [status, setStatus] = useState(supplier?.status ?? "ACTIVE");
-  const [fields, setFields] = useState(
-    customFieldValues(supplier?.custom_fields)
+  const [status, setStatus] = useState(
+    supplier ? supplier.status : (unfinished?.status ?? "ACTIVE")
+  );
+  const [fields, setFields] = useState<CustomFieldValues>(
+    supplier
+      ? customFieldValues(supplier.custom_fields)
+      : (unfinished?.fields ?? {})
   );
   const [error, setError] = useState<string | null>(null);
 
   // Advanced options: active by default if data is already set
   const [showLeadTime, setShowLeadTime] = useState(
-    Boolean(supplier?.lead_time_days != null)
+    Boolean(
+      supplier
+        ? supplier.lead_time_days != null
+        : unfinished?.showLeadTime
+    )
   );
   const [showCurrency, setShowCurrency] = useState(
-    Boolean(supplier?.default_currency_id)
+    Boolean(
+      supplier
+        ? supplier.default_currency_id
+        : unfinished?.showCurrency
+    )
   );
   const [showCustomFields, setShowCustomFields] = useState(
     Boolean(
-      supplier?.custom_fields && Object.keys(supplier.custom_fields).length > 0
+      supplier
+        ? supplier.custom_fields && Object.keys(supplier.custom_fields).length > 0
+        : unfinished?.showCustomFields
     )
   );
+
+  useEffect(() => {
+    if (!isCreate) return;
+    const currentValues: UnfinishedSupplier = {
+      newParty,
+      partyId,
+      partyCode,
+      partyName,
+      taxId,
+      registration,
+      website,
+      partyFields,
+      code,
+      terms,
+      lead,
+      account,
+      currency,
+      status,
+      fields,
+      showLeadTime,
+      showCurrency,
+      showCustomFields,
+    };
+    if (isPristine(currentValues)) {
+      clearDraft(DRAFT_NAME);
+    } else {
+      writeDraft(DRAFT_NAME, currentValues);
+    }
+  }, [
+    isCreate,
+    newParty,
+    partyId,
+    partyCode,
+    partyName,
+    taxId,
+    registration,
+    website,
+    partyFields,
+    code,
+    terms,
+    lead,
+    account,
+    currency,
+    status,
+    fields,
+    showLeadTime,
+    showCurrency,
+    showCustomFields,
+  ]);
+
+  function startOver() {
+    setNewParty(false);
+    setPartyId("");
+    setPartyCode("");
+    setPartyName("");
+    setTaxId("");
+    setRegistration("");
+    setWebsite("");
+    setPartyFields({});
+    setCode("");
+    setTerms("30");
+    setLead("");
+    setAccount("");
+    setCurrency("");
+    setStatus("ACTIVE");
+    setFields({});
+    setShowLeadTime(false);
+    setShowCurrency(false);
+    setShowCustomFields(false);
+    setResumed(false);
+    setConfirmingStartOver(false);
+    clearDraft(DRAFT_NAME);
+  }
 
   const [partySearch, setPartySearch] = useState("");
   const [accountSearch, setAccountSearch] = useState("");
@@ -233,26 +409,10 @@ function SupplierEditor({
     createSupplier.isPending ||
     updateSupplier.isPending;
 
-  const partyOptions = (
-    parties.data?.status === 200 ? parties.data.data.data : []
-  ).map((p) => ({ value: String(p.id), label: `${p.code} — ${p.name}` }));
-
-  const selected =
-    selectedParty.data?.status === 200
-      ? selectedParty.data.data.data
-      : supplier?.party;
-
-  if (selected && !partyOptions.some((p) => p.value === String(selected.id))) {
-    partyOptions.push({
-      value: String(selected.id),
-      label: `${selected.code} — ${selected.name}`,
-    });
-  }
-
   const advancedOptions: AdvancedOption[] = [
     {
-      id: "lead_time",
-      label: "Sourcing lead time",
+      id: "lead-time",
+      label: "Default lead time",
       checked: showLeadTime,
       onCheckedChange: (checked) => {
         setShowLeadTime(checked);
@@ -260,7 +420,7 @@ function SupplierEditor({
       },
     },
     {
-      id: "default_currency",
+      id: "currency",
       label: "Default currency",
       checked: showCurrency,
       onCheckedChange: (checked) => {
@@ -269,8 +429,8 @@ function SupplierEditor({
       },
     },
     {
-      id: "custom_fields",
-      label: "Custom attributes",
+      id: "custom-fields",
+      label: "Custom fields",
       checked: showCustomFields,
       onCheckedChange: (checked) => {
         setShowCustomFields(checked);
@@ -279,32 +439,51 @@ function SupplierEditor({
     },
   ];
 
-  async function submit(event: FormEvent) {
-    event.preventDefault();
+  async function submit(e: FormEvent) {
+    e.preventDefault();
     setError(null);
+
     try {
       let resolvedParty = Number(partyId);
-      if (newParty) {
-        const result = await createParty.mutateAsync({
+
+      if (!supplier && newParty) {
+        if (!partyName.trim()) {
+          setError("Trading partner name is required.");
+          return;
+        }
+        const resolvedPartyCode =
+          partyCode.trim() ||
+          (partyName.trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8) || "PTY") +
+            "-" +
+            Date.now().toString().slice(-4);
+        const createdParty = await createParty.mutateAsync({
           data: {
-            code: partyCode.trim(),
             name: partyName.trim(),
-            tax_id: taxId || null,
-            registration_no: registration || null,
-            website: website || null,
+            code: resolvedPartyCode,
+            ...(taxId.trim() ? { tax_id: taxId.trim() } : {}),
+            ...(registration.trim()
+              ? { registration_no: registration.trim() }
+              : {}),
+            ...(website.trim() ? { website: website.trim() } : {}),
             custom_fields: partyFields,
           },
         });
-        if (result.status !== 201) return;
-        resolvedParty = result.data.data.id;
-        setPartyId(String(resolvedParty));
-        setNewParty(false);
-        await queryClient.invalidateQueries();
+        if (createdParty.status !== 201) {
+          setError("Couldn't create trading partner.");
+          return;
+        }
+        resolvedParty = createdParty.data.data.id;
+      }
+
+      if (!supplier && !resolvedParty) {
+        setError("Choose a trading partner or register a new one.");
+        return;
       }
 
       const data = {
         code: code.trim(),
-        lead_time_days: showLeadTime && lead ? Number(lead) : null,
+        lead_time_days:
+          showLeadTime && lead.trim() ? Number(lead) : null,
         default_currency_id:
           showCurrency && currency ? Number(currency) : null,
         status: status as "ACTIVE" | "ARCHIVED",
@@ -328,6 +507,7 @@ function SupplierEditor({
           });
 
       if (result.status === 200 || result.status === 201) {
+        clearDraft(DRAFT_NAME);
         await queryClient.invalidateQueries();
         navigate({ pathname: "/suppliers", search });
       }
@@ -338,6 +518,61 @@ function SupplierEditor({
 
   const formBody = (
     <form onSubmit={submit} className="space-y-6">
+      {isCreate && resumed && (
+        <div
+          role="status"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/20 bg-primary-soft px-4 py-3 text-primary-soft-foreground"
+        >
+          <div className="flex min-w-0 items-start gap-3">
+            <History aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+            <div className="min-w-0 text-sm">
+              <p className="font-medium">
+                {confirmingStartOver
+                  ? "Discard everything you've entered?"
+                  : "Continuing your unfinished supplier registration"}
+              </p>
+              <p className="text-xs opacity-80">
+                {confirmingStartOver
+                  ? "What you entered will be cleared and cannot be brought back."
+                  : "What you entered last time is still here."}
+              </p>
+            </div>
+          </div>
+          {confirmingStartOver ? (
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="destructive"
+                onClick={startOver}
+              >
+                <RotateCcw className="mr-1 h-3.5 w-3.5" />
+                Yes, start over
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                autoFocus
+                onClick={() => setConfirmingStartOver(false)}
+              >
+                Keep it
+              </Button>
+            </div>
+          ) : (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => setConfirmingStartOver(true)}
+            >
+              <RotateCcw className="mr-1 h-3.5 w-3.5" />
+              Start over
+            </Button>
+          )}
+        </div>
+      )}
+
       <SectionStack>
         <DetailSection title="Trading partner">
           {supplier ? (
@@ -361,81 +596,119 @@ function SupplierEditor({
                     className="w-full"
                     search={partySearch}
                     selectedLabel={
-                      selected
-                        ? `${selected.code} — ${selected.name}`
+                      selectedParty.data?.status === 200
+                        ? `${selectedParty.data.data.data.code} — ${selectedParty.data.data.data.name}`
                         : undefined
                     }
                     {...lookupState(parties, "trading partners")}
-                    options={partyOptions}
                     value={partyId}
                     onValueChange={setPartyId}
                     onSearchChange={setPartySearch}
+                    options={(parties.data?.status === 200
+                      ? parties.data.data.data
+                      : []
+                    ).map((p) => ({
+                      value: String(p.id),
+                      label: `${p.code} — ${p.name}`,
+                    }))}
                   />
+                  {mayCreateParty && (
+                    <p className="text-xs text-muted-foreground">
+                      Or{" "}
+                      <button
+                        type="button"
+                        className="text-primary underline hover:opacity-80"
+                        onClick={() => {
+                          setNewParty(true);
+                          setPartyId("");
+                        }}
+                      >
+                        register a new trading partner
+                      </button>{" "}
+                      if one doesn't exist yet.
+                    </p>
+                  )}
                 </div>
-              )}
-
-              {mayCreateParty && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="justify-self-start"
-                  onClick={() => setNewParty(!newParty)}
-                >
-                  {newParty
-                    ? "Select existing trading partner"
-                    : "Register a new trading partner"}
-                </Button>
               )}
 
               {newParty && (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="party-code">Trading partner code</Label>
-                    <Input
-                      id="party-code"
-                      required
-                      value={partyCode}
-                      onChange={(e) => setPartyCode(e.target.value)}
-                      placeholder="e.g. ACME"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="party-name">Business name</Label>
+                    <Label htmlFor="party-name">Trading partner name</Label>
                     <Input
                       id="party-name"
                       required
                       value={partyName}
                       onChange={(e) => setPartyName(e.target.value)}
-                      placeholder="e.g. Acme Supplies Ltd"
+                      placeholder="e.g. Acme Industrial Supplies Ltd"
                     />
                   </div>
+
                   <div className="space-y-2">
-                    <Label htmlFor="party-tax">Tax ID / VAT number</Label>
-                    <Input
-                      id="party-tax"
-                      value={taxId}
-                      onChange={(e) => setTaxId(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="party-registration">
-                      Registration number
+                    <Label htmlFor="party-code">
+                      Partner code{" "}
+                      <span className="text-xs text-muted-foreground">
+                        (optional)
+                      </span>
                     </Label>
                     <Input
-                      id="party-registration"
-                      value={registration}
-                      onChange={(e) => setRegistration(e.target.value)}
+                      id="party-code"
+                      value={partyCode}
+                      onChange={(e) => setPartyCode(e.target.value)}
+                      placeholder="Auto-generated if empty"
                     />
                   </div>
+
                   <div className="space-y-2">
-                    <Label htmlFor="party-website">Website</Label>
+                    <Label htmlFor="party-tax-id">
+                      Tax identification number (TIN)
+                    </Label>
                     <Input
-                      id="party-website"
+                      id="party-tax-id"
+                      value={taxId}
+                      onChange={(e) => setTaxId(e.target.value)}
+                      placeholder="e.g. GB123456789"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="party-reg">Company registration no.</Label>
+                    <Input
+                      id="party-reg"
+                      value={registration}
+                      onChange={(e) => setRegistration(e.target.value)}
+                      placeholder="e.g. 01234567"
+                    />
+                  </div>
+
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="party-web">Website</Label>
+                    <Input
+                      id="party-web"
                       type="url"
                       value={website}
                       onChange={(e) => setWebsite(e.target.value)}
-                      placeholder="https://..."
+                      placeholder="https://example.com"
                     />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <CustomFieldInputs
+                      entity="parties"
+                      value={partyFields}
+                      onChange={setPartyFields}
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setNewParty(false)}
+                    >
+                      ← Back to select existing trading partner
+                    </Button>
                   </div>
                 </>
               )}
@@ -443,15 +716,7 @@ function SupplierEditor({
           )}
         </DetailSection>
 
-        {newParty && (
-          <CustomFieldInputs
-            entity="parties"
-            value={partyFields}
-            onChange={setPartyFields}
-          />
-        )}
-
-        <DetailSection title="Supplier account">
+        <DetailSection title="Supplier profile">
           <div className="space-y-2">
             <Label htmlFor="supplier-code">Supplier code</Label>
             <Input
@@ -459,7 +724,7 @@ function SupplierEditor({
               required
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              placeholder="e.g. SUP-001"
+              placeholder="e.g. SUP-0001"
             />
           </div>
 
@@ -708,7 +973,7 @@ function SupplierEditor({
 
   return (
     <ScreenTemplate kind="form">
-      <div className="space-y-4 p-4 pb-24 md:p-6">
+      <div className="space-y-4">
         <PageHeader
           title={title}
           backTo="/suppliers"

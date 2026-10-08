@@ -80,6 +80,7 @@ import { useListViewPreference } from "../../lib/use-view-preference";
 import { usePermission } from "../../hooks/use-permission";
 import { lookupState } from "../../lib/api-errors";
 import { getSupplierColumns } from "./suppliers-columns";
+import { hasUnfinishedSupplier } from "./supplier-form-screen";
 
 interface SupplierFilters {
   search: string;
@@ -299,19 +300,20 @@ export function SuppliersListScreen() {
 
   return (
     <ScreenTemplate kind="list" className="erp-screen">
-      <div className="space-y-4 p-4 pb-24 md:p-6">
-        <PageHeader
-          title="Suppliers"
-          description="Register and manage trading partners as suppliers for purchasing."
-          primaryAction={
-            mayManage && maySetTerms && mayMap
-              ? {
-                  label: "New supplier",
-                  onClick: () => navigate({ pathname: "/suppliers/new", search }),
-                }
-              : undefined
-          }
-        />
+      <PageHeader
+        title="Suppliers"
+        description="Register and manage trading partners as suppliers for purchasing."
+        primaryAction={
+          mayManage && maySetTerms && mayMap
+            ? {
+                label: hasUnfinishedSupplier()
+                  ? "Continue new supplier"
+                  : "New supplier",
+                onClick: () => navigate({ pathname: "/suppliers/new", search }),
+              }
+            : undefined
+        }
+      />
 
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative flex-1 md:w-80 md:flex-none">
@@ -858,7 +860,6 @@ export function SuppliersListScreen() {
             </PrintLayout>
           </div>
         </div>
-      </div>
     </ScreenTemplate>
   );
 }
