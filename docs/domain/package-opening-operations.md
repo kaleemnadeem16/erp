@@ -2,6 +2,8 @@
 
 # Saved package opening and unpacking
 
+> **Historical foundation (marked 2026-10-08).** This is the saved opening/unpacking evidence slice, which grouped issue and transfer later reuse. Grouped package tracking v1 has since shipped: current behaviour is in [package-issue-operations.md](package-issue-operations.md); the state of the workstream is in the [handoff](../phases/package-balance-handoff.md). Statements below that say tracking is disabled, inactive or not implemented describe this slice's own boundary at the time it was written.
+
 Implemented backend evidence slice under proposed
 [ADR 0082](../decisions/0082-reconcile-package-balances-with-stock-operations.md).
 PostPackageOpening saves a full-scope successor to fresh COUNTED, OPEN or UNPACK evidence.

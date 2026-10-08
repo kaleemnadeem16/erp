@@ -107,4 +107,4 @@ ADR 0079 §19.
 
 ## Related
 
-- [invariants.md](invariants.md#8-gapless-document-numbering) · [extensibility.md](extensibility.md) · [ADR 0079](../decisions/0079-document-numbering-system-templates-over-a-variable-registry.md)
+- [invariants.md](invariants.md#8-document-numbers-are-unique-issued-by-one-framework-and-gapless-only-where-a-series-says-so) · [extensibility.md](extensibility.md) · [ADR 0079](../decisions/0079-document-numbering-system-templates-over-a-variable-registry.md)

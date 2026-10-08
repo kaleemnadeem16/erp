@@ -133,6 +133,12 @@ ledger-only holders are refused. Every write now also checks its capability at t
 (create, add line `.create`; count a line `.count`; post `.post`; cancel `.create`, which gained a
 request class), answering 403 instead of the Action's 422; the Actions keep their own checks.
 
+## Items with grouped package tracking
+
+A line of an item on grouped package tracking is counted by composition — whole sealed packages of the tracked sizes plus loose quantity — instead of one number; equal litres with different cans
+posts no stock movement, a variance posts the governed movement, and a stale or QA-held scope is refused. Rules, evidence and permissions: [package-issue-operations.md](package-issue-operations.md#physical-count-of-a-grouped-item-2026-10-08)
+([ADR 0092](../decisions/0092-package-aware-physical-count-posting.md)). Quantity-only items are unchanged.
+
 ## Related
 
 - [stock.md](stock.md) — the movement/valuation model this posts into

@@ -102,7 +102,7 @@ snapshot forward as the estimate baseline. Fires `JobConfirmed`, which
 ### Numbering
 
 From the `sequences` table with row locking. Gapless —
-[invariant 8](../architecture/invariants.md#8-gapless-document-numbering).
+[invariant 8](../architecture/invariants.md#8-document-numbers-are-unique-issued-by-one-framework-and-gapless-only-where-a-series-says-so).
 
 ## Landmines
 

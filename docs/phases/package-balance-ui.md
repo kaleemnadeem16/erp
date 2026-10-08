@@ -2,9 +2,10 @@
 
 # Grouped package tracking — screens and API (design)
 
-Design pass 2026-10-08. **First slice built 2026-10-08** (item card, activation wizard, receipt composition panel, issue dialog, the read/draw/issue/checkpoint/composition endpoints and stable `reason_code`s; see the status table below); the rest is still design. The backend (ADRs 0090–0093) is internal Actions only: no HTTP route records a receipt composition, issues, transfers
-or activates, and the only package read is the replay Action. Use this with [user-interface.md](../architecture/user-interface.md),
-[ui-building-blocks.md](../architecture/ui-building-blocks.md) and [api-conventions.md](../architecture/api-conventions.md); container-level screens are out of scope.
+**Status (2026-10-08): built and signed off as grouped package tracking v1** — see [§ v1 sign-off](#v1-sign-off-2026-10-08) at the end for what is complete, the known limitations and the future
+enhancements. The sections between are the screen and API design from the 2026-10-08 design pass, followed by build notes; where the design says "missing" or "next", the sign-off and the
+build notes supersede it. Use this with [user-interface.md](../architecture/user-interface.md), [ui-building-blocks.md](../architecture/ui-building-blocks.md) and
+[api-conventions.md](../architecture/api-conventions.md); container-level screens are out of scope.
 
 ## Principles
 
@@ -17,7 +18,7 @@ or activates, and the only package read is the replay Action. Use this with [use
   the last 2 L" as one draw. No separate "open" operation to remember.
 - **The server proposes, the person confirms.** Every draw, count and reversal arrives pre-filled from a server suggestion; changing it re-validates against live stock.
 - **Actionable blockers.** Domain refusals are 422s with free text today. Add a stable `reason_code` beside the message (`NEEDS_COUNT_FIRST`, `STALE_EVIDENCE`,
-  `DRAW_NOT_ON_HAND`, `UNTRACKED_LEVEL`, `LAYER_CONSUMED`, `SUPPLIER_QA_UNSUPPORTED`, `NEEDS_OBSERVED_COMPOSITION`) so the UI can offer the fix ("Count this location") instead of parsing text.
+  `DRAW_NOT_ON_HAND`, `UNTRACKED_LEVEL`, `LAYER_CONSUMED`, `NEEDS_OBSERVED_COMPOSITION`) so the UI can offer the fix ("Count this location") instead of parsing text.
 
 ## Shared pieces
 
@@ -67,7 +68,7 @@ Item resources gain `package_tracking: {mode, tracked_levels[]}` so lists and fo
   rows: sealed cans (stepper) and loose litres, live total vs received quantity. A line of a quantity-only item shows nothing new.
 - **Suggested:** the commercial package converted to tracked levels (2 boxes of 4 cans → 8 sealed cans), editable; loose = remainder. If boxes are untracked the
   UI states "boxes are counted as the cans inside".
-- **Validation/blockers:** composition must add up to the received quantity; QA-required line → "Not supported for package-tracked items yet" (`SUPPLIER_QA_UNSUPPORTED`);
+- **Validation/blockers:** composition must add up to the received quantity; QA-required line → received as held packages (ADR 0094; this refusal was removed 2026-10-08);
   untracked level → "This item doesn't track cartons — enter the cans inside"; destination holds stock without current evidence → "Count this location first" with a link;
   open shortage → settle first. Posting is blocked until the panel is complete (a grouped line without composition cannot post).
 - **API:** missing `PUT /api/v1/goods-receipt-lines/{line}/package-composition` (`RecordReceiptComposition`, draft only, reason required) and the composition included in
@@ -146,32 +147,24 @@ Goal: in the browser, take XYZ's emulsion from quantity-only to grouped, receive
 4. **Issue as a `RecordSheet` from the card** (§3), grouped items only, with `suggest` — two endpoints. No standalone menu screen yet.
 
 That is one new read resource, two small action endpoints, two composition endpoints and four UI pieces; it exercises activation, the observed receipt, an issue with an opened can, and the
-live breakdown, and it can be driven by one Playwright spec on the dev stack. **Next slices** reuse the editor and card: ② transfer sheet + count composition entry (they share the draw editor and
-`PackageBreakdown`), ③ reversal dialog, ④ standalone Issue/Transfer menu screens and quantity-only forms once their capabilities are decided.
+live breakdown, and it can be driven by one Playwright spec on the dev stack. The follow-on slices — transfer, count composition, reversal, QA — were built on the same editor and card (see the build notes); standalone Issue/Transfer menu screens and quantity-only forms remain future enhancements.
 
 ## Status of the first slice (built 2026-10-08)
 
 | Piece | Where |
 |---|---|
 | `GET /package-balances`, `GET /items/{item}/package-tracking`, `POST …/package-tracking/preview` and `…/activate`, `POST /package-checkpoints`, `POST /package-draws/suggest`, `POST /stock-issues`, `PUT /goods-receipt-lines/{line}/package-composition` | `Inventory/Http/Controllers/Api/V1` (PackageStock requests), `Purchasing/Http/Controllers/Api/V1/GoodsReceiptLineCompositionController` |
-| `reason_code` beside `message` on 422s | `DomainInvariantException::$reasonCode`, rendered in `bootstrap/app.php`; codes include `NEEDS_COUNT_FIRST`, `STALE_EVIDENCE`, `DRAW_NOT_ON_HAND`, `UNTRACKED_LEVEL`, `LAYER_CONSUMED`, `NEEDS_OBSERVED_COMPOSITION`, `SUPPLIER_QA_UNSUPPORTED`, `ACTIVATION_BLOCKED`, `PACKAGE_TRACKED_ITEM` |
+| `reason_code` beside `message` on 422s | `DomainInvariantException::$reasonCode`, rendered in `bootstrap/app.php`; codes include `NEEDS_COUNT_FIRST`, `STALE_EVIDENCE`, `DRAW_NOT_ON_HAND`, `UNTRACKED_LEVEL`, `LAYER_CONSUMED`, `NEEDS_OBSERVED_COMPOSITION`, `ACTIVATION_BLOCKED`, `PACKAGE_TRACKED_ITEM` |
 | `PackageBreakdown`, `PackageDrawEditor`, `ItemPackageTrackingCard`, `ActivationWizard`, `ReceiptCompositionPanel`, `IssuePackageStockDialog` | `frontend/packages/core-ui/src/features/package-stock/` (card on Item detail; panel on the goods receipt detail; the wizard and issue are centred dialogs) |
 | Acceptance test | `frontend/apps/e2e/tests/package-tracking-lifecycle.spec.ts` — quantity only → activate → receive observed packages → issue with an opened can → balance 4 cans + 2 L loose = 22 L |
 
 Deviations from the design: the wizard and issue use `Dialog` (a task started from the item card) rather than `RecordSheet`; the receipt panel sits on the receipt **detail** screen of a draft (lines must exist to record against) and holds the Post button until each package-tracked line is recorded; `GET …/package-tracking` is also readable by people who create receipts, issue or count (it exposes only the package structure). **Transfer built 2026-10-08:** `POST /api/v1/stock-transfers` (`TransferGroupedStock` wraps `TransferPackagedStock`; capability `inventory.package-state.transfer` + `.view`, both locations in warehouse scope, idempotent on `request_key`, suggestions also available to transfer-only users), a "Transfer stock…" dialog on the item card on the shared draw plan (`use-package-draw-plan`, `draw-plan-section`) and a count dialog behind the "count destination first" blocker (`NEEDS_COUNT_FIRST`). The destination-blocker Playwright case mocks the destination balance as uncounted because a legitimately activated item cannot reach that state; the server refusal is covered by the API tests. **Count and reversal built 2026-10-08:** `POST /physical-count-lines/{line}/composition` (`RecordPhysicalCountComposition`, count capability) and `POST /physical-count-lines/{line}/refresh` (`RefreshPhysicalCountLine`, create capability); the line resource gains `grouped`, `composition` and `stale_reason` (never the book); the detail screen shows `GroupedCountedCell`/`CountCompositionDialog`, a verdict under the variance, `FoundCostField` (suggestion from the latest stock layer, shown with its date, never applied until chosen) and blocks posting while any line is stale. `GET /goods-receipts/{id}/reversal-preview` (`PreviewGoodsReceiptReversal` → `PreviewGroupedReceiptReversal`) returns per line the observed draw, what is on hand, the nearest coverable draw and blockers (`LAYER_CONSUMED`, `NEEDS_COUNT_FIRST`, `STALE_EVIDENCE`, `NEEDS_DECLARED_DRAW`, `NOT_POSTED`, `QA_DISPOSITION`); `POST …/reverse` accepts `package_draws`; the existing reverse section on the receipt detail embeds `ReceiptReversalPanel`. Not built: standalone Issue/Transfer menu screens.
 
-## Open decisions
+## Decisions taken (formerly open)
 
-- A stock-issue/transfer capability for quantity-only items (none exists); proposed: do not build the quantity-only forms in the first slices.
-- Stable `reason_code`s on domain refusals (small, additive change to `DomainInvariantException`/the 422 body).
-- Whether found-stock cost may default from the last receipt for counters-with-post-rights (proposed yes, editable).
-
-## Related
-
-- [Delivery plan](package-balance-delivery.md), [handoff](package-balance-handoff.md), [grouped operations](../domain/package-issue-operations.md)
-- [ADR 0090](../decisions/0090-package-aware-stock-issue-semantics.md), [0091](../decisions/0091-activate-grouped-package-tracking-and-fail-closed-enforcement.md),
-  [0092](../decisions/0092-package-aware-physical-count-posting.md), [0093](../decisions/0093-package-aware-goods-receipt-reversal.md)
-- [UI building blocks](../architecture/ui-building-blocks.md), [user interface](../architecture/user-interface.md)
+- Quantity-only items get no new issue/transfer forms: not built; no capability for them exists (unchanged, a future decision).
+- Stable `reason_code`s on domain refusals: built (`DomainInvariantException::$reasonCode`, rendered in the 422 body).
+- Found-stock cost defaults from the most recent receipt, shown with its date and source, and only counts once the reviewer chooses it: built.
 
 ## v1 sign-off (2026-10-08)
 
@@ -187,3 +180,11 @@ Deviations from the design: the wizard and issue use `Dialog` (a task started fr
 - Issue and Transfer are reached from the item page, one location at a time; the transfer, issue and reversal dialogs are checked at phone width but not redesigned for it; role recipes are documented, not shipped as templates.
 
 **Later enhancements, deliberately not v1:** supplier return/scrap movement for rejected stock, a governed change of tracked levels, deactivation/collapse back to quantity-only, container-level tracking, line-level or partial receipt reversal, a value-threshold approval for counts, QA/count reconciliation of held stock, standalone Issue/Transfer menu screens.
+
+## Related
+
+- [Delivery plan](package-balance-delivery.md), [handoff](package-balance-handoff.md), [grouped operations](../domain/package-issue-operations.md)
+- [ADR 0090](../decisions/0090-package-aware-stock-issue-semantics.md), [0091](../decisions/0091-activate-grouped-package-tracking-and-fail-closed-enforcement.md),
+  [0092](../decisions/0092-package-aware-physical-count-posting.md), [0093](../decisions/0093-package-aware-goods-receipt-reversal.md), [0094](../decisions/0094-package-aware-supplier-qa-receipts.md)
+- [UI building blocks](../architecture/ui-building-blocks.md), [user interface](../architecture/user-interface.md)
+- [User journey](../journeys/grouped-package-tracking-journey.md)

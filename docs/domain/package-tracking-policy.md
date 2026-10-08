@@ -2,6 +2,8 @@
 
 # Package tracking policy foundation
 
+> **Historical foundation (marked 2026-10-08).** This is the creation-time policy foundation; item activation is now a separate, governed transition (ADR 0091). Grouped package tracking v1 has since shipped: current behaviour is in [package-issue-operations.md](package-issue-operations.md); the state of the workstream is in the [handoff](../phases/package-balance-handoff.md). Statements below that say tracking is disabled, inactive or not implemented describe this slice's own boundary at the time it was written.
+
 Implemented 2026-10-03 under accepted [ADR 0052](../decisions/0052-progressive-inventory-package-tracking.md).
 This is creation-time policy resolution and an activation gate, not operational package tracking.
 

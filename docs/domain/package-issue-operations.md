@@ -156,7 +156,7 @@ Demo: `PackageReceiptReversalDemoSeeder` reverses a wrong delivery of 2 sealed c
 
 ## Not yet
 
-Changing tracked levels, line-level or partial receipt reversal, receipt reversal / QA split / negative-stock settlement / cutover / recalculation adapters, container-level tracking, screens.
+Future enhancements (none started; each is a new design slice, see the [handoff](../phases/package-balance-handoff.md)): supplier return / scrap movement for rejected stock, a governed change of tracked levels, deactivation or collapse, container-level tracking, line-level or partial receipt reversal, count approval thresholds, QA/count reconciliation, standalone Issue/Transfer screens, package-aware proposals in the Material Preview. Writers that stay refused for a grouped item (with a message and a database guard): cutover opening state, recalculation, negative-stock overrides, shortage settlement and scalar issue/transfer/count.
 
 ## Demo and verification
 
@@ -164,12 +164,6 @@ Changing tracked levels, line-level or partial receipt reversal, receipt reversa
 `demo-xyz-issue-12l` takes 12 L (loose 5 L, one can, 2 L from a second opened can), leaving 1 can + 3 L loose, FIFO cost 108.00. Tests: allocation
 seam (7), grouped issue (FIFO and AVCO, both 12 L draws, nested box unpack, empty successor, retries, rollback on evidence failure, database
 conservation, container refusal, invalid draws, stale-evidence-then-recount transition, quantity-only unchanged, authority, scope) and the demo.
-
-## Related
-
-- [ADR 0090](../decisions/0090-package-aware-stock-issue-semantics.md), [ADR 0082](../decisions/0082-reconcile-package-balances-with-stock-operations.md)
-- [Saved opening and unpacking](package-opening-operations.md), [package kernel](package-balance-integration.md)
-- [Delivery plan](../phases/package-balance-delivery.md), [handoff](../phases/package-balance-handoff.md)
 
 ## Granting the package capabilities (rollout, 2026-10-08)
 
@@ -180,3 +174,10 @@ Suggested role recipes, built in the role editor: **Grouped stock handler** — 
 ## Supplier QA of a grouped item (ADR 0094, 2026-10-08)
 
 A QA-required receipt line of a grouped item still needs its observed composition, but every package of it arrives `HELD`: part of on-hand and of the location total, shown as "held for inspection", never issued, transferred, opened or counted as usable. `PostQualityDisposition` (unchanged for quantity-only items) takes, for a deciding outcome, the declared `package_portion` — whole held sealed packages and loose quantity totalling the disposition quantity — and in the same transaction writes a `QA_DISPOSITION` evidence successor: `PASS`/`ACCEPT_WITH_CONCESSION` relabel the portion usable, `RETURN_TO_SUPPLIER`/`SCRAP` relabel it `REJECTED`; `REWORK`/`PENDING_DECISION` change nothing. No stock movement, layer or cost changes. `GET /goods-receipt-lines/{line}/quality-disposition-portion?quantity=` proposes the portion (largest held cans first, then loose) only when it adds up exactly. A reversal of a QA line nobody has dispositioned removes its held packages; once any disposition exists reversal stays refused. Counts are refused while a scope holds held or rejected packages. Rejected packages stay on hand until a supplier-return/scrap movement exists (not built, as for quantity-only stock). Demo: `PackageQaDemoSeeder`.
+
+## Related
+
+- [ADR 0090](../decisions/0090-package-aware-stock-issue-semantics.md), [0091](../decisions/0091-activate-grouped-package-tracking-and-fail-closed-enforcement.md), [0092](../decisions/0092-package-aware-physical-count-posting.md), [0093](../decisions/0093-package-aware-goods-receipt-reversal.md), [0094](../decisions/0094-package-aware-supplier-qa-receipts.md); [ADR 0082](../decisions/0082-reconcile-package-balances-with-stock-operations.md) (proposed)
+- [Saved opening and unpacking](package-opening-operations.md), [package kernel](package-balance-integration.md)
+- [Screens and API, with the v1 sign-off](../phases/package-balance-ui.md), [delivery plan](../phases/package-balance-delivery.md), [handoff](../phases/package-balance-handoff.md)
+- [User journey](../journeys/grouped-package-tracking-journey.md)

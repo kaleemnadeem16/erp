@@ -6,7 +6,8 @@
 
 | Section | Purpose | Read when |
 |---|---|---|
-| [STATUS.md](STATUS.md) | Current phase, what's done, what's next, what's blocked | Every session, first |
+| [STATUS.md](STATUS.md) | Current state: phases and workstreams, in progress, release state, next design areas, where to resume (short by purpose, [ADR 0095](decisions/0095-status-is-short-current-and-purpose-limited.md)) | Every session, first |
+| [STATUS-LOG.md](STATUS-LOG.md) | Detailed, append-only history of completed work — including rotated STATUS narratives (read only for a past change's full story) | Looking up how something was built or decided |
 | [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) | Decisions still needed, and what each one blocks | Before planning work |
 | [GLOSSARY.md](GLOSSARY.md) | Domain vocabulary | A term is unfamiliar |
 | [decisions/](decisions/) | ADRs — **why** things are the way they are | Before changing a decision |
@@ -52,7 +53,7 @@ See [AGENTS.md](../AGENTS.md) at the repo root — the canonical instruction fil
 and contributor. The short version:
 
 - ADRs are never edited — supersede them
-- `STATUS.md` is updated in the same commit as the work
+- `STATUS.md` is updated in the same commit that completes or starts a workstream, and the detail goes to `STATUS-LOG.md` ([ADR 0095](decisions/0095-status-is-short-current-and-purpose-limited.md))
 - Answered open questions become ADRs and leave `OPEN-QUESTIONS.md`
 - Docs change in the same commit as the code they describe
 - A workflow screen is incomplete until its journey documents actors, statuses, effects and

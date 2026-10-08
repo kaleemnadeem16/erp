@@ -119,7 +119,7 @@ customers (see above): retention and payment-allocation style are independent se
 ### Numbering
 
 Gapless, from `sequences` with `lockForUpdate()`.
-[Invariant 8](../architecture/invariants.md#8-gapless-document-numbering).
+[Invariant 8](../architecture/invariants.md#8-document-numbers-are-unique-issued-by-one-framework-and-gapless-only-where-a-series-says-so).
 
 ## Landmines
 

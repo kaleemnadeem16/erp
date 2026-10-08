@@ -2,6 +2,8 @@
 
 # Inventory packages and material selection
 
+> **Status note (2026-10-08).** This is the implementation-facing contract for ADRs 0051–0053. Grouped `PACKAGE_BALANCE` tracking is now built (ADRs 0090–0094; see [package-issue-operations.md](package-issue-operations.md)); `CONTAINER_TRACKED`, Estimating's package-aware proposals and catch-weight packages (Q23) remain future work. Sections describing the "first implementation" as quantity-only availability describe Phase 3's Material Preview, which is still quantity-only.
+
 This document is the implementation-facing domain contract for
 [ADRs 0051–0053](../decisions/README.md). It describes fixed package definitions, progressive
 physical tracking and Phase 3's advisory package selection. It does not design supplier sourcing

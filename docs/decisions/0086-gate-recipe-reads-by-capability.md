@@ -41,7 +41,7 @@ The owner's direction is that access must stay **dynamic**: a company decides wh
 
 ## Research basis
 
-No new market comparison was needed. [ADR 0073](0073-separate-inventory-valuation-visibility-from-stock-operations.md) and [ADR 0074](0074-authorise-recalculation-economic-reads-by-workflow-duty.md) already decide the shape applied here: read access follows the duties that need the data, separate from the capability to change it, with the rule held in one class and enforced at the request boundary. [ADR 0083](0083-layered-stock-read-capabilities-and-blind-counting.md) applies it to stock quantities. This decision applies the same shape to recipe composition; it introduces no new access method.
+No new market comparison was needed. [ADR 0073](0073-separate-inventory-valuation-visibility-from-stock-operations.md) and [ADR 0074](0074-authorise-recalculation-economic-record-reads-by-workflow-duty.md) already decide the shape applied here: read access follows the duties that need the data, separate from the capability to change it, with the rule held in one class and enforced at the request boundary. [ADR 0083](0083-layered-stock-read-capabilities-and-blind-counting.md) applies it to stock quantities. This decision applies the same shape to recipe composition; it introduces no new access method.
 
 ## Related
 

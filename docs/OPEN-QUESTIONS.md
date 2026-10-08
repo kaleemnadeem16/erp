@@ -60,7 +60,7 @@ instead of a hypothetical one.
 entity/branch under one login.
 
 `company_id` is the full tenant-isolation boundary
-([GLOSSARY.md](GLOSSARY.md#company), [ADR 0004](decisions/0004-multi-tenancy-ready-schema.md)),
+([GLOSSARY.md](GLOSSARY.md), [ADR 0004](decisions/0004-multi-tenancy-ready-schema.md)),
 not a legal-entity subdivision within one customer. Today, "multi-entity support" means another
 row in `companies`, isolated from its sibling exactly as strictly as from an unrelated tenant —
 the only planned bridge is user membership across `company_id`s
@@ -111,7 +111,7 @@ not be collapsed into ordinary purchased consumption because ownership, value an
 differ.
 
 ### Q26 — Organisational and record-level access scope
-**Blocks:** Remaining record-scope slices (see below) and delegated administration; the first slice (inventory by warehouse) is built
+**Blocks:** Remaining record-scope slices (see below) and delegated administration; the inventory-by-warehouse slices are built
 
 What organisational structure should access follow: departments, branches, sites, warehouses,
 cost centres, project teams or a composable organisation-unit hierarchy? Define whether users may
@@ -123,13 +123,13 @@ model. See [authorization.md](architecture/authorization.md#teams-and-organisati
 
 **Decided in part (2026-10-06, [ADR 0089](decisions/0089-organisation-units-and-record-scope.md)):** the owner chose organisation units as a
 company-defined tree, inventory by warehouse as the first slice, and delegated administration later. Built: units, memberships, warehouse
-ownership, the "only my units" limit on an assignment, one resolver, enforcement on stock layers, the ledger and physical counts. **Still open
-(each its own slice):** the other stock-bearing surfaces (negative-stock overrides, recalculation, cutover), purchasing documents (needs a
+ownership, the "only my units" limit on an assignment, one resolver, enforcement on stock layers, the ledger and physical counts, and (second slice, 2026-10-07) negative-stock requests, recalculation and cutover — every inventory surface now has a declared scope status. **Still open
+(each its own slice):** purchasing documents (needs a
 creator and ship-to recorded and a backfill first), Estimating availability, approvals; a warehouse-limited inventory overview and AVCO pool view;
 own-record and assigned-record scopes; time-bounded task access; delegated administration (a unit head assigning access to their people). The
 original brief and research follow.
 
-**Decision brief (2026-10-06; proposed, awaiting owner):** Options: keep company-wide records;
+**Decision brief (2026-10-06; historical — adopted in part by ADR 0089, which chose the third option; the "no model implemented" sentence below was true only on that date):** Options: keep company-wide records;
 use Spatie Teams as organisation units (migrate assignments); or retain Teams for company and add
 separate organisation memberships plus own/assigned/unit/company scopes. **Recommend the third**:
 several memberships, one policy/query-scope definition applied to list/count/search/lookup/show/write,
@@ -139,7 +139,7 @@ membership/scope records and audited delegation; existing grants need an approve
 backfill before enforcement. Reject one role per department pair and direct grants as denials.
 Basis: [ADR 0028](decisions/0028-dynamic-namespaced-permissions.md),
 [ADR 0062 research](decisions/0062-company-member-and-access-administration.md#research-basis),
-and the Odoo/Dynamics comparison below. No organisation or delegated-access model implemented.
+and the Odoo/Dynamics comparison below. (On 2026-10-06 no organisation or delegated-access model was implemented; organisation units and warehouse record scope now are — see the status paragraph above.)
 
 **Research supplement (accessed 2026-10-06; relocated here from an earlier block it was filed under by mistake):**
 [Odoo record rules](https://www.odoo.com/documentation/19.0/developer/tutorials/restrict_data_access.html)
@@ -156,8 +156,7 @@ indexed official text and existing ADR research were used, without treating unve
 
 Which PO approvals are required by amount, currency, department/site, supplier/category or other
 risk; may the creator submit, may an approver also issue, how many independent approvers are
-needed, and what happens on rejection or draft revision? Today any authenticated caller reaching
-the endpoint can create and issue a PO; DRAFT → ISSUED has no approval fact.
+needed, and what happens on rejection or draft revision? *(2026-10-08: the mechanism half is resolved — the shared approval engine, [ADR 0070](decisions/0070-shared-configurable-approval-engine.md); companies define policies and limits and PO approvals run through it. This question now covers only which default policy a company should start with.)*
 
 ### Q33 — ERP-wide Notifications capability
 **Blocks:** Any user-facing notification: approval requests and decisions, assignments, overdue and escalation events, module events
@@ -184,6 +183,14 @@ app, passkeys/WebAuthn, e-mail or SMS codes), what a company can configure and p
 sign-in is represented and completed (the provisional 401 `challenge` shape), step-up for sensitive actions, device trust, and whether
 service credentials for integrations are separate. Also open from the same review: a security-event audit trail for sign-ins, failed
 attempts and device changes.
+
+### Q38 — Status of ADR 0082 and the Phase 3 / Phase 2 close-out
+**Blocks:** Nothing; a documentation decision recorded by the 2026-10-08 reconciliation
+
+Three small owner decisions the docs cannot make: (1) [ADR 0082](decisions/0082-reconcile-package-balances-with-stock-operations.md) is still `proposed`, although its principles were adopted
+and built by the accepted ADRs 0090–0094 — accept it as the umbrella record, or mark it superseded by that set; (2) whether Phase 3 (Estimating core) is formally closed, its open items being
+dependencies on Phase 4 adoption and package-aware proposals; (3) whether Phase 2's "agree the interaction specification" item is closed by the journeys and the ERP Blue standard.
+Also open from the package workstream: whether Estimating's package-aware proposals (the one delivery-plan step not built) should be prioritised ahead of the rejected-stock return/scrap slice.
 
 ---
 

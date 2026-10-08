@@ -4,7 +4,7 @@ Formulation-based estimating, job costing and field service delivery. Laravel AP
 React SPA frontend.
 
 **Planning and architecture docs live in [docs/](docs/README.md).** Start there for anything
-beyond "how do I run this" — domain model, decisions, phase roadmap.
+beyond "how do I run this" — domain model, decisions, phase roadmap. **Current project state:** [docs/STATUS.md](docs/STATUS.md).
 
 ## Prerequisites
 
@@ -23,8 +23,7 @@ docker compose exec app php artisan migrate
 ```
 
 - API: http://localhost:8090
-- Frontend dev server: http://localhost:5176 (once the frontend skeleton exists — see
-  [phase-0-foundation.md](docs/phases/phase-0-foundation.md))
+- Frontend dev server: http://localhost:5176 (the `node` Compose service)
 
 `vendor/` and `node_modules/` live in named Docker volumes, not the bind mount — first boot
 installs them automatically (see `docker/backend/entrypoint.dev.sh`). A code change on the host
@@ -47,7 +46,7 @@ docker compose exec app ./vendor/bin/phpstan analyse  # Larastan, level 6+
 erp/
   docs/                 architecture, decisions, domain, phases — read AGENTS.md first
   backend/              Laravel API
-  frontend/              pnpm workspace — packages/core-ui, core-api; apps/*
+  frontend/              npm workspace — packages/core-ui, core-api; apps/* (main, e2e)
   docker/                Dockerfiles and container config, backend/ and frontend/
   docker-compose.yml     development
   docker-compose.prod.yml  production — no database/redis, connects to dbvm

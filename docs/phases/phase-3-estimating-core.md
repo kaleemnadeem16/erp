@@ -2,7 +2,7 @@
 
 # Phase 3 — Estimating core
 
-- **Status:** in progress
+- **Status:** core delivered (rate dimensions, application rates, formulations, assemblies, overhead, Material Preview with stock proposals, what-if variance control and approvals); the unchecked items below wait on other features — formal close-out is the owner's call
 - **Depends on:** Phase 1 (items, categories, parties) · Phase 2 (stock valuation — AVCO cost is
   the ingredient-cost input to every formulation roll-up)
 - **Blocked by:** nothing. [OPEN-QUESTIONS.md](../OPEN-QUESTIONS.md) has no blocking questions.
@@ -269,6 +269,10 @@ Things this phase knowingly does not do, each with what it waits on, so none is 
 item here in the same commit that delivers it; add new ones as they are found.
 
 ### Waiting on another feature
+
+> **Reconciliation note (2026-10-08).** The package items below were written before the package workstream existed. Grouped `PACKAGE_BALANCE` tracking has since shipped as a separate
+> Inventory workstream (ADRs 0090–0094; [handoff](package-balance-handoff.md)), so the *Inventory-side* dependency is met for sealed/open-loose stock. What remains **unbuilt here** is
+> Estimating's use of it: package-level proposals and equivalents in the Material Preview, residual/waste variance bands, and everything that needs `CONTAINER_TRACKED`.
 
 - [x] **`APPROVAL_REQUIRED` variance band** — delivered 2026-09-30 through the shared approval engine
       ([ADR 0070](../decisions/0070-shared-configurable-approval-engine.md), which resolves Q27). The effect is

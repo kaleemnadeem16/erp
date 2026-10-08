@@ -90,14 +90,16 @@ Lead → Opportunity → Quotation (revisions) → Job → Work Order → Invoic
 | [receipt-package-evidence.md](receipt-package-evidence.md) | Observed sealed/loose arrival and atomic receipt-source evidence |
 | [package-opening-preview.md](package-opening-preview.md) | Read-only opening/unpacking composition and layer-preserving proposals |
 | [package-opening-operations.md](package-opening-operations.md) | Immutable saved open/unpack successors, concurrency and conservation |
-| [package-issue-operations.md](package-issue-operations.md) | Grouped package-aware stock issue: draw lines, allocation vector, `ISSUE` evidence and its database checks |
-| [package-tracking-policy.md](package-tracking-policy.md) | Pinned item policy, creation-time precedence and disabled activation gates |
-| [package-balance-integration.md](package-balance-integration.md) | Physical package compatibility evidence and remaining adapter gates |
+| [package-issue-operations.md](package-issue-operations.md) | Grouped package tracking (v1 complete): issue, transfer, activation and enforcement, count, receipt reversal, supplier QA, capability rollout — evidence and database checks |
+| [package-tracking-policy.md](package-tracking-policy.md) | Historical foundation: pinned item policy and creation-time precedence (activation is now ADR 0091) |
+| [package-balance-integration.md](package-balance-integration.md) | Historical foundation: the 2026-10-03 compatibility spike and writer audit |
 | [stock.md](stock.md) | Warehouses, moves, layers, AVCO pools, the valuation feed |
 | [negative-stock.md](negative-stock.md) | ADR 0037 — negative-stock policy, overrides, settlement, transfer repairs |
 | [stock-recalculation.md](stock-recalculation.md) | ADR 0040 — backdated recalculation and corrections |
 | [stock-movement-replay.md](stock-movement-replay.md) | Backdated issue/transfer previews and connected valuation history |
 | [inventory-cutover.md](inventory-cutover.md) | Migrated history, opening stock and valuation continuity at go-live |
+| [physical-count.md](physical-count.md) | Blind counting, count lines, variance posting and separation of duties |
+| [approvals.md](approvals.md) | The shared approval engine: policies, authorities, requests, delegation, document review |
 | [sales-pipeline.md](sales-pipeline.md) | Leads, opportunities, quotations, revisions |
 | [job-costing.md](job-costing.md) | Jobs, work orders, timesheets, variance |
 

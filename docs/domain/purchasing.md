@@ -462,6 +462,12 @@ continuation sheets repeat order identity and item headings, retain the final se
 and show calculated page counts. A PO-specific toggle controls blank signature lines; no new
 permission or transition is introduced. A missing delivery destination is explicitly unspecified.
 
+## Receipts of items with grouped package tracking
+
+Posting needs the observed package composition; an inspection-required line arrives as held packages and a QA disposition declares the physical portion it applies to; reversal removes a declared
+physical draw and is refused once QA has decided anything. See [package-issue-operations.md](package-issue-operations.md) ([ADR 0093](../decisions/0093-package-aware-goods-receipt-reversal.md),
+[ADR 0094](../decisions/0094-package-aware-supplier-qa-receipts.md)). Quantity-only lines are unchanged.
+
 ## Related
 
 - [Material resolution](material-resolution.md) — Phase 3 reports internal-stock shortages;

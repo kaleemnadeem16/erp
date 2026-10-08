@@ -368,6 +368,11 @@ references the item — `Item`'s `updating` hook, covering `valuation_method`, `
 [items.md](items.md#valuation-method) and
 [ADR 0032](../decisions/0032-per-item-valuation-method.md).
 
+## Items with grouped package tracking
+
+For an item switched to grouped package tracking, every stock write must carry package evidence or is refused, in PHP and by database triggers; the ledger quantity and cost stay authoritative and
+the package picture explains the stock's form. See [package-issue-operations.md](package-issue-operations.md) ([ADR 0091](../decisions/0091-activate-grouped-package-tracking-and-fail-closed-enforcement.md)).
+
 ## Related
 
 - [material-resolution.md](material-resolution.md) — planning boundary before reservation and

@@ -2,6 +2,8 @@
 
 # Opening and unpacking preview
 
+> **Historical foundation (marked 2026-10-08).** This is the read-only opening/unpacking preview slice. Grouped package tracking v1 has since shipped: current behaviour is in [package-issue-operations.md](package-issue-operations.md); the state of the workstream is in the [handoff](../phases/package-balance-handoff.md). Statements below that say tracking is disabled, inactive or not implemented describe this slice's own boundary at the time it was written.
+
 Read-only backend slice under proposed [ADR 0082](../decisions/0082-reconcile-package-balances-with-stock-operations.md).
 PreviewPackageOpening proposes a physical transformation against a fresh full-scope counted
 checkpoint or saved open/unpack successor. It does not save an opening, reserve stock, activate tracking or change valuation.

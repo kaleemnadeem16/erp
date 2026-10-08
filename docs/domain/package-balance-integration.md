@@ -2,6 +2,8 @@
 
 # Package balance integration spike
 
+> **Historical foundation (marked 2026-10-08).** This is the 2026-10-03 compatibility spike and writer audit. Grouped package tracking v1 has since shipped: current behaviour is in [package-issue-operations.md](package-issue-operations.md); the state of the workstream is in the [handoff](../phases/package-balance-handoff.md). Statements below that say tracking is disabled, inactive or not implemented describe this slice's own boundary at the time it was written.
+
 Verified 2026-10-03. This records existing stock behaviour, not implemented package tracking.
 [Proposed ADR 0082](../decisions/0082-reconcile-package-balances-with-stock-operations.md)
 remains proposed. The original spike changed no production semantics. The storage foundation below is now shipped, without activation.

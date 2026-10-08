@@ -2,11 +2,11 @@
 
 # Physical package balances — design and delivery
 
-Started 2026-10-03 under accepted ADR 0052. [ADR 0082](../decisions/0082-reconcile-package-balances-with-stock-operations.md)
-is a **proposed** operational refinement. The owner confirmed counts of unopened packages plus
-combined open/loose quantity are sufficient. Inactive evidence storage and enforcing read/open
-capabilities have shipped; physical-tracking activation remains blocked. This plan extends the
-delivered purchasing package masters; it is not Phase 5 job execution.
+Started 2026-10-03 under accepted ADR 0052. **Status (2026-10-08): grouped package tracking v1 is complete** — see the [handoff](package-balance-handoff.md) and the
+[v1 sign-off](package-balance-ui.md#v1-sign-off-2026-10-08). The operational semantics were decided and built by accepted ADRs 0090–0094;
+[ADR 0082](../decisions/0082-reconcile-package-balances-with-stock-operations.md) (the early proposed refinement whose principles they adopted) was never accepted or superseded —
+an owner decision, see [OPEN-QUESTIONS.md](../OPEN-QUESTIONS.md). The owner confirmed counts of unopened packages plus combined open/loose quantity are sufficient. This plan extends
+the delivered purchasing package masters; it is not Phase 5 job execution. The scope table below is the original acceptance set and is kept as design history.
 
 ## Scope and examples
 
@@ -29,48 +29,23 @@ delivered purchasing package masters; it is not Phase 5 job execution.
 
 ## Delivery sequence
 
-**Continuation checkpoint:** [package-balance-handoff.md](package-balance-handoff.md) records the
-completed implementation, live demo/test baseline, shared-checkout boundaries and the exact next
-issue/transfer work. Consult it before resuming this workstream; it does not replace project STATUS.
+**Where to resume:** [package-balance-handoff.md](package-balance-handoff.md) — it lists what v1 includes, the known limitations and the future enhancements. This section records how
+the original ten steps ended.
 
 1. [x] Review ADRs 0052/0053/0080 and the current posting/read paths; compare primary ERP sources.
-2. [x] Confirm grouped leftovers versus individually tracked vessels with the owner.
-3. [x] Record proposed physical semantics, acceptance cases, integration obligations and exclusions.
-4. [x] **Compatibility spike and executable contribution contract.** Existing writer audit,
-   five real-Action cases and twelve allocation contract cases complete; combined 38 tests /
-   180 assertions pass. [Evidence, contract and exclusions](../domain/package-balance-integration.md).
-   NONE/BATCH AVCO/FIFO remain activation candidates; SERIAL/SPECIFIC, negative debt and
-   backdated replay need enforcing adapters or guards. This completes the reversible spike,
-   not operational package integration. ADR 0082 remains proposed; kernel work must preserve
-   its disabled-by-default boundary and explicit activation gates.
-5. [x] **Inactive checkpoint kernel and policy foundation.** Company-safe immutable evidence,
-   exact contribution constraints, counted-evidence posting, equal-payload retries, request/
-   location/layer locks and on-demand history reconstruction are implemented.
-   [Creation-time policy resolution](../domain/package-tracking-policy.md) pins sources and
-   enforces QUANTITY_ONLY through model/database gates. No activation or live package balance
-   is advertised. Operational event replay/posting belongs to step 6; transitions and relaxation
-   of the gates require the later enforcing/reconciliation slices.
-6. [ ] **Operational integration.** [Observed receipt backend](../domain/receipt-package-evidence.md)
-   is implemented with source-layer/QA evidence and posting rollback/retry tests. It has no
-   authoring/history UI yet and cannot activate tracking. [Opening/unpacking preview](../domain/package-opening-preview.md)
-   now calculates exact layer-preserving proposals and has a dedicated counted demo.
-   [Saved open/unpack successors](../domain/package-opening-operations.md) now persist complete
-   composition with lineage, locking, retries and a separate history demo. Tracking stays inactive.
-   [Grouped package-aware issue](../domain/package-issue-operations.md) (ADR 0090, 2026-10-07) now posts the stock issue with its allocation
-   vector and writes `ISSUE` evidence atomically. Grouped package-aware **transfer** (two evidence legs) followed the same day. **Activation and fail-closed enforcement** (ADR 0091) and the package-aware **receipt** followed on 2026-10-08. **Package-aware physical count** (ADR 0092) and **receipt reversal** (ADR 0093) followed. Remaining: QA, reversal, cutover
-   and recalculation adapters or explicit first-release guards; refusing scalar issues once a mode is authoritative (activation slice). Cover every direct Action writer,
-   not only public HTTP controllers. Preserve QUANTITY_ONLY behaviour.
-7. [ ] **Permissions and workflows.** Register only enforcing capabilities; grant demo personas
-   and include administrator assignment instructions. Requests and Actions both check authority.
-   Add Inventory package-state/history views and actionable errors; hide cost on the server.
-8. [ ] **Activation for existing stock.** Counted opening-state document, stale-stock detection,
-   governed reason/actor, atomic reconciliation checkpoint and supported mode changes.
-9. [ ] **Advisory proposals.** Extend the existing read snapshot and ADR 0053 allocator with exact
-   sealed/open evidence, stable tie-breaks and freshness. Preserve no-reservation semantics and
-   explain unavailable criteria; never claim expiry/FEFO without recorded expiry.
-10. [ ] **Demo and user journey in each enforcing slice.** Small named examples, real posting
-    Actions, create-once immutable fixtures and rerun preservation tests. Validate the live user
-    step without a hidden backdating/approval prerequisite. Update STATUS and commit each slice.
+2. [x] Confirm grouped leftovers versus individually tracked vessels with the owner (grouped; vessels are the future container-level mode).
+3. [x] Record the physical semantics, acceptance cases, integration obligations and exclusions (ADRs 0090–0094).
+4. [x] Compatibility spike and executable contribution contract — [evidence](../domain/package-balance-integration.md).
+5. [x] Inactive checkpoint kernel and creation-time policy foundation — [policy](../domain/package-tracking-policy.md).
+6. [x] **Operational integration**: observed receipt, saved open/unpack, grouped issue and transfer (ADR 0090), activation with fail-closed enforcement and package-aware receipt
+   (ADR 0091), physical count (ADR 0092), receipt reversal (ADR 0093) and supplier QA (ADR 0094) — [operations](../domain/package-issue-operations.md). Every direct writer is
+   integrated or refused, and the database re-proves it.
+7. [x] **Permissions and workflows**: `inventory.package-state.*` capabilities enforced at request and Action, rollout migration, role recipes, reason codes, screens
+   ([package-balance-ui.md](package-balance-ui.md)).
+8. [x] **Activation for existing stock**: counted opening state, stale detection, atomic validated transition (ADR 0091); no deactivation (future).
+9. [ ] **Advisory proposals** — extending the ADR 0053 allocator with exact sealed/open evidence for the Material Preview. **Not built;** a future enhancement that is not in the
+   handoff's v1 scope. Owner to prioritise.
+10. [x] **Demo and journey in each enforcing slice**: create-once demo seeders and Playwright specs exist; the [user journey](../journeys/grouped-package-tracking-journey.md) was added in the 2026-10-08 reconciliation.
 
 No slice may advertise exact operational package balances while an enabled writer can bypass them.
 A reversible test spike may precede accepted detail; it must not mutate production semantics.
@@ -99,7 +74,8 @@ workflows; this feature only makes their eventual stock boundary package-consist
 - [Screens and API design](package-balance-ui.md)
 - [Inventory packages](../domain/inventory-packages.md)
 - [ADR 0052](../decisions/0052-progressive-inventory-package-tracking.md)
-- [Proposed ADR 0082](../decisions/0082-reconcile-package-balances-with-stock-operations.md)
+- [ADR 0082 (still proposed — see note above)](../decisions/0082-reconcile-package-balances-with-stock-operations.md)
+- [Package feature handoff](package-balance-handoff.md)
 - [Purchasing delivery](item-purchasing-improvements.md)
 - [Stock](../domain/stock.md)
 - [Research rules](../architecture/research-and-design.md)

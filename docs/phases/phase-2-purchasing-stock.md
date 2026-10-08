@@ -2,12 +2,19 @@
 
 # Phase 2 — Purchasing & stock
 
-- **Status:** in progress — purchasing and warehouse foundations plus the PO workflow are built
+- **Status:** operationally complete — purchasing, receipts, QA and reversal, the stock-movement and valuation engine, cutover, negative-stock overrides, backdated recalculation and physical counts are built with their screens; the items still unchecked below are deferred dependencies, not unfinished Phase 2 build (see the reconciliation note)
 - **Depends on:** [Phase 1 — Master data](phase-1-master-data.md) (items, supplier accounts,
   currencies, UoMs and chart-of-account references)
 - **Blocked by:** nothing currently; negative stock is fixed by
   [ADR 0037](../decisions/0037-controlled-negative-stock-overrides.md) and backdated receipts by
   [ADR 0040](../decisions/0040-control-backdated-stock-recalculation-and-corrections.md)
+
+> **Reconciliation note (2026-10-08).** The still-unchecked items below fall into three groups. **Waiting on later phases:** the cross-module parts of the backdated-correction
+> package (Sales/COGS, Job Execution, GL allocation — ADR 0040) and the acceptance criteria that depend on them; they cannot be built until Phases 4–6 exist. **Infrastructure
+> follow-ups:** the first automated production deploy run and removing mainvm's emergency GHCR credential ([deployment.md](../architecture/deployment.md)), and PO fields with no
+> schema yet (ship-to, per-PO payment terms). **Owner call:** whether the "agree the Phase 2 interaction specification" item is closed by the journeys and the
+> [ERP Blue standard](../architecture/erp-blue-design-standard.md) or kept open. Package-aware inventory (grouped tracking, QA-held stock) shipped as its own workstream:
+> [package-balance-handoff.md](package-balance-handoff.md).
 
 ## Goal
 

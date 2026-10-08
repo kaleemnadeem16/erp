@@ -1,6 +1,6 @@
 # 0044 — Keep STATUS.md inside a fixed context budget with an append-only status log
 
-- **Status:** accepted
+- **Status:** superseded by [0095](0095-status-is-short-current-and-purpose-limited.md) (2026-10-08) — the fixed row/line budget is replaced by purpose limits; the append-only STATUS-LOG stays
 - **Date:** 2026-09-03
 - **Affects:** docs/STATUS.md, docs/STATUS-LOG.md, every agent session; code-structure.md's
   file-size rule

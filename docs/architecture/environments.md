@@ -259,6 +259,12 @@ reviewer, and a recalculation's approver must differ from the record's own creat
 they show up as `created_by`/`approved_by`/`requested_by`/`decided_by` on that seeded data, the
 same way a second real staff member would in production.
 
+The grouped-package demos add one account that **can** be logged into with the demo password: `demo-count-reviewer@erp.x1techs.com` (created by `PackageCountDemoSeeder`), a second person who
+may post counts, recount package compositions and see costs — the browser specs sign it in because nobody may post a count they created. `PackageCountDemoSeeder` also grants the (non-login)
+`demo-ops` assistant the grouped-stock handler capabilities. The package demos themselves (`PackageIssueDemoSeeder`, `PackageTransferDemoSeeder`, `PackageActivationDemoSeeder`,
+`PackageCountDemoSeeder`, `PackageReceiptReversalDemoSeeder`, `PackageQaDemoSeeder`) each create one create-once scenario through the real Actions; see
+[package-issue-operations.md](../domain/package-issue-operations.md).
+
 ### Follow the existing deployment pattern
 
 Traefik on `proxy-net` with `Host()` routing rules and an HTTPS-redirect middleware; images in

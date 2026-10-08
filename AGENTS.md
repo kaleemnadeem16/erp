@@ -14,10 +14,10 @@ implementation currently stands, before assuming anything about the current stat
 
 ## Read these first, every session
 
-1. **[docs/STATUS.md](docs/STATUS.md)** — where the project is right now, what's next
+1. **[docs/STATUS.md](docs/STATUS.md)** — where the project is right now, what's next (history: [STATUS-LOG.md](docs/STATUS-LOG.md); workstream resume points: the handoffs it links)
 2. **[docs/architecture/invariants.md](docs/architecture/invariants.md)** — rules that must never be broken
 
-Both are short and deliberately kept that way.
+Both are short and deliberately kept that way — STATUS.md by purpose, not by a line count.
 
 ## Then load only what you need
 
@@ -54,8 +54,12 @@ because they mislead.
    supersedes it and update the old one's `status` to `superseded by NNNN`. The record of *why
    we changed our mind* is the valuable part.
 
-2. **Update `docs/STATUS.md` in the same commit as the work.** Not afterwards, not in a batch.
-   If a phase task is finished, tick it in that commit.
+2. **Update `docs/STATUS.md` in the same commit as the work** when the work completes or starts a
+   workstream: update that workstream's row, fix any "next" line the change makes false, and append
+   the detail to `docs/STATUS-LOG.md` in that commit ([ADR 0095](docs/decisions/0095-status-is-short-current-and-purpose-limited.md)).
+   `STATUS.md` stays short, current and limited by purpose (no logs, counts or per-task history);
+   it has no line or row quota. If a phase task is finished, tick it in that commit. Text that
+   records an earlier state must say it is historical.
 
 3. **When an open question is answered, it becomes an ADR.** Write the ADR, remove the entry
    from `docs/OPEN-QUESTIONS.md`. Questions don't linger there once resolved.

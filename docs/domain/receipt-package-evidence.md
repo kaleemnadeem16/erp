@@ -2,6 +2,8 @@
 
 # Observed receipt package evidence
 
+> **Historical foundation (marked 2026-10-08).** This is the original observed-receipt slice; the authoritative receipt leg for grouped items (usable or QA-held) is described in the operations doc. Grouped package tracking v1 has since shipped: current behaviour is in [package-issue-operations.md](package-issue-operations.md); the state of the workstream is in the [handoff](../phases/package-balance-handoff.md). Statements below that say tracking is disabled, inactive or not implemented describe this slice's own boundary at the time it was written.
+
 Implemented backend slice 2026-10-03. Physical arrival is recorded independently of the
 immutable purchasing agreement under [ADR 0080](../decisions/0080-packaged-purchasing-and-independent-price-basis.md)
 and proposed [ADR 0082](../decisions/0082-reconcile-package-balances-with-stock-operations.md).

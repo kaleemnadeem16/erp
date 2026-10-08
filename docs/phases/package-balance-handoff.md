@@ -48,7 +48,7 @@ transfer and reversal; Playwright coverage of each flow and of quantity-only par
 The sections below describe the package work as it stood before the grouped issue, transfer, activation, count, reversal and QA slices. They are kept for the
 reasoning and the kernel boundary, not as current state; where they say "not implemented", the sign-off above supersedes them.
 
-## Exact implementation boundary
+## Historical: implementation boundary at 2026-10-03
 
 Inventory Actions are under backend/app/Modules/Inventory/Actions:
 
@@ -83,7 +83,7 @@ The newest migration is 2026_10_03_180000_add_package_opening_lineage.php, appli
 Its downgrade refuses while opening history exists. Earlier kernel, watermark, policy and receipt
 migrations were also applied. Do not discard history or relax QUANTITY_ONLY gates for convenience.
 
-## Next slice: concrete starting work
+## Historical: the next slice as planned on 2026-10-03
 
 **2026-10-07:** ADR 0090 is accepted and the grouped issue slice is built: the allocation-vector seam (`PostInventoryMovement::issuePosted()` /
 `transferPosted()`), the `ISSUE` evidence kind with migration `2026_10_07_100000`, `IssuePackagedStock` and `PackageIssueDemoSeeder`.
@@ -115,7 +115,7 @@ Receipt evidence also refuses serial arrivals and incoming stock consumed by neg
 settlement. No expiry/FEFO, reservations, resealing or per-vessel identity has been implemented.
 Cutover and recalculation have direct writer paths: review them before any activation claim.
 
-## Demo and last verified state
+## Historical: demo and verified state at 2026-10-03
 
 Local demos are opt-in, guarded for local/testing, use real Actions and skip immutable histories
 by stable keys. Never recompute a historical request from today's stock or overwrite manual progress.
@@ -147,7 +147,7 @@ docker compose exec -T -e TEST_DB_HOST=postgres-test app php artisan test --comp
 docker compose exec -T -e TEST_DB_HOST=postgres-test app php artisan test --compact --testsuite=Architecture
 ```
 
-## Shared-checkout coordination
+## Historical: shared-checkout notes at 2026-10-03
 
 Our latest implementation commit is 2df3c84; preview is ae54349 and receipt integration 76462df.
 Concurrent authorisation commits 409b4d3 and 6956a11 are a separate workstream. The latter now

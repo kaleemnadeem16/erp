@@ -8,6 +8,17 @@ redesign and the access-security audit. It is scoped to this workstream; the pac
 Update this file when one of its open items is picked up, alongside [STATUS.md](../STATUS.md) and the
 [audit tracker](../architecture/access-security-audit.md).
 
+> **Reconciliation note (2026-10-08).** This record's resume text below was written on 2026-10-06 and parts of it are out of date. Where it conflicts with this note, this note wins:
+> - **Pushing:** the "nothing is pushed / pushing is paused" statements are superseded — the owner authorised pushing completed `develop` commits (2026-10-07), and `develop` is
+>   pushed to origin apart from a few recent local commits. Pushing or merging to `main` (production) is still only with the owner's go-ahead; production last released 2026-10-02.
+> - **Q26 record scope:** the "apply warehouse scope to negative-stock overrides, recalculation and cutover" step is **done** (ADR 0089 second slice); `RecordScopeCoverageTest` has no
+>   PENDING routes. What remains of Q26: purchasing documents (needs creator and ship-to recorded plus a backfill — an owner decision), Estimating availability, approvals, a
+>   warehouse-limited overview and AVCO pool view, own/assigned scopes, time-bounded task access and delegated administration.
+> - **Still open and current:** Q28's default-policy half, Q37, the staging sign-off for A1–A9 and ADRs 0084–0089, and the release steps in the final section (re-run the listed
+>   browser specs, bring the dev database up to date, check generated-client drift, decide on scheduling `ExpireOverdueApprovals`).
+> - The checkout-stability caveat in the last section reflected a moment on 2026-10-06; treat it as a checklist to run before release, not as a current blocker.
+> Package-balance work, which shares this checkout, is complete for v1: [package-balance-handoff.md](package-balance-handoff.md).
+
 ## Resume here (checkpoint 2026-10-06, end of session)
 
 **Read this first when continuing on another machine.**

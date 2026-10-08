@@ -9,8 +9,8 @@ Eight phases, each independently shippable. Current state is in
 |---|---|---|---|
 | 0 | Foundation | Complete | [phase-0-foundation.md](phase-0-foundation.md) |
 | 1 | Master data | Complete | [phase-1-master-data.md](phase-1-master-data.md) |
-| 2 | Purchasing & stock | In progress | [phase-2-purchasing-stock.md](phase-2-purchasing-stock.md) |
-| 3 | Estimating core | In progress | [phase-3-estimating-core.md](phase-3-estimating-core.md) |
+| 2 | Purchasing & stock | Operationally complete; multi-owner correction package outstanding (needs Phases 4–6) | [phase-2-purchasing-stock.md](phase-2-purchasing-stock.md) |
+| 3 | Estimating core | Core delivered; remaining items wait on other features | [phase-3-estimating-core.md](phase-3-estimating-core.md) |
 | 4 | Sales pipeline | Not started | *expanded when reached* |
 | 5 | Job execution | Not started | *expanded when reached* |
 | 6 | Finance | Not started | *expanded when reached* |
@@ -28,9 +28,9 @@ User-facing entry-to-exit workflows live in [product journeys](../journeys/READM
 journey is maintained alongside its screens and is the source for future training documents or
 presentations.
 
-The [physical package-balance delivery](package-balance-delivery.md) has started with a design
-review under ADR 0052 and proposed ADR 0082. It extends the purchasing package masters without
-starting Phase 5 job execution; operational tracking remains unimplemented.
+The [physical package-balance delivery](package-balance-delivery.md) is a separate workstream (ADRs 0052, 0090–0094) that extends the purchasing package masters
+without starting Phase 5 job execution. **Grouped package tracking v1 is complete** — see its [handoff](package-balance-handoff.md) and
+[v1 sign-off](package-balance-ui.md#v1-sign-off-2026-10-08); container-level tracking and the other enhancements are future design slices.
 
 ---
 
@@ -94,9 +94,9 @@ delta touching it needs a Sales/COGS correction line — see
 Jobs, work orders, material issue, timesheets, unified job cost entries, estimate-vs-actual
 variance reporting. This is where the system starts paying for itself.
 
-**Owes an Inventory package-tracking design** (owner confirmed 2026-10-01; its own ADR, not yet scheduled) before material issue is designed:
-`item_packagings`, the `PACKAGE_BALANCE` / `CONTAINER_TRACKED` modes, sealed/opened package state and remnants,
-package-aware proposals, and the waste/residual variance bands that need them
+**Inventory package tracking — largely delivered ahead of this phase.** The package-tracking design the owner required (confirmed 2026-10-01) is built as the grouped
+`PACKAGE_BALANCE` mode (`item_packagings`, sealed and open/loose state, issue, transfer, count, reversal and QA; v1 complete 2026-10-08). **Still owed before material issue is
+designed:** the `CONTAINER_TRACKED` mode (individual vessels and remnants), package-aware proposals in the Material Preview, and the waste/residual variance bands that need them
 ([ADR 0052](../decisions/0052-progressive-inventory-package-tracking.md); the hand-built stock mix it must extend is
 [ADR 0072](../decisions/0072-hand-built-stock-mix-in-base-quantity.md); variable-content packages stay
 [Q23](../OPEN-QUESTIONS.md#q23--variable-content-and-catch-weight-packages), alongside
@@ -151,8 +151,7 @@ real second customer ([Q8](../OPEN-QUESTIONS.md#q8--second-customer-profile)).
 
 ## Related
 
-- [Package feature continuation handoff](package-balance-handoff.md) — scoped checkpoint and exact
-  next implementation step, independent of other agents' workstreams
+- [Package feature handoff](package-balance-handoff.md) — grouped package tracking v1 is complete; lists known limitations and future enhancements, independent of other agents' workstreams
 
 - [Grouped package tracking — screens and API design](package-balance-ui.md) — workflows, endpoints, permissions and the smallest first UI slice
 - [STATUS.md](../STATUS.md) — current progress

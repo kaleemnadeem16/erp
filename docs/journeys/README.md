@@ -24,6 +24,7 @@ They sit beside the existing documentation rather than replacing it:
 | [Phase 2 operational journey](phase-2-operational-journey.md) | New operator, buyer, receiver/QA operator, inventory controller | Implemented entry-to-exit flow from login and setup through purchasing, receiving, QA, stock visibility and control work |
 | [Packaged purchasing demo](packaged-purchasing-demo.md) | Buyer, receiver | Compare named packages and price bases, post a partial delivery, and inspect supplier changes and replacement agreements |
 | [Phase 3 material-planning journey](phase-3-material-planning-journey.md) | Estimator, planning lead, administrator | Implemented rules setup, Material Preview, stock proposal, what-if variance verdicts and the freshness check |
+| [Grouped package tracking journey](grouped-package-tracking-journey.md) | Inventory controller, receiving clerk, QA inspector, storeman, count reviewer | Activating, receiving (usable or QA-held), QA decisions by package, issue, transfer, count and reversal for items tracked by sealed can and loose litre |
 | Future Phase 4–7 journeys | To be added when each phase starts | Sales, job execution, finance, mobile and integrations |
 
 ## How to maintain journeys
