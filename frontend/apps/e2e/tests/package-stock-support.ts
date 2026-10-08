@@ -227,3 +227,21 @@ export function ensureExitPersonas(): boolean {
     return false;
   }
 }
+
+/**
+ * Makes sure more than 100 items sort ahead of the items the specs create (by name), so a screen that looks an item up in the first list page of 100
+ * cannot find it. Idempotent: it only creates the fillers that are missing, named "AAA filler …".
+ */
+export async function ensureMoreThanOneHundredItemsAhead(page: Page): Promise<void> {
+  const existing = (await api(page, 'GET', '/items?filter[search]=aaa-filler&per_page=1')).meta.total as number;
+  if (existing >= 105) return;
+  const litre = (await list(page, '/uoms')).find((uom) => uom.code === 'l');
+  const base = (await list(page, '/items?filter[search]=demo-pack-thinner')).find((item) => item.code === 'demo-pack-thinner');
+  const stamp = Date.now().toString(36);
+  for (let n = existing; n < 105; n++) {
+    await api(page, 'POST', '/items', {
+      code: `aaa-filler-${stamp}-${n}`, name: `AAA filler ${stamp} ${n}`, type: 'RAW', stock_uom_id: litre.id, category_id: base.category_id, valuation_method: 'FIFO', tracking: 'NONE',
+      inventory_account_id: base.inventory_account_id, is_stocked: true, is_purchasable: true, is_sellable: false,
+    });
+  }
+}

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useItemsById, useLocationsById, useUomsById } from "./use-line-lookups";
 import {
   QaPortionStep,
   decidesPackages,
@@ -321,13 +322,21 @@ export function GoodsReceiptDetailScreen({
       ? supplierQuery.data.data.data
       : undefined;
   const itemsQuery = useItemsIndex({ per_page: 100, sort: "name" });
-  const items =
+  const itemList =
     itemsQuery.data?.status === 200 ? itemsQuery.data.data.data : [];
+  const receiptLines = receipt?.lines ?? [];
+  // A list page is not a lookup table: fetch whatever the lines name that the page does not hold.
+  const items = useItemsById(receiptLines.map((line) => line.item_id), itemList);
   const locationsQuery = useLocationsIndex({ per_page: 100, sort: "code" });
-  const locations =
-    locationsQuery.data?.status === 200 ? locationsQuery.data.data.data : [];
+  const locations = useLocationsById(
+    receiptLines.map((line) => line.location_id),
+    locationsQuery.data?.status === 200 ? locationsQuery.data.data.data : [],
+  );
   const uomsQuery = useUomsIndex({ per_page: 100, sort: "name" });
-  const uoms = uomsQuery.data?.status === 200 ? uomsQuery.data.data.data : [];
+  const uoms = useUomsById(
+    [...receiptLines.flatMap((line) => [line.received_uom_id, line.stock_uom_id]), ...items.map((item) => item.stock_uom_id)],
+    uomsQuery.data?.status === 200 ? uomsQuery.data.data.data : [],
+  );
   const currenciesQuery = useCurrenciesIndex({ per_page: 100, sort: "code" });
   const currencies =
     currenciesQuery.data?.status === 200 ? currenciesQuery.data.data.data : [];
