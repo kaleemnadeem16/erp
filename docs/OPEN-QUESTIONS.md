@@ -41,8 +41,11 @@ direct opportunities and one quotation workflow governed by FLEXIBLE/MANAGED/STR
 It is not accepted; historical migration exceptions, policy governance and issue/authority/retry
 coordination remain flagged for resolution. Keep Q39 open.
 
-Next: **R1-B**, direct quotation/opportunity relationships within these presets; then **R1-C**,
-prospect/customer readiness. R1-D–G (person customers, ownership/scope, closure, duplicates/CRM
+R1-B1/B2 now have owner-reviewed direction in [proposed ADR 0099](decisions/0099-separate-quotation-issue-and-crm-association.md): draft relationship corrections and governed post-issue
+CRM association separate from immutable issue linkage. STRICT temporary unlinking, closed-state
+eligibility, association scope per family/revision and accepted/job-linked restrictions remain open.
+Next: discuss [**R1-B3** offers/revisions/forecast](phases/phase-4-r1-b3-offers-and-forecast.md),
+whose initial recommendation is not approved; then **R1-C**, prospect/customer readiness. R1-D–G (person customers, ownership/scope, closure, duplicates/CRM
 extent) remain open. Detailed question tracking is in
 [R1-A–G](phases/phase-4-r1-leads-and-relationships.md#decisions-needed-from-the-owner).
 Record accepted answers in ADRs and remove only resolved questions; do not close all Q39 or R1

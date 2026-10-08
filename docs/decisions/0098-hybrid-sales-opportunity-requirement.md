@@ -76,7 +76,9 @@ Issued quotations and their issue-policy/exception evidence remain immutable whe
 permissions change. Every unissued draft is checked against the effective policy at issue.
 A draft created under FLEXIBLE/MANAGED is not deleted when STRICT is enabled; it requires an
 opportunity before issue. STRICT checks new creation and cannot be evaded by removing a link
-before issue. Link-editing rules and revision-entry treatment remain R1-B/R2/R5 questions.
+before issue. Draft linking and separate post-issue CRM association now have owner-reviewed direction in
+[proposed ADR 0099](0099-separate-quotation-issue-and-crm-association.md). STRICT temporary
+unlinking, revision-entry treatment and opportunity eligibility still need R1-B/R2/R5 review.
 
 Capture at successful issue: company, quotation/revision identity, actor, issue timestamp,
 resolved policy source/version/rules, opportunity identity or explicit absence, and whether the
@@ -155,8 +157,8 @@ opportunities, backdate a new issue or reuse this MANAGED capability for migrati
 - **Preset trade-off:** fewer valid combinations and simpler explanations vs reduced customisation;
   independent rules can be exposed later only with demonstrated need and validation.
 - **Still open before acceptance:** historical migration disposition; policy change authority and
-  versioning; exact issue/revocation serialisation and replay authorisation; R1-B linkage,
-  revisions and opportunity eligibility. Recipient/onboarding, person customers, team visibility,
+  versioning; exact issue/revocation serialisation and replay authorisation; R1-B
+  STRICT unlink interpretation, revisions and opportunity eligibility. Recipient/onboarding, person customers, team visibility,
   closure and duplicate rules remain undecided. R1 as a whole is not complete.
 
 ## Consequences

@@ -113,8 +113,9 @@ in the same commit.
 | [0096](0096-cross-cutting-feature-standards.md) | Cross-cutting feature standards live in canonical docs and a completion checklist | accepted | 2026-10-08 |
 | [0097](0097-supplier-return-and-scrap-of-rejected-stock.md) | Supplier return and scrap of rejected stock: one exit movement from the receipt's own layer | accepted | 2026-10-08 |
 | [0098](0098-hybrid-sales-opportunity-requirement.md) | Govern opportunity requirements through one hybrid Sales workflow | proposed (owner-reviewed direction) | 2026-10-08 |
+| [0099](0099-separate-quotation-issue-and-crm-association.md) | Separate quotation issue evidence from current CRM association | proposed (R1-B1/B2 owner-reviewed) | 2026-10-08 |
 
-**Next number: 0099**
+**Next number: 0100**
 
 ## By theme
 
