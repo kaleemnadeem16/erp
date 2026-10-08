@@ -53,7 +53,9 @@ Preserve forecast history and selected source revisions. Updates do not change i
 issue linkage, approval, price, tax, FX or estimating evidence. Forecast currency/FX valuation is
 separate evidence, preserving source currencies, the applied rate/value/date and base amounts.
 Reuse ADR 0012's historical dual-amount invariant and ADR 0031's manual-rate foundation; forecast
-rate type/date/fallback-age and display/revaluation policies remain research questions.
+SPOT/explicit valuation date and persistent provisional review now have owner-reviewed direction
+in [proposed ADR 0102](0102-govern-forecast-trust-and-explicit-valuation.md); exact fallback-age,
+accepted management conversion and FX-change review classification remain research questions.
 
 Guard forecast operations at request and Action boundaries, with current actor authority,
 company isolation and appropriate record/field scope. Forecast maintenance is not permission to
@@ -109,10 +111,10 @@ acceptance. Existing currency/audit decisions are reused rather than reopened.
 
 ## Still open
 
-Staleness trigger/expiry boundary, active-report treatment of invalid/partly valid bases,
-review/refresh actions and concurrency; forecast rate type/date/age and historical vs display
-conversion; partial acceptance/overlap/corrections; post-issue regrouping/dependencies;
-partial-win/closure/job multiplicity; scope/duties and history semantics. No R1-B3 completion.
+Persistent review/exclusion and explicit SPOT/date publication are owner-reviewed in proposed
+ADR 0102. Still open: exact triggers/expiry, trust-plus-diagnostics representation and review duties;
+fallback/age, FX movement vs rate corrections and accepted management conversion; partial/
+overlap/corrections, regrouping/dependencies, closure/jobs and as-of reporting. No R1-B3 completion.
 
 ## Related
 

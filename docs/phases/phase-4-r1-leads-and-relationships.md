@@ -2,7 +2,7 @@
 
 # R1 — Leads, opportunities and customer relationships
 
-- **Status:** R1-A and R1-B1/B2 owner-reviewed proposals recorded; R1-B3 scope/group direction reviewed; forecast methods reviewed; staleness/FX discussion pending. Not accepted or complete.
+- **Status:** R1-A and R1-B1/B2 owner-reviewed proposals recorded; R1-B3 scope/group direction reviewed; forecast methods/trust/SPOT direction reviewed; FX-change review classification and topic reconciliation next. Not accepted or complete.
 - **Research/access date:** 2026-10-08.
 - **Question:** how do we qualify enquiries and track independent deals without forcing CRM or
   financial-account setup onto every quotation, duplicating Parties or restricting future scale?
@@ -58,8 +58,10 @@ in [proposed ADR 0100](../decisions/0100-independent-quotation-scopes-and-altern
 [Forecast research](phase-4-r1-b3-forecast-basis.md) proposes manual remaining-business estimates
 or a controlled selected set of non-competing issued revisions; these methods are now owner-reviewed
 in [proposed ADR 0101](../decisions/0101-separate-accepted-business-and-remaining-forecast.md).
-Staleness and FX remain research proposals. R1-B remains incomplete;
-accepted/job-linked restrictions and physical schema are unresolved. Discuss staleness then FX next, before R1-C.
+Persistent provisional review and explicit-date SPOT are now owner-reviewed in
+[proposed ADR 0102](../decisions/0102-govern-forecast-trust-and-explicit-valuation.md);
+remaining operational choices stay open. R1-B remains incomplete;
+accepted/job-linked restrictions and physical schema are unresolved. Discuss FX-change warning vs review and reconcile topic ownership next, before R1-C.
 
 ## Alternatives and initial recommendations
 
@@ -191,7 +193,7 @@ Initial evidence covers identity, optional qualification, direct quotes, multipl
 closure patterns. Configurable stage governance, detailed Sales scope, consent/retention,
 forecast accounting, quote recipient/contact evidence and conversion concurrency need deeper
 validation during the relevant topic. No legal retention rule is inferred from vendor features.
-Next discuss R1-B3 forecast staleness and FX valuation, then R1-C onboarding.
+Next decide FX-change review vs warning and reconcile R4/R6/R9 dependencies; R1-C onboarding follows.
 Resolve ADR 0098's flagged edge cases before final acceptance; do not mark all R1 complete.
 
 ## Related

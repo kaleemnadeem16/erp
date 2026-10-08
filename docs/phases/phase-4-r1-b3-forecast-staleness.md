@@ -2,11 +2,24 @@
 
 # R1-B3-S — Forecast staleness and review
 
-- **Status:** initial comparison/recommendation for discussion, not approved or complete.
+- **Status:** persistent provisional trust direction owner-reviewed in proposed ADR 0102; trigger/diagnostic details open; not complete.
 - **Access date:** 2026-10-08.
 - **Question:** how should current forecasts respond when their selected evidence or maintained
   assumptions change without rewriting published history or silently changing sales intent?
 - **Reviewed foundation:** [proposed ADR 0101](../decisions/0101-separate-accepted-business-and-remaining-forecast.md).
+
+## Owner review — 2026-10-08
+
+[Proposed ADR 0102](../decisions/0102-govern-forecast-trust-and-explicit-valuation.md) records the
+reviewed rule: NEEDS_REVIEW stays provisional and excluded from trusted totals until authorised
+review and a new publication, even if an expired offer is renewed. Preserve old values/evidence;
+show eligible components informationally, without adding them to the provisional whole twice.
+MAINTAINED stays unchanged; confirming the same amount still creates a new publication version.
+No universal managerial approval is required; future configured approval uses the shared engine.
+
+Recommend trust/review obligation plus coexisting diagnostic reasons instead of one exclusive
+status. This representation is not approved; no enums/tables are selected. Earlier comparison
+and reporting options remain research history; reviewed direction takes precedence.
 
 ## Existing behaviour and evidence reused
 
@@ -44,13 +57,13 @@ The options and triggers below are project-specific recommendations, not vendor 
 | Partial acceptance or scope correction/cancellation | Mark unresolved affected contribution for review until R2/R6 identity rules can determine the remainder | Keep amount; review required for potentially affected assumptions |
 | Group, CRM association, recipient identity or visibility changes | Revalidate eligibility/non-competition/scope; no automatic substitute | Review material assumption changes; no automatic re-assignment |
 | Time since last review | Show reviewed-at age; configurable reminder threshold possible | Show reviewed-at age; suggest review, not automatic numeric reduction |
-| FX/source-rate change | Separate valuation-review trigger; business scope may still be valid | Separate valuation-review trigger; source-currency estimate unchanged |
+| FX/source-rate change | Warning vs mandatory review remains open; never auto-revalue/republish | Same open classification; source-currency estimate unchanged |
 
 Expiry is a date-based fact even if no background task has changed a status. R5 decides company
 business-date/time-zone boundary (end of valid-until day is a candidate); current reads must check
 that rule, not depend on scheduled mutation. No scheduled job/reminder is authorised here.
 
-## Reporting alternatives
+## Reporting alternatives — historical comparison before owner review
 
 | Option | Advantage | Cost |
 |---|---|---|
@@ -65,8 +78,8 @@ Show a separately labelled valid contribution breakdown if determinable, but do 
 publish that subtotal as a replacement whole-deal forecast. Trusted active aggregate shows valid
 forecasts plus counts of excluded/unknown/review-needed deals; excluded is not zero potential.
 A manual estimate remains the stored salesperson value but carries a review-needed flag after
-material acceptance/assumption changes. Whether those manual values remain in a provisional
-aggregate is an owner choice; recommend a separate provisional subtotal, outside trusted totals.
+material acceptance/assumption changes. The owner now requires separate provisional presentation outside trusted totals, with no
+automatic recovery when a technical condition becomes valid again.
 
 ## Example and reconciliation
 
@@ -92,20 +105,29 @@ monetary change. Reason requirements and exact duties remain R9, not role names.
 Fingerprint selection, acceptance/group/association and FX evidence. Refresh locks/re-reads
 relevant facts and refuses concurrent changes; two reviewers cannot overwrite newer review
 without a stale-version response. Publishing stores source versions/calculation timestamp,
-company/actor and authoritative evidence atomically. No-op/failed/retried review cannot create
-false successful forecast versions; immutable history remains unchanged. Read/export access and
+company/actor and authoritative evidence atomically. Explicit confirmation of unchanged assumptions creates a new reviewed publication; ordinary
+no-op saves, failed publication and repeated retries cannot create false/duplicate versions; immutable history remains unchanged. Read/export access and
 aggregate visibility must be consistent, including hidden group conflicts.
 
-## Small next decisions
+## Remaining triggers and ownership
 
-1. Exclude review-needed combinations from trusted totals while showing last-published values and
-   known components separately, or allow an explicitly provisional aggregate?
-2. After relevant acceptance, should flagged MAINTAINED estimates be excluded from trusted totals
-   until explicitly confirmed (recommended), with optional provisional display?
-3. What counts as material change/age requiring review? Do not choose arbitrary thresholds now.
+Reviewed trust/reporting direction is proposed ADR 0102, not a completed forecasting design.
+Recommend mandatory review for basis eligibility loss or material relevant acceptance/identity/
+group/CRM changes. A newer draft, unrelated quotation or age alone should initially be an
+informational indication unless governance explicitly requires review. Exact materiality, expiry
+boundary, hidden-record handling and partial acceptance need their owning topics; no threshold
+or universal trigger list is finalised.
 
-R5 owns issue/expiry/supersession; R2/R6 own overlap and partial acceptance; R9 owns aggregate,
-review authority and as-of reporting. No eligibility/status model is accepted by this research.
+A durable invalidation must survive temporary recovery, including expiry/renewal between reads.
+Current-state fingerprints alone can miss that history. R5/R9 must define event/version/time
+checks without scheduling anything implicitly. Distinguish a viewer's limited visibility from
+a company-wide invalid commercial assumption.
+
+R1-B3's smallest remaining business choice is FX-change warning vs mandatory review. R4 owns
+rate age/fallback; R5 owns lifecycle/expiry; R2/R6 owns overlap/acceptance; R9 owns trigger
+classification, trust plus diagnostic representation, review/approval duties and as-of reports.
+Also open: whether stale-basis FX refresh is candidate-only or blocked until combined review;
+it cannot republish trusted evidence merely because calculation succeeds.
 
 ## Related
 

@@ -2,10 +2,20 @@
 
 # R1-B3-FX — Forecast conversion and historical valuation
 
-- **Status:** initial evidence/alternatives for discussion; no new FX rule accepted.
+- **Status:** SPOT/date/explicit publication owner-reviewed in proposed ADR 0102; exact fallback/age/management valuation open.
 - **Access date:** 2026-10-08.
 - **Question:** how should foreign-currency remaining estimates/selected offers be valued without
   changing issued prices or historical forecast amounts when rates are corrected or updated?
+
+## Owner review — 2026-10-08
+
+[Proposed ADR 0102](../decisions/0102-govern-forecast-trust-and-explicit-valuation.md) now records
+explicit-date SPOT valuation and new immutable publication on explicit FX refresh; preserve
+reporting currency/rates/evidence, incomplete-rate handling and fallback age/effective date.
+No view-time/latest-rate mutation or silent republication is permitted. Source quoted/accepted
+commercial evidence remains separate from management valuation and accounting recognition.
+Exact fallback, maximum age, FX-change warning vs review and accepted management valuation remain
+open. Earlier alternatives below are retained research, not competing current decisions.
 
 ## Reuse existing decisions and actual runtime
 
@@ -111,16 +121,26 @@ or selection/acceptance changes need a deterministic snapshot/lock/version proto
 alone is not a freshness token. Missing/old rates and withheld records appear consistently in
 UI, totals and exports. No scheduler is authorised by this research.
 
-## Small next decisions
+## Remaining decisions — assigned to their proper topics
 
-1. Use SPOT at an explicit forecast date for pending scope, preserve source/actual-rate evidence,
-   and publish a new version on explicit refresh (recommended)?
-2. Start with prior-rate fallback plus visible age, or enforce an owner-defined maximum age?
-3. Keep accepted baseline and pending forecast-date values separate, with a labelled mixed-basis
-   total, or require a separately revalued accepted-business view immediately?
+- **R1-B3:** decide FX movement alone as informational warning or mandatory business review;
+  recommend warning while preserving the trusted as-of publication, with any revaluation explicit.
+  Corrected/deleted rates used in a publication differ from ordinary later-date rates: history
+  remains pinned but the operational warning/review classification needs R4/R9.
+- **R4:** exact resolution (candidate: same-company/directed-pair/SPOT, latest eligible date at or
+  before requested date), visible requested/actual date; inverse/triangulation and missing-rate
+  rules; maximum age and authorised exceptions; monetary rounding. No global fallback policy is
+  changed by recording SPOT direction here.
+- **R4/R6:** accepted commitment's authoritative conversion basis and separately labelled
+  management revaluation; preserve issued/accepted evidence whatever display is chosen.
+- **R9:** current/historical report currencies and recorded-at/effective-at treatment; rate
+  correction provenance and transaction/snapshot consistency.
+- **R5/R9:** interaction of explicit FX refresh and stale commercial basis. A candidate valuation
+  cannot clear review obligation or publish trusted evidence without current authorised review.
 
-R4 owns rate/date/rounding and currency rules; R6 owns commitment basis; R9 owns report/as-of,
-corrections and access. These remain proposals; no accepted ADR is altered.
+Recommended next research is bounded R4 fallback/age and rate-correction semantics, after agreeing
+whether ordinary new FX rates create warning or mandatory review. No need to design the complete
+forecast engine to record these topic ownership boundaries. R1-B3 and Q39 stay open.
 
 ## Related
 

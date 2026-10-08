@@ -48,9 +48,13 @@ R1-B3 now has owner-reviewed multiple independent acceptances and explicit alter
 groups in [proposed ADR 0100](decisions/0100-independent-quotation-scopes-and-alternative-groups.md).
 The two forecast methods now have owner-reviewed direction in [proposed ADR 0101](decisions/0101-separate-accepted-business-and-remaining-forecast.md): MAINTAINED remaining estimate and
 SELECTED_OFFERS, with accepted commitments separate and manual estimates unchanged on acceptance.
-Next discuss [staleness/active aggregate treatment](phases/phase-4-r1-b3-forecast-staleness.md)
-and [forecast FX valuation](phases/phase-4-r1-b3-forecast-fx.md); then R1-C onboarding. These
-operational rules are not accepted. R1-B3 and Q39 remain open until dependencies reconcile.
+The [staleness](phases/phase-4-r1-b3-forecast-staleness.md) and
+[FX](phases/phase-4-r1-b3-forecast-fx.md) review now records persistent provisional trust and
+explicit-date SPOT publication as owner-reviewed direction
+in [proposed ADR 0102](decisions/0102-govern-forecast-trust-and-explicit-valuation.md).
+Next small choice: FX changes alone as a warning or mandatory review. Exact rate fallback/age
+belongs to R4, acceptance valuation to R6/R4, and review/diagnostics/as-of governance to R9;
+R5 owns expiry/supersession. R1-B3 and Q39 remain open until these dependencies reconcile.
 Keep open post-issue grouping/regrouping, partial acceptance, cancelling/changing accepted scope,
 offer dependencies, partially won outcomes, one/multiple jobs, closure interactions and forecast
 eligibility/refresh, currency and as-of reporting rules (R2/R4/R5/R6/R7/R9). R1-D–G (person customers, ownership/scope, closure, duplicates/CRM

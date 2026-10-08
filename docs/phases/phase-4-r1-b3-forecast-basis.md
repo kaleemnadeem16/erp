@@ -21,7 +21,9 @@ recommendations below are retained as research history; the method choice is own
 not finalised. Partial acceptance/overlap and the remaining lifecycle dependencies stay open.
 
 Next bounded topics: [staleness and review](phase-4-r1-b3-forecast-staleness.md), then
-[FX valuation](phase-4-r1-b3-forecast-fx.md). Their operational rules are not approved.
+[FX valuation](phase-4-r1-b3-forecast-fx.md). Persistent provisional review and explicit SPOT/date publication now have owner-reviewed direction
+in [proposed ADR 0102](../decisions/0102-govern-forecast-trust-and-explicit-valuation.md).
+Remaining triggers, fallback/age and accepted management valuation are open.
 
 ## Fresh primary evidence and comparison
 
@@ -118,14 +120,15 @@ At 50% probability for pending installation, a separate weighted view gives `150
 pending plus `500000.0000` accepted = `650000.0000` accepted-plus-weighted outlook. Accepted
 business is not probability-weighted and is not accounting revenue.
 
-## Eligibility, recalculation and stale bases — unresolved recommendation
+## Eligibility/recalculation — initial recommendation, refined by proposed ADR 0102
 
 Recommend recording explicit basis versions and frozen valuation results. Trigger a visible
 review-needed state when selected evidence becomes ineligible. Display the last recorded forecast
 with its as-of time and stale warning, but **do not silently include it in a trusted active total**:
 report valid total and excluded/review-needed opportunity count/value separately. Exclusion must
 not imply the deal's value is zero. Retain the last value for audit and require explicit review to
-publish a new valid basis. This candidate rule needs owner agreement, including partial-valid sets.
+publish a new valid basis. The owner now reviewed provisional exclusion until explicit review/republication in ADR 0102;
+partial-valid component calculation remains unresolved.
 
 Manual estimates also require review when acceptance materially changes remaining scope; a
 review-needed flag is not permission to change the amount. Refresh calculation, selection changes
@@ -177,8 +180,9 @@ partially won outcomes, one/multiple jobs, closure interactions and forecast eli
 
 **Next discussion:** [staleness](phase-4-r1-b3-forecast-staleness.md#small-next-decisions), then
 [FX valuation](phase-4-r1-b3-forecast-fx.md#small-next-decisions). The two-method business direction
-is owner-reviewed in proposed ADR 0101; invalid-basis aggregate treatment, partial/overlapping
-accepted work, valuation date/rate age and historical reporting need agreement before acceptance.
+is owner-reviewed in proposed ADR 0101; persistent provisional trust and SPOT/explicit date are owner-reviewed in proposed ADR 0102.
+Remaining trigger, partial/overlap, fallback/age and historical-report dependencies need
+reconciliation before acceptance; decide FX-change warning vs review next.
 
 ## Related
 
