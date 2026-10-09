@@ -118,8 +118,9 @@ in the same commit.
 | [0101](0101-separate-accepted-business-and-remaining-forecast.md) | Separate accepted business from evidence-based remaining forecasts | accepted (bounded business direction, 2026-10-09) | 2026-10-08 |
 | [0102](0102-govern-forecast-trust-and-explicit-valuation.md) | Restore forecast trust only through explicit review and publication | accepted (bounded business direction, 2026-10-09) | 2026-10-08 |
 | [0103](0103-issue-quotations-to-party-backed-prospects.md) | Issue quotations to eligible Parties without requiring financial customer setup | accepted (bounded R1-C1 direction) | 2026-10-09 |
+| [0104](0104-separate-customer-acceptance-and-readiness.md) | Separate customer acceptance from operational and financial readiness | accepted (bounded R1-C2 direction) | 2026-10-09 |
 
-**Next number: 0104**
+**Next number: 0105**
 
 ## By theme
 

@@ -2,12 +2,21 @@
 
 # R1-C2 — Financial customer readiness at business events
 
-- **Status:** initial research/recommendation for owner discussion; no accepted C2 decision.
+- **Status:** bounded acceptance/readiness separation accepted in ADR 0104; operation-specific gates remain deferred.
 - **Access/review date:** 2026-10-09.
 - **Question:** when must CustomerAccount exist, and when must separate financial/commercial
   clearance authorise the next operation? Account existence is not the same as clearance.
 - **Gate:** documentation only. Phase 4 owns offer/acceptance/handover; payment processing,
   invoices/posting and Phase 5 execution remain outside its implementation scope.
+
+## Owner review — 2026-10-09
+
+[Accepted ADR 0104](../decisions/0104-separate-customer-acceptance-and-readiness.md) records valid
+acceptance before CustomerAccount, preparation while readiness is pending, operation-level checks,
+visible Finance blockers and separate financial authority. **No universal account-at-confirmed-
+handover rule is accepted.** Cash/prepaid/non-credit treatment is assigned to R6/R7 and later
+financial design. The earlier B-style default recommendation below is retained historical research,
+not current project policy. Remaining R1 choices are presented [together](phase-4-r1-decision-matrix.md).
 
 ## What we have today
 
@@ -94,8 +103,9 @@ accounting/tax requirements when designing advances, receipts and postings.
 | C — mandatory only at first financial transaction | Minimal early onboarding | Too late if work/dispatch or credit exposure occurs first; “request payment” and actual processing must be distinguished |
 | D — checks specific to each business operation | Distinguishes evidence, work authority and money; accommodates credit and prepayment companies | Needs explicit boundaries and shared checks; unrestricted early configuration could become an unnecessary workflow engine |
 
-**Recommend D, with a small initial rule set using B as the normal confirmed-handover boundary.**
-This is a recommendation, not an accepted C2 rule. No arbitrary configurable gate engine initially.
+**Historical initial recommendation:** D with B as the normal confirmed-handover boundary.
+The owner approved only the bounded separation in ADR 0104 and withheld that universal B gate.
+The table below is historical candidate design; operation-specific gates remain R6/R7/Phase 6.
 
 | Business act | Recommended initial gate |
 |---|---|
@@ -153,19 +163,15 @@ a salesperson may need a blocker/action explanation without viewing sensitive ma
 
 ## Remaining decisions and smallest next question
 
-**First discuss:** may valid customer acceptance be recorded before CustomerAccount exists, with
-financial readiness separately pending and no automatic authority for work or payments? Recommend yes.
+The first business choice is resolved by ADR 0104: valid acceptance can precede CustomerAccount
+without granting work/credit/payment authority. A universal account-at-handover rule is explicitly
+not finalised; it is not a remaining blocker for bounded R1 business foundations.
 
-Then discuss the proposed default: account required at confirmed handover or an earlier financial
-act, versus allowing account-free confirmed work under selected company policy. These are separate
-business choices; accepting the first must not imply acceptance of the second.
-
-R7 defines draft planning vs confirmed handover vs execution release; Phase 5 owns actual work.
-R6 decides acceptance validity, inbound evidence and commercial disposition; C3/C4 own identities,
-archive/restoration and duplicates; R4/Phase 6 own tax/cash/advances/posting and credit exposure;
-R9 owns capabilities, policy ownership, holds/release, reporting and approval evidence. Exact payer
-vs contracting Party and third-party payments also remain open. No C2 decision/ADR is accepted.
-Stop after these recommendations; do not implement or begin C3/C4.
+R6/R7 will settle operational gates for cash/prepaid/non-credit exposure and preparation versus
+confirmation/release. Phase 6 settles financial processing/credit/posting requirements. Account
+existence alone is insufficient for transaction readiness. C3/C4 identity/duplicates/restoration,
+Sales ownership and opportunity outcomes are [consolidated for one review](phase-4-r1-decision-matrix.md).
+No implementation or detailed R2/R6/R7 design is started here.
 
 ## Related
 

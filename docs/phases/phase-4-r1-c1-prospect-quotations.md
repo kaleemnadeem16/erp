@@ -165,7 +165,8 @@ Keep separate:
 - **R2/R4/R5/R6/R7/R8/R9:** recipient keys, tax/commercial readiness, issue/correction lifecycle,
   acceptance, job scope, delivery channels, capabilities and historical reporting.
 
-C1 research is closed only for its bounded decision; C2 recommendations await discussion. No implementation.
+C1/C2 bounded directions are accepted in ADRs 0103/0104; operation-specific gates remain deferred.
+[Remaining R1 choices](phase-4-r1-decision-matrix.md) await consolidated owner review. No implementation.
 
 ## Related
 

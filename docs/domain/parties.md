@@ -273,7 +273,7 @@ unexposed capabilities, not implied by supplier registration.
 
 ## Related
 
-- [ADR 0103](../decisions/0103-issue-quotations-to-party-backed-prospects.md) — Party-backed quotation issue without premature financial role; [C2 readiness research](../phases/phase-4-r1-c2-financial-readiness.md) remains unapproved
+- [ADR 0103](../decisions/0103-issue-quotations-to-party-backed-prospects.md) — Party-backed quotation issue without premature financial role; [ADR 0104](../decisions/0104-separate-customer-acceptance-and-readiness.md) accepts bounded readiness separation; detailed gates deferred
 
 - [R1-C1 prospect quotation research](../phases/phase-4-r1-c1-prospect-quotations.md) — bounded issue direction accepted in ADR 0103; financial account validation unchanged
 

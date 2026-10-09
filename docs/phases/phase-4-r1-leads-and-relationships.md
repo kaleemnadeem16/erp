@@ -2,12 +2,12 @@
 
 # R1 — Leads, opportunities and customer relationships
 
-- **Status:** bounded B3 business research closed with accepted ADRs 0100–0102 (2026-10-09); 0098/0099 Proposed; C1 issue direction accepted in ADR 0103; C2 readiness research for discussion. Whole R1 remains open.
+- **Status:** ADRs 0100–0104 accepted for bounded direction; 0098/0099 remain Proposed; remaining R1 evidence and six decision bundles consolidated for owner review. Whole R1/Q39 open.
 - **Research/access date:** 2026-10-08.
 - **Question:** how do we qualify enquiries and track independent deals without forcing CRM or
   financial-account setup onto every quotation, duplicating Parties or restricting future scale?
 - **Existing-system evidence:** [review](phase-4-existing-system-review.md#r1-foundations--verified-first).
-- **Accepted new R1 decisions:** none. Recommendations below are proposals, not requirements.
+- **Accepted new R1 decisions:** ADRs 0100–0104. Earlier recommendations below are historical where refined by those ADRs or the [consolidated matrix](phase-4-r1-decision-matrix.md).
 
 ## Primary-source comparison
 
@@ -62,7 +62,7 @@ Persistent provisional review and explicit-date SPOT are now owner-reviewed in
 [accepted ADR 0102](../decisions/0102-govern-forecast-trust-and-explicit-valuation.md);
 remaining operational choices stay open. R1-B1/B2 and detailed delivery remain open;
 accepted/job-linked restrictions and physical schema are unresolved. B3 has no remaining blocking business choice within its bounded scope; see the
-[acceptance/dependency reconciliation](phase-4-r1-b3-reconciliation.md). [ADR 0103](../decisions/0103-issue-quotations-to-party-backed-prospects.md) accepts C1 issue direction; [C2 findings](phase-4-r1-c2-financial-readiness.md) await discussion.
+[acceptance/dependency reconciliation](phase-4-r1-b3-reconciliation.md). [ADR 0103](../decisions/0103-issue-quotations-to-party-backed-prospects.md) accepts C1 issue direction; ADR 0104 accepts bounded C2 separation; [remaining R1 choices](phase-4-r1-decision-matrix.md) await joint review.
 
 ## Alternatives and initial recommendations
 
@@ -181,13 +181,13 @@ requiring them to use a quotation.
 |---|---|---|
 | R1-A | Hybrid workflow and policy requirements | Owner-reviewed direction in proposed ADR 0098; remaining architecture questions prevent final acceptance |
 | R1-B | Direct quotation relationships and multiple offers | B1/B2 owner-reviewed proposed ADR 0099; B3 independent scopes/groups owner-reviewed in accepted ADR 0100; forecast methods reviewed in accepted ADR 0101; trust/dated FX reviewed in accepted ADR 0102; B3 bounded business research closed, implementation not authorised; R2/R4/R5/R6/R7/R9 delivery dependencies |
-| R1-C | Can we quote a prospect Party before financial customer setup; when is setup mandatory? | C1 accepted in ADR 0103; [C2 research](phase-4-r1-c2-financial-readiness.md) recommends separate acceptance/operational/financial gates, not approved |
-| R1-D | Organisation customers only, or individual consumers in Phase 4? | Keep established B2B boundary unless real requirements justify extension |
-| R1-E | Initial pipeline/ownership exposure and visibility? | Single owner, company stages, optional lead queue; own/team/company access needs R9 decision |
+| R1-C | Can we quote a prospect Party before financial customer setup; when is setup mandatory? | C1/C2 accepted in ADRs 0103/0104; operation-specific handover/financial gates deferred; C3/C4 choices in U3 |
+| R1-D | Organisation customers only, or individual consumers in Phase 4? | U3 recommends organisation and individual contracting Parties in one foundation; not yet approved |
+| R1-E | Initial pipeline/ownership exposure and visibility? | Single owner, optional lead queue; U4 proposes separate company/own/assigned/unit rights; integration R9 |
 | R1-F | What makes a deal won; can closure be manual; how do lost/abandoned deals reopen? | Evidence-backed closure; agree acceptance link and partial-win handling with R6/R7 |
 | R1-G | Duplicate handling and initial CRM extent? | Warn/reuse without automatic merge; minimal follow-up, defer full CRM automation |
 
-R1-A has an owner-reviewed proposed direction; the remaining choices are unresolved. Accepted
+The [consolidated matrix](phase-4-r1-decision-matrix.md) supersedes this initial question list as the current owner-review agenda. R1-A/B1/B2 remain reviewed proposals; other new recommendations remain unresolved. Accepted
 answers will become ADRs; this record retains the evidence and links to them. The decision set is tracked as
 [Q39](../OPEN-QUESTIONS.md#q39--phase-4-r1-enquiry-deal-and-customer-onboarding-boundaries); it gates dependent Sales design, not other workstreams.
 
@@ -197,10 +197,10 @@ Initial evidence covers identity, optional qualification, direct quotes, multipl
 closure patterns. Configurable stage governance, detailed Sales scope, consent/retention,
 forecast accounting, quote recipient/contact evidence and conversion concurrency need deeper
 validation during the relevant topic. No legal retention rule is inferred from vendor features.
-Next discuss [C2 financial readiness](phase-4-r1-c2-financial-readiness.md), starting with recording
-valid acceptance before account setup. B3/C1 bounded direction is accepted; delivery dependencies
-and whole R1 remain open. No C2 rule is accepted.
-Resolve ADR 0098's flagged edge cases before final acceptance; do not mark all R1 complete.
+Next review the [six consolidated owner-decision bundles](phase-4-r1-decision-matrix.md), supported
+by [remaining evidence](phase-4-r1-remaining-evidence.md). No more separate micro-discussions are
+needed unless the owner identifies a material ambiguity. Close R1/Q39 only after that review and
+recording approved contracts; recommend R2 next but do not begin it here.
 
 ## Related
 

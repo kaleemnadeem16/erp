@@ -124,16 +124,18 @@ Vendor documents support multiple quote paths and distinct CRM revenue, but do n
 separate immutable issue/current-association contract. That separation follows owner direction
 and project invariants. No vendor schema or post-issue mutability is copied.
 
-## Still unresolved
+## Still unresolved — consolidated acceptance review
 
-STRICT temporary unlink interpretation; unknown/opportunity Party identity rules (R1-C);
-closed opportunity eligibility and accepted/job-linked association restrictions (R5/R6/R7);
-association scope per family/revision (R2); permissions/visibility and report as-of policy (R9).
-R1-B3 independent accepted scopes and explicit exclusive groups now have owner-reviewed direction
-in [accepted ADR 0100](0100-independent-quotation-scopes-and-alternative-groups.md). Post-issue
-grouping/accepted-scope corrections remain open in R2/R6. Forecast business direction is now
-accepted in ADRs 0101/0102; see the [bounded reconciliation](../phases/phase-4-r1-b3-reconciliation.md).
-No whole R1-B completion claim.
+Core business choices are STRICT unlink/replacement (U1), current offer-family responsibility,
+unknown Party first binding and OPEN versus closed-target association (U2). Proposed resolutions
+and alternatives are in the [consolidated review](../phases/phase-4-r1-decision-matrix.md); none is
+approved here. ADRs 0103/0104 now settle Party-backed issue and acceptance/readiness separation.
+
+Exact family/revision keys and projections are R2/R5; accepted/job-linked exceptional moves and
+corrections remain R5/R6/R7; field/history/scope mechanics and capabilities R9. These delivery gates
+alone do not prevent bounded acceptance if the owner approves U1/U2 and the U4 access contract.
+The current STRICT temporary-unlink suggestion in the earlier table is an option, not the owner's
+answer; U1 now recommends atomic replacement instead. This ADR remains Proposed.
 
 ## Related
 

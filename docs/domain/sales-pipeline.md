@@ -18,7 +18,8 @@ Independent accepted scopes and explicit alternative groups have owner-reviewed 
 are accepted as bounded business direction. Detailed [staleness](../phases/phase-4-r1-b3-forecast-staleness.md)
 and [FX](../phases/phase-4-r1-b3-forecast-fx.md) dependencies remain open.
 [Accepted ADR 0103](../decisions/0103-issue-quotations-to-party-backed-prospects.md) permits eligible Party-backed issue without CustomerAccount, with immutable recipient evidence and unchanged financial controls.
-[C2 readiness research](../phases/phase-4-r1-c2-financial-readiness.md) proposes later event-specific gates; not approved.
+[ADR 0104](../decisions/0104-separate-customer-acceptance-and-readiness.md) accepts valid acceptance before CustomerAccount and separates readiness from commitment. No universal account-at-handover gate is decided.
+[Remaining R1 matrix](../phases/phase-4-r1-decision-matrix.md) proposes identity, ownership, outcomes and initial CRM for owner review.
 The schema below is historical planning: one opportunity field must not become both immutable
 issue linkage and editable current CRM association. Customer-only recipients are superseded as future design by ADR 0103; the physical schema below
 remains historical. Conversion, later financial gates and closure are unresolved. The historical numbering

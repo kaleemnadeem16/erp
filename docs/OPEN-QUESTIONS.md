@@ -57,17 +57,22 @@ require separate R4/R9 impact assessment. The [bounded B3 reconciliation](phases
 records the final review: ADRs 0100–0102 accepted 2026-10-09 by owner authorisation, closing
 bounded B3 business research only. Deferred delivery questions remain open; 0098/0099 stay Proposed.
 C1 eligible Party-backed issue without CustomerAccount is resolved by [accepted ADR 0103](decisions/0103-issue-quotations-to-party-backed-prospects.md).
-[C2 research](phases/phase-4-r1-c2-financial-readiness.md) recommends separate gates: record genuine
-acceptance without account; require account/clearance by confirmed handover or earlier financial
-act. Neither C2 choice is approved. First discuss acceptance recording, then the normal handover
-boundary and any future company-policy variation. C3 identity/sites and C4 duplicates/restoration
-remain open, along with detailed eligibility/issuance/checklist questions in R2/R4/R5/R8/R9.
-Q39 and whole R1 remain open.
-Keep open post-issue grouping/regrouping, partial acceptance, cancelling/changing accepted scope,
-offer dependencies, partially won outcomes, one/multiple jobs, closure interactions and forecast
-eligibility/refresh, currency and as-of reporting rules (R2/R4/R5/R6/R7/R9). R1-D–G (person customers, ownership/scope, closure, duplicates/CRM
-extent) remain open. Detailed question tracking is in
-[R1-A–G](phases/phase-4-r1-leads-and-relationships.md#decisions-needed-from-the-owner).
+C2 valid acceptance before CustomerAccount, preparation and operation-level readiness are resolved
+by [accepted ADR 0104](decisions/0104-separate-customer-acceptance-and-readiness.md). No universal
+account-at-handover rule is accepted; precise cash/prepaid/non-credit gates belong to R6/R7 and
+financial processing to later Phase 6.
+
+**Current R1 closure blockers:** [six consolidated owner-review bundles](phases/phase-4-r1-decision-matrix.md)
+U1 STRICT/legacy scope; U2 offer responsibility/eligible relationships; U3 organisation/person
+identity, duplicate reuse/restore/conversion; U4 ownership versus visibility; U5 stages/outcomes/
+partial wins/reopen; U6 initial CRM exposure. 0098/0099 remain Proposed pending their U1/U2
+answers and cross-cutting access reconciliation. New recommendations are researched, not approved.
+Detailed quotation structures/pricing/FX/lifecycle/partial scope/jobs/documents/report implementation
+remain R2–R9 delivery gates, not reasons to keep R1 open after its foundations are approved.
+[Additional primary evidence](phases/phase-4-r1-remaining-evidence.md) reuses sufficient previous
+research. Review these choices together; then record ADRs and close R1/Q39 only when genuine
+foundation choices are resolved or explicitly excluded. R2 is recommended next, not begun.
+
 Record accepted answers in ADRs and remove only resolved questions; do not close all Q39 or R1
 because one direction was reviewed.
 

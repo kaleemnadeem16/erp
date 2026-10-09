@@ -156,10 +156,15 @@ opportunities, backdate a new issue or reuse this MANAGED capability for migrati
   in the Sales sketch remains structurally useful; a global NOT NULL would defeat FLEXIBLE/MANAGED.
 - **Preset trade-off:** fewer valid combinations and simpler explanations vs reduced customisation;
   independent rules can be exposed later only with demonstrated need and validation.
-- **Still open before acceptance:** historical migration disposition; policy change authority and
-  versioning; exact issue/revocation serialisation and replay authorisation; R1-B
-  STRICT unlink interpretation, revisions and opportunity eligibility. Recipient/onboarding, person customers, team visibility,
-  closure and duplicate rules remain undecided. R1 as a whole is not complete.
+- **Genuine acceptance choices:** STRICT draft correction (atomic replacement versus temporary
+  unlink) and initial historical-record scope. The [consolidated U1/U2 review](../phases/phase-4-r1-decision-matrix.md)
+  proposes resolutions; they are not approved. Normal eligible opportunity/Party rules are reconciled
+  there with ADRs 0103/0104. No new business rule is accepted by this update.
+- **Not standalone R1 blockers:** policy storage/version schema, locks/revocation serialisation,
+  replay mechanics and revision implementation belong to R5/R9 under the existing guarantees.
+  Policy duty/reason/current effective evidence are already reviewed direction; exact vocabulary
+  remains R9. Identity/ownership/outcome foundations remain U3–U6; R1 as a whole is open.
+
 
 Multiple independent accepted scopes and explicit exclusive groups are now owner-reviewed in
 [accepted ADR 0100](0100-independent-quotation-scopes-and-alternative-groups.md). They do not
