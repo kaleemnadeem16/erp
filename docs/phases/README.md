@@ -81,7 +81,7 @@ scoped through Assembly Groups ([ADR 0049](../decisions/0049-assembly-group-over
 Research and discussion have started; see the [research plan](phase-4-sales-quotations-and-handover.md),
 [existing-system review](phase-4-existing-system-review.md) and [R1](phase-4-r1-leads-and-relationships.md).
 ADRs 0100–0102 accept bounded B3 business direction; 0098/0099 remain Proposed.
-[R1-C1](phase-4-r1-c1-prospect-quotations.md) is research for discussion; implementation has not started.
+[C1](phase-4-r1-c1-prospect-quotations.md) direction is accepted in ADR 0103; [C2](phase-4-r1-c2-financial-readiness.md) research awaits discussion. Implementation has not started.
 
 Leads, opportunities, quotations with revisions, cost snapshotting, PDF output. Mobile layout
 patterns should be settled before this. RTL is not needed — English only

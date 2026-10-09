@@ -56,9 +56,12 @@ Ordinary later-date FX movement is now owner-reviewed as non-invalidating; used-
 require separate R4/R9 impact assessment. The [bounded B3 reconciliation](phases/phase-4-r1-b3-reconciliation.md)
 records the final review: ADRs 0100–0102 accepted 2026-10-09 by owner authorisation, closing
 bounded B3 business research only. Deferred delivery questions remain open; 0098/0099 stay Proposed.
-[R1-C1 research](phases/phase-4-r1-c1-prospect-quotations.md) recommends reliable Party-backed
-prospect issue without CustomerAccount, but this is not approved. Discuss that smallest choice
-next; R1-C2's financial-readiness event, C3 identity/sites and C4 duplicates/restoration remain open.
+C1 eligible Party-backed issue without CustomerAccount is resolved by [accepted ADR 0103](decisions/0103-issue-quotations-to-party-backed-prospects.md).
+[C2 research](phases/phase-4-r1-c2-financial-readiness.md) recommends separate gates: record genuine
+acceptance without account; require account/clearance by confirmed handover or earlier financial
+act. Neither C2 choice is approved. First discuss acceptance recording, then the normal handover
+boundary and any future company-policy variation. C3 identity/sites and C4 duplicates/restoration
+remain open, along with detailed eligibility/issuance/checklist questions in R2/R4/R5/R8/R9.
 Q39 and whole R1 remain open.
 Keep open post-issue grouping/regrouping, partial acceptance, cancelling/changing accepted scope,
 offer dependencies, partially won outcomes, one/multiple jobs, closure interactions and forecast

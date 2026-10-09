@@ -17,9 +17,11 @@ Independent accepted scopes and explicit alternative groups have owner-reviewed 
 [persistent provisional trust and explicit-date SPOT](../decisions/0102-govern-forecast-trust-and-explicit-valuation.md)
 are accepted as bounded business direction. Detailed [staleness](../phases/phase-4-r1-b3-forecast-staleness.md)
 and [FX](../phases/phase-4-r1-b3-forecast-fx.md) dependencies remain open.
-[R1-C1 prospect recipient research](../phases/phase-4-r1-c1-prospect-quotations.md) recommends Party-backed issue without financial setup; not approved.
+[Accepted ADR 0103](../decisions/0103-issue-quotations-to-party-backed-prospects.md) permits eligible Party-backed issue without CustomerAccount, with immutable recipient evidence and unchanged financial controls.
+[C2 readiness research](../phases/phase-4-r1-c2-financial-readiness.md) proposes later event-specific gates; not approved.
 The schema below is historical planning: one opportunity field must not become both immutable
-issue linkage and editable current CRM association. Customer-only recipients, conversion and closure are unresolved. The historical numbering
+issue linkage and editable current CRM association. Customer-only recipients are superseded as future design by ADR 0103; the physical schema below
+remains historical. Conversion, later financial gates and closure are unresolved. The historical numbering
 paragraph below must be reconciled with ADR 0079's implemented central framework before build.
 
 ```

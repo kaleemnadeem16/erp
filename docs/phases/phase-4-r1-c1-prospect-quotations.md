@@ -2,11 +2,20 @@
 
 # R1-C1 — Quoting a prospect without financial customer setup
 
-- **Status:** initial research and recommendation for owner discussion; not an approved rule or ADR.
+- **Status:** bounded Party-backed issue direction accepted in ADR 0103 on 2026-10-09; detailed delivery and C2 gates remain open.
 - **Access/review date:** 2026-10-09.
 - **Bounded question:** may a reliably identified prospect receive an official quotation before
   a CustomerAccount exists? Exact later financial-readiness gate belongs to R1-C2.
-- **Gate:** documentation only; no implementation, migration or onboarding rule finalised.
+- **Gate:** documentation only; no implementation/migration; only bounded C1 business direction accepted.
+
+## Owner decision — 2026-10-09
+
+[Accepted ADR 0103](../decisions/0103-issue-quotations-to-party-backed-prospects.md) records eligible,
+company-scoped Party-backed official issue without CustomerAccount; context-dependent recipient
+readiness, immutable identity/contact/address evidence and unchanged financial permissions/validation.
+Consistency review found no substantive conflict. Physical schema remains R2. Earlier alternatives
+below are retained research; this approval does not accept their detailed checklist, archive or
+later Finance gate recommendations. [C2 research](phase-4-r1-c2-financial-readiness.md) is now for discussion.
 
 ## What exists today
 
@@ -43,7 +52,7 @@ an offer to the wrong entity and make later acceptance, invoicing and audit ambi
 The preliminary recommendation is **B: Party-backed prospect quotations**, with recipient
 readiness checked before issue and financial readiness checked at a later, explicitly decided
 business event. Absence of an account alone should not prohibit issue; absence of reliable identity
-or required commercial information should. This recommendation remains unapproved.
+or required commercial information should. The bounded Party-backed issue direction is now accepted in ADR 0103; detailed gates remain open.
 
 ## Practical example
 
@@ -82,7 +91,7 @@ was read instead. Do not infer immutable history from a vendor's live contact or
 | B — Party-backed quote, account optional at issue | Reuses identity, accommodates direct quotes and supplier/customer dual roles; separates commercial and Finance duties | Needs recipient readiness, governed contact/site entry, snapshots and later readiness gate. Generic pricing/tax must not depend on fabricated financial defaults |
 | C — issue directly to an unqualified Lead | Fast intake and less initial entry | Unqualified enquiry may lack reliable legal recipient; later conversion can duplicate identity or change historical meaning. Conflicts with optional Lead workflow if made mandatory |
 
-**Recommend B.** A Lead may be a draft source, but issue should resolve a real Party and the
+**Owner-approved B, bounded by ADR 0103.** A Lead may be a draft source, but issue should resolve a real Party and the
 recipient evidence appropriate to the offer. Do not presume every draft must already have that
 complete evidence; draft permissiveness is a separate R2/R5 design detail. A contact person is
 not automatically the contracting party. Alternative C need not prohibit a lead-originated draft;
@@ -142,9 +151,9 @@ opportunity controls remain orthogonal; no Lead/Opportunity bypass is inferred.
 
 ## Unresolved decisions and smallest next discussion
 
-**R1-C1 business choice:** should official quotations be permitted to a reliably identified Party
-without CustomerAccount, subject to recipient/commercial readiness? Recommend yes (B). Owner
-agreement is required before recording that as a decision; no R1-C1 ADR is accepted or created yet.
+**R1-C1 resolved:** eligible Party-backed issue without CustomerAccount is accepted in ADR 0103.
+Exact later account/financial-readiness gates are now [C2 research](phase-4-r1-c2-financial-readiness.md),
+not accepted rules. Whole R1 and Q39 remain open.
 
 Keep separate:
 
@@ -156,7 +165,7 @@ Keep separate:
 - **R2/R4/R5/R6/R7/R8/R9:** recipient keys, tax/commercial readiness, issue/correction lifecycle,
   acceptance, job scope, delivery channels, capabilities and historical reporting.
 
-Stop at R1-C1 findings. Do not proceed into R1-C2 or implement the recommendation.
+C1 research is closed only for its bounded decision; C2 recommendations await discussion. No implementation.
 
 ## Related
 

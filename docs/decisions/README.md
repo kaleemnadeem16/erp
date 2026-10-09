@@ -117,8 +117,9 @@ in the same commit.
 | [0100](0100-independent-quotation-scopes-and-alternative-groups.md) | Distinguish independent quotation scopes from exclusive alternative groups | accepted (bounded business direction, 2026-10-09) | 2026-10-08 |
 | [0101](0101-separate-accepted-business-and-remaining-forecast.md) | Separate accepted business from evidence-based remaining forecasts | accepted (bounded business direction, 2026-10-09) | 2026-10-08 |
 | [0102](0102-govern-forecast-trust-and-explicit-valuation.md) | Restore forecast trust only through explicit review and publication | accepted (bounded business direction, 2026-10-09) | 2026-10-08 |
+| [0103](0103-issue-quotations-to-party-backed-prospects.md) | Issue quotations to eligible Parties without requiring financial customer setup | accepted (bounded R1-C1 direction) | 2026-10-09 |
 
-**Next number: 0103**
+**Next number: 0104**
 
 ## By theme
 

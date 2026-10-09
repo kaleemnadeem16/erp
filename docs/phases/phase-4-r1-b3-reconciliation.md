@@ -96,7 +96,7 @@ Earlier research examples do not authorise mixed-basis production totals.
 from enquiry/prospect to commercial customer using the existing Party/account foundations. Do not
 presume person customers or configurable teams already exist. This directly supports the open
 0099 relationship questions. R1-D–G remain open; detailed FX/reporting work belongs to R4/R9 rather
-than another expansion of B3. Initial R1-C1 findings are now [recorded for discussion](phase-4-r1-c1-prospect-quotations.md); stop there before R1-C2.
+than another expansion of B3. C1 direction is accepted in ADR 0103; [C2 financial-readiness findings](phase-4-r1-c2-financial-readiness.md) are for discussion. No implementation.
 
 ## Related
 

@@ -38,7 +38,7 @@ its consolidated review comes last. R6 and R7 inform R5 before lifecycle decisio
 
 | Topic | Questions and dependencies | Existing basis to reuse | Research state |
 |---|---|---|---|
-| R1 Leads, opportunities and relationships | Enquiry vs deal; optional pipeline; identity/conversion; duplicates; owners, stages and closure | Parties; ADRs 0030/0034, 0084/0089 | B3 bounded business research closed; ADRs 0100–0102 accepted; 0098/0099 Proposed; R1-C1 evidence for discussion |
+| R1 Leads, opportunities and relationships | Enquiry vs deal; optional pipeline; identity/conversion; duplicates; owners, stages and closure | Parties; ADRs 0030/0034, 0084/0089 | B3 bounded business research closed; ADRs 0100–0102 accepted; 0098/0099 Proposed; C1 accepted in ADR 0103; C2 readiness recommendations for discussion |
 | R2 Quotation structure and scope | Assemblies, work units, sections, alternatives, optional/non-priced lines; identity of a quotation vs revision | Sales pipeline draft; ADR 0008; Estimating | Not researched; follows R1 |
 | R3 Sales pricing | SIMPLE first boundary, overrides, discounts, agreements and margin controls | Accepted ADR 0055; sales-pricing.md | Existing design to assess; follows R2 |
 | R4 Tax, currency and FX | Quotation tax estimate, rules/exemptions, rounding, rate date and evidence | ADRs 0012, 0025, 0056; currency APIs | Existing design to assess; follows R2/R3 |
@@ -64,7 +64,8 @@ proposal is never "researched", "accepted" or "complete" merely because it exist
 - [R1-B3 offers and forecast](phase-4-r1-b3-offers-and-forecast.md) — retained evidence and reviewed scope/group direction.
 - [Forecast-basis research](phase-4-r1-b3-forecast-basis.md) — selection sets, accepted/pending, FX/history; business direction accepted in ADRs 0101/0102; delivery details deferred.
 - [Forecast staleness](phase-4-r1-b3-forecast-staleness.md) · [Forecast FX](phase-4-r1-b3-forecast-fx.md) — retained alternatives and accepted bounded direction; package details deferred.
-- [R1-C1 prospect quotations](phase-4-r1-c1-prospect-quotations.md) — verified foundations, three ERP comparisons and unapproved recommendation.
+- [R1-C1 prospect quotations](phase-4-r1-c1-prospect-quotations.md) — verified foundations and accepted bounded direction in ADR 0103.
+- [R1-C2 financial readiness](phase-4-r1-c2-financial-readiness.md) — evidence, scenarios and unapproved operation-specific gates.
 - Later topic records are added when investigated; do not generate empty speculative documents.
 
 ## Tasks
@@ -78,7 +79,9 @@ proposal is never "researched", "accepted" or "complete" merely because it exist
 - [x] Record owner-reviewed persistent provisional trust and explicit-date SPOT in accepted ADR 0102.
 - [x] Final owner-authorised acceptance review passed for ADRs 0100–0102; bounded B3 research closed with R2/R4/R5/R6/R7/R9 delivery gates retained.
 - [x] Record initial R1-C1 prospect-quotation evidence and recommendation.
-- [ ] Discuss R1-C1 before accepting recipient rules or beginning R1-C2.
+- [x] Record owner-approved bounded R1-C1 direction as accepted ADR 0103 after consistency review.
+- [x] Compare R1-C2 financial-readiness gates and record initial recommendations.
+- [ ] Discuss C2 acceptance recording first, then confirmed-handover/earlier financial gates.
 - [ ] Investigate R2–R9 in the dependency order above, reusing sufficient accepted research.
 - [ ] Reconcile the historical Sales domain proposal against accepted decisions.
 - [ ] Define implementation slices, demos and observable acceptance criteria only after decisions.
