@@ -2,10 +2,11 @@
 
 # Assemblies
 
-**The central abstraction of the system** ([ADR 0008](../decisions/0008-assembly-abstraction.md)).
+**The advanced work-estimating abstraction** ([ADR 0109](../decisions/0109-shared-commercial-quotation-lines-and-optional-estimating.md)).
 
-An assembly is a sellable unit of work, priced per unit of a work measure, whose cost is built
-up from components. Construction estimating calls this a *composite rate*.
+An assembly describes work measured per unit, whose cost is built up from components. It remains
+a valid source for commercial scope, but direct Items/services and controlled manual lines need
+no artificial Assembly. Construction estimating calls the built-up rate a *composite rate*.
 
 > *"Paint exterior wall, 2 coats"* — sold per sqm, costed from material + labour + plant.
 
@@ -192,7 +193,10 @@ same-number-different-unit multiplication.
 was costed, each component's resolved quantity/unit-cost and where that unit cost came from (AVCO,
 a named formulation version, a resource rate as of a date, or a manual override), which overhead
 scope tier and driver resolved and the resulting amount, and the final cost/sell per unit —
-everything a later quotation, job-costing or audit screen needs without recomputing anything.
+evidence a later quotation, job-costing or audit screen can adopt. `sell_per_unit` is estimate-derived
+guidance, not a maintained or approved Sales price; fully costed arithmetic remains unchanged.
+Legacy missing material/resource rates can still yield numeric zero without complete cost evidence;
+see the [compatibility plan](../phases/phase-4-r2-compatibility-plan.md) before treating it as trusted cost.
 
 ### Versioning
 
@@ -233,7 +237,7 @@ not caught by inspection.
 
 ### Snapshot on issue
 
-When a quotation is issued, the **fully resolved breakdown** — every component, quantity, unit
+When an Assembly-backed quotation scope is issued, the **fully resolved applicable breakdown** — every component, quantity, unit
 cost, labour rate and which application rate was selected — is copied into the document.
 
 Not a pointer to the assembly version. The version is immutable, but the *costs it references*
@@ -258,7 +262,7 @@ Assembly's own overhead_policies row
   ↓ (none?)
 Its assembly_group's overhead_policies row, if the assembly has one — a flat, optional,
   company-defined grouping (assembly_groups), NOT the Inventory item-category tree; an assembly
-  has no output item to walk a category from (ADR 0008)
+  has no output item to walk a category from (retained by ADR 0109)
   ↓ (none?)
 Company default policy
   ↓ (none?)

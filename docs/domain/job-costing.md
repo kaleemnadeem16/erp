@@ -17,7 +17,9 @@ Created from an accepted quotation ([sales-pipeline.md](sales-pipeline.md)); con
 
 **Planning boundary:** the schema below is documented-only; R7 must reconcile multiple accepted
 scopes, job multiplicity and operational gates under [R1 contracts](../phases/phase-4-r1-decision-matrix.md).
-Acceptance/preparation is not work authority, and ADR 0104 does not impose CustomerAccount at
+[ADR 0109](../decisions/0109-shared-commercial-quotation-lines-and-optional-estimating.md) allows non-Assembly commercial scope;
+an accepted scope need not imply an Assembly baseline or even a job. R7 must establish applicable
+estimate handover and fulfilment paths without fabricating estimates. Acceptance/preparation is not work authority, and ADR 0104 does not impose CustomerAccount at
 every confirmed handover. Phase 5 owns execution.
 
 ## Schema

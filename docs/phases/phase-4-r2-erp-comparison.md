@@ -2,7 +2,9 @@
 
 # R2 — Primary ERP comparison
 
-**Accessed:** 2026-10-09. **State:** initial evidence for owner discussion, not accepted decisions.
+**Accessed:** 2026-10-09. **State:** retained initial comparison from `4ca8b44`; bounded direction
+subsequently owner-approved in [ADR 0109](../decisions/0109-shared-commercial-quotation-lines-and-optional-estimating.md).
+Vendor behaviour and initial alternatives below are evidence, not new implementation authority.
 Question: how can one quotation represent goods, services and estimated work, preserve the offered
 revision, and distinguish included, optional and competing scope without duplicate totals?
 R1 identity/forecast research and accepted estimating/units research are reused rather than repeated.

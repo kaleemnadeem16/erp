@@ -9,22 +9,6 @@ Questions do not linger once resolved.
 
 ## Blocking
 
-### Q40 — Phase 4 R2 quotation structure and scope
-
-**Raised:** 2026-10-09. **Blocks:** final R2 decisions and dependent Sales structure/design, not existing delivery.
-Owner review needed for six bundles: family/revision and line sources/scope reuse; quantities;
-presentation; optional/alternative scope and dependencies; estimate adoption; recipient/locations.
-Direct Item/manual sourcing conflicts with accepted Assembly-only ADRs 0008/0055 and requires
-an explicit superseding decision if approved. Quantity precision/bounds and inclusion semantics
-are not inferred from current previews. No new business decisions accepted.
-
-[Consolidated alternatives and recommendations](phases/phase-4-r2-quotation-structure.md),
-[actual capabilities](phases/phase-4-r2-existing-capabilities.md) and
-[primary comparison](phases/phase-4-r2-erp-comparison.md) preserve the evidence.
-R3–R9 detail is assigned forward; R1/Q39 remains closed. Resolve through reviewed ADRs and remove
-this entry once answered; do not implement from recommendations alone.
-
-
 No open question now blocks finalising the Phase 3 Material Resolution / Assembly Preview ADR.
 Q25 is resolved by ADR 0057; Q26–Q28 remain non-blocking follow-ups for organisation scope and
 reusable approvals rather than reasons to pretend those capabilities exist in Phase 3.
@@ -46,6 +30,11 @@ Q1, Q2 and Q3 were resolved on 2026-08-10 — see
 ---
 
 ## Non-blocking
+
+<a id="q40--phase-4-r2-quotation-structure-and-scope"></a>
+Q40 resolved 2026-10-09 by [accepted ADR 0109](decisions/0109-shared-commercial-quotation-lines-and-optional-estimating.md).
+This historical redirect preserves research links; compatibility delivery and research-closure
+review are tracked in the [R2 plan](phases/phase-4-r2-compatibility-plan.md), not an unanswered business question.
 
 <a id="q39--phase-4-r1-enquiry-deal-and-customer-onboarding-boundaries"></a>
 Q39 resolved 2026-10-09 by accepted ADRs 0098–0108; see [R1 research closure](phases/phase-4-r1-decision-matrix.md).

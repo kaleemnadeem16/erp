@@ -2,10 +2,11 @@
 
 # Sales pricing
 
-Sales pricing turns an Assembly and document context into a customer-facing net price. It is
-independent from internal cost, tax and supplier pricing. The accepted direction is
-[ADR 0055](../decisions/0055-progressive-sales-pricing-and-controlled-formulas.md); implementation
-belongs to Phase 4.
+Sales pricing turns commercial scope and document context into a customer-facing net price. It is
+independent from internal cost, tax and supplier pricing. [ADR 0109](../decisions/0109-shared-commercial-quotation-lines-and-optional-estimating.md)
+generalises source applicability while retaining the progressive pricing/control decisions from
+[historical ADR 0055](../decisions/0055-progressive-sales-pricing-and-controlled-formulas.md).
+Implementation belongs to Phase 4; R3 must reconcile direct Item/service/manual applicability.
 
 ## Problem statement
 
@@ -31,14 +32,16 @@ tax            = determined afterwards from the $1,800 line and tax context
 | `MANAGED` | Customer and volume pricing | SIMPLE plus effective-dated price lists, customer prices, quantity tiers, currency, adjustments, agreements and minimum-margin controls |
 | `ADVANCED` | Governed company-specific logic | MANAGED plus versioned ordered formulas from restricted typed steps |
 
-The company selects its mode and default base strategy. An Assembly Group or Assembly may define a
-more specific policy. Capability mode controls available configuration; it does not erase or
+The company selects its mode and default base strategy. For Assembly-backed scope, an Assembly
+Group or Assembly may define a more specific policy. Direct Item/manual scopes do not inherit an
+Assembly hierarchy; their specific applicability/precedence remains R3. Capability mode controls available configuration; it does not erase or
 reinterpret historical quotation snapshots.
 
 ## Conceptual schema
 
-Exact Phase 4 table boundaries remain an implementation decision, but the model must preserve
-these separate facts:
+The following Assembly-oriented sketch is retained historical design from ADR 0055, not a
+universal or implementation-ready physical model. R3 must reconcile source-neutral policy scopes
+and applicability; do not mechanically add Item categories to its precedence. Preserve these facts:
 
 ```text
 pricing_policies
@@ -73,12 +76,12 @@ the historical result; they do not point at live configuration as their source o
 
 ```text
 document context
-  customer + assembly + quantity + UoM + currency + effective date
+  eligible Party/account context + commercial source + quantity/basis + currency + effective date
         ↓
 customer contract/agreement
   → customer-specific maintained price
   → general maintained price
-  → assembly pricing policy
+  → applicable source pricing policy (Assembly scopes where relevant; others await R3)
   → permitted manual price, otherwise error
         ↓
 base price → ordered adjustments/formula → unit rounding → line net
@@ -95,7 +98,7 @@ every candidate accepted or rejected.
 Keep these concepts separate:
 
 - **base effect:** maintained price, cost plus markup, or target margin;
-- **applicability:** customer, Assembly, quantity tier, date and currency;
+- **applicability:** eligible recipient, commercial source, quantity tier, date and currency;
 - **adjustment:** discount, surcharge, factor, floor, ceiling or line charge;
 - **exception:** authorised manual final price preserving the calculated price;
 - **presentation:** tax-inclusive/exclusive display and currency formatting.
@@ -137,6 +140,9 @@ preview shows inputs and intermediate results so a non-accountant can explain th
 ## Boundaries
 
 - Phase 3 material resolution supplies quantity and cost evidence, never the final Sales price.
+  Existing Assembly `sell_per_unit` remains guidance; do not apply markup twice or treat it as a
+  maintained price. Missing cost is not legitimate zero; [compatibility work](../phases/phase-4-r2-compatibility-plan.md)
+  precedes affected trusted cost-derived/control paths.
 - Purchasing supplier offers affect replenishment and acquisition cost, not customer-price
   precedence.
 - [Tax](tax.md) consumes the resolved net line and independently determines tax.

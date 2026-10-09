@@ -12,7 +12,7 @@ History is in [STATUS-LOG.md](STATUS-LOG.md); resume points are in the workstrea
 | 1 Master data | **Complete** | [phase-1-master-data.md](phases/phase-1-master-data.md) |
 | 2 Purchasing & stock | **Complete** (closed 2026-10-08): purchase orders, receipts, QA, reversal, the stock-movement and valuation engine (AVCO/FIFO/SPECIFIC), cutover, negative-stock overrides, backdated recalculation, physical counts, with their screens. Carried forward: the multi-owner correction package (needs Phases 4–6), a few Purchasing PO fields and two operations follow-ups | [phase-2-purchasing-stock.md](phases/phase-2-purchasing-stock.md) |
 | 3 Estimating core | **Core complete** (closed 2026-10-08): rate dimensions, application rates, formulations (versioning, overrides, roll-up), assemblies and overhead, the read-only Material Preview with stock proposals, what-if variance control and approvals. Deferred, not unfinished: quotation adoption and generic cost resolution (Phase 4), package-aware proposals (enhancement), department-limited availability (Q26) | [phase-3-estimating-core.md](phases/phase-3-estimating-core.md) |
-| 4 Sales, quotations and job handover | **R1 research complete**; ADRs 0098–0108 accepted, Q39 resolved; R2 initial evidence and six owner-review bundles documented, Q40 open; implementation not started | [Phase 4 research plan](phases/phase-4-sales-quotations-and-handover.md) |
+| 4 Sales, quotations and job handover | **R1 research complete**; ADRs 0098–0108 accepted, Q39 resolved; R2 U1–U6 approved in ADR 0109, Q40 resolved; compatibility assessed, closure/plan review pending; implementation not started | [Phase 4 research plan](phases/phase-4-sales-quotations-and-handover.md) |
 | 5 Job execution · 6 Finance · 7 Mobile & integrations | Not started | [phases/README.md](phases/README.md) |
 
 ## Workstreams outside the phase list
@@ -39,13 +39,13 @@ record scope, the access audit follow-ups, the approvals workspace, grouped pack
 
 Each is a new slice: propose first, get the owner's answers, then build. Optional enhancements are kept apart from required work.
 
-- **Required for the roadmap:** Phase 4 R1 research is complete; R2 quotation structure/scope awaits owner review of its [recommendations](phases/phase-4-r2-quotation-structure.md), then the dependent topics in its [plan](phases/phase-4-sales-quotations-and-handover.md); implementation waits for agreed decisions. It also owes the multi-owner correction package carried from Phase 2.
+- **Required for the roadmap:** Phase 4 R1 research is complete; R2 business direction is accepted; its [compatibility plan and closure recommendation](phases/phase-4-r2-compatibility-plan.md) await review before the dependent topics in its [plan](phases/phase-4-sales-quotations-and-handover.md); implementation waits for agreed decisions. It also owes the multi-owner correction package carried from Phase 2.
 - **Later package enhancements** (none started; each a new design slice): governed change of tracked levels; deactivation/collapse; container-level tracking (not before the owner asks); line-level receipt reversal; count approval thresholds; QA/count reconciliation; standalone Issue/Transfer screens. **Deferred estimating enhancement:** package-aware proposals in the Material Preview (owner decision: not ahead of return/scrap).
 - **Access and security:** the remaining record-scope slices (purchasing documents, Estimating availability, approvals, delegated administration) — Q26; two-factor and step-up sign-in — Q37.
 
 ## Blocked / awaiting input
 
-No open question blocks existing delivery work. R2/Q40 awaits business decisions before dependent Sales design; R1/Q39 are resolved; dependent Phase 4 design retains the research gates in its [R1 closure](phases/phase-4-r1-decision-matrix.md). Other questions: [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) (Q8, Q10, Q16, Q23, Q24, Q26, Q28, Q33, Q37). **Still pending, and not closable by documentation:** the staging sign-off for the access work (A1–A9,
+No open question blocks existing delivery work. R1/Q39 and R2/Q40 business decisions are resolved; R2 compatibility implementation/closure review remains pending; dependent Phase 4 design retains the research gates in its [R1 closure](phases/phase-4-r1-decision-matrix.md). Other questions: [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) (Q8, Q10, Q16, Q23, Q24, Q26, Q28, Q33, Q37). **Still pending, and not closable by documentation:** the staging sign-off for the access work (A1–A9,
 ADRs 0084–0089) — it needs staging access and a person to run `erp:audit-access-inventory` and decide per person; see the [settings and access handoff](phases/settings-and-access-hardening.md). 
 
 ## Where to look

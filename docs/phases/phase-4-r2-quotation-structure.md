@@ -2,11 +2,14 @@
 
 # R2 — Quotation structure and scope: consolidated owner review
 
-**Date:** 2026-10-09. **State:** initial evidence and recommendations; owner decisions pending.
-**Scope:** A–H as one research package. No implementation, migrations or new accepted ADRs.
+**Date:** 2026-10-09. **State:** U1–U6 owner-approved and recorded in accepted
+[ADR 0109](../decisions/0109-shared-commercial-quotation-lines-and-optional-estimating.md); compatibility assessment documented, research closure recommended.
+**Scope:** A–H as one research package. No implementation or migrations. Initial alternatives below
+are retained from `4ca8b44`; 0109 governs the approved direction and resolves the Assembly-only conflict.
 [R1 is research-complete](phase-4-r1-decision-matrix.md); this record does not reopen its contracts.
 [Actual capabilities](phase-4-r2-existing-capabilities.md) and [three-ERP comparison](phase-4-r2-erp-comparison.md)
-provide the evidence. Unresolved owner choices are tracked in [Q40](../OPEN-QUESTIONS.md#q40--phase-4-r2-quotation-structure-and-scope).
+provide the evidence. Q40 is resolved by 0109. The [verified audit](phase-4-r2-compatibility-audit.md)
+and [compatibility plan](phase-4-r2-compatibility-plan.md) identify delivery gates; closure awaits owner confirmation.
 
 ## What we are doing
 
@@ -29,7 +32,7 @@ places; they do not decide tax, margin, discounts or the R3 pricing engine.
 
 | Business | Customer offer | Internal meaning and consequence |
 |---|---|---|
-| Simple product sale | 2 cartons × PKR 12000.0000 = PKR 24000.0000; optional installation PKR 3000.0000 | Fixed content 12 each/carton gives 24 stock units. Base remains PKR 24000.0000; installation is separately offered, excluded until chosen. No compulsory formulation or work phases. Direct Item entry is proposed, subject to the Assembly conflict below. |
+| Simple product sale | 2 cartons × PKR 12000.0000 = PKR 24000.0000; optional installation PKR 3000.0000 | Fixed content 12 each/carton gives 24 stock units. Base remains PKR 24000.0000; installation is separately offered, excluded until chosen. No compulsory formulation or work phases. Direct Item entry is approved by 0109; functionality remains unimplemented. |
 | Service | 8 consulting hours × PKR 1500.0000 = PKR 12000.0000 | An eligible Party may receive this without a CustomerAccount. A catalogue service, labour estimate or controlled manual scope can describe delivery; hours sold are not automatically actual employee hours or a timesheet. |
 | Assembly project work | 250 m² wall treatment, two coats × PKR 1200.0000 = PKR 300000.0000 | Pin Assembly version and dimensional context; coating/application rules determine material consumption. Two coats do not silently double the sold area to 500 m². Labour, plant, subcontract and overhead remain internal cost components unless distinct deliverables are explicitly quoted. |
 
@@ -41,7 +44,8 @@ an explicit competing/overlap assessment, not an assumption of additional busine
 
 ## Alternatives and effects — decision matrix
 
-Recommendations below are proposals, not governing decisions. A–H match the owner's requested scope.
+This matrix retains the initial alternatives and recommendations from `4ca8b44`. A–H match the
+owner's requested scope; 0109 now records the approved bounded direction, not exact implementation details.
 
 | Area | Realistic alternatives and effects | Recommended business direction | Technical implication / dependency |
 |---|---|---|---|
@@ -54,7 +58,7 @@ Recommendations below are proposals, not governing decisions. A–H match the ow
 | G Recipient/location | CustomerAccount-only violates R1; one address confuses billing and delivery; mandatory project/site masters burden small businesses. | Eligible contracting Party, contextual contact/billing location, optional execution locations at quote/section/line scope. | Use Party relationships or governed quoted location evidence without fake CustomerSite/accounts. Snapshot customer-facing facts at issue; financial readiness remains separate. |
 | H Scope reuse | Source-based uniqueness blocks legitimate repeat work; unrestricted copying duplicates business; explicit intent/provenance permits warning and review. | Stable logical scope identity across revisions, explicit copy/reuse provenance and overlap/competition review. Dependencies are declared business constraints, not inferred from ordering. | New independent copies get new scope identities. Cross-family same-intent links need explicit review; no universal deduplication key. Partial acceptance/dependency enforcement/jobs belong to R6/R7. |
 
-## Recommendation detail
+## Approved business direction and retained delivery gates
 
 ### Commercial scope and source
 
@@ -132,9 +136,9 @@ hard uniqueness on those attributes. A dependency such as installation requiring
 must be declared, not inferred from section order. Unsupported conditional scope must be refused
 on affected acceptance/handover paths, not quietly treated as independently acceptable.
 
-## Architectural compatibility and genuine conflicts
+## Initial architectural conflict assessment — resolved by ADR 0109
 
-**Blocking owner choice: Assembly-only selling.** Accepted
+**Historical blocker: Assembly-only selling.** Previously accepted
 [ADR 0008](../decisions/0008-assembly-abstraction.md) makes Assembly the sellable unit even for goods;
 [ADR 0055](../decisions/0055-progressive-sales-pricing-and-controlled-formulas.md) explicitly layers
 Sales pricing on that abstraction. Optional direct Item/manual sourcing cannot be presented as
@@ -146,7 +150,8 @@ already compatible. Two viable owner choices are:
    selling; requires a new ADR expressly superseding the relevant Assembly-only contract and
    reconciling 0055's scope without discarding its progressive pricing/control decisions.
 
-No accepted ADR is edited or superseded in this research. The recommendation is not approval.
+At initial research no ADR was superseded. Subsequent U1–U6 owner approval selected option 2;
+0109 explicitly supersedes 0008/0055, retaining their valid contracts. Only their status links changed.
 The old Sales domain's compulsory `assembly_version_id` remains historical planning, not a settled
 future physical schema. Source-neutral pricing and manual-line authorisation must be reviewed in R3.
 
@@ -162,9 +167,9 @@ Reuse shared company isolation, field-sensitive capability checks at request and
 transaction/locks, stale-state refusal and idempotent append-only evidence. Exact concurrency and
 failure/retry tests follow R5/R6; failed issue/selection must not leave successful evidence.
 
-## Six owner approval bundles
+## Six owner-reviewed bundles
 
-| Bundle | Approval needed | Recommended bounded direction |
+| Bundle | Reviewed subject | Initial recommendation, now bounded by 0109 |
 |---|---|---|
 | U1 Identity, line sources and scope reuse | Family/revision identity; universal Assembly versus optional sources; repeated-work provenance | Family/revision/issued identity with stable logical scope; choose optional sources through an explicit superseding ADR, never by assumption. |
 | U2 Measurement | Sold/work/stock/price measures, package authority, increments and precision | Separate bases and snapshot conversions; approve semantics now, require explicit precision/bounds reconciliation before implementation. |
@@ -173,10 +178,10 @@ failure/retry tests follow R5/R6; failed issue/selection must not leave successf
 | U5 Estimate adoption | Pinned sources, cost uncertainty and refreshing evidence | Separate adopted estimate from commercial scope; no silent latest-version substitution; preserve variance/mix controls and UNKNOWN cost. |
 | U6 Recipient and locations | Party/contact/billing/execution context and prospect location handling | Party-backed recipient, optional multiple execution contexts, no compulsory financial account or project master; immutable issued facts. |
 
-These are approval bundles for discussion, not six accepted ADRs or six implementation engines.
-Owner review may change recommendations. Record resulting decisions through the normal ADR process;
-Q40 stays open until its business choices are resolved. Research is sufficient to discuss A–H together;
-it is not decision-recorded or implementation-ready.
+These bundles are owner-approved bounded business direction, recorded in one coherent architecture
+ADR 0109 rather than six separate engines. Q40 is resolved. Exact quantity precision, source-aware
+pricing and API rollout remain explicit delivery gates. The compatibility audit supports closing
+bounded R2 business research independently of code delivery; formal closure awaits owner confirmation.
 
 ## Deferred questions and handoffs
 
@@ -190,12 +195,13 @@ it is not decision-recorded or implementation-ready.
 | R8 Documents | Customer projection/template, optional/alternative display, snapshot rendering, PDF/delivery/portal evidence | No internal cost leakage or portal mutation of issued evidence. |
 | R9 Access/reporting | Scope-sensitive capabilities, reuse warnings, selected-baseline eligibility/overlap, historical analytics/imports/integration | Ownership is not permission; no mixed valuation bases or silent option/alternative aggregation. |
 
-**Next:** owner discussion of U1–U6 and reconciliation into proposed ADRs. Do not begin R3 before
-that direction is settled; no implementation follows from this report. The Assembly conflict and
-R2 inclusion/quantity/scope semantics need owner decisions; detailed R3–R9 controls can be assigned
-forward without expanding this package into pricing, accounting or execution design.
+**Next:** owner review of the [compatibility plan](phase-4-r2-compatibility-plan.md) and research
+closure recommendation. Approved business architecture does not authorise its code slices.
+Do not begin R3 research, implement, create migrations or change API contracts in this assessment.
 
 ## Related
+
+- [Approved ADR 0109](../decisions/0109-shared-commercial-quotation-lines-and-optional-estimating.md) · [Verified impact matrix](phase-4-r2-compatibility-audit.md) · [Compatibility plan](phase-4-r2-compatibility-plan.md)
 
 - [Phase 4 plan](phase-4-sales-quotations-and-handover.md) · [Phase index](README.md)
 - [Actual capability review](phase-4-r2-existing-capabilities.md) · [Primary ERP comparison](phase-4-r2-erp-comparison.md)

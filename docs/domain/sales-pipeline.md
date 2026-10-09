@@ -32,9 +32,11 @@ numbering assumptions must be reconciled by R2–R9 before implementation. R1 do
 revision mechanisms, partial-acceptance calculations, job multiplicity or accounting gates. Advanced
 capabilities remain deferred. See the [Phase 4 plan](../phases/phase-4-sales-quotations-and-handover.md).
 
-**R2 initial evidence (2026-10-09):** [structure/scope recommendations](../phases/phase-4-r2-quotation-structure.md)
-await six owner decisions, including the Assembly-only conflict. They are proposals, not a new
-accepted model; implementation and physical schema remain deferred.
+**R2 direction approved (2026-10-09):** [ADR 0109](../decisions/0109-shared-commercial-quotation-lines-and-optional-estimating.md)
+establishes shared Item/service/Assembly/manual scope, distinct measures, flat presentation, explicit
+options, optional governed estimates and Party-backed contexts. The [compatibility assessment](../phases/phase-4-r2-compatibility-audit.md)
+preserves current Estimating functionality; the [delivery plan](../phases/phase-4-r2-compatibility-plan.md)
+awaits review. Implementation and physical schema remain deferred.
 
 ## Where it sits
 

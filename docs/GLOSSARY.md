@@ -8,14 +8,15 @@ from everyday usage — check here before assuming.
 ## Estimating & costing
 
 **Assembly**
-A sellable unit of work, priced per unit of a work measure (per sqm, per metre, per hour). Its
+An optional advanced work estimate, measured per work unit (per sqm, per metre, per hour). Its
 cost is built up from components of different kinds. Construction estimating calls this a
-*composite rate*. This is the central abstraction of the system.
+*composite rate*. It remains the estimating abstraction, rather than a compulsory Sales line source
+([ADR 0109](decisions/0109-shared-commercial-quotation-lines-and-optional-estimating.md)).
 → [domain/assemblies.md](domain/assemblies.md)
 
 **Assembly component**
-One cost element of an assembly, classified by `kind`: MATERIAL, LABOUR, PLANT, SUBCONTRACT or
-OVERHEAD. This four-way split is the standard estimating breakdown.
+One cost element of an assembly, classified by `kind`: MATERIAL, LABOUR, PLANT or SUBCONTRACT.
+Overhead is derived separately from the applicable policy, not a stored component kind.
 
 **Formulation**
 A recipe or bill of materials producing **one base unit of an output item** from input items.
@@ -176,3 +177,7 @@ A field added at runtime by a company without a migration or deploy. Defined in
 A single-purpose business operation class (`CreateQuotation`, `PostJournalEntry`). Business
 logic lives here, not in controllers.
 → [architecture/code-structure.md](architecture/code-structure.md)
+
+## Related
+
+- [Documentation index](README.md) · [Assemblies](domain/assemblies.md) · [Sales pipeline](domain/sales-pipeline.md)

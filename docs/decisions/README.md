@@ -20,7 +20,7 @@ in the same commit.
 | [0005](0005-sanctum-authentication.md) | Sanctum for authentication | accepted | 2026-07-29 |
 | [0006](0006-generated-api-client.md) | Generated API client (Scramble → Orval) | accepted | 2026-07-29 |
 | [0007](0007-avco-valuation.md) | AVCO stock valuation, not FIFO | ~~superseded by [0032](0032-per-item-valuation-method.md)~~ | 2026-07-29 |
-| [0008](0008-assembly-abstraction.md) | Assembly as the core sellable abstraction | accepted | 2026-07-29 |
+| [0008](0008-assembly-abstraction.md) | Assembly as the core sellable abstraction | superseded by [0109](0109-shared-commercial-quotation-lines-and-optional-estimating.md) | 2026-07-29 |
 | [0009](0009-company-defined-rate-dimensions.md) | Company-defined rate dimensions | accepted | 2026-07-29 |
 | [0010](0010-core-plus-plugins.md) | Core + plugin packages, not per-customer forks | accepted | 2026-07-29 |
 | [0011](0011-double-entry-open-item-ar.md) | Double-entry GL with open-item AR | accepted | 2026-07-29 |
@@ -67,7 +67,7 @@ in the same commit.
 | [0052](0052-progressive-inventory-package-tracking.md) | Use progressive inventory package tracking | accepted | 2026-09-26 |
 | [0053](0053-explainable-inventory-package-selection-presets.md) | Ship explainable inventory-package selection presets before custom policies | accepted | 2026-09-26 |
 | [0054](0054-risk-based-material-plan-variance-controls.md) | Audit every adopted material variance; escalate by configured risk | accepted | 2026-09-26 |
-| [0055](0055-progressive-sales-pricing-and-controlled-formulas.md) | Use progressive Sales pricing with controlled formula steps | accepted | 2026-09-26 |
+| [0055](0055-progressive-sales-pricing-and-controlled-formulas.md) | Use progressive Sales pricing with controlled formula steps | superseded by [0109](0109-shared-commercial-quotation-lines-and-optional-estimating.md) | 2026-09-26 |
 | [0056](0056-progressive-tax-calculation-and-recovery.md) | Use progressive tax calculation and explicit recovery distributions | accepted | 2026-09-26 |
 | [0057](0057-stable-material-resolution-capabilities-with-dynamic-assignment.md) | Use stable material-resolution capabilities with dynamic company assignment | accepted | 2026-09-26 |
 | [0058](0058-phase-3-material-resolution-preview-contract.md) | Define a read-only, explainable Phase 3 material-resolution preview | accepted | 2026-09-26 |
@@ -123,8 +123,9 @@ in the same commit.
 | [0106](0106-separate-sales-ownership-and-access.md) | Separate Sales responsibility from access and preserve reassignment history | accepted | 2026-10-09 |
 | [0107](0107-separate-opportunity-stages-and-outcomes.md) | Separate pipeline stages, accepted scope and governed opportunity outcomes | accepted | 2026-10-09 |
 | [0108](0108-expose-a-progressive-basic-crm.md) | Expose a practical basic CRM without forcing enterprise workflow | accepted | 2026-10-09 |
+| [0109](0109-shared-commercial-quotation-lines-and-optional-estimating.md) | Support shared commercial quotation lines with optional estimating | accepted | 2026-10-09 |
 
-**Next number: 0109**
+**Next number: 0110**
 
 ## By theme
 

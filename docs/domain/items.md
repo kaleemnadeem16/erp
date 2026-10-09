@@ -53,7 +53,7 @@ categories
 | `RAW` | ✅ | Purchased ingredients — pigment, binder, solvent |
 | `SEMI_FINISHED` | ✅ | Formulation output held in stock — a mixed shade |
 | `FINISHED` | ✅ | Sold as-is, no further work |
-| `SERVICE` | ❌ | Sold work — the output of an [assembly](assemblies.md) |
+| `SERVICE` | ❌ | Non-stock service; direct commercial source or part of an optional estimate ([ADR 0109](../decisions/0109-shared-commercial-quotation-lines-and-optional-estimating.md)) |
 | `LABOUR` | ❌ | A labour class, priced via a resource rate (below) |
 | `PLANT` | ❌ | An hourly-rated piece of equipment, priced via a resource rate (below) |
 

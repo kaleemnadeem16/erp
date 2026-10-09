@@ -13,9 +13,13 @@ Ordered by how painful violation is.
 
 **When a document is issued, copy the fully resolved figures into it.**
 
-A quotation stores its complete cost breakdown — every component, quantity, unit cost, labour
-rate and FX rate as at that moment. Not a pointer to the assembly version. Not a reference to
-current stock cost.
+A quotation stores the actual commercial, quantity/conversion, recipient and applicable estimate/
+cost/FX evidence used at issue. Assembly-backed scope copies its resolved components, quantities,
+unit costs and resource rates, not just an Assembly-version pointer. Direct Item/manual scope
+does not require an artificial Assembly ([ADR 0109](../decisions/0109-shared-commercial-quotation-lines-and-optional-estimating.md)).
+Missing/partial cost remains explicit and must never appear as trusted complete zero cost; which
+pricing/control paths require complete cost is governed separately. Never reference current stock
+cost as the historical source of truth.
 
 **Never recompute a historical document from current master data.**
 
@@ -117,7 +121,9 @@ that starts carrying money without registering a probe silently removes the lock
 250 sqm of wall at 2 coats consumes 500 sqm of material but is priced per sqm of wall.
 
 The component `multiplier` handles consumption; the document line quantity handles pricing.
-Conflating them makes every estimate wrong by the coat count.
+Conflating them makes every estimate wrong by the coat count. Direct Item/package selling likewise
+keeps offered, priced and derived stock quantities distinct; package factors do not alter technical
+Assembly/formulation composition.
 
 → [domain/assemblies.md](../domain/assemblies.md)
 

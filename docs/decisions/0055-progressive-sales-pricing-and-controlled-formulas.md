@@ -1,6 +1,6 @@
 # 0055 — Use progressive Sales pricing with controlled formula steps
 
-- **Status:** accepted
+- **Status:** superseded by [0109](0109-shared-commercial-quotation-lines-and-optional-estimating.md)
 - **Date:** 2026-09-26
 - **Affects:** Phase 3 cost/price boundary, Phase 4 quotations and Sales pricing, Phase 6 tax
 

@@ -2,9 +2,9 @@
 
 Owns Phase 3's costing layer: company-defined rate dimensions and application rates,
 formulations with versioning, customer overrides and cost roll-up, the overhead-policy resolver,
-and assemblies (a sellable unit of work) with their own versioned components and full five-part
-cost roll-up. It also owns ADR 0058's read-only Material Resolution preview contract as the next
-implementation slice.
+and assemblies (an optional commercial scope source and advanced work estimate) with their own versioned components and full five-part
+cost roll-up. It also owns the implemented ADR 0058 read-only Material Resolution preview;
+quotation adoption remains Phase 4.
 
 **Governed by:** [application-rates.md](../../../../docs/domain/application-rates.md),
 [formulations.md](../../../../docs/domain/formulations.md),
@@ -13,6 +13,12 @@ implementation slice.
 [ADR 0009](../../../../docs/decisions/0009-company-defined-rate-dimensions.md),
 [ADR 0049](../../../../docs/decisions/0049-assembly-group-overhead-scope.md) and
 [phase-3-estimating-core.md](../../../../docs/phases/phase-3-estimating-core.md).
+
+**Phase 4 source contract:** [ADR 0109](../../../../docs/decisions/0109-shared-commercial-quotation-lines-and-optional-estimating.md)
+permits direct Item/service/manual selling alongside Assembly-backed work. Existing Estimating APIs
+remain Assembly-specific; `sell_per_unit` is estimate-derived guidance, not the future Sales resolver.
+The [compatibility plan](../../../../docs/phases/phase-4-r2-compatibility-plan.md) tracks missing-cost
+certainty and future adoption without replacing these Actions.
 
 ## Owns
 

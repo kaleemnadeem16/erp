@@ -3,6 +3,9 @@
 # R2 — Existing capabilities and adoption gaps
 
 **Verified:** 2026-10-09, starting from `49ece90`. Research only; no Sales implementation.
+**Current direction:** [ADR 0109](../decisions/0109-shared-commercial-quotation-lines-and-optional-estimating.md) replaces the Assembly-only
+Sales assumption; [verified impact audit](phase-4-r2-compatibility-audit.md) and
+[compatibility plan](phase-4-r2-compatibility-plan.md) extend this initial inventory.
 This record answers what quotation structure can reuse, rather than assuming a domain sketch
 or a module README's older progress paragraph is executable functionality.
 
@@ -57,8 +60,9 @@ Do not reproduce their historical pseudo-DDL as the current schema.
 
 ## Accepted contracts reused
 
-- ADRs 0008/0055: Assembly as sellable abstraction; progressive Sales pricing independent of cost.
-  Direct non-Assembly lines would change this contract; see the [R2 decision matrix](phase-4-r2-quotation-structure.md).
+- ADR 0109 supersedes the universal Assembly selling assumptions of historical 0008/0055.
+  Versioned estimates and progressive Sales pricing independent of cost remain valid;
+  direct Item/service/manual sources are accepted bounded direction.
 - ADRs 0050/0080: distinguish global conversion, item conversion, quantity increments, package
   content and price denominator. Purchasing-specific defaults do not automatically become Sales policy.
 - ADRs 0054/0058/0072/0076/0077: governed plan variance and stock choice; preview/adoption boundary;

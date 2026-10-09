@@ -39,8 +39,8 @@ its consolidated review comes last. R6 and R7 inform R5 before lifecycle decisio
 | Topic | Questions and dependencies | Existing basis to reuse | Research state |
 |---|---|---|---|
 | R1 Leads, opportunities and relationships | Enquiry vs deal; optional pipeline; identity/conversion; duplicates; owners, stages and closure | Parties; ADRs 0030/0034, 0084/0089 | Research complete, ADRs 0098–0108 accepted; Q39 resolved; delivery gates retained |
-| R2 Quotation structure and scope | Assemblies, work units, sections, alternatives, optional/non-priced lines; identity of a quotation vs revision | Sales pipeline draft; ADR 0008; Estimating | Initial evidence documented; six owner-review bundles pending, Q40 open |
-| R3 Sales pricing | SIMPLE first boundary, overrides, discounts, agreements and margin controls | Accepted ADR 0055; sales-pricing.md | Existing design to assess; follows R2 |
+| R2 Quotation structure and scope | Assemblies, work units, sections, alternatives, optional/non-priced lines; identity of a quotation vs revision | Sales scope; ADR 0109; Estimating | U1–U6 approved, 0109 accepted; compatibility assessed; closure recommended, plan review pending |
+| R3 Sales pricing | SIMPLE first boundary, overrides, discounts, agreements and margin controls | ADR 0109 retains/generalises historical 0055; sales-pricing.md | Existing design to assess; follows R2 |
 | R4 Tax, currency and FX | Quotation tax estimate, rules/exemptions, rounding, rate date and evidence | ADRs 0012, 0025, 0056; currency APIs | Existing design to assess; follows R2/R3 |
 | R5 Lifecycle, approvals, issue and revisions | Stale drafts, plan adoption, snapshot boundary, withdrawal/supersession, expiry and approval invalidation | ADRs 0054, 0058, 0070, 0072, 0076/0077, 0079, 0085 | Not researched; follows R2–R4, informed by R6/R7 |
 | R6 Customer decisions | Whole/partial acceptance, alternatives, evidence, rejection and expired offers | Sales pipeline landmines; immutable snapshots | Not researched; follows R2; iterate with R5 |
@@ -67,7 +67,8 @@ proposal is never "researched", "accepted" or "complete" merely because it exist
 - [R1-C1 prospect quotations](phase-4-r1-c1-prospect-quotations.md) — verified foundations and accepted bounded direction in ADR 0103.
 - [R1-C2 financial readiness](phase-4-r1-c2-financial-readiness.md) — accepted bounded separation in ADR 0104; historical candidate gates remain deferred.
 - [Consolidated R1 decision matrix](phase-4-r1-decision-matrix.md) · [additional evidence](phase-4-r1-remaining-evidence.md) — accepted matrix and closure; detailed implementation gates retained.
-- [R2 consolidated recommendations](phase-4-r2-quotation-structure.md) · [actual capabilities](phase-4-r2-existing-capabilities.md) · [primary comparison](phase-4-r2-erp-comparison.md) — A–H initial evidence, alternatives and six owner-review bundles; no new accepted decisions.
+- [R2 consolidated recommendations](phase-4-r2-quotation-structure.md) · [actual capabilities](phase-4-r2-existing-capabilities.md) · [primary comparison](phase-4-r2-erp-comparison.md) — retained A–H alternatives; U1–U6 approved in accepted ADR 0109.
+- [R2 verified impact matrix](phase-4-r2-compatibility-audit.md) · [compatibility plan](phase-4-r2-compatibility-plan.md) — source-specific coexistence, shared certainty obligations and future Sales slices; code not authorised.
 - Later topic records are added when investigated; do not generate empty speculative documents.
 
 ## Tasks
@@ -87,7 +88,8 @@ proposal is never "researched", "accepted" or "complete" merely because it exist
 - [x] Consolidate remaining R1 evidence, 0098/0099 blocker resolutions and six owner-review bundles.
 - [x] Final owner review U1–U6 passed; accept 0098/0099 and 0105–0108; close R1 and resolve Q39.
 - [x] Begin R2 at owner request; document A–H initial evidence, actual capability review and primary comparison.
-- [ ] Review R2 U1–U6 with the owner, reconcile the Assembly-only conflict and record agreed decisions before dependent design.
+- [x] Record approved R2 U1–U6 in accepted ADR 0109, supersede 0008/0055 explicitly and document actual compatibility/required slices; resolve Q40.
+- [ ] Owner review of compatibility plan and formal bounded R2 research closure; code and R3 research await further authorisation.
 - [ ] Investigate R2–R9 in the dependency order above, reusing sufficient accepted research.
 - [x] Reconcile R1 business foundations with the historical Sales proposal; physical schema reconciliation remains R2–R9.
 - [ ] Define implementation slices, demos and observable acceptance criteria only after decisions.

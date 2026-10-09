@@ -40,6 +40,10 @@ independent from internal material cost.
 
 ## Accepted Phase 3 boundary
 
+[ADR 0109](../decisions/0109-shared-commercial-quotation-lines-and-optional-estimating.md) retains these controls for applicable material
+plans; ordinary direct Item/service/manual scope need not have an artificial Assembly or plan.
+Quotation adoption and certainty integration remain in the [compatibility plan](../phases/phase-4-r2-compatibility-plan.md).
+
 [ADR 0051](../decisions/0051-phase-3-commercial-packaging-and-supplier-cost-scenarios.md)
 decides that Phase 3 proposes package use from the company's own inventory. It may mix open
 remnants and sealed package sizes and lets the user choose a valid alternative.

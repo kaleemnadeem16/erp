@@ -2,7 +2,7 @@
 
 # 0008 — Assembly as the core sellable abstraction
 
-- **Status:** accepted
+- **Status:** superseded by [0109](0109-shared-commercial-quotation-lines-and-optional-estimating.md)
 - **Date:** 2026-07-29
 - **Affects:** Phases 3–6, the whole estimating and costing model
 
