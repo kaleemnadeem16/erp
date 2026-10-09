@@ -3,13 +3,14 @@
 # R2 — Quotation structure and scope: consolidated owner review
 
 **Date:** 2026-10-09. **State:** U1–U6 owner-approved and recorded in accepted
-[ADR 0109](../decisions/0109-shared-commercial-quotation-lines-and-optional-estimating.md); compatibility assessment documented, research closure recommended.
+[ADR 0109](../decisions/0109-shared-commercial-quotation-lines-and-optional-estimating.md); **bounded R2 business research formally closed** after owner approval and consistency checks.
 **Scope:** A–H as one research package. No implementation or migrations. Initial alternatives below
 are retained from `4ca8b44`; 0109 governs the approved direction and resolves the Assembly-only conflict.
 [R1 is research-complete](phase-4-r1-decision-matrix.md); this record does not reopen its contracts.
 [Actual capabilities](phase-4-r2-existing-capabilities.md) and [three-ERP comparison](phase-4-r2-erp-comparison.md)
 provide the evidence. Q40 is resolved by 0109. The [verified audit](phase-4-r2-compatibility-audit.md)
-and [compatibility plan](phase-4-r2-compatibility-plan.md) identify delivery gates; closure awaits owner confirmation.
+and [compatibility plan](phase-4-r2-compatibility-plan.md) identify delivery gates. R2 implementation
+is not complete; C0/C1/C2 and quotation delivery remain separate.
 
 ## What we are doing
 
@@ -180,8 +181,8 @@ failure/retry tests follow R5/R6; failed issue/selection must not leave successf
 
 These bundles are owner-approved bounded business direction, recorded in one coherent architecture
 ADR 0109 rather than six separate engines. Q40 is resolved. Exact quantity precision, source-aware
-pricing and API rollout remain explicit delivery gates. The compatibility audit supports closing
-bounded R2 business research independently of code delivery; formal closure awaits owner confirmation.
+pricing and API rollout remain explicit delivery gates. The owner approved formal bounded research closure independently of code delivery.
+C0 technical approval and implementation authorisation remain separate gates.
 
 ## Deferred questions and handoffs
 
@@ -195,9 +196,27 @@ bounded R2 business research independently of code delivery; formal closure awai
 | R8 Documents | Customer projection/template, optional/alternative display, snapshot rendering, PDF/delivery/portal evidence | No internal cost leakage or portal mutation of issued evidence. |
 | R9 Access/reporting | Scope-sensitive capabilities, reuse warnings, selected-baseline eligibility/overlap, historical analytics/imports/integration | Ownership is not permission; no mixed valuation bases or silent option/alternative aggregation. |
 
-**Next:** owner review of the [compatibility plan](phase-4-r2-compatibility-plan.md) and research
-closure recommendation. Approved business architecture does not authorise its code slices.
-Do not begin R3 research, implement, create migrations or change API contracts in this assessment.
+## Formal bounded closure — 2026-10-09
+
+Owner reviewed `22a3603`, accepted 0109 and the compatibility assessment/plan; formal closure
+is authorised subject to documentation checks. The final consistency review confirms:
+
+| Contract | Closure finding |
+|---|---|
+| 0008 → 0109 | Universal Assembly selling/compulsory product wrapper/rejection of direct product selling are replaced. Valid industry-neutral versioned work estimates and optional component layers remain. |
+| 0055 → 0109 | Universal Assembly-only applicability is generalised. Progressive pricing modes/effects, controlled formulas, overrides, deterministic explanation and immutable evidence remain governing through 0109's explicit retention. |
+| Existing estimating foundations | Formulations, resource rates, application rates/dimensions, technical conversions, cost roll-up and overhead decisions remain valid. Their known uncertainty defects are delivery obligations, not reopened R2 choices. |
+| R1 / Q40 | Accepted 0098–0108 unchanged; U1–U6 recorded in 0109, Q40 resolved. No unanswered bounded R2 business decision remains. |
+| Implementation gates | Numeric/API rollout and cost certainty: C0/C1/C2; quotation quantity/source models: R2 delivery; pricing: R3; tax/FX: R4; adoption/lifecycle: R5; acceptance: R6; handover: R7; documents: R8; access/analytics: R9. |
+
+Both historical ADR bodies are preserved; their status links identify replacement records, while
+0109 precisely limits the substantive change. No costing or pricing-governance provision is
+silently discarded. Research indexes, status and Q40 are reconciled with this closure.
+
+**Next:** review [C0](phase-4-c0-cost-evidence-contract.md) and the [C1/C2 slices](phase-4-c1-c2-cost-evidence-slices.md).
+R3 research is independently ready, not started in this task. Cost-dependent financial use must
+wait for appropriate corrected evidence; R3 decides which paths need it. No universal costing
+requirement is imposed on every Item/service/manual quotation. No code or migration is authorised.
 
 ## Related
 

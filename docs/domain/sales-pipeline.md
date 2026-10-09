@@ -4,7 +4,8 @@
 
 From first contact to a confirmed job.
 
-**R1 research complete (2026-10-09); implementation not started.** The
+**R1/R2 business research complete (2026-10-09).** CRM backend foundation exists separately;
+quotations/adoption remain unimplemented. The
 [accepted decision matrix](../phases/phase-4-r1-decision-matrix.md) is the current foundation contract:
 
 - [0098](../decisions/0098-hybrid-sales-opportunity-requirement.md): optional Lead intake, hybrid
@@ -50,11 +51,12 @@ numbering assumptions must be reconciled by R2–R9 before implementation. R1 do
 revision mechanisms, partial-acceptance calculations, job multiplicity or accounting gates. Advanced
 capabilities remain deferred. See the [Phase 4 plan](../phases/phase-4-sales-quotations-and-handover.md).
 
-**R2 direction approved (2026-10-09):** [ADR 0109](../decisions/0109-shared-commercial-quotation-lines-and-optional-estimating.md)
+**R2 direction approved and bounded research closed (2026-10-09):** [ADR 0109](../decisions/0109-shared-commercial-quotation-lines-and-optional-estimating.md)
 establishes shared Item/service/Assembly/manual scope, distinct measures, flat presentation, explicit
 options, optional governed estimates and Party-backed contexts. The [compatibility assessment](../phases/phase-4-r2-compatibility-audit.md)
 preserves current Estimating functionality; the [delivery plan](../phases/phase-4-r2-compatibility-plan.md)
-awaits review. Implementation and physical schema remain deferred.
+passed owner review. [C0/C1/C2 technical proposals](../phases/phase-4-c0-cost-evidence-contract.md)
+await contract approval and implementation authority; quotation implementation/schema remain deferred.
 
 ## Where it sits
 

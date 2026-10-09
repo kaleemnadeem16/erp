@@ -2,7 +2,8 @@
 
 # R2 — Dependency-ordered compatibility plan
 
-**Date:** 2026-10-09. **State:** plan for owner review; implementation not authorised.
+**Date:** 2026-10-09. **State:** compatibility assessment/plan owner-reviewed; bounded R2 research formally closed.
+C0 contract proposal remains for approval; implementation not authorised.
 Business direction is accepted in [ADR 0109](../decisions/0109-shared-commercial-quotation-lines-and-optional-estimating.md).
 The [audit](phase-4-r2-compatibility-audit.md) distinguishes valid current behaviour, known defects,
 required shared work and absent future Sales capabilities. No migration/backfill is proposed as
@@ -14,7 +15,11 @@ an immediate action; proposed code slices need owner authorisation before delive
 contracts. Only historical ADR status lines change; index links and current domain/invariant text
 identify the new source-neutral direction. R2 research retains alternatives and dated initial
 recommendations, with current approval/assessment overlays. Q40's answered business question is
-removed; research closure is recommended separately from implementation readiness.
+removed; formal research closure is separate from implementation readiness.
+
+Current detailed technical proposal: [C0 cost-evidence contract](phase-4-c0-cost-evidence-contract.md)
+and [C1/C2 independently reviewable slices](phase-4-c1-c2-cost-evidence-slices.md).
+Proposed ADR 0110 remains unaccepted; these records refine C0–C2 below without authorising code.
 
 ## B/C — Compatibility and future delivery matrix
 
@@ -115,14 +120,14 @@ The owner-approved U1–U6 business direction is reconciled in 0109; the Assembl
 resolved by explicit supersession. Remaining quantity/API rollout and Item/manual price/tax
 applicability choices are genuine delivery/research gates, not permission to expand R2 into R3.
 
-**Recommendation:** close bounded R2 business research independently of C0–C3/S1–S4 delivery.
-The audit establishes coexistence and exposes the necessary gates; code need not change to accept
-that business architecture. This commit records approved direction and the closure recommendation;
-formal R2 research closure awaits owner confirmation. No compatibility implementation is authorised.
+**Closed:** owner approved formal bounded R2 business research closure after reviewing `22a3603`;
+final consistency checks retain estimating/pricing governance and explicit implementation gates.
+No compatibility implementation is authorised. C0 is now a concrete proposal in unaccepted 0110;
+C1/C2 code waits for contract review and explicit authority.
 
 R3–R9 own pricing, tax/FX, lifecycle, acceptance, job multiplicity, customer documents and access/
-analytics details as assigned in the R2 record. Next action is owner review of this compatibility
-plan and closure recommendation. Do not start R3 research or code without the next authorisation.
+analytics details as assigned in the R2 record. R3 research can proceed independently of cost-code
+delivery; this task does not start it. Next action is owner review of C0 and C1/C2 delivery slices.
 
 ## Related
 

@@ -83,9 +83,11 @@ Research and discussion have started; see the [research plan](phase-4-sales-quot
 [R1 research is complete](phase-4-r1-decision-matrix.md), governed by accepted ADRs 0098–0108;
 Q39 resolved. [R2 quotation structure/scope](phase-4-r2-quotation-structure.md) U1–U6 is approved
 in accepted ADR 0109; Q40 resolved. [Verified impact matrix](phase-4-r2-compatibility-audit.md) and
-[compatibility plan](phase-4-r2-compatibility-plan.md) await owner review/closure confirmation.
+[compatibility plan](phase-4-r2-compatibility-plan.md) passed owner review; bounded R2 research is
+formally closed. [C0 proposal](phase-4-c0-cost-evidence-contract.md) / [C1/C2 slices](phase-4-c1-c2-cost-evidence-slices.md)
+await contract approval and code authority (proposed 0110/Q41).
 [Initial capability review](phase-4-r2-existing-capabilities.md) and [ERP comparison](phase-4-r2-erp-comparison.md)
-remain linked evidence. Implementation has not started.
+remain linked evidence. CRM backend exists; R2 quotations/C1/C2 implementation remains pending.
 
 
 Leads, opportunities, quotations with revisions, cost snapshotting, PDF output. Mobile layout

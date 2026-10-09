@@ -2,7 +2,8 @@
 
 # R2 — Existing capabilities and adoption gaps
 
-**Verified:** 2026-10-09, starting from `49ece90`. Research only; no Sales implementation.
+**Historical initial inventory:** 2026-10-09, starting from `49ece90`; no Sales runtime at that baseline.
+Subsequent CRM/Party backend commits are separate delivery, not quotation/cost-adoption implementation.
 **Current direction:** [ADR 0109](../decisions/0109-shared-commercial-quotation-lines-and-optional-estimating.md) replaces the Assembly-only
 Sales assumption; [verified impact audit](phase-4-r2-compatibility-audit.md) and
 [compatibility plan](phase-4-r2-compatibility-plan.md) extend this initial inventory.
