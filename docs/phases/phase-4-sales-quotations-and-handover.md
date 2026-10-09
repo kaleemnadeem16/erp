@@ -38,7 +38,7 @@ its consolidated review comes last. R6 and R7 inform R5 before lifecycle decisio
 
 | Topic | Questions and dependencies | Existing basis to reuse | Research state |
 |---|---|---|---|
-| R1 Leads, opportunities and relationships | Enquiry vs deal; optional pipeline; identity/conversion; duplicates; owners, stages and closure | Parties; ADRs 0030/0034, 0084/0089 | B3 bounded business research closed; ADRs 0100–0102 accepted; 0098/0099 Proposed; C1 accepted in ADR 0103; C2 bounded direction accepted in ADR 0104; remaining R1 matrix for owner review |
+| R1 Leads, opportunities and relationships | Enquiry vs deal; optional pipeline; identity/conversion; duplicates; owners, stages and closure | Parties; ADRs 0030/0034, 0084/0089 | Research complete, ADRs 0098–0108 accepted; Q39 resolved; delivery gates retained |
 | R2 Quotation structure and scope | Assemblies, work units, sections, alternatives, optional/non-priced lines; identity of a quotation vs revision | Sales pipeline draft; ADR 0008; Estimating | Not researched; follows R1 |
 | R3 Sales pricing | SIMPLE first boundary, overrides, discounts, agreements and margin controls | Accepted ADR 0055; sales-pricing.md | Existing design to assess; follows R2 |
 | R4 Tax, currency and FX | Quotation tax estimate, rules/exemptions, rounding, rate date and evidence | ADRs 0012, 0025, 0056; currency APIs | Existing design to assess; follows R2/R3 |
@@ -66,15 +66,15 @@ proposal is never "researched", "accepted" or "complete" merely because it exist
 - [Forecast staleness](phase-4-r1-b3-forecast-staleness.md) · [Forecast FX](phase-4-r1-b3-forecast-fx.md) — retained alternatives and accepted bounded direction; package details deferred.
 - [R1-C1 prospect quotations](phase-4-r1-c1-prospect-quotations.md) — verified foundations and accepted bounded direction in ADR 0103.
 - [R1-C2 financial readiness](phase-4-r1-c2-financial-readiness.md) — accepted bounded separation in ADR 0104; historical candidate gates remain deferred.
-- [Consolidated R1 decision matrix](phase-4-r1-decision-matrix.md) · [additional evidence](phase-4-r1-remaining-evidence.md) — current review agenda; new recommendations unapproved.
+- [Consolidated R1 decision matrix](phase-4-r1-decision-matrix.md) · [additional evidence](phase-4-r1-remaining-evidence.md) — accepted matrix and closure; detailed implementation gates retained.
 - Later topic records are added when investigated; do not generate empty speculative documents.
 
 ## Tasks
 
 - [x] Establish this research structure and inspect the existing foundations.
 - [x] Capture initial R1 evidence from three mature products.
-- [x] Record R1-A owner-reviewed direction in [proposed ADR 0098](../decisions/0098-hybrid-sales-opportunity-requirement.md); architecture and edge-case review remains pending.
-- [x] Record R1-B1/B2 owner-reviewed direction in proposed ADR 0099 and capture initial B3 evidence.
+- [x] Record R1-A owner-reviewed direction in [accepted ADR 0098](../decisions/0098-hybrid-sales-opportunity-requirement.md); final U1 review completed.
+- [x] Record R1-B1/B2 owner-reviewed direction in accepted ADR 0099 and capture initial B3 evidence.
 - [x] Record owner-reviewed independent scopes/exclusive groups in accepted ADR 0100; compare forecast bases.
 - [x] Record owner-reviewed MAINTAINED/SELECTED_OFFERS methods in accepted ADR 0101; investigate staleness/FX separately.
 - [x] Record owner-reviewed persistent provisional trust and explicit-date SPOT in accepted ADR 0102.
@@ -84,9 +84,10 @@ proposal is never "researched", "accepted" or "complete" merely because it exist
 - [x] Compare R1-C2 financial-readiness gates and record initial recommendations.
 - [x] Accept owner-approved bounded C2 direction in ADR 0104; universal handover account gate withheld.
 - [x] Consolidate remaining R1 evidence, 0098/0099 blocker resolutions and six owner-review bundles.
-- [ ] Owner reviews consolidated R1 decisions; record approved contracts and close R1/Q39 before R2.
+- [x] Final owner review U1–U6 passed; accept 0098/0099 and 0105–0108; close R1 and resolve Q39.
+- [ ] Begin R2 quotation structure/scope research when requested; no R2 research started in R1 closure.
 - [ ] Investigate R2–R9 in the dependency order above, reusing sufficient accepted research.
-- [ ] Reconcile the historical Sales domain proposal against accepted decisions.
+- [x] Reconcile R1 business foundations with the historical Sales proposal; physical schema reconciliation remains R2–R9.
 - [ ] Define implementation slices, demos and observable acceptance criteria only after decisions.
 - [ ] Before each implementation, apply the feature-completion checklist and authorisation rules.
 

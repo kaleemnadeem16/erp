@@ -112,15 +112,19 @@ in the same commit.
 | [0095](0095-status-is-short-current-and-purpose-limited.md) | STATUS.md is short, current and limited by purpose, not by a row count (supersedes 0044) | accepted | 2026-10-08 |
 | [0096](0096-cross-cutting-feature-standards.md) | Cross-cutting feature standards live in canonical docs and a completion checklist | accepted | 2026-10-08 |
 | [0097](0097-supplier-return-and-scrap-of-rejected-stock.md) | Supplier return and scrap of rejected stock: one exit movement from the receipt's own layer | accepted | 2026-10-08 |
-| [0098](0098-hybrid-sales-opportunity-requirement.md) | Govern opportunity requirements through one hybrid Sales workflow | proposed (owner-reviewed direction) | 2026-10-08 |
-| [0099](0099-separate-quotation-issue-and-crm-association.md) | Separate quotation issue evidence from current CRM association | proposed (R1-B1/B2 owner-reviewed) | 2026-10-08 |
+| [0098](0098-hybrid-sales-opportunity-requirement.md) | Govern opportunity requirements through one hybrid Sales workflow | accepted (U1 final review, 2026-10-09) | 2026-10-08 |
+| [0099](0099-separate-quotation-issue-and-crm-association.md) | Separate quotation issue evidence from current CRM association | accepted (U2 final review, 2026-10-09) | 2026-10-08 |
 | [0100](0100-independent-quotation-scopes-and-alternative-groups.md) | Distinguish independent quotation scopes from exclusive alternative groups | accepted (bounded business direction, 2026-10-09) | 2026-10-08 |
 | [0101](0101-separate-accepted-business-and-remaining-forecast.md) | Separate accepted business from evidence-based remaining forecasts | accepted (bounded business direction, 2026-10-09) | 2026-10-08 |
 | [0102](0102-govern-forecast-trust-and-explicit-valuation.md) | Restore forecast trust only through explicit review and publication | accepted (bounded business direction, 2026-10-09) | 2026-10-08 |
 | [0103](0103-issue-quotations-to-party-backed-prospects.md) | Issue quotations to eligible Parties without requiring financial customer setup | accepted (bounded R1-C1 direction) | 2026-10-09 |
 | [0104](0104-separate-customer-acceptance-and-readiness.md) | Separate customer acceptance from operational and financial readiness | accepted (bounded R1-C2 direction) | 2026-10-09 |
+| [0105](0105-support-generic-party-identity-and-conversion.md) | Support organisation and individual Parties with controlled identity reuse | accepted | 2026-10-09 |
+| [0106](0106-separate-sales-ownership-and-access.md) | Separate Sales responsibility from access and preserve reassignment history | accepted | 2026-10-09 |
+| [0107](0107-separate-opportunity-stages-and-outcomes.md) | Separate pipeline stages, accepted scope and governed opportunity outcomes | accepted | 2026-10-09 |
+| [0108](0108-expose-a-progressive-basic-crm.md) | Expose a practical basic CRM without forcing enterprise workflow | accepted | 2026-10-09 |
 
-**Next number: 0105**
+**Next number: 0109**
 
 ## By theme
 

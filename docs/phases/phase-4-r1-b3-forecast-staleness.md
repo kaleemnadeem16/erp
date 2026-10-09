@@ -2,7 +2,7 @@
 
 # R1-B3-S — Forecast staleness and review
 
-- **Status:** bounded B3 business research closed 2026-10-09; ADRs 0100–0102 accepted; detailed delivery gates remain open.
+- **Status:** R1 business research complete 2026-10-09; accepted ADRs 0098–0108 govern; detailed delivery gates remain.
 - **Access date:** 2026-10-08.
 - **Question:** how should current forecasts respond when their selected evidence or maintained
   assumptions change without rewriting published history or silently changing sales intent?
@@ -12,6 +12,10 @@
 **Reading this record:** earlier alternatives/recommendations are retained research history.
 Accepted ADRs 0100–0102 govern only their bounded contracts; detailed package recommendations
 are not accepted by this closure. The [final review](phase-4-r1-b3-reconciliation.md) records the boundary.
+
+**Final closure:** the owner approved the bounded foundation contracts; [current R1 closure](phase-4-r1-decision-matrix.md)
+records accepted decisions and delivery gates. Earlier alternatives and review agendas below are
+historical unless confirmed by those ADRs; they do not reopen R1 or approve detailed implementation.
 
 ## Owner review — 2026-10-08
 
@@ -30,7 +34,7 @@ and reporting options remain research history; reviewed direction takes preceden
 
 No Sales forecast or acceptance model exists. The shared audit/immutable snapshot conventions,
 explicit Actions and stale-evidence/idempotency patterns exist. Material Preview has freshness
-inspection; it is not a persisted forecast. Proposed ADRs 0098–0100 preserve issue policy,
+inspection; it is not a persisted forecast. accepted ADRs 0098–0100 preserve issue policy,
 relationship/group history and distinct acceptance; they do not define expiry or partial acceptance.
 
 ## Primary-source comparison

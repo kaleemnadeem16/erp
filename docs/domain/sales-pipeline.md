@@ -4,30 +4,33 @@
 
 From first contact to a confirmed job.
 
-**Planning note (2026-10-09):** this is a documented proposal, not implemented Sales behaviour.
-The [Phase 4 research plan](../phases/phase-4-sales-quotations-and-handover.md) and
-[R1 discussion](../phases/phase-4-r1-leads-and-relationships.md) assess the model before decisions.
-R1-A's hybrid entry and opportunity policy direction is in
-[proposed ADR 0098](../decisions/0098-hybrid-sales-opportunity-requirement.md), owner-reviewed
-but not accepted. Draft linking and separate post-issue CRM association are proposed in
-[ADR 0099](../decisions/0099-separate-quotation-issue-and-crm-association.md); [R1-B3](../phases/phase-4-r1-b3-offers-and-forecast.md) researches multiple offers and forecast.
-Independent accepted scopes and explicit alternative groups have owner-reviewed direction in
-[accepted ADR 0100](../decisions/0100-independent-quotation-scopes-and-alternative-groups.md).
-[Forecast methods](../decisions/0101-separate-accepted-business-and-remaining-forecast.md) are accepted as bounded business direction;
-[persistent provisional trust and explicit-date SPOT](../decisions/0102-govern-forecast-trust-and-explicit-valuation.md)
-are accepted as bounded business direction. Detailed [staleness](../phases/phase-4-r1-b3-forecast-staleness.md)
-and [FX](../phases/phase-4-r1-b3-forecast-fx.md) dependencies remain open.
-[Accepted ADR 0103](../decisions/0103-issue-quotations-to-party-backed-prospects.md) permits eligible Party-backed issue without CustomerAccount, with immutable recipient evidence and unchanged financial controls.
-[ADR 0104](../decisions/0104-separate-customer-acceptance-and-readiness.md) accepts valid acceptance before CustomerAccount and separates readiness from commitment. No universal account-at-handover gate is decided.
-[Remaining R1 matrix](../phases/phase-4-r1-decision-matrix.md) proposes identity, ownership, outcomes and initial CRM for owner review.
-The schema below is historical planning: one opportunity field must not become both immutable
-issue linkage and editable current CRM association. Customer-only recipients are superseded as future design by ADR 0103; the physical schema below
-remains historical. Conversion, later financial gates and closure are unresolved. The historical numbering
-paragraph below must be reconciled with ADR 0079's implemented central framework before build.
+**R1 research complete (2026-10-09); implementation not started.** The
+[accepted decision matrix](../phases/phase-4-r1-decision-matrix.md) is the current foundation contract:
 
-```
-Lead → Opportunity → Quotation (revisions) → Job
-```
+- [0098](../decisions/0098-hybrid-sales-opportunity-requirement.md): optional Lead intake, hybrid
+  opportunity policy, STRICT atomic replacement and archive-only legacy records.
+- [0099](../decisions/0099-separate-quotation-issue-and-crm-association.md): consistent current
+  family association, eligible OPEN targets and immutable per-revision issue linkage.
+- [0100](../decisions/0100-independent-quotation-scopes-and-alternative-groups.md),
+  [0101](../decisions/0101-separate-accepted-business-and-remaining-forecast.md),
+  [0102](../decisions/0102-govern-forecast-trust-and-explicit-valuation.md): independent/exclusive
+  scope, accepted versus remaining business, explicit forecast basis, persistent review and dated FX.
+- [0103](../decisions/0103-issue-quotations-to-party-backed-prospects.md),
+  [0104](../decisions/0104-separate-customer-acceptance-and-readiness.md): eligible Party-backed
+  issue/valid acceptance before CustomerAccount; no automatic work/credit/financial authority.
+- [0105](../decisions/0105-support-generic-party-identity-and-conversion.md): organisation/individual
+  contracting identity, controlled reuse/restore/conversion, independent financial roles.
+- [0106](../decisions/0106-separate-sales-ownership-and-access.md): eligible accountable owner,
+  reassignment history and access separately governed.
+- [0107](../decisions/0107-separate-opportunity-stages-and-outcomes.md),
+  [0108](../decisions/0108-expose-a-progressive-basic-crm.md): stable outcomes/partial-win indication,
+  reasoned closure/reopen, configurable stages and progressive basic CRM.
+
+**The schema and behaviour sketch below are historical planning, not an accepted physical model.**
+Customer-only recipient fields, one mutable opportunity link, simplistic win/job transitions and
+numbering assumptions must be reconciled by R2–R9 before implementation. R1 does not choose tables,
+revision mechanisms, partial-acceptance calculations, job multiplicity or accounting gates. Advanced
+capabilities remain deferred. See the [Phase 4 plan](../phases/phase-4-sales-quotations-and-handover.md).
 
 ## Where it sits
 

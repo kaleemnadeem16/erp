@@ -2,10 +2,14 @@
 
 # R1 — Remaining identity, ownership and lifecycle evidence
 
-- **Status:** consolidated research input, accessed 2026-10-09; new recommendations not approved.
+- **Status:** R1 business research complete 2026-10-09; accepted ADRs 0098–0108 govern; detailed delivery gates remain.
 - **Question:** what minimum identity, responsibility/access, outcome and CRM boundaries allow
   R1 to close without determining later quotation, job, accounting or reporting mechanics?
 - **Synthesis and approval choices:** [consolidated matrix](phase-4-r1-decision-matrix.md).
+
+**Final closure:** the owner approved the bounded foundation contracts; [current R1 closure](phase-4-r1-decision-matrix.md)
+records accepted decisions and delivery gates. Earlier alternatives and review agendas below are
+historical unless confirmed by those ADRs; they do not reopen R1 or approve detailed implementation.
 
 ## Reuse and verified project foundations
 
@@ -13,7 +17,7 @@ The [original R1 comparison](phase-4-r1-leads-and-relationships.md#primary-sourc
 [B3 reconciliation](phase-4-r1-b3-reconciliation.md), [C1](phase-4-r1-c1-prospect-quotations.md) and
 [C2](phase-4-r1-c2-financial-readiness.md) sufficiently cover optional intake, direct quotes,
 multiple offers, forecasts, prospect issue and operation-specific readiness. Do not repeat them.
-ADRs 0100–0104 settle those bounded contracts; 0098/0099 remain reviewed proposals.
+ADRs 0100–0104 settle those bounded contracts; 0098/0099 are accepted after final U1/U2 reconciliation.
 
 Rechecked current code/documents on this date:
 
@@ -65,8 +69,7 @@ processing. No general handover bypass or exemption is recommended for acceptanc
 - Full CRM/team engines before initial customer quoting burden smaller companies; industry-specific
   stages, approval and privacy needs should not become permanent model constraints.
 
-Recommended safeguards/options are consolidated in the matrix; no new recommendation is accepted
-by this evidence record and no R2 or implementation work is started.
+Recommended safeguards/options are consolidated in the matrix; accepted ADRs, rather than this retained comparison, govern the approved contracts and no R2 or implementation work is started.
 
 ## Related
 

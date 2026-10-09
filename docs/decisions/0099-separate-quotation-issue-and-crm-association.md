@@ -2,10 +2,11 @@
 
 # 0099 — Separate quotation issue evidence from current CRM association
 
-- **Status:** proposed — R1-B1/B2 owner-reviewed direction; not accepted or finalised.
+- **Status:** accepted — final owner-approved U2 direction reconciled 2026-10-09.
 - **Date:** 2026-10-08
 - **Affects:** Phase 4, quotation relationship changes, CRM association, audit and approvals.
-- **Scope:** business relationship rules only; no physical schema chosen; R1-B is not complete.
+- **Scope:** bounded business relationship contract; R1 research closed, delivery gates remain.
+  No physical schema or implementation selected.
 
 ## Context
 
@@ -15,13 +16,15 @@ field cannot truthfully represent both the relationship at issue and today's CRM
 The ERP has Parties, capabilities, audit, approvals and numbering foundations, but no implemented
 quotation/opportunity lifecycle or Sales association/history model.
 
-## Decision — owner-reviewed proposed direction
+## Decision
 
 ### R1-B1: draft relationship corrections
 
 Allow explicit link, unlink and relink while the quotation is DRAFT. Validate company isolation,
 Party/customer consistency, opportunity eligibility and actor permissions/scope. Record actor,
-timestamp, old and new relationship. Ordinary corrections need no written reason unless an
+timestamp, old and new relationship. STRICT permits atomic replacement, not temporary unlink;
+unlinked earlier-policy drafts may be repaired but require a valid link before issue. Ordinary
+corrections need no written reason unless an
 applicable governance rule requires one. Relationship history must remain explainable.
 
 Linking is not a copy/import operation: do not overwrite recipient, scope, prices, contacts,
@@ -33,16 +36,28 @@ adapter/fingerprint inputs are R3/R5/R9 work.
 
 ### R1-B2: association after issue
 
-Keep the issue-time opportunity identity or explicit absence immutable with the commercial
-snapshot and policy/exception evidence. Maintain a separately governed current CRM association.
+A quotation family has one consistent current CRM opportunity association, or explicit absence
+when applicable policy permits; individual issued revisions retain original issue-time opportunity
+identity/absence, commercial snapshot and policy/exception evidence. Maintain current CRM
+organisation separately; do not independently split revisions across current opportunities.
 Authorised post-issue association changes require a reason and actor/time/old/new history, plus
 the same company, identity and opportunity eligibility validation.
 
 An association may not change issued amounts, scope, tax, FX, approvals, recipient or frozen
 estimating evidence; it may not retroactively satisfy an opportunity requirement or erase a
-MANAGED exception under proposed ADR 0098. Linking does not mark a deal won, change its forecast,
-create a job, reserve stock or copy quotation totals into revenue. Such operations require their
+MANAGED exception under ADR 0098. Linking does not mark a deal won, change its forecast,
+create a job, reserve stock, alter exclusive alternative-group membership, move job ownership/
+handover records, rewrite published forecast/valuation evidence or copy quote totals into revenue. Such operations require their
 own explicit business decisions and controls.
+
+Normal association targets must be OPEN, company-scoped and Party-consistent. Opportunities may
+begin without a known Party; resolve and explicitly bind appropriate recipient identity before
+relevant issue association. Never silently overwrite known identity or create financial setup.
+Reopen a closed opportunity before attaching new active pursuit to that same deal. A governed
+correction of an ordinary issued offer from an incorrect closed source to an eligible OPEN target
+may proceed without reopening the source, with authority, reason and history. Accepted/job-linked
+relationship moves remain unsupported until R5/R6/R7 correction rules are designed. Group/customer
+consistency is still validated; an association edit cannot silently move or repair group membership.
 
 Example: QT-100 was issued on 1 October for `500000.0000` PKR without an opportunity. On
 10 October an authorised person links it to OP-105 with a reason. Its issue snapshot still says
@@ -54,9 +69,9 @@ organise CRM. The opportunity is not automatically worth an additional `500000.0
 
 | Boundary | Reconciliation / design question |
 |---|---|
-| Proposed ADR 0098 | One quotation workflow remains. FLEXIBLE accepts direct issue; MANAGED requires a link or its narrow authorised issue exception; STRICT requires a link at creation and issue. Draft corrections do not grant issue bypass; later association cannot cure historical non-compliance. |
-| STRICT draft unlinking | R1-B1 permits ordinary draft corrections, including unlinking an existing draft. Recommended interpretation: temporary absence makes it not ready to issue; new creation remains guarded. Whether STRICT also requires atomic replacement instead of temporary unlinking is an explicit review point, not an assumed relaxation. |
-| Party/customer boundary | Compare legal Party identity, not name/email or an unqualified lead label. A CustomerAccount refers to its Party; supplier/customer roles remain independent. R1-C must settle prospect recipients and what to do when an opportunity's identity is unknown; linking must not create financial setup silently. Same-party consistency does not imply that archived/ineligible accounts are usable. |
+| ADR 0098 | One quotation workflow remains. FLEXIBLE accepts direct issue; MANAGED requires a link or its narrow authorised issue exception; STRICT requires a link at creation and issue. Draft corrections do not grant issue bypass; later association cannot cure historical non-compliance. |
+| STRICT draft unlinking | STRICT requires atomic replacement. Earlier-policy unlinked drafts may remain and be repaired but cannot issue unlinked; FLEXIBLE/MANAGED normal draft corrections remain supported. |
+| Party/customer boundary | Compare legal Party identity, not name/email or an unqualified lead label. A CustomerAccount refers to its Party; supplier/customer roles remain independent. ADRs 0103–0105 settle prospect recipients and explicit identity resolution; linking cannot create financial setup silently. Same-party consistency does not imply that archived/ineligible accounts are usable. |
 | Authorisation/visibility | Request and Action guard both association duty and scope of quotation plus old/new opportunities. Reuse a suitable ordinary quotation update duty for drafts if it fits; post-issue association is a separate governed duty, not commercial-edit authority. Exact vocabulary and no-longer-visible previous-link handling remain R9. Protect lookups, nested reads, history, counts and exports too. |
 | Issue immutability | Keep governed association outside immutable issue evidence. A single mutable field used by both historical and current reports would conflict with invariants 1/14. Generic activity logs alone do not provide authoritative historical association evidence. |
 | Approvals | ADRs 0070/0085 invalidate when relevant routing or frozen review facts change, even if totals do not. Draft link changes must consider this. Issued association does not rewrite the approval for original issue; any additional CRM governance is separate. |
@@ -75,8 +90,8 @@ organise CRM. The opportunity is not automatically worth an additional `500000.0
 
 Recommendation: separate association evidence from commercial issue; use an append-only event
 pattern with a derived or transactionally maintained current projection. The project's immutable
-policy/evidence histories provide patterns, not a requirement for new tables. R2/R5/R9 decide
-whether the association attaches to a quotation family or each revision and its physical form.
+policy/evidence histories provide patterns, not a requirement for new tables. The accepted business unit is the quotation family; R2/R5/R9 select its physical form and
+per-revision historical projection.
 Multiple simultaneous current opportunities for one quote is not assumed or approved.
 
 ### Integrity, retries and reporting
@@ -118,29 +133,30 @@ new commercial offer. **Treat link permission as commercial-edit or issue bypass
 ## Research basis
 
 Reuse [R1's primary-source comparison](../phases/phase-4-r1-leads-and-relationships.md#primary-source-comparison),
-[proposed ADR 0098](0098-hybrid-sales-opportunity-requirement.md) and the
+[ADR 0098](0098-hybrid-sales-opportunity-requirement.md) and the
 [R1-B3 comparison](../phases/phase-4-r1-b3-offers-and-forecast.md) accessed 2026-10-08.
 Vendor documents support multiple quote paths and distinct CRM revenue, but do not establish our
 separate immutable issue/current-association contract. That separation follows owner direction
 and project invariants. No vendor schema or post-issue mutability is copied.
 
-## Still unresolved — consolidated acceptance review
+## Deferred delivery gates and final reconciliation
 
-Core business choices are STRICT unlink/replacement (U1), current offer-family responsibility,
-unknown Party first binding and OPEN versus closed-target association (U2). Proposed resolutions
-and alternatives are in the [consolidated review](../phases/phase-4-r1-decision-matrix.md); none is
-approved here. ADRs 0103/0104 now settle Party-backed issue and acceptance/readiness separation.
+The owner approved STRICT replacement, consistent current family association, explicit unknown
+Party resolution, OPEN targets and governed closed-source repair. Accepted/job-linked exceptional
+moves are unsupported until their correction design; ordinary association is never a commercial
+amendment. ADRs 0103/0104 preserve Party-backed issue and acceptance/readiness separation, ADR
+0100 preserves groups/accepted scopes, ADRs 0101/0102 preserve forecast/publication evidence, and
+ADR 0106 separates ownership and access. No substantive architectural conflict remains.
 
-Exact family/revision keys and projections are R2/R5; accepted/job-linked exceptional moves and
-corrections remain R5/R6/R7; field/history/scope mechanics and capabilities R9. These delivery gates
-alone do not prevent bounded acceptance if the owner approves U1/U2 and the U4 access contract.
-The current STRICT temporary-unlink suggestion in the earlier table is an option, not the owner's
-answer; U1 now recommends atomic replacement instead. This ADR remains Proposed.
+R2/R5 decide family/revision keys, projections and lifecycle adapters; R5/R6/R7 exceptional
+corrections; R9 capability/history/scope/reporting integration. These are delivery gates, not open
+R1 foundation decisions. No implementation, arbitrary closed-target linking or accepted/job-linked
+move is authorised by this record. Whole R1 research is closed; Phase 4 research continues.
 
 ## Related
 
 - [R1](../phases/phase-4-r1-leads-and-relationships.md) · [R1-B3](../phases/phase-4-r1-b3-offers-and-forecast.md)
-- [Phase 4](../phases/phase-4-sales-quotations-and-handover.md) · [Q39](../OPEN-QUESTIONS.md#q39--phase-4-r1-enquiry-deal-and-customer-onboarding-boundaries)
+- [Phase 4](../phases/phase-4-sales-quotations-and-handover.md) · [R1 closure](../phases/phase-4-r1-decision-matrix.md)
 - [Parties](../domain/parties.md) · [Sales pipeline](../domain/sales-pipeline.md)
 - [Domain integrity](../architecture/domain-integrity.md) · [Authorisation](../architecture/authorization.md)
 - [ADR 0098](0098-hybrid-sales-opportunity-requirement.md) · [ADR 0079](0079-document-numbering-system-templates-over-a-variable-registry.md)

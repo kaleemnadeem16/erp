@@ -3,10 +3,14 @@
 # R1-B3 — Bounded business direction and acceptance readiness
 
 - **Date:** 2026-10-08.
-- **Status:** final acceptance review passed 2026-10-09 under explicit owner authorisation;
+- **Status:** R1 business research complete 2026-10-09; accepted ADRs 0098–0108 govern; detailed delivery gates remain.
   ADRs 0100–0102 accepted, bounded B3 business research closed. No delivery authorised.
 - **Research reuse:** the linked R1 comparison records sufficiently distinguish the alternatives;
   this reconciliation records the owner's answer rather than repeating vendor research.
+
+**Final closure:** the owner approved the bounded foundation contracts; [current R1 closure](phase-4-r1-decision-matrix.md)
+records accepted decisions and delivery gates. Earlier alternatives and review agendas below are
+historical unless confirmed by those ADRs; they do not reopen R1 or approve detailed implementation.
 
 ## Business meaning
 
@@ -45,15 +49,15 @@ assess the correction under R4/R9; that event is not ordinary later-date movemen
 contracts passed the final consistency review and were accepted by owner authorisation. This does not close whole R1/Q39
 or authorise delivery of features whose delegated semantics are still unknown.
 
-| Proposed ADR | Recommended readiness | Remaining boundary |
+| ADR | Final acceptance | Remaining delivery boundary |
 |---|---|---|
-| 0098 — hybrid workflow | Further research/reconciliation before acceptance | STRICT historical migration and unlinking; policy governance and issue/revocation/replay contract still explicitly open |
-| 0099 — issue versus CRM association | Further research/reconciliation before acceptance | STRICT unlinking and Party identity (R1-C); association unit (R2), lifecycle/accepted/job restrictions (R5/R6/R7), visibility (R9) |
+| 0098 — hybrid workflow | Accepted 2026-10-09 after final U1/U2 review | STRICT replacement/archive-only legacy and policy governance settled; detailed protocols R5/R9 |
+| 0099 — issue versus CRM association | Accepted 2026-10-09 after final U1/U2 review | Family association, explicit Party resolution, OPEN targets settled; exceptional corrections and physical scope R2/R5/R6/R7/R9 |
 | 0100 — independent scopes/exclusive groups | Accepted 2026-10-09 — bounded business direction | R2 identity/overlap and post-issue regrouping; R6 accepted-scope adjustments; R7 handover. No implied permission for unresolved operations |
 | 0101 — accepted versus remaining forecast | Accepted 2026-10-09 — bounded business direction | R2/R6 exclusion calculations; R4 valuation details; R5/R9 eligibility/review implementation |
 | 0102 — persistent trust/explicit valuation | Accepted 2026-10-09 — bounded business direction | R4/R9 historical corrections/reporting; R5 lifecycle detection; exact capabilities/approval exposure remain R9 |
 
-ADRs **0100–0102 are accepted**; **0098/0099 remain proposed**. The final review checked their
+ADRs **0098–0108 are accepted** after final owner review. The final review checked their
 wording against the owner's scope/group, forecast-method, persistent review and ordinary FX
 movement decisions; no material ambiguity, contradiction or new business choice was found.
 Accepted architectural constraints remain compatible; the table below preserves all delegated
@@ -95,7 +99,7 @@ Earlier research examples do not authorise mixed-basis production totals.
 **R1-C — customer/prospect onboarding.** Resolve quotation recipient identity and the transition
 from enquiry/prospect to commercial customer using the existing Party/account foundations. Do not
 presume person customers or configurable teams already exist. This directly supports the open
-0099 relationship questions. R1-D–G remain open; detailed FX/reporting work belongs to R4/R9 rather
+0099 relationship questions. R1-D–G are accepted in ADRs 0105–0108; detailed FX/reporting work belongs to R4/R9 rather
 than another expansion of B3. C1 direction is accepted in ADR 0103; C2 separation is accepted in ADR 0104; [remaining R1 choices](phase-4-r1-decision-matrix.md) are for review. No implementation.
 
 ## Related

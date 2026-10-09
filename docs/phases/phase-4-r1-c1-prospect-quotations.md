@@ -2,11 +2,15 @@
 
 # R1-C1 — Quoting a prospect without financial customer setup
 
-- **Status:** bounded Party-backed issue direction accepted in ADR 0103 on 2026-10-09; detailed delivery and C2 gates remain open.
+- **Status:** R1 business research complete 2026-10-09; accepted ADRs 0098–0108 govern; detailed delivery gates remain.
 - **Access/review date:** 2026-10-09.
 - **Bounded question:** may a reliably identified prospect receive an official quotation before
   a CustomerAccount exists? Exact later financial-readiness gate belongs to R1-C2.
 - **Gate:** documentation only; no implementation/migration; only bounded C1 business direction accepted.
+
+**Final closure:** the owner approved the bounded foundation contracts; [current R1 closure](phase-4-r1-decision-matrix.md)
+records accepted decisions and delivery gates. Earlier alternatives and review agendas below are
+historical unless confirmed by those ADRs; they do not reopen R1 or approve detailed implementation.
 
 ## Owner decision — 2026-10-09
 
@@ -127,7 +131,7 @@ settle that authorisation boundary explicitly; no terms bypass is proposed.
 - A current master-data link supports discovery/conversion; copied issue-time name, identifiers,
   contact/address and relevant role/selection evidence preserves what was offered. Later identity
   changes/conversion must not silently rewrite it. Genuine recipient changes after issue need
-  R5/R6 correction/revision rules, not ordinary CRM relinking under proposed ADR 0099.
+  R5/R6 correction/revision rules, not ordinary CRM relinking under accepted ADR 0099.
 - Enforce company and same-Party ownership for contacts/sites; selecting a supplier's existing
   Party must not grant its supplier financial fields. Server checks apply at Request and Action,
   including non-HTTP writers; capability and record scope are independent. Reuse shared audit.
@@ -146,14 +150,14 @@ settle that authorisation boundary explicitly; no terms bypass is proposed.
 
 No conflict requires replacing Party or weakening ADR 0084. The historical Sales sketch's mandatory
 `customer_id` recipient is **documented-only**, so changing its future design is not a runtime
-migration. It still needs a recipient ADR once the owner settles this proposal. Proposed ADR 0098
+migration. ADR 0103 now records the bounded recipient decision; physical reference shape remains R2. accepted ADR 0098
 opportunity controls remain orthogonal; no Lead/Opportunity bypass is inferred.
 
 ## Unresolved decisions and smallest next discussion
 
 **R1-C1 resolved:** eligible Party-backed issue without CustomerAccount is accepted in ADR 0103.
 Exact later account/financial-readiness gates are now [C2 research](phase-4-r1-c2-financial-readiness.md),
-not accepted rules. Whole R1 and Q39 remain open.
+not accepted rules. R1 research is closed and Q39 resolved.
 
 Keep separate:
 
@@ -166,7 +170,7 @@ Keep separate:
   acceptance, job scope, delivery channels, capabilities and historical reporting.
 
 C1/C2 bounded directions are accepted in ADRs 0103/0104; operation-specific gates remain deferred.
-[Remaining R1 choices](phase-4-r1-decision-matrix.md) await consolidated owner review. No implementation.
+[R1 closure](phase-4-r1-decision-matrix.md) records final owner approval and deferred delivery. No implementation.
 
 ## Related
 

@@ -2,7 +2,7 @@
 
 # R1-B3-FX — Forecast conversion and historical valuation
 
-- **Status:** bounded B3 business research closed 2026-10-09; ADRs 0100–0102 accepted; detailed delivery gates remain open.
+- **Status:** R1 business research complete 2026-10-09; accepted ADRs 0098–0108 govern; detailed delivery gates remain.
 - **Access date:** 2026-10-08.
 - **Question:** how should foreign-currency remaining estimates/selected offers be valued without
   changing issued prices or historical forecast amounts when rates are corrected or updated?
@@ -11,6 +11,10 @@
 **Reading this record:** earlier alternatives/recommendations are retained research history.
 Accepted ADRs 0100–0102 govern only their bounded contracts; detailed package recommendations
 are not accepted by this closure. The [final review](phase-4-r1-b3-reconciliation.md) records the boundary.
+
+**Final closure:** the owner approved the bounded foundation contracts; [current R1 closure](phase-4-r1-decision-matrix.md)
+records accepted decisions and delivery gates. Earlier alternatives and review agendas below are
+historical unless confirmed by those ADRs; they do not reopen R1 or approve detailed implementation.
 
 ## Owner review — 2026-10-08
 
@@ -149,7 +153,7 @@ UI, totals and exports. No scheduler is authorised by this research.
 
 The [scope reconciliation](phase-4-r1-b3-reconciliation.md) records acceptance readiness and
 implementation gates. Do not extend R1-B3 into R4/R9. Next recommended discussion is R1-C
-customer/prospect onboarding; whole R1 and Q39 remain open and ADRs 0100–0102 are accepted, while 0098/0099 remain proposed.
+customer/prospect onboarding; R1 research is closed and Q39 resolved; dependent delivery remains gated and ADRs 0098–0108 are accepted.
 
 ## Related
 

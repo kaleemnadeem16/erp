@@ -2,11 +2,11 @@
 
 # 0098 — Govern opportunity requirements through one hybrid Sales workflow
 
-- **Status:** proposed — owner-reviewed direction; not accepted or finalised.
+- **Status:** accepted — final owner-approved U1 direction reconciled 2026-10-09.
 - **Date:** 2026-10-08
 - **Affects:** Phase 4 R1-A, quotation entry/issue, Sales policy, permissions and audit.
-- **Owner review:** the owner supplied the direction below; architectural reconciliation and
-  unresolved edge cases are recorded here for further review. No implementation is authorised.
+- **Owner review:** final U1–U6 approval and consistency review completed 2026-10-09; detailed
+  delivery gates retained. No implementation is authorised.
 
 ## Context
 
@@ -20,11 +20,11 @@ qualification, multiple deals and direct quotation paths. No Sales workflow curr
 The earlier Sales domain sketch allows a nullable opportunity, but does not settle company
 policy. Existing architecture separates domain capability, company configuration and UI exposure.
 
-## Decision — proposed direction
+## Decision
 
 Keep Leads and Opportunities as separate business concepts. Lead intake is always optional;
 opportunities can be created directly, and one lead may yield multiple opportunities. Physical
-storage and conversion details remain R1-B–G/R2 work, not decisions implied here.
+storage remains R2; conversion foundations are accepted in ADR 0105.
 
 One shared quotation workflow evaluates a company-scoped Sales opportunity-requirement policy.
 Every entry path retains the same pricing, commercial approval, revision, issue and acceptance
@@ -38,7 +38,7 @@ controls. Direct quotations are legitimate records; do not generate fake opportu
 
 ### Policy representation and ownership
 
-**Recommendation for review:** expose these three coherent presets initially. Internally describe
+Expose these three coherent presets initially. Internally describe
 their resolved semantics as a requirement gate (NONE / ISSUE / CREATE) and exception rule
 (NONE / AUTHORISED_REASON). Do not expose independent switches that permit contradictory
 combinations such as STRICT plus bypass. This is a conceptual contract, not a chosen schema.
@@ -47,11 +47,11 @@ Unknown/invalid settings fail closed; absence of configuration resolves the expl
 The policy belongs to Sales even though its scope is COMPANY. ADR 0081 says module policies do
 not belong in the shared Company-profile field registry. Reuse the governed-setting pattern,
 company context and audit foundation; do not introduce a generic key/value settings bag.
-Policy changes require an appropriate management capability and recorded reason; exact policy
-permission/storage/version shape is pending design.
+Policy changes require appropriate authority, reason, actor/time and effective version evidence.
+Exact capability vocabulary, storage and version protocol remain R5/R9 implementation design.
 
 Keep policy resolution separate from quotation relationships. A resolved result carries source
-scope, effective version and rules. Only COMPANY scope exists in this proposal; team overrides,
+scope, effective version and rules. Only COMPANY policy scope is accepted here; team overrides,
 precedence, weakening/hardening rules and assignment races require later explicit decisions.
 No Sales team or owner-based visibility capability is assumed to exist.
 
@@ -76,9 +76,11 @@ Issued quotations and their issue-policy/exception evidence remain immutable whe
 permissions change. Every unissued draft is checked against the effective policy at issue.
 A draft created under FLEXIBLE/MANAGED is not deleted when STRICT is enabled; it requires an
 opportunity before issue. STRICT checks new creation and cannot be evaded by removing a link
-before issue. Draft linking and separate post-issue CRM association now have owner-reviewed direction in
-[proposed ADR 0099](0099-separate-quotation-issue-and-crm-association.md). STRICT temporary
-unlinking, revision-entry treatment and opportunity eligibility still need R1-B/R2/R5 review.
+before issue. Under STRICT, correcting a wrong link requires atomic replacement; ordinary
+temporary unlinking is prohibited. Earlier-policy unlinked drafts may remain and be repaired,
+but cannot issue without a valid link. [ADR 0099](0099-separate-quotation-issue-and-crm-association.md)
+settles current-family association and eligible OPEN targets; physical revision-entry mechanics
+remain R2/R5. Neither a historical draft nor a new revision grants an issue-policy exception.
 
 Capture at successful issue: company, quotation/revision identity, actor, issue timestamp,
 resolved policy source/version/rules, opportunity identity or explicit absence, and whether the
@@ -131,17 +133,12 @@ invalid rows for correction; staging is not quotation creation. Source IDs map e
 deals, never synthetic opportunities. MANAGED integrations must provide an explicit actor,
 capability and reason for any issue exception; a service identity is not an implicit bypass.
 
-Historical already-issued quotes without opportunities expose a genuine unresolved case. Options:
-
-1. Refuse live quotation migration under STRICT until real source relationships are mapped;
-   retain legacy offers as read-only archive records instead.
-2. Design a separately governed historical import purpose, preserving original issued evidence,
-   import actor/time/source checksum and the historical linkage gap. It would not claim a normal
-   STRICT issue or grant new operational exceptions; acceptance/revision behaviour must be settled.
-
-**Recommendation:** ordinary paths remain strict; defer a historical import purpose until a real
-migration requirement is reviewed. Do not weaken company policy temporarily, fabricate source
-opportunities, backdate a new issue or reuse this MANAGED capability for migration.
+Legacy quotations without valid opportunity relationships may initially be retained only as
+**read-only historical records with provenance**. They are not normal operational quotations and
+cannot silently become eligible for revision, acceptance or ordinary handover. Do not fabricate
+opportunities, temporarily weaken policy, backdate a new issue or use the MANAGED exception for
+migration. A separately governed live historical-import purpose is not authorised here; detailed
+migration and eligibility require explicit later R5/R9 decisions.
 
 ## Reconciliation and unresolved questions
 
@@ -151,19 +148,18 @@ opportunities, backdate a new issue or reuse this MANAGED capability for migrati
 - **Placement conflict avoided:** a company-scoped Sales policy placed in shared Company settings
   would conflict with ADR 0081. Sales owns it.
 - **Import conflict avoided:** generic import committing/issuing quotations would violate the
-  implemented ADR 0027 staging/domain-Action boundary. Historical import is not yet decided.
+  implemented ADR 0027 staging/domain-Action boundary. Initial historical records are archive-only; live historical migration is deferred.
 - **No accepted ADR requires leads or an opportunity for every quotation.** Nullable opportunity
   in the Sales sketch remains structurally useful; a global NOT NULL would defeat FLEXIBLE/MANAGED.
 - **Preset trade-off:** fewer valid combinations and simpler explanations vs reduced customisation;
   independent rules can be exposed later only with demonstrated need and validation.
-- **Genuine acceptance choices:** STRICT draft correction (atomic replacement versus temporary
-  unlink) and initial historical-record scope. The [consolidated U1/U2 review](../phases/phase-4-r1-decision-matrix.md)
-  proposes resolutions; they are not approved. Normal eligible opportunity/Party rules are reconciled
-  there with ADRs 0103/0104. No new business rule is accepted by this update.
-- **Not standalone R1 blockers:** policy storage/version schema, locks/revocation serialisation,
-  replay mechanics and revision implementation belong to R5/R9 under the existing guarantees.
-  Policy duty/reason/current effective evidence are already reviewed direction; exact vocabulary
-  remains R9. Identity/ownership/outcome foundations remain U3–U6; R1 as a whole is open.
+- **Resolved business boundaries:** atomic STRICT replacement, repair-before-issue for earlier
+  drafts, archive-only initial legacy records and company Sales-policy governance are approved.
+  ADRs 0099 and 0103–0108 settle relationship, identity, readiness, ownership/outcome and CRM
+  foundations; no genuine R1 business blocker remains.
+- **Deferred delivery:** policy/version schema, locks/revocation serialisation, retry mechanics,
+  revision and historical migration design remain R2/R5/R9. Acceptance does not approve a
+  generic import/integration exception, team policy override or physical schema.
 
 
 Multiple independent accepted scopes and explicit exclusive groups are now owner-reviewed in
@@ -184,7 +180,9 @@ replace opportunity entry/issue rules, approve forecasts, close a deal or decide
 fake deals for routine quoting. **Always allow direct issue** — rejected: no managed control.
 **Three quotation engines** — rejected: controls and bug fixes would diverge.
 **Manager-role bypass or generic override** — rejected: role coupling and excessive authority.
-**Independent user-facing flags initially** — not recommended: unsupported/inconsistent combinations.
+**Independent user-facing flags initially** — rejected for initial exposure: unsupported combinations.
+**Temporary STRICT unlink** — rejected: use atomic replacement.
+**Operational legacy import by default** — rejected: initial provenance-bearing archive only.
 **Grandfather every draft** — rejected by owner direction: effective issue policy must apply.
 **Automatic import/system exception** — rejected as an implied permission; needs its own decision.
 
@@ -206,15 +204,15 @@ Fresh targeted evidence:
   explains external IDs for relationship mapping and repeat updates. Stable source identity helps
   reconciliation; it does not establish permission to waive a required relationship.
 
-Synthesis: transport and business finalisation must be distinguished. The proposed three presets
-are owner-selected project policy, not a vendor standard. None of these sources proves that
-historical quotations must be normal STRICT creations; the archive/governed-purpose options
-above are our inference for review. No historical migration exception is finalised.
+Synthesis: transport and business finalisation differ. The three presets and initial read-only
+legacy boundary are owner-approved project policy, not vendor standards. Existing comparisons
+sufficiently distinguished the alternatives; final U1 approval on 2026-10-09 required no repeated
+research. No live historical-migration or general transport exception is authorised.
 
 ## Related
 
 - [R1](../phases/phase-4-r1-leads-and-relationships.md) · [Phase 4 plan](../phases/phase-4-sales-quotations-and-handover.md)
-- [Q39](../OPEN-QUESTIONS.md#q39--phase-4-r1-enquiry-deal-and-customer-onboarding-boundaries)
+- [R1 closure](../phases/phase-4-r1-decision-matrix.md)
 - [Sales pipeline](../domain/sales-pipeline.md) · [Authorisation](../architecture/authorization.md)
 - [Domain integrity](../architecture/domain-integrity.md) · [Imports](../architecture/data-import.md)
 - [ADR 0081](0081-central-company-profile-and-company-wide-settings.md) · [ADR 0027](0027-generic-column-mapping-import.md)

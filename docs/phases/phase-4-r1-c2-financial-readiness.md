@@ -2,12 +2,16 @@
 
 # R1-C2 — Financial customer readiness at business events
 
-- **Status:** bounded acceptance/readiness separation accepted in ADR 0104; operation-specific gates remain deferred.
+- **Status:** R1 business research complete 2026-10-09; accepted ADRs 0098–0108 govern; detailed delivery gates remain.
 - **Access/review date:** 2026-10-09.
 - **Question:** when must CustomerAccount exist, and when must separate financial/commercial
   clearance authorise the next operation? Account existence is not the same as clearance.
 - **Gate:** documentation only. Phase 4 owns offer/acceptance/handover; payment processing,
   invoices/posting and Phase 5 execution remain outside its implementation scope.
+
+**Final closure:** the owner approved the bounded foundation contracts; [current R1 closure](phase-4-r1-decision-matrix.md)
+records accepted decisions and delivery gates. Earlier alternatives and review agendas below are
+historical unless confirmed by those ADRs; they do not reopen R1 or approve detailed implementation.
 
 ## Owner review — 2026-10-09
 

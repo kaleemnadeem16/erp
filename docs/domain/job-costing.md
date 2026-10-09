@@ -15,6 +15,11 @@ Created from an accepted quotation ([sales-pipeline.md](sales-pipeline.md)); con
 [stock.md](stock.md); billed by [receivables.md](receivables.md). Built in
 [Phase 5](../phases/README.md).
 
+**Planning boundary:** the schema below is documented-only; R7 must reconcile multiple accepted
+scopes, job multiplicity and operational gates under [R1 contracts](../phases/phase-4-r1-decision-matrix.md).
+Acceptance/preparation is not work authority, and ADR 0104 does not impose CustomerAccount at
+every confirmed handover. Phase 5 owns execution.
+
 ## Schema
 
 ```

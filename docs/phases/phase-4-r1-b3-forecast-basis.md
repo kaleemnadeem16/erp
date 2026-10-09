@@ -2,7 +2,7 @@
 
 # R1-B3 — Forecast basis with independent and competing offers
 
-- **Status:** bounded B3 business research closed 2026-10-09; ADRs 0100–0102 accepted; detailed delivery gates remain open.
+- **Status:** R1 business research complete 2026-10-09; accepted ADRs 0098–0108 govern; detailed delivery gates remain.
 - **Access date:** 2026-10-08.
 - **Question:** what should initially forecast a deal when several scopes can be bought but
   alternatives and revisions cannot be counted as additional business?
@@ -16,6 +16,10 @@
 **Reading this record:** earlier alternatives/recommendations are retained research history.
 Accepted ADRs 0100–0102 govern only their bounded contracts; detailed package recommendations
 are not accepted by this closure. The [final review](phase-4-r1-b3-reconciliation.md) records the boundary.
+
+**Final closure:** the owner approved the bounded foundation contracts; [current R1 closure](phase-4-r1-decision-matrix.md)
+records accepted decisions and delivery gates. Earlier alternatives and review agendas below are
+historical unless confirmed by those ADRs; they do not reopen R1 or approve detailed implementation.
 
 ## Owner review update — 2026-10-08
 
@@ -186,7 +190,7 @@ partially won outcomes, one/multiple jobs, closure interactions and forecast eli
 **Next discussion:** R1-C customer/prospect onboarding. Methods, persistent provisional trust and
 ordinary later-date FX movement now have sufficient owner-reviewed direction in accepted ADRs
 0101/0102. The [scope reconciliation](phase-4-r1-b3-reconciliation.md) assigns remaining delivery
-questions to R2/R4/R5/R6/R7/R9. Bounded direction is accepted; whole R1/Q39 remain open and delivery is not authorised.
+questions to R2/R4/R5/R6/R7/R9. Bounded direction is accepted; R1 research is closed and Q39 resolved and delivery is not authorised.
 
 ## Related
 

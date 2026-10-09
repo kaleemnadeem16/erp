@@ -1,192 +1,111 @@
 [← Phase 4 planning](phase-4-sales-quotations-and-handover.md)
 
-# R1 — Consolidated decision matrix and owner review
+# R1 — Accepted decision matrix and research closure
 
 - **Date:** 2026-10-09.
-- **Status:** remaining business research consolidated for one owner review; R1/Q39 not closed.
-- **Evidence:** [remaining R1 comparison](phase-4-r1-remaining-evidence.md) plus linked existing records.
-- **Gate:** documentation only; no new recommendation accepted, no implementation/migrations/R2 research.
+- **Status:** R1 business research complete; owner approved U1–U6 and final consistency review passed.
+- **Q39:** resolved and removed from active questions; no remaining R1 business blocker.
+- **Gate:** research closure only; no implementation/migrations. R2 is next, not started here.
+- **Evidence:** [remaining comparison](phase-4-r1-remaining-evidence.md) and retained A/B/C research.
 
-## Business meaning, progress and example
+## What we established and why
 
-R1 settles who the buyer is, who follows up, how genuine deals relate to offers, and how pipeline
-progress differs from commitments, readiness and money. This prevents fake CRM records, duplicate
-customers, accidental access grants and unreliable pipeline totals.
+R1 settles contracting identity, optional CRM intake, responsibility, offer/deal relationships,
+accepted versus potential business, readiness and explainable pipeline outcomes. These contracts
+prevent fake opportunities, duplicate customer masters, accidental Finance/access grants and
+history rewritten by later CRM edits. All U1–U6 approved directions and clarifications fit the
+accepted architecture; no substantive conflict or new foundation choice remains unresolved.
 
-ADRs 0100–0103 are accepted; the owner-authorised bounded C2 direction is now accepted in ADR 0104.
-0098/0099 contain owner-reviewed directions but retain core choices below. Remaining C3/C4/D/E/F/G
-research is sufficient for this joint review; it is not yet approved or an R1 completion claim.
+## Practical customer journey
 
-Example: ABC asks for furniture and installation; one optional enquiry yields a deal with several
-independent offers. A colleague owns follow-up without gaining Finance authority. Furniture is
-accepted while account setup is pending; installation remains potential. A later change of owner,
-CRM association or pipeline outcome must not rewrite the issued offer, acceptance or forecast history.
+ABC enquires about furniture and installation. Optional Lead intake produces a genuine opportunity
+with an eligible owner, using ABC's existing Party rather than duplicating a supplier/customer.
+Several independently acceptable offers and explicit competing alternatives can belong to that
+deal; revisions are versions of the same offer, never new sales. The company preset governs
+opportunity requirements, and official issue preserves recipient, pricing and policy evidence.
 
-## Consolidated matrix
+Furniture `500000.0000` PKR is accepted while installation `300000.0000` remains under negotiation.
+Acceptance is recorded even if Finance setup is pending; handover preparation may proceed without
+work/credit/payment authority. The opportunity remains OPEN with partial win. If installation is
+later declined and pursuit ends, reasoned WON closure preserves furniture commitment and the
+unsuccessful remainder. No job, group, quote or published forecast is silently changed.
 
-Status key: **A** accepted contract; **R** owner-reviewed direction, formal acceptance pending;
-**P** new proposal needing approval; **D** safely deferred detail, no decision implied.
+## Accepted consolidated matrix
 
-| Topic | What exists | Recommended decision | Why | Trade-off | Status |
+“Exists” describes runtime foundations; acceptance is a business contract, not shipped capability.
+
+| Topic | What exists | Accepted decision | Why | Trade-off / delivery gate | Status |
 |---|---|---|---|---|---|
-| A — hybrid entry | No Sales workflow; reviewed 0098 | Separate optional Leads/Opportunities; FLEXIBLE default, MANAGED issue gate/narrow reasoned bypass, STRICT creation/issue gate | Avoid fake CRM; preserve controlled issue | Presets less flexible than arbitrary rules | R — 0098; U1 boundary choices pending |
-| B — direct relationships | No Sales association model; reviewed 0099 | Draft corrections; immutable issue linkage plus governed current CRM association | Correct organisation without repricing history | Separate evidence/relationship duties | R — 0099; U1/U2 pending |
-| B3 — offers and forecasts | No runtime forecasts | Independent scopes/exclusive groups; MAINTAINED/SELECTED_OFFERS; persistent provisional review, explicit dated SPOT | Prevent competing/revision/accepted double-counting | Operator review/history overhead | A — 0100–0102; detailed R2/R4/R5/R6/R7/R9 gates retained |
-| C1 — prospect issue | Party/account split; missing contact/site surfaces | Eligible Party-backed official issue, no account solely for issue; context-dependent recipient evidence | Avoid premature financial onboarding | New recipient-readiness/snapshot integration | A — 0103; physical schema R2 |
-| C2 — acceptance/readiness | Accounts/permissions, no commercial/payment/job workflows | Record valid acceptance before account; preparation allowed; recheck operational/financial authority at actual operations | Preserve facts without granting exposure | Visible readiness blockers | A — 0104; no universal account-at-handover rule |
-| C3/D — persons, contacts, sites | Organisation-oriented Party with no kind; child models | One Party identity supporting organisation and individual contracting customers; Company default exposure, person support in initial design | Generic industries/B2C without separate masters | Person validation/privacy and existing-row classification needed | P — U3; field/schema details R2/C3/R4/R9 |
-| C4/G — matching, restore, conversion | Code/account uniqueness; soft-delete archive; no merge/restore UI | Warn/reuse candidates, controlled restore, auditable explicit qualification/linking; no automatic identity/account creation or merge | Protect identity continuity and Finance duties | Human resolution of ambiguous matches | P — U3; restore mechanics R9, physical invariants R2 |
-| E — responsibility | Company membership/suspension; no Sales owner | One eligible active member per opportunity; lead queue can be unassigned; audited reassignment | Clear follow-up without abandoned records | Management reassignment duty | P — U4 |
-| E — visibility | Capabilities/fields/MY_UNITS infrastructure; warehouse scope only | Responsibility separate from rights; company-wide grants or deliberately limited own/assigned/unit coverage; management via explicit rights | Small-company simplicity and larger-company confidentiality | R9 must integrate each supported scope; teams not assumed | P — U4; exact scope API/vocabulary D — R9 |
-| F — stages/outcomes | No Sales stages/outcomes | Configurable open stages, stable OPEN/WON/LOST/ABANDONED meaning; partial win derived separately; governed manual closure/reopen | Explain progress without mutating commitments | Must explain remaining scope on closure | P — U5; detailed corrections R5/R6/R7/R9 |
-| G — minimum CRM | No CRM runtime; common UI/audit foundations | Optional intake/qualification, owner, notes, next action/date, stage, outcomes/reopen, identity lookup/link and scoped pipeline | Usable follow-up with low entry burden | Advanced automation deferred | P — U6 |
-| Later packages | Existing independent pricing/currency/approval design | Defer line/revision/partial scope, precise FX, handover gates, communication and analytics mechanics | Keeps R1 bounded | Delivery waits for its own dependencies | D — R2–R9/Phases 5–6 |
+| A — hybrid policy | No Sales policy/runtime | Optional Leads; direct opportunities/quotes; FLEXIBLE/MANAGED/STRICT, narrow reasoned MANAGED issue exception; STRICT atomic replacement; legacy archive-only | Simple quoting with explicit governance | Shared issue checks; policy/version/transport protocols R5/R9 | Accepted 0098 |
+| B — relationships | No Sales association/history model | One consistent current family association; frozen links per issued revision; OPEN targets/explicit Party resolution; governed closed-source repair | CRM correction without commercial amendment | Physical family projection R2/R5; accepted/job moves unsupported pending correction design | Accepted 0099 |
+| B3 — offers | No runtime Sales scope/acceptance | Independent accepted scopes and explicit exclusive groups; revisions not additive | Prevent competing commitments/double count | Scope/overlap/partial corrections R2/R6 | Accepted 0100 |
+| B3 — value/forecast | Currency/audit foundations, no forecast | Accepted business, remaining potential, basis; MAINTAINED and SELECTED_OFFERS | Explainable expected business | Eligibility/exclusions/calculations R2/R4/R5/R6/R9 | Accepted 0101 |
+| B3 — trust/FX | Manual rate records, no publications | Persistent provisional review; explicit dated SPOT, copied evidence; later-date FX movement not stale | Reproducible trusted publications | Corrections/fallback/rounding/history R4/R9 | Accepted 0102 |
+| C1 — prospect issue | Party/account split; incomplete contact/site surfaces | Eligible Party-backed issue without CustomerAccount; immutable context-dependent recipient evidence | Avoid premature Finance setup | Recipient schema/checklists R2/R4/R5/R8/R9 | Accepted 0103 |
+| C2 — readiness | Account requirements/field authority; no jobs/payments | Valid acceptance before account, preparation allowed; operations check readiness; account not credit clearance | Preserve facts without authorising exposure | No universal handover-account rule; operational R6/R7, financial Phase 6 | Accepted 0104 |
+| C3/C4/D/G — identity | Organisation-oriented Party; no kind/restore/merge workflow | Organisation and individual contracting Parties; distinct contacts/sites; candidate warning/reuse/restore; explicit conversion, no automatic account/merge/overwrite | Generic identity continuity/B2C compatibility | Fields/backfills/privacy/restore mechanics later; advanced B2C/merge deferred | Accepted 0105 |
+| E — responsibility/access | Membership/suspension, generic scope; no Sales scope | One eligible owner; unassigned Lead intake; audited reassignment/recovery; responsibility grants no access; explicit scope/management rights | Accountable work without leaked rights | Own/assigned/unit coverage integrated before exposure; teams not assumed | Accepted 0106 |
+| F — outcomes | No Sales lifecycle | Configurable OPEN stages; stable OPEN/WON/LOST/ABANDONED; derived partial win; evidence-backed closure/reopen and remainder disposition | Partial success can finish without erasing commitment | Commercial correction, quote coexistence/jobs/reporting R5/R6/R7/R9 | Accepted 0107 |
+| G — initial CRM | Shared infrastructure, no CRM | Basic intake/qualification, direct paths, lookup/link, owner, notes, manual next action/date, stages/history, scoped pipeline and forecast | Practical follow-up without enterprise burden | Advanced automation/teams/merge deferred; notifications Q33 | Accepted 0108 |
 
-## ADR 0098/0099 blockers — business versus implementation
+## Architectural reconciliation and guarantees
 
-These proposals must not remain open merely for lock/table/API choices. U1/U2 are the genuine
-business blockers; other rows have bounded reconciliation or explicit later gates.
+- ADR 0034's shared Party/independent roles and parent-derived contact/site scope are retained;
+  ADR 0105 extends contracting kinds without a second master. Actual kind/restore surfaces need
+  future work, not an assumption that they already exist.
+- ADR 0084 financial field/role authority remains independent from Sales. CRM outcome is not
+  acceptance; acceptance is not execution, credit or financial clearance. Cash/prepaid/non-credit
+  operation-specific gates remain R6/R7/Phase 6, not universal exceptions or mandatory account gates.
+- ADR 0081 keeps company-scoped Sales policy in Sales, separate from Company profile. Authorised
+  policy changes carry reason/actor/time/effective evidence; past issue evidence stays unchanged.
+- ADRs 0028/0089 retain additive capabilities, record scope and company isolation. Assignment,
+  units and manager title do not grant unrestricted or Finance access. Restricted Sales coverage
+  is not delivered by warehouse scope or UI filters.
+- Reuse shared Numbering/Approvals/audit/domain Actions; no second engines, role hardcoding or
+  general transport exception. Current authority, stable-state validation, atomic writes,
+  append-only evidence and retry guarantees remain. Exact locks/protocols are later design.
+- Current CRM family changes cannot silently alter issued links, recipients/terms, accepted scope,
+  groups, job ownership/handover or historical/published forecast values. Relevant current eligibility
+  changes may require diagnostic/review treatment under 0102; they do not rewrite publications.
+- Legacy archive records carry provenance and cannot become revision/acceptance/handover shortcuts.
+  Reopening pursuit preserves stage/outcome/ownership/commitment history and cannot restore trust.
 
-| Open wording | Business consequence / options | Recommendation | Blocks R1? / owner |
-|---|---|---|---|
-| STRICT historical issued import (0098) | Refuse/match genuine live links; separate controlled archive import; or weaken policy/fake deals | Keep normal paths STRICT; initial legacy offers read-only with provenance, no implicit live acceptance/revision. Governed live historical import only after explicit R5/R9 design | Yes: U1 must approve initial boundary; detailed import mechanics R9 |
-| STRICT draft unlink (0098/0099) | Temporary missing link blocks issue but departs from continuous strict link; atomic replacement prevents it | Under STRICT require atomic link replacement, no ordinary unlink. Existing unlinked drafts after policy transition may be repaired but not issued; ordinary FLEXIBLE/MANAGED corrections stay | Yes: U1; correction/revision mechanics R5 |
-| Policy governance/version (0098) | Uncontrolled changes could evade managed oversight; freeze all drafts burdens transitions | Dedicated company Sales-policy duty, reason/actor/time/effective version; effective policy at operation; preserve issued evidence; no role names/team overrides now | Existing governance direction reviewed; endorse U1 package, exact capability/store R9; not a standalone blocker |
-| Issue/revocation/replay (0098) | Stale authority can issue/bypass; retries can fabricate success | Original write checks live authority; prior revocation observed; failed attempt no success. Identical completed retry uses original evidence plus current required access/authority per domain-integrity | No new choice; existing contract. Locks/linearisation/shared auth protocol R5/R9, not an R1 hold |
-| Unknown prospect/Party (0099) | Names/unbound enquiries could attach different customers | Opportunity may start unbound; before issue association resolves same eligible Party. Explicit authorised first binding; never silently overwrite known identity or create account | C1/C2 settled foundation; approve U2 binding boundary. Exact quote recipient/schema R2 |
-| Association unit and closed state (0099) | Different revisions associated to different deals confuse offer responsibility; closed deals could collect new active work | Current CRM association organises the offer family consistently; issue-time links per revision stay immutable. Normal target is OPEN; reopen first rather than attach new pursuit to closed target | Yes: U2 business responsibility/eligibility; physical family/projection R2/R5 |
-| Accepted/job-linked moves and closed-source repair (0099) | CRM repair could move commercial/job ownership or exclusive group | Preserve all commitments/groups/jobs; allow reasoned removal/reassignment from closed source to eligible open target only for otherwise ordinary issued offers. Accepted/job-linked exceptions remain unsupported until governed rules | U2 approves initial supported boundary; exceptional operations R5/R6/R7/R9, not full R1 blocker |
-| Visibility/history (0099) | Old/new restricted relationships or financial fields leak through history | Guard both sides/current scope, redacted governed history; no record grant from reassignment; managers use explicit scope/capabilities | U4 settles responsibility/access contract; exact projection/aggregate privacy R9 |
+ADRs 0100–0104 remain unchanged. Their statements about pending R1 work describe their decision-time
+context; this closure is the current research state. No accepted ADR was superseded. The final
+review reused sufficient dated primary research rather than repeating completed comparisons.
 
-## Owner decisions — six related bundles, review together
+## Deferred dependencies — explicit delivery gates
 
-Only the following choices need approval. The recommendations are proposals; alternatives remain
-available and individual choices within a bundle may be answered differently.
+| Package | Still to research/design before dependent capability is implementation-ready |
+|---|---|
+| R2 | Quotation/family/revision/scope identity and physical relationships; assemblies/work units/sections/alternatives; overlap and optional/non-priced scope; recipient references |
+| R3 | Pricing, discounts, commercial terms and margin permissions; linkage-dependent pricing/approval inputs |
+| R4 | Tax/jurisdiction/recipient requirements; forecast FX fallback, age, rounding/corrections and accepted valuation |
+| R5 | Quote issue/revision/expiry/withdrawal/supersession; historical live migration; correction eligibility and policy/authority/concurrency coordination |
+| R6 | Customer-decision validity, partial acceptance, accepted-scope adjustment/cancellation, group claims and exceptional relationship corrections |
+| R7 | Preparation versus confirmation/release, cash/prepaid/non-credit operational readiness, multiple scopes/jobs and handover corrections |
+| R8 | Customer document/delivery method, contextual address/contact evidence, communication proof and publication channels |
+| R9 | Exact capabilities/grants/scope coverage, privacy/restore mechanics, diagnostics/review/history, reporting/as-of/FX corrections, integrations and transaction protocols |
+| Phase 5 | Execution, materials/labour/release and actual costing; handover grants no automatic work authority |
+| Phase 6 | Credit exposure/clearance, financial-account readiness, advances/cash/receipts/invoices/postings and payer/contracting identity |
+| Q33 / later | Notification delivery and deferred enterprise CRM/team/automation/master merge |
 
-### U1 — STRICT corrections and legacy scope
+No detailed schema, API, lock, backfill or report choice is silently accepted by R1 closure.
+Unsupported exceptional operations stay unsupported until their governing packages settle them.
 
-**Problem/why:** corrections and old data must not become ways around a strict live workflow.
-**Example:** QT-10 needs a different opportunity; imported QT-1999 has no original deal.
-**Options/consequences:** temporary unlink eases corrections but permits a missing strict relation;
-atomic replacement retains it. Live historical import adds operational eligibility questions;
-read-only legacy archive preserves evidence with a smaller initial scope. Policy weakening/fake
-opportunities corrupt evidence and are rejected alternatives.
-**Recommend:** atomic STRICT replacement; archive-only legacy scope initially; separate authorised
-Sales policy changes with reason/version. **Technical:** preserves 0098 presets and domain-Action
-import boundary; later live migration purpose requires R5/R9 decisions. No grandfathered new issue.
+## Next — bounded R2 scope, recommendation only
 
-### U2 — Consistent offer responsibility and opportunity eligibility
-
-**Problem/why:** CRM organisation must be correct without becoming a commercial amendment.
-**Example:** several revisions of the same furniture offer belong to one current deal; an old
-closed deal was linked incorrectly. **Options/consequences:** revision-level current CRM links
-allow split responsibility but complicate history/forecasting; family-consistent organisation
-keeps one offer coherent. Closed-target attachment avoids reopening but mixes new pursuit with
-closed outcomes. **Recommend:** family-consistent current association; same eligible Party before
-issue, explicit binding when previously unknown; normal OPEN targets, reopen first. Permit reasoned
-repair from closed source without reopening it; accepted/job-linked exceptional moves unsupported
-until later decisions. **Technical:** separate per-revision frozen issue evidence; do not move
-groups, accepted scope or job ownership; R2 selects the physical representation.
-
-### U3 — Generic identity, controlled reuse and conversion
-
-**Problem/why:** an individual buyer is not merely an employee contact, and a returning supplier
-must not become a duplicate customer. **Example:** Fatima buys personally; ABC's procurement
-contact buys for ABC; an archived ABC supplier returns as a buyer.
-**Options/consequences:** organisation-only first is smaller but delays B2C; generic organisation/
-individual Party supports both with extra validation/privacy. Auto-merge is fast but may combine
-different entities; create-fresh bypasses archive controls; human candidate review preserves identity.
-**Recommend:** support both contracting kinds through one Party; company-oriented default UI and
-contextual person controls. Search/candidate warnings before create, explicit link/reuse, governed
-restore of the same identity with roles restored independently. No automatic merge, master-field
-overwrite or CustomerAccount on lead qualification. An enquiry may create several real deals
-through explicit repeatable actions with provenance; reject duplicate retry, not legitimate second
-deal. **Technical:** retain same-company/account uniqueness; contacts/sites remain owned children,
-not new financial identities. A company contact who buys personally needs an explicitly resolved
-contracting Party, not conversion of the employer identity. Duplicate candidates and archived
-search are permission/scoped; restricted matches require authorised resolution, not identity
-leakage or automatic merge. Existing tax/registration identifiers remain warning evidence unless
-a later jurisdiction-specific decision justifies a hard constraint. Data conversion/backfill/privacy
-validation are later design gates.
-
-### U4 — Ownership, visibility and inactive users
-
-**Problem/why:** assigning follow-up should not expose other deals or financial data.
-**Example:** Aisha leaves; Bilal takes the opportunity while Finance keeps mapping authority.
-**Options/consequences:** company-wide capability grants are simple but broad; owner-only limits
-privacy but may hide queues/cover; selling teams add management complexity. Automatic rights from
-ownership undermine existing authorisation. **Recommend:** one eligible active owner per opportunity,
-unassigned Lead queue allowed; audited reassignment with history/reason. Retain suspended owner's
-history, flag responsibility needing reassignment, permit scoped authorised management recovery;
-no silent owner deletion or automatic grant. Use existing additive capability/scope foundations:
-company grants default, deliberately limited own/explicit-assigned/unit access where integrated;
-management coverage explicit. Ownership transfer must validate destination authority/eligibility,
-not create it. **Technical:** R9 implements supported Sales scopes before restricted use; fail
-closed for unsupported scope, exports/lookups/counts/history included. Team rosters/routing may
-follow using organisation units, not a second company boundary. This is not acceptance of new
-scope enums/permission vocabulary or a claim they exist now.
-
-### U5 — Stages, partial wins, closure and reopening
-
-**Problem/why:** one accepted scope must not hide remaining demand or fabricate a full win.
-**Example:** furniture accepted, installation undecided; later buyer declines installation.
-**Options/consequences:** automatic WON at first acceptance is easy but loses remaining scope;
-PARTIALLY_WON terminal blocks continuing pursuit; separate progress/outcome preserves both.
-Manual WON without evidence supports off-system sales but can invent commitments.
-**Recommend:** configurable ordered open stages independent of stable outcomes. Partial win is a
-separate derived indication while OPEN. Authorised manual closure records actor/time/reason and
-remaining-scope disposition: WON requires authoritative accepted scope and no further pursuit;
-LOST means unsuccessful buyer/deal outcome, ABANDONED means pursuit discontinued. Positive active
-accepted scope prevents a whole-deal LOST/ABANDONED classification; partial loss is remainder
-context, not erasure. Initially require recorded quotation acceptance for WON; unquoted/off-system
-wins need separate authoritative acceptance support later, not free-entry accepted money.
-Reopen same revived pursuit with reason/history, retain accepted scopes and prior closures; new
-buying event gets a new opportunity. Closure/reopening cannot withdraw/revive quotations, cancel
-jobs, release exclusive groups or restore forecast trust. Closed pursuit has no active remaining
-forecast contribution; record disposition separately from unchanged publication history.
-**Technical:** business stage governance (authorised edits, retire used stages rather than lose
-history) now; partial corrections/cancellation evidence R6, quote coexistence/expiry R5, exact
-forecast review/retirement/report history R9. No automatic quote cascade or forced all-quotes-closed rule.
-
-### U6 — Initial CRM and progressive exposure
-
-**Problem/why:** follow-up needs useful basics without enterprise setup overhead.
-**Example:** a small service firm tracks a callback; a larger team wants assignments and pipeline.
-**Options/consequences:** quotation-only CRM omits follow-up; full automation adds expensive
-configuration; a small common foundation scales by exposure. **Recommend:** optional Lead intake,
-explicit qualification/disqualification and reopen history, Opportunity create/link, owner, contact/
-Party lookup, description/source, notes with author/time, next action/date, optional expected close,
-stage/outcome reasons, simple scoped lists/pipeline and already accepted forecast methods. Unknown
-values remain unknown. Direct quotation users need no CRM warnings in FLEXIBLE. Lead qualification
-may produce several deals without consuming/deleting the enquiry; disqualification reasons and
-reactivation preserve history. No automatic reminders or close-on-age. **Technical:** company
-configuration/UI exposure separate from domain capability; defer campaigns/scoring/territories,
-commissions, email ingestion/sync, activity plans/calendars, shared selling teams, predictive scoring,
-master merge, notification delivery (Q33) and portals until justified. Normal record linking/reuse,
-notes and human follow-up are part of usable initial CRM; no promise of a separate activity engine.
-
-## Minimum cross-topic invariants and closure path
-
-Identity, scope and current authority apply to every entry path; owner/CRM/stage cannot grant
-Finance rights. Immutable issue, accepted scope and publication evidence survive all changes.
-Optional CRM cannot create fake records or bypass pricing/approval/recipient controls. Accepted
-business differs from outcome and from work/credit authority. Closed or reopened pursuit cannot
-silently manipulate live quote commitments, groups, jobs or forecast trust. Details gate dependent
-operations; unsupported advanced cases stay unsupported, not silently inferred.
-
-After owner review: reconcile 0098/0099 with U1/U2/U4 and mark accepted only if approved semantics
-are unambiguous; retain their R2/R5/R6/R7/R9 delivery gates. Record approved identity/conversion,
-ownership/access and outcome/minimum-CRM contracts in new sequential ADRs using the index's then-
-free numbers (do not reserve numbers now). Update domain/research indices, phase task and Q39;
-close whole R1/remove Q39 only when U1–U6 and all genuine foundation choices are resolved or
-explicitly excluded from initial scope. No remaining physical table/lock design alone blocks R1.
-
-**Next recommended package after that review/closure: R2 — quotation structure and scope.**
-This record does not begin it. R3–R9 detailed questions and Phase 5/6 duties retain their owners.
+Investigate what constitutes one commercial offer and revision; how quote scope represents
+assemblies, work units, sections and optional/alternative/non-priced items; and how independent
+versus competing/overlapping scope and Party references retain identity across revisions. Use
+accepted R1 contracts and Estimating foundations. Defer pricing engine, detailed lifecycle,
+acceptance/job mechanics, tax/FX and reporting to their packages. **R2 has not begun in this task.**
 
 ## Related
 
-- [Remaining evidence](phase-4-r1-remaining-evidence.md) · [R1](phase-4-r1-leads-and-relationships.md)
-- [Phase 4](phase-4-sales-quotations-and-handover.md) · [Q39](../OPEN-QUESTIONS.md#q39--phase-4-r1-enquiry-deal-and-customer-onboarding-boundaries)
+- [R1 evidence/history](phase-4-r1-leads-and-relationships.md) · [Remaining evidence](phase-4-r1-remaining-evidence.md)
+- [Phase 4](phase-4-sales-quotations-and-handover.md) · [Decision index](../decisions/README.md)
+- [Parties](../domain/parties.md) · [Sales pipeline](../domain/sales-pipeline.md)
 - [ADR 0098](../decisions/0098-hybrid-sales-opportunity-requirement.md) · [ADR 0099](../decisions/0099-separate-quotation-issue-and-crm-association.md)
-- [ADR 0103](../decisions/0103-issue-quotations-to-party-backed-prospects.md) · [ADR 0104](../decisions/0104-separate-customer-acceptance-and-readiness.md)
+- [ADR 0105](../decisions/0105-support-generic-party-identity-and-conversion.md) · [ADR 0106](../decisions/0106-separate-sales-ownership-and-access.md)
+- [ADR 0107](../decisions/0107-separate-opportunity-stages-and-outcomes.md) · [ADR 0108](../decisions/0108-expose-a-progressive-basic-crm.md)

@@ -2,13 +2,13 @@
 
 # R1-B3 — Multiple offers, revisions and opportunity forecast
 
-- **Status:** bounded B3 business research closed 2026-10-09; ADRs 0100–0102 accepted; detailed delivery gates remain open.
+- **Status:** R1 business research complete 2026-10-09; accepted ADRs 0098–0108 govern; detailed delivery gates remain.
 - **Access date:** 2026-10-08. Compared Dynamics 365 Sales, Odoo 19 and ERPNext official guidance.
 - **Question:** how can one deal have several offers and separately acceptable scopes without
   counting alternatives, prior revisions or accepted scope twice in pipeline reporting?
 - **Existing foundation:** [review](phase-4-existing-system-review.md); Sales remains documented-only.
 - **Owner-reviewed directions:** [ADR 0098](../decisions/0098-hybrid-sales-opportunity-requirement.md)
-  and [proposed ADR 0099](../decisions/0099-separate-quotation-issue-and-crm-association.md).
+  and [accepted ADR 0099](../decisions/0099-separate-quotation-issue-and-crm-association.md).
 - **Owner-reviewed extension:** [accepted ADR 0100](../decisions/0100-independent-quotation-scopes-and-alternative-groups.md).
 - **Accepted R1-B3 decisions:** none. No physical table boundaries are chosen.
 
@@ -16,6 +16,10 @@
 **Reading this record:** earlier alternatives/recommendations are retained research history.
 Accepted ADRs 0100–0102 govern only their bounded contracts; detailed package recommendations
 are not accepted by this closure. The [final review](phase-4-r1-b3-reconciliation.md) records the boundary.
+
+**Final closure:** the owner approved the bounded foundation contracts; [current R1 closure](phase-4-r1-decision-matrix.md)
+records accepted decisions and delivery gates. Earlier alternatives and review agendas below are
+historical unless confirmed by those ADRs; they do not reopen R1 or approve detailed implementation.
 
 ## Discussion update — 2026-10-08
 
@@ -151,7 +155,7 @@ not be silently mixed with net forecasts.
 - R6/R7 own partial acceptance, exclusive-choice enforcement, jobs/baselines and closed-state
   association limits. Rejecting a quote does not itself cancel a job.
 - R9 owns association/forecast duties, field/record scope, audit retention, report grains and
-  as-of data. Proposed ADR 0099 provides retry/concurrency boundaries for relationship edits;
+  as-of data. accepted ADR 0099 provides retry/concurrency boundaries for relationship edits;
   basis changes need the same transactional stale/retry-safe pattern.
 
 ## Question reconciliation after owner review
@@ -167,6 +171,6 @@ Owner-authorised acceptance passed 2026-10-09; later research gates are not impl
 - [Forecast research](phase-4-r1-b3-forecast-basis.md) · [accepted ADR 0100](../decisions/0100-independent-quotation-scopes-and-alternative-groups.md)
 
 - [Phase 4 plan](phase-4-sales-quotations-and-handover.md) · [R1](phase-4-r1-leads-and-relationships.md)
-- [Existing review](phase-4-existing-system-review.md) · [Proposed ADR 0099](../decisions/0099-separate-quotation-issue-and-crm-association.md)
+- [Existing review](phase-4-existing-system-review.md) · [accepted ADR 0099](../decisions/0099-separate-quotation-issue-and-crm-association.md)
 - [Q39](../OPEN-QUESTIONS.md#q39--phase-4-r1-enquiry-deal-and-customer-onboarding-boundaries)
 - [Sales pipeline](../domain/sales-pipeline.md) · [Numbering](../architecture/document-numbering.md)

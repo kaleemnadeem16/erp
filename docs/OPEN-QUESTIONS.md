@@ -31,50 +31,10 @@ Q1, Q2 and Q3 were resolved on 2026-08-10 — see
 
 ## Non-blocking
 
-### Q39 — Phase 4 R1: enquiry, deal and customer-onboarding boundaries
-**Blocks:** finalising R1's Sales model and dependent quotation-recipient/acceptance design;
-not research or the other agents' existing workstreams.
-
-R1-A now has an **owner-reviewed proposed direction**, recorded in
-[proposed ADR 0098](decisions/0098-hybrid-sales-opportunity-requirement.md): optional leads,
-direct opportunities and one quotation workflow governed by FLEXIBLE/MANAGED/STRICT presets.
-It is not accepted; historical migration exceptions, policy governance and issue/authority/retry
-coordination remain flagged for resolution. Keep Q39 open.
-
-R1-B1/B2 now have owner-reviewed direction in [proposed ADR 0099](decisions/0099-separate-quotation-issue-and-crm-association.md): draft relationship corrections and governed post-issue
-CRM association separate from immutable issue linkage. STRICT temporary unlinking, closed-state
-eligibility, association scope per family/revision and accepted/job-linked restrictions remain open.
-R1-B3 now has owner-reviewed multiple independent acceptances and explicit alternative-family
-groups in [accepted ADR 0100](decisions/0100-independent-quotation-scopes-and-alternative-groups.md).
-The two forecast methods now have owner-reviewed direction in [accepted ADR 0101](decisions/0101-separate-accepted-business-and-remaining-forecast.md): MAINTAINED remaining estimate and
-SELECTED_OFFERS, with accepted commitments separate and manual estimates unchanged on acceptance.
-The [staleness](phases/phase-4-r1-b3-forecast-staleness.md) and
-[FX](phases/phase-4-r1-b3-forecast-fx.md) review now records persistent provisional trust and
-explicit-date SPOT publication as owner-reviewed direction
-in [accepted ADR 0102](decisions/0102-govern-forecast-trust-and-explicit-valuation.md).
-Ordinary later-date FX movement is now owner-reviewed as non-invalidating; used-rate corrections
-require separate R4/R9 impact assessment. The [bounded B3 reconciliation](phases/phase-4-r1-b3-reconciliation.md)
-records the final review: ADRs 0100–0102 accepted 2026-10-09 by owner authorisation, closing
-bounded B3 business research only. Deferred delivery questions remain open; 0098/0099 stay Proposed.
-C1 eligible Party-backed issue without CustomerAccount is resolved by [accepted ADR 0103](decisions/0103-issue-quotations-to-party-backed-prospects.md).
-C2 valid acceptance before CustomerAccount, preparation and operation-level readiness are resolved
-by [accepted ADR 0104](decisions/0104-separate-customer-acceptance-and-readiness.md). No universal
-account-at-handover rule is accepted; precise cash/prepaid/non-credit gates belong to R6/R7 and
-financial processing to later Phase 6.
-
-**Current R1 closure blockers:** [six consolidated owner-review bundles](phases/phase-4-r1-decision-matrix.md)
-U1 STRICT/legacy scope; U2 offer responsibility/eligible relationships; U3 organisation/person
-identity, duplicate reuse/restore/conversion; U4 ownership versus visibility; U5 stages/outcomes/
-partial wins/reopen; U6 initial CRM exposure. 0098/0099 remain Proposed pending their U1/U2
-answers and cross-cutting access reconciliation. New recommendations are researched, not approved.
-Detailed quotation structures/pricing/FX/lifecycle/partial scope/jobs/documents/report implementation
-remain R2–R9 delivery gates, not reasons to keep R1 open after its foundations are approved.
-[Additional primary evidence](phases/phase-4-r1-remaining-evidence.md) reuses sufficient previous
-research. Review these choices together; then record ADRs and close R1/Q39 only when genuine
-foundation choices are resolved or explicitly excluded. R2 is recommended next, not begun.
-
-Record accepted answers in ADRs and remove only resolved questions; do not close all Q39 or R1
-because one direction was reviewed.
+<a id="q39--phase-4-r1-enquiry-deal-and-customer-onboarding-boundaries"></a>
+Q39 resolved 2026-10-09 by accepted ADRs 0098–0108; see [R1 research closure](phases/phase-4-r1-decision-matrix.md).
+The active question entry is removed. This historical redirect preserves links in immutable ADRs;
+detailed R2–R9/Phase 5–6 delivery gates are recorded in the closure, not an open R1 blocker.
 
 Q6 (data import mechanism) and Q7 (permissions mechanism) resolved 2026-08-10 — see
 [ADR 0027](decisions/0027-generic-column-mapping-import.md) and
