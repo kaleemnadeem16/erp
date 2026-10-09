@@ -67,6 +67,7 @@ What keeps breaking, and the rule:
 - **Product code has the same rule.** A known record is resolved by id; a large searchable set is a server-driven picker; only a genuinely small bounded reference list may be listed whole ([ui-building-blocks.md](ui-building-blocks.md#lookups-that-survive-large-datasets)).
 - **Clean up what you create** where it matters: a test that makes bulk data removes it in a `finally`; the suite's teardown archives only the items the run created. Do not "fix" crowding by wiping shared data.
 - **Server-driven pickers:** wait for the current result (the picker says "Searching…" until it has it); do not act on a list that is still answering the previous text.
+- **Choose Radix options by keyboard, not pointer, at narrow widths.** An option can sit outside the viewport of its scrollable portal (seen at 320 px, in the production build CI uses and not in the dev server); a pointer click then times out with "`<html>` intercepts pointer events". Use `option.press('Enter')` (as `pickSelect` does).
 - **Copy and layout changes make specs stale.** If you rename a label, a button or an option, update the specs in the same commit; if a spec fails on wording you did not touch, it is stale — classify it as such and fix it, do not retry it.
 - **Personas come from the normal demo seeders** (`demo:seed`), not from Docker-only setup, so CI and another developer get the same people.
 - **Environment is not product.** Postgres "recovery mode", Docker down, a login throttle (`php artisan cache:clear` clears it) or a browser that will not launch are environment failures: confirm in the logs, fix the environment, re-run the *same* specs, and say so.
@@ -100,6 +101,7 @@ Recurring causes so far, and the preventive rule that closes each:
 | Stale Playwright specs after wording/layout changes | Search the specs for what you renamed; update them in the same commit |
 | Page-one / first-row assumptions | Deterministic lookups; see above |
 | A new route or writer not registered in a ratchet | Run the ratchets before committing |
+| A spec passing on the dev server fails only on the hosted production build | Layout/pointer differences (an off-screen Radix option); use keyboard activation and deterministic waits |
 | Timeouts after Postgres recovery or login throttle | Classify as environment, verify, re-run |
 
 ## What you cannot reproduce locally

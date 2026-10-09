@@ -242,7 +242,9 @@ for (const mode of ["light", "dark"] as const) {
         return { height: style.height, width: style.width, fontSize: style.fontSize, borderRadius: style.borderRadius };
       }));
       await size.click();
-      await page.getByRole("option", { name: "25", exact: true }).click();
+      // Radix can place an option outside the viewport of its scrollable portal at 320 px (the production build did, CI only);
+      // keyboard activation follows the same selection path without a pointer click on an off-screen option (see support.ts pickSelect).
+      await page.getByRole("option", { name: "25", exact: true }).press("Enter");
       await expect(size).toHaveText("25");
       expect(await footer.evaluate(element => element.scrollWidth - element.clientWidth)).toBeLessThanOrEqual(1);
       await page.screenshot({ path: `/tmp/erp-pagination-${route.includes("purchase") ? "po" : route.includes("history") ? "history" : "approvals"}-${mode}.png`, animations: "disabled" });
