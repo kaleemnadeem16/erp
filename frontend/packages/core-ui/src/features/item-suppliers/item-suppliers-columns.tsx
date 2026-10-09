@@ -57,7 +57,7 @@ export function getItemSupplierColumns(
             {row.item?.name ?? `Item #${row.item_id}`}
           </RecordLink>
           {row.item?.code && (
-            <span className="text-xs font-mono text-muted-foreground">
+            <span className="text-xs text-muted-foreground">
               {row.item.code}
             </span>
           )}

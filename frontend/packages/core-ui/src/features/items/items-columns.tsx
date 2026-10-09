@@ -27,9 +27,7 @@ export function itemColumns(
       key: "code",
       header: "Code",
       value: (item) => item.code,
-      cell: (item) => (
-        <RecordLink className="font-mono text-xs">{item.code}</RecordLink>
-      ),
+      cell: (item) => <RecordLink>{item.code}</RecordLink>,
       sortable: true,
       cardRole: "title",
     },
