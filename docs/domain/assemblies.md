@@ -197,6 +197,9 @@ evidence a later quotation, job-costing or audit screen can adopt. `sell_per_uni
 guidance, not a maintained or approved Sales price; fully costed arithmetic remains unchanged.
 Legacy missing material/resource rates can still yield numeric zero without complete cost evidence;
 see the [compatibility plan](../phases/phase-4-r2-compatibility-plan.md) before treating it as trusted cost.
+The [revised C0 proposal](../phases/phase-4-c0-cost-evidence-contract.md) corrects existing cost APIs
+and all consumers together; it does not retain the zero fallback as a second supported contract.
+Runtime changes remain unimplemented until owner review.
 
 ### Versioning
 

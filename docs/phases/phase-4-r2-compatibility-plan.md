@@ -3,13 +3,14 @@
 # R2 — Dependency-ordered compatibility plan
 
 **Date:** 2026-10-09. **State:** compatibility assessment/plan owner-reviewed; bounded R2 research formally closed.
-C0 contract proposal remains for approval; implementation not authorised.
+C0/C1/C2 delivery approach revised under no-real-business-data constraints; contract approval
+and implementation authority remain pending. The earlier compatibility-first draft is historical.
 Business direction is accepted in [ADR 0109](../decisions/0109-shared-commercial-quotation-lines-and-optional-estimating.md).
 The [audit](phase-4-r2-compatibility-audit.md) distinguishes valid current behaviour, known defects,
 required shared work and absent future Sales capabilities. No migration/backfill is proposed as
 an immediate action; proposed code slices need owner authorisation before delivery.
 
-## A — Documentation reconciliation (this commit)
+## A — Documentation reconciliation (R2 milestone, retained history)
 
 0109 replaces 0008/0055 as governing records, explicitly preserving their valid estimating/pricing
 contracts. Only historical ADR status lines change; index links and current domain/invariant text
@@ -17,8 +18,9 @@ identify the new source-neutral direction. R2 research retains alternatives and 
 recommendations, with current approval/assessment overlays. Q40's answered business question is
 removed; formal research closure is separate from implementation readiness.
 
-Current detailed technical proposal: [C0 cost-evidence contract](phase-4-c0-cost-evidence-contract.md)
-and [C1/C2 independently reviewable slices](phase-4-c1-c2-cost-evidence-slices.md).
+Current detailed technical proposal (replaces the compatibility-first delivery assumptions): [C0 cost-evidence contract](phase-4-c0-cost-evidence-contract.md)
+and [C1/C2 coherent correction slices](phase-4-c1-c2-cost-evidence-slices.md), supported by the
+[verified dependency map](phase-4-cost-dependency-map.md).
 Proposed ADR 0110 remains unaccepted; these records refine C0–C2 below without authorising code.
 
 ## B/C — Compatibility and future delivery matrix
@@ -28,7 +30,7 @@ than quotation models; “Sales” means missing future functionality, not an ex
 
 | Area / slice | Existing assumption | Required change | Reason | Priority | Tests | Delivery owner |
 |---|---|---|---|---|---|---|
-| C0 Evidence contract review | Existing totals/zero fallbacks lack authoritative certainty; API input precisions differ | Specify additive certainty/legacy-field rollout and quantity precision/bounds/loss handling; reconcile temporal cost context | Preserve API behaviour deliberately while enabling trusted evidence | Before affected adapters; review only | Contract fixtures for legacy fields, UNKNOWN/null versus real zero, supported quantity bounds | Estimating + Inventory maintainers; owner approves API/precision contract |
+| C0 Evidence contract review | Existing totals/zero fallbacks lack authoritative certainty; API input precisions differ | Correct existing cost APIs/DTOs and migrate every dependent consumer; one authoritative resolution, precise temporal/quantity semantics | Retire misleading zero while preserving valid behaviour; no permanent dual contracts | Before affected adapters; review only | Updated typed API/consumer fixtures, UNKNOWN/null versus true zero, coverage/demand attribution and bounds | Estimating + Inventory maintainers; owner approves corrected API/quantity/evaluation contract |
 | C1 Shared material cost query | AVCO company-item-only IngredientCostResolver | Implement ADR 0077 read-only query with scope/as-of/method/status, copied sources and explicit refusals; verify direct stocked-Item consumer; do not inherit advisory availability's positive-cost-only filter | Existing accepted obligation needed by material and direct Item cost paths | Before trusted cost-derived prices/material-cost controls; depends C0 | New query tests for AVCO/FIFO/SPECIFIC, partial quantity, frozen/unsupported/no evidence, legitimate zero, same-company/method/scope, repeatable evidence; no stock writes | Inventory owns valuation query; Estimating consumes |
 | C2 Shared estimate certainty | Nested materials/resources may turn missing evidence into zero aggregate guidance | Propagate C1 certainty and missing resource-rate diagnostics through nested material/Assembly/preview results; make authoritative completeness explicit | Correct known missing-cost ambiguity without changing fully costed arithmetic | After C1 for materials; resource slice independently testable after C0 | Existing hand-calculated roll-ups unchanged; add nested partial/unknown, missing versus configured zero resource rates and restricted projections | Estimating maintainer; shared with Inventory evidence |
 | C3 Guidance labels/help | “Sell / unit” can read like the final Sales price | Clarify estimate guidance in Assembly screens/help, keep `sell_per_unit` field and markup/margin settings | Avoid using guidance as maintained price or applying markup twice | Small independent UI slice after approved wording; no engine dependency | Existing Assembly browser journeys plus updated label expectations, permissions and mobile layout | Estimating UI maintainer |
@@ -67,7 +69,7 @@ Inspected existing regression anchors (repository-relative):
 - `backend/tests/Feature/Modules/Estimating/AssemblyCostRollUpTest.php`: exact five-part totals,
   markup versus margin, work/time quantities, application rates, overrides and overhead precedence.
 - `FormulationExplosionTest.php` in the same folder: nested requirements, wastage, conversion,
-  cycle rejection; explicit legacy zero/FIFO/scoped-AVCO limitations require deliberate changes only.
+  cycle rejection; replace legacy missing-cost zero assertions and obsolete supported-method refusal fixtures on approved migration; preserve valid fully costed maths.
 - `AssemblyVersionApiTest.php`, `FormulationApiTest.php`, `ApplicationRateResolutionTest.php`,
   `ResourceRateApiTest.php`, `OverheadPolicyApiTest.php`: version rules, customer override,
   rate/dimension resolution and commercial-read guards.
@@ -103,11 +105,11 @@ browser specs for UI. These are future validation requirements, not claimed resu
   persistence/caching requirements must establish any actual migration need.
 - Future quotation/plan/snapshot persistence is additive Phase 4 work after physical design;
   migrated constraints, real rollback and isolated fresh/rollback/reapply checks apply then.
-- Preserve current API routes/fields and fully costed responses. Standalone cost APIs are current
-  guidance; future adoption must explicitly align calculation date/context rather than assume
-  the version-only roll-up already supports historical quote valuation. C0 must decide additive status
-  versus changed numeric semantics/versioned endpoint before C2 delivery; never silently alter
-  `sell_per_unit`, nullability or preview accepted precision. Regenerate, never hand-edit clients.
+- Retain existing operation routes, correct DTO/response semantics deliberately and migrate all
+  affected consumers in coordinated cohorts. Preserve fully costed arithmetic, not incorrect zero
+  totals or unnecessary scalar aliases. No parallel compatibility endpoints. Current guidance is
+  not historical valuation; preserve explicit date/context and reject unsupported historical reads.
+  Keep valid preview quantity limits. Regenerate clients and verify nullable/recursive schemas.
 - Purchasing stores derived stock quantity at four places in `BuildPurchaseOrderLineAttributes`;
   nine-place factors do not imply nine-place stock documents. Reuse conversion semantics only,
   explicitly reconcile destination precision and loss handling for Sales.
@@ -127,7 +129,9 @@ C1/C2 code waits for contract review and explicit authority.
 
 R3–R9 own pricing, tax/FX, lifecycle, acceptance, job multiplicity, customer documents and access/
 analytics details as assigned in the R2 record. R3 research can proceed independently of cost-code
-delivery; this task does not start it. Next action is owner review of C0 and C1/C2 delivery slices.
+delivery; this task does not start it. Next action is owner review of revised C0, dependency map and coherent C1/C2 delivery slices.
+Local commits only; do not push unless explicitly requested. No real business data does not
+authorise historical migration edits or development database resets.
 
 ## Related
 

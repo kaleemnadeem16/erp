@@ -8,6 +8,11 @@ records bounded direction. Audit inspected code, tests, API Resources, seeders a
 no code changed or executable regression suite run. Other agents' uncommitted Party/backend and frontend edits are outside this baseline; recheck them
 before implementation rather than treating them as delivered compatibility foundations.
 
+**Historical assessment:** this record preserves the Phase 1–3 findings reviewed at `22a3603`.
+The [current dependency map](phase-4-cost-dependency-map.md) and [revised C0](phase-4-c0-cost-evidence-contract.md)
+replace subsequent compatibility-first API/test delivery assumptions; the old behaviour is not
+a permanent architecture requirement.
+
 ## Business meaning and before/after
 
 We are removing the need to maintain an Assembly for everything a company sells. This solves

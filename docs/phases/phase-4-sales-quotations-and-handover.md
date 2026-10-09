@@ -70,7 +70,8 @@ proposal is never "researched", "accepted" or "complete" merely because it exist
 - [Consolidated R1 decision matrix](phase-4-r1-decision-matrix.md) · [additional evidence](phase-4-r1-remaining-evidence.md) — accepted matrix and closure; detailed implementation gates retained.
 - [R2 consolidated recommendations](phase-4-r2-quotation-structure.md) · [actual capabilities](phase-4-r2-existing-capabilities.md) · [primary comparison](phase-4-r2-erp-comparison.md) — retained A–H alternatives; U1–U6 approved in accepted ADR 0109.
 - [R2 verified impact matrix](phase-4-r2-compatibility-audit.md) · [compatibility plan](phase-4-r2-compatibility-plan.md) — source-specific coexistence, shared certainty obligations and future Sales slices; code not authorised.
-- [C0 contract proposal](phase-4-c0-cost-evidence-contract.md) · [C1/C2 slice plan](phase-4-c1-c2-cost-evidence-slices.md) — proposed 0110/Q41, backward compatibility and cost-correctness delivery; no runtime changes.
+- [C0 contract proposal](phase-4-c0-cost-evidence-contract.md) · [C1/C2 slice plan](phase-4-c1-c2-cost-evidence-slices.md) — revised proposed 0110/Q41: correct existing operations and migrate consumers; no runtime changes.
+- [Cost dependency map](phase-4-cost-dependency-map.md) — actual Actions/DTOs, routes/client/UI, controls/tests/demos and coordinated change boundaries.
 - Later topic records are added when investigated; do not generate empty speculative documents.
 
 ## Tasks
@@ -92,7 +93,7 @@ proposal is never "researched", "accepted" or "complete" merely because it exist
 - [x] Begin R2 at owner request; document A–H initial evidence, actual capability review and primary comparison.
 - [x] Record approved R2 U1–U6 in accepted ADR 0109, supersede 0008/0055 explicitly and document actual compatibility/required slices; resolve Q40.
 - [x] Owner review of compatibility assessment/plan and formal bounded R2 business research closure; final consistency review passed.
-- [x] Prepare concrete C0 contract proposal and independent C1/C2 implementation/test slices.
+- [x] Prepare C0 and C1/C2 slices; revise compatibility-first proposal after owner constraints with verified dependency map and coherent in-place consumer migration.
 - [ ] Owner approve C0/0110 and explicitly authorise selected C1/C2 code/migration slices.
 - [ ] Investigate R3–R9 in the dependency order above, reusing sufficient accepted research; R3 independently ready, not started.
 - [x] Reconcile R1 business foundations with the historical Sales proposal; physical schema reconciliation remains R2–R9.

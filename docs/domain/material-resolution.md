@@ -111,12 +111,14 @@ shapes, transition rules and deterministic tie-breakers are in
 ## Cost, price and availability
 
 - Internal inventory cost is evidence for estimating, not customer price.
-- [ADR 0055](../decisions/0055-progressive-sales-pricing-and-controlled-formulas.md) defines the
-  separate Phase 4 Sales-pricing resolver: progressive maintained, cost-derived, agreement and
+- [ADR 0109](../decisions/0109-shared-commercial-quotation-lines-and-optional-estimating.md) retains
+  and generalises historical 0055's separate Phase 4 Sales-pricing resolver: progressive maintained, cost-derived, agreement and
   controlled-formula pricing, with tax applied afterwards.
 - Supplier purchase price and procurement cash outlay are Purchasing evidence, not substitutes for
   current inventory valuation.
-- Missing cost is never presented as zero.
+- Accepted cost direction requires missing evidence to remain unknown. Current scalar roll-ups
+  still have a legacy zero exception; [revised C0](../phases/phase-4-c0-cost-evidence-contract.md)
+  proposes correcting existing operations/DTOs and consumers, not parallel compatibility APIs.
 - Availability is advisory in Phase 3. The response must state its as-of time.
 - An adopted plan can be stale before execution; Phase 5 revalidates and reserves it.
 - An issued quotation snapshots the adopted material/cost evidence so later policy or master-data

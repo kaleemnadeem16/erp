@@ -1,118 +1,116 @@
 [← Decisions](README.md)
 
-# 0110 — Version cost evidence without changing legacy estimate responses
+# 0110 — Correct existing cost operations through one authoritative contract
 
-- **Status:** proposed — C0 technical contract; owner approval and implementation authorisation pending
+- **Status:** proposed — revised C0; owner review and implementation authorisation pending
 - **Date:** 2026-10-09
-- **Affects:** Inventory material-cost query, Estimating cost propagation, cost APIs and consumers
-- **Complements:** accepted 0077 and 0109; supersedes neither
+- **Affects:** Inventory material-cost query; Estimating Actions/DTOs, existing APIs and all consumers
+- **History:** replaces the unaccepted compatibility-first draft at `9dced38`; retained filename/identifier preserves links.
+- **Relationship:** retain 0077's query/scope/certainty and 0109's Sales/estimating boundaries; proposed refinement of 0077's runtime-deferral/legacy-retirement sequencing is explicit below.
 
 ## Context
 
-Legacy material and resource costing can emit zero when evidence is unavailable. Existing tests
-intentionally assert that behaviour, and current API consumers expect non-null numeric strings.
-Adding a status beside those totals lets an unaware consumer continue treating an incomplete number
-as complete. Correctness and compatibility therefore need distinct evidence and legacy contracts.
+Known materials 200.0000 plus unavailable labour must not be presented as complete cost 200.0000.
+A recorded zero labour rate is different: that cost is genuinely known. The ERP has no real business
+or production data, as confirmed by the owner. Existing repository consumers can be migrated together;
+there is no demonstrated external contract requiring a permanent incorrect numeric path.
+
+The previous proposal overvalued backward compatibility and proposed duplicate cost endpoints.
+Actual inspection finds a connected graph of scalar Actions/DTOs, three current API operations,
+generated hooks, cost panels, variance/mix controls, direct tests and demo fixtures. It requires a
+coordinated correction, not a scalar-to-null change in isolation.
 
 ## Decision
 
-**Proposed:** add a separately versioned cost-evidence value and opt-in evidence endpoints; preserve
-existing numeric endpoints and their supported totals/failures until explicit consumer migration.
-New financial/control consumers must use evidence, never infer completeness from a legacy number.
+**Proposed:** correct the existing cost APIs and their backend/frontend consumers together using
+one authoritative cost-resolution contract. Preserve supported arithmetic and business controls;
+retire missing-cost zero fallbacks and redundant compatibility paths after their callers migrate.
+Do not add a second endpoint simply to preserve an obsolete response.
 
-### Certainty and numeric meaning
+### One resolution, distinct business operations
 
-- `COSTED`: all applicable required cost inputs are supported by valid evidence. A proven zero
-  rate/cost is valid; non-zero is not a test of completeness.
-- `PARTIAL`: some required inputs/quantity are resolved, others are not. Expose the known contribution
-  separately; do not extrapolate it into a complete unit/line total.
-- `UNKNOWN`: no applicable required cost can be established, or the requested scope/method/date
-  cannot be supported. Unknown unit/complete cost is null, never zero.
-- Complete `unit_cost`/`total_cost` are present only for COSTED results; partial known values have
-  explicit `known_cost` semantics. Quantity coverage is per material/UoM, not a sum across unlike inputs.
-- Missing stock evidence and missing resource rate carry distinct diagnostics. Absence of overhead
-  policy is an intentional zero, not evidence that unknown material/labour is complete.
-- Parent formulations/Assemblies retain unresolved descendants and dependency reasons. Do not calculate
-  complete overhead from an incomplete driver or complete selling guidance from incomplete base cost.
+COSTED means every required cost has evidence, including genuine zero. PARTIAL exposes established
+contribution without a complete amount; UNKNOWN has no reliable applicable cost. Missing materials
+and missing resource rates have distinct diagnostics. Complete totals/unit costs are nullable when
+incomplete; a known subtotal is never labelled a complete total.
 
-### Evidence and compatibility
+Reuse the same typed resolution for material leaves, formulations, Assemblies and selected draws.
+Keep meaningful context and basis: per-output/work-unit costing, a contextual material preview and
+a selected draw are different operations. Their existing routes remain; no parallel legacy/evidence
+routes or global API v2 are justified by the current audit. Response shape and generated consumers
+change deliberately and coherently under the [revised C0](../phases/phase-4-c0-cost-evidence-contract.md).
 
-A versioned result owns status, diagnostics, amounts/currency, requested/resolved scope and method,
-requested/effective valuation time, observation time, quantity coverage and copied source evidence.
-Material strategies remain behind Inventory's read-only query; resource/manual/overhead evidence
-remains Estimating-owned. Reuse valid arithmetic and technical conversions; no stock posting changes.
+Nested uncertainty propagates; percentage overhead requires its complete driver, independent drivers
+retain valid evidence, and incomplete base cost cannot produce complete margin/selling guidance.
+Quantity-dependent FIFO must cost the actual combined material demand, not repeatedly reuse the
+cheapest layers or scale a one-unit query into a large job without recalculation.
 
-New evidence endpoints are separate additions under the existing API namespace, with
-`schema_version: 1`; they do not rename current `cost-breakdown` or `material-preview` fields.
-The exact request/response and rollout proposal is the [C0 contract](../phases/phase-4-c0-cost-evidence-contract.md).
-Preserve the legacy zero-fallback tests; add separate evidence tests instead of changing their
-expectations without authorisation. No transparent fallback from failed evidence reads to old totals.
+### What remains valid
 
-An evidence result is a point-in-time calculation, not adopted/issued authority. COSTED measures
-completeness, not commercial approval or future trust. R5 controls adoption/staleness; R3 decides
-where complete cost is required. Ordinary maintained-price Item/service/manual selling does not
-universally require material costing.
+Keep versions, nested formulations, rates/dimensions, technical conversions, wastage/multipliers,
+fully costed arithmetic/rounding, explicit overrides, overhead precedence and margin-versus-markup.
+Keep tenant/field authority, variance/stock-choice controls, immutable issued evidence and Inventory
+posting intact. Rate lookup returning null is valid; its caller must stop converting that to zero.
+COSTED is not approval, adopted evidence or future trust. R3/R5 own those boundaries.
 
-### Initial temporal and scope support
+Cost-control evaluation may be authorised without disclosing cost: material-preview and approval
+advice must still work for their legitimate no-cost-read personas. Guarded business Actions authorise
+internal evaluation; cost/recipe/stock evidence is projected only under the relevant read capabilities.
+Do not grant all preview users valuation access or trust caller-supplied visibility booleans.
 
-Current pools and layer remaining quantities are mutable; filtering receipt dates cannot reconstruct
-historical stock valuation. Initial C1 proposes current snapshot valuation only: unsupported historical
-or future requests return UNKNOWN with an explicit temporal reason, not today's cost under another date.
-Retained published/adopted evidence is read from its saved values. Historical replay support requires
-separate justified work; do not invoke posting/recalculation writers from a cost query.
+### Temporal and migration boundary
 
-Use ADR 0077's chosen-stock → document → governed company default → unknown scope rule. Preserve its
-AVCO scope distinctions, FIFO hypothetical allocation and SPECIFIC identification. Initial query work
-can support explicit scope and built-in COMPANY; configurable default history is a separately identified
-C1 slice requiring an additive migration only when authorised. Do not call that limited slice complete
-delivery of every ADR 0077 obligation.
+Current mutable pools/layers cannot answer arbitrary historical valuation by filtering receipt dates.
+Initial query support remains current consistent read evidence; unsupported historical/future material
+requests are explicit UNKNOWN. Preserve requested/effective/observed times and actual source values.
+Inventory owns AVCO/FIFO/SPECIFIC evidence; no posting allocator/writer is invoked.
 
-### Permission and rollout boundaries
+0077 explicitly planned the retirement of zero when Phase 4 callers migrate but also deferred runtime
+changes until quotation adoption. This proposal retires the fallback during coordinated C1/C2 delivery,
+before persisted quotation adoption. That sequencing refinement needs explicit owner approval; it
+retains 0077's cost, scope, strategy and eventual snapshot obligations. Accepted 0077 is unchanged now;
+formal limited supersession/retention must be reconciled on acceptance, not inferred from this draft.
 
-Guard new evidence entry points in Form Request and Action; reuse cost, recipe and stock visibility
-capabilities with field-safe projection. Do not expose hidden source quantities/locations or fingerprints
-through a cost-only response. New Inventory query authority must be supplied by guarded domain adapters,
-with tenant/warehouse scope enforced again at the query boundary; no authenticated-only API.
-
-C1 query and C2 propagation/API/consumer adoption are independently reviewed slices. Legacy APIs remain
-available as guidance during transition; migrated UI must explicitly show incomplete results. Adoption
-of the new contract, not just backend availability, resolves the affected consumer's ambiguity.
+No DTO/API certainty change requires a database backfill or historical migration edit. Governed scope
+history needs its own authorised additive migration; future adoption persistence remains R5. Existing
+development databases and idempotent demos remain valid; no reset is assumed or performed.
 
 ## Consequences
 
-- **Positive:** unavailable evidence and genuine zero remain distinct without silently changing old APIs.
-- **Positive:** new consumers cannot mistake a known subtotal for a complete estimate.
-- **Negative:** legacy and evidence contracts coexist temporarily; their differences need explicit tests,
-  documented consumers and a future deliberate retirement decision.
-- **Requires:** owner approval of C0/API/temporal/coverage rules before C1/C2 code; OpenAPI/client generation
-  and targeted consumer migration with permission, decimal, company and scope regression coverage.
-- **Not authorised:** code, migrations/backfills, a broad estimator rewrite or R3 business decisions.
+- **Positive:** one clear cost model, corrected displays and controls, no permanent incorrect legacy API.
+- **Positive:** legitimate zero and unavailable evidence are distinguished end-to-end.
+- **Negative:** this is an intentional API/DTO contract change; Actions, Resources, clients, UI, fixtures
+  and tests must migrate as one completed integration unit for each affected operation.
+- **Requires:** [verified dependency map](../phases/phase-4-cost-dependency-map.md), coordinated slice
+  gates, generated-client checks, security/tenant and Inventory/Estimating regression coverage.
+- **Requires:** no completed slice leaves an incompatible consumer; unexposed intermediate work must
+  not become a second public cost contract. Remove redundant scalar adapters after their final caller moves.
+- **Not authorised:** code, migrations, database resets, Sales pricing implementation or remote push.
 
 ## Alternatives considered
 
-**Change current zero totals to null:** breaks current numeric types and expected failures; rejected
-without an explicit compatibility/retirement decision.
+**Correct existing operations and migrate all consumers:** recommended; active development and the
+verified consumer graph allow deliberate correction without a permanent compatibility burden.
 
-**Add only status to the existing response:** old callers can ignore it; expanding FIFO/scoped support
-also changes existing failure semantics. Rejected as the sole correctness mechanism.
+**Only add status beside old zero-filled totals:** rejected; unaware callers still misread the number.
+Additive evidence is useful only when the original amount itself acquires correct nullable semantics
+and all readers honour it; then it is one corrected contract, not dual old/new authority.
 
-**Global API v2:** isolates semantics but duplicates unaffected API contracts and tooling. Separate
-versioned evidence resources under v1 provide the necessary boundary with less unrelated change.
+**Parallel versioned endpoints:** rejected on present evidence; no distinct business operation or
+unmigratable external consumer was established. A genuinely new operation can get a new route later.
 
-**Keep legacy numbers as authoritative:** rejected; missing evidence must not pass a trusted financial
-or cost-dependent control. Compatibility is not authority to rely on incomplete costs.
+**Broad estimator/Inventory rewrite:** rejected; valid technical resolution/arithmetic and posting
+already exist. Change evidence semantics and their exact dependencies, not the whole costing system.
 
 ## Research basis
 
-This is a bounded technical rollout proposal for accepted 0077/0109, not a new ERP costing model.
-Reuses [R2 compatibility audit](../phases/phase-4-r2-compatibility-audit.md),
-[existing cost-scope research](0077-generic-material-cost-resolution-with-a-configurable-costing-scope.md),
-[API conventions](../architecture/api-conventions.md) and actual resolver/API/test/consumer inspection
-on 2026-10-09. No new market comparison or R3 research is needed to distinguish these rollout choices.
+Reuses accepted 0077 cost-scope research, 0109 and the R2 compatibility assessment. The
+[dependency map](../phases/phase-4-cost-dependency-map.md) records actual code/API/schema/test/demo/UI
+inspection on 2026-10-09. This revises technical delivery under the owner's no-business-data/local-only
+constraints; no new ERP valuation method or R3 business research is needed.
 
 ## Related
 
-- [C0 contract](../phases/phase-4-c0-cost-evidence-contract.md) · [C1/C2 slices](../phases/phase-4-c1-c2-cost-evidence-slices.md)
-- [0077 material-cost contract](0077-generic-material-cost-resolution-with-a-configurable-costing-scope.md)
-- [0109 commercial sources](0109-shared-commercial-quotation-lines-and-optional-estimating.md)
-- [Compatibility plan](../phases/phase-4-r2-compatibility-plan.md) · [Phase 4 plan](../phases/phase-4-sales-quotations-and-handover.md)
+- [Revised C0](../phases/phase-4-c0-cost-evidence-contract.md) · [Revised C1/C2 slices](../phases/phase-4-c1-c2-cost-evidence-slices.md)
+- [0077](0077-generic-material-cost-resolution-with-a-configurable-costing-scope.md) · [0109](0109-shared-commercial-quotation-lines-and-optional-estimating.md)
+- [Dependency map](../phases/phase-4-cost-dependency-map.md) · [Phase 4 plan](../phases/phase-4-sales-quotations-and-handover.md)

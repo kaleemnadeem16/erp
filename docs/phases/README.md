@@ -85,7 +85,9 @@ Q39 resolved. [R2 quotation structure/scope](phase-4-r2-quotation-structure.md) 
 in accepted ADR 0109; Q40 resolved. [Verified impact matrix](phase-4-r2-compatibility-audit.md) and
 [compatibility plan](phase-4-r2-compatibility-plan.md) passed owner review; bounded R2 research is
 formally closed. [C0 proposal](phase-4-c0-cost-evidence-contract.md) / [C1/C2 slices](phase-4-c1-c2-cost-evidence-slices.md)
-await contract approval and code authority (proposed 0110/Q41).
+await revised contract approval and code authority (proposed 0110/Q41).
+[Actual cost dependencies](phase-4-cost-dependency-map.md) support correcting existing APIs together
+with their consumers; the compatibility-first draft is historical. Local commits only.
 [Initial capability review](phase-4-r2-existing-capabilities.md) and [ERP comparison](phase-4-r2-erp-comparison.md)
 remain linked evidence. CRM backend exists; R2 quotations/C1/C2 implementation remains pending.
 

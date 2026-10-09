@@ -1,191 +1,193 @@
 [← Phase 4 plan](phase-4-sales-quotations-and-handover.md)
 
-# C0 — Cost-evidence contract for owner approval
+# C0 — Correct the existing cost contract: revised owner proposal
 
-**Date/baseline:** 2026-10-09, `26571c5`; unrelated Sales/UI work remains outside this proposal.
-**State:** technical proposal, not accepted or implemented; [proposed ADR 0110](../decisions/0110-version-cost-evidence-without-changing-legacy-estimates.md).
-Accepted 0077/0109 and [R2 compatibility evidence](phase-4-r2-compatibility-audit.md) are reused.
-No new ERP costing method or R3 pricing rule is researched here.
+**Date:** 2026-10-09. **State:** revised proposal, not accepted/implemented; [ADR 0110](../decisions/0110-version-cost-evidence-without-changing-legacy-estimates.md).
+**Constraint:** owner confirms no real business/production data; local commits only, no remote push.
+The compatibility-first draft at `9dced38` is historical. [Verified dependencies](phase-4-cost-dependency-map.md)
+replace assumptions about preserving legacy consumers. R2 stays closed; Q41 tracks C0 review.
 
-## Problem and recommendation
+## Business example and correction
 
-A recipe's missing pigment cost currently becomes zero; missing labour/plant rate can do the same.
-An estimate may therefore show material 200.0000 and unconfigured labour 0.0000 as total 200.0000.
-That is useful legacy arithmetic but cannot establish a complete cost for trusted margin decisions.
-By contrast, an explicitly configured labour rate 0.0000 is valid evidence of genuinely zero cost.
+Materials cost 200.0000 and labour has no configured rate. Today's arithmetic may show 200.0000
+as the whole cost. Revised output shows known contribution 200.0000, PARTIAL, complete total null.
+If labour has an eligible rate explicitly set to 0.0000, the same total can be COSTED: the evidence,
+not whether the number is positive, distinguishes the cases.
 
-**Recommend a separate evidence contract and endpoints**, with an explicit schema version under the
-existing API namespace. Keep legacy numeric endpoints, types, totals and unsupported-method failures
-unchanged. Migrate identified consumers explicitly; new financial/control code must never fall back
-from evidence failure to legacy numbers. No global API v2 or broad estimator replacement is needed.
+The previous plan kept misleading numeric responses beside separate evidence APIs until a later
+retirement decision.
+With migratable development consumers, that doubles contracts and leaves the old ambiguity accessible.
+**Recommend correcting existing operations and migrating their complete consumer graph together.**
+No `/cost-evidence` or `/material-preview-evidence` compatibility route, global API v2, scalar
+zero fallback or legacy result adapter remains after migration.
 
-## Certainty and amount contract
+## Alternatives and effects
 
-| Status | Meaning | Complete amounts | Known contribution |
-|---|---|---|---|
-| COSTED | Every applicable required input/quantity has valid evidence, including proven zero | `unit_cost` and `total_cost` numeric decimal strings | `known_cost` equals total; no missing requirement |
-| PARTIAL | Some applicable input/quantity is evidenced and some is not | Both null; no inferred average for the whole requirement | `known_cost` contains only established contributions, possibly genuine 0.0000 |
-| UNKNOWN | No applicable required cost is established, or context/method/date cannot be supported | Both null | Null; never manufacture zero as a known subtotal |
+| Alternative | Effect | Recommendation |
+|---|---|---|
+| Correct existing cost APIs/DTOs and migrate all readers | Intentional response/type change; one correct contract | Preferred; verified repository dependencies can migrate in coordinated groups. |
+| Extend existing APIs with evidence | Useful if complete fields also become correctly nullable and every reader changes | Use typed evidence within the corrected response, not status next to knowingly wrong totals. |
+| Separate operation/endpoints | Appropriate for genuinely different business questions | Existing per-unit costing and contextual preview are already different operations. No extra route merely to preserve old numeric behaviour. |
 
-For a material request of 10 units with 6 evidenced at 2.0000, PARTIAL means known cost 12.0000,
-covered quantity 6, unresolved quantity 4; complete total/unit price remain null. Never divide
-12.0000 by 10 to imply a complete rate. Coverage quantities belong to that Item/stock UoM; an
-Assembly must not aggregate kilograms and labour hours into a spurious coverage percentage.
+Do not assume no quotations means no dependencies. The [map](phase-4-cost-dependency-map.md) includes
+recursive Actions, proposal/mix/variance/approval advice, direct tests, six UI components, generated
+clients and demos. No external consumer was found in-repo; the owner's development constraint,
+not a claim of exhaustive external discovery, permits coordinated change.
 
-A positive active AVCO pool can provide an estimate rate for the full requested quantity even
-when stock is insufficient; record physical shortage separately, not as cost uncertainty. FIFO or
-explicit chosen-stock allocation costs only supported coverage. These coverage rules need owner
-approval; they do not authorise reservation or guaranteed fulfilment.
-
-**Zero evidence:** a valid zero resource rate/authorised override or valid zero-valued Inventory
-basis can be COSTED. Require an actual valid source, not a missing/new empty pool or a last-valid
-rate borrowed from an unusable state. No overhead policy is intentional zero overhead. Zero demand
-where already allowed contributes zero without proving an unavailable rate for positive work;
-standard-versus-zero-plan variance still needs standard cost evidence. Absolute cost bands may
-use known zero; percentage bands with a zero denominator report not-evaluable, not an invented
-percentage/pass. R5 owns adoption handling. Do not broaden quantity rules.
-
-## Evidence shape (proposed typed value)
+## One authoritative resolution
 
 ```text
-CostEvidence v1
+CostResolution
   schema_version: 1
   status: COSTED | PARTIAL | UNKNOWN
-  diagnostics[]: code, affected obligation/path, dependency reason (projection-controlled)
-  complete: unit_cost?, total_cost?, currency_id, unit_basis
-  known_cost?; coverage[]: required, costed, unresolved, item/stock_uom
-  context: company, source/version, quantity/UoM/conversion, recipient account if applicable
-  scope_requested, scope_used, scope_changed, scope_policy_version?
-  source_type; valuation_method/strategy; requested_as_of?, effective_as_of, observed_at
-  basis[]: copied relevant pool/layer/rate/override/overhead values and source identities
-  basis_fingerprint?; projection: SUMMARY | DETAIL
+  amount_basis: REQUIRED_QUANTITY | OUTPUT_BATCH | WORK_QUANTITY | SELECTED_DRAW
+  total_cost?, unit_cost?, known_cost?, currency_id, unit_basis, valued_quantity
+  coverage[]: item/stock_uom, required, costed, unresolved (where applicable)
+  diagnostics[]: code, dependency/path (authorised projection only)
+  source_type/method/strategy, scope_requested/used/changed, policy_version?
+  requested_as_of?, effective_as_of, observed_at, copied basis[], basis_fingerprint?
 ```
 
-Money uses decimal(19,4) strings, never floats. Preserve existing supported rounding boundaries:
-component/recipe cost, output-unit cost and overhead arithmetic must match fully costed regression
-fixtures. New query quantities are positive decimal strings, proposed maximum 12 integer and 9
-fractional digits, with exact coverage/conversion; reject out-of-range input/results rather than
-truncate. This does not widen six-place legacy preview input or decide quotation precision. New Assembly/
-preview evidence entry retains its existing work-quantity bounds; nine-place canonical material
-requirements are passed internally to C1 without rounding them to stock document storage precision.
-
-Inventory resolves base-currency cost from its own pool/layer values and copies available original
-currency/FX evidence. No current FX conversion, purchase price fallback, standard cost or Sales price
-is invented. Resource/override rates retain their declared basis and actual source values; existing
-fully costed examples must remain identical. Unsupported monetary range/context is an explicit
-diagnostic/refusal, not a zero. R4 owns future valuation/rounding policy beyond this contract.
-
-## Propagation rules
-
-1. Resolve technical requirements first, preserving current version selection, context, nesting,
-   wastage, multipliers and dimension conversion. Cycles, invalid units and invalid IDs remain
-   validation/domain errors; they are not swallowed as UNKNOWN cost.
-2. Material leaves use Inventory evidence; resources resolve an actual eligible rate or explicit
-   override. Missing material and missing resource receive distinct codes, e.g.
-   `NO_COST_EVIDENCE` versus `RESOURCE_RATE_MISSING`.
-3. A parent is COSTED only if every applicable required cost input is COSTED. Mixed established
-   and unresolved obligations produce PARTIAL; wholly unresolved required cost produces UNKNOWN.
-   Absent optional overhead does not falsely promote wholly unknown direct costs to PARTIAL.
-4. Scale known contributions and unresolved obligations through every formulation level. A nested
-   recipe with known pigment 50.0000 and unknown binder remains partial; adding known labour
-   20.0000 gives known contribution 70.0000, never complete cost 70.0000.
-5. Percentage overhead needs its actual complete driver. If that driver is incomplete, complete
-   overhead remains null with a dependency reason; do not compute it from the known subtotal.
-   Independent work/hour drivers can remain evidenced when their quantities/rates are known.
-6. Complete estimate-derived selling guidance is null when its required base cost is incomplete.
-   Keep known cost separate; do not perform a fake margin calculation on it. COSTED guidance is
-   still not maintained Sales pricing, commercial approval or an adopted/issued baseline.
-
-## Scope, time and consistent reads
-
-ADR 0077 precedence remains chosen stock → explicit document scope → governed company default
-(COMPANY initially) → unknown if unsupported. Preserve requested and actually used scope, including
-company-wide AVCO used for a warehouse request. Company requests over warehouse AVCO pools are
-UNKNOWN, not an invented blend. Batch-scoped pools need identified batch; SPECIFIC needs selected
-batch/serial evidence. Never silently expand warehouse scope to find cheaper or available stock.
-
-**Current snapshot initially:** pools/remaining layers are mutable. Neither `received_at <= date`
-nor an old resource-rate row establishes historical material stock cost. C1 captures one consistent
-Inventory read snapshot and effective observation time; explicit historical/future stock valuation
-outside that supported snapshot returns UNKNOWN / `AS_OF_NOT_SUPPORTED`. Preserve requested time;
-do not relabel today's value. Saved historical evidence is read from its actual saved values.
-A future historical replay reader is separate work, not a posting/recalculation operation.
-
-A standalone evidence session owns a repeatable-read read-only transaction for all dependent reads;
-it acquires no allocation locks, reservations or business writes. When eventually used inside an
-adoption transaction, R5 owns its compatible snapshot/revalidation boundary; do not change caller
-isolation or assume independent per-leaf reads are atomic. Resource effective date is explicit in
-the session; pin chosen rate IDs/effective dates and report their time basis separately from stock
-observation. No future quotation valuation-date rule is decided here. An explicitly mixed resource-effective/
-stock-observation basis must be identified as such; it cannot be labelled one historical valuation.
-COSTED alone grants no trusted commercial valuation status.
-
-Fingerprint copied basis/context deterministically, including quantities/scopes/methods/source
-values and applicable rate dates. Observation timestamp alone must not create false drift. Return
-fingerprints only where their underlying evidence may be disclosed; no hash side channel or client
-hash as proof of approval. Material preview's existing fingerprint remains a legacy preview token.
-
-## API recommendation and exact compatibility boundary
-
-New proposed routes (all read-only POST calculations under `/api/v1`):
-
-| Evidence route | Contract/input | Legacy route retained |
+| Status | Complete amount | Known contribution |
 |---|---|---|
-| `formulation-versions/{version}/cost-evidence` | Schema v1; existing technical version plus quantity, costing context and supported time request | Existing GET `cost-breakdown` |
-| `assembly-versions/{version}/cost-evidence` | Schema v1; pinned version, work quantity/UoM, resource date and costing context | Existing GET `cost-breakdown`, including `sell_per_unit` |
-| `assemblies/{assembly}/material-preview-evidence` | Existing preview technical/variance/mix context plus evidence calculation; no adoption | Existing POST `material-preview` |
+| COSTED | Valid evidence covers all applicable required costs, including true zero | Equal to complete total |
+| PARTIAL | Total/unit cost null; never extrapolate a known subset | Established contributions only, possibly genuine 0.0000 |
+| UNKNOWN | Total/unit cost null; no applicable reliable cost or unsupported context | Null, not an invented zero |
 
-Valid requests with unavailable cost return a typed result, not an invented complete value. Invalid
-input uses normal 422 errors; foreign/non-visible records 404; missing route capability 403. Fatal
-programming/database failures are not relabelled UNKNOWN. Resource responses use typed Resources,
-OpenAPI schema and generated clients; no hand-authored duplicate DTO shape in the frontend.
+A material requirement of 10 units with 6 supported at 2.0000 has known cost 12.0000 and incomplete
+requirement cost. A selected draw of precisely those 6 units can itself be COSTED at 12.0000 while
+leaving shortage 4. The amount basis/quantity must make that distinction explicit. Stock-mix control
+can compare evidenced covered-draw unit costs; it must not certify the whole requirement as complete.
+Do not sum kilograms and labour hours into an Assembly coverage percentage.
 
-Inventory C1 is initially an internal query, not an extra authenticated-only material cost endpoint.
-New routes add surfaces rather than changing old payload semantics; no generic `/api/v2` duplication.
-A future incompatible CostEvidence schema gets another explicitly versioned contract. Legacy retirement
-is a separate owner decision after consumer migration; no silent nullability or method-support change.
+Valid active positive-quantity AVCO evidence can value the entire requested estimate quantity even
+if physical stock is insufficient; availability/fulfilment is separate. FIFO or specifically chosen
+stock cannot invent cost for uncovered quantity. These coverage semantics remain for owner approval.
 
-## Authority, projection and consumers
+Genuine zero requires an actual valid rate/override/Inventory basis. Missing/empty/frozen cost state
+is not zero; no last-valid average borrowed from an unusable state. No overhead policy is intentional
+zero overhead, not proof unknown direct cost is complete. No required cost at an already legal zero
+quantity means zero amount, not a valid unit rate for positive demand. Do not change quantity rules.
 
-- Cost-evidence endpoints require `estimating.internal_cost.view` at Request and Action. Technical
-  preview retains `estimating.material_preview.run` and can run without cost disclosure; cost fields
-  are omitted, not returned as UNKNOWN to confuse lack of permission with lack of evidence.
-- Inventory callers use `inventory.valuation.view`; Estimating callers use
-  `estimating.internal_cost.view` through registered adapters, not a caller-chosen capability string. Guarded adapters authorise the query; the query rechecks tenant/scoped IDs. No Sales
-  capability is invented, and a caller-supplied actor/company/scope cannot assert its own authority.
-- Detail projection also respects `estimating.recipe.view`, stock detail/availability capabilities
-  and warehouse scope. Summary cannot reveal hidden leaf quantities, source locations or hashes.
-  Chosen-stock input still requires choose/availability authority; scope limits are intersected,
-  never broadened. Refuse limited scopes until integrated; do not claim Q26 is implemented.
-- Migrate `assembly-cost-breakdown.tsx`, `formulation-cost-breakdown.tsx` and the material-preview
-  screen's cost/variance/mix evidence path explicitly in C2. Show known contribution as incomplete,
-  missing diagnostics where permitted, no complete guidance for partial/unknown. Technical preview
-  and existing no-cost personas remain usable; do not fetch protected APIs then hide their output.
-- R3/R5 future consumers take server evidence, never legacy scalar totals or browser-calculated
-  certainty. C3 guidance labels remain an independent wording task.
+Money remains decimal(19,4) strings; internal decimal factors/coverage retain needed precision.
+Initial proposed query limit is 12 integer/9 fractional stock-unit digits; existing public technical
+inputs retain their six-place bounds. Reject overflow/unrepresentable input, never silently truncate.
+No new quotation precision decision, historical migration edit or new stock posting precision follows.
 
-## Tests, migrations and owner decisions
+## Propagation, quantities and derived amounts
 
-Preserve existing `FormulationExplosionTest::test_an_item_never_received_costs_zero` and
-`AssemblyCostRollUpTest::test_a_labour_item_with_no_resource_rate_configured_costs_zero_not_an_error`.
-Legacy FIFO/scoped-AVCO refusal tests also remain. Add evidence tests for the corrected semantics;
-only explicit legacy retirement would change those expectations. Numeric compatibility and new
-completeness are separate assertions. Detailed coverage is in [C1/C2 slices](phase-4-c1-c2-cost-evidence-slices.md).
+- Preserve technical selection/nesting, rate context, output/work units, conversion, wastage and
+  multipliers. Invalid units/cycles/IDs are still errors, not swallowed as UNKNOWN.
+- Material leaves use Inventory resolution. Resources use eligible dated rate/explicit override;
+  missing material and missing resource have separate diagnostics. No positive-only evidence filter.
+- Parent COSTED requires all applicable required obligations resolved. Mixed known/unresolved becomes
+  PARTIAL; wholly unresolved remains UNKNOWN. Non-applicable zero cost kinds cannot promote certainty.
+- Gather actual required material quantities across nested/formulation/component paths before
+  quantity-dependent costing. Group identical Item/scope/selection demands within one estimate so
+  FIFO layers are not repeatedly reused. Preserve contribution provenance; propose stable path-order
+  attribution of returned allocations, with rounding residual accounted for exactly once. Attribution
+  is an explicit C0 review item, not a new Inventory valuation method. Standard and what-if plans
+  are separate hypothetical scenarios on the same read snapshot, not one combined consumption.
+- A one-unit FIFO estimate cannot simply be multiplied into a 250-unit job. Preview costs the full
+  resolved demand; per-unit endpoints answer their own unit/batch question. Preserve all existing
+  fully costed supported arithmetic/rounding when the source and quantity basis are equivalent.
+- Percentage overhead requires its complete driver. Unknown driver means unknown complete overhead;
+  do not apply the percentage to a known subtotal. Independent work/hour drivers remain evidenced
+  when their own inputs are known. Keep scope precedence and avoid overhead feeding itself.
+- `sell_per_unit` remains estimate guidance, nullable for incomplete required base cost. It is not
+  maintained/approved Sales pricing. No second markup or guidance formula over partial totals.
+- Variance complete impact is null when its comparison is incomplete; labelled known impact only
+  covers jointly evidenced matching obligations. FIFO/nonlinear cost bands need resolved standard
+  and planned scenarios, not quantity delta multiplied by a guessed constant rate. Never subtract unrelated known subtotals and call
+  that a reliable difference. Quantity-only control outcomes remain valid independently.
 
-C1 query/C2 result DTOs and read APIs need no migration/backfill. Governed configurable default-scope
-history is a separate C1 configuration slice with a concrete additive schema need; future adoption
-persistence belongs to R5. No migration is created now. OpenAPI/client generation, typechecks/build
-and affected browser tests accompany actual API/UI delivery, preserving other agents' generated work.
+Preserve existing legitimate zero-base control distinctions: `EvaluateMaterialVariance` cannot
+judge a cost percentage with zero standard cost, although an absolute amount can be judged.
+`JudgeStockMix` treats evidenced zero-versus-zero as no cost increase; positive cost above zero is
+not evaluable as a percentage. Missing evidence never takes the zero-versus-zero branch. R5 owns
+adoption consequences; C0 does not automatically pass unevaluable controls.
 
-Owner approval required for: (1) separate evidence API and coexistence/consumer migration;
-(2) null complete amounts, known contribution and propagation rules; (3) current-only temporal
-support/coverage/quantity bounds; (4) scope/permission projections and configuration staging.
-Approve proposed 0110 only after this review; C1/C2 code and any scope-history migration then need
-explicit implementation authorisation. No business cost-completeness gate for all quotations is added.
+## Scope, time, currency and fingerprints
+
+0077 scope rule remains chosen stock → explicit document scope → governed company default
+(COMPANY initially) → unknown if unsupported. Preserve actual scope change; no automatic warehouse
+blend or hidden fallback. Batch/serial choices are explicit for applicable AVCO/SPECIFIC cases.
+Scope authority is intersected, never widened to obtain a cheaper rate. Current location/batch-only
+preview mix input cannot always identify serial-specific cost. Return identification-required UNKNOWN
+until a deliberate serial-aware input/DTO/UI extension is included; never use a batch average to
+pretend a serial was chosen. Owner review must choose the initial exposure scope.
+
+Initial material valuation is a consistent current read. Mutable pool/layer balances cannot provide
+arbitrary historical cost by filtering `received_at`. Unsupported historical/future requests return
+UNKNOWN / `AS_OF_NOT_SUPPORTED` with requested time retained. Resource effective date and material
+observation basis are separate explicit evidence; do not relabel a mixed basis as one historical date.
+Saved adopted/published evidence is never recalculated from this query.
+
+Standalone read sessions use one consistent read-only snapshot, no reservation/allocation locks or
+writes. Future adoption transaction/isolation/revalidation belongs to R5. Fingerprint deterministic
+source/context/quantity values, not observation timestamp alone. Protected evidence/hash must not
+leak hidden recipe/stock changes; client hashes never authorise adoption.
+
+Inventory owns base-currency pool/layer values and copied original currency/FX evidence. No current
+FX revaluation, supplier-price fallback or new estimating-cost family is introduced; R4 owns remaining
+valuation policies. Resource/override amounts keep their declared existing basis.
+
+## Existing API operations — coordinated corrected schema
+
+All paths below are existing `/api/v1` operations; keep operation identity and migrate responses.
+
+| Operation | Corrected response proposal | Coupled consumers |
+|---|---|---|
+| GET `formulation-versions/{formulation_version}/cost-breakdown` | `version_id`, canonical `cost: CostResolution`, typed `lines[].cost` and recursive `sub_formulation`. Remove redundant scalar `total_cost`/`cost_per_output_unit` aliases; equivalents are `cost.total_cost`/`cost.unit_cost` with output basis | Formulation Action/DTO, Assembly/preview callers, Resource, generated hook and recursive panel |
+| GET `assembly-versions/{assembly_version}/cost-breakdown` | Canonical `cost`, `cost_by_kind`, component resolutions, overhead resolution/driver, labour hours and nullable `sell_per_unit`. Old complete-cost scalars replaced, not retained as zero aliases | Assembly Action/DTO, preview, Resource, generated hook and panel |
+| POST `assemblies/{assembly}/material-preview` | Technical data unchanged; cost breakdown uses same resolution; variance adds certainty/complete versus known impact; proposal/mix explicitly expose selected-draw cost and requirement coverage | Preview/control graph, Request/projection, generated types and four preview UI consumers |
+
+Use typed Resources/OpenAPI definitions for recursive/null data, not untyped array casts. Schema
+version identifies saved-value structure for future R5, not a parallel API generation. Optional
+costing context on existing operations needs typed Request validation; chosen-stock input remains
+preview-only until a genuinely different operation is justified. Do not turn GET into a write.
+
+Valid missing evidence returns typed status, not an invented number; validation/authority/company
+errors and unexpected failures remain distinct. Regenerate OpenAPI and clients, then migrate all
+callers in the same completed integration unit. No transparent fallback or hand-edited generated code.
+
+## Authority and control evaluation
+
+Cost visibility and authorisation to evaluate an internal business control are different. Existing
+preview/approval advice deliberately evaluates costs for authorised operations even when amounts
+are hidden. Preserve that behaviour: guarded Actions establish permitted evaluation context; the
+Inventory port checks company/scoped IDs, while public read Resources project costs only with the
+appropriate capabilities. Do not require every preview user to gain `inventory.valuation.view`.
+
+Standalone cost reads require `estimating.internal_cost.view` at Request and Action; preview retains
+`estimating.material_preview.run`, recipe/availability/choose-stock distinctions and no-cost operation.
+Current Estimating inventory input uses `estimating.inventory_availability.view`; do not replace it
+with generic Inventory permission by implication. Recipe/stock detail, reasons and fingerprints remain
+field-scoped. No caller-controlled `includeCost` boolean grants authority in the corrected entry Action.
+Q26 limited-scope integration remains explicit: narrow or refuse rather than claim it already exists.
+
+## Tests, migration and approval gates
+
+Replace deliberately incorrect zero-fallback assertions with UNKNOWN/PARTIAL and real-zero tests;
+update direct constructors, API fixtures and demo expectations. Do not preserve them as a second
+numeric contract. Preserve hand-computed fully costed, technical quantity, version, control and posting
+regressions. Support now-implemented methods/scope in tests without rewriting invalid-request refusals.
+
+DTO/API correction needs no schema/backfill. Keep valid development rows/seeders; add idempotent
+zero/missing cases. Configurable default-scope history remains a concrete separately authorised
+additive migration; no local reset or historical migration rewrite. Every completed slice must have
+compatible backend/frontend/generated consumers and appropriate tests. [Slice plan](phase-4-c1-c2-cost-evidence-slices.md)
+defines coupling and local checks.
+
+Owner review needed for the revised in-place response/DTO contract, demand attribution and coverage,
+query limits/current-only temporal support, projection/evaluation authority and implementation cohorts.
+Also confirm 0077's legacy-retirement sequencing refinement before formal ADR acceptance. 0110 stays
+proposed; no code/migrations are authorised. R3 can research source-neutral pricing separately;
+R5 owns adoption/staleness/approval invalidation. Not every quotation needs complete material costing.
 
 ## Related
 
-- [Proposed ADR 0110](../decisions/0110-version-cost-evidence-without-changing-legacy-estimates.md) · [C1/C2 slices](phase-4-c1-c2-cost-evidence-slices.md)
-- [R2 closure](phase-4-r2-quotation-structure.md) · [Compatibility plan](phase-4-r2-compatibility-plan.md)
-- [ADR 0077](../decisions/0077-generic-material-cost-resolution-with-a-configurable-costing-scope.md)
-- [API conventions](../architecture/api-conventions.md) · [Authorisation](../architecture/authorization.md)
+- [Verified dependency map](phase-4-cost-dependency-map.md) · [C1/C2 slices](phase-4-c1-c2-cost-evidence-slices.md)
+- [Proposed ADR 0110](../decisions/0110-version-cost-evidence-without-changing-legacy-estimates.md)
+- [0077](../decisions/0077-generic-material-cost-resolution-with-a-configurable-costing-scope.md) · [0109](../decisions/0109-shared-commercial-quotation-lines-and-optional-estimating.md)
+- [Compatibility plan](phase-4-r2-compatibility-plan.md) · [Phase 4 plan](phase-4-sales-quotations-and-handover.md)

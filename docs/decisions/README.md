@@ -124,7 +124,7 @@ in the same commit.
 | [0107](0107-separate-opportunity-stages-and-outcomes.md) | Separate pipeline stages, accepted scope and governed opportunity outcomes | accepted | 2026-10-09 |
 | [0108](0108-expose-a-progressive-basic-crm.md) | Expose a practical basic CRM without forcing enterprise workflow | accepted | 2026-10-09 |
 | [0109](0109-shared-commercial-quotation-lines-and-optional-estimating.md) | Support shared commercial quotation lines with optional estimating | accepted | 2026-10-09 |
-| [0110](0110-version-cost-evidence-without-changing-legacy-estimates.md) | Version cost evidence without changing legacy estimate responses | proposed | 2026-10-09 |
+| [0110](0110-version-cost-evidence-without-changing-legacy-estimates.md) | Correct existing cost operations through one authoritative contract | proposed (revised C0) | 2026-10-09 |
 
 **Next number: 0111**
 

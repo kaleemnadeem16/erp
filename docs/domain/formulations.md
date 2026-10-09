@@ -110,7 +110,9 @@ which layer or which pool a pure recipe —
 not tied to any warehouse or batch — should read; a never-purchased item returns a real `0`
 instead, since "no cost known yet" is a legitimate state, not an error. This is the *current* behaviour only: [ADR 0077](../decisions/0077-generic-material-cost-resolution-with-a-configurable-costing-scope.md)
 designs the generic replacement (strategies per valuation method, a configurable costing scope, an evidence-carrying result that
-Phase 4 snapshots, and `unknown` instead of `0`), adopted when Phase 4 plan adoption is built. A line specified in a
+Phase 4 snapshots, and `unknown` instead of `0`). [Revised C0](../phases/phase-4-c0-cost-evidence-contract.md)
+proposes correcting current operations and consumers during C1/C2 before persisted adoption;
+that timing refinement of 0077 remains for owner approval. No runtime change yet. A line specified in a
 different-but-convertible unit than its input item's stock UoM converts through the ordinary UoM
 system (`units-of-measure.md`) before pricing.
 

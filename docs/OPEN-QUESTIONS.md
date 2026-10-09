@@ -34,12 +34,15 @@ Q1, Q2 and Q3 were resolved on 2026-08-10 — see
 ### Q41 — C0 cost-evidence contract and compatibility rollout
 
 **Raised:** 2026-10-09. **Blocks:** C0 acceptance and C1/C2 code authorisation, not bounded R2
-closure or independent R3 research. Owner review needed for separate evidence API versus legacy
-numeric endpoints; complete/null/known-cost semantics and propagation; current-only temporal
-support, coverage/quantity bounds; authority/projection and configurable-scope staging.
+closure or independent R3 research. Owner review needed for correcting existing APIs/DTOs and
+migrating consumers together; complete/null/known-cost semantics, quantity-dependent demand
+attribution and coverage; current-only time/quantity bounds; read versus internal-control authority,
+any proposal-ranking effect, scope staging and 0077 legacy-retirement sequencing refinement.
+The separate-endpoint compatibility-first draft at `9dced38` is historical and not accepted.
 
 [Proposed ADR 0110](decisions/0110-version-cost-evidence-without-changing-legacy-estimates.md), [C0 contract](phases/phase-4-c0-cost-evidence-contract.md)
-and [C1/C2 slices](phases/phase-4-c1-c2-cost-evidence-slices.md) contain the concrete recommendation.
+and [C1/C2 slices](phases/phase-4-c1-c2-cost-evidence-slices.md), backed by the
+[dependency map](phases/phase-4-cost-dependency-map.md), contain the revised recommendation.
 No implementation/migration is authorised. Resolve through reviewed acceptance, then remove the
 active entry; do not reopen Q40 or silently change existing estimating APIs.
 

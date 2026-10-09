@@ -18,7 +18,10 @@ quotation adoption remains Phase 4.
 permits direct Item/service/manual selling alongside Assembly-backed work. Existing Estimating APIs
 remain Assembly-specific; `sell_per_unit` is estimate-derived guidance, not the future Sales resolver.
 The [compatibility plan](../../../../docs/phases/phase-4-r2-compatibility-plan.md) tracks missing-cost
-certainty and future adoption without replacing these Actions.
+certainty and future adoption. [Revised C0](../../../../docs/phases/phase-4-c0-cost-evidence-contract.md)
+proposes correcting the existing Actions/DTOs/APIs and migrating all readers together;
+[actual dependencies](../../../../docs/phases/phase-4-cost-dependency-map.md) identify that scope.
+This is still a proposal, not delivered runtime behaviour or a duplicate legacy/evidence contract.
 
 ## Owns
 
