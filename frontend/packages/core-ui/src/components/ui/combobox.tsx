@@ -35,6 +35,13 @@ export interface ComboboxProps extends Omit<ButtonHTMLAttributes<HTMLButtonEleme
   popoverClassName?: string;
   /** Optional decorative icon shown at the start of the trigger. */
   icon?: ReactNode;
+  /**
+   * Server-driven mode, for a record set too large to list: give the typed text (`search`) and a setter, and feed `options` from a request filtered by it.
+   * The list is then not filtered here, and `selectedLabel` names the chosen record when it is not among the current results.
+   */
+  search?: string;
+  onSearchChange?: (search: string) => void;
+  selectedLabel?: string;
 }
 
 /**
@@ -49,14 +56,22 @@ export interface ComboboxProps extends Omit<ButtonHTMLAttributes<HTMLButtonEleme
  * `FormControl` onto whatever single child it wraps).
  */
 export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(function Combobox(
-  { value, onValueChange, options, placeholder = 'Select…', searchPlaceholder = 'Search…', emptyText = 'No results found.', loadError, loading, popoverClassName, icon, className, disabled, ...triggerProps },
+  { value, onValueChange, options, placeholder = 'Select…', searchPlaceholder = 'Search…', emptyText = 'No results found.', loadError, loading, popoverClassName, icon, className, disabled, search, onSearchChange, selectedLabel, ...triggerProps },
   ref
 ) {
   const [open, setOpen] = useState(false);
   const selected = options.find((option) => option.value === value);
+  const serverDriven = onSearchChange !== undefined;
+  const shownLabel = selected?.label ?? (value && value !== 'all' ? selectedLabel : undefined);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) onSearchChange?.('');
+      }}
+    >
       <PopoverTrigger asChild>
         <button
           ref={ref}
@@ -73,8 +88,8 @@ export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(function Co
         >
           <span className="flex min-w-0 items-center">
             {icon && <span aria-hidden="true" className="mr-2 flex shrink-0 items-center">{icon}</span>}
-            <span className={cn('truncate text-left', !selected && 'text-muted-foreground')}>
-              {selected ? selected.label : loadError ? `Couldn't load ${loadError.noun}` : loading ? 'Loading…' : placeholder}
+            <span className={cn('truncate text-left', !shownLabel && 'text-muted-foreground')}>
+              {shownLabel ? shownLabel : loadError ? `Couldn't load ${loadError.noun}` : loading ? 'Loading…' : placeholder}
             </span>
           </span>
           <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
@@ -90,8 +105,11 @@ export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(function Co
             </Button>
           </div>
         ) : (
-        <Command>
-          <CommandInput placeholder={searchPlaceholder} />
+        <Command shouldFilter={!serverDriven}>
+          <CommandInput
+            placeholder={searchPlaceholder}
+            {...(serverDriven ? { value: search ?? '', onValueChange: onSearchChange } : {})}
+          />
           <CommandList>
             <CommandEmpty>{loading ? 'Loading…' : emptyText}</CommandEmpty>
             <CommandGroup>

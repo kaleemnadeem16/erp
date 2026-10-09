@@ -21,6 +21,7 @@ interface RemoteLookupComboboxProps extends LookupState {
   onSearchChange: (search: string) => void;
   options: ComboboxOption[];
   className?: string;
+  disabled?: boolean;
 }
 
 /** A server-filtered single-select lookup. The selected label is independent of the current results page. */
@@ -39,6 +40,7 @@ export function RemoteLookupCombobox({
   className,
   loading,
   loadError,
+  disabled,
 }: RemoteLookupComboboxProps) {
   const [open, setOpen] = useState(false);
   const displayLabel =
@@ -56,12 +58,13 @@ export function RemoteLookupCombobox({
         <button
           type="button"
           id={id}
+          disabled={disabled}
           role="combobox"
           aria-label={label}
           aria-expanded={open}
           aria-invalid={loadError ? true : undefined}
           className={cn(
-            'flex h-9 min-w-0 items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring',
+            'flex h-9 min-w-0 items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
             className,
           )}
         >

@@ -1,7 +1,8 @@
 import { useFieldArray, useFormContext, useWatch, type Control, type FieldPath, type FieldValues } from 'react-hook-form';
 import { Trash2 } from 'lucide-react';
 import { z } from 'zod';
-import { useApplicationRatesIndex, useFormulationsIndex, useItemsIndex, useUomsIndex } from '@erp/core-api';
+import { useApplicationRatesIndex, useFormulationsIndex, useUomsIndex } from '@erp/core-api';
+import { ItemCombobox } from '../../components/lookups/entity-comboboxes';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Combobox } from '../../components/ui/combobox';
@@ -84,8 +85,6 @@ export function AssemblyComponentsFields<TFieldValues extends FieldValues & { co
     name: 'components',
   });
 
-  const itemsResult = useItemsIndex({ per_page: 100, sort: 'name' });
-  const items = itemsResult.data?.status === 200 ? itemsResult.data.data.data : [];
   const uomsResult = useUomsIndex({ per_page: 100, sort: 'name' });
   const uoms = uomsResult.data?.status === 200 ? uomsResult.data.data.data : [];
   const formulationsResult = useFormulationsIndex({ per_page: 100, sort: 'code' });
@@ -93,20 +92,12 @@ export function AssemblyComponentsFields<TFieldValues extends FieldValues & { co
   const applicationRatesResult = useApplicationRatesIndex({ per_page: 100 });
   const applicationRates = applicationRatesResult.data?.status === 200 ? applicationRatesResult.data.data.data : [];
 
-  const materialItems = items.filter((i) => ['RAW', 'SEMI_FINISHED', 'FINISHED'].includes(i.type));
-  const labourItems = items.filter((i) => i.type === 'LABOUR');
-  const plantItems = items.filter((i) => i.type === 'PLANT');
   const uomOptions = uoms.map((u) => ({ value: String(u.id), label: `${u.name} (${u.code})` }));
 
   return (
     <div className="space-y-4">
       {fields.map((field, index) => {
         const kind = watched?.[index]?.kind ?? 'MATERIAL';
-        const itemOptions = (kind === 'LABOUR' ? labourItems : kind === 'PLANT' ? plantItems : materialItems).map((i) => ({
-          value: String(i.id),
-          label: `${i.code} — ${i.name}`,
-        }));
-
         return (
           <fieldset key={field.id} className="grid min-w-0 gap-3 rounded-lg border bg-panel/60 p-4 sm:grid-cols-2 lg:grid-cols-4 [&>*]:min-w-0">
             <legend className="px-1 text-sm font-medium">Component {index + 1}</legend>
@@ -149,18 +140,16 @@ export function AssemblyComponentsFields<TFieldValues extends FieldValues & { co
                   <FormItem>
                     <FormLabel>Item</FormLabel>
                     <FormControl>
-                      <Combobox {...lookupState(itemsResult, 'items')}
-                        ref={itemField.ref}
+                      <ItemCombobox
+                        label="Item"
+                        placeholder="Select item"
+                        types={kind === 'LABOUR' ? ['LABOUR'] : kind === 'PLANT' ? ['PLANT'] : ['RAW', 'SEMI_FINISHED', 'FINISHED']}
+                        leadingOptions={kind === 'MATERIAL' ? [{ value: NONE, label: 'None — use application rate instead' }] : undefined}
                         value={itemField.value}
-                        onValueChange={(value) => {
+                        onValueChange={(value, item) => {
                           itemField.onChange(value);
-                          const item = items.find((candidate) => String(candidate.id) === value);
                           if (item) form.setValue(`components.${index}.uom_id`, String(item.stock_uom_id), { shouldDirty: true });
                         }}
-                        options={kind === 'MATERIAL' ? [{ value: NONE, label: 'None — use application rate instead' }, ...itemOptions] : itemOptions}
-                        placeholder="Select item"
-                        searchPlaceholder="Search items…"
-                        emptyText="No items found."
                       />
                     </FormControl>
                     <FormMessage />

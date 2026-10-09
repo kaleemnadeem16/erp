@@ -1,3 +1,5 @@
+import { ItemCombobox } from "../../components/lookups/entity-comboboxes";
+import { useItemsById } from "../../lib/use-records-by-id";
 import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
 import type { FieldPath, UseFormReturn } from "react-hook-form";
 import { PackageOpen, Tags, Trash2, Truck } from "lucide-react";
@@ -70,8 +72,6 @@ export function PurchaseOrderLineFields({
   form,
   index,
   items,
-  itemOptions,
-  itemLookup,
   uoms,
   uomLookup,
   purchaseUomIdByItem,
@@ -82,8 +82,6 @@ export function PurchaseOrderLineFields({
   form: UseFormReturn<PurchaseOrderFormValues>;
   index: number;
   items: ItemResource[];
-  itemOptions: Option[];
-  itemLookup: LookupState;
   uoms: UomResource[];
   uomLookup: LookupState;
   purchaseUomIdByItem: Map<number, number>;
@@ -94,7 +92,7 @@ export function PurchaseOrderLineFields({
 }) {
   const line = form.watch(`lines.${index}` as FieldPath<PurchaseOrderFormValues>) as unknown as Line;
   const itemId = Number(line.item_id) || 0;
-  const item = items.find((candidate) => candidate.id === itemId);
+  const item = useItemsById(itemId > 0 ? [itemId] : [], items).find((candidate) => candidate.id === itemId);
   const pricing = usePurchaseLinePricing(form, index, item?.stock_uom_id);
   const [opened, setOpened] = useState<Set<OptionId>>(() => new Set(usedGroups(line)));
 
@@ -346,13 +344,13 @@ export function PurchaseOrderLineFields({
             <FormItem className="@3xl:col-span-2">
               <FormLabelWithHint>Item</FormLabelWithHint>
               <FormControl>
-                <Combobox
-                  {...itemLookup}
-                  ref={field.ref}
+                <ItemCombobox
+                  activeOnly
+                  label="Item"
+                  placeholder="Select item"
                   value={field.value}
-                  onValueChange={(value) => {
+                  onValueChange={(value, chosen) => {
                     field.onChange(value);
-                    const chosen = items.find((candidate) => candidate.id === Number(value));
                     if (chosen) {
                       form.setValue(`lines.${index}.description`, chosen.name);
                       form.setValue(
@@ -361,10 +359,6 @@ export function PurchaseOrderLineFields({
                       );
                     }
                   }}
-                  options={itemOptions}
-                  placeholder="Select item"
-                  searchPlaceholder="Search items…"
-                  emptyText="No items found."
                 />
               </FormControl>
               <FormMessage />

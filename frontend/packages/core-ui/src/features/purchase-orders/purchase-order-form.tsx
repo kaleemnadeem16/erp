@@ -13,7 +13,7 @@ import {
   useItemSuppliersIndex,
   useItemsIndex,
   usePurchaseOrdersIndex,
-  useSupplierAccountsIndex,
+  type SupplierAccountResource,
   useSupplierAccountsSitesIndex,
   useUomsIndex,
   type SupplierSiteResource,
@@ -55,6 +55,8 @@ import {
 import { clearDraft, readDraft, writeDraft } from "../../lib/session-draft";
 import { usePermission } from "../../hooks/use-permission";
 import { PurchaseOrderLineFields } from "./purchase-order-line-fields";
+import { useItemsById, useSuppliersById } from "../../lib/use-records-by-id";
+import { SupplierCombobox } from "../../components/lookups/entity-comboboxes";
 import { PurchaseOrderSummary } from "./purchase-order-summary";
 import { SupplierSiteDialog } from "./supplier-site-form";
 import { lookupState } from "../../lib/api-errors";
@@ -440,13 +442,11 @@ export function PurchaseOrderForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const suppliersQuery = useSupplierAccountsIndex({
-    per_page: 100,
-    sort: "code",
-    include: "party",
-  });
-  const suppliers =
-    suppliersQuery.data?.status === 200 ? suppliersQuery.data.data.data : [];
+  // The chosen supplier is resolved by its own id, and the picker searches the server (a first page of suppliers is not a lookup table).
+  const suppliers = useSuppliersById<SupplierAccountResource>(
+    Number(form.watch("supplier_account_id")) > 0 ? [Number(form.watch("supplier_account_id"))] : [],
+    [],
+  );
   const supplierOptions = useMemo(
     () =>
       suppliers.map((supplier) => ({
@@ -488,8 +488,11 @@ export function PurchaseOrderForm({
     sort: "name",
     "filter[status]": "ACTIVE",
   });
-  const items =
-    itemsQuery.data?.status === 200 ? itemsQuery.data.data.data : [];
+  // The lines' own items are resolved by id: a first page of items is not a lookup table (see lib/use-records-by-id.ts).
+  const items = useItemsById(
+    (form.watch("lines") ?? []).map((line) => Number(line?.item_id) || 0).filter((id) => id > 0),
+    itemsQuery.data?.status === 200 ? itemsQuery.data.data.data : [],
+  );
   const itemOptions = useMemo(
     () =>
       items.map((item) => ({
@@ -628,15 +631,11 @@ export function PurchaseOrderForm({
               <FormItem>
                 <FormLabelWithHint>Supplier</FormLabelWithHint>
                 <FormControl>
-                  <Combobox
-                    {...lookupState(suppliersQuery, "suppliers")}
-                    ref={field.ref}
+                  <SupplierCombobox
+                    label="Supplier"
+                    placeholder="Select supplier"
                     value={field.value}
                     onValueChange={field.onChange}
-                    options={supplierOptions}
-                    placeholder="Select supplier"
-                    searchPlaceholder="Search suppliers…"
-                    emptyText="No suppliers found."
                   />
                 </FormControl>
                 <FormMessage />
@@ -908,8 +907,6 @@ export function PurchaseOrderForm({
                 form={form}
                 index={index}
                 items={items}
-                itemOptions={itemOptions}
-                itemLookup={lookupState(itemsQuery, "items")}
                 uoms={uoms}
                 uomLookup={lookupState(uomsQuery, "units")}
                 purchaseUomIdByItem={purchaseUomIdByItem}

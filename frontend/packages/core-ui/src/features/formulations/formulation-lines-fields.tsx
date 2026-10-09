@@ -1,7 +1,9 @@
 import { useFieldArray, useFormContext, useWatch, type Control, type FieldPath, type FieldValues } from 'react-hook-form';
 import { Trash2 } from 'lucide-react';
 import { z } from 'zod';
-import { useItemsIndex, useUomsIndex } from '@erp/core-api';
+import { useUomsIndex, type ItemResource } from '@erp/core-api';
+import { ItemCombobox } from '../../components/lookups/entity-comboboxes';
+import { useItemsById } from '../../lib/use-records-by-id';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Combobox } from '../../components/ui/combobox';
@@ -70,11 +72,13 @@ export function FormulationLinesFields<TFieldValues extends FieldValues & { line
     }>,
     name: 'lines'
   });
-  const itemsResult = useItemsIndex({ per_page: 100, sort: 'name' });
-  const items = itemsResult.data?.status === 200 ? itemsResult.data.data.data : [];
+  // Each line's chosen item is resolved by its own id (a first page of items is not a lookup table).
+  const items = useItemsById<ItemResource>(
+    (watchedLines ?? []).map((line) => Number(line?.input_item_id) || 0).filter((id) => id > 0),
+    [],
+  );
   const uomsResult = useUomsIndex({ per_page: 100, sort: 'name' });
   const uoms = uomsResult.data?.status === 200 ? uomsResult.data.data.data : [];
-  const itemOptions = items.filter((i) => i.id !== excludeItemId).map((i) => ({ value: String(i.id), label: `${i.code} — ${i.name}` }));
 
   return (
     <div className="space-y-4">
@@ -98,18 +102,15 @@ export function FormulationLinesFields<TFieldValues extends FieldValues & { line
                 <FormItem className="lg:col-span-2">
                   <FormLabel>Item</FormLabel>
                   <FormControl>
-                    <Combobox {...lookupState(itemsResult, 'items')}
-                      ref={itemField.ref}
+                    <ItemCombobox
+                      label="Item"
+                      placeholder="Select item"
+                      excludeId={excludeItemId}
                       value={itemField.value}
-                      onValueChange={(value) => {
+                      onValueChange={(value, item) => {
                         itemField.onChange(value);
-                        const item = items.find((candidate) => candidate.id === Number(value));
                         if (item) form.setValue(`lines.${index}.uom_id`, String(item.stock_uom_id), { shouldDirty: true });
                       }}
-                      options={itemOptions}
-                      placeholder="Select item"
-                      searchPlaceholder="Search items…"
-                      emptyText="No items found."
                     />
                   </FormControl>
                   <FormMessage />

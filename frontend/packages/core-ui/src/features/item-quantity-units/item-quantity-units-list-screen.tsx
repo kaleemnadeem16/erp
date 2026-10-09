@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { ItemCombobox } from '../../components/lookups/entity-comboboxes';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -9,7 +10,6 @@ import {
   useItemQuantityUnitsIndex,
   useItemQuantityUnitsStore,
   useItemQuantityUnitsUpdate,
-  useItemsIndex,
   useUomsIndex,
   type ItemQuantityUnitResource,
 } from '@erp/core-api';
@@ -65,8 +65,6 @@ export function ItemQuantityUnitsListScreen({ itemId, stockUnit }: { itemId?: nu
   const columns = useMemo(() => toTanStackColumns(itemQuantityUnitColumns), []);
   const sorting: SortingState = apiSortToTableSorting(query.sort, itemQuantityUnitColumns);
 
-  const itemsResult = useItemsIndex({ per_page: 100, sort: 'name' });
-  const items = itemsResult.data?.status === 200 ? itemsResult.data.data.data : [];
   const uomsResult = useUomsIndex({ per_page: 100, sort: 'name' });
   const uoms = uomsResult.data?.status === 200 ? uomsResult.data.data.data : [];
 
@@ -173,16 +171,7 @@ export function ItemQuantityUnitsListScreen({ itemId, stockUnit }: { itemId?: nu
       />}
 
       {!itemId && <div className="flex flex-wrap items-center gap-2">
-        <Combobox {...lookupState(itemsResult, 'items')}
-          className="h-9 w-64"
-          aria-label="Filter by item"
-          value={query.filters.item_id ?? 'all'}
-          onValueChange={(v) => query.setFilter('item_id', v === 'all' ? undefined : v)}
-          placeholder="All items"
-          searchPlaceholder="Search items…"
-          emptyText="No items found."
-          options={[{ value: 'all', label: 'All items' }, ...items.map((i) => ({ value: String(i.id), label: `${i.code} — ${i.name}` }))]}
-        />
+        <ItemCombobox label="Filter by item" placeholder="All items" allLabel="All items" className="h-9 w-64" value={query.filters.item_id ?? 'all'} onValueChange={(v) => query.setFilter('item_id', v === 'all' ? undefined : v)} />
       </div>}
 
       {mayManage && <DetailSection
@@ -203,16 +192,7 @@ export function ItemQuantityUnitsListScreen({ itemId, stockUnit }: { itemId?: nu
                 <FormItem>
                   <FormLabel>Item</FormLabel>
                   <FormControl>
-                    <Combobox {...lookupState(itemsResult, 'items')}
-                      ref={field.ref}
-                      disabled={!!editing}
-                      value={field.value}
-                      onValueChange={field.onChange}
-                      options={items.map((i) => ({ value: String(i.id), label: `${i.code} — ${i.name}` }))}
-                      placeholder="Select item"
-                      searchPlaceholder="Search items…"
-                      emptyText="No items found."
-                    />
+                    <ItemCombobox label="Item" placeholder="Select item" disabled={!!editing} value={field.value} onValueChange={field.onChange} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

@@ -1,7 +1,8 @@
 import { useForm, type UseFormReturn } from 'react-hook-form';
+import { ItemCombobox } from '../../components/lookups/entity-comboboxes';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useCustomerAccountsIndex, useItemsIndex, useUomsIndex } from '@erp/core-api';
+import { useCustomerAccountsIndex, useUomsIndex } from '@erp/core-api';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Combobox } from '../../components/ui/combobox';
@@ -66,8 +67,6 @@ export function FormulationForm({
       lines: []
     }
   });
-  const itemsResult = useItemsIndex({ per_page: 100, sort: 'name' });
-  const items = itemsResult.data?.status === 200 ? itemsResult.data.data.data : [];
   const uomsResult = useUomsIndex({ per_page: 100, sort: 'name' });
   const uoms = uomsResult.data?.status === 200 ? uomsResult.data.data.data : [];
   const customersResult = useCustomerAccountsIndex({
@@ -89,22 +88,10 @@ export function FormulationForm({
               <FormItem>
                 <FormLabel>Output item</FormLabel>
                 <FormControl>
-                  <Combobox {...lookupState(itemsResult, 'items')}
-                    ref={field.ref}
-                    value={field.value}
-                    onValueChange={(value) => {
+                  <ItemCombobox label="Output item" placeholder="Select output item" value={field.value} onValueChange={(value, item) => {
                       field.onChange(value);
-                      const item = items.find((candidate) => candidate.id === Number(value));
                       if (item) form.setValue('output_uom_id', String(item.stock_uom_id), { shouldDirty: true });
-                    }}
-                    options={items.map((i) => ({
-                      value: String(i.id),
-                      label: `${i.code} — ${i.name}`
-                    }))}
-                    placeholder="Select output item"
-                    searchPlaceholder="Search items…"
-                    emptyText="No items found."
-                  />
+                    }} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

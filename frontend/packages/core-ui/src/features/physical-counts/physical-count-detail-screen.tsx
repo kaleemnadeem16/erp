@@ -1,8 +1,8 @@
 import { useMemo, useState, type FormEvent } from 'react';
+import { ItemCombobox } from '../../components/lookups/entity-comboboxes';
 import { useParams, useNavigate } from 'react-router';
 import { Check, Plus } from 'lucide-react';
 import {
-  useItemsIndex,
   useLocationsIndex,
   usePhysicalCountLinesCount,
   usePhysicalCountsCancel,
@@ -80,8 +80,6 @@ export function PhysicalCountDetailScreen() {
   const [newBatchNo, setNewBatchNo] = useState('');
   const [newSerialNo, setNewSerialNo] = useState('');
 
-  const itemsQuery = useItemsIndex({ per_page: 100, sort: 'name', 'filter[status]': 'ACTIVE' });
-  const items = itemsQuery.data?.status === 200 ? itemsQuery.data.data.data : [];
 
   const locationsQuery = useLocationsIndex(
     { 'filter[warehouse_id]': count?.warehouse_id, 'filter[active]': true, per_page: 100, sort: 'code' },
@@ -361,15 +359,7 @@ export function PhysicalCountDetailScreen() {
             <form onSubmit={handleAddLine} className="flex flex-wrap items-end gap-2 border-t border-border pt-4 sm:col-span-2">
               <div className="flex flex-col gap-1">
                 <span className="text-xs font-medium text-muted-foreground">Item</span>
-                <Combobox {...lookupState(itemsQuery, 'items')}
-                  className="h-9 w-56"
-                  value={newItemId}
-                  onValueChange={setNewItemId}
-                  placeholder="Select an item"
-                  searchPlaceholder="Search items…"
-                  emptyText="No items found."
-                  options={items.map((item) => ({ value: String(item.id), label: `${item.code} — ${item.name}` }))}
-                />
+                <ItemCombobox label="Item" placeholder="Select an item" className="h-9 w-56" value={newItemId} onValueChange={setNewItemId} activeOnly />
               </div>
               <div className="flex flex-col gap-1">
                 <span className="text-xs font-medium text-muted-foreground">Location</span>

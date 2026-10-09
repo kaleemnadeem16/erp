@@ -1,4 +1,7 @@
 import { useMemo, useState } from "react";
+import { useItemsById, useSuppliersById } from "../../lib/use-records-by-id";
+import { useSupplierLookup } from "../../components/lookups/entity-comboboxes";
+import { ItemCombobox } from "../../components/lookups/entity-comboboxes";
 import {
   Boxes,
   Building2,
@@ -18,11 +21,11 @@ import type {
   SortingState,
 } from "@tanstack/react-table";
 import {
-  useItemsIndex,
   useItemSuppliersDestroy,
   useItemSuppliersIndex,
   useItemSuppliersUpdate,
-  useSupplierAccountsIndex,
+  type SupplierAccountResource,
+  type ItemResource,
   type ItemSupplierResource,
   type ItemSuppliersIndexSort,
 } from "@erp/core-api";
@@ -114,21 +117,23 @@ export function ItemSuppliersListScreen() {
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const { view, setView } = useListViewPreference("item-suppliers-list");
 
-  const itemsResult = useItemsIndex({ per_page: 100, sort: "name" });
-  const items =
-    itemsResult.data?.status === 200 ? itemsResult.data.data.data : [];
+  // Only the filtered item needs a label (the filter chip); it is resolved by id.
+  const items = useItemsById<ItemResource>(
+    query.filters.item_id ? [Number(query.filters.item_id)] : [],
+    [],
+  );
   const itemLabels = useMemo(
     () => new Map(items.map((i) => [i.id, `${i.code} — ${i.name}`])),
     [items],
   );
 
-  const suppliersResult = useSupplierAccountsIndex({
-    per_page: 100,
-    sort: "code",
-    include: "party",
-  });
-  const suppliers =
-    suppliersResult.data?.status === 200 ? suppliersResult.data.data.data : [];
+  // Only the filtered supplier needs a label (the filter chip); it is resolved by id and the picker searches the server.
+  const suppliers = useSuppliersById<SupplierAccountResource>(
+    query.filters.supplier_account_id
+      ? [Number(query.filters.supplier_account_id)]
+      : [],
+    [],
+  );
   const supplierLabels = useMemo(
     () =>
       new Map(
@@ -429,14 +434,7 @@ export function ItemSuppliersListScreen() {
         </div>
 
         <div className="hidden items-center gap-2 md:flex md:flex-wrap">
-          <ItemSupplierFilterControls
-            itemsLookup={lookupState(itemsResult, "items")}
-            suppliersLookup={lookupState(suppliersResult, "suppliers")}
-            items={items}
-            suppliers={suppliers}
-            query={query}
-            filter={filter}
-          />
+          <ItemSupplierFilterControls query={query} filter={filter} />
 
           <Button
             variant={
@@ -537,15 +535,7 @@ export function ItemSuppliersListScreen() {
             <SheetTitle>Filters</SheetTitle>
           </SheetHeader>
           <div className="flex flex-col gap-4 py-4 max-h-[70vh] overflow-y-auto">
-            <ItemSupplierFilterControls
-              itemsLookup={lookupState(itemsResult, "items")}
-              suppliersLookup={lookupState(suppliersResult, "suppliers")}
-              items={items}
-              suppliers={suppliers}
-              query={query}
-              filter={filter}
-              full
-            />
+            <ItemSupplierFilterControls query={query} filter={filter} full />
             <div className="border-t pt-3 space-y-4">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 Advanced filters
@@ -581,7 +571,7 @@ export function ItemSuppliersListScreen() {
           {activeChips.map((chip) => (
             <span
               key={chip.id}
-              className="inline-flex max-w-full items-center rounded-full border bg-primary/5 px-3 py-1.5 text-xs text-primary !gap-2 [&>svg]:shrink-0"
+              className="ui-chip-active inline-flex max-w-full items-center rounded-full border bg-primary/5 px-3 py-1.5 text-xs text-primary !gap-2 [&>svg]:shrink-0"
             >
               {chip.icon}
               <span className="min-w-0 break-words">{chip.label}</span>
@@ -722,46 +712,34 @@ export function ItemSuppliersListScreen() {
 }
 
 interface ItemSupplierFilterControlsProps {
-  itemsLookup: LookupState;
-  suppliersLookup: LookupState;
-  items: { id: number; code: string; name: string }[];
-  suppliers: { id: number; code: string; party?: { name: string } | null }[];
   query: ReturnType<typeof useListQueryState<Filters>>;
   filter: (name: keyof Filters, value: string) => void;
   full?: boolean;
 }
 
 function ItemSupplierFilterControls({
-  itemsLookup,
-  suppliersLookup,
-  items,
-  suppliers,
   query,
   filter,
   full,
 }: ItemSupplierFilterControlsProps) {
+  const supplierLookup = useSupplierLookup(
+    query.filters.supplier_account_id ?? "all",
+    { allLabel: "All suppliers" },
+  );
+
   return (
     <>
-      <Combobox
-        {...itemsLookup}
+      <ItemCombobox
+        label="Item"
+        placeholder="Filter by item"
+        allLabel="All items"
         className={full ? "h-10 w-full" : "h-10 w-48"}
-        aria-label="Item"
         value={query.filters.item_id ?? "all"}
         onValueChange={(v) => filter("item_id", v)}
-        placeholder="Filter by item"
-        searchPlaceholder="Search items…"
-        emptyText="No items found."
-        options={[
-          { value: "all", label: "All items" },
-          ...items.map((i) => ({
-            value: String(i.id),
-            label: `${i.code} — ${i.name}`,
-          })),
-        ]}
       />
 
       <Combobox
-        {...suppliersLookup}
+        {...supplierLookup}
         className={full ? "h-10 w-full" : "h-10 w-48"}
         aria-label="Supplier"
         value={query.filters.supplier_account_id ?? "all"}
@@ -769,13 +747,6 @@ function ItemSupplierFilterControls({
         placeholder="Filter by supplier"
         searchPlaceholder="Search suppliers…"
         emptyText="No suppliers found."
-        options={[
-          { value: "all", label: "All suppliers" },
-          ...suppliers.map((s) => ({
-            value: String(s.id),
-            label: `${s.code}${s.party?.name ? ` — ${s.party.name}` : ""}`,
-          })),
-        ]}
       />
 
       <Select
@@ -785,7 +756,7 @@ function ItemSupplierFilterControls({
         <SelectTrigger className={full ? "h-10 w-full" : "h-10 w-36"}>
           <SelectValue placeholder="All statuses" />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="ui-select-content">
           <SelectItem value="all">All statuses</SelectItem>
           <SelectItem value="true">Active only</SelectItem>
           <SelectItem value="false">Inactive only</SelectItem>
@@ -799,7 +770,7 @@ function ItemSupplierFilterControls({
         <SelectTrigger className={full ? "h-10 w-full" : "h-10 w-40"}>
           <SelectValue placeholder="All priorities" />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="ui-select-content">
           <SelectItem value="all">All priorities</SelectItem>
           <SelectItem value="true">Preferred only (#1)</SelectItem>
         </SelectContent>

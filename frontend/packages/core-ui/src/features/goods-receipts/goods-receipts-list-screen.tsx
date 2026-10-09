@@ -1,4 +1,6 @@
 import { useMemo, useState, type ReactNode } from "react";
+import { useSupplierLookup } from "../../components/lookups/entity-comboboxes";
+import { useSuppliersById } from "../../lib/use-records-by-id";
 import { useLocation, useNavigate } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import type {
@@ -9,7 +11,7 @@ import type {
 import {
   useCurrenciesIndex,
   useGoodsReceiptsIndex,
-  useSupplierAccountsIndex,
+  type SupplierAccountResource,
   type GoodsReceiptResource,
   type GoodsReceiptsIndexSort,
 } from "@erp/core-api";
@@ -129,26 +131,6 @@ export function GoodsReceiptsListScreen() {
 
   const { view, setView } = useListViewPreference("goods-receipts-list");
 
-  const suppliersQuery = useSupplierAccountsIndex({
-    per_page: 100,
-    sort: "code",
-    include: "party",
-  });
-  const suppliers = useMemo(
-    () =>
-      suppliersQuery.data?.status === 200 ? suppliersQuery.data.data.data : [],
-    [suppliersQuery.data],
-  );
-  const supplierLabels = useMemo(
-    () =>
-      new Map(
-        suppliers.map((supplier) => [
-          supplier.id,
-          `${supplier.code}${supplier.party?.name ? ` — ${supplier.party.name}` : ""}`,
-        ]),
-      ),
-    [suppliers],
-  );
 
   const currenciesQuery = useCurrenciesIndex(
     { per_page: 100, sort: "code" },
@@ -164,23 +146,6 @@ export function GoodsReceiptsListScreen() {
   const currencyLabels = useMemo(
     () => new Map(currencies.map((currency) => [currency.id, currency.code])),
     [currencies],
-  );
-
-  const columns = useMemo(
-    () =>
-      goodsReceiptColumns(
-        supplierLabels,
-        currencyLabels,
-        mayViewCommercialCost,
-      ),
-    [supplierLabels, currencyLabels, mayViewCommercialCost],
-  );
-
-  const [columnVisibility, setColumnVisibility] = useColumnVisibilityPreference(
-    "goods-receipts-list",
-    Object.fromEntries(
-      columns.map((column) => [column.key, isColumnVisibleByDefault(column)]),
-    ),
   );
 
   const receiptsQuery = useGoodsReceiptsIndex({
@@ -213,6 +178,42 @@ export function GoodsReceiptsListScreen() {
     per_page: query.perPage,
     page: query.page,
   });
+  // Chips and columns name the filtered supplier and each listed receipt's supplier by id; the picker searches the server.
+  const suppliers = useSuppliersById<SupplierAccountResource>(
+    [
+      ...(query.filters.supplier_account_id ? [Number(query.filters.supplier_account_id)] : []),
+      ...(receiptsQuery.data?.status === 200 ? receiptsQuery.data.data.data.map((receipt) => receipt.supplier_account_id) : []),
+    ],
+    [],
+  );
+  const supplierLabels = useMemo(
+    () =>
+      new Map(
+        suppliers.map((supplier) => [
+          supplier.id,
+          `${supplier.code}${supplier.party?.name ? ` — ${supplier.party.name}` : ""}`,
+        ]),
+      ),
+    [suppliers],
+  );
+
+  const columns = useMemo(
+    () =>
+      goodsReceiptColumns(
+        supplierLabels,
+        currencyLabels,
+        mayViewCommercialCost,
+      ),
+    [supplierLabels, currencyLabels, mayViewCommercialCost],
+  );
+
+  const [columnVisibility, setColumnVisibility] = useColumnVisibilityPreference(
+    "goods-receipts-list",
+    Object.fromEntries(
+      columns.map((column) => [column.key, isColumnVisibleByDefault(column)]),
+    ),
+  );
+
 
   const receipts =
     receiptsQuery.data?.status === 200 ? receiptsQuery.data.data.data : [];
@@ -396,9 +397,6 @@ export function GoodsReceiptsListScreen() {
 
         <div className="hidden items-center gap-2 md:flex md:flex-wrap">
           <GoodsReceiptFilterControls
-            suppliersLookup={lookupState(suppliersQuery, "suppliers")}
-            suppliers={suppliers}
-            supplierLabels={supplierLabels}
             query={query}
           />
 
@@ -504,9 +502,6 @@ export function GoodsReceiptsListScreen() {
           </SheetHeader>
           <div className="flex flex-col gap-4 py-4">
             <GoodsReceiptFilterControls
-              suppliersLookup={lookupState(suppliersQuery, "suppliers")}
-              suppliers={suppliers}
-              supplierLabels={supplierLabels}
               query={query}
               full
             />
@@ -770,33 +765,21 @@ function describeFilters(
 }
 
 interface GoodsReceiptFilterControlsProps {
-  suppliersLookup: LookupState;
-  suppliers: { id: number; code: string; party?: { name: string } | null }[];
-  supplierLabels: ReadonlyMap<number, string>;
   query: ReturnType<typeof useListQueryState<ReceiptFilters>>;
   full?: boolean;
 }
 
 /** Supplier & Status selects — shared by the always-visible desktop bar and the mobile Filters sheet. */
 function GoodsReceiptFilterControls({
-  suppliersLookup,
-  suppliers,
-  supplierLabels,
   query,
   full,
 }: GoodsReceiptFilterControlsProps) {
-  const supplierOptions = [
-    { value: "all", label: "All suppliers" },
-    ...suppliers.map((supplier) => ({
-      value: String(supplier.id),
-      label: supplierLabels.get(supplier.id) ?? `#${supplier.id}`,
-    })),
-  ];
+  const supplierLookup = useSupplierLookup(query.filters.supplier_account_id ?? "all", { allLabel: "All suppliers" });
 
   return (
     <>
       <Combobox
-        {...suppliersLookup}
+        {...supplierLookup}
         value={query.filters.supplier_account_id ?? "all"}
         onValueChange={(value) =>
           query.setFilter(
@@ -804,7 +787,6 @@ function GoodsReceiptFilterControls({
             value === "all" ? undefined : value,
           )
         }
-        options={supplierOptions}
         placeholder="Supplier"
         aria-label="Supplier"
         searchPlaceholder="Search suppliers…"

@@ -1,19 +1,12 @@
 import { expect, type Page } from "@playwright/test";
-import { api } from "./package-stock-support";
+import { api, findByCode } from "./package-stock-support";
 
 /** Create the print test's own draft instead of relying on a long-lived local database ID. */
 export async function createPrintOrder(page: Page): Promise<number> {
   await page.goto("/");
-  const items = (await api(page, "GET", "/items?per_page=100")).data;
-  const suppliers = (await api(page, "GET", "/supplier-accounts?per_page=100"))
-    .data;
   const currencies = (await api(page, "GET", "/currencies?per_page=100")).data;
-  const item = items.find(
-    (row: { code: string }) => row.code === "demo-pig-blue",
-  );
-  const supplier = suppliers.find(
-    (row: { code: string }) => row.code === "sup-punjab",
-  );
+  const item = await findByCode<any>(page, "/items", "demo-pig-blue");
+  const supplier = await findByCode<any>(page, "/supplier-accounts", "sup-punjab");
   const currency = currencies.find(
     (row: { code: string }) => row.code === "PKR",
   );
@@ -47,7 +40,7 @@ export async function createPrintOrder(page: Page): Promise<number> {
 /** Find the seeded submitted approval scenario by its marker, not its database sequence. */
 export async function pendingReviewOrder(page: Page): Promise<number> {
   await page.goto("/");
-  const orders = (await api(page, "GET", "/purchase-orders?per_page=100")).data;
+  const orders = (await api(page, "GET", "/purchase-orders?filter[approval]=PENDING&per_page=100")).data;
   const order = orders.find(
     (row: { notes: string; approval_status: string }) =>
       row.notes?.includes("DEMO_APPROVAL_A") &&
@@ -59,10 +52,7 @@ export async function pendingReviewOrder(page: Page): Promise<number> {
 
 /** Locate the thinner draft by its line item; later seeders may add other draft receipts. */
 export async function thinnerDraftReceipt(page: Page): Promise<number> {
-  const items = (await api(page, "GET", "/items?per_page=100")).data;
-  const thinner = items.find(
-    (row: { code: string }) => row.code === "demo-thinner",
-  );
+  const thinner = await findByCode<any>(page, "/items", "demo-thinner");
   expect(thinner).toBeTruthy();
   const receipts = (
     await api(

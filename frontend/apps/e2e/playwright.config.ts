@@ -11,7 +11,11 @@ import { defineConfig, devices } from '@playwright/test';
  */
 const baseURL = process.env.E2E_BASE_URL ?? 'http://127.0.0.1:5176';
 
+// Remembered for the teardown, which archives only what this run created.
+process.env.E2E_RUN_STARTED ??= String(Date.now());
+
 export default defineConfig({
+  globalTeardown: './tests/global-teardown.ts',
   testDir: './tests',
   fullyParallel: false,
   forbidOnly: !!process.env.CI,

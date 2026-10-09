@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { ItemCombobox } from '../../components/lookups/entity-comboboxes';
 import { useParams, useNavigate } from 'react-router';
 import {
   useInventoryCutoversShow,
@@ -11,7 +12,6 @@ import {
   useInventoryCutoversFinalise,
   useInventoryCutoversNegativeOpeningsStore,
   useInventoryCutoverNegativeOpeningsApprove,
-  useItemsIndex,
   useLocationsIndex,
   type RequestInventoryCutoverNegativeOpeningRequest,
 } from '@erp/core-api';
@@ -85,8 +85,6 @@ export function InventoryCutoverDetailScreen() {
     reason: '', responsible_owner_id: '', resolution_plan: '',
   });
 
-  const itemsQuery = useItemsIndex({ per_page: 100, sort: 'name', 'filter[status]': 'ACTIVE' });
-  const items = itemsQuery.data?.status === 200 ? itemsQuery.data.data.data : [];
   const locationsQuery = useLocationsIndex({ per_page: 100, sort: 'code' });
   const locations = locationsQuery.data?.status === 200 ? locationsQuery.data.data.data : [];
 
@@ -409,15 +407,7 @@ export function InventoryCutoverDetailScreen() {
             <form onSubmit={handleRequestNegativeOpening} className="grid grid-cols-1 gap-3 border-t border-border pt-4 sm:col-span-2 sm:grid-cols-2">
               <div className="flex flex-col gap-1">
                 <span className="text-xs font-medium text-muted-foreground">Item</span>
-                <Combobox {...lookupState(itemsQuery, 'items')}
-                  className="h-9"
-                  value={negativeOpeningDraft.item_id}
-                  onValueChange={(value) => setNegativeOpeningDraft((draft) => ({ ...draft, item_id: value }))}
-                  placeholder="Select an item"
-                  searchPlaceholder="Search items…"
-                  emptyText="No items found."
-                  options={items.map((item) => ({ value: String(item.id), label: `${item.code} — ${item.name}` }))}
-                />
+                <ItemCombobox label="Item" placeholder="Select an item" className="h-9" value={negativeOpeningDraft.item_id} onValueChange={(value) => setNegativeOpeningDraft((draft) => ({ ...draft, item_id: value }))} />
               </div>
               <div className="flex flex-col gap-1">
                 <span className="text-xs font-medium text-muted-foreground">Location</span>

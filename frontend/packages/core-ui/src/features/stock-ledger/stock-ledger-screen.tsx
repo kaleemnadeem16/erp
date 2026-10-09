@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useItemsById } from '../../lib/use-records-by-id';
+import { ItemCombobox } from '../../components/lookups/entity-comboboxes';
 import { useNavigate } from 'react-router';
 import { SlidersHorizontal } from 'lucide-react';
 import type { SortingState } from '@tanstack/react-table';
-import { useItemsIndex, useStockMovesIndex, useWarehousesIndex, type StockMoveResource, type StockMovesIndexSort } from '@erp/core-api';
+import { useStockMovesIndex, type ItemResource, useWarehousesIndex, type StockMoveResource, type StockMovesIndexSort } from '@erp/core-api';
 
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -51,8 +53,8 @@ export function StockLedgerScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchInput]);
 
-  const itemsQuery = useItemsIndex({ per_page: 100, sort: 'name' });
-  const items = itemsQuery.data?.status === 200 ? itemsQuery.data.data.data : [];
+  // Only the filtered item is needed (for the filter chip); it is resolved by id.
+  const items = useItemsById<ItemResource>(query.filters.item_id ? [Number(query.filters.item_id)] : [], []);
 
   const warehousesQuery = useWarehousesIndex({ per_page: 100, sort: 'name' });
   const warehouses = warehousesQuery.data?.status === 200 ? warehousesQuery.data.data.data : [];
@@ -101,7 +103,7 @@ export function StockLedgerScreen() {
           className="h-9 flex-1 md:w-56 md:flex-none"
         />
         <div className="hidden items-center gap-2 md:flex md:flex-wrap">
-          <StockMoveFilterControls itemsLookup={lookupState(itemsQuery, 'items')} warehousesLookup={lookupState(warehousesQuery, 'warehouses')} items={items} warehouses={warehouses} query={query} />
+          <StockMoveFilterControls warehousesLookup={lookupState(warehousesQuery, 'warehouses')} items={items} warehouses={warehouses} query={query} />
           <div className="ml-auto flex items-center gap-2">
             <PrintTrigger onPrint={() => print()} />
           </div>
@@ -124,7 +126,7 @@ export function StockLedgerScreen() {
             <SheetTitle>Filters</SheetTitle>
           </SheetHeader>
           <div className="flex flex-col gap-3 py-4">
-            <StockMoveFilterControls itemsLookup={lookupState(itemsQuery, 'items')} warehousesLookup={lookupState(warehousesQuery, 'warehouses')} items={items} warehouses={warehouses} query={query} full />
+            <StockMoveFilterControls warehousesLookup={lookupState(warehousesQuery, 'warehouses')} items={items} warehouses={warehouses} query={query} full />
             <PrintTrigger onPrint={() => print()} className="w-full justify-center" />
           </div>
           <SheetFooter>
@@ -194,7 +196,6 @@ export function StockLedgerScreen() {
 }
 
 interface StockMoveFilterControlsProps {
-  itemsLookup: LookupState;
   warehousesLookup: LookupState;
   items: { id: number; code: string; name: string }[];
   warehouses: { id: number; name: string }[];
@@ -203,22 +204,10 @@ interface StockMoveFilterControlsProps {
 }
 
 /** Item/Warehouse/Source-type/date-range controls — shared by the desktop row and the mobile Filters sheet. */
-function StockMoveFilterControls({ itemsLookup, warehousesLookup, items, warehouses, query, full }: StockMoveFilterControlsProps) {
+function StockMoveFilterControls({ warehousesLookup, items, warehouses, query, full }: StockMoveFilterControlsProps) {
   return (
     <>
-      <Combobox {...itemsLookup}
-        className={full ? 'h-9 w-full' : 'h-9 w-48'}
-        aria-label="Item"
-        value={query.filters.item_id ?? 'all'}
-        onValueChange={(value) => query.setFilter('item_id', value === 'all' ? undefined : value)}
-        placeholder="Item"
-        searchPlaceholder="Search items…"
-        emptyText="No items found."
-        options={[
-          { value: 'all', label: 'All items' },
-          ...items.map((item) => ({ value: String(item.id), label: `${item.code} — ${item.name}` })),
-        ]}
-      />
+      <ItemCombobox label="Item" placeholder="Item" className={full ? 'h-9 w-full' : 'h-9 w-48'} value={query.filters.item_id ?? 'all'} onValueChange={(value) => query.setFilter('item_id', value === 'all' ? undefined : value)} allLabel="All items" />
       <Combobox {...warehousesLookup}
         className={full ? 'h-9 w-full' : 'h-9 w-44'}
         aria-label="Warehouse"

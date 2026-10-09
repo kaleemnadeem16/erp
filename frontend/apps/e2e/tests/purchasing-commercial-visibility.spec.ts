@@ -42,5 +42,5 @@ test.describe('a Receiving Clerk', () => {
 test('the administrator sees the same receipt priced', async ({ page }) => {
   await page.goto('/goods-receipts?filter.status=DRAFT');
   await page.getByRole('row').filter({ hasText: /Draft|DRAFT/ }).first().click();
-  await expect(page.getByText('Provisional cost').first()).toBeVisible();
+  await expect(page.getByText('Provisional unit cost').first()).toBeVisible();
 });

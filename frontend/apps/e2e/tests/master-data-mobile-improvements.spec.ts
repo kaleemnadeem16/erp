@@ -192,10 +192,10 @@ test("supplier registration preserves a newly saved trading partner after suppli
   await page
     .getByRole("button", { name: "Register a new trading partner" })
     .click();
-  await page.getByLabel("Trading partner code").fill("ui-partner");
-  await page.getByLabel("Business name").fill("UI supplier");
+  await page.getByLabel("Partner code").fill("ui-partner");
+  await page.getByLabel("Trading partner name").fill("UI supplier");
   await page.getByLabel("Supplier code", { exact: true }).fill("ui-supplier");
-  await pickCombobox(page, "Payable account", /./);
+  await pickCombobox(page, "Payable control account", /./);
   await page
     .getByRole("button", { name: "Register supplier", exact: true })
     .click();

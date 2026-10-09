@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import { SupplierCombobox } from "../../components/lookups/entity-comboboxes";
+import { useItemsById, useLocationsById } from "../../lib/use-records-by-id";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useFieldArray, useForm, type UseFormReturn } from "react-hook-form";
 import { z } from "zod";
@@ -257,21 +259,6 @@ export function GoodsReceiptForm({
     name: "lines",
   });
   const supplierId = Number(form.watch("supplier_account_id"));
-  const suppliersQuery = useSupplierAccountsIndex({
-    per_page: 100,
-    sort: "code",
-    include: "party",
-  });
-  const suppliers =
-    suppliersQuery.data?.status === 200 ? suppliersQuery.data.data.data : [];
-  const supplierOptions = useMemo(
-    () =>
-      suppliers.map((supplier) => ({
-        value: String(supplier.id),
-        label: `${supplier.code}${supplier.party?.name ? ` — ${supplier.party.name}` : ""}`,
-      })),
-    [suppliers],
-  );
   const ordersQuery = usePurchaseOrdersIndex(
     {
       "filter[supplier_account_id]": supplierId || undefined,
@@ -308,20 +295,26 @@ export function GoodsReceiptForm({
     [orders],
   );
   const locationsQuery = useLocationsIndex({ per_page: 100, sort: "code" });
-  const locations =
+  // Put-away targets are stock locations; a chosen one is always resolvable by its own id even if it is past the first page.
+  const locations = useLocationsById(
+    (form.watch("lines") ?? []).map((line) => Number(line?.location_id) || 0).filter((id) => id > 0),
     locationsQuery.data?.status === 200
       ? locationsQuery.data.data.data.filter(
           (location) => location.active && location.allows_stock,
         )
-      : [];
+      : [],
+  );
   const uomsQuery = useUomsIndex({ per_page: 100, sort: "name" });
   const uoms = uomsQuery.data?.status === 200 ? uomsQuery.data.data.data : [];
   const itemsQuery = useItemsIndex({
     per_page: 100,
     sort: "name",
   });
-  const items =
-    itemsQuery.data?.status === 200 ? itemsQuery.data.data.data : [];
+  // The chosen lines' items are resolved by id; a first page of items is not a lookup table (lib/use-records-by-id.ts).
+  const items = useItemsById(
+    eligibleLines.map(({ line }) => line.item_id),
+    itemsQuery.data?.status === 200 ? itemsQuery.data.data.data : [],
+  );
 
   function chooseLine(index: number, value: string) {
     form.setValue(`lines.${index}.purchase_order_line_id`, value, {
@@ -490,18 +483,14 @@ export function GoodsReceiptForm({
               <FormItem>
                 <FormLabel>Supplier</FormLabel>
                 <FormControl>
-                  <Combobox
-                    {...lookupState(suppliersQuery, "suppliers")}
-                    ref={field.ref}
+                  <SupplierCombobox
+                    label="Supplier"
+                    placeholder="Select supplier"
                     value={field.value}
                     onValueChange={(value) => {
                       field.onChange(value);
                       form.setValue("lines", [{ ...emptyLine }]);
                     }}
-                    options={supplierOptions}
-                    placeholder="Select supplier"
-                    searchPlaceholder="Search suppliers…"
-                    emptyText="No suppliers found."
                   />
                 </FormControl>
                 <FormMessage />

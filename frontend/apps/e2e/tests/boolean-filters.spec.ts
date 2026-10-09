@@ -11,7 +11,7 @@ import { expect, test, type Page } from '@playwright/test';
 async function chooseActiveStatus(page: Page): Promise<number> {
   const response = page.waitForResponse((r) => decodeURIComponent(r.url()).includes('filter[active]=true'));
   await page.getByRole('combobox').filter({ hasText: 'All statuses' }).click();
-  await page.getByRole('option', { name: 'Active', exact: true }).click();
+  await page.getByRole('option', { name: /^Active( only)?$/ }).click();
 
   return (await response).status();
 }

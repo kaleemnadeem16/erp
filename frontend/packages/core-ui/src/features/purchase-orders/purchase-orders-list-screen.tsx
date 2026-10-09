@@ -32,12 +32,16 @@ import {
   type PurchaseOrderResource,
   type PurchaseOrdersIndexFilterApproval,
   type PurchaseOrdersIndexSort,
+  type ItemResource,
+  type SupplierAccountResource,
   type SupplierSiteResource,
 } from "@erp/core-api";
 
 import { cn } from "../../lib/utils";
 import { Badge } from "../../components/ui/badge";
 import { Combobox } from "../../components/ui/combobox";
+import { useItemLookup, useSupplierLookup } from "../../components/lookups/entity-comboboxes";
+import { useItemsById, useSuppliersById } from "../../lib/use-records-by-id";
 import { DateField } from "../../components/ui/date-field";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
@@ -176,27 +180,6 @@ export function PurchaseOrdersListScreen() {
   );
   const { view, setView } = useListViewPreference("purchase-orders-list");
 
-  const suppliersQuery = useSupplierAccountsIndex({
-    per_page: 100,
-    sort: "code",
-    include: "party",
-  });
-  const suppliers = useMemo(
-    () =>
-      suppliersQuery.data?.status === 200 ? suppliersQuery.data.data.data : [],
-    [suppliersQuery.data],
-  );
-  const supplierLabels = useMemo(
-    () =>
-      new Map(
-        suppliers.map((supplier) => [
-          supplier.id,
-          `${supplier.code}${supplier.party?.name ? ` — ${supplier.party.name}` : ""}`,
-        ]),
-      ),
-    [suppliers],
-  );
-
   const selectedSupplierId = query.filters.supplier_account_id
     ? Number(query.filters.supplier_account_id)
     : undefined;
@@ -209,9 +192,10 @@ export function PurchaseOrdersListScreen() {
   const sites =
     sitesQuery.data?.status === 200 ? sitesQuery.data.data.data : [];
 
-  const itemsQuery = useItemsIndex({ per_page: 100, sort: "name" });
-  const items =
-    itemsQuery.data?.status === 200 ? itemsQuery.data.data.data : [];
+  const items = useItemsById<ItemResource>(
+    query.filters.item_id ? [Number(query.filters.item_id)] : [],
+    [],
+  );
   const itemLabels = useMemo(
     () =>
       new Map(items.map((item) => [item.id, `${item.code} — ${item.name}`])),
@@ -272,6 +256,23 @@ export function PurchaseOrdersListScreen() {
     per_page: query.perPage,
     page: query.page,
   });
+  // Chips and columns name the filtered supplier and the supplier of each listed order by id; the pickers search the server.
+  const listedSupplierIds = [
+    ...(query.filters.supplier_account_id ? [Number(query.filters.supplier_account_id)] : []),
+    ...(ordersQuery?.data?.status === 200 ? ordersQuery.data.data.data.map((order) => order.supplier_account_id) : []),
+  ];
+  const suppliers = useSuppliersById<SupplierAccountResource>(listedSupplierIds, []);
+  const supplierLabels = useMemo(
+    () =>
+      new Map(
+        suppliers.map((supplier) => [
+          supplier.id,
+          `${supplier.code}${supplier.party?.name ? ` — ${supplier.party.name}` : ""}`,
+        ]),
+      ),
+    [suppliers],
+  );
+
   const orders =
     ordersQuery.data?.status === 200 ? ordersQuery.data.data.data : [];
   const meta =
@@ -566,9 +567,6 @@ export function PurchaseOrdersListScreen() {
         <div className="hidden items-center gap-2 md:flex md:flex-wrap">
           <PurchaseOrderFilterControls
             approvalsInUse={approvalsInUse}
-            suppliersLookup={lookupState(suppliersQuery, "suppliers")}
-            suppliers={suppliers}
-            supplierLabels={supplierLabels}
             query={query}
           />
           <Button
@@ -656,8 +654,6 @@ export function PurchaseOrdersListScreen() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <AdvancedFilterFields
                 query={query}
-                itemsLookup={lookupState(itemsQuery, "items")}
-                items={items}
                 selectedSupplierId={selectedSupplierId}
                 sites={sites}
                 currencies={currencies}
@@ -683,9 +679,6 @@ export function PurchaseOrdersListScreen() {
               </span>
               <PurchaseOrderFilterControls
                 approvalsInUse={approvalsInUse}
-                suppliersLookup={lookupState(suppliersQuery, "suppliers")}
-                suppliers={suppliers}
-                supplierLabels={supplierLabels}
                 query={query}
                 full
               />
@@ -696,8 +689,6 @@ export function PurchaseOrdersListScreen() {
               </span>
               <AdvancedFilterFields
                 query={query}
-                itemsLookup={lookupState(itemsQuery, "items")}
-                items={items}
                 selectedSupplierId={selectedSupplierId}
                 sites={sites}
                 currencies={currencies}
@@ -1045,9 +1036,6 @@ function describeFilters(
 interface PurchaseOrderFilterControlsProps {
   /** Show the Approval filter — only for a company that uses approvals. */
   approvalsInUse?: boolean;
-  suppliersLookup: LookupState;
-  suppliers: { id: number }[];
-  supplierLabels: ReadonlyMap<number, string>;
   query: ReturnType<typeof useListQueryState<PurchaseOrderFilters>>;
   full?: boolean;
 }
@@ -1055,24 +1043,15 @@ interface PurchaseOrderFilterControlsProps {
 /** Supplier/Status selects — shared by the always-visible desktop row and the mobile Filters sheet. */
 function PurchaseOrderFilterControls({
   approvalsInUse,
-  suppliersLookup,
-  suppliers,
-  supplierLabels,
   query,
   full,
 }: PurchaseOrderFilterControlsProps) {
-  const supplierOptions = [
-    { value: "all", label: "All suppliers" },
-    ...suppliers.map((supplier) => ({
-      value: String(supplier.id),
-      label: supplierLabels.get(supplier.id) ?? `#${supplier.id}`,
-    })),
-  ];
+  const supplierLookup = useSupplierLookup(query.filters.supplier_account_id ?? "all", { allLabel: "All suppliers" });
 
   return (
     <>
       <Combobox
-        {...suppliersLookup}
+        {...supplierLookup}
         value={query.filters.supplier_account_id ?? "all"}
         onValueChange={(value) =>
           query.setFilters({
@@ -1080,7 +1059,6 @@ function PurchaseOrderFilterControls({
             supplier_site_id: undefined,
           })
         }
-        options={supplierOptions}
         placeholder="Supplier"
         aria-label="Supplier"
         searchPlaceholder="Search suppliers…"
@@ -1159,8 +1137,6 @@ function PurchaseOrderFilterControls({
 
 interface AdvancedFilterFieldsProps {
   query: ReturnType<typeof useListQueryState<PurchaseOrderFilters>>;
-  itemsLookup: LookupState;
-  items: { id: number; code: string; name: string }[];
   selectedSupplierId?: number;
   sites: SupplierSiteResource[];
   currencies: { id: number; code: string; name: string }[];
@@ -1170,8 +1146,6 @@ interface AdvancedFilterFieldsProps {
 
 function AdvancedFilterFields({
   query,
-  itemsLookup,
-  items,
   selectedSupplierId,
   sites,
   currencies,
@@ -1179,13 +1153,7 @@ function AdvancedFilterFields({
   full,
 }: AdvancedFilterFieldsProps) {
   const fieldH = full ? "h-9" : "h-10";
-  const itemOptions = [
-    { value: "all", label: "All items" },
-    ...items.map((item) => ({
-      value: String(item.id),
-      label: `${item.code} — ${item.name}`,
-    })),
-  ];
+  const itemLookup = useItemLookup(query.filters.item_id ?? "all", { allLabel: "All items" });
 
   return (
     <>
@@ -1269,12 +1237,11 @@ function AdvancedFilterFields({
       <div className="space-y-1.5">
         <Label className="text-sm font-medium">Contains item</Label>
         <Combobox
-          {...itemsLookup}
+          {...itemLookup}
           value={query.filters.item_id ?? "all"}
           onValueChange={(val) =>
             query.setFilter("item_id", val === "all" ? undefined : val)
           }
-          options={itemOptions}
           placeholder="Contains item"
           aria-label="Contains item"
           searchPlaceholder="Search items…"

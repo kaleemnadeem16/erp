@@ -78,7 +78,9 @@ test('purchase order through receipt, QA and availability', async ({ page }) => 
 
   // --- Receive the full ordered quantity against the issued line ---
   await page.goto('/goods-receipts/new');
-  await pickCombobox(page, 'Supplier', SUPPLIER);
+  // The receipt form is a side sheet over the receipts list, whose filter bar has its own "Supplier" control.
+  const receiptSheet = page.getByRole('dialog', { name: /goods receipt/i });
+  await pickCombobox(page, 'Supplier', SUPPLIER, { within: receiptSheet });
   await pickCombobox(page, 'Purchase-order line', new RegExp(`^${escapeRegExp(poNumber)} / `), { searchText: poNumber });
   await pickCombobox(page, 'Put-away location', 'Main Stock');
 

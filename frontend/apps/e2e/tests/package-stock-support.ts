@@ -17,6 +17,16 @@ export async function api<T = any>(page: Page, method: 'GET' | 'POST' | 'PUT' | 
   return (response.status() === 204 ? {} : await response.json()) as T;
 }
 
+/**
+ * One record by its code, asked of the server (`filter[search]` then exact match) — never "find it in the first page of the list", which stops being true
+ * once the dataset (and the records other specs leave behind) outgrows a page.
+ */
+export async function findByCode<T extends { code: string }>(page: Page, path: string, code: string): Promise<T | undefined> {
+  const rows = (await api(page, 'GET', `${path}?filter[search]=${encodeURIComponent(code)}&per_page=100`)).data as T[];
+
+  return rows.find((row) => row.code === code);
+}
+
 export interface PackageStockWorld {
   item: { id: number; code: string; name: string };
   can: { id: number };
@@ -42,12 +52,11 @@ export async function createStockedItem(page: Page, prefix: string): Promise<Pac
   const currency = (await list(page, '/currencies')).find((c) => c.code === 'PKR');
   const supplier = (await list(page, '/supplier-accounts'))[0];
   const warehouses = await list(page, '/warehouses');
-  const locations = await list(page, '/locations');
   const warehouse = warehouses.find((w) => w.code === 'demo-main');
   const karachiWarehouse = warehouses.find((w) => w.code === 'demo-khi');
-  const main = locations.find((l) => l.warehouse_id === warehouse.id && l.code === 'stock');
-  const karachi = locations.find((l) => l.warehouse_id === karachiWarehouse.id && l.code === 'stock');
-  const base = (await list(page, '/items?filter[search]=demo-pack-thinner')).find((item) => item.code === 'demo-pack-thinner');
+  const main = (await list(page, `/locations?filter[warehouse_id]=${warehouse.id}`)).find((l) => l.code === 'stock');
+  const karachi = (await list(page, `/locations?filter[warehouse_id]=${karachiWarehouse.id}`)).find((l) => l.code === 'stock');
+  const base = await findByCode<any>(page, '/items', 'demo-pack-thinner');
   expect([litre, currency, supplier, warehouse, karachiWarehouse, main, karachi, base].every(Boolean)).toBeTruthy();
 
   const item = (
@@ -106,7 +115,7 @@ export async function signInAs(browser: import('@playwright/test').Browser, emai
 
 /** A draft physical count of the main warehouse holding one line for the item, made through the API as the signed-in person. */
 export async function draftCountWithLine(page: Page, world: PackageStockWorld): Promise<{ countId: number; lineId: number }> {
-  const warehouseId = (await list(page, '/locations')).find((l) => l.id === world.main.id).warehouse_id;
+  const warehouseId = (await api(page, 'GET', `/locations/${world.main.id}`)).data.warehouse_id;
   const count = (await api(page, 'POST', '/physical-counts', { warehouse_id: warehouseId })).data;
   const line = (await api(page, 'POST', `/physical-counts/${count.id}/lines`, { item_id: world.item.id, location_id: world.main.id })).data;
 
@@ -202,7 +211,7 @@ export const EXIT_PERSONAS = {
  */
 export async function withMoreThanOneHundredItemsAhead(page: Page): Promise<() => Promise<void>> {
   const litre = (await list(page, '/uoms')).find((uom) => uom.code === 'l');
-  const base = (await list(page, '/items?filter[search]=demo-pack-thinner')).find((item) => item.code === 'demo-pack-thinner');
+  const base = await findByCode<any>(page, '/items', 'demo-pack-thinner');
   const stamp = Date.now().toString(36);
   const total = (await api(page, 'GET', '/items?per_page=1')).meta.total as number;
   const created: number[] = [];

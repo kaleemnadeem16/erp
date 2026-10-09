@@ -1,10 +1,12 @@
 import { lookupState } from '../../lib/api-errors';
 import { useMemo, useState } from 'react';
-import { useCategoriesIndex, useItemsIndex, useMaterialVariancePoliciesIndex, type VarianceScopeType } from '@erp/core-api';
+import { useCategoriesIndex, type ItemResource, useMaterialVariancePoliciesIndex, type VarianceScopeType } from '@erp/core-api';
 import { PageHeader } from '../../components/page/page-header';
 import { DetailPageLayout, DetailSection } from '../../components/detail/detail-page-layout';
 import { Button } from '../../components/ui/button';
 import { Combobox } from '../../components/ui/combobox';
+import { useItemLookup } from '../../components/lookups/entity-comboboxes';
+import { useItemsById } from '../../lib/use-records-by-id';
 import { Label } from '../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { useAuthStore } from '../../stores/auth-store';
@@ -30,19 +32,22 @@ export function MaterialVarianceSettingsScreen() {
   const [scopeId, setScopeId] = useState('');
 
   const categories = useCategoriesIndex({ per_page: 100, sort: 'code' }, { query: { enabled: mayViewRules } });
-  const items = useItemsIndex({ per_page: 100, sort: 'code' }, { query: { enabled: mayViewRules } });
   const categoryRows = categories.data?.status === 200 ? categories.data.data.data : [];
-  const itemRows = items.data?.status === 200 ? items.data.data.data : [];
   const active = useMaterialVariancePoliciesIndex({ 'filter[status]': 'ACTIVE', per_page: 100 }, { query: { enabled: mayViewRules } });
   const activeRows = active.data?.status === 200 ? active.data.data.data : [];
 
-  const options = scopeType === 'CATEGORY'
-    ? categoryRows.map((row) => ({ value: String(row.id), label: `${row.code} — ${row.name}` }))
-    : itemRows.map((row) => ({ value: String(row.id), label: `${row.code} — ${row.name}` }));
+  // Items are too many to list: the picker searches the server, and the policies' own items are resolved by id.
+  const itemLookup = useItemLookup(scopeType === 'ITEM' ? scopeId : '');
+  const itemRows = useItemsById<ItemResource>(
+    activeRows.filter((row) => row.scope_type === 'ITEM' && row.scope_id).map((row) => Number(row.scope_id)),
+    [],
+  );
+  const categoryOptions = categoryRows.map((row) => ({ value: String(row.id), label: `${row.code} — ${row.name}` }));
   const scopeLabel = useMemo(() => {
     if (scopeType === 'COMPANY') return 'whole company';
-    return options.find((option) => option.value === scopeId)?.label ?? '';
-  }, [scopeType, scopeId, options]);
+    if (scopeType === 'CATEGORY') return categoryOptions.find((option) => option.value === scopeId)?.label ?? '';
+    return itemLookup.options.find((option) => option.value === scopeId)?.label ?? itemLookup.selectedLabel ?? '';
+  }, [scopeType, scopeId, categoryOptions, itemLookup.options, itemLookup.selectedLabel]);
   const chosen = scopeType === 'COMPANY' || scopeId !== '';
 
   function describeScope(type: string, id: number | null): string {
@@ -114,11 +119,10 @@ export function MaterialVarianceSettingsScreen() {
                   <div className="space-y-2">
                     <Label>{scopeType === 'CATEGORY' ? 'Category' : 'Item'}</Label>
                     <Combobox
-                      {...lookupState(scopeType === 'CATEGORY' ? categories : items, scopeType === 'CATEGORY' ? 'categories' : 'items')}
+                      {...(scopeType === 'CATEGORY' ? { ...lookupState(categories, 'categories'), options: categoryOptions } : itemLookup)}
                       aria-label={scopeType === 'CATEGORY' ? 'Category' : 'Item'}
                       value={scopeId}
                       onValueChange={setScopeId}
-                      options={options}
                       placeholder={scopeType === 'CATEGORY' ? 'Select category' : 'Select item'}
                       searchPlaceholder="Search…"
                       emptyText="Nothing found."

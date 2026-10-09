@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
+import { ItemCombobox, SupplierCombobox } from "../../components/lookups/entity-comboboxes";
+import { useItemsById, useSuppliersById } from "../../lib/use-records-by-id";
 import { useForm, type UseFormReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
-  useItemsIndex,
-  useSupplierAccountsIndex,
   useUomsIndex,
+  type ItemResource,
+  type SupplierAccountResource,
 } from "@erp/core-api";
 import { Button } from "../../components/ui/button";
 import { Checkbox } from "../../components/ui/checkbox";
@@ -205,21 +207,6 @@ export function ItemSupplierForm({
     return () => subscription.unsubscribe();
   }, [form, mode]);
 
-  const itemsResult = useItemsIndex(
-    { per_page: 100, sort: "name" },
-    { query: { enabled: !fixedItem && mode === "create" } },
-  );
-  const items =
-    itemsResult.data?.status === 200 ? itemsResult.data.data.data : [];
-
-  const suppliersResult = useSupplierAccountsIndex({
-    per_page: 100,
-    sort: "code",
-    include: "party",
-  });
-  const suppliers =
-    suppliersResult.data?.status === 200 ? suppliersResult.data.data.data : [];
-
   const uomsResult = useUomsIndex({ per_page: 100, sort: "name" });
   const uoms = uomsResult.data?.status === 200 ? uomsResult.data.data.data : [];
   const uomMap = useMemo(() => new Map(uoms.map((u) => [u.id, u])), [uoms]);
@@ -230,6 +217,9 @@ export function ItemSupplierForm({
   const watchedPriority = form.watch("priority");
   const watchedLeadTime = form.watch("lead_time_days");
   const watchedPurchaseUomId = form.watch("purchase_uom_id");
+  // The chosen item and supplier are resolved by id (a first page of 100 is not a lookup table).
+  const items = useItemsById<ItemResource>(watchedItemId ? [Number(watchedItemId)] : [], []);
+  const suppliers = useSuppliersById<SupplierAccountResource>(watchedSupplierId ? [Number(watchedSupplierId)] : [], []);
 
   const selectedSupplierAccount = useMemo(() => {
     if (supplierDetails) return supplierDetails;
@@ -296,8 +286,6 @@ export function ItemSupplierForm({
   const select = (
     name: "item_id" | "supplier_account_id",
     label: string,
-    options: { id: number; label: string }[],
-    lookup: LookupState,
   ) => (
     <FormField
       control={form.control}
@@ -308,21 +296,25 @@ export function ItemSupplierForm({
             {label}
           </FormLabel>
           <FormControl>
-            <Combobox
-              {...lookup}
-              ref={field.ref}
-              disabled={mode === "edit"}
-              value={field.value}
-              onValueChange={field.onChange}
-              options={options.map((o) => ({
-                value: String(o.id),
-                label: o.label,
-              }))}
-              placeholder={`Select ${label.toLowerCase()}`}
-              searchPlaceholder={`Search ${label.toLowerCase()}s…`}
-              emptyText={`No ${label.toLowerCase()}s found.`}
-              className="h-10"
-            />
+            {name === "item_id" ? (
+              <ItemCombobox
+                label={label}
+                placeholder={`Select ${label.toLowerCase()}`}
+                disabled={mode === "edit"}
+                className="h-10"
+                value={field.value}
+                onValueChange={field.onChange}
+              />
+            ) : (
+              <SupplierCombobox
+                label={label}
+                placeholder={`Select ${label.toLowerCase()}`}
+                disabled={mode === "edit"}
+                className="h-10"
+                value={field.value}
+                onValueChange={field.onChange}
+              />
+            )}
           </FormControl>
           <FormMessage />
         </FormItem>
@@ -419,12 +411,7 @@ export function ItemSupplierForm({
               </p>
             </div>
           ) : (
-            select(
-              "item_id",
-              "Catalog Item",
-              items.map((i) => ({ id: i.id, label: `${i.code} — ${i.name}` })),
-              lookupState(itemsResult, "items"),
-            )
+            select("item_id", "Catalog Item")
           )}
 
           {mode === "edit" && selectedSupplierAccount ? (
@@ -467,15 +454,7 @@ export function ItemSupplierForm({
               </div>
             </div>
           ) : (
-            select(
-              "supplier_account_id",
-              "Supplier Account",
-              suppliers.map((s) => ({
-                id: s.id,
-                label: `${s.code}${s.party?.name ? ` — ${s.party.name}` : ""}`,
-              })),
-              lookupState(suppliersResult, "suppliers"),
-            )
+            select("supplier_account_id", "Supplier Account")
           )}
 
           <FormField

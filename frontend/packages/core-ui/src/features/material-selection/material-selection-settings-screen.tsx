@@ -6,7 +6,6 @@ import {
   MaterialSelectionScope,
   MaterialSelectionStrategy,
   useCategoriesIndex,
-  useItemsIndex,
   useMaterialSelectionPoliciesIndex,
   useMaterialSelectionPoliciesStore,
   type MaterialSelectionPolicyResource,
@@ -16,6 +15,7 @@ import { DetailPageLayout, DetailSection } from '../../components/detail/detail-
 import { ListError } from '../../components/data-table';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
+import { useItemLookup } from '../../components/lookups/entity-comboboxes';
 import { Combobox } from '../../components/ui/combobox';
 import { Label } from '../../components/ui/label';
 import { Textarea } from '../../components/ui/textarea';
@@ -63,17 +63,18 @@ export function MaterialSelectionSettingsScreen() {
   const [scopeId, setScopeId] = useState('');
 
   const categories = useCategoriesIndex({ per_page: 100, sort: 'code' }, { query: { enabled: mayView } });
-  const items = useItemsIndex({ per_page: 100, sort: 'code' }, { query: { enabled: mayView } });
   const categoryRows = categories.data?.status === 200 ? categories.data.data.data : [];
-  const itemRows = items.data?.status === 200 ? items.data.data.data : [];
   const active = useMaterialSelectionPoliciesIndex({ 'filter[status]': 'ACTIVE', per_page: 100 }, { query: { enabled: mayView } });
   const activeRows = (active.data?.status === 200 ? active.data.data.data : []).filter((row) => row.strategy !== null);
 
-  const options = (scopeType === 'ITEM_CATEGORY' ? categoryRows : itemRows).map((row) => ({ value: String(row.id), label: `${row.code} — ${row.name}` }));
+  // Items are too many to list: the picker searches the server instead of showing a first page.
+  const itemLookup = useItemLookup(scopeType === 'ITEM' ? scopeId : '');
+  const categoryOptions = categoryRows.map((row) => ({ value: String(row.id), label: `${row.code} — ${row.name}` }));
   const scopeLabel = useMemo(() => {
     if (scopeType === 'COMPANY') return 'the whole company';
-    return options.find((option) => option.value === scopeId)?.label ?? '';
-  }, [scopeType, scopeId, options]);
+    if (scopeType === 'ITEM_CATEGORY') return categoryOptions.find((option) => option.value === scopeId)?.label ?? '';
+    return itemLookup.options.find((option) => option.value === scopeId)?.label ?? itemLookup.selectedLabel ?? '';
+  }, [scopeType, scopeId, categoryOptions, itemLookup.options, itemLookup.selectedLabel]);
   const chosen = scopeType === 'COMPANY' || scopeId !== '';
 
   if (!mayView && !mayViewMix) {
@@ -132,11 +133,10 @@ export function MaterialSelectionSettingsScreen() {
               <div className="space-y-2">
                 <Label>{scopeType === 'ITEM_CATEGORY' ? 'Category' : 'Item'}</Label>
                 <Combobox
-                  {...lookupState(scopeType === 'ITEM_CATEGORY' ? categories : items, scopeType === 'ITEM_CATEGORY' ? 'categories' : 'items')}
+                  {...(scopeType === 'ITEM_CATEGORY' ? { ...lookupState(categories, 'categories'), options: categoryOptions } : itemLookup)}
                   aria-label={scopeType === 'ITEM_CATEGORY' ? 'Category' : 'Item'}
                   value={scopeId}
                   onValueChange={setScopeId}
-                  options={options}
                   placeholder={scopeType === 'ITEM_CATEGORY' ? 'Select category' : 'Select item'}
                   searchPlaceholder="Search…"
                   emptyText="Nothing found."

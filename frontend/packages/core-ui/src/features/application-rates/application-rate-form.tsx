@@ -1,7 +1,8 @@
 import { useForm, type UseFormReturn } from 'react-hook-form';
+import { ItemCombobox } from '../../components/lookups/entity-comboboxes';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useItemsIndex, useRateDimensionsIndex, useUomsIndex } from '@erp/core-api';
+import { useRateDimensionsIndex, useUomsIndex } from '@erp/core-api';
 import { Button } from '../../components/ui/button';
 import { Checkbox } from '../../components/ui/checkbox';
 import { Input } from '../../components/ui/input';
@@ -74,8 +75,6 @@ export function ApplicationRateForm({
       ...defaultValues,
     },
   });
-  const itemsResult = useItemsIndex({ per_page: 100, sort: 'name' });
-  const items = itemsResult.data?.status === 200 ? itemsResult.data.data.data : [];
   const uomsResult = useUomsIndex({ per_page: 100, sort: 'name' });
   const uoms = uomsResult.data?.status === 200 ? uomsResult.data.data.data : [];
   const dimensionsResult = useRateDimensionsIndex({ per_page: 100, sort: 'sort_order', include: 'values' });
@@ -105,16 +104,7 @@ export function ApplicationRateForm({
               <FormItem>
                 <FormLabel>Item</FormLabel>
                 <FormControl>
-                  <Combobox {...lookupState(itemsResult, 'items')}
-                    ref={field.ref}
-                    disabled={mode === 'edit'}
-                    value={field.value}
-                    onValueChange={field.onChange}
-                    options={items.map((i) => ({ value: String(i.id), label: `${i.code} — ${i.name}` }))}
-                    placeholder="Select item"
-                    searchPlaceholder="Search items…"
-                    emptyText="No items found."
-                  />
+                  <ItemCombobox label="Item" placeholder="Select item" value={field.value} onValueChange={field.onChange} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

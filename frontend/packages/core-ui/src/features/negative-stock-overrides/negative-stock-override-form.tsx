@@ -1,7 +1,8 @@
 import { useForm, type UseFormReturn } from 'react-hook-form';
+import { ItemCombobox } from '../../components/lookups/entity-comboboxes';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useItemsIndex, useLocationsIndex, NegativeStockMovementClass, NegativeStockReasonCode } from '@erp/core-api';
+import { useLocationsIndex, NegativeStockMovementClass, NegativeStockReasonCode } from '@erp/core-api';
 
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -57,8 +58,6 @@ export function NegativeStockOverrideForm({
     defaultValues: DEFAULT_VALUES,
   });
 
-  const itemsQuery = useItemsIndex({ per_page: 100, sort: 'name', 'filter[status]': 'ACTIVE' });
-  const items = itemsQuery.data?.status === 200 ? itemsQuery.data.data.data : [];
   const locationsQuery = useLocationsIndex({ per_page: 100, sort: 'code' });
   const locations = locationsQuery.data?.status === 200 ? locationsQuery.data.data.data : [];
 
@@ -77,15 +76,7 @@ export function NegativeStockOverrideForm({
               <FormItem>
                 <FormLabel>Item</FormLabel>
                 <FormControl>
-                  <Combobox {...lookupState(itemsQuery, 'items')}
-                    ref={field.ref}
-                    value={field.value}
-                    onValueChange={field.onChange}
-                    options={items.map((item) => ({ value: String(item.id), label: `${item.code} — ${item.name}` }))}
-                    placeholder="Select an item"
-                    searchPlaceholder="Search items…"
-                    emptyText="No items found."
-                  />
+                  <ItemCombobox label="Item" placeholder="Select an item" value={field.value} onValueChange={field.onChange} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

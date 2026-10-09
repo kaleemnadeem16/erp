@@ -74,6 +74,14 @@ affects data already saved elsewhere.
 Test helpers (`frontend/apps/e2e/tests/support.ts`): `pickCombobox(page, label, option, { searchText?, within? })`,
 `pickSelect`, `readCell`. Use `within` when a dialog sits over a page that has a same-named field.
 
+## Lookups that survive large datasets
+
+A first page of a list is not a lookup table. Fetching `per_page: 100` and then `find`-ing a known record, or offering that page as the choices of a picker, works until the dataset (or the leftovers of test runs) outgrows a page — then the record is silently absent and a screen shows `Item #123`, no unit, or an unselectable choice. Two rules:
+
+- **A record the screen already knows by id** is resolved by that id: `useItemsById` / `useUomsById` / `useLocationsById` / `useSuppliersById` / `useWarehousesById` (`lib/use-records-by-id.ts`) fetch exactly the ids named, cached per id, and merge over any list the screen already holds, so existing `find` code keeps working and is now complete.
+- **A person choosing from an unbounded set** (items, suppliers, locations, customers) gets a picker that asks the server for what is typed and resolves the chosen record by id: `ItemCombobox`, `SupplierCombobox`, `LocationCombobox` (`components/lookups/entity-comboboxes.tsx`, over `RemoteLookupCombobox`); a screen that keeps its own themed `Combobox` spreads `useItemLookup` / `useSupplierLookup` onto it (`Combobox` has a server-driven mode: `search`, `onSearchChange`, `selectedLabel`). `onValueChange` receives the chosen record, so a handler never needs to look it up in a list.
+- Small, genuinely bounded reference data (units, currencies, categories, warehouses) may still be listed whole; if one can grow past a page, treat it like the above.
+
 ## Alternatives kept on purpose
 
 Nothing here has been deleted to make way for something else. To try a different one, change the

@@ -65,6 +65,8 @@ The three TypeScript projects (`apps/main`, `packages/core-ui`, `packages/core-a
 - Tests that need a permission grant it explicitly; do not give a persona a broad role to make a test pass ([authorization.md](authorization.md) R5).
 - `PurchasingActor::make` and similar helpers can hold more capabilities than the name suggests — assert the actor's actual capabilities when a test depends on a denial.
 - Deferred database checks fire at commit; in a test that wants them to run mid-way, use `SET CONSTRAINTS ALL IMMEDIATE` then `DEFERRED` ([GroupedPackageActivationTest](../../backend/tests/Feature/Modules/Inventory/GroupedPackageActivationTest.php)).
+- **A page of a list is not a lookup table.** A fixture finds a record by its code through the server (`findByCode` → `filter[search]` + exact match) or by id, never "the first match in the first 100 rows" — leftovers from other runs push demo rows off page one. The same applies to the product: see [ui-building-blocks.md](ui-building-blocks.md#lookups-that-survive-large-datasets).
+- **Leave no avoidable records behind.** A spec that must create bulk data (for example more than 100 items) removes exactly what it created in a `finally`; `tests/global-teardown.ts` archives only the `e2e-`/`aaa-filler-` items created during the run (by creation time — never a wipe), so the shared dev database does not drift run after run.
 - Sign-in is throttled; a spec that signs a persona in once per test stays inside the limit, a loop of failed logins does not.
 
 ## Running

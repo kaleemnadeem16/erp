@@ -72,11 +72,11 @@ test("item-scoped supplier create/edit/archive/restore preserves identity and ig
     .getByRole("button", { name: "Add supplier relationship" })
     .click();
   await expect(panel.getByLabel("Item", { exact: true })).toHaveCount(0);
-  await pickCombobox(page, "Supplier", "Punjab Pigments", { within: panel });
+  await pickCombobox(page, "Supplier Account", "Punjab Pigments", { within: panel });
   await panel
-    .getByLabel("Supplier item code", { exact: true })
+    .getByLabel("Supplier Item Code (SKU / Part #)", { exact: true })
     .fill("NEW-PIGMENT");
-  await panel.getByRole("button", { name: "Save relationship" }).click();
+  await panel.getByRole("button", { name: /^(Create relationship|Save sourcing terms)$/ }).click();
   await expect(panel.getByText("new-supplier · Active")).toBeVisible();
   await panel
     .getByRole("button", {
@@ -84,9 +84,10 @@ test("item-scoped supplier create/edit/archive/restore preserves identity and ig
       exact: true,
     })
     .click();
-  await expect(panel.getByLabel("Supplier", { exact: true })).toBeDisabled();
+  // An existing relationship shows its supplier as a locked card, not an editable picker.
+  await expect(panel.getByText("Locked").first()).toBeVisible();
   await panel.getByLabel("Lead time override (days)").fill("9");
-  await panel.getByRole("button", { name: "Save relationship" }).click();
+  await panel.getByRole("button", { name: /^(Create relationship|Save sourcing terms)$/ }).click();
   await expect(
     panel.getByRole("heading", { name: "Edit supplier relationship" }),
   ).toHaveCount(0);

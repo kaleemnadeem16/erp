@@ -1,3 +1,4 @@
+import { ItemCombobox } from '../../components/lookups/entity-comboboxes';
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -5,7 +6,6 @@ import { z } from 'zod';
 import { Trash2 } from 'lucide-react';
 import type { SortingState } from '@tanstack/react-table';
 import {
-  useItemsIndex,
   useResourceRatesDestroy,
   useResourceRatesIndex,
   useResourceRatesStore,
@@ -57,9 +57,6 @@ export function ResourceRatesListScreen() {
   const columns = useMemo(() => toTanStackColumns(resourceRateColumns), []);
   const sorting: SortingState = apiSortToTableSorting(query.sort, resourceRateColumns);
 
-  const itemsResult = useItemsIndex({ per_page: 100, sort: 'name' });
-  const items = itemsResult.data?.status === 200 ? itemsResult.data.data.data : [];
-  const labourAndPlantItems = items.filter((i) => i.type === 'LABOUR' || i.type === 'PLANT');
   const uomsResult = useUomsIndex({ per_page: 100, sort: 'name' });
   const uoms = uomsResult.data?.status === 200 ? uomsResult.data.data.data : [];
 
@@ -134,14 +131,12 @@ export function ResourceRatesListScreen() {
                 <FormItem>
                   <FormLabel>Item</FormLabel>
                   <FormControl>
-                    <Combobox {...lookupState(itemsResult, 'items')}
-                      ref={field.ref}
+                    <ItemCombobox
+                      label="Item"
+                      placeholder="Select LABOUR/PLANT item"
+                      types={['LABOUR', 'PLANT']}
                       value={field.value}
                       onValueChange={field.onChange}
-                      options={labourAndPlantItems.map((i) => ({ value: String(i.id), label: `${i.code} — ${i.name}` }))}
-                      placeholder="Select LABOUR/PLANT item"
-                      searchPlaceholder="Search items…"
-                      emptyText="No LABOUR/PLANT items found."
                     />
                   </FormControl>
                   <FormMessage />
