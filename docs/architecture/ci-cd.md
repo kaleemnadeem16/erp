@@ -125,6 +125,8 @@ What replaced the portability matrix as a discipline: migrations are reviewed fo
 and any query against a table expected to exceed ~100k rows gets an `EXPLAIN` in review — dbvm
 has 1 vCPU.
 
+What an agent must run locally to avoid predictable failures of these jobs, and how to diagnose a failed run, is in [pre-push-checks.md](pre-push-checks.md).
+
 ### Codegen drift check
 
 ```

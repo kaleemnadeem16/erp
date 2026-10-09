@@ -220,6 +220,7 @@ one in a later change. A new capability a response depends on is rolled out per 
 - Respond through an API Resource (explicit `@mixin` PHPDoc and typed fields; sensitive fields conditional on the capability); never return a model or array.
 - Validate in a Form Request; shape errors with the global mapping above; scope and permission as in the table.
 - Lists use the shared pagination (cursor where established), `filter[...]` and `sort` parameters, and `include` only for relations the caller may see; a filter/sort/include on a protected field is refused.
+- Regeneration in a shared checkout (what to commit, what not to overwrite): [pre-push-checks.md](pre-push-checks.md#generated-files-openapi--client).
 - Every endpoint produces a correct OpenAPI entry (add explicit types where Scramble cannot infer one), the client is regenerated and committed, and the drift check passes.
 - Read-only previews and lookups are `GET`; anything that changes state is a named `POST`/`PUT`/`PATCH`/`DELETE` with its own capability.
 

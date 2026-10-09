@@ -23,8 +23,13 @@ line does not apply (a read-only report has no idempotency key); do not leave it
 | 10 | **Tests** — the applicable rows: happy path, permissions, direct Action, cross-company, scope, database invariant, idempotency, rollback, stale/concurrent, legacy parity, rollout, browser journey, phone width, accessibility, ratchets registered | [testing-standards.md](testing-standards.md) |
 | 11 | **Demo.** A meaningful new domain capability ships a module seeder: idempotent, realistic named scenarios, immutable history created once and never mutated, runnable by another developer | [environments.md](environments.md#development-demo-data) |
 | 12 | **Docs, at the right level and in the same commit** (below). No duplicated current-state text; no stale "next" left behind | [AGENTS.md](../../AGENTS.md) rules for maintaining the docs |
-| 13 | **Checks pass.** Pint, Larastan, backend tests incl. architecture, typecheck of all three frontend projects, build, client drift, the browser specs for the screens touched. Say honestly what you did not run | [testing-standards.md](testing-standards.md#running) · [ci-cd.md](ci-cd.md) |
+| 13 | **CI-ready.** Every applicable pipeline check passes (Pint, Larastan, backend tests incl. ratchets, migration apply → rollback → re-apply, all three frontend typechecks and `vite build`, client regeneration/drift, the browser specs for the screens and shared components touched) — see the changed-area matrix. Say honestly what you did not run | [pre-push-checks.md](pre-push-checks.md) · [testing-standards.md](testing-standards.md#running) · [ci-cd.md](ci-cd.md) |
 | 14 | **Shared-checkout hygiene.** Only your files staged, by explicit path; no stash; no push to `main`; status reported accurately | [AGENTS.md](../../AGENTS.md#working-alongside-other-agents) |
+
+## Definition of complete
+
+"The feature works" is not enough. Work is ready to hand off only when every **applicable** check CI will run has either **passed**, or been reported with a verified unrelated cause (environment, another agent's committed change, a stale test you have named) and its owner — and
+when `git status` shows nothing your change needs left untracked or unstaged. "CI failed elsewhere" is not a report; the failing job, test and cause are.
 
 ## What a feature normally updates in the docs
 

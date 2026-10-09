@@ -51,7 +51,7 @@ ADRs 0084–0089) — it needs staging access and a person to run `erp:audit-acc
 ## Where to look
 
 [docs/README.md](README.md) is the map · [phases/README.md](phases/README.md) the roadmap and phase state · [decisions/](decisions/) the ADRs (immutable) ·
-[architecture/invariants.md](architecture/invariants.md) the rules that must not be broken · [architecture/feature-completion-checklist.md](architecture/feature-completion-checklist.md) what every new feature must pass before it is done · [journeys/](journeys/README.md) how users complete tasks.
+[architecture/invariants.md](architecture/invariants.md) the rules that must not be broken · [architecture/feature-completion-checklist.md](architecture/feature-completion-checklist.md) what every new feature must pass before it is done · [architecture/pre-push-checks.md](architecture/pre-push-checks.md) the checks CI will run, by what you changed · [journeys/](journeys/README.md) how users complete tasks.
 
 ## Updating this file
 

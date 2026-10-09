@@ -164,6 +164,8 @@ it must not hide a broken test schema behind `|| true`.
 
 ## Migration standards
 
+The local apply → rollback → re-apply procedure (on an isolated database) and the ordering/formatting failures CI has repeatedly caught are in [pre-push-checks.md](pre-push-checks.md#migrations-apply--rollback--re-apply-on-an-isolated-database).
+
 Every migration, and the pull request that adds it, follows these. They exist because migrations here also carry **invariants** (triggers, constraints) and **rollout** (permissions, backfills), not
 just columns.
 

@@ -36,6 +36,7 @@ three relevant ones without pulling in the rest.
 | Add an approval or controlled transition | [approval-workflows.md](docs/architecture/approval-workflows.md) |
 | Write backend code | [code-structure.md](docs/architecture/code-structure.md), and for any write that changes business facts [domain-integrity.md](docs/architecture/domain-integrity.md) |
 | Write tests | [testing-standards.md](docs/architecture/testing-standards.md) — an applicability checklist, plus the ratchet tests |
+| Push or hand off any work | [pre-push-checks.md](docs/architecture/pre-push-checks.md) — the changed-area → required-checks matrix, migrations, generated files, ratchets, browser-test rules and CI-failure diagnosis |
 | Finish a feature | [feature-completion-checklist.md](docs/architecture/feature-completion-checklist.md) — answer every line before declaring done |
 | Start a phase | The matching file in [docs/phases/](docs/phases/) |
 | Change an existing decision | The relevant ADR in [docs/decisions/](docs/decisions/) |
@@ -66,7 +67,9 @@ found repeatedly *after* features shipped. Do these in the first commit, not in 
 8. **Demo and docs** — a module demo seeder for a meaningful new capability; domain doc, journey and ADR at the right level; STATUS only at a workstream milestone; no duplicated or stale current-state text
    ([feature-completion-checklist.md](docs/architecture/feature-completion-checklist.md)).
 
-Run the checks you claim (Pint, Larastan, tests incl. architecture, three typechecks, build, client drift, the relevant browser specs) and report honestly what you did not run.
+**Ready to hand off means CI-ready.** Run every check in [pre-push-checks.md](docs/architecture/pre-push-checks.md) that applies to what you changed (Pint, Larastan, tests incl. the ratchets, migration apply → rollback → re-apply, all
+frontend typechecks and `vite build`, client regeneration and drift, the browser specs for the screens and shared components you touched). Each is either **passed** or reported with a *verified* cause and owner — never "CI failed elsewhere". If CI fails:
+find the failing job and test, reproduce, classify (regression, stale test, environment, drift, migration, another agent's change), fix what is yours, report the rest.
 
 ---
 
@@ -119,6 +122,7 @@ only one and that the tree may have changed since you last looked.
 - **Re-read `docs/STATUS.md`.** Do not rely on remembered state — another agent may have moved
   the project on.
 - **Check `git log` and `git status`** for work in progress you might collide with.
+- **Stage explicit paths** (hunks, for a shared file); never stash, reset, restore or reformat another agent's files; commit new files your commit depends on. Details and the generated-file procedure: [pre-push-checks.md](docs/architecture/pre-push-checks.md#shared-checkout-several-agents-one-tree).
 
 ### ADR numbering
 
