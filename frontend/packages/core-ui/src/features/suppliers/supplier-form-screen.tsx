@@ -473,6 +473,9 @@ function SupplierEditor({
           return;
         }
         resolvedParty = createdParty.data.data.id;
+        // The partner now exists: keep it chosen, so a refused supplier (a duplicate code, say) is retried against this partner, not a second one.
+        setPartyId(String(resolvedParty));
+        setNewParty(false);
       }
 
       if (!supplier && !resolvedParty) {
@@ -592,6 +595,7 @@ function SupplierEditor({
                     Existing trading partner
                   </Label>
                   <RemoteLookupCombobox
+                    id="supplier-party"
                     label="Existing trading partner"
                     className="w-full"
                     search={partySearch}
@@ -747,7 +751,8 @@ function SupplierEditor({
             <div className="space-y-2">
               <Label htmlFor="supplier-payable">Payable control account</Label>
               <RemoteLookupCombobox
-                label="Payable account"
+                id="supplier-payable"
+                label="Payable control account"
                 className="w-full"
                 search={accountSearch}
                 selectedLabel={
