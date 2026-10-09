@@ -16,7 +16,7 @@ final class PermissionRegistrationTest extends TestCase
     {
         $vocabularies = app(PermissionRegistry::class)->byOwner();
 
-        $this->assertSame(['accounting', 'administration', 'approvals', 'company', 'currency', 'estimating', 'inventory', 'numbering', 'parties', 'purchasing'], array_keys($vocabularies));
+        $this->assertSame(['accounting', 'administration', 'approvals', 'company', 'currency', 'estimating', 'inventory', 'numbering', 'parties', 'purchasing', 'sales'], array_keys($vocabularies));
         $this->assertContains('administration.access.assign', $vocabularies['administration']);
         foreach (['accounting.account-mapping.view', 'accounting.account-mapping.manage'] as $capability) {
             $this->assertContains($capability, $vocabularies['accounting']);
@@ -24,6 +24,8 @@ final class PermissionRegistrationTest extends TestCase
         foreach (['parties.credit-limit.view', 'parties.credit-limit.manage', 'parties.payment-terms.manage'] as $capability) {
             $this->assertContains($capability, $vocabularies['parties']);
         }
+        $this->assertContains('sales.lead.manage', $vocabularies['sales']);
+        $this->assertContains('sales.opportunity.manage', $vocabularies['sales']);
         $this->assertContains('inventory.package-state.open', $vocabularies['inventory']);
         $this->assertContains('inventory.package-state.issue', $vocabularies['inventory']);
         $this->assertContains('inventory.package-state.transfer', $vocabularies['inventory']);

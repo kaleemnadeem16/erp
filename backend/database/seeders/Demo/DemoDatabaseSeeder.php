@@ -75,6 +75,7 @@ final class DemoDatabaseSeeder extends Seeder
                 ApprovalAuditorsDemoSeeder::class,
                 // Needs the demo warehouses (InventoryDemoSeeder, StockTransfersDemoSeeder): two sites that own them, and a limited clerk for each.
                 OrganisationDemoSeeder::class,
+                SalesCrmDemoSeeder::class,
                 CustomFieldsDemoSeeder::class,
             ]);
         });

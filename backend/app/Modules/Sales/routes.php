@@ -2,6 +2,7 @@
 
 use App\Modules\Sales\Http\Controllers\Api\V1\LeadController;
 use App\Modules\Sales\Http\Controllers\Api\V1\OpportunityController;
+use App\Modules\Sales\Http\Controllers\Api\V1\SalesOwnerController;
 use App\Modules\Sales\Http\Controllers\Api\V1\SalesStageController;
 use Illuminate\Support\Facades\Route;
 
@@ -28,6 +29,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('opportunities/{opportunity}/reopen', [OpportunityController::class, 'reopen'])->whereNumber('opportunity')->name('opportunities.reopen');
     Route::post('opportunities/{opportunity}/notes', [OpportunityController::class, 'addNote'])->whereNumber('opportunity')->name('opportunities.notes.store');
 
+    Route::get('sales-owners', [SalesOwnerController::class, 'index'])->name('sales-owners.index');
     Route::get('sales-stages', [SalesStageController::class, 'index'])->name('sales-stages.index');
     Route::post('sales-stages', [SalesStageController::class, 'store'])->name('sales-stages.store');
     Route::post('sales-stages/seed-suggested', [SalesStageController::class, 'seedSuggested'])->name('sales-stages.seed-suggested');

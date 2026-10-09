@@ -46,6 +46,18 @@ final class SalesAccess
         return false;
     }
 
+    /** Choosing who is responsible means seeing who can be: the people who create, assign or manage deals and enquiries. */
+    public static function mayChoosePeople(?User $user): bool
+    {
+        foreach ([PermissionVocabulary::LEAD_MANAGE, PermissionVocabulary::OPPORTUNITY_MANAGE, PermissionVocabulary::OPPORTUNITY_ASSIGN] as $capability) {
+            if (self::may($user, $capability)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public static function requireRead(?User $user): void
     {
         if (! self::mayRead($user)) {

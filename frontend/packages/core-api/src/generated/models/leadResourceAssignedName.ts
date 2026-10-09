@@ -5,4 +5,4 @@
  * OpenAPI spec version: 0.0.1
  */
 
-export type PartiesCandidates200DataItemStatus = string | "ARCHIVED";
+export type LeadResourceAssignedName = string | null;

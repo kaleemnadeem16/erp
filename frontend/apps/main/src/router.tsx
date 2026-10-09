@@ -58,6 +58,13 @@ import {
   PhysicalCountCreateScreen,
   PhysicalCountDetailScreen,
   PhysicalCountsListScreen,
+  LeadDetailScreen,
+  LeadFormScreen,
+  LeadsListScreen,
+  OpportunitiesListScreen,
+  OpportunityDetailScreen,
+  OpportunityFormScreen,
+  SalesStagesScreen,
   StockScrapDetailScreen,
   StockScrapFormScreen,
   StockScrapsListScreen,
@@ -944,6 +951,76 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <StockScrapDetailScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/opportunities"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <OpportunitiesListScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/opportunities/new"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <OpportunityFormScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/opportunities/:id"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <OpportunityDetailScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/leads"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <LeadsListScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/leads/new"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <LeadFormScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/leads/:id"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <LeadDetailScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/sales-stages"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <SalesStagesScreen />
               </AppShell>
             </ProtectedRoute>
           }

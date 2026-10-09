@@ -33,6 +33,13 @@ const supplierReturn = [
   "purchasing.supplier-return.post",
 ] as const;
 const stockScrap = ["inventory.scrap.create", "inventory.scrap.post"] as const;
+const salesRead = [
+  "sales.pipeline.view",
+  "sales.lead.manage",
+  "sales.opportunity.manage",
+  "sales.opportunity.assign",
+  "sales.opportunity.close",
+] as const;
 const physicalCount = [
   "inventory.valuation.view",
   "inventory.stock.view",
@@ -89,6 +96,9 @@ const rules: readonly Rule[] = [
   },
   { path: "/stock-moves", anyOf: ["inventory.movement.view"] },
   { path: "/physical-counts", anyOf: physicalCount },
+  { path: "/opportunities", anyOf: salesRead },
+  { path: "/leads", anyOf: salesRead },
+  { path: "/sales-stages", anyOf: [...salesRead, "sales.stage.manage"] },
   { path: "/supplier-returns", anyOf: supplierReturn },
   { path: "/stock-scraps", anyOf: stockScrap },
   { path: "/inventory-cutovers", anyOf: cutover },
@@ -243,6 +253,12 @@ export function canAccessScreen(
     /^\/stock-scraps\/[^/]+\/edit$/.test(pathname)
   ) {
     return permissions.has("inventory.scrap.create");
+  }
+  if (pathname === "/opportunities/new") {
+    return permissions.has("sales.opportunity.manage");
+  }
+  if (pathname === "/leads/new") {
+    return permissions.has("sales.lead.manage");
   }
   if (pathname === "/physical-counts/new") {
     return permissions.has("inventory.physical_count.create");

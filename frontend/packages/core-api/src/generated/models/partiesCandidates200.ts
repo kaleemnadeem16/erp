@@ -4,8 +4,8 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { PartiesCandidates200DataItem } from "./partiesCandidates200DataItem";
+import type { PartyCandidateResource } from "./partyCandidateResource";
 
 export type PartiesCandidates200 = {
-  data: PartiesCandidates200DataItem[];
+  data: PartyCandidateResource[];
 };

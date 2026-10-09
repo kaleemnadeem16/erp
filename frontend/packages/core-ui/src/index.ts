@@ -264,3 +264,10 @@ export {
   SupplierStatusBadge,
 } from "./features/suppliers/suppliers-columns";
 export { CustomFieldsSettingsScreen } from "./features/custom-fields/custom-fields-settings-screen";
+export { OpportunitiesListScreen } from "./features/sales/opportunities-list-screen";
+export { OpportunityFormScreen } from "./features/sales/opportunity-form-screen";
+export { OpportunityDetailScreen } from "./features/sales/opportunity-detail-screen";
+export { LeadsListScreen } from "./features/sales/leads-list-screen";
+export { LeadFormScreen } from "./features/sales/lead-form-screen";
+export { LeadDetailScreen } from "./features/sales/lead-detail-screen";
+export { SalesStagesScreen } from "./features/sales/sales-stages-screen";

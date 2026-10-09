@@ -31,6 +31,7 @@ class LeadResource extends JsonResource
             'received_at' => $lead->received_at->toIso8601String(),
             'party_id' => $lead->party_id,
             'assigned_to' => $lead->assigned_to,
+            'assigned_name' => $lead->relationLoaded('assignee') ? $lead->assignee?->name : null,
             'qualified_at' => $lead->qualified_at?->toIso8601String(),
             'disqualified_at' => $lead->disqualified_at?->toIso8601String(),
             'disqualification_reason' => $lead->disqualification_reason,

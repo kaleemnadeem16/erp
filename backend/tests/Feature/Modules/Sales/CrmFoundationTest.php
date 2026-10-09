@@ -268,6 +268,18 @@ class CrmFoundationTest extends TestCase
         $this->assertNotEmpty($shown['history']);
     }
 
+    public function test_the_people_who_can_be_made_responsible_are_active_members_with_only_id_and_name(): void
+    {
+        $seller = $this->seller();
+        $this->person([], 'SUSPENDED')->forceFill(['name' => 'Suspended Sam'])->save();
+        $this->person([])->forceFill(['name' => 'Active Amna'])->save();
+        $this->actingAs($seller);
+        $found = $this->getJson('/api/v1/sales-owners?filter[search]=Amna')->assertOk()->json('data');
+        $this->assertSame(['id', 'name'], array_keys($found[0]));
+        $this->assertSame([], $this->getJson('/api/v1/sales-owners?filter[search]=Sam')->json('data'));
+        $this->actingAs($this->person([Sales::PIPELINE_VIEW]))->getJson('/api/v1/sales-owners')->assertForbidden();
+    }
+
     public function test_the_contact_must_belong_to_the_party(): void
     {
         $this->actingAs($this->seller());

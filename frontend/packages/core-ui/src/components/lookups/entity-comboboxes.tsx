@@ -4,10 +4,14 @@ import {
   useItemsShow,
   useLocationsIndex,
   useLocationsShow,
+  usePartiesIndex,
+  usePartiesShow,
+  useSalesOwnersIndex,
   useSupplierAccountsIndex,
   useSupplierAccountsShow,
   type ItemResource,
   type LocationResource,
+  type PartyResource,
   type SupplierAccountResource,
 } from '@erp/core-api';
 
@@ -179,4 +183,51 @@ export function useSupplierLookup(value: string, options?: { allLabel?: string }
     selectedLabel: selected ? label(selected) : undefined,
     options: [...(options?.allLabel ? [{ value: 'all', label: options.allLabel }] : []), ...rows.map((supplier) => ({ value: String(supplier.id), label: label(supplier) }))],
   };
+}
+
+/** A trading partner (organisation or individual), searched on the server. */
+export function PartyCombobox({ onValueChange, ...props }: EntityComboboxProps<PartyResource>) {
+  const [search, setSearch] = useState('');
+  const delayed = useDelayed(search);
+  const list = usePartiesIndex({ 'filter[search]': delayed || undefined, per_page: PAGE, sort: 'name' });
+  const chosen = usePartiesShow(chosenId(props.value), undefined, { query: { enabled: chosenId(props.value) > 0 } });
+  const rows = list.data?.status === 200 ? list.data.data.data : [];
+  const selected = chosen.data?.status === 200 ? chosen.data.data.data : undefined;
+  const label = (party: { code: string; name: string }) => `${party.name} (${party.code})`;
+
+  return (
+    <RemoteLookupCombobox
+      {...lookupState(list, 'trading partners')}
+      {...props}
+      onValueChange={(value) => onValueChange(value, rows.find((row) => String(row.id) === value))}
+      search={search}
+      onSearchChange={setSearch}
+      searching={search !== delayed || (search !== '' && list.isFetching)}
+      selectedLabel={selected ? label(selected) : undefined}
+      options={rows.map((party) => ({ value: String(party.id), label: label(party) }))}
+    />
+  );
+}
+
+/** An active member who can be made responsible for a deal or an enquiry (id and name only). */
+export function OwnerCombobox({ onValueChange, ...props }: EntityComboboxProps<{ id: number; name: string }>) {
+  const [search, setSearch] = useState('');
+  const delayed = useDelayed(search);
+  const list = useSalesOwnersIndex({ 'filter[search]': delayed || undefined });
+  const chosen = useSalesOwnersIndex({ 'filter[id]': chosenId(props.value) }, { query: { enabled: chosenId(props.value) > 0 } });
+  const rows = list.data?.status === 200 ? list.data.data.data : [];
+  const selected = chosen.data?.status === 200 ? chosen.data.data.data[0] : undefined;
+
+  return (
+    <RemoteLookupCombobox
+      {...lookupState(list, 'people')}
+      {...props}
+      onValueChange={(value) => onValueChange(value, rows.find((row) => String(row.id) === value))}
+      search={search}
+      onSearchChange={setSearch}
+      searching={search !== delayed || (search !== '' && list.isFetching)}
+      selectedLabel={selected?.name}
+      options={rows.map((person) => ({ value: String(person.id), label: person.name }))}
+    />
+  );
 }

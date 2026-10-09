@@ -46,6 +46,7 @@ class LeadController extends Controller
     {
         $query = Lead::query();
         $this->applyIncludes($query, $request, ['party' => 'party']);
+        $query->with('assignee');
         if ($request->filled('filter.status')) {
             $query->where('status', $request->input('filter.status'));
         }
@@ -77,7 +78,7 @@ class LeadController extends Controller
 
     public function show(ShowLeadRequest $request, Lead $lead): LeadResource
     {
-        return new LeadResource($lead->load($this->requestedIncludes($request, self::INCLUDABLE)));
+        return new LeadResource($lead->load(array_merge(['assignee'], $this->requestedIncludes($request, self::INCLUDABLE))));
     }
 
     public function update(UpdateLeadRequest $request, Lead $lead, UpdateLead $update): LeadResource

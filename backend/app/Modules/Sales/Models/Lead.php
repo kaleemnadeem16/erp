@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Sales\Models;
 
 use App\Models\Model;
+use App\Models\User;
 use App\Modules\Parties\Models\Party;
 use App\Modules\Sales\Support\LeadStatus;
 use App\Support\Concerns\BelongsToCompany;
@@ -50,6 +51,12 @@ class Lead extends Model
     public function party(): BelongsTo
     {
         return $this->belongsTo(Party::class);
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function assignee(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_to');
     }
 
     /** @return HasMany<Opportunity, $this> */

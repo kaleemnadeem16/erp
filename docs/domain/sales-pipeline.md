@@ -43,6 +43,18 @@ The first implementation slice covers only what ADRs 0098 and 0105–0108 settle
 **Access.** Capabilities are by duty: `sales.pipeline.view`, `sales.lead.manage`, `sales.opportunity.manage`, `sales.opportunity.assign`, `sales.opportunity.close`, `sales.stage.manage`, `sales.numbering.manage`. Records are company-wide for those who hold one. Restricted
 own/assigned/unit visibility is **not built**, so a person an administrator has limited to their units is refused (`403`) on every Sales surface rather than shown a filtered list. Nothing is granted by inference at release: administrators assign the capabilities, and the demo personas show the intended role recipes.
 
+**Role recipes and demo personas** (all password-reset-free demo users from `demo:seed`, created idempotently by `SalesCrmDemoSeeder`; a role is a bundle of duties, and the name confers nothing):
+
+| Persona | Duties | Shows |
+|---|---|---|
+| `demo-sales-rep@…` Sales representative | view, lead and opportunity manage, party register | Records enquiries, works deals; cannot reassign, close or configure |
+| `demo-sales-manager@…` Sales manager | the representative's, plus assign, close, stage manage | Reassigns an owner who has left, closes and reopens, renames stages |
+| `demo-sales-viewer@…` Sales viewer | view only | Reads the pipeline; every control that would change it is absent |
+| `demo-sales-branch@…` Branch seller (limited) | work duties limited to *my units* | Refused (`403`) until restricted visibility exists, never shown a wrong list |
+| `demo-sales-leaver@…` | none (suspended) | Owns a deal that therefore needs a new owner |
+
+The demo data shows every state: a new unassigned enquiry, a qualified one that produced two deals, a disqualified one, a direct deal with a known value and next action, a lost deal, and a deal whose owner has left.
+
 **Deferred on purpose** (planning decisions or later topics): quotation association and the opportunity-requirement policy (ADR 0098's FLEXIBLE/MANAGED/STRICT setting has no effect without quotations), accepted business and partial win (R6), forecast and the disposition of remaining potential (ADRs 0101/0102, R9), restricted visibility (R9), notifications (Q33), automation, teams, campaigns.
 
 **The schema and behaviour sketch below are historical planning, not an accepted physical model.**

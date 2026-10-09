@@ -6,6 +6,9 @@ import {
   Boxes,
   Calculator,
   ClipboardList,
+  Handshake,
+  Inbox,
+  ListOrdered,
   Trash2,
   Undo2,
   Component,
@@ -114,6 +117,14 @@ const navGroups: NavGroup[] = [
       { to: "/supplier-returns", label: "Supplier Returns", icon: Undo2 },
       { to: "/item-suppliers", label: "Item Suppliers", icon: Boxes },
       { to: "/suppliers", label: "Suppliers", icon: Users },
+    ],
+  },
+  {
+    label: "Sales",
+    items: [
+      { to: "/opportunities", label: "Opportunities", icon: Handshake },
+      { to: "/leads", label: "Enquiries", icon: Inbox },
+      { to: "/sales-stages", label: "Pipeline Stages", icon: ListOrdered },
     ],
   },
   {

@@ -33,7 +33,7 @@ export function DataTableSortSelect<TRow>({ columns, sorting, onSortingChange }:
         onSortingChange([{ id: next.slice(0, separator), desc: next.slice(separator + 1) === 'desc' }]);
       }}
     >
-      <SelectTrigger className="h-9 w-full">
+      <SelectTrigger className="h-9 w-full" aria-label="Sort by">
         <SelectValue placeholder="Sort by" />
       </SelectTrigger>
       <SelectContent>

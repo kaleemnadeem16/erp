@@ -12,6 +12,7 @@ import type { LeadResourceDescription } from "./leadResourceDescription";
 import type { LeadResourceSource } from "./leadResourceSource";
 import type { LeadResourcePartyId } from "./leadResourcePartyId";
 import type { LeadResourceAssignedTo } from "./leadResourceAssignedTo";
+import type { LeadResourceAssignedName } from "./leadResourceAssignedName";
 import type { LeadResourceQualifiedAt } from "./leadResourceQualifiedAt";
 import type { LeadResourceDisqualifiedAt } from "./leadResourceDisqualifiedAt";
 import type { LeadResourceDisqualificationReason } from "./leadResourceDisqualificationReason";
@@ -34,6 +35,7 @@ export interface LeadResource {
   received_at: string;
   party_id: LeadResourcePartyId;
   assigned_to: LeadResourceAssignedTo;
+  assigned_name: LeadResourceAssignedName;
   qualified_at: LeadResourceQualifiedAt;
   disqualified_at: LeadResourceDisqualifiedAt;
   disqualification_reason: LeadResourceDisqualificationReason;

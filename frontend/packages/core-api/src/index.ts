@@ -85,3 +85,4 @@ export * from "./generated/party/party";
 export * from "./generated/lead/lead";
 export * from "./generated/opportunity/opportunity";
 export * from "./generated/sales-stage/sales-stage";
+export * from "./generated/sales-owner/sales-owner";

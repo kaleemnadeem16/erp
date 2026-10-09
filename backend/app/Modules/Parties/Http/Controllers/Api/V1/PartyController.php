@@ -16,6 +16,7 @@ use App\Modules\Parties\Http\Requests\Party\RestorePartyRequest;
 use App\Modules\Parties\Http\Requests\Party\ShowPartyRequest;
 use App\Modules\Parties\Http\Requests\Party\StorePartyRequest;
 use App\Modules\Parties\Http\Requests\Party\UpdatePartyRequest;
+use App\Modules\Parties\Http\Resources\PartyCandidateResource;
 use App\Modules\Parties\Http\Resources\PartyResource;
 use App\Modules\Parties\Models\Party;
 use App\Support\Concerns\AppliesApiQuery;
@@ -77,9 +78,9 @@ class PartyController extends Controller
     }
 
     /** Existing identities that probably match what is being entered, for reuse or restoration. Finds only; never merges (ADR 0105). */
-    public function candidates(CandidatePartyRequest $request, FindPartyCandidates $find): JsonResponse
+    public function candidates(CandidatePartyRequest $request, FindPartyCandidates $find): AnonymousResourceCollection
     {
-        return response()->json(['data' => $find($request->validated(), $request->user())]);
+        return PartyCandidateResource::collection(collect($find($request->validated(), $request->user())));
     }
 
     /** Restore an archived identity; its financial roles stay archived. */
