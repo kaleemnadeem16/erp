@@ -22,8 +22,6 @@ use App\Modules\Sales\Actions\LinkLeadParty;
 use App\Modules\Sales\Actions\MaintainSalesStages;
 use App\Modules\Sales\Actions\RecordLead;
 use App\Modules\Sales\Models\Lead;
-use App\Modules\Sales\Models\Opportunity;
-use App\Modules\Sales\Models\SalesStage;
 use App\Modules\Sales\Support\OpportunityOutcome;
 use App\Modules\Sales\Support\PermissionVocabulary as Sales;
 use App\Support\CompanyContext;

@@ -12,6 +12,7 @@ use App\Modules\Sales\Models\SalesHistory;
 use App\Modules\Sales\Models\SalesStage;
 use Database\Seeders\Demo\SalesCrmDemoSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class SalesCrmDemoSeederTest extends TestCase
@@ -30,7 +31,7 @@ class SalesCrmDemoSeederTest extends TestCase
         $this->assertNotNull(Opportunity::query()->whereNull('expected_amount')->first(), 'an unknown value stays unknown');
         $flagged = Opportunity::query()->where('outcome', 'OPEN')->whereHas('owner', fn ($q) => $q->where('status', 'SUSPENDED'))->get();
         $this->assertCount(1, $flagged, 'a deal whose owner left is flagged, not reassigned');
-        $this->assertSame(0, \Illuminate\Support\Facades\DB::table('customer_accounts')->whereNotIn('code', ['cus-alpha', 'cus-metro'])->count());
+        $this->assertSame(0, DB::table('customer_accounts')->whereNotIn('code', ['cus-alpha', 'cus-metro'])->count());
 
         $rep = User::query()->where('email', SalesCrmDemoSeeder::REPRESENTATIVE)->firstOrFail();
         $manager = User::query()->where('email', SalesCrmDemoSeeder::MANAGER)->firstOrFail();
@@ -49,8 +50,8 @@ class SalesCrmDemoSeederTest extends TestCase
     public function test_a_rerun_adds_nothing(): void
     {
         $this->artisan('demo:seed')->assertSuccessful();
-        \Illuminate\Support\Facades\DB::statement('SET CONSTRAINTS ALL IMMEDIATE');
-        \Illuminate\Support\Facades\DB::statement('SET CONSTRAINTS ALL DEFERRED');
+        DB::statement('SET CONSTRAINTS ALL IMMEDIATE');
+        DB::statement('SET CONSTRAINTS ALL DEFERRED');
         $before = [Lead::query()->count(), Opportunity::query()->count(), SalesHistory::query()->count(), User::query()->count(), SalesStage::query()->count()];
         $this->seed(SalesCrmDemoSeeder::class);
         $this->assertSame($before, [Lead::query()->count(), Opportunity::query()->count(), SalesHistory::query()->count(), User::query()->count(), SalesStage::query()->count()]);
