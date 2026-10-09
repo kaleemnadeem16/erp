@@ -36,8 +36,13 @@ test('reversing an untouched grouped delivery proposes what arrived and takes ex
   await page.getByRole('button', { name: 'Confirm reversal' }).click();
   await expect(page.getByText('REVERSED', { exact: true }).first()).toBeVisible();
 
-  const balance = (await api(page, 'GET', `/package-balances?item_id=${world.item.id}`)).data[0];
-  expect([balance.sealed[0].count, balance.loose, balance.total]).toEqual([3, '5.0000', '20.0000']);
+  // The screen may report REVERSED a moment before the balance read below settles; poll the server's truth rather than race it.
+  await expect
+    .poll(async () => {
+      const balance = (await api(page, 'GET', `/package-balances?item_id=${world.item.id}`)).data[0];
+      return [balance.sealed[0].count, balance.loose, balance.total];
+    })
+    .toEqual([3, '5.0000', '20.0000']);
 });
 
 test('when the cans were used the screen flags the changed form, offers the nearest draw and lets the person confirm it', async ({ page }) => {

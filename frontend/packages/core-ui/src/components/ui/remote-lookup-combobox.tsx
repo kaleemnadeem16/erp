@@ -22,6 +22,8 @@ interface RemoteLookupComboboxProps extends LookupState {
   options: ComboboxOption[];
   className?: string;
   disabled?: boolean;
+  /** True while the typed text has not yet been answered by the server: the previous results are withheld rather than offered as if they matched. */
+  searching?: boolean;
 }
 
 /** A server-filtered single-select lookup. The selected label is independent of the current results page. */
@@ -41,6 +43,7 @@ export function RemoteLookupCombobox({
   loading,
   loadError,
   disabled,
+  searching,
 }: RemoteLookupComboboxProps) {
   const [open, setOpen] = useState(false);
   const displayLabel =
@@ -105,12 +108,14 @@ export function RemoteLookupCombobox({
                     {allLabel}
                   </CommandItem>
                 )}
-                {options.length === 0 && (
+                {searching ? (
+                  <p className="px-2 py-4 text-center text-sm text-muted-foreground">Searching…</p>
+                ) : options.length === 0 && (
                   <p className="px-2 py-4 text-center text-sm text-muted-foreground">
                     {loading ? 'Loading…' : 'No matching results.'}
                   </p>
                 )}
-                {options.map((option) => (
+                {!searching && options.map((option) => (
                   <CommandItem
                     key={option.value}
                     value={option.value}

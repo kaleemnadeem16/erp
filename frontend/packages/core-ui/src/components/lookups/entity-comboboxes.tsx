@@ -88,6 +88,7 @@ export function ItemCombobox({
       onValueChange={(value) => onValueChange(value, rows.find((row) => String(row.id) === value))}
       search={search}
       onSearchChange={setSearch}
+      searching={search !== delayed || (search !== '' && list.isFetching)}
       selectedLabel={selected ? itemLabel(selected) : leading.find((option) => option.value === props.value)?.label}
       options={[...leading, ...rows.map((item) => ({ value: String(item.id), label: itemLabel(item) }))]}
     />
@@ -109,6 +110,7 @@ export function LocationCombobox({ warehouseId, onValueChange, ...props }: Entit
       onValueChange={(value) => onValueChange(value, rows.find((row) => String(row.id) === value))}
       search={search}
       onSearchChange={setSearch}
+      searching={search !== delayed || (search !== '' && list.isFetching)}
       selectedLabel={selected ? formatLocationOption(selected) : undefined}
       options={rows.map((location) => ({ value: String(location.id), label: formatLocationOption(location) }))}
     />
@@ -131,6 +133,7 @@ export function SupplierCombobox({ onValueChange, ...props }: EntityComboboxProp
       onValueChange={(value) => onValueChange(value, rows.find((row) => String(row.id) === value))}
       search={search}
       onSearchChange={setSearch}
+      searching={search !== delayed || (search !== '' && list.isFetching)}
       selectedLabel={selected ? label(selected) : undefined}
       options={rows.map((supplier) => ({ value: String(supplier.id), label: label(supplier) }))}
     />
@@ -153,6 +156,7 @@ export function useItemLookup(value: string, options?: { activeOnly?: boolean; a
     ...lookupState(list, 'items'),
     search,
     onSearchChange: setSearch,
+    searching: search !== delayed || (search !== '' && list.isFetching),
     selectedLabel: selected ? itemLabel(selected) : undefined,
     options: [...(options?.allLabel ? [{ value: 'all', label: options.allLabel }] : []), ...rows.map((item) => ({ value: String(item.id), label: itemLabel(item) }))],
   };
@@ -171,6 +175,7 @@ export function useSupplierLookup(value: string, options?: { allLabel?: string }
     ...lookupState(list, 'suppliers'),
     search,
     onSearchChange: setSearch,
+    searching: search !== delayed || (search !== '' && list.isFetching),
     selectedLabel: selected ? label(selected) : undefined,
     options: [...(options?.allLabel ? [{ value: 'all', label: options.allLabel }] : []), ...rows.map((supplier) => ({ value: String(supplier.id), label: label(supplier) }))],
   };

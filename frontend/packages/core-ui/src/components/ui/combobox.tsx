@@ -42,6 +42,8 @@ export interface ComboboxProps extends Omit<ButtonHTMLAttributes<HTMLButtonEleme
   search?: string;
   onSearchChange?: (search: string) => void;
   selectedLabel?: string;
+  /** Server-driven mode: the typed text has not been answered yet, so the previous results are withheld instead of offered as matches. */
+  searching?: boolean;
 }
 
 /**
@@ -56,7 +58,7 @@ export interface ComboboxProps extends Omit<ButtonHTMLAttributes<HTMLButtonEleme
  * `FormControl` onto whatever single child it wraps).
  */
 export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(function Combobox(
-  { value, onValueChange, options, placeholder = 'Select…', searchPlaceholder = 'Search…', emptyText = 'No results found.', loadError, loading, popoverClassName, icon, className, disabled, search, onSearchChange, selectedLabel, ...triggerProps },
+  { value, onValueChange, options, placeholder = 'Select…', searchPlaceholder = 'Search…', emptyText = 'No results found.', loadError, loading, popoverClassName, icon, className, disabled, search, onSearchChange, selectedLabel, searching, ...triggerProps },
   ref
 ) {
   const [open, setOpen] = useState(false);
@@ -111,9 +113,9 @@ export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(function Co
             {...(serverDriven ? { value: search ?? '', onValueChange: onSearchChange } : {})}
           />
           <CommandList>
-            <CommandEmpty>{loading ? 'Loading…' : emptyText}</CommandEmpty>
+            <CommandEmpty>{searching || loading ? (searching ? 'Searching…' : 'Loading…') : emptyText}</CommandEmpty>
             <CommandGroup>
-              {options.map((option) => (
+              {(searching ? [] : options).map((option) => (
                 <CommandItem
                   key={option.value}
                   value={option.value}
