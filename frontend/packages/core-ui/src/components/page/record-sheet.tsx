@@ -105,7 +105,7 @@ export function RecordSheet({
   actions,
   aside,
   onClose,
-  size = "lg",
+  size = "xl",
   className,
   variables,
   dismissOnOutsideClick = true,

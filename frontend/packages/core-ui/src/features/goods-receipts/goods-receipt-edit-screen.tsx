@@ -64,7 +64,7 @@ export function GoodsReceiptEditScreen({
             navigate({ pathname: `/goods-receipts/${id}`, search })
           }
         >
-          <div className="space-y-4 p-4 pb-6">{content}</div>
+          <div className="space-y-4 pb-6">{content}</div>
         </RecordSheet>
       );
     }

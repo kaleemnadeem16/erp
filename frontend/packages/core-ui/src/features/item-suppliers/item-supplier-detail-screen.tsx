@@ -156,7 +156,7 @@ export function ItemSupplierDetailScreen({
       return (
         <RecordSheet
           title="Loading relationship…"
-          size="lg"
+          size="xl"
           className="erp-record"
           dismissOnOutsideClick={false}
           onClose={handleClose}
@@ -183,7 +183,7 @@ export function ItemSupplierDetailScreen({
       return (
         <RecordSheet
           title="Relationship not found"
-          size="lg"
+          size="xl"
           className="erp-record"
           dismissOnOutsideClick={false}
           onClose={handleClose}
@@ -749,7 +749,7 @@ export function ItemSupplierDetailScreen({
         title={itemTitle}
         description={supplierTitle}
         actions={headerActions}
-        size="lg"
+        size="xl"
         className="erp-record"
         onClose={handleClose}
       >

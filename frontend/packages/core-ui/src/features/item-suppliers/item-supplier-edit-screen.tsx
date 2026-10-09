@@ -72,7 +72,7 @@ export function ItemSupplierEditScreen({
               ? `${row.item?.code ?? row.item_id} • ${row.supplier_account?.code ?? row.supplier_account_id}`
               : undefined
           }
-          size="lg"
+          size="xl"
           className="erp-record"
           dismissOnOutsideClick={false}
           onClose={handleClose}

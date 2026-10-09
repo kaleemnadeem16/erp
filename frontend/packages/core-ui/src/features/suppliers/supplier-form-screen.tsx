@@ -130,7 +130,7 @@ export function SupplierFormScreen({
       return (
         <RecordSheet
           title="Loading supplier…"
-          size="lg"
+          size="xl"
           className="erp-record"
           dismissOnOutsideClick={false}
           onClose={() => navigate({ pathname: "/suppliers", search })}
@@ -155,7 +155,7 @@ export function SupplierFormScreen({
       return (
         <RecordSheet
           title="Error"
-          size="lg"
+          size="xl"
           className="erp-record"
           dismissOnOutsideClick={false}
           onClose={() => navigate({ pathname: "/suppliers", search })}
@@ -954,7 +954,7 @@ function SupplierEditor({
             label="Advanced options"
           />
         }
-        size="lg"
+        size="xl"
         className="erp-record"
         dismissOnOutsideClick={false}
         onClose={() => navigate({ pathname: "/suppliers", search })}

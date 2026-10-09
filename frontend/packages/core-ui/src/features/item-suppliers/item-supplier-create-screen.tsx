@@ -74,7 +74,7 @@ export function ItemSupplierCreateScreen({
       <RecordSheet
         title="New item supplier"
         description="Approve a supplier for an item and record its sourcing terms."
-        size="lg"
+        size="xl"
         className="erp-record"
         dismissOnOutsideClick={false}
         onClose={handleClose}

@@ -565,7 +565,7 @@ function ItemFilterControls({
       >
         <SelectTrigger
           className={full ? "h-10 w-full" : "h-10 w-40"}
-          aria-label="Type"
+          aria-label="Filter by type"
         >
           <SelectValue placeholder="Type" />
         </SelectTrigger>
@@ -586,7 +586,7 @@ function ItemFilterControls({
       >
         <SelectTrigger
           className={full ? "h-10 w-full" : "h-10 w-36"}
-          aria-label="Status"
+          aria-label="Filter by status"
         >
           <SelectValue placeholder="Status" />
         </SelectTrigger>

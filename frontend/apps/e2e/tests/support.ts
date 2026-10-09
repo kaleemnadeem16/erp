@@ -17,7 +17,14 @@ export async function pickCombobox(
   optionText: string | RegExp,
   { searchText, within }: { searchText?: string; within?: Locator } = {}
 ) {
-  await (within ?? page).getByLabel(label, { exact: true }).click();
+  let target = within;
+  if (!target && (await page.locator('[role="dialog"]').count()) > 0) {
+    const dialog = page.locator('[role="dialog"]').last();
+    if ((await dialog.getByLabel(label, { exact: true }).count()) > 0) {
+      target = dialog;
+    }
+  }
+  await (target ?? page).getByLabel(label, { exact: true }).click();
   // The popover is portalled to <body>, outside any dialog its trigger is in,
   // and the page behind can have its own "Search…" inputs — cmdk's own
   // attribute picks out the open popover's box unambiguously.
@@ -37,8 +44,20 @@ export async function pickCombobox(
 }
 
 /** Opens a Radix Select by its FormLabel text and picks an option whose text matches. */
-export async function pickSelect(page: Page, label: string, optionText: string | RegExp) {
-  await page.getByLabel(label, { exact: true }).click();
+export async function pickSelect(
+  page: Page,
+  label: string,
+  optionText: string | RegExp,
+  { within }: { within?: Locator } = {}
+) {
+  let target = within;
+  if (!target && (await page.locator('[role="dialog"]').count()) > 0) {
+    const dialog = page.locator('[role="dialog"]').last();
+    if ((await dialog.getByLabel(label, { exact: true }).count()) > 0) {
+      target = dialog;
+    }
+  }
+  await (target ?? page).getByLabel(label, { exact: true }).click();
   // Radix can place an option outside the viewport in its scrollable portal.
   // Keyboard activation follows the same accessible selection path without
   // Playwright retrying a pointer click on an off-screen option indefinitely.

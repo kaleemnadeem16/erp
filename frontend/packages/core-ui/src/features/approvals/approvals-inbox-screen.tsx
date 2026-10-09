@@ -603,7 +603,7 @@ export function ApprovalsInboxScreen() {
             }
             description="Review the submitted evidence, workflow and recorded decisions."
             onClose={closeReview}
-            size="lg"
+            size="xl"
             dismissOnOutsideClick={false}
           >
             {detail.isError ? (
