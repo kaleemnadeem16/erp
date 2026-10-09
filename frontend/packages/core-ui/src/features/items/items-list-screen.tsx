@@ -10,7 +10,7 @@ import {
   Tag,
   X,
 } from "lucide-react";
-import { Link, useNavigate } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import type {
   PaginationState,
   RowSelectionState,
@@ -101,6 +101,7 @@ const ITEM_TYPES = [
 export function ItemsListScreen() {
   const mayManage = usePermission("inventory.item.manage");
   const navigate = useNavigate();
+  const { search } = useLocation();
   const query = useListQueryState<ItemFilters>({
     defaultSort: "name",
     defaultPerPage: 25,
@@ -257,7 +258,7 @@ export function ItemsListScreen() {
               aria-label="Edit"
               asChild
             >
-              <Link to={`/items/${item.id}/edit`}>
+              <Link to={{ pathname: `/items/${item.id}/edit`, search }}>
                 <Pencil className="h-4 w-4" />
               </Link>
             </Button>
@@ -293,7 +294,10 @@ export function ItemsListScreen() {
         description="Everything the company buys, holds, makes, consumes or sells."
         primaryAction={
           mayManage
-            ? { label: "New item", onClick: () => navigate("/items/new") }
+            ? {
+                label: "New item",
+                onClick: () => navigate({ pathname: "/items/new", search }),
+              }
             : undefined
         }
       />
@@ -453,7 +457,9 @@ export function ItemsListScreen() {
         onColumnVisibilityChange={setColumnVisibility}
         rowSelection={rowSelection}
         onRowSelectionChange={setRowSelection}
-        onRowClick={(item: ItemResource) => navigate(`/items/${item.id}`)}
+        onRowClick={(item: ItemResource) =>
+          navigate({ pathname: `/items/${item.id}`, search })
+        }
         isLoading={itemsQuery.isLoading}
         isError={itemsQuery.isError}
         error={itemsQuery.error}

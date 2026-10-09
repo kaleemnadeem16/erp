@@ -105,6 +105,9 @@ const goodsReceiptEditAsSheet = presentation.goodsReceiptEdit === "sheet";
 const itemSupplierCreateAsSheet = presentation.itemSupplierCreate === "sheet";
 const itemSupplierDetailAsSheet = presentation.itemSupplierDetail === "sheet";
 const itemSupplierEditAsSheet = presentation.itemSupplierEdit === "sheet";
+const itemCreateAsSheet = presentation.itemCreate === "sheet";
+const itemDetailAsSheet = presentation.itemDetail === "sheet";
+const itemEditAsSheet = presentation.itemEdit === "sheet";
 
 export function AppRouter() {
   return (
@@ -136,40 +139,66 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <ItemsListScreen />
+                <Outlet />
               </AppShell>
             </ProtectedRoute>
           }
-        />
-        <Route
-          path="/items/new"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <ItemCreateScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/items/:id"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <ItemDetailScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/items/:id/edit"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <ItemEditScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
+        >
+          {itemCreateAsSheet && (
+            <Route
+              path="new"
+              element={<ItemCreateScreen presentation="sheet" />}
+            />
+          )}
+          {itemDetailAsSheet && (
+            <Route
+              path=":id"
+              element={<ItemDetailScreen presentation="sheet" />}
+            />
+          )}
+          {itemEditAsSheet && (
+            <Route
+              path=":id/edit"
+              element={<ItemEditScreen presentation="sheet" />}
+            />
+          )}
+        </Route>
+        {!itemCreateAsSheet && (
+          <Route
+            path="/items/new"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <ItemCreateScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!itemDetailAsSheet && (
+          <Route
+            path="/items/:id"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <ItemDetailScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!itemEditAsSheet && (
+          <Route
+            path="/items/:id/edit"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <ItemEditScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
         <Route
           path="/item-quantity-units"
           element={

@@ -19,6 +19,9 @@ export const presentation: {
   itemSupplierCreate: Presentation;
   itemSupplierDetail: Presentation;
   itemSupplierEdit: Presentation;
+  itemCreate: Presentation;
+  itemDetail: Presentation;
+  itemEdit: Presentation;
 } = {
   purchaseOrderCreate: "sheet",
   purchaseOrderDetail: "sheet",
@@ -32,6 +35,9 @@ export const presentation: {
   itemSupplierCreate: "sheet",
   itemSupplierDetail: "sheet",
   itemSupplierEdit: "sheet",
+  itemCreate: "sheet",
+  itemDetail: "sheet",
+  itemEdit: "sheet",
 };
 
 /**

@@ -1,7 +1,7 @@
 import { usePermission } from "../../hooks/use-permission";
 import { customFieldValues } from "../custom-fields/custom-field-inputs";
 import { useState } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useLocation, useNavigate, useParams } from "react-router";
 import type { UseFormReturn } from "react-hook-form";
 import {
   useItemsShow,
@@ -15,7 +15,9 @@ import { Button } from "../../components/ui/button";
 import { Skeleton } from "../../components/ui/skeleton";
 import { PageHeader } from "../../components/page/page-header";
 import { ScreenTemplate } from "../../components/page/screen-template";
+import { RecordSheet } from "../../components/page/record-sheet";
 import { applyApiErrorsToForm } from "../../lib/api-errors";
+import type { Presentation } from "../../lib/presentation";
 import {
   DEFAULT_OPTION,
   ITEM_FORM_FIELDS,
@@ -24,9 +26,14 @@ import {
   type ItemFormValues,
 } from "./item-form";
 
-export function ItemEditScreen() {
+export interface ItemEditScreenProps {
+  presentation?: Presentation;
+}
+
+export function ItemEditScreen({ presentation = "page" }: ItemEditScreenProps) {
   const params = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { search } = useLocation();
   const mayManageMappings = usePermission("accounting.account-mapping.manage");
   const itemId = Number(params.id);
   const [formError, setFormError] = useState<string | null>(null);
@@ -36,6 +43,10 @@ export function ItemEditScreen() {
     itemQuery.data?.status === 200 ? itemQuery.data.data.data : undefined;
 
   const updateItem = useItemsUpdate();
+
+  const handleClose = () => {
+    navigate({ pathname: `/items/${itemId}`, search });
+  };
 
   function handleSubmit(
     values: ItemFormValues,
@@ -58,7 +69,9 @@ export function ItemEditScreen() {
       },
       {
         onSuccess: (result) => {
-          if (result.status === 200) navigate(`/items/${result.data.data.id}`);
+          if (result.status === 200) {
+            navigate({ pathname: `/items/${result.data.data.id}`, search });
+          }
         },
         onError: (error) => {
           setFormError(
@@ -70,6 +83,21 @@ export function ItemEditScreen() {
   }
 
   if (itemQuery.isLoading) {
+    if (presentation === "sheet") {
+      return (
+        <RecordSheet
+          title="Loading item…"
+          size="xl"
+          className="erp-record"
+          onClose={handleClose}
+        >
+          <div className="space-y-4 pb-4">
+            <Skeleton className="h-9 w-64" />
+            <Skeleton className="h-64 w-full" />
+          </div>
+        </RecordSheet>
+      );
+    }
     return (
       <ScreenTemplate kind="form" className="erp-screen">
         <div className="space-y-4">
@@ -81,6 +109,27 @@ export function ItemEditScreen() {
   }
 
   if (itemQuery.isError || !item) {
+    if (presentation === "sheet") {
+      return (
+        <RecordSheet
+          title="Item not found"
+          size="xl"
+          className="erp-record"
+          onClose={() => navigate({ pathname: "/items", search })}
+        >
+          <div className="space-y-4 pb-4">
+            <p className="text-sm text-destructive">Couldn't load this item.</p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate({ pathname: "/items", search })}
+            >
+              Back to items
+            </Button>
+          </div>
+        </RecordSheet>
+      );
+    }
     return (
       <ScreenTemplate kind="form" className="erp-screen">
         <div className="space-y-4">
@@ -88,7 +137,7 @@ export function ItemEditScreen() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => navigate("/items")}
+            onClick={() => navigate({ pathname: "/items", search })}
           >
             Back to items
           </Button>
@@ -125,6 +174,31 @@ export function ItemEditScreen() {
     status: item.status as ItemFormValues["status"],
   };
 
+  const formBody = (
+    <ItemForm
+      mode="edit"
+      defaultValues={defaultValues}
+      onSubmit={handleSubmit}
+      onCancel={handleClose}
+      isSubmitting={updateItem.isPending}
+      formError={formError}
+    />
+  );
+
+  if (presentation === "sheet") {
+    return (
+      <RecordSheet
+        title={`Edit ${item.name}`}
+        description={item.code}
+        size="xl"
+        className="erp-record"
+        onClose={handleClose}
+      >
+        <div className="space-y-4 pb-4">{formBody}</div>
+      </RecordSheet>
+    );
+  }
+
   return (
     <ScreenTemplate kind="form" className="erp-screen">
       <div className="space-y-4">
@@ -138,14 +212,7 @@ export function ItemEditScreen() {
           ]}
           backTo={`/items/${item.id}`}
         />
-        <ItemForm
-          mode="edit"
-          defaultValues={defaultValues}
-          onSubmit={handleSubmit}
-          onCancel={() => navigate(`/items/${item.id}`)}
-          isSubmitting={updateItem.isPending}
-          formError={formError}
-        />
+        {formBody}
       </div>
     </ScreenTemplate>
   );
