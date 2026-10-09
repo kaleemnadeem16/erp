@@ -32,6 +32,10 @@ numbering assumptions must be reconciled by R2–R9 before implementation. R1 do
 revision mechanisms, partial-acceptance calculations, job multiplicity or accounting gates. Advanced
 capabilities remain deferred. See the [Phase 4 plan](../phases/phase-4-sales-quotations-and-handover.md).
 
+**R2 initial evidence (2026-10-09):** [structure/scope recommendations](../phases/phase-4-r2-quotation-structure.md)
+await six owner decisions, including the Assembly-only conflict. They are proposals, not a new
+accepted model; implementation and physical schema remain deferred.
+
 ## Where it sits
 
 Consumes [assemblies.md](assemblies.md); produces the jobs tracked in

@@ -81,7 +81,9 @@ scoped through Assembly Groups ([ADR 0049](../decisions/0049-assembly-group-over
 Research and discussion have started; see the [research plan](phase-4-sales-quotations-and-handover.md),
 [existing-system review](phase-4-existing-system-review.md) and [R1](phase-4-r1-leads-and-relationships.md).
 [R1 research is complete](phase-4-r1-decision-matrix.md), governed by accepted ADRs 0098–0108;
-Q39 resolved. R2 quotation structure/scope is next, not started. Implementation has not started.
+Q39 resolved. [R2 quotation structure/scope](phase-4-r2-quotation-structure.md) has initial evidence
+and six pending owner-review bundles; [capability review](phase-4-r2-existing-capabilities.md) and
+[ERP comparison](phase-4-r2-erp-comparison.md) support them. Q40 is open. Implementation has not started.
 
 
 Leads, opportunities, quotations with revisions, cost snapshotting, PDF output. Mobile layout
