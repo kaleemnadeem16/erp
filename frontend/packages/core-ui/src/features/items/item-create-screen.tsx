@@ -5,6 +5,7 @@ import type { UseFormReturn } from "react-hook-form";
 import { useItemsStore } from "@erp/core-api";
 
 import { PageHeader } from "../../components/page/page-header";
+import { ScreenTemplate } from "../../components/page/screen-template";
 import { applyApiErrorsToForm } from "../../lib/api-errors";
 import {
   ItemForm,
@@ -40,20 +41,22 @@ export function ItemCreateScreen() {
   }
 
   return (
-    <div className="space-y-4 p-6">
-      <PageHeader
-        title="New item"
-        description="Add something the company buys, holds, makes, consumes or sells."
-        breadcrumbs={[{ label: "Items", to: "/items" }, { label: "New" }]}
-        backTo="/items"
-      />
-      <ItemForm
-        mode="create"
-        onSubmit={handleSubmit}
-        onCancel={() => navigate("/items")}
-        isSubmitting={createItem.isPending}
-        formError={formError}
-      />
-    </div>
+    <ScreenTemplate kind="form" className="erp-screen">
+      <div className="space-y-4">
+        <PageHeader
+          title="New item"
+          description="Add something the company buys, holds, makes, consumes or sells."
+          breadcrumbs={[{ label: "Items", to: "/items" }, { label: "New" }]}
+          backTo="/items"
+        />
+        <ItemForm
+          mode="create"
+          onSubmit={handleSubmit}
+          onCancel={() => navigate("/items")}
+          isSubmitting={createItem.isPending}
+          formError={formError}
+        />
+      </div>
+    </ScreenTemplate>
   );
 }

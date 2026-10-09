@@ -1,6 +1,5 @@
-import { ItemCustomFieldDisplay } from "../custom-fields/custom-field-inputs";
 import { useState } from "react";
-import { useParams, useNavigate, Link } from "react-router";
+import { useParams, useNavigate, Link, useLocation } from "react-router";
 import { Archive, ArchiveRestore, Pencil, ArrowLeft } from "lucide-react";
 import {
   useFormulationsIndex,
@@ -10,9 +9,10 @@ import {
 } from "@erp/core-api";
 
 import { Button } from "../../components/ui/button";
-import { Badge } from "../../components/ui/badge";
 import { Skeleton } from "../../components/ui/skeleton";
 import { PageHeader } from "../../components/page/page-header";
+import { ScreenTemplate } from "../../components/page/screen-template";
+import { RecordSheet } from "../../components/page/record-sheet";
 import {
   DetailPageLayout,
   DetailSection,
@@ -25,16 +25,26 @@ import {
   type DetailPrintSection,
 } from "../../components/print";
 import { getApiErrorMessage } from "../../lib/api-errors";
+import type { Presentation } from "../../lib/presentation";
+import { ItemCustomFieldDisplay } from "../custom-fields/custom-field-inputs";
 import { ItemPurchasingPanel } from "./item-purchasing-panel";
 import { ItemPackageTrackingCard } from "../package-stock/item-package-tracking-card";
 import { ItemQuantityUnitsListScreen } from "../item-quantity-units/item-quantity-units-list-screen";
 import { usePermission } from "../../hooks/use-permission";
 import { useRecipeAccess } from "../../hooks/use-recipe-access";
+import { ItemStatusBadge } from "./items-columns";
 
-export function ItemDetailScreen() {
+export interface ItemDetailScreenProps {
+  presentation?: Presentation;
+}
+
+export function ItemDetailScreen({
+  presentation = "page",
+}: ItemDetailScreenProps) {
   const mayManage = usePermission("inventory.item.manage");
   const params = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { search } = useLocation();
   const itemId = Number(params.id);
   const [statusError, setStatusError] = useState<string | null>(null);
 
@@ -47,6 +57,7 @@ export function ItemDetailScreen() {
   });
   const uom =
     uomQuery.data?.status === 200 ? uomQuery.data.data.data : undefined;
+
   // Recipes are readable only with recipe access (ADR 0086); without it the card is simply absent, and no request is made.
   const mayReadRecipes = useRecipeAccess();
   const formulationsQuery = useFormulationsIndex(
@@ -63,6 +74,10 @@ export function ItemDetailScreen() {
       : [];
 
   const updateStatus = useItemsUpdate();
+
+  const handleClose = () => {
+    navigate({ pathname: "/items", search });
+  };
 
   function handleToggleStatus() {
     if (!item) return;
@@ -82,23 +97,64 @@ export function ItemDetailScreen() {
   });
 
   if (itemQuery.isLoading) {
+    if (presentation === "sheet") {
+      return (
+        <RecordSheet
+          title="Loading item…"
+          size="lg"
+          className="erp-record"
+          onClose={handleClose}
+        >
+          <div className="space-y-4 pb-4">
+            <Skeleton className="h-9 w-64" />
+            <Skeleton className="h-48 w-full" />
+          </div>
+        </RecordSheet>
+      );
+    }
     return (
-      <div className="space-y-4 p-6">
-        <Skeleton className="h-9 w-64" />
-        <Skeleton className="h-40 w-full" />
-      </div>
+      <ScreenTemplate kind="detail" className="erp-screen">
+        <div className="space-y-4">
+          <Skeleton className="h-9 w-64" />
+          <Skeleton className="h-48 w-full" />
+        </div>
+      </ScreenTemplate>
     );
   }
 
   if (itemQuery.isError || !item) {
+    if (presentation === "sheet") {
+      return (
+        <RecordSheet
+          title="Item not found"
+          size="lg"
+          className="erp-record"
+          dismissOnOutsideClick={false}
+          onClose={handleClose}
+        >
+          <div className="space-y-4 pb-4">
+            <p className="text-sm text-destructive">Couldn't load this item.</p>
+            <Button variant="outline" onClick={handleClose}>
+              Back to items
+            </Button>
+          </div>
+        </RecordSheet>
+      );
+    }
     return (
-      <div className="space-y-4 p-6">
-        <p className="text-sm text-destructive">Couldn't load this item.</p>
-        <Button variant="outline" size="sm" onClick={() => navigate("/items")}>
-          <ArrowLeft className="h-4 w-4" />
-          Back to items
-        </Button>
-      </div>
+      <ScreenTemplate kind="detail" className="erp-screen">
+        <div className="space-y-4">
+          <p className="text-sm text-destructive">Couldn't load this item.</p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate("/items")}
+          >
+            <ArrowLeft className="h-4 w-4 mr-1.5" />
+            Back to items
+          </Button>
+        </div>
+      </ScreenTemplate>
     );
   }
 
@@ -135,77 +191,83 @@ export function ItemDetailScreen() {
     },
   ];
 
-  return (
-    <div className="space-y-4 p-6">
-      <PageHeader
-        title={item.name}
-        description={item.code}
-        breadcrumbs={[{ label: "Items", to: "/items" }, { label: item.code }]}
-        backTo="/items"
-        actions={
-          <>
-            <PrintTrigger onPrint={() => print()} />
-            {mayManage && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleToggleStatus}
-                disabled={updateStatus.isPending}
-              >
-                {item.status === "ACTIVE" ? (
-                  <>
-                    <Archive className="h-4 w-4" />
-                    Archive
-                  </>
-                ) : (
-                  <>
-                    <ArchiveRestore className="h-4 w-4" />
-                    Activate
-                  </>
-                )}
-              </Button>
-            )}
-            {mayManage && (
-              <Button asChild size="sm">
-                <Link to={`/items/${item.id}/edit`}>
-                  <Pencil className="h-4 w-4" />
-                  Edit
-                </Link>
-              </Button>
-            )}
-          </>
-        }
-      />
+  const headerActions = (
+    <>
+      <PrintTrigger onPrint={() => print()} />
+      {mayManage && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleToggleStatus}
+          disabled={updateStatus.isPending}
+        >
+          {item.status === "ACTIVE" ? (
+            <>
+              <Archive className="h-4 w-4 mr-1.5" />
+              Archive
+            </>
+          ) : (
+            <>
+              <ArchiveRestore className="h-4 w-4 mr-1.5" />
+              Activate
+            </>
+          )}
+        </Button>
+      )}
+      {mayManage && (
+        <Button asChild size="sm">
+          <Link to={`/items/${item.id}/edit`}>
+            <Pencil className="h-4 w-4 mr-1.5" />
+            Edit
+          </Link>
+        </Button>
+      )}
+    </>
+  );
 
+  const detailBody = (
+    <div className="space-y-4">
       {statusError && (
-        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive font-medium">
           {statusError}
         </div>
       )}
 
       <DetailPageLayout>
         <DetailSection title="General">
-          <DetailField label="Code">{item.code}</DetailField>
-          <DetailField label="Name">{item.name}</DetailField>
+          <DetailField label="Code">
+            <span className="font-mono text-xs font-semibold">{item.code}</span>
+          </DetailField>
+          <DetailField label="Name">
+            <span className="font-medium">{item.name}</span>
+          </DetailField>
           <DetailField label="Type">
             <span className="capitalize">
               {item.type.toLowerCase().replace("_", " ")}
             </span>
           </DetailField>
-          <DetailField label="Category">{item.category?.name}</DetailField>
+          <DetailField label="Category">
+            {item.category?.name ?? "—"}
+          </DetailField>
           <DetailField label="Status">
-            <Badge variant={item.status === "ACTIVE" ? "success" : "secondary"}>
-              {item.status}
-            </Badge>
+            <ItemStatusBadge status={item.status} />
           </DetailField>
           <DetailField label="Description" fullWidth>
-            {item.description}
+            {item.description || (
+              <span className="text-muted-foreground italic text-xs">
+                No description provided
+              </span>
+            )}
           </DetailField>
         </DetailSection>
 
-        <DetailSection title="Stock &amp; valuation">
+        <DetailSection title="Stock & valuation">
           <DetailField label="Stock unit of measure">
-            {uom ? `${uom.name} (${uom.code})` : undefined}
+            {uom ? (
+              `${uom.name} (${uom.code})`
+            ) : (
+              <span className="text-muted-foreground">—</span>
+            )}
           </DetailField>
           <DetailField label="Stock quantity increment">
             {item.quantity_precision ?? "Unrestricted"}
@@ -215,7 +277,7 @@ export function ItemDetailScreen() {
             {item.valuation_method}
           </DetailField>
           <DetailField label="AVCO pool scope">
-            {item.avco_pool_scope}
+            {item.avco_pool_scope ?? "—"}
           </DetailField>
           <DetailField label="Stocked">
             {item.is_stocked ? "Yes" : "No"}
@@ -236,70 +298,64 @@ export function ItemDetailScreen() {
             description="Recipes that produce this item. Customer-specific rows override the company default when resolving an estimate."
             fullWidth
           >
-            <div className="space-y-2 sm:col-span-2">
+            <div className="space-y-2 col-span-full">
               {formulations.map((formulation) => (
                 <Link
                   key={formulation.id}
                   to={`/formulations/${formulation.id}/edit`}
-                  className="flex items-center justify-between gap-3 rounded-md border p-3 hover:bg-accent"
+                  className="flex items-center justify-between gap-3 rounded-md border border-border bg-card p-3 hover:bg-accent transition-colors"
                 >
-                  <span>
-                    <span className="font-medium">
+                  <div>
+                    <span className="font-medium ui-order-link">
                       {formulation.code} — {formulation.name}
                     </span>
                     <span className="mt-0.5 block text-xs text-muted-foreground">
                       {formulation.customer?.code ?? "Company default"}
                     </span>
-                  </span>
-                  <Badge
-                    variant={
-                      formulation.status === "ACTIVE" ? "success" : "secondary"
-                    }
-                  >
-                    {formulation.status}
-                  </Badge>
+                  </div>
+                  <ItemStatusBadge status={formulation.status} />
                 </Link>
               ))}
             </div>
           </DetailSection>
         )}
+
+        <DetailSection
+          title="Pack conversions"
+          description="Alternate units for this item. These conversions describe quantity, not sealed packages in stock."
+          fullWidth
+        >
+          <div className="col-span-full">
+            <ItemQuantityUnitsListScreen
+              key={item.id}
+              itemId={item.id}
+              stockUnit={uom?.code}
+            />
+          </div>
+        </DetailSection>
+
+        <DetailSection title="Packages and supplier offers" fullWidth>
+          <div className="col-span-full">
+            <ItemPurchasingPanel
+              itemId={item.id}
+              itemLabel={item.code + " — " + item.name}
+              stockUomId={item.stock_uom_id}
+              stockUnit={uom?.code}
+            />
+          </div>
+        </DetailSection>
+
+        <DetailSection title="Package tracking" fullWidth>
+          <div className="col-span-full">
+            <ItemPackageTrackingCard
+              itemId={item.id}
+              itemLabel={item.code + " — " + item.name}
+              unit={uom?.code ?? ""}
+              isStocked={item.is_stocked}
+            />
+          </div>
+        </DetailSection>
       </DetailPageLayout>
-
-      <DetailSection
-        title="Pack conversions"
-        description="Alternate units for this item. These conversions describe quantity, not sealed packages in stock."
-        fullWidth
-      >
-        <div className="col-span-full">
-          <ItemQuantityUnitsListScreen
-            key={item.id}
-            itemId={item.id}
-            stockUnit={uom?.code}
-          />
-        </div>
-      </DetailSection>
-
-      <DetailSection title="Packages and supplier offers" fullWidth>
-        <div className="col-span-full">
-          <ItemPurchasingPanel
-            itemId={item.id}
-            itemLabel={item.code + " — " + item.name}
-            stockUomId={item.stock_uom_id}
-            stockUnit={uom?.code}
-          />
-        </div>
-      </DetailSection>
-
-      <DetailSection title="Package tracking" fullWidth>
-        <div className="col-span-full">
-          <ItemPackageTrackingCard
-            itemId={item.id}
-            itemLabel={item.code + " — " + item.name}
-            unit={uom?.code ?? ""}
-            isStocked={item.is_stocked}
-          />
-        </div>
-      </DetailSection>
 
       {/* Quick Print — a dedicated print-only layout, hidden until react-to-print clones it. */}
       <div className="hidden">
@@ -312,5 +368,35 @@ export function ItemDetailScreen() {
         </div>
       </div>
     </div>
+  );
+
+  if (presentation === "sheet") {
+    return (
+      <RecordSheet
+        title={item.name}
+        description={item.code}
+        actions={headerActions}
+        size="lg"
+        className="erp-record"
+        onClose={handleClose}
+      >
+        <div className="space-y-4 pb-4">{detailBody}</div>
+      </RecordSheet>
+    );
+  }
+
+  return (
+    <ScreenTemplate kind="detail" className="erp-screen">
+      <div className="space-y-4">
+        <PageHeader
+          title={item.name}
+          description={item.code}
+          breadcrumbs={[{ label: "Items", to: "/items" }, { label: item.code }]}
+          backTo="/items"
+          actions={headerActions}
+        />
+        {detailBody}
+      </div>
+    </ScreenTemplate>
   );
 }

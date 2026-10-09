@@ -14,6 +14,7 @@ import {
 import { Button } from "../../components/ui/button";
 import { Skeleton } from "../../components/ui/skeleton";
 import { PageHeader } from "../../components/page/page-header";
+import { ScreenTemplate } from "../../components/page/screen-template";
 import { applyApiErrorsToForm } from "../../lib/api-errors";
 import {
   DEFAULT_OPTION,
@@ -70,21 +71,29 @@ export function ItemEditScreen() {
 
   if (itemQuery.isLoading) {
     return (
-      <div className="space-y-4 p-6">
-        <Skeleton className="h-9 w-64" />
-        <Skeleton className="h-64 w-full" />
-      </div>
+      <ScreenTemplate kind="form" className="erp-screen">
+        <div className="space-y-4">
+          <Skeleton className="h-9 w-64" />
+          <Skeleton className="h-64 w-full" />
+        </div>
+      </ScreenTemplate>
     );
   }
 
   if (itemQuery.isError || !item) {
     return (
-      <div className="space-y-4 p-6">
-        <p className="text-sm text-destructive">Couldn't load this item.</p>
-        <Button variant="outline" size="sm" onClick={() => navigate("/items")}>
-          Back to items
-        </Button>
-      </div>
+      <ScreenTemplate kind="form" className="erp-screen">
+        <div className="space-y-4">
+          <p className="text-sm text-destructive">Couldn't load this item.</p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate("/items")}
+          >
+            Back to items
+          </Button>
+        </div>
+      </ScreenTemplate>
     );
   }
 
@@ -117,25 +126,27 @@ export function ItemEditScreen() {
   };
 
   return (
-    <div className="space-y-4 p-6">
-      <PageHeader
-        title={`Edit ${item.name}`}
-        description={item.code}
-        breadcrumbs={[
-          { label: "Items", to: "/items" },
-          { label: item.code, to: `/items/${item.id}` },
-          { label: "Edit" },
-        ]}
-        backTo={`/items/${item.id}`}
-      />
-      <ItemForm
-        mode="edit"
-        defaultValues={defaultValues}
-        onSubmit={handleSubmit}
-        onCancel={() => navigate(`/items/${item.id}`)}
-        isSubmitting={updateItem.isPending}
-        formError={formError}
-      />
-    </div>
+    <ScreenTemplate kind="form" className="erp-screen">
+      <div className="space-y-4">
+        <PageHeader
+          title={`Edit ${item.name}`}
+          description={item.code}
+          breadcrumbs={[
+            { label: "Items", to: "/items" },
+            { label: item.code, to: `/items/${item.id}` },
+            { label: "Edit" },
+          ]}
+          backTo={`/items/${item.id}`}
+        />
+        <ItemForm
+          mode="edit"
+          defaultValues={defaultValues}
+          onSubmit={handleSubmit}
+          onCancel={() => navigate(`/items/${item.id}`)}
+          isSubmitting={updateItem.isPending}
+          formError={formError}
+        />
+      </div>
+    </ScreenTemplate>
   );
 }

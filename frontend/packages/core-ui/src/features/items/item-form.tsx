@@ -307,7 +307,7 @@ export function ItemForm({
                       <SelectValue />
                     </SelectTrigger>
                   </FormControl>
-                  <SelectContent>
+                  <SelectContent className="ui-select-content">
                     {ITEM_TYPE_OPTIONS.map((type) => (
                       <SelectItem key={type} value={type}>
                         {type.replace("_", " ")}
@@ -413,7 +413,7 @@ export function ItemForm({
                       <SelectValue />
                     </SelectTrigger>
                   </FormControl>
-                  <SelectContent>
+                  <SelectContent className="ui-select-content">
                     {TRACKING_OPTIONS.map((option) => (
                       <SelectItem key={option} value={option}>
                         {option}
@@ -437,7 +437,7 @@ export function ItemForm({
                       <SelectValue />
                     </SelectTrigger>
                   </FormControl>
-                  <SelectContent>
+                  <SelectContent className="ui-select-content">
                     {/* UpdateItemRequest doesn't accept null for valuation_method (see item-form.tsx's ITEM_FORM_FIELDS
                         comment) — once an item exists its valuation method can only be changed to another concrete
                         method, never reset back to "let the category decide". Only offer that choice on create. */}
@@ -470,7 +470,7 @@ export function ItemForm({
                         <SelectValue />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
+                    <SelectContent className="ui-select-content">
                       <SelectItem value={DEFAULT_OPTION}>
                         Company default
                       </SelectItem>
@@ -618,7 +618,7 @@ export function ItemForm({
                         <SelectValue />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
+                    <SelectContent className="ui-select-content">
                       {STATUS_OPTIONS.map((status) => (
                         <SelectItem key={status} value={status}>
                           {status}
