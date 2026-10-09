@@ -26,6 +26,24 @@ From first contact to a confirmed job.
   [0108](../decisions/0108-expose-a-progressive-basic-crm.md): stable outcomes/partial-win indication,
   reasoned closure/reopen, configurable stages and progressive basic CRM.
 
+## CRM foundation — built (2026-10-09)
+
+The first implementation slice covers only what ADRs 0098 and 0105–0108 settle, with no dependence on quotation structure (R2 onward). Module: [Sales](../../backend/app/Modules/Sales/README.md).
+
+| Concept | As built |
+|---|---|
+| **Lead** (optional) | The enquiry as received (name, organisation, email, phone, description, source, when), numbered `LEAD-…`, optionally assigned. `NEW → QUALIFIED / DISQUALIFIED`, each a history row with its reason; a revived lead keeps what was decided before. Editing the enquiry is allowed only while it is `NEW`. May be linked to a Party by an explicit choice; **no customer account is ever created** and nothing is merged. |
+| **Opportunity** | A title for a **Party** (and optionally one of its contacts), one accountable **owner** (an active member; defaults to the creator), an OPEN **stage**, optional source, expected close date, manual next action and date, and an optional expected value that is an amount **and** its currency or neither — unknown stays unknown. Numbered `OPP-…`. Created directly or by **converting** a lead; a `conversion_key` makes a retry return the deal already created, and one enquiry may yield several deals. |
+| **Stages** | Company-configurable OPEN stages (create, rename, reorder, archive; never deleted; at least one stays active). History snapshots the stage name, so a later rename or archive never reinterprets it. A first-use action offers Qualification → Proposal → Negotiation. |
+| **Outcomes** | OPEN, LOST, ABANDONED (with a reason, actor and time), and reopen of the same pursuit with a reason; the earlier closure stays in the history. A closed opportunity cannot be edited, moved or reassigned until reopened (a database trigger). **WON is stored as a valid outcome but refused**: it needs recorded customer acceptance (R6). Partial win is derived from accepted business and so not shown yet. |
+| **Ownership** | One owner; reassignment needs its own capability, validates the new owner, and records old and new. An owner who is later suspended is **flagged** (`owner_needs_reassignment`, filter *needs attention*), never silently replaced. Ownership grants no access. |
+| **Notes, history** | Authored, timestamped notes; an append-only log of every decision (received, assigned, linked, qualified, disqualified, revived, converted, created, owner and stage changes, closed, reopened). |
+
+**Access.** Capabilities are by duty: `sales.pipeline.view`, `sales.lead.manage`, `sales.opportunity.manage`, `sales.opportunity.assign`, `sales.opportunity.close`, `sales.stage.manage`, `sales.numbering.manage`. Records are company-wide for those who hold one. Restricted
+own/assigned/unit visibility is **not built**, so a person an administrator has limited to their units is refused (`403`) on every Sales surface rather than shown a filtered list. Nothing is granted by inference at release: administrators assign the capabilities, and the demo personas show the intended role recipes.
+
+**Deferred on purpose** (planning decisions or later topics): quotation association and the opportunity-requirement policy (ADR 0098's FLEXIBLE/MANAGED/STRICT setting has no effect without quotations), accepted business and partial win (R6), forecast and the disposition of remaining potential (ADRs 0101/0102, R9), restricted visibility (R9), notifications (Q33), automation, teams, campaigns.
+
 **The schema and behaviour sketch below are historical planning, not an accepted physical model.**
 Customer-only recipient fields, one mutable opportunity link, simplistic win/job transitions and
 numbering assumptions must be reconciled by R2–R9 before implementation. R1 does not choose tables,

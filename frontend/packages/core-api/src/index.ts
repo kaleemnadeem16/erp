@@ -82,3 +82,6 @@ export * from "./generated/supplier-offer/supplier-offer";
 
 export * from "./generated/custom-field-definition/custom-field-definition";
 export * from "./generated/party/party";
+export * from "./generated/lead/lead";
+export * from "./generated/opportunity/opportunity";
+export * from "./generated/sales-stage/sales-stage";

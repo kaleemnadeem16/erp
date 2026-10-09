@@ -21,7 +21,7 @@ use Tests\TestCase;
  */
 class WriteRouteGuardTest extends TestCase
 {
-    private const GATE = '/->can\(|->canAny\(|->authorize\(|Gate::|->hasPermissionTo\(|->hasAnyPermission\(|abort_unless\(|abort_if\(|PartyWriteAccess|NumberingAccess|ActionAuthorization::|->require\(|ApprovalGrant|assertMay/';
+    private const GATE = '/->can\(|->canAny\(|->authorize\(|Gate::|->hasPermissionTo\(|->hasAnyPermission\(|abort_unless\(|abort_if\(|PartyWriteAccess|SalesAccess::|NumberingAccess|ActionAuthorization::|->require\(|ApprovalGrant|assertMay/';
 
     /** Routes that need no capability, and why. `METHOD uri`. */
     private const NO_CAPABILITY_NEEDED = [

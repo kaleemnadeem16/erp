@@ -10,6 +10,7 @@ use App\Modules\Inventory\InventoryServiceProvider;
 use App\Modules\Numbering\NumberingServiceProvider;
 use App\Modules\Parties\PartiesServiceProvider;
 use App\Modules\Purchasing\PurchasingServiceProvider;
+use App\Modules\Sales\SalesServiceProvider;
 use App\Providers\AppServiceProvider;
 use App\Providers\AuthServiceProvider;
 use App\Providers\CurrencyServiceProvider;
@@ -25,6 +26,7 @@ return [
     NumberingServiceProvider::class,
     InventoryServiceProvider::class,
     PartiesServiceProvider::class,
+    SalesServiceProvider::class,
     AccountingServiceProvider::class,
     AdministrationServiceProvider::class,
     PurchasingServiceProvider::class,

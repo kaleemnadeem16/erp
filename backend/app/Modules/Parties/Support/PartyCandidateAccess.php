@@ -6,6 +6,7 @@ namespace App\Modules\Parties\Support;
 
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
+use Spatie\Permission\Exceptions\PermissionDoesNotExist;
 
 /**
  * Who may ask "does this identity already exist?" and who may see archived candidates (ADR 0105). Searching identities is wider than reading one
@@ -33,8 +34,12 @@ final class PartyCandidateAccess
     public static function mayAsk(User $actor): bool
     {
         foreach (self::$searchers as $permission) {
-            if ($actor->can($permission)) {
-                return true;
+            try {
+                if ($actor->can($permission)) {
+                    return true;
+                }
+            } catch (PermissionDoesNotExist) {
+                // A capability another module registers but this company has not created yet confers nothing.
             }
         }
 

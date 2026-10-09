@@ -52,7 +52,7 @@ class NumberingApiTest extends TestCase
         $response = $this->as($this->viewer)->getJson('/api/v1/numbering/document-types')->assertOk();
 
         $types = collect($response->json('data'))->keyBy('key');
-        $this->assertSame(['GOODS_RECEIPT', 'PURCHASE_ORDER', 'SALES_INVOICE', 'STOCK_SCRAP', 'SUPPLIER_RETURN'], $types->keys()->sort()->values()->all());
+        $this->assertSame(['GOODS_RECEIPT', 'LEAD', 'OPPORTUNITY', 'PURCHASE_ORDER', 'SALES_INVOICE', 'STOCK_SCRAP', 'SUPPLIER_RETURN'], $types->keys()->sort()->values()->all());
         $po = $types['PURCHASE_ORDER'];
         $this->assertSame('Purchase order', $po['label']);
         $this->assertSame('when it is issued', $po['official_when']);
