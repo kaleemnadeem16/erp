@@ -3,7 +3,7 @@ import {
   useItemsById,
   useLocationsById,
   useUomsById,
-} from "./use-line-lookups";
+} from "../../lib/use-records-by-id";
 import {
   QaPortionStep,
   decidesPackages,
@@ -974,7 +974,7 @@ export function GoodsReceiptDetailScreen({
         className="erp-record"
         onClose={() => navigate({ pathname: "/goods-receipts", search })}
       >
-        <div className="space-y-4 pb-6">{detailBody}</div>
+        <div className="space-y-4 pb-4">{detailBody}</div>
       </RecordSheet>
     );
   }

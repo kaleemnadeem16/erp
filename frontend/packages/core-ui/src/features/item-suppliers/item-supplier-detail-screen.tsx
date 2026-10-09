@@ -161,7 +161,7 @@ export function ItemSupplierDetailScreen({
           dismissOnOutsideClick={false}
           onClose={handleClose}
         >
-          <div className="space-y-4 p-5">
+          <div className="space-y-4 pb-4">
             <Skeleton className="h-9 w-64" />
             <Skeleton className="h-48 w-full" />
           </div>
@@ -188,7 +188,7 @@ export function ItemSupplierDetailScreen({
           dismissOnOutsideClick={false}
           onClose={handleClose}
         >
-          <div className="space-y-4 p-5">
+          <div className="space-y-4 pb-4">
             <p className="text-sm text-destructive">
               Couldn't find this item-supplier relationship.
             </p>
@@ -374,9 +374,9 @@ export function ItemSupplierDetailScreen({
   );
 
   const detailBody = (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {actionError && (
-        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3.5 text-sm text-destructive font-medium">
+        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive font-medium">
           {actionError}
         </div>
       )}
@@ -394,23 +394,20 @@ export function ItemSupplierDetailScreen({
         </div>
       )}
 
-      {/* 4 EVEN CARDS GRID (2x2 on desktop with equal height) */}
+      {/* 4 EVEN CARDS GRID (2x2 on desktop with equal height) + Offers */}
       <DetailPageLayout equalHeight>
         {/* BOX 1: Item Details */}
         <DetailSection
           title="Item details"
           description="Catalog item specification, inventory unit, and tracking properties."
-          className="p-5 space-y-4"
         >
-          <DetailField label="Item name" fullWidth className="space-y-1">
+          <DetailField label="Item name" fullWidth>
             <div className="flex items-center justify-between gap-2">
-              <span className="font-bold text-foreground text-base tracking-tight leading-snug">
-                {itemTitle}
-              </span>
+              <span className="font-semibold">{itemTitle}</span>
               {row.item_id && (
                 <Link
                   to={`/items/${row.item_id}`}
-                  className="inline-flex items-center gap-1 text-xs text-primary hover:underline font-medium shrink-0"
+                  className="ui-order-link inline-flex items-center gap-1 text-xs shrink-0"
                 >
                   View item
                   <ExternalLink className="h-3 w-3" />
@@ -419,44 +416,38 @@ export function ItemSupplierDetailScreen({
             </div>
           </DetailField>
 
-          <DetailField label="Item code" className="space-y-1">
-            <span className="text-xs font-mono font-medium text-foreground bg-muted/60 px-2 py-0.5 rounded">
+          <DetailField label="Item code">
+            <span className="font-mono text-xs font-medium">
               {row.item?.code ?? String(row.item_id)}
             </span>
           </DetailField>
 
-          <DetailField label="Item category" className="space-y-1">
-            <span className="font-medium text-foreground">
-              {row.item?.category?.name ?? "Uncategorized"}
-            </span>
+          <DetailField label="Item category">
+            {row.item?.category?.name ?? "Uncategorized"}
           </DetailField>
 
-          <DetailField label="Inventory stock unit" className="space-y-1">
-            <div className="font-medium text-foreground">
-              {stockUom ? `${stockUom.name} (${stockUom.code})` : "Stock unit"}
-            </div>
+          <DetailField label="Inventory stock unit">
+            {stockUom ? `${stockUom.name} (${stockUom.code})` : "Stock unit"}
           </DetailField>
 
-          <DetailField label="Item classification" className="space-y-1">
-            <span className="font-medium text-foreground capitalize">
+          <DetailField label="Item classification">
+            <span className="capitalize">
               {row.item?.type
                 ? `${row.item.type.toLowerCase().replace(/_/g, " ")}`
                 : "Standard"}
             </span>
           </DetailField>
 
-          <DetailField label="Inventory tracking" className="space-y-1">
-            <span className="font-medium text-foreground capitalize">
+          <DetailField label="Inventory tracking">
+            <span className="capitalize">
               {row.item?.tracking
                 ? `${row.item.tracking.toLowerCase()} tracking`
                 : "Standard quantity"}
             </span>
           </DetailField>
 
-          <DetailField label="Valuation method" className="space-y-1">
-            <span className="font-medium text-foreground">
-              {row.item?.valuation_method ?? "AVCO"}
-            </span>
+          <DetailField label="Valuation method">
+            {row.item?.valuation_method ?? "AVCO"}
           </DetailField>
         </DetailSection>
 
@@ -464,17 +455,16 @@ export function ItemSupplierDetailScreen({
         <DetailSection
           title="Supplier details"
           description="Vendor commercial profile, standard lead times, and terms."
-          className="p-5 space-y-4"
         >
-          <DetailField label="Supplier name" fullWidth className="space-y-1">
+          <DetailField label="Supplier name" fullWidth>
             <div className="flex items-center justify-between gap-2">
-              <span className="font-bold text-foreground text-base tracking-tight leading-snug">
+              <span className="font-semibold">
                 {row.supplier_account?.party?.name ?? supplierTitle}
               </span>
               {row.supplier_account_id && (
                 <Link
                   to={`/suppliers/${row.supplier_account_id}`}
-                  className="inline-flex items-center gap-1 text-xs text-primary hover:underline font-medium shrink-0"
+                  className="ui-order-link inline-flex items-center gap-1 text-xs shrink-0"
                 >
                   View supplier
                   <ExternalLink className="h-3 w-3" />
@@ -483,46 +473,37 @@ export function ItemSupplierDetailScreen({
             </div>
           </DetailField>
 
-          <DetailField label="Account code" className="space-y-1">
-            <span className="text-xs font-mono font-medium text-foreground bg-muted/60 px-2 py-0.5 rounded">
+          <DetailField label="Account code">
+            <span className="font-mono text-xs font-medium">
               {row.supplier_account?.code ?? String(row.supplier_account_id)}
             </span>
           </DetailField>
 
-          <DetailField label="Supplier status" className="space-y-1">
-            <span className="font-medium text-foreground capitalize">
+          <DetailField label="Supplier status">
+            <span className="capitalize">
               {row.supplier_account?.status
                 ? row.supplier_account.status.toLowerCase()
                 : "Active"}
             </span>
           </DetailField>
 
-          <DetailField label="Payment terms" className="space-y-1">
-            <span className="font-medium text-foreground">
-              {row.supplier_account?.payment_terms_days != null
-                ? `${row.supplier_account.payment_terms_days} days net`
-                : "Standard terms"}
-            </span>
+          <DetailField label="Payment terms">
+            {row.supplier_account?.payment_terms_days != null
+              ? `${row.supplier_account.payment_terms_days} days net`
+              : "Standard terms"}
           </DetailField>
 
-          <DetailField label="Account default lead time" className="space-y-1">
-            <div className="inline-flex items-center gap-1.5 font-medium text-foreground">
-              <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-              <span>
-                {row.supplier_account?.lead_time_days != null
-                  ? `${row.supplier_account.lead_time_days} days`
-                  : "Not specified"}
-              </span>
-            </div>
+          <DetailField label="Account default lead time">
+            {row.supplier_account?.lead_time_days != null
+              ? `${row.supplier_account.lead_time_days} days`
+              : "Not specified"}
           </DetailField>
 
-          <DetailField label="Default currency" className="space-y-1">
-            <span className="font-medium text-foreground">
-              {defaultCurrencyCode ? `${defaultCurrencyCode}` : "Base currency"}
-            </span>
+          <DetailField label="Default currency">
+            {defaultCurrencyCode ? `${defaultCurrencyCode}` : "Base currency"}
           </DetailField>
 
-          <DetailField label="Vendor account ID" className="space-y-1">
+          <DetailField label="Vendor account ID">
             <span className="text-xs font-mono text-muted-foreground">
               #{row.supplier_account_id}
             </span>
@@ -533,30 +514,25 @@ export function ItemSupplierDetailScreen({
         <DetailSection
           title="Sourcing terms"
           description="Supplier catalog SKU, purchase units, priority ranking, and order quantities."
-          className="p-5 space-y-4"
         >
-          <DetailField
-            label="Supplier item code (SKU)"
-            fullWidth
-            className="space-y-1"
-          >
+          <DetailField label="Supplier item code (SKU)" fullWidth>
             {row.supplier_item_code ? (
               <div className="flex items-center gap-2">
-                <code className="rounded bg-muted px-2.5 py-1 font-mono text-xs font-semibold text-foreground">
+                <code className="rounded bg-muted px-2 py-0.5 font-mono text-xs font-semibold">
                   {row.supplier_item_code}
                 </code>
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7"
+                  className="h-6 w-6"
                   onClick={copySku}
                   title="Copy supplier SKU"
                 >
                   {copiedSku ? (
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
                   ) : (
-                    <Copy className="h-4 w-4 text-muted-foreground" />
+                    <Copy className="h-3.5 w-3.5 text-muted-foreground" />
                   )}
                 </Button>
               </div>
@@ -567,19 +543,17 @@ export function ItemSupplierDetailScreen({
             )}
           </DetailField>
 
-          <DetailField label="Sourcing priority" className="space-y-1">
+          <DetailField label="Sourcing priority">
             {row.priority === 1 ? (
               <Badge
                 variant="outline"
-                className="border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-semibold gap-1 inline-flex items-center py-1"
+                className="border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-semibold gap-1 inline-flex items-center"
               >
                 <Star className="h-3.5 w-3.5 fill-emerald-500 text-emerald-500" />
                 #1 Preferred supplier
               </Badge>
             ) : row.priority != null ? (
-              <span className="font-semibold text-foreground">
-                #{row.priority} Alternative
-              </span>
+              <span className="font-medium">#{row.priority} Alternative</span>
             ) : (
               <span className="text-muted-foreground italic text-xs">
                 Unranked alternative
@@ -587,18 +561,11 @@ export function ItemSupplierDetailScreen({
             )}
           </DetailField>
 
-          <DetailField label="Purchase unit" className="space-y-1">
-            <span className="font-medium text-foreground">
-              {purchaseUomLabel}
-            </span>
-          </DetailField>
+          <DetailField label="Purchase unit">{purchaseUomLabel}</DetailField>
 
-          <DetailField label="Lead time override" className="space-y-1">
+          <DetailField label="Lead time override">
             {row.lead_time_days != null ? (
-              <div className="inline-flex items-center gap-1.5 font-medium text-foreground">
-                <Clock className="h-3.5 w-3.5 text-primary" />
-                <span>{row.lead_time_days} days (Custom override)</span>
-              </div>
+              `${row.lead_time_days} days (Custom override)`
             ) : (
               <span className="text-muted-foreground text-xs italic">
                 Inheriting account default
@@ -606,26 +573,15 @@ export function ItemSupplierDetailScreen({
             )}
           </DetailField>
 
-          <DetailField
-            label="Resolved expected lead time"
-            className="space-y-1"
-          >
-            <div className="inline-flex items-center gap-1.5 font-semibold text-foreground">
-              <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-              <span>
-                {row.resolved_lead_time_days != null
-                  ? `${row.resolved_lead_time_days} days expected`
-                  : "Not specified"}
-              </span>
-            </div>
+          <DetailField label="Resolved expected lead time">
+            {row.resolved_lead_time_days != null
+              ? `${row.resolved_lead_time_days} days expected`
+              : "Not specified"}
           </DetailField>
 
-          <DetailField
-            label="Minimum order quantity (MOQ)"
-            className="space-y-1"
-          >
+          <DetailField label="Minimum order quantity (MOQ)">
             {row.minimum_order_qty ? (
-              <span className="tabular-nums font-semibold text-foreground">
+              <span className="tabular-nums font-semibold">
                 {Number(row.minimum_order_qty).toLocaleString("en-US", {
                   maximumFractionDigits: 4,
                 })}
@@ -642,7 +598,7 @@ export function ItemSupplierDetailScreen({
             )}
           </DetailField>
 
-          <DetailField label="Relationship status" className="space-y-1">
+          <DetailField label="Relationship status">
             <ItemSupplierStatusBadge active={row.active} />
           </DetailField>
         </DetailSection>
@@ -651,150 +607,128 @@ export function ItemSupplierDetailScreen({
         <DetailSection
           title="Record governance"
           description="System identifiers, audit timestamps, and automated replenishment policy."
-          className="p-5 space-y-4"
         >
-          <DetailField label="Relationship ID" className="space-y-1">
+          <DetailField label="Relationship ID">
             <span className="font-mono text-xs font-semibold text-muted-foreground bg-muted/60 px-2 py-0.5 rounded">
               #{row.id}
             </span>
           </DetailField>
 
-          <DetailField label="Designation role" className="space-y-1">
-            <div className="flex items-center gap-1.5 font-medium text-foreground">
-              <ShieldCheck className="h-3.5 w-3.5 text-primary" />
-              <span>
-                {row.priority === 1
-                  ? "Primary preferred source"
-                  : "Approved alternative"}
-              </span>
-            </div>
+          <DetailField label="Designation role">
+            {row.priority === 1
+              ? "Primary preferred source"
+              : "Approved alternative"}
           </DetailField>
 
-          <DetailField label="Created at" className="space-y-1">
-            <span className="text-sm text-foreground font-medium">
-              {formatDateTime(row.created_at)}
-            </span>
+          <DetailField label="Created at">
+            {formatDateTime(row.created_at)}
           </DetailField>
 
-          <DetailField label="Last modified" className="space-y-1">
-            <span className="text-sm text-foreground font-medium">
-              {formatDateTime(row.updated_at)}
-            </span>
+          <DetailField label="Last modified">
+            {formatDateTime(row.updated_at)}
           </DetailField>
 
-          <DetailField
-            label="Procurement policy summary"
-            fullWidth
-            className="space-y-1"
-          >
-            <p className="text-xs text-muted-foreground leading-relaxed bg-muted/30 p-3 rounded-lg border border-border/50">
+          <DetailField label="Procurement policy summary" fullWidth>
+            <p className="text-xs text-muted-foreground leading-relaxed bg-muted/30 p-2.5 rounded border border-border/50">
               {row.priority === 1
                 ? "Automated reorder triggers and manual purchase orders default to this supplier. Changing the preferred supplier for this item will reassign priority #1."
                 : "This supplier is recorded as an approved alternative. It can be selected manually when raising purchase orders or when the primary vendor is unavailable."}
             </p>
           </DetailField>
         </DetailSection>
-      </DetailPageLayout>
 
-      {/* Commercial Offers / Pricing section */}
-      <section className="space-y-3 pt-2">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
-              <Tag className="h-4 w-4 text-primary" />
-              Supplier offers & contracted pricing
-            </h3>
-            <p className="text-xs text-muted-foreground leading-normal mt-0.5">
-              Quotations, contracted tier pricing, and active price validity on
-              record for this relationship.
-            </p>
-          </div>
-          <Badge variant="secondary" className="text-xs font-normal">
-            {offers.length} {offers.length === 1 ? "offer" : "offers"}
-          </Badge>
-        </div>
-
-        {offers.length === 0 ? (
-          <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground leading-relaxed">
-            No contracted pricing offers on record for this relationship. Orders
-            will use negotiated unit prices entered at order time.
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {offers.map((offer) => (
-              <div
-                key={offer.id}
-                className="rounded-lg border bg-card p-4 shadow-xs space-y-2.5 text-sm"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    {offer.preferred && (
-                      <Badge
-                        variant="outline"
-                        className="border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-[10px] py-0 font-medium"
-                      >
-                        Preferred offer
-                      </Badge>
-                    )}
-                    <Badge
-                      variant={offer.active ? "success" : "secondary"}
-                      className="text-[10px] py-0"
-                    >
-                      {offer.active ? "Active" : "Inactive"}
-                    </Badge>
-                  </div>
-                  {mayViewCommercialCost && offer.unit_price != null && (
-                    <span className="tabular-nums font-bold text-foreground text-sm">
-                      {currencyMap.get(offer.currency_id ?? 0) ?? ""}{" "}
-                      {Number(offer.unit_price).toLocaleString("en-US", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 4,
-                      })}
-                    </span>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground pt-1.5 border-t">
-                  <div>
-                    <span className="block font-medium text-foreground">
-                      Min quantity:
-                    </span>
-                    <span className="tabular-nums">
-                      {offer.minimum_order_qty
-                        ? Number(offer.minimum_order_qty).toLocaleString(
-                            "en-US",
-                          )
-                        : "None"}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="block font-medium text-foreground">
-                      Lead time:
-                    </span>
-                    <span>
-                      {offer.lead_time_days != null
-                        ? `${offer.lead_time_days} days`
-                        : "Account default"}
-                    </span>
-                  </div>
-                  {(offer.valid_from || offer.valid_to) && (
-                    <div className="col-span-2 text-[11px] pt-0.5">
-                      <span className="text-muted-foreground">Validity: </span>
-                      <span className="font-medium text-foreground">
-                        {offer.valid_from ?? "Inception"}
-                      </span>{" "}
-                      to{" "}
-                      <span className="font-medium text-foreground">
-                        {offer.valid_to ?? "Open"}
-                      </span>
-                    </div>
-                  )}
-                </div>
+        {/* BOX 5: Supplier Offers & Contracted Pricing */}
+        <DetailSection
+          title="Supplier offers & contracted pricing"
+          description="Quotations, contracted tier pricing, and active price validity on record for this relationship."
+          fullWidth
+        >
+          <div className="sm:col-span-2 space-y-3">
+            {offers.length === 0 ? (
+              <div className="rounded-lg border border-dashed p-4 text-center text-xs text-muted-foreground leading-relaxed">
+                No contracted pricing offers on record for this relationship.
+                Orders will use negotiated unit prices entered at order time.
               </div>
-            ))}
+            ) : (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {offers.map((offer) => (
+                  <div
+                    key={offer.id}
+                    className="rounded-lg border bg-card p-3 shadow-xs space-y-2 text-sm"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        {offer.preferred && (
+                          <Badge
+                            variant="outline"
+                            className="border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-[10px] py-0 font-medium"
+                          >
+                            Preferred offer
+                          </Badge>
+                        )}
+                        <Badge
+                          variant={offer.active ? "success" : "secondary"}
+                          className="text-[10px] py-0"
+                        >
+                          {offer.active ? "Active" : "Inactive"}
+                        </Badge>
+                      </div>
+                      {mayViewCommercialCost && offer.unit_price != null && (
+                        <span className="tabular-nums font-semibold text-sm">
+                          {currencyMap.get(offer.currency_id ?? 0) ?? ""}{" "}
+                          {Number(offer.unit_price).toLocaleString("en-US", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 4,
+                          })}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground pt-1.5 border-t">
+                      <div>
+                        <span className="block font-medium text-foreground">
+                          Min quantity:
+                        </span>
+                        <span className="tabular-nums">
+                          {offer.minimum_order_qty
+                            ? Number(offer.minimum_order_qty).toLocaleString(
+                                "en-US",
+                              )
+                            : "None"}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="block font-medium text-foreground">
+                          Lead time:
+                        </span>
+                        <span>
+                          {offer.lead_time_days != null
+                            ? `${offer.lead_time_days} days`
+                            : "Account default"}
+                        </span>
+                      </div>
+                      {(offer.valid_from || offer.valid_to) && (
+                        <div className="col-span-2 text-[11px] pt-0.5">
+                          <span className="text-muted-foreground">
+                            Validity:{" "}
+                          </span>
+                          <span className="font-medium text-foreground">
+                            {offer.valid_from ?? "Inception"}
+                          </span>{" "}
+                          to{" "}
+                          <span className="font-medium text-foreground">
+                            {offer.valid_to ?? "Open"}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        )}
-      </section>
+        </DetailSection>
+      </DetailPageLayout>
 
       {/* Quick Print layout */}
       <div className="hidden">
@@ -819,7 +753,7 @@ export function ItemSupplierDetailScreen({
         className="erp-record"
         onClose={handleClose}
       >
-        <div className="p-5 pb-8">{detailBody}</div>
+        <div className="space-y-4 pb-4">{detailBody}</div>
       </RecordSheet>
     );
   }

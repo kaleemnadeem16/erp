@@ -79,7 +79,7 @@ export function ItemSupplierCreateScreen({
         dismissOnOutsideClick={false}
         onClose={handleClose}
       >
-        <div className="space-y-4 p-4 pb-6">{formElement}</div>
+        <div className="space-y-4 pb-4">{formElement}</div>
       </RecordSheet>
     );
   }

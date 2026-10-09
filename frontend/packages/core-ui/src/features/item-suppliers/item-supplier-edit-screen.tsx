@@ -77,7 +77,7 @@ export function ItemSupplierEditScreen({
           dismissOnOutsideClick={false}
           onClose={handleClose}
         >
-          <div className="space-y-4 p-4 pb-6">{content}</div>
+          <div className="space-y-4 pb-4">{content}</div>
         </RecordSheet>
       );
     }
