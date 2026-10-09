@@ -2,19 +2,19 @@
 
 # 0101 — Separate accepted business from evidence-based remaining forecasts
 
-- **Status:** proposed — owner-reviewed business direction; not accepted/finalised.
+- **Status:** accepted — bounded business direction; owner-authorised final review passed 2026-10-09.
 - **Date:** 2026-10-08
 - **Affects:** Phase 4 R1-B3, forecasting, acceptance evidence, reporting and currency valuation.
-- **Gate:** documentation/research only; R1-B3 and Q39 remain open.
+- **Gate:** bounded B3 business research closed; whole R1/Q39 and deferred delivery gates remain open; no implementation authorised.
 
 ## Context
 
-Proposed ADR 0100 permits independently acceptable scopes and exclusive alternative families.
+ADR 0100 permits independently acceptable scopes and exclusive alternative families.
 One selected quotation cannot represent every multi-scope deal, while summing every associated
 quotation double-counts alternatives, revisions and potentially overlapping work. The owner
 reviewed [forecast-basis research](../phases/phase-4-r1-b3-forecast-basis.md) with the refinements below.
 
-## Decision — owner-reviewed proposed direction
+## Decision — accepted bounded business direction
 
 Distinguish three business facts:
 
@@ -54,9 +54,9 @@ issue linkage, approval, price, tax, FX or estimating evidence. Forecast currenc
 separate evidence, preserving source currencies, the applied rate/value/date and base amounts.
 Reuse ADR 0012's historical dual-amount invariant and ADR 0031's manual-rate foundation; forecast
 SPOT/explicit valuation date and persistent provisional review now have owner-reviewed direction
-in [proposed ADR 0102](0102-govern-forecast-trust-and-explicit-valuation.md); exact fallback-age,
+in [ADR 0102](0102-govern-forecast-trust-and-explicit-valuation.md); exact fallback-age,
 accepted management conversion and used-rate correction assessment remain R4/R9 questions.
-Ordinary later-date FX movement is non-invalidating under proposed ADR 0102.
+Ordinary later-date FX movement is non-invalidating under ADR 0102.
 
 Guard forecast operations at request and Action boundaries, with current actor authority,
 company isolation and appropriate record/field scope. Forecast maintenance is not permission to
@@ -72,7 +72,7 @@ accepted commitment. No probability defaults or scoring engine are decided here.
 
 - Proposed ADRs 0098/0099 remain in force as design proposals: effective opportunity policy and
   immutable issue vs current CRM association are independent from forecast selection.
-- Proposed ADR 0100 supplies independent scopes and exclusive groups; selection may not bypass
+- ADR 0100 supplies independent scopes and exclusive groups; selection may not bypass
   group exclusivity or count acceptance twice. Partial acceptance remains R6.
 - ADRs 0012/0031 and invariants require pinned values/manual FX; live-rate rendering that changes
   stored historical forecast amounts would conflict. No automated FX fetching is proposed.
@@ -107,17 +107,16 @@ Reuse [forecast comparison](../phases/phase-4-r1-b3-forecast-basis.md), accessed
 Dynamics deal value and refreshed rollups, Odoo probability weighting, ERPNext ordered provenance.
 The two methods and acceptance safeguards are owner-reviewed project design, not a vendor
 standard. Further [staleness](../phases/phase-4-r1-b3-forecast-staleness.md) and
-[FX valuation](../phases/phase-4-r1-b3-forecast-fx.md) research presents alternatives without
-acceptance. Existing currency/audit decisions are reused rather than reopened.
+[FX valuation](../phases/phase-4-r1-b3-forecast-fx.md) research preserves alternatives and the bounded accepted direction in ADR 0102. Existing currency/audit decisions are reused rather than reopened.
 
 ## Still open
 
-Persistent review/exclusion and explicit SPOT/date publication are owner-reviewed in proposed
+Persistent review/exclusion and explicit SPOT/date publication are accepted in
 ADR 0102, including non-invalidating ordinary later-date FX movement and coexisting diagnostics.
 Exact triggers/expiry, physical trust representation and review duties; fallback/age, historical rate
 correction assessment and accepted conversion; partial/overlap/corrections, regrouping/dependencies,
 closure/jobs and as-of reporting remain delegated delivery gates. See the
-[bounded acceptance assessment](../phases/phase-4-r1-b3-reconciliation.md); no formal acceptance or whole R1 completion.
+[bounded acceptance assessment](../phases/phase-4-r1-b3-reconciliation.md); bounded business acceptance only, not whole R1 completion or delivery approval.
 
 ## Related
 

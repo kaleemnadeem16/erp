@@ -2,19 +2,24 @@
 
 # R1-B3 — Forecast basis with independent and competing offers
 
-- **Status:** MAINTAINED/SELECTED_OFFERS owner-reviewed in proposed ADR 0101; trust/dated FX direction reviewed in proposed ADR 0102; bounded scope ready for acceptance review, not accepted.
+- **Status:** bounded B3 business research closed 2026-10-09; ADRs 0100–0102 accepted; detailed delivery gates remain open.
 - **Access date:** 2026-10-08.
 - **Question:** what should initially forecast a deal when several scopes can be bought but
   alternatives and revisions cannot be counted as additional business?
-- **Owner-reviewed scope direction:** [proposed ADR 0100](../decisions/0100-independent-quotation-scopes-and-alternative-groups.md).
+- **Owner-reviewed scope direction:** [accepted ADR 0100](../decisions/0100-independent-quotation-scopes-and-alternative-groups.md).
 - **Existing basis reused:** [R1-B3 comparison](phase-4-r1-b3-offers-and-forecast.md), especially
   Dynamics manual/calculated revenue and duplicate quote-join warning; ERPNext ordered scope.
 - **Runtime:** currency/FX, company audit and immutable evidence foundations exist. No Sales
   forecast, acceptance ledger, quote selection or historical forecast calculation is implemented.
 
+
+**Reading this record:** earlier alternatives/recommendations are retained research history.
+Accepted ADRs 0100–0102 govern only their bounded contracts; detailed package recommendations
+are not accepted by this closure. The [final review](phase-4-r1-b3-reconciliation.md) records the boundary.
+
 ## Owner review update — 2026-10-08
 
-[Proposed ADR 0101](../decisions/0101-separate-accepted-business-and-remaining-forecast.md) records
+[accepted ADR 0101](../decisions/0101-separate-accepted-business-and-remaining-forecast.md) records
 the owner's MAINTAINED default and SELECTED_OFFERS direction, accepted-business separation,
 acceptance safeguards, selected-reference history and separate forecast FX evidence. Earlier
 recommendations below are retained as research history; the method choice is owner-reviewed but
@@ -22,7 +27,7 @@ not finalised. Partial acceptance/overlap and the remaining lifecycle dependenci
 
 Next bounded topics: [staleness and review](phase-4-r1-b3-forecast-staleness.md), then
 [FX valuation](phase-4-r1-b3-forecast-fx.md). Persistent provisional review and explicit SPOT/date publication now have owner-reviewed direction
-in [proposed ADR 0102](../decisions/0102-govern-forecast-trust-and-explicit-valuation.md).
+in [accepted ADR 0102](../decisions/0102-govern-forecast-trust-and-explicit-valuation.md).
 Remaining triggers, fallback/age and accepted management valuation are open.
 
 ## Fresh primary evidence and comparison
@@ -61,7 +66,7 @@ Support **two basis modes** through one forecast service:
 1. **Maintained estimate**, default: explicitly entered remaining uncommitted business value,
    currency and expected close date. Early in the deal, everything is uncommitted. Record when
    the estimate was reviewed; unknown amount is unknown, never zero. The remaining-value meaning
-   is a proposed clarification, not something the owner has already approved.
+   was approved in ADR 0101; the earlier comparison remains historical research.
 2. **Selected issued offers**: an explicitly chosen set of eligible revision identities. One offer
    is the simple case; several independent offers can be combined. Never auto-select on linking,
    new revision, issue or acceptance. A basis change is its own authorised/audited operation.
@@ -112,7 +117,7 @@ All values below are net PKR, excluding tax, at a common valuation date:
 | Standard furniture accepted; installation still pending | `500000.0000` | `300000.0000` | `800000.0000` |
 | Standard and installation accepted, premium unselected | `800000.0000` | `0.0000` for those scopes | `800000.0000` for those scopes |
 
-These examples illustrate the intended reviewed scope model plus proposed forecast semantics;
+These examples illustrate the intended accepted scope model and forecast business semantics;
 other unquoted future scope can still be unknown. Empty known remainder and unknown remainder are
 different. Acceptance is not an opportunity closure or job-count decision.
 
@@ -120,7 +125,7 @@ At 50% probability for pending installation, a separate weighted view gives `150
 pending plus `500000.0000` accepted = `650000.0000` accepted-plus-weighted outlook. Accepted
 business is not probability-weighted and is not accounting revenue.
 
-## Eligibility/recalculation — initial recommendation, refined by proposed ADR 0102
+## Eligibility/recalculation — initial recommendation, refined by accepted ADR 0102
 
 Recommend recording explicit basis versions and frozen valuation results. Trigger a visible
 review-needed state when selected evidence becomes ineligible. Display the last recorded forecast
@@ -179,13 +184,13 @@ Keep all unresolved: post-issue regrouping, cancelling/changing accepted scope, 
 partially won outcomes, one/multiple jobs, closure interactions and forecast eligibility/recalculation.
 
 **Next discussion:** R1-C customer/prospect onboarding. Methods, persistent provisional trust and
-ordinary later-date FX movement now have sufficient owner-reviewed direction in proposed ADRs
+ordinary later-date FX movement now have sufficient owner-reviewed direction in accepted ADRs
 0101/0102. The [scope reconciliation](phase-4-r1-b3-reconciliation.md) assigns remaining delivery
-questions to R2/R4/R5/R6/R7/R9. Formal acceptance is still required; whole R1/Q39 remain open.
+questions to R2/R4/R5/R6/R7/R9. Bounded direction is accepted; whole R1/Q39 remain open and delivery is not authorised.
 
 ## Related
 
 - [R1-B3 original research](phase-4-r1-b3-offers-and-forecast.md) · [R1](phase-4-r1-leads-and-relationships.md)
-- [Proposed ADR 0100](../decisions/0100-independent-quotation-scopes-and-alternative-groups.md) · [Q39](../OPEN-QUESTIONS.md#q39--phase-4-r1-enquiry-deal-and-customer-onboarding-boundaries)
+- [accepted ADR 0100](../decisions/0100-independent-quotation-scopes-and-alternative-groups.md) · [Q39](../OPEN-QUESTIONS.md#q39--phase-4-r1-enquiry-deal-and-customer-onboarding-boundaries)
 - [Phase 4 plan](phase-4-sales-quotations-and-handover.md) · [Sales pipeline](../domain/sales-pipeline.md)
 - [Invariants](../architecture/invariants.md) · [Domain integrity](../architecture/domain-integrity.md)

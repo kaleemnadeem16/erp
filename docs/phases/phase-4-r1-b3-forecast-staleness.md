@@ -2,15 +2,20 @@
 
 # R1-B3-S — Forecast staleness and review
 
-- **Status:** persistent provisional trust direction owner-reviewed in proposed ADR 0102; ordinary later-date FX movement reviewed as non-invalidating; detailed triggers delegated.
+- **Status:** bounded B3 business research closed 2026-10-09; ADRs 0100–0102 accepted; detailed delivery gates remain open.
 - **Access date:** 2026-10-08.
 - **Question:** how should current forecasts respond when their selected evidence or maintained
   assumptions change without rewriting published history or silently changing sales intent?
-- **Reviewed foundation:** [proposed ADR 0101](../decisions/0101-separate-accepted-business-and-remaining-forecast.md).
+- **Reviewed foundation:** [accepted ADR 0101](../decisions/0101-separate-accepted-business-and-remaining-forecast.md).
+
+
+**Reading this record:** earlier alternatives/recommendations are retained research history.
+Accepted ADRs 0100–0102 govern only their bounded contracts; detailed package recommendations
+are not accepted by this closure. The [final review](phase-4-r1-b3-reconciliation.md) records the boundary.
 
 ## Owner review — 2026-10-08
 
-[Proposed ADR 0102](../decisions/0102-govern-forecast-trust-and-explicit-valuation.md) records the
+[accepted ADR 0102](../decisions/0102-govern-forecast-trust-and-explicit-valuation.md) records the
 reviewed rule: NEEDS_REVIEW stays provisional and excluded from trusted totals until authorised
 review and a new publication, even if an expired offer is renewed. Preserve old values/evidence;
 show eligible components informationally, without adding them to the provisional whole twice.
@@ -112,7 +117,7 @@ aggregate visibility must be consistent, including hidden group conflicts.
 
 ## Remaining triggers and ownership
 
-Reviewed trust/reporting direction is proposed ADR 0102, not a completed forecasting design.
+Reviewed trust/reporting direction is accepted ADR 0102, not a completed forecasting design.
 Recommend mandatory review for basis eligibility loss or material relevant acceptance/identity/
 group/CRM changes. A newer draft, unrelated quotation or age alone should initially be an
 informational indication unless governance explicitly requires review. Exact materiality, expiry
@@ -124,7 +129,7 @@ Current-state fingerprints alone can miss that history. R5/R9 must define event/
 checks without scheduling anything implicitly. Distinguish a viewer's limited visibility from
 a company-wide invalid commercial assumption.
 
-Ordinary later-date FX movement is settled as non-invalidating in proposed ADR 0102. No further
+Ordinary later-date FX movement is settled as non-invalidating in accepted ADR 0102. No further
 blocking R1-B3 business choice is identified; see the [reconciliation](phase-4-r1-b3-reconciliation.md). R4 owns
 rate age/fallback; R5 owns lifecycle/expiry; R2/R6 owns overlap/acceptance; R9 owns trigger
 classification, trust plus diagnostic representation, review/approval duties and as-of reports.
@@ -134,6 +139,6 @@ it cannot republish trusted evidence merely because calculation succeeds.
 ## Related
 
 - [Phase 4](phase-4-sales-quotations-and-handover.md) · [Forecast basis](phase-4-r1-b3-forecast-basis.md)
-- [Forecast FX](phase-4-r1-b3-forecast-fx.md) · [Proposed ADR 0101](../decisions/0101-separate-accepted-business-and-remaining-forecast.md)
+- [Forecast FX](phase-4-r1-b3-forecast-fx.md) · [accepted ADR 0101](../decisions/0101-separate-accepted-business-and-remaining-forecast.md)
 - [Q39](../OPEN-QUESTIONS.md#q39--phase-4-r1-enquiry-deal-and-customer-onboarding-boundaries)
 - [Domain integrity](../architecture/domain-integrity.md) · [Sales pipeline](../domain/sales-pipeline.md)

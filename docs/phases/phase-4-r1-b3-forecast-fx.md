@@ -2,14 +2,19 @@
 
 # R1-B3-FX — Forecast conversion and historical valuation
 
-- **Status:** SPOT/date/explicit publication owner-reviewed in proposed ADR 0102; ordinary later-date movement reviewed as non-invalidating; R4/R9 details delegated.
+- **Status:** bounded B3 business research closed 2026-10-09; ADRs 0100–0102 accepted; detailed delivery gates remain open.
 - **Access date:** 2026-10-08.
 - **Question:** how should foreign-currency remaining estimates/selected offers be valued without
   changing issued prices or historical forecast amounts when rates are corrected or updated?
 
+
+**Reading this record:** earlier alternatives/recommendations are retained research history.
+Accepted ADRs 0100–0102 govern only their bounded contracts; detailed package recommendations
+are not accepted by this closure. The [final review](phase-4-r1-b3-reconciliation.md) records the boundary.
+
 ## Owner review — 2026-10-08
 
-[Proposed ADR 0102](../decisions/0102-govern-forecast-trust-and-explicit-valuation.md) now records
+[accepted ADR 0102](../decisions/0102-govern-forecast-trust-and-explicit-valuation.md) now records
 explicit-date SPOT valuation and new immutable publication on explicit FX refresh; preserve
 reporting currency/rates/evidence, incomplete-rate handling and fallback age/effective date.
 No view-time/latest-rate mutation or silent republication is permitted. Source quoted/accepted
@@ -88,7 +93,7 @@ Pending USD offer `1000.0000` plus PKR offer `300000.0000`:
   unconverted and the total clearly incomplete. Do not report the PKR subtotal as full potential.
 
 Separate source-business change from FX-only movement in history so salespeople can explain the
-`5000.0000` difference. These are examples of a proposed rule, not current functionality.
+`5000.0000` difference. These illustrate accepted business direction, not current functionality.
 
 ## Accepted commitments and display currency
 
@@ -144,11 +149,11 @@ UI, totals and exports. No scheduler is authorised by this research.
 
 The [scope reconciliation](phase-4-r1-b3-reconciliation.md) records acceptance readiness and
 implementation gates. Do not extend R1-B3 into R4/R9. Next recommended discussion is R1-C
-customer/prospect onboarding; whole R1 and Q39 remain open and all ADRs remain proposed.
+customer/prospect onboarding; whole R1 and Q39 remain open and ADRs 0100–0102 are accepted, while 0098/0099 remain proposed.
 
 ## Related
 
 - [Phase 4](phase-4-sales-quotations-and-handover.md) · [Forecast basis](phase-4-r1-b3-forecast-basis.md)
-- [Staleness](phase-4-r1-b3-forecast-staleness.md) · [Proposed ADR 0101](../decisions/0101-separate-accepted-business-and-remaining-forecast.md)
+- [Staleness](phase-4-r1-b3-forecast-staleness.md) · [accepted ADR 0101](../decisions/0101-separate-accepted-business-and-remaining-forecast.md)
 - [Multi-currency](../domain/multi-currency.md) · [ADR 0012](../decisions/0012-multi-currency-dual-amounts.md)
 - [ADR 0031](../decisions/0031-manual-exchange-rate-entry.md) · [Q39](../OPEN-QUESTIONS.md#q39--phase-4-r1-enquiry-deal-and-customer-onboarding-boundaries)

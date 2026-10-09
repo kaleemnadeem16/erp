@@ -4,7 +4,7 @@
 
 From first contact to a confirmed job.
 
-**Planning note (2026-10-08):** this is a documented proposal, not implemented Sales behaviour.
+**Planning note (2026-10-09):** this is a documented proposal, not implemented Sales behaviour.
 The [Phase 4 research plan](../phases/phase-4-sales-quotations-and-handover.md) and
 [R1 discussion](../phases/phase-4-r1-leads-and-relationships.md) assess the model before decisions.
 R1-A's hybrid entry and opportunity policy direction is in
@@ -12,11 +12,12 @@ R1-A's hybrid entry and opportunity policy direction is in
 but not accepted. Draft linking and separate post-issue CRM association are proposed in
 [ADR 0099](../decisions/0099-separate-quotation-issue-and-crm-association.md); [R1-B3](../phases/phase-4-r1-b3-offers-and-forecast.md) researches multiple offers and forecast.
 Independent accepted scopes and explicit alternative groups have owner-reviewed direction in
-[proposed ADR 0100](../decisions/0100-independent-quotation-scopes-and-alternative-groups.md).
-[Forecast methods](../decisions/0101-separate-accepted-business-and-remaining-forecast.md) are owner-reviewed/proposed;
+[accepted ADR 0100](../decisions/0100-independent-quotation-scopes-and-alternative-groups.md).
+[Forecast methods](../decisions/0101-separate-accepted-business-and-remaining-forecast.md) are accepted as bounded business direction;
 [persistent provisional trust and explicit-date SPOT](../decisions/0102-govern-forecast-trust-and-explicit-valuation.md)
-are owner-reviewed/proposed. Detailed [staleness](../phases/phase-4-r1-b3-forecast-staleness.md)
+are accepted as bounded business direction. Detailed [staleness](../phases/phase-4-r1-b3-forecast-staleness.md)
 and [FX](../phases/phase-4-r1-b3-forecast-fx.md) dependencies remain open.
+[R1-C1 prospect recipient research](../phases/phase-4-r1-c1-prospect-quotations.md) recommends Party-backed issue without financial setup; not approved.
 The schema below is historical planning: one opportunity field must not become both immutable
 issue linkage and editable current CRM association. Customer-only recipients, conversion and closure are unresolved. The historical numbering
 paragraph below must be reconciled with ADR 0079's implemented central framework before build.

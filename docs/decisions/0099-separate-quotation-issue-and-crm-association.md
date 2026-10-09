@@ -130,9 +130,9 @@ STRICT temporary unlink interpretation; unknown/opportunity Party identity rules
 closed opportunity eligibility and accepted/job-linked association restrictions (R5/R6/R7);
 association scope per family/revision (R2); permissions/visibility and report as-of policy (R9).
 R1-B3 independent accepted scopes and explicit exclusive groups now have owner-reviewed direction
-in [proposed ADR 0100](0100-independent-quotation-scopes-and-alternative-groups.md). Post-issue
+in [accepted ADR 0100](0100-independent-quotation-scopes-and-alternative-groups.md). Post-issue
 grouping/accepted-scope corrections remain open in R2/R6. Forecast business direction is now
-owner-reviewed in proposed ADRs 0101/0102; see the [bounded reconciliation](../phases/phase-4-r1-b3-reconciliation.md).
+accepted in ADRs 0101/0102; see the [bounded reconciliation](../phases/phase-4-r1-b3-reconciliation.md).
 No whole R1-B completion claim.
 
 ## Related

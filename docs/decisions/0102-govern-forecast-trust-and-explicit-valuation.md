@@ -2,25 +2,26 @@
 
 # 0102 — Restore forecast trust only through explicit review and publication
 
-- **Status:** proposed — owner-reviewed staleness/valuation direction; not accepted/finalised.
+- **Status:** accepted — bounded business direction; owner-authorised final review passed 2026-10-09.
 - **Date:** 2026-10-08
 - **Affects:** Phase 4 R1-B3, review/publication, forecast FX, historical reporting and governance.
 - **Gate:** research/documentation only; no schema, enum, migration or implementation selected.
 
 ## Context
 
-Proposed ADR 0101 separates accepted commitment, remaining potential and forecast basis. A valid
+ADR 0101 separates accepted commitment, remaining potential and forecast basis. A valid
 technical condition does not prove that commercial assumptions are current: a selected offer may
 expire and later be renewed while the buyer's requirements have changed. A live rate display
 can also change an apparent total without any new business or reviewed valuation.
 
 The owner reviewed [staleness](../phases/phase-4-r1-b3-forecast-staleness.md) and
-[FX research](../phases/phase-4-r1-b3-forecast-fx.md). This record preserves that direction;
+[FX research](../phases/phase-4-r1-b3-forecast-fx.md). This record preserves that direction.
 The owner also reviewed ordinary later-date FX movement on 2026-10-08. Topic-specific
 implementation questions are delegated in the [scope reconciliation](../phases/phase-4-r1-b3-reconciliation.md);
-this ADR remains proposed pending explicit owner acceptance.
+the final review passed and the owner authorised acceptance on 2026-10-09.
+Acceptance covers this bounded business contract, not the deferred package questions or delivery.
 
-## Decision — owner-reviewed proposed direction
+## Decision — accepted bounded business direction
 
 ### Review is persistent until explicitly republished
 
@@ -120,7 +121,7 @@ forecasts awaiting review and optional indicative current-rate valuations. Histo
 valuation dates and currencies. Do not aggregate different valuation bases without an explicit,
 consistently applied reporting rule; accepted-plus-remaining totals are not an implicit exception.
 
-## Technical/reporting invariants — proposed application of existing standards
+## Technical/reporting invariants — application of existing standards
 
 1. Publications/valuations are immutable evidence; changes and successful reviews create versions.
 2. Provisional cannot silently re-enter trusted totals, even after technical recovery.
@@ -147,7 +148,7 @@ still a design question; no implicit successful publication of an invalid basis 
 
 ## Reconciliation and conflicts
 
-Compatible with proposed ADRs 0098–0101: opportunity entry controls, issue/current CRM separation,
+Compatible with proposed ADRs 0098/0099 and accepted ADRs 0100/0101: opportunity entry controls, issue/current CRM separation,
 exclusive offers and authoritative acceptance remain independent. No accepted ADR is superseded.
 
 ADRs 0012/0031 preserve dual amounts, pinned history and manual rates; latest-rate-on-read changing
@@ -192,10 +193,9 @@ ceremonial repeat search is needed to record this review.
 - **R9:** mandatory review triggers vs warnings, duties/approval exposure, trust diagnostics,
   publication/report as-of/recorded-at and scope, concurrency/history implementation design.
 
-R1-B3 has sufficient researched and owner-reviewed business direction to proceed towards formal
-acceptance, with the [explicit dependency/acceptance assessment](../phases/phase-4-r1-b3-reconciliation.md).
-It remains proposed, not formally closed or implemented. Later research gates dependent delivery;
-whole R1 and Q39 remain open. No decision is accepted automatically.
+R1-B3 bounded business research is closed following owner-authorised acceptance, with the [explicit dependency/acceptance assessment](../phases/phase-4-r1-b3-reconciliation.md).
+ADRs 0100–0102 are accepted; later research gates dependent delivery. Whole R1 and Q39 remain
+open. No implementation, migration, physical schema or deferred business decision is authorised.
 
 ## Related
 

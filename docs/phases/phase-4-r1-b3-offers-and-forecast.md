@@ -2,29 +2,34 @@
 
 # R1-B3 — Multiple offers, revisions and opportunity forecast
 
-- **Status:** multiple accepted scopes and explicit alternative groups owner-reviewed; forecasting discussion ongoing; not accepted or complete.
+- **Status:** bounded B3 business research closed 2026-10-09; ADRs 0100–0102 accepted; detailed delivery gates remain open.
 - **Access date:** 2026-10-08. Compared Dynamics 365 Sales, Odoo 19 and ERPNext official guidance.
 - **Question:** how can one deal have several offers and separately acceptable scopes without
   counting alternatives, prior revisions or accepted scope twice in pipeline reporting?
 - **Existing foundation:** [review](phase-4-existing-system-review.md); Sales remains documented-only.
 - **Owner-reviewed directions:** [ADR 0098](../decisions/0098-hybrid-sales-opportunity-requirement.md)
   and [proposed ADR 0099](../decisions/0099-separate-quotation-issue-and-crm-association.md).
-- **Owner-reviewed extension:** [proposed ADR 0100](../decisions/0100-independent-quotation-scopes-and-alternative-groups.md).
+- **Owner-reviewed extension:** [accepted ADR 0100](../decisions/0100-independent-quotation-scopes-and-alternative-groups.md).
 - **Accepted R1-B3 decisions:** none. No physical table boundaries are chosen.
+
+
+**Reading this record:** earlier alternatives/recommendations are retained research history.
+Accepted ADRs 0100–0102 govern only their bounded contracts; detailed package recommendations
+are not accepted by this closure. The [final review](phase-4-r1-b3-reconciliation.md) records the boundary.
 
 ## Discussion update — 2026-10-08
 
 The owner reviewed multiple accepted quotation revisions for independent scopes under one
 opportunity, and explicit exclusive groups of competing families (independent by default).
-Revisions retain their family's group relationship and are not extra offers. Proposed ADR 0100
+Revisions retain their family's group relationship and are not extra offers. accepted ADR 0100
 records the rules and concurrency/history implications; this does not decide closure or jobs.
 
 [Forecast-basis research](phase-4-r1-b3-forecast-basis.md) now assesses manual estimates, a single
 selected revision and a controlled non-competing set. Its recommendation broadens the initial
 single-offer suggestion below to support multiple independent scopes. Earlier examples and
 comparisons are retained as research history; earlier "must we support multiple scopes/groups?"
-questions have owner-reviewed direction, not final ADR acceptance. Forecast business meaning now has owner-reviewed direction in
-[proposed ADR 0101](../decisions/0101-separate-accepted-business-and-remaining-forecast.md).
+questions have owner-reviewed direction, accepted in ADRs 0100–0102, with delivery questions deferred. Forecast business meaning now has owner-reviewed direction in
+[accepted ADR 0101](../decisions/0101-separate-accepted-business-and-remaining-forecast.md).
 [Staleness](phase-4-r1-b3-forecast-staleness.md) and [FX](phase-4-r1-b3-forecast-fx.md),
 eligibility and refresh remain for discussion; R1-B3 is not complete.
 
@@ -152,14 +157,14 @@ not be silently mixed with net forecasts.
 ## Question reconciliation after owner review
 
 Multiple independent scopes/exclusive groups, MAINTAINED/SELECTED_OFFERS and persistent trust/
-explicit-date FX direction are owner-reviewed in proposed ADRs 0100–0102. The
+explicit-date FX direction are owner-reviewed in accepted ADRs 0100–0102. The
 [bounded reconciliation](phase-4-r1-b3-reconciliation.md) finds no remaining blocking B3 business
 choice and assigns scope, lifecycle, acceptance, handover and reporting details to their packages.
-Formal owner acceptance remains outstanding; do not treat later research gates as implied permission.
+Owner-authorised acceptance passed 2026-10-09; later research gates are not implied permission to implement.
 
 ## Related
 
-- [Forecast research](phase-4-r1-b3-forecast-basis.md) · [Proposed ADR 0100](../decisions/0100-independent-quotation-scopes-and-alternative-groups.md)
+- [Forecast research](phase-4-r1-b3-forecast-basis.md) · [accepted ADR 0100](../decisions/0100-independent-quotation-scopes-and-alternative-groups.md)
 
 - [Phase 4 plan](phase-4-sales-quotations-and-handover.md) · [R1](phase-4-r1-leads-and-relationships.md)
 - [Existing review](phase-4-existing-system-review.md) · [Proposed ADR 0099](../decisions/0099-separate-quotation-issue-and-crm-association.md)

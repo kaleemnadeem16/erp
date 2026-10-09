@@ -2,7 +2,7 @@
 
 # R1 — Leads, opportunities and customer relationships
 
-- **Status:** R1-A and R1-B1/B2 owner-reviewed proposals recorded; R1-B3 scope/group direction reviewed; forecast methods/trust/SPOT direction reviewed; ordinary FX movement reviewed; B3 reconciliation ready for acceptance review. Whole R1 not accepted or complete.
+- **Status:** bounded B3 business research closed with accepted ADRs 0100–0102 (2026-10-09); 0098/0099 Proposed; R1-C1 findings for discussion. Whole R1 remains open.
 - **Research/access date:** 2026-10-08.
 - **Question:** how do we qualify enquiries and track independent deals without forcing CRM or
   financial-account setup onto every quotation, duplicating Parties or restricting future scale?
@@ -54,15 +54,15 @@ and history and cannot cure an issue-policy exception or change commercial evide
 [R1-B3](phase-4-r1-b3-offers-and-forecast.md) now compares three mature products and distinguishes
 quotation family, revision, alternative/additive scope, CRM association and forecast basis.
 The owner has now reviewed multiple accepted independent scopes and explicit exclusive groups
-in [proposed ADR 0100](../decisions/0100-independent-quotation-scopes-and-alternative-groups.md).
+in [accepted ADR 0100](../decisions/0100-independent-quotation-scopes-and-alternative-groups.md).
 [Forecast research](phase-4-r1-b3-forecast-basis.md) proposes manual remaining-business estimates
 or a controlled selected set of non-competing issued revisions; these methods are now owner-reviewed
-in [proposed ADR 0101](../decisions/0101-separate-accepted-business-and-remaining-forecast.md).
+in [accepted ADR 0101](../decisions/0101-separate-accepted-business-and-remaining-forecast.md).
 Persistent provisional review and explicit-date SPOT are now owner-reviewed in
-[proposed ADR 0102](../decisions/0102-govern-forecast-trust-and-explicit-valuation.md);
-remaining operational choices stay open. R1-B remains incomplete;
+[accepted ADR 0102](../decisions/0102-govern-forecast-trust-and-explicit-valuation.md);
+remaining operational choices stay open. R1-B1/B2 and detailed delivery remain open;
 accepted/job-linked restrictions and physical schema are unresolved. B3 has no remaining blocking business choice within its bounded scope; see the
-[acceptance/dependency reconciliation](phase-4-r1-b3-reconciliation.md). R1-C onboarding is next.
+[acceptance/dependency reconciliation](phase-4-r1-b3-reconciliation.md). R1-C1 findings are [ready for discussion](phase-4-r1-c1-prospect-quotations.md).
 
 ## Alternatives and initial recommendations
 
@@ -93,7 +93,10 @@ approval, snapshot and issue rules. Mandatory opportunity improves pipeline cove
 fictitious deals for routine quotes. Quotations linked to one deal may be alternatives or revisions:
 R2 must distinguish these and R9 must prevent forecast double-counting.
 
-### 3. Reuse Party; delay financial setup deliberately
+### 3. Reuse Party; delay financial setup deliberately — initial proposal
+
+Current bounded C1 findings are [recorded separately](phase-4-r1-c1-prospect-quotations.md);
+the later Finance gate below remains an initial proposal, not an accepted event.
 
 Existing Party is shared identity, CustomerAccount is a role with required financial fields.
 "Qualified prospect" and "configured customer account" need not happen on the same date.
@@ -177,8 +180,8 @@ requiring them to use a quotation.
 | ID | Choice for discussion | Current recommendation / dependency |
 |---|---|---|
 | R1-A | Hybrid workflow and policy requirements | Owner-reviewed direction in proposed ADR 0098; remaining architecture questions prevent final acceptance |
-| R1-B | Direct quotation relationships and multiple offers | B1/B2 owner-reviewed proposed ADR 0099; B3 independent scopes/groups owner-reviewed in proposed ADR 0100; forecast methods reviewed in proposed ADR 0101; trust/dated FX reviewed in proposed ADR 0102; B3 ready for bounded acceptance review; R2/R4/R5/R6/R7/R9 delivery dependencies |
-| R1-C | Can we quote a prospect Party before financial customer setup; when is setup mandatory? | Prefer Party-backed prospect quoting; agree the gate with R6/R7 |
+| R1-B | Direct quotation relationships and multiple offers | B1/B2 owner-reviewed proposed ADR 0099; B3 independent scopes/groups owner-reviewed in accepted ADR 0100; forecast methods reviewed in accepted ADR 0101; trust/dated FX reviewed in accepted ADR 0102; B3 bounded business research closed, implementation not authorised; R2/R4/R5/R6/R7/R9 delivery dependencies |
+| R1-C | Can we quote a prospect Party before financial customer setup; when is setup mandatory? | [C1 research](phase-4-r1-c1-prospect-quotations.md): Party-backed issue recommended, not approved; C2 exact Finance gate deferred |
 | R1-D | Organisation customers only, or individual consumers in Phase 4? | Keep established B2B boundary unless real requirements justify extension |
 | R1-E | Initial pipeline/ownership exposure and visibility? | Single owner, company stages, optional lead queue; own/team/company access needs R9 decision |
 | R1-F | What makes a deal won; can closure be manual; how do lost/abandoned deals reopen? | Evidence-backed closure; agree acceptance link and partial-win handling with R6/R7 |
@@ -194,8 +197,8 @@ Initial evidence covers identity, optional qualification, direct quotes, multipl
 closure patterns. Configurable stage governance, detailed Sales scope, consent/retention,
 forecast accounting, quote recipient/contact evidence and conversion concurrency need deeper
 validation during the relevant topic. No legal retention rule is inferred from vendor features.
-Next discuss R1-C onboarding. B3 business direction is sufficiently researched/reviewed for formal
-acceptance consideration; its detailed dependencies are assigned, not silently resolved.
+Next discuss [R1-C1 prospect quotation issue](phase-4-r1-c1-prospect-quotations.md). B3 business
+direction is accepted; detailed dependencies are assigned, not silently resolved. C2 is not begun.
 Resolve ADR 0098's flagged edge cases before final acceptance; do not mark all R1 complete.
 
 ## Related

@@ -273,6 +273,8 @@ unexposed capabilities, not implied by supplier registration.
 
 ## Related
 
+- [R1-C1 prospect quotation research](../phases/phase-4-r1-c1-prospect-quotations.md) — unapproved recipient-readiness proposal; current financial account validation unchanged
+
 - [items.md](items.md) — the same shared-table-with-discriminator precedent; Purchasing's
   `item_suppliers` catalogue references `supplier_accounts`
 - [multi-currency.md](multi-currency.md) — `default_currency_id`

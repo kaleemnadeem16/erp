@@ -3,8 +3,8 @@
 # R1-B3 — Bounded business direction and acceptance readiness
 
 - **Date:** 2026-10-08.
-- **Status:** owner-reviewed proposed business direction recorded; acceptance readiness is this
-  review's recommendation, not owner acceptance. No implementation or migrations authorised.
+- **Status:** final acceptance review passed 2026-10-09 under explicit owner authorisation;
+  ADRs 0100–0102 accepted, bounded B3 business research closed. No delivery authorised.
 - **Research reuse:** the linked R1 comparison records sufficiently distinguish the alternatives;
   this reconciliation records the owner's answer rather than repeating vendor research.
 
@@ -42,22 +42,25 @@ assess the correction under R4/R9; that event is not ordinary later-date movemen
 ## Consequences and acceptance recommendation
 
 **No genuinely blocking R1-B3 business choice remains within this bounded scope.** The reviewed
-contracts are sufficient to proceed towards formal acceptance. This does not close whole R1/Q39
+contracts passed the final consistency review and were accepted by owner authorisation. This does not close whole R1/Q39
 or authorise delivery of features whose delegated semantics are still unknown.
 
 | Proposed ADR | Recommended readiness | Remaining boundary |
 |---|---|---|
 | 0098 — hybrid workflow | Further research/reconciliation before acceptance | STRICT historical migration and unlinking; policy governance and issue/revocation/replay contract still explicitly open |
 | 0099 — issue versus CRM association | Further research/reconciliation before acceptance | STRICT unlinking and Party identity (R1-C); association unit (R2), lifecycle/accepted/job restrictions (R5/R6/R7), visibility (R9) |
-| 0100 — independent scopes/exclusive groups | Ready for explicit owner acceptance of bounded business direction | R2 identity/overlap and post-issue regrouping; R6 accepted-scope adjustments; R7 handover. No implied permission for unresolved operations |
-| 0101 — accepted versus remaining forecast | Ready for explicit owner acceptance of bounded business direction | R2/R6 exclusion calculations; R4 valuation details; R5/R9 eligibility/review implementation |
-| 0102 — persistent trust/explicit valuation | Ready for explicit owner acceptance of bounded business direction | R4/R9 historical corrections/reporting; R5 lifecycle detection; exact capabilities/approval exposure remain R9 |
+| 0100 — independent scopes/exclusive groups | Accepted 2026-10-09 — bounded business direction | R2 identity/overlap and post-issue regrouping; R6 accepted-scope adjustments; R7 handover. No implied permission for unresolved operations |
+| 0101 — accepted versus remaining forecast | Accepted 2026-10-09 — bounded business direction | R2/R6 exclusion calculations; R4 valuation details; R5/R9 eligibility/review implementation |
+| 0102 — persistent trust/explicit valuation | Accepted 2026-10-09 — bounded business direction | R4/R9 historical corrections/reporting; R5 lifecycle detection; exact capabilities/approval exposure remain R9 |
 
-All five ADRs **remain proposed**. The readiness recommendation concerns business contracts;
-acceptance of 0100–0102 need not wait for every physical schema or reporting choice, provided the
-explicit research gates are retained. Unresolved operations must remain unsupported until their
-own decisions are made. Subsequent research contradicting an accepted contract would require a
-new superseding ADR, never an edit to the accepted record.
+ADRs **0100–0102 are accepted**; **0098/0099 remain proposed**. The final review checked their
+wording against the owner's scope/group, forecast-method, persistent review and ordinary FX
+movement decisions; no material ambiguity, contradiction or new business choice was found.
+Accepted architectural constraints remain compatible; the table below preserves all delegated
+R2/R4/R5/R6/R7/R9 questions as unresolved delivery gates. Acceptance closes only bounded B3
+business research, not B3 implementation, whole R1, Q39 or remaining Phase 4 rules. Unresolved
+operations remain unsupported until their own decisions. Future changes to these accepted ADRs
+require a new superseding ADR; no edit to an accepted contract is permitted.
 
 ## Reconciliation and technical implications
 
@@ -93,7 +96,7 @@ Earlier research examples do not authorise mixed-basis production totals.
 from enquiry/prospect to commercial customer using the existing Party/account foundations. Do not
 presume person customers or configurable teams already exist. This directly supports the open
 0099 relationship questions. R1-D–G remain open; detailed FX/reporting work belongs to R4/R9 rather
-than another expansion of B3. Stop here at documentation and recommendations.
+than another expansion of B3. Initial R1-C1 findings are now [recorded for discussion](phase-4-r1-c1-prospect-quotations.md); stop there before R1-C2.
 
 ## Related
 

@@ -45,18 +45,21 @@ R1-B1/B2 now have owner-reviewed direction in [proposed ADR 0099](decisions/0099
 CRM association separate from immutable issue linkage. STRICT temporary unlinking, closed-state
 eligibility, association scope per family/revision and accepted/job-linked restrictions remain open.
 R1-B3 now has owner-reviewed multiple independent acceptances and explicit alternative-family
-groups in [proposed ADR 0100](decisions/0100-independent-quotation-scopes-and-alternative-groups.md).
-The two forecast methods now have owner-reviewed direction in [proposed ADR 0101](decisions/0101-separate-accepted-business-and-remaining-forecast.md): MAINTAINED remaining estimate and
+groups in [accepted ADR 0100](decisions/0100-independent-quotation-scopes-and-alternative-groups.md).
+The two forecast methods now have owner-reviewed direction in [accepted ADR 0101](decisions/0101-separate-accepted-business-and-remaining-forecast.md): MAINTAINED remaining estimate and
 SELECTED_OFFERS, with accepted commitments separate and manual estimates unchanged on acceptance.
 The [staleness](phases/phase-4-r1-b3-forecast-staleness.md) and
 [FX](phases/phase-4-r1-b3-forecast-fx.md) review now records persistent provisional trust and
 explicit-date SPOT publication as owner-reviewed direction
-in [proposed ADR 0102](decisions/0102-govern-forecast-trust-and-explicit-valuation.md).
+in [accepted ADR 0102](decisions/0102-govern-forecast-trust-and-explicit-valuation.md).
 Ordinary later-date FX movement is now owner-reviewed as non-invalidating; used-rate corrections
 require separate R4/R9 impact assessment. The [bounded B3 reconciliation](phases/phase-4-r1-b3-reconciliation.md)
-finds no genuinely blocking B3 business decision; ADRs 0100–0102 can proceed to explicit owner
-acceptance review with assigned delivery dependencies. They remain proposed. Q39/whole R1 remain
-open; R1-C customer/prospect onboarding is the next recommended discussion.
+records the final review: ADRs 0100–0102 accepted 2026-10-09 by owner authorisation, closing
+bounded B3 business research only. Deferred delivery questions remain open; 0098/0099 stay Proposed.
+[R1-C1 research](phases/phase-4-r1-c1-prospect-quotations.md) recommends reliable Party-backed
+prospect issue without CustomerAccount, but this is not approved. Discuss that smallest choice
+next; R1-C2's financial-readiness event, C3 identity/sites and C4 duplicates/restoration remain open.
+Q39 and whole R1 remain open.
 Keep open post-issue grouping/regrouping, partial acceptance, cancelling/changing accepted scope,
 offer dependencies, partially won outcomes, one/multiple jobs, closure interactions and forecast
 eligibility/refresh, currency and as-of reporting rules (R2/R4/R5/R6/R7/R9). R1-D–G (person customers, ownership/scope, closure, duplicates/CRM

@@ -2,10 +2,10 @@
 
 # 0100 — Distinguish independent quotation scopes from exclusive alternative groups
 
-- **Status:** proposed — owner-reviewed R1-B3 business direction; not accepted/finalised.
+- **Status:** accepted — bounded business direction; owner-authorised final review passed 2026-10-09.
 - **Date:** 2026-10-08
 - **Affects:** Phase 4 offer identity, alternative groups, acceptance and forecasting boundaries.
-- **Gate:** research/design only; R1-B3 remains incomplete; no implementation/schema authorised.
+- **Gate:** bounded B3 business research closed; deferred package decisions remain delivery gates; no implementation/schema authorised.
 
 ## Context
 
@@ -15,10 +15,10 @@ Forcing each accepted scope into another opportunity fragments a genuine deal. S
 quotations, including alternatives and earlier revisions, inflates expected business.
 
 Existing research is in [R1-B3](../phases/phase-4-r1-b3-offers-and-forecast.md). The owner reviewed
-the scope/alternative direction below; forecasting is now under further investigation in the
-[forecast research](../phases/phase-4-r1-b3-forecast-basis.md). No Sales capability exists yet.
+the scope/alternative direction below; bounded forecast contracts are accepted in ADRs 0101/0102,
+with detailed delivery questions retained in the [forecast research](../phases/phase-4-r1-b3-forecast-basis.md). No Sales capability exists yet.
 
-## Decision — owner-reviewed proposed direction
+## Decision — accepted bounded business direction
 
 One opportunity may have several accepted quotations when they represent independently
 acceptable scopes. Acceptance belongs to an eligible **quotation revision**, not the opportunity.
@@ -131,7 +131,7 @@ accessed 2026-10-08: Dynamics revisions and distinct deal value, Odoo multiple q
 ERPNext item alternatives/ordered provenance. None supplies a universal alternative-family rule.
 Independent-by-default groups and multiple accepted scopes are the owner's reviewed direction;
 concurrency/history implications follow project invariants. [Forecast research](../phases/phase-4-r1-b3-forecast-basis.md)
-distinguishes vendor behaviour from proposed combination selection; its two methods now have owner-reviewed direction in [proposed ADR 0101](0101-separate-accepted-business-and-remaining-forecast.md); staleness/FX and operational rules are not accepted.
+distinguishes vendor behaviour from proposed combination selection; its two methods now have owner-reviewed direction in [ADR 0101](0101-separate-accepted-business-and-remaining-forecast.md); trust/dated FX direction is accepted in ADR 0102; deferred operational questions are not accepted.
 
 ## Open questions — do not finalise implicitly
 
@@ -139,7 +139,7 @@ Grouping/regrouping after issue; group scope/direct quote membership; partial ac
 quote; changing/cancelling accepted scope and releasing an exclusive claim; dependencies between
 offers; partially won outcomes; one vs multiple jobs; acceptance/closure interactions; forecast
 implementation of recalculation/eligibility and detailed FX/as-of policy. Forecast business
-direction is reviewed in proposed ADRs 0101/0102. The
+direction is reviewed in ADRs 0101/0102. The
 [bounded reconciliation](../phases/phase-4-r1-b3-reconciliation.md) distinguishes acceptance readiness
 from these delivery gates. Exact family/revision association and number shape
 remain R2/R5. These questions remain in Q39 and their owning research topics.
