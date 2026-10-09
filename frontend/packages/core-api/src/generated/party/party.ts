@@ -24,9 +24,12 @@ import type {
   AuthenticationExceptionResponse,
   AuthorizationExceptionResponse,
   ModelNotFoundExceptionResponse,
+  PartiesCandidates200,
+  PartiesCandidatesParams,
   PartiesDestroy403,
   PartiesIndex200,
   PartiesIndexParams,
+  PartiesRestore200,
   PartiesShow200,
   PartiesShowParams,
   PartiesStore201,
@@ -40,6 +43,372 @@ import { fetchClient } from "../../mutator/fetch-client";
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
+/**
+ * @summary Existing identities that probably match what is being entered, for reuse or restoration. Finds only; never merges (ADR 0105)
+ */
+export type partiesCandidatesResponse200 = {
+  data: PartiesCandidates200;
+  status: 200;
+};
+
+export type partiesCandidatesResponse401 = {
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
+
+export type partiesCandidatesResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
+export type partiesCandidatesResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
+};
+
+export type partiesCandidatesResponseSuccess = partiesCandidatesResponse200 & {
+  headers: Headers;
+};
+export type partiesCandidatesResponseError = (
+  | partiesCandidatesResponse401
+  | partiesCandidatesResponse403
+  | partiesCandidatesResponse422
+) & {
+  headers: Headers;
+};
+
+export type partiesCandidatesResponse =
+  partiesCandidatesResponseSuccess | partiesCandidatesResponseError;
+
+export const getPartiesCandidatesUrl = (params?: PartiesCandidatesParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/v1/parties/candidates?${stringifiedParams}`
+    : `/v1/parties/candidates`;
+};
+
+export const partiesCandidates = async (
+  params?: PartiesCandidatesParams,
+  options?: RequestInit,
+): Promise<partiesCandidatesResponse> => {
+  return fetchClient<partiesCandidatesResponse>(
+    getPartiesCandidatesUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getPartiesCandidatesQueryKey = (
+  params?: PartiesCandidatesParams,
+) => {
+  return [`/v1/parties/candidates`, ...(params ? [params] : [])] as const;
+};
+
+export const getPartiesCandidatesQueryOptions = <
+  TData = Awaited<ReturnType<typeof partiesCandidates>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  params?: PartiesCandidatesParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof partiesCandidates>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getPartiesCandidatesQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof partiesCandidates>>
+  > = () => partiesCandidates(params, requestOptions);
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof partiesCandidates>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type PartiesCandidatesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof partiesCandidates>>
+>;
+export type PartiesCandidatesQueryError =
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
+
+export function usePartiesCandidates<
+  TData = Awaited<ReturnType<typeof partiesCandidates>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  params: undefined | PartiesCandidatesParams,
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof partiesCandidates>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof partiesCandidates>>,
+          TError,
+          Awaited<ReturnType<typeof partiesCandidates>>
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function usePartiesCandidates<
+  TData = Awaited<ReturnType<typeof partiesCandidates>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  params?: PartiesCandidatesParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof partiesCandidates>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof partiesCandidates>>,
+          TError,
+          Awaited<ReturnType<typeof partiesCandidates>>
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function usePartiesCandidates<
+  TData = Awaited<ReturnType<typeof partiesCandidates>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  params?: PartiesCandidatesParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof partiesCandidates>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+/**
+ * @summary Existing identities that probably match what is being entered, for reuse or restoration. Finds only; never merges (ADR 0105)
+ */
+
+export function usePartiesCandidates<
+  TData = Awaited<ReturnType<typeof partiesCandidates>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  params?: PartiesCandidatesParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof partiesCandidates>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getPartiesCandidatesQueryOptions(params, options);
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary Restore an archived identity; its financial roles stay archived
+ */
+export type partiesRestoreResponse200 = {
+  data: PartiesRestore200;
+  status: 200;
+};
+
+export type partiesRestoreResponse401 = {
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
+
+export type partiesRestoreResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
+export type partiesRestoreResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
+};
+
+export type partiesRestoreResponseSuccess = partiesRestoreResponse200 & {
+  headers: Headers;
+};
+export type partiesRestoreResponseError = (
+  | partiesRestoreResponse401
+  | partiesRestoreResponse403
+  | partiesRestoreResponse422
+) & {
+  headers: Headers;
+};
+
+export type partiesRestoreResponse =
+  partiesRestoreResponseSuccess | partiesRestoreResponseError;
+
+export const getPartiesRestoreUrl = (party: number) => {
+  return `/v1/parties/${party}/restore`;
+};
+
+export const partiesRestore = async (
+  party: number,
+  options?: RequestInit,
+): Promise<partiesRestoreResponse> => {
+  return fetchClient<partiesRestoreResponse>(getPartiesRestoreUrl(party), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getPartiesRestoreMutationOptions = <
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof partiesRestore>>,
+    TError,
+    { party: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof fetchClient>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof partiesRestore>>,
+  TError,
+  { party: number },
+  TContext
+> => {
+  const mutationKey = ["partiesRestore"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof partiesRestore>>,
+    { party: number }
+  > = (props) => {
+    const { party } = props ?? {};
+
+    return partiesRestore(party, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PartiesRestoreMutationResult = NonNullable<
+  Awaited<ReturnType<typeof partiesRestore>>
+>;
+
+export type PartiesRestoreMutationError =
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
+
+/**
+ * @summary Restore an archived identity; its financial roles stay archived
+ */
+export const usePartiesRestore = <
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof partiesRestore>>,
+      TError,
+      { party: number },
+      TContext
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof partiesRestore>>,
+  TError,
+  { party: number },
+  TContext
+> => {
+  const mutationOptions = getPartiesRestoreMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
 export type partiesIndexResponse200 = {
   data: PartiesIndex200;
   status: 200;

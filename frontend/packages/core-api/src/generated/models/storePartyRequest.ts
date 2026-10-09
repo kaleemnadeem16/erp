@@ -4,6 +4,7 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
+import type { PartyKind } from "./partyKind";
 import type { StorePartyRequestRegistrationNo } from "./storePartyRequestRegistrationNo";
 import type { StorePartyRequestTaxId } from "./storePartyRequestTaxId";
 import type { StorePartyRequestWebsite } from "./storePartyRequestWebsite";
@@ -15,6 +16,7 @@ export interface StorePartyRequest {
   code: string;
   /** @maxLength 255 */
   name: string;
+  kind?: PartyKind;
   /** @maxLength 255 */
   registration_no?: StorePartyRequestRegistrationNo;
   /** @maxLength 255 */

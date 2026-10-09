@@ -7,6 +7,8 @@ use App\Modules\Parties\Http\Controllers\Api\V1\SupplierSiteController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth:sanctum')->group(function () {
+    Route::get('parties/candidates', [PartyController::class, 'candidates'])->name('parties.candidates');
+    Route::post('parties/{party}/restore', [PartyController::class, 'restore'])->whereNumber('party')->name('parties.restore');
     Route::apiResource('parties', PartyController::class)->except('update');
     Route::patch('parties/{party}', [PartyController::class, 'update'])->name('parties.update');
     Route::apiResource('customer-accounts', CustomerAccountController::class)->except('update');

@@ -3,6 +3,7 @@
 namespace App\Modules\Parties\Models;
 
 use App\Models\Model;
+use App\Modules\Parties\Support\PartyKind;
 use App\Support\Concerns\BelongsToCompany;
 use App\Support\Concerns\HasCustomFields;
 use App\Support\Status;
@@ -19,6 +20,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  *
  * @property string $code
  * @property string $name
+ * @property PartyKind $kind
  * @property string|null $registration_no
  * @property string|null $tax_id
  * @property string|null $website
@@ -40,6 +42,7 @@ class Party extends Model
     {
         return [
             'status' => Status::class,
+            'kind' => PartyKind::class,
         ];
     }
 

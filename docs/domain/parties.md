@@ -8,15 +8,26 @@ both: a distributor might supply raw pigment and also buy finished product back.
 into disconnected `customers`/`suppliers` rows loses the fact that it's one entity
 ([ADR 0030](../decisions/0030-unified-party-model.md)).
 
-## Accepted Sales identity extension — not implemented
+## Identity kind, duplicate candidates and restore (ADR 0105, built 2026-10-09)
 
 [ADR 0105](../decisions/0105-support-generic-party-identity-and-conversion.md) accepts organisation
-and individual contracting Parties through this foundation, with controlled identity reuse,
-restoration and enquiry conversion. An employee contact and an individual contracting buyer stay
-distinct. Existing model/schema below remain current runtime; kind fields, person validation,
-backfills and restore mechanisms need later design. No parallel customer/prospect master or
-automatic financial-account creation/merge is accepted. [R1 closure](../phases/phase-4-r1-decision-matrix.md)
-records all accepted foundations and delivery gates.
+and individual contracting Parties through this foundation. An employee contact and an individual
+contracting buyer stay distinct. No parallel customer/prospect master and no automatic
+financial-account creation or merge exists.
+
+- **Kind.** `parties.kind` is `ORGANISATION` (default; every earlier Party is one) or `INDIVIDUAL`, enforced by a database check. It
+  is identity only — independent of the customer/supplier roles. No person-name fields or jurisdiction validation are added; an individual's
+  `name` is their full name.
+- **Duplicate candidates.** `GET /parties/candidates` (name, code, tax id, registration number, contact email or phone) answers a list of
+  existing identities that probably match, with *why* (`matched_on`). It normalises case, spacing and punctuation but never guesses
+  similarity: a shared word in a name is not a match. It only finds — nothing is merged, overwritten or created. It needs a duty that already
+  chooses or creates Parties (`parties.party.manage`, plus the Sales capabilities that register themselves with `PartyCandidateAccess`);
+  **archived** candidates are shown only to someone who may restore them.
+- **Restore.** `POST /parties/{id}/restore` (`parties.party.manage`) brings an archived identity back instead of creating a second one. Only the
+  identity returns: its customer and supplier accounts stay archived, because each financial role is restored on its own authority (ADR 0084).
+  Idempotent; the unique (company, code) index also covers archived rows, so a restore can never collide.
+- Not built (later, as the planning ADRs allow): merging, B2C-specific fields or validation, restricted-candidate disclosure rules (Parties are
+  not record-scoped today).
 
 ## Where it sits
 

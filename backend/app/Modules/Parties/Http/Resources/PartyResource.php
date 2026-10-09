@@ -25,6 +25,7 @@ class PartyResource extends JsonResource
             'id' => $party->id,
             'code' => $party->code,
             'name' => $party->name,
+            'kind' => $party->kind->value,
             'registration_no' => $party->registration_no,
             'tax_id' => $party->tax_id,
             'website' => $party->website,

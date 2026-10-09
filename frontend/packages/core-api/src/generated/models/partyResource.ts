@@ -17,6 +17,7 @@ export interface PartyResource {
   id: number;
   code: string;
   name: string;
+  kind: string;
   registration_no: PartyResourceRegistrationNo;
   tax_id: PartyResourceTaxId;
   website: PartyResourceWebsite;

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Parties\Http\Requests\Party;
 
 use App\Modules\Parties\Models\Party;
+use App\Modules\Parties\Support\PartyKind;
 use App\Rules\Support\CompanyScoped;
 use App\Rules\Support\ValidCustomFields;
 use App\Support\Status;
@@ -33,6 +34,7 @@ class StorePartyRequest extends FormRequest
         return [
             'code' => ['required', 'string', 'max:255', CompanyScoped::unique('parties', 'code')],
             'name' => ['required', 'string', 'max:255'],
+            'kind' => ['sometimes', Rule::enum(PartyKind::class)],
             'registration_no' => ['sometimes', 'nullable', 'string', 'max:255'],
             'tax_id' => ['sometimes', 'nullable', 'string', 'max:255'],
             'website' => ['sometimes', 'nullable', 'string', 'max:255'],

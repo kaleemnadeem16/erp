@@ -7,8 +7,12 @@ namespace App\Modules\Parties\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Modules\Parties\Actions\ArchiveParty;
 use App\Modules\Parties\Actions\CreateParty;
+use App\Modules\Parties\Actions\FindPartyCandidates;
+use App\Modules\Parties\Actions\RestoreParty;
 use App\Modules\Parties\Actions\UpdateParty;
+use App\Modules\Parties\Http\Requests\Party\CandidatePartyRequest;
 use App\Modules\Parties\Http\Requests\Party\IndexPartyRequest;
+use App\Modules\Parties\Http\Requests\Party\RestorePartyRequest;
 use App\Modules\Parties\Http\Requests\Party\ShowPartyRequest;
 use App\Modules\Parties\Http\Requests\Party\StorePartyRequest;
 use App\Modules\Parties\Http\Requests\Party\UpdatePartyRequest;
@@ -70,6 +74,20 @@ class PartyController extends Controller
     public function update(UpdatePartyRequest $request, Party $party, UpdateParty $update): PartyResource
     {
         return new PartyResource($update($party, $request->validated(), $request->user()));
+    }
+
+    /** Existing identities that probably match what is being entered, for reuse or restoration. Finds only; never merges (ADR 0105). */
+    public function candidates(CandidatePartyRequest $request, FindPartyCandidates $find): JsonResponse
+    {
+        return response()->json(['data' => $find($request->validated(), $request->user())]);
+    }
+
+    /** Restore an archived identity; its financial roles stay archived. */
+    public function restore(RestorePartyRequest $request, int $party, RestoreParty $restore): PartyResource
+    {
+        $model = Party::withTrashed()->findOrFail($party);
+
+        return new PartyResource($restore($model, $request->user()));
     }
 
     public function destroy(Request $request, Party $party, ArchiveParty $archive): Response
