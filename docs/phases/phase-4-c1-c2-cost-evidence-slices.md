@@ -2,10 +2,28 @@
 
 # C1/C2 — Coherent correction slices for the revised C0
 
-**Date:** 2026-10-09. **State:** proposed implementation sequence; no code/migrations authorised.
-[Revised C0](phase-4-c0-cost-evidence-contract.md) and [proposed 0110](../decisions/0110-version-cost-evidence-without-changing-legacy-estimates.md)
+**Date:** 2026-10-10. **State:** C1a–c/C2a–b authorised by the owner; C1a–c internal query delivered; C2 integration remains in progress.
+C1d remains unauthorised.
+[Revised C0](phase-4-c0-cost-evidence-contract.md) and [accepted 0110](../decisions/0110-version-cost-evidence-without-changing-legacy-estimates.md)
 replace the `9dced38` compatibility-first plan. [Dependency map](phase-4-cost-dependency-map.md)
 identifies every affected repository cost path. Commit locally only; do not push without explicit request.
+
+## Local C1 checkpoint — 2026-10-10
+
+C1a–c is delivered as an internal query, registered strategies and guarded cost-read adapter.
+Existing public APIs/DTOs and screens have not yet migrated; their old behaviour is historical
+implementation awaiting C2, not a second endorsed cost contract. C1d remains unauthorised.
+
+Validation: 1,252 Inventory/architecture tests passed (6,552 assertions), then 23 focused query/
+availability tests passed (95 assertions) including added QA, rounding and overflow cases.
+Pint passed; full Larastan passed. No posting file, migration, generated client or frontend consumer
+changed in this slice. Frontend/browser/codegen checks do not apply until C2 changes those surfaces.
+No public demo surface exists yet; C2 owns the demo scenarios alongside the migrated screens.
+
+Read-only applicability: no new persisted business fact, transition, permission, route, settings or
+job, so migration/rollback, audit writes, idempotency and rollout grants are not applicable. Existing
+capabilities and tenant/limited-scope guards are tested. Snapshot/history persistence remains R5.
+
 
 ## Delivery principle and dependency order
 

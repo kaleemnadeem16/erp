@@ -2,8 +2,8 @@
 
 # Phase 4 — Sales, quotations and job handover
 
-- **Status:** R1/R2 bounded research complete; C0 proposed, R3–R9 pending. CRM backend foundation
-  exists separately; quotation and cost-compatibility implementation remain pending.
+- **Status:** R1/R2 bounded research complete; C0 accepted; C1a–c/C2a–b authorised and in progress, R3–R9 pending. CRM backend foundation
+  exists separately; quotation implementation remains pending.
 - **Started:** 2026-10-08, at the owner's request. Phase 3 enhancements remain with another agent.
 - **Depends on:** Parties and Estimating; shared Numbering, Approvals, Company and access foundations.
 - **Decision gate:** no new business model is accepted by this plan. Discuss each topic, then record
@@ -69,8 +69,8 @@ proposal is never "researched", "accepted" or "complete" merely because it exist
 - [R1-C2 financial readiness](phase-4-r1-c2-financial-readiness.md) — accepted bounded separation in ADR 0104; historical candidate gates remain deferred.
 - [Consolidated R1 decision matrix](phase-4-r1-decision-matrix.md) · [additional evidence](phase-4-r1-remaining-evidence.md) — accepted matrix and closure; detailed implementation gates retained.
 - [R2 consolidated recommendations](phase-4-r2-quotation-structure.md) · [actual capabilities](phase-4-r2-existing-capabilities.md) · [primary comparison](phase-4-r2-erp-comparison.md) — retained A–H alternatives; U1–U6 approved in accepted ADR 0109.
-- [R2 verified impact matrix](phase-4-r2-compatibility-audit.md) · [compatibility plan](phase-4-r2-compatibility-plan.md) — source-specific coexistence, shared certainty obligations and future Sales slices; code not authorised.
-- [C0 contract proposal](phase-4-c0-cost-evidence-contract.md) · [C1/C2 slice plan](phase-4-c1-c2-cost-evidence-slices.md) — revised proposed 0110/Q41: correct existing operations and migrate consumers; no runtime changes.
+- [R2 verified impact matrix](phase-4-r2-compatibility-audit.md) · [compatibility plan](phase-4-r2-compatibility-plan.md) — source-specific coexistence, shared certainty obligations and future Sales slices; only C1a–c/C2a–b code authorised.
+- [C0 contract proposal](phase-4-c0-cost-evidence-contract.md) · [C1/C2 slice plan](phase-4-c1-c2-cost-evidence-slices.md) — accepted 0110/Q41 resolved: correct existing operations and migrate consumers; delivery in progress.
 - [Cost dependency map](phase-4-cost-dependency-map.md) — actual Actions/DTOs, routes/client/UI, controls/tests/demos and coordinated change boundaries.
 - Later topic records are added when investigated; do not generate empty speculative documents.
 
@@ -94,7 +94,7 @@ proposal is never "researched", "accepted" or "complete" merely because it exist
 - [x] Record approved R2 U1–U6 in accepted ADR 0109, supersede 0008/0055 explicitly and document actual compatibility/required slices; resolve Q40.
 - [x] Owner review of compatibility assessment/plan and formal bounded R2 business research closure; final consistency review passed.
 - [x] Prepare C0 and C1/C2 slices; revise compatibility-first proposal after owner constraints with verified dependency map and coherent in-place consumer migration.
-- [ ] Owner approve C0/0110 and explicitly authorise selected C1/C2 code/migration slices.
+- [x] Owner approved C0/0110 and authorised C1a–c/C2a–b code; C1d migration/settings remain gated.
 - [ ] Investigate R3–R9 in the dependency order above, reusing sufficient accepted research; R3 independently ready, not started.
 - [x] Reconcile R1 business foundations with the historical Sales proposal; physical schema reconciliation remains R2–R9.
 - [ ] Define implementation slices, demos and observable acceptance criteria only after decisions.

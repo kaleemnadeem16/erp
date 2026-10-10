@@ -2,10 +2,10 @@
 
 # C0 — Correct the existing cost contract: revised owner proposal
 
-**Date:** 2026-10-09. **State:** revised proposal, not accepted/implemented; [ADR 0110](../decisions/0110-version-cost-evidence-without-changing-legacy-estimates.md).
+**Date:** 2026-10-10. **State:** owner-approved contract; C1a–c/C2a–b implementation authorised, C1d excluded; [ADR 0110](../decisions/0110-version-cost-evidence-without-changing-legacy-estimates.md).
 **Constraint:** owner confirms no real business/production data; local commits only, no remote push.
 The compatibility-first draft at `9dced38` is historical. [Verified dependencies](phase-4-cost-dependency-map.md)
-replace assumptions about preserving legacy consumers. R2 stays closed; Q41 tracks C0 review.
+replace assumptions about preserving legacy consumers. R2 stays closed; Q41 is resolved by owner acceptance of 0110.
 
 ## Business example and correction
 
@@ -70,7 +70,7 @@ zero overhead, not proof unknown direct cost is complete. No required cost at an
 quantity means zero amount, not a valid unit rate for positive demand. Do not change quantity rules.
 
 Money remains decimal(19,4) strings; internal decimal factors/coverage retain needed precision.
-Initial proposed query limit is 12 integer/9 fractional stock-unit digits; existing public technical
+Approved initial query limit is 12 integer/9 fractional stock-unit digits; existing public technical
 inputs retain their six-place bounds. Reject overflow/unrepresentable input, never silently truncate.
 No new quotation precision decision, historical migration edit or new stock posting precision follows.
 
@@ -179,15 +179,15 @@ additive migration; no local reset or historical migration rewrite. Every comple
 compatible backend/frontend/generated consumers and appropriate tests. [Slice plan](phase-4-c1-c2-cost-evidence-slices.md)
 defines coupling and local checks.
 
-Owner review needed for the revised in-place response/DTO contract, demand attribution and coverage,
+Owner review approved the revised in-place response/DTO contract, demand attribution and coverage,
 query limits/current-only temporal support, projection/evaluation authority and implementation cohorts.
-Also confirm 0077's legacy-retirement sequencing refinement before formal ADR acceptance. 0110 stays
-proposed; no code/migrations are authorised. R3 can research source-neutral pricing separately;
+The owner confirmed 0077's legacy-retirement sequencing refinement and accepted 0110 on 2026-10-10.
+C1a–c/C2a–b code is authorised; C1d migrations and serial-selection UI are excluded. R3 can research source-neutral pricing separately;
 R5 owns adoption/staleness/approval invalidation. Not every quotation needs complete material costing.
 
 ## Related
 
 - [Verified dependency map](phase-4-cost-dependency-map.md) · [C1/C2 slices](phase-4-c1-c2-cost-evidence-slices.md)
-- [Proposed ADR 0110](../decisions/0110-version-cost-evidence-without-changing-legacy-estimates.md)
+- [Accepted ADR 0110](../decisions/0110-version-cost-evidence-without-changing-legacy-estimates.md)
 - [0077](../decisions/0077-generic-material-cost-resolution-with-a-configurable-costing-scope.md) · [0109](../decisions/0109-shared-commercial-quotation-lines-and-optional-estimating.md)
 - [Compatibility plan](phase-4-r2-compatibility-plan.md) · [Phase 4 plan](phase-4-sales-quotations-and-handover.md)

@@ -3,12 +3,11 @@
 # R2 — Dependency-ordered compatibility plan
 
 **Date:** 2026-10-09. **State:** compatibility assessment/plan owner-reviewed; bounded R2 research formally closed.
-C0/C1/C2 delivery approach revised under no-real-business-data constraints; contract approval
-and implementation authority remain pending. The earlier compatibility-first draft is historical.
+C0/C1/C2 delivery approach revised under no-real-business-data constraints; 0110 accepted and C1a–c/C2a–b implementation authorised on 2026-10-10. The earlier compatibility-first draft is historical.
 Business direction is accepted in [ADR 0109](../decisions/0109-shared-commercial-quotation-lines-and-optional-estimating.md).
 The [audit](phase-4-r2-compatibility-audit.md) distinguishes valid current behaviour, known defects,
 required shared work and absent future Sales capabilities. No migration/backfill is proposed as
-an immediate action; proposed code slices need owner authorisation before delivery.
+an immediate action; C1d alone needs separate scope-setting/migration authorisation.
 
 ## A — Documentation reconciliation (R2 milestone, retained history)
 
@@ -21,7 +20,7 @@ removed; formal research closure is separate from implementation readiness.
 Current detailed technical proposal (replaces the compatibility-first delivery assumptions): [C0 cost-evidence contract](phase-4-c0-cost-evidence-contract.md)
 and [C1/C2 coherent correction slices](phase-4-c1-c2-cost-evidence-slices.md), supported by the
 [verified dependency map](phase-4-cost-dependency-map.md).
-Proposed ADR 0110 remains unaccepted; these records refine C0–C2 below without authorising code.
+Accepted ADR 0110 authorises C1a–c/C2a–b; C1d remains separately gated.
 
 ## B/C — Compatibility and future delivery matrix
 

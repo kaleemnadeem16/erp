@@ -183,6 +183,16 @@ statement describes the day it was written, not today — read STATUS.md and the
 
 ---
 
+## 2026-10-10 — C1a–c internal cost query checkpoint
+
+Inventory owns typed certainty/coverage/time/source evidence and registered AVCO/FIFO/SPECIFIC
+read-only strategies. Shared hypothetical scenarios prevent layer reuse, attribute rounding residuals
+and preserve stock. Guarded Estimating cost reads reuse internal_cost.view and refuse unsafe limited
+scope. No public operation/consumer migration yet: C2a–b remain in progress. C1d is excluded.
+Validation: 1,252 Inventory/architecture tests (6,552 assertions), 23 focused tests (95 assertions),
+Pint and Larastan passed. No posting or schema changes, no development reset and no push.
+
+
 ## 2026-10-10 — Cost contract approved; controlled implementation started
 
 Owner accepted revised ADR 0110 and authorised C1a–c/C2a–b, resolving Q41.

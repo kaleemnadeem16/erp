@@ -334,6 +334,11 @@ The existing item/manage and mapping/manage boundaries remain authoritative; omi
 keys preserve stored mappings. Packages, supplier offers and conversions need the saved Item.
 See [Items](../../../../docs/domain/items.md#item-form-completeness-2026-10-06).
 
+`QueryMaterialCost` is the internal read-only AVCO/FIFO/SPECIFIC cost-evidence port. It reads
+current consistent evidence and never invokes movement writers. See
+[material cost resolution](../../../../docs/domain/material-cost-resolution.md) for certainty,
+quantity/scope, scenario attribution and guarded disclosure boundaries.
+
 ## Related
 
 - [domain/items.md](../../../../docs/domain/items.md)

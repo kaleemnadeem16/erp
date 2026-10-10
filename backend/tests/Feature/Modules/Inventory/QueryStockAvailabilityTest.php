@@ -10,12 +10,15 @@ use App\Modules\Accounting\Models\ChartOfAccount;
 use App\Modules\Accounting\Support\AccountType;
 use App\Modules\Inventory\Actions\CreateWarehouse;
 use App\Modules\Inventory\Actions\PostInventoryMovement;
+use App\Modules\Inventory\Actions\QueryMaterialCost;
 use App\Modules\Inventory\Actions\QueryStockAvailability;
 use App\Modules\Inventory\Models\AvcoPool;
 use App\Modules\Inventory\Models\Category;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Models\Location;
 use App\Modules\Inventory\Support\AvcoPoolScope;
+use App\Modules\Inventory\Support\Costing\CostStatus;
+use App\Modules\Inventory\Support\Costing\MaterialCostRequest;
 use App\Modules\Inventory\Support\InventoryScope;
 use App\Modules\Inventory\Support\LocationType;
 use App\Modules\Inventory\Support\StockAvailabilitySnapshot;
@@ -246,7 +249,7 @@ class QueryStockAvailabilityTest extends TestCase
 
     public function test_qa_held_stock_lands_on_the_receiving_location_and_reconciles_with_the_inventory_overview(): void
     {
-        $item = $this->item('qa-item');
+        $item = $this->item('qa-item', valuation: ValuationMethod::Fifo);
         $receiving = $this->warehouse('a');
         $other = $this->warehouse('b');
         $this->receiveThroughQaRequiredPurchaseOrder($item, $receiving, received: '6.0000', passed: '4.0000');
@@ -260,6 +263,13 @@ class QueryStockAvailabilityTest extends TestCase
         $this->assertSame('4.0000', (string) $balances['a']->usable);
         $this->assertSame('0.0000', (string) $balances['b']->held);
         $this->assertSame('3.0000', (string) $balances['b']->usable);
+
+        $cost = app(QueryMaterialCost::class)(
+            new MaterialCostRequest($item, '9'),
+        );
+        $this->assertSame(CostStatus::Partial, $cost->status);
+        $this->assertSame('70.0000', $cost->toArray()['known_cost']);
+        $this->assertSame('2.0000', $cost->coverage[0]['unresolved_quantity']);
 
         // The overview's location-agnostic "available" is on-hand 9 minus QA-held 2; with no unusable
         // location in play, this location-aware figure must equal it.

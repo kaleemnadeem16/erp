@@ -5,11 +5,15 @@ declare(strict_types=1);
 namespace App\Modules\Inventory;
 
 use App\Modules\Imports\Support\ImportTargetRegistry;
+use App\Modules\Inventory\Actions\Costing\AvcoCostStrategy;
+use App\Modules\Inventory\Actions\Costing\FifoCostStrategy;
+use App\Modules\Inventory\Actions\Costing\SpecificCostStrategy;
 use App\Modules\Inventory\Imports\OpeningStateImportTarget;
 use App\Modules\Inventory\Models\InventoryCutover;
 use App\Modules\Inventory\Models\StockMove;
 use App\Modules\Inventory\Models\Warehouse;
 use App\Modules\Inventory\Numbering\StockScrapNumbering;
+use App\Modules\Inventory\Support\Costing\CostStrategyRegistry;
 use App\Modules\Inventory\Support\PermissionVocabulary;
 use App\Modules\Numbering\Support\NumberingRegistry;
 use App\Support\CompanyLocks\ExistsProbe;
@@ -28,6 +32,17 @@ class InventoryServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->app->singleton(CostStrategyRegistry::class, function ($app) {
+            $registry = new CostStrategyRegistry;
+            foreach ([AvcoCostStrategy::class,
+                FifoCostStrategy::class,
+                SpecificCostStrategy::class] as $strategy) {
+                $registry->register($app->make($strategy));
+            }
+
+            return $registry;
+        });
+
         $this->app->afterResolving(ImportTargetRegistry::class, static function (ImportTargetRegistry $registry): void {
             $registry->register(new OpeningStateImportTarget);
         });

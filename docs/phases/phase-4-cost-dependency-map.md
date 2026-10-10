@@ -145,7 +145,7 @@ and idempotent seed verification. “No real data” does not imply developers c
 
 0077 owns query/scope/certainty; 0109 preserves optional estimating and commercial boundaries;
 0050 technical/item unit separation, 0049 overhead, 0054/0057/0058 and 0072/0076 controls remain.
-0110 is proposed and is revised in place; its old compatibility-first draft remains in Git at
+0110 was accepted on 2026-10-10; its old compatibility-first draft remains in Git at
 `9dced38`, never treated as accepted architecture. C0/slices/compatibility handoff, module README,
 Assembly/formulation/material-resolution/pricing domain references, phase indexes, Q41 and STATUS
 must identify the corrected proposal. Accepted ADRs and invariants require no semantic relaxation.

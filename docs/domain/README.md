@@ -114,6 +114,8 @@ Lead → Opportunity → Quotation (revisions) → Job → Work Order → Invoic
 
 Unfamiliar term? → [GLOSSARY.md](../GLOSSARY.md)
 
+- [Material cost resolution](material-cost-resolution.md) — Inventory-owned read-only certainty, coverage and valuation evidence
+
 ## Related
 
 - [architecture/invariants.md](../architecture/invariants.md) — rules that govern all of this
