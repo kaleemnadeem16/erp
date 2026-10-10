@@ -27,6 +27,8 @@ these choices were made, see [decisions/](../decisions/).
 | [approval-workflows.md](approval-workflows.md) | Maker/checker, multi-stage approval and authority limits | Adding an approval or controlled transition |
 | [approval-migration-audit.md](approval-migration-audit.md) | Audit of the legacy approval workflows against the shared engine | Retiring or migrating a legacy approval |
 | [data-import.md](data-import.md) | Column-mapping import engine | Building or extending an import |
+| [screen-delivery-contract.md](screen-delivery-contract.md) | PO interaction reference, field/action coverage, sheets, lists, bulk actions and acceptance evidence | Building or extending a screen |
+| [capability-delivery-contract.md](capability-delivery-contract.md) | Baseline/enabled workflows, research, activation/downgrade and complete UI exposure | Designing or exposing a configurable capability |
 | [user-interface.md](user-interface.md) | UI research, interaction standards and phase screen ownership | Planning or building screens |
 | [ui-building-blocks.md](ui-building-blocks.md) | The reusable UI that exists, and the alternatives kept on purpose | Before building any control, layout or screen behaviour |
 | [appearance-and-printing.md](appearance-and-printing.md) | Light/dark/theme tokens and Quick Print branding, both company/user-layered | Adding a colour, a theme, or touching print output |

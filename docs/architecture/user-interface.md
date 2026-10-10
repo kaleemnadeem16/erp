@@ -9,6 +9,9 @@ The React SPA is an operational ERP interface, not a collection of CRUD forms. E
 the screens needed to perform and understand the backend workflows it introduces. A phase is not
 UI-complete merely because its endpoints have generated hooks.
 
+The [screen delivery contract](screen-delivery-contract.md) makes coverage and presentation decisions
+reviewable; [capability delivery](capability-delivery-contract.md) covers simple and advanced modes.
+
 ## Design gate before a workflow is built
 
 For each workflow, write a short interaction specification in its domain document before coding:
@@ -24,7 +27,8 @@ For each workflow, write a short interaction specification in its domain documen
    use before settling API additions.
 5. Reuse `core-ui` patterns where they fit, but perform a consistency/accessibility audit instead
    of copying accidental limitations from the first screen.
-6. Record the agreed screen inventory and acceptance scenarios in the phase/domain docs, then
+6. Record the agreed screen inventory, contract coverage matrix, mode coverage and acceptance
+   scenarios in the phase/domain docs, then
    implement through generated API hooks and test the critical user journey.
 
 The baseline is WCAG 2.2 AA. In particular, errors must be identified in text and associated with
@@ -74,15 +78,18 @@ backend authorisation and shared lookup-read policy remain separate ([ADR 0066](
   (`PATCH` toggling the existing `status` field) but deliberately not hard-delete, since that
   endpoint has no guard against an item still referenced by stock/purchasing records.
 
-## Advanced options: one menu per page, not one checkbox per section
+## Advanced options: shared disclosure, with the menu alternative retained
 
 "Keep the UI minimum, features maximum": when a create/edit screen has a field group that already
 has a sensible default and is only occasionally overridden (a foreign-currency exchange rate, a
-non-default policy, anything in the same shape), **the default is this pattern, for every such
-group on every screen, unless the user explicitly asks for something else for that specific
-screen.** Don't invent a bespoke inline show/hide control per screen.
+non-default policy, anything in the same shape), **use the current shared disclosure pattern** (`MoreOptionsToggle` with `Collapse`), as selected
+for PO in `presentation.ts`. The checkbox-menu pattern below is a retained alternative, not a
+competing default. Existing values reveal their group. Do not invent a bespoke control or confuse
+form disclosure with company enablement; see [capability delivery](capability-delivery-contract.md).
 
-- **One toggle per page, not one per section.** A single "Advanced options" button lives in the
+The following rules apply when the checkbox-menu alternative is selected:
+
+- **One menu per page, not one per section.** A single "Advanced options" button lives in the
   screen's own `PageHeader` `actions` (top-right alongside the title on wide screens; aligned to
   the right edge when the header stacks on mobile) — not inside the section
   it controls, and not a separate control per optional group. Opening it shows a menu of
@@ -119,9 +126,9 @@ passes none of them renders exactly as it did before any of this existed. This i
 - A screen that genuinely needs different behaviour opts out or overrides locally (e.g. a screen with
   several status-gated actions keeps using `actions` instead of `primaryAction`) rather than the base
   component growing a special case for it.
-- Don't wire a new prop into a screen "for consistency" before that screen actually needs the
-  behaviour — a future new list screen still starts from a plain table with top-inline buttons and
-  only opts into `view`/`primaryAction`/`rowActions`/etc. once it actually needs them.
+- Optional component props preserve existing callers; this is not permission for a new screen to
+  omit the required list interactions. New screens satisfy the screen delivery contract, and
+  conditional behaviour (bulk actions, printing, approvals) is assessed and recorded per feature.
 
 ## Mobile list-screen patterns
 
@@ -224,7 +231,7 @@ instead of a page of its own. Purchase orders are the reference: `purchase-order
 
 - **Route**: `new` and `:id` are *child* routes of the list (`router.tsx`), so the list stays
   mounted, dimmed, behind the sheet, and the list's filters (held in the URL) are carried across
-  opening, closing, and the trip to the full-page edit and back.
+  opening, closing, and the trip to edit and back (edit defaults to a sheet too).
 - **Page or sheet is one word**: both presentations are implemented and kept. Each screen takes a
   `presentation` prop and `apps/main/src/presentation.ts` picks per screen — see
   [ui-building-blocks.md](ui-building-blocks.md) for what exists and how to add another.

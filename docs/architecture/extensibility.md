@@ -129,6 +129,10 @@ more meaning into one `required_permission` column.
 
 ## Progressive capability modes
 
+Apply the [capability delivery contract](capability-delivery-contract.md) when implementing or
+exposing a mode: classification, research, safe enablement/downgrade, historical values and UI
+coverage. Company size alone does not decide which capabilities a company needs.
+
 When a domain needs both a low-hassle path and richer behaviour, prefer a small number of
 cohesive company-level modes over many independent feature flags. The database may support the
 superset, while Actions validate the selected mode and the UI reveals only relevant controls.

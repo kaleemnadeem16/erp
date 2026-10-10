@@ -97,6 +97,10 @@ named switch; everything else is already wired.
 
 ### Making another screen a sheet-or-page
 
+New record screens default to sheets. Follow the [screen delivery contract](screen-delivery-contract.md)
+for owner-agreed page exceptions, coverage and navigation acceptance checks. Optional component
+props retain compatibility; they do not make required screen behaviour optional.
+
 1. Accept `presentation?: Presentation` and build the header pieces once; render them through
    `RecordSheet` for `"sheet"` and `PageHeader` for `"page"` (see `present()` in
    `purchase-order-detail-screen.tsx`).

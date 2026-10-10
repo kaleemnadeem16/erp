@@ -270,7 +270,8 @@ errors announced. The axe and contrast specs run on new pages.
 ## Required checklist before shipping a screen
 
 0. Settle the workflow first ([user-interface.md](user-interface.md#design-gate-before-a-workflow-is-built)): users, lifecycle, permission matrix, journey.
-1. Choose list/detail/form and page/sheet; reuse the shared shell, controls and hooks.
+1. Complete the [screen coverage matrix](screen-delivery-contract.md); use record sheets by
+   default and document owner-agreed page exceptions. Reuse shared shells, controls and hooks.
 2. Map every visible action/field/filter/print projection to existing capability and record scope;
    complete [authorisation](authorization.md)'s checklist, even when no new permission is needed.
 3. Keep query context, defaults, input and appropriate view/column preferences across navigation.
@@ -278,7 +279,8 @@ errors announced. The axe and contrast specs run on new pages.
 5. Verify default light and dark, the chosen accent, keyboard/focus, **phone width (no horizontal overflow, primary action reachable)** and open portals.
 6. Test important behaviours (filter request, selection, disclosure/default preservation, review,
    successful refresh), not merely that a class exists. Keep fixtures independent of mutable demos.
-7. Apply the workflow behaviour standards above (progressive exposure, permission-aware controls, reason codes, confirmations, language).
+7. Apply the workflow behaviour standards above and [capability delivery](capability-delivery-contract.md):
+   complete enabled-mode exposure, preserved advanced values, permission-aware controls and operator language.
 8. Update the matching domain/module/journey docs alongside the work ([feature-completion-checklist.md](feature-completion-checklist.md)); STATUS only at a workstream milestone. Describe exceptions.
 
 Adoption is incremental: PO list/page/sheets, the Approvals inbox/history/review workspace and

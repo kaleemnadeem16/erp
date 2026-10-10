@@ -36,6 +36,9 @@ Purely local mechanics—copy changes, a bug whose intended behaviour is already
 index supporting an existing query, or wiring a decided API into a screen—do not trigger fresh ERP
 comparison.
 
+For configurable capabilities, apply [capability delivery](capability-delivery-contract.md#research-and-specification):
+research activation, scale, historical-record handling and downgrade, not just the advanced screen.
+
 ## Bounded research method
 
 1. Write the exact question before searching. “Research user management” is too broad; “how do

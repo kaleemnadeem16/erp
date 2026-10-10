@@ -76,6 +76,16 @@ Which of these to run for which change, and what CI adds, is in [pre-push-checks
 Backend: `docker compose exec app php artisan test` (or `docker/backend/run-tests-tmpfs.sh`), `vendor/bin/pint --test`, `vendor/bin/phpstan analyse --memory-limit=2G`. Frontend: `npx tsc --noEmit` in each project, `npx playwright test`
 in `frontend/apps/e2e`. Regenerate the client with `php artisan scramble:export --path=storage/api-docs/openapi.json` then `npm run codegen`, and commit only what your change moved.
 
+## Screen and capability acceptance
+
+For new or materially extended screens, verify the agreed coverage matrix and applicable
+behaviours in [screen delivery](screen-delivery-contract.md#completion-evidence), including
+filter requests/results, sorting, context preservation, save/reopen/refresh and safe selection.
+Configurable capabilities also cover the baseline/enabled, permission, existing-record and
+activation/downgrade cases in [capability delivery](capability-delivery-contract.md#verification-and-handoff).
+These supplement the browser, accessibility and integrity requirements above; a happy-path
+journey alone does not establish UI completeness.
+
 ## Related
 
 - [feature-completion-checklist.md](feature-completion-checklist.md) · [domain-integrity.md](domain-integrity.md) · [authorization.md](authorization.md#build-rules-every-new-feature-follows)
