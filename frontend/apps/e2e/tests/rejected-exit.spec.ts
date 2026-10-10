@@ -69,7 +69,7 @@ test('rejected grouped stock is scrapped from the item page: the delivery is cho
   await activateGrouped(page, world);
   const delivery = await rejectedDelivery(page, world, await createQaOrder(page, world), 'SCRAP', { grouped: true });
 
-  await page.goto(`/items/${world.item.id}`);
+  await page.goto(`/items/${world.item.id}?tab=packaging`);
   await expect(page.getByTestId('package-balance-row').first().getByTestId('breakdown-rejected')).toContainText(/1 × Sealed 5 L can = 5 l/i);
   await expect(page.getByTestId('return-rejected-stock')).toBeVisible();
   await page.getByTestId('scrap-rejected-stock').click();

@@ -10,7 +10,7 @@ test('transfer 10 L to Karachi: whole can arrives sealed, loose arrives loose, b
   const world = await createStockedItem(page, 'e2e-xfer');
   await activateGrouped(page, world);
 
-  await page.goto(`/items/${world.item.id}`);
+  await page.goto(`/items/${world.item.id}?tab=packaging`);
   const row = page.getByTestId('package-balance-row').first();
   await expect(row.getByTestId('breakdown-total')).toContainText(/= 20 l/i);
   await row.getByTestId('transfer-stock').click();
@@ -66,7 +66,7 @@ test('a destination holding stock with no current package count blocks the trans
     });
   });
 
-  await page.goto(`/items/${world.item.id}`);
+  await page.goto(`/items/${world.item.id}?tab=packaging`);
   await page.getByTestId('package-balance-row').first().getByTestId('transfer-stock').click();
   const dialog = page.getByTestId('transfer-dialog');
   await dialog.getByLabel('To', { exact: true }).selectOption(String(world.karachi.id));

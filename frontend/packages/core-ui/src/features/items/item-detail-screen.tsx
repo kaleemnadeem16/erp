@@ -5,7 +5,6 @@ import {
   ArchiveRestore,
   Pencil,
   ArrowLeft,
-  LayoutGrid,
   Layers,
   Building2,
   Package,
@@ -100,18 +99,18 @@ export function ItemDetailScreen({
 
   const updateStatus = useItemsUpdate();
 
-  type ItemDetailTab = "all" | "overview" | "suppliers" | "packaging" | "recipes";
+  type ItemDetailTab = "overview" | "suppliers" | "packaging" | "recipes";
 
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get("tab") as ItemDetailTab | null;
   const [activeTab, setActiveTab] = useState<ItemDetailTab>(
-    tabParam && ["all", "overview", "suppliers", "packaging", "recipes"].includes(tabParam)
+    tabParam && ["overview", "suppliers", "packaging", "recipes"].includes(tabParam)
       ? tabParam
-      : "all",
+      : "overview",
   );
 
   useEffect(() => {
-    if (tabParam && ["all", "overview", "suppliers", "packaging", "recipes"].includes(tabParam)) {
+    if (tabParam && ["overview", "suppliers", "packaging", "recipes"].includes(tabParam)) {
       setActiveTab(tabParam);
     }
   }, [tabParam]);
@@ -119,7 +118,7 @@ export function ItemDetailScreen({
   const handleTabChange = (nextTab: ItemDetailTab) => {
     setActiveTab(nextTab);
     const newParams = new URLSearchParams(searchParams);
-    if (nextTab === "all") {
+    if (nextTab === "overview") {
       newParams.delete("tab");
     } else {
       newParams.set("tab", nextTab);
@@ -131,10 +130,9 @@ export function ItemDetailScreen({
     const list: Array<{
       id: ItemDetailTab;
       label: string;
-      icon: typeof LayoutGrid;
+      icon: typeof Layers;
       count?: number;
     }> = [
-      { id: "all", label: "All sections", icon: LayoutGrid },
       { id: "overview", label: "Overview", icon: Layers },
       { id: "suppliers", label: "Suppliers & Sourcing", icon: Building2 },
       { id: "packaging", label: "Packaging & Units", icon: Package },
@@ -397,195 +395,201 @@ export function ItemDetailScreen({
         </div>
       </div>
 
-      <DetailPageLayout>
-        {/* Overview Sections */}
-        {(activeTab === "all" || activeTab === "overview") && (
-          <>
-            <DetailSection
-              title="General specification"
-              description="Catalog identity, item classification, and system status."
-            >
-              <DetailField label="Code">
-                <span className="font-semibold text-foreground">
-                  {item.code}
-                </span>
-              </DetailField>
-              <DetailField label="Name">
-                <span className="font-medium">{item.name}</span>
-              </DetailField>
-              <DetailField label="Type">
-                <span className="capitalize">
-                  {item.type.toLowerCase().replace("_", " ")}
-                </span>
-              </DetailField>
-              <DetailField label="Category">
-                {item.category?.name ?? "—"}
-              </DetailField>
-              <DetailField label="Status">
-                <ItemStatusBadge status={item.status} />
-              </DetailField>
-              <DetailField label="Description" fullWidth>
-                {item.description || (
-                  <span className="text-muted-foreground italic text-xs">
-                    No description provided
-                  </span>
-                )}
-              </DetailField>
-            </DetailSection>
-
-            <DetailSection
-              title="Stock &amp; valuation policy"
-              description="Inventory unit, tracking rules, and cost calculation method."
-            >
-              <DetailField label="Stock unit of measure">
-                {uom ? (
-                  `${uom.name} (${uom.code})`
-                ) : (
-                  <span className="text-muted-foreground">—</span>
-                )}
-              </DetailField>
-              <DetailField label="Stock quantity increment">
-                {item.quantity_precision ?? "Unrestricted"}
-              </DetailField>
-              <DetailField label="Tracking">{item.tracking}</DetailField>
-              <DetailField label="Valuation method">
-                {item.valuation_method}
-              </DetailField>
-              <DetailField label="AVCO pool scope">
-                {item.avco_pool_scope ?? "—"}
-              </DetailField>
-              <DetailField label="Stocked">
-                {item.is_stocked ? "Yes" : "No"}
-              </DetailField>
-              <DetailField label="Purchasable">
-                {item.is_purchasable ? "Yes" : "No"}
-              </DetailField>
-              <DetailField label="Sellable">
-                {item.is_sellable ? "Yes" : "No"}
-              </DetailField>
-            </DetailSection>
-
-            {mayViewAccounts && (
+      <div
+        role="tabpanel"
+        id={`item-tabpanel-${activeTab}`}
+        aria-labelledby={`item-tab-${activeTab}`}
+      >
+        <DetailPageLayout>
+          {/* Overview Sections */}
+          {activeTab === "overview" && (
+            <>
               <DetailSection
-                title="General ledger mappings"
-                description="Account assignments for automatic journal postings."
+                title="General specification"
+                description="Catalog identity, item classification, and system status."
               >
-                <DetailField label="Income account">
-                  {item.income_account_id ? (
-                    (accountMap.get(item.income_account_id) ??
-                    `Account #${item.income_account_id}`)
-                  ) : (
-                    <span className="text-muted-foreground italic text-xs">
-                      Inheriting category default
-                    </span>
-                  )}
+                <DetailField label="Code">
+                  <span className="font-semibold text-foreground">
+                    {item.code}
+                  </span>
                 </DetailField>
-                <DetailField label="Expense account">
-                  {item.expense_account_id ? (
-                    (accountMap.get(item.expense_account_id) ??
-                    `Account #${item.expense_account_id}`)
-                  ) : (
-                    <span className="text-muted-foreground italic text-xs">
-                      Inheriting category default
-                    </span>
-                  )}
+                <DetailField label="Name">
+                  <span className="font-medium">{item.name}</span>
                 </DetailField>
-                <DetailField label="Inventory account" fullWidth>
-                  {item.inventory_account_id ? (
-                    (accountMap.get(item.inventory_account_id) ??
-                    `Account #${item.inventory_account_id}`)
-                  ) : (
+                <DetailField label="Type">
+                  <span className="capitalize">
+                    {item.type.toLowerCase().replace("_", " ")}
+                  </span>
+                </DetailField>
+                <DetailField label="Category">
+                  {item.category?.name ?? "—"}
+                </DetailField>
+                <DetailField label="Status">
+                  <ItemStatusBadge status={item.status} />
+                </DetailField>
+                <DetailField label="Description" fullWidth>
+                  {item.description || (
                     <span className="text-muted-foreground italic text-xs">
-                      Inheriting category default
+                      No description provided
                     </span>
                   )}
                 </DetailField>
               </DetailSection>
-            )}
 
-            <ItemCustomFieldDisplay value={item.custom_fields} />
-          </>
-        )}
+              <DetailSection
+                title="Stock &amp; valuation policy"
+                description="Inventory unit, tracking rules, and cost calculation method."
+              >
+                <DetailField label="Stock unit of measure">
+                  {uom ? (
+                    `${uom.name} (${uom.code})`
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </DetailField>
+                <DetailField label="Stock quantity increment">
+                  {item.quantity_precision ?? "Unrestricted"}
+                </DetailField>
+                <DetailField label="Tracking">{item.tracking}</DetailField>
+                <DetailField label="Valuation method">
+                  {item.valuation_method}
+                </DetailField>
+                <DetailField label="AVCO pool scope">
+                  {item.avco_pool_scope ?? "—"}
+                </DetailField>
+                <DetailField label="Stocked">
+                  {item.is_stocked ? "Yes" : "No"}
+                </DetailField>
+                <DetailField label="Purchasable">
+                  {item.is_purchasable ? "Yes" : "No"}
+                </DetailField>
+                <DetailField label="Sellable">
+                  {item.is_sellable ? "Yes" : "No"}
+                </DetailField>
+              </DetailSection>
 
-        {/* Recipes & Formulations */}
-        {(activeTab === "all" || activeTab === "recipes") &&
-          mayReadRecipes &&
-          formulations.length > 0 && (
-            <DetailSection
-              title="Formulations"
-              description="Recipes that produce this item. Customer-specific formulas override company defaults when resolving estimates."
-              fullWidth
-            >
-              <div className="col-span-full space-y-2">
-                {formulations.map((formulation) => (
-                  <Link
-                    key={formulation.id}
-                    to={`/formulations/${formulation.id}/edit`}
-                    className="flex items-center justify-between gap-3 rounded-md border border-border bg-card p-3 hover:bg-accent transition-colors"
-                  >
-                    <div>
-                      <span className="font-medium ui-order-link text-sm">
-                        {formulation.code} — {formulation.name}
+              {mayViewAccounts && (
+                <DetailSection
+                  title="General ledger mappings"
+                  description="Account assignments for automatic journal postings."
+                >
+                  <DetailField label="Income account">
+                    {item.income_account_id ? (
+                      (accountMap.get(item.income_account_id) ??
+                      `Account #${item.income_account_id}`)
+                    ) : (
+                      <span className="text-muted-foreground italic text-xs">
+                        Inheriting category default
                       </span>
-                      <span className="mt-0.5 block text-xs text-muted-foreground">
-                        {formulation.customer?.code ??
-                          "Company default formula"}
+                    )}
+                  </DetailField>
+                  <DetailField label="Expense account">
+                    {item.expense_account_id ? (
+                      (accountMap.get(item.expense_account_id) ??
+                      `Account #${item.expense_account_id}`)
+                    ) : (
+                      <span className="text-muted-foreground italic text-xs">
+                        Inheriting category default
                       </span>
-                    </div>
-                    <ItemStatusBadge status={formulation.status} />
-                  </Link>
-                ))}
-              </div>
-            </DetailSection>
+                    )}
+                  </DetailField>
+                  <DetailField label="Inventory account" fullWidth>
+                    {item.inventory_account_id ? (
+                      (accountMap.get(item.inventory_account_id) ??
+                      `Account #${item.inventory_account_id}`)
+                    ) : (
+                      <span className="text-muted-foreground italic text-xs">
+                        Inheriting category default
+                      </span>
+                    )}
+                  </DetailField>
+                </DetailSection>
+              )}
+
+              <ItemCustomFieldDisplay value={item.custom_fields} />
+            </>
           )}
 
-        {/* Packaging & Conversions */}
-        {(activeTab === "all" || activeTab === "packaging") && (
-          <>
+          {/* Suppliers & Sourcing */}
+          {activeTab === "suppliers" && (
             <DetailSection
-              title="Pack conversions"
-              description="Alternate units for this item. These conversions describe quantity, not sealed packages in stock."
+              title="Packages and supplier offers"
               fullWidth
             >
               <div className="col-span-full">
-                <ItemQuantityUnitsListScreen
-                  key={item.id}
+                <ItemPurchasingPanel
                   itemId={item.id}
+                  itemLabel={`${item.code} — ${item.name}`}
+                  stockUomId={item.stock_uom_id}
                   stockUnit={uom?.code}
                 />
               </div>
             </DetailSection>
+          )}
 
-            <DetailSection title="Package tracking" fullWidth>
-              <div className="col-span-full">
-                <ItemPackageTrackingCard
-                  itemId={item.id}
-                  itemLabel={`${item.code} — ${item.name}`}
-                  unit={uom?.code ?? ""}
-                  isStocked={item.is_stocked}
-                />
-              </div>
-            </DetailSection>
-          </>
-        )}
+          {/* Packaging & Conversions */}
+          {activeTab === "packaging" && (
+            <>
+              <DetailSection
+                title="Pack conversions"
+                description="Alternate units for this item. These conversions describe quantity, not sealed packages in stock."
+                fullWidth
+              >
+                <div className="col-span-full">
+                  <ItemQuantityUnitsListScreen
+                    key={item.id}
+                    itemId={item.id}
+                    stockUnit={uom?.code}
+                  />
+                </div>
+              </DetailSection>
 
-        {/* Suppliers & Sourcing */}
-        {(activeTab === "all" || activeTab === "suppliers") && (
-          <DetailSection
-            title="Packages and supplier offers"
-            fullWidth
-          >
-            <div className="col-span-full">
-              <ItemPurchasingPanel
-                itemId={item.id}
-                itemLabel={`${item.code} — ${item.name}`}
-                stockUomId={item.stock_uom_id}
-                stockUnit={uom?.code}
-              />
-            </div>
-          </DetailSection>
-        )}
-      </DetailPageLayout>
+              <DetailSection title="Package tracking" fullWidth>
+                <div className="col-span-full">
+                  <ItemPackageTrackingCard
+                    itemId={item.id}
+                    itemLabel={`${item.code} — ${item.name}`}
+                    unit={uom?.code ?? ""}
+                    isStocked={item.is_stocked}
+                  />
+                </div>
+              </DetailSection>
+            </>
+          )}
+
+          {/* Recipes & Formulations */}
+          {activeTab === "recipes" &&
+            mayReadRecipes &&
+            formulations.length > 0 && (
+              <DetailSection
+                title="Formulations"
+                description="Recipes that produce this item. Customer-specific formulas override company defaults when resolving estimates."
+                fullWidth
+              >
+                <div className="col-span-full space-y-2">
+                  {formulations.map((formulation) => (
+                    <Link
+                      key={formulation.id}
+                      to={`/formulations/${formulation.id}/edit`}
+                      className="flex items-center justify-between gap-3 rounded-md border border-border bg-card p-3 hover:bg-accent transition-colors"
+                    >
+                      <div>
+                        <span className="font-medium ui-order-link text-sm">
+                          {formulation.code} — {formulation.name}
+                        </span>
+                        <span className="mt-0.5 block text-xs text-muted-foreground">
+                          {formulation.customer?.code ??
+                            "Company default formula"}
+                        </span>
+                      </div>
+                      <ItemStatusBadge status={formulation.status} />
+                    </Link>
+                  ))}
+                </div>
+              </DetailSection>
+            )}
+        </DetailPageLayout>
+      </div>
 
       {/* Quick Print layout (always contains all sections for print) */}
       <div className="hidden">

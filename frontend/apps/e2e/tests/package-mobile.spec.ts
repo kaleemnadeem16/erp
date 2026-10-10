@@ -34,7 +34,7 @@ async function stocked(page: Page): Promise<PackageStockWorld> {
 test('issue and transfer dialogs fit a phone and their actions are reachable', async ({ page }) => {
   test.setTimeout(150_000);
   const world = await stocked(page);
-  await page.goto(`/items/${world.item.id}`);
+  await page.goto(`/items/${world.item.id}?tab=packaging`);
   const row = page.getByTestId('package-balance-row').first();
 
   await row.getByTestId('issue-stock').click();

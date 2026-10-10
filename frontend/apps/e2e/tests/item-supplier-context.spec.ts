@@ -65,7 +65,7 @@ test("item-scoped supplier create/edit/archive/restore preserves identity and ig
       await route.fulfill({ json: { data: row } });
     } else await route.continue();
   });
-  await page.goto(itemPath + "?filter.item_id=999999");
+  await page.goto(itemPath + "?filter.item_id=999999&tab=suppliers");
   const panel = page.getByRole("region", { name: "Supplier relationships" });
   await expect(panel.getByText("supplier-demo · Active")).toBeVisible();
   await panel
@@ -135,6 +135,7 @@ test("read-only supplier access shows relationships without mutation controls", 
     .filter({ hasText: "demo-pack-thinner" })
     .first()
     .click();
+  await page.getByRole("tab", { name: "Suppliers & Sourcing" }).click();
   const panel = page.getByRole("region", { name: "Supplier relationships" });
   await expect(
     panel.getByRole("heading", { name: "Supplier relationships" }),
@@ -164,6 +165,7 @@ test("supplier panel reports failures instead of claiming the item has no suppli
     .filter({ hasText: "demo-pack-thinner" })
     .first()
     .click();
+  await page.getByRole("tab", { name: "Suppliers & Sourcing" }).click();
   const panel = page.getByRole("region", { name: "Supplier relationships" });
   await expect(panel.getByRole("alert")).toContainText(
     "Supplier relationships unavailable",
@@ -208,6 +210,7 @@ test("supplier relationship pagination stays on this item", async ({
     .filter({ hasText: "demo-pack-thinner" })
     .first()
     .click();
+  await page.getByRole("tab", { name: "Suppliers & Sourcing" }).click();
   const itemId = new URL(page.url()).pathname.split("/").pop();
   const panel = page.getByRole("region", { name: "Supplier relationships" });
   await expect(panel.getByText("page-supplier-1 · Active")).toBeVisible();
@@ -249,6 +252,7 @@ test("users without Purchasing read access do not load relationships or offers",
     .filter({ hasText: "demo-pack-thinner" })
     .first()
     .click();
+  await page.getByRole("tab", { name: "Suppliers & Sourcing" }).click();
   await expect(
     page.getByRole("heading", { name: "Purchasing packages", exact: true }),
   ).toBeVisible();

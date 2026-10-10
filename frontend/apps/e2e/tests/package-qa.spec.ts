@@ -15,7 +15,7 @@ test('held delivery is released and rejected by declaring the physical portion o
   await api(page, 'POST', `/goods-receipts/${draft.id}/post`);
 
   // On the item page: 20 L usable, the delivery held beside it, and nothing held can be issued.
-  await page.goto(`/items/${world.item.id}`);
+  await page.goto(`/items/${world.item.id}?tab=packaging`);
   const row = page.getByTestId('package-balance-row').first();
   await expect(row.getByTestId('breakdown-total')).toContainText(/= 20 l usable/i);
   await expect(row.getByTestId('breakdown-held')).toContainText(/Held for inspection: 2 × Sealed 5 L can/);
@@ -33,7 +33,7 @@ test('held delivery is released and rejected by declaring the physical portion o
   await page.getByRole('button', { name: 'Post QA disposition' }).click();
   await expect(page.getByText('PASS · 7')).toBeVisible();
 
-  await page.goto(`/items/${world.item.id}`);
+  await page.goto(`/items/${world.item.id}?tab=packaging`);
   await expect(row.getByTestId('breakdown-total')).toContainText(/= 27 l usable/i);
   await expect(row.getByTestId('breakdown-sealed')).toContainText('4 × Sealed 5 L can');
   await expect(row.getByTestId('breakdown-held')).toContainText(/1 × Sealed 5 L can = 5 l/i);
@@ -51,7 +51,7 @@ test('held delivery is released and rejected by declaring the physical portion o
   await page.getByRole('button', { name: 'Post QA disposition' }).click();
   await expect(page.getByText('SCRAP · 5')).toBeVisible();
 
-  await page.goto(`/items/${world.item.id}`);
+  await page.goto(`/items/${world.item.id}?tab=packaging`);
   await expect(row.getByTestId('breakdown-held')).toHaveCount(0);
   await expect(row.getByTestId('breakdown-rejected')).toContainText(/Rejected, awaiting return or scrap: 1 × Sealed 5 L can = 5 l/i);
   const balance = (await api(page, 'GET', `/package-balances?item_id=${world.item.id}`)).data[0];

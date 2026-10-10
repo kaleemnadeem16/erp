@@ -11,12 +11,13 @@ test("item details keep pack conversions scoped even with a conflicting URL filt
   await expect(page).toHaveURL(/\/items\/\d+/);
   const itemPath = new URL(page.url()).pathname;
   const itemId = Number(itemPath.split("/").pop());
+  await page.getByRole("tab", { name: "Packaging & Units" }).click();
   await expect(page.getByRole("heading", { name: "Pack conversions", exact: true })).toBeVisible();
   await expect(page.locator("tbody tr").filter({ hasText: "200.000000000" }).first()).toBeVisible();
   const response = page.waitForResponse((r) =>
     r.url().includes("/api/v1/item-quantity-units?"),
   );
-  await page.goto(`${itemPath}?filter.item_id=999999`);
+  await page.goto(`${itemPath}?filter.item_id=999999&tab=packaging`);
   const conversions = await response;
   expect(conversions.status()).toBe(200);
   expect(new URL(conversions.url()).searchParams.get("filter[item_id]")).toBe(
@@ -51,6 +52,7 @@ test("conversion panel reports API failure instead of claiming there are no conv
     .locator("tbody tr").filter({ hasText: "demo-thinner" })
     .first()
     .click();
+  await page.getByRole("tab", { name: "Packaging & Units" }).click();
   await page.route("**/api/v1/item-quantity-units?**", (route) =>
     route.fulfill({
       status: 403,
@@ -59,6 +61,7 @@ test("conversion panel reports API failure instead of claiming there are no conv
     }),
   );
   await page.reload();
+  await page.getByRole("tab", { name: "Packaging & Units" }).click();
   await expect(
     page.getByText("Conversion access denied", { exact: false }).first(),
   ).toBeVisible();

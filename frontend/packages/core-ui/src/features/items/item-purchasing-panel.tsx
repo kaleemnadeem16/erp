@@ -98,8 +98,8 @@ export function ItemPurchasingPanel({
     currencies.data?.status === 200 ? currencies.data.data.data : [];
   const fail = (e: unknown) => setError(getApiErrorMessage(e));
   const field = (label: string, value: string, change: (s: string) => void) => (
-    <label className="space-y-1 text-sm">
-      {label}
+    <label className="space-y-1.5 text-sm font-medium text-foreground">
+      <span>{label}</span>
       <Input value={value} onChange={(e) => change(e.target.value)} />
     </label>
   );
@@ -110,11 +110,11 @@ export function ItemPurchasingPanel({
     choices: { id: number; label: string }[],
     empty: string,
   ) => (
-    <label className="space-y-1 text-sm">
-      {label}
+    <label className="space-y-1.5 text-sm font-medium text-foreground">
+      <span>{label}</span>
       <select
         aria-label={label}
-        className="h-10 w-full rounded-md border bg-background px-3"
+        className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-xs focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
         value={value}
         onChange={(e) => change(e.target.value)}
       >
@@ -248,9 +248,11 @@ export function ItemPurchasingPanel({
               "No inner package",
             )}
             {field("Inner count", p.count, (v) => setP({ ...p, count: v }))}
-            <Button disabled={addPackage.isPending} type="submit">
-              Add package
-            </Button>
+            <div className="col-span-full flex justify-end pt-2">
+              <Button disabled={addPackage.isPending} type="submit">
+                Add package
+              </Button>
+            </div>
           </form>
         )}
       </section>
@@ -450,17 +452,22 @@ export function ItemPurchasingPanel({
               {field("Valid to (YYYY-MM-DD)", o.to, (v) =>
                 setO({ ...o, to: v }),
               )}
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={o.preferred}
-                  onChange={(e) => setO({ ...o, preferred: e.target.checked })}
-                />
-                Default buying option for this supplier
-              </label>
-              <Button disabled={addOffer.isPending} type="submit">
-                Add supplier offer
-              </Button>
+              <div className="col-span-full flex flex-wrap items-center justify-between gap-3 pt-2">
+                <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-input text-primary shadow-xs focus:ring-primary"
+                    checked={o.preferred}
+                    onChange={(e) => setO({ ...o, preferred: e.target.checked })}
+                  />
+                  <span className="font-medium text-foreground">
+                    Default buying option for this supplier
+                  </span>
+                </label>
+                <Button disabled={addOffer.isPending} type="submit">
+                  Add supplier offer
+                </Button>
+              </div>
             </form>
           )}
         </section>

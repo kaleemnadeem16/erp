@@ -70,7 +70,7 @@ test('quantity only → grouped tracking → receive observed packages → issue
   await api(page, 'POST', `/goods-receipts/${opening.id}/post`);
 
   // --- 1. Quantity only: the card is one quiet line and the way in ---
-  await page.goto(`/items/${item.id}`);
+  await page.goto(`/items/${item.id}?tab=packaging`);
   const card = page.getByTestId('package-tracking-card');
   await expect(card).toContainText('Tracked by quantity only');
   await expect(card.getByTestId('package-breakdown')).toHaveCount(0);
@@ -114,7 +114,7 @@ test('quantity only → grouped tracking → receive observed packages → issue
   await page.getByRole('button', { name: 'Confirm posting' }).click();
   await expect(page.getByRole('button', { name: 'Post receipt' })).toHaveCount(0);
 
-  await page.goto(`/items/${item.id}`);
+  await page.goto(`/items/${item.id}?tab=packaging`);
   const afterReceipt = page.getByTestId('package-balance-row').first();
   await expect(afterReceipt.getByTestId('breakdown-sealed')).toContainText('5 × Sealed 5 L can');
   await expect(afterReceipt.getByTestId('breakdown-loose')).toContainText(/7\ L\ loose/i);

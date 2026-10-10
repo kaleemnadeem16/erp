@@ -23,6 +23,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { DetailSection } from '../../components/detail/detail-page-layout';
 import { applyApiErrorsToForm, getApiErrorMessage, lookupState } from '../../lib/api-errors';
 import { apiSortToTableSorting, tableSortingToApiSort, useListQueryState } from '../../lib/list-query-state';
+import { cn } from '../../lib/utils';
 import { usePermission } from '../../hooks/use-permission';
 import { itemQuantityUnitColumns } from './item-quantity-units-columns';
 
@@ -184,7 +185,7 @@ export function ItemQuantityUnitsListScreen({ itemId, stockUnit }: { itemId?: nu
         )}
         {stockUnit && <p className="col-span-full text-sm text-muted-foreground">1 pack unit = factor × {stockUnit}. Each pack size converts directly to the stock unit.</p>}
         <Form {...form}>
-          <form className="col-span-full grid gap-3 sm:grid-cols-4" onSubmit={form.handleSubmit(submit)}>
+          <form className={cn("col-span-full grid gap-3", itemId ? "sm:grid-cols-3" : "sm:grid-cols-4")} onSubmit={form.handleSubmit(submit)}>
             {!itemId && <FormField
               control={form.control}
               name="item_id"
@@ -246,7 +247,7 @@ export function ItemQuantityUnitsListScreen({ itemId, stockUnit }: { itemId?: nu
                 </FormItem>
               )}
             />
-            <div className="flex justify-end gap-2 sm:col-span-4">
+            <div className="col-span-full flex justify-end gap-2 pt-1">
               {editing && (
                 <Button type="button" variant="outline" onClick={cancelEdit}>
                   <X className="h-4 w-4" />

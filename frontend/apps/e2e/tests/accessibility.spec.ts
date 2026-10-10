@@ -222,6 +222,7 @@ test('PO create sheet: closing keeps unfinished work and reopening picks it back
 
 test('Combobox: typing filters options to a search match', async ({ page }) => {
   await page.goto('/items');
+  await page.getByRole('button', { name: 'Filters' }).click();
   const categoryCombobox = page.getByLabel('Category', { exact: true });
   await categoryCombobox.click();
   const search = page.getByPlaceholder('Search categories…');

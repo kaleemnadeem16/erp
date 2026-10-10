@@ -9,7 +9,7 @@ test('a quantity-only item shows no package controls, counts by a single quantit
   test.setTimeout(150_000);
   const world = await createStockedItem(page, 'e2e-qty-only'); // 20 L, deliberately not activated
 
-  await page.goto(`/items/${world.item.id}`);
+  await page.goto(`/items/${world.item.id}?tab=packaging`);
   await expect(page.getByText(/quantity only/i).first()).toBeVisible();
   await expect(page.getByTestId('transfer-stock')).toHaveCount(0);
   await expect(page.getByTestId('issue-stock')).toHaveCount(0);

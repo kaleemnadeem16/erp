@@ -3,6 +3,7 @@ import {
   Archive,
   ArchiveRestore,
   Boxes,
+  ChevronUp,
   Layers,
   Pencil,
   Search,
@@ -111,6 +112,12 @@ export function ItemsListScreen() {
   );
 
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(() =>
+    Boolean(
+      query.filters.category_id ||
+        (query.filters.type && query.filters.type !== "all"),
+    ),
+  );
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [statusError, setStatusError] = useState<string | null>(null);
   const { view, setView } = useListViewPreference("items-list");
@@ -172,6 +179,18 @@ export function ItemsListScreen() {
     [items, rowSelection],
   );
 
+  const advancedFilterCount = [
+    query.filters.category_id,
+    query.filters.type && query.filters.type !== "all",
+  ].filter(Boolean).length;
+
+  const clearAdvancedFilters = () => {
+    query.setFilters({
+      category_id: undefined,
+      type: undefined,
+    });
+  };
+
   const activeChips = useMemo(() => {
     const chips: {
       id: string;
@@ -179,6 +198,22 @@ export function ItemsListScreen() {
       icon: ReactNode;
       onRemove: () => void;
     }[] = [];
+    if (query.filters.search) {
+      chips.push({
+        id: "search",
+        icon: <Search className="h-3.5 w-3.5" />,
+        label: `Search: "${query.filters.search}"`,
+        onRemove: () => query.setFilter("search", undefined),
+      });
+    }
+    if (query.filters.status && query.filters.status !== "all") {
+      chips.push({
+        id: "status",
+        icon: <Tag className="h-3.5 w-3.5" />,
+        label: `Status: ${query.filters.status}`,
+        onRemove: () => query.setFilter("status", undefined),
+      });
+    }
     if (query.filters.category_id) {
       const category = categories.find(
         (c) => String(c.id) === query.filters.category_id,
@@ -198,21 +233,14 @@ export function ItemsListScreen() {
         onRemove: () => query.setFilter("type", undefined),
       });
     }
-    if (query.filters.status && query.filters.status !== "all") {
-      chips.push({
-        id: "status",
-        icon: <Tag className="h-3.5 w-3.5" />,
-        label: `Status: ${query.filters.status}`,
-        onRemove: () => query.setFilter("status", undefined),
-      });
-    }
     return chips;
   }, [query.filters, categories, query]);
 
   const mobileActiveFilterCount = [
+    query.filters.search,
+    query.filters.status && query.filters.status !== "all",
     query.filters.category_id,
     query.filters.type && query.filters.type !== "all",
-    query.filters.status && query.filters.status !== "all",
   ].filter(Boolean).length;
 
   const clearAllFilters = () => {
@@ -316,11 +344,52 @@ export function ItemsListScreen() {
         </div>
 
         <div className="hidden items-center gap-2 md:flex md:flex-wrap">
-          <ItemFilterControls
-            categoriesLookup={lookupState(categoriesQuery, "categories")}
-            categories={categories}
-            query={query}
-          />
+          <Select
+            value={query.filters.status ?? "all"}
+            onValueChange={(value) =>
+              query.setFilter("status", value === "all" ? undefined : value)
+            }
+          >
+            <SelectTrigger
+              className="h-10 w-36"
+              aria-label="Filter by status"
+            >
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent className="ui-select-content">
+              <SelectItem value="all">All statuses</SelectItem>
+              <SelectItem value="ACTIVE">Active</SelectItem>
+              <SelectItem value="ARCHIVED">Archived</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Button
+            variant={
+              advancedOpen || advancedFilterCount > 0 ? "secondary" : "outline"
+            }
+            size="sm"
+            className={cn(
+              "relative h-10 px-4",
+              (advancedOpen || advancedFilterCount > 0) &&
+                "po-btn-filters-active",
+            )}
+            onClick={() => setAdvancedOpen((open) => !open)}
+          >
+            <SlidersHorizontal className="mr-1.5 h-[18px] w-[18px]" />
+            Filters
+            {advancedFilterCount > 0 && (
+              <Badge
+                className={cn(
+                  "absolute -right-2 -top-2 h-5 min-w-5 justify-center rounded-full px-1 text-[11px]",
+                  (advancedOpen || advancedFilterCount > 0) &&
+                    "po-filter-badge",
+                )}
+              >
+                {advancedFilterCount}
+              </Badge>
+            )}
+          </Button>
+
           <div className="ml-auto flex items-center gap-2">
             <PrintTrigger onPrint={() => print()} className="h-10 px-4" />
           </div>
@@ -340,18 +409,181 @@ export function ItemsListScreen() {
         </Button>
       </div>
 
+      <div
+        className={cn(
+          "hidden md:grid transition-[grid-template-rows,opacity,transform] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none",
+          advancedOpen
+            ? "grid-rows-[1fr] opacity-100 translate-y-0"
+            : "grid-rows-[0fr] opacity-0 -translate-y-2 pointer-events-none",
+        )}
+        aria-hidden={!advancedOpen}
+        inert={!advancedOpen}
+      >
+        <div className="overflow-hidden">
+          <div className="rounded-lg border bg-card p-4 text-card-foreground shadow-xs">
+            <div className="mb-4 flex items-center justify-between">
+              <span className="flex items-center gap-2 text-sm font-semibold">
+                <SlidersHorizontal aria-hidden="true" className="h-4 w-4" />
+                Advanced filters
+              </span>
+              <div className="flex items-center gap-2">
+                {advancedFilterCount > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs text-muted-foreground hover:text-foreground"
+                    onClick={clearAdvancedFilters}
+                  >
+                    Reset filters
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 gap-1 px-2 text-xs"
+                  onClick={() => setAdvancedOpen(false)}
+                  aria-label="Close filters"
+                >
+                  Hide filters
+                  <ChevronUp aria-hidden="true" className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                  Category
+                </label>
+                <Combobox
+                  {...lookupState(categoriesQuery, "categories")}
+                  className="h-10 w-full"
+                  aria-label="Category"
+                  value={query.filters.category_id ?? "all"}
+                  onValueChange={(value) =>
+                    query.setFilter("category_id", value === "all" ? undefined : value)
+                  }
+                  placeholder="All categories"
+                  searchPlaceholder="Search categories…"
+                  emptyText="No categories found."
+                  options={[
+                    { value: "all", label: "All categories" },
+                    ...categories.map((category) => ({
+                      value: String(category.id),
+                      label: category.name,
+                    })),
+                  ]}
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                  Type
+                </label>
+                <Select
+                  value={query.filters.type ?? "all"}
+                  onValueChange={(value) =>
+                    query.setFilter("type", value === "all" ? undefined : value)
+                  }
+                >
+                  <SelectTrigger
+                    className="h-10 w-full"
+                    aria-label="Filter by type"
+                  >
+                    <SelectValue placeholder="All types" />
+                  </SelectTrigger>
+                  <SelectContent className="ui-select-content">
+                    <SelectItem value="all">All types</SelectItem>
+                    {ITEM_TYPES.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type.replace("_", " ")}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
         <SheetContent side="bottom" className="md:hidden">
           <SheetHeader>
             <SheetTitle>Filters</SheetTitle>
           </SheetHeader>
           <div className="flex flex-col gap-3 py-4">
-            <ItemFilterControls
-              categoriesLookup={lookupState(categoriesQuery, "categories")}
-              categories={categories}
-              query={query}
-              full
-            />
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                Status
+              </label>
+              <Select
+                value={query.filters.status ?? "all"}
+                onValueChange={(value) =>
+                  query.setFilter("status", value === "all" ? undefined : value)
+                }
+              >
+                <SelectTrigger
+                  className="h-10 w-full"
+                  aria-label="Filter by status"
+                >
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent className="ui-select-content">
+                  <SelectItem value="all">All statuses</SelectItem>
+                  <SelectItem value="ACTIVE">Active</SelectItem>
+                  <SelectItem value="ARCHIVED">Archived</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                Category
+              </label>
+              <Combobox
+                {...lookupState(categoriesQuery, "categories")}
+                className="h-10 w-full"
+                aria-label="Category"
+                value={query.filters.category_id ?? "all"}
+                onValueChange={(value) =>
+                  query.setFilter("category_id", value === "all" ? undefined : value)
+                }
+                placeholder="All categories"
+                searchPlaceholder="Search categories…"
+                emptyText="No categories found."
+                options={[
+                  { value: "all", label: "All categories" },
+                  ...categories.map((category) => ({
+                    value: String(category.id),
+                    label: category.name,
+                  })),
+                ]}
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                Type
+              </label>
+              <Select
+                value={query.filters.type ?? "all"}
+                onValueChange={(value) =>
+                  query.setFilter("type", value === "all" ? undefined : value)
+                }
+              >
+                <SelectTrigger
+                  className="h-10 w-full"
+                  aria-label="Filter by type"
+                >
+                  <SelectValue placeholder="All types" />
+                </SelectTrigger>
+                <SelectContent className="ui-select-content">
+                  <SelectItem value="all">All types</SelectItem>
+                  {ITEM_TYPES.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type.replace("_", " ")}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <PrintTrigger
               onPrint={() => print()}
               className="w-full justify-center h-10"
@@ -378,29 +610,31 @@ export function ItemsListScreen() {
             Active filters
           </span>
           {activeChips.map((chip) => (
-            <span
+            <Badge
               key={chip.id}
-              className="ui-chip-active inline-flex max-w-full items-center rounded-full border bg-primary/5 px-3 py-1.5 text-xs text-primary !gap-2 [&>svg]:shrink-0"
+              variant="secondary"
+              className="ui-chip-active h-7 gap-1.5 pl-2.5 pr-1.5 text-xs font-normal"
             >
               {chip.icon}
-              <span className="min-w-0 break-words">{chip.label}</span>
+              <span>{chip.label}</span>
               <button
                 type="button"
-                className="shrink-0"
+                className="ml-0.5 rounded-full p-0.5 hover:bg-muted-foreground/20 cursor-pointer"
                 aria-label={`Remove filter ${chip.label}`}
                 onClick={chip.onRemove}
               >
                 <X className="h-3 w-3" />
               </button>
-            </span>
+            </Badge>
           ))}
-          <button
-            type="button"
-            className="ui-link-action shrink-0 cursor-pointer text-xs ml-1"
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
             onClick={clearAllFilters}
           >
             Clear all
-          </button>
+          </Button>
         </div>
       )}
 
@@ -521,84 +755,7 @@ export function ItemsListScreen() {
   );
 }
 
-interface ItemFilterControlsProps {
-  categoriesLookup: LookupState;
-  categories: { id: number; name: string }[];
-  query: ListQueryState<ItemFilters>;
-  /** Full-width sizing for the mobile filter sheet, vs. the desktop row's fixed widths. */
-  full?: boolean;
-}
 
-/** Category/Type/Status selects — shared by the always-visible desktop row and the mobile Filters sheet. */
-function ItemFilterControls({
-  categoriesLookup,
-  categories,
-  query,
-  full,
-}: ItemFilterControlsProps) {
-  return (
-    <>
-      <Combobox
-        {...categoriesLookup}
-        className={full ? "h-10 w-full" : "h-10 w-48"}
-        aria-label="Category"
-        value={query.filters.category_id ?? "all"}
-        onValueChange={(value) =>
-          query.setFilter("category_id", value === "all" ? undefined : value)
-        }
-        placeholder="Category"
-        searchPlaceholder="Search categories…"
-        emptyText="No categories found."
-        options={[
-          { value: "all", label: "All categories" },
-          ...categories.map((category) => ({
-            value: String(category.id),
-            label: category.name,
-          })),
-        ]}
-      />
-      <Select
-        value={query.filters.type ?? "all"}
-        onValueChange={(value) =>
-          query.setFilter("type", value === "all" ? undefined : value)
-        }
-      >
-        <SelectTrigger
-          className={full ? "h-10 w-full" : "h-10 w-40"}
-          aria-label="Filter by type"
-        >
-          <SelectValue placeholder="Type" />
-        </SelectTrigger>
-        <SelectContent className="ui-select-content">
-          <SelectItem value="all">All types</SelectItem>
-          {ITEM_TYPES.map((type) => (
-            <SelectItem key={type} value={type}>
-              {type.replace("_", " ")}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Select
-        value={query.filters.status ?? "all"}
-        onValueChange={(value) =>
-          query.setFilter("status", value === "all" ? undefined : value)
-        }
-      >
-        <SelectTrigger
-          className={full ? "h-10 w-full" : "h-10 w-36"}
-          aria-label="Filter by status"
-        >
-          <SelectValue placeholder="Status" />
-        </SelectTrigger>
-        <SelectContent className="ui-select-content">
-          <SelectItem value="all">All statuses</SelectItem>
-          <SelectItem value="ACTIVE">Active</SelectItem>
-          <SelectItem value="ARCHIVED">Archived</SelectItem>
-        </SelectContent>
-      </Select>
-    </>
-  );
-}
 
 function describeFilters(
   filters: Partial<ItemFilters>,
