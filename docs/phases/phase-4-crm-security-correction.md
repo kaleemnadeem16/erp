@@ -3,8 +3,8 @@
 # CRM security correction — urgent implementation handoff
 
 **2026-10-10 · READY FOR IMPLEMENTATION HANDOFF; NOT IMPLEMENTED.** Owner requested this
-specification. Existing accepted authority rules govern; this does not approve the separate CRM
-business-policy proposals. Planning owns this file; the designated implementation agent owns code,
+specification. Existing accepted authority rules govern. A/B/C business directions are now accepted
+in ADRs 0111–0113, but their separate correction delivery is not included in this security slice. Planning owns this file; the designated implementation agent owns code,
 verification and delivery. Coordinate scheduling through the owner before changing shared files.
 
 ## Contract and demonstrated defects
@@ -86,6 +86,6 @@ ready means the specification is ready, not that the application correction is d
 
 ## Related
 
-- [CRM policy review and future gates](phase-4-crm-policy-review.md)
+- [CRM policy review and future gates](phase-4-crm-policy-review.md) · [A/B/C specification](phase-4-crm-correction-specification.md)
 - [Authorisation](../architecture/authorization.md) · [Pre-push checks](../architecture/pre-push-checks.md)
 - [Sales module](../../backend/app/Modules/Sales/README.md) · [Phase 4](phase-4-sales-quotations-and-handover.md)

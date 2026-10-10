@@ -131,9 +131,37 @@ pricing delivery, full agreement fulfilment, R4–R9 gates. AWAITING APPROVAL: P
 including SIMPLE discount packaging, agreement exception duties and downgrade draft handling.
 The three CRM policy decisions are a separate review; security correction uses existing authority.
 
+## Next consolidated review — P1–P6 remain unaccepted
+
+CRM A/B/C are accepted in 0111–0113; their correction authority gate is separate from pricing.
+No CRM decision changes price precedence, selling source or cost completeness. Research reuses
+our initial primary comparison and 0109's retained rules; questions below sharpen its proposal,
+not new ADRs or accepted controls. Cost recovery's delivery record remains implementation-owned.
+
+| Bundle / next review question | Recommended default / practical consequence |
+|---|---|
+| P1: source-specific policies and recipient identity | Item/service → company; Assembly → Group → company; manual explicit line input; Party-specific prices without fabricated CustomerAccount. Defer Item-category hierarchy and text-matched manual price records. |
+| P2: selection versus binding agreement | Explicit eligible agreement first; invalid selected agreement blocks until repaired/deselected under authority, rather than silently reverting to a cheaper list. Treat negotiated pricing terms separately from cumulative quantity/value commitment fulfilment. |
+| P3: SIMPLE discounts and stacking | SIMPLE controlled final-price exception initially; MANAGED explicit ordered discounts with stacking disabled unless configured. Decide whether routine SIMPLE line discount deserves first-class exposure; it must still preserve calculated/final price and margin-control evaluation. |
+| P4: incomplete cost and control exceptions | Maintained/manual selling may proceed with clearly unknown margin when no mandatory cost control applies. Cost-derived methods require complete applicable cost. Decide whether a configured unevaluable mandatory margin control has a separately governed exception; no silent warning/pass. |
+| P5: activation/downgrade with existing drafts | Preserve issued evidence and reconcile dependent drafts/rules before downgrade. Recommend refusing downgrade until affected drafts are repriced, resolved or explicitly withdrawn; hiding a formula control cannot leave its unexplained effects active. |
+| P6: review and confidentiality | Explicit reprice for stale drafts; separate protected operands/intermediates from commercial result. Decide customer discount presentation and which internal explanations ordinary pricing users may see; calculation authority does not grant cost/recipe evidence access. |
+
+Boundary examples for discussion: a maintained service rate can remain valid without an inventory
+cost; a mandatory margin floor may still make its issue unevaluable. A zero-cost stocked Item with
+valid evidence can use markup arithmetic, but zero selling price makes percentage margin undefined.
+A selected agreement fixes commercial intent; deselecting it is not proof a purchase commitment was
+cancelled. A 250-sqm Assembly demand must use the actual quantity-dependent cost basis, not a cheap
+one-unit FIFO query multiplied into a job. These apply accepted distinctions; packaging/exception
+choices remain owner-review items.
+
+Resolve P1–P6 together before a new pricing ADR. Exact FX/rounding/date policy stays R4;
+adoption/issue and relevant-approval fingerprints stay R5; acceptance/group/tier aggregation stays
+R6/R9. No universal trusted forecast, job creation or Inventory posting follows price resolution.
+
 ## Related
 
-- [CRM policy review](phase-4-crm-policy-review.md) · [Security handoff](phase-4-crm-security-correction.md)
+- [CRM implementation specification](phase-4-crm-correction-specification.md) · [CRM policy review](phase-4-crm-policy-review.md) · [Security handoff](phase-4-crm-security-correction.md)
 - [Pricing domain](../domain/sales-pricing.md) · [Accepted 0109](../decisions/0109-shared-commercial-quotation-lines-and-optional-estimating.md)
 - [Research standards](../architecture/research-and-design.md) · [Capability delivery](../architecture/capability-delivery-contract.md)
 - [Screen delivery](../architecture/screen-delivery-contract.md) · [C0](phase-4-c0-cost-evidence-contract.md)

@@ -194,6 +194,19 @@ sign-in is represented and completed (the provisional 401 `challenge` shape), st
 service credentials for integrations are separate. Also open from the same review: a security-event audit trail for sign-ins, failed
 attempts and device changes.
 
+
+### Q42 — Historical Opportunity attribution correction duty and initial grants
+**Blocks:** enabling B's historical-attribution write/selector only; not A/C, urgent security correction or R3 research.
+
+Business meaning is accepted in [ADR 0112](decisions/0112-correct-historical-opportunity-responsibility-with-append-only-evidence.md).
+The [authorisation assessment](phases/phase-4-crm-correction-specification.md#historical-attribution-authorisation-gate)
+recommends `sales.opportunity.attribution.correct` plus existing independent read and relevant scope.
+Existing edit/assign/close duties do not accurately express retrospective accountability changes.
+Owner approval is needed for the proposed new duty and intended initial company principals/role
+assignments, including treatment of the named full-vocabulary administrator re-sync. No blanket
+Sales-manager/editor grant, implied production recipe or new pipeline visibility is accepted.
+A/B/C are not reopened; notes remain closed-record administrative follow-up.
+
 ---
 
 ## Answered---

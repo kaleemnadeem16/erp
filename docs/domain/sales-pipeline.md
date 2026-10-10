@@ -27,6 +27,20 @@ quotations/adoption remain unimplemented. The
   [0108](../decisions/0108-expose-a-progressive-basic-crm.md): stable outcomes/partial-win indication,
   reasoned closure/reopen, configurable stages and progressive basic CRM.
 
+## Accepted CRM corrections — specified, not implemented
+
+Owner-approved [0111](../decisions/0111-disqualify-leads-independently-of-derived-opportunities.md),
+[0112](../decisions/0112-correct-historical-opportunity-responsibility-with-append-only-evidence.md)
+and [0113](../decisions/0113-preserve-original-lead-intake-and-govern-current-detail-corrections.md)
+permit independent reasoned intake disqualification, append-only historical responsibility correction
+without reopening, and immutable original intake plus governed current-detail corrections in all
+Lead states. Routine closed-record follow-up uses notes; named administration and general closed-owner
+editing are excluded. See [evidence model](crm-corrections.md) and [delivery contract](../phases/phase-4-crm-correction-specification.md).
+B's sensitive duty/grants await owner approval; the [urgent scope/candidate correction](../phases/phase-4-crm-security-correction.md)
+is independently required. The as-built foundation below retains current restrictions until delivery.
+Expected value remains unreviewed assumption; partial-win/remaining-business and trusted forecast
+remain R5/R6/R9 gates, not delivered capabilities.
+
 ## CRM foundation — built (2026-10-09)
 
 The first implementation slice covers only what ADRs 0098 and 0105–0108 settle, with no dependence on quotation structure (R2 onward). Module: [Sales](../../backend/app/Modules/Sales/README.md).
@@ -187,6 +201,7 @@ practice and has no obvious default.
 - [material-resolution.md](material-resolution.md) — cost/price separation and planned material
   snapshot boundary
 - [sales-pricing.md](sales-pricing.md) — Phase 4 price resolution and quotation price snapshot
+- [crm-corrections.md](crm-corrections.md) — accepted enquiry/responsibility correction evidence
 - [tax.md](tax.md) — tax determination after net price
 - [inventory-packages.md](inventory-packages.md) — advisory package proposal and snapshot evidence
 - [ADR 0054](../decisions/0054-risk-based-material-plan-variance-controls.md) — adoption audit and

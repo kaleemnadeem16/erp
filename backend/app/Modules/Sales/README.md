@@ -9,6 +9,18 @@ Quotations, pricing, tax, acceptance and job handover are **not** here yet — t
 [0107](../../../../docs/decisions/0107-separate-opportunity-stages-and-outcomes.md) (stages and outcomes),
 [0108](../../../../docs/decisions/0108-expose-a-progressive-basic-crm.md) (basic CRM). Domain: [sales-pipeline.md](../../../../docs/domain/sales-pipeline.md).
 
+## Accepted correction handoff — not implemented
+
+[0111](../../../../docs/decisions/0111-disqualify-leads-independently-of-derived-opportunities.md),
+[0112](../../../../docs/decisions/0112-correct-historical-opportunity-responsibility-with-append-only-evidence.md)
+and [0113](../../../../docs/decisions/0113-preserve-original-lead-intake-and-govern-current-detail-corrections.md)
+extend the foundation with independent disqualification, historical attribution evidence and original/current
+enquiry preservation. [Specification](../../../../docs/phases/phase-4-crm-correction-specification.md)
+and [domain model](../../../../docs/domain/crm-corrections.md) describe planned Actions/constraints/UI.
+Current Actions below still have their original restrictions. B's new sensitive duty/grants await
+owner approval; no general closed-owner editor or named administrative assignee is approved.
+[Security correction](../../../../docs/phases/phase-4-crm-security-correction.md) remains urgent separately.
+
 ## Owns
 
 `Lead`, `Opportunity`, `SalesStage`, `SalesNote`, `SalesHistory` (the append-only decision log). A lead/opportunity points at a `Party` (and optionally one of its contacts); it never creates a customer account.

@@ -73,7 +73,7 @@ proposal is never "researched", "accepted" or "complete" merely because it exist
 - [C0 contract proposal](phase-4-c0-cost-evidence-contract.md) · [C1/C2 slice plan](phase-4-c1-c2-cost-evidence-slices.md) — accepted 0110/Q41 resolved: correct existing operations and migrate consumers; delivery in progress.
 - [Cost dependency map](phase-4-cost-dependency-map.md) — actual Actions/DTOs, routes/client/UI, controls/tests/demos and coordinated change boundaries.
 - [CRM security correction](phase-4-crm-security-correction.md) — urgent handoff under existing authority; application correction not implemented by planning.
-- [CRM three-policy review](phase-4-crm-policy-review.md) — disqualification, responsibility correction and original intake; owner approval pending, with future acceptance/forecast gates.
+- [CRM three-policy review](phase-4-crm-policy-review.md) — A/B/C accepted in 0111–0113; [correction specification](phase-4-crm-correction-specification.md) and [evidence domain](../domain/crm-corrections.md) ready, B duty/grants awaiting approval (Q42); future acceptance/forecast gates retained.
 - [R3 Sales pricing](phase-4-r3-sales-pricing.md) — source-neutral initial evidence and consolidated owner-review matrix; no accepted new policy or implementation.
 - Later topic records are added when investigated; do not generate empty speculative documents.
 
@@ -98,6 +98,7 @@ proposal is never "researched", "accepted" or "complete" merely because it exist
 - [x] Owner review of compatibility assessment/plan and formal bounded R2 business research closure; final consistency review passed.
 - [x] Prepare C0 and C1/C2 slices; revise compatibility-first proposal after owner constraints with verified dependency map and coherent in-place consumer migration.
 - [x] Owner approved C0/0110 and authorised C1a–c/C2a–b code; C1d migration/settings remain gated.
+- [x] Record owner-approved CRM A/B/C in accepted 0111–0113 and prepare correction Action/evidence/API/UI/migration acceptance handoff; no implementation, B sensitive duty/grants gated as Q42.
 - [ ] Investigate R3–R9 in the dependency order above, reusing sufficient accepted research; R3 initial evidence documented, owner review pending.
 - [x] Reconcile R1 business foundations with the historical Sales proposal; physical schema reconciliation remains R2–R9.
 - [ ] Define implementation slices, demos and observable acceptance criteria only after decisions.

@@ -125,8 +125,11 @@ in the same commit.
 | [0108](0108-expose-a-progressive-basic-crm.md) | Expose a practical basic CRM without forcing enterprise workflow | accepted | 2026-10-09 |
 | [0109](0109-shared-commercial-quotation-lines-and-optional-estimating.md) | Support shared commercial quotation lines with optional estimating | accepted | 2026-10-09 |
 | [0110](0110-version-cost-evidence-without-changing-legacy-estimates.md) | Correct existing cost operations through one authoritative contract | accepted | 2026-10-09 |
+| [0111](0111-disqualify-leads-independently-of-derived-opportunities.md) | Disqualify Leads independently of derived Opportunities | accepted | 2026-10-10 |
+| [0112](0112-correct-historical-opportunity-responsibility-with-append-only-evidence.md) | Correct historical Opportunity responsibility with append-only evidence | accepted | 2026-10-10 |
+| [0113](0113-preserve-original-lead-intake-and-govern-current-detail-corrections.md) | Preserve original Lead intake and govern current-detail corrections | accepted | 2026-10-10 |
 
-**Next number: 0111**
+**Next number: 0114**
 
 ## By theme
 

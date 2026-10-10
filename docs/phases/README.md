@@ -91,7 +91,9 @@ with their consumers; the compatibility-first draft is historical. Local commits
 [Initial capability review](phase-4-r2-existing-capabilities.md) and [ERP comparison](phase-4-r2-erp-comparison.md)
 remain linked evidence. CRM backend exists; R2 quotation implementation remains pending and C1/C2 implementation is in progress.
 [CRM security handoff](phase-4-crm-security-correction.md) is ready;
-[three-policy review](phase-4-crm-policy-review.md) awaits approval.
+[three-policy review](phase-4-crm-policy-review.md) is accepted in 0111–0113;
+[correction specification](phase-4-crm-correction-specification.md) is ready for coordinated delivery,
+with B’s sensitive duty/grants gated by Q42.
 [R3 pricing](phase-4-r3-sales-pricing.md) has initial evidence and a consolidated review matrix; no new pricing decision accepted.
 
 
