@@ -183,6 +183,13 @@ statement describes the day it was written, not today — read STATUS.md and the
 
 ---
 
+## 2026-10-10 — Cost contract approved; controlled implementation started
+
+Owner accepted revised ADR 0110 and authorised C1a–c/C2a–b, resolving Q41.
+0077’s runtime-deferral sequencing alone is superseded; its substantive query/scope/snapshot
+contract is retained. C1d and serial-selection UI are excluded. Local develop commits only.
+
+
 ## Rotated from STATUS.md on 2026-10-08 (documentation reconciliation)
 
 [ADR 0095](decisions/0095-status-is-short-current-and-purpose-limited.md) replaced the fixed row budget of ADR 0044. STATUS.md had accumulated 104 "Recently done" rows plus

@@ -2,11 +2,11 @@
 
 # 0110 — Correct existing cost operations through one authoritative contract
 
-- **Status:** proposed — revised C0; owner review and implementation authorisation pending
+- **Status:** accepted — owner-approved revised C0, 2026-10-10
 - **Date:** 2026-10-09
 - **Affects:** Inventory material-cost query; Estimating Actions/DTOs, existing APIs and all consumers
 - **History:** replaces the unaccepted compatibility-first draft at `9dced38`; retained filename/identifier preserves links.
-- **Relationship:** retain 0077's query/scope/certainty and 0109's Sales/estimating boundaries; proposed refinement of 0077's runtime-deferral/legacy-retirement sequencing is explicit below.
+- **Relationship:** retain 0077's query/scope/certainty and 0109's Sales/estimating boundaries; limited supersession of 0077's runtime-deferral/legacy-retirement sequencing is explicit below.
 
 ## Context
 
@@ -22,7 +22,7 @@ coordinated correction, not a scalar-to-null change in isolation.
 
 ## Decision
 
-**Proposed:** correct the existing cost APIs and their backend/frontend consumers together using
+Correct existing operations: correct the existing cost APIs and their backend/frontend consumers together using
 one authoritative cost-resolution contract. Preserve supported arithmetic and business controls;
 retire missing-cost zero fallbacks and redundant compatibility paths after their callers migrate.
 Do not add a second endpoint simply to preserve an obsolete response.
@@ -66,10 +66,10 @@ requests are explicit UNKNOWN. Preserve requested/effective/observed times and a
 Inventory owns AVCO/FIFO/SPECIFIC evidence; no posting allocator/writer is invoked.
 
 0077 explicitly planned the retirement of zero when Phase 4 callers migrate but also deferred runtime
-changes until quotation adoption. This proposal retires the fallback during coordinated C1/C2 delivery,
-before persisted quotation adoption. That sequencing refinement needs explicit owner approval; it
-retains 0077's cost, scope, strategy and eventual snapshot obligations. Accepted 0077 is unchanged now;
-formal limited supersession/retention must be reconciled on acceptance, not inferred from this draft.
+changes until quotation adoption. This decision retires the fallback during coordinated C1/C2 delivery,
+before persisted quotation adoption. The owner approved this limited sequencing refinement on 2026-10-10; it
+retains 0077's cost, scope, strategy and eventual snapshot obligations. Only 0077’s runtime-deferral and legacy-retirement sequencing is superseded. Its query, scope,
+strategy and snapshot decisions remain applicable; its historical decision text is preserved.
 
 No DTO/API certainty change requires a database backfill or historical migration edit. Governed scope
 history needs its own authorised additive migration; future adoption persistence remains R5. Existing
@@ -85,7 +85,9 @@ development databases and idempotent demos remain valid; no reset is assumed or 
   gates, generated-client checks, security/tenant and Inventory/Estimating regression coverage.
 - **Requires:** no completed slice leaves an incompatible consumer; unexposed intermediate work must
   not become a second public cost contract. Remove redundant scalar adapters after their final caller moves.
-- **Not authorised:** code, migrations, database resets, Sales pricing implementation or remote push.
+- **Authorised:** C1a–c and coordinated C2a–b implementation and local commits.
+- **Not authorised:** C1d governed scope settings/history/migration, serial-selection UI, database resets,
+  Sales pricing implementation or remote push.
 
 ## Alternatives considered
 

@@ -2,7 +2,7 @@
 
 # 0077 — Resolve material cost through one generic contract, with a configurable costing scope
 
-- **Status:** accepted (design only — **no runtime change yet**)
+- **Status:** partially superseded by 0110 (runtime-deferral/legacy-retirement sequencing only; query, scope, strategy and snapshot decisions retained)
 - **Date:** 2026-10-01
 - **Affects:** Estimating cost resolution (`IngredientCostResolver` and its four callers), a future read-only Inventory cost
   query, Phase 4 plan adoption and snapshots, [ADR 0072](0072-hand-built-stock-mix-in-base-quantity.md) and
