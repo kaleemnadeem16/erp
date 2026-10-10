@@ -116,9 +116,10 @@ shapes, transition rules and deterministic tie-breakers are in
   controlled-formula pricing, with tax applied afterwards.
 - Supplier purchase price and procurement cash outlay are Purchasing evidence, not substitutes for
   current inventory valuation.
-- Accepted cost direction requires missing evidence to remain unknown. Current scalar roll-ups
-  still have a legacy zero exception; [revised C0](../phases/phase-4-c0-cost-evidence-contract.md)
-  proposes correcting existing operations/DTOs and consumers, not parallel compatibility APIs.
+- Current estimate roll-ups carry typed certainty: missing evidence remains unknown, complete
+  totals stay null, and supported zero remains valid. [C0](../phases/phase-4-c0-cost-evidence-contract.md)
+  corrects existing operations/DTOs and consumers without parallel compatibility APIs. Draw/mix
+  integration remains the separately tracked C2b cohort until its checkpoint.
 - Availability is advisory in Phase 3. The response must state its as-of time.
 - An adopted plan can be stale before execution; Phase 5 revalidates and reserves it.
 - An issued quotation snapshots the adopted material/cost evidence so later policy or master-data
@@ -231,16 +232,19 @@ beside it (`standard_quantity`, `required_quantity`).
 An adjustment that cannot be used fails with the field that is wrong rather than being ignored: an item the
 assembly does not require, a unit that does not convert, a retired reason, an unknown reason, a negative
 quantity, a duplicate item. Internal cost still decides cost bands, but the amount a cost band observed is
-returned only with `estimating.internal_cost.view`; without it that value is `null`, never zero. A zero unit
-cost counts as no evidence ("never received" is not "free"), so a cost band is reported skipped. Adjustments
-are part of the evidence fingerprint. Nothing is written.
+returned only with `estimating.internal_cost.view`; without it amounts remain null. Genuine configured
+zero is valid cost evidence; cost percentages over zero remain undefined. Standard and planned costs
+are independent hypothetical scenarios over the same observation, so FIFO cost bands compare actual
+scenario totals rather than a delta multiplied by an assumed constant unit rate. Incomplete unmatched
+subtotals cannot establish an impact. Adjustments enter the technical evidence fingerprint; visible
+cost evidence enters it only for cost readers, preventing hidden-cost changes from leaking through hashes.
 
-With `estimating.internal_cost.view` each adjusted material also carries `cost` — the internal cost of the standard,
-of the plan and their signed difference, at the item's current AVCO company-pool unit cost — and the summary
-carries `cost_impact`, the plan's total cost effect over the materials that have evidence, with
-`cost_evidence_missing_count` for those that do not. Without the capability every amount is `null` and the status
-is `HIDDEN`; with it but no defensible unit cost (non-AVCO, no pool, zero average) the status is `NO_EVIDENCE` and
-the amounts are `null` — never zero. It is an estimate at today's cost, not a quotation price.
+Each adjusted material’s `cost` carries complete standard/planned amounts and their signed difference
+where available. Summary `cost_impact` is complete only when every comparison is resolved.
+`known_cost_impact` separately labels the effect of resolved materials when others are missing;
+`cost_status` distinguishes COSTED/PARTIAL/UNKNOWN/HIDDEN and `cost_evidence_missing_count` explains
+coverage. Missing comparisons are not silently counted as zero. Without cost permission all amounts
+remain hidden, while authorised policy/approval advice still applies. Nothing is written or adopted.
 
 ### What-if on the Material Preview screen
 

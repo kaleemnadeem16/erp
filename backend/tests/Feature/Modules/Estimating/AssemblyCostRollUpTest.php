@@ -9,9 +9,6 @@ use App\Modules\Estimating\Actions\ActivateAssemblyVersion;
 use App\Modules\Estimating\Actions\ActivateFormulationVersion;
 use App\Modules\Estimating\Actions\ActivateOverheadPolicy;
 use App\Modules\Estimating\Actions\ExplodeAssemblyVersion;
-use App\Modules\Estimating\Actions\ExplodeFormulationVersion;
-use App\Modules\Estimating\Actions\ResolveOverheadPolicy;
-use App\Modules\Estimating\Actions\ResolveResourceRate;
 use App\Modules\Estimating\Models\ApplicationRate;
 use App\Modules\Estimating\Models\Assembly;
 use App\Modules\Estimating\Models\AssemblyVersion;
@@ -19,17 +16,15 @@ use App\Modules\Estimating\Models\Formulation;
 use App\Modules\Estimating\Models\OverheadPolicy;
 use App\Modules\Estimating\Models\ResourceRate;
 use App\Modules\Estimating\Support\FormulationCycleGuard;
-use App\Modules\Estimating\Support\IngredientCostResolver;
-use App\Modules\Estimating\Support\OverheadAmountCalculator;
 use App\Modules\Inventory\Models\AvcoPool;
 use App\Modules\Inventory\Models\Category;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Support\AvcoPoolScope;
 use App\Modules\Inventory\Support\AvcoPoolStatus;
 use App\Modules\Inventory\Support\ItemType;
-use App\Support\UomConversionService;
 use App\Support\UomDimension;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\Support\PermissionedActor;
 use Tests\TestCase;
 
@@ -94,17 +89,12 @@ class AssemblyCostRollUpTest extends TestCase
 
     private function explode(): ExplodeAssemblyVersion
     {
-        $uomConverter = new UomConversionService;
-        $ingredientCost = new IngredientCostResolver;
+        return app(ExplodeAssemblyVersion::class);
+    }
 
-        return new ExplodeAssemblyVersion(
-            $ingredientCost,
-            new ResolveResourceRate,
-            new ResolveOverheadPolicy,
-            new OverheadAmountCalculator,
-            new ExplodeFormulationVersion($ingredientCost, $uomConverter),
-            $uomConverter,
-        );
+    private function costActor(): User
+    {
+        return PermissionedActor::grant(User::factory()->create(), ['estimating.internal_cost.view']);
     }
 
     private function assembly(string $marginType = 'MARKUP', string $marginPct = '20'): Assembly
@@ -150,23 +140,23 @@ class AssemblyCostRollUpTest extends TestCase
         ]);
         $this->companyOverheadPolicy('PCT_DIRECT_COST', '10');
 
-        $breakdown = ($this->explode())($version);
+        $breakdown = ($this->explode())($version, $this->costActor());
 
         // material: 0.5 * 1.05 * 2 = 1.05kg * $10 = $10.50
-        $this->assertSame('10.5000', (string) $breakdown->materialCost);
+        $this->assertSame('10.5000', (string) $breakdown->costByKind['MATERIAL']->totalCost);
         // labour: 1.5hr * $20 = $30.00
-        $this->assertSame('30.0000', (string) $breakdown->labourCost);
+        $this->assertSame('30.0000', (string) $breakdown->costByKind['LABOUR']->totalCost);
         $this->assertSame('1.500000000', (string) $breakdown->labourHours);
         // plant: 0.5hr * $50 = $25.00
-        $this->assertSame('25.0000', (string) $breakdown->plantCost);
-        $this->assertSame('15.0000', (string) $breakdown->subcontractCost);
+        $this->assertSame('25.0000', (string) $breakdown->costByKind['PLANT']->totalCost);
+        $this->assertSame('15.0000', (string) $breakdown->costByKind['SUBCONTRACT']->totalCost);
         // direct: 10.50 + 30 + 25 + 15 = 80.50
-        $this->assertSame('80.5000', (string) $breakdown->directCost);
+        $this->assertSame('80.5000', (string) $breakdown->directCost->totalCost);
         // overhead: 10% of 80.50 = 8.05
-        $this->assertSame('8.0500', (string) $breakdown->overheadAmount);
+        $this->assertSame('8.0500', (string) $breakdown->overheadCost->totalCost);
         $this->assertSame('COMPANY', $breakdown->overheadMethod->value);
         // cost/unit: 80.50 + 8.05 = 88.55
-        $this->assertSame('88.5500', (string) $breakdown->costPerUnit);
+        $this->assertSame('88.5500', (string) $breakdown->cost->unitCost);
         // sell/unit (MARKUP 20%): 88.55 * 1.20 = 106.26
         $this->assertSame('106.2600', (string) $breakdown->sellPerUnit);
 
@@ -182,7 +172,7 @@ class AssemblyCostRollUpTest extends TestCase
             ['kind' => 'LABOUR', 'item_id' => $this->electrician->id, 'qty_per_work_unit' => '3.000000', 'uom_id' => $this->minute->id],
         ]);
 
-        $breakdown = ($this->explode())($version);
+        $breakdown = ($this->explode())($version, $this->costActor());
 
         $this->assertSame('1.500000000', (string) $breakdown->labourHours);
     }
@@ -195,10 +185,10 @@ class AssemblyCostRollUpTest extends TestCase
         ]);
         $this->companyOverheadPolicy('PER_LABOUR_HOUR', '4');
 
-        $breakdown = ($this->explode())($version);
+        $breakdown = ($this->explode())($version, $this->costActor());
 
         // 2 hours labour, $4/hr overhead => $8.00
-        $this->assertSame('8.0000', (string) $breakdown->overheadAmount);
+        $this->assertSame('8.0000', (string) $breakdown->overheadCost->totalCost);
     }
 
     public function test_per_work_unit_driver_uses_exactly_one_work_unit_as_its_basis(): void
@@ -209,9 +199,9 @@ class AssemblyCostRollUpTest extends TestCase
         ]);
         $this->companyOverheadPolicy('PER_WORK_UNIT', '8');
 
-        $breakdown = ($this->explode())($version);
+        $breakdown = ($this->explode())($version, $this->costActor());
 
-        $this->assertSame('8.0000', (string) $breakdown->overheadAmount);
+        $this->assertSame('8.0000', (string) $breakdown->overheadCost->totalCost);
     }
 
     public function test_margin_and_markup_produce_the_documented_different_numbers(): void
@@ -229,8 +219,8 @@ class AssemblyCostRollUpTest extends TestCase
 
         $explode = $this->explode();
 
-        $this->assertSame('120.0000', (string) $explode($markupVersion)->sellPerUnit);
-        $this->assertSame('125.0000', (string) $explode($marginVersion)->sellPerUnit);
+        $this->assertSame('120.0000', (string) $explode($markupVersion, $this->costActor())->sellPerUnit);
+        $this->assertSame('125.0000', (string) $explode($marginVersion, $this->costActor())->sellPerUnit);
     }
 
     public function test_margin_at_or_above_100_percent_fails_loudly_instead_of_dividing_by_zero(): void
@@ -241,7 +231,7 @@ class AssemblyCostRollUpTest extends TestCase
         ]);
 
         $this->expectException(DomainInvariantException::class);
-        ($this->explode())($version);
+        ($this->explode())($version, $this->costActor());
     }
 
     public function test_a_nested_formulation_material_component_prices_from_its_active_version(): void
@@ -257,7 +247,7 @@ class AssemblyCostRollUpTest extends TestCase
             $formulationVersion,
             PermissionedActor::grant(User::factory()->create(), ['estimating.formulation.manage']),
         );
-        // cost_per_output_unit = 0.75kg * $10/kg = $7.50/L
+        // unit cost per output litre = 0.75kg * $10/kg = $7.50/L
 
         $assembly = $this->assembly();
         $version = $this->activatedVersion($assembly, [
@@ -267,10 +257,10 @@ class AssemblyCostRollUpTest extends TestCase
             ],
         ]);
 
-        $breakdown = ($this->explode())($version);
+        $breakdown = ($this->explode())($version, $this->costActor());
 
         // 2L * $7.50/L = $15.00
-        $this->assertSame('15.0000', (string) $breakdown->materialCost);
+        $this->assertSame('15.0000', (string) $breakdown->costByKind['MATERIAL']->totalCost);
         $this->assertStringContainsString('Formulation F-TINTED', $breakdown->components[0]->costSource);
     }
 
@@ -289,10 +279,10 @@ class AssemblyCostRollUpTest extends TestCase
             ],
         ]);
 
-        $breakdown = ($this->explode())($version);
+        $breakdown = ($this->explode())($version, $this->costActor());
 
         // 0.4kg (from the rate, NOT the component's own 999 placeholder) * $10 = $4.00
-        $this->assertSame('4.0000', (string) $breakdown->materialCost);
+        $this->assertSame('4.0000', (string) $breakdown->costByKind['MATERIAL']->totalCost);
     }
 
     public function test_rate_override_overrides_the_resolved_material_cost(): void
@@ -305,13 +295,13 @@ class AssemblyCostRollUpTest extends TestCase
             ],
         ]);
 
-        $breakdown = ($this->explode())($version);
+        $breakdown = ($this->explode())($version, $this->costActor());
 
-        $this->assertSame('99.0000', (string) $breakdown->materialCost);
+        $this->assertSame('99.0000', (string) $breakdown->costByKind['MATERIAL']->totalCost);
         $this->assertSame('Manual override', $breakdown->components[0]->costSource);
     }
 
-    public function test_a_labour_item_with_no_resource_rate_configured_costs_zero_not_an_error(): void
+    public function test_a_labour_item_with_no_resource_rate_configured_is_unknown_not_zero(): void
     {
         $unratedElectrician = Item::create(['code' => 'demo-unrated', 'name' => 'Unrated Labour', 'type' => ItemType::Labour, 'stock_uom_id' => $this->hour->id, 'category_id' => $this->category->id]);
         $assembly = $this->assembly();
@@ -319,9 +309,11 @@ class AssemblyCostRollUpTest extends TestCase
             ['kind' => 'LABOUR', 'item_id' => $unratedElectrician->id, 'qty_per_work_unit' => '1.000000', 'uom_id' => $this->hour->id],
         ]);
 
-        $breakdown = ($this->explode())($version);
+        $breakdown = ($this->explode())($version, $this->costActor());
 
-        $this->assertSame('0.0000', (string) $breakdown->labourCost);
+        $this->assertNull($breakdown->costByKind['LABOUR']->totalCost);
+        $this->assertNull($breakdown->cost->totalCost);
+        $this->assertNull($breakdown->sellPerUnit);
         $this->assertSame('No resource rate configured', $breakdown->components[0]->costSource);
     }
 
@@ -335,7 +327,7 @@ class AssemblyCostRollUpTest extends TestCase
         ]);
 
         $this->expectException(DomainInvariantException::class);
-        ($this->explode())($version);
+        ($this->explode())($version, $this->costActor());
     }
 
     public function test_overhead_resolution_prefers_assembly_scope_over_company_default(): void
@@ -353,10 +345,10 @@ class AssemblyCostRollUpTest extends TestCase
         ])->refresh();
         (new ActivateOverheadPolicy)($assemblyPolicy, PermissionedActor::grant($user, ['estimating.overhead-policy.manage']));
 
-        $breakdown = ($this->explode())($version->refresh());
+        $breakdown = ($this->explode())($version->refresh(), $this->costActor());
 
         $this->assertSame('ASSEMBLY', $breakdown->overheadMethod->value);
-        $this->assertSame('25.0000', (string) $breakdown->overheadAmount);
+        $this->assertSame('25.0000', (string) $breakdown->overheadCost->totalCost);
     }
 
     public function test_no_overhead_policy_anywhere_costs_zero_overhead_not_an_error(): void
@@ -366,12 +358,74 @@ class AssemblyCostRollUpTest extends TestCase
             ['kind' => 'SUBCONTRACT', 'qty_per_work_unit' => '1', 'uom_id' => $this->sqm->id, 'rate_override' => '100.0000'],
         ]);
 
-        $breakdown = ($this->explode())($version);
+        $breakdown = ($this->explode())($version, $this->costActor());
 
         $this->assertSame('NONE', $breakdown->overheadMethod->value);
         $this->assertNull($breakdown->overheadPolicy);
-        $this->assertSame('0.0000', (string) $breakdown->overheadAmount);
-        $this->assertSame('100.0000', (string) $breakdown->costPerUnit);
+        $this->assertSame('0.0000', (string) $breakdown->overheadCost->totalCost);
+        $this->assertSame('100.0000', (string) $breakdown->cost->unitCost);
+    }
+
+    public function test_genuine_zero_resource_is_complete_and_observation_ticks_do_not_change_its_fingerprint(): void
+    {
+        $free = Item::create(['code' => 'free-labour', 'name' => 'Free labour', 'type' => ItemType::Labour,
+            'stock_uom_id' => $this->hour->id, 'category_id' => $this->category->id]);
+        ResourceRate::create(['item_id' => $free->id, 'rate' => '0.0000', 'rate_uom_id' => $this->hour->id, 'effective_from' => '2026-01-01']);
+        $version = $this->activatedVersion($this->assembly(), [
+            ['kind' => 'LABOUR', 'item_id' => $free->id, 'qty_per_work_unit' => '2', 'uom_id' => $this->hour->id],
+        ]);
+        $first = ($this->explode())($version, $this->costActor());
+        $this->assertSame('COSTED', $first->cost->status->value);
+        $this->assertSame('0.0000', $first->cost->toArray()['total_cost']);
+        $this->assertSame('0.0000', (string) $first->sellPerUnit);
+        $this->travel(1)->seconds();
+        $later = ($this->explode())($version, $this->costActor());
+        $this->assertSame($first->cost->toArray()['basis_fingerprint'], $later->cost->toArray()['basis_fingerprint']);
+    }
+
+    public function test_percentage_overhead_requires_its_driver_and_independent_overhead_keeps_known_cost(): void
+    {
+        $unknown = Item::create(['code' => 'unknown-material', 'name' => 'Unknown', 'type' => ItemType::Raw,
+            'stock_uom_id' => $this->kg->id, 'category_id' => $this->category->id]);
+        $version = $this->activatedVersion($this->assembly(), [
+            ['kind' => 'MATERIAL', 'item_id' => $unknown->id, 'qty_per_work_unit' => '1', 'uom_id' => $this->kg->id],
+            ['kind' => 'LABOUR', 'item_id' => $this->electrician->id, 'qty_per_work_unit' => '1', 'uom_id' => $this->hour->id],
+        ]);
+        $this->companyOverheadPolicy('PCT_MATERIAL', '10');
+        $result = ($this->explode())($version, $this->costActor());
+        $this->assertSame('PARTIAL', $result->cost->status->value);
+        $this->assertSame('20.0000', $result->cost->toArray()['known_cost']);
+        $this->assertNull($result->overheadCost->totalCost);
+        $this->assertNull($result->sellPerUnit);
+        $this->companyOverheadPolicy('PER_WORK_UNIT', '5');
+        $independent = ($this->explode())($version, $this->costActor());
+        $this->assertSame('25.0000', $independent->cost->toArray()['known_cost']);
+        $this->assertNull($independent->cost->totalCost);
+    }
+
+    public function test_cost_breakdown_refuses_limited_read_at_http_and_direct_action_boundaries(): void
+    {
+        $version = $this->activatedVersion($this->assembly(), [
+            ['kind' => 'LABOUR', 'item_id' => $this->electrician->id, 'qty_per_work_unit' => '1', 'uom_id' => $this->hour->id],
+        ]);
+        $actor = $this->costActor();
+        DB::table('access_scope_limits')->insert([
+            'company_id' => 1, 'user_id' => $actor->id, 'permission' => 'estimating.internal_cost.view',
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $this->actingAs($actor)->getJson('/api/v1/assembly-versions/'.$version->id.'/cost-breakdown')
+            ->assertForbidden()->assertJsonPath('reason_code', 'REFUSED_WHEN_LIMITED');
+        $this->expectException(DomainInvariantException::class);
+        ($this->explode())($version, $actor);
+    }
+
+    public function test_direct_cost_breakdown_requires_its_own_capability(): void
+    {
+        $version = $this->activatedVersion($this->assembly(), [
+            ['kind' => 'LABOUR', 'item_id' => $this->electrician->id, 'qty_per_work_unit' => '1', 'uom_id' => $this->hour->id],
+        ]);
+        $this->expectException(DomainInvariantException::class);
+        ($this->explode())($version, User::factory()->create());
     }
 
     public function test_the_cost_breakdown_api_response_is_fully_explainable(): void
@@ -390,12 +444,12 @@ class AssemblyCostRollUpTest extends TestCase
         $response->assertJsonPath('data.overhead.method', 'COMPANY');
         $response->assertJsonPath('data.overhead.driver_type', 'PCT_MATERIAL');
         $response->assertJsonPath('data.overhead.rate', '10.000000');
-        $response->assertJsonPath('data.overhead.amount', '1.0000');
-        $response->assertJsonPath('data.material_cost', '10.0000');
-        $response->assertJsonPath('data.cost_per_unit', '11.0000');
+        $response->assertJsonPath('data.overhead.cost.total_cost', '1.0000');
+        $response->assertJsonPath('data.cost_by_kind.material.total_cost', '10.0000');
+        $response->assertJsonPath('data.cost.unit_cost', '11.0000');
         $response->assertJsonPath('data.sell_per_unit', '12.1000');
         $response->assertJsonPath('data.components.0.cost_source', 'AVCO stock valuation');
-        $response->assertJsonPath('data.components.0.resolved_unit_cost', '10.0000');
+        $response->assertJsonPath('data.components.0.cost.unit_cost', '10.0000');
     }
 
     public function test_assembly_manager_without_internal_cost_cannot_read_cost_breakdown(): void

@@ -113,12 +113,15 @@ export function VarianceSummary({ variance }: { variance: AssembliesMaterialPrev
       {summary.needs_approval_count > 0 && (
         <p>{summary.needs_approval_count} {summary.needs_approval_count === 1 ? 'material needs' : 'materials need'} approval before the plan can be adopted.</p>
       )}
-      {summary.cost_impact !== null && (
+      {summary.cost_status !== 'HIDDEN' && (
         <p>
-          Estimated internal-cost effect of this plan:{' '}
-          <span className="font-medium">{signed(summary.cost_impact)}</span>
+          {summary.cost_status === 'COSTED' ? 'Estimated internal-cost effect of this plan: ' : 'Complete cost effect unavailable. '}
+          {summary.cost_impact !== null && <span className="font-medium">{signed(summary.cost_impact)}</span>}
+          {summary.cost_status === 'PARTIAL' && summary.known_cost_impact !== null && (
+            <span className="text-muted-foreground"> Known effect of resolved materials: {signed(summary.known_cost_impact)}.</span>
+          )}
           {summary.cost_evidence_missing_count ? (
-            <span className="text-muted-foreground"> — not counting {summary.cost_evidence_missing_count} {summary.cost_evidence_missing_count === 1 ? 'material' : 'materials'} with no cost evidence</span>
+            <span className="text-muted-foreground"> {summary.cost_evidence_missing_count} {summary.cost_evidence_missing_count === 1 ? 'material comparison lacks' : 'material comparisons lack'} complete evidence.</span>
           ) : null}
         </p>
       )}

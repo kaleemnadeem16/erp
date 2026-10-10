@@ -165,10 +165,10 @@ pricing path. It is not a maintained, contractual or final customer price. Phase
 independently under [sales-pricing.md](sales-pricing.md) and [ADR 0055](../decisions/0055-progressive-sales-pricing-and-controlled-formulas.md).
 
 `item_cost` for a MATERIAL component resolves, in order: `rate_override` if set → the referenced
-`formulation_id`'s own ACTIVE version's `cost_per_output_unit` if set (an explicit, deliberate
+`formulation_id`'s own ACTIVE version's costed output (its `cost`, priced for the converted quantity) if set (an explicit, deliberate
 choice per component — not an automatic lookup the way a nested formulation *line* resolves one
 implicitly, since an assembly component has no implicit customer context to resolve against) →
-`IngredientCostResolver`'s AVCO cost otherwise. Where a component has an `application_rate_id`,
+Inventory's typed material-cost query otherwise (AVCO/FIFO/SPECIFIC, with required context). Where a component has an `application_rate_id`,
 `qty_per_work_unit` and the item are read live from that specific rate row instead of the
 component's own stored values — a live pointer, re-read on every roll-up, the same
 never-snapshotted-within-Phase-3 shape a nested formulation's own price already has.
@@ -195,11 +195,17 @@ a named formulation version, a resource rate as of a date, or a manual override)
 scope tier and driver resolved and the resulting amount, and the final cost/sell per unit —
 evidence a later quotation, job-costing or audit screen can adopt. `sell_per_unit` is estimate-derived
 guidance, not a maintained or approved Sales price; fully costed arithmetic remains unchanged.
-Legacy missing material/resource rates can still yield numeric zero without complete cost evidence;
-see the [compatibility plan](../phases/phase-4-r2-compatibility-plan.md) before treating it as trusted cost.
-The [revised C0 proposal](../phases/phase-4-c0-cost-evidence-contract.md) corrects existing cost APIs
-and all consumers together; it does not retain the zero fallback as a second supported contract.
-Runtime changes remain unimplemented until owner review.
+The cost-breakdown and Material Preview now expose typed `cost` and `cost_by_kind` resolutions.
+Missing material/resource evidence propagates PARTIAL/UNKNOWN and null complete totals; configured
+zero is distinct. Dependent percentage overhead requires a complete driver, while independent
+work/hour overhead can retain a known contribution. Incomplete cost yields null `sell_per_unit`.
+Actual work quantities and contextual material requirements are costed without scaling a one-unit
+FIFO estimate. Cost reads require `estimating.internal_cost.view` at Request and Action boundaries;
+limited cost-read grants are refused with `REFUSED_WHEN_LIMITED` until safe narrowing is designed.
+No Inventory valuation permission is implicitly granted. Previewers without cost-read permission
+still receive authorised blind variance advice, with amounts/evidence hidden. [Cost resolution](material-cost-resolution.md)
+explains current observation, copied sources, currency and fingerprint semantics. This is advisory
+cost evidence, not approved Sales pricing or adopted quotation evidence.
 
 ### Versioning
 

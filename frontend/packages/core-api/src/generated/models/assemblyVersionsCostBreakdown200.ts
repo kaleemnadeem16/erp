@@ -4,8 +4,8 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { AssemblyVersionsCostBreakdown200Data } from "./assemblyVersionsCostBreakdown200Data";
+import type { AssemblyCostResource } from "./assemblyCostResource";
 
 export type AssemblyVersionsCostBreakdown200 = {
-  data: AssemblyVersionsCostBreakdown200Data;
+  data: AssemblyCostResource;
 };

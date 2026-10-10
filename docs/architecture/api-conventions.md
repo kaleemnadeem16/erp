@@ -215,6 +215,10 @@ An endpoint that exists is a contract: the frontend, the generated client and br
 field, rename a `reason_code`, or change a status meaning in place. When a breaking change is unavoidable, add the new shape beside the old, migrate callers, regenerate the client and remove the old
 one in a later change. A new capability a response depends on is rolled out per [authorization.md](authorization.md) R5.
 
+The owner-approved pre-production costing correction in [ADR 0110](../decisions/0110-version-cost-evidence-without-changing-legacy-estimates.md)
+is a bounded exception: existing cost operations and every repository consumer migrate together,
+without parallel legacy endpoints. This does not relax normal API compatibility rules elsewhere.
+
 ### Checklist for a new endpoint
 
 - Respond through an API Resource (explicit `@mixin` PHPDoc and typed fields; sensitive fields conditional on the capability); never return a model or array.

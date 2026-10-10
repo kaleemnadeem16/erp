@@ -2,31 +2,7 @@ import { useAssemblyVersionsCostBreakdown } from '@erp/core-api';
 import { Skeleton } from '../../components/ui/skeleton';
 import { getApiErrorMessage } from '../../lib/api-errors';
 
-// The API's components array is typed unknown[] in the generated client —
-// Scramble can't infer the shape of a dynamically array_map()'d response —
-// so this mirrors AssemblyVersionController::serializeBreakdown()'s actual
-// PHP shape by hand instead of fighting that inference.
-interface ComponentBreakdown {
-  component: { id: number; kind: string; item?: { code: string; name: string } | null };
-  resolved_qty_per_work_unit: string;
-  resolved_unit_cost: string;
-  line_cost: string;
-  cost_source: string;
-}
-
-interface CostBreakdownData {
-  version_id: number;
-  material_cost: string;
-  labour_cost: string;
-  labour_hours: string;
-  plant_cost: string;
-  subcontract_cost: string;
-  direct_cost: string;
-  overhead: { method: string; policy_id: number | null; driver_type: string | null; rate: string | null; amount: string };
-  cost_per_unit: string;
-  sell_per_unit: string;
-  components: ComponentBreakdown[];
-}
+import { CostEvidence, CostReadiness } from '../costing/cost-evidence';
 
 const OVERHEAD_METHOD_LABELS: Record<string, string> = {
   ASSEMBLY: 'this assembly',
@@ -55,16 +31,16 @@ export function AssemblyCostBreakdown({ versionId }: { versionId: number }) {
     return <p className="text-sm text-destructive">{getApiErrorMessage(query.error) ?? 'Could not load the cost breakdown.'}</p>;
   }
 
-  const data = query.data.data.data as unknown as CostBreakdownData;
+  const data = query.data.data.data;
 
   return (
     <div className="space-y-4 rounded-md border p-4 text-sm">
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
-        <Figure label="Material" value={data.material_cost} />
-        <Figure label="Labour" value={data.labour_cost} />
-        <Figure label="Plant" value={data.plant_cost} />
-        <Figure label="Subcontract" value={data.subcontract_cost} />
-        <Figure label="Overhead" value={data.overhead.amount} />
+        <CostEvidence label="Material" cost={data.cost_by_kind.material} />
+        <CostEvidence label="Labour" cost={data.cost_by_kind.labour} />
+        <CostEvidence label="Plant" cost={data.cost_by_kind.plant} />
+        <CostEvidence label="Subcontract" cost={data.cost_by_kind.subcontract} />
+        <CostEvidence label="Overhead" cost={data.overhead.cost} />
       </div>
 
       <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground">
@@ -74,20 +50,18 @@ export function AssemblyCostBreakdown({ versionId }: { versionId: number }) {
       </div>
 
       <div className="flex flex-wrap items-center gap-4 border-t pt-3">
-        <div>
-          <div className="text-xs text-muted-foreground">Direct cost</div>
-          <div className="font-medium">{data.direct_cost}</div>
-        </div>
+        <CostEvidence label="Direct cost" cost={data.direct_cost} />
         <div>
           <div className="text-xs text-muted-foreground">Cost / unit</div>
-          <div className="font-medium">{data.cost_per_unit}</div>
+          <div className="font-medium">{data.cost.unit_cost ?? 'Unavailable'}</div>
         </div>
         <div>
           <div className="text-xs text-muted-foreground">Sell / unit</div>
-          <div className="text-lg font-semibold">{data.sell_per_unit}</div>
+          <div className="text-lg font-semibold">{data.sell_per_unit ?? 'Unavailable until cost is complete'}</div>
         </div>
       </div>
 
+      <CostReadiness cost={data.cost} />
       {data.components.length > 0 && (
         <div className="space-y-2 border-t pt-3">
           <div className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Components</div>
@@ -99,23 +73,14 @@ export function AssemblyCostBreakdown({ versionId }: { versionId: number }) {
                   {c.component.item ? ` — ${c.component.item.code}` : ''}
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  {c.resolved_qty_per_work_unit} × {c.resolved_unit_cost} — {c.cost_source}
+                  Technical quantity {c.resolved_quantity}; priced quantity {c.cost.valued_quantity} at {c.cost.unit_cost ?? 'Unavailable'} — {c.cost_source}
                 </div>
               </div>
-              <div className="font-medium">{c.line_cost}</div>
+              <div className="font-medium">{c.cost.total_cost ?? 'Unavailable'}</div>
             </div>
           ))}
         </div>
       )}
-    </div>
-  );
-}
-
-function Figure({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="font-medium">{value}</div>
     </div>
   );
 }

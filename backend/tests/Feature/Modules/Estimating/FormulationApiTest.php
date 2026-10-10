@@ -249,7 +249,8 @@ class FormulationApiTest extends TestCase
 
         $this->actingAs($user)->getJson("/api/v1/formulation-versions/{$versionId}/cost-breakdown")
             ->assertOk()
-            ->assertJsonPath('data.cost_per_output_unit', '0.0000')
+            ->assertJsonPath('data.cost.status', 'UNKNOWN')
+            ->assertJsonPath('data.cost.unit_cost', null)
             ->assertJsonCount(1, 'data.lines');
     }
 

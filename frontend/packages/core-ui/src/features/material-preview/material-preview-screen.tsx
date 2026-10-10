@@ -15,6 +15,7 @@ import {
   type PreviewMaterialRequest as PreviewRequestData,
   type UomResource,
   type AssemblyResource,
+  type AssemblyCostResource,
 } from '@erp/core-api';
 import { AlertTriangle, Calculator, RefreshCw } from 'lucide-react';
 import { AdvancedOptionSection } from '../../components/ui/advanced-option-section';
@@ -28,6 +29,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { PageHeader } from '../../components/page/page-header';
 import { getApiErrorMessage, lookupState, type LookupState } from '../../lib/api-errors';
 import { useAuthStore } from '../../stores/auth-store';
+import { CostEvidence, CostReadiness } from '../costing/cost-evidence';
 import { InventoryProposalPanel } from './inventory-proposal-panel';
 import { type MixDraft } from './stock-mix-editor';
 import { VarianceSummary, VarianceVerdict, WhatIfEditor, type WhatIfPlan } from './variance-what-if';
@@ -75,23 +77,7 @@ interface PreviewData {
     uom: UomSummary;
     contributions: Array<{ component_id: number; quantity: string; path: string[] }>;
   }>;
-  cost_breakdown: null | {
-    material_cost: string;
-    labour_cost: string;
-    plant_cost: string;
-    subcontract_cost: string;
-    direct_cost: string;
-    overhead: { method: string; driver_type: string | null; rate: string | null; amount: string };
-    total_cost: string;
-    non_material_components: Array<{
-      component_id: number;
-      kind: string;
-      resolved_quantity: string;
-      uom: UomSummary;
-      line_cost: string;
-      cost_source: string;
-    }>;
-  };
+  cost_breakdown: AssemblyCostResource | null;
   inventory: AssembliesMaterialPreview200DataInventory | null;
   variance: AssembliesMaterialPreview200DataVariance;
   warnings: string[];
@@ -580,12 +566,13 @@ function PreviewResult({ data, mayViewAvailability, mayChooseMix, mayViewCost, p
         <section className="space-y-3 rounded-lg border p-4">
           <h2 className="font-semibold">Internal cost for this quantity</h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-            <Figure label="Material" value={data.cost_breakdown.material_cost} />
-            <Figure label="Labour" value={data.cost_breakdown.labour_cost} />
-            <Figure label="Plant" value={data.cost_breakdown.plant_cost} />
-            <Figure label="Subcontract" value={data.cost_breakdown.subcontract_cost} />
-            <Figure label="Overhead" value={data.cost_breakdown.overhead.amount} />
-            <Figure label="Total cost" value={data.cost_breakdown.total_cost} />
+            <CostEvidence label="Material" cost={data.cost_breakdown.cost_by_kind.material} />
+            <CostEvidence label="Labour" cost={data.cost_breakdown.cost_by_kind.labour} />
+            <CostEvidence label="Plant" cost={data.cost_breakdown.cost_by_kind.plant} />
+            <CostEvidence label="Subcontract" cost={data.cost_breakdown.cost_by_kind.subcontract} />
+            <CostEvidence label="Overhead" cost={data.cost_breakdown.overhead.cost} />
+            <CostEvidence label="Total cost" cost={data.cost_breakdown.cost} />
+            <CostReadiness cost={data.cost_breakdown.cost} />
           </div>
         </section>
       ) : (

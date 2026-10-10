@@ -12,12 +12,11 @@ use App\Modules\Estimating\Actions\ExplodeAssemblyVersion;
 use App\Modules\Estimating\Actions\UpdateAssemblyVersion;
 use App\Modules\Estimating\Http\Requests\AssemblyVersion\StoreAssemblyVersionRequest;
 use App\Modules\Estimating\Http\Requests\AssemblyVersion\UpdateAssemblyVersionRequest;
-use App\Modules\Estimating\Http\Resources\AssemblyComponentResource;
+use App\Modules\Estimating\Http\Requests\CostBreakdownRequest;
 use App\Modules\Estimating\Http\Resources\AssemblyVersionResource;
+use App\Modules\Estimating\Http\Resources\Costing\AssemblyCostResource;
 use App\Modules\Estimating\Models\Assembly;
 use App\Modules\Estimating\Models\AssemblyVersion;
-use App\Modules\Estimating\Support\AssemblyComponentBreakdown;
-use App\Modules\Estimating\Support\AssemblyCostBreakdown;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -63,46 +62,10 @@ class AssemblyVersionController extends Controller
      * was, and the final cost/sell per unit — everything a quotation,
      * job-costing or audit screen will eventually need.
      */
-    public function costBreakdown(Request $request, AssemblyVersion $assembly_version, ExplodeAssemblyVersion $explode): JsonResponse
+    public function costBreakdown(CostBreakdownRequest $request, AssemblyVersion $assembly_version, ExplodeAssemblyVersion $explode): AssemblyCostResource
     {
         abort_unless($request->user()?->can('estimating.internal_cost.view'), 403);
 
-        return response()->json(['data' => $this->serializeBreakdown($explode($assembly_version))]);
-    }
-
-    /** @return array<string, mixed> */
-    private function serializeBreakdown(AssemblyCostBreakdown $breakdown): array
-    {
-        return [
-            'version_id' => $breakdown->version->id,
-            'material_cost' => (string) $breakdown->materialCost,
-            'labour_cost' => (string) $breakdown->labourCost,
-            'labour_hours' => (string) $breakdown->labourHours,
-            'plant_cost' => (string) $breakdown->plantCost,
-            'subcontract_cost' => (string) $breakdown->subcontractCost,
-            'direct_cost' => (string) $breakdown->directCost,
-            'overhead' => [
-                'method' => $breakdown->overheadMethod->value,
-                'policy_id' => $breakdown->overheadPolicy?->id,
-                'driver_type' => $breakdown->overheadPolicy?->driver_type->value,
-                'rate' => $breakdown->overheadPolicy?->rate,
-                'amount' => (string) $breakdown->overheadAmount,
-            ],
-            'cost_per_unit' => (string) $breakdown->costPerUnit,
-            'sell_per_unit' => (string) $breakdown->sellPerUnit,
-            'components' => array_map($this->serializeComponent(...), $breakdown->components),
-        ];
-    }
-
-    /** @return array<string, mixed> */
-    private function serializeComponent(AssemblyComponentBreakdown $breakdown): array
-    {
-        return [
-            'component' => new AssemblyComponentResource($breakdown->component),
-            'resolved_qty_per_work_unit' => (string) $breakdown->resolvedQtyPerWorkUnit,
-            'resolved_unit_cost' => (string) $breakdown->resolvedUnitCost,
-            'line_cost' => (string) $breakdown->lineCost,
-            'cost_source' => $breakdown->costSource,
-        ];
+        return new AssemblyCostResource($explode($assembly_version, $request->user()));
     }
 }

@@ -70,7 +70,7 @@ class MaterialVarianceApprovalTest extends TestCase
     {
         $leaf = ['item' => ['id' => $this->paint->id, 'code' => 'PAINT', 'name' => 'Paint'], 'standard_quantity' => $standard, 'uom' => ['id' => $this->litre->id, 'code' => 'L', 'name' => 'Litre']];
 
-        return app(PreviewMaterialVariance::class)([$leaf], [['item_id' => $this->paint->id, 'planned_quantity' => $planned, 'uom_id' => $this->litre->id]], false);
+        return app(PreviewMaterialVariance::class)([$leaf], [['item_id' => $this->paint->id, 'planned_quantity' => $planned, 'uom_id' => $this->litre->id]], PermissionedActor::grant(User::factory()->create(), ['estimating.material_preview.run']));
     }
 
     public function test_the_approval_effect_can_be_chosen_only_while_approvals_are_switched_on(): void

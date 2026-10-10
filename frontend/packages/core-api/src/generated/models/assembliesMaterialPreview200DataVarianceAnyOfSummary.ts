@@ -5,6 +5,8 @@
  * OpenAPI spec version: 0.0.1
  */
 import type { AssembliesMaterialPreview200DataVarianceAnyOfSummaryCostImpact } from "./assembliesMaterialPreview200DataVarianceAnyOfSummaryCostImpact";
+import type { AssembliesMaterialPreview200DataVarianceAnyOfSummaryKnownCostImpact } from "./assembliesMaterialPreview200DataVarianceAnyOfSummaryKnownCostImpact";
+import type { AssembliesMaterialPreview200DataVarianceAnyOfSummaryCostStatus } from "./assembliesMaterialPreview200DataVarianceAnyOfSummaryCostStatus";
 import type { AssembliesMaterialPreview200DataVarianceAnyOfSummaryCostEvidenceMissingCount } from "./assembliesMaterialPreview200DataVarianceAnyOfSummaryCostEvidenceMissingCount";
 
 export type AssembliesMaterialPreview200DataVarianceAnyOfSummary = {
@@ -16,5 +18,7 @@ export type AssembliesMaterialPreview200DataVarianceAnyOfSummary = {
   /** Estimated internal-cost effect of the whole plan: hidden (null) without the cost capability,
 and only over the materials that have cost evidence — never a zero standing in for "unknown". */
   cost_impact: AssembliesMaterialPreview200DataVarianceAnyOfSummaryCostImpact;
+  known_cost_impact: AssembliesMaterialPreview200DataVarianceAnyOfSummaryKnownCostImpact;
+  cost_status: AssembliesMaterialPreview200DataVarianceAnyOfSummaryCostStatus;
   cost_evidence_missing_count: AssembliesMaterialPreview200DataVarianceAnyOfSummaryCostEvidenceMissingCount;
 };

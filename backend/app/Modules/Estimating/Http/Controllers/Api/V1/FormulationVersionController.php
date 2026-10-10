@@ -10,13 +10,13 @@ use App\Modules\Estimating\Actions\CreateFormulationVersion;
 use App\Modules\Estimating\Actions\DeleteFormulationVersion;
 use App\Modules\Estimating\Actions\ExplodeFormulationVersion;
 use App\Modules\Estimating\Actions\UpdateFormulationVersion;
+use App\Modules\Estimating\Http\Requests\CostBreakdownRequest;
 use App\Modules\Estimating\Http\Requests\FormulationVersion\StoreFormulationVersionRequest;
 use App\Modules\Estimating\Http\Requests\FormulationVersion\UpdateFormulationVersionRequest;
+use App\Modules\Estimating\Http\Resources\Costing\FormulationCostResource;
 use App\Modules\Estimating\Http\Resources\FormulationVersionResource;
 use App\Modules\Estimating\Models\Formulation;
 use App\Modules\Estimating\Models\FormulationVersion;
-use App\Modules\Estimating\Support\FormulationExplosion;
-use App\Modules\Estimating\Support\FormulationLineBreakdown;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -62,37 +62,10 @@ class FormulationVersionController extends Controller
      * compounding per level rather than only the total (that doc's own
      * "Landmines").
      */
-    public function costBreakdown(Request $request, FormulationVersion $formulation_version, ExplodeFormulationVersion $explode): JsonResponse
+    public function costBreakdown(CostBreakdownRequest $request, FormulationVersion $formulation_version, ExplodeFormulationVersion $explode): FormulationCostResource
     {
         abort_unless($request->user()?->can('estimating.internal_cost.view'), 403);
 
-        return response()->json(['data' => $this->serializeExplosion($explode($formulation_version))]);
-    }
-
-    /** @return array<string, mixed> */
-    private function serializeExplosion(FormulationExplosion $explosion): array
-    {
-        return [
-            'version_id' => $explosion->version->id,
-            'total_cost' => (string) $explosion->totalCost,
-            'cost_per_output_unit' => (string) $explosion->costPerOutputUnit,
-            'lines' => array_map($this->serializeLine(...), $explosion->lines),
-        ];
-    }
-
-    /** @return array<string, mixed> */
-    private function serializeLine(FormulationLineBreakdown $breakdown): array
-    {
-        return [
-            'line_id' => $breakdown->line->id,
-            'input_item_id' => $breakdown->line->input_item_id,
-            'input_item_code' => $breakdown->line->inputItem->code,
-            'input_item_name' => $breakdown->line->inputItem->name,
-            'qty' => $breakdown->line->qty,
-            'wastage_pct' => $breakdown->line->wastage_pct,
-            'unit_cost' => (string) $breakdown->unitCost,
-            'line_cost' => (string) $breakdown->lineCost,
-            'sub_formulation' => $breakdown->subExplosion === null ? null : $this->serializeExplosion($breakdown->subExplosion),
-        ];
+        return new FormulationCostResource($explode($formulation_version, $request->user()));
     }
 }

@@ -5,7 +5,5 @@
  * OpenAPI spec version: 0.0.1
  */
 
-export type FormulationVersionsCostBreakdown403 = {
-  /** Error overview. */
-  message: string;
-};
+export type AssembliesMaterialPreview200DataVarianceAnyOfSummaryKnownCostImpact =
+  string | null;

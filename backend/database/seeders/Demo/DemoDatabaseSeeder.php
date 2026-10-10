@@ -8,6 +8,7 @@ use Database\Seeders\Demo\Concerns\EnsuresDemoEnvironment;
 use Database\Seeders\Demo\Estimating\ApplicationRatesDemoSeeder;
 use Database\Seeders\Demo\Estimating\AssembliesDemoSeeder;
 use Database\Seeders\Demo\Estimating\AssemblyVersionsDemoSeeder;
+use Database\Seeders\Demo\Estimating\CostCertaintyDemoSeeder;
 use Database\Seeders\Demo\Estimating\FormulationsDemoSeeder;
 use Database\Seeders\Demo\Estimating\MaterialSelectionDemoSeeder;
 use Database\Seeders\Demo\Estimating\MaterialVarianceDemoSeeder;
@@ -63,6 +64,7 @@ final class DemoDatabaseSeeder extends Seeder
                 OverheadPoliciesDemoSeeder::class,
                 ResourceRatesDemoSeeder::class,
                 AssemblyVersionsDemoSeeder::class,
+                CostCertaintyDemoSeeder::class,
                 MaterialVarianceDemoSeeder::class,
                 MaterialSelectionDemoSeeder::class,
                 // After the assemblies and the stock seeders: a FIFO material in two depots, and the company's stock-choice rule.

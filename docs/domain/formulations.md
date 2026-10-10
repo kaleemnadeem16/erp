@@ -97,24 +97,20 @@ with nothing having ever rejected either save.
 ### Cost of one output unit
 
 ```
-cost_per_output_unit = Σ (line.qty × (1 + line.wastage_pct) × input_item.avco_cost)
-                       ÷ formulation.output_qty
+cost.unit_cost = Σ line costs (line.qty × (1 + line.wastage_pct) × output factor, costed through Inventory)
+                 ÷ formulation.output_qty        (only when every applicable line is costed)
 ```
 
-Ingredient cost comes from [stock valuation](stock.md), not from a price list — it reflects what
-was actually paid. v1 supports exactly one configuration for a leaf ingredient: AVCO valuation
-with a company-wide (`COMPANY_ITEM`) pool, the only case with one unambiguous current cost. A
-FIFO/SPECIFIC item, or an AVCO item whose pool is scoped by warehouse or batch (see
-[items.md](items.md#valuation-method)'s multi-pool scopes), fails loudly rather than guessing
-which layer or which pool a pure recipe —
-not tied to any warehouse or batch — should read; a never-purchased item returns a real `0`
-instead, since "no cost known yet" is a legitimate state, not an error. This is the *current* behaviour only: [ADR 0077](../decisions/0077-generic-material-cost-resolution-with-a-configurable-costing-scope.md)
-designs the generic replacement (strategies per valuation method, a configurable costing scope, an evidence-carrying result that
-Phase 4 snapshots, and `unknown` instead of `0`). [Revised C0](../phases/phase-4-c0-cost-evidence-contract.md)
-proposes correcting current operations and consumers during C1/C2 before persisted adoption;
-that timing refinement of 0077 remains for owner approval. No runtime change yet. A line specified in a
-different-but-convertible unit than its input item's stock UoM converts through the ordinary UoM
-system (`units-of-measure.md`) before pricing.
+Ingredient cost comes from [Inventory cost evidence](material-cost-resolution.md), never a price list.
+The existing cost-breakdown operation now returns one typed `cost` resolution per batch and line,
+with COSTED/PARTIAL/UNKNOWN certainty, nullable complete amounts and separately labelled known
+contributions. Genuine source-supported zero remains complete; missing material evidence never
+becomes free. FIFO costs the actual combined demand without reusing layers. SPECIFIC needs identified
+stock; an ordinary recipe without that context remains unknown. Built-in scope is COMPANY; governed
+configurable defaults remain gated C1d. Unsupported historical/future costs remain unknown.
+Nested uncertainty propagates through the parent. Compatible technical units convert through the
+ordinary UoM service before pricing. Current estimates do not persist, reserve or post stock;
+quotation adoption/history remains Phase 4/R5. See accepted ADRs 0077/0110.
 
 The UI defaults the output unit from the output item's stock UoM and each line unit from the input
 item's stock UoM. Both remain editable because a real manufacturing batch or ingredient may be
@@ -182,16 +178,12 @@ compounds visibly across a large job. Round only at presentation.
 **Unbounded recursion depth.** Nesting is legitimate but deep chains make roll-up slow and
 debugging hard. Cap depth and surface the limit clearly.
 
-**Scaling a nested formulation's rate by how much the parent needs.** A formulation's own
-`cost_per_output_unit` must be computed from its own recipe alone, at its own natural scale
-(`quantity_multiplier` of 1) — never pre-scaled by the quantity a parent formulation happens to
-need. A nested formulation is just another priced ingredient: the parent multiplies the quantity
-it needs by the child's (unscaled) `cost_per_output_unit`, exactly as it would multiply by a leaf
-ingredient's AVCO unit cost. Threading a running "fraction of the top-level batch" multiplier
-through the recursion and dividing by each level's own *unscaled* `output_qty` looks plausible
-but silently produces the wrong number — the two scalings don't cancel out. This was an actual
-bug in `ExplodeFormulationVersion`'s first implementation, caught by a two-level nesting test
-case, not by inspection.
+**Confusing a batch amount with its unit rate.** A formulation cost names its actual output quantity;
+divide by that same quantity to obtain its unit cost. Do not divide a scaled amount by an unrelated
+natural batch quantity. Supported AVCO recipe arithmetic remains covered by the original nested
+regressions. FIFO is quantity-dependent: evaluate the actual nested demand in the shared scenario,
+never multiply an unrelated one-unit layer estimate into a large job. Public recipe breakdowns use
+the recipe’s natural output batch; a contextual Assembly demand names its actual required output.
 
 ## Related
 

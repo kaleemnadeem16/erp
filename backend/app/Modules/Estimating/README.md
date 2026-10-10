@@ -19,9 +19,11 @@ permits direct Item/service/manual selling alongside Assembly-backed work. Exist
 remain Assembly-specific; `sell_per_unit` is estimate-derived guidance, not the future Sales resolver.
 The [compatibility plan](../../../../docs/phases/phase-4-r2-compatibility-plan.md) tracks missing-cost
 certainty and future adoption. [Revised C0](../../../../docs/phases/phase-4-c0-cost-evidence-contract.md)
-proposes correcting the existing Actions/DTOs/APIs and migrating all readers together;
+corrects the existing Actions/DTOs/APIs and migrates readers together;
 [actual dependencies](../../../../docs/phases/phase-4-cost-dependency-map.md) identify that scope.
-This is still a proposal, not delivered runtime behaviour or a duplicate legacy/evidence contract.
+Under accepted 0110, the C1a–c query and the C2a estimate integration (formulation and Assembly
+cost breakdowns, preview cost and variance) are implemented. Draw/mix pricing and ranking (C2b) is
+tracked separately and has not yet migrated. No duplicate legacy/evidence endpoints are introduced.
 
 ## Owns
 
@@ -45,9 +47,10 @@ This is still a proposal, not delivered runtime behaviour or a duplicate legacy/
 - `FormulationUnitGuard` — output and ingredient units may differ from their items' stock units,
   but must remain in the same convertible dimension. The UI defaults from the item; this guard
   enforces the rule for every API caller
-- `IngredientCostResolver` — leaf ingredient cost from stock valuation; supports exactly one
-  configuration today (AVCO, company-wide `COMPANY_ITEM` pool scope) and fails loudly rather than
-  guessing for FIFO/SPECIFIC items or a warehouse/batch-scoped pool
+- Inventory-owned `QueryMaterialCost` — current AVCO/FIFO/SPECIFIC evidence with typed certainty,
+  scope, coverage and shared hypothetical scenarios. Guarded estimate Actions consume it; missing
+  material/resource evidence cannot produce complete totals or selling guidance. Cost disclosures
+  reuse `estimating.internal_cost.view`; blind variance evaluation remains a preview duty.
 - `Assembly`/`AssemblyGroup` — Assembly has no output item (ADR 0008). `AssemblyGroup` is flat,
   optional, company-defined classification (not the Inventory category tree) that gives the
   overhead-policy resolver below a real scope target (`Assembly → AssemblyGroup → Company →

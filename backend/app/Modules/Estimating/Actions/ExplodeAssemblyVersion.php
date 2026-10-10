@@ -6,47 +6,35 @@ namespace App\Modules\Estimating\Actions;
 
 use App\Exceptions\DomainInvariantException;
 use App\Models\Uom;
+use App\Models\User;
 use App\Modules\Estimating\Models\AssemblyComponent;
 use App\Modules\Estimating\Models\AssemblyVersion;
 use App\Modules\Estimating\Support\AssemblyComponentBreakdown;
 use App\Modules\Estimating\Support\AssemblyComponentKind;
 use App\Modules\Estimating\Support\AssemblyCostBreakdown;
-use App\Modules\Estimating\Support\IngredientCostResolver;
+use App\Modules\Estimating\Support\CostReadAuthorization;
+use App\Modules\Estimating\Support\EstimateCostResolution;
 use App\Modules\Estimating\Support\MarginType;
 use App\Modules\Estimating\Support\OverheadAmountCalculator;
 use App\Modules\Estimating\Support\OverheadCostBasis;
-use App\Modules\Inventory\Models\Item;
+use App\Modules\Estimating\Support\OverheadDriverType;
+use App\Modules\Inventory\Actions\QueryMaterialCost;
+use App\Modules\Inventory\Support\Costing\CostReadSession;
+use App\Modules\Inventory\Support\Costing\CostResolution;
+use App\Modules\Inventory\Support\Costing\MaterialCostRequest;
+use App\Support\CompanyContext;
 use App\Support\UomConversionService;
 use App\Support\UomDimension;
 use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
 
-/**
- * docs/domain/assemblies.md#cost-roll-up, wired to Step 1's Assembly/
- * AssemblyGroup and Step 2's overhead resolver. The four direct costs
- * (material/labour/plant/subcontract) are always computed first, from
- * components alone; overhead is resolved and computed strictly afterward,
- * from those four figures — never the other way around, so overhead can
- * never end up inside its own base (see AssemblyCostBreakdown's docblock).
- *
- * Overhead driver bases, defined explicitly since the docs never spell out
- * their composition in code terms:
- *   - PCT_MATERIAL / PCT_LABOUR — that one component-kind's direct cost
- *   - PCT_DIRECT_COST           — material + labour + plant + subcontract
- *     (all four stored kinds; subcontract is a direct cost of producing
- *     this unit of work, same as the other three, not overhead)
- *   - PER_LABOUR_HOUR           — total LABOUR qty_per_work_unit, converted
- *     to the company's base TIME-dimension UoM (by company convention this
- *     is hours; wastage/multiplier never apply to LABOUR, see explodeResource)
- *   - PER_WORK_UNIT             — exactly 1: every figure here is already
- *     "per unit" (docs/domain/assemblies.md's formulas are all /unit), so
- *     costing one work unit means the basis is 1, not the assembly's own
- *     work_uom quantity on some document that doesn't exist in Phase 3
- */
+/** Supported Assembly arithmetic; current material demands share one read-only cost scenario. */
 final class ExplodeAssemblyVersion
 {
     public function __construct(
-        private readonly IngredientCostResolver $ingredientCost,
+        private readonly QueryMaterialCost $materialCost,
+        private readonly EstimateCostResolution $costs,
+        private readonly CostReadAuthorization $authorise,
         private readonly ResolveResourceRate $resolveResourceRate,
         private readonly ResolveOverheadPolicy $resolveOverheadPolicy,
         private readonly OverheadAmountCalculator $overheadCalculator,
@@ -54,81 +42,78 @@ final class ExplodeAssemblyVersion
         private readonly UomConversionService $uomConverter,
     ) {}
 
-    public function __invoke(AssemblyVersion $version): AssemblyCostBreakdown
+    public function __invoke(AssemblyVersion $version, User $actor): AssemblyCostBreakdown
     {
-        $version->loadMissing([
-            'assembly.workUom', 'assembly.assemblyGroup',
-            'components.item.stockUom', 'components.formulation.outputUom',
-            'components.applicationRate.item.stockUom', 'components.applicationRate.uom',
-            'components.uom',
-        ]);
+        ($this->authorise)($actor);
 
-        $componentBreakdowns = [];
-        $materialCost = BigDecimal::zero();
-        $labourCost = BigDecimal::zero();
-        $labourHours = BigDecimal::zero();
-        $plantCost = BigDecimal::zero();
-        $subcontractCost = BigDecimal::zero();
-
-        foreach ($version->components as $component) {
-            $breakdown = match ($component->kind) {
-                AssemblyComponentKind::Material => $this->explodeMaterial($component),
-                AssemblyComponentKind::Labour, AssemblyComponentKind::Plant => $this->explodeResource($component),
-                AssemblyComponentKind::Subcontract => $this->explodeSubcontract($component),
-            };
-            $componentBreakdowns[] = $breakdown;
-
-            match ($component->kind) {
-                AssemblyComponentKind::Material => $materialCost = $materialCost->plus($breakdown->lineCost),
-                AssemblyComponentKind::Labour => $labourCost = $labourCost->plus($breakdown->lineCost),
-                AssemblyComponentKind::Plant => $plantCost = $plantCost->plus($breakdown->lineCost),
-                AssemblyComponentKind::Subcontract => $subcontractCost = $subcontractCost->plus($breakdown->lineCost),
-            };
-
-            if ($component->kind === AssemblyComponentKind::Labour) {
-                $labourHours = $labourHours->plus($this->toBaseHours($breakdown->resolvedQtyPerWorkUnit, $component->uom));
-            }
-        }
-
-        $directCost = $materialCost->plus($labourCost)->plus($plantCost)->plus($subcontractCost);
-
-        $overheadResolution = ($this->resolveOverheadPolicy)($version->assembly);
-        $overheadAmount = $overheadResolution->policy === null
-            ? BigDecimal::zero()->toScale(4, RoundingMode::HALF_UP)
-            : ($this->overheadCalculator)(
-                $overheadResolution->policy->driver_type,
-                $overheadResolution->policy->rate,
-                new OverheadCostBasis(
-                    materialCost: (string) $materialCost,
-                    labourCost: (string) $labourCost,
-                    plantCost: (string) $plantCost,
-                    subcontractCost: (string) $subcontractCost,
-                    labourHours: (string) $labourHours,
-                    workQty: '1',
-                ),
-            );
-
-        $costPerUnit = $directCost->plus($overheadAmount);
-        $sellPerUnit = $this->applyMargin($version, $costPerUnit);
-
-        return new AssemblyCostBreakdown(
-            version: $version,
-            components: $componentBreakdowns,
-            materialCost: $materialCost,
-            labourCost: $labourCost,
-            labourHours: $labourHours,
-            plantCost: $plantCost,
-            subcontractCost: $subcontractCost,
-            directCost: $directCost,
-            overheadMethod: $overheadResolution->method,
-            overheadPolicy: $overheadResolution->policy,
-            overheadAmount: $overheadAmount,
-            costPerUnit: $costPerUnit,
-            sellPerUnit: $sellPerUnit,
-        );
+        return $this->materialCost->scenario(fn (CostReadSession $session): AssemblyCostBreakdown => $this->forWorkflow($version, $session));
     }
 
-    private function explodeMaterial(AssemblyComponent $component): AssemblyComponentBreakdown
+    /** Internal composition after the enclosing business Action authorises its caller. */
+    public function forWorkflow(AssemblyVersion $version, CostReadSession $session, ?BigDecimal $workQuantity = null, ?CostResolution $contextMaterial = null): AssemblyCostBreakdown
+    {
+        if ($version->assembly->company_id !== app(CompanyContext::class)->id()) {
+            throw new DomainInvariantException('The Assembly is outside the active company.');
+        }
+        $workQuantity ??= BigDecimal::one();
+        $version->loadMissing(['assembly.workUom', 'assembly.assemblyGroup', 'components.item.stockUom',
+            'components.formulation.outputUom', 'components.applicationRate.item.stockUom', 'components.applicationRate.uom', 'components.uom']);
+        $components = [];
+        $groups = [];
+        $labourHours = BigDecimal::zero();
+        foreach ($version->components->sortBy('id') as $component) {
+            if ($contextMaterial !== null && $component->kind === AssemblyComponentKind::Material) {
+                continue;
+            }
+            $row = match ($component->kind) {
+                AssemblyComponentKind::Material => $this->explodeMaterial($component, $workQuantity, $session),
+                AssemblyComponentKind::Labour, AssemblyComponentKind::Plant => $this->explodeResource($component, $workQuantity, $session),
+                AssemblyComponentKind::Subcontract => $this->explodeSubcontract($component, $workQuantity, $session),
+            };
+            $components[] = $row;
+            $groups[$component->kind->value][] = $row->cost;
+            if ($component->kind === AssemblyComponentKind::Labour) {
+                $labourHours = $labourHours->plus($this->toBaseHours($row->resolvedQuantity, $component->uom));
+            }
+        }
+        if ($contextMaterial !== null) {
+            $groups['MATERIAL'] = [$contextMaterial];
+        }
+        $costByKind = [];
+        foreach (AssemblyComponentKind::cases() as $kind) {
+            $costByKind[$kind->value] = $this->costs->aggregate($groups[$kind->value] ?? [], $workQuantity,
+                $version->assembly->work_uom_id, 'WORK_QUANTITY', $session);
+        }
+        $directChildren = array_merge(...array_values($groups ?: [[]]));
+        $direct = $this->costs->aggregate($directChildren, $workQuantity, $version->assembly->work_uom_id, 'WORK_QUANTITY', $session);
+        $overhead = ($this->resolveOverheadPolicy)($version->assembly);
+        $policy = $overhead->policy;
+        $driverComplete = $policy === null || match ($policy->driver_type) {
+            OverheadDriverType::PctMaterial => $costByKind['MATERIAL']->totalCost !== null,
+            OverheadDriverType::PctLabour => $costByKind['LABOUR']->totalCost !== null,
+            OverheadDriverType::PctDirectCost => $direct->totalCost !== null,
+            default => true,
+        };
+        $overheadAmount = ! $driverComplete ? null : ($policy === null ? BigDecimal::zero() : ($this->overheadCalculator)(
+            $policy->driver_type, $policy->rate, new OverheadCostBasis(
+                materialCost: (string) ($costByKind['MATERIAL']->totalCost ?? BigDecimal::zero()),
+                labourCost: (string) ($costByKind['LABOUR']->totalCost ?? BigDecimal::zero()),
+                plantCost: (string) ($costByKind['PLANT']->totalCost ?? BigDecimal::zero()),
+                subcontractCost: (string) ($costByKind['SUBCONTRACT']->totalCost ?? BigDecimal::zero()),
+                labourHours: (string) $labourHours, workQty: (string) $workQuantity,
+            )));
+        $overheadCost = $this->costs->configured($overheadAmount, $workQuantity, $version->assembly->work_uom_id,
+            'WORK_QUANTITY', $session, ['policy_id' => $policy?->id, 'rate' => $policy?->rate,
+                'driver_type' => $policy?->driver_type->value], $driverComplete ? null : 'OVERHEAD_DRIVER_INCOMPLETE');
+        $cost = $this->costs->aggregate($policy === null ? [$direct] : [$direct, $overheadCost], $workQuantity,
+            $version->assembly->work_uom_id, 'WORK_QUANTITY', $session, ['source_type' => 'ASSEMBLY_VERSION', 'version_id' => $version->id]);
+        $sell = $cost->unitCost === null ? null : $this->applyMargin($version, $cost->unitCost);
+
+        return new AssemblyCostBreakdown($version, $components, $cost, $costByKind, $labourHours, $direct,
+            $overhead->method, $policy, $overheadCost, $sell);
+    }
+
+    private function explodeMaterial(AssemblyComponent $component, BigDecimal $workQuantity, CostReadSession $session): AssemblyComponentBreakdown
     {
         if ($component->application_rate_id !== null) {
             $rate = $component->applicationRate;
@@ -146,7 +131,7 @@ final class ExplodeAssemblyVersion
         );
         $scaledQty = BigDecimal::of($qty)
             ->multipliedBy($wastageMultiplier)
-            ->multipliedBy(BigDecimal::of($component->multiplier));
+            ->multipliedBy(BigDecimal::of($component->multiplier))->multipliedBy($workQuantity);
 
         if ($component->rate_override !== null) {
             // The override is $ per unit of the component's own qty_per_work_unit
@@ -155,6 +140,7 @@ final class ExplodeAssemblyVersion
             $convertedQty = $scaledQty;
             $unitCost = BigDecimal::of($component->rate_override);
             $costSource = 'Manual override';
+            $cost = $this->costs->configured($convertedQty->multipliedBy($unitCost), $convertedQty, $qtyUom->id, 'REQUIRED_QUANTITY', $session, ['component_id' => $component->id, 'rate_override' => $component->rate_override]);
         } elseif ($component->formulation_id !== null) {
             $formulation = $component->formulation;
             $activeVersion = $formulation->activeVersion()
@@ -168,66 +154,42 @@ final class ExplodeAssemblyVersion
                 );
             }
 
-            $explosion = ($this->explodeFormulation)($activeVersion);
-            $unitCost = $explosion->costPerOutputUnit;
             $costUom = $formulation->outputUom;
             $convertedQty = $this->convert($scaledQty, $qtyUom, $costUom, $component);
+            $cost = $this->explodeFormulation->forWorkflow($activeVersion, $session, $convertedQty)->cost;
             $costSource = "Formulation {$formulation->code} (v{$activeVersion->version_no})";
         } else {
-            $unitCost = ($this->ingredientCost)($item);
             $costUom = $item->stockUom;
             $convertedQty = $this->convert($scaledQty, $qtyUom, $costUom, $component);
-            $costSource = 'AVCO stock valuation';
+            $cost = $this->materialCost->resolve(new MaterialCostRequest($item, $convertedQty), $session);
+            $costSource = $item->valuation_method->value.' stock valuation';
         }
 
-        $lineCost = $convertedQty->multipliedBy($unitCost)->toScale(4, RoundingMode::HALF_UP);
-
-        return new AssemblyComponentBreakdown($component, $qty, $unitCost, $lineCost, $costSource);
+        return new AssemblyComponentBreakdown($component, $qty->multipliedBy($workQuantity), $cost, $costSource);
     }
 
-    /** LABOUR or PLANT — wastage/multiplier never apply, see docs/domain/assemblies.md#cost-roll-up. */
-    private function explodeResource(AssemblyComponent $component): AssemblyComponentBreakdown
+    /** Resource quantities retain their supported UoM arithmetic; wastage/multipliers do not apply. */
+    private function explodeResource(AssemblyComponent $component, BigDecimal $workQuantity, CostReadSession $session): AssemblyComponentBreakdown
     {
-        $qty = $component->qty_per_work_unit;
+        $qty = BigDecimal::of($component->qty_per_work_unit)->multipliedBy($workQuantity);
+        $rate = $component->rate_override === null ? ($this->resolveResourceRate)($component->item) : null;
+        $unit = $component->rate_override === null ? ($rate === null ? null : BigDecimal::of($rate->rate)) : BigDecimal::of($component->rate_override);
+        $converted = $rate === null ? $qty : $this->convert($qty, $component->uom, $rate->rateUom, $component);
+        $source = $component->rate_override !== null ? 'Manual override' : ($rate === null ? 'No resource rate configured' : "Resource rate as of {$rate->effective_from->toDateString()}");
+        $cost = $this->costs->configured($unit === null ? null : $converted->multipliedBy($unit), $converted,
+            $rate->rate_uom_id ?? $component->uom_id, 'REQUIRED_QUANTITY', $session,
+            ['component_id' => $component->id, 'rate_id' => $rate?->id, 'rate' => $unit === null ? null : (string) $unit,
+                'effective_from' => $rate?->effective_from->toDateString()], $unit === null ? 'RESOURCE_RATE_MISSING' : null);
 
-        if ($component->rate_override !== null) {
-            $unitCost = BigDecimal::of($component->rate_override);
-            $lineCost = BigDecimal::of($qty)->multipliedBy($unitCost)->toScale(4, RoundingMode::HALF_UP);
-
-            return new AssemblyComponentBreakdown($component, BigDecimal::of($qty), $unitCost, $lineCost, 'Manual override');
-        }
-
-        $item = $component->item;
-        $resolved = ($this->resolveResourceRate)($item);
-
-        if ($resolved === null) {
-            // No resource rate configured yet for this item — a legitimate
-            // early state, not an error, same as IngredientCostResolver's
-            // "never received any stock" zero-cost fallback.
-            return new AssemblyComponentBreakdown(
-                $component, BigDecimal::of($qty), BigDecimal::zero(),
-                BigDecimal::zero()->toScale(4, RoundingMode::HALF_UP),
-                'No resource rate configured',
-            );
-        }
-
-        $convertedQty = $this->convert(BigDecimal::of($qty), $component->uom, $resolved->rateUom, $component);
-        $unitCost = BigDecimal::of($resolved->rate);
-        $lineCost = $convertedQty->multipliedBy($unitCost)->toScale(4, RoundingMode::HALF_UP);
-
-        return new AssemblyComponentBreakdown(
-            $component, BigDecimal::of($qty), $unitCost, $lineCost,
-            "Resource rate as of {$resolved->effective_from->toDateString()}",
-        );
+        return new AssemblyComponentBreakdown($component, $qty, $cost, $source);
     }
 
-    /** rate_override is required for SUBCONTRACT — see StoreAssemblyComponentRequest. */
-    private function explodeSubcontract(AssemblyComponent $component): AssemblyComponentBreakdown
+    private function explodeSubcontract(AssemblyComponent $component, BigDecimal $workQuantity, CostReadSession $session): AssemblyComponentBreakdown
     {
-        $unitCost = BigDecimal::of($component->rate_override);
-        $lineCost = $unitCost->toScale(4, RoundingMode::HALF_UP);
+        $cost = $this->costs->configured(BigDecimal::of($component->rate_override)->multipliedBy($workQuantity),
+            $workQuantity, $component->uom_id, 'WORK_QUANTITY', $session, ['component_id' => $component->id, 'rate_override' => $component->rate_override]);
 
-        return new AssemblyComponentBreakdown($component, BigDecimal::one(), $unitCost, $lineCost, 'Direct rate');
+        return new AssemblyComponentBreakdown($component, $workQuantity, $cost, 'Direct rate');
     }
 
     private function convert(BigDecimal $qty, Uom $from, Uom $to, AssemblyComponent $component): BigDecimal

@@ -5,5 +5,4 @@
  * OpenAPI spec version: 0.0.1
  */
 
-export type AssembliesMaterialPreview200DataCostBreakdownAnyOfOverheadDriverType =
-  string | null;
+export type AssemblyCostResourceOverheadDriverType = string | null;

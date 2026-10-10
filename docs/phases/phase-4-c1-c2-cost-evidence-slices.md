@@ -25,6 +25,22 @@ job, so migration/rollback, audit writes, idempotency and rollout grants are not
 capabilities and tenant/limited-scope guards are tested. Snapshot/history persistence remains R5.
 
 
+## Local C2a checkpoint — 2026-10-10
+
+C2a is implemented and locally verified as one cohort: `IngredientCostResolver` is removed; formulation,
+Assembly, preview cost and variance use canonical `CostResolution`s; both GET cost-breakdown routes and the
+material-preview cost/variance fields carry typed Resources; the four panels and `variance-what-if` read the
+regenerated client. Cost disclosure is field-scoped: a holder of only `estimating.internal_cost.view` receives no
+pool, layer, location, batch, serial, on-hand or source-document facts, and a fingerprint that does not move with
+stock (`CostResolution::forReader`). Draw/mix pricing and ranking (C2b) have **not** migrated; proposals and mixes
+still use the advisory availability cost until that slice lands. C1d remains unauthorised.
+
+Validation: focused cost cohort and ratchets pass; the full backend suite passed apart from two `LoginTest`
+failures that exist at HEAD (the login route carries no `throttle:5,1`; unrelated to costing); Pint and Larastan
+clean; client regenerated to completion with only explained drift; the three typechecks and `vite build` pass;
+cost, preview, estimating, variance, selection and accessibility browser specs pass. `recipe-access.spec.ts`
+fails on a stale "Pack conversions" heading changed by the Items commit f01848b (not cost-related).
+
 ## Delivery principle and dependency order
 
 C0 approval → C1a query/access/session → C1b strategies → C1c scope/evidence integration →

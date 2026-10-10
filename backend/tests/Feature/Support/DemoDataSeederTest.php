@@ -119,7 +119,11 @@ final class DemoDataSeederTest extends TestCase
         // reaching its component rows proves the stock fixture did not block
         // any of the later Estimating demo data.
         $this->assertDatabaseHas('assemblies', ['code' => 'demo-asm-wall-paint']);
-        $this->assertSame(5, DB::table('assembly_components')->count());
+        // The cost-certainty demo assemblies (demo-asm-cost-*) add their own components after the originals.
+        $this->assertSame(5, DB::table('assembly_components')
+            ->join('assembly_versions', 'assembly_versions.id', '=', 'assembly_components.assembly_version_id')
+            ->join('assemblies', 'assemblies.id', '=', 'assembly_versions.assembly_id')
+            ->where('assemblies.code', 'not like', 'demo-asm-cost-%')->count());
     }
 
     public function test_the_command_refuses_to_run_in_production(): void

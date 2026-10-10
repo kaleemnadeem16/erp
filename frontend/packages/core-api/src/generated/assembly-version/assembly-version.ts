@@ -25,7 +25,6 @@ import type {
   AssemblyVersionsActivate200,
   AssemblyVersionsActivate403,
   AssemblyVersionsCostBreakdown200,
-  AssemblyVersionsCostBreakdown403,
   AssemblyVersionsDestroy403,
   AssemblyVersionsUpdate200,
   AuthenticationExceptionResponse,
@@ -600,13 +599,18 @@ export type assemblyVersionsCostBreakdownResponse401 = {
 };
 
 export type assemblyVersionsCostBreakdownResponse403 = {
-  data: AssemblyVersionsCostBreakdown403;
+  data: AuthorizationExceptionResponse;
   status: 403;
 };
 
 export type assemblyVersionsCostBreakdownResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
+};
+
+export type assemblyVersionsCostBreakdownResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
 };
 
 export type assemblyVersionsCostBreakdownResponseSuccess =
@@ -617,6 +621,7 @@ export type assemblyVersionsCostBreakdownResponseError = (
   | assemblyVersionsCostBreakdownResponse401
   | assemblyVersionsCostBreakdownResponse403
   | assemblyVersionsCostBreakdownResponse404
+  | assemblyVersionsCostBreakdownResponse422
 ) & {
   headers: Headers;
 };
@@ -654,8 +659,9 @@ export const getAssemblyVersionsCostBreakdownQueryOptions = <
   TData = Awaited<ReturnType<typeof assemblyVersionsCostBreakdown>>,
   TError =
     | AuthenticationExceptionResponse
-    | AssemblyVersionsCostBreakdown403
-    | ModelNotFoundExceptionResponse,
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
 >(
   assemblyVersion: number,
   options?: {
@@ -696,15 +702,17 @@ export type AssemblyVersionsCostBreakdownQueryResult = NonNullable<
 >;
 export type AssemblyVersionsCostBreakdownQueryError =
   | AuthenticationExceptionResponse
-  | AssemblyVersionsCostBreakdown403
-  | ModelNotFoundExceptionResponse;
+  | AuthorizationExceptionResponse
+  | ModelNotFoundExceptionResponse
+  | ValidationExceptionResponse;
 
 export function useAssemblyVersionsCostBreakdown<
   TData = Awaited<ReturnType<typeof assemblyVersionsCostBreakdown>>,
   TError =
     | AuthenticationExceptionResponse
-    | AssemblyVersionsCostBreakdown403
-    | ModelNotFoundExceptionResponse,
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
 >(
   assemblyVersion: number,
   options: {
@@ -733,8 +741,9 @@ export function useAssemblyVersionsCostBreakdown<
   TData = Awaited<ReturnType<typeof assemblyVersionsCostBreakdown>>,
   TError =
     | AuthenticationExceptionResponse
-    | AssemblyVersionsCostBreakdown403
-    | ModelNotFoundExceptionResponse,
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
 >(
   assemblyVersion: number,
   options?: {
@@ -763,8 +772,9 @@ export function useAssemblyVersionsCostBreakdown<
   TData = Awaited<ReturnType<typeof assemblyVersionsCostBreakdown>>,
   TError =
     | AuthenticationExceptionResponse
-    | AssemblyVersionsCostBreakdown403
-    | ModelNotFoundExceptionResponse,
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
 >(
   assemblyVersion: number,
   options?: {
@@ -794,8 +804,9 @@ export function useAssemblyVersionsCostBreakdown<
   TData = Awaited<ReturnType<typeof assemblyVersionsCostBreakdown>>,
   TError =
     | AuthenticationExceptionResponse
-    | AssemblyVersionsCostBreakdown403
-    | ModelNotFoundExceptionResponse,
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
 >(
   assemblyVersion: number,
   options?: {

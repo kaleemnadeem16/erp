@@ -4,7 +4,7 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { AssembliesMaterialPreview200DataCostBreakdownAnyOf } from "./assembliesMaterialPreview200DataCostBreakdownAnyOf";
+import type { AssemblyCostResource } from "./assemblyCostResource";
 
 export type AssembliesMaterialPreview200DataCostBreakdown =
-  AssembliesMaterialPreview200DataCostBreakdownAnyOf | null;
+  AssemblyCostResource | null;

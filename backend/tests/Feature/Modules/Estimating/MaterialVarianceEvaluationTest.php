@@ -7,13 +7,17 @@ use App\Models\User;
 use App\Modules\Estimating\Actions\EvaluateMaterialVariance;
 use App\Modules\Estimating\Actions\ResolveMaterialVariancePolicy;
 use App\Modules\Estimating\Models\MaterialVariancePolicy;
+use App\Modules\Estimating\Support\EstimateCostResolution;
 use App\Modules\Estimating\Support\MaterialVarianceEvaluation;
+use App\Modules\Estimating\Support\VarianceCostComparison;
 use App\Modules\Estimating\Support\VarianceEffect;
 use App\Modules\Estimating\Support\VarianceResolutionMethod;
 use App\Modules\Inventory\Models\Category;
 use App\Modules\Inventory\Models\Item;
+use App\Modules\Inventory\Support\Costing\CostReadSession;
 use App\Support\UomDimension;
 use Brick\Math\BigDecimal;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -174,7 +178,7 @@ class MaterialVarianceEvaluationTest extends TestCase
         $result = $this->evaluate('6.5', '8', null);
 
         $this->assertSame(VarianceEffect::AuditOnly, $result->effect);
-        $this->assertSame('There is no internal cost evidence for this item.', $result->skipped[0]['reason']);
+        $this->assertSame('There is no complete internal cost comparison for this item.', $result->skipped[0]['reason']);
     }
 
     public function test_a_zero_standard_skips_percentages_but_absolute_rules_still_apply(): void
@@ -278,7 +282,17 @@ class MaterialVarianceEvaluationTest extends TestCase
     {
         $resolution = (new ResolveMaterialVariancePolicy)($this->paint->fresh());
 
-        return app(EvaluateMaterialVariance::class)($this->paint->fresh(), BigDecimal::of($standard), BigDecimal::of($planned), $resolution, $cost);
+        $comparison = null;
+        if ($cost !== null) {
+            $builder = app(EstimateCostResolution::class);
+            $session = new CostReadSession(CarbonImmutable::now());
+            $comparison = new VarianceCostComparison(
+                $builder->configured(BigDecimal::of($standard)->multipliedBy($cost), BigDecimal::of($standard), $this->litre->id, 'REQUIRED_QUANTITY', $session, []),
+                $builder->configured(BigDecimal::of($planned)->multipliedBy($cost), BigDecimal::of($planned), $this->litre->id, 'REQUIRED_QUANTITY', $session, []),
+            );
+        }
+
+        return app(EvaluateMaterialVariance::class)($this->paint->fresh(), BigDecimal::of($standard), BigDecimal::of($planned), $resolution, $comparison);
     }
 
     /**

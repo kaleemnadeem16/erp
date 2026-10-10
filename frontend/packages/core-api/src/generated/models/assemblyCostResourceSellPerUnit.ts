@@ -5,5 +5,4 @@
  * OpenAPI spec version: 0.0.1
  */
 
-export type AssembliesMaterialPreview200DataCostBreakdownAnyOfOverheadRate =
-  string | null;
+export type AssemblyCostResourceSellPerUnit = string | null;

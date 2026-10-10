@@ -4,8 +4,8 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { FormulationVersionsCostBreakdown200Data } from "./formulationVersionsCostBreakdown200Data";
+import type { FormulationCostResource } from "./formulationCostResource";
 
 export type FormulationVersionsCostBreakdown200 = {
-  data: FormulationVersionsCostBreakdown200Data;
+  data: FormulationCostResource;
 };

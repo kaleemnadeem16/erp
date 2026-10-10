@@ -123,14 +123,17 @@ applicability choices are genuine delivery/research gates, not permission to exp
 
 **Closed:** owner approved formal bounded R2 business research closure after reviewing `22a3603`;
 final consistency checks retain estimating/pricing governance and explicit implementation gates.
-No compatibility implementation is authorised. C0 is now a concrete proposal in unaccepted 0110;
-C1/C2 code waits for contract review and explicit authority.
+The compatibility-first proposal in this plan is historical: [ADR 0110](../decisions/0110-version-cost-evidence-without-changing-legacy-estimates.md)
+was accepted on 2026-10-10 and replaces it with correcting the existing operations and migrating their
+consumers together. C1a–c and C2a–b are authorised under [C0](phase-4-c0-cost-evidence-contract.md) and the
+[slice plan](phase-4-c1-c2-cost-evidence-slices.md); C1d (governed default-scope settings and migration) and
+serial-selection UI remain separately gated. Where the rows above describe a retained legacy or
+parallel contract, they record the earlier proposal, not current direction.
 
 R3–R9 own pricing, tax/FX, lifecycle, acceptance, job multiplicity, customer documents and access/
 analytics details as assigned in the R2 record. R3 research can proceed independently of cost-code
-delivery; this task does not start it. Next action is owner review of revised C0, dependency map and coherent C1/C2 delivery slices.
-Local commits only; do not push unless explicitly requested. No real business data does not
-authorise historical migration edits or development database resets.
+delivery; this task does not start it. Local commits only; do not push unless explicitly requested.
+No real business data does not authorise historical migration edits or development database resets.
 
 ## Related
 

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Modules\Estimating;
 
+use App\Exceptions\DomainInvariantException;
 use App\Models\Company;
 use App\Models\Currency;
 use App\Models\Uom;
@@ -10,6 +11,7 @@ use App\Modules\Accounting\Models\ChartOfAccount;
 use App\Modules\Accounting\Support\AccountType;
 use App\Modules\Estimating\Actions\ActivateAssemblyVersion;
 use App\Modules\Estimating\Actions\ActivateFormulationVersion;
+use App\Modules\Estimating\Actions\PreviewAssemblyMaterials;
 use App\Modules\Estimating\Actions\SetMaterialSelectionPolicy;
 use App\Modules\Estimating\Models\ApplicationRate;
 use App\Modules\Estimating\Models\Assembly;
@@ -177,8 +179,27 @@ class MaterialPreviewApiTest extends TestCase
         );
 
         $response->assertOk();
-        $response->assertJsonPath('data.cost_breakdown.material_cost', '12.0000');
-        $response->assertJsonPath('data.cost_breakdown.total_cost', '12.0000');
+        $response->assertJsonPath('data.cost_breakdown.cost_by_kind.material.total_cost', '12.0000');
+        $response->assertJsonPath('data.cost_breakdown.cost.total_cost', '12.0000');
+    }
+
+    public function test_direct_preview_refuses_a_caller_without_preview_permission(): void
+    {
+        $this->expectException(DomainInvariantException::class);
+        app(PreviewAssemblyMaterials::class)($this->assembly, $this->payload(), User::factory()->create());
+    }
+
+    public function test_cost_fingerprint_changes_with_visible_cost_but_does_not_expose_it_to_blind_previewers(): void
+    {
+        $costViewer = $this->userWith('estimating.internal_cost.view');
+        $blind = $this->userWith();
+        $visibleBefore = $this->actingAs($costViewer)->postJson($this->url(), $this->payload())->assertOk()->json('data.evidence_fingerprint');
+        $blindBefore = $this->actingAs($blind)->postJson($this->url(), $this->payload())->assertOk()->json('data.evidence_fingerprint');
+        AvcoPool::where('item_id', $this->pigment->id)->update(['avg_unit_cost' => '4.0000', 'base_avg_unit_cost' => '4.0000']);
+        $visibleAfter = $this->actingAs($costViewer)->postJson($this->url(), $this->payload())->assertOk()->json('data.evidence_fingerprint');
+        $blindAfter = $this->actingAs($blind)->postJson($this->url(), $this->payload())->assertOk()->json('data.evidence_fingerprint');
+        $this->assertNotSame($visibleBefore, $visibleAfter);
+        $this->assertSame($blindBefore, $blindAfter);
     }
 
     public function test_preview_is_read_only(): void
@@ -399,6 +420,31 @@ class MaterialPreviewApiTest extends TestCase
         $this->assertNotSame($sightedBefore, $this->actingAs($sighted)->postJson($url, $this->payload())->json('data.evidence_fingerprint'));
     }
 
+    public function test_cost_evidence_hides_stock_detail_and_stock_movement_from_a_cost_only_viewer(): void
+    {
+        $costOnly = $this->userWith('estimating.internal_cost.view');
+        $costAndStock = $this->userWith('estimating.internal_cost.view', 'estimating.inventory_availability.view');
+        $url = "/api/v1/assemblies/{$this->assembly->id}/material-preview";
+
+        $hidden = $this->actingAs($costOnly)->postJson($url, $this->payload())->assertOk();
+        $shown = $this->actingAs($costAndStock)->postJson($url, $this->payload())->assertOk();
+        $hiddenBefore = $hidden->json('data.evidence_fingerprint');
+        $shownBefore = $shown->json('data.evidence_fingerprint');
+
+        // Cost is unchanged by 10 kg leaving the pool; only what is on hand moves.
+        $this->assertSame('12.0000', $hidden->json('data.cost_breakdown.cost.total_cost'));
+        $encoded = (string) json_encode($hidden->json('data.cost_breakdown'));
+        foreach (['pool_id', 'qty_on_hand', 'inventory_value', 'layer_id', 'location_id', 'batch_id', 'serial_no', 'quantity_available'] as $stockKey) {
+            $this->assertStringNotContainsString("\"{$stockKey}\"", $encoded);
+        }
+        $this->assertStringContainsString('"qty_on_hand"', (string) json_encode($shown->json('data.cost_breakdown')));
+
+        AvcoPool::query()->where('item_id', $this->pigment->id)->update(['qty_on_hand' => '90', 'inventory_value' => '270']);
+
+        $this->assertSame($hiddenBefore, $this->actingAs($costOnly)->postJson($url, $this->payload())->json('data.evidence_fingerprint'));
+        $this->assertNotSame($shownBefore, $this->actingAs($costAndStock)->postJson($url, $this->payload())->json('data.evidence_fingerprint'));
+    }
+
     public function test_the_inventory_proposal_is_read_only(): void
     {
         $user = $this->userWith('estimating.inventory_availability.view', 'estimating.internal_cost.view');
@@ -437,7 +483,7 @@ class MaterialPreviewApiTest extends TestCase
         $missing->assertJsonPath('data.variance.items.0.reason_status', 'MISSING');
         $missing->assertJsonPath('data.variance.items.0.can_adopt', false);
         $missing->assertJsonPath('data.variance.items.0.policy', null);
-        $missing->assertJsonPath('data.variance.summary', ['adjusted_count' => 1, 'needs_reason_count' => 1, 'blocked_count' => 0, 'needs_approval_count' => 0, 'can_adopt' => false, 'cost_impact' => null, 'cost_evidence_missing_count' => null]);
+        $missing->assertJsonPath('data.variance.summary', ['adjusted_count' => 1, 'needs_reason_count' => 1, 'blocked_count' => 0, 'needs_approval_count' => 0, 'can_adopt' => false, 'cost_impact' => null, 'known_cost_impact' => null, 'cost_status' => 'HIDDEN', 'cost_evidence_missing_count' => null]);
 
         $given = $this->actingAs($user)->postJson($this->url(), $this->payload() + ['planned_adjustments' => [$this->adjust('5', ['reason_id' => $reason->id, 'note' => 'Bare plaster'])]]);
         $given->assertJsonPath('data.variance.items.0.reason_status', 'PROVIDED');
@@ -540,7 +586,7 @@ class MaterialPreviewApiTest extends TestCase
         $this->assertEquals(12, (float) $sighted->json('data.variance.items.0.cost.standard'));
         $this->assertEquals(15, (float) $sighted->json('data.variance.items.0.cost.planned'));
         $this->assertEquals(3, (float) $sighted->json('data.variance.items.0.cost.delta'));
-        $this->assertEquals(3, (float) $sighted->json('data.variance.summary.cost_impact'));
+        $sighted->assertJsonPath('data.variance.summary.cost_impact', '3.0000');
         $sighted->assertJsonPath('data.variance.summary.cost_evidence_missing_count', 0);
 
         // Hidden is hidden, not zero: every amount is null and the status says why.
@@ -562,7 +608,39 @@ class MaterialPreviewApiTest extends TestCase
             ->assertJsonPath('data.variance.items.0.cost.planned', null)
             ->assertJsonPath('data.variance.items.0.cost.delta', null)
             ->assertJsonPath('data.variance.summary.cost_evidence_missing_count', 1);
-        $this->assertEquals(0, (float) $response->json('data.variance.summary.cost_impact'));
+        $response->assertJsonPath('data.variance.summary.cost_impact', null)->assertJsonPath('data.variance.summary.cost_status', 'UNKNOWN');
+    }
+
+    public function test_a_genuine_zero_cost_pool_is_evidence_and_is_measured_not_skipped(): void
+    {
+        $this->activePolicy([['OVER', 'COST_AMOUNT', '0.5', null, 'BLOCKED']]);
+        AvcoPool::query()->where('item_id', $this->pigment->id)
+            ->update(['avg_unit_cost' => '0.0000', 'base_avg_unit_cost' => '0.0000', 'inventory_value' => '0.0000']);
+
+        $response = $this->actingAs($this->userWith('estimating.internal_cost.view'))->postJson($this->url(), $this->payload() + ['planned_adjustments' => [$this->adjust('5')]]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.cost_breakdown.cost.status', 'COSTED')
+            ->assertJsonPath('data.cost_breakdown.cost.total_cost', '0.0000')
+            ->assertJsonPath('data.variance.items.0.cost.status', 'AVAILABLE')
+            ->assertJsonPath('data.variance.items.0.cost.delta', '0.0000')
+            ->assertJsonPath('data.variance.items.0.skipped', [])
+            ->assertJsonPath('data.variance.summary.cost_status', 'COSTED')
+            ->assertJsonPath('data.variance.summary.cost_impact', '0.0000');
+    }
+
+    public function test_the_context_preview_agrees_with_the_version_breakdown_when_the_inputs_are_equivalent(): void
+    {
+        $user = $this->userWith('estimating.internal_cost.view');
+        $versionId = $this->assembly->activeVersion()->firstOrFail()->id;
+
+        $preview = $this->actingAs($user)->postJson($this->url(), ['work_quantity' => '10', 'work_uom_id' => $this->sqm->id])->assertOk();
+        $breakdown = $this->actingAs($user)->getJson("/api/v1/assembly-versions/{$versionId}/cost-breakdown")->assertOk();
+
+        // The default recipe and rate resolve identically: 0.1 L/sqm x 1 kg/L x 3.0000/kg.
+        $breakdown->assertJsonPath('data.cost.unit_cost', '0.3000');
+        $preview->assertJsonPath('data.cost_breakdown.cost.total_cost', '3.0000');
+        $this->assertSame($breakdown->json('data.cost.unit_cost'), $preview->json('data.cost_breakdown.cost.unit_cost'));
     }
 
     public function test_a_cost_band_without_cost_evidence_is_skipped_not_measured_against_zero(): void
@@ -572,7 +650,7 @@ class MaterialPreviewApiTest extends TestCase
 
         $response = $this->actingAs($this->userWith('estimating.internal_cost.view'))->postJson($this->url(), $this->payload() + ['planned_adjustments' => [$this->adjust('5')]]);
 
-        $response->assertJsonPath('data.variance.items.0.effect', 'AUDIT_ONLY')->assertJsonPath('data.variance.items.0.skipped.0.reason', 'There is no internal cost evidence for this item.');
+        $response->assertJsonPath('data.variance.items.0.effect', 'AUDIT_ONLY')->assertJsonPath('data.variance.items.0.skipped.0.reason', 'There is no complete internal cost comparison for this item.');
     }
 
     public function test_the_inventory_proposal_plans_for_the_planned_quantity(): void

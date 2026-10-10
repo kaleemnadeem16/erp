@@ -8,6 +8,7 @@ use App\Exceptions\DomainInvariantException;
 use App\Modules\Inventory\Models\Location;
 use App\Modules\Inventory\Models\StockBatch;
 use App\Modules\Inventory\Models\Warehouse;
+use App\Modules\Inventory\Support\Costing\CostReadObservation;
 use App\Modules\Inventory\Support\Costing\CostReadSession;
 use App\Modules\Inventory\Support\Costing\CostResolution;
 use App\Modules\Inventory\Support\Costing\CostResolutionFactory;
@@ -41,16 +42,29 @@ final class QueryMaterialCost
      */
     public function scenario(callable $read): mixed
     {
-        // Inside an existing transaction the owning Action supplies its consistent observation.
-        if (DB::transactionLevel() > 0) {
-            return $read(new CostReadSession(CarbonImmutable::now()));
+        $observation = $this->observe();
+        try {
+            return $read($observation->session);
+        } finally {
+            $observation->close();
+        }
+    }
+
+    /** Internal lease for guarded Actions whose typed result is assembled directly. */
+    public function observe(): CostReadObservation
+    {
+        $owns = DB::transactionLevel() === 0;
+        if ($owns) {
+            DB::beginTransaction();
+            try {
+                DB::statement('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY');
+            } catch (\Throwable $error) {
+                DB::rollBack();
+                throw $error;
+            }
         }
 
-        return DB::transaction(function () use ($read) {
-            DB::statement('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY');
-
-            return $read(new CostReadSession(CarbonImmutable::now()));
-        });
+        return new CostReadObservation(new CostReadSession(CarbonImmutable::now()), $owns);
     }
 
     public function resolve(MaterialCostRequest $request, CostReadSession $session): CostResolution

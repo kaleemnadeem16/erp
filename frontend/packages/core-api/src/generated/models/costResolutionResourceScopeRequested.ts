@@ -5,4 +5,4 @@
  * OpenAPI spec version: 0.0.1
  */
 
-export type AssemblyVersionsCostBreakdown200DataOverheadRate = string | null;
+export type CostResolutionResourceScopeRequested = { [key: string]: unknown };

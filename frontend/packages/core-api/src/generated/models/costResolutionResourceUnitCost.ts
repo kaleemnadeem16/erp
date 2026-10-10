@@ -5,5 +5,4 @@
  * OpenAPI spec version: 0.0.1
  */
 
-export type AssemblyVersionsCostBreakdown200DataOverheadPolicyId =
-  number | null;
+export type CostResolutionResourceUnitCost = string | null;

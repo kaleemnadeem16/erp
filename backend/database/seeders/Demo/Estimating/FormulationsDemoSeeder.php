@@ -37,11 +37,11 @@ use Illuminate\Database\Seeder;
  *     customer.
  *
  * demo-pig-blue (InventoryDemoSeeder) is COMPANY_ITEM-scoped AVCO, so it
- * already has one unambiguous cost — see IngredientCostResolver. No other
- * existing demo item qualifies (demo-pig-red is batch-scoped, demo-thinner
- * is FIFO), so this seeder adds the one new ingredient it needs itself
- * rather than reach into InventoryDemoSeeder for something that isn't
- * there.
+ * already has one unambiguous cost evidence source (Inventory's
+ * QueryMaterialCost). demo-pig-red is batch-scoped and demo-thinner is FIFO;
+ * both are costed by the same query but need a chosen batch or enough layers,
+ * so this seeder adds the one new ingredient it needs itself rather than
+ * reach into InventoryDemoSeeder for something that isn't there.
  */
 final class FormulationsDemoSeeder extends Seeder
 {

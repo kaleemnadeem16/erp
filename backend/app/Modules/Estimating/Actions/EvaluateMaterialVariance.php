@@ -8,6 +8,7 @@ use App\Modules\Estimating\Models\MaterialVariancePolicyBand;
 use App\Modules\Estimating\Support\MaterialVarianceEvaluation;
 use App\Modules\Estimating\Support\MaterialVariancePolicyResolution;
 use App\Modules\Estimating\Support\VarianceApprovalAvailability;
+use App\Modules\Estimating\Support\VarianceCostComparison;
 use App\Modules\Estimating\Support\VarianceDirection;
 use App\Modules\Estimating\Support\VarianceEffect;
 use App\Modules\Estimating\Support\VarianceMeasure;
@@ -51,7 +52,7 @@ final class EvaluateMaterialVariance
         BigDecimal $standard,
         BigDecimal $planned,
         MaterialVariancePolicyResolution $resolution,
-        ?BigDecimal $unitCost,
+        ?VarianceCostComparison $cost,
     ): MaterialVarianceEvaluation {
         $delta = $planned->minus($standard);
         $limitations = [];
@@ -85,7 +86,7 @@ final class EvaluateMaterialVariance
                 continue;
             }
 
-            [$observed, $unit, $why] = $this->measure($band, $item, $standard, $delta, $percent, $unitCost);
+            [$observed, $unit, $why] = $this->measure($band, $item, $standard, $delta, $percent, $cost);
             if ($observed === null) {
                 $skipped[] = ['band_id' => $band->id, 'reason' => (string) $why];
 
@@ -127,7 +128,7 @@ final class EvaluateMaterialVariance
     /**
      * @return array{0: BigDecimal|null, 1: string|null, 2: string|null} observed value, its unit label, why it could not be measured
      */
-    private function measure(MaterialVariancePolicyBand $band, Item $item, BigDecimal $standard, BigDecimal $delta, ?BigDecimal $percent, ?BigDecimal $unitCost): array
+    private function measure(MaterialVariancePolicyBand $band, Item $item, BigDecimal $standard, BigDecimal $delta, ?BigDecimal $percent, ?VarianceCostComparison $cost): array
     {
         $absolute = $delta->abs();
 
@@ -148,18 +149,18 @@ final class EvaluateMaterialVariance
                     : [$percent->abs(), '%', null];
 
             case VarianceMeasure::CostAmount:
-                return $unitCost === null
-                    ? [null, null, 'There is no internal cost evidence for this item.']
-                    : [$absolute->multipliedBy($unitCost)->toScale(4, RoundingMode::HALF_UP), null, null];
+                return $cost?->delta() === null
+                    ? [null, null, 'There is no complete internal cost comparison for this item.']
+                    : [$cost->delta()->abs(), null, null];
 
             case VarianceMeasure::CostPercent:
-                if ($unitCost === null) {
-                    return [null, null, 'There is no internal cost evidence for this item.'];
+                if ($cost?->delta() === null) {
+                    return [null, null, 'There is no complete internal cost comparison for this item.'];
                 }
-                $standardCost = $standard->multipliedBy($unitCost);
+                $standardCost = $cost->standard->totalCost;
 
                 return $standardCost->isGreaterThan(0)
-                    ? [$absolute->multipliedBy($unitCost)->multipliedBy(100)->dividedBy($standardCost, self::SCALE, RoundingMode::HALF_UP), '%', null]
+                    ? [$cost->delta()->abs()->multipliedBy(100)->dividedBy($standardCost, self::SCALE, RoundingMode::HALF_UP), '%', null]
                     : [null, null, 'The standard cost is zero, so a cost percentage is undefined.'];
         }
     }

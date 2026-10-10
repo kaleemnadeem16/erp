@@ -3,6 +3,8 @@
 namespace Tests\Feature\Modules\Estimating;
 
 use App\Exceptions\DomainInvariantException;
+use App\Models\Company;
+use App\Models\Currency;
 use App\Models\Uom;
 use App\Models\User;
 use App\Modules\Estimating\Actions\ActivateFormulationVersion;
@@ -11,16 +13,16 @@ use App\Modules\Estimating\Models\Formulation;
 use App\Modules\Estimating\Support\FormulationCycleGuard;
 use App\Modules\Estimating\Support\FormulationExplosion;
 use App\Modules\Estimating\Support\FormulationLineBreakdown;
-use App\Modules\Estimating\Support\IngredientCostResolver;
+use App\Modules\Inventory\Actions\CreateWarehouse;
 use App\Modules\Inventory\Models\AvcoPool;
 use App\Modules\Inventory\Models\Category;
 use App\Modules\Inventory\Models\Item;
+use App\Modules\Inventory\Models\StockLayer;
 use App\Modules\Inventory\Models\Warehouse;
 use App\Modules\Inventory\Support\AvcoPoolScope;
 use App\Modules\Inventory\Support\AvcoPoolStatus;
 use App\Modules\Inventory\Support\ItemType;
 use App\Modules\Inventory\Support\ValuationMethod;
-use App\Support\UomConversionService;
 use App\Support\UomDimension;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Support\PermissionedActor;
@@ -56,7 +58,7 @@ class FormulationExplosionTest extends TestCase
     {
         parent::setUp();
 
-        $this->formulationActor = PermissionedActor::grant(User::factory()->create(), ['estimating.formulation.manage']);
+        $this->formulationActor = PermissionedActor::grant(User::factory()->create(), ['estimating.formulation.manage', 'estimating.internal_cost.view']);
 
         $this->kg = Uom::create(['code' => 'kg', 'name' => 'Kilogram', 'dimension' => UomDimension::Mass, 'factor_to_base' => '1']);
         $this->litre = Uom::create(['code' => 'L', 'name' => 'Litre', 'dimension' => UomDimension::Volume, 'factor_to_base' => '1']);
@@ -110,8 +112,8 @@ class FormulationExplosionTest extends TestCase
         $explosion = $this->explode($formulation);
 
         // (0.5 * 1.10 * 10.00) + (0.6 * 1.00 * 5.00) = 5.50 + 3.00 = 8.50
-        $this->assertSame('8.5000', (string) $explosion->costPerOutputUnit);
-        $this->assertSame('8.5000', (string) $explosion->totalCost);
+        $this->assertSame('8.5000', (string) $explosion->cost->unitCost);
+        $this->assertSame('8.5000', (string) $explosion->cost->totalCost);
     }
 
     public function test_a_line_in_a_different_uom_converts_before_costing(): void
@@ -124,7 +126,7 @@ class FormulationExplosionTest extends TestCase
 
         $explosion = $this->explode($formulation);
 
-        $this->assertSame('8.5000', (string) $explosion->costPerOutputUnit);
+        $this->assertSame('8.5000', (string) $explosion->cost->unitCost);
     }
 
     public function test_nested_formulation_cost_compounds_through_wastage(): void
@@ -144,19 +146,19 @@ class FormulationExplosionTest extends TestCase
         $explosion = $this->explode($shadeFormulation);
 
         // (0.2 * 1.00 * 8.50) + (0.1 * 1.05 * 10.00) = 1.70 + 1.05 = 2.75
-        $this->assertSame('2.7500', (string) $explosion->costPerOutputUnit);
+        $this->assertSame('2.7500', (string) $explosion->cost->unitCost);
         $this->assertCount(2, $explosion->lines);
 
         $tintedBaseLine = collect($explosion->lines)->first(fn (FormulationLineBreakdown $l) => $l->line->input_item_id === $this->tintedBase->id);
         $this->assertNotNull($tintedBaseLine->subExplosion);
         $this->assertSame($tintedBaseFormulation->activeVersion->id, $tintedBaseLine->subExplosion->version->id);
-        $this->assertSame('8.5000', (string) $tintedBaseLine->subExplosion->costPerOutputUnit);
+        $this->assertSame('8.5000', (string) $tintedBaseLine->subExplosion->cost->unitCost);
 
         $pigmentLine = collect($explosion->lines)->first(fn (FormulationLineBreakdown $l) => $l->line->input_item_id === $this->pigment->id);
         $this->assertNull($pigmentLine->subExplosion);
     }
 
-    public function test_an_item_never_received_costs_zero(): void
+    public function test_an_item_never_received_has_unknown_cost(): void
     {
         $neverPurchased = Item::create(['code' => 'NEVER', 'name' => 'Never Purchased', 'type' => ItemType::Raw, 'stock_uom_id' => $this->kg->id, 'category_id' => $this->pigment->category_id]);
         $formulation = $this->activatedFormulation($this->tintedBase, [
@@ -165,22 +167,21 @@ class FormulationExplosionTest extends TestCase
 
         $explosion = $this->explode($formulation);
 
-        $this->assertSame('0.0000', (string) $explosion->costPerOutputUnit);
+        $this->assertNull($explosion->cost->unitCost);
+        $this->assertSame('UNKNOWN', $explosion->cost->status->value);
     }
 
-    public function test_fifo_valued_ingredients_are_not_yet_supported(): void
+    public function test_fifo_without_layers_is_unknown(): void
     {
         $fifoItem = Item::create(['code' => 'FIFO-ITEM', 'name' => 'FIFO Item', 'type' => ItemType::Raw, 'stock_uom_id' => $this->kg->id, 'category_id' => $this->pigment->category_id, 'valuation_method' => ValuationMethod::Fifo]);
         $formulation = $this->activatedFormulation($this->tintedBase, [
             ['input_item_id' => $fifoItem->id, 'qty' => '1.000000', 'uom_id' => $this->kg->id],
         ]);
 
-        $this->expectException(DomainInvariantException::class);
-
-        $this->explode($formulation);
+        $this->assertSame('UNKNOWN', $this->explode($formulation)->cost->status->value);
     }
 
-    public function test_a_warehouse_scoped_avco_pool_is_not_yet_supported(): void
+    public function test_warehouse_avco_without_a_scope_is_unknown(): void
     {
         $warehouse = Warehouse::create(['code' => 'WH1', 'name' => 'Warehouse 1', 'is_default' => true, 'active' => true]);
         $item = Item::create(['code' => 'WH-SCOPED', 'name' => 'Warehouse Scoped', 'type' => ItemType::Raw, 'stock_uom_id' => $this->kg->id, 'category_id' => $this->pigment->category_id, 'avco_pool_scope' => AvcoPoolScope::WarehouseItem]);
@@ -193,9 +194,52 @@ class FormulationExplosionTest extends TestCase
             ['input_item_id' => $item->id, 'qty' => '1.000000', 'uom_id' => $this->kg->id],
         ]);
 
-        $this->expectException(DomainInvariantException::class);
+        $this->assertSame('UNKNOWN', $this->explode($formulation)->cost->status->value);
+    }
 
-        $this->explode($formulation);
+    public function test_nested_missing_material_keeps_known_contribution_but_no_complete_cost(): void
+    {
+        $missing = Item::create(['code' => 'MISSING', 'name' => 'Missing', 'type' => ItemType::Raw,
+            'stock_uom_id' => $this->kg->id, 'category_id' => $this->pigment->category_id]);
+        $this->activatedFormulation($this->tintedBase, [
+            ['input_item_id' => $this->pigment->id, 'qty' => '1', 'uom_id' => $this->kg->id],
+            ['input_item_id' => $missing->id, 'qty' => '1', 'uom_id' => $this->kg->id],
+        ]);
+        $parent = $this->activatedFormulation($this->shade, [
+            ['input_item_id' => $this->tintedBase->id, 'qty' => '2', 'uom_id' => $this->litre->id],
+        ]);
+        $result = $this->explode($parent);
+        $this->assertSame('PARTIAL', $result->cost->status->value);
+        $this->assertNull($result->cost->totalCost);
+        $this->assertNull($result->cost->unitCost);
+        $this->assertSame('20.0000', $result->cost->toArray()['known_cost']);
+        $this->assertSame('PARTIAL', $result->lines[0]->subExplosion->cost->status->value);
+    }
+
+    public function test_fifo_duplicate_leaf_demands_share_coverage_without_reusing_layers(): void
+    {
+        $fifo = Item::create(['code' => 'FIFO-SHARED', 'name' => 'FIFO shared', 'type' => ItemType::Raw,
+            'stock_uom_id' => $this->kg->id, 'category_id' => $this->pigment->category_id, 'valuation_method' => ValuationMethod::Fifo]);
+        $currency = Currency::create(['code' => 'USD', 'name' => 'US Dollar', 'symbol' => '$']);
+        Company::findOrFail(1)->update(['base_currency_id' => $currency->id]);
+        $actor = PermissionedActor::grant($this->formulationActor, ['inventory.warehouse.manage']);
+        $location = app(CreateWarehouse::class)(['code' => 'FIFO', 'name' => 'FIFO', 'location_code' => 'main', 'location_name' => 'Main'], $actor)->locations()->sole();
+        foreach ([['2', '10.0000'], ['1', '20.0000']] as $index => [$qty, $rate]) {
+            StockLayer::create(['item_id' => $fifo->id, 'location_id' => $location->id,
+                'qty_received' => $qty, 'qty_remaining' => $qty, 'unit_cost' => $rate, 'base_unit_cost' => $rate,
+                'currency_id' => $currency->id, 'fx_rate' => '1', 'received_at' => now()->addSeconds($index),
+                'source_type' => 'TEST', 'source_id' => $index + 1]);
+        }
+        $formulation = $this->activatedFormulation($this->tintedBase, [
+            ['input_item_id' => $fifo->id, 'qty' => '2', 'uom_id' => $this->kg->id],
+            ['input_item_id' => $fifo->id, 'qty' => '2', 'uom_id' => $this->kg->id],
+        ]);
+        $result = $this->explode($formulation);
+        $this->assertSame('PARTIAL', $result->cost->status->value);
+        $this->assertSame('40.0000', $result->cost->toArray()['known_cost']);
+        $this->assertSame('20.0000', $result->lines[0]->cost->toArray()['total_cost']);
+        $this->assertNull($result->lines[1]->cost->totalCost);
+        $this->assertSame('3.0000', (string) StockLayer::where('item_id', $fifo->id)->sum('qty_remaining'));
     }
 
     public function test_direct_self_consumption_is_rejected(): void
@@ -247,9 +291,6 @@ class FormulationExplosionTest extends TestCase
 
     private function explode(Formulation $formulation): FormulationExplosion
     {
-        return (new ExplodeFormulationVersion(
-            new IngredientCostResolver,
-            new UomConversionService,
-        ))($formulation->activeVersion);
+        return app(ExplodeFormulationVersion::class)($formulation->activeVersion, $this->formulationActor);
     }
 }

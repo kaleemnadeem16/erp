@@ -64,8 +64,8 @@ costs do — see "Resource rates" below for where it actually lives and why.
 ### Resource rates
 
 `items` itself carries no rate/standard-cost column, and a non-stocked `LABOUR`/`PLANT` item has
-no AVCO pool to price it from either — `IngredientCostResolver` (formulations.md) only ever
-resolves from stock valuation. A separate, Estimating-owned `resource_rates` table is the actual
+no AVCO pool to price it from either — Inventory's material-cost query (see [material-cost-resolution.md](material-cost-resolution.md))
+only ever resolves from stock valuation. A separate, Estimating-owned `resource_rates` table is the actual
 source:
 
 ```

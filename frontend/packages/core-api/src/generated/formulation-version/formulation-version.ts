@@ -26,7 +26,6 @@ import type {
   FormulationVersionsActivate200,
   FormulationVersionsActivate403,
   FormulationVersionsCostBreakdown200,
-  FormulationVersionsCostBreakdown403,
   FormulationVersionsDestroy403,
   FormulationVersionsUpdate200,
   FormulationsVersionsStore201,
@@ -610,13 +609,18 @@ export type formulationVersionsCostBreakdownResponse401 = {
 };
 
 export type formulationVersionsCostBreakdownResponse403 = {
-  data: FormulationVersionsCostBreakdown403;
+  data: AuthorizationExceptionResponse;
   status: 403;
 };
 
 export type formulationVersionsCostBreakdownResponse404 = {
   data: ModelNotFoundExceptionResponse;
   status: 404;
+};
+
+export type formulationVersionsCostBreakdownResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
 };
 
 export type formulationVersionsCostBreakdownResponseSuccess =
@@ -627,6 +631,7 @@ export type formulationVersionsCostBreakdownResponseError = (
   | formulationVersionsCostBreakdownResponse401
   | formulationVersionsCostBreakdownResponse403
   | formulationVersionsCostBreakdownResponse404
+  | formulationVersionsCostBreakdownResponse422
 ) & {
   headers: Headers;
 };
@@ -666,8 +671,9 @@ export const getFormulationVersionsCostBreakdownQueryOptions = <
   TData = Awaited<ReturnType<typeof formulationVersionsCostBreakdown>>,
   TError =
     | AuthenticationExceptionResponse
-    | FormulationVersionsCostBreakdown403
-    | ModelNotFoundExceptionResponse,
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
 >(
   formulationVersion: number,
   options?: {
@@ -709,15 +715,17 @@ export type FormulationVersionsCostBreakdownQueryResult = NonNullable<
 >;
 export type FormulationVersionsCostBreakdownQueryError =
   | AuthenticationExceptionResponse
-  | FormulationVersionsCostBreakdown403
-  | ModelNotFoundExceptionResponse;
+  | AuthorizationExceptionResponse
+  | ModelNotFoundExceptionResponse
+  | ValidationExceptionResponse;
 
 export function useFormulationVersionsCostBreakdown<
   TData = Awaited<ReturnType<typeof formulationVersionsCostBreakdown>>,
   TError =
     | AuthenticationExceptionResponse
-    | FormulationVersionsCostBreakdown403
-    | ModelNotFoundExceptionResponse,
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
 >(
   formulationVersion: number,
   options: {
@@ -746,8 +754,9 @@ export function useFormulationVersionsCostBreakdown<
   TData = Awaited<ReturnType<typeof formulationVersionsCostBreakdown>>,
   TError =
     | AuthenticationExceptionResponse
-    | FormulationVersionsCostBreakdown403
-    | ModelNotFoundExceptionResponse,
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
 >(
   formulationVersion: number,
   options?: {
@@ -776,8 +785,9 @@ export function useFormulationVersionsCostBreakdown<
   TData = Awaited<ReturnType<typeof formulationVersionsCostBreakdown>>,
   TError =
     | AuthenticationExceptionResponse
-    | FormulationVersionsCostBreakdown403
-    | ModelNotFoundExceptionResponse,
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
 >(
   formulationVersion: number,
   options?: {
@@ -807,8 +817,9 @@ export function useFormulationVersionsCostBreakdown<
   TData = Awaited<ReturnType<typeof formulationVersionsCostBreakdown>>,
   TError =
     | AuthenticationExceptionResponse
-    | FormulationVersionsCostBreakdown403
-    | ModelNotFoundExceptionResponse,
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
 >(
   formulationVersion: number,
   options?: {

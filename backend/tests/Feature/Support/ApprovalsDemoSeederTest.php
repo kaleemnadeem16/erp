@@ -20,6 +20,7 @@ use App\Modules\Purchasing\Actions\IssuePurchaseOrder;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\PermissionRegistrar;
+use Tests\Support\PermissionedActor;
 use Tests\TestCase;
 
 /**
@@ -103,7 +104,7 @@ final class ApprovalsDemoSeederTest extends TestCase
         $paint = Item::query()->where('code', 'demo-pig-blue')->firstOrFail();
         $leaf = ['item' => ['id' => $paint->id, 'code' => $paint->code, 'name' => $paint->name], 'standard_quantity' => '10.0000', 'uom' => ['id' => $paint->stock_uom_id, 'code' => 'kg', 'name' => 'Kilogram']];
 
-        [$data] = app(PreviewMaterialVariance::class)([$leaf], [['item_id' => $paint->id, 'planned_quantity' => '25', 'uom_id' => $paint->stock_uom_id]], false);
+        [$data] = app(PreviewMaterialVariance::class)([$leaf], [['item_id' => $paint->id, 'planned_quantity' => '25', 'uom_id' => $paint->stock_uom_id]], PermissionedActor::grant(User::factory()->create(), ['estimating.material_preview.run']));
         $item = $data['items'][0];
 
         $this->assertSame('APPROVAL_REQUIRED', $item['effect']);

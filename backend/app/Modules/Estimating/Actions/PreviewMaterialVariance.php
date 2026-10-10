@@ -6,17 +6,24 @@ namespace App\Modules\Estimating\Actions;
 
 use App\Exceptions\DomainInvariantException;
 use App\Models\Uom;
+use App\Models\User;
 use App\Modules\Approvals\Actions\ResolveApprovalPolicy;
 use App\Modules\Approvals\Support\ApprovalRouting;
 use App\Modules\Estimating\Models\MaterialVarianceReason;
-use App\Modules\Estimating\Support\IngredientCostResolver;
+use App\Modules\Estimating\Support\CostReadAuthorization;
 use App\Modules\Estimating\Support\MaterialVarianceApprovalSubject;
 use App\Modules\Estimating\Support\MaterialVarianceEvaluation;
 use App\Modules\Estimating\Support\MaterialVariancePolicyResolution;
+use App\Modules\Estimating\Support\VarianceCostComparison;
 use App\Modules\Estimating\Support\VarianceEffect;
 use App\Modules\Estimating\Support\VarianceMeasure;
 use App\Modules\Inventory\Actions\ItemUomConversionService;
+use App\Modules\Inventory\Actions\QueryMaterialCost;
 use App\Modules\Inventory\Models\Item;
+use App\Modules\Inventory\Support\Costing\CostReadSession;
+use App\Modules\Inventory\Support\Costing\MaterialCostRequest;
+use App\Support\ActionAuthorization;
+use App\Support\CompanyContext;
 use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
 use InvalidArgumentException;
@@ -33,8 +40,9 @@ use InvalidArgumentException;
  *
  * Internal cost decides cost bands but is never returned to a caller without
  * `estimating.internal_cost.view`: the amounts a cost band observed are masked, and cost impact is
- * omitted, rather than reported as zero. A zero unit cost is treated as no evidence, because "never
- * received" is not "free".
+ * omitted, rather than reported as zero. Standard and planned quantities are costed as separate
+ * hypothetical scenarios on one read snapshot; a genuine zero cost is evidence, while missing,
+ * partial or unsupported evidence is never "free" and never passes a cost band.
  *
  * The same rows drive the inventory proposal: `planned` maps item id → planned stock quantity.
  */
@@ -44,7 +52,8 @@ final class PreviewMaterialVariance
         private readonly ResolveMaterialVariancePolicy $resolvePolicy,
         private readonly EvaluateMaterialVariance $evaluate,
         private readonly ItemUomConversionService $conversion,
-        private readonly IngredientCostResolver $ingredientCost,
+        private readonly QueryMaterialCost $materialCost,
+        private readonly CostReadAuthorization $costRead,
         private readonly ResolveApprovalPolicy $resolveApproval,
     ) {}
 
@@ -53,85 +62,106 @@ final class PreviewMaterialVariance
      * @param  list<array{item_id: int, planned_quantity: string, uom_id: int, reason_id?: int|null, note?: string|null}>  $adjustments
      * @return array{0: array<string, mixed>, 1: array<int, string>, 2: list<array<string, mixed>>} variance block, item id → planned stock quantity, fingerprint evidence
      */
-    public function __invoke(array $leafRows, array $adjustments, bool $includeCost): array
+    public function __invoke(array $leafRows, array $adjustments, User $actor): array
     {
-        $rowsByItem = [];
-        foreach ($leafRows as $row) {
-            $rowsByItem[$row['item']['id']] = $row;
+        ActionAuthorization::require($actor, 'estimating.material_preview.run', 'evaluate material variance');
+        if ($actor->company_id !== app(CompanyContext::class)->id()) {
+            throw new DomainInvariantException('The actor is outside the active company.');
         }
 
-        $items = Item::query()->with(['stockUom', 'category.parent'])->whereIn('id', array_map(fn (array $a): int => $a['item_id'], $adjustments))->get()->keyBy('id');
+        if ($actor->can('estimating.internal_cost.view')) {
+            ($this->costRead)($actor);
+        }
 
-        $rows = [];
-        $planned = [];
-        $evidence = [];
-        $counts = ['needs_reason' => 0, 'blocked' => 0, 'adjusted' => 0, 'adoptable' => 0];
-        $counts['needs_approval'] = 0;
-        $costImpact = BigDecimal::zero();
-        $costEvidenceMissing = 0;
-
-        foreach ($adjustments as $index => $adjustment) {
-            $itemId = $adjustment['item_id'];
-            $row = $rowsByItem[$itemId] ?? null;
-            $item = $items->get($itemId);
-            if ($row === null || $item === null) {
-                throw new DomainInvariantException('This assembly does not require that material, so there is nothing to adjust.', "planned_adjustments.{$index}.item_id");
+        $lease = $this->materialCost->observe();
+        $session = $lease->session;
+        try {
+            $includeCost = $actor->can('estimating.internal_cost.view');
+            $rowsByItem = [];
+            foreach ($leafRows as $row) {
+                $rowsByItem[$row['item']['id']] = $row;
             }
 
-            $reason = $this->reason($adjustment['reason_id'] ?? null, $index);
-            $plannedStock = $this->plannedInStockUnit($item, $adjustment, $index);
-            $standard = BigDecimal::of($row['standard_quantity']);
+            $items = Item::query()->with(['stockUom', 'category.parent'])->whereIn('id', array_map(fn (array $a): int => $a['item_id'], $adjustments))->get()->keyBy('id');
 
-            $resolution = ($this->resolvePolicy)($item);
-            // Cost decides a cost band and, for someone allowed to see it, the planned-cost figure; it is
-            // looked up once for whichever needs it.
-            $unitCost = $this->unitCostIfNeeded($item, $resolution, $includeCost);
-            $evaluation = ($this->evaluate)($item, $standard, $plannedStock, $resolution, $unitCost);
+            $rows = [];
+            $planned = [];
+            $evidence = [];
+            $counts = ['needs_reason' => 0, 'blocked' => 0, 'adjusted' => 0, 'adoptable' => 0];
+            $counts['needs_approval'] = 0;
+            $costImpact = BigDecimal::zero();
+            $costEvidenceMissing = 0;
 
-            $status = $this->reasonStatus($evaluation, $reason);
-            $adoptable = $evaluation->effect === null || $status === 'NOT_NEEDED' || $status === 'PROVIDED';
-            $counts['needs_approval'] += $status === 'APPROVAL_NEEDED' ? 1 : 0;
-            $counts['adjusted'] += $evaluation->isAdjusted() ? 1 : 0;
-            $counts['needs_reason'] += $status === 'MISSING' ? 1 : 0;
-            $counts['blocked'] += $evaluation->effect === VarianceEffect::Blocked ? 1 : 0;
-            $counts['adoptable'] += $adoptable ? 1 : 0;
-
-            $planned[$itemId] = (string) $plannedStock;
-            $cost = $this->cost($standard, $plannedStock, $unitCost, $includeCost);
-            if ($includeCost) {
-                if ($cost['status'] === 'AVAILABLE') {
-                    $costImpact = $costImpact->plus($cost['delta']);
-                } else {
-                    $costEvidenceMissing++;
+            foreach ($adjustments as $index => $adjustment) {
+                $itemId = $adjustment['item_id'];
+                $row = $rowsByItem[$itemId] ?? null;
+                $item = $items->get($itemId);
+                if ($row === null || $item === null) {
+                    throw new DomainInvariantException('This assembly does not require that material, so there is nothing to adjust.', "planned_adjustments.{$index}.item_id");
                 }
-            }
-            $approval = $evaluation->effect === VarianceEffect::ApprovalRequired ? $this->approvalPreview($item, $standard, $plannedStock, $unitCost) : null;
-            $rows[] = $this->row($item, $row, $adjustment, $evaluation, $resolution, $reason, $status, $adoptable, $includeCost, $cost, $approval);
-            $evidence[] = [
-                'item_id' => $itemId, 'planned' => (string) $plannedStock, 'reason_id' => $reason?->id,
-                'policy_id' => $evaluation->policyId, 'effect' => $evaluation->effect?->value,
-            ];
-        }
 
-        return [
-            [
-                'items' => $rows,
-                'summary' => [
-                    'adjusted_count' => $counts['adjusted'],
-                    'needs_reason_count' => $counts['needs_reason'],
-                    'blocked_count' => $counts['blocked'],
-                    'needs_approval_count' => $counts['needs_approval'],
-                    'can_adopt' => $counts['adoptable'] === count($rows),
-                    // Estimated internal-cost effect of the whole plan: hidden (null) without the cost capability,
-                    // and only over the materials that have cost evidence — never a zero standing in for "unknown".
-                    'cost_impact' => $includeCost ? (string) $costImpact->toScale(4, RoundingMode::HALF_UP) : null,
-                    'cost_evidence_missing_count' => $includeCost ? $costEvidenceMissing : null,
+                $reason = $this->reason($adjustment['reason_id'] ?? null, $index);
+                $plannedStock = $this->plannedInStockUnit($item, $adjustment, $index);
+                $standard = BigDecimal::of($row['standard_quantity']);
+
+                $resolution = ($this->resolvePolicy)($item);
+                // Cost decides a cost band and, for someone allowed to see it, the planned-cost figure; it is
+                // looked up once for whichever needs it.
+                $comparison = new VarianceCostComparison(
+                    $this->materialCost->resolve(new MaterialCostRequest($item, $standard), new CostReadSession($session->observedAt)),
+                    $this->materialCost->resolve(new MaterialCostRequest($item, $plannedStock), new CostReadSession($session->observedAt)),
+                );
+                $evaluation = ($this->evaluate)($item, $standard, $plannedStock, $resolution, $comparison);
+
+                $status = $this->reasonStatus($evaluation, $reason);
+                $adoptable = $evaluation->effect === null || $status === 'NOT_NEEDED' || $status === 'PROVIDED';
+                $counts['needs_approval'] += $status === 'APPROVAL_NEEDED' ? 1 : 0;
+                $counts['adjusted'] += $evaluation->isAdjusted() ? 1 : 0;
+                $counts['needs_reason'] += $status === 'MISSING' ? 1 : 0;
+                $counts['blocked'] += $evaluation->effect === VarianceEffect::Blocked ? 1 : 0;
+                $counts['adoptable'] += $adoptable ? 1 : 0;
+
+                $planned[$itemId] = (string) $plannedStock;
+                $cost = $this->cost($comparison, $includeCost);
+                if ($includeCost) {
+                    if ($cost['status'] === 'AVAILABLE') {
+                        $costImpact = $costImpact->plus($cost['delta']);
+                    } else {
+                        $costEvidenceMissing++;
+                    }
+                }
+                $approval = $evaluation->effect === VarianceEffect::ApprovalRequired ? $this->approvalPreview($item, $comparison) : null;
+                $rows[] = $this->row($item, $row, $adjustment, $evaluation, $resolution, $reason, $status, $adoptable, $includeCost, $cost, $approval);
+                $evidence[] = [
+                    'item_id' => $itemId, 'planned' => (string) $plannedStock, 'reason_id' => $reason?->id,
+                    'policy_id' => $evaluation->policyId, 'effect' => $evaluation->effect?->value,
+                ];
+            }
+
+            return [
+                [
+                    'items' => $rows,
+                    'summary' => [
+                        'adjusted_count' => $counts['adjusted'],
+                        'needs_reason_count' => $counts['needs_reason'],
+                        'blocked_count' => $counts['blocked'],
+                        'needs_approval_count' => $counts['needs_approval'],
+                        'can_adopt' => $counts['adoptable'] === count($rows),
+                        // Estimated internal-cost effect of the whole plan: hidden (null) without the cost capability,
+                        // and only over the materials that have cost evidence — never a zero standing in for "unknown".
+                        'cost_impact' => $includeCost && $costEvidenceMissing === 0 ? (string) $costImpact->toScale(4, RoundingMode::HALF_UP) : null,
+                        'known_cost_impact' => $includeCost && $costEvidenceMissing < count($rows) ? (string) $costImpact->toScale(4, RoundingMode::HALF_UP) : null,
+                        'cost_status' => ! $includeCost ? 'HIDDEN' : ($costEvidenceMissing === 0 ? 'COSTED' : ($costEvidenceMissing < count($rows) ? 'PARTIAL' : 'UNKNOWN')),
+                        'cost_evidence_missing_count' => $includeCost ? $costEvidenceMissing : null,
+                    ],
+                    'limitations' => $this->limitations(),
                 ],
-                'limitations' => $this->limitations(),
-            ],
-            $planned,
-            $evidence,
-        ];
+                $planned,
+                $evidence,
+            ];
+        } finally {
+            $lease->close();
+        }
     }
 
     /** @return list<string> */
@@ -191,41 +221,15 @@ final class PreviewMaterialVariance
     }
 
     /**
-     * Cost is only fetched when the resolved policy has a cost band (the resolver is AVCO-company-pool
-     * only and throws otherwise). No evidence — a non-AVCO item, or nothing ever received — is null,
-     * so the cost band is reported skipped instead of measuring against a made-up zero.
-     */
-    private function unitCostIfNeeded(Item $item, MaterialVariancePolicyResolution $resolution, bool $includeCost): ?BigDecimal
-    {
-        $hasCostBand = $resolution->policy !== null && $resolution->policy->bands->contains(
-            fn ($band): bool => in_array($band->measure, [VarianceMeasure::CostAmount, VarianceMeasure::CostPercent], true),
-        );
-        $hasApprovalBand = $resolution->policy !== null && ($resolution->policy->minimum_effect === VarianceEffect::ApprovalRequired
-            || $resolution->policy->bands->contains(fn ($band): bool => $band->effect === VarianceEffect::ApprovalRequired));
-        // An approval band routes on the cost impact, so cost is looked up for it even when the caller may not see it.
-        if (! $hasCostBand && ! $hasApprovalBand && ! $includeCost) {
-            return null;
-        }
-
-        try {
-            $cost = ($this->ingredientCost)($item);
-        } catch (DomainInvariantException) {
-            return null;
-        }
-
-        return $cost->isGreaterThan(0) ? $cost : null;
-    }
-
-    /**
      * Which approval a plan would need, if its difference falls in an approval-required band (ADR 0070 §11): the policy the
      * engine would route it under and its steps. Read-only — a plan is hypothetical until Phase 4 adopts it, so nothing is
      * submitted. With no matching policy it says so: an approval-required band never falls through to "not required".
      *
      * @return array{policy: array{id: int, code: string, version_no: int, name: string}|null, steps: list<array{name: string, stage: int, required_approvals: int, uses_authority_limit: bool}>, note: string|null}
      */
-    private function approvalPreview(Item $item, BigDecimal $standard, BigDecimal $planned, ?BigDecimal $unitCost): array
+    private function approvalPreview(Item $item, VarianceCostComparison $comparison): array
     {
-        $amount = $unitCost === null ? null : (string) $planned->minus($standard)->abs()->multipliedBy($unitCost)->toScale(4, RoundingMode::HALF_UP);
+        $amount = $comparison->delta() === null ? null : (string) $comparison->delta()->abs()->toScale(4, RoundingMode::HALF_UP);
         $routing = new ApprovalRouting(['item_id' => $item->id, 'category_id' => $item->category_id], $amount, [], []);
         $policy = ($this->resolveApproval)(MaterialVarianceApprovalSubject::CODE, $routing);
         if ($policy === null) {
@@ -246,18 +250,15 @@ final class PreviewMaterialVariance
      *
      * @return array{status: string, standard: ?BigDecimal, planned: ?BigDecimal, delta: ?BigDecimal}
      */
-    private function cost(BigDecimal $standard, BigDecimal $planned, ?BigDecimal $unitCost, bool $includeCost): array
+    private function cost(VarianceCostComparison $comparison, bool $includeCost): array
     {
         if (! $includeCost) {
             return ['status' => 'HIDDEN', 'standard' => null, 'planned' => null, 'delta' => null];
         }
-        if ($unitCost === null) {
-            return ['status' => 'NO_EVIDENCE', 'standard' => null, 'planned' => null, 'delta' => null];
-        }
-        $standardCost = $standard->multipliedBy($unitCost)->toScale(4, RoundingMode::HALF_UP);
-        $plannedCost = $planned->multipliedBy($unitCost)->toScale(4, RoundingMode::HALF_UP);
 
-        return ['status' => 'AVAILABLE', 'standard' => $standardCost, 'planned' => $plannedCost, 'delta' => $plannedCost->minus($standardCost)];
+        return ['status' => $comparison->delta() === null ? 'NO_EVIDENCE' : 'AVAILABLE',
+            'standard' => $comparison->standard->totalCost, 'planned' => $comparison->planned->totalCost,
+            'delta' => $comparison->delta()];
     }
 
     /**

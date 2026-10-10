@@ -5,7 +5,4 @@
  * OpenAPI spec version: 0.0.1
  */
 
-export type AssemblyVersionsCostBreakdown403 = {
-  /** Error overview. */
-  message: string;
-};
+export type CostResolutionResourceRequestedAsOf = string | null;
