@@ -90,6 +90,9 @@ have owner approval and C1a–c/C2a–b code authority (accepted 0110/Q41 resolv
 with their consumers; the compatibility-first draft is historical. Local commits only.
 [Initial capability review](phase-4-r2-existing-capabilities.md) and [ERP comparison](phase-4-r2-erp-comparison.md)
 remain linked evidence. CRM backend exists; R2 quotation implementation remains pending and C1/C2 implementation is in progress.
+[CRM security handoff](phase-4-crm-security-correction.md) is ready;
+[three-policy review](phase-4-crm-policy-review.md) awaits approval.
+[R3 pricing](phase-4-r3-sales-pricing.md) has initial evidence and a consolidated review matrix; no new pricing decision accepted.
 
 
 Leads, opportunities, quotations with revisions, cost snapshotting, PDF output. Mobile layout
