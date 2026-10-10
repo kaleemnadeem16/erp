@@ -375,18 +375,19 @@ class MaterialPreviewApiTest extends TestCase
         $hidden = $this->actingAs($withoutCost)->postJson("/api/v1/assemblies/{$this->assembly->id}/material-preview", $this->payload());
         $hidden->assertOk();
         // Availability shows; every cost figure is hidden — null, not zero — while cost still ranks the balances.
-        $hidden->assertJsonPath('data.inventory.items.0.recommendation.estimated_cost', null);
-        $hidden->assertJsonPath('data.inventory.items.0.recommendation.lines.0.unit_cost', null);
-        $hidden->assertJsonPath('data.inventory.items.0.recommendation.lines.0.cost_method', null);
-        $hidden->assertJsonPath('data.inventory.items.0.recommendation.lines.0.line_cost', null);
+        $hidden->assertJsonPath('data.inventory.items.0.recommendation.cost', null);
+        $hidden->assertJsonPath('data.inventory.items.0.recommendation.lines.0.cost', null);
 
         $shown = $this->actingAs($withCost)->postJson("/api/v1/assemblies/{$this->assembly->id}/material-preview", $this->payload());
         $shown->assertOk();
         // 4 kg at the company pool's 3.0000/kg.
-        $shown->assertJsonPath('data.inventory.items.0.recommendation.estimated_cost', '12.0000');
-        $shown->assertJsonPath('data.inventory.items.0.recommendation.lines.0.unit_cost', '3.0000');
-        $shown->assertJsonPath('data.inventory.items.0.recommendation.lines.0.cost_method', 'AVCO_POOL');
-        $shown->assertJsonPath('data.inventory.items.0.recommendation.lines.0.line_cost', '9.0000');
+        $plan = 'data.inventory.items.0.recommendation';
+        $shown->assertJsonPath("{$plan}.cost.status", 'COSTED');
+        $shown->assertJsonPath("{$plan}.cost.amount_basis", 'SELECTED_DRAW');
+        $shown->assertJsonPath("{$plan}.cost.total_cost", '12.0000');
+        $shown->assertJsonPath("{$plan}.lines.0.cost.unit_cost", '3.0000');
+        $shown->assertJsonPath("{$plan}.lines.0.cost.method", 'AVCO');
+        $shown->assertJsonPath("{$plan}.lines.0.cost.total_cost", '9.0000');
     }
 
     public function test_a_non_stocked_leaf_item_gets_no_availability_rather_than_a_false_shortage(): void
@@ -770,9 +771,10 @@ class MaterialPreviewApiTest extends TestCase
         $response->assertJsonPath("{$mix}.lines.0.usable_before_quantity", '3.0000');
         $response->assertJsonPath("{$mix}.lines.0.remaining_after_quantity", '1.000000000');
         $response->assertJsonPath("{$mix}.lines.1.remaining_after_quantity", '0.000000000');
-        $response->assertJsonPath("{$mix}.lines.0.unit_cost", '3.0000');
-        $response->assertJsonPath("{$mix}.lines.0.line_cost", '6.0000');
-        $response->assertJsonPath("{$mix}.estimated_cost", '12.0000');
+        $response->assertJsonPath("{$mix}.lines.0.cost.unit_cost", '3.0000');
+        $response->assertJsonPath("{$mix}.lines.0.cost.total_cost", '6.0000');
+        $response->assertJsonPath("{$mix}.cost.total_cost", '12.0000');
+        $response->assertJsonPath("{$mix}.cost.amount_basis", 'SELECTED_DRAW');
         $response->assertJsonPath("{$mix}.remaining_after_use_quantity", '1.0000');
         // The recommendation drew 3 + 1; this mix is different, and at one AVCO cost costs the same.
         $response->assertJsonPath("{$mix}.same_as_recommendation", false);
@@ -942,8 +944,8 @@ class MaterialPreviewApiTest extends TestCase
 
         $response = $this->actingAs($blind)->postJson($this->url(), $this->mixPayload([$this->draw('a', '2'), $this->draw('b', '2')]));
         $response->assertOk();
-        $response->assertJsonPath('data.inventory.items.0.selected_mix.estimated_cost', null);
-        $response->assertJsonPath('data.inventory.items.0.selected_mix.lines.0.unit_cost', null);
+        $response->assertJsonPath('data.inventory.items.0.selected_mix.cost', null);
+        $response->assertJsonPath('data.inventory.items.0.selected_mix.lines.0.cost', null);
         $response->assertJsonPath('data.inventory.items.0.selected_mix.cost_difference', null);
 
         $plain = $this->actingAs($blind)->postJson($this->url(), $this->payload())->json('data.evidence_fingerprint');

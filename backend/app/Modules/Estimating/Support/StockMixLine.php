@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Estimating\Support;
 
 use App\Models\Uom;
+use App\Modules\Inventory\Support\Costing\CostResolution;
 use App\Modules\Inventory\Support\StockBalance;
 use Brick\Math\BigDecimal;
 
@@ -22,5 +23,6 @@ final class StockMixLine
         public readonly Uom $enteredUom,
         public readonly BigDecimal $stockUnitFactor,
         public readonly BigDecimal $remainingAfter,
+        public readonly ?CostResolution $cost = null,
     ) {}
 }

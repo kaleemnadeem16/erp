@@ -10,6 +10,8 @@ use App\Modules\Estimating\Support\StockMix;
 use App\Modules\Estimating\Support\StockMixLine;
 use App\Modules\Inventory\Actions\ItemUomConversionService;
 use App\Modules\Inventory\Models\Item;
+use App\Modules\Inventory\Support\Costing\CostReadSession;
+use App\Modules\Inventory\Support\Costing\CostResolution;
 use App\Modules\Inventory\Support\StockBalance;
 use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
@@ -35,14 +37,16 @@ use InvalidArgumentException;
  */
 final class PriceStockMix
 {
-    public function __construct(private readonly ItemUomConversionService $conversion) {}
+    public function __construct(private readonly ItemUomConversionService $conversion, private readonly PriceStockDraw $draws) {}
 
     /**
      * @param  list<StockBalance>  $balances  every balance in the preview's scope for the item, usable or not
      * @param  list<array{index: int, location_id: int, batch_id: int|null, quantity: string, uom_id: int}>  $lines
      */
-    public function __invoke(Item $item, BigDecimal $required, array $balances, array $lines): StockMix
+    public function __invoke(Item $item, BigDecimal $required, array $balances, array $lines, CostReadSession $snapshot): StockMix
     {
+        // A hand-built mix is its own hypothetical scenario: it does not consume what a proposal would.
+        $session = $this->draws->scenario($snapshot);
         $byKey = [];
         foreach ($balances as $balance) {
             $byKey[$balance->locationId.':'.($balance->batchId ?? 0)] = $balance;
@@ -67,14 +71,16 @@ final class PriceStockMix
             $balance = $byKey[$key] ?? null;
             $usable = $this->assertUsable($item, $balance, $stockQuantity, $index);
 
+            $cost = $this->draws->resolve($item, $balance, $stockQuantity, $session);
             $priced[] = new StockMixLine(
                 $balance,
                 $stockQuantity,
-                $balance->unitCost?->multipliedBy($stockQuantity)->toScale(4, RoundingMode::HALF_UP),
+                $cost->totalCost,
                 $line['quantity'],
                 $uom,
                 $factor,
                 $usable->minus($stockQuantity),
+                $cost,
             );
             $total = $total->plus($stockQuantity);
         }
@@ -87,13 +93,14 @@ final class PriceStockMix
             );
         }
 
-        $fullyCosted = $priced !== [] && array_reduce($priced, fn (bool $ok, StockMixLine $line): bool => $ok && $line->lineCost !== null, true);
+        $drawCost = $this->draws->total($item, array_map(fn (StockMixLine $line): CostResolution => $line->cost, $priced), $total, $session);
 
         return new StockMix(
             $priced,
             $total->toScale(4, RoundingMode::HALF_UP),
             $required->minus($total)->toScale(4, RoundingMode::HALF_UP),
-            $fullyCosted ? array_reduce($priced, fn (BigDecimal $sum, StockMixLine $line): BigDecimal => $sum->plus($line->lineCost), BigDecimal::zero()) : null,
+            $drawCost?->totalCost,
+            $drawCost,
         );
     }
 

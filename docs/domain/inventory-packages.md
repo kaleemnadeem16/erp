@@ -180,10 +180,12 @@ policy: it may under-report usable stock, and says so, but never over-reports it
 mark a location as counting or not counting (permission `inventory.location-policy.manage`, a reason, and an
 `inventory_policy_changes` entry); each balance reports `location_usable_source` (`TYPE` or `MARKED`).
 
-**Cost evidence** follows what a real issue would consider defensible, and is `null` — never zero —
-otherwise: AVCO uses the pool the movement engine would resolve for that location/batch
-(`COMPANY_ITEM`, `WAREHOUSE_ITEM` or `COMPANY_ITEM_BATCH`), only while it is `ACTIVE` with a positive
-average; FIFO and SPECIFIC use the remaining layers' weighted-average base cost.
+**Cost evidence** is not part of availability: `QueryStockAvailability` reports physical stock only. Estimating prices
+each balance and each drawn quantity through Inventory's read-only `QueryMaterialCost` (chosen location/batch, the item's
+own method and pool scope; see [material-cost-resolution.md](material-cost-resolution.md)). Balances are ranked on the unit
+cost of the draw they would first supply (their usable stock, up to the requirement); a proposed or chosen draw is then
+priced for its actual quantity as a `SELECTED_DRAW` resolution — the cost of the drawn quantity, never of the whole
+requirement, and complete even when the draw leaves a shortage. A genuine zero cost is a cost and ranks first.
 
 **Stored strategy** ([ADR 0071](../decisions/0071-stored-material-selection-strategy-as-governed-history.md)): each material's preset resolves
 item → nearest category ancestor → company → the built-in `MINIMISE_WASTE`, and a strategy chosen for one preview overrides all of
@@ -204,8 +206,11 @@ can be evaluated, which is cost and physical picks:
 | `FEWEST_PACKAGES` | fewest locations that can cover the requirement, then the cheapest fill among equally-sized sets; that set search is bounded and reports when the bound skips the cost tie-break |
 
 Because the two cost-first presets coincide here, the response lists the other two presets as
-alternatives and flags each `same_as_recommendation`. A balance without cost evidence ranks after
-every costed one and makes the plan's estimated cost unknown rather than partial.
+alternatives and flags each `same_as_recommendation`. A balance without complete cost evidence ranks after
+every costed one, is never treated as cheapest, and makes the plan's draw cost `PARTIAL` (known contribution only) or `UNKNOWN`; the plan
+then says it is cheapest only among the balances that have evidence. The ranking rules are versioned (`rules_version` 2: cost evidence
+comes from Inventory's query, so a genuine zero now ranks first; version 1 treated zero as no evidence). The alternatives and the
+recommendation are separate hypothetical scenarios on one read snapshot — none consumes another's layers.
 
 **Hand-built mix** ([ADR 0072](../decisions/0072-hand-built-stock-mix-in-base-quantity.md)): a person may instead choose the quantity to take from
 each location/batch. The canonical line is `(item, location, batch, quantity in the item's stock unit)` — the same shape as an automatic
@@ -213,8 +218,8 @@ proposal — typed in any unit that converts through the item's conversion (0.75
 smaller quantity). The server refuses, rather than warns about, stock that is not a usable balance in scope (absent, held for QA, in a
 location that does not count, exhausted), a draw above a balance, a repeated location/batch, a quantity that breaks the item's
 precision, and an unconvertible unit. Lines adding up to *more than the plan* are refused too — using more is a planned-quantity change
-the variance rules must judge — while adding up to less is reported as a shortage. Pricing uses the proposal's cost evidence (never a
-zero) and the result names, per line, the source, entered quantity and factor, usable before and remaining after, and how the cost
+the variance rules must judge — while adding up to less is reported as a shortage. Pricing is of the chosen draw through the same Inventory query (a separate scenario, never a zero for missing
+evidence; SPECIFIC stock that is not identified stays unsupported) and the result names, per line, the source, entered quantity and factor, usable before and remaining after, and how the cost
 compares with the proposal's. Package tracking will add facts about these lines (a package identity, sealed or open); it does not
 replace them.
 

@@ -6,7 +6,7 @@
  */
 import type { AssembliesMaterialPreview200DataInventoryItemsItemAlternativesItemPlanStrategy } from "./assembliesMaterialPreview200DataInventoryItemsItemAlternativesItemPlanStrategy";
 import type { AssembliesMaterialPreview200DataInventoryItemsItemAlternativesItemPlanLinesItem } from "./assembliesMaterialPreview200DataInventoryItemsItemAlternativesItemPlanLinesItem";
-import type { AssembliesMaterialPreview200DataInventoryItemsItemAlternativesItemPlanEstimatedCost } from "./assembliesMaterialPreview200DataInventoryItemsItemAlternativesItemPlanEstimatedCost";
+import type { AssembliesMaterialPreview200DataInventoryItemsItemAlternativesItemPlanCost } from "./assembliesMaterialPreview200DataInventoryItemsItemAlternativesItemPlanCost";
 import type { AssembliesMaterialPreview200DataInventoryItemsItemAlternativesItemPlanCriteriaItem } from "./assembliesMaterialPreview200DataInventoryItemsItemAlternativesItemPlanCriteriaItem";
 
 export type AssembliesMaterialPreview200DataInventoryItemsItemAlternativesItemPlan =
@@ -16,7 +16,7 @@ export type AssembliesMaterialPreview200DataInventoryItemsItemAlternativesItemPl
     pick_count: number;
     covered_quantity: string;
     shortage_quantity: string;
-    estimated_cost: AssembliesMaterialPreview200DataInventoryItemsItemAlternativesItemPlanEstimatedCost;
+    cost: AssembliesMaterialPreview200DataInventoryItemsItemAlternativesItemPlanCost;
     criteria: AssembliesMaterialPreview200DataInventoryItemsItemAlternativesItemPlanCriteriaItem[];
     limitations: string[];
   };

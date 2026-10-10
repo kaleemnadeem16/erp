@@ -12,7 +12,6 @@ use App\Modules\Inventory\Actions\CreateWarehouse;
 use App\Modules\Inventory\Actions\PostInventoryMovement;
 use App\Modules\Inventory\Actions\QueryMaterialCost;
 use App\Modules\Inventory\Actions\QueryStockAvailability;
-use App\Modules\Inventory\Models\AvcoPool;
 use App\Modules\Inventory\Models\Category;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Models\Location;
@@ -177,31 +176,7 @@ class QueryStockAvailabilityTest extends TestCase
         $this->assertSame('0.0000', (string) $byLocation['old']->usable);
     }
 
-    public function test_avco_cost_follows_the_items_pool_scope(): void
-    {
-        $company = $this->item('company-pool', AvcoPoolScope::CompanyItem);
-        $perWarehouse = $this->item('warehouse-pool', AvcoPoolScope::WarehouseItem);
-        $a = $this->warehouse('a');
-        $b = $this->warehouse('b');
-        foreach ([$company, $perWarehouse] as $item) {
-            $this->receive($item, $a, '2', '10.0000');
-            $this->receive($item, $b, '2', '20.0000');
-        }
-
-        // One company-wide pool: 4 units worth 60 → 15.0000 everywhere.
-        $this->assertSame(
-            ['a/main' => '15.0000', 'b/main' => '15.0000'],
-            $this->costByLocation($this->snapshot([$company->id])->balancesFor($company->id)),
-        );
-        // A pool per warehouse: each location keeps its own cost.
-        $this->assertSame(
-            ['a/main' => '10.0000', 'b/main' => '20.0000'],
-            $this->costByLocation($this->snapshot([$perWarehouse->id])->balancesFor($perWarehouse->id)),
-        );
-        $this->assertSame('AVCO_POOL', $this->snapshot([$company->id])->balancesFor($company->id)[0]->costMethod);
-    }
-
-    public function test_batch_valued_avco_splits_one_location_into_one_balance_per_batch_with_its_own_cost(): void
+    public function test_batch_valued_avco_splits_one_location_into_one_balance_per_batch(): void
     {
         $item = $this->item('batched', AvcoPoolScope::CompanyItemBatch, tracking: 'BATCH');
         $main = $this->warehouse('a');
@@ -211,12 +186,10 @@ class QueryStockAvailabilityTest extends TestCase
         $balances = collect($this->snapshot([$item->id])->balancesFor($item->id))->keyBy(fn (StockBalance $b): string => (string) $b->batchCode);
 
         $this->assertSame(['b1', 'b2'], $balances->keys()->all());
-        $this->assertSame('10.0000', (string) $balances['b1']->unitCost);
-        $this->assertSame('30.0000', (string) $balances['b2']->unitCost);
         $this->assertSame('3.0000', (string) $balances['b2']->usable);
     }
 
-    public function test_fifo_cost_is_the_weighted_average_of_the_remaining_layers(): void
+    public function test_fifo_availability_counts_only_the_remaining_layers(): void
     {
         $item = $this->item('fifo', valuation: ValuationMethod::Fifo);
         $main = $this->warehouse('a');
@@ -230,21 +203,20 @@ class QueryStockAvailabilityTest extends TestCase
         $balance = $this->snapshot([$item->id])->balancesFor($item->id)[0];
 
         $this->assertSame('2.0000', (string) $balance->onHand);
-        $this->assertSame('12.0000', (string) $balance->unitCost);
-        $this->assertSame('LAYER_WEIGHTED_AVERAGE', $balance->costMethod);
     }
 
-    public function test_cost_is_null_never_zero_without_defensible_evidence(): void
+    public function test_availability_reports_physical_stock_only_and_never_a_cost(): void
     {
-        $frozen = $this->item('frozen');
         $free = $this->item('free');
         $main = $this->warehouse('a');
-        $this->receive($frozen, $main, '2', '10.0000');
         $this->receive($free, $main, '2', '0.0000');
-        AvcoPool::query()->where('item_id', $frozen->id)->update(['status' => 'FROZEN']);
 
-        $this->assertNull($this->snapshot([$frozen->id])->balancesFor($frozen->id)[0]->unitCost);
-        $this->assertNull($this->snapshot([$free->id])->balancesFor($free->id)[0]->unitCost);
+        $balance = $this->snapshot([$free->id])->balancesFor($free->id)[0];
+
+        // A genuine zero cost and absent evidence are indistinguishable here, so cost comes only from QueryMaterialCost.
+        $this->assertSame('2.0000', (string) $balance->usable);
+        $this->assertNull($balance->unitCost);
+        $this->assertNull($balance->costMethod);
     }
 
     public function test_qa_held_stock_lands_on_the_receiving_location_and_reconciles_with_the_inventory_overview(): void
@@ -344,20 +316,6 @@ class QueryStockAvailabilityTest extends TestCase
         $out = [];
         foreach ($balances as $balance) {
             $out[$balance->warehouseCode.'/'.$balance->locationCode] = (string) $balance->usable;
-        }
-
-        return $out;
-    }
-
-    /**
-     * @param  list<StockBalance>  $balances
-     * @return array<string, string>
-     */
-    private function costByLocation(array $balances): array
-    {
-        $out = [];
-        foreach ($balances as $balance) {
-            $out[$balance->warehouseCode.'/'.$balance->locationCode] = (string) $balance->unitCost;
         }
 
         return $out;

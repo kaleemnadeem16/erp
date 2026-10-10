@@ -118,8 +118,8 @@ shapes, transition rules and deterministic tie-breakers are in
   current inventory valuation.
 - Current estimate roll-ups carry typed certainty: missing evidence remains unknown, complete
   totals stay null, and supported zero remains valid. [C0](../phases/phase-4-c0-cost-evidence-contract.md)
-  corrects existing operations/DTOs and consumers without parallel compatibility APIs. Draw/mix
-  integration remains the separately tracked C2b cohort until its checkpoint.
+  corrects existing operations/DTOs and consumers without parallel compatibility APIs. Proposal and mix draws
+  are priced through the same query as `SELECTED_DRAW` costs: the drawn quantity only, with the requirement's shortage reported separately.
 - Availability is advisory in Phase 3. The response must state its as-of time.
 - An adopted plan can be stale before execution; Phase 5 revalidates and reserves it.
 - An issued quotation snapshots the adopted material/cost evidence so later policy or master-data
@@ -187,11 +187,11 @@ A person may choose the draw themselves instead of a preset's proposal: `stock_m
 held as a quantity in the item's stock unit. The server refuses an unusable or exhausted source, a draw above a balance, a repeated
 source, a quantity off the item's precision, an unconvertible unit, and a total above the planned quantity (more use is a planned-quantity
 change, judged by the variance rules — so a mix can never bypass reasons, blocks or approval). A total below the requirement is a reported shortage.
-The mix is priced from the proposal's cost evidence and compared with it. What that comparison *means* is the company's choice
+The mix is priced for the quantity actually chosen through Inventory's cost query (a `SELECTED_DRAW` resolution) and compared with the proposal's draw cost. What that comparison *means* is the company's choice
 ([ADR 0076](../decisions/0076-company-control-over-hand-chosen-stock.md); not the variance bands, see
 [ADR 0072](../decisions/0072-hand-built-stock-mix-in-base-quantity.md)): `NOT_ALLOWED` (mixes refused), `INFORMATION` (default: cost shown),
 `REASON_REQUIRED` or `APPROVAL_REQUIRED` at a percentage above the proposal's *average unit cost* (so a part-covering mix is not
-mistaken for a cheap one). A cheaper mix never triggers; a mix that cannot be costed is `NOT_JUDGED`, never passed; a stored approval level
+mistaken for a cheap one). A cheaper mix never triggers; zero versus zero is no increase while a positive cost above a zero proposal is undefined; a mix or proposal whose draw is not completely costed is `NOT_JUDGED`, never passed; a stored approval level
 fails closed (`BLOCKED`) if approvals are later switched off. Resolved item → category → company → built-in, but only the company scope can be
 set today; the judgement is the same for everyone and its numbers follow `estimating.internal_cost.view`. Choosing stock by hand needs
 `estimating.stock_mix.choose` on top of `estimating.inventory_availability.view`; the rule is set on `/settings/material-selection` with

@@ -26,6 +26,8 @@ test.describe('material preview inventory proposal', () => {
     await expect(panel.getByRole('table', { name: /Recommended draw of demo-pig-blue/ })).toBeVisible();
     await expect(panel.getByText(/reserves nothing/)).toBeVisible();
     await expect(page.getByText('Advisory — not reserved')).toBeVisible();
+    // A draw's cost is labelled as the drawn quantity only, never as the cost of the whole requirement.
+    await expect(panel.getByText(/(drawn quantity only)|(has no complete cost evidence)|(is incomplete)/).first()).toBeVisible();
 
     for (const summary of await panel.locator('summary').all()) await summary.click();
     await expect(panel.getByText('Fewest physical picks')).toBeVisible();
@@ -221,6 +223,7 @@ test.describe('material preview hand-built stock mix', () => {
     await expect(mix.getByRole('status')).toContainText('uncovered');
     await expect(mix.getByRole('table', { name: 'Where each quantity of your mix comes from' })).toBeVisible();
     await expect(mix.getByText(/reserves nothing/)).toBeVisible();
+    await expect(mix.getByText(/Internal cost of the chosen stock \(drawn quantity only\)/)).toBeVisible();
 
     const results = await new AxeBuilder({ page }).analyze();
     const serious = results.violations.filter((violation) => violation.impact === 'critical' || violation.impact === 'serious');

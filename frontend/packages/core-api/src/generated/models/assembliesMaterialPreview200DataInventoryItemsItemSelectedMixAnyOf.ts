@@ -5,7 +5,7 @@
  * OpenAPI spec version: 0.0.1
  */
 import type { AssembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfLinesItem } from "./assembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfLinesItem";
-import type { AssembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfEstimatedCost } from "./assembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfEstimatedCost";
+import type { AssembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfCost } from "./assembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfCost";
 import type { AssembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfRecommendationEstimatedCost } from "./assembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfRecommendationEstimatedCost";
 import type { AssembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfCostDifference } from "./assembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfCostDifference";
 import type { AssembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfCostDifferencePercent } from "./assembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfCostDifferencePercent";
@@ -21,7 +21,7 @@ export type AssembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOf =
     shortage_quantity: string;
     is_complete: boolean;
     remaining_after_use_quantity: string;
-    estimated_cost: AssembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfEstimatedCost;
+    cost: AssembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfCost;
     same_as_recommendation: boolean;
     recommendation_estimated_cost: AssembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfRecommendationEstimatedCost;
     cost_difference: AssembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfCostDifference;

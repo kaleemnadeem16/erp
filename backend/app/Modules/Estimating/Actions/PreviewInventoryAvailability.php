@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Estimating\Actions;
 
 use App\Exceptions\DomainInvariantException;
+use App\Modules\Estimating\Http\Resources\Costing\CostResolutionResource;
 use App\Modules\Estimating\Support\InventoryAllocation;
 use App\Modules\Estimating\Support\MaterialSelectionStrategy;
 use App\Modules\Estimating\Support\ResolvedSelectionStrategy;
@@ -14,6 +15,8 @@ use App\Modules\Estimating\Support\StockMixLevel;
 use App\Modules\Estimating\Support\StockMixVerdict;
 use App\Modules\Inventory\Actions\QueryStockAvailability;
 use App\Modules\Inventory\Models\Item;
+use App\Modules\Inventory\Support\Costing\CostReadSession;
+use App\Modules\Inventory\Support\Costing\CostResolution;
 use App\Modules\Inventory\Support\InventoryScope;
 use App\Modules\Inventory\Support\LocationType;
 use App\Modules\Inventory\Support\StockBalance;
@@ -33,9 +36,15 @@ use Illuminate\Support\Collection;
  * considered — no supplier offers, no replenishment (ADR 0051).
  *
  * Cost is evidence, gated separately (ADR 0057): with `$includeCost` false the
- * allocator still uses cost to rank balances, but every unit/line/estimated
- * cost field is null — hidden, never zero — and the wording of the criteria
- * notes carries no amounts.
+ * allocator still uses cost to rank balances, but every cost field is null —
+ * hidden, never zero — and the wording of the criteria notes carries no amounts.
+ * Every cost here comes from Inventory's read-only cost query (ADR 0077/0110):
+ * balances are ranked on the unit cost of the draw they would first supply, and
+ * each proposed or chosen draw is then priced for its actual quantity as a
+ * SELECTED_DRAW resolution. That is the cost of the drawn quantity, never of the
+ * whole requirement; a shortage is reported separately and a genuine zero cost
+ * is a cost. A proposal, each alternative and a hand-built mix are separate
+ * hypothetical scenarios on one read snapshot — none consumes another's layers.
  *
  * It is only ever called for an actor who holds
  * `estimating.inventory_availability.view`; the controller decides that, and
@@ -58,6 +67,7 @@ final class PreviewInventoryAvailability
         private readonly PriceStockMix $priceMix,
         private readonly ResolveStockMixControls $resolveMixControls,
         private readonly JudgeStockMix $judgeMix,
+        private readonly PriceStockDraw $draws,
     ) {}
 
     /**
@@ -68,7 +78,7 @@ final class PreviewInventoryAvailability
      * @param  list<array{item_id: int, note: string|null}>  $stockMixNotes  the reason given for a mix, where the company's control asks for one (ADR 0076)
      * @return array{data: array<string, mixed>, evidence: array<string, mixed>}
      */
-    public function __invoke(array $leafRows, array $scopeInput, ?MaterialSelectionStrategy $override, bool $includeCost, array $plannedByItem = [], array $stockMix = [], array $stockMixNotes = []): array
+    public function __invoke(CostReadSession $session, array $leafRows, array $scopeInput, ?MaterialSelectionStrategy $override, bool $includeCost, array $plannedByItem = [], array $stockMix = [], array $stockMixNotes = []): array
     {
         $headline = ($this->resolveStrategies)->companyLevel($override);
         $resolved = ($this->resolveStrategies)(array_map(fn (array $row): int => $row['item']['id'], $leafRows), $override);
@@ -103,22 +113,25 @@ final class PreviewInventoryAvailability
             $itemStrategy = $resolved[$itemId];
             $strategy = $itemStrategy->strategy;
             $required = BigDecimal::of($plannedByItem[$itemId] ?? $row['standard_quantity']);
-            $balances = $stocked ? $snapshot->balancesFor($itemId) : [];
-            $recommendation = $stocked ? ($this->allocate)($required, $balances, $strategy) : null;
+            $item = $items->get($itemId);
+            $balances = $stocked
+                ? array_map(fn (StockBalance $balance): StockBalance => $this->draws->ranked($item, $balance, $required, $session), $snapshot->balancesFor($itemId))
+                : [];
+            $recommendation = $stocked ? $this->priced($item, ($this->allocate)($required, $balances, $strategy), $session) : null;
 
             $mix = $recommendation === null || ! isset($mixLinesByItem[$itemId])
                 ? null
-                : ($this->priceMix)($items->get($itemId), $required, $balances, $mixLinesByItem[$itemId]);
+                : ($this->priceMix)($item, $required, $balances, $mixLinesByItem[$itemId], $session);
             $verdict = $mix === null
                 ? null
-                : ($this->judgeMix)($items->get($itemId), $mixControls[$itemId], $mix, $recommendation, $mixNotes[$itemId] ?? null);
+                : ($this->judgeMix)($item, $mixControls[$itemId], $mix, $recommendation, $mixNotes[$itemId] ?? null);
 
             $otherStrategies = $recommendation === null
                 ? []
                 : array_values(array_filter(MaterialSelectionStrategy::cases(), fn (MaterialSelectionStrategy $case): bool => $case !== $strategy));
             $alternatives = [];
             foreach ($otherStrategies as $other) {
-                $plan = ($this->allocate)($required, $balances, $other);
+                $plan = $this->priced($item, ($this->allocate)($required, $balances, $other), $session);
                 $alternatives[] = [
                     'strategy' => $this->strategyRef($other),
                     'same_as_recommendation' => $plan->signature() === $recommendation->signature(),
@@ -133,7 +146,7 @@ final class PreviewInventoryAvailability
                     $warnings[] = "Usable stock of {$code} does not cover the requirement: short by {$recommendation->shortage->stripTrailingZeros()} {$uomCode}.";
                 }
                 if ($includeCost && $recommendation->lines !== [] && $recommendation->estimatedCost === null) {
-                    $warnings[] = "Some recommended stock of {$code} has no defensible cost evidence, so its estimated cost is unavailable.";
+                    $warnings[] = "Some recommended stock of {$code} has no complete cost evidence, so the cost of that draw is incomplete.";
                 }
             }
 
@@ -141,7 +154,7 @@ final class PreviewInventoryAvailability
                 $warnings[] = "The stock you chose for {$code} leaves {$mix->shortage->stripTrailingZeros()} {$uomCode} of the requirement uncovered.";
             }
             if ($mix !== null && $includeCost && $mix->estimatedCost === null) {
-                $warnings[] = "Some stock you chose for {$code} has no defensible cost evidence, so the cost of your mix is unavailable.";
+                $warnings[] = "Some stock you chose for {$code} has no complete cost evidence, so the cost of your mix is incomplete.";
             }
 
             $onHand = BigDecimal::zero()->toScale(4);
@@ -227,11 +240,11 @@ final class PreviewInventoryAvailability
     /**
      * @return array{
      *     strategy: array{code: string, label: string},
-     *     lines: list<array{warehouse: array{id: int, code: string, name: string}, location: array{id: int, code: string, name: string, type: string}, batch: array{id: int, code: string}|null, quantity: string, unit_cost: string|null, cost_method: string|null, line_cost: string|null}>,
+     *     lines: list<array{warehouse: array{id: int, code: string, name: string}, location: array{id: int, code: string, name: string, type: string}, batch: array{id: int, code: string}|null, quantity: string, cost: CostResolutionResource|null}>,
      *     pick_count: int,
      *     covered_quantity: string,
      *     shortage_quantity: string,
-     *     estimated_cost: string|null,
+     *     cost: CostResolutionResource|null,
      *     criteria: list<array{code: string, label: string, applied: bool, note: string}>,
      *     limitations: list<string>
      * }
@@ -245,9 +258,7 @@ final class PreviewInventoryAvailability
                 'location' => $this->locationRef($line->balance),
                 'batch' => $this->batchRef($line->balance),
                 'quantity' => (string) $line->quantity,
-                'unit_cost' => $includeCost && $line->balance->unitCost !== null ? (string) $line->balance->unitCost : null,
-                'cost_method' => $includeCost ? $line->balance->costMethod : null,
-                'line_cost' => $includeCost && $line->lineCost !== null ? (string) $line->lineCost : null,
+                'cost' => $this->costRef($line->cost, $includeCost),
             ];
         }
         $criteria = [];
@@ -266,7 +277,7 @@ final class PreviewInventoryAvailability
             'pick_count' => $plan->pickCount(),
             'covered_quantity' => (string) $plan->covered,
             'shortage_quantity' => (string) $plan->shortage,
-            'estimated_cost' => $includeCost && $plan->estimatedCost !== null ? (string) $plan->estimatedCost : null,
+            'cost' => $this->costRef($plan->cost, $includeCost),
             'criteria' => $criteria,
             'limitations' => $plan->limitations,
         ];
@@ -314,14 +325,14 @@ final class PreviewInventoryAvailability
 
     /**
      * @return array{
-     *     lines: list<array{warehouse: array{id: int, code: string, name: string}, location: array{id: int, code: string, name: string, type: string}, batch: array{id: int, code: string}|null, entered_quantity: string, entered_uom: array{id: int, code: string, name: string}, stock_unit_factor: string, quantity: string, usable_before_quantity: string, remaining_after_quantity: string, unit_cost: string|null, cost_method: string|null, line_cost: string|null}>,
+     *     lines: list<array{warehouse: array{id: int, code: string, name: string}, location: array{id: int, code: string, name: string, type: string}, batch: array{id: int, code: string}|null, entered_quantity: string, entered_uom: array{id: int, code: string, name: string}, stock_unit_factor: string, quantity: string, usable_before_quantity: string, remaining_after_quantity: string, cost: CostResolutionResource|null}>,
      *     pick_count: int,
      *     required_quantity: string,
      *     covered_quantity: string,
      *     shortage_quantity: string,
      *     is_complete: bool,
      *     remaining_after_use_quantity: string,
-     *     estimated_cost: string|null,
+     *     cost: CostResolutionResource|null,
      *     same_as_recommendation: bool,
      *     recommendation_estimated_cost: string|null,
      *     cost_difference: string|null,
@@ -344,9 +355,7 @@ final class PreviewInventoryAvailability
                 'quantity' => (string) $line->quantity,
                 'usable_before_quantity' => (string) $line->balance->usable,
                 'remaining_after_quantity' => (string) $line->remainingAfter,
-                'unit_cost' => $includeCost && $line->balance->unitCost !== null ? (string) $line->balance->unitCost : null,
-                'cost_method' => $includeCost ? $line->balance->costMethod : null,
-                'line_cost' => $includeCost && $line->lineCost !== null ? (string) $line->lineCost : null,
+                'cost' => $this->costRef($line->cost, $includeCost),
             ];
         }
 
@@ -367,7 +376,7 @@ final class PreviewInventoryAvailability
             'shortage_quantity' => (string) $mix->shortage,
             'is_complete' => $mix->isComplete(),
             'remaining_after_use_quantity' => (string) $usable->minus($mix->covered),
-            'estimated_cost' => $includeCost && $mix->estimatedCost !== null ? (string) $mix->estimatedCost : null,
+            'cost' => $this->costRef($mix->cost, $includeCost),
             'same_as_recommendation' => $mix->signature() === $recommendation->signature(),
             'recommendation_estimated_cost' => $includeCost && $recommendation->estimatedCost !== null ? (string) $recommendation->estimatedCost : null,
             'cost_difference' => $difference === null ? null : (string) $difference,
@@ -386,6 +395,24 @@ final class PreviewInventoryAvailability
             ],
             'limitations' => $this->mixLimitations(),
         ];
+    }
+
+    /** The draw's cost resolution for a reader who may see cost; hidden (null), never zero, otherwise. */
+    private function costRef(?CostResolution $cost, bool $includeCost): ?CostResolutionResource
+    {
+        return $includeCost && $cost !== null ? new CostResolutionResource($cost) : null;
+    }
+
+    /** Prices a proposed draw as its own scenario, line by line within it. */
+    private function priced(Item $item, InventoryAllocation $plan, CostReadSession $snapshot): InventoryAllocation
+    {
+        $session = $this->draws->scenario($snapshot);
+        $lineCosts = [];
+        foreach ($plan->lines as $line) {
+            $lineCosts[] = $this->draws->resolve($item, $line->balance, $line->quantity, $session);
+        }
+
+        return $plan->priced($lineCosts, $this->draws->total($item, $lineCosts, $plan->covered, $session));
     }
 
     /** @return list<array{location_id: int, batch_id: int|null, quantity: string}> */

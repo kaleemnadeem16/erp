@@ -164,6 +164,7 @@ final class PreviewAssemblyMaterials
             $inventoryEvidence = null;
             if ($includeInventory) {
                 ['data' => $inventory, 'evidence' => $inventoryEvidence] = ($this->inventoryPreview)(
+                    $session,
                     $leafRows,
                     $input['inventory_scope'] ?? [],
                     isset($input['selection_strategy']) ? MaterialSelectionStrategy::from($input['selection_strategy']) : null,

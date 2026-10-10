@@ -38,15 +38,17 @@ use Brick\Math\RoundingMode;
  *    minimum-pick plan but the cost tie-break is skipped, and the response
  *    says so rather than implying a full search.
  *
- * Balances without cost evidence rank after every costed one and make the
- * plan's estimated cost unknown; missing cost is never treated as zero.
+ * Balances without complete cost evidence rank after every costed one and make the
+ * plan's estimated cost unknown; missing cost is never treated as zero, and a genuine
+ * zero cost is a real cost that ranks first.
  *
  * Bump RULES_VERSION whenever the ordering rules change, so a stored or
  * compared result can tell which rules produced it.
  */
 final class AllocateInventory
 {
-    public const RULES_VERSION = 1;
+    /** 2: cost evidence comes from Inventory's cost query, so a genuine zero cost now ranks as the cheapest balance. */
+    public const RULES_VERSION = 2;
 
     private const COMBINATION_LIMIT = 2000;
 
@@ -64,6 +66,11 @@ final class AllocateInventory
 
         if ($required->isLessThanOrEqualTo(0) || $candidates === []) {
             return new InventoryAllocation($strategy, [], BigDecimal::zero()->toScale(4), $this->nonNegative($required), null, $criteria, $limitations);
+        }
+
+        $costed = count(array_filter($candidates, fn (StockBalance $b): bool => $b->unitCost !== null));
+        if ($strategy->ranksCostBeforePicks() && $costed > 0 && $costed < count($candidates)) {
+            $limitations[] = 'Some usable balances have no complete cost evidence, so this plan is the cheapest only among the balances that do; the others rank last, not cheapest.';
         }
 
         $draws = $strategy->ranksCostBeforePicks()

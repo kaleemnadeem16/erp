@@ -4,23 +4,20 @@ declare(strict_types=1);
 
 namespace App\Modules\Inventory\Actions;
 
-use App\Modules\Inventory\Support\AvcoPoolStatus;
 use App\Modules\Inventory\Support\InventoryScope;
 use App\Modules\Inventory\Support\LocationType;
 use App\Modules\Inventory\Support\StockAvailabilitySnapshot;
 use App\Modules\Inventory\Support\StockBalance;
-use App\Modules\Inventory\Support\ValuationMethod;
 use App\Modules\Purchasing\Support\DispositionOutcome;
 use App\Support\CompanyContext;
 use Brick\Math\BigDecimal;
-use Brick\Math\RoundingMode;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
 /**
  * The read model behind Estimating's advisory inventory proposal (ADR 0058):
  * every open stock layer of the requested items, grouped by item, location
- * and batch, with QA-held quantity and a cost estimate attached.
+ * and batch, with QA-held quantity attached. Physical availability only; cost evidence comes from QueryMaterialCost.
  *
  * It is one SQL statement on purpose. A single statement is one consistent
  * snapshot under any isolation level, so quantities, QA holds and pool cost
@@ -40,13 +37,8 @@ use Illuminate\Support\Facades\DB;
  * subtracted twice (the overview's known over-subtraction), and a draft
  * receipt, which has no layer yet, holds nothing.
  *
- * Cost mirrors what a real issue would consider defensible: AVCO items use
- * the pool the movement engine itself would resolve for that location/batch
- * (the three-way join below restates AvcoPoolManager::identity() — keep them
- * in step), and only while it is ACTIVE with a positive average; FIFO and
- * SPECIFIC items use the remaining layers' weighted-average base cost. Cost
- * ≤ 0 or an absent/frozen pool yields null, never zero — IssuePoster refuses
- * such a cost as indefensible, and so does this.
+ * Cost is deliberately not read here: a positive-only average cannot tell a genuine zero from absent
+ * evidence. Estimating prices the chosen or proposed draw through Inventory's QueryMaterialCost.
  *
  * Every table here is read through the raw query builder, which bypasses
  * BelongsToCompany's global scope, so each one is company-filtered explicitly.
@@ -94,16 +86,6 @@ final class QueryStockAvailability
             ->join('locations as loc', 'loc.id', '=', 'sl.location_id')
             ->join('warehouses as wh', 'wh.id', '=', 'loc.warehouse_id')
             ->leftJoin('stock_batches as sb', 'sb.id', '=', 'sl.batch_id')
-            ->leftJoin('avco_pools as ap', function ($join): void {
-                $join->on('ap.company_id', '=', 'sl.company_id')
-                    ->on('ap.item_id', '=', 'sl.item_id')
-                    ->on('ap.scope', '=', 'it.avco_pool_scope')
-                    ->where(function ($pool): void {
-                        $pool->where('ap.scope', 'COMPANY_ITEM')
-                            ->orWhere(fn ($warehouse) => $warehouse->where('ap.scope', 'WAREHOUSE_ITEM')->whereColumn('ap.warehouse_id', 'loc.warehouse_id'))
-                            ->orWhere(fn ($batch) => $batch->where('ap.scope', 'COMPANY_ITEM_BATCH')->whereColumn('ap.batch_id', 'sl.batch_id'));
-                    });
-            })
             ->leftJoinSub($held, 'hold', function ($join): void {
                 $join->on('hold.grl_id', '=', 'sl.source_id')->where('sl.source_type', 'GOODS_RECEIPT_LINE');
             })
@@ -122,11 +104,9 @@ final class QueryStockAvailability
             ->selectRaw('sl.item_id, sl.location_id, sl.batch_id, sb.code AS batch_code')
             ->selectRaw('loc.warehouse_id, loc.code AS location_code, loc.name AS location_name, loc.type AS location_type, loc.active AS location_active, loc.counts_as_usable AS location_counts_as_usable')
             ->selectRaw('wh.code AS warehouse_code, wh.name AS warehouse_name, wh.active AS warehouse_active')
-            ->selectRaw('it.valuation_method, ap.id AS pool_id, ap.status AS pool_status, ap.base_avg_unit_cost AS pool_unit_cost')
             ->selectRaw('SUM(sl.qty_remaining) AS on_hand_qty')
             ->selectRaw('SUM(LEAST(sl.qty_remaining, COALESCE(hold.held_qty, 0))) AS held_qty')
-            ->selectRaw('SUM(sl.qty_remaining * sl.base_unit_cost) AS layer_value')
-            ->groupByRaw('sl.item_id, sl.location_id, sl.batch_id, sb.code, loc.warehouse_id, loc.code, loc.name, loc.type, loc.active, loc.counts_as_usable, wh.code, wh.name, wh.active, it.valuation_method, ap.id, ap.status, ap.base_avg_unit_cost')
+            ->groupByRaw('sl.item_id, sl.location_id, sl.batch_id, sb.code, loc.warehouse_id, loc.code, loc.name, loc.type, loc.active, loc.counts_as_usable, wh.code, wh.name, wh.active')
             ->orderByRaw('sl.item_id, wh.code, loc.code, sl.batch_id')
             ->get();
 
@@ -141,7 +121,6 @@ final class QueryStockAvailability
             $locationUsable = (bool) $row->location_active
                 && (bool) $row->warehouse_active
                 && ($row->location_counts_as_usable ?? LocationType::from($row->location_type)->holdsUsableStock());
-            [$unitCost, $costMethod] = $this->unitCost($row, $onHand);
 
             $balances[(int) $row->item_id][] = new StockBalance(
                 itemId: (int) $row->item_id,
@@ -159,29 +138,10 @@ final class QueryStockAvailability
                 held: $heldQty,
                 unusableLocation: $locationUsable ? $zero : $free,
                 usable: $locationUsable ? $free : $zero,
-                unitCost: $unitCost,
-                costMethod: $costMethod,
                 locationMarked: $row->location_counts_as_usable === null ? null : (bool) $row->location_counts_as_usable,
             );
         }
 
         return new StockAvailabilitySnapshot($asOf, $balances);
-    }
-
-    /** @return array{0: BigDecimal|null, 1: string|null} unit cost and how it was derived */
-    private function unitCost(object $row, BigDecimal $onHand): array
-    {
-        if ($row->valuation_method === ValuationMethod::Avco->value) {
-            if ($row->pool_id === null || $row->pool_status !== AvcoPoolStatus::Active->value) {
-                return [null, null];
-            }
-            $cost = BigDecimal::of($row->pool_unit_cost);
-
-            return $cost->isGreaterThan(0) ? [$cost, 'AVCO_POOL'] : [null, null];
-        }
-
-        $cost = BigDecimal::of($row->layer_value)->dividedBy($onHand, 4, RoundingMode::HALF_UP);
-
-        return $cost->isGreaterThan(0) ? [$cost, 'LAYER_WEIGHTED_AVERAGE'] : [null, null];
     }
 }

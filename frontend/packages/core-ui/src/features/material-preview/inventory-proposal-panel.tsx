@@ -37,6 +37,8 @@ interface InventoryProposalPanelProps {
   isCalculating?: boolean;
 }
 
+import { drawCostText } from '../costing/cost-evidence';
+
 const STRATEGY_SOURCE_TEXT: Record<string, string> = {
   REQUEST_OVERRIDE: 'chosen for this preview',
   ITEM: 'set for this item',
@@ -288,8 +290,8 @@ function PlanTable({ plan, itemCode, unit, mayViewCost, caption }: { plan: Plan;
             <TableCell>{line.location.code}</TableCell>
             <TableCell>{line.batch?.code ?? '—'}</TableCell>
             <TableCell className="text-right font-medium">{qty(line.quantity)}</TableCell>
-            {mayViewCost && <TableCell className="text-right">{line.unit_cost ?? 'No cost evidence'}</TableCell>}
-            {mayViewCost && <TableCell className="text-right">{line.line_cost ?? '—'}</TableCell>}
+            {mayViewCost && <TableCell className="text-right">{line.cost?.unit_cost ?? 'No complete evidence'}</TableCell>}
+            {mayViewCost && <TableCell className="text-right">{line.cost?.total_cost ?? (line.cost?.known_cost ? `known ${line.cost.known_cost}` : '—')}</TableCell>}
           </TableRow>
         ))}
       </TableBody>
@@ -301,9 +303,7 @@ function CostLine({ plan, mayViewCost }: { plan: Plan; mayViewCost: boolean }) {
   if (!mayViewCost || plan.lines.length === 0) return null;
   return (
     <p className="mt-1 text-sm text-muted-foreground">
-      {plan.estimated_cost !== null
-        ? `Estimated internal cost of this draw: ${plan.estimated_cost}`
-        : 'Estimated internal cost is unavailable: some of this stock has no defensible cost evidence.'}
+      {drawCostText(plan.cost, 'this draw')}
     </p>
   );
 }

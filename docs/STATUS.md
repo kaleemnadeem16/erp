@@ -1,6 +1,6 @@
 # Project Status
 
-**Updated:** 2026-10-10 (Phase 4 cost implementation). Kept short and current on purpose — see
+**Updated:** 2026-10-10 (Phase 4 cost contract implemented locally). Kept short and current on purpose — see
 [ADR 0095](decisions/0095-status-is-short-current-and-purpose-limited.md): no logs, counts or per-task history here.
 History is in [STATUS-LOG.md](STATUS-LOG.md); resume points are in the workstream handoffs below.
 
@@ -12,7 +12,7 @@ History is in [STATUS-LOG.md](STATUS-LOG.md); resume points are in the workstrea
 | 1 Master data | **Complete** | [phase-1-master-data.md](phases/phase-1-master-data.md) |
 | 2 Purchasing & stock | **Complete** (closed 2026-10-08): purchase orders, receipts, QA, reversal, the stock-movement and valuation engine (AVCO/FIFO/SPECIFIC), cutover, negative-stock overrides, backdated recalculation, physical counts, with their screens. Carried forward: the multi-owner correction package (needs Phases 4–6), a few Purchasing PO fields and two operations follow-ups | [phase-2-purchasing-stock.md](phases/phase-2-purchasing-stock.md) |
 | 3 Estimating core | **Core complete** (closed 2026-10-08): rate dimensions, application rates, formulations (versioning, overrides, roll-up), assemblies and overhead, the read-only Material Preview with stock proposals, what-if variance control and approvals. Deferred, not unfinished: quotation adoption and generic cost resolution (Phase 4), package-aware proposals (enhancement), department-limited availability (Q26) | [phase-3-estimating-core.md](phases/phase-3-estimating-core.md) |
-| 4 Sales, quotations and job handover | **R1/R2 business research complete**; ADRs 0098–0109 accepted, Q39/Q40 resolved; C0 accepted (0110), C1a–c internal query delivered; authorised C2a–b in progress; CRM backend foundation exists; security correction handoff ready; CRM A/B/C accepted and specified, B duty/grants gated; R3 initial evidence, quotation implementation pending | [Phase 4 research plan](phases/phase-4-sales-quotations-and-handover.md) |
+| 4 Sales, quotations and job handover | **R1/R2 business research complete**; ADRs 0098–0109 accepted, Q39/Q40 resolved; C0 accepted (0110), C1a–c query and C2a–b cost-contract migration implemented locally (not pushed); C1d gated; CRM backend foundation exists; security correction handoff ready; CRM A/B/C accepted and specified, B duty/grants gated; R3 initial evidence, quotation implementation pending | [Phase 4 research plan](phases/phase-4-sales-quotations-and-handover.md) |
 | 5 Job execution · 6 Finance · 7 Mobile & integrations | Not started | [phases/README.md](phases/README.md) |
 
 ## Workstreams outside the phase list
@@ -27,7 +27,7 @@ History is in [STATUS-LOG.md](STATUS-LOG.md); resume points are in the workstrea
 
 ## In progress
 
-Phase 4 cost-contract implementation is in flight. Nothing of the package workstreams is in flight (the rejected-stock exit, ADR 0097, is complete). Other agents share the checkout: run `git status` and `git log` before assuming the tree is idle.
+Phase 4 cost-contract implementation (C1a–c, C2a–b) is complete locally; C1d and quotation work have not started. Nothing of the package workstreams is in flight (the rejected-stock exit, ADR 0097, is complete). Other agents share the checkout: run `git status` and `git log` before assuming the tree is idle.
 
 ## Release state
 
@@ -39,7 +39,7 @@ record scope, the access audit follow-ups, the approvals workspace, grouped pack
 
 Each is a new slice: propose first, get the owner's answers, then build. Optional enhancements are kept apart from required work.
 
-- **Required for the roadmap:** Phase 4 R1/R2 business research is complete; [C0 and C1/C2 contract/slices](phases/phase-4-c0-cost-evidence-contract.md) authorise correcting existing cost APIs and migrating consumers together; C1a–c query delivered; C2a–b remain in progress, C1d remains separately gated. Local commits only, no push without explicit request. [R3 pricing research](phases/phase-4-r3-sales-pricing.md) has started independently; initial recommendations await owner review. It also owes the multi-owner correction package carried from Phase 2.
+- **Required for the roadmap:** Phase 4 R1/R2 business research is complete; [C0 and C1/C2 contract/slices](phases/phase-4-c0-cost-evidence-contract.md) authorise correcting existing cost APIs and migrating consumers together; C1a–c, C2a and C2b are implemented locally and verified (not pushed); C1d remains separately gated. Local commits only, no push without explicit request. [R3 pricing research](phases/phase-4-r3-sales-pricing.md) has started independently; initial recommendations await owner review. It also owes the multi-owner correction package carried from Phase 2.
 - **Later package enhancements** (none started; each a new design slice): governed change of tracked levels; deactivation/collapse; container-level tracking (not before the owner asks); line-level receipt reversal; count approval thresholds; QA/count reconciliation; standalone Issue/Transfer screens. **Deferred estimating enhancement:** package-aware proposals in the Material Preview (owner decision: not ahead of return/scrap).
 - **Access and security:** the remaining record-scope slices (purchasing documents, Estimating availability, approvals, delegated administration) — Q26; two-factor and step-up sign-in — Q37.
 

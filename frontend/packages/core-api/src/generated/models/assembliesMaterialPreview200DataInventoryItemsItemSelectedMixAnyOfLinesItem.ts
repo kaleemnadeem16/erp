@@ -8,9 +8,7 @@ import type { AssembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOf
 import type { AssembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfLinesItemLocation } from "./assembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfLinesItemLocation";
 import type { AssembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfLinesItemBatch } from "./assembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfLinesItemBatch";
 import type { AssembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfLinesItemEnteredUom } from "./assembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfLinesItemEnteredUom";
-import type { AssembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfLinesItemUnitCost } from "./assembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfLinesItemUnitCost";
-import type { AssembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfLinesItemCostMethod } from "./assembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfLinesItemCostMethod";
-import type { AssembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfLinesItemLineCost } from "./assembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfLinesItemLineCost";
+import type { AssembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfLinesItemCost } from "./assembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfLinesItemCost";
 
 export type AssembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfLinesItem =
   {
@@ -23,7 +21,5 @@ export type AssembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfLi
     quantity: string;
     usable_before_quantity: string;
     remaining_after_quantity: string;
-    unit_cost: AssembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfLinesItemUnitCost;
-    cost_method: AssembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfLinesItemCostMethod;
-    line_cost: AssembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfLinesItemLineCost;
+    cost: AssembliesMaterialPreview200DataInventoryItemsItemSelectedMixAnyOfLinesItemCost;
   };

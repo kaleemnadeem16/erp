@@ -25,3 +25,14 @@ export function CostReadiness({ cost }: { cost: CostResolutionResource }) {
     </div>
   );
 }
+
+/**
+ * The cost of a drawn quantity only (SELECTED_DRAW) — never the cost of the whole requirement, whose shortage is
+ * reported separately. Incomplete evidence shows the known contribution, not a total.
+ */
+export function drawCostText(cost: CostResolutionResource | null, subject: string): string {
+  if (cost === null) return `The cost of ${subject} is unavailable.`;
+  if (cost.status === 'COSTED') return `Internal cost of ${subject} (drawn quantity only): ${cost.total_cost}`;
+  if (cost.status === 'PARTIAL') return `The cost of ${subject} is incomplete: some stock has no complete cost evidence. Known contribution ${cost.known_cost}.`;
+  return `The cost of ${subject} is unavailable: its stock has no complete cost evidence.`;
+}

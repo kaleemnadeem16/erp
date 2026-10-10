@@ -18,7 +18,8 @@ use Brick\Math\BigDecimal;
  * partition is what lets a user reconcile a shortfall against the inventory
  * overview's location-agnostic "available" figure.
  *
- * `unitCost` is null — never zero — when there is no defensible cost evidence.
+ * `unitCost`/`costMethod` are not read from stock: they are ranking evidence attached by the consumer from
+ * QueryMaterialCost (see `withCostEvidence`). Null means no complete evidence — never zero; a genuine zero is 0.
  */
 final class StockBalance
 {
@@ -38,8 +39,8 @@ final class StockBalance
         public readonly BigDecimal $held,
         public readonly BigDecimal $unusableLocation,
         public readonly BigDecimal $usable,
-        public readonly ?BigDecimal $unitCost,
-        public readonly ?string $costMethod,
+        public readonly ?BigDecimal $unitCost = null,
+        public readonly ?string $costMethod = null,
         /** The company's own usable/not-usable mark on the location, or null when it follows the location's type. */
         public readonly ?bool $locationMarked = null,
     ) {}
@@ -48,5 +49,13 @@ final class StockBalance
     public function key(): string
     {
         return sprintf('%010d:%010d', $this->locationId, $this->batchId ?? 0);
+    }
+
+    /** The same balance carrying cost evidence the consumer resolved for it (null = no complete evidence). */
+    public function withCostEvidence(?BigDecimal $unitCost, ?string $costMethod): self
+    {
+        return new self($this->itemId, $this->warehouseId, $this->warehouseCode, $this->warehouseName, $this->locationId,
+            $this->locationCode, $this->locationName, $this->locationType, $this->locationUsable, $this->batchId, $this->batchCode,
+            $this->onHand, $this->held, $this->unusableLocation, $this->usable, $unitCost, $costMethod, $this->locationMarked);
     }
 }

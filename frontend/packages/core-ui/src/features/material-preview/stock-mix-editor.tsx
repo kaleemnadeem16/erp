@@ -210,8 +210,8 @@ export function StockMixEditor({ item, draft, onChange, uoms, unitsLookup, mayVi
                   </TableCell>
                   <TableCell className="text-right">{qty(line.quantity)}</TableCell>
                   <TableCell className="text-right">{qty(line.remaining_after_quantity)}</TableCell>
-                  {mayViewCost && <TableCell className="text-right">{line.unit_cost === null ? '—' : qty(line.unit_cost)}</TableCell>}
-                  {mayViewCost && <TableCell className="text-right">{line.line_cost === null ? '—' : qty(line.line_cost)}</TableCell>}
+                  {mayViewCost && <TableCell className="text-right">{line.cost?.unit_cost == null ? '—' : qty(line.cost.unit_cost)}</TableCell>}
+                  {mayViewCost && <TableCell className="text-right">{line.cost?.total_cost == null ? '—' : qty(line.cost.total_cost)}</TableCell>}
                 </TableRow>
               ))}
             </TableBody>
@@ -219,8 +219,14 @@ export function StockMixEditor({ item, draft, onChange, uoms, unitsLookup, mayVi
 
           {mayViewCost && (
             <p>
-              Estimated internal cost{' '}
-              <span className="font-medium">{mix.estimated_cost === null ? 'unavailable — some stock has no cost evidence' : qty(mix.estimated_cost)}</span>
+              Internal cost of the chosen stock (drawn quantity only){' '}
+              <span className="font-medium">
+                {mix.cost?.total_cost != null
+                  ? qty(mix.cost.total_cost)
+                  : mix.cost?.known_cost != null
+                    ? `incomplete — known contribution ${qty(mix.cost.known_cost)}`
+                    : 'unavailable — some stock has no complete cost evidence'}
+              </span>
               {mix.cost_difference !== null && mix.recommendation_estimated_cost !== null && (
                 <span className="text-muted-foreground">
                   {' · '}the proposal costs {qty(mix.recommendation_estimated_cost)}; yours is{' '}

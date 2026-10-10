@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Estimating\Support;
 
+use App\Modules\Inventory\Support\Costing\CostResolution;
 use Brick\Math\BigDecimal;
 
 /**
@@ -27,6 +28,7 @@ final class InventoryAllocation
         public readonly ?BigDecimal $estimatedCost,
         public readonly array $criteria,
         public readonly array $limitations,
+        public readonly ?CostResolution $cost = null,
     ) {}
 
     public function pickCount(): int
@@ -44,5 +46,20 @@ final class InventoryAllocation
         sort($parts);
 
         return implode('|', $parts);
+    }
+
+    /**
+     * The same draw with each line and the whole priced through Inventory.
+     *
+     * @param  list<CostResolution>  $lineCosts  one per line, in order
+     */
+    public function priced(array $lineCosts, ?CostResolution $total): self
+    {
+        $lines = [];
+        foreach ($this->lines as $index => $line) {
+            $lines[] = new InventoryAllocationLine($line->balance, $line->quantity, $lineCosts[$index]->totalCost, $lineCosts[$index]);
+        }
+
+        return new self($this->strategy, $lines, $this->covered, $this->shortage, $total?->totalCost, $this->criteria, $this->limitations, $total);
     }
 }

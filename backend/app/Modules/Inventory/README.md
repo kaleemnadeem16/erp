@@ -59,7 +59,7 @@ movement and valuation, built in Phase 2.
 - `QueryStockAvailability` (with `StockBalance`, `StockAvailabilitySnapshot`, `InventoryScope`) — the
   read-only, single-statement availability read model Estimating's inventory proposal consumes
   (ADR 0058): open layers per item/location/batch, QA hold attributed to the layer it sits in,
-  location usability (the location's own `counts_as_usable` mark, else `LocationType::holdsUsableStock()`), and defensible cost evidence. It
+  location usability (the location's own `counts_as_usable` mark, else `LocationType::holdsUsableStock()`). It reports physical availability only; cost comes from `QueryMaterialCost`. It
   locks and posts nothing; see [inventory-packages.md](../../../../docs/domain/inventory-packages.md#first-implementation-quantity_only-availability-and-allocation)
 
 ## Does not own

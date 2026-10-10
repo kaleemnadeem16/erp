@@ -21,11 +21,13 @@ use App\Modules\Estimating\Support\StockMixLevel;
 use App\Modules\Estimating\Support\StockMixVerdict;
 use App\Modules\Inventory\Actions\CreateWarehouse;
 use App\Modules\Inventory\Actions\PostInventoryMovement;
+use App\Modules\Inventory\Actions\QueryMaterialCost;
 use App\Modules\Inventory\Models\AvcoPool;
 use App\Modules\Inventory\Models\Category;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Models\Location;
 use App\Modules\Inventory\Support\AvcoPoolStatus;
+use App\Modules\Inventory\Support\Costing\CostReadSession;
 use App\Modules\Inventory\Support\ItemType;
 use App\Support\UomDimension;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -107,7 +109,20 @@ class StockMixControlTest extends TestCase
         $lines = array_map(fn (array $pair): array => $this->draw($pair[0], $pair[1]), $draws);
         $leaf = [['item' => ['id' => $this->item->id, 'code' => 'RESIN', 'name' => 'Resin'], 'standard_quantity' => '10', 'uom' => ['id' => $this->kg->id, 'code' => 'kg', 'name' => 'Kilogram']]];
 
-        return app(PreviewInventoryAvailability::class)($leaf, [], null, true, [], $lines, $notes)['data'];
+        return $this->availability($leaf, true, $lines, $notes)['data'];
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $leaf
+     * @param  list<array<string, mixed>>  $lines
+     * @param  list<array<string, mixed>>  $notes
+     * @return array{data: array<string, mixed>, evidence: array<string, mixed>}
+     */
+    private function availability(array $leaf, bool $includeCost, array $lines, array $notes): array
+    {
+        return app(QueryMaterialCost::class)->scenario(
+            fn (CostReadSession $session): array => app(PreviewInventoryAvailability::class)($session, $leaf, [], null, $includeCost, [], $lines, $notes),
+        );
     }
 
     /** @return array<string, mixed> */
@@ -191,7 +206,7 @@ class StockMixControlTest extends TestCase
         $this->receive('b', '10', '3.0000');
         $leaf = [['item' => ['id' => $this->item->id, 'code' => 'RESIN', 'name' => 'Resin'], 'standard_quantity' => '10', 'uom' => ['id' => $this->kg->id, 'code' => 'kg', 'name' => 'Kilogram']]];
 
-        $blind = app(PreviewInventoryAvailability::class)($leaf, [], null, false, [], [$this->draw('b', '10')], [])['data']['items'][0]['selected_mix']['control'];
+        $blind = $this->availability($leaf, false, [$this->draw('b', '10')], [])['data']['items'][0]['selected_mix']['control'];
 
         $this->assertSame(StockMixVerdict::REASON_MISSING, $blind['status']);
         $this->assertNull($blind['observed_percent']);
@@ -239,7 +254,7 @@ class StockMixControlTest extends TestCase
         AvcoPool::query()->update(['status' => AvcoPoolStatus::Frozen]);
         $leaf = [['item' => ['id' => $this->item->id, 'code' => 'RESIN', 'name' => 'Resin'], 'standard_quantity' => '10', 'uom' => ['id' => $this->kg->id, 'code' => 'kg', 'name' => 'Kilogram']]];
 
-        $control = app(PreviewInventoryAvailability::class)($leaf, [], null, true, [], [$this->draw('b', '10')], [])['data']['items'][0]['selected_mix']['control'];
+        $control = $this->availability($leaf, true, [$this->draw('b', '10')], [])['data']['items'][0]['selected_mix']['control'];
 
         $this->assertSame(StockMixVerdict::NOT_JUDGED, $control['status']);
         $this->assertFalse($control['can_adopt']);

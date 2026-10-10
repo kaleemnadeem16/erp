@@ -10,5 +10,5 @@ export type AssembliesMaterialPreview200DataInventoryStrategy = {
   code: string;
   label: AssembliesMaterialPreview200DataInventoryStrategyLabel;
   source: string;
-  rules_version: 1;
+  rules_version: 2;
 };

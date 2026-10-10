@@ -32,14 +32,25 @@ Assembly, preview cost and variance use canonical `CostResolution`s; both GET co
 material-preview cost/variance fields carry typed Resources; the four panels and `variance-what-if` read the
 regenerated client. Cost disclosure is field-scoped: a holder of only `estimating.internal_cost.view` receives no
 pool, layer, location, batch, serial, on-hand or source-document facts, and a fingerprint that does not move with
-stock (`CostResolution::forReader`). Draw/mix pricing and ranking (C2b) have **not** migrated; proposals and mixes
-still use the advisory availability cost until that slice lands. C1d remains unauthorised.
+stock (`CostResolution::forReader`). Draw/mix pricing and ranking (C2b) follow in the next checkpoint. C1d remains unauthorised.
 
 Validation: focused cost cohort and ratchets pass; the full backend suite passed apart from two `LoginTest`
 failures that exist at HEAD (the login route carries no `throttle:5,1`; unrelated to costing); Pint and Larastan
 clean; client regenerated to completion with only explained drift; the three typechecks and `vite build` pass;
 cost, preview, estimating, variance, selection and accessibility browser specs pass. `recipe-access.spec.ts`
 fails on a stale "Pack conversions" heading changed by the Items commit f01848b (not cost-related).
+
+## Local C2b checkpoint — 2026-10-10
+
+C2b is implemented: `QueryStockAvailability` no longer reads cost (its positive-only average could not tell a genuine
+zero from absence). Balances are ranked, and proposals, alternatives and hand-built mixes are priced, through
+`QueryMaterialCost` by `PriceStockDraw` as `SELECTED_DRAW` resolutions in separate scenarios on one snapshot. The
+draw's cost is complete when its own lines are costed even with a shortage; the shortage stays separate. A genuine zero
+ranks first, so `AllocateInventory::RULES_VERSION` is 2; unknown evidence ranks last and the plan says it is cheapest
+only among evidenced balances. `JudgeStockMix` is unchanged: an incompletely costed draw is `NOT_JUDGED`, zero-versus-zero
+is no increase. The preview's scalar `unit_cost`/`line_cost`/`estimated_cost`/`cost_method` fields are replaced by typed
+`cost` resolutions on plans, lines and mixes; `inventory-proposal-panel` and `stock-mix-editor` read them. Serial-aware
+selection is not added; unidentified SPECIFIC stock remains UNKNOWN.
 
 ## Delivery principle and dependency order
 

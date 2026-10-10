@@ -6,7 +6,7 @@
  */
 import type { AssembliesMaterialPreview200DataInventoryItemsItemRecommendationAnyOfStrategy } from "./assembliesMaterialPreview200DataInventoryItemsItemRecommendationAnyOfStrategy";
 import type { AssembliesMaterialPreview200DataInventoryItemsItemRecommendationAnyOfLinesItem } from "./assembliesMaterialPreview200DataInventoryItemsItemRecommendationAnyOfLinesItem";
-import type { AssembliesMaterialPreview200DataInventoryItemsItemRecommendationAnyOfEstimatedCost } from "./assembliesMaterialPreview200DataInventoryItemsItemRecommendationAnyOfEstimatedCost";
+import type { AssembliesMaterialPreview200DataInventoryItemsItemRecommendationAnyOfCost } from "./assembliesMaterialPreview200DataInventoryItemsItemRecommendationAnyOfCost";
 import type { AssembliesMaterialPreview200DataInventoryItemsItemRecommendationAnyOfCriteriaItem } from "./assembliesMaterialPreview200DataInventoryItemsItemRecommendationAnyOfCriteriaItem";
 
 export type AssembliesMaterialPreview200DataInventoryItemsItemRecommendationAnyOf =
@@ -16,7 +16,7 @@ export type AssembliesMaterialPreview200DataInventoryItemsItemRecommendationAnyO
     pick_count: number;
     covered_quantity: string;
     shortage_quantity: string;
-    estimated_cost: AssembliesMaterialPreview200DataInventoryItemsItemRecommendationAnyOfEstimatedCost;
+    cost: AssembliesMaterialPreview200DataInventoryItemsItemRecommendationAnyOfCost;
     criteria: AssembliesMaterialPreview200DataInventoryItemsItemRecommendationAnyOfCriteriaItem[];
     limitations: string[];
   };
