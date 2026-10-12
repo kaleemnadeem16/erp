@@ -66,7 +66,7 @@ export function SalesStagesScreen() {
               <StatusBadge tone={stage.status === 'ACTIVE' ? 'success' : 'draft'}>{stage.status === 'ACTIVE' ? 'Active' : 'Archived'}</StatusBadge>
               {mayManage && (
                 <>
-                  <Button size="sm" variant="outline" disabled={(renames[stage.id] ?? stage.name).trim() === stage.name || (renames[stage.id] ?? stage.name).trim() === ''} onClick={() => void run(() => update.mutateAsync({ stage: stage.id, data: { name: (renames[stage.id] ?? stage.name).trim() } }), () => setRenames(({ [stage.id]: _done, ...rest }) => rest))}>
+                  <Button size="sm" variant="outline" disabled={(renames[stage.id] ?? stage.name).trim() === stage.name || (renames[stage.id] ?? stage.name).trim() === ''} onClick={() => void run(() => update.mutateAsync({ stage: stage.id, data: { name: (renames[stage.id] ?? stage.name).trim() } }), () => setRenames((current) => (current[stage.id]?.trim() === (renames[stage.id] ?? stage.name).trim() ? Object.fromEntries(Object.entries(current).filter(([id]) => Number(id) !== stage.id)) : current)))}>
                     Rename
                   </Button>
                   <Button size="sm" variant="outline" disabled={index === 0} aria-label={`Move ${stage.name} up`} onClick={() => void run(() => update.mutateAsync({ stage: stage.id, data: { sort_order: Math.max(0, (stages[index - 1]?.sort_order ?? 10) - 5) } }))}>

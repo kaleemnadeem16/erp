@@ -189,6 +189,10 @@ test('stages can be renamed and the change is shown on deals', async ({ browser 
     await page.locator('li').filter({ has: input }).getByRole('button', { name: 'Rename' }).click();
     await expect(page.getByLabel(`Name of ${to}`, { exact: true })).toBeVisible();
   };
+  // A run killed between the rename and its restore leaves the shared demo stage renamed; heal that first so one
+  // interrupted run cannot fail every later one.
+  await page.getByLabel(/^Name of Proposal/).first().waitFor();
+  if ((await page.getByLabel('Name of Proposal (e2e)', { exact: true }).count()) > 0) await rename('Proposal (e2e)', 'Proposal');
   let renamed = false;
   try {
     await rename('Proposal', 'Proposal (e2e)');
