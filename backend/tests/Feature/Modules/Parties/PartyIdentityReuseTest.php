@@ -5,15 +5,19 @@ namespace Tests\Feature\Modules\Parties;
 use App\Models\User;
 use App\Modules\Accounting\Models\ChartOfAccount;
 use App\Modules\Accounting\Support\AccountType;
+use App\Modules\Administration\Models\AccessScopeLimit;
+use App\Modules\Parties\Actions\FindPartyCandidates;
 use App\Modules\Parties\Models\CustomerAccount;
 use App\Modules\Parties\Models\Party;
 use App\Modules\Parties\Models\PartyContact;
 use App\Modules\Parties\Support\PartyCandidateAccess;
 use App\Support\CompanyContext;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
@@ -91,6 +95,56 @@ class PartyIdentityReuseTest extends TestCase
         $visible = $this->getJson('/api/v1/parties/candidates?name=Old+Customer')->assertOk()->json('data');
         $this->assertSame(['ACTIVE'], array_column($visible, 'status'));
         $this->assertSame(1, count($visible));
+    }
+
+    public function test_a_restricted_sales_duty_cannot_search_identities_even_with_an_unrelated_unrestricted_one(): void
+    {
+        $this->maintainer();
+        foreach (['sales.lead.manage', 'sales.opportunity.manage', 'sales.stage.manage', 'sales.numbering.manage'] as $name) {
+            Permission::findOrCreate($name);
+        }
+        Party::create(['code' => 'SECRET', 'name' => 'Secret Customer', 'tax_id' => 'TAX-777']);
+        foreach ([['sales.lead.manage', 'sales.stage.manage'], ['sales.opportunity.manage', 'sales.numbering.manage']] as [$restricted, $unrestricted]) {
+            $role = Role::create(['team_id' => 1, 'name' => "Limited {$restricted}", 'guard_name' => 'web']);
+            $role->givePermissionTo($restricted);
+            $user = User::factory()->create();
+            $user->assignRole($role);
+            AccessScopeLimit::create(['user_id' => $user->id, 'role_id' => $role->id, 'scope' => 'MY_UNITS']);
+            $user->givePermissionTo($unrestricted);
+
+            $this->actingAs($user);
+            foreach (['name=Secret+Customer', 'tax_id=TAX-777', 'code=SECRET'] as $probe) {
+                $this->getJson("/api/v1/parties/candidates?{$probe}")->assertForbidden()
+                    ->assertJsonMissing(['name' => 'Secret Customer'])->assertJsonMissingPath('data');
+            }
+            try {
+                app(FindPartyCandidates::class)(['name' => 'Secret Customer'], $user);
+                $this->fail('A restricted Sales duty must not reach the identity search.');
+            } catch (AuthorizationException) {
+                $this->addToAssertionCount(1);
+            }
+        }
+    }
+
+    public function test_sales_duty_that_is_unrestricted_or_an_independent_party_maintainer_still_searches(): void
+    {
+        $this->maintainer();
+        foreach (['sales.lead.manage', 'sales.stage.manage'] as $name) {
+            Permission::findOrCreate($name);
+        }
+        Party::create(['code' => 'LIVE', 'name' => 'Live Customer']);
+        $seller = User::factory()->create();
+        $seller->givePermissionTo('sales.lead.manage');
+        $this->actingAs($seller)->getJson('/api/v1/parties/candidates?name=Live+Customer')->assertOk()->assertJsonCount(1, 'data');
+
+        // A restricted Sales grant does not revoke an independent Party maintenance grant.
+        $role = Role::create(['team_id' => 1, 'name' => 'Limited lead', 'guard_name' => 'web']);
+        $role->givePermissionTo('sales.lead.manage');
+        $both = User::factory()->create();
+        $both->assignRole($role);
+        AccessScopeLimit::create(['user_id' => $both->id, 'role_id' => $role->id, 'scope' => 'MY_UNITS']);
+        $both->givePermissionTo('parties.party.manage');
+        $this->actingAs($both)->getJson('/api/v1/parties/candidates?name=Live+Customer')->assertOk()->assertJsonCount(1, 'data');
     }
 
     public function test_candidate_search_needs_a_duty_that_chooses_parties(): void

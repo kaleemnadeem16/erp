@@ -197,6 +197,11 @@ export function RegisterPartyDialog({ open, onOpenChange, initialName, onChosen 
                 </SelectContent>
               </Select>
             </div>
+            {candidates.data?.status === 403 && (
+              <p className="text-sm text-muted-foreground" data-testid="party-candidates-denied">
+                You are not permitted to search existing identities, so duplicates cannot be checked here.
+              </p>
+            )}
             {found.length > 0 && (
               <div className="space-y-2 rounded-md border border-dashed p-3" data-testid="party-candidates">
                 <p className="text-sm font-medium">Already here? Use one of these instead.</p>

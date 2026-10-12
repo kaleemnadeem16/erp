@@ -7,14 +7,17 @@ use App\Models\User;
 use App\Modules\Administration\Models\AccessScopeLimit;
 use App\Modules\Administration\Support\MemberStatus;
 use App\Modules\Parties\Models\Party;
+use App\Modules\Sales\Actions\CreateOpportunity;
 use App\Modules\Sales\Models\Opportunity;
 use App\Modules\Sales\Models\SalesHistory;
 use App\Modules\Sales\Models\SalesStage;
 use App\Modules\Sales\Support\PermissionVocabulary as Sales;
 use App\Support\CompanyContext;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
@@ -306,6 +309,97 @@ class CrmFoundationTest extends TestCase
         $this->getJson('/api/v1/leads')->assertForbidden();
         $this->postJson('/api/v1/opportunities', ['title' => 'x', 'party_id' => $this->party->id])->assertForbidden();
         $this->assertSame(0, Opportunity::query()->count());
+    }
+
+    /**
+     * A person whose own role grants `$limited` only for "my units", plus direct, unrestricted grants of `$unrestricted`.
+     *
+     * @param  list<string>  $limited
+     * @param  list<string>  $unrestricted
+     */
+    private function mixed(array $limited, array $unrestricted): User
+    {
+        $role = Role::create(['team_id' => 1, 'name' => 'Limited '.implode('+', $limited), 'guard_name' => 'web']);
+        $role->givePermissionTo($limited);
+        $user = User::factory()->create();
+        $user->assignRole($role);
+        AccessScopeLimit::create(['user_id' => $user->id, 'role_id' => $role->id, 'scope' => 'MY_UNITS']);
+        if ($unrestricted !== []) {
+            $user->givePermissionTo($unrestricted);
+        }
+
+        return $user;
+    }
+
+    private function existingOpportunity(): int
+    {
+        $this->actingAs($this->seller());
+
+        return (int) $this->postJson('/api/v1/opportunities', ['title' => 'Existing', 'party_id' => $this->party->id])->assertCreated()->json('data.id');
+    }
+
+    /** @return array<string, array{0: string}> */
+    public static function unrelatedUnrestrictedDuties(): array
+    {
+        return ['stage management' => [Sales::STAGE_MANAGE], 'numbering' => [Sales::NUMBERING_MANAGE]];
+    }
+
+    #[DataProvider('unrelatedUnrestrictedDuties')]
+    public function test_an_unrelated_unrestricted_duty_cannot_widen_a_restricted_opportunity_or_lead_duty(string $unrelated): void
+    {
+        $opportunityId = $this->existingOpportunity();
+        $person = $this->mixed([Sales::OPPORTUNITY_MANAGE, Sales::LEAD_MANAGE], [$unrelated]);
+        $this->actingAs($person);
+        $before = SalesHistory::query()->count();
+
+        $this->postJson('/api/v1/opportunities', ['title' => 'x', 'party_id' => $this->party->id])->assertForbidden();
+        $this->patchJson("/api/v1/opportunities/{$opportunityId}", ['title' => 'Changed'])->assertForbidden();
+        $this->postJson("/api/v1/opportunities/{$opportunityId}/notes", ['body' => 'n'])->assertForbidden();
+        $this->postJson('/api/v1/leads', $this->lead())->assertForbidden();
+        $this->getJson('/api/v1/opportunities')->assertForbidden();
+        $this->getJson("/api/v1/opportunities/{$opportunityId}")->assertForbidden();
+        $this->getJson('/api/v1/leads')->assertForbidden();
+        $this->getJson('/api/v1/sales-owners')->assertForbidden();
+
+        $this->assertSame(1, Opportunity::query()->count());
+        $this->assertSame('Existing', Opportunity::query()->findOrFail($opportunityId)->title);
+        $this->assertSame($before, SalesHistory::query()->count());
+        $this->assertSame(0, DB::table('sales_leads')->count());
+    }
+
+    public function test_direct_actions_refuse_a_restricted_duty_even_with_an_unrelated_unrestricted_one(): void
+    {
+        $person = $this->mixed([Sales::OPPORTUNITY_MANAGE, Sales::LEAD_MANAGE], [Sales::STAGE_MANAGE]);
+
+        $this->expectException(AuthorizationException::class);
+        app(CreateOpportunity::class)(['title' => 'x', 'party_id' => $this->party->id], $person);
+    }
+
+    public function test_a_restricted_assign_or_close_duty_still_reads_through_its_own_unrestricted_grant_but_cannot_act(): void
+    {
+        $opportunityId = $this->existingOpportunity();
+        $person = $this->mixed([Sales::OPPORTUNITY_ASSIGN, Sales::OPPORTUNITY_CLOSE], [Sales::PIPELINE_VIEW]);
+        $this->actingAs($person);
+
+        $this->getJson("/api/v1/opportunities/{$opportunityId}")->assertOk();
+        $this->postJson("/api/v1/opportunities/{$opportunityId}/reassign", ['owner_id' => $person->id])->assertForbidden();
+        $this->postJson("/api/v1/opportunities/{$opportunityId}/close", ['outcome' => 'LOST', 'reason' => 'x'])->assertForbidden();
+        $this->assertSame('OPEN', Opportunity::query()->findOrFail($opportunityId)->outcome->value);
+    }
+
+    public function test_the_same_duty_unrestricted_through_another_grant_still_wins(): void
+    {
+        $person = $this->mixed([Sales::OPPORTUNITY_MANAGE], [Sales::OPPORTUNITY_MANAGE]);
+        $this->actingAs($person);
+        $this->postJson('/api/v1/opportunities', ['title' => 'Allowed', 'party_id' => $this->party->id])->assertCreated();
+
+        $inverse = User::factory()->create();
+        $role = Role::create(['team_id' => 1, 'name' => 'Open seller', 'guard_name' => 'web']);
+        $role->givePermissionTo([Sales::OPPORTUNITY_MANAGE]);
+        $inverse->assignRole($role);
+        $inverse->givePermissionTo(Sales::OPPORTUNITY_MANAGE);
+        AccessScopeLimit::create(['user_id' => $inverse->id, 'permission' => Sales::OPPORTUNITY_MANAGE, 'scope' => 'MY_UNITS']);
+        $this->actingAs($inverse)->postJson('/api/v1/opportunities', ['title' => 'Also allowed', 'party_id' => $this->party->id])->assertCreated();
     }
 
     public function test_another_companys_records_are_unreachable_by_id(): void

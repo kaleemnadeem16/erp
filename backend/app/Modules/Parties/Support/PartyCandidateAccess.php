@@ -15,14 +15,20 @@ use Spatie\Permission\Exceptions\PermissionDoesNotExist;
  */
 final class PartyCandidateAccess
 {
-    /** @var list<string> */
-    private static array $searchers = [PermissionVocabulary::PARTY_MANAGE];
+    /** @var array<string, (\Closure(User): bool)|null> capability → the owning module's own eligibility (capability and its scope), or null for a plain capability */
+    private static array $searchers = [PermissionVocabulary::PARTY_MANAGE => null];
 
-    /** Register a capability whose holders choose or create Parties (called by the owning module's provider). */
-    public static function allow(string $permission): void
+    /**
+     * Register a capability whose holders choose or create Parties (called by the owning module's provider). A module whose duty is
+     * record-scoped passes its own eligibility predicate, so that a duty limited to "my units" is not enough here either: the
+     * permission string alone is never the answer.
+     *
+     * @param  (\Closure(User): bool)|null  $eligible
+     */
+    public static function allow(string $permission, ?\Closure $eligible = null): void
     {
-        if (! in_array($permission, self::$searchers, true)) {
-            self::$searchers[] = $permission;
+        if (! array_key_exists($permission, self::$searchers) || $eligible !== null) {
+            self::$searchers[$permission] = $eligible;
         }
     }
 
@@ -33,9 +39,9 @@ final class PartyCandidateAccess
 
     public static function mayAsk(User $actor): bool
     {
-        foreach (self::$searchers as $permission) {
+        foreach (self::$searchers as $permission => $eligible) {
             try {
-                if ($actor->can($permission)) {
+                if ($eligible !== null ? $eligible($actor) : $actor->can($permission)) {
                     return true;
                 }
             } catch (PermissionDoesNotExist) {
