@@ -162,4 +162,5 @@ Stable actionable codes: `REASON_REQUIRED`, `STALE_EVIDENCE`, `LEAD_DISQUALIFIED
 - [0112](../decisions/0112-correct-historical-opportunity-responsibility-with-append-only-evidence.md)
 - [0113](../decisions/0113-preserve-original-lead-intake-and-govern-current-detail-corrections.md)
 - [0114](../decisions/0114-authorise-historical-attribution-correction-as-a-dedicated-duty.md)
+- [As-built implementation handoff](../phases/phase-4-crm-corrections-implementation.md)
 - [Domain integrity](../architecture/domain-integrity.md) · [Authorisation](../architecture/authorization.md)

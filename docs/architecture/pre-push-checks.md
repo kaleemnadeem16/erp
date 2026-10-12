@@ -58,6 +58,22 @@ Adding a **route, a write, a read, a permission, a stock writer, or scope behavi
 - **Shared checkout:** codegen cleans the whole generated folder. Before running it, `git status`: if another agent has uncommitted generated files, **do not** regenerate over them and do not commit theirs. Either wait for their commit, or regenerate and then
   restore only what is theirs by re-adding their files from their working copy — never `git checkout`/`stash` their work. Commit only the generated files your change moved. If CI later shows drift that is not yours, say whose change it is.
 - Never hand-edit a generated file.
+- **A generated change must belong to an API change that is in the commits you deliver.** The client is a function of the backend *at the commit being
+  pushed*, not of the working tree you generated it in. If another agent has uncommitted Resource/Request/enum/route changes, `codegen` in the shared tree
+  emits their symbols too, and a directory-wide `git add` stages them: `codegen-check` then fails on the pushed head because the backend that produces
+  those files was never published (found 2026-10-12: a `packageTrackingMode` type and its barrel export were committed ahead of the Items filter change that
+  produces them). A green working tree or a successful local build proves nothing here — both include the other agent's unpublished code.
+  - **Stage generated files by explicit path, never `git add -A -- …/generated`.** Every new/removed generated file and every `models/index.ts` barrel line
+    you stage must trace to a Resource, Form Request, enum, route or validation change in *your* commit. A new untracked generated file you did not cause is
+    someone else's uncommitted work: leave it out (and note it).
+  - **Before you commit:** `git diff --cached --stat -- frontend/packages/core-api` against `git diff --cached --name-only | grep -E 'Http/(Requests|Resources|Controllers)|routes|Support/'` —
+    each generated change needs a source change in the same list. (The OpenAPI document itself is gitignored, so it is not a committed reference: the committed
+    reference is the backend source in the commits, and the authority is the CI `codegen-check`.)
+  - **Before you push:** the generator must run against the tree you are delivering, not your working tree. Either run `export` + `codegen` when `git status`
+    shows no uncommitted backend/API change of anyone else (and nothing of yours left out), or generate in a clean checkout of exactly the commits you push, then
+    `git diff --exit-code -- frontend/packages/core-api`. Push only after that is empty, and watch `codegen-check` on the hosted run.
+  - **If it still mismatches, do not "fix" it by publishing another agent's commits.** Remove the stray generated file and its barrel line in a corrective commit
+    (or coordinate with its owner to deliver their backend change first, with their authorisation). Their next regeneration restores it with their change.
 
 ## Browser (Playwright) tests
 
@@ -98,6 +114,7 @@ Recurring causes so far, and the preventive rule that closes each:
 | Pint fails on migrations | Run `pint --test` on every PHP path you add, migrations included |
 | Demo seed fails on a fresh database in the e2e job | Seeders and seeder tests run on a *fresh* migrated schema; never rely on columns or rows from a long-lived dev DB |
 | Codegen drift | Regenerate and commit whenever the API surface moves; check the diff is only yours |
+| Codegen-check fails on the pushed head although the working tree is clean | A generated symbol was staged whose backend change is not in the pushed commits (another agent's uncommitted API change, or a directory-wide `git add`). Stage generated files by explicit path and verify against the delivered tree — see Generated files |
 | Stale Playwright specs after wording/layout changes | Search the specs for what you renamed; update them in the same commit |
 | Page-one / first-row assumptions | Deterministic lookups; see above |
 | A new route or writer not registered in a ratchet | Run the ratchets before committing |
