@@ -2,9 +2,9 @@
 
 # CRM correction evidence
 
-Accepted ADRs 0111–0113 distinguish intake disposition, corrected enquiry details and historical
+Accepted ADRs 0111–0114 distinguish intake disposition, corrected enquiry details and historical
 responsibility from current pursuit. **DECISIONS ACCEPTED; SCHEMA/OPERATIONS SPECIFIED, NOT
-IMPLEMENTED.** Historical-attribution write authority remains owner-gated. The existing CRM
+IMPLEMENTED.** Historical-attribution authority is accepted in 0114; registry/grants/re-sync remain implementation work. The existing CRM
 foundation still has its old restrictions until the implementation agent delivers these corrections.
 
 ## Where it sits
@@ -113,12 +113,16 @@ current and correction histories use existing legitimate pipeline-read duties an
 Intake correction confers no Party or financial-master authority. Preserve independent Party rights
 and additive grants under the [urgent security correction](../phases/phase-4-crm-security-correction.md).
 
-B requires separate explicitly approved correction duty plus existing independent read eligibility;
-`sales.opportunity.attribution.correct` is a proposed name, NOT accepted/registered authority.
+B requires accepted `sales.opportunity.attribution.correct` AND independent legitimate Opportunity
+read eligibility (0114); this is approved vocabulary, not evidence of registration/implementation.
 Assignment, editing, closure, stage maintenance, role names and ownership do not imply it. Restricted
 Sales modes refuse (403); other-company ids remain unreachable under existing conventions. Original
 and corrected historical facts follow the same read/sensitive-field protection. The correction duty
-alone must not silently add pipeline view or user-directory visibility.
+alone must not silently add pipeline view or user-directory visibility. Explicit grants are for designated
+authorised CRM/company administrators; ordinary Sales duties/managers gain nothing automatically.
+Administrator re-sync includes it only under an explicitly defined existing full-access role mandate,
+not a name or current permission snapshot. Preserve legitimate explicit grants and effective scope;
+missing qualifying mandate excludes automatic inclusion.
 
 ## Integrity and refusals
 
@@ -156,4 +160,5 @@ Stable actionable codes: `REASON_REQUIRED`, `STALE_EVIDENCE`, `LEAD_DISQUALIFIED
 - [0111](../decisions/0111-disqualify-leads-independently-of-derived-opportunities.md)
 - [0112](../decisions/0112-correct-historical-opportunity-responsibility-with-append-only-evidence.md)
 - [0113](../decisions/0113-preserve-original-lead-intake-and-govern-current-detail-corrections.md)
+- [0114](../decisions/0114-authorise-historical-attribution-correction-as-a-dedicated-duty.md)
 - [Domain integrity](../architecture/domain-integrity.md) · [Authorisation](../architecture/authorization.md)

@@ -7,6 +7,8 @@ independent from internal cost, tax and supplier pricing. [ADR 0109](../decision
 generalises source applicability while retaining the progressive pricing/control decisions from
 [historical ADR 0055](../decisions/0055-progressive-sales-pricing-and-controlled-formulas.md).
 Implementation belongs to Phase 4; R3 must reconcile direct Item/service/manual applicability.
+The [consolidated P1–P6 business review](../phases/phase-4-r3-business-review.md) is awaiting owner approval;
+its recommendations are not accepted additions to this contract.
 
 ## Problem statement
 

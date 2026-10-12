@@ -349,6 +349,14 @@ vocabulary to a named administrator and is safe to re-run every deploy (see
 never hit this gap because `StockDemoSeeder` already syncs the demo login to the full registry on
 every `demo:seed` run — the production path just had no equivalent.
 
+**Sensitive duty exception — [ADR 0114](../decisions/0114-authorise-historical-attribution-correction-as-a-dedicated-duty.md).**
+`sales.opportunity.attribution.correct` is not automatically added by a named administrator re-sync.
+Include it only where an existing role is explicitly defined as genuinely full-access across all
+registered capabilities and the target holds its eligible company assignment; role names, email and
+current permission snapshots are insufficient. Otherwise exclude automatic inclusion, preserving
+legitimate explicit grants and effective scope. Current unconditional all-registry helpers require
+this narrow integration before the duty is rolled out; no global wildcard/admin-role system is implied.
+
 Registration without enforcement is allowed as a clearly documented foundation/reserved
 capability. Enforcement without assignment preparation, backend tests and usable UI is not. The
 phase/module checklist must state which names are active now and which are deliberately reserved.

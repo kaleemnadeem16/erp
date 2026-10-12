@@ -7,8 +7,7 @@ Accepted records: [0111](../decisions/0111-disqualify-leads-independently-of-der
 [0112](../decisions/0112-correct-historical-opportunity-responsibility-with-append-only-evidence.md),
 [0113](../decisions/0113-preserve-original-lead-intake-and-govern-current-detail-corrections.md).
 The initial options/research below retain the reasoning; accepted ADRs govern. Current code behaviour
-is source-inspected, not evidence of correction delivery. Historical-attribution capability/grants
-remain awaiting approval; [implementation specification](phase-4-crm-correction-specification.md)
+is source-inspected, not evidence of correction delivery. Q42 authority is now accepted in [0114](../decisions/0114-authorise-historical-attribution-correction-as-a-dedicated-duty.md); [implementation specification](phase-4-crm-correction-specification.md)
 and [domain model](../domain/crm-corrections.md) supply the handoff. Named administrative assignee
 is excluded for now; notes remain the routine closed-record follow-up. Earlier accepted ADRs unchanged.
 
@@ -130,8 +129,8 @@ is chosen. This comparison is sufficient for owner review; detailed report/corre
 Each approved correction needs an implementation handoff naming Request/Action, database/writer,
 Resource/client, demo and screen coverage before coding. Where enabled, detail/history must make
 original versus corrected facts understandable; reasoned actions use shared review sheets, retained
-input on refusal and refreshed projections. Endpoint/evidence contracts are now in the implementation specification; the B capability/grant
-choice alone retains a separate owner gate. No global UI or audit retrofit is authorised.
+input on refusal and refreshed projections. Endpoint/evidence contracts and accepted 0114 duty/grant rollout are now in the implementation
+specification; actual implementation and company-specific assignments remain delivery work. No global UI or audit retrofit is authorised.
 
 ## Preserved choices and future integration gates
 

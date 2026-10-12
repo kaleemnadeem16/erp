@@ -36,7 +36,7 @@ permit independent reasoned intake disqualification, append-only historical resp
 without reopening, and immutable original intake plus governed current-detail corrections in all
 Lead states. Routine closed-record follow-up uses notes; named administration and general closed-owner
 editing are excluded. See [evidence model](crm-corrections.md) and [delivery contract](../phases/phase-4-crm-correction-specification.md).
-B's sensitive duty/grants await owner approval; the [urgent scope/candidate correction](../phases/phase-4-crm-security-correction.md)
+B's sensitive duty/grant boundary is accepted in [0114](../decisions/0114-authorise-historical-attribution-correction-as-a-dedicated-duty.md); safe rollout remains implementation work; the [urgent scope/candidate correction](../phases/phase-4-crm-security-correction.md)
 is independently required. The as-built foundation below retains current restrictions until delivery.
 Expected value remains unreviewed assumption; partial-win/remaining-business and trusted forecast
 remain R5/R6/R9 gates, not delivered capabilities.

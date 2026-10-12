@@ -17,8 +17,10 @@ and [0113](../../../../docs/decisions/0113-preserve-original-lead-intake-and-gov
 extend the foundation with independent disqualification, historical attribution evidence and original/current
 enquiry preservation. [Specification](../../../../docs/phases/phase-4-crm-correction-specification.md)
 and [domain model](../../../../docs/domain/crm-corrections.md) describe planned Actions/constraints/UI.
-Current Actions below still have their original restrictions. B's new sensitive duty/grants await
-owner approval; no general closed-owner editor or named administrative assignee is approved.
+Current Actions below still have their original correction restrictions. B's duty/grant boundary is
+accepted in [0114](../../../../docs/decisions/0114-authorise-historical-attribution-correction-as-a-dedicated-duty.md);
+safe registry/grant/re-sync integration remains delivery work. No general closed-owner editor or named
+administrative assignee is approved.
 [Security correction](../../../../docs/phases/phase-4-crm-security-correction.md) remains urgent separately.
 
 ## Owns

@@ -2,13 +2,14 @@
 
 # CRM A/B/C corrections — implementation specification
 
-**2026-10-10 · BUSINESS ACCEPTED; NOT IMPLEMENTED.** ADRs [0111](../decisions/0111-disqualify-leads-independently-of-derived-opportunities.md),
+**Updated 2026-10-12 · BUSINESS AND Q42 AUTHORITY ACCEPTED; NOT IMPLEMENTED BY PLANNING.** ADRs [0111](../decisions/0111-disqualify-leads-independently-of-derived-opportunities.md),
 [0112](../decisions/0112-correct-historical-opportunity-responsibility-with-append-only-evidence.md)
 and [0113](../decisions/0113-preserve-original-lead-intake-and-govern-current-detail-corrections.md)
 record owner approval. Planning specifies; designated implementation agent delivers after the owner
 coordinates schedule through them. No application code/tests/migrations/generation executed here.
 The [urgent security correction](phase-4-crm-security-correction.md) remains required independently.
-B's new sensitive duty/grant choice is explicitly AWAITING APPROVAL; do not enable that write yet.
+[ADR 0114](../decisions/0114-authorise-historical-attribution-correction-as-a-dedicated-duty.md)
+resolves Q42. Handoff is final for owner-coordinated coding; actual grants/verification remain delivery work.
 
 ## Slice boundaries and examples
 
@@ -31,20 +32,58 @@ expresses retrospective attribution correction, which can change historical acco
 all current operational facts remain unchanged. Reusing manage is too broad; requiring assign+close
 would grant unrelated powers to a correction specialist and still not identify the duty explicitly.
 
-**Recommend `sales.opportunity.attribution.correct` as one narrow new capability, subject to owner
-approval.** Requires independent legitimate pipeline-read eligibility AND effective company-wide
-scope for this duty; unsupported restricted grants refuse. Owning the record, manager role, assign,
-close or ordinary editing do not substitute. The proposed capability is not added to `mayRead`,
-owner/candidate lookup duties or an unrestricted vocabulary-wide scope query.
+**Q42 CLOSED by owner approval, 2026-10-12; accepted ADR 0114.** Require
+`sales.opportunity.attribution.correct` AND independent legitimate Opportunity-read eligibility.
+Enforce company and each relevant effective record scope at Request and Action; unsupported limited
+Sales scope refuses. Owning the record, manager title, assign, close or ordinary edit cannot substitute.
+Do not add correction to `mayRead`, ordinary owner/candidate lookup duties or a vocabulary-wide scope
+query. Unrestricted correction cannot rescue restricted-only read; unrestricted read cannot rescue
+restricted-only correction. Same-duty additive grants still use the shared resolver normally.
 
-Register only after approval in Sales vocabulary/registry and ratchets. Grant explicitly to approved
-company principals/role assignments; no blanket salesperson/manager grant or inferred incumbent
-attribution users, because this is a new operation. Owner must approve the initial grant audience,
-including whether a named full-vocabulary administrator's normal re-sync should include it. Demo
-correction-reviewer recipe has read + correction only and no active-edit/assign/close duty; recipe
-is not authority to grant production roles. Rollout test proves ordinary existing roles do not gain
-it, explicit eligible grants work, rerun is idempotent and companies remain isolated. If an approved
-existing duty is preferred instead, record that deliberate sensitivity choice before enabling B.
+Register the duty in Sales vocabulary/registry and ratchets. Explicitly assign only to designated
+authorised CRM/company administrators using existing access-assignment/anti-escalation guards.
+There is no incumbent-grant migration based on ordinary Sales roles because this is a new surface.
+Prepare company/principal or company/role-id grant inputs and audited assignment provenance at
+rollout; category approval does not invent named production recipients. Bootstrap the first
+authorised grant through the existing privileged deployment procedure, then normal access
+administration cannot grant the duty beyond its own authority. Demo reviewer has independent read +
+correction only, no active-edit/assign/close; it is not a production role grant.
+
+### Administrator re-sync and automatic grant integration
+
+`backend/app/Console/Commands/SyncAdminPermissions.php` currently calls
+`$user->syncPermissions($permissions->all())`; `CreateAdminUser --permissions=all` and demo
+all-vocabulary helpers also expand the registry automatically. Role currently records description/
+permissions, not a standing all-capability mandate. Those paths must not silently grant this duty.
+
+Re-sync inclusion requires an existing company role explicitly defined as genuinely full-access
+across all registered capabilities, evidence of its approved mandate and the target's eligible
+assignment. Use reviewed company/role-id rollout inputs referencing that existing definition; a
+role name, description/name alone, email, current permission count or command invocation is not proof.
+Qualifying rollout input identifies `company_id`, existing `role_id`, explicit
+`ALL_REGISTERED_CAPABILITIES` mandate, approval/provenance reference and effective assignment;
+the input attests an already approved role definition, not an inferred new full-access role. Use one
+narrow eligibility predicate consistently across all-vocabulary callers; keep registry registration
+unfiltered. Where no machine-verifiable qualifying mandate is supplied, exclude the new duty from automatic
+expansion and preserve legitimate explicit grants. No new wildcard engine or general role-editor
+full-access switch is needed for this correction. The coding agent must make the narrow new-duty
+eligibility check before registry expansion can reach live/bootstrap/demo callers.
+
+Preserve explicit direct grants during re-sync; filtering automatic eligibility must not accidentally
+revoke an independently authorised grant. Preserve ordinary company-scoped role inheritance and
+same-duty additive scope. Do not turn a restricted role mandate into an unrestricted direct grant.
+Audit all automatic consumers of `PermissionRegistry::all` (not registration itself), including
+`StockDemoSeeder`, `PurchasingDemoSeeder`, `PackagedPurchasingDemoSeeder` and bootstrap helpers;
+coordinate shared demo edits through the owner, never overwrite another cohort. Explicitly named
+permission assignment remains an auditable authorised operation, not an implicit all-vocabulary grant.
+
+Rollout tests: ordinary salesperson/editor/assigner/closer/manager unchanged; role named Admin or
+having all today's grants without explicit mandate gains nothing; qualifying existing full-access
+mandate works only for its company/eligible assignment and scope; existing explicit grant survives;
+foreign-company/unknown mandate refuses inclusion; rerun adds no duplicate assignment; revocation
+and permission cache refresh are effective. Test independent read and correction separately through
+Request, direct Action, lookup and history projection. Required operational grant inputs are rollout
+prerequisites, not an unresolved Q42 business decision.
 
 Read original/corrected responsibility through existing authorised history projection; no separate
 read permission is needed for the same responsibility fields. Historical inactive company members
@@ -64,7 +103,7 @@ Existing route identities remain except the new named B operation; no generic st
 | `POST /leads/{lead}/disqualify` | `DisqualifyLeadRequest` + `DecideLead::disqualify`: existing reason plus required `request_key` (≤85), `expected_decision_event_id` (latest qualification/disqualification/revival event or null). Remove only open-deal coupling; retain current status semantics and record prior qualification context before clearing projection. |
 | `POST /leads` | `StoreLeadRequest` + `RecordLead`: accepted input normalised as today, required `request_key`; create Lead, immutable ORIGINAL_INTAKE, original receipt event and receipt atomically. No baseline disguised as an original. |
 | `PATCH /leads/{lead}` | `UpdateLeadRequest` + dedicated `CorrectLeadEnquiry` (or existing `UpdateLead` forwarding to that one authority): allowlisted six fields, required `reason`, `request_key`, `expected_enquiry_version`; all three lifecycle states allowed. Reject status/link/assignee/received_at/identity fields. No other field silently ignored as an editable correction. |
-| `POST /opportunities/{opportunity}/attribution-corrections` | `StoreOpportunityAttributionCorrectionRequest` + `CorrectOpportunityAttribution`, thin controller + typed Resource: `target_event_id`, `target_field` (`OWNER_ID` or `TO_OWNER_ID`), `asserted_owner_id`, nullable `expected_predecessor_id`, `expected_closure_event_id`, required `reason`/`request_key`. Do not expose before sensitive duty approval. |
+| `POST /opportunities/{opportunity}/attribution-corrections` | `StoreOpportunityAttributionCorrectionRequest` + `CorrectOpportunityAttribution`, thin controller + typed Resource: `target_event_id`, `target_field` (`OWNER_ID` or `TO_OWNER_ID`), `asserted_owner_id`, nullable `expected_predecessor_id`, `expected_closure_event_id`, required `reason`/`request_key`. Expose only after safe registry/grant/re-sync integration and required checks. |
 | `GET /opportunities/{opportunity}/attribution-members` | `IndexOpportunityAttributionMemberRequest` + `ReadOpportunityAttributionMembers` requiring correction+read and relevant scope; search active or retained inactive company members, capped/paginated, minimal id/name/status. Only for historical selection; no generic owner-lookup expansion. |
 
 Correction reasons follow existing max 1000 and nonblank semantics; field bounds/normalisation
@@ -160,7 +199,8 @@ until governed rollout, not a silent runtime backfill. Existing rows are not ass
 Real `down()` removes only the new schema/trigger changes when safe; refuse with explanation when
 accepted correction evidence would be lost or current corrected projection become unauditable.
 Fresh apply → rollback → reapply and populated rollback refusal are implementation-owned checks.
-Grant rollout for B is separately owner-gated; A/C need no new permission grant.
+B grant rollout follows accepted 0114’s explicit audience/qualifying re-sync contract;
+A/C need no new permission grant.
 
 ## API projection and screen coverage
 
@@ -222,6 +262,8 @@ forecast never becomes trusted on view/revival/correction; active commitment pre
 classification; remaining-business disposition is separately recorded when partial success closes.
 
 ## Related
+
+- [Accepted Q42 authority — 0114](../decisions/0114-authorise-historical-attribution-correction-as-a-dedicated-duty.md)
 
 - [CRM correction domain](../domain/crm-corrections.md) · [Accepted policy review](phase-4-crm-policy-review.md)
 - [Security handoff](phase-4-crm-security-correction.md) · [R3 pricing review](phase-4-r3-sales-pricing.md)

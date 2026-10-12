@@ -2,11 +2,12 @@
 
 # R3 — Source-neutral Sales pricing: initial evidence and consolidated review
 
-**2026-10-10 · INITIAL EVIDENCE / AWAITING OWNER REVIEW.** Research started after the CRM
+**Updated 2026-10-12 · CONSOLIDATED BUSINESS REVIEW READY / AWAITING OWNER APPROVAL.** Research started after the CRM
 security handoff and policy review were documented. No R3 ADR is accepted, implementation slice
 authorised, schema selected or application code changed. Planning owns this file; cost C2 recovery
 and its delivery docs remain with the implementation agent. This is one owner-review matrix,
-not a sequence of independently accepted pricing decisions.
+not a sequence of independently accepted pricing decisions. The [business-first P1–P6 review](phase-4-r3-business-review.md)
+is the current owner-review agenda, including examples, realistic options and R4–R9 boundaries.
 
 ## Question, existing basis and boundaries
 
@@ -54,7 +55,7 @@ are AWAITING APPROVAL; recommendations do not authorise implementation.
 |---|---|---|
 | P1 Source applicability | Shared resolver with source adapters. Item/service-specific policy → company; Assembly → Assembly Group → company; manual has company defaults and explicit line input, no fabricated source identity. Recipient prices use eligible Party identity without CustomerAccount. Retain effect/applicability separation. | Add Item-category hierarchy now: useful at scale but new conflict/maintenance semantics. Defer pending demonstrated need; Assembly groups remain applicable to their own sources. |
 | P2 Precedence and agreements | Retain agreement → Party price → general maintained price → applicable source policy → authorised manual, else refusal. Explicitly choose an eligible agreement; never select among different commitments by cheapest rate. Within a source retain specificity/priority/effective date/stable identity. Detect overlapping configuration and explain tie-breaks. Locked agreement terms require their specific governed exception, never a generic price edit. | Best-price selection conflicts with retained 0055. Silent fallback from a selected invalid agreement hides commercial intent; recommend explicit repair/deselect rather than silent fallthrough. Full quantity/value agreement fulfilment is deferred to R6/R7. |
-| P3 Discounts and exception | MANAGED supports typed percent/per-unit/line adjustments with ordered application and explicit stacking; default one applicable automatic discount per adjustment group. Preserve base, calculated net and final net. Manual price in SIMPLE is controlled entry when no calculated source exists, separately labelled from overriding a calculated result. Overrides require duty/reason and applicable approval. | Automatically stack all matches gives surprising totals; forbid initially. SIMPLE ordinary discount entry is an open packaging choice: recommend controlled final-price exception initially, preserving reason, rather than a hidden second discount engine. |
+| P3 Discounts and exception | MANAGED supports typed percent/per-unit/line adjustments with ordered application and explicit stacking; default single-group plan with one applicable automatic discount; additional groups coexist only under explicit ordered stacking configuration. Preserve base, calculated net and final net. Manual price in SIMPLE is controlled entry when no calculated source exists, separately labelled from overriding a calculated result. Overrides require duty/reason and applicable approval. | Automatically stack all matches gives surprising totals; forbid initially. SIMPLE ordinary discount entry is an open packaging choice: recommend controlled final-price exception initially, preserving reason, rather than a hidden second discount engine. |
 | P4 Complete cost and margin controls | Cost-plus/target-margin and any cost-consuming formula step require COSTED for the complete applicable quantity/basis. Maintained/manual may price with PARTIAL/UNKNOWN, visibly preserving uncertainty. Minimum-margin control evaluates final discounted/overridden net price; unevaluable configured control refuses issue pending a separately governed exception if approved, never assumes pass. Genuine zero is valid evidence; percentage margin at zero sell price is undefined. | Require cost for all prices blocks valid service/manual selling; extrapolate partial cost hides risk. Warning-only minimum margin may suit a policy, but must be explicitly configured and distinguished from mandatory control. No universal complete-cost mandate. |
 | P5 Progressive enablement | SIMPLE first, with maintained/cost-derived/manual basics; MANAGED adds agreed lists/Party/tier/agreement/adjustment/control surfaces; ADVANCED adds typed versioned steps. Modes independent of CRM/tax. Activation validates prerequisites/permissions/rules. Downgrade preserves snapshots and refuses unresolved dependent drafts/configuration unless explicitly reconciled. | Enable every control globally creates unusable setup. Hiding active rules while silently retaining effects on downgrade is unacceptable. Exact downgrade draft handling needs an owner-reviewed transition before delivery. |
 | P6 Evidence, reprice and confidentiality | Copy source/rule/quantity/UoM/FX/rounding/adjustment/override evidence on issue. Show stale draft inputs, explicit reprice and changed-price review; quantity/Party/date/basis changes revalidate. Maintained prices do not track cost. Internal cost/margin/candidate diagnostics remain capability-projected; customer receives approved commercial price/discount presentation only. | Auto-reprice without review surprises users; freeze all draft prices hides stale policy. R4 settles FX/tax/rounding dates; R5 settles adoption and approval fingerprints. Selective blind control evaluation may be allowed without disclosing protected operands. |
@@ -126,14 +127,15 @@ Candidate acceptance scenarios for later approved specifications:
 ## Current state and next owner review
 
 ACCEPTED: 0109 and retained 0055 boundaries. IMPLEMENTED: Estimating guidance and internal C1
-cost query, not Sales pricing. INCOMPLETE: separately owned cost C2 integration. DEFERRED:
+cost query, not Sales pricing. C2 completion is reported locally in STATUS and implementation commits;
+this planning session does not independently reverify it. DEFERRED:
 pricing delivery, full agreement fulfilment, R4–R9 gates. AWAITING APPROVAL: P1–P6 recommendations,
 including SIMPLE discount packaging, agreement exception duties and downgrade draft handling.
-The three CRM policy decisions are a separate review; security correction uses existing authority.
+CRM A/B/C and Q42 are accepted in 0111–0114; security correction uses existing authority.
 
 ## Next consolidated review — P1–P6 remain unaccepted
 
-CRM A/B/C are accepted in 0111–0113; their correction authority gate is separate from pricing.
+CRM A/B/C and correction authority are accepted in 0111–0114, separately from pricing.
 No CRM decision changes price precedence, selling source or cost completeness. Research reuses
 our initial primary comparison and 0109's retained rules; questions below sharpen its proposal,
 not new ADRs or accepted controls. Cost recovery's delivery record remains implementation-owned.
@@ -160,6 +162,8 @@ adoption/issue and relevant-approval fingerprints stay R5; acceptance/group/tier
 R6/R9. No universal trusted forecast, job creation or Inventory posting follows price resolution.
 
 ## Related
+
+- [Current consolidated business review](phase-4-r3-business-review.md)
 
 - [CRM implementation specification](phase-4-crm-correction-specification.md) · [CRM policy review](phase-4-crm-policy-review.md) · [Security handoff](phase-4-crm-security-correction.md)
 - [Pricing domain](../domain/sales-pricing.md) · [Accepted 0109](../decisions/0109-shared-commercial-quotation-lines-and-optional-estimating.md)

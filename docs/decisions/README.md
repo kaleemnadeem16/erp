@@ -128,8 +128,9 @@ in the same commit.
 | [0111](0111-disqualify-leads-independently-of-derived-opportunities.md) | Disqualify Leads independently of derived Opportunities | accepted | 2026-10-10 |
 | [0112](0112-correct-historical-opportunity-responsibility-with-append-only-evidence.md) | Correct historical Opportunity responsibility with append-only evidence | accepted | 2026-10-10 |
 | [0113](0113-preserve-original-lead-intake-and-govern-current-detail-corrections.md) | Preserve original Lead intake and govern current-detail corrections | accepted | 2026-10-10 |
+| [0114](0114-authorise-historical-attribution-correction-as-a-dedicated-duty.md) | Authorise historical attribution correction as a dedicated duty | accepted | 2026-10-12 |
 
-**Next number: 0114**
+**Next number: 0115**
 
 ## By theme
 
