@@ -97,7 +97,9 @@ with B’s authority accepted in 0114/Q42 closed and safe grant/re-sync rollout 
 [R3 pricing evidence](phase-4-r3-sales-pricing.md) and the [revised P1–P8 decision matrix](phase-4-r3-business-review.md) are ready for owner review; no new pricing decision accepted.
 [Expanded R3 evidence](phase-4-r3-expanded-research.md) reconciles customer groups, categories,
 packages/tiers and controls; [implementation-question reconciliation](../architecture/implementation-question-reconciliation.md)
-uses OPEN-QUESTIONS rather than a duplicate register.
+uses OPEN-QUESTIONS rather than a duplicate register; the owner has accepted that coordination workflow.
+The [integrated R3 pricing example](phase-4-r3-worked-example.md) accompanies the final P1–P8
+decision table; pricing recommendations remain unaccepted.
 
 
 Leads, opportunities, quotations with revisions, cost snapshotting, PDF output. Mobile layout

@@ -2,10 +2,11 @@
 
 # Reconciling implementation questions through the owner
 
-**2026-10-12 · Documentation workflow under the owner's explicit instruction.** Use
+**2026-10-12 · ACCEPTED COORDINATION WORKFLOW — explicit owner review following `297b7c2`.** Use
 [OPEN-QUESTIONS.md](../OPEN-QUESTIONS.md) for unresolved decisions; this is a process/template,
 not a parallel register. Implementation communication remains through the owner unless the owner
-explicitly authorises direct messaging. Research does not implement or accept new business choices.
+explicitly authorises direct messaging. Research does not implement or accept new business choices. Workflow acceptance grants no
+new pricing authority and does not mark any coding question or implementation verified.
 
 ## Intake and classification
 

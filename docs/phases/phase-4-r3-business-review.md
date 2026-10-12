@@ -7,6 +7,11 @@ This replaces the earlier P1–P6 review agenda, not accepted authority. No new 
 implementation permission or physical schema is accepted. Read the bundles together; the
 [expanded evidence and repository reconciliation](phase-4-r3-expanded-research.md) distinguish
 vendor facts from project recommendations. CRM ADRs 0111–0114 remain independently accepted.
+The P1–P8 matrix committed at `297b7c2`, with the final-review clarifications here, is the
+**authoritative owner-review proposal**. Earlier P1–P6 agendas are historical; accepted ADRs remain
+the governing authority until owner approval. Reuse existing expanded research; no new broad cycle.
+The [integrated worked example](phase-4-r3-worked-example.md) fixes its rule configuration explicitly
+and demonstrates the same recommendations, including tier adjustment allowance and exclusions.
 
 ## Accepted and implemented baseline
 
@@ -34,6 +39,29 @@ different prices). Any accepted refinement needs a new ADR with explicit retaine
 No contradiction is silently implemented. P1–P6 retain their IDs; P7 adds quantity semantics and
 P8 adds optional selling context because each needs a distinct owner decision.
 
+## Final business decision table — all pricing choices still need approval
+
+Each recommendation below needs owner selection/approval, not merely acknowledgement of the
+accepted baseline. Detailed P1a–P8b rows remain the specification agenda. “Now” means support in
+the architectural contract before delivery; it does not authorise implementation today.
+
+| Bundle / already accepted | New choice: options and recommendation | Practical impact / important exception | Support now versus delivery later |
+|---|---|---|---|
+| **P1 · Party/account separation; existing Item category tree** | Exclusive customer type or single group is smaller but loses legitimate overlap. **Recommend optional descriptive classifications, multiple flat Party pricing groups, and reuse of Item categories with explicit inheritance/exclusions.** | Distributor + preferred partner can both nominate rules, never automatically stack. A prospect can have membership without CustomerAccount. Display a group's commercial label without requiring a duplicate classification assignment; labels alone grant no discount. | Eligibility/history, category/basis and scoped exclusion seams now. Group/matrix UI MANAGED later; separate classification UI only when useful; R5 stale dependencies, R9 duties. |
+| **P2 · Explicit sources, deterministic selection, no cheapest-wins** | Product-first versus audience-first; automatic agreement versus explicit intent; ID tie versus conflict refusal. **Recommend selected agreement first; then Party → group → general, and Item → nearest category → ancestors → company within each audience. Refuse materially conflicting equal-rank terms.** | Party/category 25% beats group/Item 30%; Party/Item 35% beats Party/category. Family exclusions filter first. Selected fixed agreement 850 is used even if ordinary result is 650. No ordinary contract departure. | Typed effect/ranking/list/contract evidence now. Refines 0055 on group scope and ID conflict tie; R4 dates/currency, R5 issue, R6/R7 commitments, R9 protected lookup. |
+| **P3 · Controlled manual pricing, preserve calculated/final, separate authority** | All reductions as exceptions versus bounded routine discounts; replace versus stack. **Recommend one routine percent/per-unit/per-line discount in SIMPLE; default one adjustment slot; explicitly named ordered stacking only.** | Replacing 20% automatic with 10% discretionary gives 900 from 1000, not 720; an explicitly permitted extra slot gives 720. A final-net override applies no discount again. Base/tier rates must declare allowed adjustment plan or exclusive net terms. Same benefit identity applies once. | Effect/benefit/plan/limit/reference facts now. SIMPLE exposure needs 0055 refinement. MANAGED simple plans/promotions later, ADVANCED conditional plans; R5 approval, R4 rounding, R8 display, R9 duties. |
+| **P4 · Missing cost is not zero; complete cost for cost-derived methods** | Warnings only versus mandatory controls; no bypass versus separately governed exception. **Recommend advisory/mandatory per named control, final-net floors/margins, and a separate optional risk-exception contract with no initial bypass.** | Cost 800, net 900 fails a 20% margin; a 950 floor fails independently. Unknown cost can sell at maintained price absent a mandatory cost test; mandatory unknown refuses. Risk approval never fabricates cost or changes contract terms. | Typed control/result/exception evidence now; exception delivery separately approved later. R4 comparable units/currency/rounding, R5 approval validity, R9 risk authority. |
+| **P5 · SIMPLE/MANAGED/ADVANCED independent of CRM and tax** | Fixed-price-only versus usable SIMPLE; hide rules versus reconcile on downgrade. **Recommend routine prices/discounts in SIMPLE, structured rules in MANAGED, typed complex pipelines in ADVANCED; dependency validation and reconciliation before downgrade.** | A draft relying on advanced steps cannot quietly become SIMPLE. Active commitments/controls cannot disappear through mode change; issued offers remain readable unchanged. | Capability/dependency/history seams now. Optional configuration/UI slices later; R5 draft/withdrawal/approval transitions, R8 history, R9 mode authority. |
+| **P6 · Stale draft review and immutable issue, protected projections** | Auto-update or permanent freeze versus explicit review. **Recommend relevant stale detection, explicit before/after reprice or valid no-change confirmation, and separate customer/internal explanations.** | Category move may remove a discount; retained manual net still needs current control checks. Issued evidence stays fixed. Partial acceptance cannot silently keep or remove a tier/line discount. | Version/fingerprint/scope/allocation/projection facts now; R5 lifecycle/concurrency, R6 partial/options, R7 handover, R8 documents, R9 remaining scope/forecast. |
+| **P7 · Offered, priced, package and stock measures are distinct** | Universal stock thresholds versus declared rule measure; all-units versus marginal slabs; line-local versus aggregation. **Recommend explicit measure/package eligibility and initial line-local all-units tiers.** | Ten 10-unit cartons can qualify; 100 loose units need not. Two six-carton lines do not pool; alternative lines never silently pool. A 900 tier may allow another discount only under its declared terms. | Basis/conversion/interval/aggregation/benefit facts now. Marginal, cross-line/category and historical cumulative tiers deferred; R4 precision, R5 dependencies, R6 selection/acceptance. |
+| **P8 · Company isolation, record scope, separate date/currency authority** | Mandatory hierarchies versus company-wide default with optional flat dimensions. **Recommend optional explicit channel/location eligibility, no automatic geography/warehouse mapping and no cross-currency fallback before R4.** | Authorised East wholesale context can nominate a rule but grants no East record access. Missing required context refuses rather than assuming another branch. Channel-qualified price is not automatically higher-ranked than Party terms. | Typed context/date/currency provenance now; channel/location masters/UI only when justified later. R4 authoritative dates/FX/tax/rounding, R9 assignment/scope. |
+
+P1's classifications/groups, P2's audience order/conflict rule, P3's SIMPLE discount exposure and
+combination defaults, P4's mandatory/exception policy, P5's transition rules, P6's review/projection,
+P7's tier model and P8's optional context each remain explicit owner choices. Exact company limits,
+approver audiences and agreement terms are not universal constants. The example is illustrative
+configuration, not acceptance of its percentages, rates or controls.
+
 ## Decision matrix — what must be settled, and when
 
 “Now” means settle the architectural contract before pricing implementation, not implement today.
@@ -52,13 +80,19 @@ Each row names unresolved semantics; recommendations are unaccepted. Amounts are
 Example: general price `1000.0000`; distributor category adjustment 20% gives `800.0000`.
 A's Party/category 25% replaces that adjustment with `750.0000`; A's Party/Item 35% gives
 `650.0000`. These are three candidates for one adjustment slot, not cumulative reductions.
-Water-based rules are separate configured applicability. Premium exclusion removes the general
-category family; a selected agreement may provide its own permitted price, not bypass a global floor.
+Water-based rules are separate configured applicability. Premium exclusion removes only its named
+discount family/plan; a selected agreement may provide its own permitted price, not bypass a global floor.
 
 A category-wide *policy* (e.g. cost markup) or percentage adjustment is usually meaningful across
 products. A uniform category *fixed price* is allowed only with an explicitly compatible pricing
 basis and intentional configuration; never assume a drum and a brush share one monetary rate.
 No existing Item Group master distinct from categories was found; do not add a synonym hierarchy.
+
+When “Distributor” is both the useful commercial description and a pricing audience, maintain
+one pricing-group membership and display its label in the Party profile; no second classification
+assignment is required. Independent reporting labels remain optional, separate concepts. Do not
+auto-enrol or synchronise labels into pricing; a future explicit mapping proposes the authorised
+membership change. An eligible prospect uses the same Party membership, without debtor setup.
 
 ### P2 — One selected base and explicit contractual intent
 
@@ -152,6 +186,10 @@ configuration UI is exposed; lowering mode is not a means of evading active comp
 Recommend all-units breaks initially: 10 cartons at `900.0000` totals `9000.0000`; a marginal slab
 (9 at `1000.0000` plus 1 at `900.0000` = `9900.0000`) is a different deferred effect, never inferred.
 Intervals use declared lower-inclusive/upper-exclusive boundaries; 1–9 whole cartons is `[1,10)`.
+Each selected maintained/tier rate declares its allowed adjustment plan or exclusive final-net terms.
+A 900 base permitting the distributor 20% adjustment produces 720; an exclusive 900 net admits no
+extra reduction. Capture benefit identity: if the rate already includes the same category/customer
+benefit, that benefit cannot apply again as an adjustment. No “fixed price” flag alone decides this.
 Customer/group tiers obey P2 audience precedence; rates for loose sales are explicit, not automatically
 carton rate divided by ten unless the selected rule permits normalisation. Reject incompatible UoMs.
 
@@ -184,6 +222,7 @@ semantics; R4–R9 gates remain. Q43 blocks new pricing authority only, never un
 
 ## Related
 
+- [Integrated worked example](phase-4-r3-worked-example.md)
 - [Expanded research](phase-4-r3-expanded-research.md) · [Initial evidence](phase-4-r3-sales-pricing.md)
 - [Pricing domain](../domain/sales-pricing.md) · [Implementation-question reconciliation](../architecture/implementation-question-reconciliation.md)
 - [Open Q43](../OPEN-QUESTIONS.md#q43--expanded-r3-sales-pricing-semantics)

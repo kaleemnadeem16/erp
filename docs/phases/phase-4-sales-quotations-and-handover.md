@@ -74,7 +74,7 @@ proposal is never "researched", "accepted" or "complete" merely because it exist
 - [Cost dependency map](phase-4-cost-dependency-map.md) — actual Actions/DTOs, routes/client/UI, controls/tests/demos and coordinated change boundaries.
 - [CRM security correction](phase-4-crm-security-correction.md) — urgent handoff under existing authority; application correction not implemented by planning.
 - [CRM three-policy review](phase-4-crm-policy-review.md) — A/B/C accepted in 0111–0113; [correction specification](phase-4-crm-correction-specification.md) and [evidence domain](../domain/crm-corrections.md) final, B authority accepted in 0114 (Q42 closed), safe rollout required; future acceptance/forecast gates retained.
-- [R3 Sales pricing](phase-4-r3-sales-pricing.md) — retained evidence; [revised P1–P8 matrix](phase-4-r3-business-review.md) is the consolidated owner-review agenda, with no new pricing ADR accepted. [Expanded primary evidence](phase-4-r3-expanded-research.md) and [owner-forwarded implementation-question process](../architecture/implementation-question-reconciliation.md) accompany it.
+- [R3 Sales pricing](phase-4-r3-sales-pricing.md) — retained evidence; [revised P1–P8 matrix](phase-4-r3-business-review.md) is the consolidated owner-review agenda, with no new pricing ADR accepted. [Expanded primary evidence](phase-4-r3-expanded-research.md), [integrated pricing example](phase-4-r3-worked-example.md) and [accepted coordination workflow](../architecture/implementation-question-reconciliation.md) accompany it. Pricing P1–P8 still await approval.
 - Later topic records are added when investigated; do not generate empty speculative documents.
 
 ## Tasks
