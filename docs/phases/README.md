@@ -94,7 +94,10 @@ remain linked evidence. CRM backend exists; R2 quotation implementation remains 
 [three-policy review](phase-4-crm-policy-review.md) is accepted in 0111–0113;
 [correction specification](phase-4-crm-correction-specification.md) is ready for coordinated delivery,
 with B’s authority accepted in 0114/Q42 closed and safe grant/re-sync rollout specified.
-[R3 pricing evidence](phase-4-r3-sales-pricing.md) and the [business-first P1–P6 review](phase-4-r3-business-review.md) are ready for owner review; no new pricing decision accepted.
+[R3 pricing evidence](phase-4-r3-sales-pricing.md) and the [revised P1–P8 decision matrix](phase-4-r3-business-review.md) are ready for owner review; no new pricing decision accepted.
+[Expanded R3 evidence](phase-4-r3-expanded-research.md) reconciles customer groups, categories,
+packages/tiers and controls; [implementation-question reconciliation](../architecture/implementation-question-reconciliation.md)
+uses OPEN-QUESTIONS rather than a duplicate register.
 
 
 Leads, opportunities, quotations with revisions, cost snapshotting, PDF output. Mobile layout

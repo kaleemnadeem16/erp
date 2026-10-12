@@ -1,248 +1,190 @@
 [← Phase 4 plan](phase-4-sales-quotations-and-handover.md)
 
-# R3 — Consolidated business review of P1–P6
+# R3 — Revised consolidated pricing decision matrix
 
-**2026-10-12 · AWAITING OWNER REVIEW.** No P1–P6 recommendation below is accepted and no pricing
-ADR/code is authorised. Read this as one coherent proposal. [Initial research](phase-4-r3-sales-pricing.md)
-retains source comparison/technical boundaries; this record explains the business decisions.
-Accepted ADR 0109 generalises selling beyond Assemblies while retaining the valid provisions of 0055.
-CRM A/B/C and Q42 authority do not decide pricing policy.
+**2026-10-12 · PROPOSED / OWNER APPROVAL REQUIRED · Q43 (origin: PLANNING RESEARCH).**
+This replaces the earlier P1–P6 review agenda, not accepted authority. No new pricing ADR,
+implementation permission or physical schema is accepted. Read the bundles together; the
+[expanded evidence and repository reconciliation](phase-4-r3-expanded-research.md) distinguish
+vendor facts from project recommendations. CRM ADRs 0111–0114 remain independently accepted.
 
-## What already exists and what this review decides
+## Accepted and implemented baseline
 
-Implemented: Items/services, Parties, Estimating cost/guidance and Inventory/Estimation cost resolution.
-STATUS and commits `1d77fc0`, `0ba5970`, `72106aa` report local C2 completion; this planning session
-has not rerun its checks. Sales quotation/pricing/acceptance implementation is pending.
-Accepted: optional estimates and four commercial scope sources; maintained/cost-plus/target-margin
-base effects; progressive modes; explainable precedence, no cheapest-wins; typed restricted formulas;
-price/cost/tax separation, controlled overrides and immutable issued evidence.
-New decisions: source-specific applicability, agreement selection/exceptions, adjustment stacking,
-incomplete-cost control behaviour, operational mode transitions and draft review/presentation.
+Implemented masters: company-scoped Party identity and optional CustomerAccount, Items including
+services, one Item category with an existing parent tree, item-specific alternate units and named
+fixed-content packages. Estimating owns Assembly/Assembly Group and cost guidance; these are not
+Sales price lists. Local cost-contract delivery is reported in STATUS under 0110; planning has not
+rerun its checks. No delivered quotation/pricing resolver, pricing-group membership or discount
+matrix was found in the reviewed Sales model/Action inventory. CRM delivery is separately owned.
 
-## P1 — Price the thing actually being sold
+Accepted [0103](../decisions/0103-issue-quotations-to-party-backed-prospects.md),
+[0109](../decisions/0109-shared-commercial-quotation-lines-and-optional-estimating.md), retained
+[0055](../decisions/0055-progressive-sales-pricing-and-controlled-formulas.md),
+[0050](../decisions/0050-item-specific-uom-conversion-and-divisibility.md),
+[0080](../decisions/0080-packaged-purchasing-and-independent-price-basis.md) and
+[0110](../decisions/0110-version-cost-evidence-without-changing-legacy-estimates.md) govern:
+prospect quotations without accounts; optional estimates; offered/priced/stock quantities distinct;
+maintained/cost-plus/target-margin effects; deterministic explanation, never cheapest-wins;
+typed formulas; cost/price/tax separation; missing cost not zero; immutable issued evidence.
 
-**Already accepted/existing:** direct stocked Items, service/non-stock Items, Assembly-backed work
-and controlled manual scope share one quotation model. Assembly Groups remain relevant only to
-Assembly work. Offered, priced, stock and estimating measures stay distinct. Cost/guidance exists;
-a maintained Sales price catalogue does not yet exist.
+**Changes needing explicit approval:** customer-group/category scopes extend retained precedence;
+first-class SIMPLE discounts extend 0055's listed mode exposure; new overlap refusal below refines
+its stable-identity tie-break (identity remains an ordering aid, not authority to resolve materially
+different prices). Any accepted refinement needs a new ADR with explicit retained/superseded scope.
+No contradiction is silently implemented. P1–P6 retain their IDs; P7 adds quantity semantics and
+P8 adds optional selling context because each needs a distinct owner decision.
 
-**New decision:** where defaults and more specific policies belong for Items/services/manual scope,
-and whether Item categories gain pricing inheritance now. Recipient prices must identify an
-eligible contracting Party; prospect quotation does not imply financial account creation.
+## Decision matrix — what must be settled, and when
 
-**Example:** a decorator sells paint by carton, installation by sqm, and a five-hour consultation.
-Each needs a customer price in its offered basis. A manual survey line should not require a fake
-Assembly. Two cartons of ten units priced PKR `1200.0000` each mean net `2400.0000` and stock
-requirement 20; carton price is not a recipe conversion.
+“Now” means settle the architectural contract before pricing implementation, not implement today.
+Each row names unresolved semantics; recommendations are unaccepted. Amounts are PKR and
+`decimal(19,4)` examples; percentages are explicit, not floating-point implementation guidance.
 
-**Options/trade-offs:** company defaults only are easy but too coarse for differing products;
-source-specific overrides preserve practical control; adding category inheritance now helps bulk
-maintenance but introduces another hierarchy and overlap rules before its need is established.
+### P1 — Customer eligibility and catalogue applicability
 
-**Recommendation:** Item/service-specific policy → company; Assembly → Assembly Group → company;
-manual scope uses applicable company defaults and explicit line inputs, with no description-text
-matching to permanent prices. Party-specific maintained pricing works without artificial accounts.
-Use one resolver and suitable source adapters. This gives practical variation without imposing
-Assembly structure or premature Item-category pricing on every company.
+| ID / accepted basis | Unresolved decision and example | Options and trade-offs | Recommendation / why | Support now; later dependency |
+|---|---|---|---|---|
+| P1a · Party/account separation, 0103/0105 | Distributor A is also a contractor and preferred partner; a prospect has no debtor account. | One exclusive customer type is simple but loses overlapping roles; one hierarchy mixes reporting and price eligibility; separate concepts add maintenance. | Company-defined, non-exclusive commercial classifications on Party, separate from financial role and flat pricing groups. Classification alone applies no price; an explicit governed mapping may propose membership later. No hardcoded industry types or financial account prerequisite. | Party-based eligibility and separate concepts now; classification UI/automated mappings optional later; R9 visibility/duties. |
+| P1b · Group pricing deferred in 0055 pending real segmentation | Distributor and preferred-partner groups both match. | Single membership limits legitimate cases; best discount changes intent; multiple membership with configured precedence requires conflict validation. | Multiple effective-dated Party pricing-group memberships; group eligibility nominates candidates, never stacks them. Rule priority resolves equal group scopes; unresolved material overlap refuses. Flat groups first, no customer hierarchy. | Membership/version evidence now for MANAGED foundation; group UI later slice; R5 fingerprints, R9 membership/configuration authority. |
+| P1c · Existing Item category tree; Item/manual scopes await R3 | Oil-based parent gives 20%; child industrial gives 22%; A has 25% category and 35% exact product. | Duplicate pricing hierarchy drifts; parent-only rules miss children; implicit inheritance affects products unintentionally. | Reuse Inventory categories; configured rule chooses EXACT_CATEGORY or SUBTREE. Exact Item > nearest matching category > ancestors > company within an audience tier. Party > group > general is the audience axis. Assembly > Assembly Group > company remains separate. | Typed source/audience applicability now; category matrix UI MANAGED later; R5 category-change staleness; R9 configuration scope. |
+| P1d · Classification is not authority | Premium product must not receive general category discount; new Item joins oil-based category. | Implicit all-category discounts surprise; global exclusion may suppress an intentional agreement; rule-scoped exclusions need clear explanation. | Explicit Item/category exclusions attached to a named discount family/plan; deny wins within that family, including against a positive descendant match. No exemption inferred from a more specific price. Separate authorised agreement terms are evaluated independently; mandatory global controls still apply. New Item automatically matches an active SUBTREE rule unless excluded, never by category alone. | Exclusion domain and inclusion preview now; exact UI later; R5 category moves/new membership invalidate dependent drafts; R9 authority. |
 
-**Deferred:** R4 currency/FX and precise commercial rounding; R5 adopted estimate/snapshot adapters;
-R6/R9 scope/tier aggregation across repeated or optional lines. Customer-group pricing waits for a
-real Party segmentation model; service/manual cost adapters need explicit legitimate evidence.
+Example: general price `1000.0000`; distributor category adjustment 20% gives `800.0000`.
+A's Party/category 25% replaces that adjustment with `750.0000`; A's Party/Item 35% gives
+`650.0000`. These are three candidates for one adjustment slot, not cumulative reductions.
+Water-based rules are separate configured applicability. Premium exclusion removes the general
+category family; a selected agreement may provide its own permitted price, not bypass a global floor.
 
-## P2 — Honour an agreement without confusing it with a price preference
+A category-wide *policy* (e.g. cost markup) or percentage adjustment is usually meaningful across
+products. A uniform category *fixed price* is allowed only with an explicitly compatible pricing
+basis and intentional configuration; never assume a drum and a brush share one monetary rate.
+No existing Item Group master distinct from categories was found; do not add a synonym hierarchy.
 
-**Already accepted:** retained precedence is agreement → Party-specific maintained price → general
-maintained price → applicable source policy → authorised manual price, otherwise refuse. More
-specific eligible records, priority/date/stable identity resolve deterministically; cheapest-wins
-is rejected. Agreement creation/selection/lifecycle is not implemented.
+### P2 — One selected base and explicit contractual intent
 
-**New decision:** explicit agreement selection, what invalid/conflicting agreements do, and whether
-ordinary price override may depart from fixed terms. Distinguish an agreed price schedule from a
-quantity/value purchase commitment: selecting pricing terms does not create accepted business.
+| ID / accepted basis | Unresolved decision and example | Options and trade-offs | Recommendation / why | Support now; later dependency |
+|---|---|---|---|---|
+| P2a · Agreement → Party → general → source policy → permitted manual, 0055/0109 | Party/category rate competes with group/Item and general/Item rate. | Product-first can override personal terms; audience-first preserves deliberate customer exceptions; arbitrary priority across all levels erases hierarchy. | Insert group between Party and general; audience-first, then product specificity, then explicit priority, latest effective start and stable ordering. Currency, unit, date, tier and context are eligibility gates, not price comparisons. | Source order now; R4 dates/currency; R5 pin/issue; R9 lookup protection. |
+| P2b · Agreement facts distinct from ordinary preferred prices | Agreement fixes `850.0000`/carton; promotion offers 15% off `1000.0000`; two contracts eligible. | Automatic cheapest or latest agreement can select wrong commitment; explicit selection costs a step. | Discover eligible agreements but select explicitly at document/line applicability; one applicable agreement per line initially. Selected terms govern its base/adjustment allowance. Invalid selection blocks repair or deliberate reselection, no silent fallback. No ordinary override departure. | Agreement identity/version/intent now; R4 eligibility date; R5 change/approval; R6/R7 fulfilment, no cancellation inference. |
+| P2c · Fixed price differs from discount effect | `850.0000` fixed and 15% off maintained `1000.0000` coincide today; list becomes `1100.0000`. | Flatten to net loses behaviour; calculate both as discounts changes fixed terms. | Fixed rate stays `850.0000`; 15% yields `935.0000` after explicit reprice. Keep reference list/version for discount, not a fabricated list discount for fixed rate. Campaign rule declares BASE_REPLACEMENT or ADJUSTMENT, never both for the same benefit. | Typed effects/dependency graph now; R4 precision; R5 staleness; R8 commercial presentation. |
+| P2d · Stable deterministic selection, no cheapest-wins | Equally ranked group rules give 20% and 25%; two future versions overlap. | ID tie-break is predictable but commercially arbitrary; refusal needs administrator repair; explicit priority is intentional. | Reject known conflicting activation; at runtime refuse materially different equal-rank overlaps. Stable ID orders explanations or equivalent effects only. Intentional superseding dated versions identify predecessor; reject accidental overlap. | Conflict semantics now; requires explicit 0055 refinement if approved; R5 configuration concurrency; R9 repair duty. |
 
-**Example:** maintenance agreement price PKR `900.0000`/hour, customer's ordinary rate `1000.0000`,
-public promotion `850.0000`. An offer under the agreement uses its eligible terms; it must not quietly
-switch to `850.0000`. If the selected agreement expires, that is a visible decision to resolve.
+Proposed resolution sequence:
 
-**Options/trade-offs:** cheapest-wins can breach intended terms and conflicts with accepted direction;
-automatic agreement matching is convenient but ambiguous where multiple commitments overlap;
-explicit selection makes commercial intent visible, with automatic discovery of eligible candidates.
-Silent fallback on expiry avoids interruption but loses the selected basis; explicit repair/authorised
-change requires an extra decision and preserves evidence.
+1. Authorise company/document/read context; validate source, Party, quantity/conversion, currency,
+   pricing date and explicitly enabled context. No valid eligible source means refusal, never zero.
+2. If an agreement is selected and covers the line, resolve its exact terms first. Any uncovered
+   line follows ordinary sources only where agreement coverage rules explicitly permit that.
+3. Otherwise select base: Party maintained → group maintained → general maintained → source policy
+   → authorised entered manual base. Inside each audience: Item → nearest eligible category →
+   parent categories → company. Assembly scopes use Assembly → Assembly Group → company instead;
+   manual text has no invented catalogue matching. Item-package exactness is a declared basis gate.
+4. Select adjustments under P3; exclusions and agreement allowance filter before selection.
+   Evaluate final controls under P4, then R4 rounding/tax under its future accepted contract.
+5. Record accepted/rejected candidate IDs, ranks, basis, memberships, exclusions, agreement versions
+   and calculation evidence. Protect sensitive candidate terms as well as cost operands.
 
-**Recommendation:** explicit eligible agreement selection; surface alternatives without automatically
-choosing between different commitments. Once selected, invalid terms block resolution until repaired
-or deliberately changed under applicable authority. Ordinary final-price override does not break a
-fixed agreement. Initially fixed terms cannot be departed from inside an ordinary quotation edit;
-a later governed agreement-departure path can be designed if genuinely needed. Preserve agreement
-identity/version, applicability and agreed adjustment permissions; extra discounts require terms
-that allow them. Deselecting pricing context is never proof that an underlying obligation was cancelled.
+A general exact-Item base does **not** replace a Party category base under audience-first ordering.
+A category cost policy does not outrank an eligible maintained price. A campaign fixed base enters
+its declared Party/group/general tier and still obeys that ranking; it has no universal promotion
+precedence. Agreement and ordinary customer discounts never combine merely because both match.
 
-**Deferred:** R4 exact date/currency eligibility; R5 agreement-change approval/issue evidence;
-R6/R7 commitment fulfilment, cancellation and handover; R9 sensitive agreement lookup/reporting.
-No legal contract validity, subscription or quantity/value fulfilment engine is implied by this review.
+### P3 — Discounts, promotions and everyday SIMPLE selling
 
-## P3 — Make negotiated reductions and combined discounts explainable
+| ID / accepted basis | Unresolved decision and example | Options and trade-offs | Recommendation / why | Support now; later dependency |
+|---|---|---|---|---|
+| P3a · Controlled manual/override; routine SIMPLE discount not yet accepted | Salesperson reduces `1000.0000` by 10% for an ordinary sale. | Every reduction as exceptional override burdens normal work; unrestricted discount bypasses control; bounded discretionary adjustment is familiar and auditable. | SIMPLE exposes one optional routine discount per line: percentage OR fixed per-priced-unit OR fixed line amount, explicitly labelled. Ordinary manual base entry, discretionary discount and exceptional final-net override remain separate facts. Company-set authority limits; no reason mandated for in-limit routine discount, actor/time always captured. | Approve SIMPLE exposure now as 0055 refinement; UI may be an approved slice later; R5 approvals, R8 display, R9 exact duties. |
+| P3b · Adjustment distinct from base | Three cartons at `1000.0000`: 10%, `100.0000`/carton, or `100.0000`/line. | Generic amount is ambiguous; typed bases add a small selector. | Net respectively `2700.0000`, `2700.0000`, `2900.0000`. Fixed per-unit uses declared pricing denominator; fixed line applies once. Reject negative net, invalid percentages or discount greater than eligible amount; no silent clipping. Free-goods are not monetary discounts. | Types/quantity basis now; R4 allocation/rounding, R6 partial acceptance. |
+| P3c · No precise stacking accepted | 10% group and 5% season rule overlap. | Cheapest discount or additive percentages are policies, not inevitabilities; no-stack is easy; ordered plans require configuration. | Default one automatic winner in one discount slot using P2 ranking; no largest-discount rule. MANAGED may configure named ordered coexistence of slots with running-net compounding. Complex conditional stacking ADVANCED. 10% then 5% gives `855.0000`, not `850.0000`. | Plan identity/order/combination gate now; configured stacking later; R5 snapshot/fingerprint, R9 management. |
+| P3d · Preserve calculated/final and agreement terms | Customer already gets 20%, seller enters another 10%; two campaigns active. | Automatically add risks double benefit; substitute loses intended negotiated addition; explicit allowed coexistence is clear. | Routine discretionary adjustment occupies the default slot and replaces the automatic candidate only with explicit seller confirmation; proposed default is no extra stacking. A plan/agreement may expressly allow a discretionary slot after automatic discounts. Campaigns compete unless named plan allows both. Final-net override replaces computed net and applies no further discount afterwards. | Combination semantics now; R5 authority/approval; R8 customer discount presentation. |
+| P3e · Entry ≠ approval authority | Seller limit 10%, asks for 15%, while automatic terms already reduce 20%. | Role name alone is unsafe; checking each input alone permits split discounts; total effective reduction captures risk but needs reference evidence. | Separate enter/override/approve duties and effective limits by company role/employee assignment; record source of limit. Check discretionary limit and aggregate reduction against an explicit reference gross, plus mandatory floors. Above limit routes to independent approval if configured, otherwise refuses. Contractual allowances still bind. | Limit bases/separation now; no permission names accepted yet; R5 approval engine/fingerprint; R9 grant rollout. |
 
-**Already accepted:** adjustments differ from base-price effects; calculated and final price must
-both survive an override, with authority/reason and applicable approval. MANAGED adds discount/
-surcharge rules; SIMPLE supports controlled manual pricing. Precise stacking and SIMPLE packaging
-remain open. Neither adjustment nor override grants cost-read or agreement-departure authority.
+Ordinary discount is a recorded customer-facing commercial adjustment. Automatic discount is a
+configured benefit. Manual final-net override is a reasoned exception preserving calculated net.
+Contract departure is a separate, initially unavailable operation requiring future explicit approval;
+manager discount approval does not grant it. A policy must say whether fixed preferred prices allow
+extra discounts; recommend default no extras on contract terms, ordinary maintained bases governed
+by the named plan. Zero reference gross makes percentage authority undefined, not zero discount.
+Authority reference is the governed selected gross/version, not a seller-inflated manual number;
+changing the base cannot reset an aggregate limit. Where no trusted reference exists, percentage
+limits are unevaluable and require an explicit absolute-limit/approval policy, never silent passage.
 
-**New decision:** stacking default/order, ordinary discretionary reductions in SIMPLE and the
-relationship between calculated discounts and a manual final-price exception.
+### P4 — Final-net margin, floor and commercial risk
 
-**Example:** PKR `1000.0000` has a 10% customer discount and a 5% campaign discount. Choosing one
-may produce `900.0000`; adding percentages produces `850.0000`; sequential application produces
-`855.0000`. These are different offers, not presentation variations. A negotiated `950.0000` is
-another explicit final-price exception, not a hidden edit to the maintained `1000.0000` rate.
+| ID / accepted basis | Unresolved decision and example | Options and trade-offs | Recommendation / why | Support now; later dependency |
+|---|---|---|---|---|
+| P4a · 0110 complete/partial/unknown, no invented zero | Maintained service `5000.0000`, cost unknown. | Complete cost for every sale blocks valid services; passing unknown cost hides risk. | Cost-derived methods/operands require complete applicable cost. Maintained/manual may proceed if no mandatory cost control applies; unknown remains explicit. Complete genuine zero is valid; zero selling price has undefined percentage margin. | Certainty/evaluation contract now; R5 adoption, R7 estimate/actual handover. |
+| P4b · Minimum-margin capability retained | Known cost `800.0000`, price `1000.0000`, discount to `900.0000`; floor `950.0000`. | Warn only permits accidental loss; mandatory can block legitimate deals; advisory/mandatory per control makes intent visible. | Evaluate final net after all reductions in comparable quantity/currency basis. Margin at `900.0000` is about 11.11%, below 20%; independent price floor also fails. Minimum-price floor can work without cost when its basis is known. Mandatory unknown/below control blocks issue; no auto-clamp that rewrites terms. | Separate typed controls now; R4 comparability/rounding recheck, R5 issue, R6 accepted scope. |
+| P4c · Price edit grants no risk bypass | Manager approves below floor or accepts unknown margin. | Ban exceptions is strongest; blanket manager bypass is opaque; scoped evidence-bound exception is auditable. | Support a separately authorised, reasoned risk request/decision contract now, optional delivery later. Initial mandatory controls have no bypass until that path is separately approved. Policy names exceptionable controls; unknown-cost risk approval never supplies cost or enables cost-derived arithmetic. No exception to tenant/contract restrictions. | Evidence/control IDs/revision/net/cost fingerprint now; R5 approval validity/concurrency; R9 sensitive duty owner approval. |
 
-**Options/trade-offs:** strongest-discount selection is predictable only if chosen deliberately,
-not as cheapest-base-price policy; stack-everything surprises sellers; explicit ordered stacking
-is flexible but needs configuration. SIMPLE first-class discount entry is familiar but introduces
-adjustment UX; a controlled final-price exception is smaller and fits retained SIMPLE authority.
+Advisory failures warn visibly; advisory unknown reports “cannot evaluate”. No-cost-read sellers may
+receive authorised pass/warn/refuse results under 0110 without cost amounts, percentages or inferable
+threshold traces. Advisory/mandatory, discount maximum, unit/line floor and margin are independent;
+all applicable mandatory controls must pass or have their own valid permitted risk evidence.
 
-**Recommendation:** default no automatic stacking; choose one eligible automatic adjustment per
-explicit adjustment group using deterministic rules. The default discount plan has one group;
-multiple groups do not combine unless explicitly configured to coexist in a named ordered plan.
-MANAGED may enable named, ordered compounding within that plan. Keep percent, per-unit and line adjustments typed and distinguish their
-bases. SIMPLE initially negotiates through controlled final-price exception with base/final/reason
-visible; routine automatic discount/tier configuration remains MANAGED. If first-class SIMPLE
-percentage/amount discount entry is desired, approve it explicitly as bounded discretionary exposure.
-A manually entered final net replaces the calculated net, does not receive the same discount twice,
-and rechecks agreement constraints and final-price controls.
+### P5 — Progressive capability and safe transition
 
-**Deferred:** R4 tax/rounding allocation; R5 approval/fingerprint and issue evidence; R6 option/partial
-acceptance effects on document adjustments; R8 discount presentation; R9 duty/scope vocabulary.
-Document-wide discount allocation, promotions/free-product engines and cumulative tiers stay separate.
+| ID / accepted basis | Unresolved decision and example | Options and trade-offs | Recommendation / why | Support now; later dependency |
+|---|---|---|---|---|
+| P5a · SIMPLE → MANAGED → ADVANCED, independent of CRM/tax | Small shop enters normal unit price and 10%; distributor needs category matrix. | Fixed-price-only SIMPLE under-serves; enterprise setup burdens ordinary quoting. | SIMPLE: maintained prices, ordinary manual bases, cost-plus/target-margin where cost supports them, bounded discretionary discounts and controlled exceptions. MANAGED: groups/categories, tiers, dated lists, agreements, simple promotions, named stacking plans/controls. ADVANCED: typed formulas, complex allowlisted conditions and governed conditional stacking. | Effect/applicability/result contracts now; optional configuration/UI slices later, not delivered by research. |
+| P5b · Historical modes do not rewrite snapshots | ADVANCED draft depends on formula, company requests SIMPLE. | Hide controls leaves secret effects; auto-convert loses intent; impact reconciliation needs work. | Activation validates capabilities/configuration/duties and preview. Downgrade refuses unresolved dependent drafts, agreements/rules and pending approvals; reprice/resolve or withdraw under R5-approved lifecycle before switch. Archive incompatible future configuration; preserve issued/history read. | Dependency/mode evidence now; R5 transitions, R8 historical display, R9 mode duty. |
 
-## P4 — Separate price availability from known margin and risk exceptions
+Optional modules may arrive later; dormant dimensions never affect calculation. A MANAGED rule cannot
+silently run in SIMPLE. Common server controls remain enforced independently of whether advanced
+configuration UI is exposed; lowering mode is not a means of evading active company obligations.
 
-**Already accepted:** missing cost is not zero; COSTED/PARTIAL/UNKNOWN are distinct. A maintained
-price need not move with cost; markup is not margin. Cost-aware policy evaluation can be authorised
-without disclosing protected amounts. Accepted pricing capability includes minimum-margin controls
-in MANAGED, but their policy/refusal/exception semantics are not yet settled.
+### P6 — Draft changes, protected explanation and connected commercial work
 
-**New decision:** which calculations require complete cost and how a mandatory margin check behaves
-when cost is incomplete or margin too low. A commercial override and a risk exception are separate
-facts; neither can manufacture complete cost or satisfy a missing input.
+| ID / accepted basis | Unresolved decision and example | Options and trade-offs | Recommendation / why | Support now; later dependency |
+|---|---|---|---|---|
+| P6a · Draft stale review; immutable issue | Price list/category/membership changes after draft; manual net retained. | Auto-update changes intent; permanent freeze ignores eligibility. | Mark relevant dependencies stale; explicit before/after review/reprice or no-change confirmation against current valid facts. Retained manual net rechecks all controls. Snapshot evidence at issue; approval invalidates on relevant changed facts. | Fingerprints/version/provenance now; R5 exact draft/issue concurrency, R4 dates. |
+| P6b · Server protects internal details | Customer wants discount shown, seller cannot read cost. | Show every candidate leaks personal prices/cost; net-only may hide agreed savings. | Customer-visible chosen commercial discount is explicit presentation intent; internal rules/formulas/cost/candidate terms projected by duty. Keep complete protected explanation for legitimate authorised review without exposing operands through exports/errors. | Separate projections now; R8 templates/delivery, R9 read/report authority. |
+| P6c · Choices/partial-win are gated, 0109/0101/0102 | Customer accepts half discounted scope; returned goods need original terms. | Reprice from live lists rewrites offer; blindly prorate fixed-line benefit may over-credit. | Preserve offered scope and discount allocation/reference evidence; acceptance must validate thresholds and allowed combinations without editing issue. No policy for partial repricing/cancellation inferred here. Returns/refunds reference original sale/allocated benefits, never today's list. | Trace/line identity now; R6 partial/option acceptance, R7 order/job, R9 remaining/forecast, Phase 6 credits/refunds. |
 
-**Example:** a survey has a maintained PKR `5000.0000` price but no supported service-cost estimate.
-Selling can be valid while margin is unknown. If a company requires proof of minimum 20% margin,
-that requirement is unevaluable. Separately, known cost `800.0000` and net price `1000.0000` gives
-20% margin; a discount to `900.0000` reduces it below the floor even though the original price passed.
+### P7 — Quantity tiers, packages and repeated scope
 
-**Options/trade-offs:** require complete cost for every offer blocks valid maintained/manual sales;
-allow every unevaluable check to pass hides uncertainty; configurable warning versus mandatory
-control expresses different business risk. A governed exception permits deliberate commercial risk
-but must remain visible, authorised and tied to the actual uncertain/below-floor facts.
+| ID / accepted basis | Unresolved decision and example | Options and trade-offs | Recommendation / why | Support now; later dependency |
+|---|---|---|---|---|
+| P7a · Offered/priced/stock distinct, 0050/0080/0109 | 1–9 cartons `1000.0000` each, 10+ `900.0000`; carton = 10 units, loose unit also sold. | Always stock basis converts 100 loose units into carton eligibility; selling basis alone cannot express alternate thresholds; explicit rule basis avoids ambiguity. | Rule declares tier measure: offered packages, named pricing UoM/denominator, or derived stock UoM. Carton-only offer requires that package identity; 10 cartons qualify, 100 loose units do not unless expressly allowed. Tier threshold basis independent of rate basis, exact conversion evidence, no rounding into eligibility. | Measure/identity/tier intervals now; R4 precision; R5 snapshots; R6 selection. |
+| P7b · Explicit independent logical scope | Two 6-carton lines versus choose-one alternatives each 6. | Always aggregate misprices alternatives; line-local is predictable but splitting changes tiers; selected-set aggregation needs acceptance reconciliation. | Initial LINE_LOCAL tiers: neither 6-line reaches 10; visibly state this, never silently pool. Reserve explicit SELECTED_COMPATIBLE_SET later, grouping same Item/package/basis/recipient/rule context and eligible selected scope only. Cross-Item/category and historical cumulative tiers deferred. | Aggregation discriminator now; R5 draft dependency; R6 option/partial acceptance must settle before aggregate delivery. |
+| P7c · Quantity increment ≠ commercial minimum/multiple | Half carton violates package increment; 9 cartons misses price tier; MOQ 10. | One “minimum quantity” conflates price eligibility and ordering legality. | Package/stock increments hard validation under existing architecture. Tier minimum only nominates a rate; missing upper tier uses lower eligible rate. Sales MOQ/multiple is separately configured warn/block/approval, not inherited Purchasing supplier MOQ. Recommend defer Sales ordering controls until R6/R7, with explicit reserved semantics. | Separation now; Sales constraint delivery later; R6/R7 commitments/order validation. |
 
-**Recommendation:** complete applicable cost for cost-plus, target-margin and every cost-consuming
-formula/control. Maintained/manual pricing may proceed without it when no mandatory cost control
-applies. Evaluate controls on final net price after discounts and exceptions, with named compatible
-basis. Policies may be advisory or mandatory; mandatory failures/unevaluable results block issue.
-Initial delivery has no blanket risk bypass. If exceptions are approved, model a separate, reasoned,
-evidence-bound authority/approval path that permits risk while leaving margin unknown or below floor.
-Do not use ordinary price-edit authority as that path. Zero cost with evidence is valid; percentage
-margin at zero selling price is undefined. A known subtotal is never used as the complete denominator.
+Recommend all-units breaks initially: 10 cartons at `900.0000` totals `9000.0000`; a marginal slab
+(9 at `1000.0000` plus 1 at `900.0000` = `9900.0000`) is a different deferred effect, never inferred.
+Intervals use declared lower-inclusive/upper-exclusive boundaries; 1–9 whole cartons is `[1,10)`.
+Customer/group tiers obey P2 audience precedence; rates for loose sales are explicit, not automatically
+carton rate divided by ten unless the selected rule permits normalisation. Reject incompatible UoMs.
 
-**Deferred:** R4 currency/rounding needed for comparable margin; R5 issue/approval invalidation;
-R6 accepted-scope changes; R7 estimate/actual cost handover; R9 confidential controls and audit.
-No new Inventory valuation, price-to-cost inference permission or universal approval is implied.
+### P8 — Minimal sales context, dates and currencies
 
-## P5 — Grow pricing capability without changing what old offers meant
+| ID / accepted basis | Unresolved decision and example | Options and trade-offs | Recommendation / why | Support now; later dependency |
+|---|---|---|---|---|
+| P8a · Strict company boundary; organisation scope separate | Wholesale branch charges `900.0000`, online `950.0000`. | Geography/channel trees add burden; warehouse/department inference conflates operations/authority; optional flat context is enough initially. | Company-wide default. Reserve explicit flat sales-channel and selling-location references, enabled only for demonstrated use. Region conditions via an explicit later controlled dimension, no auto-derived address hierarchy. Reuse a valid existing location identity if its business meaning fits; do not equate warehouse, customer site or organisation scope to selling channel. | Typed extensibility/context evidence now; UI/entities deferred unless requested; R9 authorise context and scopes. |
+| P8b · Dates/currency eligibility accepted; R4 authority | Price changes next month; USD list used for PKR quote. | Silent FX/date fallback conceals source; explicit eligible list and date preserves intent. | List carries currency and effective interval; selected list is explicit context, not an unlimited fallback chain. Within it P2 audience/source rules apply. Exact compatible-currency price initially; cross-currency requires approved R4 conversion/evidence, otherwise refuse. Future prices do not alter issue history. | Currency/date inputs and provenance now; R4 authoritative price date, timezone, boundary, FX/rounding policy; R5 revalidation. |
 
-**Already accepted:** SIMPLE is initial; MANAGED adds effective-dated lists/Party/tier/agreement/
-adjustment/margin control; ADVANCED adds typed, versioned ordered formulas. Modes are independent
-of CRM/tax and selected by business need, not company headcount. Arbitrary scripts/SQL are excluded.
+## Connected cases — architectural seams, not extra R3 engines
 
-**New decision:** safe activation, downgrade handling and what each enabled mode exposes across the
-workflow. A display preference cannot turn off authoritative rules or approvals.
+| Case / example | Settle now | Deferred owner / impact |
+|---|---|---|
+| Kit or bundle sold for one price | Priced parent and explanatory children cannot double charge (0109); retain source identity/cost evidence. | Kit master/stock expansion later; R5 source adapter, R6 acceptance dependencies, R7 fulfilment. No kit inferred from a section. |
+| Buy 10 get 1 / free goods | Monetary zero has intentional promotion provenance, quantity/cost/control evidence; reward scope is distinct from discount. | Promotion/reward engine later, R6 selection and R7 fulfilment; never implemented by 100% ordinary discount shorthand. |
+| Quantity/value commitments | Agreement identity distinct from fulfilment ledger; pricing selection neither consumes nor cancels commitment. | R6/R7 orders/acceptance/remaining commitments; later settlement. |
+| Loyalty / retrospective rebate | Immediate benefit is a configured eligible adjustment; retrospective promise distinct from line net and optional future accrual. | Loyalty qualification/rebate settlement Phase 6 or later; no current net deduction for unearned rebate. |
+| Services and Assembly work | Service Item can use Item/category/hour pricing; Assembly uses its work-UoM/group, not component categories; manual scope explicit basis, no text matching. | R5 supported cost/adoption; R7 actual service/job cost; no fake Item/Assembly/account. |
+| Credits, returns and refunds | Retain original selected terms and allocations for later reversal. | Phase 6 accounting, later Sales returns; R6/R7 sale links. Supplier Return/Scrap remains closed and unrelated. |
 
-**Example:** a small specialist starts with maintained rates, adds contract/tier pricing, then needs
-`(complete cost + per-unit charge) × factor`. After issuing that offer, disabling ADVANCED must not
-remove its explanation or leave its formula silently active on an apparently SIMPLE draft.
+## Owner review requested
 
-**Options/trade-offs:** show everything from day one burdens routine quoting; feature flags per
-control permit unexplained combinations; automatic conversion on downgrade may erase negotiated
-intent. Blocking until affected configuration/drafts are reconciled is explicit but needs a useful
-impact preview and practical remediation.
-
-**Recommendation:** coherent independent pricing modes, SIMPLE first. Activation validates sources,
-configuration, authority and all affected forms/detail/preview/history. Before downgrade, show impact
-and require affected drafts to be repriced/resolved or explicitly withdrawn under their own rules;
-then archive/deactivate incompatible future configuration. Do not invent withdrawn-draft lifecycle
-here. Historical snapshots remain readable and unchanged. Advanced inputs/steps are allowlisted,
-typed and versioned with preview examples; company-specific logic remains explainable without scripts.
-Delivery can progress in approved slices without pretending undelivered modes are enabled.
-
-**Deferred:** R5 exact draft/change/withdrawal and stale-approval transitions; R8 historical document
-presentation; R9 configuration duties/scope/audit. R4 establishes currency/rounding inputs. No pricing
-mode creates a selling team, financial account, forecast publication or job.
-
-## P6 — Review a changed offer and show the right explanation to each reader
-
-**Already accepted:** immutable issued price/evidence; explicit staleness handling; maintained price
-independent of cost; price exception retains calculated/final values. Customer projection omits
-internal estimate/cost details. Viewing a document must not silently change its terms.
-
-**New decision:** draft recalculation/reprice review, no-change confirmation when relevant inputs
-change, and customer-visible discount versus internal price-building explanations.
-
-**Example:** draft installation cost moves from `100.0000` to `110.0000`/sqm. A 20% cost markup
-would move the price from `120.0000` to `132.0000`; a maintained `120.0000` rate stays fixed but
-its margin check may need review. The customer receives commercial scope/net/tax, not labour rates
-or the internal formula operands. Issued earlier offers retain their own captured evidence.
-
-**Options/trade-offs:** automatic overwrite removes seller control; freeze all drafts ignores new
-eligibility/control facts; explicit changed-result review costs a step and preserves intent.
-Always showing discounts can expose commercial negotiation strategy; always hiding them prevents
-agreed transparent discount presentation. Internal trace detail needs field authority, not mere access
-to the final price.
-
-**Recommendation:** flag affected drafts, show an authorised before/after commercial comparison,
-and require explicit reprice/confirmation of current relevant facts before issue. A retained manual
-final price still revalidates dependencies and controls; it never suppresses stale evidence. Keep
-calculated/final values and source/version/quantity/UoM/FX/rounding/exception evidence. Customer
-projection may show explicitly customer-facing commercial discounts; internal formula adjustments
-remain internal, with presentation intent captured. Cost/margin/candidate/recipe/stock evidence is
-server-projected by duty; authorised internal evaluation never gives unrestricted operand access.
-
-**Deferred:** R4 tax/FX/rate dates and rounding; R5 adoption/issue concurrency and approval fingerprints;
-R6 revised/accepted commercial effects; R8 print/delivery/templates; R9 read scopes/explanation/report
-basis. Issuing does not automatically publish forecast, accept work or create a job.
-
-## Consolidated decisions requested
-
-Review P1–P6 together: source policies; explicit agreement intent/fixed-term departure; stacking and
-SIMPLE discretionary reductions; cost-completeness/advisory-versus-mandatory controls/risk exception;
-mode activation/downgrade; explicit draft review/customer disclosure. The recommendations fit one
-shared resolution sequence. Exact capabilities, schema, API and delivery slices follow approval;
-no implementation or new R3 ADR follows from documenting this review.
-
-## Research basis — verified 2026-10-12
-
-Reuse accepted 0109/retained 0055 and the [2026-10-10 comparison](phase-4-r3-sales-pricing.md#primary-source-comparison--accessed-2026-10-10).
-Targeted official-source refresh supports the unsettled agreement/stacking/presentation distinctions:
-
-- [Dynamics sales agreements](https://learn.microsoft.com/en-us/dynamics365/supply-chain/sales-marketing/sales-agreements):
-  agreement prices override trade terms; fixed price/discount departures affect the agreement link;
-  quantity/value fulfilment is separate. We retain visible intent, not automatic unlinking/cancellation.
-- [ERPNext Pricing Rule](https://docs.frappe.io/erpnext/pricing-rule): explicit priority, optional multiple
-  rules and compounding distinguish selection from stacking. We do not copy Python conditions,
-  stock-UoM tier assumptions or unrestricted ignore-rule behaviour.
-- [Odoo 19 official pricelist source](https://raw.githubusercontent.com/odoo/documentation/19.0/content/applications/sales/sales/products_prices/prices/pricing.rst):
-  optional activation, fixed/discount/formula effects and different customer discount presentation.
-  We preserve explicit authority and history rather than copying open overrides or default-list ordering.
-
-Convergence is applicability, effect and explanation; priorities, commitments and override freedom
-differ. Complete mixed-source cost, approved risk exceptions and safe downgrade are project decisions,
-not universal vendor behaviour. Evidence now supports the consolidated review; no tax/legal policy
-or new market-standard claim is inferred. Research readiness is not owner acceptance.
+Please review P1–P8 together, especially audience-first specificity, multiple flat groups, scoped
+exclusions, conflict refusal instead of commercial ID tie-break, SIMPLE routine discounts, default
+single-slot substitution versus permitted stacking, risk-exception foundation, line-local all-units
+tiers and optional flat context. Numeric discount limits and approval audiences are company policy,
+not invented global values. Exact permission vocabulary/schema/API/UI follow approved business
+semantics; R4–R9 gates remain. Q43 blocks new pricing authority only, never unrelated C2/CRM delivery.
 
 ## Related
 
-- [Initial R3 record](phase-4-r3-sales-pricing.md) · [Pricing domain](../domain/sales-pricing.md)
-- [0109](../decisions/0109-shared-commercial-quotation-lines-and-optional-estimating.md)
-- [Capability delivery](../architecture/capability-delivery-contract.md) · [Screen delivery](../architecture/screen-delivery-contract.md)
-- [CRM handoff](phase-4-crm-correction-specification.md) · [Phase 4](phase-4-sales-quotations-and-handover.md)
+- [Expanded research](phase-4-r3-expanded-research.md) · [Initial evidence](phase-4-r3-sales-pricing.md)
+- [Pricing domain](../domain/sales-pricing.md) · [Implementation-question reconciliation](../architecture/implementation-question-reconciliation.md)
+- [Open Q43](../OPEN-QUESTIONS.md#q43--expanded-r3-sales-pricing-semantics)
+- [Phase 4](phase-4-sales-quotations-and-handover.md) · [Research method](../architecture/research-and-design.md)

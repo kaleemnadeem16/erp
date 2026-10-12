@@ -41,7 +41,7 @@ its consolidated review comes last. R6 and R7 inform R5 before lifecycle decisio
 |---|---|---|---|
 | R1 Leads, opportunities and relationships | Enquiry vs deal; optional pipeline; identity/conversion; duplicates; owners, stages and closure | Parties; ADRs 0030/0034, 0084/0089 | Research complete, ADRs 0098–0108 accepted; Q39 resolved; delivery gates retained |
 | R2 Quotation structure and scope | Assemblies, work units, sections, alternatives, optional/non-priced lines; identity of a quotation vs revision | Sales scope; ADR 0109; Estimating | Business research formally closed; 0109 accepted, Q40 resolved; implementation gates retained |
-| R3 Sales pricing | SIMPLE first boundary, overrides, discounts, agreements and margin controls | ADR 0109 retains/generalises historical 0055; sales-pricing.md | Consolidated business-first P1–P6 review ready; owner approval pending |
+| R3 Sales pricing | SIMPLE first boundary, overrides, discounts, agreements and margin controls | ADR 0109 retains/generalises historical 0055; sales-pricing.md | Expanded P1–P8 decision matrix ready (Q43); owner approval pending |
 | R4 Tax, currency and FX | Quotation tax estimate, rules/exemptions, rounding, rate date and evidence | ADRs 0012, 0025, 0056; currency APIs | Existing design to assess; follows R2/R3 |
 | R5 Lifecycle, approvals, issue and revisions | Stale drafts, plan adoption, snapshot boundary, withdrawal/supersession, expiry and approval invalidation | ADRs 0054, 0058, 0070, 0072, 0076/0077, 0079, 0085 | Not researched; follows R2–R4, informed by R6/R7 |
 | R6 Customer decisions | Whole/partial acceptance, alternatives, evidence, rejection and expired offers | Sales pipeline landmines; immutable snapshots | Not researched; follows R2; iterate with R5 |
@@ -74,7 +74,7 @@ proposal is never "researched", "accepted" or "complete" merely because it exist
 - [Cost dependency map](phase-4-cost-dependency-map.md) — actual Actions/DTOs, routes/client/UI, controls/tests/demos and coordinated change boundaries.
 - [CRM security correction](phase-4-crm-security-correction.md) — urgent handoff under existing authority; application correction not implemented by planning.
 - [CRM three-policy review](phase-4-crm-policy-review.md) — A/B/C accepted in 0111–0113; [correction specification](phase-4-crm-correction-specification.md) and [evidence domain](../domain/crm-corrections.md) final, B authority accepted in 0114 (Q42 closed), safe rollout required; future acceptance/forecast gates retained.
-- [R3 Sales pricing](phase-4-r3-sales-pricing.md) — retained evidence; [business-first P1–P6 review](phase-4-r3-business-review.md) is the consolidated owner-review agenda, with no new pricing ADR accepted.
+- [R3 Sales pricing](phase-4-r3-sales-pricing.md) — retained evidence; [revised P1–P8 matrix](phase-4-r3-business-review.md) is the consolidated owner-review agenda, with no new pricing ADR accepted. [Expanded primary evidence](phase-4-r3-expanded-research.md) and [owner-forwarded implementation-question process](../architecture/implementation-question-reconciliation.md) accompany it.
 - Later topic records are added when investigated; do not generate empty speculative documents.
 
 ## Tasks

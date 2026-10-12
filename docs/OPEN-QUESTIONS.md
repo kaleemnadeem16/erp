@@ -3,7 +3,9 @@
 Decisions not yet made. Each says what it blocks, so work can be sequenced around it.
 
 **When a question is answered:** write an [ADR](decisions/), then delete the entry here.
-Questions do not linger once resolved.
+Questions do not linger once resolved. Implementation-originated questions follow the
+[owner-forwarded reconciliation process](architecture/implementation-question-reconciliation.md);
+existing-authority clarifications need no redundant ADR or active entry.
 
 ---
 
@@ -195,6 +197,30 @@ service credentials for integrations are separate. Also open from the same revie
 attempts and device changes.
 
 
+
+---
+
+### Q43 — Expanded R3 Sales pricing semantics
+
+**Origin:** PLANNING RESEARCH (owner-requested expansion, not a forwarded implementation question).
+**Decision status:** AWAITING_OWNER. **Delivery status:** NOT_STARTED; unrelated approved work continues.
+**Module/slice/context:** Phase 4 R3; earlier review local commit `290aa7c`, expanded 2026-10-12.
+**Question/business examples:** How should overlapping customer groups, inherited category rules,
+exact-product exclusions, carton tiers and routine discounts resolve without cheapest-wins or
+accidental stacking? A gets 25% instead of distributor 20%, exact product 35%; 10 cartons qualify
+for `900.0000` each while loose units and independent alternatives may not.
+**Authority checked:** 0103/0105, 0050/0080, 0109 retaining 0055, 0110; Party/account separation,
+category/quantity reuse, progressive pricing, immutable evidence and missing-cost semantics remain.
+**Blocks:** New pricing acceptance/implementation only; no C2 or CRM correction/security blocker.
+**Options/recommendation/research:** [Revised P1–P8 matrix](phases/phase-4-r3-business-review.md)
+and [primary evidence/reconciliation](phases/phase-4-r3-expanded-research.md). Proposed multiple
+flat groups separate from classifications, audience-first specificity, scoped exclusions, explicit
+agreement intent, bounded SIMPLE discounts, named stacking, final-net controls, line-local tiers
+and optional flat context. Alternatives/trade-offs and R4–R9 gates are recorded per decision.
+**Owner choice needed:** Review the consolidated design, including explicit refinements to retained
+0055 for group precedence, SIMPLE exposure and conflicting-rule tie refusal; no new ADR accepted.
+**Follow-up:** Planning records approved ADRs after review; coding/verification stays with designated
+implementation owner, routed through owner. No implementation-originated question supplied yet.
 
 ---
 

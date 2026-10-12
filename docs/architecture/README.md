@@ -13,6 +13,7 @@ these choices were made, see [decisions/](../decisions/).
 | [pre-push-checks.md](pre-push-checks.md) | The changed-area → required-checks matrix, migrations, generated files, ratchets, browser-test and shared-checkout rules, and how to diagnose a failed CI run | Before pushing or handing off any work |
 | [testing-standards.md](testing-standards.md) | What a feature's tests must cover (applicability checklist), ratchet tests, browser and phone-width checks | Writing tests for a feature |
 | [research-and-design.md](research-and-design.md) | Research reuse, primary-source comparison and recording standard | Designing a new feature or materially changing its business model |
+| [implementation-question-reconciliation.md](implementation-question-reconciliation.md) | Owner-forwarded questions, existing authority clarification, decision and delivery status | Reconciling implementation questions without a duplicate register |
 | [environments.md](environments.md) | The actual VMs, versions, disk, what's already running | Deploying, choosing a version |
 | [ci-cd.md](ci-cd.md) | Pipeline, runners, image retention | Touching CI or deploy |
 | [ci-runner-setup.md](ci-runner-setup.md) | Step-by-step: registering the second self-hosted runner | Setting up the ERP CI runner |
