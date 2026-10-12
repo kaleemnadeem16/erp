@@ -2,167 +2,153 @@
 
 # Sales pricing
 
-Sales pricing turns commercial scope and document context into a customer-facing net price. It is
-independent from internal cost, tax and supplier pricing. [ADR 0109](../decisions/0109-shared-commercial-quotation-lines-and-optional-estimating.md)
-generalises source applicability while retaining the progressive pricing/control decisions from
-[historical ADR 0055](../decisions/0055-progressive-sales-pricing-and-controlled-formulas.md).
-Implementation belongs to Phase 4; R3 must reconcile direct Item/service/manual applicability.
-The [revised P1–P8 decision matrix](../phases/phase-4-r3-business-review.md) is awaiting owner approval;
-its recommendations are not accepted additions to this contract.
+Sales owns customer-facing commercial prices, separately from Inventory cost, Estimating guidance,
+Purchasing offers and tax. **R3 P1–P8 business architecture is accepted, 2026-10-12**, in
+[0115](../decisions/0115-resolve-sales-pricing-by-explicit-eligibility-and-commercial-intent.md),
+[0116](../decisions/0116-govern-sales-discounts-and-final-net-controls.md) and
+[0117](../decisions/0117-preserve-pricing-evidence-across-capability-transitions.md).
+These refine the pricing provisions of [0109](../decisions/0109-shared-commercial-quotation-lines-and-optional-estimating.md)
+retained from historical 0055; other 0109 contracts remain. No Sales pricing code is authorised or
+claimed delivered. The [resolution specification](sales-pricing-resolution.md) and
+[implementation slices](../phases/phase-4-r3-implementation-slices.md) are planning handoffs with
+explicit R4–R9 gates, not permission to implement those phases.
 
-## Problem statement
+## Problem statement and sources
 
-The system can calculate what one unit of work costs the company, but the amount charged to a
-customer may be a maintained rate, a contractual price, cost plus markup, a target margin or a
-controlled formula. A maintained rate should not move when cost moves. A cost-derived rate should
-identify when its input is stale. Tax is calculated after the net price, not hidden inside it.
+One contract serves direct stocked/non-stock Items, service Items, Assembly work and governed manual
+lines. Do not invent an Assembly, Item or CustomerAccount to sell normal scope. Source-neutral
+price basis remains distinct from offered, stock and technical estimating quantities. Assembly
+components use global technical conversions, never commercial package factors (0050/0109).
 
-Example: an Assembly costs $8/m². A company-defined input `x` is $2/m² and its factor is 1.8.
-For 100 m²:
+Maintained price remains fixed for its selected effective version; cost-derived price depends on
+complete applicable cost. Example: complete cost `100.0000`, markup 20% gives `120.0000`, target
+margin 20% gives `125.0000`. Existing Assembly sell guidance is not maintained Sales price and must
+not receive another markup as if it were base cost. Tax follows commercial net under R4.
+
+## Eligibility and precedence
+
+Party identity, optional financial CustomerAccount, descriptive commercial classification and pricing
+eligibility are separate. Groups are multiple flat, effective-dated Party memberships; group labels
+can satisfy commercial description without duplicate classification entry. No exclusive distributor/
+dealer Party kind, hardcoded industry list, automatic label enrolment or account prerequisite exists.
+
+Reuse existing Item category ancestry; configured EXACT_CATEGORY/SUBTREE rules authorise effects,
+not category membership alone. Assembly resolves Assembly → Assembly Group → company; manual scope
+has explicit basis and company defaults, not text/category matching. Named family/plan exclusions
+filter first, deny within that family even against more specific positive rules, and do not implicitly
+ban independent agreement terms. Universal bans are named mandatory controls.
 
 ```text
-net unit price = ($8/m² + $2/m²) × 1.8 = $18/m²
-net line       = $18/m² × 100 m²       = $1,800
-tax            = determined afterwards from the $1,800 line and tax context
+validated company, scope, Party, source, measures, date/currency and enabled context
+  → explicitly selected agreement terms for covered scope
+  → otherwise Party maintained → group maintained → general maintained
+       → source policy → permitted manual base, otherwise refusal
+  → permitted typed adjustments / deliberate final-net exception
+  → independent final-net controls and authority
+  → R4 rounding/comparability recheck and tax
+  → R5 adopted evidence / issue snapshot (gated, not delivered)
 ```
 
-## Capability modes
+Within each audience: Item → nearest eligible category → ancestors → company; then explicit priority
+and applicable effective version. Priority does not promote general terms above Party terms. Stable
+identity orders equivalent candidates/explanations; materially conflicting equal-rank terms refuse.
+Known conflicts refuse activation. No cheapest-price policy or silent selected-agreement fallback.
+Uncovered agreement lines use ordinary pricing only if its coverage permits; fixed-term departure
+is distinct and initially unavailable, never an ordinary override or discount approval.
 
-| Mode | Intended fit | Capabilities |
+## Effects, quantities and commercial controls
+
+Base effects are maintained price, cost plus markup and target margin. Authorised manual entry is an
+explicit base/exception fact; agreement and campaign describe applicability, not new arithmetic types.
+Percent, per-priced-unit and per-line adjustments declare compatible basis and reference gross.
+Final-net override is reasoned, retains calculated/final, replaces net and runs no discount afterwards.
+
+Default one discount slot. Automatic candidates compete under ranking; discretionary entry replaces
+only after explicit review/confirmation of **both existing and proposed results**, including any
+increase from replacing a larger automatic reduction. No silent increase. In-limit routine discount
+captures actor/time without requiring exceptional reason; above-limit needs configured approval or
+refusal. Named ordered plans combine distinct benefits only if configuration/rate/agreement permits;
+no automatic percentage addition, and no benefit twice in base/tier/slots.
+
+A rate/tier declares allowed adjustment plan or exclusive final-net terms. Tier declares measure and
+package/unit eligibility separately from rate basis. Initial line-local all-units breaks do not pool
+separate lines or alternatives. Ten cartons at `900.0000` costs `9000.0000` before explicitly allowed
+adjustments; marginal `9900.0000` is a different deferred effect. Exact conversions and increments
+are not MOQ or tier eligibility; supplier MOQ/multiples do not become Sales constraints.
+
+Advisory failure warns; advisory unknown is unevaluable. Mandatory failure/unknown prevents issue;
+floors and margin are independent, applied to final net in comparable quantity/currency basis.
+No automatic clamping. Cost-derived and cost-consuming operations need complete evidence under
+0110; PARTIAL/UNKNOWN cannot become zero or a complete subtotal. Maintained/manual may sell with
+incomplete cost absent a mandatory cost-dependent test. Genuine zero is valid; percentage margin
+at zero net is undefined. Separate discretionary and aggregate reference-based authority limits;
+manual base changes cannot reset an authority reference.
+
+Risk-exception evidence is an architectural seam, **no initial general bypass**. Exact exceptionable
+controls, permissions, separation of duties and approval validity remain R5/R9. Neither approval nor
+price entry supplies missing cost, enables incomplete cost-derived arithmetic or departs from contract.
+
+## Modes, context and evidence
+
+| Mode | Approved exposure | Implementation boundary |
 |---|---|---|
-| `SIMPLE` | Small company or straightforward catalogue | Maintained price, cost-plus-markup, target margin, controlled manual price |
-| `MANAGED` | Customer and volume pricing | SIMPLE plus effective-dated price lists, customer prices, quantity tiers, currency, adjustments, agreements and minimum-margin controls |
-| `ADVANCED` | Governed company-specific logic | MANAGED plus versioned ordered formulas from restricted typed steps |
+| SIMPLE | Maintained/authorised manual bases, complete-cost markup/target margin, bounded percent/per-unit/per-line routine discounts, controlled final exceptions | Initial operational target, requires safe duties and R4/R5 integration before quotation delivery. |
+| MANAGED | SIMPLE plus dated lists, Party/group/category terms, tiers, agreements, simple promotions, named plans and controls | Optional complete slices; no hidden automatic rules in SIMPLE. |
+| ADVANCED | Typed/versioned allowlisted formulas, complex controlled conditions/conditional stacking | Deferred execution until its configuration/preview/writer/UI contract is complete. |
 
-The company selects its mode and default base strategy. For Assembly-backed scope, an Assembly
-Group or Assembly may define a more specific policy. Direct Item/manual scopes do not inherit an
-Assembly hierarchy; their specific applicability/precedence remains R3. Capability mode controls available configuration; it does not erase or
-reinterpret historical quotation snapshots.
+Company enablement is independent of CRM/tax and user preferences. Activation validates dependencies;
+downgrade reviews/reconciles dependent drafts, active rules/agreements and approvals, preserving history.
+Unresolved dependency refuses change; no silent hiding, auto-conversion or cancellation of obligations.
+R5 owns permissible reprice/resolve/withdraw transitions. Company controls cannot be bypassed by mode.
 
-## Conceptual schema
+Company-wide context is default; optional flat channels/locations nominate rules only where enabled
+and validated. They are not warehouse/region hierarchies or record-access grants. Date/currency/FX/
+rounding/tax authority stays R4. Currency conversion is not inferred from an eligible foreign list.
 
-The following Assembly-oriented sketch is retained historical design from ADR 0055, not a
-universal or implementation-ready physical model. R3 must reconcile source-neutral policy scopes
-and applicability; do not mechanically add Item categories to its precedence. Preserve these facts:
+Draft dependency evidence includes source versions, membership/category path, exclusions, absent
+candidates where relevant, measures/factors, selected terms, benefit plans, cost/control/authority
+and date/context. Changes mark affected drafts stale; explicit before/after reprice or valid no-change
+confirmation evaluates current facts. Reads never reprice. Manual final price rechecks the same gates.
+Issue freezes resolved figures and provenance under R5; historical price never comes from live masters.
 
-```text
-pricing_policies
-  id, company_id
-  scope_type        COMPANY | ASSEMBLY_GROUP | ASSEMBLY
-  scope_id          NULLABLE
-  base_method       MAINTAINED_PRICE | COST_PLUS_MARKUP | TARGET_MARGIN
-  status, effective_from, effective_to, priority
+Customer projection shows chosen commercial scope/net and explicitly customer-facing discounts.
+Sensitive competing terms, policy/formula/cost/margin internals require independent read authority;
+apply on nested APIs, history, lookups, filters/sorts, UI, print/export and errors. Cost-blind legitimate
+control evaluation returns safe status, not operands or inferable threshold traces.
 
-price_lists / price_entries
-  id, company_id, currency_id, status, effective dates
-  applicability    GENERAL | CUSTOMER | AGREEMENT
-  party/agreement, assembly, UoM, quantity tier
-  unit_price       decimal(19,4)
+## Data model and authorisation
 
-pricing_formula_versions / inputs / steps
-  id, company_id, version, status, effective dates, reason
-  typed input definitions and permitted resolution scopes
-  ordered allowlisted operation, operands and result type/UoM
+The [typed resolution/model specification](sales-pricing-resolution.md) replaces the old universal
+Assembly pseudo-DDL. Company-safe Party/group/catalogue/version references and separate base,
+adjustment, exclusion, control and evidence records are required. Money is `decimal(19,4)` with
+currency/base/FX evidence under 0012; used economic versions and issued evidence are immutable.
+No generic audit trait substitutes for typed reason/actor/time/results. Physical migrations are future.
 
-quotation_line_price_snapshots
-  company and quotation-line identity
-  source/rule/formula versions, resolved inputs and intermediate results
-  calculated_unit_price, final_unit_price, line_net   decimal(19,4)
-  currency/FX and rounding evidence, override reason/approval
-```
+Existing CRM duty names do not authorise price configuration, discount approval or confidential price
+reads. Reuse genuinely matching capabilities only; the slice permission matrix defines proposed duty
+contracts and gates vocabulary/grants through R9. Guard Request and Action, constrain exact-duty scope
+and independently legitimate source/Party/document access. No role-name inference, authenticated-only
+price lookup or blanket manager/administrator risk grant. Coding owner registers/grants/tests all
+new surfaces before enabling them; planning does not assign roles.
 
-Pricing configuration is versioned or effective-dated and company-scoped. Issued snapshots own
-the historical result; they do not point at live configuration as their source of truth.
+## Integration gates and exclusions
 
-## Resolution contract
+R4: authoritative pricing date/time bounds, FX/currencies, tax/inclusive display, precision/rounding/
+allocation and final comparison. R5: quotation draft/revision persistence, cost adoption/staleness,
+issue/expiry/withdrawal, locks/retries and approval fingerprints. R6: options/partial acceptance and
+benefit/quantity reconciliation. R7: order/job baseline/commitment fulfilment, actual cost and correction
+ownership. R8: customer templates/delivery evidence. R9: duties/limits/scope/audit/import/reporting and
+expected-value/forecast/remaining-scope integration. These are not closed by R3 acceptance.
 
-```text
-document context
-  eligible Party/account context + commercial source + quantity/basis + currency + effective date
-        ↓
-customer contract/agreement
-  → customer-specific maintained price
-  → general maintained price
-  → applicable source pricing policy (Assembly scopes where relevant; others await R3)
-  → permitted manual price, otherwise error
-        ↓
-base price → ordered adjustments/formula → unit rounding → line net
-        ↓
-tax determination
-```
-
-The resolver uses specificity, explicit priority, effective date and stable identity. It never
-silently selects the lowest applicable price. It returns both the result and an explanation of
-every candidate accepted or rejected.
-
-## Effects, applicability and adjustments
-
-Keep these concepts separate:
-
-- **base effect:** maintained price, cost plus markup, or target margin;
-- **applicability:** eligible recipient, commercial source, quantity tier, date and currency;
-- **adjustment:** discount, surcharge, factor, floor, ceiling or line charge;
-- **exception:** authorised manual final price preserving the calculated price;
-- **presentation:** tax-inclusive/exclusive display and currency formatting.
-
-Different ERP labels that produce the same effect map to the same base or adjustment type. A
-“standard rate per work unit” is a maintained Assembly/UoM price. A “contract price” is a
-maintained price with agreement scope, not a fourth calculation method.
-
-## Formula contract
-
-Formula variables are defined data with a name, business meaning, type, unit and permitted scope.
-Examples include money per m², a percentage, a dimensionless factor, a line amount and quantity.
-Value resolution may allow quotation line → customer/agreement → Assembly → Assembly Group →
-company. Missing or incompatible values fail visibly.
-
-The first evaluator supports allowlisted steps: base cost or maintained price; add a per-unit
-amount; multiply by a factor; apply markup or target margin; enforce a minimum/maximum unit price;
-round the unit price; add a line charge. It validates UoMs and percentage ranges and protects
-against division by zero. Arbitrary scripts, SQL and application functions are forbidden.
-
-Every version has effective dates, lifecycle status, author/reason and preview test cases. The
-preview shows inputs and intermediate results so a non-accountant can explain the final price.
-
-## Draft, issue and override
-
-- A draft using current cost can be marked stale and explicitly repriced; maintained price uses
-  the selected effective record and does not drift with cost.
-- Calculation retains precision until its named unit-price and document rounding boundaries.
-- Issue snapshots source/rule/formula versions, all inputs and intermediate results, calculated
-  and final prices, currency/FX, rounding and any override reason/approval.
-- Issued quotes are immutable; a change creates a quotation revision.
-
-## Authorisation and data scope
-
-- Override permission is separate from quotation entry, viewing internal cost and approval. Each
-  Phase 4 slice defines its detailed permission vocabulary; Q25 covers Phase 3 material/cost
-  visibility and Q27 governs the reusable approval workflow.
-
-## Boundaries
-
-- Phase 3 material resolution supplies quantity and cost evidence, never the final Sales price.
-  Existing Assembly `sell_per_unit` remains guidance; do not apply markup twice or treat it as a
-  maintained price. Missing cost is not legitimate zero; [compatibility work](../phases/phase-4-r2-compatibility-plan.md)
-  precedes affected trusted cost-derived/control paths.
-- Purchasing supplier offers affect replenishment and acquisition cost, not customer-price
-  precedence.
-- [Tax](tax.md) consumes the resolved net line and independently determines tax.
-- Customer-group pricing waits for a real Party segmentation model rather than reusing Inventory
-  categories.
-
-## Landmines
-
-- Treating markup and margin as synonyms produces a plausible but wrong price on every quote.
-- Choosing the lowest candidate automatically can violate a customer agreement or deliberate
-  precedence.
-- Recomputing an issued line from current cost or rules rewrites commercial history.
-- Allowing untyped amounts in formulas can add money per line to money per unit or mix UoMs.
-- Hiding a manual override by replacing the calculated value destroys its audit trail.
-- Applying tax inside the price formula gives statutory rules the wrong date and lifecycle.
+Deferred: marginal/cumulative/pooled tiers, free-goods/promotion engines, loyalty/retrospective rebates,
+contract departure/settlement, Sales returns/credits, hierarchy/geography and kit master/stock expansion.
+No forecasting, acceptance, reservation, Inventory posting, invoice or job is implied. Accepted scope
+cannot be counted twice; current Opportunity expected amount remains unreviewed assumption (0101/0102).
+C1d remains separately gated; existing C2/CRM delivery and Supplier Return/Scrap remain untouched.
 
 ## Related
 
-- [Assemblies](assemblies.md) · [Sales pipeline](sales-pipeline.md)
-- [Material resolution](material-resolution.md) · [Tax](tax.md)
-- [ADR 0055](../decisions/0055-progressive-sales-pricing-and-controlled-formulas.md)
+- [Resolution specification](sales-pricing-resolution.md) · [R3 slices](../phases/phase-4-r3-implementation-slices.md)
+- [Accepted review](../phases/phase-4-r3-business-review.md) · [Worked example](../phases/phase-4-r3-worked-example.md)
+- [0115](../decisions/0115-resolve-sales-pricing-by-explicit-eligibility-and-commercial-intent.md) · [0116](../decisions/0116-govern-sales-discounts-and-final-net-controls.md) · [0117](../decisions/0117-preserve-pricing-evidence-across-capability-transitions.md)
+- [0109](../decisions/0109-shared-commercial-quotation-lines-and-optional-estimating.md) · [Parties](parties.md) · [Items](items.md) · [Assemblies](assemblies.md)

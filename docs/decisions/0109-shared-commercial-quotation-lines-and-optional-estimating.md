@@ -2,7 +2,7 @@
 
 # 0109 — Support shared commercial quotation lines with optional estimating
 
-- **Status:** accepted
+- **Status:** accepted — retained pricing provisions partially superseded by [0115](0115-resolve-sales-pricing-by-explicit-eligibility-and-commercial-intent.md), [0116](0116-govern-sales-discounts-and-final-net-controls.md) and [0117](0117-preserve-pricing-evidence-across-capability-transitions.md); other provisions remain accepted.
 - **Date:** 2026-10-09
 - **Affects:** Phase 4 R2, Sales pricing source contract, Estimating adoption and customer documents
 - **Supersedes:** [0008](0008-assembly-abstraction.md) and [0055](0055-progressive-sales-pricing-and-controlled-formulas.md); retained provisions and changed scope are explicit below.

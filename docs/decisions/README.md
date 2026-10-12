@@ -123,14 +123,17 @@ in the same commit.
 | [0106](0106-separate-sales-ownership-and-access.md) | Separate Sales responsibility from access and preserve reassignment history | accepted | 2026-10-09 |
 | [0107](0107-separate-opportunity-stages-and-outcomes.md) | Separate pipeline stages, accepted scope and governed opportunity outcomes | accepted | 2026-10-09 |
 | [0108](0108-expose-a-progressive-basic-crm.md) | Expose a practical basic CRM without forcing enterprise workflow | accepted | 2026-10-09 |
-| [0109](0109-shared-commercial-quotation-lines-and-optional-estimating.md) | Support shared commercial quotation lines with optional estimating | accepted | 2026-10-09 |
+| [0109](0109-shared-commercial-quotation-lines-and-optional-estimating.md) | Support shared commercial quotation lines with optional estimating | accepted; retained pricing partially superseded by 0115–0117 | 2026-10-09 |
 | [0110](0110-version-cost-evidence-without-changing-legacy-estimates.md) | Correct existing cost operations through one authoritative contract | accepted | 2026-10-09 |
 | [0111](0111-disqualify-leads-independently-of-derived-opportunities.md) | Disqualify Leads independently of derived Opportunities | accepted | 2026-10-10 |
 | [0112](0112-correct-historical-opportunity-responsibility-with-append-only-evidence.md) | Correct historical Opportunity responsibility with append-only evidence | accepted | 2026-10-10 |
 | [0113](0113-preserve-original-lead-intake-and-govern-current-detail-corrections.md) | Preserve original Lead intake and govern current-detail corrections | accepted | 2026-10-10 |
 | [0114](0114-authorise-historical-attribution-correction-as-a-dedicated-duty.md) | Authorise historical attribution correction as a dedicated duty | accepted | 2026-10-12 |
+| [0115](0115-resolve-sales-pricing-by-explicit-eligibility-and-commercial-intent.md) | Resolve Sales pricing by explicit eligibility and commercial intent | accepted | 2026-10-12 |
+| [0116](0116-govern-sales-discounts-and-final-net-controls.md) | Govern Sales discounts and final-net controls | accepted | 2026-10-12 |
+| [0117](0117-preserve-pricing-evidence-across-capability-transitions.md) | Preserve pricing evidence across capability transitions | accepted | 2026-10-12 |
 
-**Next number: 0115**
+**Next number: 0118**
 
 ## By theme
 

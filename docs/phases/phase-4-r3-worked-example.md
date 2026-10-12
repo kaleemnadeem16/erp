@@ -2,11 +2,10 @@
 
 # R3 — Integrated distributor pricing example and interaction clarifications
 
-**2026-10-12 · ILLUSTRATIVE PROPOSAL, NOT ACCEPTED PRICES OR POLICY.** This demonstrates the
-[authoritative P1–P8 owner-review matrix](phase-4-r3-business-review.md), first committed at
-`297b7c2`, with final-review clarifications. Earlier P1–P6 agendas are historical. No new research,
-pricing ADR, implementation or company policy is authorised. The coordination workflow alone is
-accepted. These are one seller's counterfactual customer quotations, not prices pooled across buyers.
+**2026-10-12 · ACCEPTED ARCHITECTURE EXAMPLE / ILLUSTRATIVE PRICES AND COMPANY POLICIES.**
+P1–P8 are owner-approved after `c9c7875`, governed by 0115–0117 in the
+[approved matrix](phase-4-r3-business-review.md). The example demonstrates those semantics;
+its rates/groups/percentages/limits are not universal accepted settings. No pricing code is authorised.
 
 ## One catalogue and explicit rule configuration
 
@@ -93,7 +92,7 @@ Audience precedence applies independently inside base-source and adjustment sele
 category can beat group exact Item. Explicit priority resolves otherwise equally specific group
 candidates; it cannot promote a general campaign above personal terms. Known materially conflicting
 same-rank rules are rejected at activation; runtime unresolved conflict refuses, not lowest-price
-or arbitrary-ID selection. This conflict refusal and added audience scope need explicit ADR refinement.
+or arbitrary-ID selection. 0115 records this conflict-refusal and audience-scope refinement.
 
 ## Replacement, stacking and SIMPLE discount entry
 
@@ -122,7 +121,7 @@ contracts. An entered manual base cannot inflate the governed authority referenc
 Configured SUBTREE rules follow current eligible ancestry at explicit resolution. A new Item in
 Components inherits DIST-C/PERSONAL-C eligibility because those rules expressly cover the subtree,
 not simply because it has a category. A child rule wins within the same audience before an ancestor;
-a Party ancestor rule still outranks a group child rule under proposed audience-first ordering.
+a Party ancestor rule still outranks a group child rule under accepted audience-first ordering.
 EXACT_CATEGORY rules never inherit to children. EX-P stays on P after a category move; a category
 exclusion applies only while the Item is in its declared exact/subtree scope. Deny wins in its family.
 
@@ -184,12 +183,10 @@ Do not silently hide active effects or remove company controls/contract obligati
 cannot safely be resolved, downgrade refuses. Issued price evidence and authorised history remain
 readable regardless of current mode. Optional UX slices can follow without replacing these seams.
 
-Owner selection is still required for each P1–P8 recommendation, especially multiple membership,
-audience-first rank/scoped exclusion, conflict refusal, SIMPLE routine discounts, substitution versus
-named stacking, rate/tier allowance, mandatory-control exceptions, downgrade reconciliation,
-line-local all-units tiers and optional flat context. No rates/thresholds in this example are global
-policy. Following approval, planning prepares governing ADRs and implementation-ready contracts;
-the designated agent implements and verifies. R4–R9 and later Finance gates remain explicit.
+P1–P8 semantics are accepted in 0115–0117; exact company rates/allowances/limits and R4–R9 gates
+remain. [Resolution specification](../domain/sales-pricing-resolution.md) and
+[delivery slices](phase-4-r3-implementation-slices.md) are now prepared. The designated agent owns
+future implementation and verification after explicit authorisation; planning implements no code.
 
 ## Related
 

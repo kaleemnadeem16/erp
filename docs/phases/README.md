@@ -94,12 +94,13 @@ remain linked evidence. CRM backend exists; R2 quotation implementation remains 
 [three-policy review](phase-4-crm-policy-review.md) is accepted in 0111–0113;
 [correction specification](phase-4-crm-correction-specification.md) is ready for coordinated delivery,
 with B’s authority accepted in 0114/Q42 closed and safe grant/re-sync rollout specified.
-[R3 pricing evidence](phase-4-r3-sales-pricing.md) and the [revised P1–P8 decision matrix](phase-4-r3-business-review.md) are ready for owner review; no new pricing decision accepted.
-[Expanded R3 evidence](phase-4-r3-expanded-research.md) reconciles customer groups, categories,
-packages/tiers and controls; [implementation-question reconciliation](../architecture/implementation-question-reconciliation.md)
-uses OPEN-QUESTIONS rather than a duplicate register; the owner has accepted that coordination workflow.
-The [integrated R3 pricing example](phase-4-r3-worked-example.md) accompanies the final P1–P8
-decision table; pricing recommendations remain unaccepted.
+[R3 retained evidence](phase-4-r3-sales-pricing.md), [approved P1–P8 review](phase-4-r3-business-review.md),
+[expanded research](phase-4-r3-expanded-research.md) and [worked example](phase-4-r3-worked-example.md)
+support accepted 0115–0117/Q43 closed. [Implementation slices](phase-4-r3-implementation-slices.md)
+and [resolution contract](../domain/sales-pricing-resolution.md) are specified, not code-authorised;
+R4–R9 gates remain. [Accepted question coordination](../architecture/implementation-question-reconciliation.md)
+uses OPEN-QUESTIONS and coding-owned verification.
+
 
 
 Leads, opportunities, quotations with revisions, cost snapshotting, PDF output. Mobile layout

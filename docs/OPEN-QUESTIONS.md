@@ -200,33 +200,22 @@ attempts and device changes.
 
 ---
 
-### Q43 — Expanded R3 Sales pricing semantics
-
-**Origin:** PLANNING RESEARCH (owner-requested expansion, not a forwarded implementation question).
-**Decision status:** AWAITING_OWNER. **Delivery status:** NOT_STARTED; unrelated approved work continues.
-**Module/slice/context:** Phase 4 R3; earlier review local commit `290aa7c`, expanded 2026-10-12.
-**Question/business examples:** How should overlapping customer groups, inherited category rules,
-exact-product exclusions, carton tiers and routine discounts resolve without cheapest-wins or
-accidental stacking? A gets 25% instead of distributor 20%, exact product 35%; 10 cartons qualify
-for `900.0000` each while loose units and independent alternatives may not.
-**Authority checked:** 0103/0105, 0050/0080, 0109 retaining 0055, 0110; Party/account separation,
-category/quantity reuse, progressive pricing, immutable evidence and missing-cost semantics remain.
-**Blocks:** New pricing acceptance/implementation only; no C2 or CRM correction/security blocker.
-**Options/recommendation/research:** [Revised P1–P8 matrix](phases/phase-4-r3-business-review.md)
-and [primary evidence/reconciliation](phases/phase-4-r3-expanded-research.md). Proposed multiple
-flat groups separate from classifications, audience-first specificity, scoped exclusions, explicit
-agreement intent, bounded SIMPLE discounts, named stacking, final-net controls, line-local tiers
-and optional flat context. Alternatives/trade-offs and R4–R9 gates are recorded per decision.
-**Owner choice needed:** Review the consolidated design, including explicit refinements to retained
-0055 for group precedence, SIMPLE exposure and conflicting-rule tie refusal; no new ADR accepted.
-**Follow-up:** Planning records approved ADRs after review; coding/verification stays with designated
-implementation owner, routed through owner. No implementation-originated question supplied yet.
 
 ---
 
 ## Answered---
 
 ## Answered
+
+<a id="q43--expanded-r3-sales-pricing-semantics"></a>
+
+Q43 (origin: PLANNING RESEARCH) resolved 2026-10-12 by accepted ADRs
+[0115](decisions/0115-resolve-sales-pricing-by-explicit-eligibility-and-commercial-intent.md),
+[0116](decisions/0116-govern-sales-discounts-and-final-net-controls.md) and
+[0117](decisions/0117-preserve-pricing-evidence-across-capability-transitions.md), following owner
+approval of P1–P8 at `c9c7875`. No pricing code authorised.
+[Specified slices and R4–R9 gates](phases/phase-4-r3-implementation-slices.md) track future delivery;
+no new question blocks drafting R3 contracts or unrelated CRM/C2 work.
 
 <a id="q42--historical-opportunity-attribution-correction-duty-and-initial-grants"></a>
 

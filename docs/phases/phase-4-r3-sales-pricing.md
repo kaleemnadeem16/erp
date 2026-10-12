@@ -2,14 +2,12 @@
 
 # R3 — Source-neutral Sales pricing: initial evidence and consolidated review
 
-**Updated 2026-10-12 · HISTORICAL INITIAL EVIDENCE / EXPANDED REVIEW AWAITING APPROVAL.** Research started after the CRM
-security handoff and policy review were documented. No R3 ADR is accepted, implementation slice
-authorised, schema selected or application code changed. Planning owns this file; cost C2 recovery
-and its delivery docs remain with the implementation agent. This is one owner-review matrix,
-not a sequence of independently accepted pricing decisions. The [revised P1–P8 decision matrix](phase-4-r3-business-review.md)
-is the current owner-review agenda, including examples, realistic options and R4–R9 boundaries.
-The initial recommendations below are historical inputs, superseded as a review agenda by that
-matrix and its [expanded evidence](phase-4-r3-expanded-research.md), not accepted policy.
+**Updated 2026-10-12 · HISTORICAL INITIAL RESEARCH; R3 BUSINESS ARCHITECTURE NOW ACCEPTED.**
+P1–P8 approval after `c9c7875` is recorded in 0115–0117, closing Q43. This initial record preserves
+prior evidence/options, not the current decision agenda. Use the [approved matrix](phase-4-r3-business-review.md),
+[pricing domain](../domain/sales-pricing.md) and [specified slices](phase-4-r3-implementation-slices.md).
+No pricing code is authorised; CRM/C2 delivery remains independently owned. Statements of proposed/
+unaccepted scope below describe the historical initial research stage, not the current authority.
 
 ## Question, existing basis and boundaries
 

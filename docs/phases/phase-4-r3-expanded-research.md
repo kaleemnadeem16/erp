@@ -2,9 +2,9 @@
 
 # R3 — Expanded pricing evidence and architecture reconciliation
 
-**Accessed/reconciled 2026-10-12 · RESEARCH, NOT ACCEPTED DESIGN.** The
-[revised P1–P8 decision matrix](phase-4-r3-business-review.md) is the single current owner-review
-agenda. This file records its evidence and structural seams, not a second decision register.
+**Accessed/reconciled 2026-10-12 · RETAINED EVIDENCE; P1–P8 NOW ACCEPTED IN 0115–0117.** The
+[revised P1–P8 decision matrix](phase-4-r3-business-review.md) is the approved business review. This file records its evidence and structural seams, not a second decision register. The proposed seams below are retained research inputs;
+[resolution specification](../domain/sales-pricing-resolution.md) is the current implementation contract.
 Previous [initial comparison](phase-4-r3-sales-pricing.md) remains historical research input.
 
 ## Questions researched
@@ -52,7 +52,8 @@ project proposals. No source establishes this ERP's exact price-floor/exception 
 
 ## Proposed architecture seams before choosing tables
 
-These are logical responsibilities to approve; physical names, migrations and APIs follow approval.
+These were the logical responsibilities presented for approval. P1–P8 is now accepted; the linked
+resolution/slice contracts carry current model/API obligations and remaining integration gates.
 Avoid a universal polymorphic rule blob with unverifiable cross-company IDs or executable expressions.
 
 | Responsibility | Required logical facts / boundary | Optional delivery later |
@@ -72,7 +73,7 @@ append-only issued and decision evidence. Changes to membership/category/list/te
 relevant drafts stale, not every document indiscriminately. Currency/precision/rounding constraints
 must be finalised with R4; money remains decimal. No DDL, migration or endpoint is authorised here.
 
-Later approved specification must define each Action and Request guard, field projection, database
+The current resolution and slice specifications define each Action and Request guard, field projection, database
 constraints, stable lock order, exact-intent idempotency, activation concurrency, refusal reason codes,
 additive migration/rollback, grant rollout, UI states and regression criteria. Research does not
 claim these implementation obligations are already delivered or fully selected.
