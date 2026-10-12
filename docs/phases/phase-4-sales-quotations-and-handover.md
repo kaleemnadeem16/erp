@@ -2,7 +2,7 @@
 
 # Phase 4 — Sales, quotations and job handover
 
-- **Status:** R1/R2 bounded research complete; C0 accepted; C1a–c/C2a–b implemented locally per STATUS, R3 accepted/specifications prepared, R4 accepted/specifications prepared, R5 initial research, R6–R9 pending. CRM backend foundation
+- **Status:** R1/R2 bounded research complete; C0 accepted; C1a–c/C2a–b implemented locally per STATUS, R3 accepted/specifications prepared, R4 accepted/specifications prepared, R5 research ready for owner review, bounded R6/R7 reconciliation, remaining R6–R9 pending. CRM backend foundation
   exists separately; quotation implementation remains pending.
 - **Started:** 2026-10-08, at the owner's request. Phase 3 enhancements remain with another agent.
 - **Depends on:** Parties and Estimating; shared Numbering, Approvals, Company and access foundations.
@@ -43,9 +43,9 @@ its consolidated review comes last. R6 and R7 inform R5 before lifecycle decisio
 | R2 Quotation structure and scope | Assemblies, work units, sections, alternatives, optional/non-priced lines; identity of a quotation vs revision | Sales scope; ADR 0109; Estimating | Business research formally closed; 0109 accepted, Q40 resolved; implementation gates retained |
 | R3 Sales pricing | SIMPLE first boundary, overrides, discounts, agreements and margin controls | ADR 0109 retains/generalises historical 0055; sales-pricing.md | P1–P8 accepted in 0115–0117; Q43 closed; slices specified, no code authorised |
 | R4 Tax, currency and FX | Quotation tax estimate, rules/exemptions, rounding, rate date and evidence | ADRs 0012, 0025, 0056; currency APIs | F1–F8 accepted0118–0120/Q44 closed; financial contract/slices specified, no code authorised |
-| R5 Lifecycle, approvals, issue and revisions | Stale drafts, plan adoption, snapshot boundary, withdrawal/supersession, expiry and approval invalidation | ADRs 0054, 0058, 0070, 0072, 0076/0077, 0079, 0085 | Initial bounded L1–L6 research/Q45; accepted R1–R4 reused, R6/R7 inform final review |
-| R6 Customer decisions | Whole/partial acceptance, alternatives, evidence, rejection and expired offers | Sales pipeline landmines; immutable snapshots | Not researched; follows R2; iterate with R5 |
-| R7 Job creation and handover | Idempotent confirmation, scope/baseline, contacts/sites, job changes; Sales/COGS correction ownership | job-costing.md; ADR 0040; Phase 5 boundary | Not researched; follows R6; feeds R5 |
+| R5 Lifecycle, approvals, issue and revisions | Stale drafts, plan adoption, snapshot boundary, withdrawal/supersession, expiry and approval invalidation | ADRs 0054, 0058, 0070, 0072, 0076/0077, 0079, 0085 | Consolidated L1–L6 research complete for owner review/Q45; no new ADR; R6/R7 boundaries reconciled |
+| R6 Customer decisions | Whole/partial acceptance, alternatives, evidence, rejection and expired offers | Sales pipeline landmines; immutable snapshots | Bounded partial/choice/tier/allocation/late-decision reconciliation for R5; full R6 decision review pending |
+| R7 Job creation and handover | Idempotent confirmation, scope/baseline, contacts/sites, job changes; Sales/COGS correction ownership | job-costing.md; ADR 0040; Phase 5 boundary | Bounded accepted-scope/idempotent-target/amendment reconciliation for R5; full R7 target review pending |
 | R8 Documents and communications | Customer projection, PDF/template, delivery evidence, portal/signature vs manual recording | Existing PO print model; appearance-and-printing.md; Q33 | Not researched; follows R2/R5/R6 |
 | R9 Access, audit, reporting and integration | Owner vs visibility, sensitive prices/costs, forecast metrics, history, imports and events | ADRs 0028, 0062, 0084/0089, 0096; shared audit/scope | Not researched; applied throughout and reconciled last |
 
@@ -78,7 +78,7 @@ proposal is never "researched", "accepted" or "complete" merely because it exist
 - [Accepted implementation-question coordination](../architecture/implementation-question-reconciliation.md) uses OPEN-QUESTIONS, original origin/context and coding-owned verification.
 
 - [R4 accepted F1–F8 review](phase-4-r4-financial-review.md) · [tax composition/examples](phase-4-r4-tax-composition.md) · [evidence/R3 readiness](phase-4-r4-evidence-and-readiness.md). 0118–0120 accepted/Q44 closed; [typed financial contract](../domain/quotation-financial-calculation.md) and [R4 slices](phase-4-r4-implementation-slices.md) specified, no coding authority.
-- [R5 initial lifecycle research](phase-4-r5-quotation-lifecycle.md) — bounded L1–L6 recommendations/Q45; no R5 ADR accepted; R6/R7 inform final review.
+- [R5 consolidated business review](phase-4-r5-business-review.md) · [R6/R7 reconciliation/journey](phase-4-r5-acceptance-and-handover-boundaries.md) · [bounded lifecycle evidence](phase-4-r5-quotation-lifecycle.md). L1–L6 ready for owner/Q45; no R5 ADR accepted, downstream decisions explicitly pending.
 - Later topic records are added when investigated; do not generate empty speculative documents.
 
 ## Tasks
@@ -105,7 +105,8 @@ proposal is never "researched", "accepted" or "complete" merely because it exist
 - [x] Record owner-approved CRM A/B/C in accepted 0111–0113 and prepare correction Action/evidence/API/UI/migration acceptance handoff; no implementation by planning; B authority now accepted in 0114/Q42 closed, safe rollout required.
 - [x] Close R3 bounded business research, record owner-approved P1–P8 in 0115–0117, resolve Q43 and prepare implementation contracts/slices with R4–R9 gates; no code authorised.
 - [x] Record approved R4 F1–F8 in0118–0120, close Q44, reconcile domain contracts and specify R4 slices/PR0–PR6 readiness; no implementation authorised.
-- [x] Begin R5 bounded lifecycle research reusing R1–R4; prepare L1–L6 owner-review priorities/Q45, no lifecycle ADR accepted.
+- [x] Complete R5 business recommendations with bounded R6/R7 partial/choice/tier/allocation/handover reconciliation; consolidate L1–L6 and integrated journey/Q45 for owner review, no lifecycle ADR accepted.
+- [ ] Owner review of L1–L6; record approved R5 decisions before implementation contracts. No code authorisation inferred.
 - [ ] Complete R5–R9 research in dependency order, R6/R7 informing R5 and R9 applied throughout; no operational pricing/quotation authority inferred.
 - [x] Reconcile R1 business foundations with the historical Sales proposal; physical schema reconciliation remains R2–R9.
 - [ ] Define implementation slices, demos and observable acceptance criteria only after decisions.

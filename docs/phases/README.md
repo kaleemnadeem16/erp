@@ -105,8 +105,10 @@ uses OPEN-QUESTIONS and coding-owned verification.
 [primary evidence/R3 readiness](phase-4-r4-evidence-and-readiness.md) support accepted0118–0120;
 Q44 closed. [R4 implementation slices](phase-4-r4-implementation-slices.md) and
 [financial contract](../domain/quotation-financial-calculation.md) are specified, not implemented.
-[R5 initial lifecycle research](phase-4-r5-quotation-lifecycle.md) opens planning Q45, informed by
-R6/R7 and R9. No pricing/tax code is authorised.
+[R5 consolidated L1–L6 review](phase-4-r5-business-review.md),
+[R6/R7 reconciliation/journey](phase-4-r5-acceptance-and-handover-boundaries.md) and
+[bounded evidence](phase-4-r5-quotation-lifecycle.md) prepare planning Q45 for owner review.
+Recommendations remain unaccepted; no pricing/tax/quotation code is authorised.
 
 
 

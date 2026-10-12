@@ -497,3 +497,21 @@ Initial R5 bounded lifecycle comparison reuses accepted R1–R4 and opens planni
 R6/R7 must inform final lifecycle acceptance. No R5 ADR, application code/tests, migration, generated
 client, seeder, push or direct coding-agent handoff. Implementation-owned CRM/C2 delivery untouched.
 Documentation checks are distinct from implementation/verification; no R3/R4 coding authorised.
+
+
+## 2026-10-12 — Consolidated R5 lifecycle review with bounded R6/R7 reconciliation
+
+Continued owner-requested research after1d63de5, reusing accepted R1–R4 and shared approval/numbering
+contracts. Prepared authoritative proposed L1–L6 business matrix, source-specific SIMPLE/MANAGED
+paths, canonical review/freshness invalidation/no-change conditions, atomic issue/retry/numbering
+consequences, distinct expiry/withdrawal/rejection/cancellation/revision events, scoped atomic replacement
+and governed UNKNOWN withholding/payment disclosure. Proposed per-issued-revision numbering and
+ALLOW_GAPS, explicit valid-through and BLOCK/opt-in acknowledged withholding defaults await owner.
+Bounded R6/R7 reconciliation covers40/100 acceptance, remaining60 revision, choose-one options,
+tier-loss versus partial delivery, fixed benefit/tax allocation and separate accepted-scope handover
+with business identity/idempotency; exact downstream policies and target multiplicity unaccepted.
+Integrated numerical journey marks conditional acceptance/variation/partial replacement/handover,
+not delivered operations. Q45 remains planning-origin READY_FOR_OWNER; no R5 ADR accepted.
+Primary existing lifecycle evidence reused; bounded Dynamics/ERPNext comparison and local source
+inspection are research, not application verification. No code/migrations/tests/generated files/
+seeders/push or direct implementation-agent message; CRM/C2 and other agents' delivery untouched.

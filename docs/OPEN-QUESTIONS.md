@@ -206,18 +206,28 @@ attempts and device changes.
 ### Q45 — R5 quotation lifecycle checkpoints and issued-offer treatment
 
 **Origin:** PLANNING RESEARCH (owner-requested R5; no forwarded coding question).
-**Decision status:** AWAITING_OWNER after initial research; **Delivery status:** NOT_STARTED.
-**Context/authority:** R1–R4 accepted through0120, shared approvals/numbering; no operational quote code authorised.
-**Question:** Which draft/adoption/approval/issue checkpoints, revision replacement and expiry/withdrawal
-rules govern immutable offers? Example: revision2 is drafted while customer holds revision1; price remains
-equal but reviewed cost/FX changes; output tax known while withholding payment estimate is unknown.
-**Options/recommendation:** [R5 L1–L6 initial business matrix](phases/phase-4-r5-quotation-lifecycle.md).
-Recommend explicit evidence checkpoints/current issue validation, deliberate refresh, reasoned events,
-no automatic withdrawal on starting a revision and separate delivery; replacement/late/partial acceptance
-and unknown-payment issue rules require owner review informed by R6/R7/R9.
-**Blocks:** New R5 lifecycle acceptance and dependent quote delivery; not CRM/C2 or R4 specifications.
-**Follow-up:** Research R6/R7 interactions before final consolidated R5 ADR review. Preserve coding-origin
-questions separately when forwarded; documentation alone cannot verify coding delivery.
+**Decision status:** READY_FOR_OWNER — consolidated L1–L6 recommendations, not accepted.
+**Delivery status:** NOT_STARTED; independent CRM/C2 work unaffected.
+**Context/authority:** Owner continuation after1d63de5; R1–R4 accepted through0120,0070/0085
+approval and0079 numbering. No operational quote code authorised.
+**Original research question:** Which draft/adoption/approval/issue checkpoints, revision replacement
+and expiry/withdrawal rules govern immutable offers? Examples: revision2 being prepared while customer
+holds1; equal price with changed cost/FX; unknown withholding while output tax is known.
+**Expanded owner scenarios:**40/100 accepted, remaining60 revised, choose-one products, lost quantity
+tier, fixed document benefit/tax, partial expiry/withdrawal, handover and retries.
+**Options/recommendation:** [Authoritative consolidated L1–L6 matrix](phases/phase-4-r5-business-review.md),
+[R6/R7 journey and allocation choices](phases/phase-4-r5-acceptance-and-handover-boundaries.md),
+[reused primary evidence/source inspection](phases/phase-4-r5-quotation-lifecycle.md).
+Recommend explicit routine atomic adopt/issue without auto-adoption on save; strict reviewed-facts
+no-change revalidation; per-issued-revision central numbering/ALLOW_GAPS default; explicit validity and
+reasoned unaccepted availability events; atomic replacement with one actionable overlapping revision scope per family;
+BLOCK or company opt-in acknowledged UNKNOWN withholding/payment only.
+**Disposition needed:** Owner approval/alternative selections for L1–L6, including numbering/validity/
+withholding defaults. R6 tier/partial consent/allocations/late acceptance and R7 targets/amendments
+remain unaccepted; refuse affected partial operations until their contracts are delivered.
+**Blocks:** New R5 lifecycle acceptance/dependent quote delivery, not R4 specifications or existing delivery.
+**Follow-up:** Accepted ADRs/contracts only after approval. Preserve future coding-origin questions and
+coding-owned verification; no implementation result was verified by research.
 
 ---
 

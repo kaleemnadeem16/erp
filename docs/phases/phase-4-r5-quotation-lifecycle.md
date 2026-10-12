@@ -1,8 +1,11 @@
 [← Phase index](README.md)
 
-# R5 — Initial quotation lifecycle research and owner review priorities
+# R5 — Quotation lifecycle evidence and authority reconciliation
 
-**2026-10-12 · INITIAL RESEARCH / PROPOSED, Q45 · Origin: PLANNING RESEARCH.**
+**2026-10-12 · RESEARCH SYNTHESISED / OWNER REVIEW PENDING, Q45 · Origin: PLANNING RESEARCH.**
+[Consolidated L1–L6 review](phase-4-r5-business-review.md) is the authoritative current recommendation
+matrix; [partial acceptance/handover journey](phase-4-r5-acceptance-and-handover-boundaries.md)
+provides the R6/R7 reconciliation. The original initial agenda at 1d63de5 is historical.
 No R5 ADR or operational lifecycle is accepted by this record. Reuse R1–R4 first; research is
 bounded to draft/adoption/approval/issue/revision transitions. R6 acceptance and R7 commitment/
 handover must inform the final R5 review; R9 access applies throughout. This is not coding authority.
@@ -44,53 +47,66 @@ amend/cancel semantics and order-centric status. Two primary products plus accep
 are sufficient for initial lifecycle framing; no broad R3/R4 re-research or statutory research needed.
 Vendor status vocabulary is evidence, not an approved project state machine.
 
-## Business choices for the next consolidated review — recommendations only
+## Bounded downstream comparison — additional primary evidence, 2026-10-12
 
-| Bundle | New decision, practical impact and options | Initial recommendation / trade-off | Architecture now / later integration |
-|---|---|---|---|
-| L1 Draft and adopted evidence | Seller changes qty10→20 after calculating a plan. Keep every edit auto-adopted; have a distinct adoption checkpoint; or issue-only adoption? | Separate editable inputs from calculated preview and adopted evidence. Preview alone cannot satisfy issue; material/variance approval applies only to relevant source facts. Consider adoption plus issue revalidation in one transaction for routine no-approval cases; reduce SIMPLE steps without bypass. Exact checkpoints require owner review. | Dependency vector and evidence boundary now; no unnecessary material adoption for direct/manual lines. R9 duties, R6 selected scope. |
-| L2 Approval and stale dependencies | Supplier cost/profile/agreement changes after review but total stays equal. Blind retain approval, always discard all approvals, or relevant-fingerprint invalidation with no-change revalidation? | Relevant fingerprint includes reviewed scope, source/cost certainty, controls, relationship/routing, financial policies/FX/dates and selected baseline. Equal totals alone insufficient. Preserve valid no-change evidence only with explicit revalidation. Use shared engine; no generic risk bypass. | Exact subjects/checkpoints and maker/checker policy with R9; risk/contract exceptions stay unsupported until separately approved. |
-| L3 Issue and numbering | Two sellers issue same draft while rate/date eligibility changes. Number at creation, issue, or delivery? Must failed issue consume official number? | Atomic issue after current scope/policy/approval/freshness checks, capture immutable evidence and allocate official number using0079; internal draft identity need not be official number. Retry same receipt does not issue twice. Separate delivery from issue. | R5 aggregate lock/fingerprint and numbering policy; R8 artefact/delivery. Confirm revision number display and initial quote series policy rather than guess. |
-| L4 Expiry, withdrawal and loss | Customer responds after validity ends; seller withdraws early. Edit original validity, reopen history, or record new events/new revision? | Preserve original expiry. Expiry is date eligibility with explainable as-of state; governed withdrawal/loss adds reasoned events. Renewal/change to issued terms creates linked revision; acceptance of expired offer is R6's explicit choice, never ordinary draft edit. | Distinguish immutable offer and current availability/status projections; R6 late acceptance and accepted-scope restrictions, R9 forecast provisional updates. |
-| L5 Revision and supersession | Seller starts revision2 while customer still holds revision1. Does starting/issuing revision2 instantly withdraw1, require explicit replacement, or allow both? | Drafting revision2 alone must not silently withdraw1. Recommend explicit replacement choice at issue with clear customer impact and scope/acceptance checks; whether simultaneous live revisions are ever allowed remains owner choice informed by R6/exclusive claims. Copy inputs with original links; deliberately re-resolve affected current facts. | Original history and draft basis now; R6 partially accepted originals/competing revisions and R7 commitment amendments before final acceptance. No rewrite original component allocations. |
-| L6 Unknown estimates and operational simplicity | Output-tax context unknown versus withholding estimate unknown with otherwise complete totals; SIMPLE seller has no estimating line. Block everything, permit every unknown, or distinguish dependencies? | Mandatory financial control/output-tax prerequisites must fail closed. Consider allowing separately labelled UNKNOWN withholding/payment estimate where company issue policy permits and customer projection is honest; it cannot hide unknown tax or mandatory margin. Keep SIMPLE routine prepare/issue concise; advanced review shown when relevant. | Owner must settle quote issue completeness/mandatory warnings/acknowledgements; no missing cost-to-zero or generated certificates. R8 projection and R9 sensitive duty policy. |
+| Source | Observed behaviour | Why it informs, rather than dictates, this ERP |
+|---|---|---|
+| [Dynamics Sales transaction stages](https://learn.microsoft.com/en-us/dynamics365/sales/sales-transactions) | Activating freezes a quote; revise closes it and creates a draft with incremented revision identity. | Our proposed L5 deliberately keeps the original available while drafting its successor; vendor auto-close-on-revise is not imported. One versus many actionable scopes must be explicit. |
+| [Dynamics create order](https://learn.microsoft.com/en-us/dynamics365/sales/create-edit-order-sales) | Accepted quote cannot be revised; creating an order copies products/price-list/currency. | Our accepted-vs-remaining split needs finer scope history. No blanket whole-quote freeze blocking a legitimate remaining-scope proposal, and no issue-to-order implication. |
+| [ERPNext version-15 official quotation source](https://raw.githubusercontent.com/frappe/erpnext/version-15/erpnext/selling/doctype/quotation/quotation.py) | `get_ordered_status` distinguishes partial/full; mapper subtracts already ordered stock quantity, filters alternatives, calculates target totals and checks expired quotations unless company setting allows them. | Confirms remaining quantity and selected choices need provenance. Do not import target recalculation as authority to change original net/benefits/taxes, automatic financial-customer creation or generic expired-offer bypass. Our R6/R7 must define consent, allocation and claim semantics. |
 
-These are genuinely new lifecycle decisions, not revisions of F1–F8. Exact issue dates, original
-validity/renewal, supported simultaneous revisions and unknown-estimate issue policy require owner
-selection. Actual jurisdiction rates/max FX age remain governed setup, not new universal choices.
+The ERPNext Sales Order documentation timed out twice; no detailed claim rests on the unavailable
+page. Its official version-15 source supplies the bounded partial mapping evidence above; it is not
+asserted identical to every current vendor edition. Earlier quotation documentation remains reused.
+No source settles our tier entitlement, fixed-tax legal allocation, parallel revisions or consent.
+Those are explicit owner/project/jurisdiction decisions. This closes the research gap for R5 review,
+not all future R6/R7 design. No broader currency/tax/pricing investigation was repeated.
 
-## Acceptance/commitment scenarios to research before final R5 acceptance
+## Current repository facts — read-only inspection, no application checks
 
-1. Baseline contains base goods plus one selected alternative and an optional service. R6 decides
-   acceptance selection/partial quantity/consent/tier repricing and fixed-component allocation.
-   R5 issue freezes offered baseline and provenance without guessing the accepted outcome.
-2. Customer accepts4 of10 units, then seller issues revised remaining6. Original accepted allocation
-   stays linked and consumed once; R6/R7 define remaining caps, exclusive claim and amendment.
-   Don't calculate a second full fixed tax/benefit merely from fresh master lookup.
-3. A current associated Opportunity closes while an issued offer remains. Apply accepted relationship
-   direction without automatic quotation cancellation/win or creating duplicate pursuit. R6/R9 settle
-   acceptance/remaining-forecast effects; CRM Lead disqualification does not cascade.
-4. Accepted scope creates a job/order twice through retries. R7 requires idempotent target baseline
-   creation with original commercial/estimate/contact/site provenance; issue is not handover.
-5. Draft revalidation changes cost/FX but final net remains equal. R5 approval subject may still change;
-   original issue snapshot and0102 provisional forecast publication remain distinct.
+| Surface inspected | Finding | Required Sales adaptation / limit |
+|---|---|---|
+| Sales module README and file inventory | CRM foundation and LEAD/OPPORTUNITY numbering exist; no quotation issue/approval adapter found in inspected module. | Draft/issue/revision/acceptance are future operations. Existing CRM duties/creation numbering are not quote authority. README history is not independent verification of delivery. |
+| Numbering `NumberingService::allocate`, `LockedCounterStrategy`, `SequenceCounterStrategy` | Caller transaction captures allocation; locked counter rolls back; sequence nextval may leave gap. Allocator is not an issue retry receipt lookup. | Quote-specific atomic receipt/family-revision lock prevents another allocator call on completed retry. Scope/date/routing/number uniqueness remain 0079. No new framework or global gap policy. |
+| Purchasing `IssuePurchaseOrder` | Demonstrates document lock, shared approval guard and number allocation at official issue. | Reuse pattern, not PO semantics: source-aware quote snapshots and exact retry need own adapter; no Purchasing changes authorised. |
+| Approvals `ApprovalSubject`, `ApprovalRouting`, `RequireApproval` | Routing hash covers typed facts/base amount; current guard also checks registered review provider fingerprint. General modes NONE/POLICY/REQUIRED already exist. | New Sales routing/review provider must cover all reviewed commercial/technical/financial/Party facts; total-only routing is insufficient. Subject guard doesn't issue a quote. |
+| `ApprovalReviewRegistry` and `SubmitForApproval` | Review capture/fingerprint is consumer-owned; unchanged pending request can be reused; changed review is not approved just because amount equal. | No-change revalidation must preserve both hashes and original reviewed evidence, not alter old request. Separate current dependency receipt. |
+| `ExpireOverdueApprovals` | Implements open-step deadlines and overdue/request-expiry effects. | Do not claim generic post-approval age expiry exists. Quote expiry and any proposed subject approval valid-until are different governed facts. |
+|0109/0110, R3/R4 and job-costing domain | Sources/cost certainty/financial evidence accepted; job schema is conceptual and accepted scope need not require a job/Assembly/customer account. | R6 decides accepted terms/remaining claims; R7 decides applicable target baseline and corrections. No duplication, reservation or Finance work from issue. |
 
-## Next research sequence and question handling
+Code pointers:
+[NumberingService](../../backend/app/Modules/Numbering/Services/NumberingService.php),
+[counter strategies](../../backend/app/Modules/Numbering/Services/SequenceCounterStrategy.php),
+[RequireApproval](../../backend/app/Modules/Approvals/Actions/RequireApproval.php),
+[routing](../../backend/app/Modules/Approvals/Support/ApprovalRouting.php),
+[review registry](../../backend/app/Modules/Approvals/Support/Review/ApprovalReviewRegistry.php),
+[step expiry](../../backend/app/Modules/Approvals/Actions/ExpireOverdueApprovals.php),
+[PO issue pattern](../../backend/app/Modules/Purchasing/Actions/IssuePurchaseOrder.php).
+Read-only inspection supports design compatibility, not runtime/concurrency verification.
 
-First settle L1–L3 draft/adoption/approval/issue transaction scenarios using existing Actions/engine
-interfaces and bounded source inspection. Then investigate R6 late/partial acceptance and R7 target
-baseline/amendment enough to resolve L4–L5; consolidate L6 with R8/R9 evidence/access. Present one
-business-first lifecycle matrix before proposing ADRs. No unconditional state diagram or schema is
-accepted prematurely. Further browsing only for a demonstrated unanswered design conflict.
+## Synthesis and owner boundary
 
-Q45 is planning-originated and blocks new R5 lifecycle acceptance, not CRM/C2 or drafting R4 specs.
-No implementation question was forwarded this turn. Future owner-forwarded questions retain
-**Origin: IMPLEMENTATION AGENT**, original wording/example/commit/files and checked authority under
-[question reconciliation](../architecture/implementation-question-reconciliation.md). Routine choices
-within accepted authority need clarification, not invented business ADRs. Documentation alone never
-marks a coding question VERIFIED; the coding owner supplies implementation/check evidence.
+No demonstrated contradiction requires altering accepted R1–R4. The engine contracts support
+explicit candidates, relevant fingerprint invalidation, named issue and per-series numbering;
+new Sales adapters and downstream scope/claim design are still required. Recommendations choose
+routine explicit atomic adoption/issue, one actionable overlapping scope, reasoned availability
+changes and a narrowly governed unknown-withholding disclosure path, not automatic acceptance.
+
+The [single owner matrix](phase-4-r5-business-review.md) records all new L1–L6 choices/options/defaults;
+the [reconciliation](phase-4-r5-acceptance-and-handover-boundaries.md) identifies exactly what R5 can
+settle now and what R6/R7 must later approve. No R5 ADR is accepted before that owner review.
+After approval, prepare governing decisions/contracts; no code authority follows from research.
+
+Q45 remains planning-originated, ready for owner review, blocking new R5 semantics/dependent quote
+operations only. No forwarded implementation question was supplied. Future owner-forwarded questions
+retain **Origin: IMPLEMENTATION AGENT**, original wording/example/commit/files and checked authority
+under [question reconciliation](../architecture/implementation-question-reconciliation.md).
+Routine choices within authority need clarification rather than duplicate policy ADRs. Documentation
+alone never marks a coding question VERIFIED; coding owner supplies actual implementation evidence.
 
 ## Related
+
+- [Consolidated business review](phase-4-r5-business-review.md) · [R6/R7 journey](phase-4-r5-acceptance-and-handover-boundaries.md)
 
 - [Phase 4](phase-4-sales-quotations-and-handover.md) · [R4 slices](phase-4-r4-implementation-slices.md)
 - [Q45](../OPEN-QUESTIONS.md#q45--r5-quotation-lifecycle-checkpoints-and-issued-offer-treatment)
