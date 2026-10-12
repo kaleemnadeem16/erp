@@ -45,7 +45,8 @@ final class IssuePoster
             return new PostedMovement($existing->load(['valuationEntries', 'negativeStockShortage']), null);
         }
 
-        $item = Item::query()->findOrFail($input['item_id']);
+        // Archiving stops new orders, not stock already in the warehouse leaving it (rejected exits, scraps).
+        $item = Item::withTrashed()->findOrFail($input['item_id']);
         // The location row is the stable lock even when this exact identity
         // has no layer yet. It closes the zero-stock issue/receipt race that
         // row-locking only existing layers cannot serialize.

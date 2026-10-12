@@ -31,6 +31,9 @@ class StockScrapLine extends Model
 
     protected $guarded = ['id', 'rejected_stock_exit_id'];
 
+    /** Frozen lines show their item code and name, so load it with the line (archived items included). */
+    protected $with = ['item'];
+
     protected function casts(): array
     {
         return ['package_portion' => 'array', 'quantity' => 'decimal:4'];
@@ -45,7 +48,7 @@ class StockScrapLine extends Model
     /** @return BelongsTo<Item, $this> */
     public function item(): BelongsTo
     {
-        return $this->belongsTo(Item::class);
+        return $this->belongsTo(Item::class)->withTrashed();
     }
 
     /** @return BelongsTo<Location, $this> */

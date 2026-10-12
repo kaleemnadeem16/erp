@@ -7,6 +7,7 @@ namespace Tests\Feature\Modules\Inventory;
 use App\Models\Role;
 use App\Models\User;
 use App\Modules\Administration\Models\AccessScopeLimit;
+use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Models\PackageOperation;
 use App\Modules\Inventory\Models\RejectedStockExit;
 use App\Modules\Inventory\Models\StockLayer;
@@ -118,6 +119,24 @@ class RejectedExitDocumentsApiTest extends RecordPackageCheckpointTest
         $this->postJson("/api/v1/supplier-returns/{$id}/cancel")->assertUnprocessable()->assertJsonPath('reason_code', 'DOCUMENT_NOT_DRAFT');
         $this->getJson("/api/v1/supplier-returns/{$id}")->assertOk()->assertJsonPath('data.status', 'POSTED');
         $this->getJson('/api/v1/supplier-returns?filter[status]=POSTED&filter[search]=RMA')->assertOk()->assertJsonCount(1, 'data');
+    }
+
+    public function test_an_item_archived_after_delivery_can_still_be_previewed_posted_and_shown_with_its_code_and_name(): void
+    {
+        $this->grouped();
+        $receipt = $this->mixedDelivery();
+        $line = $receipt->lines()->sole();
+        $item = Item::query()->findOrFail($line->item_id);
+        $item->delete();
+
+        $this->actingAs($this->drafter());
+        $this->postJson('/api/v1/supplier-returns/preview', ['lines' => [['goods_receipt_line_id' => $line->id, 'quantity' => '5']]])->assertOk();
+        $id = $this->postJson('/api/v1/supplier-returns', $this->returnBody($receipt))->assertCreated()
+            ->assertJsonPath('data.lines.0.item.id', $item->id)->assertJsonPath('data.lines.0.item.code', $item->code)->assertJsonPath('data.lines.0.item.name', $item->name)->json('data.id');
+
+        $this->actingAs($this->poster());
+        $this->postJson("/api/v1/supplier-returns/{$id}/post")->assertOk()->assertJsonPath('data.status', 'POSTED')->assertJsonPath('data.lines.0.item.code', $item->code);
+        $this->getJson("/api/v1/supplier-returns/{$id}?include=lines")->assertOk()->assertJsonPath('data.lines.0.item.name', $item->name);
     }
 
     public function test_a_scrap_that_differs_from_the_qa_decision_is_refused_at_post_until_it_says_why_and_a_failed_post_leaves_the_draft_untouched(): void

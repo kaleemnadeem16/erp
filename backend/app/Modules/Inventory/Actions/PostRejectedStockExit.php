@@ -98,7 +98,8 @@ final class PostRejectedStockExit
         }
         $location = Location::query()->lockForUpdate()->findOrFail($layer->location_id);
         WarehouseScope::requireLocation($actor, $capability, $location->id, 'exit rejected stock');
-        $item = Item::query()->findOrFail($receiptLine->item_id);
+        // Archived items stay returnable: stock already received must remain processable.
+        $item = Item::withTrashed()->findOrFail($receiptLine->item_id);
         // A retry racing the first request: re-check inside the lock.
         $existing = RejectedStockExit::query()->where('request_key', $key)->first();
         if ($existing !== null) {

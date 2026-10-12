@@ -4,6 +4,7 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
+import type { SupplierReturnLineResourceItem } from "./supplierReturnLineResourceItem";
 import type { SupplierReturnLineResourceOutcomeChangeReason } from "./supplierReturnLineResourceOutcomeChangeReason";
 import type { SupplierReturnLineResourcePackagePortion } from "./supplierReturnLineResourcePackagePortion";
 import type { SupplierReturnLineResourceRejectedStockExitId } from "./supplierReturnLineResourceRejectedStockExitId";
@@ -13,6 +14,7 @@ export interface SupplierReturnLineResource {
   line_no: number;
   goods_receipt_line_id: number;
   item_id: number;
+  item: SupplierReturnLineResourceItem;
   location_id: number;
   quantity: string;
   outcome_change_reason: SupplierReturnLineResourceOutcomeChangeReason;

@@ -57,7 +57,8 @@ final class PreviewRejectedStockExit
         if (! WarehouseScope::permitsLocation($actor, $capabilities, $layer->location_id)) {
             throw new DomainInvariantException('That delivery is outside your warehouses.', 'goods_receipt_line_id');
         }
-        $item = Item::query()->findOrFail($receiptLine->item_id);
+        // Archived items stay returnable: stock already received must remain processable.
+        $item = Item::withTrashed()->findOrFail($receiptLine->item_id);
         $location = Location::query()->findOrFail($layer->location_id);
         $balance = RejectedStockBalance::forLine($receiptLine->id);
         $blockers = [];

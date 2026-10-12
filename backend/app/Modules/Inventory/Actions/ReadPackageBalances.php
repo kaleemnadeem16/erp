@@ -30,7 +30,8 @@ final class ReadPackageBalances
         if ((int) $actor->company_id !== app(CompanyContext::class)->id() || ! $actor->can('inventory.package-state.view')) {
             throw new DomainInvariantException('Package-state view authority in the current company is required.');
         }
-        $item = Item::query()->findOrFail($itemId);
+        // Packages of archived items stay readable: the stock is still in the warehouse.
+        $item = Item::withTrashed()->findOrFail($itemId);
         $scopes = [];
         $layers = StockLayer::query()->where('item_id', $item->id)->where('qty_remaining', '>', 0)->whereNull('serial_no')
             ->when($locationId !== null, fn ($q) => $q->where('location_id', $locationId))->get();

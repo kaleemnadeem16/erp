@@ -36,7 +36,7 @@ final class ReplayPackageCheckpoint
             $operation = PackageOperation::query()->findOrFail($operationId);
             // Ordinary stock and checkpoint writers take this same stable scope lock.
             Location::query()->lockForUpdate()->findOrFail($operation->location_id);
-            $item = Item::query()->findOrFail($operation->item_id);
+            $item = Item::withTrashed()->findOrFail($operation->item_id);
             $states = PackageState::query()->where('operation_id', $operation->id)->orderBy('id')->get();
             $parts = PackageContribution::query()->whereIn('state_id', $states->pluck('id'))->orderBy('position')->orderBy('id')->get()->groupBy('state_id');
             $total = BigDecimal::zero();

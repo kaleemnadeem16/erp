@@ -4,6 +4,7 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
+import type { StockScrapLineResourceItem } from "./stockScrapLineResourceItem";
 import type { StockScrapLineResourceOutcomeChangeReason } from "./stockScrapLineResourceOutcomeChangeReason";
 import type { StockScrapLineResourcePackagePortion } from "./stockScrapLineResourcePackagePortion";
 import type { StockScrapLineResourceRejectedStockExitId } from "./stockScrapLineResourceRejectedStockExitId";
@@ -13,6 +14,7 @@ export interface StockScrapLineResource {
   line_no: number;
   goods_receipt_line_id: number;
   item_id: number;
+  item: StockScrapLineResourceItem;
   location_id: number;
   quantity: string;
   outcome_change_reason: StockScrapLineResourceOutcomeChangeReason;
