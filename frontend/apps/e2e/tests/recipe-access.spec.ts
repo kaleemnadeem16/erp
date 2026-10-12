@@ -82,12 +82,17 @@ test.describe("a Buyer (no recipe access)", () => {
   });
 });
 
-async function openItem(page: Page, code: string) {
+// The item screen is tabbed; formulations live on the "recipes" tab, which a person without recipe access must not be shown.
+async function openItemRecipesTab(page: Page, code: string) {
   await page.goto(`/items?filter.search=${code}`);
   await page.locator("tbody tr").filter({ hasText: code }).first().click();
   await expect(page).toHaveURL(/\/items\/\d+/);
   await expect(
-    page.getByRole("heading", { name: "Pack conversions", exact: true }),
+    page.getByRole("tab", { name: "Packaging & Units" }),
+  ).toBeVisible();
+  await page.goto(`${new URL(page.url()).pathname}?tab=recipes`);
+  await expect(
+    page.getByRole("tab", { name: "Packaging & Units" }),
   ).toBeVisible();
 }
 
@@ -104,7 +109,7 @@ test.describe("a Master data steward (items, no recipe access)", () => {
     });
     await signIn(page, STEWARD);
 
-    await openItem(page, ITEM_WITH_RECIPE);
+    await openItemRecipesTab(page, ITEM_WITH_RECIPE);
     await page.waitForLoadState("networkidle");
     await expect(
       page.locator('a[href^="/formulations/"][href$="/edit"]'),
@@ -121,7 +126,7 @@ test.describe("a Master data steward (items, no recipe access)", () => {
 test("the administrator sees the same item with its formulations", async ({
   page,
 }) => {
-  await openItem(page, ITEM_WITH_RECIPE);
+  await openItemRecipesTab(page, ITEM_WITH_RECIPE);
   // The card lists each formulation as a link to its edit screen; the sidebar link to the list does not match.
   await expect(
     page.locator('a[href^="/formulations/"][href$="/edit"]').first(),
