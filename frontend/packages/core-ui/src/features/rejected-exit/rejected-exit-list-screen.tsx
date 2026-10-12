@@ -1,8 +1,8 @@
 import { useMemo, useState, type ReactNode } from 'react';
-import { Outlet, useNavigate } from 'react-router';
-import type { PaginationState, SortingState } from '@tanstack/react-table';
+import { Outlet, useLocation, useNavigate } from 'react-router';
+import type { PaginationState, RowSelectionState, SortingState } from '@tanstack/react-table';
 import { useCurrenciesIndex, useWarehousesIndex, type SupplierAccountResource } from '@erp/core-api';
-import { Building2, Search, SlidersHorizontal, Tag, X } from 'lucide-react';
+import { Building2, Calendar, DollarSign, FileText, Search, SlidersHorizontal, Tag, Truck, User, X } from 'lucide-react';
 
 import { cn } from '../../lib/utils';
 import { Badge } from '../../components/ui/badge';
@@ -10,14 +10,17 @@ import { Button } from '../../components/ui/button';
 import { Combobox } from '../../components/ui/combobox';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '../../components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '../../components/ui/sheet';
 import { StatusBadge } from '../../components/ui/status-badge';
 import { ScreenTemplate } from '../../components/page/screen-template';
 import { PageHeader } from '../../components/page/page-header';
 import { DataTable, toTanStackColumns, isColumnVisibleByDefault } from '../../components/data-table';
+import { selectionColumn } from '../../components/data-table/columns';
 import type { DataColumn } from '../../components/data-table/types';
 import { PrintLayout, PrintableTable, PrintTrigger, useQuickPrint, type PrintMetaLine } from '../../components/print';
+import { SupplierCombobox } from '../../components/lookups/entity-comboboxes';
 import { apiSortToTableSorting, describeSort, tableSortingToApiSort, useListQueryState } from '../../lib/list-query-state';
 import { useColumnVisibilityPreference } from '../../lib/use-column-visibility-preference';
 import { useDebouncedSearch } from '../../lib/use-debounced-search';
@@ -36,15 +39,23 @@ interface Filters {
   search: string;
   warehouse_id: string;
   status: string;
+  supplier_id: string;
+  has_reference: string;
+  has_credit: string;
+  has_carrier_note: string;
+  created_from: string;
+  created_to: string;
+  reason: string;
   [key: string]: string;
 }
-
 
 export function ExitListScreen({ kind }: { kind: ExitKind }) {
   const config = EXIT_CONFIG[kind];
   const navigate = useNavigate();
+  const { search: locationSearch } = useLocation();
   const mayCreate = usePermission(config.createPermission);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
   const query = useListQueryState<Filters>({ defaultSort: '-created_at', defaultPerPage: 25 });
   const searchBox = useDebouncedSearch(query.filters.search, (value) => query.setFilter('search', value));
@@ -88,7 +99,7 @@ export function ExitListScreen({ kind }: { kind: ExitKind }) {
         cardRole: 'title',
         sortable: true,
         cell: (row) => (
-          <span className="font-semibold text-primary hover:underline ui-order-link">
+          <span className="font-medium text-foreground hover:underline" data-testid="exit-row-link">
             {row.number ?? `Draft #${row.id}`}
           </span>
         ),
@@ -175,7 +186,7 @@ export function ExitListScreen({ kind }: { kind: ExitKind }) {
       },
       {
         key: 'posted_at',
-        header: 'Posted',
+        header: 'Posted at',
         value: (row) => formatDateTime(row.posted_at),
         sortable: true,
         screenVisible: false,
@@ -191,21 +202,101 @@ export function ExitListScreen({ kind }: { kind: ExitKind }) {
   );
   const { view, setView } = useListViewPreference(`${config.basePath.slice(1)}-list`);
 
-  const tanStackColumns = useMemo(() => toTanStackColumns(columns), [columns]);
+  const tanStackColumns = useMemo(
+    () => [selectionColumn<Row>(), ...toTanStackColumns(columns)],
+    [columns],
+  );
   const sorting: SortingState = apiSortToTableSorting(query.sort, columns);
   const pagination: PaginationState = { pageIndex: query.page - 1, pageSize: query.perPage };
+
+  // Client-side filtering of loaded rows across dimensions not yet validated by the backend
+  const filteredRows = useMemo(() => {
+    let rows = list.rows as Row[];
+    if (query.filters.supplier_id && query.filters.supplier_id !== 'all') {
+      rows = rows.filter((r) => String(r.supplier_account_id) === query.filters.supplier_id);
+    }
+    if (query.filters.has_reference === 'true') {
+      rows = rows.filter((r) => Boolean(r.supplier_reference && r.supplier_reference.trim() !== ''));
+    } else if (query.filters.has_reference === 'false') {
+      rows = rows.filter((r) => !r.supplier_reference || r.supplier_reference.trim() === '');
+    }
+    if (query.filters.has_credit === 'true') {
+      rows = rows.filter((r) => Boolean(r.expected_credit_amount && Number(r.expected_credit_amount) > 0));
+    } else if (query.filters.has_credit === 'false') {
+      rows = rows.filter((r) => !r.expected_credit_amount || Number(r.expected_credit_amount) === 0);
+    }
+    if (query.filters.has_carrier_note === 'true') {
+      rows = rows.filter((r) => Boolean(r.carrier_note && r.carrier_note.trim() !== ''));
+    } else if (query.filters.has_carrier_note === 'false') {
+      rows = rows.filter((r) => !r.carrier_note || r.carrier_note.trim() === '');
+    }
+    if (query.filters.created_from) {
+      const fromTime = new Date(query.filters.created_from).getTime();
+      rows = rows.filter((r) => (r.created_at ? new Date(r.created_at).getTime() >= fromTime : false));
+    }
+    if (query.filters.created_to) {
+      const toTime = new Date(query.filters.created_to).getTime() + 86400000;
+      rows = rows.filter((r) => (r.created_at ? new Date(r.created_at).getTime() <= toTime : false));
+    }
+    if (query.filters.reason) {
+      const reasonLower = query.filters.reason.toLowerCase();
+      rows = rows.filter((r) => r.reason.toLowerCase().includes(reasonLower));
+    }
+    return rows;
+  }, [list.rows, query.filters]);
+
+  const selectedRows = useMemo(
+    () => filteredRows.filter((row) => rowSelection[String(row.id)]),
+    [filteredRows, rowSelection],
+  );
+
+  const advancedFilterCount = [
+    query.filters.supplier_id && query.filters.supplier_id !== 'all',
+    query.filters.has_reference && query.filters.has_reference !== 'all',
+    query.filters.has_credit && query.filters.has_credit !== 'all',
+    query.filters.has_carrier_note && query.filters.has_carrier_note !== 'all',
+    query.filters.created_from,
+    query.filters.created_to,
+    query.filters.reason,
+  ].filter(Boolean).length;
 
   const activeFilterCount = [
     query.filters.search,
     query.filters.warehouse_id && query.filters.warehouse_id !== 'all',
     query.filters.status && query.filters.status !== 'all',
+    query.filters.supplier_id && query.filters.supplier_id !== 'all',
+    query.filters.has_reference && query.filters.has_reference !== 'all',
+    query.filters.has_credit && query.filters.has_credit !== 'all',
+    query.filters.has_carrier_note && query.filters.has_carrier_note !== 'all',
+    query.filters.created_from,
+    query.filters.created_to,
+    query.filters.reason,
   ].filter(Boolean).length;
+
+  const clearAdvancedFilters = () => {
+    query.setFilters({
+      supplier_id: undefined,
+      has_reference: undefined,
+      has_credit: undefined,
+      has_carrier_note: undefined,
+      created_from: undefined,
+      created_to: undefined,
+      reason: undefined,
+    });
+  };
 
   const clearAllFilters = () => {
     query.setFilters({
       search: undefined,
       warehouse_id: undefined,
       status: undefined,
+      supplier_id: undefined,
+      has_reference: undefined,
+      has_credit: undefined,
+      has_carrier_note: undefined,
+      created_from: undefined,
+      created_to: undefined,
+      reason: undefined,
     });
   };
 
@@ -222,9 +313,7 @@ export function ExitListScreen({ kind }: { kind: ExitKind }) {
         id: 'search',
         icon: <Search className="h-3.5 w-3.5" />,
         label: `Search: “${query.filters.search}”`,
-        onRemove: () => {
-          query.setFilter('search', undefined);
-        },
+        onRemove: () => query.setFilter('search', undefined),
       });
     }
 
@@ -247,8 +336,72 @@ export function ExitListScreen({ kind }: { kind: ExitKind }) {
       });
     }
 
+    if (query.filters.supplier_id && query.filters.supplier_id !== 'all') {
+      const supplierName = supplierLabels.get(Number(query.filters.supplier_id)) ?? `#${query.filters.supplier_id}`;
+      chips.push({
+        id: 'supplier',
+        icon: <User className="h-3.5 w-3.5" />,
+        label: `Supplier: ${supplierName}`,
+        onRemove: () => query.setFilter('supplier_id', undefined),
+      });
+    }
+
+    if (query.filters.has_reference && query.filters.has_reference !== 'all') {
+      chips.push({
+        id: 'has_reference',
+        icon: <FileText className="h-3.5 w-3.5" />,
+        label: query.filters.has_reference === 'true' ? "With supplier ref" : "Without supplier ref",
+        onRemove: () => query.setFilter('has_reference', undefined),
+      });
+    }
+
+    if (query.filters.has_credit && query.filters.has_credit !== 'all') {
+      chips.push({
+        id: 'has_credit',
+        icon: <DollarSign className="h-3.5 w-3.5" />,
+        label: query.filters.has_credit === 'true' ? "With credit" : "Without credit",
+        onRemove: () => query.setFilter('has_credit', undefined),
+      });
+    }
+
+    if (query.filters.has_carrier_note && query.filters.has_carrier_note !== 'all') {
+      chips.push({
+        id: 'has_carrier_note',
+        icon: <Truck className="h-3.5 w-3.5" />,
+        label: query.filters.has_carrier_note === 'true' ? "With carrier note" : "Without carrier note",
+        onRemove: () => query.setFilter('has_carrier_note', undefined),
+      });
+    }
+
+    if (query.filters.created_from) {
+      chips.push({
+        id: 'created_from',
+        icon: <Calendar className="h-3.5 w-3.5" />,
+        label: `From: ${query.filters.created_from}`,
+        onRemove: () => query.setFilter('created_from', undefined),
+      });
+    }
+
+    if (query.filters.created_to) {
+      chips.push({
+        id: 'created_to',
+        icon: <Calendar className="h-3.5 w-3.5" />,
+        label: `To: ${query.filters.created_to}`,
+        onRemove: () => query.setFilter('created_to', undefined),
+      });
+    }
+
+    if (query.filters.reason) {
+      chips.push({
+        id: 'reason',
+        icon: <FileText className="h-3.5 w-3.5" />,
+        label: `Reason: “${query.filters.reason}”`,
+        onRemove: () => query.setFilter('reason', undefined),
+      });
+    }
+
     return chips;
-  }, [query.filters, warehouses, query]);
+  }, [query.filters, warehouses, supplierLabels, query]);
 
   const printMeta = useMemo(() => {
     const meta: PrintMetaLine[] = [];
@@ -260,13 +413,21 @@ export function ExitListScreen({ kind }: { kind: ExitKind }) {
     if (query.filters.status && query.filters.status !== 'all') {
       meta.push({ label: 'Status', value: EXIT_STATUS_LABEL[query.filters.status] ?? query.filters.status });
     }
+    if (query.filters.supplier_id && query.filters.supplier_id !== 'all') {
+      const name = supplierLabels.get(Number(query.filters.supplier_id)) ?? `#${query.filters.supplier_id}`;
+      meta.push({ label: 'Supplier', value: name });
+    }
     const sortDesc = describeSort(query.sort, columns);
     if (sortDesc) meta.push({ label: 'Sort', value: sortDesc });
     return meta;
-  }, [query.filters, query.sort, warehouses, columns]);
+  }, [query.filters, query.sort, warehouses, supplierLabels, columns]);
 
   const { contentRef: printRef, print } = useQuickPrint({
     documentTitle: `${config.plural} List`,
+  });
+
+  const { contentRef: selectedPrintRef, print: printSelected } = useQuickPrint({
+    documentTitle: `${config.plural} (Selected)`,
   });
 
   return (
@@ -279,11 +440,19 @@ export function ExitListScreen({ kind }: { kind: ExitKind }) {
               ? 'Rejected stock sent back to the supplier. Start one from a delivery’s rejected stock.'
               : 'Rejected stock written off. Start one from a delivery’s rejected stock.'
           }
-          primaryAction={mayCreate ? { label: `New ${config.noun}`, onClick: () => navigate(`${config.basePath}/new`) } : undefined}
+          primaryAction={
+            mayCreate
+              ? {
+                  label: `New ${config.noun}`,
+                  onClick: () => navigate({ pathname: `${config.basePath}/new`, search: locationSearch }),
+                }
+              : undefined
+          }
         />
 
+        {/* Filter Toolbar (Row 1: Primary Inputs & Controls) */}
         <div className="flex flex-wrap items-center gap-2">
-          <div className="relative flex-1 md:w-80 md:flex-none">
+          <div className="relative flex-1 md:w-72 md:flex-none">
             <Search
               aria-hidden="true"
               className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
@@ -291,8 +460,8 @@ export function ExitListScreen({ kind }: { kind: ExitKind }) {
             <Input
               placeholder={
                 kind === 'SUPPLIER_RETURN'
-                  ? 'Search return number or supplier ref…'
-                  : 'Search scrap number or disposal ref…'
+                  ? 'Search return number or ref…'
+                  : 'Search scrap number or ref…'
               }
               className="h-10 w-full pl-9 pr-8"
               {...searchBox.searchProps}
@@ -314,7 +483,7 @@ export function ExitListScreen({ kind }: { kind: ExitKind }) {
           <div className="hidden items-center gap-2 md:flex md:flex-wrap">
             <Combobox
               {...lookupState(warehousesQuery, 'warehouses')}
-              className="h-10 w-48"
+              className="h-10 w-44"
               aria-label="Warehouse"
               value={query.filters.warehouse_id ?? 'all'}
               onValueChange={(value) => query.setFilter('warehouse_id', value === 'all' ? undefined : value)}
@@ -334,6 +503,122 @@ export function ExitListScreen({ kind }: { kind: ExitKind }) {
                 ))}
               </SelectContent>
             </Select>
+
+            {/* Desktop More Filters Popover */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn('h-10 gap-1.5', advancedFilterCount > 0 && 'ui-btn-filters-active')}
+                  aria-label="More filters"
+                >
+                  <SlidersHorizontal className="h-4 w-4" />
+                  <span>More filters</span>
+                  {advancedFilterCount > 0 && (
+                    <Badge className="ml-1 h-5 min-w-5 justify-center rounded-full px-1 text-[11px] ui-filter-badge">
+                      {advancedFilterCount}
+                    </Badge>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-80 space-y-3 p-4">
+                <div className="flex items-center justify-between border-b pb-2">
+                  <h4 className="text-sm font-semibold">Additional Filters</h4>
+                  {advancedFilterCount > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-1.5 text-xs text-muted-foreground hover:text-foreground"
+                      onClick={clearAdvancedFilters}
+                    >
+                      Reset
+                    </Button>
+                  )}
+                </div>
+
+                {kind === 'SUPPLIER_RETURN' && (
+                  <div className="space-y-1">
+                    <Label className="text-xs">Supplier</Label>
+                    <SupplierCombobox
+                      label="Supplier"
+                      value={query.filters.supplier_id ?? ''}
+                      onValueChange={(val) => query.setFilter('supplier_id', val || undefined)}
+                      placeholder="All suppliers"
+                      className="h-9 w-full"
+                    />
+                  </div>
+                )}
+
+                <div className="space-y-1">
+                  <Label className="text-xs">Reason contains</Label>
+                  <Input
+                    className="h-9"
+                    placeholder="e.g. Viscosity, Damaged…"
+                    value={query.filters.reason ?? ''}
+                    onChange={(e) => query.setFilter('reason', e.target.value || undefined)}
+                  />
+                </div>
+
+                {kind === 'SUPPLIER_RETURN' && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Supplier Reference</Label>
+                      <Select
+                        value={query.filters.has_reference ?? 'all'}
+                        onValueChange={(val) => query.setFilter('has_reference', val === 'all' ? undefined : val)}
+                      >
+                        <SelectTrigger className="h-9 text-xs">
+                          <SelectValue placeholder="All" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All</SelectItem>
+                          <SelectItem value="true">With ref</SelectItem>
+                          <SelectItem value="false">Without ref</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label className="text-xs">Expected Credit</Label>
+                      <Select
+                        value={query.filters.has_credit ?? 'all'}
+                        onValueChange={(val) => query.setFilter('has_credit', val === 'all' ? undefined : val)}
+                      >
+                        <SelectTrigger className="h-9 text-xs">
+                          <SelectValue placeholder="All" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All</SelectItem>
+                          <SelectItem value="true">With credit</SelectItem>
+                          <SelectItem value="false">Without credit</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Created from</Label>
+                    <Input
+                      type="date"
+                      className="h-9 text-xs"
+                      value={query.filters.created_from ?? ''}
+                      onChange={(e) => query.setFilter('created_from', e.target.value || undefined)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Created to</Label>
+                    <Input
+                      type="date"
+                      className="h-9 text-xs"
+                      value={query.filters.created_to ?? ''}
+                      onChange={(e) => query.setFilter('created_to', e.target.value || undefined)}
+                    />
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
 
             <PrintTrigger onPrint={() => print()} className="h-10 px-4" />
           </div>
@@ -362,6 +647,7 @@ export function ExitListScreen({ kind }: { kind: ExitKind }) {
           </Button>
         </div>
 
+        {/* Filter Toolbar (Row 2: Active Filter Chips Bar) */}
         {activeChips.length > 0 && (
           <div className="flex flex-wrap items-center gap-1.5 pt-1">
             {activeChips.map((chip) => (
@@ -393,18 +679,53 @@ export function ExitListScreen({ kind }: { kind: ExitKind }) {
           </div>
         )}
 
+        {/* Bulk Selection Bar */}
+        {selectedRows.length > 0 && (
+          <div
+            role="region"
+            aria-label="Bulk actions"
+            className="flex flex-wrap items-center gap-3 rounded-md border bg-muted/40 px-3 py-2 text-sm"
+          >
+            <span className="font-medium">{selectedRows.length} selected</span>
+            <PrintTrigger
+              onPrint={() => printSelected()}
+              label="Print selected"
+              className="h-8"
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8"
+              onClick={() => setRowSelection({})}
+            >
+              Clear selection
+            </Button>
+          </div>
+        )}
+
+        {/* Hidden Print Layouts */}
         <div className="hidden">
           <div ref={printRef}>
             <PrintLayout
               title={config.plural}
               meta={printMeta}
-              recordCount={list.rows.length}
+              recordCount={filteredRows.length}
             >
-              <PrintableTable<Row> columns={columns} rows={list.rows as Row[]} />
+              <PrintableTable<Row> columns={columns} rows={filteredRows} />
+            </PrintLayout>
+          </div>
+          <div ref={selectedPrintRef}>
+            <PrintLayout
+              title={`${config.plural} (Selected)`}
+              meta={printMeta}
+              recordCount={selectedRows.length}
+            >
+              <PrintableTable<Row> columns={columns} rows={selectedRows} />
             </PrintLayout>
           </div>
         </div>
 
+        {/* Mobile Filters Bottom Sheet */}
         <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
           <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto md:hidden">
             <SheetHeader>
@@ -425,6 +746,7 @@ export function ExitListScreen({ kind }: { kind: ExitKind }) {
                   options={[{ value: 'all', label: 'All warehouses' }, ...warehouses.map((warehouse) => ({ value: String(warehouse.id), label: warehouse.name }))]}
                 />
               </div>
+
               <div className="space-y-1">
                 <Label>Status</Label>
                 <Select value={query.filters.status ?? 'all'} onValueChange={(value) => query.setFilter('status', value === 'all' ? undefined : value)}>
@@ -438,6 +760,88 @@ export function ExitListScreen({ kind }: { kind: ExitKind }) {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              {kind === 'SUPPLIER_RETURN' && (
+                <div className="space-y-1">
+                  <Label>Supplier</Label>
+                  <SupplierCombobox
+                    label="Supplier"
+                    value={query.filters.supplier_id ?? ''}
+                    onValueChange={(val) => query.setFilter('supplier_id', val || undefined)}
+                    placeholder="All suppliers"
+                    className="h-10 w-full"
+                  />
+                </div>
+              )}
+
+              <div className="space-y-1">
+                <Label>Reason contains</Label>
+                <Input
+                  className="h-10"
+                  placeholder="e.g. Viscosity, Damaged…"
+                  value={query.filters.reason ?? ''}
+                  onChange={(e) => query.setFilter('reason', e.target.value || undefined)}
+                />
+              </div>
+
+              {kind === 'SUPPLIER_RETURN' && (
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label>Supplier Reference</Label>
+                    <Select
+                      value={query.filters.has_reference ?? 'all'}
+                      onValueChange={(val) => query.setFilter('has_reference', val === 'all' ? undefined : val)}
+                    >
+                      <SelectTrigger className="h-10">
+                        <SelectValue placeholder="All" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All</SelectItem>
+                        <SelectItem value="true">With ref</SelectItem>
+                        <SelectItem value="false">Without ref</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label>Expected Credit</Label>
+                    <Select
+                      value={query.filters.has_credit ?? 'all'}
+                      onValueChange={(val) => query.setFilter('has_credit', val === 'all' ? undefined : val)}
+                    >
+                      <SelectTrigger className="h-10">
+                        <SelectValue placeholder="All" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All</SelectItem>
+                        <SelectItem value="true">With credit</SelectItem>
+                        <SelectItem value="false">Without credit</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label>Created from</Label>
+                  <Input
+                    type="date"
+                    className="h-10"
+                    value={query.filters.created_from ?? ''}
+                    onChange={(e) => query.setFilter('created_from', e.target.value || undefined)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Created to</Label>
+                  <Input
+                    type="date"
+                    className="h-10"
+                    value={query.filters.created_to ?? ''}
+                    onChange={(e) => query.setFilter('created_to', e.target.value || undefined)}
+                  />
+                </div>
               </div>
             </div>
             <SheetFooter className="flex-row gap-2 pt-2">
@@ -460,8 +864,8 @@ export function ExitListScreen({ kind }: { kind: ExitKind }) {
 
         <DataTable
           columns={tanStackColumns}
-          data={list.rows as Row[]}
-          rowCount={list.total}
+          data={filteredRows}
+          rowCount={filteredRows.length}
           pagination={pagination}
           onPaginationChange={(updater) => {
             const next = typeof updater === 'function' ? updater(pagination) : updater;
@@ -475,7 +879,10 @@ export function ExitListScreen({ kind }: { kind: ExitKind }) {
           }}
           columnVisibility={columnVisibility}
           onColumnVisibilityChange={setColumnVisibility}
-          onRowClick={(row: Row) => navigate(`${config.basePath}/${row.id}`)}
+          rowSelection={rowSelection}
+          onRowSelectionChange={setRowSelection}
+          getRowId={(row) => String(row.id)}
+          onRowClick={(row: Row) => navigate({ pathname: `${config.basePath}/${row.id}`, search: locationSearch })}
           isLoading={list.query.isLoading}
           isError={list.query.isError}
           error={list.query.error}

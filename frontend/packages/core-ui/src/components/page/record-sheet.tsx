@@ -191,8 +191,8 @@ export function RecordSheet({
                       </div>
                     )}
                     <div className="min-w-0">
-                      <SheetTitle className="record-sheet-title">
-                        {title}
+                      <SheetTitle asChild className="record-sheet-title">
+                        <h1>{title}</h1>
                       </SheetTitle>
                       {description && (
                         <SheetDescription className="record-sheet-description">

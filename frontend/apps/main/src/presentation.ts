@@ -44,12 +44,12 @@ export const presentation: {
   itemCreate: "sheet",
   itemDetail: "sheet",
   itemEdit: "sheet",
-  supplierReturnCreate: "page",
-  supplierReturnDetail: "page",
-  supplierReturnEdit: "page",
-  stockScrapCreate: "page",
-  stockScrapDetail: "page",
-  stockScrapEdit: "page",
+  supplierReturnCreate: "sheet",
+  supplierReturnDetail: "sheet",
+  supplierReturnEdit: "sheet",
+  stockScrapCreate: "sheet",
+  stockScrapDetail: "sheet",
+  stockScrapEdit: "sheet",
 };
 
 /**

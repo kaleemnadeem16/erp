@@ -53,7 +53,7 @@ test('a grouped delivery’s rejected can goes back to the supplier: preview, po
   await page.getByTestId('exit-confirm-action').click();
 
   // Posted: numbered, frozen, no controls.
-  await expect(page.getByText('Posted', { exact: true }).first()).toBeVisible();
+  await expect(page.getByTestId('exit-detail').getByText('Posted', { exact: true }).first()).toBeVisible();
   await expect(page.getByRole('heading', { level: 1 })).toContainText('SRN-');
   await expect(page.getByTestId('exit-frozen-line')).toContainText('1 sealed Sealed 5 L can');
   await expect(page.getByTestId('exit-post')).toHaveCount(0);
@@ -89,7 +89,7 @@ test('rejected grouped stock is scrapped from the item page: the delivery is cho
   await page.getByTestId('exit-save').click();
 
   await expect(page).toHaveURL(/\/stock-scraps\/\d+$/);
-  await expect(page.getByText('Licensed waste collector')).toBeVisible();
+  await expect(page.getByTestId('exit-detail').getByText('Licensed waste collector')).toBeVisible();
   await page.getByTestId('exit-post').click();
   await expect(page.getByTestId('exit-confirm')).toContainText('written off');
   await page.getByTestId('exit-confirm-action').click();
