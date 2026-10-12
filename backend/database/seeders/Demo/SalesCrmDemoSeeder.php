@@ -60,6 +60,8 @@ final class SalesCrmDemoSeeder extends Seeder
         $admin->givePermissionTo(Sales::all());
         $this->personas($admin);
         if (Lead::query()->where('enquirer_name', 'Rukhsana Baig')->exists()) {
+            $this->duplicateIntake();
+
             return; // Immutable history and later manual progress are preserved.
         }
         DB::transaction(function () use ($admin): void {
@@ -87,7 +89,7 @@ final class SalesCrmDemoSeeder extends Seeder
 
             // A disqualified enquiry.
             $out = app(RecordLead::class)(['enquirer_name' => 'Imran Siddiqui', 'source' => 'Walk-in', 'description' => 'Wanted a one-bedroom repaint in another city.'], $rep);
-            app(DecideLead::class)->disqualify($out, $rep, 'Outside our service area');
+            app(DecideLead::class)->disqualify($out, $rep, 'Outside our service area', 'demo-lead-out-of-area', $out->latestDecisionEventId());
 
             // A direct deal (no enquiry) for an individual buyer, with a known value, and one for an organisation with no value yet.
             app(CreateOpportunity::class)(['title' => 'Plant room refurbishment', 'party_id' => $metro->id, 'expected_amount' => '1200000', 'expected_currency_id' => $pkr->id,
@@ -105,6 +107,25 @@ final class SalesCrmDemoSeeder extends Seeder
             $leaver->givePermissionTo([Sales::OPPORTUNITY_MANAGE]);
             app(CreateOpportunity::class)(['title' => 'Showroom repaint (owner has left)', 'party_id' => $metro->id, 'owner_id' => $leaver->id], $admin);
             app(ChangeMemberStatus::class)($leaver->refresh(), MemberStatus::Suspended, 'Demo: left the company', $admin);
+        });
+        $this->duplicateIntake();
+    }
+
+    /** ADR 0111: an intake found to be a duplicate is disqualified while the two genuine deals already derived from it stay open. Added once, beside the original demo. */
+    private function duplicateIntake(): void
+    {
+        $rep = User::query()->where('email', self::REPRESENTATIVE)->first();
+        $alpha = Party::query()->where('code', 'cus-alpha')->first();
+        if ($rep === null || $alpha === null || Lead::query()->where('enquirer_name', 'Bilal Chaudhry')->exists()) {
+            return;
+        }
+        DB::transaction(function () use ($rep, $alpha): void {
+            $lead = app(RecordLead::class)(['enquirer_name' => 'Bilal Chaudhry', 'enquirer_organisation' => 'Alpha Decorators', 'source' => 'Website',
+                'description' => 'Submitted twice: the second form duplicates a running enquiry.'], $rep);
+            app(LinkLeadParty::class)($lead, $alpha->id, $rep);
+            app(CreateOpportunity::class)(['title' => 'Showroom lighting', 'conversion_key' => 'demo-dup-lighting'], $rep, $lead);
+            app(CreateOpportunity::class)(['title' => 'Showroom signage', 'conversion_key' => 'demo-dup-signage'], $rep, $lead);
+            app(DecideLead::class)->disqualify($lead->refresh(), $rep, 'Duplicate intake: already being pursued', 'demo-lead-duplicate', $lead->latestDecisionEventId());
         });
     }
 

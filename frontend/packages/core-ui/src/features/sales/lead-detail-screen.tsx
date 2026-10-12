@@ -14,7 +14,7 @@ import { Label } from '../../components/ui/label';
 import { Skeleton } from '../../components/ui/skeleton';
 import { Textarea } from '../../components/ui/textarea';
 import { usePermission } from '../../hooks/use-permission';
-import { getApiErrorMessage, isApiError } from '../../lib/api-errors';
+import { getApiErrorMessage, getApiReasonCode, isApiError } from '../../lib/api-errors';
 import { formatDateTime } from '../../lib/format-date';
 import { HistoryList, LeadStatusBadge, NotesList, OutcomeBadge, RegisterPartyDialog, SALES } from './sales-common';
 
@@ -40,6 +40,8 @@ export function LeadDetailScreen() {
   const [ownerId, setOwnerId] = useState('');
   const [title, setTitle] = useState('');
   const conversionKey = useRef(newKey());
+  // One key per intent: the same reason confirmed against the same decision retries safely; any change of either is a new request.
+  const disqualifyAttempt = useRef<{ key: string; reason: string; marker: number | null } | null>(null);
   const qualify = useLeadsQualify();
   const disqualify = useLeadsDisqualify();
   const revive = useLeadsRevive();
@@ -55,8 +57,19 @@ export function LeadDetailScreen() {
       await query.refetch();
       done?.();
     } catch (failure) {
-      setError(getApiErrorMessage(failure));
+      setError(getApiReasonCode(failure) === 'STALE_EVIDENCE' ? 'This enquiry was decided or converted since you opened it. It has been refreshed: review it, then confirm again.' : getApiErrorMessage(failure));
+      // A stale confirmation is reviewed against fresh data, never overwritten.
+      if (getApiReasonCode(failure) === 'STALE_EVIDENCE') await query.refetch();
     }
+  }
+
+  function disqualifyIntent(reasonText: string, marker: number | null) {
+    const current = disqualifyAttempt.current;
+    if (current === null || current.reason !== reasonText || current.marker !== marker) {
+      disqualifyAttempt.current = { key: newKey(), reason: reasonText, marker };
+    }
+
+    return disqualifyAttempt.current!;
   }
 
   if (query.isLoading) return <Skeleton className="m-6 h-64" />;
@@ -81,6 +94,7 @@ export function LeadDetailScreen() {
     setMode(null);
     setReason('');
     setError(null);
+    disqualifyAttempt.current = null;
   };
 
   return (
@@ -206,7 +220,7 @@ export function LeadDetailScreen() {
           <DialogContent className="max-h-[90vh] max-w-md overflow-y-auto" data-testid="lead-reason-dialog">
             <DialogHeader>
               <DialogTitle>{mode === 'revive' ? 'Revive this enquiry' : 'Disqualify this enquiry'}</DialogTitle>
-              <DialogDescription>{mode === 'revive' ? 'It returns to new; what was decided before stays in the history.' : 'It stays on record with your reason; you can revive it later.'}</DialogDescription>
+              <DialogDescription>{mode === 'revive' ? 'It returns to new; what was decided before stays in the history.' : 'The enquiry stays on record with your reason, and you can revive it later. Deals already created from it stay open and are not changed.'}</DialogDescription>
             </DialogHeader>
             <div className="space-y-1">
               <Label htmlFor="lead-reason">Why?</Label>
@@ -220,7 +234,7 @@ export function LeadDetailScreen() {
               <Button
                 disabled={reason.trim() === ''}
                 data-testid="lead-reason-confirm"
-                onClick={() => void run(() => (mode === 'revive' ? revive.mutateAsync({ lead: id, data: { reason: reason.trim() } }) : disqualify.mutateAsync({ lead: id, data: { reason: reason.trim() } })), closeDialog)}
+                onClick={() => void run(() => (mode === 'revive' ? revive.mutateAsync({ lead: id, data: { reason: reason.trim() } }) : disqualify.mutateAsync({ lead: id, data: { reason: reason.trim(), request_key: disqualifyIntent(reason.trim(), lead.decision_event_id).key, expected_decision_event_id: lead.decision_event_id } })), closeDialog)}
               >
                 {mode === 'revive' ? 'Revive' : 'Disqualify'}
               </Button>

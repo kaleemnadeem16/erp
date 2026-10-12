@@ -16,6 +16,7 @@ import type { LeadResourceAssignedName } from "./leadResourceAssignedName";
 import type { LeadResourceQualifiedAt } from "./leadResourceQualifiedAt";
 import type { LeadResourceDisqualifiedAt } from "./leadResourceDisqualifiedAt";
 import type { LeadResourceDisqualificationReason } from "./leadResourceDisqualificationReason";
+import type { LeadResourceDecisionEventId } from "./leadResourceDecisionEventId";
 import type { LeadResourceParty } from "./leadResourceParty";
 import type { OpportunityResource } from "./opportunityResource";
 import type { SalesNoteResource } from "./salesNoteResource";
@@ -39,6 +40,8 @@ export interface LeadResource {
   qualified_at: LeadResourceQualifiedAt;
   disqualified_at: LeadResourceDisqualifiedAt;
   disqualification_reason: LeadResourceDisqualificationReason;
+  /** The newest decision on this enquiry; a decision is confirmed against it so a stale screen cannot overwrite a newer one. */
+  decision_event_id: LeadResourceDecisionEventId;
   created_by: number;
   party?: LeadResourceParty;
   opportunities?: OpportunityResource[];

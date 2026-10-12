@@ -80,7 +80,7 @@ class CrmFoundationTest extends TestCase
         $id = $this->postJson('/api/v1/leads', $this->lead())->json('data.id');
 
         $this->postJson("/api/v1/leads/{$id}/disqualify", [])->assertUnprocessable();
-        $this->postJson("/api/v1/leads/{$id}/disqualify", ['reason' => 'Not our market'])->assertOk()->assertJsonPath('data.status', 'DISQUALIFIED');
+        $this->postJson("/api/v1/leads/{$id}/disqualify", ['reason' => 'Not our market', 'request_key' => 'k-dq-1', 'expected_decision_event_id' => null])->assertOk()->assertJsonPath('data.status', 'DISQUALIFIED');
         $this->postJson("/api/v1/leads/{$id}/qualify")->assertUnprocessable()->assertJsonPath('reason_code', 'LEAD_DISQUALIFIED');
         $this->postJson("/api/v1/leads/{$id}/revive", ['reason' => 'They came back'])->assertOk()->assertJsonPath('data.status', 'NEW');
         $this->postJson("/api/v1/leads/{$id}/qualify")->assertOk()->assertJsonPath('data.status', 'QUALIFIED');
@@ -118,7 +118,10 @@ class CrmFoundationTest extends TestCase
         $this->assertSame(2, Opportunity::query()->where('lead_id', $id)->count());
         $this->assertSame(0, DB::table('customer_accounts')->count(), 'conversion never creates a customer account');
         $this->assertSame('QUALIFIED', DB::table('sales_leads')->where('id', $id)->value('status'));
-        $this->postJson("/api/v1/leads/{$id}/disqualify", ['reason' => 'x'])->assertUnprocessable()->assertJsonPath('reason_code', 'LEAD_HAS_OPEN_OPPORTUNITY');
+        // Opportunities derived from an enquiry are separate pursuits: disqualifying the enquiry no longer depends on them (ADR 0111).
+        $marker = $this->getJson("/api/v1/leads/{$id}")->json('data.decision_event_id');
+        $this->postJson("/api/v1/leads/{$id}/disqualify", ['reason' => 'Duplicate intake', 'request_key' => 'k-dq-2', 'expected_decision_event_id' => $marker])->assertOk()->assertJsonPath('data.status', 'DISQUALIFIED');
+        $this->assertSame(2, Opportunity::query()->where('lead_id', $id)->where('outcome', 'OPEN')->count());
         $this->postJson("/api/v1/leads/{$id}/convert", ['title' => 'No key'])->assertUnprocessable();
     }
 

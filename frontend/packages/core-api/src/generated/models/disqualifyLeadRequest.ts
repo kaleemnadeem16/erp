@@ -4,8 +4,16 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
+import type { DisqualifyLeadRequestExpectedDecisionEventId } from "./disqualifyLeadRequestExpectedDecisionEventId";
 
 export interface DisqualifyLeadRequest {
   /** @maxLength 1000 */
   reason: string;
+  /** @maxLength 85 */
+  request_key: string;
+  /**
+   * The newest decision the caller saw on this enquiry (its `decision_event_id`); null when it has never been decided.
+   * @minimum 1
+   */
+  expected_decision_event_id: DisqualifyLeadRequestExpectedDecisionEventId;
 }

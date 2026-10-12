@@ -5,7 +5,10 @@
  * OpenAPI spec version: 0.0.1
  */
 import type { LeadResource } from "./leadResource";
+import type { LeadsDisqualify200OperationResult } from "./leadsDisqualify200OperationResult";
 
 export type LeadsDisqualify200 = {
   data: LeadResource;
+  operation_result: LeadsDisqualify200OperationResult;
+  replayed: boolean;
 };

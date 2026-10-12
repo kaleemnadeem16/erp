@@ -83,6 +83,15 @@ test('a representative records an enquiry, qualifies it, links a partner and tur
   // A representative cannot reassign, close, or configure.
   await expect(page.getByTestId('opportunity-reassign')).toHaveCount(0);
   await expect(page.getByTestId('opportunity-close')).toHaveCount(0);
+
+  // The intake turns out to be a duplicate: it is disqualified on its own merits while both genuine deals stay open (ADR 0111).
+  await page.goto(leadUrl);
+  await page.getByTestId('lead-disqualify').click();
+  await expect(page.getByTestId('lead-reason-dialog')).toContainText('stay open');
+  await page.getByLabel('Why?').fill('Duplicate intake');
+  await page.getByTestId('lead-reason-confirm').click();
+  await expect(page.getByTestId('lead-detail')).toContainText('Disqualified');
+  await expect(page.getByTestId('lead-opportunities').getByRole('link')).toHaveCount(2);
   await page.close();
 });
 
@@ -158,7 +167,8 @@ test('a manager closes and reopens a deal, and replaces the owner of a deal whos
 test('a viewer reads the pipeline and cannot change it; a branch seller limited to their units is refused', async ({ browser }) => {
   test.setTimeout(180_000);
   const viewer = await as(browser, VIEWER);
-  await viewer.goto('/opportunities');
+  // Found by a deterministic server-side search: earlier runs leave deals behind, so the seeded one is not on page one.
+  await viewer.goto('/opportunities?filter.search=Plant%20room');
   await expect(viewer.getByTestId('opportunities-list')).toBeVisible();
   await expect(viewer.getByRole('row', { name: /Plant room refurbishment/ })).toBeVisible();
   await expect(viewer.getByRole('button', { name: 'New opportunity' })).toHaveCount(0);
@@ -219,7 +229,7 @@ test('the screens fit a phone and have no serious accessibility problems in ligh
       const serious = results.violations.filter((violation) => violation.impact === 'critical' || violation.impact === 'serious');
       expect(serious, `${path} (${mode}): ${JSON.stringify(serious, null, 2)}`).toEqual([]);
     }
-    await page.goto('/opportunities');
+    await page.goto('/opportunities?filter.search=Plant%20room');
     await page.getByRole('row', { name: /Plant room refurbishment/ }).or(page.getByText('Plant room refurbishment')).first().click();
     await expect(page.getByTestId('opportunity-detail')).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);

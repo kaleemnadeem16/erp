@@ -7,9 +7,8 @@ namespace App\Modules\Sales\Actions;
 use App\Exceptions\DomainInvariantException;
 use App\Models\User;
 use App\Modules\Sales\Models\Lead;
-use App\Modules\Sales\Models\Opportunity;
+use App\Modules\Sales\Support\CrmOperation;
 use App\Modules\Sales\Support\LeadStatus;
-use App\Modules\Sales\Support\OpportunityOutcome;
 use App\Modules\Sales\Support\PermissionVocabulary;
 use App\Modules\Sales\Support\SalesAccess;
 use App\Modules\Sales\Support\SalesEvent;
@@ -36,20 +35,41 @@ final class DecideLead
         });
     }
 
-    public function disqualify(Lead $lead, User $actor, ?string $reason): Lead
+    /**
+     * Disqualify the enquiry itself (ADR 0111). Opportunities already derived from it are separate pursuits and are not touched, merged or closed.
+     * The decision is confirmed against the latest decision the caller saw (`$expectedDecisionEventId`, null when none), so a conversion, qualification or
+     * revival that happened meanwhile is reviewed rather than overwritten, and it is keyed so that retrying it records nothing twice.
+     *
+     * @return array{lead: Lead, operation: array<string, mixed>, replayed: bool}
+     */
+    public function disqualify(Lead $lead, User $actor, ?string $reason, ?string $requestKey, ?int $expectedDecisionEventId): array
     {
+        SalesAccess::require($actor, PermissionVocabulary::LEAD_MANAGE, 'decide about an enquiry');
+        SalesRecords::requireCompanyActor($actor);
         $reason = SalesRecords::requireReason($reason, 'disqualify an enquiry');
 
-        return $this->decide($lead, $actor, function (Lead $locked) use ($actor, $reason): void {
-            if ($locked->status === LeadStatus::Disqualified) {
-                return;
-            }
-            if (Opportunity::query()->where('lead_id', $locked->id)->where('outcome', OpportunityOutcome::Open->value)->exists()) {
-                throw new DomainInvariantException('This enquiry still has open opportunities; close or pursue them first.', 'status', 'LEAD_HAS_OPEN_OPPORTUNITY');
-            }
-            $locked->update(['status' => LeadStatus::Disqualified, 'disqualified_at' => now(), 'disqualified_by' => $actor->id, 'disqualification_reason' => $reason, 'qualified_at' => null, 'qualified_by' => null]);
-            SalesRecords::record($actor, SalesEvent::LEAD_DISQUALIFIED, $locked, null, $reason);
-        });
+        $ran = CrmOperation::run(
+            $actor, 'LEAD_DISQUALIFY', $requestKey,
+            ['reason' => $reason, 'expected_decision_event_id' => $expectedDecisionEventId], $lead->id, null,
+            fn () => Lead::query()->whereKey($lead->id)->lockForUpdate()->firstOrFail(),
+            function () use ($lead, $actor, $reason, $expectedDecisionEventId): array {
+                $locked = Lead::query()->whereKey($lead->id)->firstOrFail();
+                if ($locked->latestDecisionEventId() !== $expectedDecisionEventId) {
+                    throw new DomainInvariantException('This enquiry was decided or converted since you opened it; review it and decide again.', 'expected_decision_event_id', 'STALE_EVIDENCE');
+                }
+                if ($locked->status === LeadStatus::Disqualified) {
+                    return ['version' => 1, 'lead_id' => $locked->id, 'status' => LeadStatus::Disqualified->value, 'decision_event_id' => $expectedDecisionEventId, 'changed' => false];
+                }
+                // What was decided before stays in the history: the projection below clears it.
+                $details = ['prior_status' => $locked->status->value, 'prior_qualified_at' => $locked->qualified_at?->toIso8601String(), 'prior_qualified_by' => $locked->qualified_by];
+                $locked->update(['status' => LeadStatus::Disqualified, 'disqualified_at' => now(), 'disqualified_by' => $actor->id, 'disqualification_reason' => $reason, 'qualified_at' => null, 'qualified_by' => null]);
+                $event = SalesRecords::record($actor, SalesEvent::LEAD_DISQUALIFIED, $locked, null, $reason, $details);
+
+                return ['version' => 1, 'lead_id' => $locked->id, 'status' => LeadStatus::Disqualified->value, 'decision_event_id' => $event->id, 'changed' => true];
+            },
+        );
+
+        return ['lead' => Lead::query()->findOrFail($lead->id), 'operation' => $ran['result'], 'replayed' => $ran['replayed']];
     }
 
     public function revive(Lead $lead, User $actor, ?string $reason): Lead

@@ -17,6 +17,11 @@ class DisqualifyLeadRequest extends SalesRequest
     /** @return array<string, mixed> */
     public function rules(): array
     {
-        return ['reason' => ['required', 'string', 'max:1000']];
+        return [
+            'reason' => ['required', 'string', 'max:1000'],
+            'request_key' => ['required', 'string', 'max:85'],
+            // The newest decision the caller saw on this enquiry (its `decision_event_id`); null when it has never been decided.
+            'expected_decision_event_id' => ['present', 'nullable', 'integer', 'min:1'],
+        ];
     }
 }

@@ -9,7 +9,9 @@ Quotations, pricing, tax, acceptance and job handover are **not** here yet — t
 [0107](../../../../docs/decisions/0107-separate-opportunity-stages-and-outcomes.md) (stages and outcomes),
 [0108](../../../../docs/decisions/0108-expose-a-progressive-basic-crm.md) (basic CRM). Domain: [sales-pipeline.md](../../../../docs/domain/sales-pipeline.md).
 
-## Accepted correction handoff — not implemented
+## Accepted correction handoff — slices S and A implemented; B and C pending
+
+Delivered: per-duty record scope (`SalesAccess`), scope-aware Party candidate eligibility, and independent keyed disqualification (`DecideLead::disqualify` through `CrmOperation`, receipts in `sales_crm_operation_receipts`). Everything below about attribution and enquiry corrections is still pending.
 
 [0111](../../../../docs/decisions/0111-disqualify-leads-independently-of-derived-opportunities.md),
 [0112](../../../../docs/decisions/0112-correct-historical-opportunity-responsibility-with-append-only-evidence.md)

@@ -26,7 +26,10 @@ class SalesCrmDemoSeederTest extends TestCase
         $this->assertSame(['Qualification', 'Proposal', 'Negotiation'], SalesStage::query()->orderBy('sort_order')->pluck('name')->all());
         $this->assertSame(['DISQUALIFIED', 'NEW', 'QUALIFIED'], Lead::query()->orderBy('status')->pluck('status')->map(fn ($s) => $s->value)->unique()->sort()->values()->all());
         $this->assertSame(1, Lead::query()->whereNull('assigned_to')->where('status', 'NEW')->count(), 'one enquiry is new and unassigned');
-        $this->assertSame(2, Opportunity::query()->whereNotNull('lead_id')->count(), 'one enquiry produced two deals');
+        $this->assertSame(4, Opportunity::query()->whereNotNull('lead_id')->count(), 'two enquiries produced two deals each');
+        $duplicate = Lead::query()->where('enquirer_name', 'Bilal Chaudhry')->sole();
+        $this->assertSame('DISQUALIFIED', $duplicate->status->value);
+        $this->assertSame(2, Opportunity::query()->where('lead_id', $duplicate->id)->where('outcome', 'OPEN')->count(), 'a duplicate intake is disqualified while its genuine deals stay open');
         $this->assertSame(1, Opportunity::query()->where('outcome', 'LOST')->count());
         $this->assertNotNull(Opportunity::query()->whereNull('expected_amount')->first(), 'an unknown value stays unknown');
         $flagged = Opportunity::query()->where('outcome', 'OPEN')->whereHas('owner', fn ($q) => $q->where('status', 'SUSPENDED'))->get();

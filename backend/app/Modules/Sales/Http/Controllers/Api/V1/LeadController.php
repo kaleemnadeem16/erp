@@ -44,7 +44,7 @@ class LeadController extends Controller
 
     public function index(IndexLeadRequest $request): AnonymousResourceCollection
     {
-        $query = Lead::query();
+        $query = Lead::query()->withDecisionMarker();
         $this->applyIncludes($query, $request, ['party' => 'party']);
         $query->with('assignee');
         if ($request->filled('filter.status')) {
@@ -96,9 +96,25 @@ class LeadController extends Controller
         return new LeadResource($decide->qualify($lead, $request->user(), $request->input('reason')));
     }
 
-    public function disqualify(DisqualifyLeadRequest $request, Lead $lead, DecideLead $decide): LeadResource
+    public function disqualify(DisqualifyLeadRequest $request, Lead $lead, DecideLead $decide): JsonResponse
     {
-        return new LeadResource($decide->disqualify($lead, $request->user(), $request->input('reason')));
+        $expected = $request->input('expected_decision_event_id');
+        $done = $decide->disqualify($lead, $request->user(), $request->input('reason'), $request->input('request_key'), $expected === null ? null : (int) $expected);
+        $operation = $done['operation'];
+        $marker = $operation['decision_event_id'] ?? null;
+
+        // `operation_result` is what this request decided, fixed forever; `data` is the enquiry as it is now.
+        return response()->json([
+            'data' => new LeadResource($done['lead']),
+            'operation_result' => [
+                'version' => (int) ($operation['version'] ?? 1),
+                'lead_id' => (int) $operation['lead_id'],
+                'status' => (string) $operation['status'],
+                'decision_event_id' => $marker === null ? null : (int) $marker,
+                'changed' => (bool) $operation['changed'],
+            ],
+            'replayed' => (bool) $done['replayed'],
+        ]);
     }
 
     public function revive(ReviveLeadRequest $request, Lead $lead, DecideLead $decide): LeadResource

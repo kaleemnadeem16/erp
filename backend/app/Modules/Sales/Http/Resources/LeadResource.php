@@ -17,6 +17,8 @@ class LeadResource extends JsonResource
     {
         /** @var Lead $lead */
         $lead = $this->resource;
+        $marker = array_key_exists('decision_event_id', $lead->getAttributes()) ? $lead->getAttribute('decision_event_id') : $lead->latestDecisionEventId();
+        $decision = $marker === null ? null : (int) $marker;
 
         return [
             'id' => $lead->id,
@@ -35,6 +37,8 @@ class LeadResource extends JsonResource
             'qualified_at' => $lead->qualified_at?->toIso8601String(),
             'disqualified_at' => $lead->disqualified_at?->toIso8601String(),
             'disqualification_reason' => $lead->disqualification_reason,
+            // The newest decision on this enquiry; a decision is confirmed against it so a stale screen cannot overwrite a newer one.
+            'decision_event_id' => $decision,
             'created_by' => $lead->created_by,
             'party' => $this->whenLoaded('party', fn () => $lead->party === null ? null : new PartyResource($lead->party)),
             'opportunities' => OpportunityResource::collection($this->whenLoaded('opportunities')),
