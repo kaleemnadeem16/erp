@@ -38,13 +38,34 @@ isolated database): `2026_10_12_100000_create_sales_crm_operation_receipts`, `20
 - **Not assigned to any real role or person.** The only holder is the demo `Sales attribution reviewer` persona (read + correction),
   bootstrapped directly by the demo seeder because no demo administrator holds the duty. Production holders are an owner decision.
 
-## Operational steps still owed (not done by code)
+## Granting `sales.opportunity.attribution.correct` — procedure (nothing below has been run)
 
-1. The owner names the holders (designated CRM/company administrators). The first holder is bootstrapped through the existing
-   privileged deployment procedure; later grants go through normal access administration.
-2. Only if a genuinely full-access company role should receive it automatically: add a reviewed mandate entry (company, role id,
-   approval reference). Do not infer one from a role name or permission count.
-3. Run `php artisan permission:register` on deploy as usual (creates the permission row; grants it to nobody).
+The duty is **assigned to no real role or person** and must stay that way until the owner approves the intended holders. Nothing in
+code, deployment (`permission:register`, `erp:sync-admin-permissions`) or seeding grants it. Approval of holders is recorded first
+(who, why, reference); only then is any step below taken.
+
+1. **Register the permission** — happens on every deploy (`permission:register`). It creates the row and grants it to nobody.
+2. **First holder (bootstrap).** An administrator cannot grant a permission they do not hold (`AccessAssignmentGuard`, used by
+   `SaveRole` and `SyncMemberAccess`), and no administrator holds this one, so the first holder needs the privileged path the deployment
+   guide reserves for bootstrap and recovery ([deployment.md](../architecture/deployment.md#production-data-changes)):
+   - *Available today, for a new person:* `erp:create-admin --email=… --name=… --permissions=<explicit names>` with the duty and the
+     independent read right it requires (for example `sales.pipeline.view`), never `--permissions=all` (which deliberately omits the duty).
+   - *Gap — an existing person:* no command grants one named permission to an existing user, and an ad-hoc console edit is not a
+     reviewed procedure. If the approved first holder is an existing person, a small audited one-off command would have to be added
+     (named permission, target email, approval reference, refuses a permission that is not marked sensitive, writes an access-audit
+     entry). That is new operational surface: it needs the owner's approval before I build it.
+3. **Later holders and roles — normal access administration.** The first holder, now holding the duty, can build an explicitly approved
+   company role that includes it and assign that role (or the permission directly) to approved members through Access Administration;
+   each change needs a reason and is audited, and the guard keeps refusing anyone who tries to grant more than they hold. A role that
+   contains the duty must also give its members an independent right to read the pipeline, because authority is the duty **and** read,
+   each judged by its own record scope (a "my units"-limited assignment of either part refuses).
+4. **Automatic inclusion (optional, only for a genuinely full-access role).** If an existing company role is meant to receive every
+   registered capability including this one, add a reviewed entry to `ACCESS_FULL_ACCESS_MANDATES` (company id, existing role id,
+   `ALL_REGISTERED_CAPABILITIES`, an approval reference, an effective date). A role name, description or permission count is never accepted
+   as proof; the entry is the owner's attestation of an approved role. Leave it empty until then.
+5. **Verify** (after any grant): the person can correct a closed deal's recorded responsibility and cannot assign, close or edit; a
+   person without the duty is refused over HTTP and in the Action; `permission:register` plus an admin re-sync did not remove an
+   explicit grant and did not add it to anyone else.
 
 ## Verification recorded
 
