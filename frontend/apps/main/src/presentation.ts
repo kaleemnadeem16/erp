@@ -22,6 +22,12 @@ export const presentation: {
   itemCreate: Presentation;
   itemDetail: Presentation;
   itemEdit: Presentation;
+  supplierReturnCreate: Presentation;
+  supplierReturnDetail: Presentation;
+  supplierReturnEdit: Presentation;
+  stockScrapCreate: Presentation;
+  stockScrapDetail: Presentation;
+  stockScrapEdit: Presentation;
 } = {
   purchaseOrderCreate: "sheet",
   purchaseOrderDetail: "sheet",
@@ -38,6 +44,12 @@ export const presentation: {
   itemCreate: "sheet",
   itemDetail: "sheet",
   itemEdit: "sheet",
+  supplierReturnCreate: "page",
+  supplierReturnDetail: "page",
+  supplierReturnEdit: "page",
+  stockScrapCreate: "page",
+  stockScrapDetail: "page",
+  stockScrapEdit: "page",
 };
 
 /**

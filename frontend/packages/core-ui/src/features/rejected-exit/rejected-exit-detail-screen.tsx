@@ -1,15 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
-import { useCurrenciesIndex, useItemsShow, useWarehousesShow } from '@erp/core-api';
+import { useLocation, useNavigate, useParams } from 'react-router';
+import { useCurrenciesIndex, useItemsShow, useWarehousesShow, type SupplierAccountResource } from '@erp/core-api';
 
 import { Button } from '../../components/ui/button';
 import { Skeleton } from '../../components/ui/skeleton';
 import { StatusBadge, type StatusTone } from '../../components/ui/status-badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../../components/ui/dialog';
+import { RecordSheet } from '../../components/page/record-sheet';
 import { ScreenTemplate } from '../../components/page/screen-template';
 import { PageHeader } from '../../components/page/page-header';
 import { DetailPageLayout, DetailSection } from '../../components/detail/detail-page-layout';
 import { DetailField } from '../../components/detail/detail-field';
+import { DetailPrintLayout, PrintTrigger, useQuickPrint } from '../../components/print';
+import type { Presentation } from '../../lib/presentation';
+import { useSuppliersById } from '../../lib/use-records-by-id';
 import { getApiErrorMessage, getApiReasonCode, isApiError } from '../../lib/api-errors';
 import { formatDateTime } from '../../lib/format-date';
 import { usePermission } from '../../hooks/use-permission';
@@ -23,9 +27,10 @@ export const EXIT_STATUS_TONE: Record<string, StatusTone> = { DRAFT: 'draft', PO
 export const EXIT_STATUS_LABEL: Record<string, string> = { DRAFT: 'Draft', POSTED: 'Posted', CANCELLED: 'Cancelled' };
 
 /** One Supplier Return / Scrap: a draft is previewed and posted here; a posted or cancelled one is shown frozen. */
-export function ExitDetailScreen({ kind }: { kind: ExitKind }) {
+export function ExitDetailScreen({ kind, presentation }: { kind: ExitKind; presentation?: Presentation }) {
   const config = EXIT_CONFIG[kind];
   const navigate = useNavigate();
+  const { search } = useLocation();
   const params = useParams<{ id: string }>();
   const id = Number(params.id);
   const mayCreate = usePermission(config.createPermission);
@@ -37,6 +42,17 @@ export function ExitDetailScreen({ kind }: { kind: ExitKind }) {
   const [previews, setPreviews] = useState<Record<number, PreviewLine>>({});
   const [confirming, setConfirming] = useState<'post' | 'cancel' | null>(null);
   const [actionError, setActionError] = useState<{ message: string | null; code: string | null } | null>(null);
+
+  const supplierIds = useMemo(() => {
+    return document?.supplier_account_id ? [document.supplier_account_id] : [];
+  }, [document?.supplier_account_id]);
+  const suppliers = useSuppliersById<SupplierAccountResource>(supplierIds, []);
+  const supplier = suppliers[0];
+  const supplierLabel = supplier
+    ? `${supplier.code}${supplier.party?.name ? ` — ${supplier.party.name}` : ''}`
+    : document?.supplier_account_id
+      ? `Supplier #${document.supplier_account_id}`
+      : undefined;
 
   const isDraft = document?.status === 'DRAFT';
   const lines = useMemo(() => document?.lines ?? [], [document]);
@@ -74,7 +90,27 @@ export function ExitDetailScreen({ kind }: { kind: ExitKind }) {
     }
   }
 
+  const { contentRef: printRef, print } = useQuickPrint({
+    documentTitle: document?.number ? `${config.title} ${document.number}` : `${config.title} Draft #${id}`,
+  });
+
   if (query.isLoading) {
+    if (presentation === 'sheet') {
+      return (
+        <RecordSheet
+          title={`Loading ${config.noun}…`}
+          size="xl"
+          className="erp-record"
+          dismissOnOutsideClick={false}
+          onClose={() => navigate({ pathname: config.basePath, search })}
+        >
+          <div className="space-y-4 p-4">
+            <Skeleton className="h-9 w-64" />
+            <Skeleton className="h-64 w-full" />
+          </div>
+        </RecordSheet>
+      );
+    }
     return (
       <div className="space-y-4 p-4 md:p-6">
         <Skeleton className="h-9 w-64" />
@@ -82,15 +118,38 @@ export function ExitDetailScreen({ kind }: { kind: ExitKind }) {
       </div>
     );
   }
+
   if (query.isError || !document) {
     const denied = isApiError(query.error) && query.error.status === 403;
+    if (presentation === 'sheet') {
+      return (
+        <RecordSheet
+          title="Error"
+          size="xl"
+          className="erp-record"
+          dismissOnOutsideClick={false}
+          onClose={() => navigate({ pathname: config.basePath, search })}
+        >
+          <div className="space-y-4 p-4" data-testid={denied ? 'exit-denied' : 'exit-error'}>
+            <p className={denied ? 'text-sm text-muted-foreground' : 'text-sm text-destructive'}>
+              {denied ? `You don't have permission to view this ${config.noun}.` : `Couldn't load this ${config.noun}.`}
+            </p>
+            <Button variant="outline" size="sm" onClick={() => navigate({ pathname: config.basePath, search })}>
+              Back to {config.plural.toLowerCase()}
+            </Button>
+          </div>
+        </RecordSheet>
+      );
+    }
 
     return (
       <div className="space-y-4 p-4 md:p-6" data-testid={denied ? 'exit-denied' : 'exit-error'}>
         <p className={denied ? 'text-sm text-muted-foreground' : 'text-sm text-destructive'}>
           {denied ? `You don't have permission to view this ${config.noun}.` : `Couldn't load this ${config.noun}.`}
         </p>
-        <Button variant="outline" size="sm" onClick={() => navigate(config.basePath)}>Back to {config.plural.toLowerCase()}</Button>
+        <Button variant="outline" size="sm" onClick={() => navigate(config.basePath)}>
+          Back to {config.plural.toLowerCase()}
+        </Button>
       </div>
     );
   }
@@ -98,107 +157,161 @@ export function ExitDetailScreen({ kind }: { kind: ExitKind }) {
   const title = document.number ?? `${config.title} draft #${document.id}`;
   const actionable = isDraft && (mayCreate || mayPost);
 
+  const headerActions = (
+    <>
+      <PrintTrigger onPrint={() => print()} />
+      {actionable && (
+        <>
+          {mayCreate && <Button variant="outline" onClick={() => setConfirming('cancel')} data-testid="exit-cancel">Cancel draft</Button>}
+          {mayCreate && <Button variant="outline" onClick={() => navigate(`${config.basePath}/${id}/edit`)} data-testid="exit-edit">Edit</Button>}
+          {mayPost && (
+            <Button onClick={() => setConfirming('post')} disabled={!canPost || api.post.isPending} data-testid="exit-post">
+              Post {config.noun}
+            </Button>
+          )}
+        </>
+      )}
+    </>
+  );
+
+  const detailBody = (
+    <>
+      {actionable && mayPost && !canPost && previewReady && (
+        <p className="text-sm text-destructive" data-testid="exit-post-blocked">Posting is blocked until the points below are fixed — edit the draft.</p>
+      )}
+      {isDraft && mayCreate && !mayPost && (
+        <p className="text-sm text-muted-foreground" data-testid="exit-needs-poster">Someone with permission to post {config.plural.toLowerCase()} will post this draft.</p>
+      )}
+
+      {actionError && (
+        <div role="alert" className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive" data-testid="exit-action-error" data-reason-code={actionError.code ?? undefined}>
+          {(actionError.code && REASON_HINTS[actionError.code]) || actionError.message || 'That did not work.'}
+        </div>
+      )}
+
+      <DetailPageLayout>
+        <DetailSection title="General">
+          <DetailField label="Status">
+            <StatusBadge tone={EXIT_STATUS_TONE[document.status] ?? 'draft'}>{EXIT_STATUS_LABEL[document.status] ?? document.status}</StatusBadge>
+          </DetailField>
+          <DetailField label="Warehouse">{warehouseName}</DetailField>
+          {kind === 'SUPPLIER_RETURN' && supplierLabel && (
+            <DetailField label="Supplier">{supplierLabel}</DetailField>
+          )}
+          <DetailField label="Reason">{document.reason}</DetailField>
+          <DetailField label="Created">{formatDateTime(document.created_at)}</DetailField>
+          {document.posted_at && <DetailField label="Posted">{formatDateTime(document.posted_at)}</DetailField>}
+          {document.cancelled_at && <DetailField label="Cancelled">{formatDateTime(document.cancelled_at)}</DetailField>}
+          {/* Optional header fields appear only once they hold something. */}
+          {kind === 'SUPPLIER_RETURN' ? (
+            <>
+              {document.supplier_reference && <DetailField label="Supplier's reference">{document.supplier_reference}</DetailField>}
+              {document.carrier_note && <DetailField label="Carrier note">{document.carrier_note}</DetailField>}
+              <ExpectedCredit document={document} />
+            </>
+          ) : (
+            <>
+              {document.disposal_method && <DetailField label="Disposal method">{document.disposal_method}</DetailField>}
+              {document.disposal_reference && <DetailField label="Disposal reference">{document.disposal_reference}</DetailField>}
+            </>
+          )}
+        </DetailSection>
+
+        <DetailSection
+          title="Stock"
+          description={isDraft ? 'This is what posting would take out. Nothing has moved yet.' : document.status === 'POSTED' ? 'What left the warehouse. This record can no longer be changed.' : undefined}
+          fullWidth
+        >
+          <div className="space-y-3 sm:col-span-2">
+            {isDraft
+              ? lines.map((line) => (
+                  <ExitLineCard
+                    key={line.id}
+                    config={config}
+                    line={asDraftLine(line)}
+                    preview={previews[line.goods_receipt_line_id]}
+                    readOnly
+                    showErrors={false}
+                    onChange={() => undefined}
+                  />
+                ))
+              : lines.map((line) => <FrozenLine key={line.id} line={line} />)}
+          </div>
+        </DetailSection>
+      </DetailPageLayout>
+
+      <div className="hidden">
+        <div ref={printRef}>
+          <DetailPrintLayout
+            title={title}
+            subtitle={supplierLabel ? `${supplierLabel} · ${document.reason}` : document.reason}
+            sections={[
+              {
+                title: 'General',
+                fields: [
+                  { label: 'Status', value: EXIT_STATUS_LABEL[document.status] ?? document.status },
+                  { label: 'Warehouse', value: warehouseName ?? '—' },
+                  ...(kind === 'SUPPLIER_RETURN' && supplierLabel ? [{ label: 'Supplier', value: supplierLabel }] : []),
+                  ...(document.supplier_reference ? [{ label: "Supplier's ref", value: document.supplier_reference }] : []),
+                  ...(document.carrier_note ? [{ label: 'Carrier note', value: document.carrier_note }] : []),
+                  { label: 'Reason', value: document.reason },
+                  { label: 'Created', value: formatDateTime(document.created_at) ?? '—' },
+                  ...(document.posted_at ? [{ label: 'Posted', value: formatDateTime(document.posted_at) ?? '—' }] : []),
+                ],
+              },
+            ]}
+          />
+        </div>
+      </div>
+
+      <Dialog open={confirming !== null} onOpenChange={(open) => !open && setConfirming(null)}>
+        <DialogContent className="max-h-[90vh] max-w-md overflow-y-auto" data-testid="exit-confirm">
+          <DialogHeader>
+            <DialogTitle>{confirming === 'post' ? `Post this ${config.noun}?` : 'Cancel this draft?'}</DialogTitle>
+            <DialogDescription>
+              {confirming === 'post'
+                ? `${config.consequence} It covers ${lines.length} line${lines.length === 1 ? '' : 's'}.`
+                : 'The draft is discarded. No stock has moved, so nothing changes in the warehouse.'}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirming(null)}>Go back</Button>
+            <Button onClick={() => void act(confirming ?? 'post')} disabled={api.post.isPending || api.cancel.isPending} data-testid="exit-confirm-action">
+              {confirming === 'post' ? (api.post.isPending ? 'Posting…' : `Post ${config.noun}`) : 'Cancel draft'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+
+  if (presentation === 'sheet') {
+    return (
+      <RecordSheet
+        title={title}
+        description={supplierLabel ? `${supplierLabel} · ${document.reason}` : document.reason}
+        actions={headerActions}
+        size="xl"
+        className="erp-record"
+        onClose={() => navigate({ pathname: config.basePath, search })}
+      >
+        <div className="space-y-4 pb-4" data-testid="exit-detail">
+          {detailBody}
+        </div>
+      </RecordSheet>
+    );
+  }
+
   return (
     <ScreenTemplate kind="detail" className="erp-screen pb-24">
       <div className="space-y-4" data-testid="exit-detail">
         <PageHeader
           title={title}
-          description={document.reason}
+          description={supplierLabel ? `${supplierLabel} · ${document.reason}` : document.reason}
           breadcrumbs={[{ label: config.plural, to: config.basePath }, { label: title }]}
-          actions={
-            actionable && (
-              <>
-                {mayCreate && <Button variant="outline" onClick={() => setConfirming('cancel')} data-testid="exit-cancel">Cancel draft</Button>}
-                {mayCreate && <Button variant="outline" onClick={() => navigate(`${config.basePath}/${id}/edit`)} data-testid="exit-edit">Edit</Button>}
-                {mayPost && (
-                  <Button onClick={() => setConfirming('post')} disabled={!canPost || api.post.isPending} data-testid="exit-post">
-                    Post {config.noun}
-                  </Button>
-                )}
-              </>
-            )
-          }
+          actions={headerActions}
         />
-
-        {actionable && mayPost && !canPost && previewReady && (
-          <p className="text-sm text-destructive" data-testid="exit-post-blocked">Posting is blocked until the points below are fixed — edit the draft.</p>
-        )}
-        {isDraft && mayCreate && !mayPost && (
-          <p className="text-sm text-muted-foreground" data-testid="exit-needs-poster">Someone with permission to post {config.plural.toLowerCase()} will post this draft.</p>
-        )}
-
-        {actionError && (
-          <div role="alert" className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive" data-testid="exit-action-error" data-reason-code={actionError.code ?? undefined}>
-            {(actionError.code && REASON_HINTS[actionError.code]) || actionError.message || 'That did not work.'}
-          </div>
-        )}
-
-        <DetailPageLayout>
-          <DetailSection title="General">
-            <DetailField label="Status">
-              <StatusBadge tone={EXIT_STATUS_TONE[document.status] ?? 'draft'}>{EXIT_STATUS_LABEL[document.status] ?? document.status}</StatusBadge>
-            </DetailField>
-            <DetailField label="Warehouse">{warehouseName}</DetailField>
-            <DetailField label="Reason">{document.reason}</DetailField>
-            <DetailField label="Created">{formatDateTime(document.created_at)}</DetailField>
-            {document.posted_at && <DetailField label="Posted">{formatDateTime(document.posted_at)}</DetailField>}
-            {document.cancelled_at && <DetailField label="Cancelled">{formatDateTime(document.cancelled_at)}</DetailField>}
-            {/* Optional header fields appear only once they hold something. */}
-            {kind === 'SUPPLIER_RETURN' ? (
-              <>
-                {document.supplier_reference && <DetailField label="Supplier's reference">{document.supplier_reference}</DetailField>}
-                {document.carrier_note && <DetailField label="Carrier note">{document.carrier_note}</DetailField>}
-                <ExpectedCredit document={document} />
-              </>
-            ) : (
-              <>
-                {document.disposal_method && <DetailField label="Disposal method">{document.disposal_method}</DetailField>}
-                {document.disposal_reference && <DetailField label="Disposal reference">{document.disposal_reference}</DetailField>}
-              </>
-            )}
-          </DetailSection>
-
-          <DetailSection
-            title="Stock"
-            description={isDraft ? 'This is what posting would take out. Nothing has moved yet.' : document.status === 'POSTED' ? 'What left the warehouse. This record can no longer be changed.' : undefined}
-            fullWidth
-          >
-            <div className="space-y-3 sm:col-span-2">
-              {isDraft
-                ? lines.map((line) => (
-                    <ExitLineCard
-                      key={line.id}
-                      config={config}
-                      line={asDraftLine(line)}
-                      preview={previews[line.goods_receipt_line_id]}
-                      readOnly
-                      showErrors={false}
-                      onChange={() => undefined}
-                    />
-                  ))
-                : lines.map((line) => <FrozenLine key={line.id} line={line} />)}
-            </div>
-          </DetailSection>
-        </DetailPageLayout>
-
-        <Dialog open={confirming !== null} onOpenChange={(open) => !open && setConfirming(null)}>
-          <DialogContent className="max-h-[90vh] max-w-md overflow-y-auto" data-testid="exit-confirm">
-            <DialogHeader>
-              <DialogTitle>{confirming === 'post' ? `Post this ${config.noun}?` : 'Cancel this draft?'}</DialogTitle>
-              <DialogDescription>
-                {confirming === 'post'
-                  ? `${config.consequence} It covers ${lines.length} line${lines.length === 1 ? '' : 's'}.`
-                  : 'The draft is discarded. No stock has moved, so nothing changes in the warehouse.'}
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setConfirming(null)}>Go back</Button>
-              <Button onClick={() => void act(confirming ?? 'post')} disabled={api.post.isPending || api.cancel.isPending} data-testid="exit-confirm-action">
-                {confirming === 'post' ? (api.post.isPending ? 'Posting…' : `Post ${config.noun}`) : 'Cancel draft'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        {detailBody}
       </div>
     </ScreenTemplate>
   );

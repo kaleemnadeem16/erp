@@ -115,6 +115,12 @@ const itemSupplierEditAsSheet = presentation.itemSupplierEdit === "sheet";
 const itemCreateAsSheet = presentation.itemCreate === "sheet";
 const itemDetailAsSheet = presentation.itemDetail === "sheet";
 const itemEditAsSheet = presentation.itemEdit === "sheet";
+const supplierReturnCreateAsSheet = presentation.supplierReturnCreate === "sheet";
+const supplierReturnDetailAsSheet = presentation.supplierReturnDetail === "sheet";
+const supplierReturnEditAsSheet = presentation.supplierReturnEdit === "sheet";
+const stockScrapCreateAsSheet = presentation.stockScrapCreate === "sheet";
+const stockScrapDetailAsSheet = presentation.stockScrapDetail === "sheet";
+const stockScrapEditAsSheet = presentation.stockScrapEdit === "sheet";
 
 export function AppRouter() {
   return (
@@ -884,37 +890,62 @@ export function AppRouter() {
               </AppShell>
             </ProtectedRoute>
           }
-        />
-        <Route
-          path="/supplier-returns/new"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <SupplierReturnFormScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/supplier-returns/:id/edit"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <SupplierReturnFormScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/supplier-returns/:id"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <SupplierReturnDetailScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
+        >
+          {supplierReturnCreateAsSheet && (
+            <Route
+              path="new"
+              element={<SupplierReturnFormScreen presentation="sheet" />}
+            />
+          )}
+          {supplierReturnDetailAsSheet && (
+            <Route
+              path=":id"
+              element={<SupplierReturnDetailScreen presentation="sheet" />}
+            />
+          )}
+          {supplierReturnEditAsSheet && (
+            <Route
+              path=":id/edit"
+              element={<SupplierReturnFormScreen presentation="sheet" />}
+            />
+          )}
+        </Route>
+        {!supplierReturnCreateAsSheet && (
+          <Route
+            path="/supplier-returns/new"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <SupplierReturnFormScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!supplierReturnDetailAsSheet && (
+          <Route
+            path="/supplier-returns/:id"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <SupplierReturnDetailScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!supplierReturnEditAsSheet && (
+          <Route
+            path="/supplier-returns/:id/edit"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <SupplierReturnFormScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
         <Route
           path="/stock-scraps"
           element={
@@ -924,37 +955,62 @@ export function AppRouter() {
               </AppShell>
             </ProtectedRoute>
           }
-        />
-        <Route
-          path="/stock-scraps/new"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <StockScrapFormScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/stock-scraps/:id/edit"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <StockScrapFormScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/stock-scraps/:id"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <StockScrapDetailScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
+        >
+          {stockScrapCreateAsSheet && (
+            <Route
+              path="new"
+              element={<StockScrapFormScreen presentation="sheet" />}
+            />
+          )}
+          {stockScrapDetailAsSheet && (
+            <Route
+              path=":id"
+              element={<StockScrapDetailScreen presentation="sheet" />}
+            />
+          )}
+          {stockScrapEditAsSheet && (
+            <Route
+              path=":id/edit"
+              element={<StockScrapFormScreen presentation="sheet" />}
+            />
+          )}
+        </Route>
+        {!stockScrapCreateAsSheet && (
+          <Route
+            path="/stock-scraps/new"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <StockScrapFormScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!stockScrapDetailAsSheet && (
+          <Route
+            path="/stock-scraps/:id"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <StockScrapDetailScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!stockScrapEditAsSheet && (
+          <Route
+            path="/stock-scraps/:id/edit"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <StockScrapFormScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
         <Route
           path="/opportunities"
           element={
