@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { usePartiesCandidates, usePartiesRestore, usePartiesStore, useSalesStagesIndex, type PartyResource } from '@erp/core-api';
 
 import { Badge } from '../../components/ui/badge';
@@ -21,6 +21,23 @@ export const SALES = {
   close: 'sales.opportunity.close',
   stage: 'sales.stage.manage',
 } as const;
+
+/** A fresh request key; a retry of the same intent reuses it so the server records it once. */
+export const newKey = () => (typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `k-${Date.now()}-${Math.random().toString(16).slice(2)}`);
+
+/**
+ * One key per intent: the same request retried (a double click, a dropped connection) keeps its key, so it is recorded once; any change to what is being
+ * asked gets a new key, because the server refuses a key reused for a different request.
+ */
+export function useIntentKey(): (intent: string) => string {
+  const current = useRef<{ intent: string; key: string } | null>(null);
+
+  return (intent: string) => {
+    if (current.current === null || current.current.intent !== intent) current.current = { intent, key: newKey() };
+
+    return current.current.key;
+  };
+}
 
 /** Whether the person may use any Sales surface at all. */
 export function useMaySeeSales(): boolean {
@@ -67,6 +84,8 @@ export function describeEvent(event: { event: string; reason?: string | null; de
       return 'Disqualified';
     case 'LEAD_REVIVED':
       return 'Revived';
+    case 'LEAD_ENQUIRY_CORRECTED':
+      return 'Enquiry details corrected';
     case 'LEAD_CONVERTED':
       return 'Converted to an opportunity';
     case 'OPPORTUNITY_CREATED':

@@ -19,6 +19,8 @@ final class SalesEvent
 
     public const LEAD_REVIVED = 'LEAD_REVIVED';
 
+    public const LEAD_ENQUIRY_CORRECTED = 'LEAD_ENQUIRY_CORRECTED';
+
     public const LEAD_CONVERTED = 'LEAD_CONVERTED';
 
     public const OPPORTUNITY_CREATED = 'OPPORTUNITY_CREATED';

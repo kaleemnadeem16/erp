@@ -11,13 +11,14 @@ import { Label } from '../../components/ui/label';
 import { Textarea } from '../../components/ui/textarea';
 import { usePermission } from '../../hooks/use-permission';
 import { getApiErrorMessage } from '../../lib/api-errors';
-import { SALES } from './sales-common';
+import { SALES, useIntentKey } from './sales-common';
 
 /** Record an enquiry as it arrived. Only a name is required; nothing about who it resolves to is decided here. */
 export function LeadFormScreen() {
   const navigate = useNavigate();
   const mayManage = usePermission(SALES.lead);
   const store = useLeadsStore();
+  const keyFor = useIntentKey();
   const [form, setForm] = useState({ name: '', organisation: '', email: '', phone: '', source: '', description: '' });
   const [error, setError] = useState<string | null>(null);
   const [showErrors, setShowErrors] = useState(false);
@@ -30,6 +31,7 @@ export function LeadFormScreen() {
     try {
       const result = await store.mutateAsync({
         data: {
+          request_key: keyFor(JSON.stringify(form)),
           enquirer_name: form.name.trim(),
           enquirer_organisation: form.organisation.trim() || null,
           enquirer_email: form.email.trim() || null,
@@ -38,7 +40,7 @@ export function LeadFormScreen() {
           description: form.description.trim() || null,
         },
       });
-      if (result.status === 201) navigate(`/leads/${result.data.data.id}`);
+      if (result.status === 201 || result.status === 200) navigate(`/leads/${result.data.data.id}`);
     } catch (failure) {
       setError(getApiErrorMessage(failure));
     }

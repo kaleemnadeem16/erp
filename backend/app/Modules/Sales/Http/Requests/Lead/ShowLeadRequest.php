@@ -19,6 +19,6 @@ class ShowLeadRequest extends SalesRequest
     /** @return array<string, mixed> */
     public function rules(): array
     {
-        return $this->includeRules(['party', 'opportunities', 'notes', 'history']);
+        return $this->includeRules(['party', 'opportunities', 'notes', 'history', 'intake', 'enquiry_corrections']);
     }
 }

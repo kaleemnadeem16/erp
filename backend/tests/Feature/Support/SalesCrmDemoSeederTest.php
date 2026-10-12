@@ -30,6 +30,9 @@ class SalesCrmDemoSeederTest extends TestCase
         $duplicate = Lead::query()->where('enquirer_name', 'Bilal Chaudhry')->sole();
         $this->assertSame('DISQUALIFIED', $duplicate->status->value);
         $this->assertSame(2, Opportunity::query()->where('lead_id', $duplicate->id)->where('outcome', 'OPEN')->count(), 'a duplicate intake is disqualified while its genuine deals stay open');
+        $this->assertSame('0300-1234567', $duplicate->enquirer_phone);
+        $this->assertSame('0300-1234576', DB::table('sales_lead_intakes')->where('lead_id', $duplicate->id)->value('enquirer_phone'), 'the received phone stays recorded');
+        $this->assertSame(DB::table('sales_leads')->count(), DB::table('sales_lead_intakes')->count(), 'every enquiry has its intake evidence');
         $this->assertSame(1, Opportunity::query()->where('outcome', 'LOST')->count());
         $this->assertNotNull(Opportunity::query()->whereNull('expected_amount')->first(), 'an unknown value stays unknown');
         $flagged = Opportunity::query()->where('outcome', 'OPEN')->whereHas('owner', fn ($q) => $q->where('status', 'SUSPENDED'))->get();

@@ -42,6 +42,7 @@ test('a representative records an enquiry, qualifies it, links a partner and tur
   await page.goto('/leads/new');
   await page.getByLabel('Who is asking?').fill(`E2E Enquirer ${stamp}`);
   await page.getByLabel('Organisation').fill('E2E Interiors');
+  await page.getByLabel('Phone').fill('123');
   await page.getByLabel('Where did it come from?').fill('Trade fair');
   await page.getByTestId('lead-save').click();
   await expect(page).toHaveURL(/\/leads\/\d+$/);
@@ -92,6 +93,18 @@ test('a representative records an enquiry, qualifies it, links a partner and tur
   await page.getByTestId('lead-reason-confirm').click();
   await expect(page.getByTestId('lead-detail')).toContainText('Disqualified');
   await expect(page.getByTestId('lead-opportunities').getByRole('link')).toHaveCount(2);
+
+  // A mistyped detail is corrected in any state: the received phone stays recorded, the corrected one becomes current, and the status is untouched (ADR 0113).
+  await expect(page.getByTestId('lead-original-kind')).toContainText('Original intake');
+  await page.getByTestId('lead-correct').click();
+  await page.getByLabel('Phone').fill('132');
+  await expect(page.getByTestId('lead-correct-confirm')).toBeDisabled();
+  await page.getByLabel('Why is this being corrected?').fill('Mistyped');
+  await page.getByTestId('lead-correct-confirm').click();
+  await expect(page.getByTestId('lead-detail')).toContainText('132');
+  await expect(page.getByTestId('lead-detail')).toContainText('Disqualified');
+  await expect(page.getByTestId('lead-original-values')).toContainText('123');
+  await expect(page.getByTestId('lead-corrections')).toContainText('Mistyped');
   await page.close();
 });
 

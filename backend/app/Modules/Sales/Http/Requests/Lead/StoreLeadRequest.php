@@ -27,6 +27,8 @@ class StoreLeadRequest extends SalesRequest
             'received_at' => ['sometimes', 'date'],
             'party_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'assigned_to' => ['sometimes', 'nullable', 'integer', 'min:1'],
+            // Retrying the same submission records one enquiry; the key is chosen by the form when it opens.
+            'request_key' => ['required', 'string', 'max:85'],
         ];
     }
 }

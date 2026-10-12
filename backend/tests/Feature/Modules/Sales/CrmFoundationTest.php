@@ -61,7 +61,7 @@ class CrmFoundationTest extends TestCase
     /** @return array<string, mixed> */
     private function lead(array $over = []): array
     {
-        return array_merge(['enquirer_name' => 'Fatima Khan', 'enquirer_organisation' => 'ABC Industries', 'enquirer_email' => 'fatima@abc.example', 'description' => 'Office furniture', 'source' => 'Referral'], $over);
+        return array_merge(['enquirer_name' => 'Fatima Khan', 'enquirer_organisation' => 'ABC Industries', 'enquirer_email' => 'fatima@abc.example', 'description' => 'Office furniture', 'source' => 'Referral', 'request_key' => 'lead-'.uniqid('', true)], $over);
     }
 
     public function test_an_enquiry_is_optional_numbered_unassigned_and_recorded_in_the_history(): void
@@ -91,13 +91,13 @@ class CrmFoundationTest extends TestCase
         $this->assertSame('Not our market', $events[2]->details['disqualification_reason'], 'what was decided before is kept when the lead is revived');
     }
 
-    public function test_the_enquiry_as_received_is_not_rewritten_after_a_decision(): void
+    public function test_the_enquiry_as_received_is_not_rewritten_by_a_correction_or_a_decision(): void
     {
         $this->actingAs($this->seller());
         $id = $this->postJson('/api/v1/leads', $this->lead())->json('data.id');
-        $this->patchJson("/api/v1/leads/{$id}", ['description' => 'Corrected'])->assertOk();
         $this->postJson("/api/v1/leads/{$id}/qualify")->assertOk();
-        $this->patchJson("/api/v1/leads/{$id}", ['description' => 'Rewritten'])->assertUnprocessable()->assertJsonPath('reason_code', 'LEAD_NOT_NEW');
+        $this->patchJson("/api/v1/leads/{$id}", ['description' => 'Corrected', 'reason' => 'Typo', 'request_key' => 'fix-1', 'expected_enquiry_version' => 0])->assertOk()->assertJsonPath('data.description', 'Corrected');
+        $this->assertSame('Office furniture', DB::table('sales_lead_intakes')->where('lead_id', $id)->value('description'), 'the original stays as received');
     }
 
     public function test_conversion_needs_an_identity_creates_no_account_and_is_safe_to_retry(): void

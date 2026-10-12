@@ -47,7 +47,7 @@ class LeadDisqualificationTest extends TestCase
 
     private function lead(): int
     {
-        return (int) $this->postJson('/api/v1/leads', ['enquirer_name' => 'Fatima Khan', 'description' => 'Office furniture', 'source' => 'Referral'])->assertCreated()->json('data.id');
+        return (int) $this->postJson('/api/v1/leads', ['enquirer_name' => 'Fatima Khan', 'description' => 'Office furniture', 'source' => 'Referral', 'request_key' => 'lead-'.uniqid('', true)])->assertCreated()->json('data.id');
     }
 
     /** @param array<string, mixed> $over */
@@ -180,7 +180,7 @@ class LeadDisqualificationTest extends TestCase
         $this->actingAs($viewer);
         $this->disqualify($id, ['expected_decision_event_id' => null])->assertForbidden();
         $this->assertSame('NEW', Lead::query()->findOrFail($id)->status->value);
-        $this->assertSame(0, DB::table('sales_crm_operation_receipts')->count());
+        $this->assertSame(0, DB::table('sales_crm_operation_receipts')->where('operation', 'LEAD_DISQUALIFY')->count());
 
         $this->expectException(AuthorizationException::class);
         app(DecideLead::class)->disqualify(Lead::query()->findOrFail($id), $viewer, 'x', 'k', null);

@@ -23,4 +23,19 @@ export interface UpdateLeadRequest {
   description?: UpdateLeadRequestDescription;
   /** @maxLength 100 */
   source?: UpdateLeadRequestSource;
+  /** @maxLength 1000 */
+  reason: string;
+  /** @maxLength 85 */
+  request_key: string;
+  /**
+   * The enquiry version the caller saw (the lead's `enquiry_version`); another correction in between is reviewed, never merged.
+   * @minimum 0
+   */
+  expected_enquiry_version: number;
+  /** A correction changes the six enquiry details and nothing else. */
+  status?: string;
+  party_id?: string;
+  assigned_to?: string;
+  received_at?: string;
+  number?: string;
 }

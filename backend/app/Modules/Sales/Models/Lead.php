@@ -13,6 +13,7 @@ use App\Support\Concerns\BelongsToCompany;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 
 /**
@@ -34,6 +35,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $disqualified_at
  * @property string|null $disqualification_reason
  * @property int $created_by
+ * @property int $enquiry_version
  */
 class Lead extends Model
 {
@@ -71,6 +73,18 @@ class Lead extends Model
     public function notes(): HasMany
     {
         return $this->hasMany(SalesNote::class, 'lead_id');
+    }
+
+    /** @return HasOne<LeadIntake, $this> */
+    public function intake(): HasOne
+    {
+        return $this->hasOne(LeadIntake::class, 'lead_id');
+    }
+
+    /** @return HasMany<LeadEnquiryCorrection, $this> */
+    public function enquiryCorrections(): HasMany
+    {
+        return $this->hasMany(LeadEnquiryCorrection::class, 'lead_id')->orderBy('resulting_version');
     }
 
     /** @return HasMany<SalesHistory, $this> */

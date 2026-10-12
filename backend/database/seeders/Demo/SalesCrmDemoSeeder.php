@@ -16,6 +16,7 @@ use App\Modules\Parties\Models\Party;
 use App\Modules\Sales\Actions\AddSalesNote;
 use App\Modules\Sales\Actions\ChangeOpportunityStage;
 use App\Modules\Sales\Actions\CloseOpportunity;
+use App\Modules\Sales\Actions\CorrectLeadEnquiry;
 use App\Modules\Sales\Actions\CreateOpportunity;
 use App\Modules\Sales\Actions\DecideLead;
 use App\Modules\Sales\Actions\LinkLeadParty;
@@ -75,11 +76,11 @@ final class SalesCrmDemoSeeder extends Seeder
 
             // A new, unassigned enquiry.
             app(RecordLead::class)(['enquirer_name' => 'Rukhsana Baig', 'enquirer_organisation' => 'Baig Interiors', 'enquirer_email' => 'rukhsana@baig.example', 'source' => 'Website',
-                'description' => 'Asking about low-VOC paint for a showroom.'], $rep);
+                'description' => 'Asking about low-VOC paint for a showroom.'], $rep, 'demo-lead-rukhsana')['lead'];
 
             // A qualified enquiry that produced two genuine deals.
             $lead = app(RecordLead::class)(['enquirer_name' => 'Aisha Rehman', 'enquirer_organisation' => 'Alpha Decorators', 'source' => 'Referral',
-                'description' => 'New head-office fit-out: furniture and installation.'], $rep);
+                'description' => 'New head-office fit-out: furniture and installation.'], $rep, 'demo-lead-aisha')['lead'];
             app(LinkLeadParty::class)($lead, $alpha->id, $rep);
             $furniture = app(CreateOpportunity::class)(['title' => 'Head-office furniture', 'conversion_key' => 'demo-furniture', 'expected_amount' => '500000', 'expected_currency_id' => $pkr->id,
                 'stage_id' => $stage('PROPOSAL'), 'next_action' => 'Send the revised quotation', 'next_action_on' => now()->addDays(3)->toDateString()], $rep, $lead)['opportunity'];
@@ -88,7 +89,7 @@ final class SalesCrmDemoSeeder extends Seeder
             app(AddSalesNote::class)($furniture, 'Aisha prefers delivery in two phases.', $rep);
 
             // A disqualified enquiry.
-            $out = app(RecordLead::class)(['enquirer_name' => 'Imran Siddiqui', 'source' => 'Walk-in', 'description' => 'Wanted a one-bedroom repaint in another city.'], $rep);
+            $out = app(RecordLead::class)(['enquirer_name' => 'Imran Siddiqui', 'source' => 'Walk-in', 'description' => 'Wanted a one-bedroom repaint in another city.'], $rep, 'demo-lead-imran')['lead'];
             app(DecideLead::class)->disqualify($out, $rep, 'Outside our service area', 'demo-lead-out-of-area', $out->latestDecisionEventId());
 
             // A direct deal (no enquiry) for an individual buyer, with a known value, and one for an organisation with no value yet.
@@ -120,12 +121,14 @@ final class SalesCrmDemoSeeder extends Seeder
             return;
         }
         DB::transaction(function () use ($rep, $alpha): void {
-            $lead = app(RecordLead::class)(['enquirer_name' => 'Bilal Chaudhry', 'enquirer_organisation' => 'Alpha Decorators', 'source' => 'Website',
-                'description' => 'Submitted twice: the second form duplicates a running enquiry.'], $rep);
+            $lead = app(RecordLead::class)(['enquirer_name' => 'Bilal Chaudhry', 'enquirer_organisation' => 'Alpha Decorators', 'enquirer_phone' => '0300-1234576', 'source' => 'Website',
+                'description' => 'Submitted twice: the second form duplicates a running enquiry.'], $rep, 'demo-lead-bilal')['lead'];
             app(LinkLeadParty::class)($lead, $alpha->id, $rep);
             app(CreateOpportunity::class)(['title' => 'Showroom lighting', 'conversion_key' => 'demo-dup-lighting'], $rep, $lead);
             app(CreateOpportunity::class)(['title' => 'Showroom signage', 'conversion_key' => 'demo-dup-signage'], $rep, $lead);
             app(DecideLead::class)->disqualify($lead->refresh(), $rep, 'Duplicate intake: already being pursued', 'demo-lead-duplicate', $lead->latestDecisionEventId());
+            // The phone was received with two digits swapped: the received value stays recorded, the corrected one is current (ADR 0113).
+            app(CorrectLeadEnquiry::class)($lead->refresh(), ['enquirer_phone' => '0300-1234567'], 'Digits transposed when the form was copied', 'demo-lead-bilal-phone', $lead->enquiry_version, $rep);
         });
     }
 

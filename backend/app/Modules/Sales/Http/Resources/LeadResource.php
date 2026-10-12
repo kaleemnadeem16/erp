@@ -40,6 +40,9 @@ class LeadResource extends JsonResource
             // The newest decision on this enquiry; a decision is confirmed against it so a stale screen cannot overwrite a newer one.
             'decision_event_id' => $decision,
             'created_by' => $lead->created_by,
+            'enquiry_version' => $lead->enquiry_version,
+            'original_intake' => $this->whenLoaded('intake', fn () => $lead->intake === null ? null : new LeadIntakeResource($lead->intake)),
+            'enquiry_corrections' => LeadEnquiryCorrectionResource::collection($this->whenLoaded('enquiryCorrections')),
             'party' => $this->whenLoaded('party', fn () => $lead->party === null ? null : new PartyResource($lead->party)),
             'opportunities' => OpportunityResource::collection($this->whenLoaded('opportunities')),
             'notes' => SalesNoteResource::collection($this->whenLoaded('notes')),

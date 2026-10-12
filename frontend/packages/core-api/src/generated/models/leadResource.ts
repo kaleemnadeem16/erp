@@ -17,6 +17,8 @@ import type { LeadResourceQualifiedAt } from "./leadResourceQualifiedAt";
 import type { LeadResourceDisqualifiedAt } from "./leadResourceDisqualifiedAt";
 import type { LeadResourceDisqualificationReason } from "./leadResourceDisqualificationReason";
 import type { LeadResourceDecisionEventId } from "./leadResourceDecisionEventId";
+import type { LeadResourceOriginalIntake } from "./leadResourceOriginalIntake";
+import type { LeadEnquiryCorrectionResource } from "./leadEnquiryCorrectionResource";
 import type { LeadResourceParty } from "./leadResourceParty";
 import type { OpportunityResource } from "./opportunityResource";
 import type { SalesNoteResource } from "./salesNoteResource";
@@ -43,6 +45,9 @@ export interface LeadResource {
   /** The newest decision on this enquiry; a decision is confirmed against it so a stale screen cannot overwrite a newer one. */
   decision_event_id: LeadResourceDecisionEventId;
   created_by: number;
+  enquiry_version: number;
+  original_intake?: LeadResourceOriginalIntake;
+  enquiry_corrections?: LeadEnquiryCorrectionResource[];
   party?: LeadResourceParty;
   opportunities?: OpportunityResource[];
   notes?: SalesNoteResource[];

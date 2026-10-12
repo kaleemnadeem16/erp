@@ -24,9 +24,10 @@ final class CrmOperation
      * @param  array<string, mixed>  $intent  everything that gives the request its meaning: subject, expected markers, reason, changed values
      * @param  \Closure(): mixed  $lockSubject  locks the lead or opportunity row (and nothing else)
      * @param  \Closure(): array<string, mixed>  $work  performs the change and returns its immutable, versioned result
+     * @param  (\Closure(array<string, mixed>): array{0: int|null, 1: int|null})|null  $subjectOf  the receipt's lead and opportunity ids from the result, for a create that has no subject yet
      * @return array{result: array<string, mixed>, replayed: bool}
      */
-    public static function run(User $actor, string $operation, ?string $key, array $intent, ?int $leadId, ?int $opportunityId, \Closure $lockSubject, \Closure $work): array
+    public static function run(User $actor, string $operation, ?string $key, array $intent, ?int $leadId, ?int $opportunityId, \Closure $lockSubject, \Closure $work, ?\Closure $subjectOf = null): array
     {
         $key = trim((string) $key);
         if ($key === '' || mb_strlen($key) > self::KEY_MAX) {
@@ -36,7 +37,7 @@ final class CrmOperation
 
         for ($attempt = 0; ; $attempt++) {
             try {
-                return DB::transaction(function () use ($actor, $operation, $key, $hash, $leadId, $opportunityId, $lockSubject, $work): array {
+                return DB::transaction(function () use ($actor, $operation, $key, $hash, $leadId, $opportunityId, $lockSubject, $work, $subjectOf): array {
                     $lockSubject();
                     $receipt = OperationReceipt::query()->where('actor_id', $actor->id)->where('request_key', $key)->first();
                     if ($receipt !== null) {
@@ -47,8 +48,9 @@ final class CrmOperation
                         return ['result' => $receipt->result, 'replayed' => true];
                     }
                     $result = $work();
+                    [$receiptLead, $receiptOpportunity] = $subjectOf === null ? [$leadId, $opportunityId] : $subjectOf($result);
                     OperationReceipt::create([
-                        'actor_id' => $actor->id, 'request_key' => $key, 'operation' => $operation, 'lead_id' => $leadId, 'opportunity_id' => $opportunityId,
+                        'actor_id' => $actor->id, 'request_key' => $key, 'operation' => $operation, 'lead_id' => $receiptLead, 'opportunity_id' => $receiptOpportunity,
                         'payload_hash' => $hash, 'completed_at' => now(), 'result' => $result,
                     ]);
 

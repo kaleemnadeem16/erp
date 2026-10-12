@@ -37,6 +37,7 @@ import type {
   LeadsRevive200,
   LeadsShow200,
   LeadsShowParams,
+  LeadsStore200,
   LeadsStore201,
   LeadsUpdate200,
   LinkLeadPartyRequest,
@@ -252,6 +253,11 @@ export function useLeadsIndex<
   return query;
 }
 
+export type leadsStoreResponse200 = {
+  data: LeadsStore200;
+  status: 200;
+};
+
 export type leadsStoreResponse201 = {
   data: LeadsStore201;
   status: 201;
@@ -272,7 +278,9 @@ export type leadsStoreResponse422 = {
   status: 422;
 };
 
-export type leadsStoreResponseSuccess = leadsStoreResponse201 & {
+export type leadsStoreResponseSuccess = (
+  leadsStoreResponse200 | leadsStoreResponse201
+) & {
   headers: Headers;
 };
 export type leadsStoreResponseError = (

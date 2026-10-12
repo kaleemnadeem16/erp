@@ -16,11 +16,11 @@ import { Textarea } from '../../components/ui/textarea';
 import { usePermission } from '../../hooks/use-permission';
 import { getApiErrorMessage, getApiReasonCode, isApiError } from '../../lib/api-errors';
 import { formatDateTime } from '../../lib/format-date';
-import { HistoryList, LeadStatusBadge, NotesList, OutcomeBadge, RegisterPartyDialog, SALES } from './sales-common';
+import { LeadCorrectionDialog, LeadEnquiryEvidence } from './lead-enquiry-evidence';
+import { HistoryList, LeadStatusBadge, NotesList, OutcomeBadge, RegisterPartyDialog, SALES, newKey } from './sales-common';
 
-type Mode = 'disqualify' | 'revive' | 'assign' | 'convert' | null;
+type Mode = 'disqualify' | 'revive' | 'assign' | 'convert' | 'correct' | null;
 
-const newKey = () => (typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `k-${Date.now()}-${Math.random().toString(16).slice(2)}`);
 
 /** One enquiry: what was asked, who it resolved to, what was decided about it, and the deals it produced. */
 export function LeadDetailScreen() {
@@ -29,7 +29,7 @@ export function LeadDetailScreen() {
   const mayLead = usePermission(SALES.lead);
   const mayOpportunity = usePermission(SALES.opportunity);
   const mayAssign = usePermission(SALES.assign);
-  const query = useLeadsShow(id, { include: 'party,opportunities,notes,history' });
+  const query = useLeadsShow(id, { include: 'party,opportunities,notes,history,intake,enquiry_corrections' });
   const lead = query.data?.status === 200 ? query.data.data.data : undefined;
   const [mode, setMode] = useState<Mode>(null);
   const [error, setError] = useState<string | null>(null);
@@ -146,6 +146,15 @@ export function LeadDetailScreen() {
               <LeadStatusBadge status={lead.status} />
             </DetailField>
             <DetailField label="Received">{formatDateTime(lead.received_at)}</DetailField>
+            <DetailField label="Who is asking">
+              {lead.enquirer_name}
+              {lead.enquirer_organisation ? ` — ${lead.enquirer_organisation}` : ''}
+              {mayLead && (
+                <Button variant="link" size="sm" className="ml-2 h-auto p-0" onClick={() => setMode('correct')} data-testid="lead-correct">
+                  Correct details…
+                </Button>
+              )}
+            </DetailField>
             {lead.enquirer_email && <DetailField label="Email">{lead.enquirer_email}</DetailField>}
             {lead.enquirer_phone && <DetailField label="Phone">{lead.enquirer_phone}</DetailField>}
             {lead.source && <DetailField label="Source">{lead.source}</DetailField>}
@@ -164,6 +173,7 @@ export function LeadDetailScreen() {
               </DetailField>
             )}
           </DetailSection>
+          <LeadEnquiryEvidence lead={lead} />
           <DetailSection title="Trading partner" description="Who this enquiry is about. Choosing one never creates a customer account.">
             <div className="space-y-2 sm:col-span-2">
               <p className="text-sm" data-testid="lead-party">
@@ -241,6 +251,8 @@ export function LeadDetailScreen() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        <LeadCorrectionDialog lead={lead} open={mode === 'correct'} onClose={closeDialog} onSaved={async () => { await query.refetch(); }} />
 
         <Dialog open={mode === 'assign'} onOpenChange={(next) => !next && closeDialog()}>
           <DialogContent className="max-h-[90vh] max-w-md overflow-y-auto" data-testid="lead-assign-dialog">

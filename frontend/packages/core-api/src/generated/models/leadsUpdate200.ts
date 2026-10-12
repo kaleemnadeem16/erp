@@ -5,7 +5,10 @@
  * OpenAPI spec version: 0.0.1
  */
 import type { LeadResource } from "./leadResource";
+import type { LeadsUpdate200OperationResult } from "./leadsUpdate200OperationResult";
 
 export type LeadsUpdate200 = {
   data: LeadResource;
+  operation_result: LeadsUpdate200OperationResult;
+  replayed: boolean;
 };

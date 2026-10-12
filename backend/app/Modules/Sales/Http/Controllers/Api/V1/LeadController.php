@@ -7,11 +7,11 @@ namespace App\Modules\Sales\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Modules\Sales\Actions\AddSalesNote;
 use App\Modules\Sales\Actions\AssignLead;
+use App\Modules\Sales\Actions\CorrectLeadEnquiry;
 use App\Modules\Sales\Actions\CreateOpportunity;
 use App\Modules\Sales\Actions\DecideLead;
 use App\Modules\Sales\Actions\LinkLeadParty;
 use App\Modules\Sales\Actions\RecordLead;
-use App\Modules\Sales\Actions\UpdateLead;
 use App\Modules\Sales\Http\Requests\Lead\AddLeadNoteRequest;
 use App\Modules\Sales\Http\Requests\Lead\AssignLeadRequest;
 use App\Modules\Sales\Http\Requests\Lead\ConvertLeadRequest;
@@ -27,6 +27,7 @@ use App\Modules\Sales\Http\Resources\LeadResource;
 use App\Modules\Sales\Http\Resources\OpportunityResource;
 use App\Modules\Sales\Http\Resources\SalesNoteResource;
 use App\Modules\Sales\Models\Lead;
+use App\Modules\Sales\Support\LeadEnquiry;
 use App\Support\Concerns\AppliesApiQuery;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -37,7 +38,7 @@ class LeadController extends Controller
     use AppliesApiQuery;
 
     /** @var array<string, string> */
-    private const INCLUDABLE = ['party' => 'party', 'opportunities' => 'opportunities', 'notes' => 'notes.author', 'history' => 'history.actor'];
+    private const INCLUDABLE = ['party' => 'party', 'opportunities' => 'opportunities', 'notes' => 'notes.author', 'history' => 'history.actor', 'intake' => 'intake', 'enquiry_corrections' => 'enquiryCorrections.fields'];
 
     /** @var array<string, string> */
     private const SORTABLE = ['received_at' => 'received_at', 'number' => 'number', 'created_at' => 'created_at'];
@@ -73,7 +74,14 @@ class LeadController extends Controller
 
     public function store(StoreLeadRequest $request, RecordLead $record): JsonResponse
     {
-        return (new LeadResource($record($request->validated(), $request->user())))->response()->setStatusCode(201);
+        $done = $record($request->validated(), $request->user(), $request->input('request_key'));
+
+        // A retry of an enquiry already recorded answers with it (200), not with a second one.
+        if ($done['replayed']) {
+            return (new LeadResource($done['lead']))->response()->setStatusCode(200);
+        }
+
+        return (new LeadResource($done['lead']))->response()->setStatusCode(201);
     }
 
     public function show(ShowLeadRequest $request, Lead $lead): LeadResource
@@ -81,9 +89,24 @@ class LeadController extends Controller
         return new LeadResource($lead->load(array_merge(['assignee'], $this->requestedIncludes($request, self::INCLUDABLE))));
     }
 
-    public function update(UpdateLeadRequest $request, Lead $lead, UpdateLead $update): LeadResource
+    public function update(UpdateLeadRequest $request, Lead $lead, CorrectLeadEnquiry $correct): JsonResponse
     {
-        return new LeadResource($update($lead, $request->validated(), $request->user()));
+        $done = $correct($lead, $request->safe()->only(LeadEnquiry::FIELDS), $request->input('reason'), $request->input('request_key'), (int) $request->input('expected_enquiry_version'), $request->user());
+        $operation = $done['operation'];
+        $correction = $operation['correction_id'] ?? null;
+
+        // `operation_result` is what this request decided, fixed forever; `data` is the enquiry as it is now.
+        return response()->json([
+            'data' => new LeadResource($done['lead']),
+            'operation_result' => [
+                'version' => (int) ($operation['version'] ?? 1),
+                'lead_id' => (int) $operation['lead_id'],
+                'enquiry_version' => (int) $operation['enquiry_version'],
+                'correction_id' => $correction === null ? null : (int) $correction,
+                'changed' => (bool) $operation['changed'],
+            ],
+            'replayed' => (bool) $done['replayed'],
+        ]);
     }
 
     public function linkParty(LinkLeadPartyRequest $request, Lead $lead, LinkLeadParty $link): LeadResource

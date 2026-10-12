@@ -30,4 +30,9 @@ export interface StoreLeadRequest {
   party_id?: StoreLeadRequestPartyId;
   /** @minimum 1 */
   assigned_to?: StoreLeadRequestAssignedTo;
+  /**
+   * Retrying the same submission records one enquiry; the key is chosen by the form when it opens.
+   * @maxLength 85
+   */
+  request_key: string;
 }
