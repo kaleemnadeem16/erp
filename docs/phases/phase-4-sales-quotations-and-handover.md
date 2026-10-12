@@ -2,7 +2,7 @@
 
 # Phase 4 — Sales, quotations and job handover
 
-- **Status:** R1/R2 bounded research complete; C0 accepted; C1a–c/C2a–b implemented locally per STATUS, R3 accepted/specifications prepared, R4–R9 pending. CRM backend foundation
+- **Status:** R1/R2 bounded research complete; C0 accepted; C1a–c/C2a–b implemented locally per STATUS, R3 accepted/specifications prepared, R4 initial review, R5–R9 pending. CRM backend foundation
   exists separately; quotation implementation remains pending.
 - **Started:** 2026-10-08, at the owner's request. Phase 3 enhancements remain with another agent.
 - **Depends on:** Parties and Estimating; shared Numbering, Approvals, Company and access foundations.
@@ -42,7 +42,7 @@ its consolidated review comes last. R6 and R7 inform R5 before lifecycle decisio
 | R1 Leads, opportunities and relationships | Enquiry vs deal; optional pipeline; identity/conversion; duplicates; owners, stages and closure | Parties; ADRs 0030/0034, 0084/0089 | Research complete, ADRs 0098–0108 accepted; Q39 resolved; delivery gates retained |
 | R2 Quotation structure and scope | Assemblies, work units, sections, alternatives, optional/non-priced lines; identity of a quotation vs revision | Sales scope; ADR 0109; Estimating | Business research formally closed; 0109 accepted, Q40 resolved; implementation gates retained |
 | R3 Sales pricing | SIMPLE first boundary, overrides, discounts, agreements and margin controls | ADR 0109 retains/generalises historical 0055; sales-pricing.md | P1–P8 accepted in 0115–0117; Q43 closed; slices specified, no code authorised |
-| R4 Tax, currency and FX | Quotation tax estimate, rules/exemptions, rounding, rate date and evidence | ADRs 0012, 0025, 0056; currency APIs | Existing design to assess; follows R2/R3 |
+| R4 Tax, currency and FX | Quotation tax estimate, rules/exemptions, rounding, rate date and evidence | ADRs 0012, 0025, 0056; currency APIs | Initial F1–F8 review (Q44), multi-tax/withholding/exemptions included; no new ADR/code |
 | R5 Lifecycle, approvals, issue and revisions | Stale drafts, plan adoption, snapshot boundary, withdrawal/supersession, expiry and approval invalidation | ADRs 0054, 0058, 0070, 0072, 0076/0077, 0079, 0085 | Not researched; follows R2–R4, informed by R6/R7 |
 | R6 Customer decisions | Whole/partial acceptance, alternatives, evidence, rejection and expired offers | Sales pipeline landmines; immutable snapshots | Not researched; follows R2; iterate with R5 |
 | R7 Job creation and handover | Idempotent confirmation, scope/baseline, contacts/sites, job changes; Sales/COGS correction ownership | job-costing.md; ADR 0040; Phase 5 boundary | Not researched; follows R6; feeds R5 |
@@ -77,6 +77,7 @@ proposal is never "researched", "accepted" or "complete" merely because it exist
 - [R3 retained research](phase-4-r3-sales-pricing.md) · [approved P1–P8 matrix](phase-4-r3-business-review.md) · [expanded evidence](phase-4-r3-expanded-research.md) · [worked example](phase-4-r3-worked-example.md). Governing 0115–0117; Q43 closed; [implementation slices/gates](phase-4-r3-implementation-slices.md) and [resolution contract](../domain/sales-pricing-resolution.md) prepared, no code authorisation.
 - [Accepted implementation-question coordination](../architecture/implementation-question-reconciliation.md) uses OPEN-QUESTIONS, original origin/context and coding-owned verification.
 
+- [R4 initial F1–F8 financial review](phase-4-r4-financial-review.md) · [tax composition and examples](phase-4-r4-tax-composition.md) · [primary evidence/conflicts and R3 readiness](phase-4-r4-evidence-and-readiness.md). Q44 awaits owner approval; no R3/tax implementation authority.
 - Later topic records are added when investigated; do not generate empty speculative documents.
 
 ## Tasks
@@ -102,6 +103,7 @@ proposal is never "researched", "accepted" or "complete" merely because it exist
 - [x] Owner approved C0/0110 and authorised C1a–c/C2a–b code; C1d migration/settings remain gated.
 - [x] Record owner-approved CRM A/B/C in accepted 0111–0113 and prepare correction Action/evidence/API/UI/migration acceptance handoff; no implementation by planning; B authority now accepted in 0114/Q42 closed, safe rollout required.
 - [x] Close R3 bounded business research, record owner-approved P1–P8 in 0115–0117, resolve Q43 and prepare implementation contracts/slices with R4–R9 gates; no code authorised.
+- [x] Begin R4 and prepare initial F1–F8 currency/FX/tax/rounding review, including multiple taxes, exemptions and withholding; Q44 awaiting owner approval.
 - [ ] Investigate R4–R9 in dependency order, R6/R7 informing R5 and R9 applied throughout; no operational pricing/quotation authority inferred.
 - [x] Reconcile R1 business foundations with the historical Sales proposal; physical schema reconciliation remains R2–R9.
 - [ ] Define implementation slices, demos and observable acceptance criteria only after decisions.

@@ -100,6 +100,11 @@ support accepted 0115–0117/Q43 closed. [Implementation slices](phase-4-r3-impl
 and [resolution contract](../domain/sales-pricing-resolution.md) are specified, not code-authorised;
 R4–R9 gates remain. [Accepted question coordination](../architecture/implementation-question-reconciliation.md)
 uses OPEN-QUESTIONS and coding-owned verification.
+[R4 financial decision matrix](phase-4-r4-financial-review.md),
+[core tax composition/examples](phase-4-r4-tax-composition.md) and
+[primary evidence/R3 readiness](phase-4-r4-evidence-and-readiness.md) are initial research awaiting
+owner approval (Q44). Multiple taxes, withholding and exemptions are current R4 architecture scope.
+No pricing/tax code is authorised.
 
 
 

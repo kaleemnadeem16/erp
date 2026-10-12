@@ -5,6 +5,10 @@
 Confirmed in scope from the start ([ADR 0012](../decisions/0012-multi-currency-dual-amounts.md)).
 Adding it later is effectively impossible — historical exchange rates cannot be reconstructed
 after the fact.
+The [initial R4 quotation review](../phases/phase-4-r4-financial-review.md) proposes explicit
+price-currency conversion, bounded rate age and operative rounding/residual contracts. These
+remain owner-review choices; [repository reconciliation](../phases/phase-4-r4-evidence-and-readiness.md)
+flags historical presentation-only wording and existing Money context before future Sales reuse.
 
 ## Where it sits
 

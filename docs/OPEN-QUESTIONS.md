@@ -203,6 +203,31 @@ attempts and device changes.
 
 ---
 
+### Q44 — R4 currency, tax composition and rounding contracts
+
+**Origin:** PLANNING RESEARCH (owner-requested R4, no forwarded implementation question).
+**Decision status:** AWAITING_OWNER. **Delivery status:** NOT_STARTED; independent approved work continues.
+**Module/context:** Phase 4 R4; accepted R3 local `6702838`; initial source reconciliation 2026-10-12.
+**Question/example:** Which explicit dates, FX routes/age, tax-component/dependency/inclusion/exemption/
+withholding and rounding/allocation contracts govern quotations? USD100 can convert to EUR80 via
+PKR280/350; net1000 additive10%+5% yields1150 versus compounded1155 or tax-only1105.
+**Checked authority:** 0012/0031/0081, 0025/0056, 0050/0080/0109, 0110 and 0115–0117.
+**Blocks:** Approved R4 semantics for affected pricing monetary/date/tax schema and calculation;
+no R3 implementation authorisation, no CRM/C2 blocker. R5–R9 remain separate integration gates.
+**Options/recommendation/research:** [Single F1–F8 matrix](phases/phase-4-r4-financial-review.md),
+[tax composition/examples](phases/phase-4-r4-tax-composition.md), and
+[primary comparison/conflicts/PR0–PR6 readiness](phases/phase-4-r4-evidence-and-readiness.md).
+Proposed explicit pricing dates, authorised base-bridge FX/bounded prior rates, component graph and
+mixed inclusive intent, component exemptions, separate withholding, named precision/rounding and
+conserved allocations. No jurisdiction/rate or new ADR accepted.
+**Owner decision:** Consolidated F1–F8 review; explicit refinements to prior-FX and presentation-only
+rounding prose/service defaults if approved. Existing money-cast/single-tax-code seams are findings,
+not code changes or assumed delivery permission.
+**Follow-up:** Planning records governing ADRs only after approval; coding owner implements/verifies
+under separate authorisation. Documentation response never marks a coding question verified.
+
+---
+
 ## Answered---
 
 ## Answered

@@ -6,6 +6,10 @@ Tax is a separate determination, accounting and reporting capability. It consume
 sales or purchase amount but is not part of the price formula. [ADR 0025](../decisions/0025-configurable-tax-engine.md)
 established configurable tax; [ADR 0056](../decisions/0056-progressive-tax-calculation-and-recovery.md)
 extends it with progressive calculation and explicit recovery distributions.
+The [initial R4 review](../phases/phase-4-r4-financial-review.md) and
+[core tax-composition model/examples](../phases/phase-4-r4-tax-composition.md) research precise
+multi-tax/inclusion/exemption/withholding/rounding contracts now. Their recommendations are
+unaccepted and do not enable an engine, amend these accepted principles or implement Finance.
 
 ## Problem statement
 

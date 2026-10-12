@@ -219,7 +219,9 @@ passed checks or verified cause/owner; planning has run documentation checks onl
 | **R8** | Customer commercial/discount/terms projection, immutable templates/PDF, delivery/re-delivery/channel evidence; signature/portal/manual-recording boundaries. | PR5 safe commercial API/UI projection only; no pricing print/export raw trace. Separate R8 complete surface review. |
 | **R9** | Final permission vocabulary, company duty/read/sensitive-field scopes, employee/role limits and trusted reference; grant continuity/explicit new-duty rollout; approval/risk/contract scope; audit/import/event projections; selected-offer provisional expected-value/FX/staleness and partial-win/remaining metrics. | Every public surface and PR4 authority; no all-role assumed grants, draft-price trusted forecast or accepted-scope double count. Existing 0101/0102 and R5/R6 gates remain required. |
 
-R4 research is the next independent planning priority; iterate R6/R7 to inform R5 before operational
+[R4 initial research/readiness](phase-4-r4-evidence-and-readiness.md) now distinguishes independently
+specifiable foundations from monetary/date/tax gates; [F1–F8](phase-4-r4-financial-review.md) remain
+unaccepted and authorise no R3 code. Iterate R6/R7 to inform R5 before operational
 quotation handoff. R9 proceeds alongside every slice. C1d remains separately gated, not made available
 by R3. No implementation-originated question supplied with this approval; none is invented.
 
