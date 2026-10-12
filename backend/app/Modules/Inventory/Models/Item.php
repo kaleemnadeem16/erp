@@ -219,6 +219,12 @@ class Item extends Model
         return $this->hasMany(ItemSupplier::class);
     }
 
+    /** @return HasMany<ItemPackaging, $this> */
+    public function packagings(): HasMany
+    {
+        return $this->hasMany(ItemPackaging::class);
+    }
+
     /** @return HasMany<ItemQuantityUnit, $this> */
     public function quantityUnits(): HasMany
     {

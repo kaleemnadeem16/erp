@@ -50,6 +50,11 @@ export type itemsIndexResponse401 = {
   status: 401;
 };
 
+export type itemsIndexResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type itemsIndexResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -59,7 +64,7 @@ export type itemsIndexResponseSuccess = itemsIndexResponse200 & {
   headers: Headers;
 };
 export type itemsIndexResponseError = (
-  itemsIndexResponse401 | itemsIndexResponse422
+  itemsIndexResponse401 | itemsIndexResponse403 | itemsIndexResponse422
 ) & {
   headers: Headers;
 };
@@ -99,7 +104,10 @@ export const getItemsIndexQueryKey = (params?: ItemsIndexParams) => {
 
 export const getItemsIndexQueryOptions = <
   TData = Awaited<ReturnType<typeof itemsIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: ItemsIndexParams,
   options?: {
@@ -127,11 +135,16 @@ export type ItemsIndexQueryResult = NonNullable<
   Awaited<ReturnType<typeof itemsIndex>>
 >;
 export type ItemsIndexQueryError =
-  AuthenticationExceptionResponse | ValidationExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
 
 export function useItemsIndex<
   TData = Awaited<ReturnType<typeof itemsIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params: undefined | ItemsIndexParams,
   options: {
@@ -154,7 +167,10 @@ export function useItemsIndex<
 };
 export function useItemsIndex<
   TData = Awaited<ReturnType<typeof itemsIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: ItemsIndexParams,
   options?: {
@@ -177,7 +193,10 @@ export function useItemsIndex<
 };
 export function useItemsIndex<
   TData = Awaited<ReturnType<typeof itemsIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: ItemsIndexParams,
   options?: {
@@ -193,7 +212,10 @@ export function useItemsIndex<
 
 export function useItemsIndex<
   TData = Awaited<ReturnType<typeof itemsIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: ItemsIndexParams,
   options?: {

@@ -6,6 +6,9 @@
  */
 import type { ItemType } from "./itemType";
 import type { Status } from "./status";
+import type { ValuationMethod } from "./valuationMethod";
+import type { ItemTracking } from "./itemTracking";
+import type { PackageTrackingMode } from "./packageTrackingMode";
 import type { ItemsIndexSort } from "./itemsIndexSort";
 
 export type ItemsIndexParams = {
@@ -19,6 +22,22 @@ export type ItemsIndexParams = {
    * @maxLength 255
    */
   "filter[search]"?: string;
+  "filter[is_stocked]"?: boolean;
+  "filter[is_purchasable]"?: boolean;
+  "filter[is_sellable]"?: boolean;
+  "filter[valuation_method]"?: ValuationMethod;
+  "filter[tracking]"?: ItemTracking;
+  /**
+   * @minimum 1
+   */
+  "filter[supplier_id]"?: number;
+  "filter[has_supplier]"?: boolean;
+  "filter[has_packaging]"?: boolean;
+  /**
+   * @minimum 1
+   */
+  "filter[stock_uom_id]"?: number;
+  "filter[package_tracking_mode]"?: PackageTrackingMode;
   sort?: ItemsIndexSort;
   include?: string;
   /**

@@ -112,8 +112,10 @@ export function ItemDetailScreen({
   useEffect(() => {
     if (tabParam && ["overview", "suppliers", "packaging", "recipes"].includes(tabParam)) {
       setActiveTab(tabParam);
+    } else {
+      setActiveTab("overview");
     }
-  }, [tabParam]);
+  }, [tabParam, itemId]);
 
   const handleTabChange = (nextTab: ItemDetailTab) => {
     setActiveTab(nextTab);
@@ -149,7 +151,10 @@ export function ItemDetailScreen({
   }, [mayReadRecipes, formulations.length]);
 
   const handleClose = () => {
-    navigate({ pathname: "/items", search });
+    const listParams = new URLSearchParams(searchParams);
+    listParams.delete("tab");
+    const nextSearch = listParams.toString();
+    navigate({ pathname: "/items", search: nextSearch ? `?${nextSearch}` : "" });
   };
 
   function handleToggleStatus() {

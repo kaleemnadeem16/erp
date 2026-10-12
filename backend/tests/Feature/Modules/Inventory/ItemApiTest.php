@@ -5,13 +5,20 @@ namespace Tests\Feature\Modules\Inventory;
 use App\Models\CustomFieldDefinition;
 use App\Models\Uom;
 use App\Models\User;
+use App\Modules\Accounting\Models\ChartOfAccount;
+use App\Modules\Accounting\Support\AccountType;
 use App\Modules\Inventory\Models\Category;
 use App\Modules\Inventory\Models\Item;
+use App\Modules\Inventory\Models\ItemPackaging;
+use App\Modules\Parties\Models\Party;
+use App\Modules\Parties\Models\SupplierAccount;
+use App\Modules\Purchasing\Models\ItemSupplier;
 use App\Support\CompanyContext;
 use App\Support\UomDimension;
 use Illuminate\Contracts\Auth\Authenticatable as UserContract;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Spatie\Permission\Models\Permission;
 use Tests\Support\PermissionedActor;
 use Tests\TestCase;
 
@@ -166,6 +173,143 @@ class ItemApiTest extends TestCase
         $response->assertOk();
         $response->assertJsonCount(1, 'data');
         $response->assertJsonPath('data.0.code', 'pig-001');
+    }
+
+    public function test_index_can_filter_by_flags_valuation_and_tracking(): void
+    {
+        $user = User::factory()->create();
+        Item::create($this->payload([
+            'code' => 'pig-010',
+            'name' => 'Stocked batch pigment',
+            'is_stocked' => true,
+            'is_purchasable' => true,
+            'is_sellable' => false,
+            'valuation_method' => 'AVCO',
+            'tracking' => 'BATCH',
+        ]));
+        Item::create($this->payload([
+            'code' => 'pig-011',
+            'name' => 'Non-stocked resale pigment',
+            'is_stocked' => false,
+            'is_purchasable' => false,
+            'is_sellable' => true,
+            'valuation_method' => 'FIFO',
+            'tracking' => 'NONE',
+        ]));
+
+        $actor = $this->actingAs($user);
+
+        $actor->getJson('/api/v1/items?filter[is_stocked]=true')->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.code', 'pig-010');
+        $actor->getJson('/api/v1/items?filter[is_stocked]=false')->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.code', 'pig-011');
+        $actor->getJson('/api/v1/items?filter[is_purchasable]=true')->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.code', 'pig-010');
+        $actor->getJson('/api/v1/items?filter[is_sellable]=true')->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.code', 'pig-011');
+        $actor->getJson('/api/v1/items?filter[valuation_method]=FIFO')->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.code', 'pig-011');
+        $actor->getJson('/api/v1/items?filter[tracking]=BATCH')->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.code', 'pig-010');
+    }
+
+    public function test_index_can_filter_by_supplier_packaging_uom_and_package_tracking_mode(): void
+    {
+        $user = User::factory()->create();
+        $otherUom = Uom::create(['code' => 'ltr', 'name' => 'Litre', 'dimension' => UomDimension::Volume, 'factor_to_base' => '1']);
+
+        $itemWithSupplierAndPackage = Item::create($this->payload([
+            'code' => 'pig-sup-pack',
+            'name' => 'Pigment with supplier and package',
+            'stock_uom_id' => $otherUom->id,
+            'package_tracking_mode' => 'QUANTITY_ONLY',
+        ]));
+
+        $plainItem = Item::create($this->payload([
+            'code' => 'pig-plain',
+            'name' => 'Plain pigment without supplier or package',
+            'stock_uom_id' => $this->uom->id,
+            'package_tracking_mode' => 'QUANTITY_ONLY',
+        ]));
+
+        $party = Party::create(['code' => 'SUPP-CORP', 'name' => 'Supplier Corp']);
+        $payable = ChartOfAccount::create([
+            'code' => '2101',
+            'name' => 'Accounts Payable Test',
+            'type' => AccountType::Liability,
+        ]);
+        $supplier = SupplierAccount::create([
+            'party_id' => $party->id,
+            'code' => 'SUPP-01',
+            'payment_terms_days' => 30,
+            'payable_account_id' => $payable->id,
+        ]);
+
+        ItemSupplier::create([
+            'item_id' => $itemWithSupplierAndPackage->id,
+            'supplier_account_id' => $supplier->id,
+            'priority' => 1,
+            'active' => true,
+        ]);
+
+        ItemPackaging::create([
+            'item_id' => $itemWithSupplierAndPackage->id,
+            'code' => 'DRUM-200',
+            'name' => '200L Drum',
+            'stock_quantity' => 200,
+            'active' => true,
+        ]);
+
+        // Filtering by supplier reads sourcing links, which needs the right to read them.
+        $actor = $this->actingAs($user);
+        PermissionedActor::grant($user, ['purchasing.item-supplier.view']);
+
+        // Filter by specific supplier
+        $actor->getJson("/api/v1/items?filter[supplier_id]={$supplier->id}")
+            ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.code', 'pig-sup-pack');
+
+        // Filter by has_supplier
+        $actor->getJson('/api/v1/items?filter[has_supplier]=true')
+            ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.code', 'pig-sup-pack');
+        $actor->getJson('/api/v1/items?filter[has_supplier]=false')
+            ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.code', 'pig-plain');
+
+        // Filter by has_packaging
+        $actor->getJson('/api/v1/items?filter[has_packaging]=true')
+            ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.code', 'pig-sup-pack');
+        $actor->getJson('/api/v1/items?filter[has_packaging]=false')
+            ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.code', 'pig-plain');
+
+        // Filter by stock_uom_id
+        $actor->getJson("/api/v1/items?filter[stock_uom_id]={$otherUom->id}")
+            ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.code', 'pig-sup-pack');
+        $actor->getJson("/api/v1/items?filter[stock_uom_id]={$this->uom->id}")
+            ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.code', 'pig-plain');
+
+        // Filter by package_tracking_mode
+        $actor->getJson('/api/v1/items?filter[package_tracking_mode]=QUANTITY_ONLY')
+            ->assertOk()->assertJsonCount(2, 'data');
+    }
+
+    public function test_supplier_filters_need_the_right_to_read_item_supplier_links(): void
+    {
+        foreach (['purchasing.item-supplier.view', 'purchasing.item-supplier.manage', 'purchasing.purchase-order.view', 'purchasing.purchase-order.create'] as $name) {
+            Permission::findOrCreate($name);
+        }
+        $plain = User::factory()->create();
+        $item = Item::create($this->payload(['code' => 'pig-src', 'name' => 'Sourced pigment']));
+        $party = Party::create(['code' => 'SUPP-X', 'name' => 'Supplier X']);
+        $payable = ChartOfAccount::create(['code' => '2102', 'name' => 'Payables', 'type' => AccountType::Liability]);
+        $supplier = SupplierAccount::create(['party_id' => $party->id, 'code' => 'SUPP-X1', 'payment_terms_days' => 30, 'payable_account_id' => $payable->id]);
+        ItemSupplier::create(['item_id' => $item->id, 'supplier_account_id' => $supplier->id, 'priority' => 1, 'active' => true]);
+
+        // Listing items is open to anyone who may list items; learning which items a supplier supplies is not.
+        $this->actingAs($plain);
+        $this->getJson('/api/v1/items')->assertOk();
+        $this->getJson("/api/v1/items?filter[supplier_id]={$supplier->id}")->assertForbidden();
+        $this->getJson('/api/v1/items?filter[has_supplier]=true')->assertForbidden();
+        $this->getJson('/api/v1/items?filter[has_supplier]=false')->assertForbidden();
+
+        $reader = User::factory()->create();
+        Permission::findOrCreate('purchasing.item-supplier.view');
+        $reader->givePermissionTo('purchasing.item-supplier.view');
+        $this->actingAs($reader);
+        $this->getJson("/api/v1/items?filter[supplier_id]={$supplier->id}")->assertOk()->assertJsonCount(1, 'data');
+        $this->getJson('/api/v1/items?filter[has_supplier]=true')->assertOk()->assertJsonCount(1, 'data');
     }
 
     public function test_index_validates_includes_and_sorts_descending(): void
