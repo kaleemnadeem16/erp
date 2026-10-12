@@ -356,6 +356,7 @@ registered capabilities and the target holds its eligible company assignment; ro
 current permission snapshots are insufficient. Otherwise exclude automatic inclusion, preserving
 legitimate explicit grants and effective scope. Current unconditional all-registry helpers require
 this narrow integration before the duty is rolled out; no global wildcard/admin-role system is implied.
+**As built:** `PermissionRegistry::excludeFromAutomaticGrants` marks the duty, `automaticGrants()` / `syncAutomatic()` are the one predicate every all-capabilities caller uses (`erp:create-admin`, `erp:sync-admin-permissions` and the demo seeders), an explicit direct grant survives a re-sync, and `FullAccessMandates` reads `config('access.full_access_mandates')` for the verified-mandate case. The duty stays unassigned until the owner names its holders — see the [CRM corrections handoff](../phases/phase-4-crm-corrections-implementation.md).
 
 Registration without enforcement is allowed as a clearly documented foundation/reserved
 capability. Enforcement without assignment preparation, backend tests and usable UI is not. The
