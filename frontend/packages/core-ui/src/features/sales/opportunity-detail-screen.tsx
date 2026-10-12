@@ -30,9 +30,10 @@ import { usePermission } from '../../hooks/use-permission';
 import { getApiErrorMessage, isApiError, lookupState } from '../../lib/api-errors';
 import { formatDate, formatDateTime } from '../../lib/format-date';
 import { trimQty } from '../package-stock/quantity';
+import { AttributionCorrectionDialog, ResponsibilityRecord } from './opportunity-attribution';
 import { HistoryList, NotesList, OutcomeBadge, SALES, useSalesStages } from './sales-common';
 
-type Mode = 'close' | 'reopen' | 'reassign' | 'edit' | null;
+type Mode = 'close' | 'reopen' | 'reassign' | 'edit' | 'attribution' | null;
 
 /** One opportunity: who it is for, who is responsible, where it stands, what happens next — with its notes and the history of every decision. */
 export function OpportunityDetailScreen() {
@@ -41,7 +42,7 @@ export function OpportunityDetailScreen() {
   const mayManage = usePermission(SALES.opportunity);
   const mayAssign = usePermission(SALES.assign);
   const mayClose = usePermission(SALES.close);
-  const query = useOpportunitiesShow(id, { include: 'party,stage,lead,notes,history' });
+  const query = useOpportunitiesShow(id, { include: 'party,stage,lead,notes,history,attribution_corrections' });
   const opportunity = query.data?.status === 200 ? query.data.data.data : undefined;
   const { active: stages } = useSalesStages();
   const currencies = useCurrenciesIndex({ per_page: 100, sort: 'code' });
@@ -196,12 +197,14 @@ export function OpportunityDetailScreen() {
               <NotesList rows={opportunity.notes ?? []} />
             </div>
           </DetailSection>
+          {opportunity.outcome !== 'OPEN' && <ResponsibilityRecord opportunity={opportunity} onCorrect={() => setMode('attribution')} />}
           <DetailSection title="History" fullWidth>
             <div className="sm:col-span-2">
               <HistoryList rows={[...(opportunity.history ?? [])].reverse()} />
             </div>
           </DetailSection>
         </DetailPageLayout>
+        <AttributionCorrectionDialog opportunity={opportunity} open={mode === 'attribution'} onClose={() => setMode(null)} onSaved={async () => { await query.refetch(); }} />
         <ActionDialogs
           key={opportunity.updated_at}
           mode={mode}

@@ -3,8 +3,9 @@
 # CRM correction evidence
 
 Accepted ADRs 0111–0114 distinguish intake disposition, corrected enquiry details and historical
-responsibility from current pursuit. **DECISIONS ACCEPTED. Implemented: the operation-receipt table, keyed independent
-disqualification (A) and intake/enquiry-correction evidence (C). SPECIFIED, NOT IMPLEMENTED: attribution corrections (B).** Historical-attribution authority is accepted in 0114; registry/grants/re-sync remain implementation work. The existing CRM
+responsibility from current pursuit. **DECISIONS ACCEPTED AND IMPLEMENTED: the operation-receipt table, keyed independent
+disqualification (A), intake/enquiry-correction evidence (C) and attribution corrections (B), with the
+security correction (S) ahead of them.** Historical-attribution authority is accepted in 0114; registry/grants/re-sync remain implementation work. The existing CRM
 foundation still has its old restrictions until the implementation agent delivers these corrections.
 
 ## Where it sits

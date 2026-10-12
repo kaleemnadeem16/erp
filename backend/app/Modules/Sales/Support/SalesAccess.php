@@ -65,4 +65,20 @@ final class SalesAccess
             throw new AuthorizationException('You are not permitted to view the sales pipeline.');
         }
     }
+
+    /**
+     * Correcting recorded responsibility needs the dedicated duty AND an independent, legitimate right to read the pipeline, each judged by its own
+     * scope: an unrestricted read cannot rescue a restricted correction, nor the reverse (ADR 0114).
+     */
+    public static function mayCorrectAttribution(?User $user): bool
+    {
+        return self::may($user, PermissionVocabulary::OPPORTUNITY_ATTRIBUTION_CORRECT) && self::mayRead($user);
+    }
+
+    public static function requireCorrectAttribution(?User $user): void
+    {
+        if (! self::mayCorrectAttribution($user)) {
+            throw new AuthorizationException('You are not permitted to correct recorded responsibility.');
+        }
+    }
 }

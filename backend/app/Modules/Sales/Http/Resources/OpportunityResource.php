@@ -8,6 +8,8 @@ use App\Modules\Administration\Support\MemberStatus;
 use App\Modules\Parties\Http\Resources\PartyResource;
 use App\Modules\Sales\Models\Opportunity;
 use App\Modules\Sales\Support\OpportunityOutcome;
+use App\Modules\Sales\Support\ResponsibilityFacts;
+use App\Modules\Sales\Support\SalesAccess;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -45,6 +47,12 @@ class OpportunityResource extends JsonResource
             'closed_by' => $opportunity->closed_by,
             'closure_reason' => $opportunity->closure_reason,
             'created_by' => $opportunity->created_by,
+            // The closure a historical correction is confirmed against, and whether this person may correct who was responsible (closed deal + the dedicated duty + read).
+            'closure_event_id' => $opportunity->outcome === OpportunityOutcome::Open ? null : $opportunity->latestClosureEventId(),
+            'can_correct_attribution' => $opportunity->outcome !== OpportunityOutcome::Open && self::mayCorrect($request),
+            'attribution_corrections' => OpportunityAttributionCorrectionResource::collection($this->whenLoaded('attributionCorrections')),
+            // Each recorded owner fact beside what the record says after corrections, for the detail screen; read with the same authority as the history.
+            'responsibility' => $this->when($opportunity->relationLoaded('attributionCorrections'), fn (): array => ResponsibilityFacts::for($opportunity)),
             'party' => $this->whenLoaded('party', fn () => new PartyResource($opportunity->party)),
             'stage' => $this->whenLoaded('stage', fn () => new SalesStageResource($opportunity->stage)),
             'lead' => $this->whenLoaded('lead', fn () => $opportunity->lead === null ? null : new LeadResource($opportunity->lead)),
@@ -53,5 +61,15 @@ class OpportunityResource extends JsonResource
             'created_at' => $opportunity->created_at?->toIso8601String(),
             'updated_at' => $opportunity->updated_at?->toIso8601String(),
         ];
+    }
+
+    /** One answer per request: a list of deals must not ask the access tables once per row. */
+    private static function mayCorrect(Request $request): bool
+    {
+        if (! $request->attributes->has('sales.may_correct_attribution')) {
+            $request->attributes->set('sales.may_correct_attribution', SalesAccess::mayCorrectAttribution($request->user()));
+        }
+
+        return (bool) $request->attributes->get('sales.may_correct_attribution');
     }
 }

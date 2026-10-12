@@ -10,6 +10,7 @@ use App\Modules\Sales\Models\Lead;
 use App\Modules\Sales\Models\Opportunity;
 use App\Modules\Sales\Models\SalesHistory;
 use App\Modules\Sales\Models\SalesStage;
+use App\Modules\Sales\Support\PermissionVocabulary as Sales;
 use Database\Seeders\Demo\SalesCrmDemoSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -42,6 +43,10 @@ class SalesCrmDemoSeederTest extends TestCase
         $rep = User::query()->where('email', SalesCrmDemoSeeder::REPRESENTATIVE)->firstOrFail();
         $manager = User::query()->where('email', SalesCrmDemoSeeder::MANAGER)->firstOrFail();
         $viewer = User::query()->where('email', SalesCrmDemoSeeder::VIEWER)->firstOrFail();
+        $reviewer = User::query()->where('email', SalesCrmDemoSeeder::REVIEWER)->firstOrFail();
+        $this->assertEqualsCanonicalizing([Sales::PIPELINE_VIEW, Sales::OPPORTUNITY_ATTRIBUTION_CORRECT], $reviewer->getAllPermissions()->pluck('name')->all(), 'the reviewer reads and corrects attribution, nothing else');
+        $admin = User::query()->where('email', config('demo.user.email'))->firstOrFail();
+        $this->assertFalse($admin->hasPermissionTo(Sales::OPPORTUNITY_ATTRIBUTION_CORRECT), 'the demo administrator does not receive the sensitive duty by the all-capabilities shortcut');
         $this->assertTrue($rep->can('sales.opportunity.manage'));
         $this->assertFalse($rep->can('sales.opportunity.assign'));
         $this->assertFalse($rep->can('sales.opportunity.close'));

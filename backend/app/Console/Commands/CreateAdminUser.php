@@ -62,7 +62,7 @@ final class CreateAdminUser extends Command
             // makes --permissions=all safe on a fresh production database.
             if ($requested === ['all']) {
                 $permissions->registerForTeam($companyContext->id());
-                $names = $permissions->all();
+                $names = $permissions->automaticGrants($user);
             } else {
                 $names = $requested;
             }

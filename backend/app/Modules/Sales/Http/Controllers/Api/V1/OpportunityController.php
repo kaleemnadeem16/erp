@@ -9,17 +9,21 @@ use App\Modules\Administration\Support\MemberStatus;
 use App\Modules\Sales\Actions\AddSalesNote;
 use App\Modules\Sales\Actions\ChangeOpportunityStage;
 use App\Modules\Sales\Actions\CloseOpportunity;
+use App\Modules\Sales\Actions\CorrectOpportunityAttribution;
 use App\Modules\Sales\Actions\CreateOpportunity;
+use App\Modules\Sales\Actions\ReadOpportunityAttributionMembers;
 use App\Modules\Sales\Actions\ReassignOpportunity;
 use App\Modules\Sales\Actions\ReopenOpportunity;
 use App\Modules\Sales\Actions\UpdateOpportunity;
 use App\Modules\Sales\Http\Requests\Opportunity\AddOpportunityNoteRequest;
 use App\Modules\Sales\Http\Requests\Opportunity\ChangeOpportunityStageRequest;
 use App\Modules\Sales\Http\Requests\Opportunity\CloseOpportunityRequest;
+use App\Modules\Sales\Http\Requests\Opportunity\IndexOpportunityAttributionMemberRequest;
 use App\Modules\Sales\Http\Requests\Opportunity\IndexOpportunityRequest;
 use App\Modules\Sales\Http\Requests\Opportunity\ReassignOpportunityRequest;
 use App\Modules\Sales\Http\Requests\Opportunity\ReopenOpportunityRequest;
 use App\Modules\Sales\Http\Requests\Opportunity\ShowOpportunityRequest;
+use App\Modules\Sales\Http\Requests\Opportunity\StoreOpportunityAttributionCorrectionRequest;
 use App\Modules\Sales\Http\Requests\Opportunity\StoreOpportunityRequest;
 use App\Modules\Sales\Http\Requests\Opportunity\UpdateOpportunityRequest;
 use App\Modules\Sales\Http\Resources\OpportunityResource;
@@ -36,7 +40,7 @@ class OpportunityController extends Controller
     use AppliesApiQuery;
 
     /** @var array<string, string> */
-    private const INCLUDABLE = ['party' => 'party', 'owner' => 'owner', 'stage' => 'stage', 'lead' => 'lead', 'notes' => 'notes.author', 'history' => 'history.actor'];
+    private const INCLUDABLE = ['party' => 'party', 'owner' => 'owner', 'stage' => 'stage', 'lead' => 'lead', 'notes' => 'notes.author', 'history' => 'history.actor', 'attribution_corrections' => 'attributionCorrections.actor'];
 
     /** @var array<string, string> */
     private const SORTABLE = ['created_at' => 'created_at', 'number' => 'number', 'title' => 'title', 'expected_close_on' => 'expected_close_on', 'next_action_on' => 'next_action_on'];
@@ -113,5 +117,37 @@ class OpportunityController extends Controller
     public function addNote(AddOpportunityNoteRequest $request, Opportunity $opportunity, AddSalesNote $add): JsonResponse
     {
         return (new SalesNoteResource($add($opportunity, $request->string('body')->toString(), $request->user())))->response()->setStatusCode(201);
+    }
+
+    public function attributionCorrection(StoreOpportunityAttributionCorrectionRequest $request, Opportunity $opportunity, CorrectOpportunityAttribution $correct): JsonResponse
+    {
+        $done = $correct(
+            $opportunity, $request->integer('target_event_id'), (string) $request->input('target_field'), $request->integer('asserted_owner_id'),
+            $request->input('expected_predecessor_id') === null ? null : $request->integer('expected_predecessor_id'), $request->integer('expected_closure_event_id'),
+            $request->input('reason'), $request->input('request_key'), $request->user(),
+        );
+        $operation = $done['operation'];
+        $correction = $operation['correction_id'] ?? null;
+        $head = $operation['head_id'] ?? null;
+
+        // `operation_result` is what this request decided, fixed forever; `data` is the opportunity as it is now (never changed by a correction).
+        return response()->json([
+            'data' => new OpportunityResource($done['opportunity']),
+            'operation_result' => [
+                'version' => (int) ($operation['version'] ?? 1),
+                'opportunity_id' => (int) $operation['opportunity_id'],
+                'correction_id' => $correction === null ? null : (int) $correction,
+                'head_id' => $head === null ? null : (int) $head,
+                'changed' => (bool) $operation['changed'],
+            ],
+            'replayed' => (bool) $done['replayed'],
+        ]);
+    }
+
+    public function attributionMembers(IndexOpportunityAttributionMemberRequest $request, Opportunity $opportunity, ReadOpportunityAttributionMembers $read): JsonResponse
+    {
+        $id = $request->input('filter.id');
+
+        return response()->json(['data' => $read($opportunity, $request->input('filter.search'), $id === null ? null : (int) $id, $request->user())]);
     }
 }

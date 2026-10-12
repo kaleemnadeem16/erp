@@ -79,10 +79,8 @@ final class StockDemoSeeder extends Seeder
 
         $permissions = app(PermissionRegistry::class);
         $permissions->registerForTeam(1);
-        $demoPermissions = $permissions->all();
-
         $demoUser = User::query()->where('email', config('demo.user.email'))->firstOrFail();
-        $demoUser->syncPermissions($demoPermissions);
+        $permissions->syncAutomatic($demoUser);
 
         $ops = $this->seedActor('demo-ops@erp.x1techs.com', 'Demo Ops Assistant', [
             'inventory.physical_count.create', 'inventory.physical_count.count',

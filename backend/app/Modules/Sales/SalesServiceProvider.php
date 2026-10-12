@@ -19,7 +19,10 @@ class SalesServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->app->afterResolving(PermissionRegistry::class, fn (PermissionRegistry $registry) => $registry->registerVocabulary('sales', PermissionVocabulary::all()));
+        $this->app->afterResolving(PermissionRegistry::class, function (PermissionRegistry $registry): void {
+            $registry->registerVocabulary('sales', PermissionVocabulary::all());
+            $registry->excludeFromAutomaticGrants([PermissionVocabulary::OPPORTUNITY_ATTRIBUTION_CORRECT], 'Retrospective attribution is a sensitive duty: granted only explicitly or under a verified full-access mandate (ADR 0114).');
+        });
         $this->app->afterResolving(NumberingRegistry::class, static function (NumberingRegistry $registry): void {
             $registry->register(new LeadNumbering);
             $registry->register(new OpportunityNumbering);

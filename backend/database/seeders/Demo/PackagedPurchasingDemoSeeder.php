@@ -58,7 +58,7 @@ final class PackagedPurchasingDemoSeeder extends Seeder
         $registry = app(PermissionRegistry::class);
         $registry->registerForTeam(1);
         $this->actor = User::query()->where('email', config('demo.user.email'))->firstOrFail();
-        $this->actor->syncPermissions($registry->all());
+        $registry->syncAutomatic($this->actor);
         $this->litre = Uom::query()->where('code', 'l')->firstOrFail();
         $this->currency = Currency::query()->where('code', 'PKR')->firstOrFail();
         $this->supplier = SupplierAccount::query()->where('code', 'sup-pakchem')->firstOrFail();

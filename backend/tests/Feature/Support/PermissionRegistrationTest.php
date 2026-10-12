@@ -88,7 +88,8 @@ final class PermissionRegistrationTest extends TestCase
 
         $user = User::query()->where('email', 'first-admin@example.com')->firstOrFail();
 
-        $this->assertCount(count(app(PermissionRegistry::class)->all()), $user->getAllPermissions());
+        // Every registered capability except those no automatic grant may include (a sensitive duty needs an explicit grant).
+        $this->assertCount(count(app(PermissionRegistry::class)->automaticGrants()), $user->getAllPermissions());
     }
 
     public function test_sync_admin_permissions_grants_names_registered_after_the_user_was_created(): void
@@ -107,7 +108,7 @@ final class PermissionRegistrationTest extends TestCase
             ->assertSuccessful();
 
         $user->unsetRelation('permissions');
-        $this->assertSame(count($registry->all()), $user->getAllPermissions()->count());
+        $this->assertSame(count($registry->automaticGrants()), $user->getAllPermissions()->count());
     }
 
     public function test_sync_admin_permissions_is_idempotent(): void

@@ -62,7 +62,7 @@ final class PurchasingDemoSeeder extends Seeder
         $permissions = app(PermissionRegistry::class);
         $permissions->registerForTeam(1);
         $this->actor = User::query()->where('email', config('demo.user.email'))->firstOrFail();
-        $this->actor->syncPermissions($permissions->all());
+        $permissions->syncAutomatic($this->actor);
 
         $kg = Uom::query()->where('code', 'kg')->firstOrFail();
         $litre = Uom::query()->where('code', 'l')->firstOrFail();

@@ -27,6 +27,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('opportunities/{opportunity}/reassign', [OpportunityController::class, 'reassign'])->whereNumber('opportunity')->name('opportunities.reassign');
     Route::post('opportunities/{opportunity}/close', [OpportunityController::class, 'close'])->whereNumber('opportunity')->name('opportunities.close');
     Route::post('opportunities/{opportunity}/reopen', [OpportunityController::class, 'reopen'])->whereNumber('opportunity')->name('opportunities.reopen');
+    Route::post('opportunities/{opportunity}/attribution-corrections', [OpportunityController::class, 'attributionCorrection'])->whereNumber('opportunity')->name('opportunities.attribution-corrections.store');
+    Route::get('opportunities/{opportunity}/attribution-members', [OpportunityController::class, 'attributionMembers'])->whereNumber('opportunity')->name('opportunities.attribution-members.index');
     Route::post('opportunities/{opportunity}/notes', [OpportunityController::class, 'addNote'])->whereNumber('opportunity')->name('opportunities.notes.store');
 
     Route::get('sales-owners', [SalesOwnerController::class, 'index'])->name('sales-owners.index');

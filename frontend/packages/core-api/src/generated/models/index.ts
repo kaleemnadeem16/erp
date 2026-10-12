@@ -3,7 +3,7 @@
  * Do not edit manually.
  *
  * Pure-type schemas are re-exported with `export type *` so a browser never requests them;
- * only the 157 schemas that export a runtime value use `export *`.
+ * only the 159 schemas that export a runtime value use `export *`.
  */
 export type * from "./accountDevicesIndex200";
 export type * from "./accountShow200";
@@ -1239,6 +1239,13 @@ export type * from "./numberingSeriesRulesStore201";
 export type * from "./numberingSeriesStore201";
 export type * from "./numberingSeriesVersions200";
 export type * from "./numberingSeriesVersionsStore201";
+export type * from "./opportunitiesAttributionCorrectionsStore200";
+export type * from "./opportunitiesAttributionCorrectionsStore200OperationResult";
+export type * from "./opportunitiesAttributionCorrectionsStore200OperationResultCorrectionId";
+export type * from "./opportunitiesAttributionCorrectionsStore200OperationResultHeadId";
+export type * from "./opportunitiesAttributionMembersIndex200";
+export type * from "./opportunitiesAttributionMembersIndex200DataItem";
+export type * from "./opportunitiesAttributionMembersIndexParams";
 export type * from "./opportunitiesClose200";
 export type * from "./opportunitiesIndex200";
 export type * from "./opportunitiesIndex200Links";
@@ -1262,10 +1269,16 @@ export type * from "./opportunitiesShowParams";
 export type * from "./opportunitiesStage200";
 export type * from "./opportunitiesStore201";
 export type * from "./opportunitiesUpdate200";
+export type * from "./opportunityAttributionCorrectionResource";
+export type * from "./opportunityAttributionCorrectionResourceActorName";
+export type * from "./opportunityAttributionCorrectionResourceAssertedOwnerName";
+export type * from "./opportunityAttributionCorrectionResourcePredecessorId";
+export type * from "./opportunityAttributionCorrectionResourceRecordedOwnerName";
 export * from "./opportunityOutcome";
 export type * from "./opportunityResource";
 export type * from "./opportunityResourceClosedAt";
 export type * from "./opportunityResourceClosedBy";
+export type * from "./opportunityResourceClosureEventId";
 export type * from "./opportunityResourceClosureReason";
 export type * from "./opportunityResourceCreatedAt";
 export type * from "./opportunityResourceDescription";
@@ -1279,6 +1292,10 @@ export type * from "./opportunityResourceNextActionOn";
 export type * from "./opportunityResourceNumber";
 export type * from "./opportunityResourceOwnerName";
 export type * from "./opportunityResourcePartyContactId";
+export type * from "./opportunityResourceResponsibilityItem";
+export type * from "./opportunityResourceResponsibilityItemEffectiveOwnerName";
+export type * from "./opportunityResourceResponsibilityItemHeadId";
+export type * from "./opportunityResourceResponsibilityItemRecordedOwnerName";
 export type * from "./opportunityResourceSource";
 export type * from "./opportunityResourceUpdatedAt";
 export type * from "./organisationUnitResource";
@@ -1342,6 +1359,7 @@ export type * from "./packageDrawsSuggest200DataLinesItemAnyOfFive";
 export type * from "./packageDrawsSuggest200DataLinesItemAnyOfTwo";
 export type * from "./packageDrawsSuggest200DataLinesItemAnyOfTwoCount";
 export type * from "./packageDrawsSuggest200DataLinesItemAnyOfTwoCountAnyOf";
+export * from "./packageTrackingMode";
 export type * from "./partiesCandidates200";
 export type * from "./partiesCandidatesParams";
 export type * from "./partiesDestroy403";
@@ -2040,6 +2058,9 @@ export type * from "./storeNumberingRuleRequestConditionsItem";
 export * from "./storeNumberingRuleRequestConditionsItemOperator";
 export type * from "./storeNumberingSeriesRequest";
 export type * from "./storeNumberingVersionRequest";
+export type * from "./storeOpportunityAttributionCorrectionRequest";
+export type * from "./storeOpportunityAttributionCorrectionRequestExpectedPredecessorId";
+export * from "./storeOpportunityAttributionCorrectionRequestTargetField";
 export type * from "./storeOpportunityRequest";
 export type * from "./storeOpportunityRequestDescription";
 export type * from "./storeOpportunityRequestExpectedAmount";

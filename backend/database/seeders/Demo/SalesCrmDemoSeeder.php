@@ -51,6 +51,8 @@ final class SalesCrmDemoSeeder extends Seeder
 
     public const BRANCH = 'demo-sales-branch@erp.x1techs.com';
 
+    public const REVIEWER = 'demo-sales-reviewer@erp.x1techs.com';
+
     public const LEAVER = 'demo-sales-leaver@erp.x1techs.com';
 
     public function run(): void
@@ -58,7 +60,8 @@ final class SalesCrmDemoSeeder extends Seeder
         $this->ensureDemoEnvironment();
         app(PermissionRegistry::class)->registerForTeam(1);
         $admin = User::query()->where('email', config('demo.user.email'))->firstOrFail();
-        $admin->givePermissionTo(Sales::all());
+        // Everything except retrospective attribution, which is a sensitive duty granted explicitly (to the reviewer persona below), never by an all-capabilities shortcut.
+        $admin->givePermissionTo(array_values(array_diff(Sales::all(), [Sales::OPPORTUNITY_ATTRIBUTION_CORRECT])));
         $this->personas($admin);
         if (Lead::query()->where('enquirer_name', 'Rukhsana Baig')->exists()) {
             $this->duplicateIntake();
@@ -139,11 +142,34 @@ final class SalesCrmDemoSeeder extends Seeder
         $this->rolePersona($admin, 'Sales representative', 'Records enquiries and works their deals: notes, stages, next actions. Cannot reassign, close or configure.', [...$read, ...$work, 'parties.party.manage'], self::REPRESENTATIVE, 'Demo Sales Rep');
         $this->rolePersona($admin, 'Sales manager', 'Everything a representative does, plus assigning owners, closing and reopening, and configuring the pipeline. The name confers nothing: each duty is a capability.', [...$read, ...$work, Sales::OPPORTUNITY_ASSIGN, Sales::OPPORTUNITY_CLOSE, Sales::STAGE_MANAGE, 'parties.party.manage'], self::MANAGER, 'Demo Sales Manager');
         $this->rolePersona($admin, 'Sales viewer', 'Reads the pipeline; changes nothing.', $read, self::VIEWER, 'Demo Sales Viewer');
+        $this->reviewerPersona($read);
         $this->rolePersona($admin, 'Branch seller (limited)', 'Works deals, but is limited to their own units. Restricted visibility is not built yet, so Sales refuses this person rather than showing everything.', [...$read, ...$work], self::BRANCH, 'Demo Branch Seller');
         $branch = User::query()->where('email', self::BRANCH)->firstOrFail();
         $role = Role::query()->where('team_id', app(CompanyContext::class)->id())->where('name', 'Branch seller (limited)')->firstOrFail();
         if (! AccessScopeLimit::query()->where('user_id', $branch->id)->exists()) {
             app(SyncMemberAccess::class)($branch, ['role_ids' => [$role->id], 'direct_permissions' => [], 'scope_limits' => [['role_id' => $role->id, 'scope' => AccessScopeLimit::MY_UNITS]], 'reason' => 'Demo: limited to their own units.'], $admin);
         }
+    }
+
+    /**
+     * The sensitive attribution duty is never given by an all-capabilities shortcut, and an administrator cannot grant what they do not hold, so a demo
+     * administrator cannot hand it out either. The reviewer is therefore bootstrapped the way a first holder is in a real company — by a privileged
+     * deployment step — and is created once: a rerun never changes what was assigned afterwards. Demo only, not a production role grant.
+     *
+     * @param  list<string>  $read
+     */
+    private function reviewerPersona(array $read): void
+    {
+        $company = app(CompanyContext::class)->id();
+        $member = $this->demoMember(self::REVIEWER, 'Demo Attribution Reviewer');
+        if ($member->roles()->exists() || $member->permissions()->exists()) {
+            return;
+        }
+        $role = Role::query()->firstOrCreate(
+            ['team_id' => $company, 'name' => 'Sales attribution reviewer', 'guard_name' => 'web'],
+            ['description' => 'May read the pipeline and correct who the record says was responsible on a closed deal, with a reason and without reopening it. Cannot edit, assign or close. A demo recipe, not a production grant.'],
+        );
+        $role->syncPermissions([...$read, Sales::OPPORTUNITY_ATTRIBUTION_CORRECT]);
+        $member->assignRole($role);
     }
 }

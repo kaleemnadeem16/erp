@@ -48,7 +48,7 @@ final class SyncAdminPermissions extends Command
         $permissions->registerForTeam($companyContext->id());
 
         $before = $user->getAllPermissions()->pluck('name')->all();
-        $user->syncPermissions($permissions->all());
+        $permissions->syncAutomatic($user);
         $after = $user->getAllPermissions()->pluck('name')->sort()->values();
 
         $added = array_values(array_diff($after->all(), $before));

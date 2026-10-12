@@ -27,6 +27,9 @@ import type {
   ChangeOpportunityStageRequest,
   CloseOpportunityRequest,
   ModelNotFoundExceptionResponse,
+  OpportunitiesAttributionCorrectionsStore200,
+  OpportunitiesAttributionMembersIndex200,
+  OpportunitiesAttributionMembersIndexParams,
   OpportunitiesClose200,
   OpportunitiesIndex200,
   OpportunitiesIndexParams,
@@ -40,6 +43,7 @@ import type {
   OpportunitiesUpdate200,
   ReassignOpportunityRequest,
   ReopenOpportunityRequest,
+  StoreOpportunityAttributionCorrectionRequest,
   StoreOpportunityRequest,
   UpdateOpportunityRequest,
   ValidationExceptionResponse,
@@ -1375,6 +1379,427 @@ export const useOpportunitiesReopen = <
 
   return useMutation(mutationOptions, queryClient);
 };
+export type opportunitiesAttributionCorrectionsStoreResponse200 = {
+  data: OpportunitiesAttributionCorrectionsStore200;
+  status: 200;
+};
+
+export type opportunitiesAttributionCorrectionsStoreResponse401 = {
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
+
+export type opportunitiesAttributionCorrectionsStoreResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
+export type opportunitiesAttributionCorrectionsStoreResponse404 = {
+  data: ModelNotFoundExceptionResponse;
+  status: 404;
+};
+
+export type opportunitiesAttributionCorrectionsStoreResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
+};
+
+export type opportunitiesAttributionCorrectionsStoreResponseSuccess =
+  opportunitiesAttributionCorrectionsStoreResponse200 & {
+    headers: Headers;
+  };
+export type opportunitiesAttributionCorrectionsStoreResponseError = (
+  | opportunitiesAttributionCorrectionsStoreResponse401
+  | opportunitiesAttributionCorrectionsStoreResponse403
+  | opportunitiesAttributionCorrectionsStoreResponse404
+  | opportunitiesAttributionCorrectionsStoreResponse422
+) & {
+  headers: Headers;
+};
+
+export type opportunitiesAttributionCorrectionsStoreResponse =
+  | opportunitiesAttributionCorrectionsStoreResponseSuccess
+  | opportunitiesAttributionCorrectionsStoreResponseError;
+
+export const getOpportunitiesAttributionCorrectionsStoreUrl = (
+  opportunity: number,
+) => {
+  return `/v1/opportunities/${opportunity}/attribution-corrections`;
+};
+
+export const opportunitiesAttributionCorrectionsStore = async (
+  opportunity: number,
+  storeOpportunityAttributionCorrectionRequest: StoreOpportunityAttributionCorrectionRequest,
+  options?: RequestInit,
+): Promise<opportunitiesAttributionCorrectionsStoreResponse> => {
+  return fetchClient<opportunitiesAttributionCorrectionsStoreResponse>(
+    getOpportunitiesAttributionCorrectionsStoreUrl(opportunity),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(storeOpportunityAttributionCorrectionRequest),
+    },
+  );
+};
+
+export const getOpportunitiesAttributionCorrectionsStoreMutationOptions = <
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof opportunitiesAttributionCorrectionsStore>>,
+    TError,
+    { opportunity: number; data: StoreOpportunityAttributionCorrectionRequest },
+    TContext
+  >;
+  request?: SecondParameter<typeof fetchClient>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof opportunitiesAttributionCorrectionsStore>>,
+  TError,
+  { opportunity: number; data: StoreOpportunityAttributionCorrectionRequest },
+  TContext
+> => {
+  const mutationKey = ["opportunitiesAttributionCorrectionsStore"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof opportunitiesAttributionCorrectionsStore>>,
+    { opportunity: number; data: StoreOpportunityAttributionCorrectionRequest }
+  > = (props) => {
+    const { opportunity, data } = props ?? {};
+
+    return opportunitiesAttributionCorrectionsStore(
+      opportunity,
+      data,
+      requestOptions,
+    );
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type OpportunitiesAttributionCorrectionsStoreMutationResult =
+  NonNullable<
+    Awaited<ReturnType<typeof opportunitiesAttributionCorrectionsStore>>
+  >;
+export type OpportunitiesAttributionCorrectionsStoreMutationBody =
+  StoreOpportunityAttributionCorrectionRequest;
+export type OpportunitiesAttributionCorrectionsStoreMutationError =
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ModelNotFoundExceptionResponse
+  | ValidationExceptionResponse;
+
+export const useOpportunitiesAttributionCorrectionsStore = <
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof opportunitiesAttributionCorrectionsStore>>,
+      TError,
+      {
+        opportunity: number;
+        data: StoreOpportunityAttributionCorrectionRequest;
+      },
+      TContext
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof opportunitiesAttributionCorrectionsStore>>,
+  TError,
+  { opportunity: number; data: StoreOpportunityAttributionCorrectionRequest },
+  TContext
+> => {
+  const mutationOptions =
+    getOpportunitiesAttributionCorrectionsStoreMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+export type opportunitiesAttributionMembersIndexResponse200 = {
+  data: OpportunitiesAttributionMembersIndex200;
+  status: 200;
+};
+
+export type opportunitiesAttributionMembersIndexResponse401 = {
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
+
+export type opportunitiesAttributionMembersIndexResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
+export type opportunitiesAttributionMembersIndexResponse404 = {
+  data: ModelNotFoundExceptionResponse;
+  status: 404;
+};
+
+export type opportunitiesAttributionMembersIndexResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
+};
+
+export type opportunitiesAttributionMembersIndexResponseSuccess =
+  opportunitiesAttributionMembersIndexResponse200 & {
+    headers: Headers;
+  };
+export type opportunitiesAttributionMembersIndexResponseError = (
+  | opportunitiesAttributionMembersIndexResponse401
+  | opportunitiesAttributionMembersIndexResponse403
+  | opportunitiesAttributionMembersIndexResponse404
+  | opportunitiesAttributionMembersIndexResponse422
+) & {
+  headers: Headers;
+};
+
+export type opportunitiesAttributionMembersIndexResponse =
+  | opportunitiesAttributionMembersIndexResponseSuccess
+  | opportunitiesAttributionMembersIndexResponseError;
+
+export const getOpportunitiesAttributionMembersIndexUrl = (
+  opportunity: number,
+  params?: OpportunitiesAttributionMembersIndexParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/v1/opportunities/${opportunity}/attribution-members?${stringifiedParams}`
+    : `/v1/opportunities/${opportunity}/attribution-members`;
+};
+
+export const opportunitiesAttributionMembersIndex = async (
+  opportunity: number,
+  params?: OpportunitiesAttributionMembersIndexParams,
+  options?: RequestInit,
+): Promise<opportunitiesAttributionMembersIndexResponse> => {
+  return fetchClient<opportunitiesAttributionMembersIndexResponse>(
+    getOpportunitiesAttributionMembersIndexUrl(opportunity, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getOpportunitiesAttributionMembersIndexQueryKey = (
+  opportunity?: number,
+  params?: OpportunitiesAttributionMembersIndexParams,
+) => {
+  return [
+    `/v1/opportunities/${opportunity}/attribution-members`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getOpportunitiesAttributionMembersIndexQueryOptions = <
+  TData = Awaited<ReturnType<typeof opportunitiesAttributionMembersIndex>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  opportunity: number,
+  params?: OpportunitiesAttributionMembersIndexParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof opportunitiesAttributionMembersIndex>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getOpportunitiesAttributionMembersIndexQueryKey(opportunity, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof opportunitiesAttributionMembersIndex>>
+  > = () =>
+    opportunitiesAttributionMembersIndex(opportunity, params, requestOptions);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!opportunity,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof opportunitiesAttributionMembersIndex>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type OpportunitiesAttributionMembersIndexQueryResult = NonNullable<
+  Awaited<ReturnType<typeof opportunitiesAttributionMembersIndex>>
+>;
+export type OpportunitiesAttributionMembersIndexQueryError =
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ModelNotFoundExceptionResponse
+  | ValidationExceptionResponse;
+
+export function useOpportunitiesAttributionMembersIndex<
+  TData = Awaited<ReturnType<typeof opportunitiesAttributionMembersIndex>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  opportunity: number,
+  params: undefined | OpportunitiesAttributionMembersIndexParams,
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof opportunitiesAttributionMembersIndex>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof opportunitiesAttributionMembersIndex>>,
+          TError,
+          Awaited<ReturnType<typeof opportunitiesAttributionMembersIndex>>
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useOpportunitiesAttributionMembersIndex<
+  TData = Awaited<ReturnType<typeof opportunitiesAttributionMembersIndex>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  opportunity: number,
+  params?: OpportunitiesAttributionMembersIndexParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof opportunitiesAttributionMembersIndex>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof opportunitiesAttributionMembersIndex>>,
+          TError,
+          Awaited<ReturnType<typeof opportunitiesAttributionMembersIndex>>
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useOpportunitiesAttributionMembersIndex<
+  TData = Awaited<ReturnType<typeof opportunitiesAttributionMembersIndex>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  opportunity: number,
+  params?: OpportunitiesAttributionMembersIndexParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof opportunitiesAttributionMembersIndex>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+
+export function useOpportunitiesAttributionMembersIndex<
+  TData = Awaited<ReturnType<typeof opportunitiesAttributionMembersIndex>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ModelNotFoundExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  opportunity: number,
+  params?: OpportunitiesAttributionMembersIndexParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof opportunitiesAttributionMembersIndex>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getOpportunitiesAttributionMembersIndexQueryOptions(
+    opportunity,
+    params,
+    options,
+  );
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
 export type opportunitiesNotesStoreResponse201 = {
   data: OpportunitiesNotesStore201;
   status: 201;

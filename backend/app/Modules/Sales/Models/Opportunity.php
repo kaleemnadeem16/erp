@@ -8,6 +8,7 @@ use App\Models\Model;
 use App\Models\User;
 use App\Modules\Parties\Models\Party;
 use App\Modules\Sales\Support\OpportunityOutcome;
+use App\Modules\Sales\Support\SalesEvent;
 use App\Support\Concerns\BelongsToCompany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -85,5 +86,22 @@ class Opportunity extends Model
     public function history(): HasMany
     {
         return $this->hasMany(SalesHistory::class, 'opportunity_id');
+    }
+
+    /** @return HasMany<OpportunityAttributionCorrection, $this> */
+    public function attributionCorrections(): HasMany
+    {
+        return $this->hasMany(OpportunityAttributionCorrection::class, 'opportunity_id')->orderBy('id');
+    }
+
+    /**
+     * The newest closure of this pursuit: the marker a historical correction is confirmed against. A reopen followed by a new closure changes it, so
+     * an earlier confirmation cannot be applied to a different closure.
+     */
+    public function latestClosureEventId(): ?int
+    {
+        $id = SalesHistory::query()->where('opportunity_id', $this->id)->where('event', SalesEvent::CLOSED)->max('id');
+
+        return $id === null ? null : (int) $id;
     }
 }

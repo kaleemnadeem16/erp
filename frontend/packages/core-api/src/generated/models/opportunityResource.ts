@@ -18,6 +18,9 @@ import type { OpportunityResourceNextActionOn } from "./opportunityResourceNextA
 import type { OpportunityResourceClosedAt } from "./opportunityResourceClosedAt";
 import type { OpportunityResourceClosedBy } from "./opportunityResourceClosedBy";
 import type { OpportunityResourceClosureReason } from "./opportunityResourceClosureReason";
+import type { OpportunityResourceClosureEventId } from "./opportunityResourceClosureEventId";
+import type { OpportunityAttributionCorrectionResource } from "./opportunityAttributionCorrectionResource";
+import type { OpportunityResourceResponsibilityItem } from "./opportunityResourceResponsibilityItem";
 import type { PartyResource } from "./partyResource";
 import type { SalesStageResource } from "./salesStageResource";
 import type { OpportunityResourceLead } from "./opportunityResourceLead";
@@ -50,6 +53,12 @@ export interface OpportunityResource {
   closed_by: OpportunityResourceClosedBy;
   closure_reason: OpportunityResourceClosureReason;
   created_by: number;
+  /** The closure a historical correction is confirmed against, and whether this person may correct who was responsible (closed deal + the dedicated duty + read). */
+  closure_event_id: OpportunityResourceClosureEventId;
+  can_correct_attribution: string;
+  attribution_corrections?: OpportunityAttributionCorrectionResource[];
+  /** Each recorded owner fact beside what the record says after corrections, for the detail screen; read with the same authority as the history. */
+  responsibility?: OpportunityResourceResponsibilityItem[];
   party?: PartyResource;
   stage?: SalesStageResource;
   lead?: OpportunityResourceLead;

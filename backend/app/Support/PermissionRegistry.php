@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Support;
 
+use App\Models\User;
 use InvalidArgumentException;
 use LogicException;
 use Spatie\Permission\Models\Permission;
@@ -20,6 +21,9 @@ final class PermissionRegistry
 {
     /** @var array<string, list<string>> */
     private array $permissionsByOwner = [];
+
+    /** @var array<string, string> permission → why no automatic, all-capabilities grant may include it */
+    private array $notAutomaticallyGranted = [];
 
     public function __construct(private readonly PermissionRegistrar $registrar) {}
 
@@ -66,6 +70,54 @@ final class PermissionRegistry
         }
 
         return $permissions;
+    }
+
+    /**
+     * A sensitive duty that no automatic expansion of "every registered capability" may grant: an explicit, audited assignment (or a
+     * verified full-access mandate, see FullAccessMandates) is the only way to hold it. Registration itself stays unfiltered.
+     *
+     * @param  list<string>  $permissions
+     */
+    public function excludeFromAutomaticGrants(array $permissions, string $reason): void
+    {
+        foreach ($permissions as $permission) {
+            $this->notAutomaticallyGranted[$permission] = $reason;
+        }
+    }
+
+    /** @return list<string> */
+    public function notAutomaticallyGranted(): array
+    {
+        return array_keys($this->notAutomaticallyGranted);
+    }
+
+    /**
+     * What an automatic "everything registered" grant gives this person: every registered capability except the excluded duties, which are
+     * included only for someone covered by a verified full-access mandate. One predicate for every all-capabilities caller.
+     *
+     * @return list<string>
+     */
+    public function automaticGrants(?User $target = null): array
+    {
+        $covered = $target !== null && app(FullAccessMandates::class)->covers($target);
+
+        return $covered ? $this->all() : array_values(array_diff($this->all(), $this->notAutomaticallyGranted()));
+    }
+
+    /**
+     * Brings an administrator in step with the registry without revoking anything legitimately held: the automatic grants, plus any excluded duty the
+     * person already holds directly (an explicit grant survives a re-sync).
+     *
+     * @return list<string> the permissions now granted
+     */
+    public function syncAutomatic(User $user): array
+    {
+        $held = $user->getDirectPermissions()->pluck('name')->all();
+        $explicit = array_values(array_intersect($held, $this->notAutomaticallyGranted()));
+        $names = array_values(array_unique([...$this->automaticGrants($user), ...$explicit]));
+        $user->syncPermissions($names);
+
+        return $names;
     }
 
     /** @return array<string, list<string>> */

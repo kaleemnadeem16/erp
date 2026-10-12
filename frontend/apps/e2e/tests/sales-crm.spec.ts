@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Browser, type BrowserContext, type Page } from '@playwright/test';
-import { signInAs } from './package-stock-support';
+import { api, findByCode, signInAs } from './package-stock-support';
 
 /**
  * Phase 4 CRM foundation (ADRs 0098, 0105–0108): an optional enquiry that becomes deals, one accountable owner, stages with history, closing and reopening, and what
@@ -10,6 +10,7 @@ const REP = 'demo-sales-rep@erp.x1techs.com';
 const MANAGER = 'demo-sales-manager@erp.x1techs.com';
 const VIEWER = 'demo-sales-viewer@erp.x1techs.com';
 const BRANCH = 'demo-sales-branch@erp.x1techs.com';
+const REVIEWER = 'demo-sales-reviewer@erp.x1techs.com';
 
 /** One sign-in per person for the whole file (sign-in is throttled), then a fresh page in that person's session for each test. */
 const sessions = new Map<string, BrowserContext>();
@@ -248,6 +249,51 @@ test('the screens fit a phone and have no serious accessibility problems in ligh
     expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
     const detail = await new AxeBuilder({ page }).analyze();
     expect(detail.violations.filter((violation) => violation.impact === 'critical' || violation.impact === 'serious'), `detail (${mode})`).toEqual([]);
+    // A closed deal also shows the recorded-responsibility section.
+    await page.goto('/opportunities?filter.search=Warehouse%20floor&filter.outcome=LOST');
+    await page.getByRole('row', { name: /Warehouse floor coating/ }).or(page.getByText('Warehouse floor coating')).first().click();
+    await expect(page.getByTestId('responsibility-record')).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
+    const closed = await new AxeBuilder({ page }).analyze();
+    expect(closed.violations.filter((violation) => violation.impact === 'critical' || violation.impact === 'serious'), `closed detail (${mode})`).toEqual([]);
     await page.close();
   }
+});
+
+test('a reviewer corrects who the record says was responsible on a closed deal, and nobody else is offered it', async ({ browser }) => {
+  test.setTimeout(180_000);
+  const stamp = Date.now().toString(36);
+  const manager = await as(browser, MANAGER);
+  const party = await findByCode<{ id: number; code: string }>(manager, '/parties', 'cus-alpha');
+  expect(party, 'the demo partner must be seeded').toBeTruthy();
+  const created = await api<{ data: { id: number } }>(manager, 'POST', '/opportunities', { title: `E2E attribution ${stamp}`, party_id: party!.id });
+  await api(manager, 'POST', `/opportunities/${created.data.id}/close`, { outcome: 'LOST', reason: 'E2E closed deal' });
+  const url = `/opportunities/${created.data.id}`;
+
+  // Closing and managing a deal confer no right to correct who was responsible.
+  await manager.goto(url);
+  await expect(manager.getByTestId('responsibility-record')).toBeVisible();
+  await expect(manager.getByTestId('attribution-correct')).toHaveCount(0);
+  await manager.close();
+
+  const page = await as(browser, REVIEWER);
+  await page.goto(url);
+  await expect(page.getByTestId('responsibility-fact')).toHaveCount(1);
+  for (const control of ['opportunity-edit', 'opportunity-reassign', 'opportunity-reopen', 'note-add']) await expect(page.getByTestId(control)).toHaveCount(0);
+
+  await page.getByTestId('attribution-correct').click();
+  await page.getByLabel('Which entry is wrong?').click();
+  await page.getByRole('option', { name: /Created for/ }).click();
+  await page.getByRole('combobox', { name: 'Member' }).click();
+  await page.locator('[cmdk-input]').fill('Demo Sales Rep');
+  await page.getByRole('option', { name: /Demo Sales Rep/ }).first().click();
+  await expect(page.getByTestId('attribution-confirm')).toBeDisabled();
+  await page.getByLabel('Why is this being corrected?').fill('It was entered under the wrong person');
+  await page.getByTestId('attribution-confirm').click();
+
+  await expect(page.getByTestId('responsibility-corrected')).toContainText('Corrected to Demo Sales Rep');
+  await expect(page.getByTestId('attribution-chain')).toContainText('wrong person');
+  // The deal itself is unchanged: still closed, owner still the member recorded today.
+  await expect(page.getByTestId('opportunity-detail')).toContainText('Lost');
+  await page.close();
 });

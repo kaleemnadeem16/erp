@@ -98,6 +98,8 @@ export function describeEvent(event: { event: string; reason?: string | null; de
       return `Closed as ${OUTCOME_LABEL[String(d.outcome)] ?? d.outcome}`;
     case 'REOPENED':
       return 'Reopened';
+    case 'OPPORTUNITY_ATTRIBUTION_CORRECTED':
+      return 'Recorded responsibility corrected';
     default:
       return event.event;
   }

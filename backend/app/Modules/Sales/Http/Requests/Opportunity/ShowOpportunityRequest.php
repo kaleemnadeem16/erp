@@ -19,6 +19,6 @@ class ShowOpportunityRequest extends SalesRequest
     /** @return array<string, mixed> */
     public function rules(): array
     {
-        return $this->includeRules(['party', 'owner', 'stage', 'lead', 'notes', 'history']);
+        return $this->includeRules(['party', 'owner', 'stage', 'lead', 'notes', 'history', 'attribution_corrections']);
     }
 }

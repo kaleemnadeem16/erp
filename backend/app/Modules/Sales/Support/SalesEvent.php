@@ -32,4 +32,6 @@ final class SalesEvent
     public const CLOSED = 'CLOSED';
 
     public const REOPENED = 'REOPENED';
+
+    public const OPPORTUNITY_ATTRIBUTION_CORRECTED = 'OPPORTUNITY_ATTRIBUTION_CORRECTED';
 }
