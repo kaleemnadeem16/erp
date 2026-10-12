@@ -68,7 +68,7 @@ in the same commit.
 | [0053](0053-explainable-inventory-package-selection-presets.md) | Ship explainable inventory-package selection presets before custom policies | accepted | 2026-09-26 |
 | [0054](0054-risk-based-material-plan-variance-controls.md) | Audit every adopted material variance; escalate by configured risk | accepted | 2026-09-26 |
 | [0055](0055-progressive-sales-pricing-and-controlled-formulas.md) | Use progressive Sales pricing with controlled formula steps | superseded by [0109](0109-shared-commercial-quotation-lines-and-optional-estimating.md) | 2026-09-26 |
-| [0056](0056-progressive-tax-calculation-and-recovery.md) | Use progressive tax calculation and explicit recovery distributions | accepted | 2026-09-26 |
+| [0056](0056-progressive-tax-calculation-and-recovery.md) | Use progressive tax calculation and explicit recovery distributions | accepted; Item defaults partially superseded by 0119 | 2026-09-26 |
 | [0057](0057-stable-material-resolution-capabilities-with-dynamic-assignment.md) | Use stable material-resolution capabilities with dynamic company assignment | accepted | 2026-09-26 |
 | [0058](0058-phase-3-material-resolution-preview-contract.md) | Define a read-only, explainable Phase 3 material-resolution preview | accepted | 2026-09-26 |
 | [0059](0059-name-a-location-as-warehouse-and-location.md) | Name a location as warehouse / location, and always return its warehouse | accepted | 2026-09-28 |
@@ -132,8 +132,11 @@ in the same commit.
 | [0115](0115-resolve-sales-pricing-by-explicit-eligibility-and-commercial-intent.md) | Resolve Sales pricing by explicit eligibility and commercial intent | accepted | 2026-10-12 |
 | [0116](0116-govern-sales-discounts-and-final-net-controls.md) | Govern Sales discounts and final-net controls | accepted | 2026-10-12 |
 | [0117](0117-preserve-pricing-evidence-across-capability-transitions.md) | Preserve pricing evidence across capability transitions | accepted | 2026-10-12 |
+| [0118](0118-pin-quotation-pricing-dates-and-company-base-fx.md) | Pin quotation pricing dates and company-base FX | accepted | 2026-10-12 |
+| [0119](0119-determine-versioned-quotation-tax-components.md) | Determine versioned quotation tax components | accepted | 2026-10-12 |
+| [0120](0120-settle-quotation-rounding-and-financial-evidence.md) | Settle quotation rounding and financial evidence | accepted | 2026-10-12 |
 
-**Next number: 0118**
+**Next number: 0121**
 
 ## By theme
 

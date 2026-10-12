@@ -42,8 +42,10 @@ All business rows have `id, company_id`; codes normalised with company-composite
 Foreign keys pair company and target identity. Polymorphic raw IDs are not accepted tenancy proofs.
 Version economic data is immutable after activation/use; lifecycle availability is separate evidence.
 Money columns below are `decimal(19,4)` with currency, base-currency equivalent and pinned FX evidence
-under 0012. Initial maintained configuration can use company base currency/identity conversion only;
-other currency persistence/conversion waits for R4. No incomplete dual-money row is silently written.
+under0012/0118/0120. Accepted R4 permits one quote currency and explicitly convertible source terms
+through the pinned company-base bridge, exact-date default/bounded prior policy and provenance;
+no unsupported route or incomplete dual-money row. Implementation remains separately gated.
+[Financial calculation](quotation-financial-calculation.md) owns FX/rounding/tax adapters.
 
 ```text
 sales_pricing_groups
@@ -100,8 +102,10 @@ Positive denominator/factors and quantity bounds; non-negative rate/net/floor; p
 TARGET_MARGIN <100; exactly one audience reference where required; source reference CHECKs enforce
 one applicable typed target, and company-level/manual defaults carry no fake target. Category/Item
 package identity matches the referenced Item. Intervals/bands valid/disjoint with PostgreSQL exclusion
-constraints where expressible. R4 must settle date type/end convention and conversion precision before
-migration activation; initial quote quantity adapters cannot silently truncate finer-than-ledger input.
+constraints where expressible. 0118 accepts date-only company-local half-open intervals;0120
+accepts storage4/unit4, higher-precision conversion and representability refusal. These monetary/date
+contracts are settled; R5 quote keys and R9 public authority still gate migration/surface activation.
+Initial quote quantity adapters cannot silently truncate finer-than-ledger input.
 
 Composite FKs constrain currency, Party/group/list/plan/Item/category/Assembly/version/package.
 Cross-audience/category overlap and full semantic conflict require guarded activation with consistent
@@ -193,6 +197,8 @@ limits/read/scope. Mandatory failure remains refusal until their approved except
 These known gates do not block drafting this contract or unrelated CRM/C2 implementation.
 
 ## Related
+
+- [Accepted R4 financial adapter](quotation-financial-calculation.md)
 
 - [Pricing domain](sales-pricing.md) · [Domain index](README.md)
 - [Slice sequence and verification](../phases/phase-4-r3-implementation-slices.md)

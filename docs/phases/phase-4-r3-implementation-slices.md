@@ -65,7 +65,7 @@ stated Resources, generated client, navigation, states, forms/details/history an
 
 ### PR0 — Shared typed model and resolution kernel
 
-**Depends:** 0115–0117, 0109/0110 and explicit implementation authorisation. R4 must resolve persistence
+**Depends:** 0115–0117, 0109/0110 and explicit implementation authorisation. Accepted R4 (0118–0120) resolves persistence
 precision/date/dual-money before relevant migrations; R9 before any public surface.
 **Deliver:** typed input/result and source adapters; eligibility/ranking/exclusion/benefit evaluation,
 complete/partial/unknown semantics, source/quantity basis and projection interfaces. Internal Action
@@ -80,10 +80,11 @@ Party without account; equal-rank conflict; no cheapest selection; no unknown-co
 
 ### PR1 — Maintained configuration and SIMPLE pricing inputs
 
-**Depends:** PR0; R4 base-currency monetary/date/precision adapter; R9 config/entry/discount/override duties.
+**Depends:** PR0; accepted R4 monetary/date/precision adapter (FR0/FR1/FR3/FR4 supported subset); R9 config/entry/discount/override duties.
 **Deliver API:** list/detail/create-draft-version/activate/retire base rules/list and configuration preview
-from resolution spec, registered exact Actions/Requests/Resources; base currency initially unless R4
-approves more. SIMPLE percent/per-priced-unit/per-line intent, comparison result and controlled final
+from resolution spec, registered exact Actions/Requests/Resources. Base identity or explicitly allowed
+pinned base-bridge conversion follows accepted R4 and delivered adapters. SIMPLE percent/per-priced-unit/
+per-line intent, comparison result and controlled final
 exception are typed resolver inputs, not yet a public quotation mutation.
 **UI boundary:** pricing settings list/detail and sheets for maintained rates/company/source policies;
 admin preview supports all four sources, quantities/basis, calculated/final and safe diagnostics.
@@ -95,7 +96,7 @@ competitor terms or cost by implication; direct Action denial and company/scope 
 120 versus target margin125, maintained price independent of cost, manual base/no fabricated master;
 100 per-unit versus line discount; 20%-to-10% comparison shows increase and needs confirmation.
 **Demo:** designated pricing maintainer, quote-only persona denied config, cost-blind preview; all sources.
-**Exclude:** managed group lookup, foreign conversion, issue/approval, unconfirmed replacement save.
+**Exclude:** managed group lookup, unsupported currency routes, issue/approval, unconfirmed replacement save.
 
 ### PR2 — Groups, categories, individual terms and exclusions
 
@@ -212,18 +213,19 @@ passed checks or verified cause/owner; planning has run documentation checks onl
 
 | Owner topic | Required accepted contract before affected implementation | Affected slices / safe boundary |
 |---|---|---|
-| **R4** | Authoritative pricing date/time-zone/end intervals; maintained version eligibility; quantity/conversion precision; transaction/base money/pinned FX and eligible list conversion; tax/exemptions/inclusive display; unit/line/document rounding and benefit allocation/remainder; final control comparable basis after rounding. | PR0 monetary/date migration, PR1–PR4 effective configuration/calculation, PR5/PR6 operational amounts. No guessed FX, tax or final issue rounding. Base-currency-only boundary still needs approved R4 precision/date adapter. |
+| **R4 — ACCEPTED0118–0120** | Explicit dates/local half-open intervals; unit4/storage4 and representable quantity; pinned base-bridge manual FX/exact-date or bounded prior; per-line components/dispositions and net/gross normalisation; settled-line/document and tax rounding, conserved allocations/computed-vs-allocated base evidence; comparable final net controls. | Architectural dependencies resolved for PR0–PR6; implement supported adapters under separate authority. Required scoped MoneyCast investigation and enabled-method verification remain; R5 keys and R9 grants still gate operational schema/surfaces. |
 | **R5** | Quote family/revision/line keys and draft authority; adopted cost/material plan/version/freshness and no-change criteria; stale/approval invalidation; persisted confirmations/override/decision evidence; transaction/locks/idempotency; issue/expiry/withdrawal/revision semantics and mode reconciliation; risk approval subject/fingerprint if later enabled. | PR5 quote writes/issue integration and PR6 actual downgrade; PR3 quote agreements, PR4 operational control. Config preview never adoption or issue. |
 | **R6** | Baseline/selected alternatives/add-ons, whole/partial acceptance authority/evidence; whether changed accepted quantity loses a tier; fixed-line/ordered-benefit allocation and consent to changed commercial amount; family/remaining-scope reconciliation. | No pooled tier/partial acceptance/option-dependent operational pricing before gate; PR5 evidence seam only. Issued offer never edited to simulate acceptance. |
 | **R7** | Idempotent accepted scope→order/job/baseline with accepted estimate/contact/site; commitment fulfilment/cancellation links and actual cost/correction ownership. | No consumption/fulfilment/handover/posting from PR3 terms or PR5 prices; preserve identifiers/provenance only. |
 | **R8** | Customer commercial/discount/terms projection, immutable templates/PDF, delivery/re-delivery/channel evidence; signature/portal/manual-recording boundaries. | PR5 safe commercial API/UI projection only; no pricing print/export raw trace. Separate R8 complete surface review. |
 | **R9** | Final permission vocabulary, company duty/read/sensitive-field scopes, employee/role limits and trusted reference; grant continuity/explicit new-duty rollout; approval/risk/contract scope; audit/import/event projections; selected-offer provisional expected-value/FX/staleness and partial-win/remaining metrics. | Every public surface and PR4 authority; no all-role assumed grants, draft-price trusted forecast or accepted-scope double count. Existing 0101/0102 and R5/R6 gates remain required. |
 
-[R4 initial research/readiness](phase-4-r4-evidence-and-readiness.md) now distinguishes independently
-specifiable foundations from monetary/date/tax gates; [F1–F8](phase-4-r4-financial-review.md) remain
-unaccepted and authorise no R3 code. Iterate R6/R7 to inform R5 before operational
-quotation handoff. R9 proceeds alongside every slice. C1d remains separately gated, not made available
-by R3. No implementation-originated question supplied with this approval; none is invented.
+[Accepted R4/readiness](phase-4-r4-evidence-and-readiness.md) resolves the financial architecture,
+with [R4 typed contract](../domain/quotation-financial-calculation.md) and
+[slices](phase-4-r4-implementation-slices.md) specified. This is no code authorisation or verified
+adapter delivery. Iterate R6/R7 to inform [R5 lifecycle](phase-4-r5-quotation-lifecycle.md) before
+operational quotation handoff. R9 proceeds alongside every public slice. C1d stays separately gated;
+no implementation-originated question was supplied or invented.
 
 ## Related
 

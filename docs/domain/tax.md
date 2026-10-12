@@ -6,10 +6,23 @@ Tax is a separate determination, accounting and reporting capability. It consume
 sales or purchase amount but is not part of the price formula. [ADR 0025](../decisions/0025-configurable-tax-engine.md)
 established configurable tax; [ADR 0056](../decisions/0056-progressive-tax-calculation-and-recovery.md)
 extends it with progressive calculation and explicit recovery distributions.
-The [initial R4 review](../phases/phase-4-r4-financial-review.md) and
-[core tax-composition model/examples](../phases/phase-4-r4-tax-composition.md) research precise
-multi-tax/inclusion/exemption/withholding/rounding contracts now. Their recommendations are
-unaccepted and do not enable an engine, amend these accepted principles or implement Finance.
+[ADR0119](../decisions/0119-determine-versioned-quotation-tax-components.md) and [0120](../decisions/0120-settle-quotation-rounding-and-financial-evidence.md) accept R4's precise multi-component,
+inclusion, exemption, withholding and rounding contracts. 0119 refines only0056's blanket Item
+goods-default: declared service Items use service defaults. The [financial calculation contract](quotation-financial-calculation.md)
+is the current Sales implementation specification; older schema sketches below are conceptual,
+not an enabled engine. Finance determination, recovery, postings and settlement remain deferred.
+
+## Current Sales determination and component contract
+
+Determine per-line tax from source nature/classification, Party profile, jurisdiction and date;
+no debtor-account creation or commercial-group exemption. Preserve TAXABLE/ZERO_RATED/EXEMPT/
+NOT_APPLICABLE/UNKNOWN per component. Versioned groups use named NET/TAX_AMOUNT/NET_PLUS_COMPONENTS
+bases and fixed-line/document/per-unit methods, explicit dependency stage and cycle validation.
+NET_FIXED/GROSS_FIXED input intent and named included components normalise separately to R3 net.
+Withholding estimates payment only, never revenue/output tax/gross; unknown facts remain unknown.
+Operative rounding/allocations and immutable evidence follow0120, independent of pricing modes.
+Unsupported structure/mode refuses; architecture support is not enabled execution. Future invoice
+legal tax may differ with linked evidence, never overwrite quote tax estimates.
 
 ## Problem statement
 
@@ -53,7 +66,8 @@ all modes use the same component snapshot and posting boundaries.
 tax_regimes / tax_codes / tax_rule_versions
   company, jurisdiction, direction, effective dates, status
   calculation_method   PERCENTAGE | FIXED | QUANTITY | RESTRICTED_FORMULA
-  inclusive, sequence, base_includes_prior_components
+  input inclusion set; named component dependencies and RAW | SETTLED basis stage
+  NET | TAX_AMOUNT(ids) | NET_PLUS_COMPONENTS(ids); fixed line/document or declared-unit scope
   report_code/grid, GL mappings
 
 tax_classifications
@@ -94,7 +108,8 @@ The resolver uses declared facts only:
 Tax classification is not an Inventory category. Categories may supply defaults:
 
 ```text
-item explicit classification → nearest category default → company goods default
+Item explicit classification → nearest applicable category default → declared-nature company default
+  goods Item → goods default; service Item → service default; manual → explicit declared nature
 assembly explicit classification → assembly-group default → company services default
 ```
 
@@ -173,6 +188,8 @@ does not imply permission to change tax rules or recovery treatment.
 - [Oracle tax recovery distributions](https://docs.oracle.com/en/cloud/saas/financials/25d/fautx/tax-recovery-distributions.html)
 
 ## Related
+
+- [Financial calculation contract](quotation-financial-calculation.md)
 
 - [Sales pricing](sales-pricing.md) · [Sales pipeline](sales-pipeline.md)
 - [Receivables](receivables.md) · [General ledger](general-ledger.md)

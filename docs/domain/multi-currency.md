@@ -5,10 +5,12 @@
 Confirmed in scope from the start ([ADR 0012](../decisions/0012-multi-currency-dual-amounts.md)).
 Adding it later is effectively impossible — historical exchange rates cannot be reconstructed
 after the fact.
-The [initial R4 quotation review](../phases/phase-4-r4-financial-review.md) proposes explicit
-price-currency conversion, bounded rate age and operative rounding/residual contracts. These
-remain owner-review choices; [repository reconciliation](../phases/phase-4-r4-evidence-and-readiness.md)
-flags historical presentation-only wording and existing Money context before future Sales reuse.
+[ADR0118](../decisions/0118-pin-quotation-pricing-dates-and-company-base-fx.md) accepts quotation pricing dates, one quote currency and explicit pinned
+source→base/quote→base bridge using manual SPOT rates: exact-date default, governed bounded prior
+carry-forward, refusal on missing/overage/unsupported route. Actual dates/age/source/route are evidence.
+[0120](../decisions/0120-settle-quotation-rounding-and-financial-evidence.md) defines operative Sales rounding and separate computed/allocated base facts.
+See [financial contract](quotation-financial-calculation.md); no global Purchasing/accounting FX or
+cast change is authorised. MoneyCast minor-unit integration remains a required scoped investigation.
 
 ## Where it sits
 
@@ -124,8 +126,12 @@ reconciles.
 **Missing rate on a date.** Weekends and holidays have no published rate. Define the fallback
 (most recent prior) and record what was used.
 
-**Rounding at the wrong point.** Convert then round, never round then convert. And round only at
-presentation, never mid-calculation.
+**Rounding at the wrong point.** Avoid incidental intermediate conversion rounding. Historical
+“presentation-only” wording is insufficient for Sales settlement:0120 explicitly defines unit4,
+final line currency-quantum and component/eligible-aggregate tax stages; document net sums settled
+lines. Convert each settled monetary fact with pinned FX, then store its computed base4 separately
+from allocated contributions/residuals. Retain high-precision intermediate evidence. This reconciles
+the domain rule; it does not change existing Purchasing/accounting arithmetic through documentation.
 
 **Journal entries balancing in one currency only.** Balances in transaction currency but not
 base. See [general-ledger.md](general-ledger.md).
@@ -138,6 +144,8 @@ gap and should not be forgotten.
 may use another. Never infer from the customer record alone.
 
 ## Related
+
+- [Quotation financial calculation](quotation-financial-calculation.md)
 
 - [receivables.md](receivables.md) — where FX gain/loss is realised
 - [general-ledger.md](general-ledger.md)

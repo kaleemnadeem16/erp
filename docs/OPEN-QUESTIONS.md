@@ -203,34 +203,36 @@ attempts and device changes.
 
 ---
 
-### Q44 — R4 currency, tax composition and rounding contracts
+### Q45 — R5 quotation lifecycle checkpoints and issued-offer treatment
 
-**Origin:** PLANNING RESEARCH (owner-requested R4, no forwarded implementation question).
-**Decision status:** AWAITING_OWNER. **Delivery status:** NOT_STARTED; independent approved work continues.
-**Module/context:** Phase 4 R4; accepted R3 local `6702838`; initial source reconciliation 2026-10-12.
-**Question/example:** Which explicit dates, FX routes/age, tax-component/dependency/inclusion/exemption/
-withholding and rounding/allocation contracts govern quotations? USD100 can convert to EUR80 via
-PKR280/350; net1000 additive10%+5% yields1150 versus compounded1155 or tax-only1105.
-**Checked authority:** 0012/0031/0081, 0025/0056, 0050/0080/0109, 0110 and 0115–0117.
-**Blocks:** Approved R4 semantics for affected pricing monetary/date/tax schema and calculation;
-no R3 implementation authorisation, no CRM/C2 blocker. R5–R9 remain separate integration gates.
-**Options/recommendation/research:** [Single F1–F8 matrix](phases/phase-4-r4-financial-review.md),
-[tax composition/examples](phases/phase-4-r4-tax-composition.md), and
-[primary comparison/conflicts/PR0–PR6 readiness](phases/phase-4-r4-evidence-and-readiness.md).
-Proposed explicit pricing dates, authorised base-bridge FX/bounded prior rates, component graph and
-mixed inclusive intent, component exemptions, separate withholding, named precision/rounding and
-conserved allocations. No jurisdiction/rate or new ADR accepted.
-**Owner decision:** Consolidated F1–F8 review; explicit refinements to prior-FX and presentation-only
-rounding prose/service defaults if approved. Existing money-cast/single-tax-code seams are findings,
-not code changes or assumed delivery permission.
-**Follow-up:** Planning records governing ADRs only after approval; coding owner implements/verifies
-under separate authorisation. Documentation response never marks a coding question verified.
+**Origin:** PLANNING RESEARCH (owner-requested R5; no forwarded coding question).
+**Decision status:** AWAITING_OWNER after initial research; **Delivery status:** NOT_STARTED.
+**Context/authority:** R1–R4 accepted through0120, shared approvals/numbering; no operational quote code authorised.
+**Question:** Which draft/adoption/approval/issue checkpoints, revision replacement and expiry/withdrawal
+rules govern immutable offers? Example: revision2 is drafted while customer holds revision1; price remains
+equal but reviewed cost/FX changes; output tax known while withholding payment estimate is unknown.
+**Options/recommendation:** [R5 L1–L6 initial business matrix](phases/phase-4-r5-quotation-lifecycle.md).
+Recommend explicit evidence checkpoints/current issue validation, deliberate refresh, reasoned events,
+no automatic withdrawal on starting a revision and separate delivery; replacement/late/partial acceptance
+and unknown-payment issue rules require owner review informed by R6/R7/R9.
+**Blocks:** New R5 lifecycle acceptance and dependent quote delivery; not CRM/C2 or R4 specifications.
+**Follow-up:** Research R6/R7 interactions before final consolidated R5 ADR review. Preserve coding-origin
+questions separately when forwarded; documentation alone cannot verify coding delivery.
 
 ---
 
 ## Answered---
 
 ## Answered
+
+<a id="q44--r4-currency-tax-composition-and-rounding-contracts"></a>
+
+Q44 (Origin: PLANNING RESEARCH) resolved 2026-10-12 following owner approval of F1–F8 at
+`5d43bea`, recorded in accepted [0118](decisions/0118-pin-quotation-pricing-dates-and-company-base-fx.md),
+[0119](decisions/0119-determine-versioned-quotation-tax-components.md) and [0120](decisions/0120-settle-quotation-rounding-and-financial-evidence.md).
+[R4 contracts/slices](phases/phase-4-r4-implementation-slices.md) are SPECIFIED; no coding authority
+or implementation verification follows. Governing company/localisation values remain configuration.
+R5–R9 gates and required scoped MoneyCast investigation remain explicit.
 
 <a id="q43--expanded-r3-sales-pricing-semantics"></a>
 

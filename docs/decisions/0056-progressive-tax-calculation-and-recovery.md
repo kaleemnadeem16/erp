@@ -1,6 +1,6 @@
 # 0056 — Use progressive tax calculation and explicit recovery distributions
 
-- **Status:** accepted
+- **Status:** accepted; Item nature/default classification partially superseded by [0119](0119-determine-versioned-quotation-tax-components.md)
 - **Date:** 2026-09-26
 - **Affects:** Phase 4 quotations and invoices, Purchasing input tax, Phase 6 Finance and tax
 

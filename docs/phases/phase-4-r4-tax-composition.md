@@ -2,11 +2,11 @@
 
 # R4 — Core tax composition, withholding and worked examples
 
-**2026-10-12 · PROPOSED MODEL / OWNER REVIEW REQUIRED, not an accepted ADR or tax engine.**
-Multiple simultaneous taxes, dependency bases, fixed/quantity levies, inclusivity, exemptions,
-withholding and allocations belong to the current R4 review. Existing 0025/0056 already approve
-these capability families; this record proposes their precise shared contract. Jurisdiction rules
-remain configuration/localisation, not assumptions from these examples. No actual rate is prescribed.
+**2026-10-12 · ACCEPTED architectural examples under 0119/0120; no engine implementation.**
+The reviewed numerical configurations remain illustrative, not jurisdiction law or prescribed rates.
+Multiple taxes/dependencies/inclusion/exemptions/withholding are designed now; only explicitly
+supported methods may be enabled later. The [typed contract](../domain/quotation-financial-calculation.md)
+and [slices](phase-4-r4-implementation-slices.md) govern delivery with R5–R9 gates.
 
 ## Generic component model — architecture now, execution progressively
 
@@ -46,7 +46,7 @@ FIXED_PER_DOCUMENT once for the document; AMOUNT_PER_UNIT × declared assessed q
 Fixed amounts declare tax currency and conversion policy; quantity bases may use offered packages,
 stock units or technical/service measure only with explicit compatible evidence. “Quantity” never
 means sum of unlike kg/hour/carton values. Advanced restricted formulas/providers stay allowlisted,
-typed, versioned, bounded and independently authorised under0056, not executable SQL/scripts.
+typed, versioned, bounded and independently authorised under 0056, not executable SQL/scripts.
 
 Tax bases use explicit `NET`, `TAX_AMOUNT([component IDs])`, `NET_PLUS_COMPONENTS([IDs])`, or a
 supported named statutory value/charge basis. No implicit “all preceding rows”. Stable IDs survive

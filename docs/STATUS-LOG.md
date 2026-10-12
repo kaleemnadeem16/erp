@@ -483,3 +483,17 @@ consolidated ADR is accepted; implementation is next. [OPEN-QUESTIONS.md](OPEN-Q
 
 
 - **2026-10-12 — R4 initial financial review started with multiple-tax composition as core scope:** prepared [single F1–F8 decision matrix](phases/phase-4-r4-financial-review.md) for pricing/effective dates, currencies and explicit manual SPOT/age/route evidence, tax determination/exemptions, additive/compound/tax-only/fixed/quantity/mixed-inclusive components, separate withholding, operative rounding/allocations, final-net controls and later-document evidence. [Worked tax/rounding model](phases/phase-4-r4-tax-composition.md) compares1150/1155/1105 totals, mixed Items/exemptions/cash withholding and3.06/3.03/3.02 rounding; [primary comparison/repository conflicts and PR0–PR6 readiness](phases/phase-4-r4-evidence-and-readiness.md) reuses accepted0025/0056 and compares Odoo/ERPNext/Dynamics without adopting jurisdiction law or provider fallback. MoneyCast default minor-unit context versus money4, single-tax-code placeholder, prior-rate/presentation-rounding prose and inclusive service/default seams explicitly flagged. Q44 is planning-originated awaiting approval; no new ADR or R3/tax code authorisation. R5–R9/Finance execution and forecast/partial-win gates preserved; independent CRM/C2 delivery docs and code untouched. Planning docs only, local link/numbering/whitespace and decimal-example checks; no application tests or push.
+
+
+## 2026-10-12 — R4 accepted; financial contracts/slices and initial R5 research
+
+Owner approved F1–F8 after local5d43bea: accepted0118 dates/pinned base-bridge FX,
+0119 typed tax composition/inclusive intent/separate withholding and0120 rounding/final-net/evidence.
+Q44 closed;0056 Item nature/default status partially superseded, accepted bodies preserved.
+Tax/multi-currency/pricing domains reconciled; financial typed contract and FR0–FR6 slices specified;
+PR0–PR6 financial architecture dependencies resolved, R5–R9 access/lifecycle/partial/forecast gates
+preserved. MoneyCast minor-unit concern remains required scoped coding investigation, no global fix.
+Initial R5 bounded lifecycle comparison reuses accepted R1–R4 and opens planning Q45/L1–L6;
+R6/R7 must inform final lifecycle acceptance. No R5 ADR, application code/tests, migration, generated
+client, seeder, push or direct coding-agent handoff. Implementation-owned CRM/C2 delivery untouched.
+Documentation checks are distinct from implementation/verification; no R3/R4 coding authorised.

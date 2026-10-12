@@ -1,17 +1,21 @@
 [← Phase 4 plan](phase-4-sales-quotations-and-handover.md)
 
-# R4 — Initial currency, tax-composition and rounding decision matrix
+# R4 — Accepted currency, tax-composition and rounding decision matrix
 
-**2026-10-12 · RESEARCH / PROPOSED / OWNER REVIEW REQUIRED · Q44, Origin: PLANNING RESEARCH.**
-No new ADR, code, tax engine or R3 implementation authority is accepted. Multiple simultaneous taxes,
-additive/compound/fixed/quantity calculations, mixed inclusion, exemptions and withholding are **core
-R4 architecture review**, not a later research task. Execution/posting/localisation may be staged.
+**2026-10-12 · ACCEPTED F1–F8 architecture; Q44 closed by ADRs
+[0118](../decisions/0118-pin-quotation-pricing-dates-and-company-base-fx.md), [0119](../decisions/0119-determine-versioned-quotation-tax-components.md),
+[0120](../decisions/0120-settle-quotation-rounding-and-financial-evidence.md).** The option comparisons below retain the reviewed decision basis;
+recommended directions are now accepted with the owner refinements recorded in those ADRs.
+[Typed financial contract](../domain/quotation-financial-calculation.md) and
+[R4 slices](phase-4-r4-implementation-slices.md) are SPECIFIED; no code or tax engine is implemented/
+verified by planning, and no R3/R4 coding authority is granted. Multiple simultaneous taxes,
+exemptions and withholding are core R4 architecture; execution may be staged.
 [Tax model and worked examples](phase-4-r4-tax-composition.md) and
 [evidence/repository/readiness reconciliation](phase-4-r4-evidence-and-readiness.md) support this single
 matrix. Reuse accepted R3, accounting/FX and 0056 tax research; fresh primary comparison addresses
 only unresolved boundaries. Figures illustrate configuration, never a country's law or actual rates.
 
-## Accepted baseline and what actually exists
+## Baseline at initial review — implementation unchanged by acceptance
 
 [0012](../decisions/0012-multi-currency-dual-amounts.md): currency/FX/base amounts on monetary rows,
 `decimal(19,4)` money, immutable historical conversion; [0031](../decisions/0031-manual-exchange-rate-entry.md):
@@ -50,7 +54,7 @@ move with master changes. R5 must decide when a new offered revision may use ear
 |---|---|---|---|---|
 | F2a · Transaction/base/display distinct; CustomerAccount optional | PKR company, USD100 maintained rate, eligible prospect requests EUR quote. | Require same-currency list is simplest; direct/inverse/arbitrary chains introduce ambiguity; explicit base bridge is reproducible. | One document currency; Party/account preferred currency is a default, not authority or requirement. Same-currency pricing needs no price conversion; transaction→base still needs evidence. Cross-currency list must expressly permit conversion; initially use explicit company-base bridge, not arbitrary cheapest path or silent override of fixed agreement currency. | Source/document currency + conversion allowance and separate price FX/base FX fields now. R3 PR0/PR1/PR3/PR5 schema; R9 currency/override duty. |
 | F2b · Dated manual SPOT; rate provenance pinned | USD→PKR280, EUR→PKR350: USD100 → EUR80 → PKR28000. Direct USD→EUR0.81 would yield EUR81/base28350. | Best available route changes commercial result; named direct route can be valid but needs explicit policy; base bridge makes dual amounts coherent. | Price conversion via one pinned set: source→base and document→base, derive source/document ratio with rational precision. Both legs share company/requested date/type, each records actual date/source/value; any permitted prior-date leg remains explicit. Identity leg is exact1 with identity provenance. Do not round intermediate PKR or derived ratio prematurely. Defer alternate routes until approved. | FX route/evidence/conservation now; future direct route requires explicit new policy, not silent fallback. PR0–PR5. |
-| F2c · Prior-rate fallback documented; no automatic FX fetch, 0031 | Requested Monday; most recent manual rate Friday. | Unlimited prior silently stale; exact-date blocks weekends; bounded prior with explicit policy balances operations/risk. | Quotation SPOT at explicit requested pricing/valuation date; latest-on-or-before only under company maximum-age policy, show actual date/age. Default exact-date unless carry-forward configured. Missing/over-age refuses conversion/mandatory evaluation; no1/default currency/provider substitution. New or corrected relevant rate triggers draft review, not rewrite. | Age/selection/provenance contract now; quoted FX != forecast valuation FX (0102). Refines unbounded domain fallback for quotation use only if approved. PR1/PR4/PR5; R5 approvals, R9 authority. |
+| F2c · Prior-rate fallback documented; no automatic FX fetch, 0031 | Requested Monday; most recent manual rate Friday. | Unlimited prior silently stale; exact-date blocks weekends; bounded prior with explicit policy balances operations/risk. | Quotation SPOT at explicit requested pricing/valuation date; latest-on-or-before only under company maximum-age policy, show actual date/age. Default exact-date unless carry-forward configured. Missing/over-age refuses conversion/mandatory evaluation; no1/default currency/provider substitution. New or corrected relevant rate triggers draft review, not rewrite. | Age/selection/provenance contract now; quoted FX != forecast valuation FX (0102). Refines unbounded domain fallback for quotation use under accepted 0118. PR1/PR4/PR5; R5 approvals, R9 authority. |
 
 Rate masters currently permit authorised edit/delete. Pin value/pair/date/type/source/observation,
 not just rate-row ID; fingerprints detect relevant correction/replacement. Append-only document
@@ -120,7 +124,7 @@ Sales use; do not assume a rounded conversion is mathematical exactness. No glob
 | ID / already accepted | Exact new choice and numerical example | Options / trade-offs | Recommendation and reason | Foundation now; later owner / R3 dependency |
 |---|---|---|---|---|
 | F7a · 0116 independent final-net controls, no initial bypass | EUR100 at base350 gives35000; complete base cost28000 gives20% margin. FX340 gives34000, margin≈17.65%. | Compare raw before rounding hides actual breach; tax-inclusive gross boosts margin; final allocated tax-exclusive net is comparable. | Evaluate after commercial/discount allocations and settlement net rounding, before tax/withholding; gross-fixed input normalises first. Compare in pinned company base currency and same priced quantity, without using rounded display unit or known subtotal. Floor and margin separate; recheck any later approved net-affecting adjustment. Rounding is not tolerance to pass mandatory failure. | Control evaluation basis, source-versus-quote FX and cost date/coverage now. PR4/PR5; R5 reprice/approval, R9 blind status/reference duties. |
-| F7b · Complete cost for derived pricing; partial/unknown explicit | Maintained service5000 has no supported cost; known materials3000 plus missing labour isn't total3000. | Use subtotal as denominator false; refuse all maintained prices over-restricts. | Propagate COSTED/PARTIAL/UNKNOWN and time/basis coverage from0110; maintained/manual can proceed absent mandatory cost requirement. Missing comparable FX/cost yields UNEVALUABLE mandatory refusal. Tax/FX permission cannot grant stock/recipe read or risk bypass. | No new valuation mode; current Inventory query cannot answer arbitrary future/historical cost. PR0/PR4; R5 adoption and R7 actual cost. |
+| F7b · Complete cost for derived pricing; partial/unknown explicit | Maintained service5000 has no supported cost; known materials3000 plus missing labour isn't total3000. | Use subtotal as denominator false; refuse all maintained prices over-restricts. | Propagate COSTED/PARTIAL/UNKNOWN and time/basis coverage from 0110; maintained/manual can proceed absent mandatory cost requirement. Missing comparable FX/cost yields UNEVALUABLE mandatory refusal. Tax/FX permission cannot grant stock/recipe read or risk bypass. | No new valuation mode; current Inventory query cannot answer arbitrary future/historical cost. PR0/PR4; R5 adoption and R7 actual cost. |
 
 Output taxes collected for authority and withholding are not selling revenue/cost adjustments. Accepted
 input-tax recovery remains a Finance/Purchasing cost-source responsibility; do not invent extra cost
@@ -134,18 +138,18 @@ Finance-backed cost evidence, not classification as tax alone.
 | F8a · Immutable issue; invoice legal tax independently determined, 0056 | Quote1000+tax100 later invoice legal rate12% could require120; copying100 blindly is wrong. | Copy all terms avoids drift but ignores tax point; recalc everything loses agreement. | Separate adopted commercial terms/allocations/FX from invoice statutory determination and settlement FX. Preserve original and new evidence/link plus visible variance, not edit issued quote. Model net/tax/gross/expected cash separately in both currencies, input inclusion intent, basis/rule/date/certificate and rounding/allocation versions. | Snapshot envelope and source links now; R5 exact persistence/issue, R6 consent if payable changes, R7 baseline, R8 projection, Finance legal tax/FX/posting. PR5/PR6. |
 | F8b · Partial/options/remaining scope gated | Half of fixed10 line levy/1 document discount cannot be independently rounded then over-refunded cumulatively. | Naive prorate cheap but may exceed original; original allocation ledger supports conservation without settling legal allocation now. | Preserve original line/component allocations, assessed quantity/fixed scope and cumulative remaining references. Acceptance/credit allocation uses original identities and caps remaining original amounts unless a separately authorised legal correction/re-determination requires variance. Recheck eligibility, never edit offer or pool alternatives. | Evidence seam now; exact partial levy/discount/tax/FX carry and customer agreement remains R6/R7/Finance, R9 reports. No refund/credit engine in R4. |
 
-## Owner decisions requested and schema impact
+## Historical owner decisions — accepted in 0118–0120 and schema impact
 
-Approve/select F1–F8 as one calculation architecture: explicit dates, authorised conversion/age,
+The owner approved F1–F8 as one calculation architecture: explicit dates, authorised conversion/age,
 classification/exemptions, tax dependency/inclusion model, separate withholding, named rounding/
 allocation and final-net controls. Prioritise F2 currency/rate evidence, F4 net/gross intent and tax
 components, F6 precision/residual contracts: these directly affect PR0–PR5 schema and amounts.
 Maximum carry-forward age and actual tax/rounding regimes are company configuration, not invented
 universal values. No mature ERP default or example percentage becomes jurisdiction law.
 
-Known refinements need explicit ADRs only after approval: quotation-bounded prior FX fallback;
+Approved refinements are recorded in 0118–0120: quotation-bounded prior FX fallback;
 operational rounding versus old multi-currency prose; service/manual classification default extension
-and precise inclusive adapters under0056/R3. No demonstrated contradiction requires changing accepted
+and precise inclusive adapters under 0056/R3. No demonstrated contradiction requires changing accepted
 R3 principles; treating net amounts as inclusive or assuming one tax would violate them. No code is
 independently authorised; readiness details show what is contract-independent, not permission to start.
 

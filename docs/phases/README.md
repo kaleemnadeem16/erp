@@ -102,9 +102,11 @@ R4–R9 gates remain. [Accepted question coordination](../architecture/implement
 uses OPEN-QUESTIONS and coding-owned verification.
 [R4 financial decision matrix](phase-4-r4-financial-review.md),
 [core tax composition/examples](phase-4-r4-tax-composition.md) and
-[primary evidence/R3 readiness](phase-4-r4-evidence-and-readiness.md) are initial research awaiting
-owner approval (Q44). Multiple taxes, withholding and exemptions are current R4 architecture scope.
-No pricing/tax code is authorised.
+[primary evidence/R3 readiness](phase-4-r4-evidence-and-readiness.md) support accepted0118–0120;
+Q44 closed. [R4 implementation slices](phase-4-r4-implementation-slices.md) and
+[financial contract](../domain/quotation-financial-calculation.md) are specified, not implemented.
+[R5 initial lifecycle research](phase-4-r5-quotation-lifecycle.md) opens planning Q45, informed by
+R6/R7 and R9. No pricing/tax code is authorised.
 
 
 
