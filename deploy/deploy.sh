@@ -5,8 +5,10 @@
 #   deploy/deploy.sh [git-ref]      git-ref selects which docker-compose.prod.yml to use (default: main)
 #
 # Needs: docker with compose, curl, write access to $ERP_DIR, and $ERP_DIR/.env (secrets, never in git).
-# Optional $ERP_DIR/deploy.env (also never in git) may set:
+# $ERP_DIR/deploy.env (also never in git) sets:
 #   ERP_ADMIN_EMAIL   sign-in that must always hold every registered permission
+#   ERP_API_HOST, ERP_FRONTEND_HOST   REQUIRED: the public hostnames Traefik routes (docker-compose.prod.yml
+#                     refuses to render without them, so the repository never names the production hosts)
 #   ERP_URL, ERP_API_URL   public origins to health-check after the deploy
 set -euo pipefail
 

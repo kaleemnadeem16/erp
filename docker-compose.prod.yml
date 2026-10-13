@@ -42,12 +42,12 @@ services:
       - traefik.enable=true
       - traefik.docker.network=proxy-net
       # HTTPS router
-      - traefik.http.routers.erp-api.rule=Host(`api-erp.x1techs.com`)
+      - traefik.http.routers.erp-api.rule=Host(`${ERP_API_HOST:?set ERP_API_HOST in .env}`)
       - traefik.http.routers.erp-api.entrypoints=websecure
       - traefik.http.routers.erp-api.tls=true
       - traefik.http.routers.erp-api.middlewares=erp-api-retry
       # HTTP router -> redirect to HTTPS
-      - traefik.http.routers.erp-api-http.rule=Host(`api-erp.x1techs.com`)
+      - traefik.http.routers.erp-api-http.rule=Host(`${ERP_API_HOST:?set ERP_API_HOST in .env}`)
       - traefik.http.routers.erp-api-http.entrypoints=web
       - traefik.http.routers.erp-api-http.middlewares=erp-redirect-https
       # Redirect middleware
@@ -84,11 +84,11 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=proxy-net
-      - traefik.http.routers.erp-frontend.rule=Host(`erp.x1techs.com`)
+      - traefik.http.routers.erp-frontend.rule=Host(`${ERP_FRONTEND_HOST:?set ERP_FRONTEND_HOST in .env}`)
       - traefik.http.routers.erp-frontend.entrypoints=websecure
       - traefik.http.routers.erp-frontend.tls=true
       - traefik.http.routers.erp-frontend.middlewares=erp-frontend-retry
-      - traefik.http.routers.erp-frontend-http.rule=Host(`erp.x1techs.com`)
+      - traefik.http.routers.erp-frontend-http.rule=Host(`${ERP_FRONTEND_HOST:?set ERP_FRONTEND_HOST in .env}`)
       - traefik.http.routers.erp-frontend-http.entrypoints=web
       - traefik.http.routers.erp-frontend-http.middlewares=erp-redirect-https
       - traefik.http.middlewares.erp-frontend-retry.retry.attempts=4

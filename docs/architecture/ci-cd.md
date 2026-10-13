@@ -211,7 +211,9 @@ Compose project per app, matching the existing nine on mainvm.
 Deploys run `deploy/deploy.sh` on mainvm as a user that owns `/srv/apps/erp` (historically the
 `github-runner` OS user, the same convention the existing `invoiceflow` deploy uses —
 [ci-runner-setup.md](ci-runner-setup.md)). Per-host values (admin email, health-check URLs) go in
-`/srv/apps/erp/deploy.env`, never in the repository. A path under a human user's home directory (the
+`/srv/apps/erp/deploy.env`, never in the repository: `ERP_API_HOST` and `ERP_FRONTEND_HOST` (the Traefik
+hostnames — [docker-compose.prod.yml](../../docker-compose.prod.yml) refuses to render without them, so export
+them, or `set -a; . ./deploy.env`, before running `docker compose` by hand), `ERP_ADMIN_EMAIL`, `ERP_URL`, `ERP_API_URL`. A path under a human user's home directory (the
 original choice here) doesn't work: `github-runner` isn't in that user's group and can't
 traverse into their home directory at all, regardless of the target folder's own permissions.
 Don't route around that with `sudo` to hop accounts either — that means granting a CI runner
