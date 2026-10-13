@@ -17,6 +17,12 @@ export type SupplierReturnsIndexParams = {
    * @maxLength 255
    */
   "filter[search]"?: string;
+  /**
+   * @minimum 1
+   */
+  "filter[supplier_account_id]"?: number;
+  "filter[created_from]"?: string;
+  "filter[created_to]"?: string;
   sort?: SupplierReturnsIndexSort;
   include?: string;
   /**

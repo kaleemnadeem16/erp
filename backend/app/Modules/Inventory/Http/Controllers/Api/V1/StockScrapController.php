@@ -56,6 +56,12 @@ class StockScrapController extends Controller
             $search = '%'.$request->string('filter.search')->toString().'%';
             $query->where(fn ($q) => $q->where('number', 'ilike', $search)->orWhere('disposal_reference', 'ilike', $search));
         }
+        if ($request->filled('filter.created_from')) {
+            $query->whereDate('created_at', '>=', $request->input('filter.created_from'));
+        }
+        if ($request->filled('filter.created_to')) {
+            $query->whereDate('created_at', '<=', $request->input('filter.created_to'));
+        }
         $this->applySort($query, $request, self::SORTABLE, '-created_at');
 
         return StockScrapResource::collection($query->paginate($request->integer('per_page', 25)));

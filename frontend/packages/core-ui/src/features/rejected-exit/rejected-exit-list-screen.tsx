@@ -67,6 +67,9 @@ export function ExitListScreen({ kind }: { kind: ExitKind }) {
     warehouseId: query.filters.warehouse_id && query.filters.warehouse_id !== 'all' ? Number(query.filters.warehouse_id) : undefined,
     status: query.filters.status && query.filters.status !== 'all' ? query.filters.status : undefined,
     search: query.filters.search,
+    supplierAccountId: kind === 'SUPPLIER_RETURN' && query.filters.supplier_id && query.filters.supplier_id !== 'all' ? Number(query.filters.supplier_id) : undefined,
+    createdFrom: query.filters.created_from || undefined,
+    createdTo: query.filters.created_to || undefined,
     sort: query.sort,
     perPage: query.perPage,
     page: query.page,
@@ -209,12 +212,9 @@ export function ExitListScreen({ kind }: { kind: ExitKind }) {
   const sorting: SortingState = apiSortToTableSorting(query.sort, columns);
   const pagination: PaginationState = { pageIndex: query.page - 1, pageSize: query.perPage };
 
-  // Client-side filtering of loaded rows across dimensions not yet validated by the backend
+  // Supplier, status, warehouse, search and creation dates filter on the server; the rest narrow the loaded page only.
   const filteredRows = useMemo(() => {
     let rows = list.rows as Row[];
-    if (query.filters.supplier_id && query.filters.supplier_id !== 'all') {
-      rows = rows.filter((r) => String(r.supplier_account_id) === query.filters.supplier_id);
-    }
     if (query.filters.has_reference === 'true') {
       rows = rows.filter((r) => Boolean(r.supplier_reference && r.supplier_reference.trim() !== ''));
     } else if (query.filters.has_reference === 'false') {
@@ -229,14 +229,6 @@ export function ExitListScreen({ kind }: { kind: ExitKind }) {
       rows = rows.filter((r) => Boolean(r.carrier_note && r.carrier_note.trim() !== ''));
     } else if (query.filters.has_carrier_note === 'false') {
       rows = rows.filter((r) => !r.carrier_note || r.carrier_note.trim() === '');
-    }
-    if (query.filters.created_from) {
-      const fromTime = new Date(query.filters.created_from).getTime();
-      rows = rows.filter((r) => (r.created_at ? new Date(r.created_at).getTime() >= fromTime : false));
-    }
-    if (query.filters.created_to) {
-      const toTime = new Date(query.filters.created_to).getTime() + 86400000;
-      rows = rows.filter((r) => (r.created_at ? new Date(r.created_at).getTime() <= toTime : false));
     }
     if (query.filters.reason) {
       const reasonLower = query.filters.reason.toLowerCase();

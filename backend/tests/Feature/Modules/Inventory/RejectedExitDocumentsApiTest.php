@@ -119,6 +119,15 @@ class RejectedExitDocumentsApiTest extends RecordPackageCheckpointTest
         $this->postJson("/api/v1/supplier-returns/{$id}/cancel")->assertUnprocessable()->assertJsonPath('reason_code', 'DOCUMENT_NOT_DRAFT');
         $this->getJson("/api/v1/supplier-returns/{$id}")->assertOk()->assertJsonPath('data.status', 'POSTED');
         $this->getJson('/api/v1/supplier-returns?filter[status]=POSTED&filter[search]=RMA')->assertOk()->assertJsonCount(1, 'data');
+
+        // Server-side supplier and creation-date filters span every page, not only the loaded one.
+        $today = now()->format('Y-m-d');
+        $supplierId = $this->getJson("/api/v1/supplier-returns/{$id}")->json('data.supplier_account_id');
+        $this->getJson("/api/v1/supplier-returns?filter[supplier_account_id]={$supplierId}&filter[created_from]={$today}&filter[created_to]={$today}")->assertOk()->assertJsonCount(1, 'data');
+        $this->getJson('/api/v1/supplier-returns?filter[supplier_account_id]='.($supplierId + 999))->assertOk()->assertJsonCount(0, 'data');
+        $this->getJson('/api/v1/supplier-returns?filter[created_to]='.now()->subDays(2)->format('Y-m-d'))->assertOk()->assertJsonCount(0, 'data');
+        $this->getJson("/api/v1/supplier-returns?filter[created_from]={$today}&filter[created_to]=2000-01-01")->assertUnprocessable();
+        $this->getJson("/api/v1/stock-scraps?filter[created_from]={$today}")->assertOk();
     }
 
     public function test_an_item_archived_after_delivery_can_still_be_previewed_posted_and_shown_with_its_code_and_name(): void
@@ -137,6 +146,7 @@ class RejectedExitDocumentsApiTest extends RecordPackageCheckpointTest
         $this->actingAs($this->poster());
         $this->postJson("/api/v1/supplier-returns/{$id}/post")->assertOk()->assertJsonPath('data.status', 'POSTED')->assertJsonPath('data.lines.0.item.code', $item->code);
         $this->getJson("/api/v1/supplier-returns/{$id}?include=lines")->assertOk()->assertJsonPath('data.lines.0.item.name', $item->name);
+        $this->getJson("/api/v1/items/{$item->id}/package-tracking")->assertOk()->assertJsonPath('data.item_id', $item->id);
     }
 
     public function test_a_scrap_that_differs_from_the_qa_decision_is_refused_at_post_until_it_says_why_and_a_failed_post_leaves_the_draft_untouched(): void

@@ -17,6 +17,8 @@ export type StockScrapsIndexParams = {
    * @maxLength 255
    */
   "filter[search]"?: string;
+  "filter[created_from]"?: string;
+  "filter[created_to]"?: string;
   sort?: StockScrapsIndexSort;
   include?: string;
   /**

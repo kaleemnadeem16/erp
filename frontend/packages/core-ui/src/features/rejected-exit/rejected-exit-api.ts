@@ -77,6 +77,8 @@ export interface ExitLineRecord {
   line_no?: number;
   goods_receipt_line_id: number;
   item_id: number;
+  /** Embedded by the server, so archived items still show their code and name. */
+  item?: { id: number; code: string | null; name: string | null };
   location_id: number;
   quantity: string;
   outcome_change_reason: string | null;
@@ -214,19 +216,21 @@ export function useExitDocument(kind: ExitKind, id: number) {
 
 export function useExitIndex(
   kind: ExitKind,
-  params: { warehouseId?: number; status?: string; search?: string; sort?: string; perPage: number; page: number },
+  params: { warehouseId?: number; status?: string; search?: string; supplierAccountId?: number; createdFrom?: string; createdTo?: string; sort?: string; perPage: number; page: number },
 ) {
   const query = {
     'filter[warehouse_id]': params.warehouseId,
     'filter[status]': (params.status || undefined) as never,
     'filter[search]': params.search || undefined,
+    'filter[created_from]': params.createdFrom,
+    'filter[created_to]': params.createdTo,
     sort: params.sort as never,
     include: 'warehouse',
     per_page: params.perPage,
     page: params.page,
   };
   const returns = kind === 'SUPPLIER_RETURN';
-  const supplierReturns = useSupplierReturnsIndex(query, { query: { enabled: returns } });
+  const supplierReturns = useSupplierReturnsIndex({ ...query, 'filter[supplier_account_id]': params.supplierAccountId }, { query: { enabled: returns } });
   const scraps = useStockScrapsIndex(query, { query: { enabled: !returns } });
   const active = returns ? supplierReturns : scraps;
   const body = (active.data as unknown as { status: number; data: { data: Array<ExitDocument & { warehouse?: { name: string } }>; meta?: { total: number } } } | undefined);

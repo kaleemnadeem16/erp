@@ -161,6 +161,13 @@ has no obligation to match the accounting cost basis. See ADR 0032 for the full 
 Items are archived, never deleted. Historical documents reference them and must remain
 readable. Soft deletes throughout.
 
+Archiving stops *new* orders; it never strands stock already received. Returning or scrapping
+rejected stock, issuing it, reading its package balances and tracking, and saving any record that
+points at the item all keep working for an archived item (relationships use `withTrashed()`, and
+the shared related-company guard checks tenancy, not liveness). Document line resources embed
+`item {id, code, name}` so a historical document never needs a separate item request. Whether *new*
+work may reference an archived item is a validation rule on the entry point, not a model guard.
+
 ### User interface
 
 The React application exposes item list, detail, create and edit screens. The list is the

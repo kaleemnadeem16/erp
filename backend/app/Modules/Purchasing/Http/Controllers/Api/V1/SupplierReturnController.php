@@ -56,6 +56,15 @@ class SupplierReturnController extends Controller
             $search = '%'.$request->string('filter.search')->toString().'%';
             $query->where(fn ($q) => $q->where('number', 'ilike', $search)->orWhere('supplier_reference', 'ilike', $search));
         }
+        if ($request->filled('filter.supplier_account_id')) {
+            $query->where('supplier_account_id', $request->integer('filter.supplier_account_id'));
+        }
+        if ($request->filled('filter.created_from')) {
+            $query->whereDate('created_at', '>=', $request->input('filter.created_from'));
+        }
+        if ($request->filled('filter.created_to')) {
+            $query->whereDate('created_at', '<=', $request->input('filter.created_to'));
+        }
         $this->applySort($query, $request, self::SORTABLE, '-created_at');
 
         return SupplierReturnResource::collection($query->paginate($request->integer('per_page', 25)));

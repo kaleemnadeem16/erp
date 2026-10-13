@@ -39,7 +39,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('stock-scraps/{stockScrap}/post', [StockScrapController::class, 'post'])->name('stock-scraps.post');
     Route::post('stock-scraps/{stockScrap}/cancel', [StockScrapController::class, 'cancel'])->name('stock-scraps.cancel');
     Route::post('stock-transfers', [StockTransferController::class, 'store'])->name('stock-transfers.store');
-    Route::get('items/{item}/package-tracking', [ItemPackageTrackingController::class, 'show'])->name('items.package-tracking.show');
+    Route::get('items/{item}/package-tracking', [ItemPackageTrackingController::class, 'show'])->withTrashed()->name('items.package-tracking.show');
     Route::post('items/{item}/package-tracking/preview', [ItemPackageTrackingController::class, 'preview'])->name('items.package-tracking.preview');
     Route::post('items/{item}/package-tracking/activate', [ItemPackageTrackingController::class, 'activate'])->name('items.package-tracking.activate');
     Route::get('item-packagings', [ItemPackagingController::class, 'index'])->name('item-packagings.index');

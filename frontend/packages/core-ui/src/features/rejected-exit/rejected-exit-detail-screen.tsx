@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
-import { useCurrenciesIndex, useItemsShow, useWarehousesShow, type SupplierAccountResource } from '@erp/core-api';
+import { useCurrenciesIndex, useWarehousesShow, type SupplierAccountResource } from '@erp/core-api';
 
 import { Button } from '../../components/ui/button';
 import { Skeleton } from '../../components/ui/skeleton';
@@ -346,10 +346,9 @@ function ExpectedCredit({ document }: { document: { expected_credit_amount?: str
 
 /** A line of a posted or cancelled document: what was taken, plainly, with no controls. */
 function FrozenLine({ line }: { line: ExitLineRecord }) {
-  const item = useItemsShow(line.item_id, undefined, { query: { retry: false } });
-  const record = item.data?.status === 200 ? item.data.data.data : undefined;
-  const isMissing = item.isError;
-  const tracking = useTrackingState(line.item_id, !isMissing && !!line.package_portion?.length);
+  // The server embeds the item (archived ones included), so a frozen line needs no per-line item request.
+  const record = line.item?.code ? line.item : undefined;
+  const tracking = useTrackingState(line.item_id, !!line.package_portion?.length);
   const portion = (line.package_portion ?? [])
     .map((entry) =>
       entry.kind === 'SEALED'
@@ -361,11 +360,7 @@ function FrozenLine({ line }: { line: ExitLineRecord }) {
   return (
     <article className="space-y-1 rounded-md border p-3 text-sm" data-testid="exit-frozen-line">
       <h3 className="font-medium break-words">
-        {record
-          ? `${record.code} — ${record.name}`
-          : isMissing
-            ? `Item #${line.item_id} (Archived / Unavailable)`
-            : `Item #${line.item_id}`}
+        {record ? `${record.code} — ${record.name}` : `Item #${line.item_id}`}
       </h3>
       <p className="tabular-nums" data-testid="exit-frozen-quantity">{trimQty(line.quantity)}</p>
       {portion && <p className="text-muted-foreground">{portion}</p>}
