@@ -2,7 +2,7 @@
 
 # CI runner setup — second self-hosted runner
 
-**Status: done (2026-08-11).** `mainvm-erp-arm64` is registered and running as a systemd service.
+**Status: historical — retired 2026-10-13 ([ADR 0121](../decisions/0121-public-repository-hosted-runners-and-manual-deploy.md)); the repository is public and has no self-hosted runner.** It was done 2026-08-11. `mainvm-erp-arm64` is registered and running as a systemd service.
 This runbook is kept as a reference for anyone who needs to reproduce or troubleshoot the setup —
 tracked as a prerequisite in
 [phase-0-foundation.md](../phases/phase-0-foundation.md#infrastructure-prerequisites).

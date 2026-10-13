@@ -16,7 +16,7 @@ these choices were made, see [decisions/](../decisions/).
 | [implementation-question-reconciliation.md](implementation-question-reconciliation.md) | Owner-forwarded questions, existing authority clarification, decision and delivery status | Reconciling implementation questions without a duplicate register |
 | [environments.md](environments.md) | The actual VMs, versions, disk, what's already running | Deploying, choosing a version |
 | [ci-cd.md](ci-cd.md) | Pipeline, runners, image retention | Touching CI or deploy |
-| [ci-runner-setup.md](ci-runner-setup.md) | Step-by-step: registering the second self-hosted runner | Setting up the ERP CI runner |
+| [ci-runner-setup.md](ci-runner-setup.md) | Historical: how the second self-hosted runner was registered (retired, ADR 0121) | Setting up the ERP CI runner |
 | [tech-stack.md](tech-stack.md) | Every library and why it's there | Setting up, adding a dependency |
 | [code-structure.md](code-structure.md) | Module layout, Actions, events | Writing any backend code |
 | [database.md](database.md) | Postgres conventions, migration standards and what to use | Writing a migration or query |

@@ -109,7 +109,7 @@ Practical commands (WSL, repository root `/home/kaleem/projects/erp`):
   ([negative-stock.md](../domain/negative-stock.md#who-may-read-and-act-on-a-request-2026-10-06)).
 - **Deployment verification (every slice A1–A6):** enumerate real members, roles, direct grants and service actors; verify effective access for
   representative warehouse, sales, counting, finance and administrator users in staging; record who approved the map and the result. The A6
-  grant migration and the deploy job's `permission:register` + admin sync are the release steps; nothing has been verified outside dev.
+  grant migration and the deploy script's `permission:register` + admin sync are the release steps; nothing has been verified outside dev.
 - **Information-flow reviews still to do as surfaces appear:** Phase 4 quotations/adoption, package-balance routes (ADR 0082), any export or
   download, a future import screen (the staging Actions check no capability and a test fails when an entry point appears), the allocation-log
   screen for numbering.

@@ -23,7 +23,7 @@ Both VMs are **Oracle Ampere, ARM64 (`aarch64`)**.
 | Disk | 117 GB — **45 GB used, 72 GB free (39%)** |
 | Docker | 29.0.1, Compose v2.40.3 |
 | Ingress | **Traefik v3.6.1** on the `proxy-net` network |
-| CI | Self-hosted GitHub Actions runner, user `github-runner`, `~/actions-runner` |
+| CI | Self-hosted GitHub Actions runner, user `github-runner`, `~/actions-runner`, scoped to `invoiceflow` only — the ERP repository has none ([ADR 0121](../decisions/0121-public-repository-hosted-runners-and-manual-deploy.md)); ERP deploys with `deploy/deploy.sh` |
 
 ### Already running
 

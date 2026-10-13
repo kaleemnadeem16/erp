@@ -16,30 +16,22 @@ Each architecture builds **natively**, then the manifests are merged:
 
 | Platform | Runner |
 |---|---|
-| `linux/arm64` | Self-hosted Ampere runner on mainvm |
+| `linux/arm64` | GitHub-hosted native ARM runner, `ubuntu-24.04-arm` |
 | `linux/amd64` | GitHub-hosted `ubuntu-latest` |
 
 Cross-building either one under QEMU makes `composer install` and `npm ci` several times slower
 — often 10–20 minutes instead of 2 — which means it eventually gets skipped.
 
-mainvm already runs a self-hosted runner (`github-runner`, `~/actions-runner`), currently
-**scoped to the `invoiceflow` repository**.
-
-**Decision:** invoiceflow, the CRM and this ERP repo all sit under a **personal GitHub account**,
-not an organisation — GitHub does not offer org-level runners for personal accounts. So this
-project registers a **second, independent repo-scoped runner** on mainvm, alongside the existing
-one rather than sharing it.
-
-**Done (2026-08-11)** — `mainvm-erp-arm64` is registered and running; confirmed online again
-2026-09-22. Step-by-step setup → [ci-runner-setup.md](ci-runner-setup.md).
+**There is no self-hosted runner** ([ADR 0121](../decisions/0121-public-repository-hosted-runners-and-manual-deploy.md)).
+The repository is public, and a self-hosted runner on a public repository lets a fork's pull
+request run code on the host. Both architectures build on GitHub-hosted runners, which are free
+and unlimited for public repositories. *Historical:* until 2026-10-13 arm64 built on
+`mainvm-erp-arm64`; the setup is kept in [ci-runner-setup.md](ci-runner-setup.md).
 
 ### Runner constraints
 
-mainvm has 3 vCPU and runs production workloads. Builds compete with them.
-
-- Limit concurrent jobs to 1
-- Cap build cache and prune on a schedule (see below)
-- Keep the test job light — see [Tests](#tests)
+Only GitHub-hosted runners, so mainvm's 3 vCPUs stay for production. Keep the test job light — see
+[Tests](#tests).
 
 ---
 
@@ -54,7 +46,8 @@ Two long-lived branches ([ADR 0029](../decisions/0029-develop-main-branching-mod
   `develop`.
 
 A commit landing on GitHub is not the same act as a commit going live — only a merge to `main`
-deploys.
+builds release images, and going live is a separate run of [deploy/deploy.sh](../../deploy/deploy.sh)
+on mainvm ([ADR 0121](../decisions/0121-public-repository-hosted-runners-and-manual-deploy.md)).
 
 ## Pipeline
 
@@ -64,15 +57,14 @@ push / PR (any branch)
    ├─ codegen     Scramble → OpenAPI → Orval; FAIL ON DIFF
    └─ test        PostgreSQL 16 service container
 
-main branch only ──→ build   amd64 (hosted) ┐
-                                arm64 (self-hosted) ┴→ merge manifest → GHCR, tagged by commit SHA
-                                                  │
-                      ──────────────────────────┴─→ deploy to mainvm → prune old images
+main branch only ──→ build   amd64 (ubuntu-latest)  ┐
+                                arm64 (ubuntu-24.04-arm) ┴→ merge manifest → GHCR, tagged by commit SHA
+
+on mainvm, by hand ──→ deploy/deploy.sh → pull, migrate, up --wait, permission:register → prune
 ```
 
 Image build and deploy are scoped to `main` only — a WIP push to a feature branch or `develop`
-gets full lint/codegen/test feedback without tying up the single-concurrency ARM runner
-building an image nobody's going to deploy (see [runner constraints](#runner-constraints) above).
+gets full lint/codegen/test feedback without building images nobody is going to deploy.
 
 ### Tests
 
@@ -216,15 +208,16 @@ Compose project per app, matching the existing nine on mainvm.
   .env                        secrets — never in the repo
 ```
 
-`/srv/apps/erp` is owned by the `github-runner` OS user that runs the deploy job — the same
-convention the existing `invoiceflow` deploy on this host already uses
-([ci-runner-setup.md](ci-runner-setup.md)). A path under a human user's home directory (the
+Deploys run `deploy/deploy.sh` on mainvm as a user that owns `/srv/apps/erp` (historically the
+`github-runner` OS user, the same convention the existing `invoiceflow` deploy uses —
+[ci-runner-setup.md](ci-runner-setup.md)). Per-host values (admin email, health-check URLs) go in
+`/srv/apps/erp/deploy.env`, never in the repository. A path under a human user's home directory (the
 original choice here) doesn't work: `github-runner` isn't in that user's group and can't
 traverse into their home directory at all, regardless of the target folder's own permissions.
 Don't route around that with `sudo` to hop accounts either — that means granting a CI runner
 passwordless root access, which is worse than just owning the directory it operates on.
 
-`docker-compose.yml` on the server is not hand-maintained — the deploy job copies the
+`docker-compose.yml` on the server is not hand-maintained — the deploy script downloads the
 repo's [docker-compose.prod.yml](../../docker-compose.prod.yml) over it fresh on every run, so
 the two can never drift. Only `.env` (secrets) lives solely on the server.
 
@@ -256,7 +249,7 @@ things close that gap without adding orchestration:
   remaining gap against the (by then updated) pool, rather than surfacing the failure to the
   browser as `ERR_CONNECTION_RESET`/`ERR_CONNECTION_CLOSED`.
 
-The deploy job itself also passes `--wait` to `docker compose up -d`, so it doesn't run
+The deploy script itself also passes `--wait` to `docker compose up -d`, so it doesn't run
 `permission:register` against a container its own healthcheck hasn't yet confirmed is healthy.
 
 None of this is a substitute for the frontend's PWA caching being correct. The app registers a

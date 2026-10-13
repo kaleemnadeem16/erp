@@ -1,10 +1,10 @@
 name: Pipeline
 
-# ADR 0029: `develop` never deploys, `main` is the only deploy-triggering branch.
-# lint/codegen/test run on every push and PR, on GitHub-hosted runners — cheap, and gives
-# full feedback on a WIP push to a feature branch without touching mainvm at all. Only the
-# arm64 image build runs on the self-hosted mainvm runner, and only on `main` — see
-# docs/architecture/ci-cd.md#runner-constraints.
+# ADR 0121: every job runs on a GitHub-hosted runner — this repository is public and has no
+# self-hosted runner, so nothing a pull request can trigger reaches mainvm. lint/codegen/test
+# run on every push and PR. Images (amd64 on ubuntu-latest, arm64 natively on ubuntu-24.04-arm)
+# are built and pushed to GHCR only on `main` (ADR 0029). Deploying is a separate, deliberate
+# act on mainvm: deploy/deploy.sh — see docs/architecture/ci-cd.md#deployment.
 on:
   push:
     branches: ['**']
@@ -291,7 +291,7 @@ jobs:
             runner: ubuntu-latest
             platform: linux/amd64
           - arch: arm64
-            runner: [self-hosted, arm64, erp]
+            runner: ubuntu-24.04-arm
             platform: linux/arm64
     runs-on: ${{ matrix.runner }}
     permissions:
@@ -333,7 +333,7 @@ jobs:
 
   merge-manifest:
     needs: build
-    runs-on: [self-hosted, arm64, erp]
+    runs-on: ubuntu-latest
     permissions:
       packages: write
     steps:
@@ -346,7 +346,7 @@ jobs:
         run: |
           set -euo pipefail
           # Keep each imagetools invocation to one destination tag. The
-          # self-hosted Buildx version has a concurrent-map bug when one
+          # older Buildx versions had a concurrent-map bug when one
           # invocation publishes multiple tags. The per-architecture build
           # tags are single-platform manifest lists, which imagetools can
           # combine into the final multi-platform index.
@@ -366,63 +366,3 @@ jobs:
             -t ghcr.io/${{ github.repository_owner }}/erp-frontend:latest \
             ghcr.io/${{ github.repository_owner }}/erp-frontend:${{ github.sha }}-amd64 \
             ghcr.io/${{ github.repository_owner }}/erp-frontend:${{ github.sha }}-arm64
-      - name: Prune old images and build cache
-        run: |
-          docker image prune -af --filter "until=168h" --filter "label=app=erp"
-          docker builder prune -af --keep-storage 2GB
-
-  deploy-production:
-    name: deploy production
-    if: github.ref == 'refs/heads/main'
-    needs: merge-manifest
-    runs-on: [self-hosted, arm64, erp]
-    permissions:
-      contents: read
-      packages: read
-    environment:
-      name: production
-    steps:
-      - uses: actions/checkout@v4
-      - uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Deploy on mainvm
-        # /srv/apps/erp is owned by the github-runner service account that
-        # runs this job, matching the existing invoiceflow deploy on this
-        # host — see docs/architecture/ci-cd.md#deployment. Do not point
-        # this back at a path under /home/ubuntu: that directory belongs to
-        # a different OS user and the runner cannot traverse into it.
-        working-directory: /srv/apps/erp
-        run: |
-          set -euo pipefail
-          test -f .env
-          # docker-compose.prod.yml is the checked-in source of truth; copied fresh
-          # on every deploy so the two can never drift, instead of relying on
-          # someone remembering to hand-edit the server's copy.
-          cp "${{ github.workspace }}/docker-compose.prod.yml" docker-compose.yml
-          docker compose pull
-          docker compose run --rm app php artisan migrate --force
-          # --wait: don't move on to permission:register until app's healthcheck
-          # (GET /up, docker-compose.prod.yml) reports healthy.
-          docker compose up -d --remove-orphans --wait
-          docker compose run --rm app php artisan permission:register
-          # permission:register only creates the Permission rows for any new
-          # names a release ships — it grants nobody anything. Without this,
-          # the administrator created once via `erp:create-admin
-          # --permissions=all` silently falls behind every later feature
-          # slice's new permissions (see authorization.md's "Safe rollout
-          # rule"; found 2026-09-26). Set the ERP_ADMIN_EMAIL repository
-          # variable to the sign-in that should always hold every registered
-          # permission; skipped with a warning, not a failed deploy, if unset.
-          if [ -n "${{ vars.ERP_ADMIN_EMAIL }}" ]; then
-            docker compose run --rm app php artisan erp:sync-admin-permissions "${{ vars.ERP_ADMIN_EMAIL }}"
-          else
-            echo "::warning::ERP_ADMIN_EMAIL repository variable is not set — skipped syncing the administrator's permissions."
-          fi
-      - name: Verify production endpoints
-        run: |
-          set -euo pipefail
-          curl --fail --silent --show-error --max-time 20 https://erp.x1techs.com/ >/dev/null
-          curl --fail --silent --show-error --max-time 20 https://api-erp.x1techs.com/up >/dev/null
