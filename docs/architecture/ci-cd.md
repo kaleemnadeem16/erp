@@ -187,7 +187,7 @@ network — admin UI on the app tier, data on the db tier. Not a candidate for r
   rollback tags. `crm_backend:rollback` and `crm_frontend:rollback` are distinct image IDs from
   their `:latest` counterparts, so they are genuinely at risk.
 - **`docker volume prune`** — several volumes show `LINKS=0` but hold real data, notably
-  `x1techs-crm-app_crm_redis_data`. A volume with no attached container is *not* the same as an
+  another application's Redis data volume. A volume with no attached container is *not* the same as an
   unused volume. Inspect and remove individually.
 
 Removing an unused image **cannot** affect a running container: Docker refuses to delete an image

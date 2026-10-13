@@ -127,7 +127,7 @@ automated release is still the verification point for this job.
    Use dbvm's private VCN IP instead (confirmed from another app already running on
    mainvm, which does the same); fixed in `.env.example`.
 5. Set the repository variable `ERP_API_BASE_URL` to the public API origin, `/api`
-   appended (e.g. `https://api-erp.x1techs.com/api`) **before** the image build — Vite
+   appended (e.g. `https://api-erp.<your-domain>/api`) **before** the image build — Vite
    inlines it at build time, so an image built without it permanently points the SPA at
    localhost.
 6. Register the self-hosted ARM64 runner with the labels `self-hosted, arm64, erp`
@@ -168,7 +168,7 @@ automated release is still the verification point for this job.
     next feature slice.
 
     Before handing member onboarding to the Access Administration screens, configure
-    `FRONTEND_URL` to the public SPA origin (for example `https://erp.x1techs.com`) and a real
+    `FRONTEND_URL` to the public SPA origin (for example `https://erp.<your-domain>`) and a real
     outbound Laravel mail transport. Invitation messages contain a time-limited, single-use link
     to `${FRONTEND_URL}/accept-invitation`; the default/log mailer is suitable only for local
     development. Confirm delivery and the link's public origin with a non-administrator test
@@ -211,9 +211,10 @@ Deployments do not run general seeders automatically. Use these boundaries:
   or change them through the Access Administration API/UI; retain the reviewed one-off command
   path only for bootstrap or recovery when no authorised administrator can sign in.
 
-**Verified working end-to-end** (2026-09-22): `https://erp.x1techs.com` (200, valid TLS),
-`https://api-erp.x1techs.com/api/v1/...` (401 unauthenticated as expected, not 500), and a
-full cookie-session login/CSRF round trip against the real domains, all through Traefik.
+**Verified working end-to-end** (2026-09-22): the SPA origin (200, valid TLS),
+the API origin's `/api/v1/...` (401 unauthenticated as expected, not 500), and a
+full cookie-session login/CSRF round trip against the real domains, all through Traefik. (The
+production hostnames are deliberately not recorded in this public repository.)
 
 **Rollback:** redeploy a previous image tag from `main`'s history by setting the image
 tag and repeating steps 8 and 10. Migrations are not automatically reversed — check

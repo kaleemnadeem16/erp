@@ -27,9 +27,8 @@ Both VMs are **Oracle Ampere, ARM64 (`aarch64`)**.
 
 ### Already running
 
-Nine Compose projects: `invoiceflow`, `x1techs-crm-app`, `n8n`, `monitoring`
-(Grafana/Loki/Prometheus/promtail/node-exporter), `traefik`, `portainer`, `pgadmin`,
-`phpmyadmin`, `x1techs-com` (WordPress).
+Nine Compose projects, including this repository's sibling applications, a monitoring stack,
+Traefik and database admin tools (named in the operator's private notes, not here).
 
 **No native PHP, Node or Composer** — everything is containerised. This matters: containerising
 our app adds no duplication versus an existing native install, because there isn't one.

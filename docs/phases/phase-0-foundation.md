@@ -84,8 +84,8 @@ feature.
 - [x] ~~Confirm the Redis key prefix does not collide with invoiceflow or crm~~ — done
       2026-08-19, checked via `docker inspect` on the running `invoiceflow-backend`/
       `crm_backend_prod` containers on mainvm: neither sets `REDIS_PREFIX` explicitly, so both
-      fall back to Laravel's `APP_NAME`-derived default (`invoiceflow_database_`,
-      `x1techs_crm_database_`), distinct from our explicit `REDIS_PREFIX=erp_`
+      fall back to Laravel's `APP_NAME`-derived default (`invoiceflow_database_` and a similar
+      default for the CRM), distinct from our explicit `REDIS_PREFIX=erp_`
 - [x] ~~Traefik labels + `proxy-net` attachment, matching the invoiceflow pattern~~ — verified
       during the first production deployment on 2026-09-22; both public ERP domains route through
       Traefik with real TLS → [deployment.md](../architecture/deployment.md#first-deploy-runbook)
