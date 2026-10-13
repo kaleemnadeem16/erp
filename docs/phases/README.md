@@ -105,10 +105,11 @@ uses OPEN-QUESTIONS and coding-owned verification.
 [primary evidence/R3 readiness](phase-4-r4-evidence-and-readiness.md) support accepted0118–0120;
 Q44 closed. [R4 implementation slices](phase-4-r4-implementation-slices.md) and
 [financial contract](../domain/quotation-financial-calculation.md) are specified, not implemented.
-[R5 consolidated L1–L6 review](phase-4-r5-business-review.md),
-[R6/R7 reconciliation/journey](phase-4-r5-acceptance-and-handover-boundaries.md) and
-[bounded evidence](phase-4-r5-quotation-lifecycle.md) prepare planning Q45 for owner review.
-Recommendations remain unaccepted; no pricing/tax/quotation code is authorised.
+[R5 L1–L6](phase-4-r5-business-review.md) is accepted0122–0124/Q45 closed;
+[lifecycle domain](../domain/quotation-lifecycle.md) and [QL0–QL6 handoff](phase-4-r5-implementation-slices.md)
+are specified, not application delivery. [R6/R7 journey](phase-4-r5-acceptance-and-handover-boundaries.md)
+preserves still-proposed downstream branches. [Initial R6 C1–C8 review](phase-4-r6-customer-decisions.md)
+opens planning Q46; no new R6 ADR or pricing/tax/quotation coding authority.
 
 
 

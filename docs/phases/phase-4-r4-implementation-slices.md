@@ -71,7 +71,7 @@ boundary inclusive max age, future/non-positive/missing/too-old unsupported legs
 cannot replace bridge; mutable master edits/deletes cannot change captured evidence. Company/scope,
 Request and direct Action denials; same-key replay/payload conflict/concurrent version activation.
 **Migration:** additive version rows/indexed company/date lookup, valid interval CHECKs and exact
-partition exclusions. Snapshot quote FKs await R5, no inferred historical rate backfill.
+partition exclusions. Snapshot company/candidate/issue FKs bind specified R5 keys; no inferred historical rate backfill.
 
 ## FR2 — Classification, Party profiles and tax groups
 
@@ -137,17 +137,17 @@ RAW/SETTLED dependent tax stages reproduce their distinct results; incompatible 
 Final controls use settled net and complete comparable quantity/base cost; missing FX/cost mandatory
 UNEVALUABLE; advisory warning; output tax/withholding do not inflate margin; zero legitimate net has
 undefined percent margin, not an invented ratio. Inclusive extraction rechecks floors after rounding.
-**Migration:** versioned policy/evidence constraints; R5 quote snapshot keys reserved. No GL journals.
+**Migration:** versioned policy/evidence constraints; R5 candidate/issue snapshot keys specified; coding remains separately authorised. No GL journals.
 
 ## FR5 — Operational quotation financial evidence and UI
 
-**Depends:** FR0–FR4 supported subset + R3 PR5; accepted R5 identities/state/adoption/issue/concurrency,
+**Depends:** FR0–FR4 supported subset + R3 PR5; [accepted R5 identities/state/adoption/issue/concurrency](phase-4-r5-implementation-slices.md),
 R9 duty/grants; R6 chosen-scope integration before options/partial operations. No implementation gate
 is satisfied merely by R4 acceptance. R8 documents/delivery separate.
 **Model/Actions/Requests:** R5-owned financial snapshots/components/allocations/receipt references;
 R5 prepare/reprice/adopt/issue Requests/Actions integrate current pipeline in one transaction and
 stable aggregate locks. Freeze immutable issued evidence; operational preview itself does not adopt.
-**API/UI:** R5 `/quotations/{id}/financial-preview` and financial result Resource; form/detail/history
+**API/UI:** R5 `/quotations/{id}/preview` composed financial result and financial result Resource; form/detail/history
 show price/tax dates, one currency, FX age/route, intent/included taxes, net/output/gross and withholding/
 unknown payment. Explicit refresh confirmation and stale states; customer-safe explanation distinct
 from internal cost/authority trace. All standard empty/loading/error/denied/mobile/dark/light states.
@@ -159,9 +159,9 @@ stale; issue revalidates now-effective facts without silently repricing; concurr
 issue refuses stale snapshot; retries duplicate neither snapshot nor number; current authorisation
 checked before replay. Issued evidence unchanged after master edits or downgrade; privileged
 financial preview not adopted by unprivileged caller; cross-company nested/history leaks prevented.
-Exact approval fingerprint, issue numbering, permitted UNKNOWN estimates and lifecycle are R5/R9
-acceptance additions before coding, not presumed settled by these financial tests.
-**Migration:** only after R5 composite aggregate/line keys approved; append-only evidence, allocation
+Exact approval fingerprint, issue numbering and UNKNOWN issue policy are now specified by R5;
+verify QL0–QL6 adapters and R9 scope/grants before enabling, not presumed passed by financial tests.
+**Migration:** bind specified R5 composite aggregate/line keys; append-only evidence, allocation
 links to original/remaining scope reserved for R6. Real rollback/reapply by coding owner.
 
 ## FR6 — Additional supported tax execution and transitions

@@ -2,15 +2,17 @@
 
 # R5 — Consolidated quotation lifecycle decision review
 
-**2026-10-12 · RESEARCH COMPLETE FOR OWNER REVIEW / PROPOSED L1–L6 · Q45.**
-This is the authoritative current L1–L6 recommendation matrix, replacing the initial agenda at
-`1d63de5`. **None of these new R5 recommendations is accepted.** R1–R4 remain governing authority;
-no ADR body, code, delivery file or implementation authority changes. [Evidence](phase-4-r5-quotation-lifecycle.md)
-is reused with a bounded approval/numbering inspection and partial-commitment comparison.
-[R6/R7 reconciliation and integrated journey](phase-4-r5-acceptance-and-handover-boundaries.md)
-support the recommendations; detailed acceptance and handover decisions remain pending.
+**2026-10-13 · ACCEPTED L1–L6 architecture / Q45 CLOSED / no code authorised.**
+Owner approved the recommendations after local6d5bc0c with explicit clarifications in
+[0122](../decisions/0122-govern-quotation-candidates-adoption-and-revalidation.md), [0123](../decisions/0123-issue-numbered-quotation-revisions-atomically.md),
+[0124](../decisions/0124-preserve-quotation-availability-and-scope-replacements.md). Alternatives below retain the reviewed decision basis;
+R6/R7 partial pricing/allocation/consent/handover choices remain proposed, not accepted by R5.
+[Lifecycle contract](../domain/quotation-lifecycle.md) and
+[R5 slices](phase-4-r5-implementation-slices.md) are SPECIFIED, not IMPLEMENTED/VERIFIED.
+[Evidence](phase-4-r5-quotation-lifecycle.md) and [R6/R7 journey](phase-4-r5-acceptance-and-handover-boundaries.md)
+remain supporting research. [R6 C1–C8](phase-4-r6-customer-decisions.md) continues planning underQ46.
 
-## Single owner decision matrix
+## Approved L1–L6 matrix — reviewed options retained
 
 | Bundle / accepted authority | Genuine new choice | Practical example | Options and trade-offs | Recommendation for approval | R3/R4 and R6–R9 impact / delivery boundary |
 |---|---|---|---|---|---|
@@ -21,8 +23,8 @@ support the recommendations; detailed acceptance and handover decisions remain p
 | **L5 — Revisions and replacement**. 0099/0100 family identity,0109 frozen baseline,0120 original allocations. | When old offer stops being actionable and how accepted/remaining scopes coexist. | Revision1 sent; revision2 drafted for remaining60 while acceptance of1 may race. | Close1 on draft creation loses valid offer; allow overlapping active revisions gives contradictory terms; atomic explicit replacement needs scope/claim coordination. | Draft2 leaves1 available. Issuing2 explicitly replaces eligible unaccepted scope in the same transaction. Within a family/revision chain, at most one actionable offer per overlapping logical scope; accepted portions retain original terms. Independent non-overlapping scopes can coexist. Initially refuse partial replacement until R6/R7 claim/allocation contracts are delivered. | No silent price refresh/second benefit or full fixed-tax repeat. R6 acceptance cap/alternatives/tier consent and R7 commitment amendments must inform implementation. Initial unaccepted whole replacement can be delivered after R5/R9 approval; partial paths later. |
 | **L6 — Unknown estimates and usability**. 0110/0116 mandatory unknown refusal;0119 withholding≠gross;0120 net controls. | Can a complete quote issue with UNKNOWN withholding/payment estimate, and what disclosure/acknowledgement applies? | Net1000/output tax100/gross1100 known; customer cumulative withholding facts unavailable. | Block every unknown obstructs legitimate quoting; silently permit unknown misstates cash; governed opt-in preserves safety with modest disclosure. | Company policy BLOCK by default or ALLOW_WITH_ACKNOWLEDGEMENT for separate UNKNOWN withholding/payment only. Issuer acknowledges displayed consequence; customer-safe projection says gross1100, withholding/payment estimate not determined. Mandatory tax/FX/control unknown still blocks. | Does not waive tax/completeness/margin or create Finance settlement facts. R8 carries disclosure on artefacts; R9 manages policy/duty. Simple known quotes need no extra acknowledgement; advanced disclosures only when applicable. |
 
-Approval of this matrix would settle R5's business direction, **not** R6/R7 choices, R9 permission
-names/grants, all tax methods or code authorisation. Recommendations below clarify the matrix;
+Approval of this matrix settles R5's business direction; it does not approve R6/R7 choices, R9 permission
+names/grants, all tax methods or code authorisation. Accepted directions below clarify the matrix;
 they do not grant new risk, agreement-departure, late-acceptance or commitment-cancellation powers.
 
 ## L1 — Practical preparation paths by source
@@ -199,13 +201,13 @@ MANAGED agreements/tax contexts/material reviews appear only when applicable. Cu
 signature/delivery evidence is R6/R8, not invented by the issuer's checkbox. Finance later calculates
 actual withholding/settlement; quotation cash estimate cannot post receipts or tax certificates.
 
-## Exact owner approvals and remaining gates
+## Recorded approval and remaining gates
 
-Please review **L1–L6 as proposed**, including the concrete defaults: routine atomic adopt-and-issue,
-strict fingerprint-preserving no-change checks, per-issued-revision numbering/ALLOW_GAPS, explicit
-valid-through date and separate unaccepted availability, single actionable overlapping revision scope per family with
-atomic replacement, and BLOCK/opt-in acknowledged UNKNOWN withholding. Different choices remain
-available; none is silently accepted by committing this document.
+The owner approved routine atomic adoption/issue, both-fingerprint no-change revalidation,
+per-issued-revision numbering/company-configurable policy, explicit local validity and distinct
+unaccepted availability, atomic scope replacement and BLOCK/opt-in acknowledged UNKNOWN payment.
+Initial partial replacement remains refused until R6/R7 approved AND delivered. Validity duration
+is governed company setup; numbering ALLOW_GAPS remains recommended default, not mandatory setting.
 
 Cancelled drafts and withdrawn/superseded offers are not reopened by generic status editing;
 use explicit successor revisions/events, preserving original terminal history. R6 corrections remain
@@ -222,10 +224,11 @@ R9 final duty/grant/limit
 contracts and R8 documents remain gates. These are missing delivery decisions, not contradictions
 requiring R3/R4 reversal. No universal approval or pricing/FX/tax change is proposed.
 
-After owner approval, prepare governing R5 ADRs and implementation contracts; authorised delivery
+Governing R5 ADRs are now accepted and implementation contracts specified; separately authorised delivery
 then implements source adapters, guards/transactions/evidence/DB protections, shared-engine adapters,
 UI/demos and regression coverage. R6/R7 operations, Finance engines and communications stay later.
-Nothing is IMPLEMENTED or VERIFIED by this research. Q45 stays open; no coding question was forwarded.
+Nothing is IMPLEMENTED or VERIFIED by this research. Q45 is closed; Q46 tracks new R6 choices.
+No coding question was forwarded.
 
 ## Related
 

@@ -86,6 +86,16 @@ preserves current Estimating functionality; the [delivery plan](../phases/phase-
 passed owner review. [C0/C1/C2 technical proposals](../phases/phase-4-c0-cost-evidence-contract.md)
 await contract approval and implementation authority; quotation implementation/schema remain deferred.
 
+## Current quotation lifecycle authority
+
+R5 L1–L6 is accepted in [0122](../decisions/0122-govern-quotation-candidates-adoption-and-revalidation.md),
+[0123](../decisions/0123-issue-numbered-quotation-revisions-atomically.md) and [0124](../decisions/0124-preserve-quotation-availability-and-scope-replacements.md).
+The [quotation lifecycle contract](quotation-lifecycle.md) now governs family/logical-scope/revision,
+source candidates/adoption, shared review, atomic official issue, original financial/expiry evidence
+and whole-unaccepted availability/replacement. The old schema below remains historical, including
+its number/revision unique and implicit win/job sketch; it is not the new physical model.
+R6 acceptance/partial decisions and R7 commitment remain gated; no quotation application delivered.
+
 ## Where it sits
 
 Consumes [assemblies.md](assemblies.md); produces the jobs tracked in
@@ -199,6 +209,8 @@ a revision or a partial job — this is a real workflow question that surfaces i
 practice and has no obvious default.
 
 ## Related
+
+- [Accepted R5 quotation contract](quotation-lifecycle.md)
 
 - [material-resolution.md](material-resolution.md) — cost/price separation and planned material
   snapshot boundary

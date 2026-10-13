@@ -85,22 +85,22 @@ a resolver shell is not a trusted price/tax engine. No Purchasing/accounting beh
 
 | R3 slice | Newly resolved R4 architectural dependency | Remaining gates and delivery evidence |
 |---|---|---|
-| PR0 kernel/model | Local date-only half-open intervals; storage4/unit4/higher precision; typed financial result and FX legs; quantity representability; component/inclusion evidence. | FR0 monetary-context investigation and adapter verification; R5 quote keys before operational schema. No global MoneyCast fix implied. |
+| PR0 kernel/model | Local date-only half-open intervals; storage4/unit4/higher precision; typed financial result and FX legs; quantity representability; component/inclusion evidence. | FR0 monetary-context investigation and adapter verification; R5 keys now specified in0122–0124/lifecycle; QL delivery and R9 gate enabled schema/surfaces. No global MoneyCast fix implied. |
 | PR1 maintained/SIMPLE | One quote currency and explicit conversion allowance; exact-date/bounded prior pinned base bridge; source NET_FIXED/GROSS_FIXED intent and operative final-net settlement. | FR0/FR1/FR3/FR4 supported calculation; R9 configuration/grants; R5 operational entry/confirmation/persistence. |
 | PR2 groups/categories | Effective membership/rule periods and financial currency/basis/date representation accepted; commercial audience and statutory Party tax profile distinct. | FR1/FR2 adapters; R9 membership/term confidentiality/read scope and duties. Category move does not fabricate original tax classification. |
 | PR3 tiers/agreements/plans | Half-open agreement dates, explicit rate allowance, unit/package/stock representability, included components and tax-unit bases defined. | FR1–FR4; R5 current issue eligibility/adoption; R6 accepted quantity/tier/option/fixed-allocation consent. Cross-line/marginal tiers stay deferred. |
 | PR4 controls | Settled tax-exclusive net, pinned comparable base/quantity, complete cost, tax/WHT excluded; mandatory UNKNOWN not PASS; raw/computed/allocated distinctions. | FR4 verified controls; R9 exact limits/duties; R5 sensitive exception subjects if later approved. No general risk bypass. |
-| PR5 operational quote | Immutable commercial/tax/FX/rounding/allocations and separate payment estimate evidence specified. | FR5 + R5 aggregate/lifecycle/locks/approval/issue/unknown-estimate policy; R9 guards/grants; R6 partial/alternative operations; R8 documents. |
+| PR5 operational quote | Immutable commercial/tax/FX/rounding/allocations and separate payment estimate evidence specified. | FR5 + specified R5 QL0–QL6 aggregate/lifecycle/locks/approval/issue/unknown-estimate adapters; R9 guards/grants; R6 partial/alternative operations; R8 documents. |
 | PR6 ADVANCED/transitions | Typed currency/quantity/net operands; supported tax-method graph and independent tax modes; history survives mode transition. | Supported FR6 methods, R5 reconciliation and R9 mode/formula duties. Architecture does not enable every advanced tax or formula. |
 
-R6/R7 must inform R5 before final lifecycle acceptance. R9 applies to every public configuration/
+R5 lifecycle is now accepted0122–0124 with QL contracts; exact R6/R7 partial/consent/commitment operations remain gated. R9 applies to every public configuration/
 preview/operational surface, not only final review. Forecast trust and partial-win/remaining scope
 under 0101/0102 remain separate R5/R6/R9 gates; quotation issue FX is not published forecast FX.
 Company max FX age, actual jurisdiction rates/exemptions and compatible rounding are governed setup,
-not unresolved universal choices. R4 itself has no unresolved architectural owner decision.
+not unresolved universal choices. R4 and R5 have no unresolved architectural owner decision within their accepted bounds; R6/R7/R9 remain dependent choices.
 
 No application checks ran; source inspection is not runtime verification. No implementation question
-was forwarded: Q44 is closed planning research; Q45 tracks new R5 choices. Owner-forwarded coding
+was forwarded: Q44 is closed planning research; Q45 is closed by0122–0124; Q46 tracks new R6 choices. Owner-forwarded coding
 questions retain their original origin/context and coding-owned verification. CRM/C2 delivery untouched.
 
 ## Related

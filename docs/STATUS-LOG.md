@@ -515,3 +515,25 @@ not delivered operations. Q45 remains planning-origin READY_FOR_OWNER; no R5 ADR
 Primary existing lifecycle evidence reused; bounded Dynamics/ERPNext comparison and local source
 inspection are research, not application verification. No code/migrations/tests/generated files/
 seeders/push or direct implementation-agent message; CRM/C2 and other agents' delivery untouched.
+
+
+## 2026-10-13 — Accept R5 lifecycle, specify QL0–QL6 and begin R6 review
+
+Owner approved L1–L6 after6d5bc0c with explicit source checkpoints, both-hash review, per-issued-revision
+central numbering/company-configurable gaps, frozen local validity, distinct unaccepted availability,
+atomic scope replacement and BLOCK/opt-in acknowledged UNKNOWN payment. Accepted ADRs0122–0124;
+Q45 planning research closed. Another agent committed infrastructure ADR0121 during drafting; R5
+numbers renumbered and all references adjusted, historical decisions/bodies preserved.
+Specified quotation family/revision/logical-scope/choice/candidate/adoption/issue/projection/receipt
+model, source-appropriate Actions/Requests, shared coordinator/registered source barriers, replay and
+protected tokens/Resources, API/UI, proposed R9 duty/grant contract, constraints/migration/demo/regression
+and QL0–QL6 sequence. Bound PR/FR financial evidence to candidate/issue keys; R5 seams settled but
+adapters undelivered. Whole-unaccepted initial scope distinct from refused partial replacement until
+R6/R7 claims/allocation/consent/commitment approved AND delivered. No acceptance/amendment/header
+discount/risk/contract/Finance/communication authority created.
+Initial R6 C1–C8 review/Q46 presents full/partial consent, tier loss versus delivery split, options/
+exclusive claims, conserved fixed benefits/tax, late decision evidence, accepted-vs-target readiness,
+decision identity plus retries/concurrency and separate remaining/forecast facts. Reused dated primary
+comparison; R7 bounded dependencies and all R6 directions still proposals.
+No code/tests/migrations/seeders/generated files/push or direct coding-agent message; implementation-
+owned CRM/C2/delivery files untouched. Docs checks are not implementation or runtime verification.

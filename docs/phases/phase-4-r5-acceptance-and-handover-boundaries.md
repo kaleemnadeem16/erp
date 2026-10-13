@@ -2,9 +2,12 @@
 
 # R5 — Partial acceptance and handover reconciliation
 
-**2026-10-12 · PROPOSED supporting research for L1–L6/Q45; R6/R7 decisions unaccepted.**
+**2026-10-13 · R5 lifecycle boundaries ACCEPTED0122–0124/Q45 closed; R6/R7 branches PROPOSED.**
+[R6 C1–C8 review](phase-4-r6-customer-decisions.md) continues these choices underQ46.
+Original worked arithmetic remains illustrative, not accepted partial consent/allocation policy.
 This investigates enough downstream behaviour to make [R5 lifecycle recommendations](phase-4-r5-business-review.md)
 safe. It is not an acceptance/handover implementation contract or authority to build those operations.
+[Accepted R5 delivery scope](phase-4-r5-implementation-slices.md) distinguishes initial whole operations.
 R3/R4 pricing/financial decisions remain accepted; arithmetic below illustrates possible commercial
 choices, not country law or an enabled tax engine.
 
@@ -21,8 +24,8 @@ choices, not country law or an enabled tax engine.
 | Partial offer expires/withdraws | Only unaccepted availability ends; accepted40 and its evidence survive. | Late recorded acceptance/correction, customer rejection, cancelling accepted scope require separate governed decisions. | Cancellation/amendment/releasing downstream obligations separate; no automatic job/order reversal. |
 | Duplicate acceptance/handover retries | Issue receipt cannot be reused as an acceptance or handover command. | Receipt plus business scope/choice claim prevents duplicate accepted quantity, even under another key. | Receipt plus business handover allocation identity prevents duplicate target baseline; explicit disjoint splits/multiplicity require R7 decision. |
 
-R5 can accept immutable history, availability and replacement boundaries without accepting exact
-partial commercial rules. **Operational partial replacement must remain refused until R6/R7's
+R5 has accepted immutable history, availability and replacement boundaries without accepting exact
+partial commercial rules. **Accepted0124 requires operational partial replacement remain refused until R6/R7's
 claim, allocation and commitment contracts are accepted/delivered.** Initial whole-unaccepted
 replacement may proceed after approved R5/R9 implementation; this is no code authorisation now.
 

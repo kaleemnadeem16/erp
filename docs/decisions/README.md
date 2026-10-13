@@ -136,8 +136,11 @@ in the same commit.
 | [0119](0119-determine-versioned-quotation-tax-components.md) | Determine versioned quotation tax components | accepted | 2026-10-12 |
 | [0120](0120-settle-quotation-rounding-and-financial-evidence.md) | Settle quotation rounding and financial evidence | accepted | 2026-10-12 |
 | [0121](0121-public-repository-hosted-runners-and-manual-deploy.md) | Public repository: GitHub-hosted runners only, deploy by script on mainvm | accepted | 2026-10-13 |
+| [0122](0122-govern-quotation-candidates-adoption-and-revalidation.md) | Govern quotation candidates, adoption and revalidation | accepted | 2026-10-13 |
+| [0123](0123-issue-numbered-quotation-revisions-atomically.md) | Issue numbered quotation revisions atomically | accepted | 2026-10-13 |
+| [0124](0124-preserve-quotation-availability-and-scope-replacements.md) | Preserve quotation availability and scope replacements | accepted | 2026-10-13 |
 
-**Next number: 0122**
+**Next number: 0125**
 
 ## By theme
 

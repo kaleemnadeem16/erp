@@ -34,7 +34,7 @@ is a separately authorised Resource; internal canonical result is not automatica
 
 Admin configuration preview is read-only, labels hypothetical inputs and has no write/adoption side
 effect. Its amounts are not authorisation tokens. Operational preview/persistence remains gated by
-R5 document identity and R9 effective scope; stale approval/confirmation is not accepted from client.
+specified R5 document identity and pending R9 effective scope; stale approval/confirmation is not accepted from client.
 
 ## Typed persistence sketch — annotated pseudo-DDL, not migration code
 
@@ -104,7 +104,8 @@ one applicable typed target, and company-level/manual defaults carry no fake tar
 package identity matches the referenced Item. Intervals/bands valid/disjoint with PostgreSQL exclusion
 constraints where expressible. 0118 accepts date-only company-local half-open intervals;0120
 accepts storage4/unit4, higher-precision conversion and representability refusal. These monetary/date
-contracts are settled; R5 quote keys and R9 public authority still gate migration/surface activation.
+contracts and [R5 quote keys](quotation-lifecycle.md) are specified; R9 public authority and verified
+adapters still gate migration/surface activation.
 Initial quote quantity adapters cannot silently truncate finer-than-ledger input.
 
 Composite FKs constrain currency, Party/group/list/plan/Item/category/Assembly/version/package.
@@ -132,10 +133,10 @@ refuses when removal would lose facts. Never edit historical migrations or C2 co
 | Named operation | Preconditions / fact changed | Concurrency and result |
 |---|---|---|
 | RecordPricingGroup / ArchivePricingGroup | Configuration duty, company identity; archive leaves used memberships/history. | Group lock, expected revision, reason for governed archive; active dependants reconcile/refuse. |
-| SetPartyPricingMembership | Configuration/membership duty AND legitimate Party scope; validated effective interval. | Company config generation then Party/group in stable ID order; append revision, bump dependency generation atomically. |
-| RecordPricingVersion / ActivatePricingVersion / RetirePricingVersion | Config duty; mode supported, required basis/terms/plan/controls coherent; no known material conflict. | Lock company pricing generation then families/versions ascending IDs, re-read and validate; increment generation, append event; no status PATCH. |
+| SetPartyPricingMembership | Configuration/membership duty AND legitimate Party scope; validated effective interval. | Company Sales fence, config generation then Party/group in stable ID order; append revision, bump dependency generation atomically. |
+| RecordPricingVersion / ActivatePricingVersion / RetirePricingVersion | Config duty; mode supported, required basis/terms/plan/controls coherent; no known material conflict. | Lock company Sales fence, pricing generation then pricing families/versions ascending IDs, re-read and validate; increment generation, append event; no status PATCH. |
 | ResolveSalesPrice / PreviewSalesPrice | Quote/config-preview duty and independently authorised context; no persisted commercial fact. | Consistent read and generation comparison; if context/config changes during evaluation return stale, no mixed-version result. Cost evidence records actual consistent observed scope/time under 0110. |
-| ReplaceDiscretionaryDiscount / ConfirmPriceReview | Future R5 editable draft, entry duty/limits, both proposed results displayed; selected agreement allows. | Lock R5 document/revision then pricing generations/dependencies in one published global order; verify expected revision and exact comparison fingerprint; append intent/confirmation/evidence atomically. |
+| ReplaceDiscretionaryDiscount / ConfirmPriceReview | Future R5 editable draft, entry duty/limits, both proposed results displayed; selected agreement allows. | R5 coordinator: company Sales fence then document/revision and pricing generations/dependencies in one published global order; verify expected revision and exact comparison fingerprint; append intent/confirmation/evidence atomically. |
 | RecordFinalPriceException | Future editable draft + separate override duty, reason, valid terms/limits and final controls. | Same document transaction; retain calculated/final; invalidates affected approval under R5, no duplicate benefits. |
 | ChangePricingMode | Config duty/reason; impact preview and reconciled dependencies, no hidden effects or obligations dropped. | R5-approved document/config lock order, fresh impact fingerprint; atomic change or refusal. Actual downgrade unavailable until R5 dependencies supported. |
 
@@ -148,8 +149,9 @@ changed price/eligibility invalidates it. Cancellation leaves automatic result u
 cannot authorise an increase by submitting a hidden checkbox. Explain both nets, delta and replaced
 benefit in the server-derived comparison and UI; store confirmed intent/actor/time through R5.
 
-R5 must publish the common document/config lock order before enabling its mutations; table-specific
-config order above is for independent config Actions, not an invented override of existing locks.
+[R5 lifecycle](quotation-lifecycle.md) now specifies the shared coordinator and common lock order;
+all relevant writers/ports need compatible fence/generation validation before activation. Table-specific
+config records follow that outer coordinator; no arbitrary inverse quote/config locking.
 Persistent evidence creation/adoption and issue snapshots share the R5 document transaction; never
 save a draft and evidence separately. Hash/generation is a comparison aid, not sole issue authority.
 Issue re-resolves current authorised relevant facts before atomically freezing under R5.
@@ -191,8 +193,9 @@ coverage; no unused validated field hidden from its own screen. Required states 
 validation/permission/stale/conflict/confirmation/error/success, keyboard and phone/light/dark.
 Print/export customer projection belongs to R8; no automatic raw internal trace in Quick Print.
 
-No approval/request schema or risk permission selected here: R5 must bind stored maker/checker,
-net/reference/terms/cost/control/revision fingerprint and expiry/invalidation; R9 supplies effective
+R5 now binds immutable candidates, shared review/subject adapters, exact routing/review fingerprints
+and issue validity;0122 requires source checkpoints without universal maker/checker. Risk/contract
+exception subjects stay gated; R9 supplies effective
 limits/read/scope. Mandatory failure remains refusal until their approved exception path exists.
 These known gates do not block drafting this contract or unrelated CRM/C2 implementation.
 

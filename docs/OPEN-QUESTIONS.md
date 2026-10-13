@@ -203,37 +203,42 @@ attempts and device changes.
 
 ---
 
-### Q45 — R5 quotation lifecycle checkpoints and issued-offer treatment
+### Q46 — R6 customer acceptance, partial terms and decision evidence
 
-**Origin:** PLANNING RESEARCH (owner-requested R5; no forwarded coding question).
-**Decision status:** READY_FOR_OWNER — consolidated L1–L6 recommendations, not accepted.
-**Delivery status:** NOT_STARTED; independent CRM/C2 work unaffected.
-**Context/authority:** Owner continuation after1d63de5; R1–R4 accepted through0120,0070/0085
-approval and0079 numbering. No operational quote code authorised.
-**Original research question:** Which draft/adoption/approval/issue checkpoints, revision replacement
-and expiry/withdrawal rules govern immutable offers? Examples: revision2 being prepared while customer
-holds1; equal price with changed cost/FX; unknown withholding while output tax is known.
-**Expanded owner scenarios:**40/100 accepted, remaining60 revised, choose-one products, lost quantity
-tier, fixed document benefit/tax, partial expiry/withdrawal, handover and retries.
-**Options/recommendation:** [Authoritative consolidated L1–L6 matrix](phases/phase-4-r5-business-review.md),
-[R6/R7 journey and allocation choices](phases/phase-4-r5-acceptance-and-handover-boundaries.md),
-[reused primary evidence/source inspection](phases/phase-4-r5-quotation-lifecycle.md).
-Recommend explicit routine atomic adopt/issue without auto-adoption on save; strict reviewed-facts
-no-change revalidation; per-issued-revision central numbering/ALLOW_GAPS default; explicit validity and
-reasoned unaccepted availability events; atomic replacement with one actionable overlapping revision scope per family;
-BLOCK or company opt-in acknowledged UNKNOWN withholding/payment only.
-**Disposition needed:** Owner approval/alternative selections for L1–L6, including numbering/validity/
-withholding defaults. R6 tier/partial consent/allocations/late acceptance and R7 targets/amendments
-remain unaccepted; refuse affected partial operations until their contracts are delivered.
-**Blocks:** New R5 lifecycle acceptance/dependent quote delivery, not R4 specifications or existing delivery.
-**Follow-up:** Accepted ADRs/contracts only after approval. Preserve future coding-origin questions and
-coding-owned verification; no implementation result was verified by research.
+**Origin:** PLANNING RESEARCH (owner requested R6 after approving R5; no coding question forwarded).
+**Decision status:** READY_FOR_OWNER initial C1–C8 review; R6 architecture remains proposed.
+**Delivery status:** NOT_STARTED; only dependent acceptance/partial replacement/handover gated.
+**Context/authority:** Owner approval of R5 after6d5bc0c; accepted0122–0124 and R1–R4; existing
+0100 exclusive families,0101/0102 accepted-versus-remaining trust,0115 tiers and0120 allocations.
+**Question/examples:** How may customers accept full/partial scope, retain or lose100-unit tier when
+only40 committed, choose alternatives, consume original fixed benefits/taxes, record earlier decisions
+after expiry/withdrawal/replacement, and avoid duplicates with distinct retry keys?
+**Options/recommendation:** [Initial C1–C8 business review](phases/phase-4-r6-customer-decisions.md).
+Recommend ordinary unchanged eligible full acceptance; supported divisible partial scope with consent;
+no assumed future quantity; explicit choice/exclusive claims; conserved original-scope entitlements;
+separate governed late-evidence reconciliation; authoritative decision identity plus receipt/claims;
+accepted business separate from operational target/readiness and provisional remaining forecast.
+**Disposition needed:** Partial entitlement/consent/reoffer-vs-variation, alternatives, allocation eligibility,
+late evidence duty/policy, exact decision identity and accepted/remaining projections. R7 target/split/
+amendment contracts stay bounded dependencies; R9 final recording/sensitive duties and R8 evidence pending.
+**Blocks:** R6 acceptance, partial replacement and dependent target operations; no CRM/C2 or R5 whole-
+unaccepted specification blocker. Architecture approval without delivered contracts never removes gate.
+**Follow-up:** Present final R6 recommendations before new ADR approval. Preserve coding-origin context
+if forwarded; verification requires coding evidence, not documentation response.
 
 ---
 
 ## Answered---
 
 ## Answered
+
+<a id="q45--r5-quotation-lifecycle-checkpoints-and-issued-offer-treatment"></a>
+
+Q45 (Origin: PLANNING RESEARCH) resolved2026-10-13 by owner approval of L1–L6 after local6d5bc0c,
+recorded in accepted [0122](decisions/0122-govern-quotation-candidates-adoption-and-revalidation.md), [0123](decisions/0123-issue-numbered-quotation-revisions-atomically.md) and
+[0124](decisions/0124-preserve-quotation-availability-and-scope-replacements.md). [R5 contracts/slices](phases/phase-4-r5-implementation-slices.md) SPECIFIED,
+no code authorisation or implementation verification. R6/R7 partial replacement gate and R9 public
+scope/duty/grant prerequisites remain. New downstream C1–C8 choices belong to planning Q46.
 
 <a id="q44--r4-currency-tax-composition-and-rounding-contracts"></a>
 

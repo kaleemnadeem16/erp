@@ -7,7 +7,7 @@
 [0120](../decisions/0120-settle-quotation-rounding-and-financial-evidence.md), F1–F8/Q44.
 **SPECIFIED delivery:** this contract and [R4 slices](../phases/phase-4-r4-implementation-slices.md).
 **IMPLEMENTED / VERIFIED:** no R3/R4 delivery claimed. Separate coding authorisation is required.
-R5 owns quotation aggregate/state/issue identity; R9 owns final duties. No new Finance engine.
+[Accepted R5 lifecycle](quotation-lifecycle.md) now specifies aggregate/state/issue identity; R9 owns final duties. No new Finance engine.
 
 ## Input and result contracts
 
@@ -33,14 +33,14 @@ charges use their own typed lines/bases; they are not statutory tax or concealed
 Business rows carry `id, company_id`; cross-company references use composite FKs. Global currency
 IDs use the existing global registry. Activated/used economic versions are immutable; availability,
 revocation and current projection are separate events. Model names are implementation contracts,
-not permission to create orphan quote tables before R5 chooses aggregate identities.
+not permission to create orphan quote tables. R5 candidate/issue identities now bind this evidence.
 
 ```text
 sales_fx_policy_versions
   company/version unique; EXACT_DATE | BOUNDED_PRIOR; max_age_days >= 0
   route COMPANY_BASE_BRIDGE; rate_type SPOT; effective_from, effective_end_exclusive
   source-price conversion allowance remains on R3 term/agreement version
-quotation_fx_evidence (R5 owner identity reserved)
+quotation_fx_evidence (company/candidate or company/issue typed owner FK under R5)
   requested_date, time_zone, observed_at_utc, policy_version, route, base_currency
   source_to_base_leg, quote_to_base_leg (pair/type/value9/actual_date/age/source)
   rate_master_id optional provenance, copied immutable values; identity_leg explicit
@@ -68,7 +68,7 @@ tax_group_versions / tax_group_component_edges
 withholding_rule_versions (separate role and result)
   declared NET | GROSS | supported explicit base; rate/period/context requirements
   cumulative fact requirements; estimate only, no settlement certificate entries
-quotation_financial_snapshots / component_evidence / allocation_evidence (R5 keys reserved)
+candidate / issue financial snapshots, components and allocations (R5 company-composite keys)
   input_intent NET_FIXED | GROSS_FIXED; included_component_ids; original_input4
   canonical_net4, settled_line_net4, output_tax4, gross4; currency and computed_base4
   withholding_status/estimate4, payment_status/estimate4, reasons
@@ -126,7 +126,7 @@ Credit/negative document types remain Finance-owned; initial Sales quotes refuse
 10. Estimate withholding separately: net1000 plus tax100 gives gross1100; withholding5% NET=50,
     estimated payment1050. GROSS basis=55 gives1045. Missing cumulative facts leave payment UNKNOWN
     while otherwise complete commercial totals remain known. Issue treatment of unknown estimates
-    is an R5 owner choice, not authority for a tax/mandatory-control bypass.
+    is settled by0123: BLOCK default or enabled exact-facts acknowledgement; never mandatory bypass.
 
 Inclusion rounding uses the activated profile's explicit extraction-residual tolerance and recipient;
 no universal tolerance or undocumented balancing edit. An unsatisfiable gross/net/component
@@ -153,13 +153,15 @@ It is not quote-FX override, tax setup, exemption override or pricing risk appro
 configuration/profile/exemption duties are pending final R9 vocabulary/grants (see slices).
 No automatic salesperson/manager grants; explicit designated duty owners, same-company/read scope,
 registry/permission ratchet and genuine-full-access-only re-sync. New public surfaces stay disabled
-until this contract is approved and delivered. Existing CRM duties supply no pricing/tax authority.
+until the R9 duty/scope/grant contract is approved and delivered. Existing CRM duties supply no pricing/tax authority.
 
-Version writes require expected generation; activate locks company configuration generation and
+Version writes require expected generation; related Sales writers acquire the R5 company fence
+before configuration generation. Activation locks that generation and
 validates complete graph/rates/policies before switching pointer in one transaction. Quote writes
-will lock R5 aggregate then dependent records in stable ID order, re-read dates/config/profile/rates/
-cost/authority, refuse stale context, calculate and append evidence atomically. R5 must specify exact
-lock ownership/fingerprint; this does not invent an issue transaction outside its aggregate.
+use [R5 coordinator](quotation-lifecycle.md): company Sales fence before claims/families/revisions/
+dependencies/approval/numbering; re-read dates/config/profile/rates/cost/authority, refuse stale context
+and append financial evidence atomically. Relevant source/config writers need compatible generation/
+validation barriers, including inserted effective rates; no unscoped change to Purchasing/Inventory.
 
 Retryable mutations require idempotency key, scoped request hash and atomic receipt/outcome. After
 current authorisation, matching completed receipt replays original result before new stale checks;
@@ -182,13 +184,13 @@ via copied facts/restrict or soft-delete; no cascade deleting issued evidence.
 Additive migrations with real down paths and isolated apply/rollback/reapply verification belong to
 coding. Do not backfill taxes, exemptions, historical rates or original receipt facts from today's
 configuration. Any captured preexisting baseline is explicitly dated after initial receipt. No
-quote evidence schema before accepted R5 keys; no change to PO casts/rounding by this Sales task.
+orphan quote evidence schema outside specified R5 company/candidate/issue keys; no change to PO casts/rounding by this Sales task.
 MoneyCast must undergo scoped minor-unit/custom4 investigation and adapter regression verification.
 
 Proposed configuration APIs under existing API prefix: `/sales-fx-policies`,
 `/quotation-rounding-policies`, `/tax-group-versions` (activate named transition),
 `/parties/{party}/tax-profile-versions`; immutable economic edits create successor versions.
-R5 binds operational `/quotations/{id}/financial-preview` and financial evidence resources; no live
+R5 binds operational financial calculation inside `/quotations/{id}/preview` and evidence resources; no live
 public endpoint implied now. Resources expose decimal strings, selected dates/currencies, actual
 FX age/route, known/unknown tax/payment state, safe component explanations and settled totals.
 Protected cost, other Parties' exemptions and internal authority traces never leak in errors,
@@ -213,5 +215,5 @@ readability after mode changes. Shared shells/sheets, mobile and dark/light stat
 
 - [R4 slices](../phases/phase-4-r4-implementation-slices.md) · [Accepted review](../phases/phase-4-r4-financial-review.md)
 - [Tax examples](../phases/phase-4-r4-tax-composition.md) · [Tax](tax.md) · [Currencies](multi-currency.md)
-- [Pricing resolution](sales-pricing-resolution.md) · [R5 research](../phases/phase-4-r5-quotation-lifecycle.md)
+- [Pricing resolution](sales-pricing-resolution.md) · [Accepted R5 contract](quotation-lifecycle.md)
 - [Authorisation](../architecture/authorization.md) · [Domain integrity](../architecture/domain-integrity.md)

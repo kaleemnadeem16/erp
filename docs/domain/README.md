@@ -79,6 +79,7 @@ Lead → Opportunity → Quotation (revisions) → Job → Work Order → Invoic
 | [material-resolution.md](material-resolution.md) | Cross-phase quantity, sourcing, pack, cost and price boundaries |
 | [inventory-packages.md](inventory-packages.md) | Package definitions, progressive physical tracking and internal-stock selection |
 | [sales-pricing.md](sales-pricing.md) | Progressive customer-price resolution and controlled formulas |
+| [quotation-lifecycle.md](quotation-lifecycle.md) | Accepted R5 draft/candidate/adoption/issue and availability Action/persistence contract |
 | [sales-pricing-resolution.md](sales-pricing-resolution.md) | Accepted R3 implementation contract: typed inputs/model, Actions, evidence and API gates |
 | [quotation-financial-calculation.md](quotation-financial-calculation.md) | Accepted R4 dates/FX, tax components, operative rounding and financial evidence contracts |
 

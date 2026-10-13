@@ -2,13 +2,15 @@
 
 # R5 — Quotation lifecycle evidence and authority reconciliation
 
-**2026-10-12 · RESEARCH SYNTHESISED / OWNER REVIEW PENDING, Q45 · Origin: PLANNING RESEARCH.**
+**2026-10-13 · R5 ACCEPTED0122–0124 / Q45 CLOSED; source inspection historical2026-10-12.**
+Origin: PLANNING RESEARCH. [Lifecycle contract](../domain/quotation-lifecycle.md) and
+[R5 slices](phase-4-r5-implementation-slices.md) are specified, no implementation/verification.
 [Consolidated L1–L6 review](phase-4-r5-business-review.md) is the authoritative current recommendation
-matrix; [partial acceptance/handover journey](phase-4-r5-acceptance-and-handover-boundaries.md)
+matrix now approved; [partial acceptance/handover journey](phase-4-r5-acceptance-and-handover-boundaries.md)
 provides the R6/R7 reconciliation. The original initial agenda at 1d63de5 is historical.
-No R5 ADR or operational lifecycle is accepted by this record. Reuse R1–R4 first; research is
+This evidence record supports accepted R5; it grants no code authority. Reuse R1–R4 first; research is
 bounded to draft/adoption/approval/issue/revision transitions. R6 acceptance and R7 commitment/
-handover must inform the final R5 review; R9 access applies throughout. This is not coding authority.
+handover inform R5 boundaries; exact R6/R7 decisions remain pending and R9 applies throughout.
 
 ## Settled authority — do not reopen
 
@@ -94,11 +96,11 @@ changes and a narrowly governed unknown-withholding disclosure path, not automat
 
 The [single owner matrix](phase-4-r5-business-review.md) records all new L1–L6 choices/options/defaults;
 the [reconciliation](phase-4-r5-acceptance-and-handover-boundaries.md) identifies exactly what R5 can
-settle now and what R6/R7 must later approve. No R5 ADR is accepted before that owner review.
-After approval, prepare governing decisions/contracts; no code authority follows from research.
+settle now and what R6/R7 must later approve. The owner review is approved in0122–0124; contracts/slices now specify it.
+No R6 decision or code authority follows from R5 acceptance.
 
-Q45 remains planning-originated, ready for owner review, blocking new R5 semantics/dependent quote
-operations only. No forwarded implementation question was supplied. Future owner-forwarded questions
+Q45 planning research is closed. [R6 review](phase-4-r6-customer-decisions.md) opens Q46;
+only affected downstream decisions/delivery are gated. No forwarded implementation question was supplied. Future owner-forwarded questions
 retain **Origin: IMPLEMENTATION AGENT**, original wording/example/commit/files and checked authority
 under [question reconciliation](../architecture/implementation-question-reconciliation.md).
 Routine choices within authority need clarification rather than duplicate policy ADRs. Documentation
