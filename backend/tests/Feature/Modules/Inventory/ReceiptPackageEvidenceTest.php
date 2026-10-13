@@ -137,6 +137,9 @@ class ReceiptPackageEvidenceTest extends StockIssueTest
 
     public function test_negative_debt_settlement_is_refused_and_rolled_back_for_observed_receipts(): void
     {
+        // The receipt's moved_at is its arrival truncated to the second; without a frozen clock a second
+        // boundary between the fixture and the issue makes the receipt look backdated.
+        $this->freezeSecond();
         [$receipt, $actor] = $this->fixture();
         $line = $receipt->lines()->sole();
         $this->directReceipt($line->item_id, $line->stock_uom_id, $line->location_id, $line->currency_id, '1', '10', 99801);
