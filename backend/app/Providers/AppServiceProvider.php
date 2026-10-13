@@ -8,10 +8,13 @@ use App\Support\CompanyLocks\FinancialActivity;
 use App\Support\DefaultNumberingScheme;
 use App\Support\OpenApi\CustomFieldsRuleTransformer;
 use App\Support\OpenApi\DecimalAsStringRuleTransformer;
+use App\Support\Performance\QueryTimings;
 use App\Support\PermissionRegistry;
 use Dedoc\Scramble\Scramble;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
@@ -31,6 +34,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(CompanyContext::class);
         $this->app->singleton(PermissionRegistry::class);
         $this->app->singleton(FinancialActivity::class);
+        $this->app->singleton(QueryTimings::class);
         $this->app->bind(NumberingScheme::class, DefaultNumberingScheme::class);
     }
 
@@ -43,6 +47,9 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('api', fn (Request $request) => Limit::perMinute(config('api.rate_limit_per_minute'))->by(
             $request->user()?->id ?: $request->ip()
         ));
+
+        // Per-request query count and time for the performance log (docs/architecture/observability.md).
+        DB::listen(fn (QueryExecuted $query) => $this->app->make(QueryTimings::class)->record($query));
 
         // Invariant 6: decimals cross the wire as strings in both directions.
         Scramble::configure()->withRuleTransformers([DecimalAsStringRuleTransformer::class, CustomFieldsRuleTransformer::class]);

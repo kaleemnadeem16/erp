@@ -1,0 +1,84 @@
+[← Architecture](README.md)
+
+# Observability — finding which layer is slow
+
+How to tell whether a slow screen is the browser, the network, Cloudflare, Traefik, nginx, PHP, the
+application's queries or the database. Built on the Prometheus, Loki, Promtail and Grafana stack that
+already runs on mainvm (project `monitoring`); no new product.
+
+## The layers, outermost first
+
+| Layer | What measures it | Where to look |
+|---|---|---|
+| Browser, TLS, Cloudflare | Browser DevTools (Network → Timing); `curl -w` with `time_connect` / `time_appconnect` / `time_starttransfer` | A fresh connection costs one or two round trips plus TLS; a reused connection is fast. Many requests per screen multiply it. |
+| Traefik (server-side latency) | Prometheus `traefik_service_request_duration_seconds` | Dashboard row "Where is the time going". Excludes the user's network. |
+| nginx and php-fpm workers | `phpfpm_*` and `nginx_*` via exporters | "max children reached" above zero, or a growing listen queue, means requests wait for a worker (`pm.max_children`). |
+| Laravel, per endpoint | One JSON line per request in Loki (`http_request`) | Duration, query count and database time by route. A high query count on one route is an N+1. |
+| Database queries | `slow_query` lines (SQL with placeholders, never bindings) | Queries at or above `PERF_SLOW_QUERY_MS` (default 100 ms), with the route. |
+| Host | node-exporter | CPU, memory, load. |
+
+Read it outermost-in: if Traefik's p95 is small but the user waits seconds, the time is outside the
+server (network, TLS, number of requests). If Traefik's p95 is large, compare it with Laravel's: a gap
+means queueing in php-fpm; no gap means look at database time versus total time.
+
+## What the application logs
+
+`App\Http\Middleware\LogRequestPerformance` writes one line per request **after the response is sent**
+(`terminate()`), to the `perf` channel (JSON on stderr). Fields: `method`, `route` (the pattern, never
+the URL with ids), `status`, `duration_ms`, `slow`, `queries`, `db_ms`, `slow_queries`, `memory_mb`,
+`user_id`, `cf_ray` (the Cloudflare ray id, to follow one page load from the edge into the log).
+`App\Support\Performance\QueryTimings` counts queries and logs each slow one on its own line.
+
+Never logged: request or response bodies, query bindings, passwords, tokens, email addresses.
+`/up` is skipped. Tuning (all optional): `PERF_LOG_ENABLED`, `PERF_SLOW_QUERY_MS`, `PERF_SLOW_REQUEST_MS`
+([config/performance.php](../../backend/config/performance.php)).
+
+Application errors use the `json` channel (`LOG_STACK=json` in
+[docker-compose.prod.yml](../../docker-compose.prod.yml)) so they reach Loki. **Before this change
+production errors were not visible anywhere:** php-fpm's stderr went to an auto-named temp file that
+supervisor never forwarded, and the application wrote to a file nothing shipped. `redirect_stderr=true`
+in [supervisord.conf](../../docker/backend/supervisord.conf) is the root-cause fix.
+
+## Components
+
+- **Request log and slow-query log** — in the image; shipped by the existing Promtail (it already tails every container).
+- **php-fpm pool** ([php-fpm-erp.conf](../../docker/backend/php-fpm-erp.conf)): listens on `127.0.0.1:9000` only (the base image listened on every interface, reachable from any container on a shared network), `pm.status_path`, and a stack dump for any request still running after 3 s.
+- **nginx**: `stub_status` on `127.0.0.1:8081` (not routed by Traefik); health checks excluded from the access log.
+- **Exporters** — `erp-fpm-exporter` and `erp-nginx-exporter` share the `app` container's network namespace (`network_mode: service:app`), so php-fpm and the status page are never exposed on a network; Prometheus scrapes ports 9253 and 9113 over `monitoring_monitoring-net`.
+- **Prometheus** (on mainvm, `/srv/apps/monitoring/prometheus/prometheus.yml`): jobs `erp-php-fpm` and `erp-nginx` (`erp-backend:9253`, `erp-backend:9113`). Traefik's histogram buckets are `0.025 … 10` s so percentiles are meaningful.
+- **Grafana dashboard** — [erp-performance.dashboard.json](../../docker/monitoring/erp-performance.dashboard.json), loaded into `/var/lib/grafana/dashboards` on mainvm (the provider polls every 30 s). Datasources are chosen by dashboard variables, so the JSON holds no instance-specific ids.
+
+## Decision and alternatives
+
+Use the stack already running and put the application's own timings into Loki as structured logs.
+*Laravel Pulse* was rejected for now: its own tables in the production database and a second dashboard,
+for what Grafana already shows. *An application `/metrics` endpoint* (Prometheus client in PHP) needs shared
+storage across php-fpm workers and an authenticated route; log-derived metrics need neither. *`pg_stat_statements`*
+needs `shared_preload_libraries` and a restart of the Postgres instance shared with other applications; the
+application-side slow-query log already gives per-query time without it. A `postgres_exporter` (connections,
+cache hit ratio, locks) is the remaining database-side step and needs a read-only monitoring role on dbvm.
+No ADR number is claimed here because ADR numbering is being used by other in-flight work; promote this
+section to an ADR when that settles.
+
+## Caching and stale data — a reminder, not a change
+
+Many people edit the same data, so **no layer in front of the API may cache API responses.** Current state
+(verified 2026-10-13): hashed files under `/assets/` are `immutable` for a year (safe: a changed file gets a
+new name); `index.html`, `sw.js`, `registerSW.js` and `manifest.webmanifest` are `no-cache` (so a deploy is
+picked up and the service worker never references removed assets); API responses carry `no-cache, private`;
+Cloudflare reports `cf-cache-status: DYNAMIC` for both hosts. Cloudflare's default caches only static file
+extensions, so it caches neither JSON nor HTML.
+
+When adjusting Cloudflare (free plan), keep these true:
+1. **Never add a Cache Rule that caches `/api/*`, the API hostname or `index.html`** ("Cache Everything", Edge Cache TTL overrides).
+2. Leave **Browser Cache TTL** on *Respect Existing Headers*.
+3. Leave **Always Online** off for the app hostnames (it serves stale copies when the origin is down).
+4. Safe to enable: HTTP/3, 0-RTT off unless understood, Brotli, "Always Use HTTPS", Early Hints.
+5. After any Cloudflare change, re-check `curl -sI` on `/`, an `/assets/…` file and an API route: `cf-cache-status` must stay `DYNAMIC` for the HTML and API.
+6. If the application ever adds server-side caching (Redis, response or query caches), every cached read of shared
+   data needs an invalidation on every write path and a short TTL; settle that in a design note first.
+
+## Related
+
+[ci-cd.md](ci-cd.md) · [deployment.md](deployment.md) · [environments.md](environments.md) ·
+[testing-standards.md](testing-standards.md)

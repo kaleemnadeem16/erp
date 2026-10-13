@@ -80,6 +80,7 @@ RUN composer run-script post-autoload-dump --no-dev --no-interaction \
 
 COPY docker/backend/nginx.conf /etc/nginx/nginx.conf
 COPY docker/backend/php-prod.ini /usr/local/etc/php/conf.d/php-prod.ini
+COPY docker/backend/php-fpm-erp.conf /usr/local/etc/php-fpm.d/zz-erp.conf
 COPY docker/backend/supervisord.conf /etc/supervisord.conf
 
 RUN ln -sf /dev/stdout /var/log/nginx/access.log \

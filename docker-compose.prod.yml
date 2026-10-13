@@ -4,6 +4,10 @@
 networks:
   proxy-net:
     external: true
+  # Where Prometheus (the monitoring stack) scrapes the exporters below.
+  monitoring-net:
+    external: true
+    name: monitoring_monitoring-net
   erp-internal:
     driver: bridge
 
@@ -14,6 +18,9 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    environment:
+      # Application logs as JSON lines on stderr -> Docker -> Promtail -> Loki (config/logging.php).
+      LOG_STACK: json
     # No log bind mounts. Docker creates a bind-mount target root-owned, but
     # php-fpm runs as www-data and could not write into it, so Monolog threw on
     # its first write; and mounting over /var/log/nginx shadowed the
@@ -27,6 +34,7 @@ services:
     networks:
       - proxy-net
       - erp-internal
+      - monitoring-net
     # Backs both the deploy job's `docker compose up -d --wait` (don't run
     # permission:register against a container that isn't accepting connections
     # yet) and Traefik's own active healthcheck below (don't route real
@@ -105,6 +113,8 @@ services:
     command: php artisan queue:work redis --sleep=3 --tries=3 --max-time=3600
     env_file:
       - .env
+    environment:
+      LOG_STACK: json
     volumes:
       - ./logs/laravel:/var/www/html/storage/logs
     logging:
@@ -122,6 +132,8 @@ services:
     command: ["sh", "-c", "while true; do php artisan schedule:run; sleep 60; done"]
     env_file:
       - .env
+    environment:
+      LOG_STACK: json
     volumes:
       - ./logs/laravel:/var/www/html/storage/logs
     logging:
@@ -131,3 +143,36 @@ services:
         max-file: "3"
     networks:
       - erp-internal
+
+  # Metrics sidecars. Each shares the app container's network namespace (network_mode), so it reaches
+  # php-fpm and nginx's status page on loopback — neither is exposed on any network — and Prometheus
+  # scrapes the exporters' own ports (9253, 9113) over monitoring-net. See docs/architecture/observability.md.
+  fpm-exporter:
+    image: hipages/php-fpm_exporter:2.2.0
+    container_name: erp-fpm-exporter
+    restart: unless-stopped
+    network_mode: "service:app"
+    depends_on:
+      - app
+    environment:
+      PHP_FPM_SCRAPE_URI: tcp://127.0.0.1:9000/fpm-status
+      PHP_FPM_LOG_LEVEL: warn
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  nginx-exporter:
+    image: nginx/nginx-prometheus-exporter:1.5.1
+    container_name: erp-nginx-exporter
+    restart: unless-stopped
+    network_mode: "service:app"
+    depends_on:
+      - app
+    command: ["--nginx.scrape-uri=http://127.0.0.1:8081/nginx-status"]
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"

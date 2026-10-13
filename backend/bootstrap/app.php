@@ -2,6 +2,7 @@
 
 use App\Exceptions\DomainInvariantException;
 use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\LogRequestPerformance;
 use App\Http\Middleware\SetPermissionsTeam;
 use Illuminate\Database\QueryException;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -34,6 +35,8 @@ return Application::configure(basePath: dirname(__DIR__))
         );
         // Cookie-authenticates requests from the SPA's origin (SANCTUM_STATEFUL_DOMAINS)
         // instead of requiring a bearer token — see docs/decisions/0005-sanctum-authentication.md.
+        // Request timing is outermost so it sees every response, including throttled and unauthenticated ones.
+        $middleware->prepend(LogRequestPerformance::class);
         $middleware->statefulApi();
         // Rate limiter 'api' (120/min, docs/architecture/api-conventions.md) registered in
         // AppServiceProvider — login's own 5/min limit is set directly on that route.

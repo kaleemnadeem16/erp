@@ -1,0 +1,1162 @@
+{
+ "uid": "erp-performance",
+ "title": "ERP performance",
+ "tags": [
+  "erp",
+  "performance"
+ ],
+ "timezone": "browser",
+ "schemaVersion": 39,
+ "version": 1,
+ "refresh": "30s",
+ "time": {
+  "from": "now-3h",
+  "to": "now"
+ },
+ "templating": {
+  "list": [
+   {
+    "name": "ds_prom",
+    "type": "datasource",
+    "query": "prometheus",
+    "label": "Prometheus",
+    "current": {},
+    "hide": 2
+   },
+   {
+    "name": "ds_loki",
+    "type": "datasource",
+    "query": "loki",
+    "label": "Loki",
+    "current": {},
+    "hide": 2
+   }
+  ]
+ },
+ "annotations": {
+  "list": []
+ },
+ "panels": [
+  {
+   "type": "row",
+   "title": "Where is the time going? Start here",
+   "collapsed": false,
+   "gridPos": {
+    "h": 1,
+    "w": 24,
+    "x": 0,
+    "y": 0
+   },
+   "id": 1
+  },
+  {
+   "type": "stat",
+   "title": "API p95 (server side, 5m)",
+   "description": "Time Traefik waited for the ERP backend. Excludes the user's network and TLS.",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${ds_prom}"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "histogram_quantile(0.95, sum by (le) (rate(traefik_service_request_duration_seconds_bucket{service=\"erp-api@docker\"}[5m])))",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${ds_prom}"
+     }
+    }
+   ],
+   "gridPos": {
+    "h": 4,
+    "w": 6,
+    "x": 0,
+    "y": 1
+   },
+   "id": 2,
+   "fieldConfig": {
+    "defaults": {
+     "unit": "s",
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       },
+       {
+        "color": "orange",
+        "value": 0.5
+       },
+       {
+        "color": "red",
+        "value": 1.5
+       }
+      ]
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ]
+    },
+    "colorMode": "value"
+   }
+  },
+  {
+   "type": "stat",
+   "title": "App p95 (Laravel, 5m)",
+   "description": "Time inside Laravel per request. If this is far below the Traefik figure, the time is in nginx/php-fpm queueing.",
+   "datasource": {
+    "type": "loki",
+    "uid": "${ds_loki}"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "quantile_over_time(0.95, {container=\"erp-backend\"} |= \"http_request\" | json | message=\"http_request\" | unwrap context_duration_ms [5m]) / 1000",
+     "datasource": {
+      "type": "loki",
+      "uid": "${ds_loki}"
+     }
+    }
+   ],
+   "gridPos": {
+    "h": 4,
+    "w": 6,
+    "x": 6,
+    "y": 1
+   },
+   "id": 3,
+   "fieldConfig": {
+    "defaults": {
+     "unit": "s",
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       },
+       {
+        "color": "orange",
+        "value": 0.5
+       },
+       {
+        "color": "red",
+        "value": 1.5
+       }
+      ]
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ]
+    },
+    "colorMode": "value"
+   }
+  },
+  {
+   "type": "stat",
+   "title": "5xx per minute",
+   "description": "",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${ds_prom}"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum(rate(traefik_service_requests_total{service=~\"erp-.*@docker\",code=~\"5..\"}[5m])) * 60",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${ds_prom}"
+     }
+    }
+   ],
+   "gridPos": {
+    "h": 4,
+    "w": 6,
+    "x": 12,
+    "y": 1
+   },
+   "id": 4,
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short",
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       },
+       {
+        "color": "red",
+        "value": 1
+       }
+      ]
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ]
+    },
+    "colorMode": "value"
+   }
+  },
+  {
+   "type": "stat",
+   "title": "php-fpm: max children reached",
+   "description": "Times in the last hour every worker was busy. Above 0 means requests queued: raise pm.max_children.",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${ds_prom}"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum(increase(phpfpm_max_children_reached[1h]))",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${ds_prom}"
+     }
+    }
+   ],
+   "gridPos": {
+    "h": 4,
+    "w": 6,
+    "x": 18,
+    "y": 1
+   },
+   "id": 5,
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short",
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       },
+       {
+        "color": "red",
+        "value": 1
+       }
+      ]
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ]
+    },
+    "colorMode": "value"
+   }
+  },
+  {
+   "type": "timeseries",
+   "title": "Server-side latency by service (Traefik)",
+   "description": "",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${ds_prom}"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "histogram_quantile(0.5, sum by (le,service) (rate(traefik_service_request_duration_seconds_bucket{service=~\".*erp.*\"}[5m])))",
+     "legendFormat": "p50 {{service}}",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${ds_prom}"
+     }
+    },
+    {
+     "refId": "B",
+     "expr": "histogram_quantile(0.95, sum by (le,service) (rate(traefik_service_request_duration_seconds_bucket{service=~\".*erp.*\"}[5m])))",
+     "legendFormat": "p95 {{service}}",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${ds_prom}"
+     }
+    },
+    {
+     "refId": "C",
+     "expr": "histogram_quantile(0.99, sum by (le,service) (rate(traefik_service_request_duration_seconds_bucket{service=~\".*erp.*\"}[5m])))",
+     "legendFormat": "p99 {{service}}",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${ds_prom}"
+     }
+    }
+   ],
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 0,
+    "y": 5
+   },
+   "id": 6,
+   "fieldConfig": {
+    "defaults": {
+     "unit": "s",
+     "custom": {
+      "lineWidth": 1,
+      "fillOpacity": 10,
+      "showPoints": "never",
+      "stacking": {
+       "mode": "none"
+      }
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "table",
+     "placement": "bottom",
+     "calcs": [
+      "mean",
+      "max"
+     ]
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   }
+  },
+  {
+   "type": "timeseries",
+   "title": "Requests per second by status (Traefik)",
+   "description": "",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${ds_prom}"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum by (service,code) (rate(traefik_service_requests_total{service=~\".*erp.*\"}[5m]))",
+     "legendFormat": "{{service}} {{code}}",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${ds_prom}"
+     }
+    }
+   ],
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 12,
+    "y": 5
+   },
+   "id": 7,
+   "fieldConfig": {
+    "defaults": {
+     "unit": "reqps",
+     "custom": {
+      "lineWidth": 1,
+      "fillOpacity": 10,
+      "showPoints": "never",
+      "stacking": {
+       "mode": "normal"
+      }
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "table",
+     "placement": "bottom",
+     "calcs": [
+      "mean",
+      "max"
+     ]
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   }
+  },
+  {
+   "type": "row",
+   "title": "Laravel: per endpoint (from the request log in Loki)",
+   "collapsed": false,
+   "gridPos": {
+    "h": 1,
+    "w": 24,
+    "x": 0,
+    "y": 13
+   },
+   "id": 8
+  },
+  {
+   "type": "timeseries",
+   "title": "p95 duration by endpoint (top 10)",
+   "description": "The slowest endpoints. Click a legend entry to isolate it.",
+   "datasource": {
+    "type": "loki",
+    "uid": "${ds_loki}"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "topk(10, quantile_over_time(0.95, {container=\"erp-backend\"} |= \"http_request\" | json | message=\"http_request\" | unwrap context_duration_ms [5m]) by (context_route))",
+     "legendFormat": "{{context_route}}",
+     "datasource": {
+      "type": "loki",
+      "uid": "${ds_loki}"
+     }
+    }
+   ],
+   "gridPos": {
+    "h": 9,
+    "w": 12,
+    "x": 0,
+    "y": 14
+   },
+   "id": 9,
+   "fieldConfig": {
+    "defaults": {
+     "unit": "ms",
+     "custom": {
+      "lineWidth": 1,
+      "fillOpacity": 10,
+      "showPoints": "never",
+      "stacking": {
+       "mode": "none"
+      }
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "table",
+     "placement": "bottom",
+     "calcs": [
+      "mean",
+      "max"
+     ]
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   }
+  },
+  {
+   "type": "timeseries",
+   "title": "Requests per second by endpoint (top 10)",
+   "description": "",
+   "datasource": {
+    "type": "loki",
+    "uid": "${ds_loki}"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "topk(10, sum by (context_route) (rate({container=\"erp-backend\"} |= \"http_request\" | json | message=\"http_request\"[5m])))",
+     "legendFormat": "{{context_route}}",
+     "datasource": {
+      "type": "loki",
+      "uid": "${ds_loki}"
+     }
+    }
+   ],
+   "gridPos": {
+    "h": 9,
+    "w": 12,
+    "x": 12,
+    "y": 14
+   },
+   "id": 10,
+   "fieldConfig": {
+    "defaults": {
+     "unit": "reqps",
+     "custom": {
+      "lineWidth": 1,
+      "fillOpacity": 10,
+      "showPoints": "never",
+      "stacking": {
+       "mode": "none"
+      }
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "table",
+     "placement": "bottom",
+     "calcs": [
+      "mean",
+      "max"
+     ]
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   }
+  },
+  {
+   "type": "timeseries",
+   "title": "Database time vs total time (p95)",
+   "description": "If database time is close to the total, tune queries/indexes. If it is small, the time is PHP code or waiting for a worker.",
+   "datasource": {
+    "type": "loki",
+    "uid": "${ds_loki}"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "quantile_over_time(0.95, {container=\"erp-backend\"} |= \"http_request\" | json | message=\"http_request\" | unwrap context_duration_ms [5m])",
+     "legendFormat": "request total",
+     "datasource": {
+      "type": "loki",
+      "uid": "${ds_loki}"
+     }
+    },
+    {
+     "refId": "B",
+     "expr": "quantile_over_time(0.95, {container=\"erp-backend\"} |= \"http_request\" | json | message=\"http_request\" | unwrap context_db_ms [5m])",
+     "legendFormat": "of which database",
+     "datasource": {
+      "type": "loki",
+      "uid": "${ds_loki}"
+     }
+    }
+   ],
+   "gridPos": {
+    "h": 8,
+    "w": 8,
+    "x": 0,
+    "y": 23
+   },
+   "id": 11,
+   "fieldConfig": {
+    "defaults": {
+     "unit": "ms",
+     "custom": {
+      "lineWidth": 1,
+      "fillOpacity": 10,
+      "showPoints": "never",
+      "stacking": {
+       "mode": "none"
+      }
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "table",
+     "placement": "bottom",
+     "calcs": [
+      "mean",
+      "max"
+     ]
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   }
+  },
+  {
+   "type": "timeseries",
+   "title": "Queries per request (p95)",
+   "description": "A high number on one endpoint is the sign of an N+1 query problem.",
+   "datasource": {
+    "type": "loki",
+    "uid": "${ds_loki}"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "quantile_over_time(0.95, {container=\"erp-backend\"} |= \"http_request\" | json | message=\"http_request\" | unwrap context_queries [5m]) by (context_route)",
+     "legendFormat": "{{context_route}}",
+     "datasource": {
+      "type": "loki",
+      "uid": "${ds_loki}"
+     }
+    }
+   ],
+   "gridPos": {
+    "h": 8,
+    "w": 8,
+    "x": 8,
+    "y": 23
+   },
+   "id": 12,
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short",
+     "custom": {
+      "lineWidth": 1,
+      "fillOpacity": 10,
+      "showPoints": "never",
+      "stacking": {
+       "mode": "none"
+      }
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "table",
+     "placement": "bottom",
+     "calcs": [
+      "mean",
+      "max"
+     ]
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   }
+  },
+  {
+   "type": "timeseries",
+   "title": "Slow requests and slow queries per minute",
+   "description": "",
+   "datasource": {
+    "type": "loki",
+    "uid": "${ds_loki}"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum(count_over_time({container=\"erp-backend\"} |= \"http_request\" | json | message=\"http_request\" | context_slow=\"true\" [1m]))",
+     "legendFormat": "slow requests (>=1s)",
+     "datasource": {
+      "type": "loki",
+      "uid": "${ds_loki}"
+     }
+    },
+    {
+     "refId": "B",
+     "expr": "sum(count_over_time({container=\"erp-backend\"} |= \"slow_query\" | json | message=\"slow_query\" [1m]))",
+     "legendFormat": "slow queries (>=100ms)",
+     "datasource": {
+      "type": "loki",
+      "uid": "${ds_loki}"
+     }
+    }
+   ],
+   "gridPos": {
+    "h": 8,
+    "w": 8,
+    "x": 16,
+    "y": 23
+   },
+   "id": 13,
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short",
+     "custom": {
+      "lineWidth": 1,
+      "fillOpacity": 10,
+      "showPoints": "never",
+      "stacking": {
+       "mode": "none"
+      }
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "table",
+     "placement": "bottom",
+     "calcs": [
+      "mean",
+      "max"
+     ]
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   }
+  },
+  {
+   "type": "logs",
+   "title": "Slowest queries (SQL, no bindings)",
+   "datasource": {
+    "type": "loki",
+    "uid": "${ds_loki}"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "{container=\"erp-backend\"} |= \"slow_query\" | json | message=\"slow_query\" | line_format \"{{.context_duration_ms}}ms  {{.context_route}}  {{.context_sql}}\"",
+     "datasource": {
+      "type": "loki",
+      "uid": "${ds_loki}"
+     }
+    }
+   ],
+   "gridPos": {
+    "h": 9,
+    "w": 24,
+    "x": 0,
+    "y": 31
+   },
+   "id": 14,
+   "options": {
+    "wrapLogMessage": true,
+    "sortOrder": "Descending",
+    "enableLogDetails": true
+   }
+  },
+  {
+   "type": "logs",
+   "title": "Application errors and warnings",
+   "datasource": {
+    "type": "loki",
+    "uid": "${ds_loki}"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "{container=~\"erp-backend|erp-queue-worker|erp-scheduler\"} | json | level_name=~\"ERROR|CRITICAL|ALERT|EMERGENCY|WARNING\" | message!=\"slow_query\"",
+     "datasource": {
+      "type": "loki",
+      "uid": "${ds_loki}"
+     }
+    }
+   ],
+   "gridPos": {
+    "h": 9,
+    "w": 24,
+    "x": 0,
+    "y": 40
+   },
+   "id": 15,
+   "options": {
+    "wrapLogMessage": true,
+    "sortOrder": "Descending",
+    "enableLogDetails": true
+   }
+  },
+  {
+   "type": "row",
+   "title": "PHP-FPM and nginx: are workers the bottleneck?",
+   "collapsed": false,
+   "gridPos": {
+    "h": 1,
+    "w": 24,
+    "x": 0,
+    "y": 49
+   },
+   "id": 16
+  },
+  {
+   "type": "timeseries",
+   "title": "php-fpm workers",
+   "description": "pm.max_children is the ceiling. Active touching it means requests wait for a worker.",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${ds_prom}"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "phpfpm_active_processes",
+     "legendFormat": "active",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${ds_prom}"
+     }
+    },
+    {
+     "refId": "B",
+     "expr": "phpfpm_idle_processes",
+     "legendFormat": "idle",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${ds_prom}"
+     }
+    },
+    {
+     "refId": "C",
+     "expr": "phpfpm_total_processes",
+     "legendFormat": "total",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${ds_prom}"
+     }
+    }
+   ],
+   "gridPos": {
+    "h": 8,
+    "w": 8,
+    "x": 0,
+    "y": 50
+   },
+   "id": 17,
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short",
+     "custom": {
+      "lineWidth": 1,
+      "fillOpacity": 10,
+      "showPoints": "never",
+      "stacking": {
+       "mode": "none"
+      }
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "table",
+     "placement": "bottom",
+     "calcs": [
+      "mean",
+      "max"
+     ]
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   }
+  },
+  {
+   "type": "timeseries",
+   "title": "php-fpm listen queue",
+   "description": "",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${ds_prom}"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "phpfpm_listen_queue",
+     "legendFormat": "waiting requests",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${ds_prom}"
+     }
+    },
+    {
+     "refId": "B",
+     "expr": "phpfpm_listen_queue_length",
+     "legendFormat": "queue length",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${ds_prom}"
+     }
+    }
+   ],
+   "gridPos": {
+    "h": 8,
+    "w": 8,
+    "x": 8,
+    "y": 50
+   },
+   "id": 18,
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short",
+     "custom": {
+      "lineWidth": 1,
+      "fillOpacity": 10,
+      "showPoints": "never",
+      "stacking": {
+       "mode": "none"
+      }
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "table",
+     "placement": "bottom",
+     "calcs": [
+      "mean",
+      "max"
+     ]
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   }
+  },
+  {
+   "type": "timeseries",
+   "title": "nginx connections and requests/s",
+   "description": "",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${ds_prom}"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "nginx_connections_active",
+     "legendFormat": "active connections",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${ds_prom}"
+     }
+    },
+    {
+     "refId": "B",
+     "expr": "rate(nginx_http_requests_total[5m])",
+     "legendFormat": "requests/s",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${ds_prom}"
+     }
+    }
+   ],
+   "gridPos": {
+    "h": 8,
+    "w": 8,
+    "x": 16,
+    "y": 50
+   },
+   "id": 19,
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short",
+     "custom": {
+      "lineWidth": 1,
+      "fillOpacity": 10,
+      "showPoints": "never",
+      "stacking": {
+       "mode": "none"
+      }
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "table",
+     "placement": "bottom",
+     "calcs": [
+      "mean",
+      "max"
+     ]
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   }
+  },
+  {
+   "type": "row",
+   "title": "Host (mainvm)",
+   "collapsed": false,
+   "gridPos": {
+    "h": 1,
+    "w": 24,
+    "x": 0,
+    "y": 58
+   },
+   "id": 20
+  },
+  {
+   "type": "timeseries",
+   "title": "CPU busy %",
+   "description": "",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${ds_prom}"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "100 - (avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+     "legendFormat": "cpu",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${ds_prom}"
+     }
+    }
+   ],
+   "gridPos": {
+    "h": 7,
+    "w": 8,
+    "x": 0,
+    "y": 59
+   },
+   "id": 21,
+   "fieldConfig": {
+    "defaults": {
+     "unit": "percent",
+     "custom": {
+      "lineWidth": 1,
+      "fillOpacity": 10,
+      "showPoints": "never",
+      "stacking": {
+       "mode": "none"
+      }
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "table",
+     "placement": "bottom",
+     "calcs": [
+      "mean",
+      "max"
+     ]
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   }
+  },
+  {
+   "type": "timeseries",
+   "title": "Memory available",
+   "description": "",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${ds_prom}"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "node_memory_MemAvailable_bytes",
+     "legendFormat": "available",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${ds_prom}"
+     }
+    },
+    {
+     "refId": "B",
+     "expr": "node_memory_MemTotal_bytes",
+     "legendFormat": "total",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${ds_prom}"
+     }
+    }
+   ],
+   "gridPos": {
+    "h": 7,
+    "w": 8,
+    "x": 8,
+    "y": 59
+   },
+   "id": 22,
+   "fieldConfig": {
+    "defaults": {
+     "unit": "bytes",
+     "custom": {
+      "lineWidth": 1,
+      "fillOpacity": 10,
+      "showPoints": "never",
+      "stacking": {
+       "mode": "none"
+      }
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "table",
+     "placement": "bottom",
+     "calcs": [
+      "mean",
+      "max"
+     ]
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   }
+  },
+  {
+   "type": "timeseries",
+   "title": "Load average",
+   "description": "",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${ds_prom}"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "node_load1",
+     "legendFormat": "1m",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${ds_prom}"
+     }
+    },
+    {
+     "refId": "B",
+     "expr": "node_load5",
+     "legendFormat": "5m",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${ds_prom}"
+     }
+    }
+   ],
+   "gridPos": {
+    "h": 7,
+    "w": 8,
+    "x": 16,
+    "y": 59
+   },
+   "id": 23,
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short",
+     "custom": {
+      "lineWidth": 1,
+      "fillOpacity": 10,
+      "showPoints": "never",
+      "stacking": {
+       "mode": "none"
+      }
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "table",
+     "placement": "bottom",
+     "calcs": [
+      "mean",
+      "max"
+     ]
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   }
+  }
+ ],
+ "description": "Layers of the ERP, outermost first: Traefik (server-side latency), Laravel per endpoint and per query (request log), php-fpm/nginx workers, host. docs/architecture/observability.md."
+}
