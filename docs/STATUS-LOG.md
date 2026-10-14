@@ -537,3 +537,5 @@ decision identity plus retries/concurrency and separate remaining/forecast facts
 comparison; R7 bounded dependencies and all R6 directions still proposals.
 No code/tests/migrations/seeders/generated files/push or direct coding-agent message; implementation-
 owned CRM/C2/delivery files untouched. Docs checks are not implementation or runtime verification.
+
+- 2026-10-14 — Operations: repository made public (ADR 0121: no self-hosted runner, hosted native arm64 builds, deploy by `deploy/deploy.sh`); release of `develop` to production verified end to end (129 migrations, database dump taken first); observability delivered (ADR 0128: request and slow-query log, application errors reach Loki, php-fpm and nginx exporters on loopback-only status, php-fpm no longer listens on every interface, finer Traefik latency buckets, ERP Grafana dashboard). Demo-data approach decided (ADR 0129): separate demo deployment, deferred until near completion; production Company 1 stays the interim demo company and `demo:seed` is not re-run against production.

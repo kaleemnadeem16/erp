@@ -1,6 +1,6 @@
 # Project Status
 
-**Updated:** 2026-10-13 (R5 accepted/specified; initial R6 customer-decision review). Kept short and current on purpose — see
+**Updated:** 2026-10-14 (public repository, hosted-runner pipeline, observability live; R5 accepted/specified; initial R6 customer-decision review). Kept short and current on purpose — see
 [ADR 0095](decisions/0095-status-is-short-current-and-purpose-limited.md): no logs, counts or per-task history here.
 History is in [STATUS-LOG.md](STATUS-LOG.md); resume points are in the workstream handoffs below.
 
@@ -27,17 +27,20 @@ History is in [STATUS-LOG.md](STATUS-LOG.md); resume points are in the workstrea
 
 ## In progress
 
+**Operations (2026-10-14):** the repository is public and CI runs only on GitHub-hosted runners; production is deployed by `deploy/deploy.sh` on mainvm, not by GitHub ([ADR 0121](decisions/0121-public-repository-hosted-runners-and-manual-deploy.md)). Request/query timing, php-fpm and nginx exporters and the ERP Grafana dashboard are live ([ADR 0128](decisions/0128-observe-with-the-existing-grafana-loki-stack.md), [observability.md](architecture/observability.md)). Open: a read-only PostgreSQL exporter for dbvm, a performance review after real usage, and removing a stale Let's Encrypt entry and the retired runner directory on mainvm. Production Company 1 is the working demo company during development; **`demo:seed` is not re-run against production** ([ADR 0129](decisions/0129-demo-and-sandbox-data-live-in-a-separate-demo-deployment.md)).
+
 Phase 4 cost-contract implementation (C1a–c, C2a–b) is complete locally; C1d and quotation work have not started. Nothing of the package workstreams is in flight (the rejected-stock exit, ADR 0097, is complete). Other agents share the checkout: run `git status` and `git log` before assuming the tree is idle.
 
 ## Release state
 
-Production runs `main`, last released **2026-10-02** (Phase 3 estimating core, access administration, shared approval engine). `develop` is well ahead of it; its later work —
-record scope, the access audit follow-ups, the approvals workspace, grouped package tracking, and others — has **not** been released. Release steps are the owner's
+Production runs `main`, last released **2026-10-14** (the whole of `develop` as of that day: Phase 3 estimating core, access administration, shared approval engine, record scope, the access audit follow-ups, the approvals workspace, grouped package tracking, the rejected-stock exit, CRM corrections and the observability work). Work merged to `develop` after that date is not released. Release steps are the owner's
 ([deployment.md](architecture/deployment.md), and the release notes in the settings-and-access handoff); nothing is pushed to `main` without the owner's go-ahead.
 
 ## Next — design and build areas
 
 Each is a new slice: propose first, get the owner's answers, then build. Optional enhancements are kept apart from required work.
+
+- **Deferred until the product nears completion — a separate demo deployment** ([ADR 0129](decisions/0129-demo-and-sandbox-data-live-in-a-separate-demo-deployment.md)): own database on dbvm, own Compose project and hostnames, `DEMO_MODE`, a confirmed and audited reset, parameterised create-only seeders, per-reviewer credentials. Do not start it earlier; do not seed real customer companies, and do not run demo seeding as part of a deploy.
 
 - **Required for the roadmap:** Phase 4 R1/R2 business research is complete; [C0 and C1/C2 contract/slices](phases/phase-4-c0-cost-evidence-contract.md) authorise correcting existing cost APIs and migrating consumers together; C1a–c, C2a and C2b are implemented locally and verified (not pushed); C1d remains separately gated. Local commits only, no push without explicit request. [R3 P1–P8](phases/phase-4-r3-business-review.md) is accepted in 0115–0117; [pricing specifications/slices](phases/phase-4-r3-implementation-slices.md) are prepared without code authorisation. [R4 F1–F8](phases/phase-4-r4-financial-review.md) is accepted in0118–0120/Q44 closed; [financial slices](phases/phase-4-r4-implementation-slices.md) are specified. [R5 L1–L6](phases/phase-4-r5-business-review.md) is accepted0122–0124/Q45 closed; [lifecycle handoff](phases/phase-4-r5-implementation-slices.md) specified without coding authority. [Initial R6 C1–C8 review](phases/phase-4-r6-customer-decisions.md) opens planning Q46; partial replacement requires R6/R7 approved and delivered. R6/R7 inform R5 and R9 applies throughout. It also owes the multi-owner correction package carried from Phase 2.
 - **Later package enhancements** (none started; each a new design slice): governed change of tracked levels; deactivation/collapse; container-level tracking (not before the owner asks); line-level receipt reversal; count approval thresholds; QA/count reconciliation; standalone Issue/Transfer screens. **Deferred estimating enhancement:** package-aware proposals in the Material Preview (owner decision: not ahead of return/scrap).

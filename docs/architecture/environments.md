@@ -150,6 +150,8 @@ Local development runs its own Postgres via Compose — a dev-only concern.
 
 ### Development demo data
 
+> **Demo environment (deferred, [ADR 0129](../decisions/0129-demo-and-sandbox-data-live-in-a-separate-demo-deployment.md)):** the long-term home for people trying the product is a **separate demo deployment** (own database, own hostnames, resettable), to be built when the product nears completion. Until then `demo:seed` is for local development, production Company 1 keeps the demo data it already has, and **`demo:seed` must not be re-run against production** — the seeders hard-code company 1, overwrite company settings and delete-and-rebuild some records, and the append-only database triggers make an in-place reset impossible.
+
 Demonstration data is deliberately opt-in and separate from Laravel's ordinary
 `DatabaseSeeder`, which stays empty. After migrations, run:
 

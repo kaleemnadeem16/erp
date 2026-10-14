@@ -72,8 +72,7 @@ storage across php-fpm workers and an authenticated route; log-derived metrics n
 needs `shared_preload_libraries` and a restart of the Postgres instance shared with other applications; the
 application-side slow-query log already gives per-query time without it. A `postgres_exporter` (connections,
 cache hit ratio, locks) is the remaining database-side step and needs a read-only monitoring role on dbvm.
-No ADR number is claimed here because ADR numbering is being used by other in-flight work; promote this
-section to an ADR when that settles.
+Recorded as [ADR 0128](../decisions/0128-observe-with-the-existing-grafana-loki-stack.md).
 
 ## Caching and stale data — a reminder, not a change
 

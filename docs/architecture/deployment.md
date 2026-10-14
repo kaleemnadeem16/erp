@@ -176,7 +176,7 @@ automated release is still the verification point for this job.
     `administration.member.view`, `administration.member.manage`, `administration.role.view`,
     `administration.role.manage` and `administration.access.assign`; the full-vocabulary sync above
     supplies them when `ERP_ADMIN_EMAIL` is configured.
-12. Seed data. Company 1 doubles as a demo/sandbox company on this live deployment (the
+12. Seed data. *(Historical, and superseded for re-runs by [ADR 0129](../decisions/0129-demo-and-sandbox-data-live-in-a-separate-demo-deployment.md): do not re-run `demo:seed` against production; a separate demo deployment is planned.)* Company 1 doubles as a demo/sandbox company on this live deployment (the
     user's own choice), so `demo:seed`'s dataset belongs here too, not just in dev — it
     populates currencies/UoMs/chart of accounts/parties/items/warehouses and a run of
     realistic POs, receipts and stock activity. `demo:seed` still refuses to run outside
