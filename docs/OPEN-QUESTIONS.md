@@ -203,32 +203,24 @@ attempts and device changes.
 
 ---
 
-### Q46 — R6 customer acceptance, partial terms and decision evidence
+### Q47 — R7 handover targets and commitment corrections
 
-**Origin:** PLANNING RESEARCH (owner continuation after325973f; no coding question forwarded).
-**Decision status:** READY_FOR_OWNER — final consolidated C1–C8 recommendations, still unaccepted.
-**Delivery status:** NOT_STARTED; only affected acceptance/partial-family/handover operations gated.
-**Context/authority:** R5 accepted0122–0124; R1–R4,0100 exclusive groups,0101/0102 forecast trust,
-0110 source cost certainty,0115/0116 tier/benefit controls and0120 allocation; research completed2026-10-14.
-**Original question/examples:** Full/partial scope, only40 of100/tier consequence, alternatives, fixed
-benefit/tax, late-recorded decisions, distinct retries, accepted versus remaining/operational business.
-**Expanded owner cases:** Named packages/services/Assembly/manual scope; authentic verbal/PO/email/
-portal evidence; reoffer versus variation; conflicting claims and exact R7 interfaces.
-**Options/recommendation:** [Authoritative final C1–C8 matrix](phases/phase-4-r6-customer-decisions.md),
-[numerical reoffer/allocation journey](phases/phase-4-r6-allocation-and-journey.md),
-[evidence/decision identity/races](phases/phase-4-r6-evidence-and-claims.md).
-Recommend FULL_ONLY unless explicitly supported DIVISIBLE; newly issued reoffer for changed terms
-(no initial acceptance-variation editor); explicit retained tier only; first accepted option/family
-claim; conserved entitled original consumption distinct from new agreed/assessed amounts; shared
-customer-decision case plus quantity/exclusive claims; pending uncertain evidence versus separately
-authorised late reconciliation; acceptance independent from target readiness and provisional forecast.
-**Disposition needed:** Owner approve/amend C1–C8, especially divisibility, reoffer/remaining lineage,
-fixed entitlement/rounding, choice/group locks, evidence/late duty and duplicate-case policy. R7 target/
-split/baseline/correction dependencies remain bounded/unaccepted; R9 final duties/access and R8 channels pending.
-**Blocks:** New R6 semantics/delivery and partial-family operations; no CRM/C2 or drafting R5 blocker.
-R6/R7 architecture approval without delivered contracts never enables partial replacement.
-**Follow-up:** Record governing R6 ADRs/contracts only after owner approval. Preserve future coding-
-origin wording/context and coding-owned verification; documentation alone verifies no implementation.
+**Origin:** PLANNING RESEARCH (owner instruction following C1–C8 approval; no coding question forwarded).
+**Decision status:** OPEN — initial H1–H8 recommendations, not accepted.
+**Delivery status:** NOT_STARTED; no R3–R7 code authority.
+**Original question/context:** Generic goods/services/projects handover: source-to-target mapping,
+Sales Order versus Job, one/multiple targets, split deliveries versus commitments, readiness,
+source/estimate/material baselines, duplicate prevention, amendments/cancellations and claim-release ownership.
+**Authority:** Accepted R1–R6, including0125–0127; no mandatory Job/account and immutable customer consent.
+**Options/recommendation:** [R7 initial review](phases/phase-4-r7-handover-research.md) compares Order-first,
+Job-first and common accepted commitment with suitable operational adapters. Recommend the latter,
+disjoint/stage-aware mapping and separately governed commercial correction/claim release. Owner must
+settle Order aggregate/visibility, first paths, cardinality/baselines and correction ownership.
+**Blocks:** R7 target delivery and affected R6 partial-family/technical allocation/correction paths;
+ordinary supported full R6 acceptance need not await a Job or operational target.
+**Follow-up:** Consolidated business review before R7 ADRs; approved and delivered dependencies before
+partial-family enablement. Forwarded coding questions retain Origin: IMPLEMENTATION AGENT; only coding
+agent checks can mark implementation verified.
 
 ---
 
@@ -236,13 +228,27 @@ origin wording/context and coding-owned verification; documentation alone verifi
 
 ## Answered
 
+<a id="q46--r6-customer-acceptance-partial-terms-and-decision-evidence"></a>
+
+Q46 (Origin: PLANNING RESEARCH; original owner continuation after325973f, no coding question forwarded)
+resolved2026-10-14 by owner approval of final C1–C8 after7e9308c. Accepted
+[0125](decisions/0125-govern-customer-acceptance-and-explicit-partial-consent.md),
+[0126](decisions/0126-conserve-acceptance-entitlements-and-allocation-evidence.md) and
+[0127](decisions/0127-record-customer-decision-evidence-and-atomic-business-claims.md) settle full/partial
+scope, price entitlement/reoffer/consent, choices, allocations, evidence/late recognition, readiness,
+business identity and separate remaining projections. [Domain](domain/sales-customer-decisions.md) and
+[CA0–CA6 slices](phases/phase-4-r6-implementation-slices.md) SPECIFIED; NOT IMPLEMENTED/VERIFIED.
+R7 target/correction/claim-release choices move to planning Q47, R8 channels and R9 duties/reporting
+remain separate; partial-family operations require necessary R6/R7 approval AND delivery. No code authority.
+
+
 <a id="q45--r5-quotation-lifecycle-checkpoints-and-issued-offer-treatment"></a>
 
 Q45 (Origin: PLANNING RESEARCH) resolved2026-10-13 by owner approval of L1–L6 after local6d5bc0c,
 recorded in accepted [0122](decisions/0122-govern-quotation-candidates-adoption-and-revalidation.md), [0123](decisions/0123-issue-numbered-quotation-revisions-atomically.md) and
 [0124](decisions/0124-preserve-quotation-availability-and-scope-replacements.md). [R5 contracts/slices](phases/phase-4-r5-implementation-slices.md) SPECIFIED,
 no code authorisation or implementation verification. R6/R7 partial replacement gate and R9 public
-scope/duty/grant prerequisites remain. New downstream C1–C8 choices belong to planning Q46.
+scope/duty/grant prerequisites remain. C1–C8 are now accepted0125–0127/Q46 closed; downstream R7 choices belong to planning Q47.
 
 <a id="q44--r4-currency-tax-composition-and-rounding-contracts"></a>
 

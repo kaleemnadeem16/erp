@@ -2,9 +2,10 @@
 
 # R6 — Customer consent evidence, decision identity and claim races
 
-**2026-10-14 · PROPOSED C3/C5/C7 research, Q46; no new permission or execution accepted.**
+**2026-10-14 · C3/C5/C7 architecture ACCEPTED0125/0127; Q46 closed; no permission name/grant or execution delivered.**
 This completes the [final owner matrix](phase-4-r6-customer-decisions.md), reusing accepted 0100,
-0070/0085 and 0122–0124. It is a business/architecture recommendation, not legal adjudication,
+0070/0085 and 0122–0124. The owner-approved directions now govern; [domain](../domain/sales-customer-decisions.md) and
+[slices](phase-4-r6-implementation-slices.md) are specified. This is not legal adjudication,
 implementation DDL or authorisation to add acceptance/portal/handover code.
 
 ## C5 — Factual evidence and appropriate business practice
@@ -143,7 +144,7 @@ quantity/value through conflicts. Request-specific0070/0085 review does not gran
 No role-name inference or automatic ordinary editor/manager grant for new sensitive duty.
 
 Ordinary customer recording and sensitive late-recognition/cancellation/claim-release are distinct
-proposed duties, with R9 vocabulary/owner approval still required. Factual intake permissions must not
+accepted duty boundaries, with R9 vocabulary/grants and owner approval still required. Factual intake permissions must not
 implicitly grant either approval or authority to assert unresolved consent. Company evidence policy
 may support routine verbal decisions; ordinary workflow remains concise when identity/terms are clear.
 

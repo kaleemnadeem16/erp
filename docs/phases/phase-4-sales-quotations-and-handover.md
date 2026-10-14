@@ -2,7 +2,7 @@
 
 # Phase 4 — Sales, quotations and job handover
 
-- **Status:** R1/R2 bounded research complete; C0 accepted; C1a–c/C2a–b implemented locally per STATUS, R3 accepted/specifications prepared, R4 accepted/specifications prepared, R5 accepted/specifications prepared, R6 final C1–C8 owner review, bounded R7 dependencies and remaining R6–R9 pending. CRM backend foundation
+- **Status:** R1/R2 bounded research complete; C0 accepted; C1a–c/C2a–b implemented locally per STATUS, R3 accepted/specifications prepared, R4 accepted/specifications prepared, R5 accepted/specifications prepared, R6 accepted/specifications prepared, R7 initial research/Q47 open and remaining R7–R9 pending. CRM backend foundation
   exists separately; quotation implementation remains pending.
 - **Started:** 2026-10-08, at the owner's request. Phase 3 enhancements remain with another agent.
 - **Depends on:** Parties and Estimating; shared Numbering, Approvals, Company and access foundations.
@@ -44,8 +44,8 @@ its consolidated review comes last. R6 and R7 inform R5 before lifecycle decisio
 | R3 Sales pricing | SIMPLE first boundary, overrides, discounts, agreements and margin controls | ADR 0109 retains/generalises historical 0055; sales-pricing.md | P1–P8 accepted in 0115–0117; Q43 closed; slices specified, no code authorised |
 | R4 Tax, currency and FX | Quotation tax estimate, rules/exemptions, rounding, rate date and evidence | ADRs 0012, 0025, 0056; currency APIs | F1–F8 accepted0118–0120/Q44 closed; financial contract/slices specified, no code authorised |
 | R5 Lifecycle, approvals, issue and revisions | Stale drafts, plan adoption, snapshot boundary, withdrawal/supersession, expiry and approval invalidation | ADRs 0054, 0058, 0070, 0072, 0076/0077, 0079, 0085 | L1–L6 accepted0122–0124/Q45 closed; lifecycle contract/QL0–QL6 specified; partial R6/R7 gates remain |
-| R6 Customer decisions | Whole/partial acceptance, alternatives, evidence, rejection and expired offers | Sales pipeline landmines; immutable snapshots | Final C1–C8 owner matrix/Q46, numerical reoffer/remaining journey, evidence/claim races complete; recommendations unaccepted |
-| R7 Job creation and handover | Idempotent confirmation, scope/baseline, contacts/sites, job changes; Sales/COGS correction ownership | job-costing.md; ADR 0040; Phase 5 boundary | Bounded accepted-scope/idempotent-target/amendment reconciliation for R5; full R7 target review pending |
+| R6 Customer decisions | Whole/partial acceptance, alternatives, evidence, rejection and expired offers | Sales pipeline landmines; immutable snapshots | C1–C8 accepted0125–0127/Q46 closed; domain/CA0–CA6 specified, no code authority |
+| R7 Job creation and handover | Idempotent confirmation, scope/baseline, contacts/sites, job changes; Sales/COGS correction ownership | job-costing.md; ADR 0040; Phase 5 boundary | Initial H1–H8 generic handover/commitment research proposed, Q47 open; no mandatory Job workflow |
 | R8 Documents and communications | Customer projection, PDF/template, delivery evidence, portal/signature vs manual recording | Existing PO print model; appearance-and-printing.md; Q33 | Not researched; follows R2/R5/R6 |
 | R9 Access, audit, reporting and integration | Owner vs visibility, sensitive prices/costs, forecast metrics, history, imports and events | ADRs 0028, 0062, 0084/0089, 0096; shared audit/scope | Not researched; applied throughout and reconciled last |
 
@@ -110,7 +110,9 @@ proposal is never "researched", "accepted" or "complete" merely because it exist
 - [x] Record owner-approved R5 L1–L6 in0122–0124, close Q45 and specify lifecycle persistence/Actions/API/UI/permissions/concurrency/QL0–QL6; initial partial replacement blocked until R6/R7 approved and delivered.
 - [x] Begin R6 C1–C8 consent/tier/choices/allocation/late-evidence/claims/commitment/remaining review, reuse primary research and bound R7 dependencies; Q46 opened, no new ADR accepted.
 - [x] Complete final R6 C1–C8 matrix, explicit source divisibility/reoffer/consent/exclusive/cumulative allocation/evidence/decision identity recommendations and integrated100→40→remaining60 journey; Q46 still pending approval.
-- [ ] Owner approves/amends C1–C8 before governing R6 ADRs/contracts; partial-family operations remain gated.
+- [x] Record approved C1–C8 in0125–0127, close Q46, specify customer-decision contracts/CA0–CA6; no implementation.
+- [x] Begin R7 generic target/readiness/baseline/duplicate/amendment/claim-release research under Q47; choices proposed.
+- [ ] Approve R7 and deliver necessary R6/R7 contracts before partial-family enablement.
 - [ ] Complete R6–R9 research in dependency order, R6/R7 informing R5 and R9 applied throughout; no operational pricing/quotation authority inferred.
 - [x] Reconcile R1 business foundations with the historical Sales proposal; physical schema reconciliation remains R2–R9.
 - [ ] Define implementation slices, demos and observable acceptance criteria only after decisions.
@@ -130,6 +132,9 @@ STATUS phase row and STATUS-LOG; this plan; Sales/related domain docs alongside 
 OPEN-QUESTIONS when a recorded question is resolved; journeys alongside eventual workflows.
 
 ## Related
+
+- [R6 domain](../domain/sales-customer-decisions.md) · [R6 slices](phase-4-r6-implementation-slices.md)
+- [R7 initial research](phase-4-r7-handover-research.md)
 
 - [R1-B3 bounded reconciliation and acceptance readiness](phase-4-r1-b3-reconciliation.md)
 

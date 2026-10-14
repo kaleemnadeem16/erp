@@ -94,7 +94,10 @@ The [quotation lifecycle contract](quotation-lifecycle.md) now governs family/lo
 source candidates/adoption, shared review, atomic official issue, original financial/expiry evidence
 and whole-unaccepted availability/replacement. The old schema below remains historical, including
 its number/revision unique and implicit win/job sketch; it is not the new physical model.
-R6 acceptance/partial decisions and R7 commitment remain gated; no quotation application delivered.
+R6 C1–C8 is accepted0125–0127: [customer-decision contracts](sales-customer-decisions.md) and
+[CA0–CA6 slices](../phases/phase-4-r6-implementation-slices.md) are specified, not delivered.
+Ordinary acceptance is separate from operational readiness; R7 targets/corrections and R8/R9 gates
+remain. Partial-family operations still require R6/R7 approval and delivery; no quotation application delivered.
 
 ## Where it sits
 

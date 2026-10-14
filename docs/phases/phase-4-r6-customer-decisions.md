@@ -2,11 +2,15 @@
 
 # R6 — Final C1–C8 customer acceptance decision review
 
-**2026-10-14 · RESEARCH COMPLETE FOR OWNER REVIEW / PROPOSED / Q46.**
-This is the authoritative final C1–C8 matrix, replacing the initial agenda at 325973f. **No new R6
-recommendation is accepted.** R1–R5 remain governing; no ADR, application or delivery authority is
-created. [Allocation and worked journey](phase-4-r6-allocation-and-journey.md) and
-[evidence, identity and races](phase-4-r6-evidence-and-claims.md) complete the review.
+**2026-10-14 · C1–C8 ACCEPTED in0125–0127; planning Q46 CLOSED.**
+This is the authoritative reviewed matrix, replacing the initial agenda at325973f. The owner approved
+its recommendations with explicit preservation of genuine consent, unsupported-path refusal and
+R6/R7 approval **and delivery** gates. Matrix choice/recommendation columns retain the review framing;
+R6 directions are now accepted, while R7/R8/R9 choices and adapter enablement remain pending.
+[Domain contracts](../domain/sales-customer-decisions.md) and [CA0–CA6 slices](phase-4-r6-implementation-slices.md)
+are SPECIFIED, not IMPLEMENTED or VERIFIED; no application code authority.
+[Allocation journey](phase-4-r6-allocation-and-journey.md) and [evidence/claims](phase-4-r6-evidence-and-claims.md)
+remain supporting examples, not permission to run unsupported paths.
 
 Reuse accepted 0100/0109 scope/choice structure,0110 cost certainty,0115/0116 pricing and benefit-once,
 0118–0120 financial evidence and 0122–0124 lifecycle,0070/0085 shared governance and 0101/0102 forecast.
@@ -157,17 +161,18 @@ conditional choices, new header discounts and Finance engines can be deferred wi
 Partial remaining-scope reoffers/replacement stay blocked until both R6 and required R7 contracts
 are approved AND delivered. Final R9 duties/grants and R8 evidence channels remain prerequisites.
 
-## Exact owner disposition and coordination
+## Owner disposition and coordination
 
-Approve or amend C1–C8, especially FULL_ONLY default/declared DIVISIBLE scope, new issued reoffer
-for changed terms, first-choice/family claim binding, explicit commercial entitlement and cumulative
-allocation, governed late evidence and shared decision-case identity. No new architecture is accepted
-by this local research commit. No demonstrated contradiction requires changing R1–R5 ADR bodies.
+Owner approved C1–C8 on2026-10-14. [0125](../decisions/0125-govern-customer-acceptance-and-explicit-partial-consent.md)
+records C1/C2/C3/C6/C8, [0126](../decisions/0126-conserve-acceptance-entitlements-and-allocation-evidence.md)
+records C4 and [0127](../decisions/0127-record-customer-decision-evidence-and-atomic-business-claims.md)
+records C5/C7. No accepted R1–R5 body changed. Duties remain separate; no new permission names/grants
+or execution adapters are accepted merely by this review. Partial-family replacement/reoffers remain
+refused until necessary R6/R7 approved and delivered; no general variation editor.
 
-Q46 remains Origin: PLANNING RESEARCH, ready for final owner review. No implementation question
-was forwarded. Future coding-origin questions retain original wording/context and Origin:
-IMPLEMENTATION AGENT; only the coding owner can verify implementation. No application tests,
-migrations, generated files, delivery-document changes or push are part of this work.
+Q46 closed with Origin: PLANNING RESEARCH preserved in the answered record. R7 begins under planning
+Q47. No coding question was forwarded; future questions retain Origin: IMPLEMENTATION AGENT and
+coding-owned verification. All contracts are documentation only; no tests, implementation or push.
 
 ## Related
 

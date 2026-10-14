@@ -139,6 +139,9 @@ in the same commit.
 | [0122](0122-govern-quotation-candidates-adoption-and-revalidation.md) | Govern quotation candidates, adoption and revalidation | accepted | 2026-10-13 |
 | [0123](0123-issue-numbered-quotation-revisions-atomically.md) | Issue numbered quotation revisions atomically | accepted | 2026-10-13 |
 | [0124](0124-preserve-quotation-availability-and-scope-replacements.md) | Preserve quotation availability and scope replacements | accepted | 2026-10-13 |
+| [0125](0125-govern-customer-acceptance-and-explicit-partial-consent.md) | Govern customer acceptance and explicit partial consent | accepted | 2026-10-14 |
+| [0126](0126-conserve-acceptance-entitlements-and-allocation-evidence.md) | Conserve acceptance entitlements and allocation evidence | accepted | 2026-10-14 |
+| [0127](0127-record-customer-decision-evidence-and-atomic-business-claims.md) | Record customer decision evidence and atomic business claims | accepted | 2026-10-14 |
 | [0128](0128-observe-with-the-existing-grafana-loki-stack.md) | Observe the ERP with the existing Prometheus, Loki and Grafana stack | accepted | 2026-10-14 |
 | [0129](0129-demo-and-sandbox-data-live-in-a-separate-demo-deployment.md) | Demo and sandbox data live in a separate demo deployment (deferred) | accepted | 2026-10-14 |
 

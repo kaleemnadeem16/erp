@@ -2,8 +2,9 @@
 
 # R6 — Entitlement, allocation and integrated numerical journey
 
-**2026-10-14 · PROPOSED supporting C1–C4/C6–C8 research; no R6 approval or execution.**
-The [final C1–C8 matrix](phase-4-r6-customer-decisions.md) governs the recommendation to review.
+**2026-10-14 · Supporting accepted0125–0127/Q46 closed; examples are not delivered execution.**
+The [accepted C1–C8 matrix](phase-4-r6-customer-decisions.md) and [slices](phase-4-r6-implementation-slices.md) govern;
+R7-dependent operations remain gated by approval and delivery. Conditional examples are not enabled.
 Money below uses quantum0.01, four-place storage and identity quote/base FX for clarity. Tax rates
 and assessments are illustrative configuration, not jurisdiction law or an enabled engine.
 
@@ -100,7 +101,7 @@ authority; continuation isn't automatically entitled to the unused60.
    customer representative/evidence according to policy, records actual occurrence separately from
    ERP recording time, and links the PO amendment to D1. It isn't a new purchase just because the PO or
    quote has a new version. Earlier “40 at9” message cannot stand in for agreement to396.
-5. **Authoritative acceptance (R6 approval/delivery required).** Atomically accept QT-00002's whole40,
+5. **Authoritative acceptance (R6 architecture accepted; delivery required).** Atomically accept QT-00002's whole40,
    not a fraction of its40 offer. Consume its available40, original scope capacity40 of100, benefit40,
    A selection and exclusive-family claim where applicable; append agreed financial/consent evidence
    and receipt. Accepted net360/gross396 refers to QT-00002. QT-00001 stays800/880 with its historical

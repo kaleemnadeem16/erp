@@ -559,3 +559,19 @@ baseline/correction/handover uniqueness dependencies listed; no new R7/Finance e
 No source/migration/test/generated/seeder/implementation-delivery file change, push or coding-agent
 message. Local docs checks are not application/implementation verification; approvals and all
 R6/R7 delivered-contract gates remain explicit.
+
+
+## 2026-10-14 — R6 architecture accepted; customer-decision slices specified; R7 research begun
+
+Owner approved C1–C8 after7e9308c. Accepted0125 (eligibility/consent/choice/readiness/projections),
+0126 (conserved entitlement and separate allocation/agreement/statutory facts),0127 (evidence,
+late reconciliation and business identity/atomic claims); planning-origin Q46 closed. Existing accepted
+ADR bodies unchanged. Customer-decision domain and CA0–CA6 Actions/Requests/Resources/UI/security,
+tenant constraints, concurrency/retries/migrations/evidence/demos/regressions specified, not delivered.
+Ordinary supported full acceptance first; retained partials only supported adapters; remaining-family
+operations still require necessary R6 AND R7 approval AND delivery; sensitive late/correction duties,
+R8 channels and R9 access/report/forecast gates retained. No header-discount input or variation editor.
+Initial generic R7 H1–H8 comparison of ERPNext/Dynamics orders, delivery and correction constraints
+opened planning Q47; target/Order/Job/cardinality/baseline/release recommendations remain proposed.
+Documentation-only checks; no app tests, migrations, generated files, implementation-owned delivery
+changes or push. Code/implementation verification remains with the coding agent via owner handoff.

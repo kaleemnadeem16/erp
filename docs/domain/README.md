@@ -104,6 +104,7 @@ Lead → Opportunity → Quotation (revisions) → Job → Work Order → Invoic
 | [physical-count.md](physical-count.md) | Blind counting, count lines, variance posting and separation of duties |
 | [approvals.md](approvals.md) | The shared approval engine: policies, authorities, requests, delegation, document review |
 | [sales-pipeline.md](sales-pipeline.md) | Leads, opportunities, quotations, revisions |
+| [sales-customer-decisions.md](sales-customer-decisions.md) | Accepted R6 consent, immutable commitments, evidence, capacities and customer-decision Action contracts |
 | [crm-corrections.md](crm-corrections.md) | Accepted intake, enquiry corrections and historical responsibility evidence (specified, not implemented) |
 | [job-costing.md](job-costing.md) | Jobs, work orders, timesheets, variance |
 

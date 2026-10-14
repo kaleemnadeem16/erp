@@ -22,6 +22,11 @@ an accepted scope need not imply an Assembly baseline or even a job. R7 must est
 estimate handover and fulfilment paths without fabricating estimates. Acceptance/preparation is not work authority, and ADR 0104 does not impose CustomerAccount at
 every confirmed handover. Phase 5 owns execution.
 
+[Initial R7 handover review](../phases/phase-4-r7-handover-research.md) is proposed under Q47.
+[Accepted R6 commitments](sales-customer-decisions.md) are independent of Job creation; original
+source/consent and baseline evidence cannot be rewritten by operational mapping or cancellation.
+The schema below remains historical planning, not an approved one-quote/one-Job contract.
+
 ## Schema
 
 ```
