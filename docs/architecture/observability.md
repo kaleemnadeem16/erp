@@ -46,6 +46,7 @@ in [supervisord.conf](../../docker/backend/supervisord.conf) is the root-cause f
 - **nginx**: `stub_status` on `127.0.0.1:8081` (not routed by Traefik); health checks excluded from the access log.
 - **Exporters** — `erp-fpm-exporter` and `erp-nginx-exporter` share the `app` container's network namespace (`network_mode: service:app`), so php-fpm and the status page are never exposed on a network; Prometheus scrapes ports 9253 and 9113 over `monitoring_monitoring-net`.
 - **Prometheus** (on mainvm, `/srv/apps/monitoring/prometheus/prometheus.yml`): jobs `erp-php-fpm` and `erp-nginx` (`erp-backend:9253`, `erp-backend:9113`). Traefik's histogram buckets are `0.025 … 10` s so percentiles are meaningful.
+- **PostgreSQL** — a `postgres-exporter` container in the monitoring project on mainvm, connecting to dbvm as the `monitoring_exporter` role: login only, no superuser/createdb/createrole, `pg_monitor` membership only (read-only statistics, no table privileges), `CONNECTION LIMIT 3`, `statement_timeout 5s`, `lock_timeout 1s`. Scraped every 30 s (about 50 ms, one connection, 7 MiB). Credentials are in `/srv/apps/monitoring/postgres-exporter.env` (mode 600), never in git; the exporter publishes no port. No application role was changed.
 - **Grafana dashboard** — [erp-performance.dashboard.json](../../docker/monitoring/erp-performance.dashboard.json), loaded into `/var/lib/grafana/dashboards` on mainvm (the provider polls every 30 s). Datasources are chosen by dashboard variables, so the JSON holds no instance-specific ids.
 
 ## Installing it on mainvm (done 2026-10-14)
@@ -62,6 +63,20 @@ Both steps edit the shared monitoring stack, not this repository's compose file:
 
 After a deploy, confirm both targets are `up` and every panel query runs (Grafana → Explore, or the
 dashboard itself). Panels for slow requests, slow queries, 5xx and errors are legitimately empty when nothing is wrong.
+
+### The database exporter (done 2026-10-14)
+
+dbvm runs PostgreSQL 16 in a container shared with other applications. To rebuild it: create the role on dbvm
+(`CREATE ROLE monitoring_exporter LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION CONNECTION LIMIT 3 PASSWORD '…'`,
+`GRANT pg_monitor TO monitoring_exporter`, then `ALTER ROLE … SET statement_timeout='5s'`, `lock_timeout='1s'`,
+`idle_in_transaction_session_timeout='10s'`), put `DATA_SOURCE_URI`, `DATA_SOURCE_USER`, `DATA_SOURCE_PASS` in
+`postgres-exporter.env`, add the service from the monitoring compose file (`prometheuscommunity/postgres-exporter`,
+`monitoring-net` only), and add a `postgres` job (30 s) to Prometheus. Check `pg_up` is 1.
+
+**Observed on dbvm, not changed (shared infrastructure, outside this task):** PostgreSQL publishes port 5432 on all
+interfaces with `listen_addresses=*`, `pg_hba` accepts any address with a password (`scram-sha-256`), and `ssl=off`.
+Whether the port is reachable from the internet depends on the cloud network rules, which this repository cannot see;
+confirm they restrict 5432 to the private network, and consider requiring TLS and narrowing `pg_hba` to mainvm's private address.
 
 ## Decision and alternatives
 

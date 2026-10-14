@@ -967,7 +967,7 @@
   },
   {
    "type": "row",
-   "title": "Host (mainvm)",
+   "title": "Database: shared PostgreSQL on dbvm (read-only exporter; other applications share this server)",
    "collapsed": false,
    "gridPos": {
     "h": 1,
@@ -976,6 +976,576 @@
     "y": 58
    },
    "id": 20
+  },
+  {
+   "type": "stat",
+   "title": "Connections in use (all databases)",
+   "description": "Server-wide: every application shares the max_connections limit. Sustained above 80% risks refusing new connections for all of them.",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${ds_prom}"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum(pg_stat_database_numbackends) / max(pg_settings_max_connections) * 100",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${ds_prom}"
+     }
+    }
+   ],
+   "gridPos": {
+    "h": 4,
+    "w": 6,
+    "x": 0,
+    "y": 59
+   },
+   "id": 21,
+   "fieldConfig": {
+    "defaults": {
+     "unit": "percent",
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       },
+       {
+        "color": "orange",
+        "value": 60
+       },
+       {
+        "color": "red",
+        "value": 80
+       }
+      ]
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ]
+    },
+    "colorMode": "value"
+   }
+  },
+  {
+   "type": "stat",
+   "title": "ERP cache hit ratio (5m)",
+   "description": "Share of block reads served from memory. Healthy is above 99%; falling means the working set no longer fits in memory.",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${ds_prom}"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "100 * sum(rate(pg_stat_database_blks_hit{datname=\"erp\"}[5m])) / (sum(rate(pg_stat_database_blks_hit{datname=\"erp\"}[5m])) + sum(rate(pg_stat_database_blks_read{datname=\"erp\"}[5m])))",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${ds_prom}"
+     }
+    }
+   ],
+   "gridPos": {
+    "h": 4,
+    "w": 6,
+    "x": 6,
+    "y": 59
+   },
+   "id": 22,
+   "fieldConfig": {
+    "defaults": {
+     "unit": "percent",
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "red",
+        "value": null
+       },
+       {
+        "color": "orange",
+        "value": 95
+       },
+       {
+        "color": "green",
+        "value": 99
+       }
+      ]
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ]
+    },
+    "colorMode": "value"
+   }
+  },
+  {
+   "type": "stat",
+   "title": "ERP deadlocks (1h)",
+   "description": "Above 0 means two transactions waited on each other and one was cancelled.",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${ds_prom}"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum(increase(pg_stat_database_deadlocks{datname=\"erp\"}[1h]))",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${ds_prom}"
+     }
+    }
+   ],
+   "gridPos": {
+    "h": 4,
+    "w": 6,
+    "x": 12,
+    "y": 59
+   },
+   "id": 23,
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short",
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       },
+       {
+        "color": "red",
+        "value": 1
+       }
+      ]
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ]
+    },
+    "colorMode": "value"
+   }
+  },
+  {
+   "type": "stat",
+   "title": "ERP database size",
+   "description": "",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${ds_prom}"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "pg_database_size_bytes{datname=\"erp\"}",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${ds_prom}"
+     }
+    }
+   ],
+   "gridPos": {
+    "h": 4,
+    "w": 6,
+    "x": 18,
+    "y": 59
+   },
+   "id": 24,
+   "fieldConfig": {
+    "defaults": {
+     "unit": "bytes",
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       }
+      ]
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ]
+    },
+    "colorMode": "value"
+   }
+  },
+  {
+   "type": "timeseries",
+   "title": "Connections by database",
+   "description": "Where the shared connection budget goes.",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${ds_prom}"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "pg_stat_database_numbackends{datname!~\"template.*\"}",
+     "legendFormat": "{{datname}}",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${ds_prom}"
+     }
+    },
+    {
+     "refId": "B",
+     "expr": "max(pg_settings_max_connections)",
+     "legendFormat": "max_connections",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${ds_prom}"
+     }
+    }
+   ],
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 0,
+    "y": 63
+   },
+   "id": 25,
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short",
+     "custom": {
+      "lineWidth": 1,
+      "fillOpacity": 10,
+      "showPoints": "never",
+      "stacking": {
+       "mode": "none"
+      }
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "table",
+     "placement": "bottom",
+     "calcs": [
+      "mean",
+      "max"
+     ]
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   }
+  },
+  {
+   "type": "timeseries",
+   "title": "ERP transactions per second",
+   "description": "Rollbacks should be a small fraction of commits.",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${ds_prom}"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "rate(pg_stat_database_xact_commit{datname=\"erp\"}[5m])",
+     "legendFormat": "commits",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${ds_prom}"
+     }
+    },
+    {
+     "refId": "B",
+     "expr": "rate(pg_stat_database_xact_rollback{datname=\"erp\"}[5m])",
+     "legendFormat": "rollbacks",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${ds_prom}"
+     }
+    }
+   ],
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 12,
+    "y": 63
+   },
+   "id": 26,
+   "fieldConfig": {
+    "defaults": {
+     "unit": "ops",
+     "custom": {
+      "lineWidth": 1,
+      "fillOpacity": 10,
+      "showPoints": "never",
+      "stacking": {
+       "mode": "none"
+      }
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "table",
+     "placement": "bottom",
+     "calcs": [
+      "mean",
+      "max"
+     ]
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   }
+  },
+  {
+   "type": "timeseries",
+   "title": "ERP rows touched per second",
+   "description": "Returned far above fetched means queries scan many rows to use few: a missing-index signal.",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${ds_prom}"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "rate(pg_stat_database_tup_returned{datname=\"erp\"}[5m])",
+     "legendFormat": "returned (scanned)",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${ds_prom}"
+     }
+    },
+    {
+     "refId": "B",
+     "expr": "rate(pg_stat_database_tup_fetched{datname=\"erp\"}[5m])",
+     "legendFormat": "fetched (used)",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${ds_prom}"
+     }
+    },
+    {
+     "refId": "C",
+     "expr": "rate(pg_stat_database_tup_inserted{datname=\"erp\"}[5m])",
+     "legendFormat": "inserted",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${ds_prom}"
+     }
+    },
+    {
+     "refId": "D",
+     "expr": "rate(pg_stat_database_tup_updated{datname=\"erp\"}[5m])",
+     "legendFormat": "updated",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${ds_prom}"
+     }
+    },
+    {
+     "refId": "E",
+     "expr": "rate(pg_stat_database_tup_deleted{datname=\"erp\"}[5m])",
+     "legendFormat": "deleted",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${ds_prom}"
+     }
+    }
+   ],
+   "gridPos": {
+    "h": 8,
+    "w": 8,
+    "x": 0,
+    "y": 71
+   },
+   "id": 27,
+   "fieldConfig": {
+    "defaults": {
+     "unit": "ops",
+     "custom": {
+      "lineWidth": 1,
+      "fillOpacity": 10,
+      "showPoints": "never",
+      "stacking": {
+       "mode": "none"
+      }
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "table",
+     "placement": "bottom",
+     "calcs": [
+      "mean",
+      "max"
+     ]
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   }
+  },
+  {
+   "type": "timeseries",
+   "title": "Sessions by state, and longest open transaction",
+   "description": "'idle in transaction' that lingers, or a long transaction, holds locks and blocks vacuum.",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${ds_prom}"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum by (state) (pg_stat_activity_count{datname=\"erp\"})",
+     "legendFormat": "{{state}}",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${ds_prom}"
+     }
+    },
+    {
+     "refId": "B",
+     "expr": "max(pg_stat_activity_max_tx_duration{datname=\"erp\"})",
+     "legendFormat": "longest transaction (s)",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${ds_prom}"
+     }
+    }
+   ],
+   "gridPos": {
+    "h": 8,
+    "w": 8,
+    "x": 8,
+    "y": 71
+   },
+   "id": 28,
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short",
+     "custom": {
+      "lineWidth": 1,
+      "fillOpacity": 10,
+      "showPoints": "never",
+      "stacking": {
+       "mode": "none"
+      }
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "table",
+     "placement": "bottom",
+     "calcs": [
+      "mean",
+      "max"
+     ]
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   }
+  },
+  {
+   "type": "timeseries",
+   "title": "ERP temp files (work_mem spills)",
+   "description": "Sorts or hashes that did not fit in memory and went to disk.",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${ds_prom}"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "rate(pg_stat_database_temp_files{datname=\"erp\"}[5m])",
+     "legendFormat": "temp files/s",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${ds_prom}"
+     }
+    },
+    {
+     "refId": "B",
+     "expr": "rate(pg_stat_database_temp_bytes{datname=\"erp\"}[5m])",
+     "legendFormat": "temp bytes/s",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${ds_prom}"
+     }
+    }
+   ],
+   "gridPos": {
+    "h": 8,
+    "w": 8,
+    "x": 16,
+    "y": 71
+   },
+   "id": 29,
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short",
+     "custom": {
+      "lineWidth": 1,
+      "fillOpacity": 10,
+      "showPoints": "never",
+      "stacking": {
+       "mode": "none"
+      }
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "table",
+     "placement": "bottom",
+     "calcs": [
+      "mean",
+      "max"
+     ]
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   }
+  },
+  {
+   "type": "row",
+   "title": "Host (mainvm)",
+   "collapsed": false,
+   "gridPos": {
+    "h": 1,
+    "w": 24,
+    "x": 0,
+    "y": 79
+   },
+   "id": 30
   },
   {
    "type": "timeseries",
@@ -1000,9 +1570,9 @@
     "h": 7,
     "w": 8,
     "x": 0,
-    "y": 59
+    "y": 80
    },
-   "id": 21,
+   "id": 31,
    "fieldConfig": {
     "defaults": {
      "unit": "percent",
@@ -1063,9 +1633,9 @@
     "h": 7,
     "w": 8,
     "x": 8,
-    "y": 59
+    "y": 80
    },
-   "id": 22,
+   "id": 32,
    "fieldConfig": {
     "defaults": {
      "unit": "bytes",
@@ -1126,9 +1696,9 @@
     "h": 7,
     "w": 8,
     "x": 16,
-    "y": 59
+    "y": 80
    },
-   "id": 23,
+   "id": 33,
    "fieldConfig": {
     "defaults": {
      "unit": "short",
