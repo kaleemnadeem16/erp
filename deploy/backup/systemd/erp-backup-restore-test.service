@@ -1,0 +1,13 @@
+[Unit]
+Description=Restore the newest ERP backup into a throwaway database and check it
+Wants=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+User=ubuntu
+Environment=BACKUP_METRICS_FILE=/var/lib/node_exporter/textfile/erp_backup.prom
+ExecStart=/srv/apps/erp/backup/restore-test.sh
+TimeoutStartSec=30min
+Nice=10
+IOSchedulingClass=idle

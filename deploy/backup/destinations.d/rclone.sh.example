@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Copy a backup to any rclone remote (Google Drive, S3, Backblaze, OCI Object Storage, SFTP...), encrypted with age.
+# Inactive until copied to rclone.sh and made executable. Needs `rclone` and `age` installed on the host.
+#
+#   BACKUP_RCLONE_REMOTE      e.g. gdrive:erp-backups        (configure with `rclone config`)
+#   BACKUP_AGE_RECIPIENT      an age public key (age1...) — the private key is kept OFF this host
+#   BACKUP_REMOTE_KEEP_DAYS   optional: delete remote copies older than this many days (default: keep everything)
+set -euo pipefail
+dump="$1"
+: "${BACKUP_RCLONE_REMOTE:?set BACKUP_RCLONE_REMOTE}" "${BACKUP_AGE_RECIPIENT:?set BACKUP_AGE_RECIPIENT}"
+enc="$(mktemp --suffix=.age)"; trap 'rm -f -- "${enc:?}"' EXIT
+age -r "$BACKUP_AGE_RECIPIENT" -o "$enc" "$dump"
+rclone copyto "$enc" "$BACKUP_RCLONE_REMOTE/$(basename "$dump").age"
+rclone copyto "${dump%.dump}.json" "$BACKUP_RCLONE_REMOTE/$(basename "${dump%.dump}").json"
+if [ -n "${BACKUP_REMOTE_KEEP_DAYS:-}" ]; then rclone delete "$BACKUP_RCLONE_REMOTE" --min-age "${BACKUP_REMOTE_KEEP_DAYS}d"; fi
