@@ -1537,7 +1537,7 @@
   },
   {
    "type": "row",
-   "title": "Host (mainvm)",
+   "title": "Backups: database dumps on mainvm (nightly) and the weekly restore test",
    "collapsed": false,
    "gridPos": {
     "h": 1,
@@ -1546,6 +1546,342 @@
     "y": 79
    },
    "id": 30
+  },
+  {
+   "type": "stat",
+   "title": "Last successful backup",
+   "description": "How long ago the last good dump finished. The nightly job runs every 24 hours, so green means within 26 hours.",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${ds_prom}"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "time() - erp_backup_last_success_timestamp_seconds",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${ds_prom}"
+     }
+    }
+   ],
+   "gridPos": {
+    "h": 4,
+    "w": 6,
+    "x": 0,
+    "y": 80
+   },
+   "id": 31,
+   "fieldConfig": {
+    "defaults": {
+     "unit": "s",
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       },
+       {
+        "color": "orange",
+        "value": 93600
+       },
+       {
+        "color": "red",
+        "value": 180000
+       }
+      ]
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ]
+    },
+    "colorMode": "value"
+   }
+  },
+  {
+   "type": "stat",
+   "title": "Last backup run",
+   "description": "1 = the most recent run succeeded, 0 = it failed (check: journalctl -u erp-backup).",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${ds_prom}"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "erp_backup_last_run_success",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${ds_prom}"
+     }
+    }
+   ],
+   "gridPos": {
+    "h": 4,
+    "w": 6,
+    "x": 6,
+    "y": 80
+   },
+   "id": 32,
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short",
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "red",
+        "value": null
+       },
+       {
+        "color": "green",
+        "value": 1
+       }
+      ]
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ]
+    },
+    "colorMode": "value"
+   }
+  },
+  {
+   "type": "stat",
+   "title": "Last restore test passed",
+   "description": "A backup is only proven when it has been restored. The weekly test restores the newest dump into a throwaway database and checks it.",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${ds_prom}"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "time() - erp_backup_restore_test_last_success_timestamp_seconds",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${ds_prom}"
+     }
+    }
+   ],
+   "gridPos": {
+    "h": 4,
+    "w": 6,
+    "x": 12,
+    "y": 80
+   },
+   "id": 33,
+   "fieldConfig": {
+    "defaults": {
+     "unit": "s",
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       },
+       {
+        "color": "orange",
+        "value": 777600
+       },
+       {
+        "color": "red",
+        "value": 1296000
+       }
+      ]
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ]
+    },
+    "colorMode": "value"
+   }
+  },
+  {
+   "type": "stat",
+   "title": "Dumps kept locally",
+   "description": "14 daily + 8 weekly + 12 monthly at most.",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${ds_prom}"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "erp_backup_dumps",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${ds_prom}"
+     }
+    }
+   ],
+   "gridPos": {
+    "h": 4,
+    "w": 6,
+    "x": 18,
+    "y": 80
+   },
+   "id": 34,
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short",
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       }
+      ]
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ]
+    },
+    "colorMode": "value"
+   }
+  },
+  {
+   "type": "timeseries",
+   "title": "Dump size",
+   "description": "Sudden shrinkage or growth is worth a look.",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${ds_prom}"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "erp_backup_last_size_bytes",
+     "legendFormat": "last dump",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${ds_prom}"
+     }
+    }
+   ],
+   "gridPos": {
+    "h": 7,
+    "w": 12,
+    "x": 0,
+    "y": 84
+   },
+   "id": 35,
+   "fieldConfig": {
+    "defaults": {
+     "unit": "bytes",
+     "custom": {
+      "lineWidth": 1,
+      "fillOpacity": 10,
+      "showPoints": "never",
+      "stacking": {
+       "mode": "none"
+      }
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "table",
+     "placement": "bottom",
+     "calcs": [
+      "mean",
+      "max"
+     ]
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   }
+  },
+  {
+   "type": "timeseries",
+   "title": "Backup duration",
+   "description": "",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${ds_prom}"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "erp_backup_last_duration_seconds",
+     "legendFormat": "seconds",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${ds_prom}"
+     }
+    }
+   ],
+   "gridPos": {
+    "h": 7,
+    "w": 12,
+    "x": 12,
+    "y": 84
+   },
+   "id": 36,
+   "fieldConfig": {
+    "defaults": {
+     "unit": "s",
+     "custom": {
+      "lineWidth": 1,
+      "fillOpacity": 10,
+      "showPoints": "never",
+      "stacking": {
+       "mode": "none"
+      }
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "table",
+     "placement": "bottom",
+     "calcs": [
+      "mean",
+      "max"
+     ]
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   }
+  },
+  {
+   "type": "row",
+   "title": "Host (mainvm)",
+   "collapsed": false,
+   "gridPos": {
+    "h": 1,
+    "w": 24,
+    "x": 0,
+    "y": 91
+   },
+   "id": 37
   },
   {
    "type": "timeseries",
@@ -1570,9 +1906,9 @@
     "h": 7,
     "w": 8,
     "x": 0,
-    "y": 80
+    "y": 92
    },
-   "id": 31,
+   "id": 38,
    "fieldConfig": {
     "defaults": {
      "unit": "percent",
@@ -1633,9 +1969,9 @@
     "h": 7,
     "w": 8,
     "x": 8,
-    "y": 80
+    "y": 92
    },
-   "id": 32,
+   "id": 39,
    "fieldConfig": {
     "defaults": {
      "unit": "bytes",
@@ -1696,9 +2032,9 @@
     "h": 7,
     "w": 8,
     "x": 16,
-    "y": 80
+    "y": 92
    },
-   "id": 33,
+   "id": 40,
    "fieldConfig": {
     "defaults": {
      "unit": "short",
