@@ -108,8 +108,10 @@ Q44 closed. [R4 implementation slices](phase-4-r4-implementation-slices.md) and
 [R5 L1–L6](phase-4-r5-business-review.md) is accepted0122–0124/Q45 closed;
 [lifecycle domain](../domain/quotation-lifecycle.md) and [QL0–QL6 handoff](phase-4-r5-implementation-slices.md)
 are specified, not application delivery. [R6/R7 journey](phase-4-r5-acceptance-and-handover-boundaries.md)
-preserves still-proposed downstream branches. [Initial R6 C1–C8 review](phase-4-r6-customer-decisions.md)
-opens planning Q46; no new R6 ADR or pricing/tax/quotation coding authority.
+preserves still-proposed downstream branches. [Final R6 C1–C8 owner review](phase-4-r6-customer-decisions.md),
+[numerical allocations/journey](phase-4-r6-allocation-and-journey.md) and
+[evidence/identity/claim races](phase-4-r6-evidence-and-claims.md) complete planning Q46 research;
+all new directions await approval. No R6 ADR or pricing/tax/quotation coding authority.
 
 
 

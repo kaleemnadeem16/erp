@@ -539,3 +539,23 @@ No code/tests/migrations/seeders/generated files/push or direct coding-agent mes
 owned CRM/C2/delivery files untouched. Docs checks are not implementation or runtime verification.
 
 - 2026-10-14 — Operations: repository made public (ADR 0121: no self-hosted runner, hosted native arm64 builds, deploy by `deploy/deploy.sh`); release of `develop` to production verified end to end (129 migrations, database dump taken first); observability delivered (ADR 0128: request and slow-query log, application errors reach Loki, php-fpm and nginx exporters on loopback-only status, php-fpm no longer listens on every interface, finer Traefik latency buckets, ERP Grafana dashboard). Demo-data approach decided (ADR 0129): separate demo deployment, deferred until near completion; production Company 1 stays the interim demo company and `demo:seed` is not re-run against production.
+
+
+## 2026-10-14 — Final R6 C1–C8 customer-acceptance research for owner review
+
+Completed owner-requested business review after325973f using accepted R1–R5 and dated primary ERP
+comparison. One authoritative final matrix selects FULL_ONLY/explicit supported DIVISIBLE scope,
+new issued reoffer for changed terms (no initial acceptance-variation editor), explicit partial-tier
+entitlement, first accepted choice/family claim, conserved entitled original allocations distinct from
+new agreement/assessment, legitimate customer evidence and separate late reconciliation, shared
+decision-case identity with capacity/exclusive locks, and accepted/available/potential/fulfilled
+reporting distinctions. Q46 remains planning-origin READY_FOR_OWNER; no R6 ADR accepted.
+Integrated100-unit tier/benefit/VAT example preserves original880, new40 reoffer396, accepted40 and
+unoffered60, then gated remaining60 offer594; original100 terms never silently survive as a60 offer.
+Provided retained-price/full-commitment-delivery branches,0.03 rounding over-allocation proof,
+separate compound/fixed-tax historical attribution versus new assessment, evidence timing/late conflict
+process and duplicate/new-purchase/race scenarios. Exact R7 source/target/cardinality/delivery/site/
+baseline/correction/handover uniqueness dependencies listed; no new R7/Finance execution chosen.
+No source/migration/test/generated/seeder/implementation-delivery file change, push or coding-agent
+message. Local docs checks are not application/implementation verification; approvals and all
+R6/R7 delivered-contract gates remain explicit.

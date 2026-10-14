@@ -205,26 +205,30 @@ attempts and device changes.
 
 ### Q46 — R6 customer acceptance, partial terms and decision evidence
 
-**Origin:** PLANNING RESEARCH (owner requested R6 after approving R5; no coding question forwarded).
-**Decision status:** READY_FOR_OWNER initial C1–C8 review; R6 architecture remains proposed.
-**Delivery status:** NOT_STARTED; only dependent acceptance/partial replacement/handover gated.
-**Context/authority:** Owner approval of R5 after6d5bc0c; accepted0122–0124 and R1–R4; existing
-0100 exclusive families,0101/0102 accepted-versus-remaining trust,0115 tiers and0120 allocations.
-**Question/examples:** How may customers accept full/partial scope, retain or lose100-unit tier when
-only40 committed, choose alternatives, consume original fixed benefits/taxes, record earlier decisions
-after expiry/withdrawal/replacement, and avoid duplicates with distinct retry keys?
-**Options/recommendation:** [Initial C1–C8 business review](phases/phase-4-r6-customer-decisions.md).
-Recommend ordinary unchanged eligible full acceptance; supported divisible partial scope with consent;
-no assumed future quantity; explicit choice/exclusive claims; conserved original-scope entitlements;
-separate governed late-evidence reconciliation; authoritative decision identity plus receipt/claims;
-accepted business separate from operational target/readiness and provisional remaining forecast.
-**Disposition needed:** Partial entitlement/consent/reoffer-vs-variation, alternatives, allocation eligibility,
-late evidence duty/policy, exact decision identity and accepted/remaining projections. R7 target/split/
-amendment contracts stay bounded dependencies; R9 final recording/sensitive duties and R8 evidence pending.
-**Blocks:** R6 acceptance, partial replacement and dependent target operations; no CRM/C2 or R5 whole-
-unaccepted specification blocker. Architecture approval without delivered contracts never removes gate.
-**Follow-up:** Present final R6 recommendations before new ADR approval. Preserve coding-origin context
-if forwarded; verification requires coding evidence, not documentation response.
+**Origin:** PLANNING RESEARCH (owner continuation after325973f; no coding question forwarded).
+**Decision status:** READY_FOR_OWNER — final consolidated C1–C8 recommendations, still unaccepted.
+**Delivery status:** NOT_STARTED; only affected acceptance/partial-family/handover operations gated.
+**Context/authority:** R5 accepted0122–0124; R1–R4,0100 exclusive groups,0101/0102 forecast trust,
+0110 source cost certainty,0115/0116 tier/benefit controls and0120 allocation; research completed2026-10-14.
+**Original question/examples:** Full/partial scope, only40 of100/tier consequence, alternatives, fixed
+benefit/tax, late-recorded decisions, distinct retries, accepted versus remaining/operational business.
+**Expanded owner cases:** Named packages/services/Assembly/manual scope; authentic verbal/PO/email/
+portal evidence; reoffer versus variation; conflicting claims and exact R7 interfaces.
+**Options/recommendation:** [Authoritative final C1–C8 matrix](phases/phase-4-r6-customer-decisions.md),
+[numerical reoffer/allocation journey](phases/phase-4-r6-allocation-and-journey.md),
+[evidence/decision identity/races](phases/phase-4-r6-evidence-and-claims.md).
+Recommend FULL_ONLY unless explicitly supported DIVISIBLE; newly issued reoffer for changed terms
+(no initial acceptance-variation editor); explicit retained tier only; first accepted option/family
+claim; conserved entitled original consumption distinct from new agreed/assessed amounts; shared
+customer-decision case plus quantity/exclusive claims; pending uncertain evidence versus separately
+authorised late reconciliation; acceptance independent from target readiness and provisional forecast.
+**Disposition needed:** Owner approve/amend C1–C8, especially divisibility, reoffer/remaining lineage,
+fixed entitlement/rounding, choice/group locks, evidence/late duty and duplicate-case policy. R7 target/
+split/baseline/correction dependencies remain bounded/unaccepted; R9 final duties/access and R8 channels pending.
+**Blocks:** New R6 semantics/delivery and partial-family operations; no CRM/C2 or drafting R5 blocker.
+R6/R7 architecture approval without delivered contracts never enables partial replacement.
+**Follow-up:** Record governing R6 ADRs/contracts only after owner approval. Preserve future coding-
+origin wording/context and coding-owned verification; documentation alone verifies no implementation.
 
 ---
 

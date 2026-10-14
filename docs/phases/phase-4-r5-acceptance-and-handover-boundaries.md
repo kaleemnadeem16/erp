@@ -5,6 +5,10 @@
 **2026-10-13 · R5 lifecycle boundaries ACCEPTED0122–0124/Q45 closed; R6/R7 branches PROPOSED.**
 [R6 C1–C8 review](phase-4-r6-customer-decisions.md) continues these choices underQ46.
 Original worked arithmetic remains illustrative, not accepted partial consent/allocation policy.
+**Current R6 review:** [final C1–C8 matrix](phase-4-r6-customer-decisions.md) and
+[reoffer/remaining-scope journey](phase-4-r6-allocation-and-journey.md) supersede the initial dual
+“reoffer/acceptance variation” recommendation. Initial changed terms now recommend issued reoffer;
+fixed-tax shares below are conditional historical illustrations, never automatic new payable tax.
 This investigates enough downstream behaviour to make [R5 lifecycle recommendations](phase-4-r5-business-review.md)
 safe. It is not an acceptance/handover implementation contract or authority to build those operations.
 [Accepted R5 delivery scope](phase-4-r5-implementation-slices.md) distinguishes initial whole operations.

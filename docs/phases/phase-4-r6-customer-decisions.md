@@ -1,135 +1,177 @@
 [← Phase index](README.md)
 
-# R6 — Customer acceptance, alternatives and partial scope
+# R6 — Final C1–C8 customer acceptance decision review
 
-**2026-10-13 · INITIAL BUSINESS REVIEW / PROPOSED C1–C8 · Q46, Origin: PLANNING RESEARCH.**
-R5 is accepted in 0122–0124; R6 choices below are not accepted or coding authority. This bounded
-review reuses [R5 partial/tier/allocation research](phase-4-r5-acceptance-and-handover-boundaries.md)
-and [primary comparison](phase-4-r5-quotation-lifecycle.md), accessed 2026-10-12, rather than repeating
-pricing/tax/lifecycle research. R7 is investigated only where commitment identity/readiness affects
-acceptance. Next owner review must settle eligibility, consent, claim and allocation contracts before
-R6 ADRs or enabling partial replacement. No code, legal tax engine or application checks here.
+**2026-10-14 · RESEARCH COMPLETE FOR OWNER REVIEW / PROPOSED / Q46.**
+This is the authoritative final C1–C8 matrix, replacing the initial agenda at 325973f. **No new R6
+recommendation is accepted.** R1–R5 remain governing; no ADR, application or delivery authority is
+created. [Allocation and worked journey](phase-4-r6-allocation-and-journey.md) and
+[evidence, identity and races](phase-4-r6-evidence-and-claims.md) complete the review.
 
-## Accepted baseline — new decision boundaries
+Reuse accepted 0100/0109 scope/choice structure,0110 cost certainty,0115/0116 pricing and benefit-once,
+0118–0120 financial evidence and 0122–0124 lifecycle,0070/0085 shared governance and 0101/0102 forecast.
+The [dated primary comparison](phase-4-r5-quotation-lifecycle.md) already contrasts Dynamics frozen
+quotes/order conversion with ERPNext partial quantity/alternative mapping (accessed 2026-10-12).
+It supports separate offer/decision/target identities; vendor mapping does not decide our consent,
+entitlement, statutory allocation or late-evidence rules. No broad research cycle is repeated.
 
-0100 distinguishes independent families and exclusive competing groups;0109 freezes offered
-choices/baseline while acceptance is separate.0115's tier is line-local all-units with declared basis;
-no pooled/cumulative entitlement.0116 protects benefit-once, controlled exceptions and complete
-applicable cost.0118–0120 preserve original financial/FX/component/rounding allocation evidence and
-separate future invoice/settlement facts.0124 ends only unaccepted availability and refuses initial
-partial replacement until R6/R7 approved/delivered.0101/0102 separate accepted business, remaining
-potential, provisional trust and explicit reporting FX. Party, not fabricated CustomerAccount, is
-legal recipient;0104 does not require every handover to create financial setup.
+## Single final owner matrix
 
-## Single initial C1–C8 review
-
-| Bundle | Genuine new choice / small-business example | Options and trade-offs | Recommendation for owner review | Architecture/delivery and R7–R9 gates |
+| Bundle / accepted authority | New decision and examples | Options / trade-offs | Recommended direction for approval | Support architecturally now; defer execution / dependencies |
 |---|---|---|---|---|
-| **C1 Full/partial eligibility and consent** | Customer wants4 of10 boxes; bespoke Assembly quoted as one complete installation. | Full-only simple but restrictive; any fraction ignores package/technical dependencies; explicit divisible-scope rules need adapters and consent evidence. | Ordinary full acceptance binds unchanged eligible issued terms. Partial requires supported DIVISIBLE eligibility, exact compatible offered/priced/package measure, minimums/dependencies and explicit selected-scope/amount consent. Unsupported/indivisible scope requires new offer, never automatic scaling. | Design full/partial outcome identities now; enable only supported accepted contracts. R7 cost/estimate baseline for split technical/fixed setup; R9 record-on-behalf duty. No universal customer account requirement. |
-| **C2 Quantity-tier consequences** |100 units quoted at9,40 accepted while ordinary price is10. | Always keep9 is convenient but may waive minimum; always reprice may break promised partial terms; full-commitment-only preserves economics but limits selling. | Respect explicit original entitlement: unchanged full100 commitment with delivery40 may retain9. Only40 committed cannot assume future60. Without explicit partial-rate retention, show new eligible quantity price and obtain customer consent through approved reoffer/variation vehicle before accepting changed amount. | Original issue stays unchanged; C1 consent and C7 claims. R3 cross-line/cumulative tiers still deferred; fixed contract departure remains unsupported without specific authority. |
-| **C3 Alternatives and exclusive claims** | Customer selects B instead of baseline A, or adds installation. Two independent families compete for same sale. | Baseline-only simpler; free combinations can double count or bypass review; explicit supported choices require claim and financial checks. | Accept named offered selection once, exclude unselected options, validate dependencies/prices/controls/approval coverage. Initial choose-one group binds one selected alternative for that logical scope; mixed partial A/B requires explicit reoffer/selection rule. Different competing families can remain offers but one permitted exclusive commercial claim, even for partial first acceptance. | Immutable selection evidence and stable intent/claim key, not Item ID. R7 fulfilment scope; R9 opaque conflict if hidden competitor; no silent exclusive claim release on expiry/withdrawal. |
-| **C4 Fixed benefits/tax allocation** | Document benefit100/fixed tax20 attached to original100; customer accepts40 then60. | Repeat full amount duplicates economics; naïve independently rounded proration over/under-allocates; original-scope conserved allocations are richer but explainable. | Preserve original line/scope allocation and cumulative consumed/remaining shares for supported divisible benefits. Do not grant new full benefit per acceptance/revision. Fixed tax uses declared assessed scope/method and explicit legal/context support; unknown prorating eligibility requires review/reoffer, never assume all duties proportional. | R4 computed-vs-allocated base and rounding evidence remain. New multi-line header discount input not authorised. R7 carries authorised shares; Finance legal invoice tax/credits separate with linked variance. |
-| **C5 Expired/withdrawn/replaced offers and late evidence** | Customer says “I accepted yesterday” after seller records withdrawal today; another revision is now active. | Current-only misses genuine earlier decisions; arbitrary backdate bypasses claims; governed evidence capture/review has delay but preserves truth. | Ordinary acceptance only of currently eligible available scope. Separately capture actual occurrence and recording times plus authentic decision evidence. Earlier external decision needing late recording goes through a dedicated governed reconciliation duty/review; don't reactivate old offer or overwrite conflicting later claims automatically. | R5 frozen times/availability untouched. R7 conflicting target amendments and R8 withdrawal/delivery evidence dependencies; no generic expired-offer checkbox or claim that ERP status settles legal validity. |
-| **C6 Acceptance vs operational commitment** | Customer accepts service40; Order/Job readiness or required site information not yet complete. | Force target creation in acceptance delays recording real business; auto-create generic job invents scope; separate accepted decision/target is clearer but needs readiness status. | Validate/record authoritative customer acceptance separately from Order/Job handover. Accepted business references exact scope/terms; target creation is a distinct idempotent R7 operation. Missing execution readiness is explicit, not no acceptance; unsupported commercial prerequisites still refuse authoritative acceptance. | R7 chooses target/multiplicity/cancellation, cost/setup/site baseline. No stock reservation/posting/Finance from acceptance; accepted business is not accounting revenue or forecast. |
-| **C7 Duplicate prevention/concurrency** | Same customer decision sent twice with different retry keys; concurrent40/60 requests race with replacement. | Receipt-only misses fresh-key duplicates; amount matching rejects real repeat purchases; durable decision identity plus scope claims requires evidence and locks. | Use actor/company/operation receipt AND stable customer-decision/business allocation identity. Canonical customer reference or server-issued decision-intent identity plus evidence distinguishes retry from genuinely new purchase. Serialize accepted quantity/selection/exclusive/remaining claims with R5 coordinator and enforce DB conservation. | R7 separate handover intent/consumption identity. Different key cannot re-record same decision; simultaneous competing-family/overlap requests cannot both claim incompatible scope. No silent newer-revision retry. |
-| **C8 Remaining disposition and forecast** |40 accepted, remaining60 later withdrawn or lost; other installation scope remains open. | Whole-quote won/lost masks partial facts; auto-publish forecast from new sums misstates trust; explicit remaining projection requires governance. | Keep accepted quantities/terms, remaining availability and remaining pursuit decision distinct. Expiry/withdrawal/rejection removes only relevant unaccepted availability; accepted cancellation/amendment separate. Changed forecast basis becomes provisional under 0102, never auto-trusted or double-counted. | R7 obligations preserved; R9 remaining/partial-win metrics and published FX/valuation. No automatic close/win entire Opportunity from one partial, family choice or handover. |
+| **C1 — Eligibility**.0109 preserves source-specific measures, options and optional estimating;0124 preserves accepted/unaccepted scope. |4/10 cartons versus40% of a complete bespoke installation; independent service hours versus an indivisible outcome. | FULL_ONLY is simple but restrictive; unrestricted fractions misrepresent obligations; declared divisibility needs source validation. | Default FULL_ONLY per offered logical scope. DIVISIBLE only when explicitly offered and supported: compatible quantity/basis/increments, minimums, dependencies, applicable cost/technical allocation and consent all pass. Multiple independently acceptable scopes can be selected without making each scope fractionally divisible. Unsupported changes require reoffer. | Design source/quantity/entitlement and original-scope anchors now. Enable only supported adapters; Assembly/fixed setup splitting waits applicable R7 baseline rules. R5 snapshots/claims and R9 recording scope are prerequisites. |
+| **C2 — Price and consent**.0115 line-local all-units tiers;0116 adjustments/contract limits;0122 immutable issued result. |100 committed with delivery40/60; only40 committed; an explicit partial entitlement retains9; otherwise ordinary rate10. | Always retain ignores minimum; automatic reprice lacks consent; direct acceptance variation adds another sensitive editing workflow. | Honour explicit partial entitlement only. Without it, receive a request/counterproposal, issue a new reoffer, obtain consent to its exact amount/conditions, then record acceptance. **Newly issued reoffer is the initial changed-terms vehicle; no acceptance-variation editor.** Never reprice already accepted terms or infer future60. | Keep original offer plus reoffer lineage/caps and exact consent. R5 whole replacement before acceptance can support reoffer; post-acceptance remaining reoffer stays gated by R6/R7 delivered contracts. R3 pooling/cumulative benefits and contract departure remain deferred. |
+| **C3 — Choices/exclusivity**.0100 independent families/explicit exclusive groups;0109 within-quote choices/baseline. |A or B plus optional installation; standard/premium competing families; two staff select different options. | Auto-cancel competitors loses history; permit every combination doubles scope; choice claims need stable intent. | Accept only explicit offered, eligible selections and dependencies once. One alternative per within-quote choose-one intent; first authoritative partial binds that choice. First accepted claim in an exclusive family group binds the family; further disjoint acceptance in it may proceed within caps. Competitors become claim-blocked, not automatically cancelled/rejected. Selection changes after acceptance need governed correction/reoffer, not a toggle. | Stable choice/family/group claims across revisions and products now. Unsupported mixtures/conditional combinations refuse. R7 accepted cancellation/claim release and R9 hidden-member access; R8 displays honest availability/claim distinctions. |
+| **C4 — Allocations**.0116 benefit identity once;0120 original components, rounding and computed/allocated base evidence distinct. |Fixed benefit100, fixed tax20, or0.03 split25%/25%/50%; a changed-price40 reoffer. |Repeat full benefit duplicates; independently round slices over-allocates; original allocation plus cumulative consumption is richer. | Original quotation allocation is historical attribution. Supported unchanged partials consume only entitled original benefits/component shares with cumulative caps and deterministic residuals. Fixed commercial benefit sharing must be explicit; no presumed proportional right. Fixed taxes require declared assessed-scope support, never generic legal proration. Reoffers preserve original attribution but separately calculate/agreed new amounts. | Preserve lineage, per-component budgets/consumption/remaining, policy and separate base conversions now. No multi-line header-discount input. New assessment/benefit needs explicit identity/authority; Finance legal taxes/credits and unsupported allocations later. |
+| **C5 — Evidence/late records**.0123 separates expiry/withdrawal/rejection;0124 freezes predecessor history;0122 issuer acknowledgement isn't customer consent. |Customer PO/email/verbal agreement; claimed yesterday's acceptance recorded after expiry/replacement with competing commitment. |Current-only loses facts; arbitrary backdate bypasses claims; governed reconciliation needs evidence/review. | Ordinary acceptance requires current eligible offer, verified customer consent and recorder authority. Record occurrence and ERP recording times separately. Capture uncertain/disputed evidence as pending observation, not accepted business. A dedicated governed reconciliation may recognise proven earlier consent only after historical eligibility and present conflict/commitment review; no old-offer reopening or automatic later-claim reversal. | Evidence provenance and late-case identity now; company evidence policy supports legitimate non-electronic practice. Sensitive reconciliation duty separately approved in R9; R7 conflict corrections and R8 delivery/withdrawal evidence. Defer complex late-case execution if unsupported. |
+| **C6 — Readiness**.0104 no universal CustomerAccount gate;0109 no mandatory Assembly/Job;R5 issue≠acceptance≠handover. |Customer accepts installation but site/Finance setup incomplete; stocked goods need delivery rather than a Job. |Force target creation delays real business; generic auto-job invents scope; separate accepted/readiness facts need visible follow-up. | Record authoritative acceptance once its own commercial/consent/claim requirements pass. Expose missing handover/site/operational/Finance prerequisites separately; no forced Assembly, Job or CustomerAccount. Accepted business is commercial commitment, not accounting revenue or completed work. | Accepted allocation/source and readiness interface now. R7 chooses target, multiplicity, baseline and correction; Phase5 execution and Finance posting later. Commercial uncertainty still prevents authoritative acceptance, not factual evidence capture. |
+| **C7 — Identity/concurrency**.0100 atomic exclusive claims;R5 coordinator, scoped receipts and immutable evidence. |Same PO recorded by two staff with different keys; two40 slices; genuine later purchase of the same Item/quantity. |Receipt-only misses new-key duplication; amount/item matching blocks genuine sales; canonical decision case plus claims needs shared intake. | Stable company/Party customer-decision case independent of employee/key/quote revision. Customer references and versions resolve to that case; referenced amendments are not new purchases. No-reference cases need shared intake and duplicate review; unresolved identity remains pending. Atomically consume current offer and original-scope capacity plus choice/exclusive claims; receipts handle transport retry. | Shared business identity, authoritative caps and R5 writer coordination now; no magical dedup from UUID or text similarity. R7 handover has separate business consumption identity. R9 protects cross-record conflict details; current scope/field checks precede replay. |
+| **C8 — Remaining/reporting**.0101 accepted versus remaining potential;0102 persistent provisional trust and explicit valuation FX. |40 accepted,60 merely potential/unoffered or later withdrawn; another independent installation scope remains. |Whole quote won/lost masks partial truth; summing revisions duplicates; automatic forecast refresh falsely implies trust. | Separate accepted quantities/agreed values, currently available/claim-blocked scope, sales potential, lost remainder, accepted corrections and actual fulfilment. A remaining quantity may exist without a current priced offer. Changes invalidate affected forecast trust, not automatically publish trusted values or close the Opportunity. | Distinct scope/value/event projections and original quote FX now. R9 final metrics/scopes and reporting FX; R7 delivery/cancellation facts separate. No old100 + accepted40 + remaining60 counted as200. |
 
-These recommendations settle the direction to review, not detailed schema or all conditional
-combinations. C1/C2/C4/C5 need explicit owner choice on partial entitlement, revised-terms consent
-vehicle, supported allocations and late evidence duty. Sensitive reconciliation permission must not
-be inferred from ordinary quote preparation/issue/customer-recording authority. R9 finalises vocabulary.
+All eight bundles require owner approval. The following sections make the defaults, consent vehicle,
+source limits and R7 boundaries precise; they do not accept them by describing them.
 
-## Two practical acceptance paths
+## C1 — Source eligibility, not a universal “partial” switch
 
-**Small supplier, unchanged full offer:** a prospect Party accepts10 cartons at100.0000 net each,
-known supported output tax10%, total gross1100.0000, within validity. Recommend explicit recorder
-checking customer identity/evidence and exact issued selection/terms, then one authoritative full
-acceptance referencing issue/currency/FX/component/policy IDs. Do not create a financial account,
-material plan, Job or extra approval merely to record routine business when no policy requires it.
-A repeated genuine decision returns the same acceptance; separate later Order/Job readiness is visible.
-Changing quantities/options/terms moves out of this ordinary full-offer path.
+| Offered source / scope | Full acceptance | Partial allowed only when explicitly DIVISIBLE | Refuse/reoffer when |
+|---|---|---|---|
+| Ordinary stocked Item |Exact offered product/measure/conversions and conditions pass |Integer/declared divisible selling increments and exact compatible priced/stock quantities |Quantity changes product/package identity, minimum/price condition fails, unsupported conversion or missing mandatory evidence |
+| Named package |Whole offered cartons/packs under captured contents and price basis |4 of10 whole cartons may qualify if explicitly divisible by carton |“Half a sealed carton” is unsupported under that offer; offer loose units through a legitimate new basis, not silent stock conversion |
+| Measurable service |Offered service/deliverable, quantities and terms known |4 of10 genuinely independent hours/visits if minimum call-out/setup conditions supported |A single successful outcome or fixed mobilisation is presented as arbitrarily divisible |
+| Assembly-backed work |Complete defined work with applicable issued technical/cost/material evidence |Independent zones/sqm/stages only with meaningful technical quantities, fixed/setup treatment and supported accepted-baseline allocation |40% of complete bespoke installation has no coherent delivered scope/estimate; do not proportionally scale a recipe into fictitious completeness |
+| Controlled manual scope |Defined legal Party, nature, measure, scope and authorised terms |Explicit measurable divisible scope, real applicable cost/control evidence and consent |Free text alone does not define divisible units, excuse tax or create cost evidence |
+| Optional/independent scope |Select whole optional installation or independent supply scope if offered/eligible |Its own scope must separately pass divisibility and prerequisites |Section heading alone is not an indivisible unit; optional installation dependent on equipment cannot be selected without satisfying declared dependency |
 
-**Conditional100-unit offer:** quote100 at tier9 with distinct allowed fixed-per-line benefit100 and
-supported fixed quote-tax estimate20 gives net800.0000/gross820.0000. This mirrors the R5 numerical
-journey; no multi-line document-discount input or statutory tax prorating is approved.
+Recommend FULL_ONLY when an issued offer lacks an explicit partial declaration. This does not make
+all lines compulsory: declared independently acceptable scopes/optional choices may still be accepted
+whole. A chosen combination must have supported pricing/tax/control and review coverage; a baseline
+approval is not authority for all unreviewed permutations. Arbitrary conditional combinations defer.
+Offered actionable choices need the seller's required control/review coverage, or an explicitly
+disclosed continuing approval condition under agreed policy. Recording cannot retroactively impose
+an undisclosed new price/approval condition on genuine consent; capture that fact and reconcile a
+discovered coverage gap rather than automatically repricing it.
 
-| Customer choice | Proposed consequence / unresolved acceptance rule |
+Customer consent identifies exact revision/selection, quantity/basis, net/discounts, tax-estimate and
+inclusion/withholding disclosures, contractual conditions and any allowed partial entitlement.
+A price or commercial prerequisite change turns the request into a proposed new deal, not authorised
+acceptance at a silently substituted price. If customer and appropriately authorised seller have
+already genuinely agreed40 at9 outside ERP, do not relabel that fact merely to impose10. Preserve
+their evidence and use supported governed recognition/reconciliation; no later reoffer invents consent
+or rewrites an already agreed amount. Source truth/complete applicable cost remains0110/0116;
+no universal new cost requirement for maintained/manual advisory paths.
+
+## C2 — Exact initial changed-terms rule
+
+| Situation | Terms remaining eligible / result recommended |
 |---|---|
-| Accept100, delivery40/60 |9 price entitlement applies to accepted100 if stated terms permit; operational split is R7, not loss of tier. |
-| Accept40 only with explicit partial-rate retention | Original attribution net320.0000/tax-share8.0000/gross328.0000 is possible only with supported eligibility/allocations and authorised consent. |
-| Accept40 only without such entitlement | Recommend reoffer/governed agreed variation to10: net360.0000 + illustrative8.0000 =368.0000. Customer must accept the actual changed amount; original820 remains history. |
-| Later revised remaining60 at10 | Presumed remaining benefit60 yields net540.0000 plus original-assessment share12.0000 =552.0000, only if eligibility/assessment continuation permits. A new genuine fixed20 assessment instead gives560.0000 with visible variance. |
+|Firm commitment100, delivery40 then60 |100-unit price may remain; delivery scheduling is R7, not a40-unit commitment. |
+|40 only, original offer explicitly permits40 at9 and benefit treatment is defined |9 can remain with supported partial tax/allocation/controls and consent; do not infer this clause from an offered100 quantity. |
+|40 only,100-unit minimum/benefit condition no longer met |Original offer remains immutable, but its100-unit entitlement is not available for this40 acceptance. Issue a reoffer with eligible terms, then obtain new customer agreement. |
+|Customer requests B, new discount/payment condition or quantity beyond remaining cap |If the exact supported offered alternative/condition is already covered, validate C3; otherwise reoffer. No “accepted price” edit, implicit waiver or ordinary Issue-authority contract departure. |
+|Customer already accepted100 or40 on valid agreed terms |Never recalculate its unit price from later purchases, cost, FX or a cancelled remainder. Amendments/cancellation require separately governed accepted-business and R7 correction policy. |
 
-Choosing the supported variation vehicle matters: safest initial path is a newly issued agreed
-reoffer; a dedicated acceptance-variation operation is a new approved capability, not a generic
-editable “accepted price”. Do not silently consume original40 claim through two separate offers.
-R5 whole-unaccepted replacement can make a reoffer before any partial is accepted; after acceptance,
-remaining-scope changes stay refused until R6/R7 contracts are approved and delivered.
+Do not rerun live price lists, FX or cost as an automatic repricing/voiding test for an unchanged
+issued firm offer. Validate current actor/record/claim eligibility and **declared continuing conditions**
+(such as an explicit contract-valid-at-acceptance clause), not an imagined requirement that every
+old master version remain current. Original contract/rate expiry conditions must be explicit; no
+universal assumption that a price-list change revokes a valid offer. New mandatory compliance/review
+requirements need their own supported governance, never covert alteration of actual customer agreement.
 
-C4 fractional-rounding illustration: original benefit0.0300, accept25%/25%/50%. Independent HALF_UP
-shares0.01+0.01+0.02 incorrectly total0.04. A proposed supported cumulative-entitlement policy yields
-settled cumulative0.01/0.02/0.03 and incremental0.01/0.01/0.01, conserving0.03. Final policy/ties/
-eligibility must be named and approved; use original scope identity, quantum and remaining cap.
-Never turn this example into universal tax or refund allocation. R4 original largest-remainder
-allocation and new partial consumption are different stages with linked evidence.
+Sending a reoffer is not consent. An earlier PO/email accepting40 at9 cannot evidence agreement to40
+at10. Require a corresponding updated PO, signed/portal/email confirmation or policy-supported verbal
+agreement to the new exact terms, recorded under C5. Company approval of discount is also not customer
+consent. No new electronic-signature mandate or universal independent reviewer is proposed.
 
-## Identity, consent and authority facts to support now
+New reoffer before any acceptance can atomically replace the wholly unaccepted original under R5.
+If reoffer covers40 rather than100, explicitly dispose of the old100 availability and show remaining60
+as unoffered potential pending a new offer. Do not silently leave60 at the invalid100-unit price.
+A later remaining60 reoffer after accepted40 is a **partially accepted-family operation**, even if no
+old offer currently covers60: it cannot bypass R6/R7 gates by being labelled “new revision”.
 
-Design accepted decision identity separately from issued revision and later fulfilment ID. Preserve
-customer Party/contact or authorised decision source, actual decision occurrence/recording times,
-source evidence/reference, selected offered scopes/options/quantities/UoM/conversions, original versus
-agreed amounts/terms, variation reason/consent, entitlement/condition outcome, original allocations/
-remaining caps, quote tax-estimate and pinned commercial FX, review/authority and claim generations.
-No fabricated historic timestamp/approval/certificate or generic audit trail as sole evidence.
+## C3 — Claim semantics the owner is choosing
 
-Full unchanged acceptance references original commercial/financial evidence; changing live list/cost/
-FX does not rewrite its offer. Determine current recording eligibility and claim/policy prerequisites
-separately. If current mandatory commercial risk/compliance policy requires fresh review, expose it
-and obtain the required evidence/authority; don't change the customer's agreed net covertly or equate
-an unknown execution estimate with no customer decision. Exact acceptance revalidation subjects/
-review coverage belong to R6/R9 approval, not universal forced repricing.
+Within-quotation choose-one group: bind one selected option on first authoritative acceptance;
+further eligible partials use that option. Optional independent scope has its own claim/dependencies.
+Across competing families: bind the exclusive group to first accepted family, not merely to one quote
+revision. Accepted40 can leave eligible60 in that family; it cannot permit competing family B to claim
+the same pursuit. Other issued offers remain historical/offered records but normal acceptance is
+claim-blocked, not automatically seller-withdrawn, rejected or customer-cancelled.
 
-Scope/choice claims use stable logical intent/overlap anchors across revisions, not product master
-or display position. A25-unit alternative package and100-piece baseline may share intent but not
-an automatically fungible quantity; supported comparison/basis is required before partial conversion.
-Assembly splitting needs applicable technical/fixed/setup-cost support; no blind proportional recipe
-or complete-cost assertion. R7 source adapter must reconcile accepted baseline without fabrication.
+Independent families outside an explicit exclusive group remain independent under 0100. Source Item
+identity is neither proof of duplicate intent nor proof of independence. Preserve copy/overlap anchors
+and warn/review materially overlapping proposals without secretly making every family exclusive.
+Membership/revision/recipient edits cannot release or evade an existing accepted claim.
 
-A sender/recorder's acknowledgement is not customer's consent. Signature, email, purchase order,
-portal or witnessed instruction require an explicit evidence policy; no blanket compulsory e-signature
-or maker/checker is proposed. Unsupported/disputed late records may be captured as pending factual
-observations for governed reconciliation, without asserting authoritative accepted claims or operational
-commitments. R8 communications context assists evidence, never decides legal binding automatically.
+Selection changes after acceptance, mixed A40/B60, moving accepted scope to a competing family or
+releasing a group require explicit governed customer agreement and commitment compatibility, not a
+selection toggle. Recommend refusing those corrections in initial normal acceptance delivery;
+design references/events now and implement only after R6/R7 correction contracts are approved.
 
-## R7 dependencies bounded to acceptance safety
+## C6 — Exact remaining R7 contracts, not a new R7 implementation
 
-R7 must define accepted allocation→target identity, source-appropriate Order/Job paths, one-vs-many
-or disjoint splits, readiness, contacts/site, cost certainty/material baseline and correction ownership.
-One accepted commercial scope is counted once even when Order→Job→fulfilment links exist. Target
-idempotency plus business consumption identity prevents new-key duplicate handover. A cancelled Job
-cannot automatically erase customer acceptance/release exclusive claim; correction requires governed
-commercial and operational evidence. Phase5 execution and Finance invoices/settlements stay later.
+| R7 decision/interface required | Minimum acceptance-safe boundary | What may remain incomplete when acceptance is recorded |
+|---|---|---|
+|Accepted source/target mapping |Accepted allocation ID, logical/option identity and original/agreed issue lineage; Item/service/Assembly/manual retained |Order versus Job or another supported target not created; no mandatory fake Job/Assembly |
+|Target cardinality and quantity consumption |Business handover intent, consumed/remaining accepted quantity, disjoint split/parent flow links |One/many targets not chosen until handover policy ready; no duplicate reuse of accepted40 |
+|Delivery schedule versus new commitment |100 committed with40/60 scheduling stays100 accepted once |Delivery dates/slots/stock reservation pending; no extra acceptance for a delivery batch |
+|Site/contact/operational readiness |Typed missing prerequisites and provenance/correction ownership |Execution-only site/contact details may wait; uncertainty about legal customer/scope/terms cannot |
+|Technical/cost/material baseline |Source-appropriate accepted estimate/cost certainty, fixed/setup allocation and source control coverage |Current execution stock/estimate readiness may wait; unsupported partial technical allocation still blocks that authoritative partial |
+|Commitment amendments/cancellation |Authorised accepted-business correction → target impact and exclusive/cap release protocol |Initial acceptance can exist without correction engine, but accepted40 cannot be replaced/cancelled through ordinary quote actions |
+|Idempotent handover |Same accepted allocation/target intent returns same target; new key cannot consume it twice |Order/Job creation and their numbering/fulfilment are deferred R7 |
 
-R6 should not require a Job for ordinary stock/service acceptance, nor erase accepted business merely
-because execution prerequisites remain. Partial replacement enabling needs both R6 claim/consent/
-allocation support and R7 commitment compatibility; architecture approval by itself is insufficient.
+The target gate does not erase real customer consent. Expose ACCEPTED with readiness deficiencies
+when its own commercial/evidence/claim prerequisites pass. Inadequate commercial identity, unsupported
+partial economics or disputed consent remains pending/refused authoritative acceptance, regardless
+of whether a Job could be created. Finance customer-account setup/invoice point is separately owned.
+Site/contact facts that determine agreed scope, tax jurisdiction, price or authentic customer consent
+are commercial prerequisites, not deferrable handover details. Execution-only access instructions,
+scheduling/contact refinements or Finance setup may wait. No dummy data fills a mandatory gap.
 
-## Next review priorities and coordination
+## C8 — Distinct business facts
 
-First settle C1/C2 consent/quantity/tier cases, then C3/C7 stable choice/exclusive/decision claims;
-C4 fixed allocations and C5 late evidence follow with exact numerical/external-decision scenarios.
-C6/C8 clarify recording/readiness and remaining metrics with bounded R7/R9 implications. No broad
-research cycle unless a specific unresolved design conflict appears. Prepare final consolidated R6
-review before ADR acceptance; no R6 decision becomes accepted through this planning commit.
+| Fact | Meaning / must not imply |
+|---|---|
+|Accepted quantity and agreed value |Authoritative selected commercial commitment, not recognised revenue or quantity delivered |
+|Currently offered/available quantity |Supported live offer with current validity and claims; not all original unaccepted quantity |
+|Remaining sales potential |Possible future business, which may have no active priced offer; MAINTAINED or eligible SELECTED_OFFERS under 0101 |
+|Rejected/withdrawn/expired remainder |Disposition/availability of unaccepted scope; no accepted-business reversal |
+|Accepted amendment/cancellation |Separate governed correction stream; original agreement and target impacts retained |
+|Actual delivery/fulfilment |R7/Phase5 execution against accepted scope, never a second sale |
 
-Q46 is new PLANNING RESEARCH, separate from closed Q45. Future owner-forwarded coding questions
-retain Origin: IMPLEMENTATION AGENT, original wording/context and coding-owned verification under
-the accepted workflow. No coding question was forwarded, answered or marked VERIFIED here.
+Affected forecast source changes leave0102 trust provisional until authorised review/publication;
+use its explicit valuation-date FX, not live conversion or issue FX as published reporting FX. Do not
+count unselected alternatives, blocked competitors or already accepted scope in remaining potential.
+One partial acceptance never automatically makes the entire Opportunity won or lost. R9 settles
+final metric formulas, access, exports and scope-safe aggregates.
+
+## Support now versus staged delivery
+
+Design coherent decision/consent/claim/original-allocation/readiness identities, typed source limits,
+exact monetary evidence and protected company/record projections now. Initial acceptance should
+support eligible unchanged full scopes and explicitly supported divisible cases after their contracts
+are approved/delivered; everything else refuses, with factual pending intake kept distinct.
+
+Changed-terms reoffers reuse R5; no separate acceptance-variation workflow initially. Late-sensitive
+reconciliation, accepted selection/cancellation corrections, unsupported Assembly partials, advanced
+conditional choices, new header discounts and Finance engines can be deferred with explicit refusal.
+Partial remaining-scope reoffers/replacement stay blocked until both R6 and required R7 contracts
+are approved AND delivered. Final R9 duties/grants and R8 evidence channels remain prerequisites.
+
+## Exact owner disposition and coordination
+
+Approve or amend C1–C8, especially FULL_ONLY default/declared DIVISIBLE scope, new issued reoffer
+for changed terms, first-choice/family claim binding, explicit commercial entitlement and cumulative
+allocation, governed late evidence and shared decision-case identity. No new architecture is accepted
+by this local research commit. No demonstrated contradiction requires changing R1–R5 ADR bodies.
+
+Q46 remains Origin: PLANNING RESEARCH, ready for final owner review. No implementation question
+was forwarded. Future coding-origin questions retain original wording/context and Origin:
+IMPLEMENTATION AGENT; only the coding owner can verify implementation. No application tests,
+migrations, generated files, delivery-document changes or push are part of this work.
 
 ## Related
 
-- [R5 accepted review](phase-4-r5-business-review.md) · [R5 slices](phase-4-r5-implementation-slices.md)
-- [Lifecycle contract](../domain/quotation-lifecycle.md) · [R6/R7 journey](phase-4-r5-acceptance-and-handover-boundaries.md)
+- [Worked journey/allocations](phase-4-r6-allocation-and-journey.md) · [Evidence/claims/races](phase-4-r6-evidence-and-claims.md)
 - [Q46](../OPEN-QUESTIONS.md#q46--r6-customer-acceptance-partial-terms-and-decision-evidence)
-- [Phase 4](phase-4-sales-quotations-and-handover.md) · [Job costing](../domain/job-costing.md)
-- [Question workflow](../architecture/implementation-question-reconciliation.md)
+- [R5 accepted lifecycle](phase-4-r5-business-review.md) · [R5 slices](phase-4-r5-implementation-slices.md)
+- [Phase 4](phase-4-sales-quotations-and-handover.md) · [Question workflow](../architecture/implementation-question-reconciliation.md)
