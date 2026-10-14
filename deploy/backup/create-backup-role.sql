@@ -1,9 +1,10 @@
 -- The least-privilege role the backup uses. Run once, as a superuser, against the shared server:
---   psql -U postgres -d erp -v pw="'<generated password>'" -f create-backup-role.sql   (feed the password on stdin, never in a file)
+--   { printf "\\set pw '%s'\n" "$PW"; cat create-backup-role.sql; } | psql -U postgres -d erp -v ON_ERROR_STOP=1
+-- (the password travels on stdin only: never in a file or a command line)
 --
 -- Read-only on the `erp` database only: it cannot write, cannot create objects, and has no access to any other database's
 -- tables. Existing application roles and privileges are not touched.
-CREATE ROLE erp_backup LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION CONNECTION LIMIT 2 PASSWORD :pw;
+CREATE ROLE erp_backup LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION CONNECTION LIMIT 2 PASSWORD :'pw';
 ALTER ROLE erp_backup SET default_transaction_read_only = on;
 ALTER ROLE erp_backup SET statement_timeout = '30min';
 ALTER ROLE erp_backup SET lock_timeout = '10s';
