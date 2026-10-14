@@ -203,34 +203,46 @@ attempts and device changes.
 
 ---
 
-### Q47 — R7 handover targets and commitment corrections
+### Q48 — R8 quotation documents and customer delivery evidence
 
-**Origin:** PLANNING RESEARCH (owner instruction following C1–C8 approval; no coding question forwarded).
-**Decision status:** READY_FOR_OWNER — final consolidated H1–H8 recommendations; none accepted.
-**Delivery status:** NOT_STARTED; no R3–R7 code authority.
-**Original question/context:** Generic goods/services/projects handover: source-to-target mapping,
-Sales Order versus Job, one/multiple targets, split deliveries versus commitments, readiness,
-source/estimate/material baselines, duplicate prevention, amendments/cancellations and claim-release ownership.
-**Authority:** Accepted R1–R6, including0125–0127; no mandatory Job/account and immutable customer consent.
-**Options/recommendation:** [Final H1–H8 matrix](phases/phase-4-r7-handover-research.md),
-[mixed journey](phases/phase-4-r7-mixed-journey.md) and [primary/code evidence](phases/phase-4-r7-evidence-and-integrity.md)
-complete the research. Recommend accepted commercial authority plus common allocation lineage and
-optional managed operational Order aggregate/source-appropriate targets; disjoint splits versus stages,
-path readiness, separate baselines, stable business handover identity and local atomic owning Actions.
-Recommend bounded supported remaining reduction, conservative separately governed commercial claim
-release; no initial cross-acceptance consolidation/general variation/family transfer. Owner must approve/
-amend H1–H8, especially Order role/required paths, initial adapters/splits and correction/release scope.
-**Blocks:** R7 target delivery and affected R6 partial-family/technical allocation/correction paths;
-ordinary supported full R6 acceptance need not await a Job or operational target.
-**Follow-up:** Owner review of H1–H8 before any accepted R7 ADRs; approved and delivered dependencies before
-partial-family enablement. Forwarded coding questions retain Origin: IMPLEMENTATION AGENT; only coding
-agent checks can mark implementation verified.
+**Origin:** PLANNING RESEARCH (owner priority after H1–H8 approval; no implementation question forwarded).
+**Decision status:** READY_FOR_OWNER — initial consolidated D1–D8 matrix; no accepted R8 ADR.
+**Delivery status:** NOT_STARTED; no R3–R8 code authority.
+**Original question/context:** Professional quotation templates/multi-page PDF; immutable issued content
+versus drafts; safe commercial projection; generation/reproduction; email/manual/portal delivery,
+retries/recipients; failed delivery versus issue; acknowledgement/signature versus acceptance;
+secure tenant-isolated attachments; numbering/branding/localisation/currency/tax and path-specific
+delivery requirements without universal consent inference.
+**Authority:** Accepted R1–R7 and existing printing, numbering, authorisation and document architecture.
+**Options/recommendation:** [D1–D8 matrix](phases/phase-4-r8-documents-review.md) recommends curated
+versioned customer projection, pinned inputs plus archived original, separate generation/delivery
+status, protected files, staged manual/email channels and R6 method-specific evidence.
+**Blocks:** Accepted R8 document/storage/delivery specifications; binary exposure and affected R6
+acceptance methods. No universal Job/portal or delivery-as-consent rule is proposed.
+**Follow-up:** Owner reviews D1–D8, especially issue/render gate, rendition/recovery, access/channel
+boundaries and path policy; then ADR/specification. R9 grants/scope and separate coding authority remain.
+Forwarded implementation questions retain Origin: IMPLEMENTATION AGENT and original context.
 
 ---
 
 ## Answered---
 
 ## Answered
+
+<a id="q47--r7-handover-targets-and-commitment-corrections"></a>
+
+Q47 (Origin: PLANNING RESEARCH) resolved2026-10-14 by owner's H1–H8 approval with clarifications
+after7f2dc45, recorded in accepted [0130](decisions/0130-govern-source-appropriate-operational-handover.md),
+[0131](decisions/0131-preserve-operational-baselines-and-handover-identity.md) and
+[0132](decisions/0132-govern-bounded-accepted-business-reductions-and-claim-release.md).
+Original question/context: Generic goods/services/projects handover: source-to-target mapping,
+Sales Order versus Job, one/multiple targets, split deliveries versus commitments, readiness,
+source/estimate/material baselines, duplicate prevention, amendments/cancellations and claim-release ownership.
+[Domain](domain/sales-operational-handover.md) and [HA0–HA7 slices](phases/phase-4-r7-implementation-slices.md)
+SPECIFIED; NOT IMPLEMENTED/VERIFIED. Bounded reductions need all authoritative downstream checks;
+automatic claim release/transfers deferred. R5/R6 partial-family gates still require actual delivery;
+R8/Q48 and R9 remain separate. No code authorisation.
+
 
 <a id="q46--r6-customer-acceptance-partial-terms-and-decision-evidence"></a>
 

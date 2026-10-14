@@ -115,7 +115,7 @@ rounding. Do not make fixed tax proportional by default. Finance legal assessmen
 | RecordCustomerAcceptance | Same intent, verified consent, opaque reviewed token, generations, request key | Recheck under locks; append commitment, lines, all claims/allocations and receipt atomically; no automatic target |
 | AssessAcceptanceReadiness | Accepted identity, requested operational path | Read-only missing execution/Finance prerequisites; no price or consent mutation and no universal Job/account |
 | ReconcileLateCustomerDecision | Pending case plus historical proof and current conflict/target plan | Disabled until dedicated R9 duty, evidence policy and relevant R7 correction adapters approved/delivered |
-| CorrectAcceptedBusiness | Linked original facts, correction intent/reason/consent where applicable | Reserved, disabled until R7 correction/claim-release contract; never PATCH original acceptance |
+| CorrectAcceptedBusiness | Linked original facts, correction intent/reason/consent where applicable | R7 bounded reduction accepted0132, still disabled until relevant delivered impact/correction adapters and R9; claim-release execution deferred; never PATCH original acceptance |
 
 No independent "mark won" writer bypasses accepted facts. Commercial dispositions of unaccepted
 scope use R5 availability events; accepted cancellation is not withdrawal or observation rejection.
@@ -181,6 +181,8 @@ and fresh consent if terms/rounded quantum changes. Keyboard/phone/light/dark co
 No portal, signature delivery or claim-release control is implied by this screen contract.
 
 ## Related
+
+- [R7 accepted contract and actual-delivery gates](../phases/phase-4-r7-implementation-slices.md) — R7 authority is accepted0130–0132; necessary adapters remain undelivered, so affected partial-family/correction gates remain.
 
 - [R6 implementation slices](../phases/phase-4-r6-implementation-slices.md)
 - [Accepted matrix and numerical examples](../phases/phase-4-r6-customer-decisions.md)

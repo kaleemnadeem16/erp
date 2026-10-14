@@ -108,12 +108,14 @@ Q44 closed. [R4 implementation slices](phase-4-r4-implementation-slices.md) and
 [R5 L1–L6](phase-4-r5-business-review.md) is accepted0122–0124/Q45 closed;
 [lifecycle domain](../domain/quotation-lifecycle.md) and [QL0–QL6 handoff](phase-4-r5-implementation-slices.md)
 are specified, not application delivery. [R6/R7 journey](phase-4-r5-acceptance-and-handover-boundaries.md)
-preserves still-proposed downstream branches. [R6 C1–C8](phase-4-r6-customer-decisions.md) is accepted0125–0127/Q46 closed;
+preserves historical downstream proposals; current R7 authority is recorded below. [R6 C1–C8](phase-4-r6-customer-decisions.md) is accepted0125–0127/Q46 closed;
 [numerical journey](phase-4-r6-allocation-and-journey.md) and [evidence/claims](phase-4-r6-evidence-and-claims.md)
 support [domain contracts](../domain/sales-customer-decisions.md) and [CA0–CA6 slices](phase-4-r6-implementation-slices.md),
 SPECIFIED not delivered. [R7 final H1–H8 review](phase-4-r7-handover-research.md), [mixed journey](phase-4-r7-mixed-journey.md)
-and [evidence/architecture inspection](phase-4-r7-evidence-and-integrity.md) are ready for owner review/Q47 open; recommendations proposed.
-Partial-family operations require necessary R6/R7 approved and delivered; no R3–R7 coding authority.
+and [evidence/architecture inspection](phase-4-r7-evidence-and-integrity.md) support accepted0130–0132/Q47 closed.
+[Operational domain](../domain/sales-operational-handover.md) and [HA0–HA7](phase-4-r7-implementation-slices.md) SPECIFIED, no R7 adapter delivered/verified.
+[R8 D1–D8](phase-4-r8-documents-review.md) proposed under planning Q48; R9 pending.
+Partial-family operations require necessary R6/R7 approved and delivered; no R3–R8 coding authority.
 
 
 

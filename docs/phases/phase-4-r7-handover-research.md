@@ -2,7 +2,14 @@
 
 # R7 — Final H1–H8 operational handover decision review
 
-**2026-10-14 · RESEARCH COMPLETE FOR OWNER REVIEW / PROPOSED / planning Q47 OPEN.**
+**2026-10-14 · H1–H8 ACCEPTED with owner clarifications in0130–0132; planning Q47 CLOSED.**
+The recommendation body below is the preserved historical review, not current unresolved authority.
+Governing decisions: [0130](../decisions/0130-govern-source-appropriate-operational-handover.md),
+[0131](../decisions/0131-preserve-operational-baselines-and-handover-identity.md),
+[0132](../decisions/0132-govern-bounded-accepted-business-reductions-and-claim-release.md).
+[Domain](../domain/sales-operational-handover.md) and [slices](phase-4-r7-implementation-slices.md)
+are SPECIFIED; no R7 implementation/atomicity verified. Owner clarification limits reductions to
+authoritatively checked downstream effects and defers automatic release/transfers.
 This replaces the initial H1–H8 agenda at443f176 (the shared history now contains6bc1b85).
 R6 remains ACCEPTED/SPECIFIED in0125–0127; no R7 choice, ADR, permission vocabulary or code is
 accepted here. [Evidence and architecture inspection](phase-4-r7-evidence-and-integrity.md) and

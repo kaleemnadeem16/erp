@@ -595,3 +595,28 @@ price-tier recalculation, double issue/value, automatic Job cancellation or comp
 R5/R6 approved-and-delivered gates, R8/R9 permissions/evidence/reporting, Inventory/Phase5 and Finance
 ownership retained. No code, migrations, generated files, seeders, application tests, implementation-
 owned handoffs or push. Documentation checks only; coding owner retains implementation verification.
+
+
+## 2026-10-14 — R7 approved/specifications; R8 initial owner review
+
+Verified actual WSL develop HEAD7f2dc45 and clean tree before documentation work; Windows helper
+folder is not application checkout. Owner approved H1–H8 with clarifications: accepted0130–0132,
+planning-originated Q47 closed, historical accepted ADR bodies unchanged. Added source-neutral
+operational domain and HA0–HA7 implementation sequence, Actions/Requests/API/UI/permissions,
+tenant constraints, migrations, exact receipts/business identity, real rollback/race verification,
+baseline/setup treatment and authoritative downstream reduction limits. No R7 adapter delivered or
+atomicity verified. R5/R6 partial-family, technical split and late correction gates reconciled against
+actual-delivery requirements; approval alone does not enable them. Automatic commercial release,
+transfers and general variation/returns/full cancellation remain deferred.
+
+R8 D1–D8 consolidated initial proposed matrix compares primary ERPNext and Dynamics documentation,
+reuses Quick Print/numbering/approval/snapshot authority and separates immutable customer artefacts,
+generation, channel attempts and consent. Planning Q48 opened for owner review; no accepted R8 ADR.
+R9 scope/duties/grants, secure binary files, owning Inventory/Phase5 actuals and Finance impacts remain
+gates. Documentation checks only; no application source, migrations/tests/generated files changed,
+no application checks or push. Research/architecture approval is not code authorisation.
+
+## Related — R7/R8 checkpoint
+
+- [R7 slices](phases/phase-4-r7-implementation-slices.md)
+- [R8 owner matrix](phases/phase-4-r8-documents-review.md)

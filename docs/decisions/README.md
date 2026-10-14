@@ -146,7 +146,11 @@ in the same commit.
 | [0129](0129-demo-and-sandbox-data-live-in-a-separate-demo-deployment.md) | Demo and sandbox data live in a separate demo deployment (deferred) | accepted | 2026-10-14 |
 | [0130](0130-back-up-locally-first-through-a-read-only-role-with-pluggable-off-site-copies.md) | Back up locally first, through a read-only role, with pluggable off-site copies | accepted | 2026-10-14 |
 
-**Next number: 0131**
+| [0130](0130-govern-source-appropriate-operational-handover.md) | Govern source-appropriate operational handover | accepted | 2026-10-14 |
+| [0131](0131-preserve-operational-baselines-and-handover-identity.md) | Preserve operational baselines and handover identity | accepted | 2026-10-14 |
+| [0132](0132-govern-bounded-accepted-business-reductions-and-claim-release.md) | Govern bounded accepted-business reductions and claim release | accepted | 2026-10-14 |
+
+**Next number: 0133**
 
 ## By theme
 

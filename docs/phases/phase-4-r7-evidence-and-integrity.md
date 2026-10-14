@@ -2,7 +2,9 @@
 
 # R7 — Primary evidence, architecture inspection and integrity
 
-**2026-10-14 · Supporting PROPOSED H1–H8; Q47 ready for owner review.**
+**2026-10-14 · Supporting accepted H1–H8/0130–0132; Q47 closed.**
+Protocol proposals below are historical inspection evidence, not delivered/verified adapters.
+Current [domain](../domain/sales-operational-handover.md) and [slices](phase-4-r7-implementation-slices.md) govern the handoff.
 [Consolidated review](phase-4-r7-handover-research.md) is the single decision matrix. This evidence
 record does not register an Action/permission or verify runtime behaviour.
 

@@ -259,6 +259,8 @@ concurrent/idempotency conflict409 as applicable), not message parsing or leaked
 
 ## Related
 
+- [R7 accepted contract and actual-delivery gates](../phases/phase-4-r7-implementation-slices.md) — R7 authority is accepted0130–0132; necessary adapters remain undelivered, so affected partial-family/correction gates remain.
+
 - [R5 slices](../phases/phase-4-r5-implementation-slices.md) · [Approved L1–L6](../phases/phase-4-r5-business-review.md)
 - [Financial contract](quotation-financial-calculation.md) · [Pricing resolution](sales-pricing-resolution.md)
 - [Sales pipeline](sales-pipeline.md) · [R6 research](../phases/phase-4-r6-customer-decisions.md)

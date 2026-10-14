@@ -191,6 +191,8 @@ Forwarded questions retain Origin: IMPLEMENTATION AGENT and original context via
 
 ## Related
 
+- [R7 accepted contract and actual-delivery gates](phase-4-r7-implementation-slices.md) — R7 authority is accepted0130–0132; necessary adapters remain undelivered, so affected partial-family/correction gates remain.
+
 - [Lifecycle domain](../domain/quotation-lifecycle.md) · [Approved L1–L6](phase-4-r5-business-review.md)
 - [R6 initial review](phase-4-r6-customer-decisions.md) · [R6/R7 journey](phase-4-r5-acceptance-and-handover-boundaries.md)
 - [R5 evidence](phase-4-r5-quotation-lifecycle.md) · [Phase 4](phase-4-sales-quotations-and-handover.md)
