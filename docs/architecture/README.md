@@ -16,6 +16,7 @@ these choices were made, see [decisions/](../decisions/).
 | [implementation-question-reconciliation.md](implementation-question-reconciliation.md) | Owner-forwarded questions, existing authority clarification, decision and delivery status | Reconciling implementation questions without a duplicate register |
 | [environments.md](environments.md) | The actual VMs, versions, disk, what's already running | Deploying, choosing a version |
 | [ci-cd.md](ci-cd.md) | Pipeline, runners, image retention | Touching CI or deploy |
+| [backup-and-restore.md](backup-and-restore.md) | Nightly database backups, retention, the restore test, how to get data back, adding off-site copies | Anything about data loss or recovery |
 | [observability.md](observability.md) | Finding which layer is slow: request/query log, exporters, Grafana dashboard, the caching rules | Investigating performance or adding monitoring |
 | [ci-runner-setup.md](ci-runner-setup.md) | Historical: how the second self-hosted runner was registered (retired, ADR 0121) | Setting up the ERP CI runner |
 | [tech-stack.md](tech-stack.md) | Every library and why it's there | Setting up, adding a dependency |

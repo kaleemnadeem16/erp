@@ -575,3 +575,5 @@ Initial generic R7 H1–H8 comparison of ERPNext/Dynamics orders, delivery and c
 opened planning Q47; target/Order/Job/cardinality/baseline/release recommendations remain proposed.
 Documentation-only checks; no app tests, migrations, generated files, implementation-owned delivery
 changes or push. Code/implementation verification remains with the coding agent via owner handoff.
+
+- 2026-10-14 — Operations: scheduled database backups introduced (ADR 0130). The `erp` database had no scheduled backup (only hand-taken dumps). A nightly `pg_dump` through a read-only `erp_backup` role, 14/8/12 daily/weekly/monthly retention with checksums and manifests, a weekly restore test into a throwaway network-less PostgreSQL container, Prometheus metrics and a Backups row on the ERP dashboard are live on mainvm; restore proven (143 tables, 129 migrations, 1 company, 26 users). Off-site copies plug in through `destinations.d/`; Google Drive via rclone with age encryption is the planned first destination. Not yet covered: `.env` (APP_KEY), the other applications' databases.
