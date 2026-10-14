@@ -577,3 +577,21 @@ Documentation-only checks; no app tests, migrations, generated files, implementa
 changes or push. Code/implementation verification remains with the coding agent via owner handoff.
 
 - 2026-10-14 — Operations: scheduled database backups introduced (ADR 0130). The `erp` database had no scheduled backup (only hand-taken dumps). A nightly `pg_dump` through a read-only `erp_backup` role, 14/8/12 daily/weekly/monthly retention with checksums and manifests, a weekly restore test into a throwaway network-less PostgreSQL container, Prometheus metrics and a Backups row on the ERP dashboard are live on mainvm; restore proven (143 tables, 129 migrations, 1 company, 26 users). Off-site copies plug in through `destinations.d/`; Google Drive via rclone with age encryption is the planned first destination. Not yet covered: `.env` (APP_KEY), the other applications' databases.
+
+
+## 2026-10-14 — R7 H1–H8 operational handover research completed for owner review
+
+After owner review of443f176 (now6bc1b85 in shared history), final consolidated R7 matrix replaces the
+initial agenda. Planning Q47 READY_FOR_OWNER, still open; no R7 ADR accepted or delivery authorised.
+Compared ERPNext/Dynamics primary order/delivery/project/reservation patterns; read-only inspection
+of Sales, Purchasing→Inventory posting, movement/availability boundaries, connection/queue config
+and canonical0014/code-structure contracts supports local atomic owning-Action handover feasibility,
+not runtime verification. Proposed optional managed operational Order, common allocation/stage lineage,
+source-appropriate targets, disjoint split caps, readiness/duties, five baseline/evidence layers,
+stable business handover identity, bounded supported reduction and separately governed claim release.
+Mixed100 goods plus1 installation journey covers40/60 scheduling, actual30, customer-agreed reduction
+to80 with50 remaining, separate technical/cost successor and duplicate handover; no original rewrite,
+price-tier recalculation, double issue/value, automatic Job cancellation or competing-family release.
+R5/R6 approved-and-delivered gates, R8/R9 permissions/evidence/reporting, Inventory/Phase5 and Finance
+ownership retained. No code, migrations, generated files, seeders, application tests, implementation-
+owned handoffs or push. Documentation checks only; coding owner retains implementation verification.

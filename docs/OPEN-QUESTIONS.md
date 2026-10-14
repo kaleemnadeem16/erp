@@ -206,19 +206,23 @@ attempts and device changes.
 ### Q47 — R7 handover targets and commitment corrections
 
 **Origin:** PLANNING RESEARCH (owner instruction following C1–C8 approval; no coding question forwarded).
-**Decision status:** OPEN — initial H1–H8 recommendations, not accepted.
+**Decision status:** READY_FOR_OWNER — final consolidated H1–H8 recommendations; none accepted.
 **Delivery status:** NOT_STARTED; no R3–R7 code authority.
 **Original question/context:** Generic goods/services/projects handover: source-to-target mapping,
 Sales Order versus Job, one/multiple targets, split deliveries versus commitments, readiness,
 source/estimate/material baselines, duplicate prevention, amendments/cancellations and claim-release ownership.
 **Authority:** Accepted R1–R6, including0125–0127; no mandatory Job/account and immutable customer consent.
-**Options/recommendation:** [R7 initial review](phases/phase-4-r7-handover-research.md) compares Order-first,
-Job-first and common accepted commitment with suitable operational adapters. Recommend the latter,
-disjoint/stage-aware mapping and separately governed commercial correction/claim release. Owner must
-settle Order aggregate/visibility, first paths, cardinality/baselines and correction ownership.
+**Options/recommendation:** [Final H1–H8 matrix](phases/phase-4-r7-handover-research.md),
+[mixed journey](phases/phase-4-r7-mixed-journey.md) and [primary/code evidence](phases/phase-4-r7-evidence-and-integrity.md)
+complete the research. Recommend accepted commercial authority plus common allocation lineage and
+optional managed operational Order aggregate/source-appropriate targets; disjoint splits versus stages,
+path readiness, separate baselines, stable business handover identity and local atomic owning Actions.
+Recommend bounded supported remaining reduction, conservative separately governed commercial claim
+release; no initial cross-acceptance consolidation/general variation/family transfer. Owner must approve/
+amend H1–H8, especially Order role/required paths, initial adapters/splits and correction/release scope.
 **Blocks:** R7 target delivery and affected R6 partial-family/technical allocation/correction paths;
 ordinary supported full R6 acceptance need not await a Job or operational target.
-**Follow-up:** Consolidated business review before R7 ADRs; approved and delivered dependencies before
+**Follow-up:** Owner review of H1–H8 before any accepted R7 ADRs; approved and delivered dependencies before
 partial-family enablement. Forwarded coding questions retain Origin: IMPLEMENTATION AGENT; only coding
 agent checks can mark implementation verified.
 
