@@ -20,9 +20,9 @@ env:
 
 jobs:
   lint-backend:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ env.PHP_VERSION }}
@@ -39,10 +39,10 @@ jobs:
         run: vendor/bin/phpstan analyse --no-progress --memory-limit=1G
 
   lint-frontend:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
@@ -64,8 +64,16 @@ jobs:
         working-directory: frontend/apps/main
         run: npx vite build
 
-  test:
-    runs-on: ubuntu-latest
+  test-shard:
+    name: test (${{ matrix.shard }}/4)
+    runs-on: ubuntu-24.04
+    # One process on one runner took ~31 minutes. The suite is split by file into four jobs, each with its own
+    # PostgreSQL service and `erp_testing` database, so no test sees another's data. The aggregate `test` job below
+    # keeps the single name the rest of the pipeline waits on.
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     services:
       postgres:
         image: postgres:16
@@ -86,7 +94,7 @@ jobs:
       DB_PASSWORD: secret
       REDIS_HOST: 127.0.0.1
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ env.PHP_VERSION }}
@@ -104,10 +112,21 @@ jobs:
         run: cp .env.example .env && php artisan key:generate
       - name: Pest
         working-directory: backend
-        run: vendor/bin/pest
+        run: vendor/bin/pest --shard=${{ matrix.shard }}/4
+
+  test:
+    name: test
+    needs: test-shard
+    if: ${{ always() }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Every test shard must pass
+        run: |
+          echo "test shards: ${{ needs.test-shard.result }}"
+          [ "${{ needs.test-shard.result }}" = "success" ]
 
   codegen-check:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # Scramble's inference touches the database directly (e.g. resolving a
     # property fetch on the User model queries the users table's real schema),
     # so this needs the same postgres service + migrated schema as the test job
@@ -141,7 +160,7 @@ jobs:
       SESSION_DRIVER: array
       QUEUE_CONNECTION: sync
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ env.PHP_VERSION }}
@@ -150,7 +169,7 @@ jobs:
       - uses: ramsey/composer-install@v3
         with:
           working-directory: backend
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
@@ -184,8 +203,16 @@ jobs:
       - name: Fail on drift
         run: git diff --exit-code -- frontend/packages/core-api
 
-  e2e:
-    runs-on: ubuntu-latest
+  e2e-shard:
+    name: e2e (${{ matrix.shard }}/3)
+    runs-on: ubuntu-24.04
+    # The browser suite is serial inside one job (~12 minutes). Playwright splits it by spec file across three jobs;
+    # each job seeds its own database, so specs never share data across shards. The aggregate `e2e` job below keeps
+    # the single name the rest of the pipeline waits on.
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     # Drives the real PO -> receipt -> QA -> availability journey through a
     # real browser against the real app — php artisan serve plus the actual
     # production frontend build (vite preview, not vite dev): dev mode serves
@@ -231,7 +258,7 @@ jobs:
       API_RATE_LIMIT_PER_MINUTE: 10000
       LOGIN_RATE_LIMIT_PER_MINUTE: 10000
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ env.PHP_VERSION }}
@@ -240,7 +267,7 @@ jobs:
       - uses: ramsey/composer-install@v3
         with:
           working-directory: backend
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
@@ -271,14 +298,25 @@ jobs:
           npx --yes wait-on@7 http://127.0.0.1:5176 --timeout 30000
       - name: Playwright
         working-directory: frontend/apps/e2e
-        run: npx playwright test
+        run: npx playwright test --shard=${{ matrix.shard }}/3
       - name: Upload Playwright report
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.shard }}
           path: frontend/apps/e2e/playwright-report/
           retention-days: 14
+
+  e2e:
+    name: e2e
+    needs: e2e-shard
+    if: ${{ always() }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Every e2e shard must pass
+        run: |
+          echo "e2e shards: ${{ needs.e2e-shard.result }}"
+          [ "${{ needs.e2e-shard.result }}" = "success" ]
 
   build:
     name: build (${{ matrix.arch }})
@@ -288,7 +326,7 @@ jobs:
       matrix:
         include:
           - arch: amd64
-            runner: ubuntu-latest
+            runner: ubuntu-24.04
             platform: linux/amd64
           - arch: arm64
             runner: ubuntu-24.04-arm
@@ -298,14 +336,14 @@ jobs:
       contents: read
       packages: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
+      - uses: actions/checkout@v5
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v7
         with:
           context: .
           file: docker/backend/Dockerfile
@@ -315,7 +353,7 @@ jobs:
           tags: ghcr.io/${{ github.repository_owner }}/erp-backend:${{ github.sha }}-${{ matrix.arch }}
           cache-from: type=gha,scope=backend-${{ matrix.arch }}
           cache-to: type=gha,mode=max,scope=backend-${{ matrix.arch }}
-      - uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v7
         with:
           context: .
           file: docker/frontend/Dockerfile
@@ -333,11 +371,11 @@ jobs:
 
   merge-manifest:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       packages: write
     steps:
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
