@@ -48,6 +48,21 @@ in [supervisord.conf](../../docker/backend/supervisord.conf) is the root-cause f
 - **Prometheus** (on mainvm, `/srv/apps/monitoring/prometheus/prometheus.yml`): jobs `erp-php-fpm` and `erp-nginx` (`erp-backend:9253`, `erp-backend:9113`). Traefik's histogram buckets are `0.025 … 10` s so percentiles are meaningful.
 - **Grafana dashboard** — [erp-performance.dashboard.json](../../docker/monitoring/erp-performance.dashboard.json), loaded into `/var/lib/grafana/dashboards` on mainvm (the provider polls every 30 s). Datasources are chosen by dashboard variables, so the JSON holds no instance-specific ids.
 
+## Installing it on mainvm (done 2026-10-14)
+
+Both steps edit the shared monitoring stack, not this repository's compose file:
+
+1. **Scrape jobs** — append `erp-php-fpm` (`erp-backend:9253`) and `erp-nginx` (`erp-backend:9113`) to
+   `/srv/apps/monitoring/prometheus/prometheus.yml`, check with
+   `docker exec prometheus promtool check config /etc/prometheus/prometheus.yml`, then reload with
+   `docker exec prometheus wget -qO- --post-data= http://localhost:9090/-/reload` (lifecycle is enabled; no restart).
+2. **Dashboard** — `docker cp docker/monitoring/erp-performance.dashboard.json grafana:/var/lib/grafana/dashboards/erp-performance.json`;
+   the file provider picks it up within 30 s. Edit the JSON in the repository and copy it again; do not edit it in the Grafana UI
+   (a provisioned dashboard is overwritten on the next copy).
+
+After a deploy, confirm both targets are `up` and every panel query runs (Grafana → Explore, or the
+dashboard itself). Panels for slow requests, slow queries, 5xx and errors are legitimately empty when nothing is wrong.
+
 ## Decision and alternatives
 
 Use the stack already running and put the application's own timings into Loki as structured logs.

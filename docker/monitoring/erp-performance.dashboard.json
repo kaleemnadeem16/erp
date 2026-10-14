@@ -117,7 +117,7 @@
    "targets": [
     {
      "refId": "A",
-     "expr": "quantile_over_time(0.95, {container=\"erp-backend\"} |= \"http_request\" | json | message=\"http_request\" | unwrap context_duration_ms [5m]) / 1000",
+     "expr": "quantile_over_time(0.95, {container=\"erp-backend\"} |= \"http_request\" | json | message=\"http_request\" | unwrap context_duration_ms [5m]) by () / 1000",
      "datasource": {
       "type": "loki",
       "uid": "${ds_loki}"
@@ -526,7 +526,7 @@
    "targets": [
     {
      "refId": "A",
-     "expr": "quantile_over_time(0.95, {container=\"erp-backend\"} |= \"http_request\" | json | message=\"http_request\" | unwrap context_duration_ms [5m])",
+     "expr": "quantile_over_time(0.95, {container=\"erp-backend\"} |= \"http_request\" | json | message=\"http_request\" | unwrap context_duration_ms [5m]) by ()",
      "legendFormat": "request total",
      "datasource": {
       "type": "loki",
@@ -535,7 +535,7 @@
     },
     {
      "refId": "B",
-     "expr": "quantile_over_time(0.95, {container=\"erp-backend\"} |= \"http_request\" | json | message=\"http_request\" | unwrap context_db_ms [5m])",
+     "expr": "quantile_over_time(0.95, {container=\"erp-backend\"} |= \"http_request\" | json | message=\"http_request\" | unwrap context_db_ms [5m]) by ()",
      "legendFormat": "of which database",
      "datasource": {
       "type": "loki",
