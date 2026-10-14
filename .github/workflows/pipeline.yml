@@ -112,7 +112,12 @@ jobs:
         run: cp .env.example .env && php artisan key:generate
       - name: Pest
         working-directory: backend
-        run: vendor/bin/pest --shard=${{ matrix.shard }}/4
+        # Pest 3 has no --shard option, so split the files ourselves: round-robin over the sorted list, so a heavy
+        # directory is spread across all four jobs instead of landing in one. Every file lands in exactly one shard.
+        run: |
+          mapfile -t files < <(find tests -name '*Test.php' | LC_ALL=C sort | awk -v s=${{ matrix.shard }} -v n=4 '(NR - 1) % n == s - 1')
+          echo "shard ${{ matrix.shard }}/4: ${#files[@]} test files"
+          vendor/bin/pest "${files[@]}"
 
   test:
     name: test
