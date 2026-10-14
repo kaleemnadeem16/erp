@@ -17,7 +17,7 @@ Each architecture builds **natively**, then the manifests are merged:
 | Platform | Runner |
 |---|---|
 | `linux/arm64` | GitHub-hosted native ARM runner, `ubuntu-24.04-arm` |
-| `linux/amd64` | GitHub-hosted `ubuntu-latest` |
+| `linux/amd64` | GitHub-hosted `ubuntu-24.04` |
 
 Cross-building either one under QEMU makes `composer install` and `npm ci` several times slower
 — often 10–20 minutes instead of 2 — which means it eventually gets skipped.
@@ -55,9 +55,10 @@ on mainvm ([ADR 0121](../decisions/0121-public-repository-hosted-runners-and-man
 push / PR (any branch)
    ├─ lint        Pint, Larastan L6, ESLint, tsc
    ├─ codegen     Scramble → OpenAPI → Orval; FAIL ON DIFF
-   └─ test        PostgreSQL 16 service container
+   ├─ test        4 shards in parallel (each with its own PostgreSQL 16 service) → aggregate job `test`
+   └─ e2e         3 Playwright shards in parallel (each seeds its own database) → aggregate job `e2e`
 
-main branch only ──→ build   amd64 (ubuntu-latest)  ┐
+main branch only ──→ build   amd64 (ubuntu-24.04)  ┐
                                 arm64 (ubuntu-24.04-arm) ┴→ merge manifest → GHCR, tagged by commit SHA
 
 on mainvm, by hand ──→ deploy/deploy.sh → pull, migrate, up --wait, permission:register → prune
@@ -73,6 +74,19 @@ matrix is gone, roughly halving CI time.
 
 Postgres runs as a **service container**, never the dbvm instances. **CI never touches
 production databases.**
+
+**Sharding (2026-10-14).** The Pest job took ~31 minutes on one process and Playwright ~12 minutes serially, while a
+public-repository runner has four CPUs. Both are now split into parallel jobs, each with its **own PostgreSQL service
+and database**, so no test sees another's data and no test needed changing. Pest 3 has no `--shard`, so the job splits
+the files itself: `find tests -name '*Test.php' | sort`, round-robin by position, so a heavy directory spreads across
+every shard. Playwright uses its own `--shard=i/3`. Two aggregate jobs, `test` and `e2e`, keep the names the rest of
+the pipeline waits on, and fail unless every shard passed. Measured on the same commit: 2,410 tests and 12,852
+assertions both before and after; the pipeline went from **31 min to 9 min**. To rebalance (the slowest Pest shard
+is about 9 min, the others 5–6), raise the shard count in `.github/workflows/pipeline.yml` (`matrix.shard` and the `4`
+in the awk expression); **a file added to `tests/` is picked up automatically**.
+
+The runner image is pinned (`ubuntu-24.04`, not `ubuntu-latest`, which moves to Ubuntu 26 on 2026-10-19) so a runner
+upgrade is a deliberate change. Actions use the lowest major that runs on Node 24.
 
 The Playwright job sets `API_RATE_LIMIT_PER_MINUTE=10000`, as the development stack does.
 Its scripted page loads exceed the production limit of 120/min and otherwise make the
