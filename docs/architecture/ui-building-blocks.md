@@ -92,6 +92,8 @@ named switch; everything else is already wired.
 | Purchase order — create | Side-sheet wizard (current) · the same wizard on a full page | `presentation.purchaseOrderCreate` |
 | Purchase order — detail | Side sheet (current) · full page | `presentation.purchaseOrderDetail` |
 | Purchase order — edit | Side-sheet wizard (current; the same steps as create, with free navigation) · full page | `presentation.purchaseOrderEdit` |
+| Opportunity — create | Side sheet over the pipeline list (current) · full page | `presentation.opportunityCreate` |
+| Opportunity — detail (edit, owner, close and reopen are dialogs over it) | Side sheet (current) · full page | `presentation.opportunityDetail` |
 | Document numbering — editor | Side sheet over the list (current; the child route `/settings/document-numbering/:type`) | — |
 | Date entry | `DateField` (current) · native `<input type="date">` via `Input` (still available; its Tab walks the browser's own segments) | swap the component at the call site |
 

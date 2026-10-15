@@ -66,7 +66,7 @@ test('a representative records an enquiry, qualifies it, links a partner and tur
     await page.getByLabel('Title').fill(title);
     await page.getByTestId('lead-convert-confirm').click();
     await expect(page).toHaveURL(/\/opportunities\/\d+$/);
-    await expect(page.getByTestId('opportunity-detail')).toContainText(title);
+    await expect(page.getByRole('dialog')).toContainText(title);
     await expect(page.getByTestId('sales-history')).toContainText('Opportunity created from an enquiry');
     await page.goto(leadUrl);
   }
@@ -225,6 +225,59 @@ test('stages can be renamed and the change is shown on deals', async ({ browser 
     // Leave the shared demo stage as it was, even when an assertion above fails.
     if (renamed) await rename('Proposal (e2e)', 'Proposal');
   }
+  await page.close();
+});
+
+test('the pipeline list filters by partner and owner, shows removable chips and keeps its context around a record', async ({ browser }) => {
+  test.setTimeout(240_000);
+  const page = await as(browser, MANAGER);
+  await page.goto('/opportunities?filter.outcome=ALL');
+  await expect(page.getByTestId('opportunities-list')).toBeVisible();
+
+  // The partner filter lives in the advanced panel, asks the server, and shows as a named chip.
+  await page.getByRole('button', { name: 'Filters' }).click();
+  const request = page.waitForRequest((candidate) => candidate.url().includes('/api/v1/opportunities?') && candidate.url().includes('filter%5Bparty_id%5D'));
+  await page.getByRole('combobox', { name: 'Trading partner' }).click();
+  await page.locator('[cmdk-input]').fill('Metro');
+  await page.getByRole('option', { name: /Metro Engineering/ }).first().click();
+  await request;
+  await expect(page).toHaveURL(/party_id=\d+/);
+  const chips = page.getByTestId('active-filters');
+  await expect(chips).toContainText('For: Metro Engineering');
+
+  // Opening a record from the filtered list keeps the filters in the URL; closing the sheet returns to the same list.
+  const row = page.getByRole('row').nth(1);
+  await row.click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await expect(page).toHaveURL(/\/opportunities\/\d+\?.*party_id=\d+/);
+  await page.getByRole('button', { name: /^Close/ }).first().click();
+  await expect(page).toHaveURL(/\/opportunities\?.*party_id=\d+/);
+  await expect(chips).toContainText('For: Metro Engineering');
+
+  // A chip removes just its filter; Clear all removes the rest.
+  await chips.getByRole('button', { name: /Remove filter: For: Metro Engineering/ }).click();
+  await expect(page).not.toHaveURL(/party_id=/);
+  await expect(chips).toContainText('Outcome: All outcomes');
+  await chips.getByRole('button', { name: 'Clear all' }).click();
+  await expect(chips).toHaveCount(0);
+
+  // Every supported sort stays reachable even though Created is a hidden-by-default column.
+  await expect(page.getByRole('columnheader', { name: /Created/ })).toHaveCount(0);
+  await page.close();
+});
+
+test('the pipeline filters are in a bottom sheet on a phone', async ({ browser }) => {
+  const page = await as(browser, MANAGER);
+  await page.setViewportSize({ width: 390, height: 800 });
+  await page.goto('/opportunities');
+  await page.getByRole('button', { name: 'Filters' }).click();
+  const sheet = page.getByRole('dialog', { name: 'Filters' });
+  await expect(sheet.getByRole('combobox', { name: 'Trading partner' })).toBeVisible();
+  await expect(sheet.getByRole('combobox', { name: 'Owner' })).toBeVisible();
+  await sheet.getByLabel('Mine').click();
+  await sheet.getByRole('button', { name: 'Done' }).click();
+  await expect(page.getByTestId('active-filters')).toContainText('Mine only');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
   await page.close();
 });
 

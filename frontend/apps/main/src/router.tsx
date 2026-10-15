@@ -105,6 +105,8 @@ const purchaseOrderDetailAsSheet = presentation.purchaseOrderDetail === "sheet";
 const purchaseOrderEditAsSheet = presentation.purchaseOrderEdit === "sheet";
 const supplierCreateAsSheet = presentation.supplierCreate === "sheet";
 const supplierDetailAsSheet = presentation.supplierDetail === "sheet";
+const opportunityCreateAsSheet = presentation.opportunityCreate === "sheet";
+const opportunityDetailAsSheet = presentation.opportunityDetail === "sheet";
 const supplierEditAsSheet = presentation.supplierEdit === "sheet";
 const goodsReceiptCreateAsSheet = presentation.goodsReceiptCreate === "sheet";
 const goodsReceiptDetailAsSheet = presentation.goodsReceiptDetail === "sheet";
@@ -1017,30 +1019,38 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <OpportunitiesListScreen />
+                <Outlet />
               </AppShell>
             </ProtectedRoute>
           }
-        />
-        <Route
-          path="/opportunities/new"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <OpportunityFormScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/opportunities/:id"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <OpportunityDetailScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
+        >
+          {opportunityCreateAsSheet && <Route path="new" element={<OpportunityFormScreen presentation="sheet" />} />}
+          {opportunityDetailAsSheet && <Route path=":id" element={<OpportunityDetailScreen presentation="sheet" />} />}
+        </Route>
+        {!opportunityCreateAsSheet && (
+          <Route
+            path="/opportunities/new"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <OpportunityFormScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!opportunityDetailAsSheet && (
+          <Route
+            path="/opportunities/:id"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <OpportunityDetailScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
         <Route
           path="/leads"
           element={

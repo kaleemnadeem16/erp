@@ -28,6 +28,8 @@ export const presentation: {
   stockScrapCreate: Presentation;
   stockScrapDetail: Presentation;
   stockScrapEdit: Presentation;
+  opportunityCreate: Presentation;
+  opportunityDetail: Presentation;
 } = {
   purchaseOrderCreate: "sheet",
   purchaseOrderDetail: "sheet",
@@ -50,6 +52,8 @@ export const presentation: {
   stockScrapCreate: "sheet",
   stockScrapDetail: "sheet",
   stockScrapEdit: "sheet",
+  opportunityCreate: "sheet",
+  opportunityDetail: "sheet",
 };
 
 /**
