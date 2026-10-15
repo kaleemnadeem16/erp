@@ -152,8 +152,11 @@ in the same commit.
 | [0135](0135-separate-quotation-delivery-evidence-from-customer-consent.md) | Separate quotation delivery evidence from customer consent | accepted | 2026-10-15 |
 | [0136](0136-govern-source-appropriate-operational-handover.md) | Govern source-appropriate operational handover | accepted | 2026-10-14 |
 | [0137](0137-share-document-and-print-infrastructure-through-module-adapters.md) | Share document and print infrastructure through module adapters | accepted | 2026-10-15 |
+| [0138](0138-authorise-sales-and-document-duties-with-explicit-scope-and-grants.md) | Authorise Sales and document duties with explicit scope and grants | accepted | 2026-10-15 |
+| [0139](0139-bind-sales-authority-limits-approvals-and-execution-to-exact-evidence.md) | Bind Sales authority limits, approvals and execution to exact evidence | accepted | 2026-10-15 |
+| [0140](0140-publish-sales-measures-and-dated-forecasts-with-persistent-trust.md) | Publish Sales measures and dated forecasts with persistent trust | accepted | 2026-10-15 |
 
-**Next number: 0138**
+**Next number: 0141**
 
 Note: the R7 handover ADR was first drafted as a second 0130 and renumbered to 0136 on 2026-10-15; 0130 is the backup decision. Number is chosen after fetching, so drafts do not collide.
 

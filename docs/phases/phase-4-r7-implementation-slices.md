@@ -85,6 +85,16 @@ Customer artefact/delivery authority now accepted0133–0135/Q48 closed; DOC0–
 not delivered/verified. R7 file/evidence paths still require actual secure adapter and R9 scope/
 grants. No PDF, send or acknowledgement creates target/actual fulfilment or lifts partial-family gates.
 
+## R9 closure and coordinated delivery —2026-10-15
+
+R9 A1–A10 accepted0138–0140/Q49 closed. [Canonical duty matrix](../domain/sales-duty-matrix.md),
+[safe rollout](phase-4-r9-permission-rollout.md) and [R9 slices](phase-4-r9-implementation-slices.md)
+resolve previously proposed vocabulary/grant architecture; historical candidate names above yield
+to this reconciled catalogue, not duplicate guards. Actual guards/holder inventory/adapters/verification
+remain required before affected public routes. [Consolidated handoff](phase-4-implementation-handoff.md)
+defines small dependency batches; no implementation/live grant authorisation. Partial-family and
+downstream gates stay until exact affected contracts actually delivered.
+
 ## Related
 
 - [Operational domain](../domain/sales-operational-handover.md) · [Accepted review](phase-4-r7-handover-research.md)

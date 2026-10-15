@@ -707,3 +707,36 @@ source/generated files/migrations/tests/seeders/in-flight delivery changes or ap
 
 - [Documents domain](domain/documents.md) · [Framework sequence](phases/document-print-framework-slices.md)
 - [Final R9 matrix](phases/phase-4-r9-authority-reporting-review.md)
+
+
+## 2026-10-15 — R9 accepted and coordinated Phase 4 implementation handoff
+
+Started c25d5cb,6 ahead/0 behind recorded origin/develop; five frontend CRM WIP files belong to
+another agent and are untouched. Confirmed backup0130/handover0136 and next free0138. Owner approved
+A1–A10 safeguards: accepted0138–0140, planning Q49 closed with origin/original context retained.
+Specified canonical per-duty operation/scope/field/holder/gate matrix, authority/limits/approval/
+execution and separate reporting/dated FX/persistent trust/history domain contracts, safe grant/
+migration/backout/staging specification and AU0–AU5/RP0–RP6 implementation slices. Read-only code
+reconciliation preserves eight CRM rights, uses consuming Sales review registry permission without
+duplicate generic PO guard, exact FR Tax candidate names and existing source/Currency/Company reads.
+No new registration, role/person holder grant, application test or implementation by planning.
+
+Prepared consolidated actual-readiness/dependency handoff B0–B12 across PR/FR/QL/CA/HA/DOC/DF/AU/RP,
+including build-once shared boundaries, earliest disabled foundations, atomic issue plus required
+DF manifest binding, recovery-before-document-pilot, full acceptance before affected partial-family/
+operational corrections, current-authoritative forecast invalidation and explicit public activation
+evidence. Existing CRM/C2/shared helpers are implementation dependencies, not proof new adapters or
+runtime paths verified. Finance/Inventory/Phase5 impacts cannot be inferred NONE; reserved exceptions/
+claim-release/transfers/returns/repricing/email/portal remain off. Batches proposed only; owner must
+separately authorise implementation scope/owners and actual rollout holder/configuration inventory.
+
+Existing accepted ADR bodies unchanged. Documentation links/numbering/whitespace checks only;
+no code/migrations/generated/client/seeder/in-flight delivery edits, no source WIP stage/commit,
+no history reconciliation/fetch/push and no new feature IMPLEMENTED/VERIFIED/PUBLIC_ENABLED.
+During planning the other agent committed Opportunities frontend/test/UI documentation as0a62b0e;
+our doc diff/checks were reconciled against that HEAD with its committed content preserved.
+
+## Related — R9 closure/handoff
+
+- [Implementation handoff](phases/phase-4-implementation-handoff.md) · [R9 slices](phases/phase-4-r9-implementation-slices.md)
+- [Duty matrix](domain/sales-duty-matrix.md) · [Rollout](phases/phase-4-r9-permission-rollout.md)

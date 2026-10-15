@@ -3,7 +3,7 @@
 # Documents foundation and first quotation adapter sequence
 
 **2026-10-15 · ACCEPTED0137 architecture / SPECIFIED; no application IMPLEMENTED or VERIFIED.**
-Every slice needs separate code authorisation. R9 final names/scope/grants await owner approval.
+Every slice needs separate code authorisation. R9 names/scope/grant architecture accepted0138; actual holder inventory/rollout still needs owner authorisation.
 Initial deliverable is one coherent Documents foundation plus real Sales quotation adapter and
 PO-shaped compatibility fixture. No actual PO refactor or universal adapter rollout is authorised.
 
@@ -64,6 +64,16 @@ durable retry, portal/signatures, advanced designers, bulk/network printing, mul
 additional engines remain DOC6/7 later capabilities. R5/R6 partial-family and R7 downstream impact
 gates unchanged. Renderer package/runtime choice needs measured authorised implementation spike;
 no library installed, engine performance or byte-reproduction claimed verified by these specifications.
+
+## R9 closure and coordinated delivery —2026-10-15
+
+R9 A1–A10 accepted0138–0140/Q49 closed. [Canonical duty matrix](../domain/sales-duty-matrix.md),
+[safe rollout](phase-4-r9-permission-rollout.md) and [R9 slices](phase-4-r9-implementation-slices.md)
+resolve previously proposed vocabulary/grant architecture; historical candidate names above yield
+to this reconciled catalogue, not duplicate guards. Actual guards/holder inventory/adapters/verification
+remain required before affected public routes. [Consolidated handoff](phase-4-implementation-handoff.md)
+defines small dependency batches; no implementation/live grant authorisation. Partial-family and
+downstream gates stay until exact affected contracts actually delivered.
 
 ## Related
 

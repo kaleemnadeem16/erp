@@ -116,7 +116,8 @@ and [evidence/architecture inspection](phase-4-r7-evidence-and-integrity.md) sup
 [Operational domain](../domain/sales-operational-handover.md) and [HA0–HA7](phase-4-r7-implementation-slices.md) SPECIFIED, no R7 adapter delivered/verified.
 [R8 D1–D8](phase-4-r8-documents-review.md) accepted0133–0135/Q48 closed; [DOC0–DOC7](phase-4-r8-implementation-slices.md) specified, not delivered/verified.
 [Shared Documents0137](../domain/documents.md)/Q50 accepted; [DF0–DF5](document-print-framework-slices.md) and DOC ownership specified, not delivered.
-[R9 final A1–A10](phase-4-r9-authority-reporting-review.md) proposed/Q49 READY_FOR_OWNER; no accepted R9 ADR.
+[R9 A1–A10](phase-4-r9-authority-reporting-review.md) accepted0138–0140/Q49 closed; duty/authority/reporting/rollout and AU/RP slices specified.
+[Consolidated implementation handoff](phase-4-implementation-handoff.md) defines actual-readiness gates and proposed small batches, no blanket code authority.
 Partial-family operations require necessary R6/R7 approved and delivered; no R3–R9 coding authority.
 
 

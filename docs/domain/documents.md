@@ -178,11 +178,11 @@ report stable pending/failed/unsupported/stale/missing/quarantined states safely
 preview/download/history/config editors use same trusted layout pipeline for formal preview; no second
 frontend formal paginator. Existing Quick Print remains unchanged until an authorised module adopts.
 
-0137 accepts ownership, not exact permission strings. R9 proposes shared template/page-policy admin,
+0137 accepts ownership;0138 now accepts reconciled exact duty catalogue. [R9 matrix](sales-duty-matrix.md) specifies shared template/page-policy admin,
 technical recovery, Company-owned branding, and module-owned generate/download/repair/attachment
 eligibility. Config administrator cannot issue or access files by implication; worker is restricted
 to company/type/manifest/purpose and may never accept or post. Exact grant/migration/profile choices
-remain R9 owner review; no new registry or real grants exist.
+are specified in R9 rollout contract; no new registry or real grants exist.
 
 ## Pagination, isolation, performance and acceptance evidence
 

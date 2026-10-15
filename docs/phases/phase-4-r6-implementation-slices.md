@@ -12,10 +12,10 @@ implementation-owned CRM/C2 work. Owner coordinates any future coding handoff.
 Every slice below needs separate code authorisation. Delivery follows R2 commercial scope, PR/FR/QL
 interfaces, source cost/control ports and complete R9 permission/read-scope contracts. Disabled
 writers must refuse at Request, Action and database integrity boundary; hidden controls alone fail.
-No R9 vocabulary or role grant is accepted here. Duty matrix: ordinary evidence/case recording,
+R9 vocabulary/scope/grant architecture is now accepted0138–0140; no real role/person grant authorised. Duty matrix: ordinary evidence/case recording,
 authoritative acceptance recording, late recognition, accepted-business correction, quote issue and
 operational handover remain distinct. Proposed names belong in R9; no "Sales manager" inference.
-R9 must settle independent read eligibility, duty-specific effective scope, sensitive fields,
+R9 now specifies independent read eligibility, duty-specific effective scope, sensitive fields,
 registry/explicit holder grants and mandate-aware re-sync consistent with0114. Ship grants/ratchets
 with first surface, not a later patch. Unsupported limited scope is refused under0106.
 
@@ -93,6 +93,16 @@ authority and claims. Company/path method may require exact document/delivery; n
 portal or PDF receipt prerequisite displaces legitimate verified manual/PO consent. Binary upload/
 access and affected method integration still need actual secure R8 adapters and R9 grants/scope.
 Late/conflicting recognition retains CA5/R7 delivered-impact gates. Architecture is not verification.
+
+## R9 closure and coordinated delivery —2026-10-15
+
+R9 A1–A10 accepted0138–0140/Q49 closed. [Canonical duty matrix](../domain/sales-duty-matrix.md),
+[safe rollout](phase-4-r9-permission-rollout.md) and [R9 slices](phase-4-r9-implementation-slices.md)
+resolve previously proposed vocabulary/grant architecture; historical candidate names above yield
+to this reconciled catalogue, not duplicate guards. Actual guards/holder inventory/adapters/verification
+remain required before affected public routes. [Consolidated handoff](phase-4-implementation-handoff.md)
+defines small dependency batches; no implementation/live grant authorisation. Partial-family and
+downstream gates stay until exact affected contracts actually delivered.
 
 ## Related
 

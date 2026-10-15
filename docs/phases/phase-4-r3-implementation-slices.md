@@ -34,7 +34,7 @@ cost-read as pricing authority. R9 reconciles final names/limits/grants before a
 
 | Duty / proposed registry name | Required eligibility and minimum projection | Grant / scope gate |
 |---|---|---|
-| Configure base prices/policies/plans/controls/modes · `sales.pricing.configure` | Company config duty; only supported config scope; minimum read of its writable terms, no cost/stock operands by implication. | Explicit designated pricing administrator role recipe; operating a quote grants none. R9 decides config scope; unsupported limited config refuses 403. |
+| Configure base prices/policies/plans/controls/modes · `sales.pricing.configure` | Company config duty; only supported config scope; minimum read of its writable terms, no cost/stock operands by implication. | Explicit designated pricing administrator role recipe; operating a quote grants none. R9 accepts initial explicit company-wide config scope; unsupported limited config refuses 403. |
 | Maintain Party pricing eligibility · `sales.pricing.eligibility.manage` | Duty AND independently legitimate Party read/record eligibility. Group list/config obeys config scope. | Designated eligibility maintainers; no membership from commercial labels, no CustomerAccount prerequisite. |
 | Maintain contractual pricing · `sales.pricing.agreement.manage` | Duty AND legitimate contracting Party/term scope; preserve approved fixed terms/version history. | Separate agreement-maintainer assessment; config manager/ordinary seller is not automatically contract administrator. |
 | Read competing/private price terms · `sales.pricing.terms.view` | Company/effective Party/agreement/price-term scope; sensitive fields on every surface. | Explicit confidential commercial read; chosen authorised quote net does not require all competitor/customer terms. |
@@ -226,6 +226,16 @@ with [R4 typed contract](../domain/quotation-financial-calculation.md) and
 adapter delivery. [Accepted R5](phase-4-r5-implementation-slices.md) now binds lifecycle seams;
 [R6](phase-4-r6-customer-decisions.md)/R7 partial/consent/claim/commitment gates remain before those operations. R9 proceeds alongside every public slice. C1d stays separately gated;
 no implementation-originated question was supplied or invented.
+
+## R9 closure and coordinated delivery —2026-10-15
+
+R9 A1–A10 accepted0138–0140/Q49 closed. [Canonical duty matrix](../domain/sales-duty-matrix.md),
+[safe rollout](phase-4-r9-permission-rollout.md) and [R9 slices](phase-4-r9-implementation-slices.md)
+resolve previously proposed vocabulary/grant architecture; historical candidate names above yield
+to this reconciled catalogue, not duplicate guards. Actual guards/holder inventory/adapters/verification
+remain required before affected public routes. [Consolidated handoff](phase-4-implementation-handoff.md)
+defines small dependency batches; no implementation/live grant authorisation. Partial-family and
+downstream gates stay until exact affected contracts actually delivered.
 
 ## Related
 

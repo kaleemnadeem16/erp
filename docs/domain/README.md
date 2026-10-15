@@ -104,6 +104,9 @@ Lead → Opportunity → Quotation (revisions) → Job → Work Order → Invoic
 | [physical-count.md](physical-count.md) | Blind counting, count lines, variance posting and separation of duties |
 | [approvals.md](approvals.md) | The shared approval engine: policies, authorities, requests, delegation, document review |
 | [sales-pipeline.md](sales-pipeline.md) | Leads, opportunities, quotations, revisions |
+| [sales-authority.md](sales-authority.md) | Accepted R9 guards/limits/approval/audit execution contract |
+| [sales-duty-matrix.md](sales-duty-matrix.md) | Exact duty × operation × scope × fields × holder/activation catalogue; no live grants |
+| [sales-reporting-and-forecast.md](sales-reporting-and-forecast.md) | Accepted measures/partial wins/dated FX/trust/publication/history contract |
 | [documents.md](documents.md) | Accepted0137 shared template/page/artefact/file/recovery contracts and module adapter ownership; specified, not implemented |
 | [quotation-documents.md](quotation-documents.md) | Accepted R8 customer projection, templates, formal artefacts and storage/recovery; specified, not delivered |
 | [quotation-delivery-evidence.md](quotation-delivery-evidence.md) | Accepted R8 channel/recipient/retry evidence and R6 consent-method boundary; specified, not delivered |

@@ -203,31 +203,29 @@ attempts and device changes.
 
 ---
 
-### Q49 — R9 Sales authority, reporting and forecast integration
+## Answered---
 
-**Origin:** PLANNING RESEARCH (owner priority after D1–D8 approval; no implementation question forwarded).
-**Decision status:** READY_FOR_OWNER — final consolidated A1–A10, reconciled0137 vocabulary/scope/grants/limits and forecast rules; no R9 ADR accepted.
-**Delivery status:** NOT_STARTED; no R3–R9 implementation or push authority.
-**Original question/context:** Final Sales duty vocabulary across R1–R8; company/Party/quotation/
+## Answered
+
+<a id="q49--r9-sales-authority-reporting-and-forecast-integration"></a>
+
+Q49 (Origin: PLANNING RESEARCH) resolved2026-10-15 by owner's A1–A10 approval with safeguards,
+recorded in [0138](decisions/0138-authorise-sales-and-document-duties-with-explicit-scope-and-grants.md),
+[0139](decisions/0139-bind-sales-authority-limits-approvals-and-execution-to-exact-evidence.md) and
+[0140](decisions/0140-publish-sales-measures-and-dated-forecasts-with-persistent-trust.md).
+Original question/context: Final Sales duty vocabulary across R1–R8; company/Party/quotation/
 decision/target/warehouse/site scopes; separate read/prepare/issue/approve/discount/override/accept/
 correct/withdraw/handover/delivery authorities; protected fields/evidence; exact grants/mandates/
 limits; configured maker/checker; non-HTTP writers/audit/replay; accepted/remaining/partial-win/
 forecast FX/trust/reporting without double counting and owner gates before public rollout.
-**Authority:** Accepted R1–R8 plus0028/0070/0084–0089/0096/0101/0102/0106/0114/0116.
-**Options/recommendation:** [Final consolidated A1–A10 matrix](phases/phase-4-r9-authority-reporting-review.md)
-with proposed exact strings, shared Documents/Company duties, scopes/grant migration, policy limits, partial-win reporting and forecast
-trust/valuation/history recommendations. Existing CRM duties/0114 preserved, no inferred new grants.
-**Blocks:** final R9 authority/reporting/grant specifications and public enablement of affected
-R3–R8 surfaces; independent existing authorised implementation is not frozen.
-**Follow-up:** Owner reviews names/read implications, initial scope modes, sensitive grant exclusions,
-policy reference/limits, partial-win reporting and forecast FX/trust/history choices; then ADR/specification.
-Forwarded coding questions retain Origin: IMPLEMENTATION AGENT and original wording/context.
+[Duty matrix](domain/sales-duty-matrix.md), [authority](domain/sales-authority.md), [report/forecast](domain/sales-reporting-and-forecast.md),
+[rollout](phases/phase-4-r9-permission-rollout.md), [slices](phases/phase-4-r9-implementation-slices.md)
+and [implementation handoff](phases/phase-4-implementation-handoff.md) SPECIFIED, not new application
+IMPLEMENTED/VERIFIED or PUBLIC_ENABLED. No live permissions/holder grants/application coding authorised;
+owner selects separately authorised small batches and actual rollout inventory. Existing R5/R6
+partial-family and R7 downstream/Finance/Inventory delivery gates remain. Forwarded coding questions
+retain Origin: IMPLEMENTATION AGENT and original context/code-owner verification.
 
----
-
-## Answered---
-
-## Answered
 
 <a id="q50--shared-document--print-framework-ownership"></a>
 
@@ -242,7 +240,7 @@ and [refined DOC0–DOC7](phases/phase-4-r8-implementation-slices.md) SPECIFIED;
 One shared archive/module, owner-specific content/snapshot/access/lifecycle, Company brand, no generic
 download permission, A4/Letter framework with quotation A4 and quotation-first/PO-shaped fixture.
 No PO refactor/application authorisation.0133–0135 bodies unchanged; R9 exact vocabulary/grants/
-scope still planning Q49 final owner review. Earlier0130 collision resolved by handover0136.
+scope were pending Q49 at Q50 closure; now accepted0138–0140 with actual rollout still undelivered. Earlier0130 collision resolved by handover0136.
 
 
 <a id="q48--r8-quotation-documents-and-customer-delivery-evidence"></a>

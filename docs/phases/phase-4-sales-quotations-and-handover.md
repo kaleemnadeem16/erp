@@ -2,7 +2,7 @@
 
 # Phase 4 — Sales, quotations and job handover
 
-- **Status:** R1/R2 bounded research complete; C0 accepted; C1a–c/C2a–b implemented locally per STATUS, R3 accepted/specifications prepared, R4 accepted/specifications prepared, R5 accepted/specifications prepared, R6 accepted/specifications prepared, R7 accepted/specifications prepared, Q47 closed; R8 D1–D8 accepted0133–0135/Q48 closed, DOC0–DOC7 specified; shared Documents0137/Q50 accepted, DF0–DF5 specified; R9 final A1–A10 proposed/Q49 owner review. CRM backend foundation
+- **Status:** R1/R2 bounded research complete; C0 accepted; C1a–c/C2a–b implemented locally per STATUS, R3 accepted/specifications prepared, R4 accepted/specifications prepared, R5 accepted/specifications prepared, R6 accepted/specifications prepared, R7 accepted/specifications prepared, Q47 closed; R8 D1–D8 accepted0133–0135/Q48 closed, DOC0–DOC7 specified; shared Documents0137/Q50 accepted, DF0–DF5 specified; R9 A1–A10 accepted0138–0140/Q49 closed; AU/RP and consolidated implementation handoff specified. CRM backend foundation
   exists separately; quotation implementation remains pending.
 - **Started:** 2026-10-08, at the owner's request. Phase 3 enhancements remain with another agent.
 - **Depends on:** Parties and Estimating; shared Numbering, Approvals, Company and access foundations.
@@ -47,7 +47,7 @@ its consolidated review comes last. R6 and R7 inform R5 before lifecycle decisio
 | R6 Customer decisions | Whole/partial acceptance, alternatives, evidence, rejection and expired offers | Sales pipeline landmines; immutable snapshots | C1–C8 accepted0125–0127/Q46 closed; domain/CA0–CA6 specified, no code authority |
 | R7 Job creation and handover | Idempotent confirmation, scope/baseline, contacts/sites, job changes; Sales/COGS correction ownership | job-costing.md; ADR 0040; Phase 5 boundary | H1–H8 accepted0131–0132 and 0136/Q47 closed; operational domain/HA0–HA7 specified, no delivered adapter |
 | R8 Documents and communications | Customer projection, PDF/template, delivery evidence, portal/signature vs manual recording | Existing PO print model; appearance-and-printing.md; Q33 | D1–D8 accepted0133–0135/Q48 closed; document/delivery contracts and DOC0–DOC7 specified, not delivered |
-| R9 Access, audit, reporting and integration | Owner vs visibility, sensitive prices/costs, forecast metrics, history, imports and events | ADRs 0028, 0062, 0084/0089, 0096; shared audit/scope | Final A1–A10 with0137 Documents/Company vocabulary, scope/grants/limits and forecast refinements proposed/Q49 READY_FOR_OWNER; no accepted R9 ADR |
+| R9 Access, audit, reporting and integration | Owner vs visibility, sensitive prices/costs, forecast metrics, history, imports and events | ADRs 0028, 0062, 0084/0089, 0096; shared audit/scope | A1–A10 accepted0138–0140/Q49 closed; exact duty/authority/reporting/rollout and AU/RP slices specified; application delivery remains separate |
 
 R3–R4 can be investigated independently once R2's context is settled. Read-only source/code review
 is evidence, not proof that a shared component fulfils the new workflow's requirements.
@@ -119,7 +119,9 @@ proposal is never "researched", "accepted" or "complete" merely because it exist
 - [x] Begin R9 A1–A10 owner matrix with proposed vocabulary, scopes/grants/limits and reporting/forecast refinements under Q49.
 - [x] Record Q50 F1–F6 in0137, close Q50, specify Documents/DF0–DF5 and refine DOC ownership without duplicate archive; no implementation.
 - [x] Consolidate final R9 A1–A10/0137 vocabulary, operation profiles, limits/FX/trust/history and safe-grant recommendations.
-- [ ] Owner reviews final R9 A1–A10 and exact authority/reporting choices before accepted R9 ADRs.
+- [x] Record owner-approved R9 A1–A10 safeguards in0138–0140, close Q49, specify exact duties/limits/scopes/grants/reporting/rollout and AU/RP slices.
+- [x] Prepare consolidated dependency/readiness handoff and proposed small PR/FR/QL/CA/HA/DOC/DF batches, preserving actual adapter gates.
+- [ ] Owner separately authorises selected implementation batches/owners and real rollout holder/configuration inventory; no blanket coding approval.
 - [ ] Deliver and verify necessary R6/R7 contracts before partial-family enablement; R7 architecture approval recorded above.
 - [ ] Complete R6–R9 research in dependency order, R6/R7 informing R5 and R9 applied throughout; no operational pricing/quotation authority inferred.
 - [x] Reconcile R1 business foundations with the historical Sales proposal; physical schema reconciliation remains R2–R9.
@@ -140,6 +142,8 @@ STATUS phase row and STATUS-LOG; this plan; Sales/related domain docs alongside 
 OPEN-QUESTIONS when a recorded question is resolved; journeys alongside eventual workflows.
 
 ## Related
+
+- [Consolidated implementation handoff](phase-4-implementation-handoff.md) · [R9 slices](phase-4-r9-implementation-slices.md)
 
 - [Shared Documents contract](../domain/documents.md) · [DF0–DF5](document-print-framework-slices.md) — accepted0137/Q50 closed; specified, not delivered.
 

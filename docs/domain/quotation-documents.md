@@ -122,7 +122,7 @@ Font/image readiness is mandatory for correct pagination; unsupported assets fai
 
 ## Authorisation, APIs and safe access
 
-R9 chooses final read/template/generate/repair/download/attachment duty names/grants/scopes. Each
+R9 accepted0138 and [duty matrix](sales-duty-matrix.md) specify read/template/generate/repair/download/attachment ownership and scope; real grants await rollout. Each
 Request and Action checks company, operation, legitimate subject read and independent file/evidence
 eligibility. A costing entitlement is not public customer content; renderer receives only allowlist.
 Approvals keep their own0070/0085/0087 review projection and reason visibility. Customer attachment

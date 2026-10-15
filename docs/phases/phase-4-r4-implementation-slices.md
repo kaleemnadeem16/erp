@@ -197,6 +197,16 @@ R9 forecast trust/partial-win/remaining reconciliation stay independent. Allocat
 now, not partial acceptance or Finance credit implementation. All R4 slices are NOT_STARTED for coding;
 none is IMPLEMENTED or VERIFIED by this specification. No coding-originated question was forwarded.
 
+## R9 closure and coordinated delivery —2026-10-15
+
+R9 A1–A10 accepted0138–0140/Q49 closed. [Canonical duty matrix](../domain/sales-duty-matrix.md),
+[safe rollout](phase-4-r9-permission-rollout.md) and [R9 slices](phase-4-r9-implementation-slices.md)
+resolve previously proposed vocabulary/grant architecture; historical candidate names above yield
+to this reconciled catalogue, not duplicate guards. Actual guards/holder inventory/adapters/verification
+remain required before affected public routes. [Consolidated handoff](phase-4-implementation-handoff.md)
+defines small dependency batches; no implementation/live grant authorisation. Partial-family and
+downstream gates stay until exact affected contracts actually delivered.
+
 ## Related
 
 - [Financial contract](../domain/quotation-financial-calculation.md) · [R4 review](phase-4-r4-financial-review.md)

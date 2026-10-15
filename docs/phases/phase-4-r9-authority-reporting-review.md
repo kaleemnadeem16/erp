@@ -2,7 +2,13 @@
 
 # R9 — Sales authority, reporting and forecast integration
 
-**2026-10-15 · FINAL CONSOLIDATED OWNER REVIEW / PROPOSED / planning Q49 READY_FOR_OWNER.**
+**2026-10-15 · A1–A10 ACCEPTED with owner safeguards in0138–0140; planning Q49 CLOSED.**
+The owner-review body below is retained historical proposal/evidence. Current authoritative
+specification: [duty matrix](../domain/sales-duty-matrix.md), [authority](../domain/sales-authority.md),
+[report/forecast](../domain/sales-reporting-and-forecast.md), [rollout](phase-4-r9-permission-rollout.md)
+and [R9 slices](phase-4-r9-implementation-slices.md). Approved names still require actual code/owner
+reconciliation before registration; future duties reserved, no live permissions/grants authorised.
+[Consolidated handoff](phase-4-implementation-handoff.md) SPECIFIED; no new application delivery/verification.
 R1–R8 authority is reused, not reopened. No R9 ADR accepted; names, rollout and reporting refinements
 below require owner review before accepted R9 ADRs/specifications. Framework0137 is already accepted; R9 is not. No application coding or real grants authorised.
 Recommended next order: owner reviews A1–A10 and vocabulary, resolves concrete rollout choices, then

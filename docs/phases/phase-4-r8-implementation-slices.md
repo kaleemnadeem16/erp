@@ -3,7 +3,7 @@
 # R8 — Document, delivery and evidence implementation slices
 
 **2026-10-15 · D1–D8 ACCEPTED0133–0135, Q48 closed; SPECIFIED, not IMPLEMENTED or VERIFIED.**
-Every slice needs separate code authorisation. R9 names/grants/effective scope remain unaccepted;
+Every slice needs separate code authorisation. R9 duty/grant/scope architecture is accepted0138–0140; actual registration/holders remain undelivered;
 no public R3–R8 route becomes authorised by this specification. Existing PO Quick Print is neither
 immutable quotation archive nor formal backend PDF. Do not change implementation-owned delivery files.
 
@@ -103,6 +103,16 @@ DOC2 archive cannot be publicly enabled without DF4 recovery/file access. Cohere
 requires R9 approved/delivered permissions/grants plus actual Sales source adapter/Actions and safe
 common storage; no live PO/Finance/Inventory adapter prerequisite is fabricated. DOC5 follows actual
 R6 method needs. DOC6/7 remain later, not minimum pilot. Existing PO Quick Print is not refactored.
+
+## R9 closure and coordinated delivery —2026-10-15
+
+R9 A1–A10 accepted0138–0140/Q49 closed. [Canonical duty matrix](../domain/sales-duty-matrix.md),
+[safe rollout](phase-4-r9-permission-rollout.md) and [R9 slices](phase-4-r9-implementation-slices.md)
+resolve previously proposed vocabulary/grant architecture; historical candidate names above yield
+to this reconciled catalogue, not duplicate guards. Actual guards/holder inventory/adapters/verification
+remain required before affected public routes. [Consolidated handoff](phase-4-implementation-handoff.md)
+defines small dependency batches; no implementation/live grant authorisation. Partial-family and
+downstream gates stay until exact affected contracts actually delivered.
 
 ## Related
 
