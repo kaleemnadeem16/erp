@@ -81,6 +81,7 @@ import {
   useNavUsagePrefs,
 } from "../lib/use-nav-usage";
 import { canAccessScreen } from "../routes/screen-access";
+import { isRecordSheetOpen } from "../components/page/record-sheet";
 
 interface NavItem {
   to: string;
@@ -416,9 +417,14 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   // `<main>` (not `window`) is the actual scroll container — React Router
   // doesn't reset it on navigation, so without this a route opened while
-  // scrolled down on the previous screen stays scrolled down.
+  // scrolled down on the previous screen stays scrolled down. A record side
+  // sheet is the exception: it opens and closes over the list, which must stay
+  // where the person was reading, so no reset when a sheet is, or just was, open.
+  const sheetWasOpen = useRef(false);
   useEffect(() => {
-    mainRef.current?.scrollTo(0, 0);
+    const sheetInvolved = isRecordSheetOpen() || sheetWasOpen.current;
+    sheetWasOpen.current = isRecordSheetOpen();
+    if (!sheetInvolved) mainRef.current?.scrollTo(0, 0);
     const ownerPath = resolveNavPath(pathname, navPaths);
     if (ownerPath && canAccessScreen(ownerPath, permissions))
       recordNavVisit(ownerPath);

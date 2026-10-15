@@ -89,6 +89,17 @@ export interface RecordSheetProps {
   children: ReactNode;
 }
 
+/** How many record sheets are mounted. The app shell reads it to leave the page behind a sheet where it is (see `isRecordSheetOpen`). */
+let mountedSheets = 0;
+
+/**
+ * Whether a record sheet is on screen right now. A sheet is a route (so a link to it works) but it is an overlay: opening or closing one must not move the list
+ * underneath, so the app shell skips its scroll-to-top when a sheet is involved.
+ */
+export function isRecordSheetOpen(): boolean {
+  return mountedSheets > 0;
+}
+
 /**
  * A record — a create form or a detail view — as a right-hand side sheet over
  * the screen it came from. Mount it from a child route of the list, so the
@@ -112,6 +123,13 @@ export function RecordSheet({
   children,
 }: RecordSheetProps) {
   const contentRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    mountedSheets += 1;
+
+    return () => {
+      mountedSheets -= 1;
+    };
+  }, []);
   const [open, setOpen] = useState(true);
   const [asideElement, setAsideElement] = useState<HTMLElement | null>(null);
   const [asideClaims, setAsideClaims] = useState(0);

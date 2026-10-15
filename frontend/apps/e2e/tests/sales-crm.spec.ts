@@ -394,6 +394,38 @@ test('enquiries have filters, chips, selection with bulk actions and printing li
   await page.close();
 });
 
+test('opening and closing a side panel leaves the list where it was; a real page change starts at the top', async ({ browser }) => {
+  test.setTimeout(240_000);
+  const page = await as(browser, MANAGER);
+  await page.setViewportSize({ width: 1360, height: 700 });
+  await page.goto('/opportunities?filter.outcome=ALL&per_page=25');
+  await expect(page.getByRole('row').nth(20)).toBeVisible();
+  const main = page.locator('main');
+  const scrollTop = () => main.evaluate((element) => element.scrollTop);
+
+  await main.evaluate((element) => element.scrollTo(0, element.scrollHeight));
+  await expect.poll(scrollTop).toBeGreaterThan(200);
+  const before = await scrollTop();
+
+  // Open a row from the bottom of the list: the page behind stays put.
+  await page.getByRole('row').last().click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await page.waitForTimeout(400);
+  expect(Math.abs((await scrollTop()) - before)).toBeLessThan(5);
+
+  // Close it: still where it was.
+  await page.getByRole('button', { name: 'Close', exact: true }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page.waitForTimeout(400);
+  expect(Math.abs((await scrollTop()) - before)).toBeLessThan(5);
+
+  // Going to another screen still starts at the top.
+  await page.getByRole('link', { name: 'Enquiries' }).first().click();
+  await expect(page.getByTestId('leads-list')).toBeVisible();
+  await expect.poll(scrollTop).toBe(0);
+  await page.close();
+});
+
 test('the pipeline filters are in a bottom sheet on a phone', async ({ browser }) => {
   const page = await as(browser, MANAGER);
   await page.setViewportSize({ width: 390, height: 800 });
