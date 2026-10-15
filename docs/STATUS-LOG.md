@@ -679,3 +679,31 @@ no branch/history reconciliation by this agent and no changes to the other actor
 ## 2026-10-15 — develop synced with origin; R7 handover ADR renumbered 0130 → 0136
 
 Local develop (3 unpushed docs commits) was rebased onto origin/develop (7 commits of CI sharding and backups); backup branch `backup/develop-before-sync-2026-10-15` holds the old tip. Two ADRs were numbered 0130 (backup on origin, R7 handover local); the unpushed R7 one became 0136 (R7 is now 0131–0132 and 0136) and references were updated. Earlier log entries naming "0130–0132" for R7 are historical. Documentation only; nothing pushed.
+
+
+## 2026-10-15 — Q50 accepted0137, Documents contracts and final R9 owner review
+
+Started clean develop0c6012e,5 ahead/0 behind recorded origin/develop; confirmed separate actor's
+0130 backup/0136 handover renumber resolution and next free0137. No further reconciliation/fetch/
+renumber/push by planning. Owner approved F1–F6; recorded accepted0137, closed planning Q50 with
+origin/context preserved. Specified shared Documents domain and DF0–DF5 minimal foundation/quotation
+adapter dependency sequence, refined DOC0–DOC7 and replaced quotation-prefixed shared pseudo-DDL with
+one common archive and Sales snapshot/binding. Company brand, shared config/render/storage/recovery,
+module content/access/retention/business authority remain explicit. A4/Letter shared profiles do not
+change initial quotation A4; PO-shaped fixture requires no live PO refactor/other-module adapter.
+
+Consolidated one final proposed R9 A1–A10 matrix under Q49 READY_FOR_OWNER. Reconciled PR/QL/FR duty
+names, removed duplicate Sales template/admin/download rights, proposed shared Documents recovery/
+configuration and Company brand authority, minimum operation profiles, explicit priority/tie refusal,
+input+aggregate discount reference, separate base-bridge forecast FX, persistent correction trust and
+known/effective-as-of history.0137 accepts ownership, not exact R9 strings, rollout or named holders.
+No R9 ADR acceptance, real permission changes or reopen of accepted0107 partial-win semantics.
+
+ACCEPTED architecture / SPECIFIED contracts / no Documents or R3–R9 application IMPLEMENTED/VERIFIED.
+Existing accepted ADR bodies including0133–0135 unchanged. Documentation checks only; no application
+source/generated files/migrations/tests/seeders/in-flight delivery changes or application checks/push.
+
+## Related — Q50 closure/final R9
+
+- [Documents domain](domain/documents.md) · [Framework sequence](phases/document-print-framework-slices.md)
+- [Final R9 matrix](phases/phase-4-r9-authority-reporting-review.md)

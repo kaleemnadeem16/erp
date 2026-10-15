@@ -2,7 +2,11 @@
 
 # Shared Document & Print Framework — owner decision proposal
 
-**2026-10-15 · RESEARCH / PROPOSED / planning Q50 OPEN. No accepted cross-cutting ADR.**
+**2026-10-15 · F1–F6 ACCEPTED in0137; planning Q50 CLOSED.**
+The proposal body below is retained historical research. Current authority is
+[0137](../decisions/0137-share-document-and-print-infrastructure-through-module-adapters.md);
+[Documents contract](../domain/documents.md) and [framework sequence](../phases/document-print-framework-slices.md)
+are SPECIFIED, not IMPLEMENTED/VERIFIED. No PO refactor or application code authorised.
 Recommend one shared Documents infrastructure module in the Laravel modular monolith, with typed
 module-owned document-type adapters and shared React presentation primitives. Approve the boundary
 first, then refine R8 implementation ownership and R9 duties before a coding handoff. This proposal

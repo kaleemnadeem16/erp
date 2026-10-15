@@ -151,8 +151,9 @@ in the same commit.
 | [0134](0134-archive-original-quotation-artefacts-with-private-recoverable-storage.md) | Archive original quotation artefacts with private recoverable storage | accepted | 2026-10-15 |
 | [0135](0135-separate-quotation-delivery-evidence-from-customer-consent.md) | Separate quotation delivery evidence from customer consent | accepted | 2026-10-15 |
 | [0136](0136-govern-source-appropriate-operational-handover.md) | Govern source-appropriate operational handover | accepted | 2026-10-14 |
+| [0137](0137-share-document-and-print-infrastructure-through-module-adapters.md) | Share document and print infrastructure through module adapters | accepted | 2026-10-15 |
 
-**Next number: 0137**
+**Next number: 0138**
 
 Note: the R7 handover ADR was first drafted as a second 0130 and renumbered to 0136 on 2026-10-15; 0130 is the backup decision. Number is chosen after fetching, so drafts do not collide.
 

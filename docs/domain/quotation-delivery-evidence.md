@@ -128,6 +128,13 @@ after branding/terms change, per-recipient bounce, duplicate/out-of-order callba
 send, expiry/withdrawal race, download without receipt, acknowledgement/signature without acceptance,
 and valid PO through R6 versus missing required method evidence. Existing CRM/PO printing unaffected.
 
+## Shared infrastructure — accepted0137
+
+Artefact/hash/file-version references resolve [Documents](documents.md) common archive and protected
+association engine, not a Sales copy. Sales still owns dispatch/recipient/manual evidence and R6
+method/consent linkage. Adapter checks independent Sales subject/audience/file eligibility; no generic
+download grant or global Documents receipt-to-consent rule. Delivery retries are not render retries.
+
 ## Related
 
 - [0135](../decisions/0135-separate-quotation-delivery-evidence-from-customer-consent.md)

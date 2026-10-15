@@ -165,10 +165,10 @@ The reference's internal FX, repeated totals, invented contacts/terms and receiv
 were rejected for this supplier-facing default. Backend formal rendering remains the separate
 track above, including trustworthy page counts and frozen company letterhead.
 
-## Shared framework review — proposed, 2026-10-15
+## Shared framework architecture — accepted0137, 2026-10-15
 
 [Document & Print Framework proposal](document-print-framework-review.md) compares common infrastructure
-with module adapters. Q50 awaits owner approval; no existing Quick Print code/configuration is changed.
+with module adapters. Q50 is closed by accepted0137; [Documents](../domain/documents.md) and [framework slices](../phases/document-print-framework-slices.md) specify delivery. No existing Quick Print code/configuration is changed.
 Current PO A4/browser-local behaviour above remains current; shared Letter/backend artefacts are proposed,
 not delivered. Accepted R8 original/security guarantees remain0133–0135.
 

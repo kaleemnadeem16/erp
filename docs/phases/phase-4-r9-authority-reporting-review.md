@@ -2,9 +2,9 @@
 
 # R9 — Sales authority, reporting and forecast integration
 
-**2026-10-15 · INITIAL CONSOLIDATED REVIEW / PROPOSED / planning Q49 OPEN.**
+**2026-10-15 · FINAL CONSOLIDATED OWNER REVIEW / PROPOSED / planning Q49 READY_FOR_OWNER.**
 R1–R8 authority is reused, not reopened. No R9 ADR accepted; names, rollout and reporting refinements
-below require owner review before final specifications. No application coding or real grants authorised.
+below require owner review before accepted R9 ADRs/specifications. Framework0137 is already accepted; R9 is not. No application coding or real grants authorised.
 Recommended next order: owner reviews A1–A10 and vocabulary, resolves concrete rollout choices, then
 accepted ADRs/domain/slices; designated implementation agent later delivers separately authorised scope.
 
@@ -46,15 +46,15 @@ differ; our per-duty scope and privacy remain governing. Existing R1 primary for
 R3 control research and accepted approvals are sufficient to reuse for settled choices. New detailed
 limit/forecast policy refinements below remain proposals, not vendor-mandated or legally required rules.
 
-## Initial business-first decision matrix
+## Final A1–A10 business-first decision matrix
 
 | Bundle | Options/trade-offs | Practical example | Recommendation for owner review | Dependencies/boundaries |
 |---|---|---|---|---|
-| **A1 — Duty vocabulary across R1–R8** | One quotation-manage duty (easy, collapses authority); duty vocabulary (precise, more configuration); one permission per table/field (unusable). | Drafter prepares100; authorised issuer issues; acceptance recorder cannot revise price or release Job. | Retain eight existing CRM strings; approve proposed business-duty catalogue below, with ordinary read/minimum workflow projection distinct from sensitive transitions. Reuse existing owning-module duties instead of new Finance/Inventory/Approvals synonyms. | Owner approves exact names/implications, not real users. R3–R8 Request/Action and UI coverage follows actual delivery; no hidden general manage/bypass. |
+| **A1 — Duty vocabulary across R1–R8/0137** | One quotation-manage duty (easy, collapses authority); duty vocabulary (precise, more configuration); one permission per table/field (unusable). | Drafter prepares100; authorised issuer issues; acceptance recorder cannot revise price or release Job. | Retain eight existing CRM strings; approve proposed business-duty catalogue below, with ordinary read/minimum workflow projection distinct from sensitive transitions. Reuse existing owning-module duties instead of new Finance/Inventory/Approvals synonyms. | Owner approves exact names/implications, not real users. R3–R8 Request/Action and UI coverage follows actual delivery; no hidden general manage/bypass. |
 | **A2 — Record scope and relationship access** | Company-wide first (simple); full restricted Sales scopes (work); inherit owner/Party/target access transitively (unsafe). | Warehouse operator sees eligible delivery destination, not every Party's credit terms or all quotations linked to same customer. | Company-wide only through explicit effective per-duty grant first; unsupported own/assigned/unit modes refuse as0106. Implement restricted paths only with complete list/count/lookup/history/export/mutation coverage. Require each sensitive transition's duty scope AND legitimate source/target projection; unrelated unrestricted duty cannot widen it. | Reuse RecordScope, no second team/tenant resolver. Party candidate selector is narrow workflow access, not directory/Finance grant. No universal live Item/Assembly read solely to see a lawful customer snapshot; owning adapter defines necessary current-source access for mutations. |
 | **A3 — Sensitive fields and attachments** | View record→all data (easy, leaks); server projections and independent file access (precise); scrub text automatically (unreliable). | Cost-blind issuer gets required control outcome, not cost/margin threshold or confidential competitor existence. | Reuse existing cost/Finance read gates; separate commercial terms from protected costs/margins and internal evidence. Customer projection is fixed allowlist. R6 attachments/recipient diagnostics and approval reasons use need-to-know profiles/0087 rules, not generic history licence. | Exact Resource/fields/filter/sort/count/print/download/log matrix before public rollout. No scalar zero for redacted cost, no protected operands in errors/hash/comparison candidates. Secure R8 adapter actually delivered. |
 | **A4 — Grants and full-access mandates** | Grant every new duty to editors/admin names (quick, escalation); preserve proven incumbents and explicit mandates (safe, needs mapping); revoke broadly on deploy (disruptive). | Existing Sales manager may prepare; cannot acquire retrospective acceptance correction through registry growth. | Map each new capability to exact legitimate previous duty/holder if evidence exists, keeping same company and scope. New sensitive acceptance/correction/late-reconcile/claim-release/exception and authority-policy duties default excluded from automatic growth; explicit authorised assignment or verified full-access mandate only. Existing0114 treatment unchanged. | No current permission-count/name inference. Audit registration, grant migrations, sync/bootstrap/demo/seed/import and scoped role→direct conversions. Mandate must cover actual duty/company/scope; missing proof excludes. Holder decision remains owner's operational step. |
-| **A5 — Effective amount/discount authority** | Universal percentage (too coarse); actor limits against current edited base (reset bypass); exact policy reference/input+aggregate controls (sound, more evidence). | Governed reference100.0000; automatic10%, discretionary20% gives80.0000: aggregate20%, not just extra10%. Editing base cannot erase reference. | Pin authoritative reference and discount basis, both specific input and aggregate reduction; apply percentage and absolute ceilings independently, compare amount ceilings in company base using frozen rate/date/source under0070/R4. Missing required reference/FX/cost blocks, no inferred unlimited authority. Overlapping policy conditions need explicit precedence; unknown/conflicting match refuses. | Limits are typed policy/assignments, never permission strings. Owner supplies actual values and supported policy precedence. Above limits routes configured eligible independent review or refuses; no general exception, fixed-contract departure or margin disclosure. |
+| **A5 — Effective amount/discount authority** | Universal percentage (too coarse); actor limits against current edited base (reset bypass); exact policy reference/input+aggregate controls (sound, more evidence). | Governed reference100.0000; automatic10%, discretionary20% gives80.0000: aggregate20%, not just extra10%. Editing base cannot erase reference. | Pin authoritative reference and discount basis, both specific input and aggregate reduction; apply percentage and absolute ceilings independently, compare amount ceilings in company base using frozen rate/date/source under0070/R4. Missing required reference/FX/cost blocks, no inferred unlimited authority. Versioned authority policy selects one explicit highest-priority applicable rule set; equal-priority conflict refuses. All independent applicable controls must pass; authority grants do not sum ceilings or mix bases. Unknown required basis refuses. | Limits are typed policy/assignments, never permission strings. Company config supplies actual numeric thresholds; recommendation is explicit priority with tie refusal, not arbitrary rule order. Above limits routes configured eligible independent review or refuses; no general exception, fixed-contract departure or margin disclosure. |
 | **A6 — Maker/checker and exceptions** | Universal second person (burdens small firms); none (unsafe for governed cases); policy-specific separation (existing model). | Same person can prepare/issue routine quote where policy NONE, but cannot self-approve a step requiring independence. | Keep0070 NONE/POLICY/REQUIRED and stored-actor separation; distinct submitter/decider/principal counts and actual current eligibility. Commercial and operational review profiles remain independent. No initial risk/contract exception bypass; future exception only named exceptionable rule, exact facts/expiry and separate authority. | Approval capability alone neither issues nor grants cost/reason view. Request-specific projection0085; history/limit/reason readership0087. Reuse delegate limits, do not add delegate/principal ceilings. |
 | **A7 — Non-HTTP, audit, imports and replay** | HTTP-only grants/system superuser workers (simple, bypass); all writers through guarded Actions with explicit limited context (required). | R8 worker renders one pinned manifest; cannot accept business or browse another company's evidence. | Human initiator and constrained service execution identity, tenant/subject/purpose/fence/policy evidence. Current authority rechecked for new execution/replay; exact completed receipts projected safely. Imports capture real occurrence vs recording, use same claims/duplicate rules; no fabricated acceptance from Order/import. | Append audit facts and after-commit optional events; durable required protocol only where approved. Revocation fences future work; already in-flight external effect is recorded truthfully. Console/bootstrap/demo included in writer inventory; no secret payload logs. |
 | **A8 — Accepted business, partial wins and remainder** | Auto-WON on first acceptance (inflates); one OPEN amount (loses split truth); independent accepted/outcome/remainder facts (clearer). | Accepted40 of100 plus unoffered60 is partial business; Order/Job/delivery stages do not add value. | Accepted amount from0125/0126 plus authorised0132 corrections, never quote/email/forecast/fulfilment. Show partial-accepted indicator, offered eligible remainder, claim-blocked scope and unoffered potential separately. Explicit authorised pursuit closure only with disposition of remaining intent; no automatic whole-WON/LOST or offer withdrawal/claim release. | Reuse0107: accepted40 plus unsuccessful60 with no remainder pursued can close WON with recorded remainder disposition. Partial win remains a derived indication, not a new terminal outcome. Active accepted business prevents wholly LOST/ABANDONED classification; closure does not require withdrawing every quote. Owner reviews reporting/closure implementation, not settled outcome vocabulary. |
@@ -69,13 +69,17 @@ not wildcard support. Owning module retains existing permission names where they
 | Area | Proposed/retained capability strings | Implications and exclusions |
 |---|---|---|
 | CRM existing | `sales.pipeline.view`, `sales.lead.manage`, `sales.opportunity.manage`, `sales.opportunity.assign`, `sales.opportunity.close`, `sales.stage.manage`, `sales.numbering.manage`, `sales.opportunity.attribution.correct` | Retain current meanings/independent attribution read and scopes; no new quotation rights |
-| Quotation read/workflow | `sales.quotation.view`, `sales.quotation.commercial.view`, `sales.quotation.prepare`, `sales.quotation.submit`, `sales.quotation.issue`, `sales.quotation.withdraw`, `sales.quotation.history.view` | Prepare includes ordinary draft submission already specified in QL: recommend reuse prepare for submit initially, so standalone submit remains deferred unless owner wants independent submitter. Final names must avoid contradictory double gate. Each operator gets minimum necessary projection within own scope, not unrestricted commercial/evidence read. |
+| Quotation read/workflow | `sales.quotation.view`, `sales.quotation.commercial.view`, `sales.quotation.prepare`, `sales.quotation.issue`, `sales.quotation.withdraw`, `sales.quotation.history.view` | Prepare includes ordinary review submission under QL; no separate submit capability initially. Issue/withdraw/approval remain separate. Each operator gets minimum necessary projection within own scope, not unrestricted commercial/evidence read. |
 | Quotation review | `sales.quotation.approve`, `sales.quotation.review-operational` | Exact commercial/operational approval-subject capabilities; request evidence under0085, configured review not always mandatory. No transition implied. |
-| Pricing | `sales.pricing.discount`, `sales.pricing.override`, `sales.pricing.agreement.depart`, `sales.pricing.policy.manage` | Routine discount vs reasoned final-net override vs explicit contract departure; contractual departure stays unsupported without separately delivered contract. Reuse estimating internal-cost read; independent margin view only if actual separate need is approved; no duplicate cost gate invented. |
+| Pricing | `sales.pricing.configure`, `sales.pricing.eligibility.manage`, `sales.pricing.agreement.manage`, `sales.pricing.terms.view`, `sales.quotation.discount`, `sales.quotation.price.override`, `sales.quotation.discount.approve` | Reconcile PR slice names: configuration/Party eligibility/contract maintenance/confidential terms separate from routine discount and reasoned final-net override. Above-limit discount review is exact policy eligibility, not risk/fixed-contract bypass. Reuse actual source cost/margin gates; no new duplicate read. |
 | Sensitive exception future | `sales.pricing.exception.approve` | Reserved proposal only; not initial registry/public surface or automatic grant; control-specific contract first |
 | Customer decisions | `sales.customer-decision.view`, `sales.customer-decision.evidence.record`, `sales.customer-decision.accept`, `sales.customer-decision.reconcile`, `sales.customer-decision.correct`, `sales.customer-decision.claim-release`, `sales.customer-decision.evidence.view` | Independent legitimate subject/evidence read; correction/late/claim release sensitive. Claim-release execution remains deferred0132. Evidence recorder does not accept. |
 | Handover | `sales.handover.view`, `sales.handover.prepare`, `sales.handover.release`, `sales.handover.hold`, `sales.handover.amend` | Preparation/release/hold/operational revision distinct; shared review uses typed subject profile; actual target/warehouse/Inventory duties remain owning module. No invented `sales.*` stock posting permission. |
-| Documents | `sales.document.view`, `sales.document.generate`, `sales.document.repair`, `sales.document.download`, `sales.document.template.manage`, `sales.document.attachment.manage`, `sales.document.attachment.view` | Original customer projection does not open internal attachment; independent subject/file scope. Initial print uses download plus local invocation record, no fake receipt. |
+| Sales document adapter | `sales.document.view`, `sales.document.generate`, `sales.document.repair`, `sales.document.download`, `sales.document.attachment.manage`, `sales.document.attachment.view` | Module subject/profile and confidential file access remain Sales; no sales.document.template.manage or generic documents.download. Repair authorises owner-approved semantic rendition, not host recovery. Print uses permitted download/invocation, no receipt inference. |
+| Shared Documents configuration | `documents.template.manage`, `documents.page-policy.manage` | Documents owns shared curated versions/defaults/activation under0137; does not grant quote prepare/issue or any subject/file read. Separate template content versus page/resource policy; tenant cannot change runtime security caps. |
+| Technical recovery | `documents.recovery.reconcile`, `documents.recovery.restore` | Current company/type/intent recovery context and minimum metadata. No file-read-all, business repair or permission bypass; restore exact existing identity/hash and preserve audit. Service execution identity separately constrained. |
+| Company brand | existing `company.profile.manage` | Extend Company-owned governed brand/version operation with this existing identity duty and safe asset handling; Documents does not duplicate identity edit rights. Existing Company history rules remain. |
+| Sales association/configuration | `sales.quotation.associate`, `sales.quotation.policy.manage`, `sales.financial.configure` | Current CRM reassociation requires both relevant scopes and immutable0099 issue linkage; configuration follows existing QL/FR owning boundaries, not pricing/consent/file grants. |
 | Delivery | `sales.delivery.view`, `sales.delivery.record`, `sales.delivery.send`, `sales.delivery.reconcile` | Initial record is manual only; send/provider reconcile dormant until approved adapter; read masks confidential recipient/evidence facts appropriately |
 | Forecast/reports | `sales.forecast.view`, `sales.forecast.maintain`, `sales.forecast.select`, `sales.forecast.review`, `sales.forecast.publish`, `sales.forecast.value`, `sales.report.view`, `sales.report.export` | Maintain/select by enabled method; valuation/publish do not clear commercial review. Report/export scopes/field projection no wider than their sources. |
 
@@ -118,7 +122,7 @@ administrator may manage eligible assignments but receives no actual customer co
 | Missing required conversion/control/quantity evidence | Incomplete/invalid; show permitted known contributions explicitly, never unknown=zero or subtotal labelled complete |
 | Technical recovery/restored eligibility | Validation may recover, trust does not; successful authorised review/publication needed to re-enter trusted totals under0102 |
 | Ordinary later-date FX movement | No invalidation of trusted historical dated valuation; optional indicative value separate |
-| Correction/invalidation of rate actually used | Preserve original amounts/provenance; if relied-on value/date/source validity changes, provisional pending impact review, even if source later recovers. Pure metadata with no relied-on evidence change warns only. Owner may request separate materiality policy; no silent threshold assumed. |
+| Correction/invalidation of rate actually used | Preserve original amounts/provenance; if relied-on value/date/source validity changes, provisional pending impact review, even if source later recovers. Pure metadata with no relied-on evidence change warns only. Recommend no automatic materiality tolerance initially: any relied-on value/date/source-validity change requires review. Metadata-only warning is allowed only when reliance evidence is unchanged. |
 | Current responsibility/reassociation changes | Preserve original publication and issue attribution; review where maintained assumptions/selection eligibility/scope actually affected, no automatic business amount rewrite |
 | Delivery acknowledgement/Job/Order/dispatch/invoice | No independent new acceptance or forecast win; use owning authoritative accepted/actual sources only |
 
@@ -145,7 +149,7 @@ management conversion policy needed for combined accepted+remaining amount; show
 incomplete or incompatible. No tax/revenue/realised FX/GL authority is conferred. Limits and reports use
 their own pinned conversion bases; forecast FX cannot alter quoted/accepted monetary evidence.
 
-## Important owner choices and next delivery boundaries
+## Final owner choices and delivery boundaries
 
 Review A1–A10, then exact names/minimum read implications; company-wide first versus a concrete
 restricted scope rollout; sensitive automatic-grant exclusions and eligible mandates; actual amount/
@@ -155,21 +159,110 @@ name every real holder now, but holder inventory and tested safe grants are requ
 
 After approval specify vocabulary/field/scope matrix → safe registry/grants → guarded source duties →
 report measures → forecast basis/valuation/trust/publication → integrated rollout. No accepted R9 ADR
-or implementation-ready grant migration is asserted by this initial proposal. Later delivery must
+or implementation-ready grant migration is asserted by this final review proposal. Later delivery must
 include real all-writer/scope inventory, migrations/ratchets/generated API/UI/demo and race evidence.
 R5/R6 partial-family restrictions, R7 downstream impact adapters and R8 email/portal/security gates stay.
 
-## Independent progress and shared framework dependency — proposed Q50
+## Framework0137 applied — no additional R9 architecture gate for ownership
 
-Continue A4–A10 grants/limits/review/audit/partial-win/forecast work against accepted authority while
-[shared document ownership](../architecture/document-print-framework-review.md) is reviewed. A1/A3
-document/template/file rows remain proposals: recommend common template/page administration under
-shared Documents, authoritative company brand under Company, business download/evidence/read/send
-under owning modules. Framework delegates to tenant/subject/audience access adapters; no extra global
-download capability or file-read-all operator grant. Attachment storage/validation/recovery is shared,
-confidential evidence association and access remain module policy. A full original cannot be returned
-to a quantity-only reader merely because the blob exists. R9 finalisation/rollout manifest must resolve
-these boundaries; no new string/grant is accepted here. Limits and forecast require no renderer engine.
+Documents/Company own shared configuration/recovery, Sales owns subject/download/attachment/delivery
+eligibility, common protected stream calls current adapter. No extra ordinary generic download duty,
+no config/recovery read-all. Final vocabulary above replaces the earlier conflicting Sales template
+proposal. Approval of0137 does not accept these exact new strings or grant any user. Framework first
+pilot and secure file availability are actual delivery dependencies for R8, not for independent
+pricing-limit/forecast design. Retention decisions and confidential associations remain module-owned.
+
+## Final scope and operation profiles — recommendation, not deployed authority
+
+| Operation/profile | Required current eligibility | Explicit limit |
+|---|---|---|
+| Quotation list/show/customer money | sales.quotation.view plus independent commercial-view for general monetary projection, each effective scope; workflow may provide exact minimum operation projection under its own approved duty | No margins/costs/private competing terms or source directory expansion; row includes only permitted facts |
+| Prepare/issue/withdraw/associate | Exact named duty and legitimate quotation/Party/source access for that operation; changed association checks destination Opportunity eligibility and original link preserved | Prepare includes ordinary submit; replacement needs issue plus withdrawal if withdrawing predecessor; no silent terms/price override |
+| Review/discount approval | Exact review capability, approval assignment/ceiling/profile/steps and stored actor independence under0070/0085 | Request-specific evidence, not broad quote read; discount approval not fixed-contract/risk bypass;0087 reason/limit guards |
+| Record evidence versus accept/reconcile/correct | Distinct evidence record/accept/late reconcile/correct duty plus independent decision read and confidential evidence view when required | Record observation creates no claim/hold; late/correction need real R7 impact/disposition adapters; claim-release execution deferred |
+| Handover/warehouse/site | Exact prepare/release/hold/amend duty plus independent source/target operational projection and owning warehouse/site operation eligibility where path actually uses it | No universal site/warehouse/Job requirement for service paths; stage does not consume commercial root again |
+| File generation/download/attachment | Sales operation and current subject/audience/profile/association access; shared Documents rechecks tenant/health/binding | Full original requires whole payload eligibility; otherwise explicit permitted profile/rendition or refusal, never renamed redaction |
+| Shared configuration/Company/recovery | Owning configuration duty and company scope; recovery minimal type/intent context, no business content grant | No new automatic holder/role inference; original and snapshots unmodifiable through settings; runtime security caps outside company-editable templates |
+| Forecast/report/export | Exact operation duty plus current eligible source/profile scopes; filter before sums, label visible-scope total | Unseen totals/hidden conflict details never leak; export cannot exceed read, no complete label on incomplete valuation |
+
+Initial supported mode is company-wide only through explicit effective per-duty rights, consistent
+with current0106; restricted own/assigned/unit modes remain refused with403 until each surface has
+real integration. For a supported restricted mode, out-of-scope IDs use existing404 conventions.
+No field history/export/download backdoor, global Eloquent filter substitute or unrelated all-scope
+grant rescue. This limits initial rollout, not permanently forbids later scoped Sales delivery.
+
+## Limit/forecast refinements ready for owner decision
+
+1. Authority reference is the governed versioned pre-discretionary commercial reference from R3,
+   with compatible measure/currency. Preserve automatic benefit comparison, proposed discretionary
+   input and aggregate final reduction separately. No denominator/reference reset via manual base,
+   line splitting or new revision. Percentage and absolute limits both apply where configured;
+   no additive actor/principal/delegate ceilings. Select compatible grant coverage, then every
+   independent mandatory control applies. Unknown/nonpositive/unsupported reference or required
+   cost/FX refuses; do not invent unlimited defaults or a universal numeric threshold.
+2. Use explicit highest-priority rule-set selection with ambiguous tie refusal; approval engine
+   routing remains0070. Actual threshold values are Company-governed configuration in owning Sales
+   policy, not requested as universal owner constants. Same-total changes to basis/source/terms/
+   actor authority invalidate prior evaluation/approval at issue. Exceptional controls stay off.
+3. Forecast SPOT: recommend company-base bridge for mixed source/reporting currencies with each
+   manual-rate leg at explicit valuation date, identity=one; default exact-date, opt-in bounded
+   latest-on-or-before/max-age, never future/arbitrary route. Pin rates/dates/source/route/policy,
+   use R4 decimal/rounding primitives without changing quotation FX selection or old publications.
+4. Combined accepted+remaining management view uses one explicit valuation currency/date/policy
+   and effective accepted source components plus disjoint remaining basis. Keep separate accepted
+   commercial dual amounts and management conversion versions; no recognised revenue implication.
+   If a compatible complete valuation cannot be made, show separate source-currency contributions
+   and incomplete status, never sum historical quote FX with current remaining FX.
+5. Changed/inactivated relied-on rate evidence forces persistent review regardless of amount
+   materiality initially; ordinary later-date rate does not. Metadata-only unchanged relied facts
+   warns. History defaults known-as-of recorded time plus separate effective-as-of/restated view.
+   No historic forecast fabricated where publication evidence did not exist. Partial-win/closure
+   meaning already0107; owner approves reporting implementation, not a new terminal outcome.
+
+## Safe-grant classification and rollout contract
+
+Keep eight incumbent CRM rights and0114 independent read unchanged. No automatic CRM→new pricing/
+quote/acceptance grant. New sensitive accept/reconcile/correct/claim-release/discount-approval/risk,
+agreement/configuration/policy/template/page/recovery and confidential-evidence rights are excluded
+from automatic vocabulary growth by default; explicit authorised grant or verified qualifying
+full-access mandate only, preserving actual duty/company/scope. Other newly exposed duties still
+need an approved holder recipe; safe registration alone does not enable business access. Keep dormant
+future risk/contract departure/claim-release execution unregistered or explicitly reserved without
+public writers as actual slice contract requires. No new wildcard/deny/admin-role engine.
+
+For genuine retrofit continuity, map exact predecessor→new permission to each company role/direct
+holder and retain its scope; do not copy restricted role to unrestricted direct grant. New business
+feature has no inferred incumbent. Review effective additive union and authorised holder inventory
+before rollout; full-access mandate approval must match actual company assignment and evidence,
+not email/role name/permission count. Explicit excluded grants survive re-sync. Audit all registry,
+sync/bootstrap/import/console/demo consumers; idempotent no-op, negative-holder and cross-company
+tests plus staging review required. No live holder is assigned by planning approval.
+
+Human commands/replays check current human authority; service execution uses current bounded service
+authority tied to persisted company/type/subject/purpose intent, records original initiator and never
+impersonates an inactive employee. Legitimate committed issued-original archival work may complete
+under independently authorised system workflow; no revoked human grant is silently reused to send
+or accept. External in-flight result remains truthful after revocation. Trust/claim writers require
+canonical source generations/invalidation before a current trusted response; polling alone fails.
+
+## One consolidated owner review request
+
+Approve/amend A1–A10 together with the reconciled exact vocabulary, scope/operation profiles,
+limit/FX/history refinements and safe-grant exclusions above. Remaining business choices are
+company-wide initial exposure versus a separately specified restricted rollout, exact duty/read
+implications, automatic-growth classification, reference/priority rules, forecast bridge/fallback,
+used-rate correction policy and known/effective-as-of presentation. Company-specific numbers,
+named real holders and supported-adapter rollout inventory remain explicit deployment/configuration
+decisions; not implied by architectural approval. No final R9 ADR accepted yet; Q49 READY_FOR_OWNER.
+
+After owner approval record R9 ADRs/specifications, then separately authorise implementation sequence:
+registry/safe grants/scopes → core source/transition duties → document pilot/shared services →
+report measures → forecast basis/valuation/trust/publication → integrated staged rollout. Independent
+source/forecast foundation may stage without renderer, but public surfaces require full actual scope,
+grants/guards/field policies and all affected adapters. R5/R6 partial-family/R7 downstream/Finance/
+Phase5 restrictions remain unchanged. Required future proof includes Action/HTTP/SQL/service denials,
+concurrent authorisation and publication invalidation, immutable evidence, migration cycle and actual
+API/UI/demo/staging delivery. This final review is documentation, not application verification.
 
 ## Repository coordination note
 

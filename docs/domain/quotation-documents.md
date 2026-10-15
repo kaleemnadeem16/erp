@@ -21,34 +21,23 @@ addresses or universal statutory wording; Finance retains statutory determinatio
 ## Models — logical pseudo-DDL, not migrations
 
 ```
-quotation_template_versions
-  id, company_id, template_key, version, status; immutable once used
-  curated_layout/config_schema_version, mandatory_section_rules, assets_manifest
-quotation_customer_document_snapshots
-  id, company_id, revision_id, projection_schema_version
-  allowlisted_content, content_digest, terms_version/evidence, locale/format_evidence
-  frozen_branding/assets/fonts, template_version_id, issued_snapshot_id
-quotation_render_manifests
-  id, company_id, customer_snapshot_id, generation_identity, manifest_digest
-  renderer_contract/version, layout/config/assets/font digests, output_kind, created_by
-  purpose ORIGINAL | RENDITION | DRAFT_PREVIEW; pinned input digest
-quotation_generation_runs
-  id, company_id, manifest_id, attempt_identity, request_key, intent_digest
-  state PENDING | RUNNING | FAILED | VERIFIED; lease/fencing_generation, error_code
-quotation_artefacts
-  id, company_id, issued_revision_id, manifest_id, generation_run_id
-  purpose, parent_original_id nullable, technical_identity, blob_id, hash, byte_size, media_type
-  verified_at, provenance, created_by; immutable metadata/bytes
-quotation_artefact_heads
-  company_id, revision_id, original_artefact_id nullable, generation
-  UNIQUE(company_id, revision_id); null means official original not available
-private_document_blobs
-  id, company_id, opaque_storage_key, expected_hash, size, storage_generation
-  state STAGED | VERIFIED | MISSING | QUARANTINED; reconciliation timestamps
-document_attachment_versions
-  id, company_id, subject_type/id, opaque_blob_id, safe_display_name, detected_type
-  hash, size, audience CUSTOMER | INTERNAL_EVIDENCE, validation/quarantine evidence
+quotation_customer_document_snapshots                    -- Sales-owned commercial projection
+  id, company_id, revision_id, issued_snapshot_id, projection_schema_version
+  allowlisted_content, content_digest, exact_terms_evidence, source_generation
+quotation_document_bindings                             -- Sales-owned real subject FKs
+  id, company_id, issued_revision_id, customer_snapshot_id
+  document_subject_binding_id, original_profile/purpose
+  UNIQUE(company_id, issued_revision_id, original_profile/purpose)
 ```
+
+Use [Documents common models](documents.md) for template/page versions, manifests, generation
+intents/runs, blobs, artefacts/heads, receipts and attachment/file associations. Company owns brand
+versions/assets. Render binding pins resolved template/page/brand/locale/assets and references the
+Sales immutable snapshot. There are no separate quotation_render_manifests, quotation_generation_runs,
+quotation_artefacts, quotation_artefact_heads or second Sales/private blob archive. Old logical R8
+names described capabilities before0137; this explicit refinement allocates each model once.
+The common original head is authoritative; Sales keeps a binding reference, not duplicate PDF bytes.
+
 
 Every reference uses company-safe keys; technical identities/receipt keys unique within company
 and operation. Database rejects multiple original heads and mutable used templates/snapshots/
@@ -165,13 +154,14 @@ access and original identity conflict; expose no hidden subject details. Direct 
 writes, fresh-key duplicate original, stale worker completion, tenant guessing, cross-worker crash
 and backup/restore consistency require meaningful implementation verification before enablement.
 
-## Proposed common infrastructure ownership — Q50, not an accepted schema change
+## Accepted shared ownership —0137, Q50 closed
 
-The [framework review](../architecture/document-print-framework-review.md) proposes shared template,
-manifest/generation/artefact/blob/recovery primitives with quotation-owned projection/issue/access
-adapters. Logical quotation prefixes above do not mandate a separate Sales PDF infrastructure.
-After owner approval refine physical ownership in slices once; do not create duplicate shared and
-Sales archives. Accepted0133–0135 guarantees and initial quotation A4 format remain unchanged.
+Sales owns BuildCustomerProjection and quotation required content/layout, QL3 issue/snapshot and
+business access/audience/retention callbacks. Shared Documents Actions own pinned manifest, render,
+archive, stream, recovery and rendition plumbing described above; Company owns authoritative brand.
+Names such as RequestOriginalGeneration/RepairRendition are quotation-facing operations delegated to
+common Actions, not an independent implementation. Follow [DF0–DF5](../phases/document-print-framework-slices.md)
+and refined DOC0–DOC7; actual secure adapter/atomicity remains undelivered.0133–0135 unchanged.
 
 ## Related
 

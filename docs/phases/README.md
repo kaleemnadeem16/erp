@@ -115,7 +115,8 @@ SPECIFIED not delivered. [R7 final H1–H8 review](phase-4-r7-handover-research.
 and [evidence/architecture inspection](phase-4-r7-evidence-and-integrity.md) support accepted0131–0132 and 0136/Q47 closed.
 [Operational domain](../domain/sales-operational-handover.md) and [HA0–HA7](phase-4-r7-implementation-slices.md) SPECIFIED, no R7 adapter delivered/verified.
 [R8 D1–D8](phase-4-r8-documents-review.md) accepted0133–0135/Q48 closed; [DOC0–DOC7](phase-4-r8-implementation-slices.md) specified, not delivered/verified.
-[R9 A1–A10](phase-4-r9-authority-reporting-review.md) proposed under planning Q49; no accepted R9 ADR.
+[Shared Documents0137](../domain/documents.md)/Q50 accepted; [DF0–DF5](document-print-framework-slices.md) and DOC ownership specified, not delivered.
+[R9 final A1–A10](phase-4-r9-authority-reporting-review.md) proposed/Q49 READY_FOR_OWNER; no accepted R9 ADR.
 Partial-family operations require necessary R6/R7 approved and delivered; no R3–R9 coding authority.
 
 

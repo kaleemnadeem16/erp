@@ -79,16 +79,30 @@ R6/R7 contracts actually delivered/verified. R8 approval changes neither capacit
 R7 target adapters, bounded reductions and Inventory/Phase5/Finance effects remain undelivered/gated;
 PDF/send/acknowledgement cannot substitute for handover receipt or actual fulfilment.
 
-## Cross-cutting ownership review — PROPOSED, planning Q50
+## Accepted DOC ownership and first-adapter dependency plan —0137
 
-Before infrastructure coding, owner reviews the [shared Documents framework](../architecture/document-print-framework-review.md).
-Proposed split: DOC0–DOC3 common templates/manifests/renderer/archive/recovery in shared Documents,
-Sales customer projection/layout/issue/source semantics in quotation adapter; DOC4 reuses protected
-file mechanics while manual delivery stays Sales; DOC5 consent remains R6; DOC6 email and DOC7 portal/
-signature/localisation retain their own later contracts. One physical common archive, no duplicate
-Sales blob subsystem. Existing pseudo-DDL ownership is not silently rewritten before approval.
-R9 must settle shared configuration/recovery duties and domain file-access adapter responsibility,
-avoiding a duplicate global download permission. No accepted0133–0135 body or business rule changed.
+No parallel Sales renderer/archive. [Documents contract](../domain/documents.md) and
+[DF0–DF5 sequence](document-print-framework-slices.md) are the common foundation; DOC0–DOC7 remains
+the Sales delivery view, not another implementation of shared models. The table below allocates
+the operations in the earlier delivery table explicitly; it supersedes its previously unassigned
+infrastructure ownership without changing0133–0135 business guarantees.
+
+| Slice | Shared Documents / Company | Sales / owning module |
+|---|---|---|
+| DOC0 | DF0/1 common template/page policy/manifests/intents/artefacts/blobs/receipts, attachment validation; Company brand/assets | Customer snapshot and quotation binding with real revision FKs; source-neutral allowlist/required facts/options; no second archive |
+| DOC1 | DF2 BindDocumentManifest/durable generation, DRAFT preview/status primitives | QL3 snapshot/numbering/approvals/claims and exact pinned input integration; prepared-required policy cannot use stale preview |
+| DOC2 | DF3 isolated renderer/A4+Letter pagination/original/run fence | Quotation A4 body/semantic row/total/option rules and actual customer fixture; Letter only compatible fixture initially |
+| DOC3 | DF4 blob/DB reconciliation/restore/history/rendition plumbing | Repair consent/semantic-equality and retention/hold/incident authority; original remains shared identity |
+| DOC4 | DF4/5 private protected streaming/print-invocation/upload/file association UI primitives | Current Sales subject/profile/download/internal attachment eligibility, manual delivery/recipient record and history |
+| DOC5 | Common validated evidence-file association/immutable provenance | R6 evidence-method policy, authorised acceptance and claims; no shared consent engine |
+| DOC6 | Existing artefact/file references; no new email platform in framework | Later Sales dispatch purpose/source eligibility/provider evidence/reconciliation, durable adapter under separate delivery contract |
+| DOC7 | Future supported shared template/page/file extensions only | Prepared-before-issue/public portal/signature/language/retention semantics each separately governed; no universal framework lifecycle |
+
+DF0/1 can stage disabled contracts with quotation/PO-shaped fixture; real DOC1 binding needs QL3.
+DOC2 archive cannot be publicly enabled without DF4 recovery/file access. Coherent DOC0–DOC4 pilot
+requires R9 approved/delivered permissions/grants plus actual Sales source adapter/Actions and safe
+common storage; no live PO/Finance/Inventory adapter prerequisite is fabricated. DOC5 follows actual
+R6 method needs. DOC6/7 remain later, not minimum pilot. Existing PO Quick Print is not refactored.
 
 ## Related
 
