@@ -10,6 +10,7 @@ use App\Modules\Sales\Support\Financial\FinancialResult;
 use App\Modules\Sales\Support\Financial\SettlementRule;
 use App\Modules\Sales\Support\Financial\StorageAmount;
 use App\Support\Casts\MoneyCast;
+use Brick\Math\BigDecimal;
 use Brick\Math\BigRational;
 use Brick\Math\Exception\RoundingNecessaryException;
 use Brick\Math\RoundingMode;
@@ -102,6 +103,22 @@ class FinancialKernelTest extends TestCase
         $this->refused(fn () => $this->rule(2, RoundingMode::UNNECESSARY), 'UNSUPPORTED_ROUNDING_MODE');
     }
 
+    #[DataProvider('currencyPlaces')]
+    public function test_the_currency_quantum_is_exact_for_every_supported_place_count(int $places, string $unit): void
+    {
+        $quantum = new CurrencyQuantum($places);
+
+        $this->assertSame($unit, (string) $quantum->unit());
+        $this->assertSame($places, $quantum->unit()->getScale());
+        $this->assertSame('1', (string) BigRational::of($quantum->unit())->multipliedBy(BigDecimal::of(10)->power($places))->simplified());
+    }
+
+    /** @return array<string, array{int, string}> */
+    public static function currencyPlaces(): array
+    {
+        return ['zero (JPY)' => [0, '1'], 'two (USD)' => [2, '0.01'], 'three (KWD)' => [3, '0.001'], 'four (storage)' => [4, '0.0001']];
+    }
+
     public function test_invalid_negative_and_overflowing_inputs_are_refused(): void
     {
         $this->refused(fn () => StorageAmount::of('abc'), 'INVALID_AMOUNT');
@@ -109,9 +126,9 @@ class FinancialKernelTest extends TestCase
         $this->refused(fn () => StorageAmount::of('1.00005'), 'AMOUNT_NOT_REPRESENTABLE');
         $this->refused(fn () => StorageAmount::of('1000000000000000'), 'AMOUNT_OVERFLOW');
         $this->refused(fn () => StorageAmount::ofRational(BigRational::nd(1, 3)), 'AMOUNT_NOT_REPRESENTABLE');
-        $this->refused(fn () => Arithmetic::quantity('-1'), 'INVALID_QUANTITY');
-        $this->refused(fn () => Arithmetic::quantity('0.0000000001'), 'INVALID_QUANTITY');
-        $this->refused(fn () => Arithmetic::quantity('1000000000000'), 'INVALID_QUANTITY');
+        $this->refused(fn () => Arithmetic::quantity('-1'), 'QUANTITY_NEGATIVE');
+        $this->refused(fn () => Arithmetic::quantity('0.0000000001'), 'QUANTITY_NOT_REPRESENTABLE');
+        $this->refused(fn () => Arithmetic::quantity('10000000000'), 'QUANTITY_OVERFLOW');
         $this->refused(fn () => Arithmetic::settleLine('999999999999999.9999', '2', $this->rule(2)), 'AMOUNT_OVERFLOW');
         $this->assertSame('999999999999999.9999', (string) StorageAmount::of('999999999999999.9999'));
         $this->assertSame('1.2000', (string) StorageAmount::of('1.20'));

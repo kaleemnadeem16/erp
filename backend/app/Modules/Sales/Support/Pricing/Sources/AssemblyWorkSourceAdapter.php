@@ -13,6 +13,7 @@ use App\Modules\Inventory\Actions\QueryMaterialCost;
 use App\Modules\Inventory\Support\Costing\CostReadSession;
 use App\Modules\Sales\Support\Financial\FinancialResult;
 use App\Modules\Sales\Support\Pricing\PricingInput;
+use App\Modules\Sales\Support\Pricing\PricingQuantity;
 use App\Modules\Sales\Support\Pricing\PricingRefusal;
 use App\Modules\Sales\Support\Pricing\PricingSourceAdapter;
 use App\Modules\Sales\Support\Pricing\PricingSourceKind;
@@ -51,14 +52,15 @@ final class AssemblyWorkSourceAdapter implements PricingSourceAdapter
         if ($input->sellingUomId === null || $input->sellingUomId !== $version->assembly->work_uom_id) {
             throw PricingRefusal::make(PricingRefusal::SELLING_UNIT_UNSUPPORTED, 'Assembly work is priced in the Assembly\'s work unit.', 'selling_uom_id');
         }
+        $quantity = PricingQuantity::forAssemblyWork($input->quantity);
         try {
             ($this->authorise)($input->actor->actor);
         } catch (AuthorizationException|DomainInvariantException $refused) {
             throw PricingRefusal::make(PricingRefusal::SOURCE_EVIDENCE_NOT_AUTHORISED, 'Pricing Assembly work needs permission to read estimating cost.', 'source');
         }
-        $breakdown = $this->materialCost->scenario(fn (CostReadSession $session) => $this->explode->forWorkflow($version, $session, $input->quantity));
+        $breakdown = $this->materialCost->scenario(fn (CostReadSession $session) => $this->explode->forWorkflow($version, $session, $quantity));
 
         return new ResolvedSource($this->kind(), $version->id, $version->assembly->code.' v'.$version->version_no.' — '.$version->assembly->name,
-            $version->assembly->work_uom_id, FinancialResult::fromCost($breakdown->cost), ['cost_source' => 'estimating.explode-assembly-version', 'version_id' => $version->id]);
+            $version->assembly->work_uom_id, $quantity, FinancialResult::fromCost($breakdown->cost), ['cost_source' => 'estimating.explode-assembly-version', 'version_id' => $version->id]);
     }
 }

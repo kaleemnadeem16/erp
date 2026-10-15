@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace App\Modules\Sales\Support\Pricing;
 
 use App\Modules\Sales\Support\Financial\FinancialResult;
+use Brick\Math\BigDecimal;
 
 /**
- * What a source adapter proved about the thing being sold, for the requested quantity: its identity and label, and its cost as honest certainty in the
+ * What a source adapter proved about the thing being sold, for the requested quantity: its identity and label, the quantity proven exact for this source, and its cost as honest certainty in the
  * cost's own currency (the company base currency for stock). Cost is internal evidence; it is never a price input.
  */
 final readonly class ResolvedSource
@@ -18,6 +19,7 @@ final readonly class ResolvedSource
         public ?int $sourceId,
         public string $label,
         public ?int $uomId,
+        public BigDecimal $quantity,
         public FinancialResult $cost,
         public array $evidence = [],
     ) {}

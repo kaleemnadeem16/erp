@@ -28,6 +28,7 @@ final readonly class CurrencyQuantum
     /** The quantum as a decimal, e.g. 0.01 for two places. */
     public function unit(): BigDecimal
     {
-        return BigDecimal::one()->dividedBy(BigDecimal::of(10)->power($this->decimalPlaces));
+        // Exact by construction: 1 at the currency's scale (0.01 for two places). A division here would throw RoundingNecessaryException.
+        return BigDecimal::ofUnscaledValue(1, $this->decimalPlaces);
     }
 }

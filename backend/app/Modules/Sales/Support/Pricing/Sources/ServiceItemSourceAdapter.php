@@ -7,6 +7,7 @@ namespace App\Modules\Sales\Support\Pricing\Sources;
 use App\Modules\Inventory\Support\ItemType;
 use App\Modules\Sales\Support\Financial\FinancialResult;
 use App\Modules\Sales\Support\Pricing\PricingInput;
+use App\Modules\Sales\Support\Pricing\PricingQuantity;
 use App\Modules\Sales\Support\Pricing\PricingRefusal;
 use App\Modules\Sales\Support\Pricing\PricingSourceAdapter;
 use App\Modules\Sales\Support\Pricing\PricingSourceKind;
@@ -27,7 +28,9 @@ final class ServiceItemSourceAdapter implements PricingSourceAdapter
             throw PricingRefusal::make(PricingRefusal::SOURCE_INCOMPATIBLE, 'Only a service item can be declared as a service source.', 'source');
         }
 
-        return new ResolvedSource($this->kind(), $item->id, $item->code.' — '.$item->name, $item->stock_uom_id,
+        $quantity = PricingQuantity::forItem($item, $input->quantity);
+
+        return new ResolvedSource($this->kind(), $item->id, $item->code.' — '.$item->name, $item->stock_uom_id, $quantity,
             FinancialResult::unknown([['code' => 'SERVICE_COST_PROVIDER_UNSUPPORTED']]), ['cost_source' => 'none']);
     }
 }

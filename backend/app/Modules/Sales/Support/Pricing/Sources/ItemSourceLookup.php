@@ -26,6 +26,7 @@ final class ItemSourceLookup
             throw PricingRefusal::make(PricingRefusal::SELLING_UNIT_UNSUPPORTED, 'Only the item\'s stock unit is supported as a selling unit.', 'selling_uom_id');
         }
 
+        // The quantity is proven against this Item's own contract here, before any adapter reads cost.
         return $item;
     }
 }

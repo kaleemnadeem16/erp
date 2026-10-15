@@ -31,8 +31,8 @@ final class ResolveSalesPrice
 
         $source = $this->sources->adapterFor($input->source->kind)->resolve($input);
         $price = PriceCandidateSelector::select($candidates, $input->settlement->currencyId);
-        $line = Arithmetic::settleLine($price->unitAmount, $input->quantity, $input->settlement);
+        $line = Arithmetic::settleLine($price->unitAmount, $source->quantity, $input->settlement);
 
-        return new PricingResult($source, $price, $input->quantity, $line, $source->cost);
+        return new PricingResult($source, $price, $source->quantity, $line, $source->cost);
     }
 }

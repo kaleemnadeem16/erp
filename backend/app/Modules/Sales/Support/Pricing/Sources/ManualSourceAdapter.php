@@ -6,6 +6,7 @@ namespace App\Modules\Sales\Support\Pricing\Sources;
 
 use App\Modules\Sales\Support\Financial\FinancialResult;
 use App\Modules\Sales\Support\Pricing\PricingInput;
+use App\Modules\Sales\Support\Pricing\PricingQuantity;
 use App\Modules\Sales\Support\Pricing\PricingSourceAdapter;
 use App\Modules\Sales\Support\Pricing\PricingSourceKind;
 use App\Modules\Sales\Support\Pricing\ResolvedSource;
@@ -21,8 +22,9 @@ final class ManualSourceAdapter implements PricingSourceAdapter
     public function resolve(PricingInput $input): ResolvedSource
     {
         $source = $input->source;
+        $quantity = PricingQuantity::forManual($input->quantity);
 
-        return new ResolvedSource($this->kind(), null, (string) $source->description, null,
+        return new ResolvedSource($this->kind(), null, (string) $source->description, null, $quantity,
             $source->manualCost ?? FinancialResult::unknown([['code' => 'MANUAL_COST_NOT_PROVIDED']]), ['measure' => $source->measure, 'cost_source' => 'declared']);
     }
 }

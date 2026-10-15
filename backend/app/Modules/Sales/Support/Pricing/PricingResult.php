@@ -28,7 +28,7 @@ final readonly class PricingResult
         if ($costVisible) {
             return $this;
         }
-        $source = new ResolvedSource($this->source->kind, $this->source->sourceId, $this->source->label, $this->source->uomId,
+        $source = new ResolvedSource($this->source->kind, $this->source->sourceId, $this->source->label, $this->source->uomId, $this->source->quantity,
             FinancialResult::unknown([['code' => 'COST_NOT_DISCLOSED']]));
 
         return new self($source, $this->price, $this->quantity, $this->line, null, true);

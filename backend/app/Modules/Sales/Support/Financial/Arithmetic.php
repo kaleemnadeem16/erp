@@ -4,20 +4,20 @@ declare(strict_types=1);
 
 namespace App\Modules\Sales\Support\Financial;
 
+use App\Support\Quantity\QuantityContract;
+use App\Support\Quantity\QuantitySign;
 use Brick\Math\BigDecimal;
 use Brick\Math\BigRational;
-use Brick\Math\Exception\MathException;
 
 /**
- * Exact Sales arithmetic (FR0). Unit amounts are storage money (at most four places) and quantities have at most nine places (the ledger quantity
- * precision); the product is an exact rational, so nothing is rounded until a SettlementRule says so. Settled amounts are summed as settled — a header
- * is the sum of its settled lines, never a separately rounded raw total (ADR 0120).
+ * Exact Sales arithmetic (FR0). Unit amounts are storage money (at most four places) and a quantity is whatever its source already proved exact
+ * (`PricingQuantity`, ADR 0142) — here it is only held to the widest quantity any destination can carry. The product is an exact rational, so nothing
+ * is rounded until a SettlementRule says so. Settled amounts are summed as settled — a header is the sum of its settled lines, never a separately rounded raw total (ADR 0120).
  */
 final class Arithmetic
 {
-    public const QUANTITY_SCALE = 9;
-
-    public const QUANTITY_MAX = '999999999999.999999999';
+    /** The arithmetic ceiling, not a business rule: the finest quantity any destination holds. Each source applies its own, narrower contract first. */
+    public const QUANTITY_CEILING_SCALE = QuantityContract::MAX_SCALE;
 
     /** Exact line value: unit amount × quantity. */
     public static function lineValue(string|BigDecimal $unitAmount, string|BigDecimal $quantity): BigRational
@@ -32,25 +32,10 @@ final class Arithmetic
         return $rule->settle(self::lineValue($unitAmount, $quantity));
     }
 
-    /** A validated non-negative quantity that the ledger precision can hold exactly; finer input is refused, never truncated. */
+    /** A non-negative quantity within the arithmetic ceiling, refused with the shared contract's stable codes and never truncated. */
     public static function quantity(string|BigDecimal $quantity): BigDecimal
     {
-        try {
-            $value = BigDecimal::of($quantity);
-        } catch (MathException) {
-            throw FinancialRefusal::make(FinancialRefusal::INVALID_QUANTITY, 'The quantity is not an exact decimal number.', 'quantity');
-        }
-        if ($value->isNegative()) {
-            throw FinancialRefusal::make(FinancialRefusal::INVALID_QUANTITY, 'The quantity cannot be negative.', 'quantity');
-        }
-        if ($value->stripTrailingZeros()->getScale() > self::QUANTITY_SCALE) {
-            throw FinancialRefusal::make(FinancialRefusal::INVALID_QUANTITY, 'The quantity is finer than the ledger precision and is not truncated.', 'quantity');
-        }
-        if ($value->isGreaterThan(self::QUANTITY_MAX)) {
-            throw FinancialRefusal::make(FinancialRefusal::INVALID_QUANTITY, 'The quantity exceeds the supported range.', 'quantity');
-        }
-
-        return $value;
+        return QuantityContract::commercialLine(self::QUANTITY_CEILING_SCALE)->represent($quantity, QuantitySign::NonNegative);
     }
 
     /**

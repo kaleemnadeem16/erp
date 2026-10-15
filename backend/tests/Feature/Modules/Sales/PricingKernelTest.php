@@ -201,13 +201,89 @@ class PricingKernelTest extends TestCase
     public function test_unsupported_input_is_refused(): void
     {
         $item = $this->stockedItem('GOODS', '1.0000');
-        $this->assertSame('INVALID_INPUT', $this->refusal(fn () => $this->input(PricingSource::directItem($item->id), '0', $this->kg->id)));
-        $this->assertSame('INVALID_QUANTITY', $this->refusal(fn () => $this->input(PricingSource::directItem($item->id), '-1', $this->kg->id)));
-        $this->assertSame('INVALID_QUANTITY', $this->refusal(fn () => $this->input(PricingSource::directItem($item->id), '0.0000000001', $this->kg->id)));
+        $this->assertSame('QUANTITY_ZERO', $this->refusal(fn () => $this->resolve($this->input(PricingSource::directItem($item->id), '0', $this->kg->id))));
+        $this->assertSame('QUANTITY_NEGATIVE', $this->refusal(fn () => $this->resolve($this->input(PricingSource::directItem($item->id), '-1', $this->kg->id))));
+        $this->assertSame('QUANTITY_NOT_REPRESENTABLE', $this->refusal(fn () => $this->resolve($this->input(PricingSource::directItem($item->id), '0.0000000001', $this->kg->id))));
         $this->assertSame('INVALID_INPUT', $this->refusal(fn () => PricingSource::manual(' ', 'sum')));
         $this->assertSame('PARTY_NOT_FOUND', $this->refusal(fn () => $this->resolve($this->input(PricingSource::directItem($item->id), '1', $this->kg->id, party: 999999))));
         $this->prospect->update(['status' => 'ARCHIVED']);
         $this->assertSame('PARTY_NOT_FOUND', $this->refusal(fn () => $this->resolve($this->input(PricingSource::directItem($item->id), '1', $this->kg->id))));
+    }
+
+    /** PX1 (ADR 0142): each source applies its own quantity contract, before any cost is read, with the shared stable refusal codes. */
+    public function test_a_stock_item_quantity_is_held_to_four_places_and_the_items_own_increment(): void
+    {
+        $item = $this->stockedItem('CEMENT', '2.0000');
+        $line = fn (string $quantity) => $this->resolve($this->input(PricingSource::directItem($item->id), $quantity, $this->kg->id), $this->price('L', 10, '3.00'));
+
+        $this->assertSame('1.2750', (string) $line('1.275')->quantity);
+        $this->assertSame('3.8250', (string) $line('1.275')->line->computedDecimal());
+        $this->assertSame('QUANTITY_NOT_REPRESENTABLE', $this->refusal(fn () => $line('1.27501')), 'Five places do not fit the four-place ledger and are never rounded.');
+        $this->assertSame('QUANTITY_NOT_REPRESENTABLE', $this->refusal(fn () => $line('0.000000001')), 'The old nine-place allowance is gone for stock.');
+        $this->assertSame('QUANTITY_OVERFLOW', $this->refusal(fn () => $line('1000000000000000')));
+
+        $item->update(['quantity_precision' => '0.5']);
+        $this->assertSame('2.5000', (string) $line('2.5')->quantity);
+        $this->assertSame('QUANTITY_INCREMENT_VIOLATED', $this->refusal(fn () => $line('1.25')));
+        $this->assertSame('QUANTITY_INCREMENT_VIOLATED', $this->refusal(fn () => $line('0.25')));
+    }
+
+    public function test_unsupported_quantity_values_are_refused_as_invalid_never_coerced(): void
+    {
+        $item = $this->stockedItem('GOODS', '1.0000');
+        foreach (['abc', '', '1e3', '1,5', ' 1'] as $bad) {
+            $this->assertSame('QUANTITY_INVALID', $this->refusal(fn () => $this->resolve($this->input(PricingSource::directItem($item->id), $bad, $this->kg->id))), "'{$bad}'");
+        }
+        foreach ([1.5, null, [], true] as $bad) {
+            $input = new PricingInput(SalesActorContext::forUser($this->user, 'test'), $this->prospect->id, PricingSource::directItem($item->id), $bad, $this->kg->id,
+                SettlementRule::forCurrency($this->usd, RoundingMode::HALF_UP));
+            $this->assertSame('QUANTITY_INVALID', $this->refusal(fn () => $this->resolve($input)));
+        }
+    }
+
+    public function test_a_service_item_uses_the_same_four_place_and_increment_rule(): void
+    {
+        $service = Item::create(['code' => 'INSPECT', 'name' => 'Inspection', 'type' => ItemType::Service, 'stock_uom_id' => $this->hour->id, 'category_id' => $this->category->id, 'is_sellable' => true, 'quantity_precision' => '0.25']);
+        $line = fn (string $quantity) => $this->resolve($this->input(PricingSource::serviceItem($service->id), $quantity, $this->hour->id), $this->price('S', 10, '80.00'));
+
+        $this->assertSame('1.5000', (string) $line('1.5')->quantity);
+        $this->assertSame('120.0000', (string) $line('1.5')->line->settled);
+        $this->assertSame('QUANTITY_INCREMENT_VIOLATED', $this->refusal(fn () => $line('1.1')));
+        $this->assertSame('QUANTITY_NOT_REPRESENTABLE', $this->refusal(fn () => $line('1.00001')));
+    }
+
+    public function test_assembly_work_keeps_six_technical_places_and_refuses_a_seventh(): void
+    {
+        $pigment = $this->stockedItem('PIGMENT', '10.0000');
+        $version = $this->activatedVersion([['kind' => 'MATERIAL', 'item_id' => $pigment->id, 'qty_per_work_unit' => '1.000000', 'uom_id' => $this->kg->id]]);
+        $costActor = PermissionedActor::grant(User::factory()->create(), ['estimating.internal_cost.view']);
+        $line = fn (string $quantity, ?User $actor = null) => $this->resolve($this->input(PricingSource::assemblyVersion($version->id), $quantity, $this->sqm->id, $actor ?? $costActor), $this->price('A', 10, '100.00'));
+
+        $result = $line('0.000125');
+        $this->assertSame('0.000125', (string) $result->quantity, 'A legitimate six-place technical quantity is preserved, not cut to four.');
+        $this->assertSame('0.0125', (string) $result->line->computedDecimal());
+        $this->assertSame('QUANTITY_NOT_REPRESENTABLE', $this->refusal(fn () => $line('0.0000001')));
+        $this->assertSame('QUANTITY_ZERO', $this->refusal(fn () => $line('0.000000')));
+        // The quantity is proven before the cost duty is exercised, so a bad quantity is reported as such rather than as a cost refusal.
+        $this->assertSame('QUANTITY_NOT_REPRESENTABLE', $this->refusal(fn () => $line('0.0000001', User::factory()->create())));
+    }
+
+    public function test_manual_scope_is_held_to_four_places(): void
+    {
+        $manual = fn (string $quantity) => $this->resolve($this->input(PricingSource::manual('Site clean-up', 'lump'), $quantity, null), $this->price('M', 10, '10.00'));
+
+        $this->assertSame('2.5000', (string) $manual('2.5')->quantity);
+        $this->assertSame('QUANTITY_NOT_REPRESENTABLE', $this->refusal(fn () => $manual('2.00001')));
+        $this->assertSame('QUANTITY_NOT_REPRESENTABLE', $this->refusal(fn () => $manual('0.000001')), 'Six places are a technical scale, not a manual selling quantity.');
+        $this->assertSame('QUANTITY_NEGATIVE', $this->refusal(fn () => $manual('-1')));
+    }
+
+    public function test_a_refused_quantity_reads_no_cost_and_posts_nothing(): void
+    {
+        $item = $this->stockedItem('GOODS', '1.0000');
+        $before = $this->stockAndLedgerCounts();
+        $this->assertSame('QUANTITY_NOT_REPRESENTABLE', $this->refusal(fn () => $this->resolve($this->input(PricingSource::directItem($item->id), '1.00001', $this->kg->id))));
+        $this->assertSame($before, $this->stockAndLedgerCounts());
     }
 
     public function test_equal_ranked_candidates_conflict_lower_rank_wins_and_the_cheapest_is_never_chosen(): void
