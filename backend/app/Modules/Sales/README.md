@@ -39,6 +39,16 @@ administrative assignee is approved.
 | `CloseOpportunity`, `ReopenOpportunity` | LOST / ABANDONED with a reason; reopen the same pursuit. **WON is refused** until recorded customer acceptance exists |
 | `AddSalesNote`, `MaintainSalesStages` | Authored notes; stage configuration (archive, never delete; the last active stage stays) |
 
+## Internal financial and pricing kernel (Phase 4 batch B1)
+
+Internal only — no route, table, permission, grant or UI; nothing here is reachable from HTTP. Contracts: [quotation-financial-calculation.md](../../../../docs/domain/quotation-financial-calculation.md) (FR0) and [sales-pricing-resolution.md](../../../../docs/domain/sales-pricing-resolution.md) (PR0).
+
+- **`Support/Financial` (FR0).** `StorageAmount` is the decimal(19,4) adapter: non-negative, at most four places, never rounded silently. `Arithmetic` multiplies exactly (unit × quantity as a rational); `SettlementRule` (currency, `CurrencyQuantum` 0–4 places, an explicit `RoundingMode`) is the only way an amount is rounded; `SettledAmount` keeps the computed value, the settled amount and the residual apart; a header is `Arithmetic::sumSettled` of settled lines, never a re-rounded aggregate. `FinancialResult` is COMPLETE / PARTIAL / UNKNOWN and cannot be built inconsistently, so unknown never reads as zero and partial never as complete. The shared `MoneyCast` is **not** used and not changed: it loads a four-place amount in a two-place currency with `RoundingNecessaryException` (pinned by a characterisation test); it has no model callers today, and replacing it needs its own review.
+- **`Support/Pricing` (PR0).** `ResolveSalesPrice` checks the Party (a prospect needs no CustomerAccount), verifies the source through a `PricingSourceAdapter` (direct Item and service Item, Assembly work from an ACTIVE version, governed manual scope), picks one `PriceCandidate` by explicit rank (no candidate, a currency mismatch or two equal best ranks refuse; never the cheapest) and settles the line. Cost comes read-only from `QueryMaterialCost` / the Estimating roll-up and is kept as certainty in its own currency; it never sets a price. Assembly work needs the existing `estimating.internal_cost.view` duty (a cost-blind adapter is a later slice). Alternate units and packages, the pricing master, FX, tax, discounts and controls are not here.
+- **`Support/Kernel` (AU2/AU5 interfaces).** `SalesActorContext` (explicit actor and company, identity only — not a permission verdict), the `OperationReceiptPort` interface and `OperationIntent::hash` (the existing CRM canonical-hash convention). No receipt table or implementation.
+
+A guarded Action must check its own duty and scope before calling the kernel and project the result with `PricingResult::forReader`.
+
 ## Non-obvious
 
 - **Access.** `SalesAccess` is the one guard: the capability *and* "not limited to my units". Own/assigned/unit visibility is not built, so a limited person is **refused (403)**, never shown a filtered list (ADR 0106). Ownership grants nothing.

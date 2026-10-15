@@ -736,6 +736,10 @@ no history reconciliation/fetch/push and no new feature IMPLEMENTED/VERIFIED/PUB
 During planning the other agent committed Opportunities frontend/test/UI documentation as0a62b0e;
 our doc diff/checks were reconciled against that HEAD with its committed content preserved.
 
+## 2026-10-15 — Phase 4 batch B1: internal FR0/PR0 kernel implemented
+
+Owner-authorised B1: a Sales-scoped exact monetary layer (`Support/Financial`: decimal(19,4) storage adapter, rational arithmetic, explicit settlement rule over 0–4 place currencies, computed/settled/residual kept apart, COMPLETE/PARTIAL/UNKNOWN results), the PR0 typed pricing input/result and source adapters over the real C1/C2 cost read (`Support/Pricing`: direct Item, service Item, Assembly work, governed manual; explicit-rank candidate selection that refuses conflicts) and minimal AU2/AU5 interfaces (`Support/Kernel`). No route, migration, permission, grant, UI or generated client. The shared `MoneyCast` was not changed: it throws on a four-place amount in a two-place currency (characterisation test records this). IMPLEMENTED locally; not pushed. Existing finding carried to the owner: Sales registers no `FinancialActivity` probe although opportunities store `expected_amount` with a currency.
+
 ## Related — R9 closure/handoff
 
 - [Implementation handoff](phases/phase-4-implementation-handoff.md) · [R9 slices](phases/phase-4-r9-implementation-slices.md)
