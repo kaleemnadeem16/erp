@@ -79,6 +79,12 @@ invoicing/credits/deposits/payment/statutory tax/FX/COGS and0040 correction owne
 No missing domain is a verified zero-impact port. External/delayed creation requires separately
 approved durable handoff; ordinary queued notices cannot satisfy mandatory effects.
 
+## R8 update — accepted2026-10-15
+
+Customer artefact/delivery authority now accepted0133–0135/Q48 closed; DOC0–DOC7 specified,
+not delivered/verified. R7 file/evidence paths still require actual secure adapter and R9 scope/
+grants. No PDF, send or acknowledgement creates target/actual fulfilment or lifts partial-family gates.
+
 ## Related
 
 - [Operational domain](../domain/sales-operational-handover.md) · [Accepted review](phase-4-r7-handover-research.md)

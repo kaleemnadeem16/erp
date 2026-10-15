@@ -180,6 +180,15 @@ forbidden, pending, replay and success states; retain safe entered intent on ref
 and fresh consent if terms/rounded quantum changes. Keyboard/phone/light/dark coverage required.
 No portal, signature delivery or claim-release control is implied by this screen contract.
 
+## R8 evidence reconciliation — accepted2026-10-15
+
+0135 and [delivery/evidence contract](quotation-delivery-evidence.md) distinguish acknowledgement/signature from
+commercial consent. Only R6 Action establishes accepted business with exact revision/scope/terms/
+authority and claims. Company/path method may require exact document/delivery; no universal email,
+portal or PDF receipt prerequisite displaces legitimate verified manual/PO consent. Binary upload/
+access and affected method integration still need actual secure R8 adapters and R9 grants/scope.
+Late/conflicting recognition retains CA5/R7 delivered-impact gates. Architecture is not verification.
+
 ## Related
 
 - [R7 accepted contract and actual-delivery gates](../phases/phase-4-r7-implementation-slices.md) — R7 authority is accepted0130–0132; necessary adapters remain undelivered, so affected partial-family/correction gates remain.

@@ -149,8 +149,15 @@ in the same commit.
 | [0130](0130-govern-source-appropriate-operational-handover.md) | Govern source-appropriate operational handover | accepted | 2026-10-14 |
 | [0131](0131-preserve-operational-baselines-and-handover-identity.md) | Preserve operational baselines and handover identity | accepted | 2026-10-14 |
 | [0132](0132-govern-bounded-accepted-business-reductions-and-claim-release.md) | Govern bounded accepted-business reductions and claim release | accepted | 2026-10-14 |
+| [0133](0133-freeze-customer-quotation-content-and-versioned-presentation.md) | Freeze customer quotation content and versioned presentation | accepted | 2026-10-15 |
+| [0134](0134-archive-original-quotation-artefacts-with-private-recoverable-storage.md) | Archive original quotation artefacts with private recoverable storage | accepted | 2026-10-15 |
+| [0135](0135-separate-quotation-delivery-evidence-from-customer-consent.md) | Separate quotation delivery evidence from customer consent | accepted | 2026-10-15 |
 
-**Next number: 0133**
+**Next number: 0136**
+
+Coordination: recorded origin/develop has a different0130 (backup) in3e8a31a; local0130 is R7.
+No branch/history reconciliation performed. Owner-coordinated integration must resolve numbering;
+use full filenames while divergent. R8 uses locally free0133–0135.
 
 ## By theme
 

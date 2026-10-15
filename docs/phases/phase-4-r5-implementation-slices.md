@@ -189,6 +189,15 @@ Record each delivery state/evidence; no planning response marks a coding questio
 No app tests run here; docs-only links/numbering/whitespace/body-preservation checks apply.
 Forwarded questions retain Origin: IMPLEMENTATION AGENT and original context via owner; none supplied.
 
+## R8 issue/document reconciliation — accepted2026-10-15
+
+0133–0135 require QL3 to freeze customer projection/manifest/asset versions with commercial issue.
+Default issue does not await PDF success; pending/failed generation leaves issued facts intact,
+official sending blocked until verified artefact. Prepared-required policy needs delivered exact
+number/date/fact checks or refuses. This is a specified extension, not delivered/verified QL3.
+See [artefact contract](../domain/quotation-documents.md) for storage/recovery and immutable original. R9 public duties
+and actual R6/R7 partial-family adapters remain gates; no document action bypasses them.
+
 ## Related
 
 - [R7 accepted contract and actual-delivery gates](phase-4-r7-implementation-slices.md) — R7 authority is accepted0130–0132; necessary adapters remain undelivered, so affected partial-family/correction gates remain.

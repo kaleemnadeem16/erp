@@ -85,6 +85,15 @@ R9 is required before public R6 routes, including CA1; schema representation con
 **Finance/Phase5:** statutory tax/invoicing/payment/credits and actual execution/stock postings remain
 separate. No operational readiness or future Finance acceptance is fabricated by R6.
 
+## R8 evidence reconciliation — accepted2026-10-15
+
+0135 and [delivery/evidence contract](../domain/quotation-delivery-evidence.md) distinguish acknowledgement/signature from
+commercial consent. Only R6 Action establishes accepted business with exact revision/scope/terms/
+authority and claims. Company/path method may require exact document/delivery; no universal email,
+portal or PDF receipt prerequisite displaces legitimate verified manual/PO consent. Binary upload/
+access and affected method integration still need actual secure R8 adapters and R9 grants/scope.
+Late/conflicting recognition retains CA5/R7 delivered-impact gates. Architecture is not verification.
+
 ## Related
 
 - [R7 accepted contract and actual-delivery gates](phase-4-r7-implementation-slices.md) — R7 authority is accepted0130–0132; necessary adapters remain undelivered, so affected partial-family/correction gates remain.

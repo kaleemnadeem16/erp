@@ -203,31 +203,49 @@ attempts and device changes.
 
 ---
 
-### Q48 — R8 quotation documents and customer delivery evidence
+### Q49 — R9 Sales authority, reporting and forecast integration
 
-**Origin:** PLANNING RESEARCH (owner priority after H1–H8 approval; no implementation question forwarded).
-**Decision status:** READY_FOR_OWNER — initial consolidated D1–D8 matrix; no accepted R8 ADR.
-**Delivery status:** NOT_STARTED; no R3–R8 code authority.
-**Original question/context:** Professional quotation templates/multi-page PDF; immutable issued content
-versus drafts; safe commercial projection; generation/reproduction; email/manual/portal delivery,
-retries/recipients; failed delivery versus issue; acknowledgement/signature versus acceptance;
-secure tenant-isolated attachments; numbering/branding/localisation/currency/tax and path-specific
-delivery requirements without universal consent inference.
-**Authority:** Accepted R1–R7 and existing printing, numbering, authorisation and document architecture.
-**Options/recommendation:** [D1–D8 matrix](phases/phase-4-r8-documents-review.md) recommends curated
-versioned customer projection, pinned inputs plus archived original, separate generation/delivery
-status, protected files, staged manual/email channels and R6 method-specific evidence.
-**Blocks:** Accepted R8 document/storage/delivery specifications; binary exposure and affected R6
-acceptance methods. No universal Job/portal or delivery-as-consent rule is proposed.
-**Follow-up:** Owner reviews D1–D8, especially issue/render gate, rendition/recovery, access/channel
-boundaries and path policy; then ADR/specification. R9 grants/scope and separate coding authority remain.
-Forwarded implementation questions retain Origin: IMPLEMENTATION AGENT and original context.
+**Origin:** PLANNING RESEARCH (owner priority after D1–D8 approval; no implementation question forwarded).
+**Decision status:** INITIAL_OWNER_REVIEW — proposed A1–A10 and capability catalogue; no R9 ADR accepted.
+**Delivery status:** NOT_STARTED; no R3–R9 implementation or push authority.
+**Original question/context:** Final Sales duty vocabulary across R1–R8; company/Party/quotation/
+decision/target/warehouse/site scopes; separate read/prepare/issue/approve/discount/override/accept/
+correct/withdraw/handover/delivery authorities; protected fields/evidence; exact grants/mandates/
+limits; configured maker/checker; non-HTTP writers/audit/replay; accepted/remaining/partial-win/
+forecast FX/trust/reporting without double counting and owner gates before public rollout.
+**Authority:** Accepted R1–R8 plus0028/0070/0084–0089/0096/0101/0102/0106/0114/0116.
+**Options/recommendation:** [Initial A1–A10 matrix](phases/phase-4-r9-authority-reporting-review.md)
+with proposed exact strings, scopes/grant migration, policy limits, partial outcome and forecast
+trust/valuation/history recommendations. Existing CRM duties/0114 preserved, no inferred new grants.
+**Blocks:** final R9 authority/reporting/grant specifications and public enablement of affected
+R3–R8 surfaces; independent existing authorised implementation is not frozen.
+**Follow-up:** Owner reviews names/read implications, initial scope modes, sensitive grant exclusions,
+policy reference/limits, partial-win reporting and forecast FX/trust/history choices; then ADR/specification.
+Forwarded coding questions retain Origin: IMPLEMENTATION AGENT and original wording/context.
 
 ---
 
 ## Answered---
 
 ## Answered
+
+<a id="q48--r8-quotation-documents-and-customer-delivery-evidence"></a>
+
+Q48 (Origin: PLANNING RESEARCH) resolved2026-10-15 by owner's D1–D8 approval with clarifications
+afterb3dae82, recorded in accepted [0133](decisions/0133-freeze-customer-quotation-content-and-versioned-presentation.md),
+[0134](decisions/0134-archive-original-quotation-artefacts-with-private-recoverable-storage.md) and
+[0135](decisions/0135-separate-quotation-delivery-evidence-from-customer-consent.md).
+Original question/context: Professional quotation templates/multi-page PDF; immutable issued content
+versus drafts; safe commercial projection; generation/reproduction; email/manual/portal delivery,
+retries/recipients; failed delivery versus issue; acknowledgement/signature versus acceptance;
+secure tenant-isolated attachments; numbering/branding/localisation/currency/tax and path-specific
+delivery requirements without universal consent inference.
+[Document](domain/quotation-documents.md)/[delivery evidence](domain/quotation-delivery-evidence.md)
+and [DOC0–DOC7 slices](phases/phase-4-r8-implementation-slices.md) SPECIFIED, not IMPLEMENTED/VERIFIED.
+R5 issue independent of default render success; official send needs verified artefact; R6 alone
+establishes acceptance. Later email/portal/signature/localisation contracts/delivery, R9 authority,
+actual R6/R7 partial-family adapters and separate code authorisation remain gates.
+
 
 <a id="q47--r7-handover-targets-and-commitment-corrections"></a>
 

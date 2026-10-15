@@ -257,6 +257,15 @@ Stable proposed codes: `STALE_EVIDENCE`, `REVIEW_RESULT_CHANGED`, `APPROVAL_REQU
 Reuse canonical API exception/status mapping (Request authorization403; business rule422;
 concurrent/idempotency conflict409 as applicable), not message parsing or leaked internal causes.
 
+## R8 issue/document reconciliation — accepted2026-10-15
+
+0133–0135 require QL3 to freeze customer projection/manifest/asset versions with commercial issue.
+Default issue does not await PDF success; pending/failed generation leaves issued facts intact,
+official sending blocked until verified artefact. Prepared-required policy needs delivered exact
+number/date/fact checks or refuses. This is a specified extension, not delivered/verified QL3.
+See [artefact contract](quotation-documents.md) for storage/recovery and immutable original. R9 public duties
+and actual R6/R7 partial-family adapters remain gates; no document action bypasses them.
+
 ## Related
 
 - [R7 accepted contract and actual-delivery gates](../phases/phase-4-r7-implementation-slices.md) — R7 authority is accepted0130–0132; necessary adapters remain undelivered, so affected partial-family/correction gates remain.

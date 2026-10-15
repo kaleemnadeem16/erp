@@ -114,8 +114,9 @@ support [domain contracts](../domain/sales-customer-decisions.md) and [CA0–CA6
 SPECIFIED not delivered. [R7 final H1–H8 review](phase-4-r7-handover-research.md), [mixed journey](phase-4-r7-mixed-journey.md)
 and [evidence/architecture inspection](phase-4-r7-evidence-and-integrity.md) support accepted0130–0132/Q47 closed.
 [Operational domain](../domain/sales-operational-handover.md) and [HA0–HA7](phase-4-r7-implementation-slices.md) SPECIFIED, no R7 adapter delivered/verified.
-[R8 D1–D8](phase-4-r8-documents-review.md) proposed under planning Q48; R9 pending.
-Partial-family operations require necessary R6/R7 approved and delivered; no R3–R8 coding authority.
+[R8 D1–D8](phase-4-r8-documents-review.md) accepted0133–0135/Q48 closed; [DOC0–DOC7](phase-4-r8-implementation-slices.md) specified, not delivered/verified.
+[R9 A1–A10](phase-4-r9-authority-reporting-review.md) proposed under planning Q49; no accepted R9 ADR.
+Partial-family operations require necessary R6/R7 approved and delivered; no R3–R9 coding authority.
 
 
 

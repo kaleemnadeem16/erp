@@ -2,7 +2,15 @@
 
 # R8 — Quotation documents, presentation, delivery and customer evidence
 
-**2026-10-14 · Consolidated initial research / PROPOSED / planning Q48 READY_FOR_OWNER.**
+**2026-10-15 · D1–D8 ACCEPTED with owner clarifications in0133–0135; planning Q48 CLOSED.**
+The matrix/recommendation body below is the preserved historical review from2026-10-14.
+Current authority: [0133](../decisions/0133-freeze-customer-quotation-content-and-versioned-presentation.md),
+[0134](../decisions/0134-archive-original-quotation-artefacts-with-private-recoverable-storage.md),
+[0135](../decisions/0135-separate-quotation-delivery-evidence-from-customer-consent.md).
+[Document](../domain/quotation-documents.md)/[delivery](../domain/quotation-delivery-evidence.md)
+contracts and [DOC0–DOC7](phase-4-r8-implementation-slices.md) SPECIFIED; no application delivery/verification.
+Owner clarifies default atomic commercial issue independent of rendering, verified artefact before
+official send, deliberate compact continuation pages and later email/portal/localisation boundaries.
 R7 recorded and specified first. R8 recommendations below need owner decision; no accepted R8
 ADR or code authority. Recommended order: settle D1–D8, record approved authority, then specify
 document/delivery slices alongside R9; application work requires separate authorisation.

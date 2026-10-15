@@ -620,3 +620,33 @@ no application checks or push. Research/architecture approval is not code author
 
 - [R7 slices](phases/phase-4-r7-implementation-slices.md)
 - [R8 owner matrix](phases/phase-4-r8-documents-review.md)
+
+
+## 2026-10-15 — R8 approved/specifications and R9 initial owner matrix
+
+Started clean WSL develop atb3dae82,2 ahead/7 behind recorded origin/develop. Read-only divergence
+inspection found origin3e8a31a backup ADR0130 colliding with local R7 ADR0130. Recorded for owner/
+implementation coordination; no fetch, branch reconciliation, renumber, merge/rebase/reset/cherry-pick
+or push. Local R8 numbers0133–0135 free on both inspected histories; existing accepted bodies preserved.
+
+Owner approved R8 D1–D8 with clarifications: accepted0133–0135, planning Q48 closed. Added formal
+document/artefact and delivery/evidence domains, DOC0–DOC7 slices with models/Actions/Requests/API/
+Resources/UI, private storage/security, idempotent generation, DB/blob reconciliation/recovery,
+original versus repair rendition, later provider retry/unknown outcomes and actual PDF verification.
+Default R5 issue remains atomic and independent of renderer success; official send needs verified
+artefact. Prepared-before-issue is explicit policy requiring an actual exact numbering/fact adapter.
+R6 Action alone establishes acceptance; signatures/acknowledgements/downloads do not infer consent.
+Initial print/download/manual recording separated from later email/portal/signature/localisation.
+R5/R6 partial-family and R7 downstream adapter gates remain; no operational capability delivered.
+
+R9 initial A1–A10 matrix, proposed exact duty catalogue, scopes, grant/mandate migration, limits,
+maker/checker, non-HTTP audit and forecast/partial-win/FX/trust/history refinements under planning Q49.
+Reused accepted CRM/forecast/authority contracts; bounded current ERPNext/Dynamics primary comparison.
+No R9 ADR accepted, no real grants or holder changes. ACCEPTED R8 / SPECIFIED / NOT IMPLEMENTED /
+NOT VERIFIED. Documentation checks only; no application code, migrations, generated files, seeders,
+tests or in-flight implementation delivery files changed; no application checks or push authorised.
+
+## Related — R8/R9 checkpoint
+
+- [R8 slices](phases/phase-4-r8-implementation-slices.md)
+- [R9 initial owner matrix](phases/phase-4-r9-authority-reporting-review.md)
