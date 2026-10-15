@@ -65,6 +65,8 @@ import {
   OpportunityDetailScreen,
   OpportunityFormScreen,
   SalesStagesScreen,
+  StageDetailScreen,
+  StageFormScreen,
   StockScrapDetailScreen,
   StockScrapFormScreen,
   StockScrapsListScreen,
@@ -110,6 +112,9 @@ const opportunityDetailAsSheet = presentation.opportunityDetail === "sheet";
 const opportunityEditAsSheet = presentation.opportunityEdit === "sheet";
 const leadCreateAsSheet = presentation.leadCreate === "sheet";
 const leadDetailAsSheet = presentation.leadDetail === "sheet";
+const stageCreateAsSheet = presentation.stageCreate === "sheet";
+const stageDetailAsSheet = presentation.stageDetail === "sheet";
+const stageEditAsSheet = presentation.stageEdit === "sheet";
 const supplierEditAsSheet = presentation.supplierEdit === "sheet";
 const goodsReceiptCreateAsSheet = presentation.goodsReceiptCreate === "sheet";
 const goodsReceiptDetailAsSheet = presentation.goodsReceiptDetail === "sheet";
@@ -1111,10 +1116,51 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <SalesStagesScreen />
+                <Outlet />
               </AppShell>
             </ProtectedRoute>
           }
-        />
+        >
+          {stageCreateAsSheet && <Route path="new" element={<StageFormScreen presentation="sheet" />} />}
+          {stageDetailAsSheet && <Route path=":id" element={<StageDetailScreen presentation="sheet" />} />}
+          {stageEditAsSheet && <Route path=":id/edit" element={<StageFormScreen presentation="sheet" />} />}
+        </Route>
+        {!stageCreateAsSheet && (
+          <Route
+            path="/sales-stages/new"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <StageFormScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!stageDetailAsSheet && (
+          <Route
+            path="/sales-stages/:id"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <StageDetailScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!stageEditAsSheet && (
+          <Route
+            path="/sales-stages/:id/edit"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <StageFormScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
         <Route
           path="/inventory-cutovers"
           element={

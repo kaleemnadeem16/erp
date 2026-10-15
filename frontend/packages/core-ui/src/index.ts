@@ -271,3 +271,5 @@ export { LeadsListScreen } from "./features/sales/leads-list-screen";
 export { LeadFormScreen } from "./features/sales/lead-form-screen";
 export { LeadDetailScreen } from "./features/sales/lead-detail-screen";
 export { SalesStagesScreen } from "./features/sales/sales-stages-screen";
+export { StageDetailScreen } from "./features/sales/stage-detail-screen";
+export { StageFormScreen } from "./features/sales/stage-form-screen";

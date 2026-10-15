@@ -96,6 +96,19 @@ The demo data shows every state: a new unassigned enquiry, a qualified one that 
 | Actions | Detail sheet: qualify, disqualify, revive, assign, link partner, create opportunity, add note, correct details (version + reason). Bulk on one page: assign, qualify, disqualify, revive, each only for the enquiries it fits, one request each with named, retryable failures | Convert, link partner, notes and correction stay single-record: each needs choices or evidence of its own |
 | Print | List (visible columns and filters), selected rows, and the record with opportunities, notes and history | Quick Print |
 
+**Pipeline stage screens — coverage** (`SalesStageResource`: code, name, sort order, status; routes index, store, update, seed-suggested).
+
+| Backend element | Where it appears | Notes |
+|---|---|---|
+| Index (no filters, sorts or paging: the endpoint returns the whole short list in order) | Search (name or code) and a status filter, as chips with Clear all, in the URL; paging on the loaded list; position shown is the place in the full order | These work on what is loaded because the set is bounded configuration, not data that grows |
+| Create `code`, `name`, `sort_order` | Side panel: name; under *More options* the code (taken from the name) and a position value | A code is a stage's fixed identity: set once, never edited |
+| Update `name` | Rename panel | |
+| Update `sort_order` | Move up / Move down in the row menu and on the stage's panel | Down is the stage below moving up |
+| Update `status` | Archive / Restore on the row, the panel, and in bulk on the ticked rows (one request each; the server refuses an archive that would leave no active stage, reported by name) | Never deleted |
+| Seed suggested | Empty state | Qualification, Proposal, Negotiation |
+| Print | List (filtered), selected rows, and one stage | Quick Print |
+| No single-stage endpoint | The panel reads the stage from the list | |
+
 **Editing a deal.** Create and edit are the same side-panel form (`/opportunities/:id/edit`; open deals only; who it is for, owner and stage change through their own actions). *Quick update* is a small dialog over the record for the follow-up only (value, expected close, next action and date).
 
 **Company size.** One stage needs no stage control, column or filter, and one possible owner needs no owner column, filter, "Mine" or change-owner action (for enquiries: no assignee column, filter, Unassigned toggle or bulk assign); all of them appear as soon as there is a choice (a second stage, a second active member, or a deal whose owner has left). No setting is involved — the pipeline simply grows with the company.

@@ -203,20 +203,22 @@ test('a viewer reads the pipeline and cannot change it; a branch seller limited 
   await branch.close();
 });
 
-test('stages can be renamed and the change is shown on deals', async ({ browser }) => {
-  test.setTimeout(120_000);
+test('stages are renamed from their own panel and the change is shown on deals', async ({ browser }) => {
+  test.setTimeout(180_000);
   const page = await as(browser, MANAGER);
-  await page.goto('/sales-stages');
   const rename = async (from: string, to: string) => {
-    const input = page.getByLabel(`Name of ${from}`, { exact: true });
-    await input.fill(to);
-    await page.locator('li').filter({ has: input }).getByRole('button', { name: 'Rename' }).click();
-    await expect(page.getByLabel(`Name of ${to}`, { exact: true })).toBeVisible();
+    await page.goto(`/sales-stages?filter.search=${encodeURIComponent(from)}`);
+    await page.getByRole('row', { name: new RegExp(`^.*${from.replace(/[()]/g, '\\$&')}`) }).first().click();
+    await page.getByTestId('stage-edit').click();
+    await expect(page.getByRole('dialog')).toContainText('Rename stage');
+    await page.getByLabel('Name', { exact: true }).fill(to);
+    await page.getByTestId('stage-save').click();
+    await expect(page.getByTestId('stage-detail')).toContainText(to);
   };
-  // A run killed between the rename and its restore leaves the shared demo stage renamed; heal that first so one
-  // interrupted run cannot fail every later one.
-  await page.getByLabel(/^Name of Proposal/).first().waitFor();
-  if ((await page.getByLabel('Name of Proposal (e2e)', { exact: true }).count()) > 0) await rename('Proposal (e2e)', 'Proposal');
+  // A run killed between the rename and its restore leaves the shared demo stage renamed; heal that first so one interrupted run cannot fail every later one.
+  await page.goto('/sales-stages');
+  await expect(page.getByTestId('sales-stages')).toBeVisible();
+  if ((await page.getByRole('row', { name: /Proposal \(e2e\)/ }).count()) > 0) await rename('Proposal (e2e)', 'Proposal');
   let renamed = false;
   try {
     await rename('Proposal', 'Proposal (e2e)');
@@ -225,6 +227,57 @@ test('stages can be renamed and the change is shown on deals', async ({ browser 
     // Leave the shared demo stage as it was, even when an assertion above fails.
     if (renamed) await rename('Proposal (e2e)', 'Proposal');
   }
+  await page.close();
+});
+
+test('stages have filters, an add panel, ordering, archive and restore, bulk change and printing', async ({ browser }) => {
+  test.setTimeout(240_000);
+  const page = await as(browser, MANAGER);
+  const stamp = Date.now().toString(36);
+
+  // New stage in the side panel; its code comes from the name.
+  await page.goto('/sales-stages/new');
+  await expect(page.getByRole('dialog')).toContainText('New stage');
+  await page.getByLabel('Name', { exact: true }).fill(`E2E stage ${stamp}`);
+  await page.getByRole('button', { name: /Code and position/ }).click();
+  await expect(page.getByLabel('Code')).toHaveValue(`E2E_STAGE_${stamp.toUpperCase()}`);
+  await page.getByTestId('stage-save').click();
+  const detail = page.getByTestId('stage-detail');
+  await expect(detail).toContainText(`E2E stage ${stamp}`);
+  await expect(detail).toContainText('Place in the order');
+  await expect(page.getByTestId('stage-print')).toBeVisible();
+
+  // Move it up and down from its panel; archive and restore it.
+  await detail.getByRole('button', { name: /Move .* up/ }).click();
+  await expect(detail).toContainText(/of \d+/);
+  await page.getByTestId(`stage-toggle-E2E_STAGE_${stamp.toUpperCase()}`).click();
+  await expect(detail).toContainText('Archived');
+  await page.getByTestId(`stage-toggle-E2E_STAGE_${stamp.toUpperCase()}`).click();
+  await expect(detail).toContainText('Active');
+
+  // Filters as chips; Print is on the list.
+  await page.goto(`/sales-stages?filter.search=${stamp}`);
+  await expect(page.getByRole('row', { name: new RegExp(`E2E stage ${stamp}`) })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Print', exact: true }).first()).toBeVisible();
+  await page.getByRole('combobox', { name: 'Status' }).click();
+  await page.getByRole('option', { name: 'Archived' }).click();
+  await expect(page.getByTestId('active-filters')).toContainText('Status: Archived');
+  await expect(page.getByRole('row', { name: new RegExp(`E2E stage ${stamp}`) })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Clear all' }).click();
+
+  // Tick it and archive it from the bulk bar (the stage is left archived: stages are never deleted).
+  await page.goto(`/sales-stages?filter.search=${stamp}`);
+  await page.getByRole('checkbox', { name: 'Select all' }).check();
+  const bar = page.getByTestId('stage-bulk-bar');
+  await expect(bar.getByTestId('bulk-count')).toHaveText('1 selected');
+  await expect(bar.getByRole('button', { name: 'Print selected' })).toBeVisible();
+  await bar.getByTestId('bulk-archive').click();
+  const dialog = page.getByTestId('bulk-dialog');
+  await expect(dialog).toContainText('1 active stage');
+  await dialog.getByTestId('bulk-confirm').click();
+  await expect(dialog.getByTestId('bulk-result')).toContainText('1 changed');
+  await dialog.getByRole('button', { name: 'Done' }).click();
+  await expect(page.getByRole('row', { name: new RegExp(`E2E stage ${stamp}`) })).toContainText('Archived');
   await page.close();
 });
 
