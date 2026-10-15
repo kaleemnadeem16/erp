@@ -20,6 +20,7 @@ use App\Modules\Inventory\Models\StockLayer;
 use App\Modules\Inventory\Models\StockMove;
 use App\Modules\Inventory\Support\PackageCountComposition;
 use App\Modules\Inventory\Support\PackageWriteScope;
+use App\Modules\Inventory\Support\StockQuantity;
 use Brick\Math\BigDecimal;
 
 /**
@@ -114,7 +115,7 @@ final class PostGroupedCountLine
         foreach (PhysicalCountLineComposition::query()->where('physical_count_line_id', $line->id)->orderBy('line_no')->get() as $row) {
             $definition = $row->item_packaging_id === null ? null : ItemPackaging::query()->findOrFail($row->item_packaging_id);
             $rows[] = ['packaging_id' => $row->item_packaging_id, 'packaging_code' => $definition?->code, 'packaging_name' => $definition?->name,
-                'count' => $row->whole_count, 'content_quantity' => $definition === null ? null : (string) BigDecimal::of($definition->stock_quantity)->toScale(4), 'quantity' => (string) $row->quantity];
+                'count' => $row->whole_count, 'content_quantity' => $definition === null ? null : (string) StockQuantity::packageContent($definition->stock_quantity), 'quantity' => (string) $row->quantity];
         }
 
         return $rows;

@@ -69,6 +69,35 @@ Reason codes: `QUANTITY_INVALID`, `_NEGATIVE`, `_ZERO`, `_OVERFLOW`, `_NOT_REPRE
 
 **Hand-off to the Sales (PX1) owner.** Replace `Arithmetic::quantity` with a per-source contract: direct and service Items `stockLedger($item->quantity_precision)`, Assembly work `assemblyTechnical()` (offered scale still open), manual `commercialLine(4)`; validate before any cost read. Also found while testing: `Sales/Support/Financial/CurrencyQuantum::unit()` uses `BigDecimal::one()->dividedBy(10^n)` with no scale, which throws `RoundingNecessaryException` for one or more places (untested, unused); use `BigDecimal::ofUnscaledValue(1, $places)`.
 
+## Notes handed to PX5 (from the Phase 4 FR1 owner, 2026-10-15)
+The exchange-rate master accepts zero and negative rates (`ManageExchangeRate`, `StoreExchangeRateRequest`/`UpdateExchangeRateRequest`, `exchange_rates.rate` has no CHECK). FR1 (`Sales/Support/Fx`) refuses a non-positive rate with `FX_RATE_INVALID` and does not fall back to an older rate. PX5 should review write-boundary positivity (a CHECK and the request/Action rules) in the Currency-owned slice, and the development database has no seeded rates, so PX5's seeding is a dependency of any FR1 demo.
+
+## PX2 delivery record — Inventory (2026-10-15)
+
+**IMPLEMENTED locally; targeted and wide backend tests only (see the commit report).** Development-stage Inventory is corrected directly (owner clarification): no legacy or grandfather path, and the production audit does not gate PX2.
+
+| Area | Change |
+|---|---|
+| Item increment | `ItemQuantityRules::assertItem` in the `Item` saving hook: positive and reachable by the destination (stock ledger for a stocked item, a four-place commercial context otherwise). Reads the **raw** attribute, because the `decimal:9` cast would round a finer value to zero before the rule saw it |
+| Increment change | Refused (`INCREMENT_INCOMPATIBLE`) if it would strand an active package's content or a pack unit's increment |
+| Pack-unit conversions | `ItemQuantityUnit` hook: factor stays nine-place evidence (`FACTOR_*`); a unit increment is checked through its factor (`acceptTransactionIncrement`) |
+| Package definitions | `ItemPackaging` creating hook: content exact at four places and a multiple of the item increment; a package increment checked through its content. The duplicate check in `MaintainItemPackaging` was removed |
+| Posting | `ReceiptPoster`, `IssuePoster`, `TransferPoster` and `RecordPhysicalCountLine` read quantities through `StockQuantity::signed`; a quantity of more than four places is refused instead of being rounded by PostgreSQL on insert |
+| Unhandled arithmetic | The three sites that multiplied a nine-place package content by a count and called `toScale(4)` (`RecordPhysicalCountComposition`, `PackageDrawPlanner`, `PostGroupedCountLine`) now use `StockQuantity::sealed/packageContent`; the seven private "exact quantity" helpers delegate to the contract and carry reason codes |
+| Database | Migration `2026_10_15_100000_enforce_stock_quantity_representability`: CHECKs on `item_packagings` (content and increment) and on a **stocked** item's increment. Apply → rollback → re-apply verified on an isolated database |
+
+**Reason codes returned (422 with `reason_code`):** `INCREMENT_INVALID`, `INCREMENT_NOT_REPRESENTABLE`, `INCREMENT_INCOMPATIBLE`, `FACTOR_INVALID`, `FACTOR_NOT_REPRESENTABLE`, `QUANTITY_NOT_REPRESENTABLE`, `QUANTITY_INCREMENT_VIOLATED`, `QUANTITY_ZERO`, `QUANTITY_NEGATIVE`, `QUANTITY_OVERFLOW`, `QUANTITY_INVALID`.
+
+**Remaining Inventory paths (not changed, with reason):** item increments are **not** enforced on stock postings or counts (only on definitions and PO/receipt quantities elsewhere); `RecordReceiptComposition` is Purchasing's file (PX3); cutover opening quantities and recalculation take stored values; the many `toScale(4)` calls that only format an already-stored four-place value are intentionally left.
+
+**Frontend hand-off (not done; another agent owns these screens).**
+1. `packages/core-ui/src/features/items/item-form.tsx` lines 54–60: the client rule allows up to nine decimals for `quantity_precision`; change to at most four places (hint "up to 4 decimal places") for stocked items.
+2. `features/item-quantity-units/pack-conversion-common.tsx` line 67: the precision rule has the same nine-place pattern; the factor keeps nine places.
+3. Show the server's `message` for 422 responses carrying the codes above next to the field (the item, pack-conversion and package forms already display field errors; confirm each renders `errors.quantity_precision`/`stock_quantity`).
+4. Demo journeys: no change needed; a Playwright check that a finer increment is refused is optional.
+
+**PX3 dependencies.** PX3 can reuse `QuantityContract::convert` for purchase-to-stock conversion and `StockQuantity` for receipt quantities. It still needs: the pinned order-line increment (its own migration), a pass over `BuildPurchaseOrderLineAttributes`, `DraftGoodsReceiptLines`, `PostGoodsReceipt` (live Item increment in the tolerance floor) and `RecordReceiptComposition`, and the Purchasing demo data.
+
 ## Genuinely unresolved technical decisions
 1. Where the shared quantity contract lives (proposed `app/Support/Quantity`).
 2. A read-only precision catalogue endpoint versus additive scale fields on existing resources.

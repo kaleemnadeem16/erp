@@ -9,8 +9,8 @@ use App\Models\User;
 use App\Modules\Inventory\Models\PhysicalCount;
 use App\Modules\Inventory\Models\PhysicalCountLine;
 use App\Modules\Inventory\Support\PhysicalCountStatus;
+use App\Modules\Inventory\Support\StockQuantity;
 use App\Modules\Inventory\Support\WarehouseScope;
-use Brick\Math\BigDecimal;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -40,7 +40,7 @@ final class RecordPhysicalCountLine
                 throw new DomainInvariantException('This item uses grouped package tracking: record the counted composition (sealed packages and loose quantity) instead of a single quantity.', 'counted_qty');
             }
 
-            $qty = BigDecimal::of($countedQty);
+            $qty = StockQuantity::signed($countedQty, 'counted_qty');
             if ($qty->isNegative()) {
                 throw new DomainInvariantException('Counted quantity cannot be negative.', 'counted_qty');
             }

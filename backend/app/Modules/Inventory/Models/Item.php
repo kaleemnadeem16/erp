@@ -11,6 +11,7 @@ use App\Models\Uom;
 use App\Modules\Accounting\Models\ChartOfAccount;
 use App\Modules\Inventory\Actions\ResolvePackageTrackingPolicy;
 use App\Modules\Inventory\Support\AvcoPoolScope;
+use App\Modules\Inventory\Support\ItemQuantityRules;
 use App\Modules\Inventory\Support\ItemTracking;
 use App\Modules\Inventory\Support\ItemType;
 use App\Modules\Inventory\Support\PackageTrackingMode;
@@ -76,6 +77,16 @@ class Item extends Model
 
     protected static function booted(): void
     {
+        // ADR 0142: an increment must be reachable by the ledger and must not strand the item's own package and unit definitions.
+        static::saving(function (Item $item): void {
+            if (! $item->exists || $item->isDirty(['quantity_precision', 'is_stocked'])) {
+                ItemQuantityRules::assertItem($item);
+                if ($item->exists && $item->isDirty('quantity_precision')) {
+                    ItemQuantityRules::assertIncrementFitsDefinitions($item);
+                }
+            }
+        });
+
         static::saving(function (Item $item): void {
             if (! $item->exists) {
                 $policy = app(ResolvePackageTrackingPolicy::class)(

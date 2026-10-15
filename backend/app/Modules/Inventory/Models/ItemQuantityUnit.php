@@ -7,6 +7,7 @@ namespace App\Modules\Inventory\Models;
 use App\Exceptions\DomainInvariantException;
 use App\Models\Model;
 use App\Models\Uom;
+use App\Modules\Inventory\Support\ItemQuantityRules;
 use App\Support\Concerns\BelongsToCompany;
 use App\Support\Concerns\GuardsRelatedCompanyScope;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -35,6 +36,12 @@ class ItemQuantityUnit extends Model
 
     protected static function booted(): void
     {
+        static::saving(function (ItemQuantityUnit $itemQuantityUnit): void {
+            if (! $itemQuantityUnit->exists || $itemQuantityUnit->isDirty(['factor', 'quantity_precision'])) {
+                ItemQuantityRules::assertUnit($itemQuantityUnit);
+            }
+        });
+
         static::updating(function (ItemQuantityUnit $itemQuantityUnit): void {
             if ($itemQuantityUnit->isDirty(['item_id', 'uom_id'])) {
                 throw new DomainInvariantException(

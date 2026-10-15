@@ -45,10 +45,7 @@ final class MaintainItemPackaging
             } elseif (! empty($data['inner_count'])) {
                 throw new DomainInvariantException('Inner count requires an inner package.', 'inner_count');
             }
-            $item = Item::query()->findOrFail($data['item_id']);
-            if ($item->quantity_precision !== null && ! BigDecimal::of($data['stock_quantity'])->remainder($item->quantity_precision)->isZero()) {
-                throw new DomainInvariantException('Content violates stock increment.', 'stock_quantity');
-            }
+            // Content, increment and the item's own increment are enforced by the model hook (ItemQuantityRules, ADR 0142).
             if ($package) {
                 $package->update($data);
 

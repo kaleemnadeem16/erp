@@ -42,10 +42,11 @@
 
 Open: the offered Assembly quotation quantity scale (not assumed to be six; reconcile with R2/R5 first).
 
-### Increment and conversion rules (PROPOSED; enforcement waits on the audit)
+### Increment and conversion rules
+**Inventory side IMPLEMENTED locally (PX2, 2026-10-15; targeted and wide tests, see the slices record).** Item, pack-unit and package definitions, stock posting quantities, counts and package paths are held to the rules below through `App\Modules\Inventory\Support\{ItemQuantityRules, StockQuantity}` over the shared PX0 contract, in model hooks (every writer) and in the posting Actions, with database CHECK constraints behind them. **Purchasing conversion rounding is NOT changed yet (PX3).** The enforcement note below about the audit applies to Purchasing only; development-stage Inventory is corrected directly.
 - A stock-unit increment for a four-place item: positive, ≤ 4 places, multiple of 0.0001. A per-unit or per-package increment: ≤ 4 places in its own unit, and its stock-unit equivalent representable. Package content ≤ 4 places.
 - A converted quantity must be **exactly** representable at its destination or is refused (`QUANTITY_NOT_REPRESENTABLE`). Example: 7 cartons × 6.666666667 = 46.666666669 cannot be stored at four places, so it is refused rather than stored as 46.6667.
-- Purchasing today (IMPLEMENTED, unchanged until enforcement): rounds the stock quantity half-up to four places silently when the item has no increment; the package kernel raises on `toScale(4)`.
+- Purchasing today (IMPLEMENTED, unchanged until PX3): rounds the stock quantity half-up to four places silently when the item has no increment; the package kernel raises on `toScale(4)`.
 
 ## Currency (0143)
 Minor units (0–4 places) are global ISO reference data, synchronised at deployment and never edited by a company. Currently only `FoundationDemoSeeder` creates currencies (PKR, USD, AED) and only the Sales kernel reads `decimal_places`.

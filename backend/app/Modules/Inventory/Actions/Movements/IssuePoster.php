@@ -18,6 +18,7 @@ use App\Modules\Inventory\Support\NegativeStockApprovalDecision;
 use App\Modules\Inventory\Support\NegativeStockAuthorisationMode;
 use App\Modules\Inventory\Support\PostedMovement;
 use App\Modules\Inventory\Support\StockLayerAllocation;
+use App\Modules\Inventory\Support\StockQuantity;
 use App\Modules\Inventory\Support\ValuationMethod;
 use App\Support\CompanyContext;
 use Brick\Math\BigDecimal;
@@ -51,7 +52,7 @@ final class IssuePoster
         // has no layer yet. It closes the zero-stock issue/receipt race that
         // row-locking only existing layers cannot serialize.
         $location = Location::query()->with('warehouse')->lockForUpdate()->findOrFail($input['location_id']);
-        $qty = BigDecimal::of($input['qty']);
+        $qty = StockQuantity::signed($input['qty'], 'qty');
         if ($qty->isLessThanOrEqualTo(0)) {
             throw new DomainInvariantException('Stock issue quantity must be greater than zero.', 'qty');
         }

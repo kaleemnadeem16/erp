@@ -6,7 +6,6 @@ namespace App\Modules\Inventory\Support;
 
 use App\Exceptions\DomainInvariantException;
 use Brick\Math\BigDecimal;
-use Brick\Math\Exception\MathException;
 
 /** Exact cohort transformation. Contributions represent bookkeeping, not vessel identities. */
 final class PackageOpeningComposition
@@ -126,14 +125,6 @@ final class PackageOpeningComposition
 
     private function exact(string $quantity): BigDecimal
     {
-        try {
-            $value = BigDecimal::of($quantity)->toScale(4);
-            if ($value->isGreaterThan(0)) {
-                return $value;
-            }
-        } catch (\InvalidArgumentException|MathException $error) {
-            // Invalid precision is a domain error, never rounded.
-        }
-        throw new DomainInvariantException('Package contents require positive exact stock-precision quantities.');
+        return StockQuantity::positive($quantity, 'content_quantity');
     }
 }

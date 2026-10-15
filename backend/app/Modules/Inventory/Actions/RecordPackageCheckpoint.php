@@ -17,11 +17,11 @@ use App\Modules\Inventory\Models\StockBatch;
 use App\Modules\Inventory\Models\StockLayer;
 use App\Modules\Inventory\Models\StockMove;
 use App\Modules\Inventory\Support\ItemTracking;
+use App\Modules\Inventory\Support\StockQuantity;
 use App\Modules\Inventory\Support\ValuationMethod;
 use App\Modules\Purchasing\Models\GoodsReceiptLine;
 use App\Support\CompanyContext;
 use Brick\Math\BigDecimal;
-use Brick\Math\Exception\MathException;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -188,15 +188,6 @@ final class RecordPackageCheckpoint
 
     private function positive(string $qty): string
     {
-        try {
-            $value = BigDecimal::of($qty)->toScale(4);
-        } catch (\InvalidArgumentException|MathException $error) {
-            throw new DomainInvariantException('Package quantities must be exact decimals at stock precision.');
-        }
-        if ($value->isLessThanOrEqualTo(0)) {
-            throw new DomainInvariantException('Package quantities must be positive.');
-        }
-
-        return (string) $value;
+        return (string) StockQuantity::positive($qty);
     }
 }

@@ -14,6 +14,7 @@ use App\Modules\Inventory\Models\StockMove;
 use App\Modules\Inventory\Models\StockTransferDetail;
 use App\Modules\Inventory\Support\PostedMovement;
 use App\Modules\Inventory\Support\StockLayerAllocation;
+use App\Modules\Inventory\Support\StockQuantity;
 use App\Modules\Inventory\Support\ValuationMethod;
 use App\Support\CompanyContext;
 use Brick\Math\BigDecimal;
@@ -64,7 +65,7 @@ final class TransferPoster
                 throw new DomainInvariantException('Transfers require active stock-holding locations.', 'to_location_id');
             }
         }
-        $qty = BigDecimal::of($input['qty']);
+        $qty = StockQuantity::signed($input['qty'], 'qty');
         if ($qty->isLessThanOrEqualTo(0) || ! $item->is_stocked || $item->stock_uom_id !== $input['uom_id']) {
             throw new DomainInvariantException('Transfers require positive stock quantity in the pinned stock UoM.', 'qty');
         }

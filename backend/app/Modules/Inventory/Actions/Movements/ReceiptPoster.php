@@ -12,6 +12,7 @@ use App\Modules\Inventory\Models\StockBatch;
 use App\Modules\Inventory\Models\StockLayer;
 use App\Modules\Inventory\Models\StockLayerConsumption;
 use App\Modules\Inventory\Models\StockMove;
+use App\Modules\Inventory\Support\StockQuantity;
 use App\Modules\Inventory\Support\ValuationMethod;
 use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
@@ -55,7 +56,7 @@ final class ReceiptPoster
             throw new DomainInvariantException('This receipt conflicts with later valuation history and requires the controlled backdating workflow.', 'moved_at');
         }
 
-        $qty = BigDecimal::of($input['qty']);
+        $qty = StockQuantity::signed($input['qty'], 'qty');
         $unitCost = BigDecimal::of($input['unit_cost']);
         $baseUnitCost = BigDecimal::of($input['base_unit_cost']);
         $batchNo = $this->identity->normalisedBatchNo($input);

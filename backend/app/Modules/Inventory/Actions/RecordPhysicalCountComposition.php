@@ -12,9 +12,9 @@ use App\Modules\Inventory\Models\PhysicalCountLine;
 use App\Modules\Inventory\Models\PhysicalCountLineComposition;
 use App\Modules\Inventory\Support\PackageTrackedLevels;
 use App\Modules\Inventory\Support\PhysicalCountStatus;
+use App\Modules\Inventory\Support\StockQuantity;
 use App\Modules\Inventory\Support\WarehouseScope;
 use Brick\Math\BigDecimal;
-use Brick\Math\Exception\MathException;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -64,7 +64,7 @@ final class RecordPhysicalCountComposition
             $number = 0;
             foreach ($sealed as $packagingId => $wholeCount) {
                 $definition = ItemPackaging::query()->where('item_id', $line->item_id)->findOrFail($packagingId);
-                $quantity = BigDecimal::of($definition->stock_quantity)->multipliedBy($wholeCount)->toScale(4);
+                $quantity = StockQuantity::sealed($definition->stock_quantity, $wholeCount);
                 PhysicalCountLineComposition::query()->create(['physical_count_line_id' => $line->id, 'line_no' => ++$number,
                     'item_packaging_id' => $packagingId, 'whole_count' => $wholeCount, 'quantity' => (string) $quantity]);
                 $total = $total->plus($quantity);
@@ -85,14 +85,6 @@ final class RecordPhysicalCountComposition
 
     private function exact(string $quantity): BigDecimal
     {
-        try {
-            $value = BigDecimal::of($quantity);
-            if ($value->isGreaterThan(0) && $value->getScale() <= 4) {
-                return $value->toScale(4);
-            }
-        } catch (\InvalidArgumentException|MathException $error) {
-            // domain error below
-        }
-        throw new DomainInvariantException('A loose quantity must be positive and no finer than the stock ledger.', 'composition');
+        return StockQuantity::positive($quantity, 'composition');
     }
 }

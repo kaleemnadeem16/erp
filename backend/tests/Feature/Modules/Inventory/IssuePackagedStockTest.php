@@ -313,7 +313,7 @@ class IssuePackagedStockTest extends RecordPackageCheckpointTest
         $cases = [
             'more sealed than on hand' => [[['kind' => 'SEALED', 'packaging_id' => $can->id, 'count' => 4]], 'more sealed packages'],
             'more loose than on hand' => [[['kind' => 'LOOSE', 'quantity' => '5.0001']], 'more open/loose'],
-            'finer than the ledger' => [[['kind' => 'LOOSE', 'quantity' => '0.00005']], 'no finer than the stock ledger'],
+            'finer than the ledger' => [[['kind' => 'LOOSE', 'quantity' => '0.00005']], 'more than 4 decimal places'],
             'opened remainder larger than the opened can' => [[['kind' => 'OPEN_AND_DRAW', 'packaging_id' => $can->id, 'count' => 1, 'quantity' => '5.5']], 'cannot exceed what they held'],
             'nothing taken' => [[], 'must take something'],
         ];

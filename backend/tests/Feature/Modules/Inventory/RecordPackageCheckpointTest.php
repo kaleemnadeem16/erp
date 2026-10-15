@@ -106,7 +106,7 @@ class RecordPackageCheckpointTest extends StockIssueTest
         [$input, $actor] = $this->checkpoint();
         $input['composition'][0]['quantity'] = '4.00001';
         $this->expectException(DomainInvariantException::class);
-        $this->expectExceptionMessage('exact decimals');
+        $this->expectExceptionMessage('more than 4 decimal places');
         app(RecordPackageCheckpoint::class)($input, $actor);
     }
 

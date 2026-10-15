@@ -12,6 +12,7 @@ use App\Modules\Inventory\Models\RejectedStockExit;
 use App\Modules\Inventory\Models\StockLayer;
 use App\Modules\Inventory\Support\PackageWriteScope;
 use App\Modules\Inventory\Support\RejectedStockBalance;
+use App\Modules\Inventory\Support\StockQuantity;
 use App\Modules\Inventory\Support\ValuationMethod;
 use App\Modules\Inventory\Support\WarehouseScope;
 use App\Modules\Purchasing\Models\GoodsReceiptLine;
@@ -188,15 +189,7 @@ final class PreviewRejectedStockExit
 
     private function quantity(string $quantity): BigDecimal
     {
-        try {
-            $value = BigDecimal::of($quantity);
-            if ($value->isGreaterThan(0) && $value->getScale() <= 4) {
-                return $value->toScale(4);
-            }
-        } catch (\Throwable) {
-            // domain error below
-        }
-        throw new DomainInvariantException('The quantity must be positive and no finer than the stock ledger.', 'quantity');
+        return StockQuantity::positive($quantity);
     }
 
     /** @return array{code:string, message:string} */

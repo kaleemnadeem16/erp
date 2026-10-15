@@ -6,8 +6,8 @@ namespace App\Modules\Inventory\Actions;
 
 use App\Exceptions\DomainInvariantException;
 use App\Models\User;
+use App\Modules\Inventory\Support\StockQuantity;
 use Brick\Math\BigDecimal;
-use Brick\Math\Exception\MathException;
 
 /**
  * The part of a grouped package movement that issue and transfer share (ADR 0090): parsing the declared draw, recording any opening
@@ -164,9 +164,9 @@ final class PackageDrawPlanner
                     throw new DomainInvariantException('The draw takes more sealed packages than are on hand.', null, 'DRAW_NOT_ON_HAND');
                 }
                 $sealed[$draw['packaging_id']]['count'] -= $draw['count'];
-                $draw['quantity'] = $available['content']->multipliedBy($draw['count'])->toScale(4);
+                $draw['quantity'] = StockQuantity::sealed($available['content'], (int) $draw['count']);
             } else {
-                $draw['quantity'] = BigDecimal::of($draw['quantity'])->toScale(4);
+                $draw['quantity'] = StockQuantity::positive($draw['quantity']);
                 if ($draw['quantity']->isGreaterThan($loose)) {
                     throw new DomainInvariantException('The draw takes more open/loose quantity than is on hand.', null, 'DRAW_NOT_ON_HAND');
                 }
@@ -180,14 +180,6 @@ final class PackageDrawPlanner
 
     private function exactQuantity(string $quantity, string $what): BigDecimal
     {
-        try {
-            $value = BigDecimal::of($quantity);
-            if ($value->isGreaterThan(0) && $value->getScale() <= 4) {
-                return $value->toScale(4);
-            }
-        } catch (\InvalidArgumentException|MathException $error) {
-            // fall through to the domain error
-        }
-        throw new DomainInvariantException("{$what} must be positive and no finer than the stock ledger.");
+        return StockQuantity::positive($quantity, strtolower(str_replace(' ', '_', $what)));
     }
 }

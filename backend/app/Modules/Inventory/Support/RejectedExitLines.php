@@ -10,7 +10,6 @@ use App\Modules\Inventory\Actions\PackageDrawPlanner;
 use App\Modules\Inventory\Models\Location;
 use App\Modules\Inventory\Models\StockLayer;
 use App\Modules\Purchasing\Models\GoodsReceiptLine;
-use Brick\Math\BigDecimal;
 
 /**
  * Validates and normalises the lines of a Supplier Return or Scrap draft (ADR 0097): each line names a delivery line whose stock exists, a positive quantity, an
@@ -74,15 +73,7 @@ final class RejectedExitLines
 
     public static function quantity(string $quantity, string $field): string
     {
-        try {
-            $value = BigDecimal::of($quantity);
-            if ($value->isGreaterThan(0) && $value->getScale() <= 4) {
-                return (string) $value->toScale(4);
-            }
-        } catch (\Throwable) {
-            // domain error below
-        }
-        throw new DomainInvariantException('The quantity must be positive and no finer than the stock ledger.', $field);
+        return (string) StockQuantity::positive($quantity, $field);
     }
 
     public static function nullable(mixed $value): ?string

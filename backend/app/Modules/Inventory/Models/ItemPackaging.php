@@ -4,6 +4,7 @@ namespace App\Modules\Inventory\Models;
 
 use App\Exceptions\DomainInvariantException;
 use App\Models\Model;
+use App\Modules\Inventory\Support\ItemQuantityRules;
 use App\Support\Concerns\BelongsToCompany;
 use App\Support\Concerns\GuardsRelatedCompanyScope;
 
@@ -37,6 +38,7 @@ class ItemPackaging extends Model
 
     protected static function booted(): void
     {
+        static::creating(fn (self $record) => ItemQuantityRules::assertPackaging($record));
         static::updating(function (self $record): void {
             if ($record->isDirty(['item_id', 'code', 'stock_quantity', 'quantity_precision', 'inner_packaging_id', 'inner_count'])) {
                 throw new DomainInvariantException('Identity/content cannot be repointed; archive and create a replacement.');
