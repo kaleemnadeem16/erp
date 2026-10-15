@@ -218,6 +218,15 @@ still reference it. There is no equivalent `customer-sites` endpoint yet, and no
 independent of a role — see [purchasing.md](purchasing.md#user-interface) for where the supplier
 side is used.
 
+### Contacts
+
+The people at a Party (`party_contacts`: name, role/title, email, phone, one optional primary). They are scoped through their Party, never directly by company.
+
+- `GET /parties/{party}/contacts` (filter `search`; primary first, then by name) — readable only by someone whose duty involves choosing or maintaining a Party (`PartyCandidateAccess::mayAsk`: Party maintenance, or a Sales duty that registers itself there). Names, phones and emails are personal data, so being signed in is not enough.
+- `POST /parties/{party}/contacts` and `PATCH /party-contacts/{contact}` — need `parties.party.manage`. A Party has at most one primary contact: making one primary demotes the previous one. A contact never moves to another Party.
+- Not offered yet: removing a contact. A deal or enquiry may point at one, so archiving needs its own rule (what the record shows afterwards).
+- Used by Sales: an opportunity or an enquiry conversion may name a contact of its own Party (`party_contact_id`, enforced by a composite foreign key, so a deal can never name another Party's contact).
+
 ### Country as a code, not a reference
 
 `party_sites.country_code` is a plain ISO 3166-1 alpha-2 string (normalised to uppercase in the

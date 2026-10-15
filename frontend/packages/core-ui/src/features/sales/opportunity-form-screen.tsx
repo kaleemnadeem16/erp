@@ -19,6 +19,7 @@ import { usePermission } from '../../hooks/use-permission';
 import { getApiErrorMessage, getApiReasonCode, lookupState } from '../../lib/api-errors';
 import type { Presentation } from '../../lib/presentation';
 import { useAuthStore } from '../../stores/auth-store';
+import { ContactPicker, usePartyContacts } from './contact-picker';
 import { RegisterPartyDialog, SALES, useSalesStages } from './sales-common';
 
 /**
@@ -47,6 +48,7 @@ export function OpportunityFormScreen({ presentation = 'sheet' }: { presentation
 
   const [title, setTitle] = useState('');
   const [partyId, setPartyId] = useState(search.get('party') ?? '');
+  const [contactId, setContactId] = useState('');
   const [ownerId, setOwnerId] = useState(me ? String(me.id) : '');
   const [stageId, setStageId] = useState('');
   const [description, setDescription] = useState('');
@@ -74,9 +76,14 @@ export function OpportunityFormScreen({ presentation = 'sheet' }: { presentation
     setCloseOn(deal.expected_close_on ?? '');
     setNextAction(deal.next_action ?? '');
     setNextOn(deal.next_action_on ?? '');
+    setContactId(deal.party_contact_id ? String(deal.party_contact_id) : '');
     // Anything already set is shown, never hidden behind the toggle.
     setMore(Boolean(deal.description || deal.source || deal.expected_amount || deal.expected_close_on || deal.next_action || deal.next_action_on));
   }, [deal]);
+
+  // The contact is only sent when this person can see the Party's contacts: otherwise the picker is absent and the deal's existing contact must stay as it is.
+  const contactParty = editing ? deal?.party_id : Number(partyId) || undefined;
+  const contactsReadable = usePartyContacts(contactParty).readable;
 
   const valueProblem =
     (amount.trim() === '') !== (currencyId === '')
@@ -102,6 +109,7 @@ export function OpportunityFormScreen({ presentation = 'sheet' }: { presentation
             title: title.trim(),
             description: description.trim() || null,
             source: source.trim() || null,
+            ...(contactsReadable ? { party_contact_id: contactId ? Number(contactId) : null } : {}),
             expected_amount: amount.trim() || null,
             expected_currency_id: currencyId ? Number(currencyId) : null,
             expected_close_on: closeOn || null,
@@ -117,6 +125,7 @@ export function OpportunityFormScreen({ presentation = 'sheet' }: { presentation
         data: {
           title: title.trim(),
           party_id: Number(partyId),
+          ...(contactsReadable && contactId ? { party_contact_id: Number(contactId) } : {}),
           ...(ownerId && mayAssign ? { owner_id: Number(ownerId) } : {}),
           ...(stageId ? { stage_id: Number(stageId) } : {}),
           description: description.trim() || null,
@@ -208,7 +217,16 @@ export function OpportunityFormScreen({ presentation = 'sheet' }: { presentation
           <div className="space-y-1.5 sm:col-span-2">
             <Label>Trading partner</Label>
             <div className="flex flex-wrap items-center gap-2">
-              <PartyCombobox label="Trading partner" placeholder="Search trading partners" className="min-w-0 flex-1" value={partyId} onValueChange={setPartyId} />
+              <PartyCombobox
+                label="Trading partner"
+                placeholder="Search trading partners"
+                className="min-w-0 flex-1"
+                value={partyId}
+                onValueChange={(value) => {
+                  setPartyId(value);
+                  setContactId('');
+                }}
+              />
               <Button type="button" variant="outline" size="sm" onClick={() => setRegistering(true)} data-testid="register-party">
                 Register new…
               </Button>
@@ -216,6 +234,7 @@ export function OpportunityFormScreen({ presentation = 'sheet' }: { presentation
             {showErrors && partyMissing && <p className="text-xs text-destructive">Choose who this deal is for.</p>}
           </div>
         )}
+        <ContactPicker partyId={contactParty} value={contactId} onValueChange={setContactId} />
         {mayAssign && !editing && (
           <div className="space-y-1.5">
             <Label>Responsible</Label>
@@ -304,7 +323,15 @@ export function OpportunityFormScreen({ presentation = 'sheet' }: { presentation
           {store.isPending || update.isPending ? 'Saving…' : editing ? 'Save changes' : 'Create opportunity'}
         </Button>
       </div>
-      <RegisterPartyDialog open={registering} onOpenChange={setRegistering} initialName={undefined} onChosen={(party) => setPartyId(String(party.id))} />
+      <RegisterPartyDialog
+        open={registering}
+        onOpenChange={setRegistering}
+        initialName={undefined}
+        onChosen={(party) => {
+          setPartyId(String(party.id));
+          setContactId('');
+        }}
+      />
     </div>,
   );
 }

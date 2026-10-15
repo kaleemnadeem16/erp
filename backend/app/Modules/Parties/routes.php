@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\Parties\Http\Controllers\Api\V1\CustomerAccountController;
+use App\Modules\Parties\Http\Controllers\Api\V1\PartyContactController;
 use App\Modules\Parties\Http\Controllers\Api\V1\PartyController;
 use App\Modules\Parties\Http\Controllers\Api\V1\SupplierAccountController;
 use App\Modules\Parties\Http\Controllers\Api\V1\SupplierSiteController;
@@ -11,6 +12,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('parties/{party}/restore', [PartyController::class, 'restore'])->whereNumber('party')->name('parties.restore');
     Route::apiResource('parties', PartyController::class)->except('update');
     Route::patch('parties/{party}', [PartyController::class, 'update'])->name('parties.update');
+    Route::get('parties/{party}/contacts', [PartyContactController::class, 'index'])->whereNumber('party')->name('parties.contacts.index');
+    Route::post('parties/{party}/contacts', [PartyContactController::class, 'store'])->whereNumber('party')->name('parties.contacts.store');
+    Route::patch('party-contacts/{party_contact}', [PartyContactController::class, 'update'])->whereNumber('party_contact')->name('party-contacts.update');
     Route::apiResource('customer-accounts', CustomerAccountController::class)->except('update');
     Route::patch('customer-accounts/{customer_account}', [CustomerAccountController::class, 'update'])->name('customer-accounts.update');
     Route::apiResource('supplier-accounts', SupplierAccountController::class)->except('update');

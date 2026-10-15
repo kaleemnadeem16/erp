@@ -347,7 +347,8 @@ test.describe("Purchase Orders Light Palette Theme Audit", () => {
       if (draft) draft.approval_status = null;
       await route.fulfill({ response, json: body });
     });
-    await page.goto("/purchase-orders");
+    // Ask for drafts: the first page of the unfiltered list is whatever was raised last, which can be all issued orders.
+    await page.goto("/purchase-orders?filter.status=DRAFT");
     await expect(
       page.getByRole("heading", { name: "Purchase Orders" }),
     ).toBeVisible();
@@ -373,6 +374,7 @@ test.describe("Purchase Orders Light Palette Theme Audit", () => {
     await page.keyboard.press("Escape");
 
     // An issued order: open and cancel — never edit or issue
+    await page.goto("/purchase-orders?filter.status=ISSUED");
     const issuedRow = page
       .getByRole("row")
       .filter({ has: page.getByText("ISSUED", { exact: true }) })
@@ -420,7 +422,7 @@ test.describe("Purchase Orders Light Palette Theme Audit", () => {
   test("the order side panel uses the same system, and boxes sharing a row are the same height", async ({
     page,
   }) => {
-    await page.goto("/purchase-orders");
+    await page.goto("/purchase-orders?filter.status=CLOSED");
     await page
       .getByRole("row")
       .filter({ has: page.getByText("CLOSED", { exact: true }) })

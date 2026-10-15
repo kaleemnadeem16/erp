@@ -1,11 +1,9 @@
-import { Check } from 'lucide-react';
-
 import { cn } from '../../lib/utils';
 
 /**
- * An on/off filter that sits in a list's toolbar beside the dropdowns ("Mine", "Needs attention"). It reads as one of the toolbar's controls — same height and border as a
- * Select — and, when on, takes the active-filter look the chips use, with a tick so the state is never only a colour. Use it instead of a bare checkbox for a filter;
- * a checkbox is for choosing records in a table, and for agreeing to something in a form.
+ * An on/off filter that sits in a list's toolbar beside the dropdowns ("Mine", "Unassigned", "Needs attention"). It has the same height, padding, radius and border as a
+ * Select in both states and never changes size when switched: the "on" state is colour only (the brand tint and edge, set in `screen-templates.css` for
+ * `[aria-pressed="true"]`) with `aria-pressed` carrying it for assistive technology. Use it for filters; a checkbox is for choosing table rows or agreeing in a form.
  */
 export function FilterToggle({ pressed, onPressedChange, children, className }: { pressed: boolean; onPressedChange: (pressed: boolean) => void; children: string; className?: string }) {
   return (
@@ -14,12 +12,10 @@ export function FilterToggle({ pressed, onPressedChange, children, className }: 
       aria-pressed={pressed}
       onClick={() => onPressedChange(!pressed)}
       className={cn(
-        'inline-flex h-10 items-center gap-1.5 rounded-md border border-input bg-background px-3 text-sm font-medium transition-colors hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring motion-reduce:transition-none',
-        pressed && 'ui-chip-active border-primary/40 bg-primary/10 text-primary hover:bg-primary/15',
+        'ui-filter-toggle inline-flex h-10 items-center justify-center rounded-md border border-input bg-background px-3 text-sm font-medium transition-colors hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring motion-reduce:transition-none',
         className,
       )}
     >
-      {pressed && <Check className="h-4 w-4" aria-hidden="true" />}
       {children}
     </button>
   );

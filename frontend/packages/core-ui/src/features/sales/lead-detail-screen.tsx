@@ -20,6 +20,7 @@ import { getApiErrorMessage, getApiReasonCode, isApiError } from '../../lib/api-
 import { formatDateTime } from '../../lib/format-date';
 import type { Presentation } from '../../lib/presentation';
 import { LeadCorrectionDialog, LeadEnquiryEvidence } from './lead-enquiry-evidence';
+import { ContactPicker } from './contact-picker';
 import { HistoryList, LEAD_LABEL, LeadStatusBadge, NotesList, OutcomeBadge, OUTCOME_LABEL, RegisterPartyDialog, SALES, describeEvent, newKey } from './sales-common';
 
 type Mode = 'disqualify' | 'revive' | 'assign' | 'convert' | 'correct' | null;
@@ -44,6 +45,7 @@ export function LeadDetailScreen({ presentation = 'sheet' }: { presentation?: Pr
   const [registering, setRegistering] = useState(false);
   const [ownerId, setOwnerId] = useState('');
   const [title, setTitle] = useState('');
+  const [contactId, setContactId] = useState('');
   const conversionKey = useRef(newKey());
   // One key per intent: the same reason confirmed against the same decision retries safely; any change of either is a new request.
   const disqualifyAttempt = useRef<{ key: string; reason: string; marker: number | null } | null>(null);
@@ -134,6 +136,7 @@ export function LeadDetailScreen({ presentation = 'sheet' }: { presentation?: Pr
   const closeDialog = () => {
     setMode(null);
     setReason('');
+    setContactId('');
     setError(null);
     disqualifyAttempt.current = null;
   };
@@ -426,6 +429,9 @@ export function LeadDetailScreen({ presentation = 'sheet' }: { presentation?: Pr
                 <Label htmlFor="convert-title">Title</Label>
                 <Input id="convert-title" value={title} onChange={(event) => setTitle(event.target.value)} />
               </div>
+              <div className="grid">
+                <ContactPicker partyId={lead.party_id ?? undefined} value={contactId} onValueChange={setContactId} id="convert-contact" />
+              </div>
               {mayAssign && (
                 <div className="space-y-1.5">
                   <Label>Responsible (you, unless you choose someone)</Label>
@@ -451,7 +457,12 @@ export function LeadDetailScreen({ presentation = 'sheet' }: { presentation?: Pr
                   // The conversion answers 201 (created) or 200 (this key was already converted) with the opportunity; the generated type only describes the refusals.
                   const result = (await convert.mutateAsync({
                     lead: id,
-                    data: { conversion_key: conversionKey.current, title: title.trim(), ...(mayAssign && ownerId ? { owner_id: Number(ownerId) } : {}) },
+                    data: {
+                      conversion_key: conversionKey.current,
+                      title: title.trim(),
+                      ...(mayAssign && ownerId ? { owner_id: Number(ownerId) } : {}),
+                      ...(contactId ? { party_contact_id: Number(contactId) } : {}),
+                    },
                   })) as unknown as { status: number; data: { data: { id: number } } };
                   conversionKey.current = newKey();
                   if (result.status === 200 || result.status === 201) navigate(`/opportunities/${result.data.data.id}`);

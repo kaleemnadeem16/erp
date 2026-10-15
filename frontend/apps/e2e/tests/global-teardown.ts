@@ -37,6 +37,30 @@ export default async function globalTeardown(config: FullConfig) {
       }
     }
     console.log(`e2e hygiene: archived ${archived} item(s) created by this run`);
+
+    // The Sales specs leave deals and enquiries named "E2E …". They cannot be deleted (history is append-only), but they can be put away: open deals are closed
+    // as abandoned and enquiries disqualified, so the default Open / New views stay clear of them. Only what this run created, only what is still live.
+    const sales = { deals: 0, enquiries: 0 };
+    const mine = <T extends { created_at?: string | null }>(rows: T[]) => rows.filter((row) => !row.created_at || Date.parse(row.created_at) >= started);
+    const deals = await page.request.get(`${api}/opportunities?filter[search]=E2E&filter[outcome]=OPEN&sort=-created_at&per_page=100`, { headers: await headers() });
+    if (deals.ok()) {
+      for (const deal of mine((await deals.json()).data as Array<{ id: number; title: string; created_at?: string }>).filter((row) => row.title.startsWith('E2E'))) {
+        const closed = await page.request.post(`${api}/opportunities/${deal.id}/close`, { headers: await headers(), data: { outcome: 'ABANDONED', reason: 'E2E run clean-up' } });
+        if (closed.ok()) sales.deals++;
+      }
+    }
+    for (const status of ['NEW', 'QUALIFIED']) {
+      const leads = await page.request.get(`${api}/leads?filter[search]=E2E&filter[status]=${status}&sort=-created_at&per_page=100`, { headers: await headers() });
+      if (!leads.ok()) continue;
+      for (const lead of mine((await leads.json()).data as Array<{ id: number; enquirer_name: string; decision_event_id: number | null; created_at?: string }>).filter((row) => row.enquirer_name.startsWith('E2E'))) {
+        const decided = await page.request.post(`${api}/leads/${lead.id}/disqualify`, {
+          headers: await headers(),
+          data: { reason: 'E2E run clean-up', request_key: `e2e-cleanup-${lead.id}-${started}`, expected_decision_event_id: lead.decision_event_id },
+        });
+        if (decided.ok()) sales.enquiries++;
+      }
+    }
+    console.log(`e2e hygiene: put away ${sales.deals} deal(s) and ${sales.enquiries} enquiry(ies) created by this run`);
   } finally {
     await browser.close();
   }

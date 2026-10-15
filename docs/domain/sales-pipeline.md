@@ -81,7 +81,7 @@ The demo data shows every state: a new unassigned enquiry, a qualified one that 
 | Actions: stage, reassign, close, reopen, notes, edit, attribution correction | Detail sheet (permission- and state-gated). Bulk, on the ticked rows of one page: change owner, move stage, close — each its own request, open deals only, closed ones counted and skipped, failures named and retryable | Reopen, notes, edit and the attribution correction stay single-record on purpose (each needs its own reason or evidence) |
 | Print | List (visible columns, filters recorded on the paper), selected rows, and the record with notes and history | Quick Print; a formal quotation document is R8 |
 | Update field `source` | Edit dialog and create form | |
-| `party_contact_id` (create and update) | **Not exposed**: the Parties API has no contact read or create endpoint, so a person could not choose or see a contact | Add with that API |
+| `party_contact_id` (create, update, and converting an enquiry) | *Contact person* picker once a partner is chosen, with *Add contact…* on the spot; shown with role, phone and email on the deal and its print. Offered only to someone whose duty involves choosing or maintaining a Party; anyone else sees "One is set (you cannot see contacts)" and an edit leaves the contact untouched | Uses the Parties contacts API ([parties.md](parties.md#contacts)) |
 | `WON` on close | Not offered: refused until customer acceptance (R6) | |
 | `lead` include on the index | Not available: the list endpoint allows only party, stage and owner | List shows a yes/no "came from an enquiry"; the detail links the enquiry |
 

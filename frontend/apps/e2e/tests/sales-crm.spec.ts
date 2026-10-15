@@ -287,6 +287,16 @@ test('the pipeline list filters by partner and owner, shows removable chips and 
   await page.goto('/opportunities?filter.outcome=ALL');
   await expect(page.getByTestId('opportunities-list')).toBeVisible();
 
+  // An on/off filter keeps its exact size and shape when switched on: only its colour changes.
+  const mine = page.getByRole('button', { name: 'Mine', exact: true });
+  const geometry = () => mine.evaluate((element) => ({ width: element.getBoundingClientRect().width, height: element.getBoundingClientRect().height, radius: getComputedStyle(element).borderRadius, padding: getComputedStyle(element).padding }));
+  const off = await geometry();
+  await mine.click();
+  await expect(mine).toHaveAttribute('aria-pressed', 'true');
+  expect(await geometry()).toEqual(off);
+  await mine.click();
+  await expect(mine).toHaveAttribute('aria-pressed', 'false');
+
   // The partner filter lives in the advanced panel, asks the server, and shows as a named chip.
   await page.getByRole('button', { name: 'Filters' }).click();
   const request = page.waitForRequest((candidate) => candidate.url().includes('/api/v1/opportunities?') && candidate.url().includes('filter%5Bparty_id%5D'));
@@ -305,12 +315,16 @@ test('the pipeline list filters by partner and owner, shows removable chips and 
   await expect(page).toHaveURL(/\/opportunities\/\d+\?.*party_id=\d+/);
   await page.getByRole('button', { name: 'Close', exact: true }).click();
   await expect(page).toHaveURL(/\/opportunities\?.*party_id=\d+/);
+  // The panel finishes sliding out before anything else is clicked, and the list has stopped refreshing: a shifting layout can put a row under the pointer.
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
   await expect(chips).toContainText('For: Metro Engineering');
 
   // A chip removes just its filter; Clear all removes the rest.
   await chips.getByRole('button', { name: /Remove filter: For: Metro Engineering/ }).click();
   await expect(page).not.toHaveURL(/party_id=/);
   await expect(chips).toContainText('Outcome: All outcomes');
+  await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
   await chips.getByRole('button', { name: 'Clear all' }).click();
   await expect(chips).toHaveCount(0);
 
@@ -522,6 +536,70 @@ test('on a phone the cards can be ticked and changed together like table rows', 
     expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth), `${path} scrolls sideways`).toBeLessThanOrEqual(0);
   }
   await page.close();
+});
+
+test('a deal can name a contact person, added on the spot, shown on the record and changed when editing', async ({ browser }) => {
+  test.setTimeout(240_000);
+  const page = await as(browser, MANAGER);
+  const stamp = Date.now().toString(36);
+  await page.goto('/opportunities/new');
+  await page.getByLabel('Title').fill(`E2E contact deal ${stamp}`);
+  // No partner yet: no contact field.
+  await expect(page.getByLabel('Contact person (optional)')).toHaveCount(0);
+  await pickParty(page, 'Metro', /Metro Engineering/);
+  await expect(page.getByText('Contact person (optional)')).toBeVisible();
+
+  // Add a contact without leaving the form; it is chosen at once.
+  await page.getByTestId('add-contact').click();
+  const dialog = page.getByTestId('add-contact-dialog');
+  await dialog.getByTestId('contact-save').click();
+  await expect(dialog).toContainText('Give the contact a name.');
+  await dialog.getByLabel('Name', { exact: true }).fill(`E2E Contact ${stamp}`);
+  await dialog.getByLabel('Role (optional)').fill('Site engineer');
+  await dialog.getByLabel('Phone (optional)').fill('0300 5550101');
+  await dialog.getByTestId('contact-save').click();
+  await expect(page.getByTestId('add-contact-dialog')).toHaveCount(0);
+  await page.getByTestId('opportunity-save').click();
+
+  // The record names the contact with their role and phone, and prints it.
+  const contact = page.getByTestId('deal-contact');
+  await expect(contact).toContainText(`E2E Contact ${stamp}`);
+  await expect(contact).toContainText('Site engineer');
+  await expect(contact).toContainText('0300 5550101');
+
+  // Editing offers the same picker with the contact already chosen; it can be removed.
+  await page.getByTestId('opportunity-edit').click();
+  await expect(page.getByRole('combobox', { name: /Contact person/ })).toContainText(`E2E Contact ${stamp}`);
+  await page.getByRole('combobox', { name: /Contact person/ }).click();
+  await page.getByRole('option', { name: 'No contact person' }).click();
+  await page.getByTestId('opportunity-save').click();
+  await expect(page.getByTestId('opportunity-detail')).toContainText('Contact person');
+  await expect(page.getByTestId('deal-contact')).toHaveCount(0);
+  await page.close();
+});
+
+test('someone without a Party duty is not offered contacts and cannot see who the contact is', async ({ browser }) => {
+  test.setTimeout(240_000);
+  const manager = await as(browser, MANAGER);
+  const stamp = Date.now().toString(36);
+  await manager.goto('/opportunities/new');
+  await manager.getByLabel('Title').fill(`E2E private contact ${stamp}`);
+  await pickParty(manager, 'Metro', /Metro Engineering/);
+  await manager.getByTestId('add-contact').click();
+  await manager.getByTestId('add-contact-dialog').getByLabel('Name', { exact: true }).fill(`E2E Private ${stamp}`);
+  await manager.getByTestId('contact-save').click();
+  await manager.getByTestId('opportunity-save').click();
+  await expect(manager.getByTestId('deal-contact')).toContainText(`E2E Private ${stamp}`);
+  const url = manager.url();
+  await manager.close();
+
+  const viewer = await as(browser, VIEWER);
+  await viewer.goto(new URL(url).pathname);
+  await expect(viewer.getByTestId('opportunity-detail')).toBeVisible();
+  await expect(viewer.getByTestId('deal-contact')).toHaveCount(0);
+  await expect(viewer.getByTestId('opportunity-detail')).toContainText('you cannot see contacts');
+  await expect(viewer.getByTestId('opportunity-detail')).not.toContainText(`E2E Private ${stamp}`);
+  await viewer.close();
 });
 
 test('the pipeline filters are in a bottom sheet on a phone', async ({ browser }) => {

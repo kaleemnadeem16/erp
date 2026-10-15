@@ -12,13 +12,13 @@ test('items are archived together from the selection bar and the result stays re
   expect(unit && base).toBeTruthy();
   for (const letter of ['a', 'b']) {
     await api(page, 'POST', '/items', {
-      code: `bulk-${stamp}-${letter}`, name: `E2E bulk item ${letter} ${stamp}`, type: 'RAW', stock_uom_id: unit.id, category_id: base.category_id, valuation_method: 'FIFO', tracking: 'NONE',
+      code: `e2e-bulk-${stamp}-${letter}`, name: `E2E bulk item ${letter} ${stamp}`, type: 'RAW', stock_uom_id: unit.id, category_id: base.category_id, valuation_method: 'FIFO', tracking: 'NONE',
       inventory_account_id: base.inventory_account_id, is_stocked: true, is_purchasable: true, is_sellable: false,
     });
   }
 
-  await page.goto(`/items?filter.search=bulk-${stamp}`);
-  await expect(page.getByRole('row', { name: new RegExp(`bulk-${stamp}-a`) })).toBeVisible();
+  await page.goto(`/items?filter.search=e2e-bulk-${stamp}`);
+  await expect(page.getByRole('row', { name: new RegExp(`e2e-bulk-${stamp}-a`) })).toBeVisible();
   await page.getByRole('checkbox', { name: 'Select all' }).check();
   await expect(page.getByText('2 selected items')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Print selected' })).toBeVisible();

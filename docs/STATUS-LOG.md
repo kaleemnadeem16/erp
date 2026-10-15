@@ -749,6 +749,11 @@ Owner-approved after a read-only audit and a comparison of ERPNext, Business Cen
 - [Implementation handoff](phases/phase-4-implementation-handoff.md) · [R9 slices](phases/phase-4-r9-implementation-slices.md)
 - [Duty matrix](domain/sales-duty-matrix.md) · [Rollout](phases/phase-4-r9-permission-rollout.md)
 
+## 2026-10-15 — Screen standard applied to the Sales screens, Pack conversions and the Items selection bar; Parties contacts API
+
+Sales (Opportunities, Enquiries, Pipeline stages), Pack conversions and the Items list now follow the [screen standard](architecture/erp-blue-design-standard.md): server filters with chips, row selection with bulk actions (also on phone cards), Quick Print on list, selection and record, side-panel create/detail/edit, every backend field and action reached or recorded as a deliberate omission ([coverage in the pipeline domain doc](domain/sales-pipeline.md), [units-of-measure.md](domain/units-of-measure.md)), and stage/owner controls that appear only when the company has a choice. Shared fixes: list context and scroll position kept across side panels, label/value and heading spacing, `FilterToggle` for on/off filters (colour-only, never changes size), one `BulkRunDialog` whose result survives the rows leaving the view, `getRowId` on Items (its ticked rows were keyed by position). New backend surface: Parties contacts (`GET/POST /parties/{party}/contacts`, `PATCH /party-contacts/{id}`; read narrower than reading a Party, write needs `parties.party.manage`), used by deals and enquiry conversion. E2E hygiene now also closes the "E2E…" deals and disqualifies the "E2E…" enquiries a run created. Not done: removing a contact (needs an archive rule); other screens have not been audited against the standard.
+
+
 ## 2026-10-15 — Phase 5 lifecycle accepted; labour research submitted
 
 Owner-approved D1–D6 and clarifications recorded in0145: four Job states, independent

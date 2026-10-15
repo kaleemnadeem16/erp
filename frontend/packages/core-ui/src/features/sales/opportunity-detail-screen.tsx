@@ -35,6 +35,7 @@ import { formatDate, formatDateTime } from '../../lib/format-date';
 import type { Presentation } from '../../lib/presentation';
 import { trimQty } from '../package-stock/quantity';
 import { AttributionCorrectionDialog, ResponsibilityRecord } from './opportunity-attribution';
+import { contactLabel, usePartyContact } from './contact-picker';
 import { HistoryList, NotesList, OUTCOME_LABEL, OutcomeBadge, SALES, describeEvent, useSalesStages } from './sales-common';
 
 const isPast = (day: string | null | undefined) => Boolean(day) && (day as string) < new Date().toLocaleDateString('en-CA');
@@ -54,6 +55,7 @@ export function OpportunityDetailScreen({ presentation = 'sheet' }: { presentati
   const query = useOpportunitiesShow(id, { include: 'party,stage,lead,notes,history,attribution_corrections' });
   const opportunity = query.data?.status === 200 ? query.data.data.data : undefined;
   const { stages: allStages, active: stages } = useSalesStages();
+  const { contact, readable: contactsReadable } = usePartyContact(opportunity?.party_id, opportunity?.party_contact_id);
   const owners = useSalesOwnersIndex(undefined, { query: { enabled: mayAssign } });
   const { contentRef: printRef, print } = useQuickPrint({ documentTitle: 'Opportunity' });
   const currencies = useCurrenciesIndex({ per_page: 100, sort: 'code' });
@@ -170,6 +172,7 @@ export function OpportunityDetailScreen({ presentation = 'sheet' }: { presentati
       fields: [
         { label: 'Outcome', value: OUTCOME_LABEL[opportunity.outcome] ?? opportunity.outcome },
         { label: 'For', value: opportunity.party ? `${opportunity.party.name} (${opportunity.party.code})` : '—' },
+        { label: 'Contact person', value: contact ? [contactLabel(contact), contact.phone, contact.email].filter(Boolean).join(' · ') : opportunity.party_contact_id ? 'Set' : 'Not set' },
         { label: 'Owner', value: opportunity.owner_name ?? '—' },
         ...(usesStages ? [{ label: 'Stage', value: opportunity.stage?.name ?? '—' }] : []),
         { label: 'Expected value', value: valueText },
@@ -224,6 +227,18 @@ export function OpportunityDetailScreen({ presentation = 'sheet' }: { presentati
           <DetailField label="For">
             {opportunity.party?.name}
             {opportunity.party?.code && <span className="text-muted-foreground"> ({opportunity.party.code})</span>}
+          </DetailField>
+          <DetailField label="Contact person">
+            {contact ? (
+              <span className="inline-flex flex-col" data-testid="deal-contact">
+                <span>{contactLabel(contact)}</span>
+                {(contact.phone || contact.email) && <span className="text-xs text-muted-foreground">{[contact.phone, contact.email].filter(Boolean).join(' · ')}</span>}
+              </span>
+            ) : opportunity.party_contact_id ? (
+              <span className="text-muted-foreground">{contactsReadable ? 'Not found' : 'One is set (you cannot see contacts)'}</span>
+            ) : (
+              <span className="text-muted-foreground">Not set</span>
+            )}
           </DetailField>
           <DetailField label="Owner">{opportunity.owner_name}</DetailField>
           {usesStages && (

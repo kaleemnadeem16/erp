@@ -120,18 +120,18 @@ test('PO create: dates entered in the sheet are saved and shown on the order', a
   const sheet = page.getByRole('dialog', { name: 'New purchase order' });
   await pickCombobox(page, 'Supplier', 'Punjab Pigments', { within: sheet });
   await sheet.getByRole('group', { name: 'Expected delivery' }).getByLabel('Month').focus();
-  await page.keyboard.type('10152026');
+  await page.keyboard.type('12202030');
   await sheet.getByRole('button', { name: 'Next' }).click();
   await pickCombobox(page, 'Item', 'Phthalo', { within: sheet });
   await sheet.getByRole('button', { name: 'Next' }).click();
   // Scoped to the Review step, not just anywhere in the sheet — the order
   // summary side column also shows the expected-delivery date.
   const reviewSection = sheet.locator('section').filter({ hasText: 'Review' });
-  await expect(reviewSection.getByText('2026-10-15')).toBeVisible();
+  await expect(reviewSection.getByText('2030-12-20')).toBeVisible();
   await sheet.getByRole('button', { name: 'Save draft' }).click();
   await expect(page).toHaveURL(/\/purchase-orders\/\d+$/);
   await expect(page.getByRole('dialog').getByText('Expected delivery').first()).toBeVisible();
-  await expect(page.getByRole('dialog').getByText('2026-10-15').first()).toBeVisible();
+  await expect(page.getByRole('dialog').getByText('2030-12-20').first()).toBeVisible();
 });
 
 test('PO detail sheet: opens over the list, and closes back to it', async ({ page }) => {
