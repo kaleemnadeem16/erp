@@ -131,9 +131,11 @@ separate outcome evidence (simple, accountable); full measurement/milestone engi
 
 **Recommend:** named activity usage in explicit UoM, actual work date and manual duration first;
 optional interval evidence for historical holds, no stopwatch/attendance system required.
-Use a shared duration contract, proposed6-place hours internally with exact conversion and named
-settlement stage; no silent billing increments, timesheet rounding or stock-scale truncation.
-Show exact submitted duration and basis; finish precision/bound checks before implementation.
+Recommend canonical whole seconds with exact rational hour conversion for costing; manual
+hours/minutes must resolve exactly to that supported duration. One minute is not silently
+rounded to0.016667 hours merely because resource rates have six places. Sub-second capture
+is deferred. Preserve submitted duration/basis; no billing-increment rounding or stock-scale
+truncation. Final entry bounds and arithmetic adapters need specification after owner review.
 Per-person quantities add; equipment hours/crew elapsed time do not silently combine with them.
 Require enough occurrence context to distinguish hold/pre-hold or rate-date boundaries; ambiguous
 daily entries require clarification rather than guessed timestamp/authority.
