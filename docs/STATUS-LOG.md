@@ -767,3 +767,15 @@ is PROPOSED/Q51 awaiting owner; no labour choices accepted or implementation aut
 Preserved package prerequisite discrepancy/Q24,0040 correction linkage and0137 Documents.
 Docs-only work; no application tests/migrations/grants or push; no Job IMPLEMENTED/VERIFIED.
 Other agents' in-flight implementation/docs and status-log additions preserved.
+
+## 2026-10-15 — Phase 5 flexible labour research revised for Q51
+
+Owner agrees with general research direction, not final L1–L6. Revised proposal supports
+completion-only, attributable direct incurred amounts, fixed-unit/daily and duration evidence
+without fabricated workers/hours/rates. Recommends smallest completion+direct-amount release,
+subsequent unit/time capture and separate external Purchasing/Finance/crew integrations.
+Recorded/recognised/valued/covered facts, worker-day semantics, source deduplication and later
+invoice/payroll reconciliation remain proposed. Primary comparison/architecture inspection
+recorded separately; Q51 retains original context and owner's refinement, AWAITING_OWNER.
+ADR0145 and accepted R7/R9 unchanged; no conflict identified. No implementation/grants/migrations
+or application tests. Other agent Sales authority and rollout work preserved. Docs-only checks.

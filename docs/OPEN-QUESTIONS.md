@@ -37,19 +37,24 @@ Q1, Q2 and Q3 were resolved on 2026-08-10 — see
 Origin: PLANNING RESEARCH
 Decision status: AWAITING_OWNER
 Delivery status: BLOCKED_AFFECTED_OPERATION; independent approved work continues
-Module/slice: Phase5 labour bundle L1–L6; implementation owner not assigned
-Context: research inspected local f09b2a9,2026-10-15; lifecycle0145 accepted, no labour actuals implementation.
+Module/slice: Phase5 flexible labour bundle L1–L6; implementation owner not assigned
+Context: initial research inspected local f09b2a9; revised inspection9ac893d,2026-10-15. Lifecycle0145 accepted; labour remains unaccepted/unimplemented.
 Original question: employee versus generic resource identity; recorded versus approved/recognised hours;
 rates/pinned evidence; plan versus usage; progress versus fulfilment; certainty; corrections/backdating;
 permissions/approval; one contribution to unified Job costing (owner's next-workstream request).
+Owner refinement,2026-10-15: "The ERP must not force a company to fabricate worker identities, hours,
+rates or other evidence it does not maintain." Compare completion-only, direct incurred amounts,
+days/fixed units, optional named/hourly detail and external fixed-price labour. General direction
+approved only; revised L1–L6 require review. This is owner refinement, not an implementation question.
 Business example: one fixed-scope service visit planned2h, recorded3h; distinguish pending usage,
 recognised actual and unknown valuation without increasing accepted quantity.
 Authority checked:0145,0131–0132/0136,0138–0140,0110,0070,0141–0144; existing ResourceRate/resolver.
 Consequences / blocks: new authoritative labour recognition/rate adoption/correction/worker contract;
 no reopening of settled lifecycle/commercial rules or freeze of other agents' work.
 Options / trade-offs and recommendation / research: [L1–L6 bundle](phases/phase-5-labour-resource-research.md).
-Disposition needed: approve/revise worker identity, review/recognition default, adopted actual class rates,
-duration/progress capture, correction policy and operation authority. All recommendations PROPOSED.
+Disposition needed: approve/revise initial method scope/evidence minima, conditional worker/team
+identity, record/recognise authority, class-rate/units/FX adoption, multi-method corrections and later
+Finance/source reconciliation. Revised recommendations remain PROPOSED; no new ADR or implementation.
 Follow-up: owner review, then ADR/specification for accepted choices; no code/grants authorised.
 
 

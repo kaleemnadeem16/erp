@@ -19,6 +19,12 @@ make these usable. Initial candidate: one labour-only fixed-scope service Job, a
 supported handover/baseline → assignment/start → labour → completion evidence → costs → closeout.
 No implementation authorised.
 
+The revised [labour proposal](phase-5-labour-resource-research.md) investigates completion-only
+and optional direct amounts, fixed units or time; it does not require every Job to maintain
+named workers, hours or rates. Proposed first release is completion plus narrow direct incurred
+amounts; method coverage/review and later integrations await Q51 owner approval. Lifecycle0145
+and its required-known-record/closeout guards are unchanged.
+
 Specialised manufacturing/fabrication, complex capacity scheduling, advanced dispatch and equipment
 management are separate later workstreams. No generic service Work Order. Finance owns invoicing,
 payment/revenue/accounting settlement. Phase7 owns later mobile/integrations; operational responsive
@@ -29,7 +35,7 @@ UI remains each implementation slice's responsibility.
 | Order | Deliverable | State / gate |
 |---|---|---|
 |1| Lifecycle/Job receiver | ACCEPTED0145; [bounded contract](../domain/job-execution-lifecycle.md) SPECIFIED, no adapter |
-|2| Labour/resource usage/progress/recognition | [Research](phase-5-labour-resource-research.md), PROPOSED/Q51 awaiting owner |
+|2| Flexible labour evidence/usage/progress/recognition | [Revised proposal](phase-5-labour-resource-research.md) and [evidence](phase-5-labour-evidence.md), PROPOSED/Q51 awaiting owner |
 |3| Materials/custody/reservations/consumption/corrections | Queued; Inventory, Q24/Q23, package prerequisites |
 |4| Purchasing/equipment/subcontract attribution | Queued; reuse owning systems; commitment versus actual |
 |5| Unified costing/source reconciliation | Queued; recognition/source identities,0040 correction linkage |

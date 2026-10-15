@@ -137,7 +137,7 @@ delta touching it needs a Sales/COGS correction line — see
 
 ### Phase 5 — Job execution
 
-[Research plan](phase-5-job-execution.md): lifecycle0145 accepted/specified; [labour bundle](phase-5-labour-resource-research.md) proposed for owner review. No code authority.
+[Research plan](phase-5-job-execution.md): lifecycle0145 accepted/specified; [revised flexible labour bundle](phase-5-labour-resource-research.md) and [evidence](phase-5-labour-evidence.md) proposed for owner review. No code authority.
 Jobs, work orders, material issue, timesheets, unified job cost entries, estimate-vs-actual
 variance reporting. This is where the system starts paying for itself.
 
