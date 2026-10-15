@@ -2,7 +2,7 @@
 
 # R7 — Operational handover implementation slices
 
-**2026-10-14 · H1–H8 ACCEPTED in0130–0132/Q47 closed; slices SPECIFIED.**
+**2026-10-14 · H1–H8 ACCEPTED in0131–0132 and 0136/Q47 closed; slices SPECIFIED.**
 No R7 adapter is IMPLEMENTED or VERIFIED. All slices require separate owner code authorisation.
 The [domain](../domain/sales-operational-handover.md) defines the Action/input/locking contracts.
 

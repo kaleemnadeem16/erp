@@ -2,7 +2,7 @@
 
 # Sales operational handover
 
-**2026-10-14 · ACCEPTED architecture (0130–0132), SPECIFIED contracts; not IMPLEMENTED or VERIFIED.**
+**2026-10-14 · ACCEPTED architecture (0131–0132 and 0136), SPECIFIED contracts; not IMPLEMENTED or VERIFIED.**
 Accepted customer business feeds explicit operational allocations and stage-specific owning targets.
 These coordinate goods/services/projects without becoming a second commercial value ledger.
 No public surface or application implementation is authorised by this document.
@@ -162,7 +162,7 @@ are delivered and verified under separate code authority; architecture acceptanc
 
 ## Related
 
-- [0130](../decisions/0130-govern-source-appropriate-operational-handover.md)
+- [0136](../decisions/0136-govern-source-appropriate-operational-handover.md)
 - [0131](../decisions/0131-preserve-operational-baselines-and-handover-identity.md)
 - [0132](../decisions/0132-govern-bounded-accepted-business-reductions-and-claim-release.md)
 - [R7 delivery sequence and gates](../phases/phase-4-r7-implementation-slices.md)

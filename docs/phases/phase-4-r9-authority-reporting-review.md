@@ -173,11 +173,7 @@ these boundaries; no new string/grant is accepted here. Limits and forecast requ
 
 ## Repository coordination note
 
-At start local develop b3dae82 was2 ahead/7 behind recorded origin/develop. Origin commit3e8a31a
-uses0130 for backups; local0130 is R7 handover. No history reconciliation, renumbering, fetch/push,
-merge/rebase/reset/cherry-pick performed. Owner/implementation agent coordinates eventual numbering
-and integration under AGENTS rules; use full ADR filenames meanwhile. Local next0133 was free on
-both inspected histories and allocated to R8 in this work; this does not solve existing collision.
+Resolved 2026-10-15: develop was rebased onto origin/develop and the R7 handover ADR, which collided with the backup ADR 0130, was renumbered to 0136. 0130 is the backup decision; R7 is 0131–0132 and 0136.
 
 ## Related
 

@@ -145,19 +145,16 @@ in the same commit.
 | [0128](0128-observe-with-the-existing-grafana-loki-stack.md) | Observe the ERP with the existing Prometheus, Loki and Grafana stack | accepted | 2026-10-14 |
 | [0129](0129-demo-and-sandbox-data-live-in-a-separate-demo-deployment.md) | Demo and sandbox data live in a separate demo deployment (deferred) | accepted | 2026-10-14 |
 | [0130](0130-back-up-locally-first-through-a-read-only-role-with-pluggable-off-site-copies.md) | Back up locally first, through a read-only role, with pluggable off-site copies | accepted | 2026-10-14 |
-
-| [0130](0130-govern-source-appropriate-operational-handover.md) | Govern source-appropriate operational handover | accepted | 2026-10-14 |
 | [0131](0131-preserve-operational-baselines-and-handover-identity.md) | Preserve operational baselines and handover identity | accepted | 2026-10-14 |
 | [0132](0132-govern-bounded-accepted-business-reductions-and-claim-release.md) | Govern bounded accepted-business reductions and claim release | accepted | 2026-10-14 |
 | [0133](0133-freeze-customer-quotation-content-and-versioned-presentation.md) | Freeze customer quotation content and versioned presentation | accepted | 2026-10-15 |
 | [0134](0134-archive-original-quotation-artefacts-with-private-recoverable-storage.md) | Archive original quotation artefacts with private recoverable storage | accepted | 2026-10-15 |
 | [0135](0135-separate-quotation-delivery-evidence-from-customer-consent.md) | Separate quotation delivery evidence from customer consent | accepted | 2026-10-15 |
+| [0136](0136-govern-source-appropriate-operational-handover.md) | Govern source-appropriate operational handover | accepted | 2026-10-14 |
 
-**Next number: 0136**
+**Next number: 0137**
 
-Coordination: recorded origin/develop has a different0130 (backup) in3e8a31a; local0130 is R7.
-No branch/history reconciliation performed. Owner-coordinated integration must resolve numbering;
-use full filenames while divergent. R8 uses locally free0133–0135.
+Note: the R7 handover ADR was first drafted as a second 0130 and renumbered to 0136 on 2026-10-15; 0130 is the backup decision. Number is chosen after fetching, so drafts do not collide.
 
 ## By theme
 

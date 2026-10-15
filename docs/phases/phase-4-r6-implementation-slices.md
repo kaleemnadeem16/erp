@@ -68,7 +68,7 @@ unaccepted: this does **not** enable remaining-family replacement/withdrawal/reo
 
 ## Exact remaining gates
 
-**R7:** accepted0130–0132; adapters NOT DELIVERED/VERIFIED. Specified source→target mapping, Sales Order versus optional Job, one/many disjoint consumption,
+**R7:** accepted0131–0132 and 0136; adapters NOT DELIVERED/VERIFIED. Specified source→target mapping, Sales Order versus optional Job, one/many disjoint consumption,
 schedules versus new commitments, site/contact readiness, original estimate/material/cost baseline,
 target business uniqueness, accepted amendments/cancellations and who may release which claims.
 A target cancellation cannot release customer commitment by assumption. R7 approval alone is not
@@ -96,7 +96,7 @@ Late/conflicting recognition retains CA5/R7 delivered-impact gates. Architecture
 
 ## Related
 
-- [R7 accepted contract and actual-delivery gates](phase-4-r7-implementation-slices.md) — R7 authority is accepted0130–0132; necessary adapters remain undelivered, so affected partial-family/correction gates remain.
+- [R7 accepted contract and actual-delivery gates](phase-4-r7-implementation-slices.md) — R7 authority is accepted0131–0132 and 0136; necessary adapters remain undelivered, so affected partial-family/correction gates remain.
 
 - [R6 final accepted review](phase-4-r6-customer-decisions.md)
 - [Numerical journey](phase-4-r6-allocation-and-journey.md) · [Evidence/claims](phase-4-r6-evidence-and-claims.md)

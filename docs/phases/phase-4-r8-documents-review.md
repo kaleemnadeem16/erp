@@ -18,7 +18,7 @@ document/delivery slices alongside R9; application work requires separate author
 ## Existing authority and observed boundary
 
 Reuse0109 scope/options,0115–0120 pricing/tax/FX,0122–0124 issue/revisions,0125–0127 consent/evidence,
-0130–0132 handover,0079 numbering and0070/0085 approval review. Never expose internal approval
+0131–0132 and 0136 handover,0079 numbering and0070/0085 approval review. Never expose internal approval
 documents as customer quotations or substitute delivery for acceptance. Company facts come from
 Company; required customer-facing facts differ from execution readiness. English/LTR remains0026;
 multilingual/RTL investment needs a demonstrated requirement and separately approved extension.

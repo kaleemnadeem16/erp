@@ -1,6 +1,6 @@
 [← Decisions](README.md)
 
-# 0130 — Govern source-appropriate operational handover
+# 0136 — Govern source-appropriate operational handover
 
 - **Status:** accepted
 - **Date:** 2026-10-14

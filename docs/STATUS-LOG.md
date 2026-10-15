@@ -675,3 +675,7 @@ no branch/history reconciliation by this agent and no changes to the other actor
 ## Related — framework review
 
 - [Owner decision proposal](architecture/document-print-framework-review.md)
+
+## 2026-10-15 — develop synced with origin; R7 handover ADR renumbered 0130 → 0136
+
+Local develop (3 unpushed docs commits) was rebased onto origin/develop (7 commits of CI sharding and backups); backup branch `backup/develop-before-sync-2026-10-15` holds the old tip. Two ADRs were numbered 0130 (backup on origin, R7 handover local); the unpushed R7 one became 0136 (R7 is now 0131–0132 and 0136) and references were updated. Earlier log entries naming "0130–0132" for R7 are historical. Documentation only; nothing pushed.

@@ -2,9 +2,9 @@
 
 # R7 — Final H1–H8 operational handover decision review
 
-**2026-10-14 · H1–H8 ACCEPTED with owner clarifications in0130–0132; planning Q47 CLOSED.**
+**2026-10-14 · H1–H8 ACCEPTED with owner clarifications in0131–0132 and 0136; planning Q47 CLOSED.**
 The recommendation body below is the preserved historical review, not current unresolved authority.
-Governing decisions: [0130](../decisions/0130-govern-source-appropriate-operational-handover.md),
+Governing decisions: [0136](../decisions/0136-govern-source-appropriate-operational-handover.md),
 [0131](../decisions/0131-preserve-operational-baselines-and-handover-identity.md),
 [0132](../decisions/0132-govern-bounded-accepted-business-reductions-and-claim-release.md).
 [Domain](../domain/sales-operational-handover.md) and [slices](phase-4-r7-implementation-slices.md)

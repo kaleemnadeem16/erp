@@ -45,7 +45,7 @@ its consolidated review comes last. R6 and R7 inform R5 before lifecycle decisio
 | R4 Tax, currency and FX | Quotation tax estimate, rules/exemptions, rounding, rate date and evidence | ADRs 0012, 0025, 0056; currency APIs | F1–F8 accepted0118–0120/Q44 closed; financial contract/slices specified, no code authorised |
 | R5 Lifecycle, approvals, issue and revisions | Stale drafts, plan adoption, snapshot boundary, withdrawal/supersession, expiry and approval invalidation | ADRs 0054, 0058, 0070, 0072, 0076/0077, 0079, 0085 | L1–L6 accepted0122–0124/Q45 closed; lifecycle contract/QL0–QL6 specified; partial R6/R7 gates remain |
 | R6 Customer decisions | Whole/partial acceptance, alternatives, evidence, rejection and expired offers | Sales pipeline landmines; immutable snapshots | C1–C8 accepted0125–0127/Q46 closed; domain/CA0–CA6 specified, no code authority |
-| R7 Job creation and handover | Idempotent confirmation, scope/baseline, contacts/sites, job changes; Sales/COGS correction ownership | job-costing.md; ADR 0040; Phase 5 boundary | H1–H8 accepted0130–0132/Q47 closed; operational domain/HA0–HA7 specified, no delivered adapter |
+| R7 Job creation and handover | Idempotent confirmation, scope/baseline, contacts/sites, job changes; Sales/COGS correction ownership | job-costing.md; ADR 0040; Phase 5 boundary | H1–H8 accepted0131–0132 and 0136/Q47 closed; operational domain/HA0–HA7 specified, no delivered adapter |
 | R8 Documents and communications | Customer projection, PDF/template, delivery evidence, portal/signature vs manual recording | Existing PO print model; appearance-and-printing.md; Q33 | D1–D8 accepted0133–0135/Q48 closed; document/delivery contracts and DOC0–DOC7 specified, not delivered |
 | R9 Access, audit, reporting and integration | Owner vs visibility, sensitive prices/costs, forecast metrics, history, imports and events | ADRs 0028, 0062, 0084/0089, 0096; shared audit/scope | Initial A1–A10/capability/scope/grant/forecast matrix proposed under planning Q49; no accepted R9 ADR |
 
@@ -113,7 +113,7 @@ proposal is never "researched", "accepted" or "complete" merely because it exist
 - [x] Record approved C1–C8 in0125–0127, close Q46, specify customer-decision contracts/CA0–CA6; no implementation.
 - [x] Begin R7 generic target/readiness/baseline/duplicate/amendment/claim-release research under Q47; choices proposed.
 - [x] Historical research checkpoint — complete R7 H1–H8 owner review: optional operational Order, source-aware mapping, stages/splits, readiness/baselines, atomic intent/races, amendments/release and mixed journey; Q47 READY_FOR_OWNER, no R7 ADR.
-- [x] Record owner-approved H1–H8 with clarifications in0130–0132, close Q47 and specify operational domain/HA0–HA7; no implementation.
+- [x] Record owner-approved H1–H8 with clarifications in0131–0132 and 0136, close Q47 and specify operational domain/HA0–HA7; no implementation.
 - [x] Begin R8; consolidate D1–D8 alternatives/examples/primary comparison and staged delivery boundaries under planning Q48.
 - [x] Record owner-approved D1–D8 in0133–0135, close Q48; specify formal document/recovery/delivery/evidence contracts and DOC0–DOC7, no implementation.
 - [x] Begin R9 A1–A10 owner matrix with proposed vocabulary, scopes/grants/limits and reporting/forecast refinements under Q49.

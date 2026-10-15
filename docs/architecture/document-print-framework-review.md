@@ -239,10 +239,7 @@ pilot without PO refactor; (F5) A4/Letter framework profiles with quote A4 uncha
 deferred boundaries and constrained workers/recovery. After approval record a cross-cutting ADR using
 then-free number and refine slices/domain physical ownership/R9 duties. No number reserved here.
 
-Initial divergence was3 ahead/7 behind at ee4b04b. During review another actor moved the shared
-checkout to a31025d (rebased planning commits now follow origin backup work),3 ahead/0 behind.
-Both0130 files now coexist; numbering still needs owner/implementation coordination. This agent
-performed no merge/rebase/reset/renumber/fetch/push; current changes were rechecked against a31025d.
+Resolved 2026-10-15: develop was rebased onto origin/develop and the colliding R7 ADR renumbered 0130 → 0136.
 
 ## Related
 

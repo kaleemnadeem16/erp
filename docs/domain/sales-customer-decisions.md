@@ -191,7 +191,7 @@ Late/conflicting recognition retains CA5/R7 delivered-impact gates. Architecture
 
 ## Related
 
-- [R7 accepted contract and actual-delivery gates](../phases/phase-4-r7-implementation-slices.md) — R7 authority is accepted0130–0132; necessary adapters remain undelivered, so affected partial-family/correction gates remain.
+- [R7 accepted contract and actual-delivery gates](../phases/phase-4-r7-implementation-slices.md) — R7 authority is accepted0131–0132 and 0136; necessary adapters remain undelivered, so affected partial-family/correction gates remain.
 
 - [R6 implementation slices](../phases/phase-4-r6-implementation-slices.md)
 - [Accepted matrix and numerical examples](../phases/phase-4-r6-customer-decisions.md)

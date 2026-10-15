@@ -240,7 +240,7 @@ recommends shared infrastructure in modular monolith with per-type authorised ty
 **Blocks:** infrastructure ownership and related R9 template/file-duty finalisation before affected
 document coding handoff. Independent R9 limits/grants/forecast research continues.
 **Follow-up:** Owner approves/amends boundaries, then new cross-cutting ADR and explicit slice refinement;
-no number reserved. Existing0130 collision/divergence requires owner-coordinated reconciliation.
+no number reserved. The former 0130 numbering collision was resolved on 2026-10-15 by renumbering R7 handover to 0136.
 Forwarded implementation questions retain original wording and Origin: IMPLEMENTATION AGENT.
 
 ---
@@ -270,7 +270,7 @@ actual R6/R7 partial-family adapters and separate code authorisation remain gate
 <a id="q47--r7-handover-targets-and-commitment-corrections"></a>
 
 Q47 (Origin: PLANNING RESEARCH) resolved2026-10-14 by owner's H1–H8 approval with clarifications
-after7f2dc45, recorded in accepted [0130](decisions/0130-govern-source-appropriate-operational-handover.md),
+after7f2dc45, recorded in accepted [0136](decisions/0136-govern-source-appropriate-operational-handover.md),
 [0131](decisions/0131-preserve-operational-baselines-and-handover-identity.md) and
 [0132](decisions/0132-govern-bounded-accepted-business-reductions-and-claim-release.md).
 Original question/context: Generic goods/services/projects handover: source-to-target mapping,

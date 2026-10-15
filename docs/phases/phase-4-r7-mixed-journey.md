@@ -2,7 +2,7 @@
 
 # R7 — Mixed goods and installation journey
 
-**2026-10-14 · Illustrates accepted H1–H8/0130–0132; no adapter or correction workflow delivered.**
+**2026-10-14 · Illustrates accepted H1–H8/0131–0132 and 0136; no adapter or correction workflow delivered.**
 The preserved example applies only with authoritatively checked downstream impacts; delivered quantity
 is not the only possible lower bound. [Specified handoff](phase-4-r7-implementation-slices.md).
 [Final matrix](phase-4-r7-handover-research.md) governs recommendations for owner review.
