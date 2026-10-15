@@ -9,6 +9,7 @@ use App\Modules\Numbering\Support\NumberingRegistry;
 use App\Modules\Parties\Support\PartyCandidateAccess;
 use App\Modules\Sales\Numbering\LeadNumbering;
 use App\Modules\Sales\Numbering\OpportunityNumbering;
+use App\Modules\Sales\Support\Authority\SalesDutyManifest;
 use App\Modules\Sales\Support\PermissionVocabulary;
 use App\Modules\Sales\Support\SalesAccess;
 use App\Support\PermissionRegistry;
@@ -19,9 +20,9 @@ class SalesServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->app->singleton(SalesDutyManifest::class, static fn (): SalesDutyManifest => SalesDutyManifest::shipped());
         $this->app->afterResolving(PermissionRegistry::class, function (PermissionRegistry $registry): void {
-            $registry->registerVocabulary('sales', PermissionVocabulary::all());
-            $registry->excludeFromAutomaticGrants([PermissionVocabulary::OPPORTUNITY_ATTRIBUTION_CORRECT], 'Retrospective attribution is a sensitive duty: granted only explicitly or under a verified full-access mandate (ADR 0114).');
+            $this->app->make(SalesDutyManifest::class)->registerWith($registry);
         });
         $this->app->afterResolving(NumberingRegistry::class, static function (NumberingRegistry $registry): void {
             $registry->register(new LeadNumbering);

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Sales\Support;
 
 use App\Models\User;
+use App\Modules\Sales\Support\Authority\SalesDutyManifest;
 use App\Support\Scope\RecordScope;
 use Illuminate\Auth\Access\AuthorizationException;
 
@@ -20,12 +21,28 @@ final class SalesAccess
 {
     public static function may(?User $user, string $capability): bool
     {
-        if ($user === null || ! $user->can($capability)) {
+        // A duty the manifest does not list as ACTIVE is not a Sales capability yet: a hand-made permission row for a specified or dormant duty confers nothing.
+        if ($user === null || ! app(SalesDutyManifest::class)->isActive($capability) || ! $user->can($capability)) {
             return false;
         }
 
         // The scope of THIS duty only: an unrestricted grant of an unrelated Sales duty (stages, numbering) must never widen a restricted one.
         return app(RecordScope::class)->resolve($user, $capability)->isAll();
+    }
+
+    /**
+     * Several duties at once, each judged by its own scope and none standing in for another — an unrestricted read cannot rescue a restricted sensitive
+     * duty, nor the reverse. Use it where a sensitive operation also needs an independent right (ADR 0114).
+     */
+    public static function mayAll(?User $user, string ...$capabilities): bool
+    {
+        foreach ($capabilities as $capability) {
+            if (! self::may($user, $capability)) {
+                return false;
+            }
+        }
+
+        return $capabilities !== [];
     }
 
     public static function require(?User $user, string $capability, string $doing = 'do that'): void

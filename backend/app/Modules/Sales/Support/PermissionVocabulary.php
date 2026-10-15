@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Sales\Support;
 
+use App\Modules\Sales\Support\Authority\SalesDutyManifest;
+
 /**
  * Sales capabilities, named by duty (authorization.md R14). Owning a record is responsibility, not authority (ADR 0106): none of these is implied by being
  * an owner, a manager or a role name, and none grants any Finance or credit right. Nothing is granted by inference at rollout; administrators assign them.
@@ -38,18 +40,14 @@ final class PermissionVocabulary
      */
     public const OPPORTUNITY_ATTRIBUTION_CORRECT = 'sales.opportunity.attribution.correct';
 
-    /** @return list<string> */
+    /**
+     * The registered Sales duties: the manifest's ACTIVE ones, today exactly the eight above. Every other Sales duty in the accepted matrix is specified
+     * in `Authority\SalesDutyManifest` and deliberately has no constant here until the slice that delivers it.
+     *
+     * @return list<string>
+     */
     public static function all(): array
     {
-        return [
-            self::PIPELINE_VIEW,
-            self::LEAD_MANAGE,
-            self::OPPORTUNITY_MANAGE,
-            self::OPPORTUNITY_ASSIGN,
-            self::OPPORTUNITY_CLOSE,
-            self::STAGE_MANAGE,
-            self::NUMBERING_MANAGE,
-            self::OPPORTUNITY_ATTRIBUTION_CORRECT,
-        ];
+        return SalesDutyManifest::shipped()->activeNames();
     }
 }
