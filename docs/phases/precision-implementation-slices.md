@@ -51,6 +51,24 @@ Seeders refuse to run outside `local`/`testing`, register in `DemoDatabaseSeeder
 ## Dependencies on other work
 FR1 is **not** blocked by this work except that it must treat `currencies.decimal_places` as read-only authority. FR4 carries the policy; R9 (AU0/AU1) registers `sales.financial.configure` before PX6 or its card go live; Documents DF1 pins print precision per template version; no new duty is created and no grant is made.
 
+## PX0 delivery record and integration guidance (2026-10-15)
+
+**IMPLEMENTED locally, targeted tests only.** `App\Support\Quantity\{QuantityContract, QuantityContext, QuantitySign, ConvertedQuantity, QuantityRefusal}`: pure, database-free, no consumers yet.
+
+| Need | Call | Result |
+|---|---|---|
+| Stock quantity | `QuantityContract::stockLedger($increment = null)->represent($v, QuantitySign::Positive)` | Value at four places, or a refusal |
+| Document line | `QuantityContract::commercialLine($scale, $increment)` | The destination column's scale (0–9) |
+| Assembly measure | `QuantityContract::assemblyTechnical()` | Six places |
+| Factor evidence | `QuantityContract::factor($v)` | Positive, ≤ 9 places, ≤ 10 integer digits |
+| Convert | `$destination->convert($qty, $factor)` | `ConvertedQuantity` (exact = result) or `QUANTITY_NOT_REPRESENTABLE` |
+| Increment definition | `$destination->acceptIncrement($v)`, `acceptTransactionIncrement($v, $factor)` | Increment at destination scale, or `INCREMENT_*` |
+| Detection | `$destination->isRepresentable($v)` | Boolean, never throws |
+
+Reason codes: `QUANTITY_INVALID`, `_NEGATIVE`, `_ZERO`, `_OVERFLOW`, `_NOT_REPRESENTABLE`, `_INCREMENT_VIOLATED`; `INCREMENT_INVALID`, `_NOT_REPRESENTABLE`, `_INCOMPATIBLE`; `FACTOR_INVALID`, `_NOT_REPRESENTABLE`; `CONTRACT_INVALID`. All are `DomainInvariantException` (422). Floats, null, arrays and exponent forms are refused as invalid.
+
+**Hand-off to the Sales (PX1) owner.** Replace `Arithmetic::quantity` with a per-source contract: direct and service Items `stockLedger($item->quantity_precision)`, Assembly work `assemblyTechnical()` (offered scale still open), manual `commercialLine(4)`; validate before any cost read. Also found while testing: `Sales/Support/Financial/CurrencyQuantum::unit()` uses `BigDecimal::one()->dividedBy(10^n)` with no scale, which throws `RoundingNecessaryException` for one or more places (untested, unused); use `BigDecimal::ofUnscaledValue(1, $places)`.
+
 ## Genuinely unresolved technical decisions
 1. Where the shared quantity contract lives (proposed `app/Support/Quantity`).
 2. A read-only precision catalogue endpoint versus additive scale fields on existing resources.
