@@ -43,8 +43,9 @@ export function DetailPrintLayout({ sections, children, ...printLayoutProps }: D
               {section.title}
             </h2>
             <dl className={cn('grid gap-x-4 gap-y-0 text-[10px]', section.fullWidth ? 'grid-cols-1' : 'grid-cols-2')}>
-              {section.fields.map((field) => (
-                <div key={field.label} className="flex flex-col border-b border-black/10 py-1.5 [break-inside:avoid]">
+              {section.fields.map((field, index) => (
+                // Labels repeat (two history entries in the same minute by one person), so the position is part of the key.
+                <div key={`${index}-${field.label}`} className="flex flex-col border-b border-black/10 py-1.5 [break-inside:avoid]">
                   <dt className="mb-0.5 font-semibold uppercase tracking-wide text-black/60">{field.label}</dt>
                   <dd className="text-[11px] leading-4">{field.value || '—'}</dd>
                 </div>
