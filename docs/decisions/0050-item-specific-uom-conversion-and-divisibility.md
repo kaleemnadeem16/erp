@@ -1,6 +1,6 @@
 # 0050 — Item-specific UoM conversions; divisibility is an item-and-UoM rule
 
-- **Status:** accepted
+- **Status:** accepted; increment validation and representability partly superseded by [0142](0142-represent-stock-quantities-exactly-and-supersede-0050-increment-validation.md)
 - **Date:** 2026-09-25
 - **Affects:** Purchasing (corrects a live Phase 2 gap), Inventory (receipt/count entry), Phase 3
   material resolution, [units-of-measure.md](../domain/units-of-measure.md),

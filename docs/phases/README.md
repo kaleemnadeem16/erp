@@ -200,6 +200,7 @@ real second customer ([Q8](../OPEN-QUESTIONS.md#q8--second-customer-profile)).
 - [Package feature handoff](package-balance-handoff.md) — grouped package tracking v1 is complete; lists known limitations and future enhancements, independent of other agents' workstreams
 
 - [Grouped package tracking — screens and API design](package-balance-ui.md) — workflows, endpoints, permissions and the smallest first UI slice
+- [Precision architecture slices](precision-implementation-slices.md) — accepted 0141–0144; PX0–PX7 specified, not implemented; [production audit plan](precision-production-audit-plan.md) prepared, not executed
 - [STATUS.md](../STATUS.md) — current progress
 - [OPEN-QUESTIONS.md](../OPEN-QUESTIONS.md) — what's blocking what
 - [templates/phase.md](../templates/phase.md)

@@ -122,6 +122,7 @@ Lead → Opportunity → Quotation (revisions) → Job → Work Order → Invoic
 | [general-ledger.md](general-ledger.md) | Chart of accounts, journals, what posts when |
 | [receivables.md](receivables.md) | Invoices, receipts, allocation, customer ledger |
 | [multi-currency.md](multi-currency.md) | Rates, dual amounts, realised FX |
+| [precision.md](precision.md) | Storage scales, rounding stages, quantity representability, number display |
 | [tax.md](tax.md) | Configurable tax codes, withholding tax, input/output tax |
 
 Unfamiliar term? → [GLOSSARY.md](../GLOSSARY.md)

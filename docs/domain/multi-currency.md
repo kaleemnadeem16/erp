@@ -112,6 +112,8 @@ actually used**, not just the value.
 
 ### Money representation
 
+> **2026-10-15:** currency minor units are governed global reference data ([ADR 0143](../decisions/0143-maintain-currency-minor-units-as-governed-reference-data.md)) and the five kinds of precision are separated in [precision.md](precision.md).
+
 `decimal(19,4)` in the database, `brick/money` in PHP, **string in JSON**
 ([api-conventions.md](../architecture/api-conventions.md)).
 
@@ -146,6 +148,7 @@ may use another. Never infer from the customer record alone.
 ## Related
 
 - [Quotation financial calculation](quotation-financial-calculation.md)
+- [Precision, rounding and number display](precision.md)
 
 - [receivables.md](receivables.md) — where FX gain/loss is realised
 - [general-ledger.md](general-ledger.md)

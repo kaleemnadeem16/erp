@@ -114,6 +114,9 @@ fact that `BuildPurchaseOrderLineAttributes` does not apply.
 
 ### Precision
 
+> **2026-10-15:** increment validation and quantity representability are refined by [ADR 0142](../decisions/0142-represent-stock-quantities-exactly-and-supersede-0050-increment-validation.md) and described in [precision.md](precision.md). A factor stays nine places as evidence; its precision is not the destination quantity's.
+
+
 `decimal(19,9)` for factors. Ingredient quantities are frequently small (0.00012 kg per unit),
 and rounding at storage compounds through the whole cost roll-up.
 
@@ -148,7 +151,7 @@ item-aware conversion service. Receipt prices are normalised to the received uni
 ## Related
 
 - [ADR 0050](../decisions/0050-item-specific-uom-conversion-and-divisibility.md) — item-specific
-  conversion and divisibility decision, implemented
+  conversion and divisibility decision, implemented (increment validation partly superseded by [0142](../decisions/0142-represent-stock-quantities-exactly-and-supersede-0050-increment-validation.md); see [precision.md](precision.md))
 - [material-resolution.md](material-resolution.md) — cross-module research baseline; remaining
   commercial-package and supplier-offer gaps across later phases
 - [items.md](items.md) — each item has a stock UoM

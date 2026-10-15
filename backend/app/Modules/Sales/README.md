@@ -47,6 +47,8 @@ Internal only — no route, table, permission, grant or UI; nothing here is reac
 - **`Support/Pricing` (PR0).** `ResolveSalesPrice` checks the Party (a prospect needs no CustomerAccount), verifies the source through a `PricingSourceAdapter` (direct Item and service Item, Assembly work from an ACTIVE version, governed manual scope), picks one `PriceCandidate` by explicit rank (no candidate, a currency mismatch or two equal best ranks refuse; never the cheapest) and settles the line. Cost comes read-only from `QueryMaterialCost` / the Estimating roll-up and is kept as certainty in its own currency; it never sets a price. Assembly work needs the existing `estimating.internal_cost.view` duty (a cost-blind adapter is a later slice). Alternate units and packages, the pricing master, FX, tax, discounts and controls are not here.
 - **`Support/Kernel` (AU2/AU5 interfaces).** `SalesActorContext` (explicit actor and company, identity only — not a permission verdict), the `OperationReceiptPort` interface and `OperationIntent::hash` (the existing CRM canonical-hash convention). No receipt table or implementation.
 
+**Pending correction (PX1, [0142](../../../../docs/decisions/0142-represent-stock-quantities-exactly-and-supersede-0050-increment-validation.md)):** `Arithmetic::quantity` applies one nine-place scale to every source and the kernel does not yet check Item increments; it is to be replaced by source-specific quantity contracts. Until then the kernel must not be exposed.
+
 A guarded Action must check its own duty and scope before calling the kernel and project the result with `PricingResult::forReader`.
 
 ## Non-obvious

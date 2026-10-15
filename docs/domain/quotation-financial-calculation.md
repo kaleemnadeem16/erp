@@ -9,6 +9,8 @@
 **IMPLEMENTED / VERIFIED:** no R3/R4 delivery claimed. Separate coding authorisation is required.
 [Accepted R5 lifecycle](quotation-lifecycle.md) now specifies aggregate/state/issue identity; R9 owns final duties. No new Finance engine.
 
+> **Unit-price precision (2026-10-15):** entry precision is a company-wide versioned policy of two to four places, default four, inside the FR4 policy version ([0144](../decisions/0144-version-sales-unit-price-precision-within-four-place-storage.md)); quantity representability follows [0142](../decisions/0142-represent-stock-quantities-exactly-and-supersede-0050-increment-validation.md). See [precision.md](precision.md).
+
 ## Input and result contracts
 
 `QuotationFinancialContext` contains authenticated actor, company, scope, Party, typed selling
@@ -214,6 +216,6 @@ readability after mode changes. Shared shells/sheets, mobile and dark/light stat
 ## Related
 
 - [R4 slices](../phases/phase-4-r4-implementation-slices.md) · [Accepted review](../phases/phase-4-r4-financial-review.md)
-- [Tax examples](../phases/phase-4-r4-tax-composition.md) · [Tax](tax.md) · [Currencies](multi-currency.md)
+- [Tax examples](../phases/phase-4-r4-tax-composition.md) · [Tax](tax.md) · [Currencies](multi-currency.md) · [Precision](precision.md)
 - [Pricing resolution](sales-pricing-resolution.md) · [Accepted R5 contract](quotation-lifecycle.md)
 - [Authorisation](../architecture/authorization.md) · [Domain integrity](../architecture/domain-integrity.md)

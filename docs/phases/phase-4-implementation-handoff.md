@@ -112,9 +112,13 @@ small batch to authorise, code owners/checkout coordination, actual company limi
 and staged rollout timing. Future deferred capability requests may need their own business contract.
 This handoff supplies a concrete reviewable next step (B0 then B1/B5 foundations); it authorises none.
 
+## Precision prerequisites (2026-10-15)
+
+Accepted [0141](../decisions/0141-layer-precision-as-invariants-versioned-policy-and-presentation.md)–[0144](../decisions/0144-version-sales-unit-price-precision-within-four-place-storage.md) add dependencies, **specified not implemented**: the B1 kernel's single nine-place quantity scale is to be replaced by source-specific contracts (slice PX1); FR1 must treat `currencies.decimal_places` as read-only authority and needs seeded exchange rates (none exist in development; PX5); FR4's policy version carries Sales unit-price entry precision (PX6, after AU0/AU1 registers `sales.financial.configure`); Documents DF1 pins print precision per template version; the offered Assembly quotation quantity scale remains open until reconciled with R2/R5. Details and ownership: [precision-implementation-slices.md](precision-implementation-slices.md).
+
 ## Related
 
 - [R9 slices](phase-4-r9-implementation-slices.md) · [Rollout](phase-4-r9-permission-rollout.md)
 - [PR](phase-4-r3-implementation-slices.md) · [FR](phase-4-r4-implementation-slices.md) · [QL](phase-4-r5-implementation-slices.md)
 - [CA](phase-4-r6-implementation-slices.md) · [HA](phase-4-r7-implementation-slices.md) · [DOC](phase-4-r8-implementation-slices.md) · [DF](document-print-framework-slices.md)
-- [Question workflow](../architecture/implementation-question-reconciliation.md) · [Pre-push checks](../architecture/pre-push-checks.md)
+- [Precision slices](precision-implementation-slices.md) · [Question workflow](../architecture/implementation-question-reconciliation.md) · [Pre-push checks](../architecture/pre-push-checks.md)
