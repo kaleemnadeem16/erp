@@ -498,6 +498,32 @@ test('a bulk change that takes the rows out of the current list still shows its 
   await page.close();
 });
 
+test('on a phone the cards can be ticked and changed together like table rows', async ({ browser }) => {
+  test.setTimeout(240_000);
+  const page = await as(browser, MANAGER);
+  await page.setViewportSize({ width: 390, height: 800 });
+  for (const [path, list, bar] of [
+    ['/opportunities?filter.outcome=ALL', 'opportunities-list', 'opportunity-bulk-bar'],
+    ['/leads', 'leads-list', 'lead-bulk-bar'],
+    ['/sales-stages', 'sales-stages', 'stage-bulk-bar'],
+  ] as const) {
+    await page.goto(path);
+    await expect(page.getByTestId(list)).toBeVisible();
+    await expect(page.getByTestId(bar)).toHaveCount(0);
+    // One card ticked: the bulk bar appears with the count, and its card is marked.
+    await page.getByRole('checkbox', { name: 'Select row' }).first().check();
+    await expect(page.getByTestId(bar).getByTestId('bulk-count')).toHaveText('1 selected');
+    await expect(page.getByTestId(bar).getByRole('button', { name: 'Print selected' })).toBeVisible();
+    // Select all on the page, then clear.
+    await page.getByRole('checkbox', { name: 'Select all' }).check();
+    await expect(page.getByTestId(bar).getByTestId('bulk-count')).not.toHaveText('1 selected');
+    await page.getByTestId(bar).getByRole('button', { name: 'Clear selection' }).click();
+    await expect(page.getByTestId(bar)).toHaveCount(0);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth), `${path} scrolls sideways`).toBeLessThanOrEqual(0);
+  }
+  await page.close();
+});
+
 test('the pipeline filters are in a bottom sheet on a phone', async ({ browser }) => {
   const page = await as(browser, MANAGER);
   await page.setViewportSize({ width: 390, height: 800 });

@@ -89,6 +89,7 @@ import { useColumnVisibilityPreference } from "../../lib/use-column-visibility-p
 import { useDebouncedSearch } from "../../lib/use-debounced-search";
 import { useListViewPreference } from "../../lib/use-view-preference";
 import { usePermission } from "../../hooks/use-permission";
+import { BulkRunDialog } from "../../components/bulk-run-dialog";
 import { itemColumns } from "./items-columns";
 
 interface ItemFilters {
@@ -192,6 +193,8 @@ export function ItemsListScreen() {
   const [statusError, setStatusError] = useState<string | null>(null);
   const { view, setView } = useListViewPreference("items-list");
   const updateStatus = useItemsUpdate();
+  // The ticked items are remembered when the dialog opens: archiving takes them out of an Active-only list, and the result must stay readable.
+  const [bulkStatus, setBulkStatus] = useState<{ to: "ACTIVE" | "ARCHIVED"; items: ItemResource[] } | null>(null);
 
   const categoriesQuery = useCategoriesIndex({ per_page: 100, sort: "name" });
   const categories =
@@ -1347,6 +1350,27 @@ export function ItemsListScreen() {
         </div>
       )}
 
+      {bulkStatus && (
+        <BulkRunDialog
+          open
+          key={bulkStatus.to}
+          title={bulkStatus.to === "ARCHIVED" ? "Archive these items" : "Activate these items"}
+          intro={`${bulkStatus.items.filter((item) => item.status !== bulkStatus.to).length} ${bulkStatus.to === "ARCHIVED" ? "active" : "archived"} item${bulkStatus.items.filter((item) => item.status !== bulkStatus.to).length === 1 ? "" : "s"} will be changed, each by its own request.${bulkStatus.items.some((item) => item.status === bulkStatus.to) ? ` ${bulkStatus.items.filter((item) => item.status === bulkStatus.to).length} already ${bulkStatus.to === "ARCHIVED" ? "archived" : "active"} are left out.` : ""}`}
+          rows={bulkStatus.items.filter((item) => item.status !== bulkStatus.to)}
+          ready
+          labelOf={(item) => item.code}
+          onClose={() => setBulkStatus(null)}
+          onChanged={async () => {
+            await itemsQuery.refetch();
+          }}
+          run={(item) => updateStatus.mutateAsync({ item: item.id, data: { status: bulkStatus.to } })}
+        >
+          <p className="text-sm text-muted-foreground">
+            {bulkStatus.to === "ARCHIVED" ? "Archived items cannot be chosen on new documents; everything already recorded keeps them." : "Activated items can be chosen on new documents again."}
+          </p>
+        </BulkRunDialog>
+      )}
+
       {selectedItems.length > 0 && (
         <div className="ui-bulk-bar fixed bottom-4 left-1/2 z-30 flex -translate-x-1/2 items-center gap-3 rounded-lg border bg-card px-4 py-2 text-card-foreground shadow-lg">
           <span className="text-sm font-medium">
@@ -1361,6 +1385,16 @@ export function ItemsListScreen() {
           >
             Print selected
           </Button>
+          {mayManage && selectedItems.some((item) => item.status === "ACTIVE") && (
+            <Button size="sm" variant="outline" className="h-8" onClick={() => setBulkStatus({ to: "ARCHIVED", items: selectedItems })} data-testid="bulk-archive">
+              Archive…
+            </Button>
+          )}
+          {mayManage && selectedItems.some((item) => item.status === "ARCHIVED") && (
+            <Button size="sm" variant="outline" className="h-8" onClick={() => setBulkStatus({ to: "ACTIVE", items: selectedItems })} data-testid="bulk-activate">
+              Activate…
+            </Button>
+          )}
           <Button
             size="sm"
             variant="ghost"
@@ -1400,6 +1434,7 @@ export function ItemsListScreen() {
         onColumnVisibilityChange={setColumnVisibility}
         rowSelection={rowSelection}
         onRowSelectionChange={setRowSelection}
+        getRowId={(item) => String(item.id)}
         onRowClick={(item: ItemResource) =>
           navigate({ pathname: `/items/${item.id}`, search: listSearch })
         }

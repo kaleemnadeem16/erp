@@ -6,7 +6,7 @@ import { PrintTrigger } from '../../components/print';
 import { Button } from '../../components/ui/button';
 import { Label } from '../../components/ui/label';
 import { Textarea } from '../../components/ui/textarea';
-import { BulkRunDialog } from './bulk-run-dialog';
+import { BulkRunDialog } from '../../components/bulk-run-dialog';
 import { newKey } from './sales-common';
 
 type Row = LeadResource;

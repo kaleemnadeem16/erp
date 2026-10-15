@@ -3,7 +3,7 @@ import { useItemQuantityUnitsDestroy } from '@erp/core-api';
 
 import { PrintTrigger } from '../../components/print';
 import { Button } from '../../components/ui/button';
-import { BulkRunDialog } from '../sales/bulk-run-dialog';
+import { BulkRunDialog } from '../../components/bulk-run-dialog';
 import type { PackRow } from './pack-conversion-common';
 
 const label = (row: PackRow) => `${row.item ? row.item.code : `Item #${row.item_id}`} / ${row.uom ? row.uom.code : `Unit #${row.uom_id}`}`;

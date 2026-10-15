@@ -3,7 +3,7 @@ import { useSalesStagesUpdate } from '@erp/core-api';
 
 import { PrintTrigger } from '../../components/print';
 import { Button } from '../../components/ui/button';
-import { BulkRunDialog } from './bulk-run-dialog';
+import { BulkRunDialog } from '../../components/bulk-run-dialog';
 import type { StageRow } from './stage-common';
 
 type BulkKind = 'archive' | 'restore';

@@ -215,6 +215,8 @@ export function DataTable<TRow>({
           getRowId={getRowId}
           onRowClick={onRowClick}
           rowActions={rowActions}
+          rowSelection={rowSelection}
+          onRowSelectionChange={onRowSelectionChange ? (next) => onRowSelectionChange(next) : undefined}
           isLoading={isLoading}
           isError={isError}
           errorMessage={errorMessage}

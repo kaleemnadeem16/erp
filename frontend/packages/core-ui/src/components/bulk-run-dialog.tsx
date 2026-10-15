@@ -1,8 +1,8 @@
 import { useState, type ReactNode } from 'react';
 
-import { Button } from '../../components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../../components/ui/dialog';
-import { getApiErrorMessage } from '../../lib/api-errors';
+import { Button } from './ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
+import { getApiErrorMessage } from '../lib/api-errors';
 
 interface Failure<T> {
   row: T;

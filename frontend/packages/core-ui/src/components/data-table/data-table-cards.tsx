@@ -1,7 +1,8 @@
 import type { KeyboardEvent, ReactNode } from 'react';
-import type { VisibilityState } from '@tanstack/react-table';
+import type { RowSelectionState, VisibilityState } from '@tanstack/react-table';
 
 import { cn } from '../../lib/utils';
+import { Checkbox } from '../ui/checkbox';
 import { Skeleton } from '../ui/skeleton';
 import { formatColumnValue, isColumnVisibleByDefault, type DataColumn } from './types';
 import { ListError } from './list-error';
@@ -21,6 +22,12 @@ export interface DataTableCardsProps<TRow> {
   onRetry?: () => void;
   emptyMessage?: string;
   skeletonCount?: number;
+  /**
+   * Opt-in selection, the card-view counterpart of the table's checkbox column: the ticked rows (by `getRowId`) and a setter. Each card gets a checkbox and the list
+   * a "select all on this page" control, so bulk actions work on a phone exactly as in the table. Needs `getRowId`.
+   */
+  rowSelection?: RowSelectionState;
+  onRowSelectionChange?: (next: RowSelectionState) => void;
 }
 
 /**
@@ -46,7 +53,10 @@ export function DataTableCards<TRow>({
   onRetry,
   emptyMessage = 'No records found.',
   skeletonCount = 6,
+  rowSelection,
+  onRowSelectionChange,
 }: DataTableCardsProps<TRow>) {
+  const selectable = Boolean(onRowSelectionChange && getRowId);
   const visible = columns.filter(
     (column) => (columnVisibility?.[column.key] ?? isColumnVisibleByDefault(column)) !== false
   );
@@ -83,10 +93,39 @@ export function DataTableCards<TRow>({
     );
   }
 
+  const idOf = (row: TRow, index: number) => getRowId?.(row) ?? String(index);
+  const chosen = (id: string) => Boolean(rowSelection?.[id]);
+  const toggle = (id: string, on: boolean) => {
+    const next = { ...(rowSelection ?? {}) };
+    if (on) next[id] = true;
+    else delete next[id];
+    onRowSelectionChange?.(next);
+  };
+  const allChosen = selectable && data.length > 0 && data.every((row, index) => chosen(idOf(row, index)));
+  const someChosen = selectable && data.some((row, index) => chosen(idOf(row, index)));
+
   return (
     <div className="space-y-3">
+      {selectable && (
+        <label className="flex min-h-[44px] items-center gap-3 rounded-md border border-border px-4 text-sm font-medium">
+          <Checkbox
+            checked={allChosen || (someChosen && 'indeterminate')}
+            onCheckedChange={(value) => {
+              const next = { ...(rowSelection ?? {}) };
+              data.forEach((row, index) => {
+                if (value === true) next[idOf(row, index)] = true;
+                else delete next[idOf(row, index)];
+              });
+              onRowSelectionChange?.(next);
+            }}
+            aria-label="Select all"
+          />
+          Select all on this page
+        </label>
+      )}
       {data.map((row, index) => {
-        const key = getRowId?.(row) ?? String(index);
+        const key = idOf(row, index);
+        const isChosen = selectable && chosen(key);
 
         function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
           if (!onRowClick) return;
@@ -111,11 +150,21 @@ export function DataTableCards<TRow>({
             onKeyDown={handleKeyDown}
             className={cn(
               'min-h-[44px] rounded-md border border-border p-4',
+              isChosen && 'border-primary/60 bg-primary/5',
               onRowClick && 'cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-ring'
             )}
           >
             <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
+              {selectable && (
+                <Checkbox
+                  className="mt-1 shrink-0"
+                  checked={isChosen}
+                  onCheckedChange={(value) => toggle(key, value === true)}
+                  onClick={(event) => event.stopPropagation()}
+                  aria-label="Select row"
+                />
+              )}
+              <div className="min-w-0 flex-1">
                 {title && <div className="font-medium">{title.cell?.(row) ?? formatColumnValue(title, row)}</div>}
                 {subtitle && (
                   <div className="mt-0.5 text-sm text-muted-foreground">
