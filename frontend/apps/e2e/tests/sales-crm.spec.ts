@@ -156,7 +156,7 @@ test('a manager closes and reopens a deal, and replaces the owner of a deal whos
 
   // The deal whose owner left is flagged in the list and on the deal, and nothing replaced the owner behind anyone's back.
   await page.goto('/opportunities');
-  await page.getByLabel('Needs a new owner').click();
+  await page.getByRole('button', { name: 'Needs a new owner' }).click();
   const row = page.getByRole('row', { name: /Showroom repaint \(owner has left\)/ });
   await expect(row).toContainText('needs a new owner');
   await row.click();
@@ -250,7 +250,7 @@ test('the pipeline list filters by partner and owner, shows removable chips and 
   await row.click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await expect(page).toHaveURL(/\/opportunities\/\d+\?.*party_id=\d+/);
-  await page.getByRole('button', { name: /^Close/ }).first().click();
+  await page.getByRole('button', { name: 'Close', exact: true }).click();
   await expect(page).toHaveURL(/\/opportunities\?.*party_id=\d+/);
   await expect(chips).toContainText('For: Metro Engineering');
 
@@ -324,6 +324,76 @@ test('deals are ticked on the list and changed together, each by its own request
   await page.close();
 });
 
+test('an open deal is edited in the same side panel as a new one, and its follow-up can be updated quickly', async ({ browser }) => {
+  test.setTimeout(240_000);
+  const page = await as(browser, MANAGER);
+  const stamp = Date.now().toString(36);
+  await createDeal(page, `E2E edit ${stamp}`);
+
+  await page.getByTestId('opportunity-edit').click();
+  await expect(page).toHaveURL(/\/opportunities\/\d+\/edit/);
+  await expect(page.getByRole('dialog')).toContainText('Edit opportunity');
+  // The party and owner are not asked again; they change through their own actions.
+  await expect(page.getByRole('combobox', { name: 'Trading partner' })).toHaveCount(0);
+  await page.getByLabel('Title').fill(`E2E edited ${stamp}`);
+  await page.getByTestId('opportunity-save').click();
+  await expect(page).toHaveURL(/\/opportunities\/\d+$/);
+  await expect(page.getByRole('dialog')).toContainText(`E2E edited ${stamp}`);
+
+  // Quick update: only the follow-up, in a small dialog over the record.
+  await page.getByTestId('opportunity-quick-edit').click();
+  const quick = page.getByTestId('edit-dialog');
+  await expect(quick.getByLabel('Title')).toHaveCount(0);
+  await quick.getByLabel('Next action', { exact: true }).fill('Call back about the quote');
+  await quick.getByTestId('edit-save').click();
+  await expect(page.getByTestId('opportunity-detail')).toContainText('Call back about the quote');
+  await page.close();
+});
+
+test('enquiries have filters, chips, selection with bulk actions and printing like the pipeline', async ({ browser }) => {
+  test.setTimeout(240_000);
+  const page = await as(browser, MANAGER);
+  const stamp = Date.now().toString(36);
+  for (const letter of ['A', 'B']) {
+    await page.goto('/leads/new');
+    await expect(page.getByRole('dialog')).toContainText('Record an enquiry');
+    await page.getByLabel('Who is asking?').fill(`E2E enquirer ${letter} ${stamp}`);
+    await page.getByTestId('lead-save').click();
+    await expect(page.getByTestId('lead-detail')).toContainText(`E2E enquirer ${letter} ${stamp}`);
+    // Every fact the enquiry holds is shown, including the ones not provided; the record can be printed.
+    for (const label of ['Email', 'Phone', 'Source', 'Recorded', 'What they want']) await expect(page.getByTestId('lead-detail')).toContainText(label);
+    await expect(page.getByTestId('lead-print')).toBeVisible();
+  }
+
+  await page.goto(`/leads?filter.search=${stamp}`);
+  await expect(page.getByRole('row', { name: new RegExp(`E2E enquirer A ${stamp}`) })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Print', exact: true }).first()).toBeVisible();
+
+  // Filters show as chips that can be removed.
+  await page.getByRole('combobox', { name: 'Status' }).click();
+  await page.getByRole('option', { name: 'New' }).click();
+  await expect(page.getByTestId('active-filters')).toContainText('Status: New');
+  await page.getByRole('button', { name: /Remove filter: Status/ }).click();
+  await expect(page.getByTestId('active-filters')).not.toContainText('Status: New');
+
+  // Tick both, qualify them together.
+  await page.getByRole('checkbox', { name: 'Select all' }).check();
+  const bar = page.getByTestId('lead-bulk-bar');
+  await expect(bar.getByTestId('bulk-count')).toHaveText('2 selected');
+  await expect(bar.getByRole('button', { name: 'Print selected' })).toBeVisible();
+  await bar.getByTestId('bulk-qualify').click();
+  const dialog = page.getByTestId('bulk-dialog');
+  await expect(dialog).toContainText('2 new enquiries');
+  await dialog.getByTestId('bulk-confirm').click();
+  await expect(dialog.getByTestId('bulk-result')).toContainText('2 changed');
+  await dialog.getByRole('button', { name: 'Done' }).click();
+  await expect(page.getByRole('row', { name: new RegExp(`E2E enquirer A ${stamp}`) })).toContainText('Qualified');
+  // Qualified ones are no longer offered "Qualify"; they can be disqualified.
+  await expect(bar.getByTestId('bulk-qualify')).toHaveCount(0);
+  await expect(bar.getByTestId('bulk-disqualify')).toBeVisible();
+  await page.close();
+});
+
 test('the pipeline filters are in a bottom sheet on a phone', async ({ browser }) => {
   const page = await as(browser, MANAGER);
   await page.setViewportSize({ width: 390, height: 800 });
@@ -332,7 +402,7 @@ test('the pipeline filters are in a bottom sheet on a phone', async ({ browser }
   const sheet = page.getByRole('dialog', { name: 'Filters' });
   await expect(sheet.getByRole('combobox', { name: 'Trading partner' })).toBeVisible();
   await expect(sheet.getByRole('combobox', { name: 'Owner' })).toBeVisible();
-  await sheet.getByLabel('Mine').click();
+  await sheet.getByRole('button', { name: 'Mine' }).click();
   await sheet.getByRole('button', { name: 'Done' }).click();
   await expect(page.getByTestId('active-filters')).toContainText('Mine only');
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
@@ -355,14 +425,14 @@ test('the screens fit a phone and have no serious accessibility problems in ligh
       expect(serious, `${path} (${mode}): ${JSON.stringify(serious, null, 2)}`).toEqual([]);
     }
     await page.goto('/opportunities?filter.search=Plant%20room');
-    await page.getByRole('row', { name: /Plant room refurbishment/ }).or(page.getByText('Plant room refurbishment')).first().click();
+    await page.getByRole('row', { name: /Plant room refurbishment/ }).or(page.getByText('Plant room refurbishment')).filter({ visible: true }).first().click();
     await expect(page.getByTestId('opportunity-detail')).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
     const detail = await new AxeBuilder({ page }).analyze();
     expect(detail.violations.filter((violation) => violation.impact === 'critical' || violation.impact === 'serious'), `detail (${mode})`).toEqual([]);
     // A closed deal also shows the recorded-responsibility section.
     await page.goto('/opportunities?filter.search=Warehouse%20floor&filter.outcome=LOST');
-    await page.getByRole('row', { name: /Warehouse floor coating/ }).or(page.getByText('Warehouse floor coating')).first().click();
+    await page.getByRole('row', { name: /Warehouse floor coating/ }).or(page.getByText('Warehouse floor coating')).filter({ visible: true }).first().click();
     await expect(page.getByTestId('responsibility-record')).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
     const closed = await new AxeBuilder({ page }).analyze();

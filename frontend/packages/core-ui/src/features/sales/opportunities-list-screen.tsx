@@ -11,8 +11,8 @@ import { PageHeader } from '../../components/page/page-header';
 import { PrintLayout, PrintableTable, PrintTrigger, useQuickPrint } from '../../components/print';
 import { ScreenTemplate } from '../../components/page/screen-template';
 import { Badge } from '../../components/ui/badge';
+import { FilterToggle } from '../../components/ui/filter-toggle';
 import { Button } from '../../components/ui/button';
-import { Checkbox } from '../../components/ui/checkbox';
 import { Collapse } from '../../components/ui/collapse';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../../components/ui/dropdown-menu';
 import { Input } from '../../components/ui/input';
@@ -232,13 +232,10 @@ export function OpportunitiesListScreen() {
       </SelectContent>
     </Select>
   );
-  const flag = (id: string, label: string, key: 'mine' | 'needs_attention') => (
-    <div className="flex items-center gap-2">
-      <Checkbox id={id} checked={query.filters[key] === 'true'} onCheckedChange={(checked) => query.setFilter(key, checked === true ? 'true' : undefined)} />
-      <Label htmlFor={id} className="text-sm">
-        {label}
-      </Label>
-    </div>
+  const flag = (label: string, key: 'mine' | 'needs_attention', className?: string) => (
+    <FilterToggle pressed={query.filters[key] === 'true'} onPressedChange={(pressed) => query.setFilter(key, pressed ? 'true' : undefined)} className={className}>
+      {label}
+    </FilterToggle>
   );
   const partyFilter = (idPrefix: string) => (
     <div className="space-y-1.5">
@@ -288,8 +285,8 @@ export function OpportunitiesListScreen() {
           <div className="hidden items-center gap-3 md:flex md:flex-wrap">
             {outcomeSelect('h-10 w-40')}
             {usesStages && stageSelect('h-10 w-44')}
-            {usesOwners && flag('mine', 'Mine', 'mine')}
-            {usesOwners && flag('attention', 'Needs a new owner', 'needs_attention')}
+            {usesOwners && flag('Mine', 'mine')}
+            {usesOwners && flag('Needs a new owner', 'needs_attention')}
             <PrintTrigger onPrint={() => print()} className="h-10 px-4" />
             <Button
               variant={advancedOpen || advancedCount > 0 ? 'secondary' : 'outline'}
@@ -357,8 +354,8 @@ export function OpportunitiesListScreen() {
               {usesOwners && <div className="border-t pt-3">{ownerFilter('mob')}</div>}
               {usesOwners && (
                 <div className="flex flex-col gap-3 border-t pt-3">
-                  {flag('mine-mobile', 'Mine', 'mine')}
-                  {flag('attention-mobile', 'Needs a new owner', 'needs_attention')}
+                  {flag('Mine', 'mine', 'w-full justify-start')}
+                  {flag('Needs a new owner', 'needs_attention', 'w-full justify-start')}
                 </div>
               )}
             </div>
@@ -464,7 +461,7 @@ export function OpportunitiesListScreen() {
                   <DropdownMenuItem
                     onClick={(event) => {
                       event.stopPropagation();
-                      navigate({ pathname: `/opportunities/${row.id}`, search }, { state: { edit: true } });
+                      navigate({ pathname: `/opportunities/${row.id}/edit`, search });
                     }}
                   >
                     <Pencil className="mr-2 h-4 w-4 text-muted-foreground" aria-hidden="true" />

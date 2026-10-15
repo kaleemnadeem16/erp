@@ -4,39 +4,17 @@ import { useOpportunitiesClose, useOpportunitiesReassign, useOpportunitiesStage,
 import { OwnerCombobox } from '../../components/lookups/entity-comboboxes';
 import { PrintTrigger } from '../../components/print';
 import { Button } from '../../components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../../components/ui/dialog';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Textarea } from '../../components/ui/textarea';
-import { getApiErrorMessage } from '../../lib/api-errors';
+import { BulkRunDialog } from './bulk-run-dialog';
 
 type Row = OpportunityResource;
 type BulkKind = 'owner' | 'stage' | 'close';
 
-interface Failure {
-  row: Row;
-  message: string;
-}
-
-/** Each record is changed by its own request, one after another, so one refusal never undoes or blocks the rest; what could not be changed is reported by name. */
-async function applyToEach(rows: Row[], change: (row: Row) => Promise<unknown>, onProgress: (done: number) => void): Promise<{ done: Row[]; failed: Failure[] }> {
-  const done: Row[] = [];
-  const failed: Failure[] = [];
-  for (const [index, row] of rows.entries()) {
-    try {
-      await change(row);
-      done.push(row);
-    } catch (failure) {
-      failed.push({ row, message: getApiErrorMessage(failure) ?? 'The change was refused.' });
-    }
-    onProgress(index + 1);
-  }
-
-  return { done, failed };
-}
-
 const label = (row: Row) => row.number ?? `#${row.id}`;
+const TITLE: Record<BulkKind, string> = { owner: 'Change who is responsible', stage: 'Move to a stage', close: 'Close these opportunities' };
 
 /**
  * What can be done to the deals ticked on the current page. Only open deals can be changed (a closed deal is reopened first), so closed ones are counted and skipped,
@@ -92,23 +70,13 @@ export function OpportunityBulkBar({
       <Button variant="ghost" size="sm" className="h-8" onClick={onClear}>
         Clear selection
       </Button>
-      <BulkDialog
-        // A fresh dialog (and so a fresh result) each time one is opened.
-        key={kind ?? 'none'}
-        kind={kind}
-        selected={selected}
-        eligible={eligible}
-        stages={stages}
-        onClose={() => setKind(null)}
-        onChanged={onChanged}
-      />
+      {/* A fresh dialog (and so a fresh result) each time one is opened. */}
+      <OpportunityBulkDialog key={kind ?? 'none'} kind={kind} selected={selected} eligible={eligible} stages={stages} onClose={() => setKind(null)} onChanged={onChanged} />
     </div>
   );
 }
 
-const TITLE: Record<BulkKind, string> = { owner: 'Change who is responsible', stage: 'Move to a stage', close: 'Close these opportunities' };
-
-function BulkDialog({
+function OpportunityBulkDialog({
   kind,
   selected,
   eligible,
@@ -130,131 +98,76 @@ function BulkDialog({
   const [stageId, setStageId] = useState('');
   const [outcome, setOutcome] = useState<'LOST' | 'ABANDONED'>('LOST');
   const [reason, setReason] = useState('');
-  const [progress, setProgress] = useState<number | null>(null);
-  const [result, setResult] = useState<{ done: number; failed: Failure[] } | null>(null);
-  const [remaining, setRemaining] = useState<Row[]>(eligible);
-
   const skipped = selected.length - eligible.length;
-  const running = progress !== null;
   const ready = kind === 'owner' ? ownerId !== '' : kind === 'stage' ? stageId !== '' : reason.trim() !== '';
 
-  async function run() {
-    if (!kind) return;
-    setProgress(0);
-    const outcomeRows = await applyToEach(
-      remaining,
-      (row) => {
+  return (
+    <BulkRunDialog
+      open={kind !== null}
+      title={kind ? TITLE[kind] : ''}
+      intro={`${eligible.length === 1 ? 'One open opportunity' : `${eligible.length} open opportunities`} will be changed, each by its own request.${skipped > 0 ? ` ${skipped} closed ${skipped === 1 ? 'one is' : 'ones are'} left out — reopen a deal before changing it.` : ''}`}
+      rows={eligible}
+      ready={ready}
+      labelOf={label}
+      onClose={onClose}
+      onChanged={onChanged}
+      run={(row) => {
         if (kind === 'owner') return reassign.mutateAsync({ opportunity: row.id, data: { owner_id: Number(ownerId), reason: reason.trim() || null } });
         if (kind === 'stage') return stage.mutateAsync({ opportunity: row.id, data: { stage_id: Number(stageId) } });
 
         return close.mutateAsync({ opportunity: row.id, data: { outcome, reason: reason.trim() } });
-      },
-      setProgress,
-    );
-    setProgress(null);
-    setRemaining(outcomeRows.failed.map((failure) => failure.row));
-    setResult((previous) => ({ done: (previous?.done ?? 0) + outcomeRows.done.length, failed: outcomeRows.failed }));
-    await onChanged();
-  }
-
-  const finished = result !== null && result.failed.length === 0;
-
-  return (
-    <Dialog open={kind !== null} onOpenChange={(next) => !next && !running && onClose()}>
-      <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto" data-testid="bulk-dialog">
-        <DialogHeader>
-          <DialogTitle>{kind ? TITLE[kind] : ''}</DialogTitle>
-          <DialogDescription>
-            {remaining.length === 1 ? 'One open opportunity' : `${remaining.length} open opportunities`} will be changed, each by its own request.
-            {skipped > 0 && result === null ? ` ${skipped} closed ${skipped === 1 ? 'one is' : 'ones are'} left out — reopen a deal before changing it.` : ''}
-          </DialogDescription>
-        </DialogHeader>
-        {!finished && (
-          <div className="space-y-3">
-            {kind === 'owner' && (
-              <>
-                <div className="space-y-1">
-                  <Label>New owner</Label>
-                  <OwnerCombobox label="New owner" placeholder="Choose a person" className="w-full" value={ownerId} onValueChange={setOwnerId} />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="bulk-owner-reason">Reason (optional)</Label>
-                  <Input id="bulk-owner-reason" value={reason} onChange={(event) => setReason(event.target.value)} />
-                </div>
-              </>
-            )}
-            {kind === 'stage' && (
-              <div className="space-y-1">
-                <Label>Stage</Label>
-                <Select value={stageId} onValueChange={setStageId}>
-                  <SelectTrigger aria-label="Stage">
-                    <SelectValue placeholder="Choose a stage" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {stages.map((option) => (
-                      <SelectItem key={option.id} value={String(option.id)}>
-                        {option.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-            {kind === 'close' && (
-              <>
-                <p className="text-sm text-muted-foreground">Closing ends the pursuit. It changes no quotation or job, and each deal can be reopened later.</p>
-                <div className="space-y-1">
-                  <Label>How did it end?</Label>
-                  <Select value={outcome} onValueChange={(value) => setOutcome(value as 'LOST' | 'ABANDONED')}>
-                    <SelectTrigger aria-label="Outcome">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="LOST">Lost — we did not win the business</SelectItem>
-                      <SelectItem value="ABANDONED">Abandoned — we stopped pursuing it</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="bulk-close-reason">Why?</Label>
-                  <Textarea id="bulk-close-reason" rows={2} value={reason} onChange={(event) => setReason(event.target.value)} />
-                </div>
-              </>
-            )}
+      }}
+    >
+      {kind === 'owner' && (
+        <>
+          <div className="space-y-1.5">
+            <Label>New owner</Label>
+            <OwnerCombobox label="New owner" placeholder="Choose a person" className="w-full" value={ownerId} onValueChange={setOwnerId} />
           </div>
-        )}
-        {running && (
-          <p role="status" className="text-sm text-muted-foreground" data-testid="bulk-progress">
-            Changing {progress} of {remaining.length}…
-          </p>
-        )}
-        {result && (
-          <div role="status" className="space-y-2 rounded-md border p-3 text-sm" data-testid="bulk-result">
-            <p className="font-medium">
-              {result.done} changed{result.failed.length > 0 ? `, ${result.failed.length} could not be changed` : '.'}
-            </p>
-            {result.failed.length > 0 && (
-              <ul className="list-disc space-y-1 pl-5 text-destructive">
-                {result.failed.map((failure) => (
-                  <li key={failure.row.id}>
-                    {label(failure.row)} — {failure.message}
-                  </li>
-                ))}
-              </ul>
-            )}
+          <div className="space-y-1.5">
+            <Label htmlFor="bulk-owner-reason">Reason (optional)</Label>
+            <Input id="bulk-owner-reason" value={reason} onChange={(event) => setReason(event.target.value)} />
           </div>
-        )}
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={running}>
-            {finished ? 'Done' : 'Cancel'}
-          </Button>
-          {!finished && (
-            <Button onClick={() => void run()} disabled={!ready || running || remaining.length === 0} data-testid="bulk-confirm">
-              {result ? `Retry ${remaining.length} that failed` : `Change ${remaining.length}`}
-            </Button>
-          )}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </>
+      )}
+      {kind === 'stage' && (
+        <div className="space-y-1.5">
+          <Label>Stage</Label>
+          <Select value={stageId} onValueChange={setStageId}>
+            <SelectTrigger aria-label="Stage">
+              <SelectValue placeholder="Choose a stage" />
+            </SelectTrigger>
+            <SelectContent>
+              {stages.map((option) => (
+                <SelectItem key={option.id} value={String(option.id)}>
+                  {option.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+      {kind === 'close' && (
+        <>
+          <p className="text-sm text-muted-foreground">Closing ends the pursuit. It changes no quotation or job, and each deal can be reopened later.</p>
+          <div className="space-y-1.5">
+            <Label>How did it end?</Label>
+            <Select value={outcome} onValueChange={(value) => setOutcome(value as 'LOST' | 'ABANDONED')}>
+              <SelectTrigger aria-label="Outcome">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="LOST">Lost — we did not win the business</SelectItem>
+                <SelectItem value="ABANDONED">Abandoned — we stopped pursuing it</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="bulk-close-reason">Why?</Label>
+            <Textarea id="bulk-close-reason" rows={2} value={reason} onChange={(event) => setReason(event.target.value)} />
+          </div>
+        </>
+      )}
+    </BulkRunDialog>
   );
 }

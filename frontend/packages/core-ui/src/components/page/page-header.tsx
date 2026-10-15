@@ -70,7 +70,7 @@ export function PageHeader({ title, description, breadcrumbs, backTo, actions, p
           </nav>
         )}
         <h1 className="page-header-title text-xl font-semibold">{title}</h1>
-        {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
+        {description && <p className="page-header-description mt-2 text-sm text-muted-foreground">{description}</p>}
       </div>
       {(actions || primaryAction) && (
         <div className="flex shrink-0 self-end items-center gap-2 sm:self-auto">

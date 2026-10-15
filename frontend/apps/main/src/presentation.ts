@@ -30,6 +30,9 @@ export const presentation: {
   stockScrapEdit: Presentation;
   opportunityCreate: Presentation;
   opportunityDetail: Presentation;
+  opportunityEdit: Presentation;
+  leadCreate: Presentation;
+  leadDetail: Presentation;
 } = {
   purchaseOrderCreate: "sheet",
   purchaseOrderDetail: "sheet",
@@ -54,6 +57,9 @@ export const presentation: {
   stockScrapEdit: "sheet",
   opportunityCreate: "sheet",
   opportunityDetail: "sheet",
+  opportunityEdit: "sheet",
+  leadCreate: "sheet",
+  leadDetail: "sheet",
 };
 
 /**

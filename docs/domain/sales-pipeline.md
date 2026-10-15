@@ -85,7 +85,20 @@ The demo data shows every state: a new unassigned enquiry, a qualified one that 
 | `WON` on close | Not offered: refused until customer acceptance (R6) | |
 | `lead` include on the index | Not available: the list endpoint allows only party, stage and owner | List shows a yes/no "came from an enquiry"; the detail links the enquiry |
 
-**Company size.** One stage needs no stage control, column or filter, and one possible owner needs no owner column, filter, "Mine" or change-owner action; all of them appear as soon as there is a choice (a second stage, a second active member, or a deal whose owner has left). No setting is involved — the pipeline simply grows with the company.
+**Enquiry screens — coverage** (same contract; verified against `LeadResource`, the Store/Update/Index/Assign/Qualify/Disqualify/Revive/Convert requests and routes).
+
+| Backend element | Where it appears | Notes |
+|---|---|---|
+| Filters `status`, `assigned_to`, `party_id`, `search`, `unassigned` | Beside search: status, Unassigned toggle. Advanced panel (phone: bottom sheet): trading partner, assigned to | Chips with removal, Clear all, all in the URL |
+| Sorts `received_at`, `number`, `created_at` | Column headers; *Recorded* is an optional column | |
+| Resource facts | Default columns: number, enquirer, organisation, source, assigned to, received, status. Optional: email, phone, what they want, trading partner, qualified on, disqualified on, disqualification reason, recorded | Detail shows every fact; ones not provided say "Not provided" |
+| Create fields | Name, organisation, email, phone, source, description; under *More options*: received on, trading partner (with Register new), assign to | `request_key` per submission |
+| Actions | Detail sheet: qualify, disqualify, revive, assign, link partner, create opportunity, add note, correct details (version + reason). Bulk on one page: assign, qualify, disqualify, revive, each only for the enquiries it fits, one request each with named, retryable failures | Convert, link partner, notes and correction stay single-record: each needs choices or evidence of its own |
+| Print | List (visible columns and filters), selected rows, and the record with opportunities, notes and history | Quick Print |
+
+**Editing a deal.** Create and edit are the same side-panel form (`/opportunities/:id/edit`; open deals only; who it is for, owner and stage change through their own actions). *Quick update* is a small dialog over the record for the follow-up only (value, expected close, next action and date).
+
+**Company size.** One stage needs no stage control, column or filter, and one possible owner needs no owner column, filter, "Mine" or change-owner action (for enquiries: no assignee column, filter, Unassigned toggle or bulk assign); all of them appear as soon as there is a choice (a second stage, a second active member, or a deal whose owner has left). No setting is involved — the pipeline simply grows with the company.
 
 **Deferred on purpose** (planning decisions or later topics): quotation association and the opportunity-requirement policy (ADR 0098's FLEXIBLE/MANAGED/STRICT setting has no effect without quotations), accepted business and partial win (R6), forecast and the disposition of remaining potential (ADRs 0101/0102, R9), restricted visibility (R9), notifications (Q33), automation, teams, campaigns.
 

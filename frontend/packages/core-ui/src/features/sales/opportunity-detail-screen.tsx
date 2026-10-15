@@ -40,13 +40,13 @@ import { HistoryList, NotesList, OUTCOME_LABEL, OutcomeBadge, SALES, describeEve
 const isPast = (day: string | null | undefined) => Boolean(day) && (day as string) < new Date().toLocaleDateString('en-CA');
 const Overdue = () => <span className="ml-1 text-xs text-destructive">overdue</span>;
 
-type Mode = 'close' | 'reopen' | 'reassign' | 'edit' | 'attribution' | null;
+type Mode = 'close' | 'reopen' | 'reassign' | 'quick' | 'attribution' | null;
 
 /** One opportunity: who it is for, who is responsible, where it stands, what happens next — with its notes and the history of every decision. */
 export function OpportunityDetailScreen({ presentation = 'sheet' }: { presentation?: Presentation }) {
   const id = Number(useParams<{ id: string }>().id);
   const navigate = useNavigate();
-  const { search, state } = useLocation();
+  const { search } = useLocation();
   const backToList = () => navigate({ pathname: '/opportunities', search });
   const mayManage = usePermission(SALES.opportunity);
   const mayAssign = usePermission(SALES.assign);
@@ -58,8 +58,7 @@ export function OpportunityDetailScreen({ presentation = 'sheet' }: { presentati
   const { contentRef: printRef, print } = useQuickPrint({ documentTitle: 'Opportunity' });
   const currencies = useCurrenciesIndex({ per_page: 100, sort: 'code' });
   const currencyRows = currencies.data?.status === 200 ? currencies.data.data.data : [];
-  // The list's row menu asks for the edit form to open straight away.
-  const [mode, setMode] = useState<Mode>((state as { edit?: boolean } | null)?.edit ? 'edit' : null);
+  const [mode, setMode] = useState<Mode>(null);
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState('');
   const stage = useOpportunitiesStage();
@@ -136,9 +135,14 @@ export function OpportunityDetailScreen({ presentation = 'sheet' }: { presentati
   const actions = (
     <>
       {open && mayManage && (
-        <Button variant="outline" onClick={() => setMode('edit')} data-testid="opportunity-edit">
-          Edit
-        </Button>
+        <>
+          <Button variant="outline" onClick={() => navigate({ pathname: `/opportunities/${id}/edit`, search })} data-testid="opportunity-edit">
+            Edit
+          </Button>
+          <Button variant="outline" onClick={() => setMode('quick')} data-testid="opportunity-quick-edit">
+            Quick update
+          </Button>
+        </>
       )}
       {open && mayAssign && canChangeOwner && (
         <Button variant="outline" onClick={() => setMode('reassign')} data-testid="opportunity-reassign">
@@ -400,7 +404,7 @@ function ActionDialogs({
             <DialogDescription>Closing ends the pursuit. It does not change any quotation or job, and you can reopen it later.</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <Label>How did it end?</Label>
               <Select value={outcome} onValueChange={(value) => setOutcome(value as 'LOST' | 'ABANDONED')}>
                 <SelectTrigger aria-label="Outcome">
@@ -412,7 +416,7 @@ function ActionDialogs({
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <Label htmlFor="close-reason">Why?</Label>
               <Textarea id="close-reason" rows={2} value={reason} onChange={(event) => setReason(event.target.value)} />
             </div>
@@ -443,7 +447,7 @@ function ActionDialogs({
             <DialogTitle>Reopen this opportunity</DialogTitle>
             <DialogDescription>It continues as the same pursuit; the earlier closure stays in the history.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             <Label htmlFor="reopen-reason">Why is it being revived?</Label>
             <Textarea id="reopen-reason" rows={2} value={reason} onChange={(event) => setReason(event.target.value)} />
           </div>
@@ -474,11 +478,11 @@ function ActionDialogs({
             <DialogDescription>Responsibility is not access: the new owner sees only what their own permissions allow. Only active members can be chosen.</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <Label>New owner</Label>
               <OwnerCombobox label="New owner" placeholder="Choose a person" className="w-full" value={ownerId} onValueChange={setOwnerId} />
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <Label htmlFor="reassign-reason">Reason (optional)</Label>
               <Input id="reassign-reason" value={reason} onChange={(event) => setReason(event.target.value)} />
             </div>
@@ -503,30 +507,18 @@ function ActionDialogs({
         </DialogContent>
       </Dialog>
 
-      <Dialog open={mode === 'edit'} onOpenChange={(next) => !next && onClose()}>
+      <Dialog open={mode === 'quick'} onOpenChange={(next) => !next && onClose()}>
         <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto" data-testid="edit-dialog">
           <DialogHeader>
-            <DialogTitle>Edit the deal</DialogTitle>
-            <DialogDescription>Who it is for, its stage and its owner change through their own actions.</DialogDescription>
+            <DialogTitle>Quick update</DialogTitle>
+            <DialogDescription>Just the follow-up: value, expected close and the next step. Use Edit for the title, source and description.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-1 sm:col-span-2">
-              <Label htmlFor="edit-title">Title</Label>
-              <Input id="edit-title" value={edit.title} onChange={(event) => setEdit({ ...edit, title: event.target.value })} />
-            </div>
-            <div className="space-y-1 sm:col-span-2">
-              <Label htmlFor="edit-source">Source</Label>
-              <Input id="edit-source" value={edit.source} onChange={(event) => setEdit({ ...edit, source: event.target.value })} />
-            </div>
-            <div className="space-y-1 sm:col-span-2">
-              <Label htmlFor="edit-description">Description</Label>
-              <Textarea id="edit-description" rows={2} value={edit.description} onChange={(event) => setEdit({ ...edit, description: event.target.value })} />
-            </div>
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <Label htmlFor="edit-amount">Expected value</Label>
               <Input id="edit-amount" inputMode="decimal" placeholder="Leave empty if not known" value={String(edit.amount)} onChange={(event) => setEdit({ ...edit, amount: event.target.value })} />
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <Label>Currency</Label>
               <Combobox
                 aria-label="Currency"
@@ -539,15 +531,15 @@ function ActionDialogs({
               />
             </div>
             {valueProblem && <p className="text-xs text-destructive sm:col-span-2">Give both the amount and its currency, or neither.</p>}
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <Label htmlFor="edit-close">Expected close</Label>
               <Input id="edit-close" type="date" value={edit.closeOn} onChange={(event) => setEdit({ ...edit, closeOn: event.target.value })} />
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <Label htmlFor="edit-next-on">Next action on</Label>
               <Input id="edit-next-on" type="date" value={edit.nextOn} onChange={(event) => setEdit({ ...edit, nextOn: event.target.value })} />
             </div>
-            <div className="space-y-1 sm:col-span-2">
+            <div className="space-y-1.5 sm:col-span-2">
               <Label htmlFor="edit-next">Next action</Label>
               <Input id="edit-next" value={edit.nextAction} onChange={(event) => setEdit({ ...edit, nextAction: event.target.value })} />
             </div>
@@ -562,16 +554,13 @@ function ActionDialogs({
               Cancel
             </Button>
             <Button
-              disabled={valueProblem || edit.title.trim() === '' || update.isPending}
+              disabled={valueProblem || update.isPending}
               data-testid="edit-save"
               onClick={() =>
                 void submit(() =>
                   update.mutateAsync({
                     opportunity: opportunity.id,
                     data: {
-                      title: edit.title.trim(),
-                      description: edit.description.trim() || null,
-                      source: edit.source.trim() || null,
                       expected_amount: String(edit.amount).trim() || null,
                       expected_currency_id: edit.currency ? Number(edit.currency) : null,
                       expected_close_on: edit.closeOn || null,

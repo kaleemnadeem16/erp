@@ -36,6 +36,8 @@ date) — `DateField` is date-only.
 | Block | File | Use it for |
 |---|---|---|
 | `ScreenTemplate` / `ScreenDesignProvider` | `components/page/screen-template.tsx` | Required shell for new list/detail/form pages. Central geometry/type/role styles; `variables` provides per-screen overrides, carried into shared portalled controls. `RecordSheet` accepts the same overrides for record sheets. See the [standard](erp-blue-design-standard.md). |
+| `FilterToggle` | `components/ui/filter-toggle.tsx` | An on/off list filter in the toolbar beside the dropdowns ("Mine", "Unassigned", "Needs attention"). Same height and border as a Select; when on it takes the active-chip look with a tick. Use it for filters; a checkbox is for choosing table rows or agreeing in a form. |
+| `BulkRunDialog` / `applyToEach` | `features/sales/bulk-run-dialog.tsx` | The confirmation for a bulk change where the backend has only a single-record endpoint: runs the change one record at a time, shows progress, then reports how many changed and which did not (with the server's reason) and retries just those. The caller supplies the inputs, which records are eligible and the request; used by the opportunity and enquiry bulk bars. |
 | `StatusBadge` | `components/ui/status-badge.tsx` | Labelled draft/pending/active/progress/success/danger visual roles; each domain maps its own states. Light/dark state colours are independent of the accent. |
 | `PageHeader` (+ `MobileFab`) | `components/page/page-header.tsx` | Title, breadcrumbs, actions; `primaryAction` becomes a FAB below `md`. |
 | `DetailPageLayout` / `DetailSection` / `DetailField` | `components/detail/` | Read-only record views: cards of label/value pairs. `DetailPageLayout` is a `@container` grid — short sections (a handful of fields) share a row from `@2xl` up instead of each stacking full-width; mark a section `fullWidth` (a table, a long-text-heavy section) to keep it on its own row. `DetailSection`'s own field grid stays viewport- (not container-) based, since the same component is also used standalone, at full width, inside every create/edit form. |
@@ -93,6 +95,8 @@ named switch; everything else is already wired.
 | Purchase order — detail | Side sheet (current) · full page | `presentation.purchaseOrderDetail` |
 | Purchase order — edit | Side-sheet wizard (current; the same steps as create, with free navigation) · full page | `presentation.purchaseOrderEdit` |
 | Opportunity — create | Side sheet over the pipeline list (current) · full page | `presentation.opportunityCreate` |
+| Opportunity — edit (the same form as create; Quick update is a small dialog for the follow-up only) | Side sheet (current) · full page | `presentation.opportunityEdit` |
+| Enquiry — create / detail | Side sheet over the enquiries list (current) · full page | `presentation.leadCreate`, `presentation.leadDetail` |
 | Opportunity — detail (edit, owner, close and reopen are dialogs over it) | Side sheet (current) · full page | `presentation.opportunityDetail` |
 | Document numbering — editor | Side sheet over the list (current; the child route `/settings/document-numbering/:type`) | — |
 | Date entry | `DateField` (current) · native `<input type="date">` via `Input` (still available; its Tab walks the browser's own segments) | swap the component at the call site |
