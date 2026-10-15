@@ -79,6 +79,17 @@ R6/R7 contracts actually delivered/verified. R8 approval changes neither capacit
 R7 target adapters, bounded reductions and Inventory/Phase5/Finance effects remain undelivered/gated;
 PDF/send/acknowledgement cannot substitute for handover receipt or actual fulfilment.
 
+## Cross-cutting ownership review — PROPOSED, planning Q50
+
+Before infrastructure coding, owner reviews the [shared Documents framework](../architecture/document-print-framework-review.md).
+Proposed split: DOC0–DOC3 common templates/manifests/renderer/archive/recovery in shared Documents,
+Sales customer projection/layout/issue/source semantics in quotation adapter; DOC4 reuses protected
+file mechanics while manual delivery stays Sales; DOC5 consent remains R6; DOC6 email and DOC7 portal/
+signature/localisation retain their own later contracts. One physical common archive, no duplicate
+Sales blob subsystem. Existing pseudo-DDL ownership is not silently rewritten before approval.
+R9 must settle shared configuration/recovery duties and domain file-access adapter responsibility,
+avoiding a duplicate global download permission. No accepted0133–0135 body or business rule changed.
+
 ## Related
 
 - [Accepted R8 review](phase-4-r8-documents-review.md) · [R9 initial matrix](phase-4-r9-authority-reporting-review.md)

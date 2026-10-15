@@ -165,6 +165,14 @@ access and original identity conflict; expose no hidden subject details. Direct 
 writes, fresh-key duplicate original, stale worker completion, tenant guessing, cross-worker crash
 and backup/restore consistency require meaningful implementation verification before enablement.
 
+## Proposed common infrastructure ownership — Q50, not an accepted schema change
+
+The [framework review](../architecture/document-print-framework-review.md) proposes shared template,
+manifest/generation/artefact/blob/recovery primitives with quotation-owned projection/issue/access
+adapters. Logical quotation prefixes above do not mandate a separate Sales PDF infrastructure.
+After owner approval refine physical ownership in slices once; do not create duplicate shared and
+Sales archives. Accepted0133–0135 guarantees and initial quotation A4 format remain unchanged.
+
 ## Related
 
 - [0133](../decisions/0133-freeze-customer-quotation-content-and-versioned-presentation.md)

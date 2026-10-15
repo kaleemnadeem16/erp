@@ -159,6 +159,18 @@ or implementation-ready grant migration is asserted by this initial proposal. La
 include real all-writer/scope inventory, migrations/ratchets/generated API/UI/demo and race evidence.
 R5/R6 partial-family restrictions, R7 downstream impact adapters and R8 email/portal/security gates stay.
 
+## Independent progress and shared framework dependency — proposed Q50
+
+Continue A4–A10 grants/limits/review/audit/partial-win/forecast work against accepted authority while
+[shared document ownership](../architecture/document-print-framework-review.md) is reviewed. A1/A3
+document/template/file rows remain proposals: recommend common template/page administration under
+shared Documents, authoritative company brand under Company, business download/evidence/read/send
+under owning modules. Framework delegates to tenant/subject/audience access adapters; no extra global
+download capability or file-read-all operator grant. Attachment storage/validation/recovery is shared,
+confidential evidence association and access remain module policy. A full original cannot be returned
+to a quantity-only reader merely because the blob exists. R9 finalisation/rollout manifest must resolve
+these boundaries; no new string/grant is accepted here. Limits and forecast require no renderer engine.
+
 ## Repository coordination note
 
 At start local develop b3dae82 was2 ahead/7 behind recorded origin/develop. Origin commit3e8a31a

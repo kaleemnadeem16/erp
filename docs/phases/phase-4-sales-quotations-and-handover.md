@@ -139,6 +139,8 @@ OPEN-QUESTIONS when a recorded question is resolved; journeys alongside eventual
 
 ## Related
 
+- [Shared Document & Print Framework owner proposal](../architecture/document-print-framework-review.md) — Q50; DOC/R9 ownership refinement proposed, no accepted cross-cutting ADR.
+
 - [R8 document/delivery slices](phase-4-r8-implementation-slices.md) · [R9 initial matrix](phase-4-r9-authority-reporting-review.md)
 
 - [R7 operational domain](../domain/sales-operational-handover.md) · [HA0–HA7 slices/gates](phase-4-r7-implementation-slices.md)

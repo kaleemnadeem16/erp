@@ -34,6 +34,7 @@ these choices were made, see [decisions/](../decisions/).
 | [capability-delivery-contract.md](capability-delivery-contract.md) | Baseline/enabled workflows, research, activation/downgrade and complete UI exposure | Designing or exposing a configurable capability |
 | [user-interface.md](user-interface.md) | UI research, interaction standards and phase screen ownership | Planning or building screens |
 | [ui-building-blocks.md](ui-building-blocks.md) | The reusable UI that exists, and the alternatives kept on purpose | Before building any control, layout or screen behaviour |
+| [document-print-framework-review.md](document-print-framework-review.md) | Proposed shared rendering/templates/artefacts with module adapters; Q50 owner review, no implementation | Before finalising R8 infrastructure ownership/R9 document duties |
 | [appearance-and-printing.md](appearance-and-printing.md) | Light/dark/theme tokens and Quick Print branding, both company/user-layered | Adding a colour, a theme, or touching print output |
 | [document-numbering.md](document-numbering.md) | The central numbering framework: series, versions, counters, routing, and how to make a document numbered | Adding a document that carries a number, or changing how numbers are issued |
 | [company-settings.md](company-settings.md) | The Company module: profile, company-wide settings, field registry, locks, history, how to add a field | Adding a company-wide setting, or reading the company's time zone/code |

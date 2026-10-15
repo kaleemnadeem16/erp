@@ -225,6 +225,26 @@ Forwarded coding questions retain Origin: IMPLEMENTATION AGENT and original word
 
 ---
 
+### Q50 — Shared Document & Print Framework ownership
+
+**Origin:** PLANNING RESEARCH (owner's cross-cutting review before R9 finalisation/implementation handoff).
+**Decision status:** OWNER_REVIEW — F1–F6 proposed; no accepted cross-cutting ADR.
+**Delivery status:** NOT_STARTED; no code or existing-print refactor authority.
+**Original question/context:** Avoid independent per-module PDF/print infrastructure; compare separate
+systems, generic PDF service and shared framework with module adapters. Define common renderer,
+templates/branding/pagination/A4-Letter, immutable artefacts where required, private security/recovery,
+module-specific business semantics, DOC0–DOC7 split, minimum foundation and R9 responsibilities.
+**Authority:**0010/0014/0079/0081/authorisation; accepted0133–0135 unchanged. No universal lifecycle.
+**Options/recommendation:** [Framework proposal F1–F6](architecture/document-print-framework-review.md)
+recommends shared infrastructure in modular monolith with per-type authorised typed adapters.
+**Blocks:** infrastructure ownership and related R9 template/file-duty finalisation before affected
+document coding handoff. Independent R9 limits/grants/forecast research continues.
+**Follow-up:** Owner approves/amends boundaries, then new cross-cutting ADR and explicit slice refinement;
+no number reserved. Existing0130 collision/divergence requires owner-coordinated reconciliation.
+Forwarded implementation questions retain original wording and Origin: IMPLEMENTATION AGENT.
+
+---
+
 ## Answered---
 
 ## Answered

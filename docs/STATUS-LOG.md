@@ -650,3 +650,28 @@ tests or in-flight implementation delivery files changed; no application checks 
 
 - [R8 slices](phases/phase-4-r8-implementation-slices.md)
 - [R9 initial owner matrix](phases/phase-4-r9-authority-reporting-review.md)
+
+
+## 2026-10-15 — Shared Document & Print Framework owner proposal
+
+Read-only inspection of clean local ee4b04b,3 ahead/7 behind recorded origin/develop. Reused
+appearance/printing, PO typed projection/template/A4 pagination, private filesystem configuration,
+Company0081, owning-Action boundaries and accepted R8 security/artefact/delivery architecture.
+Primary Frappe and Business Central comparison supports common infrastructure plus type adapters.
+Planning Q50/F1–F6 proposes one shared Documents renderer/template/page/manifest/artefact/file/recovery
+foundation, domain-owned snapshots/projections/lifecycle/retention/access, immutable resolved branding,
+DOC0–DOC7 shared-versus-Sales split and minimal quotation-first delivery. Shared A4/Letter capability
+does not silently change accepted quotation A4. R9 document/attachment/configuration duties need
+ownership refinement; independent limit/grant/forecast work remains possible, no R9 acceptance.
+
+No accepted cross-cutting ADR or number reservation;0133–0135 and all other accepted ADR bodies
+unchanged. No application code/refactor/test/migration/generated output/push or branch reconciliation.
+Existing0130 backup-versus-handover collision remains for owner/implementation coordination.
+Documentation links/whitespace/unchanged-ADR checks performed; no runtime capability VERIFIED.
+During review another actor moved shared HEAD to a31025d,3 ahead/0 behind, incorporating origin
+backup work. Both0130 files now coexist. Our documentation diff was rechecked against that HEAD;
+no branch/history reconciliation by this agent and no changes to the other actor's committed work.
+
+## Related — framework review
+
+- [Owner decision proposal](architecture/document-print-framework-review.md)
