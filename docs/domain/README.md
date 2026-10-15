@@ -113,7 +113,8 @@ Lead → Opportunity → Quotation (revisions) → Job → Work Order → Invoic
 | [sales-operational-handover.md](sales-operational-handover.md) | Accepted R7 operational allocations, targets, baselines and bounded corrections; specified, not delivered |
 | [sales-customer-decisions.md](sales-customer-decisions.md) | Accepted R6 consent, immutable commitments, evidence, capacities and customer-decision Action contracts |
 | [crm-corrections.md](crm-corrections.md) | Accepted intake, enquiry corrections and historical responsibility evidence (specified, not implemented) |
-| [job-costing.md](job-costing.md) | Jobs, work orders, timesheets, variance |
+| [job-execution-lifecycle.md](job-execution-lifecycle.md) | Accepted0145 Job/activity lifecycle, effective holds/termination and operational closeout; specified, not delivered |
+| [job-costing.md](job-costing.md) | Historical Job costing sketch; replaced assumptions and current lifecycle link |
 
 ### Finance
 

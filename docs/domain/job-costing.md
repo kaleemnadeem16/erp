@@ -2,6 +2,30 @@
 
 # Job Costing
 
+**Historical planning context.** The original sketch below is retained, not a current implementation
+contract. [ADR0145](../decisions/0145-separate-job-lifecycle-execution-and-operational-closeout.md)
+records owner-approved D1–D6; [Job lifecycle](job-execution-lifecycle.md) is the current bounded
+SPECIFIED contract. Jobs/receiver remain unimplemented and unverified.
+
+## Reconciliation with accepted R7 and0145
+
+| Historical assumption | Current governing interpretation |
+|---|---|
+| quotation_id/quotation_line alone define origin | R6 accepted component and R7 allocation/stage lineage govern; quote remains provenance |
+| One quotation implies one Job/customer/site/Assembly | No universal requirement; only supported applicable Job paths; disjoint allocations conserve capacity |
+| Job → generic Work Order for service | Job + lightweight activities; specialised production Work Orders remain future |
+| PLANNED/IN_PROGRESS/COMPLETED/CANCELLED fully describe status |0145 four states plus independent planning/assignment/hold/termination, completion versus closeout |
+| progress_pct or hours prove completion | Supported fulfilment evidence required; progress estimates remain informational |
+| Extra effort automatically becomes variation | Overrun, rework and additional agreed scope differ; no general repricing/increase |
+| Single estimate snapshot | Original quote/agreement/initial baseline/authorised successors/actuals remain distinct |
+| Unified actual-cost source attribution | Compatible direction, not approved detailed ledger schema/recognition design |
+| Employee timesheet/rates, unapproved costs, overhead and journals | Historical proposals; labour research and Finance/source contracts still required |
+
+No deployed Job schema was found to migrate. Future imports must establish truthful source/baseline
+lineage; no invented consent. No accepted ADR is superseded; historical assumptions yield to R7/0145.
+
+## Original historical sketch
+
 Execution and, more importantly, **estimated versus actual**. Variance reporting is the reason
 to build this system rather than a quoting tool.
 
@@ -22,7 +46,7 @@ an accepted scope need not imply an Assembly baseline or even a job. R7 must est
 estimate handover and fulfilment paths without fabricating estimates. Acceptance/preparation is not work authority, and ADR 0104 does not impose CustomerAccount at
 every confirmed handover. Phase 5 owns execution.
 
-[Initial R7 handover review](../phases/phase-4-r7-handover-research.md) is proposed under Q47.
+Historical note: R7 was pending when this sketch was written. It is now accepted in0131–0132/0136; Q47 is closed. [R7 review](../phases/phase-4-r7-handover-research.md).
 [Accepted R6 commitments](sales-customer-decisions.md) are independent of Job creation; original
 source/consent and baseline evidence cannot be rewritten by operational mapping or cancellation.
 The schema below remains historical planning, not an approved one-quote/one-Job contract.
@@ -140,6 +164,8 @@ estimate, not silently inflate actuals against the original. Without this, varia
 execution for what was actually a scope change.
 
 ## Related
+
+- [Current Job lifecycle](job-execution-lifecycle.md) · [Phase 5 plan](../phases/phase-5-job-execution.md)
 
 - [material-resolution.md](material-resolution.md) — standard/planned/actual material states and
   Phase 5 ownership

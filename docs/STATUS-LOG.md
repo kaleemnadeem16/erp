@@ -748,3 +748,17 @@ Owner-approved after a read-only audit and a comparison of ERPNext, Business Cen
 
 - [Implementation handoff](phases/phase-4-implementation-handoff.md) · [R9 slices](phases/phase-4-r9-implementation-slices.md)
 - [Duty matrix](domain/sales-duty-matrix.md) · [Rollout](phases/phase-4-r9-permission-rollout.md)
+
+## 2026-10-15 — Phase 5 lifecycle accepted; labour research submitted
+
+Owner-approved D1–D6 and clarifications recorded in0145: four Job states, independent
+assignment/planning/holds/termination, source-appropriate handover, truthful historical/hold
+evidence, controlled pre-close completion withdrawal and incomplete-valuation operational
+closeout with sources/reasons/owner/supported follow-up. Bounded lifecycle SPECIFIED with
+ownership/authority/transaction/idempotency and acceptance scenarios; historical Job Costing
+retained and replaced assumptions explicitly reconciled. No accepted R7/R9 conflict found.
+Phase5 roadmap now records research started. L1–L6 labour/resource/progress/recognition bundle
+is PROPOSED/Q51 awaiting owner; no labour choices accepted or implementation authorised.
+Preserved package prerequisite discrepancy/Q24,0040 correction linkage and0137 Documents.
+Docs-only work; no application tests/migrations/grants or push; no Job IMPLEMENTED/VERIFIED.
+Other agents' in-flight implementation/docs and status-log additions preserved.

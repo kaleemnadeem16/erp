@@ -12,7 +12,7 @@ Eight phases, each independently shippable. Current state is in
 | 2 | Purchasing & stock | **Complete** (closed 2026-10-08); the multi-owner correction package is carried to Phases 4–6 | [phase-2-purchasing-stock.md](phase-2-purchasing-stock.md) |
 | 3 | Estimating core | **Core complete** (closed 2026-10-08); adoption and enhancements deferred to Phase 4 / later | [phase-3-estimating-core.md](phase-3-estimating-core.md) |
 | 4 | Sales, quotations and job handover | Research/discussion; implementation not started | [Phase 4 plan](phase-4-sales-quotations-and-handover.md) |
-| 5 | Job execution | Not started | *expanded when reached* |
+| 5 | Job execution | Research in progress; lifecycle accepted0145/specified, no Job implementation | [Phase 5 plan](phase-5-job-execution.md) |
 | 6 | Finance | Not started | *expanded when reached* |
 | 7 | Mobile & integrations | Not started | *expanded when reached* |
 
@@ -136,6 +136,8 @@ delta touching it needs a Sales/COGS correction line — see
 → [sales-pipeline.md](../domain/sales-pipeline.md)
 
 ### Phase 5 — Job execution
+
+[Research plan](phase-5-job-execution.md): lifecycle0145 accepted/specified; [labour bundle](phase-5-labour-resource-research.md) proposed for owner review. No code authority.
 Jobs, work orders, material issue, timesheets, unified job cost entries, estimate-vs-actual
 variance reporting. This is where the system starts paying for itself.
 

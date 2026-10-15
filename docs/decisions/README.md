@@ -159,8 +159,9 @@ in the same commit.
 | [0142](0142-represent-stock-quantities-exactly-and-supersede-0050-increment-validation.md) | Represent stock quantities exactly; supersede ADR 0050's increment validation | accepted | 2026-10-15 |
 | [0143](0143-maintain-currency-minor-units-as-governed-reference-data.md) | Maintain currency minor units as governed reference data | accepted | 2026-10-15 |
 | [0144](0144-version-sales-unit-price-precision-within-four-place-storage.md) | Version Sales unit-price precision within four-place storage | accepted | 2026-10-15 |
+| [0145](0145-separate-job-lifecycle-execution-and-operational-closeout.md) | Separate Job lifecycle, execution and operational closeout | accepted | 2026-10-15 |
 
-**Next number: 0145**
+**Next number: 0146**
 
 Note: the R7 handover ADR was first drafted as a second 0130 and renumbered to 0136 on 2026-10-15; 0130 is the backup decision. Number is chosen after fetching, so drafts do not collide.
 

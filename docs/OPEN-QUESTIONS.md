@@ -33,6 +33,26 @@ Q1, Q2 and Q3 were resolved on 2026-08-10 — see
 
 ## Non-blocking
 
+### Q51 — Phase 5 labour, resource usage and recognition
+Origin: PLANNING RESEARCH
+Decision status: AWAITING_OWNER
+Delivery status: BLOCKED_AFFECTED_OPERATION; independent approved work continues
+Module/slice: Phase5 labour bundle L1–L6; implementation owner not assigned
+Context: research inspected local f09b2a9,2026-10-15; lifecycle0145 accepted, no labour actuals implementation.
+Original question: employee versus generic resource identity; recorded versus approved/recognised hours;
+rates/pinned evidence; plan versus usage; progress versus fulfilment; certainty; corrections/backdating;
+permissions/approval; one contribution to unified Job costing (owner's next-workstream request).
+Business example: one fixed-scope service visit planned2h, recorded3h; distinguish pending usage,
+recognised actual and unknown valuation without increasing accepted quantity.
+Authority checked:0145,0131–0132/0136,0138–0140,0110,0070,0141–0144; existing ResourceRate/resolver.
+Consequences / blocks: new authoritative labour recognition/rate adoption/correction/worker contract;
+no reopening of settled lifecycle/commercial rules or freeze of other agents' work.
+Options / trade-offs and recommendation / research: [L1–L6 bundle](phases/phase-5-labour-resource-research.md).
+Disposition needed: approve/revise worker identity, review/recognition default, adopted actual class rates,
+duration/progress capture, correction policy and operation authority. All recommendations PROPOSED.
+Follow-up: owner review, then ADR/specification for accepted choices; no code/grants authorised.
+
+
 <a id="q40--phase-4-r2-quotation-structure-and-scope"></a>
 Q40 resolved 2026-10-09 by [accepted ADR 0109](decisions/0109-shared-commercial-quotation-lines-and-optional-estimating.md).
 Bounded R2 business research is formally closed after owner review. This historical redirect
