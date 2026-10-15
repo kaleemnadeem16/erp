@@ -1,13 +1,14 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, ChevronUp, EllipsisVertical, Eye, Pencil, Search, SlidersHorizontal, X } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router';
-import type { PaginationState, SortingState } from '@tanstack/react-table';
+import type { PaginationState, RowSelectionState, SortingState } from '@tanstack/react-table';
 import { useCurrenciesIndex, useOpportunitiesIndex, usePartiesShow, useSalesOwnersIndex, type OpportunitiesIndexSort, type OpportunityResource } from '@erp/core-api';
 
-import { DataTable, isColumnVisibleByDefault, toTanStackColumns } from '../../components/data-table';
+import { DataTable, isColumnVisibleByDefault, selectionColumn, toTanStackColumns } from '../../components/data-table';
 import type { DataColumn } from '../../components/data-table/types';
 import { OwnerCombobox, PartyCombobox } from '../../components/lookups/entity-comboboxes';
 import { PageHeader } from '../../components/page/page-header';
+import { PrintLayout, PrintableTable, PrintTrigger, useQuickPrint } from '../../components/print';
 import { ScreenTemplate } from '../../components/page/screen-template';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -25,7 +26,11 @@ import { useColumnVisibilityPreference } from '../../lib/use-column-visibility-p
 import { useDebouncedSearch } from '../../lib/use-debounced-search';
 import { useListViewPreference } from '../../lib/use-view-preference';
 import { trimQty } from '../package-stock/quantity';
+import { OpportunityBulkBar } from './opportunity-bulk-actions';
 import { OUTCOME_LABEL, OutcomeBadge, SALES, useSalesStages } from './sales-common';
+
+/** Whether a day (ISO date) has passed — shown beside an open deal's expected close or next action so nothing quietly goes stale. */
+const isPast = (day: string | null | undefined) => Boolean(day) && (day as string) < new Date().toLocaleDateString('en-CA');
 
 interface Filters {
   search: string;
@@ -56,9 +61,12 @@ export function OpportunitiesListScreen() {
   const navigate = useNavigate();
   const { search } = useLocation();
   const mayCreate = usePermission(SALES.opportunity);
+  const mayAssign = usePermission(SALES.assign);
+  const mayClose = usePermission(SALES.close);
   const query = useListQueryState<Filters>({ defaultSort: '-created_at', defaultPerPage: 25 });
   const searchBox = useDebouncedSearch(query.filters.search, (value) => query.setFilter('search', value));
-  const { stages } = useSalesStages();
+  const { stages, active: activeStages, query: stagesQuery } = useSalesStages();
+  const owners = useSalesOwnersIndex();
   const currencies = useCurrenciesIndex({ per_page: 100, sort: 'code' });
   const currencyCode = useMemo(() => new Map((currencies.data?.status === 200 ? currencies.data.data.data : []).map((currency) => [currency.id, currency.code])), [currencies.data]);
   const outcome = query.filters.outcome ?? 'OPEN';
@@ -83,9 +91,15 @@ export function OpportunitiesListScreen() {
   const rows = list.data?.status === 200 ? list.data.data.data : [];
   const meta = list.data?.status === 200 ? list.data.data.meta : undefined;
 
+  // The pipeline grows with the company: one stage or one person to own deals needs no stage or owner columns, filters or bulk moves — they appear as soon as there is a choice.
+  const ownerCount = owners.data?.status === 200 ? owners.data.data.data.length : undefined;
+  const hasOwnerFacts = Boolean(query.filters.owner_id || query.filters.needs_attention || rows.some((row) => row.owner_needs_reassignment));
+  const usesOwners = ownerCount === undefined || ownerCount > 1 || hasOwnerFacts;
+  const usesStages = stagesQuery.isLoading || stages.length > 1 || Boolean(query.filters.stage_id);
+
   const open = (row: Row) => navigate({ pathname: `/opportunities/${row.id}`, search });
 
-  const columns = useMemo<DataColumn<Row>[]>(
+  const allColumns = useMemo<DataColumn<Row>[]>(
     () => [
       { key: 'number', header: 'Number', value: (row) => row.number ?? `#${row.id}`, cell: (row) => <span className="ui-order-link font-medium">{row.number ?? `#${row.id}`}</span>, sortable: true },
       { key: 'title', header: 'Opportunity', value: (row) => row.title, cardRole: 'title', sortable: true },
@@ -112,21 +126,57 @@ export function OpportunitiesListScreen() {
         align: 'right',
         value: (row) => (row.expected_amount ? `${trimQty(row.expected_amount)} ${currencyCode.get(row.expected_currency_id ?? 0) ?? ''}`.trim() : null),
       },
-      { key: 'close', header: 'Expected close', value: (row) => formatDate(row.expected_close_on), sortable: true, sortKey: 'expected_close_on' },
+      {
+        key: 'close',
+        header: 'Expected close',
+        value: (row) => formatDate(row.expected_close_on),
+        cell: (row) => (
+          <span className={row.outcome === 'OPEN' && isPast(row.expected_close_on) ? 'text-destructive' : undefined}>
+            {formatDate(row.expected_close_on) ?? '—'}
+            {row.outcome === 'OPEN' && isPast(row.expected_close_on) && <span className="ml-1 text-xs">overdue</span>}
+          </span>
+        ),
+        sortable: true,
+        sortKey: 'expected_close_on',
+      },
       {
         key: 'next',
         header: 'Next action',
         value: (row) => (row.next_action ? `${row.next_action}${row.next_action_on ? ` · ${formatDate(row.next_action_on)}` : ''}` : null),
+        cell: (row) => (
+          <span className={row.outcome === 'OPEN' && isPast(row.next_action_on) ? 'text-destructive' : undefined}>
+            {row.next_action ? `${row.next_action}${row.next_action_on ? ` · ${formatDate(row.next_action_on)}` : ''}` : '—'}
+            {row.outcome === 'OPEN' && isPast(row.next_action_on) && <span className="ml-1 text-xs">overdue</span>}
+          </span>
+        ),
         sortable: true,
         sortKey: 'next_action_on',
       },
+      // Optional columns: everything else the record carries, one toggle away in Columns.
+      { key: 'source', header: 'Source', value: (row) => row.source ?? null, screenVisible: false },
+      { key: 'enquiry', header: 'Came from an enquiry', value: (row) => (row.lead_id ? 'Yes' : 'No'), screenVisible: false },
+      { key: 'description', header: 'Description', value: (row) => row.description ?? null, screenVisible: false },
       { key: 'created', header: 'Created', value: (row) => formatDate(row.created_at), sortable: true, sortKey: 'created_at', screenVisible: false },
+      { key: 'updated', header: 'Last updated', value: (row) => formatDate(row.updated_at), screenVisible: false },
+      { key: 'closed', header: 'Closed on', value: (row) => formatDate(row.closed_at), screenVisible: false },
+      { key: 'closure', header: 'Closure reason', value: (row) => row.closure_reason ?? null, screenVisible: false },
       { key: 'outcome', header: 'Outcome', value: (row) => OUTCOME_LABEL[row.outcome] ?? row.outcome, cell: (row) => <OutcomeBadge outcome={row.outcome} />, filterable: true },
     ],
     [currencyCode],
   );
+  const columns = useMemo(() => allColumns.filter((column) => (column.key !== 'stage' || usesStages) && (column.key !== 'owner' || usesOwners)), [allColumns, usesStages, usesOwners]);
   const [columnVisibility, setColumnVisibility] = useColumnVisibilityPreference('opportunities-list', Object.fromEntries(columns.map((column) => [column.key, isColumnVisibleByDefault(column)])));
-  const tanStackColumns = useMemo(() => toTanStackColumns(columns), [columns]);
+  const tanStackColumns = useMemo(() => [selectionColumn<Row>(), ...toTanStackColumns(columns)], [columns]);
+  const printedColumns = columns.filter((column) => columnVisibility[column.key] !== false);
+
+  // Selection is the ticked rows of the page in view: it never outlives a change of page, sort or filter.
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const viewKey = JSON.stringify([query.filters, query.sort, query.page, query.perPage]);
+  useEffect(() => setRowSelection({}), [viewKey]);
+  const selectedRows = useMemo(() => rows.filter((row) => rowSelection[String(row.id)]), [rows, rowSelection]);
+
+  const { contentRef: printRef, print } = useQuickPrint({ documentTitle: 'Opportunities' });
+  const { contentRef: selectedPrintRef, print: printSelected } = useQuickPrint({ documentTitle: 'Opportunities (selected)' });
   const sorting: SortingState = apiSortToTableSorting(query.sort, columns);
   const pagination: PaginationState = { pageIndex: query.page - 1, pageSize: query.perPage };
 
@@ -148,6 +198,7 @@ export function OpportunitiesListScreen() {
   if (query.filters.mine === 'true') chips.push({ id: 'mine', label: 'Mine only', onRemove: () => query.setFilter('mine', undefined) });
   if (query.filters.needs_attention === 'true') chips.push({ id: 'attention', label: 'Needs a new owner', onRemove: () => query.setFilter('needs_attention', undefined) });
 
+  const filterMeta = chips.map((chip) => ({ label: 'Filter', value: chip.label }));
   const clearAll = () => query.setFilters({ search: undefined, outcome: undefined, stage_id: undefined, party_id: undefined, owner_id: undefined, mine: undefined, needs_attention: undefined });
   const clearAdvanced = () => query.setFilters({ party_id: undefined, owner_id: undefined });
 
@@ -236,9 +287,10 @@ export function OpportunitiesListScreen() {
           </div>
           <div className="hidden items-center gap-3 md:flex md:flex-wrap">
             {outcomeSelect('h-10 w-40')}
-            {stageSelect('h-10 w-44')}
-            {flag('mine', 'Mine', 'mine')}
-            {flag('attention', 'Needs a new owner', 'needs_attention')}
+            {usesStages && stageSelect('h-10 w-44')}
+            {usesOwners && flag('mine', 'Mine', 'mine')}
+            {usesOwners && flag('attention', 'Needs a new owner', 'needs_attention')}
+            <PrintTrigger onPrint={() => print()} className="h-10 px-4" />
             <Button
               variant={advancedOpen || advancedCount > 0 ? 'secondary' : 'outline'}
               size="sm"
@@ -251,6 +303,7 @@ export function OpportunitiesListScreen() {
               {advancedCount > 0 && <Badge className="ui-filter-badge absolute -right-2 -top-2 h-5 min-w-5 justify-center rounded-full px-1 text-[11px]">{advancedCount}</Badge>}
             </Button>
           </div>
+          <PrintTrigger onPrint={() => print()} label="" aria-label="Print" className="h-10 shrink-0 md:hidden" />
           <Button variant="outline" size="sm" className="h-10 shrink-0 md:hidden" onClick={() => setFiltersOpen(true)}>
             <SlidersHorizontal className="mr-1 h-4 w-4" aria-hidden="true" />
             Filters
@@ -279,7 +332,7 @@ export function OpportunitiesListScreen() {
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {partyFilter('adv')}
-              {ownerFilter('adv')}
+              {usesOwners && ownerFilter('adv')}
             </div>
           </div>
         </Collapse>
@@ -294,16 +347,20 @@ export function OpportunitiesListScreen() {
                 <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Outcome</Label>
                 {outcomeSelect('w-full')}
               </div>
-              <div className="space-y-1.5 border-t pt-3">
-                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Stage</Label>
-                {stageSelect('w-full')}
-              </div>
+              {usesStages && (
+                <div className="space-y-1.5 border-t pt-3">
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Stage</Label>
+                  {stageSelect('w-full')}
+                </div>
+              )}
               <div className="border-t pt-3">{partyFilter('mob')}</div>
-              <div className="border-t pt-3">{ownerFilter('mob')}</div>
-              <div className="flex flex-col gap-3 border-t pt-3">
-                {flag('mine-mobile', 'Mine', 'mine')}
-                {flag('attention-mobile', 'Needs a new owner', 'needs_attention')}
-              </div>
+              {usesOwners && <div className="border-t pt-3">{ownerFilter('mob')}</div>}
+              {usesOwners && (
+                <div className="flex flex-col gap-3 border-t pt-3">
+                  {flag('mine-mobile', 'Mine', 'mine')}
+                  {flag('attention-mobile', 'Needs a new owner', 'needs_attention')}
+                </div>
+              )}
             </div>
             <SheetFooter className="gap-2 sm:space-x-0">
               <Button
@@ -336,6 +393,23 @@ export function OpportunitiesListScreen() {
           </div>
         )}
 
+        {selectedRows.length > 0 && (
+          <OpportunityBulkBar
+            selected={selectedRows}
+            stages={activeStages}
+            showStage={usesStages}
+            showOwner={usesOwners}
+            mayManage={mayCreate}
+            mayAssign={mayAssign}
+            mayClose={mayClose}
+            onPrintSelected={() => printSelected()}
+            onClear={() => setRowSelection({})}
+            onChanged={async () => {
+              await list.refetch();
+            }}
+          />
+        )}
+
         <DataTable
           columns={tanStackColumns}
           data={rows}
@@ -353,6 +427,9 @@ export function OpportunitiesListScreen() {
           }}
           columnVisibility={columnVisibility}
           onColumnVisibilityChange={setColumnVisibility}
+          rowSelection={rowSelection}
+          onRowSelectionChange={setRowSelection}
+          getRowId={(row) => String(row.id)}
           onRowClick={open}
           isLoading={list.isLoading}
           isError={list.isError}
@@ -398,6 +475,31 @@ export function OpportunitiesListScreen() {
             </DropdownMenu>
           )}
         />
+
+        <div className="hidden">
+          <div ref={printRef}>
+            <PrintLayout
+              title="OPPORTUNITIES"
+              printedAt={new Date()}
+              recordCount={rows.length}
+              meta={[...filterMeta, { label: 'Page', value: `${rows.length} of ${meta?.total ?? rows.length} shown` }]}
+            >
+              <PrintableTable columns={printedColumns} rows={rows} getRowKey={(row) => row.id} />
+            </PrintLayout>
+          </div>
+        </div>
+        <div className="hidden">
+          <div ref={selectedPrintRef}>
+            <PrintLayout
+              title="OPPORTUNITIES (SELECTED)"
+              printedAt={new Date()}
+              recordCount={selectedRows.length}
+              meta={[{ label: 'Selection', value: `${selectedRows.length} selected opportunities` }]}
+            >
+              <PrintableTable columns={printedColumns} rows={selectedRows} getRowKey={(row) => row.id} />
+            </PrintLayout>
+          </div>
+        </div>
       </div>
     </ScreenTemplate>
   );

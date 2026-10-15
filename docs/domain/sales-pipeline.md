@@ -71,6 +71,22 @@ own/assigned/unit visibility is **not built**, so a person an administrator has 
 
 The demo data shows every state: a new unassigned enquiry, a qualified one that produced two deals, a disqualified one, a direct deal with a known value and next action, a lost deal, and a deal whose owner has left.
 
+**Opportunity screens — coverage against the backend** (the [screen delivery contract](../architecture/screen-delivery-contract.md) matrix; list, detail sheet and create sheet). Verified 2026-10-15 against `OpportunityResource`, the Store/Update/Index/Close/Reassign/Stage requests and routes.
+
+| Backend element | Where it appears | Notes |
+|---|---|---|
+| Filters `outcome`, `stage_id`, `owner_id`, `party_id`, `search`, `mine`, `needs_attention` | Beside search: outcome, stage, Mine, Needs a new owner. Advanced panel (phone: bottom sheet): trading partner, owner | Active chips with removal and Clear all; all in the URL |
+| Sorts `created_at`, `number`, `title`, `expected_close_on`, `next_action_on` | Column headers; *Created* is an optional column so its sort stays reachable | Direction shown on the header |
+| Resource facts | Default columns: number, title, for, stage, owner, value, expected close, next action, outcome. Optional columns: source, came from an enquiry, description, created, last updated, closed on, closure reason | Dates past due on an open deal read "overdue"; every fact is also on the detail (empty ones say "Not set") |
+| Actions: stage, reassign, close, reopen, notes, edit, attribution correction | Detail sheet (permission- and state-gated). Bulk, on the ticked rows of one page: change owner, move stage, close — each its own request, open deals only, closed ones counted and skipped, failures named and retryable | Reopen, notes, edit and the attribution correction stay single-record on purpose (each needs its own reason or evidence) |
+| Print | List (visible columns, filters recorded on the paper), selected rows, and the record with notes and history | Quick Print; a formal quotation document is R8 |
+| Update field `source` | Edit dialog and create form | |
+| `party_contact_id` (create and update) | **Not exposed**: the Parties API has no contact read or create endpoint, so a person could not choose or see a contact | Add with that API |
+| `WON` on close | Not offered: refused until customer acceptance (R6) | |
+| `lead` include on the index | Not available: the list endpoint allows only party, stage and owner | List shows a yes/no "came from an enquiry"; the detail links the enquiry |
+
+**Company size.** One stage needs no stage control, column or filter, and one possible owner needs no owner column, filter, "Mine" or change-owner action; all of them appear as soon as there is a choice (a second stage, a second active member, or a deal whose owner has left). No setting is involved — the pipeline simply grows with the company.
+
 **Deferred on purpose** (planning decisions or later topics): quotation association and the opportunity-requirement policy (ADR 0098's FLEXIBLE/MANAGED/STRICT setting has no effect without quotations), accepted business and partial win (R6), forecast and the disposition of remaining potential (ADRs 0101/0102, R9), restricted visibility (R9), notifications (Q33), automation, teams, campaigns.
 
 **The schema and behaviour sketch below are historical planning, not an accepted physical model.**

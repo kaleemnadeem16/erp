@@ -266,6 +266,64 @@ test('the pipeline list filters by partner and owner, shows removable chips and 
   await page.close();
 });
 
+async function createDeal(page: Page, title: string) {
+  await page.goto('/opportunities/new');
+  await page.getByLabel('Title').fill(title);
+  await pickParty(page, 'Metro', /Metro Engineering/);
+  await page.getByTestId('opportunity-save').click();
+  await expect(page).toHaveURL(/\/opportunities\/\d+/);
+}
+
+test('deals are ticked on the list and changed together, each by its own request, with a printed list and a printed record', async ({ browser }) => {
+  test.setTimeout(240_000);
+  const page = await as(browser, MANAGER);
+  const stamp = Date.now().toString(36);
+  await createDeal(page, `E2E bulk A ${stamp}`);
+  await createDeal(page, `E2E bulk B ${stamp}`);
+
+  // The record can be printed, and shows every fact it holds — including the ones that are not set.
+  await expect(page.getByTestId('opportunity-print')).toBeVisible();
+  const detail = page.getByTestId('opportunity-detail');
+  for (const label of ['Expected value', 'Expected close', 'Next action', 'Created', 'Last updated']) await expect(detail).toContainText(label);
+  await expect(detail).toContainText('Not set');
+
+  await page.goto(`/opportunities?filter.search=${stamp}`);
+  await expect(page.getByRole('row', { name: new RegExp(`E2E bulk A ${stamp}`) })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Print', exact: true }).first()).toBeVisible();
+  await expect(page.getByTestId('opportunity-bulk-bar')).toHaveCount(0);
+
+  // Ticking rows shows the bulk bar with a count; changing the filters drops the selection.
+  await page.getByRole('checkbox', { name: 'Select all' }).check();
+  const bar = page.getByTestId('opportunity-bulk-bar');
+  await expect(bar.getByTestId('bulk-count')).toHaveText('2 selected');
+  await expect(bar.getByRole('button', { name: 'Print selected' })).toBeVisible();
+  await page.getByRole('combobox', { name: 'Outcome' }).click();
+  await page.getByRole('option', { name: 'All outcomes' }).click();
+  await expect(bar).toHaveCount(0);
+
+  // Move both to another stage.
+  await page.getByRole('checkbox', { name: 'Select all' }).check();
+  await bar.getByTestId('bulk-stage').click();
+  const dialog = page.getByTestId('bulk-dialog');
+  await expect(dialog).toContainText('2 open opportunities');
+  await dialog.getByRole('combobox', { name: 'Stage' }).click();
+  await page.getByRole('option').last().click();
+  await dialog.getByTestId('bulk-confirm').click();
+  await expect(dialog.getByTestId('bulk-result')).toContainText('2 changed');
+  await dialog.getByRole('button', { name: 'Done' }).click();
+
+  // Close both with one reason; closed deals are then not offered a change.
+  await bar.getByTestId('bulk-close').click();
+  await expect(dialog.getByTestId('bulk-confirm')).toBeDisabled();
+  await dialog.getByLabel('Why?').fill('E2E bulk clean-up');
+  await dialog.getByTestId('bulk-confirm').click();
+  await expect(dialog.getByTestId('bulk-result')).toContainText('2 changed');
+  await dialog.getByRole('button', { name: 'Done' }).click();
+  await expect(page.getByRole('row', { name: new RegExp(`E2E bulk A ${stamp}`) })).toContainText('Lost');
+  await expect(bar.getByTestId('bulk-close')).toHaveCount(0);
+  await page.close();
+});
+
 test('the pipeline filters are in a bottom sheet on a phone', async ({ browser }) => {
   const page = await as(browser, MANAGER);
   await page.setViewportSize({ width: 390, height: 800 });

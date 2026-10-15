@@ -10,6 +10,7 @@ import {
   useOpportunitiesShow,
   useOpportunitiesStage,
   useOpportunitiesUpdate,
+  useSalesOwnersIndex,
   type OpportunityResource,
 } from '@erp/core-api';
 
@@ -17,6 +18,7 @@ import { DetailField } from '../../components/detail/detail-field';
 import { DetailPageLayout, DetailSection } from '../../components/detail/detail-page-layout';
 import { OwnerCombobox } from '../../components/lookups/entity-comboboxes';
 import { PageHeader } from '../../components/page/page-header';
+import { DetailPrintLayout, PrintTrigger, useQuickPrint, type DetailPrintSection } from '../../components/print';
 import { RecordSheet } from '../../components/page/record-sheet';
 import { ScreenTemplate } from '../../components/page/screen-template';
 import { Button } from '../../components/ui/button';
@@ -33,7 +35,10 @@ import { formatDate, formatDateTime } from '../../lib/format-date';
 import type { Presentation } from '../../lib/presentation';
 import { trimQty } from '../package-stock/quantity';
 import { AttributionCorrectionDialog, ResponsibilityRecord } from './opportunity-attribution';
-import { HistoryList, NotesList, OutcomeBadge, SALES, useSalesStages } from './sales-common';
+import { HistoryList, NotesList, OUTCOME_LABEL, OutcomeBadge, SALES, describeEvent, useSalesStages } from './sales-common';
+
+const isPast = (day: string | null | undefined) => Boolean(day) && (day as string) < new Date().toLocaleDateString('en-CA');
+const Overdue = () => <span className="ml-1 text-xs text-destructive">overdue</span>;
 
 type Mode = 'close' | 'reopen' | 'reassign' | 'edit' | 'attribution' | null;
 
@@ -48,7 +53,9 @@ export function OpportunityDetailScreen({ presentation = 'sheet' }: { presentati
   const mayClose = usePermission(SALES.close);
   const query = useOpportunitiesShow(id, { include: 'party,stage,lead,notes,history,attribution_corrections' });
   const opportunity = query.data?.status === 200 ? query.data.data.data : undefined;
-  const { active: stages } = useSalesStages();
+  const { stages: allStages, active: stages } = useSalesStages();
+  const owners = useSalesOwnersIndex(undefined, { query: { enabled: mayAssign } });
+  const { contentRef: printRef, print } = useQuickPrint({ documentTitle: 'Opportunity' });
   const currencies = useCurrenciesIndex({ per_page: 100, sort: 'code' });
   const currencyRows = currencies.data?.status === 200 ? currencies.data.data.data : [];
   // The list's row menu asks for the edit form to open straight away.
@@ -118,6 +125,12 @@ export function OpportunityDetailScreen({ presentation = 'sheet' }: { presentati
   }
 
   const open = opportunity.outcome === 'OPEN';
+  // Features follow the company's size: a single stage needs no stage control, and a single possible owner no owner change — until a flagged owner makes it necessary.
+  const usesStages = allStages.length > 1;
+  const ownerChoices = owners.data?.status === 200 ? owners.data.data.data.length : undefined;
+  const canChangeOwner = ownerChoices === undefined || ownerChoices > 1 || opportunity.owner_needs_reassignment;
+  const overdueClose = open && isPast(opportunity.expected_close_on);
+  const overdueNext = open && isPast(opportunity.next_action_on);
   const currency = currencyRows.find((row) => row.id === opportunity.expected_currency_id)?.code ?? '';
 
   const actions = (
@@ -127,7 +140,7 @@ export function OpportunityDetailScreen({ presentation = 'sheet' }: { presentati
           Edit
         </Button>
       )}
-      {open && mayAssign && (
+      {open && mayAssign && canChangeOwner && (
         <Button variant="outline" onClick={() => setMode('reassign')} data-testid="opportunity-reassign">
           Change owner
         </Button>
@@ -142,8 +155,46 @@ export function OpportunityDetailScreen({ presentation = 'sheet' }: { presentati
           Reopen
         </Button>
       )}
+      <PrintTrigger onPrint={() => print()} data-testid="opportunity-print" />
     </>
   );
+
+  const valueText = opportunity.expected_amount ? `${trimQty(opportunity.expected_amount)} ${currency}`.trim() : 'Not set';
+  const printSections: DetailPrintSection[] = [
+    {
+      title: 'Deal',
+      fields: [
+        { label: 'Outcome', value: OUTCOME_LABEL[opportunity.outcome] ?? opportunity.outcome },
+        { label: 'For', value: opportunity.party ? `${opportunity.party.name} (${opportunity.party.code})` : '—' },
+        { label: 'Owner', value: opportunity.owner_name ?? '—' },
+        ...(usesStages ? [{ label: 'Stage', value: opportunity.stage?.name ?? '—' }] : []),
+        { label: 'Expected value', value: valueText },
+        { label: 'Expected close', value: formatDate(opportunity.expected_close_on) ?? 'Not set' },
+        { label: 'Next action', value: opportunity.next_action ? `${opportunity.next_action}${opportunity.next_action_on ? ` · ${formatDate(opportunity.next_action_on)}` : ''}` : 'Not set' },
+        { label: 'Source', value: opportunity.source ?? '—' },
+        { label: 'From enquiry', value: opportunity.lead?.number ?? '—' },
+        { label: 'Description', value: opportunity.description ?? '—' },
+        ...(opportunity.closed_at ? [{ label: 'Closed', value: `${formatDateTime(opportunity.closed_at)} — ${opportunity.closure_reason ?? ''}` }] : []),
+        { label: 'Created', value: formatDateTime(opportunity.created_at) ?? '—' },
+        { label: 'Last updated', value: formatDateTime(opportunity.updated_at) ?? '—' },
+      ],
+    },
+    {
+      title: 'Notes',
+      fullWidth: true,
+      fields:
+        (opportunity.notes ?? []).length > 0
+          ? (opportunity.notes ?? []).map((item) => ({ label: `${item.author_name ?? 'Someone'} · ${formatDateTime(item.created_at)}`, value: item.body }))
+          : [{ label: 'Notes', value: 'No notes yet.' }],
+    },
+    {
+      title: 'History',
+      fullWidth: true,
+      fields: [...(opportunity.history ?? [])]
+        .reverse()
+        .map((event) => ({ label: `${formatDateTime(event.occurred_at)} · ${event.actor_name ?? 'Someone'}`, value: `${describeEvent(event)}${event.reason ? ` — “${event.reason}”` : ''}` })),
+    },
+  ];
 
   return present(
     <div className="space-y-4" data-testid="opportunity-detail">
@@ -166,40 +217,55 @@ export function OpportunityDetailScreen({ presentation = 'sheet' }: { presentati
           <DetailField label="Outcome">
             <OutcomeBadge outcome={opportunity.outcome} />
           </DetailField>
-          <DetailField label="For">{opportunity.party?.name}</DetailField>
+          <DetailField label="For">
+            {opportunity.party?.name}
+            {opportunity.party?.code && <span className="text-muted-foreground"> ({opportunity.party.code})</span>}
+          </DetailField>
           <DetailField label="Owner">{opportunity.owner_name}</DetailField>
-          <DetailField label="Stage">
-            {open && mayManage && stages.length > 0 ? (
-              <Select value={String(opportunity.stage_id)} onValueChange={(value) => void run(() => stage.mutateAsync({ opportunity: id, data: { stage_id: Number(value) } }))}>
-                <SelectTrigger className="h-9 w-48" aria-label="Stage" data-testid="stage-select">
-                  <SelectValue>{opportunity.stage?.name}</SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {stages.map((option) => (
-                    <SelectItem key={option.id} value={String(option.id)}>
-                      {option.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {usesStages && (
+            <DetailField label="Stage">
+              {open && mayManage && stages.length > 0 ? (
+                <Select value={String(opportunity.stage_id)} onValueChange={(value) => void run(() => stage.mutateAsync({ opportunity: id, data: { stage_id: Number(value) } }))}>
+                  <SelectTrigger className="h-9 w-48" aria-label="Stage" data-testid="stage-select">
+                    <SelectValue>{opportunity.stage?.name}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {stages.map((option) => (
+                      <SelectItem key={option.id} value={String(option.id)}>
+                        {option.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                opportunity.stage?.name
+              )}
+            </DetailField>
+          )}
+          <DetailField label="Expected value">
+            {opportunity.expected_amount ? <span data-testid="expected-value">{valueText}</span> : <span className="text-muted-foreground">Not set</span>}
+          </DetailField>
+          <DetailField label="Expected close">
+            {opportunity.expected_close_on ? formatDate(opportunity.expected_close_on) : <span className="text-muted-foreground">Not set</span>}
+            {overdueClose && <Overdue />}
+          </DetailField>
+          <DetailField label="Next action">
+            {opportunity.next_action ? (
+              <>
+                {opportunity.next_action}
+                {opportunity.next_action_on ? ` · ${formatDate(opportunity.next_action_on)}` : ''}
+                {overdueNext && <Overdue />}
+              </>
             ) : (
-              opportunity.stage?.name
+              <span className="text-muted-foreground">Not set</span>
             )}
           </DetailField>
-          {opportunity.expected_amount && (
-            <DetailField label="Expected value">
-              <span data-testid="expected-value">{`${trimQty(opportunity.expected_amount)} ${currency}`.trim()}</span>
-            </DetailField>
-          )}
-          {opportunity.expected_close_on && <DetailField label="Expected close">{formatDate(opportunity.expected_close_on)}</DetailField>}
-          {opportunity.next_action && (
-            <DetailField label="Next action">
-              {opportunity.next_action}
-              {opportunity.next_action_on ? ` · ${formatDate(opportunity.next_action_on)}` : ''}
-            </DetailField>
-          )}
           {opportunity.source && <DetailField label="Source">{opportunity.source}</DetailField>}
-          {opportunity.description && <DetailField label="Description">{opportunity.description}</DetailField>}
+          {opportunity.description && (
+            <DetailField label="Description" fullWidth>
+              <span className="whitespace-pre-wrap break-words">{opportunity.description}</span>
+            </DetailField>
+          )}
           {opportunity.lead && (
             <DetailField label="From enquiry">
               <Link className="text-primary hover:underline" to={`/leads/${opportunity.lead.id}`}>
@@ -245,7 +311,16 @@ export function OpportunityDetailScreen({ presentation = 'sheet' }: { presentati
             <HistoryList rows={[...(opportunity.history ?? [])].reverse()} />
           </div>
         </DetailSection>
+        <DetailSection title="Record">
+          <DetailField label="Created">{formatDateTime(opportunity.created_at)}</DetailField>
+          <DetailField label="Last updated">{formatDateTime(opportunity.updated_at)}</DetailField>
+        </DetailSection>
       </DetailPageLayout>
+      <div className="hidden">
+        <div ref={printRef}>
+          <DetailPrintLayout title="OPPORTUNITY" subtitle={`${opportunity.number ?? `#${opportunity.id}`} — ${opportunity.title}`} printedAt={new Date()} sections={printSections} />
+        </div>
+      </div>
       <AttributionCorrectionDialog
         opportunity={opportunity}
         open={mode === 'attribution'}
@@ -294,6 +369,7 @@ function ActionDialogs({
   const [edit, setEdit] = useState({
     title: opportunity.title,
     description: opportunity.description ?? '',
+    source: opportunity.source ?? '',
     amount: opportunity.expected_amount ?? '',
     currency: opportunity.expected_currency_id ? String(opportunity.expected_currency_id) : '',
     closeOn: opportunity.expected_close_on ?? '',
@@ -439,6 +515,10 @@ function ActionDialogs({
               <Input id="edit-title" value={edit.title} onChange={(event) => setEdit({ ...edit, title: event.target.value })} />
             </div>
             <div className="space-y-1 sm:col-span-2">
+              <Label htmlFor="edit-source">Source</Label>
+              <Input id="edit-source" value={edit.source} onChange={(event) => setEdit({ ...edit, source: event.target.value })} />
+            </div>
+            <div className="space-y-1 sm:col-span-2">
               <Label htmlFor="edit-description">Description</Label>
               <Textarea id="edit-description" rows={2} value={edit.description} onChange={(event) => setEdit({ ...edit, description: event.target.value })} />
             </div>
@@ -491,6 +571,7 @@ function ActionDialogs({
                     data: {
                       title: edit.title.trim(),
                       description: edit.description.trim() || null,
+                      source: edit.source.trim() || null,
                       expected_amount: String(edit.amount).trim() || null,
                       expected_currency_id: edit.currency ? Number(edit.currency) : null,
                       expected_close_on: edit.closeOn || null,
