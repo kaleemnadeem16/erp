@@ -43,6 +43,8 @@ import {
   ItemDetailScreen,
   ItemEditScreen,
   ItemQuantityUnitsListScreen,
+  PackConversionDetailScreen,
+  PackConversionFormScreen,
   ItemSupplierCreateScreen,
   ItemSupplierDetailScreen,
   ItemSupplierEditScreen,
@@ -115,6 +117,9 @@ const leadDetailAsSheet = presentation.leadDetail === "sheet";
 const stageCreateAsSheet = presentation.stageCreate === "sheet";
 const stageDetailAsSheet = presentation.stageDetail === "sheet";
 const stageEditAsSheet = presentation.stageEdit === "sheet";
+const packCreateAsSheet = presentation.packConversionCreate === "sheet";
+const packDetailAsSheet = presentation.packConversionDetail === "sheet";
+const packEditAsSheet = presentation.packConversionEdit === "sheet";
 const supplierEditAsSheet = presentation.supplierEdit === "sheet";
 const goodsReceiptCreateAsSheet = presentation.goodsReceiptCreate === "sheet";
 const goodsReceiptDetailAsSheet = presentation.goodsReceiptDetail === "sheet";
@@ -228,10 +233,51 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <ItemQuantityUnitsListScreen />
+                <Outlet />
               </AppShell>
             </ProtectedRoute>
           }
-        />
+        >
+          {packCreateAsSheet && <Route path="new" element={<PackConversionFormScreen presentation="sheet" />} />}
+          {packDetailAsSheet && <Route path=":id" element={<PackConversionDetailScreen presentation="sheet" />} />}
+          {packEditAsSheet && <Route path=":id/edit" element={<PackConversionFormScreen presentation="sheet" />} />}
+        </Route>
+        {!packCreateAsSheet && (
+          <Route
+            path="/item-quantity-units/new"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <PackConversionFormScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!packDetailAsSheet && (
+          <Route
+            path="/item-quantity-units/:id"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <PackConversionDetailScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!packEditAsSheet && (
+          <Route
+            path="/item-quantity-units/:id/edit"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <PackConversionFormScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
         <Route
           path="/warehouses"
           element={

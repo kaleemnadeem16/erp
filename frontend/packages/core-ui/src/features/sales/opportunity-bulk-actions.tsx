@@ -43,36 +43,51 @@ export function OpportunityBulkBar({
   onClear: () => void;
   onChanged: () => Promise<void> | void;
 }) {
-  const [kind, setKind] = useState<BulkKind | null>(null);
+  // The ticked rows are remembered when a dialog opens: a change can take them out of the current view (closing deals from the Open list), and the result must stay readable.
+  const [dialog, setDialog] = useState<{ kind: BulkKind; selected: Row[] } | null>(null);
   const eligible = selected.filter((row) => row.outcome === 'OPEN');
 
   return (
-    <div role="region" aria-label="Bulk actions" className="ui-bulk-bar flex flex-wrap items-center gap-3 rounded-md border bg-muted/40 px-3 py-2 text-sm" data-testid="opportunity-bulk-bar">
-      <span className="font-medium" data-testid="bulk-count">
-        {selected.length} selected
-      </span>
-      <PrintTrigger onPrint={onPrintSelected} label="Print selected" className="h-8" />
-      {showOwner && mayAssign && eligible.length > 0 && (
-        <Button variant="outline" size="sm" className="h-8" onClick={() => setKind('owner')} data-testid="bulk-owner">
-          Change owner…
-        </Button>
+    <>
+      {selected.length > 0 && (
+        <div role="region" aria-label="Bulk actions" className="ui-bulk-bar flex flex-wrap items-center gap-3 rounded-md border bg-muted/40 px-3 py-2 text-sm" data-testid="opportunity-bulk-bar">
+          <span className="font-medium" data-testid="bulk-count">
+            {selected.length} selected
+          </span>
+          <PrintTrigger onPrint={onPrintSelected} label="Print selected" className="h-8" />
+          {showOwner && mayAssign && eligible.length > 0 && (
+            <Button variant="outline" size="sm" className="h-8" onClick={() => setDialog({ kind: 'owner', selected })} data-testid="bulk-owner">
+              Change owner…
+            </Button>
+          )}
+          {showStage && mayManage && eligible.length > 0 && (
+            <Button variant="outline" size="sm" className="h-8" onClick={() => setDialog({ kind: 'stage', selected })} data-testid="bulk-stage">
+              Move stage…
+            </Button>
+          )}
+          {mayClose && eligible.length > 0 && (
+            <Button variant="outline" size="sm" className="h-8" onClick={() => setDialog({ kind: 'close', selected })} data-testid="bulk-close">
+              Close…
+            </Button>
+          )}
+          <Button variant="ghost" size="sm" className="h-8" onClick={onClear}>
+            Clear selection
+          </Button>
+        </div>
       )}
-      {showStage && mayManage && eligible.length > 0 && (
-        <Button variant="outline" size="sm" className="h-8" onClick={() => setKind('stage')} data-testid="bulk-stage">
-          Move stage…
-        </Button>
-      )}
-      {mayClose && eligible.length > 0 && (
-        <Button variant="outline" size="sm" className="h-8" onClick={() => setKind('close')} data-testid="bulk-close">
-          Close…
-        </Button>
-      )}
-      <Button variant="ghost" size="sm" className="h-8" onClick={onClear}>
-        Clear selection
-      </Button>
       {/* A fresh dialog (and so a fresh result) each time one is opened. */}
-      <OpportunityBulkDialog key={kind ?? 'none'} kind={kind} selected={selected} eligible={eligible} stages={stages} onClose={() => setKind(null)} onChanged={onChanged} />
-    </div>
+      {dialog && (
+        <OpportunityBulkDialog
+          key={dialog.kind}
+          kind={dialog.kind}
+          selected={dialog.selected}
+          eligible={dialog.selected.filter((row) => row.outcome === 'OPEN')}
+          stages={stages}
+          onClose={() => setDialog(null)}
+          onChanged={onChanged}
+        />
+      )}
+    </>
   );
 }
 

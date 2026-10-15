@@ -25,31 +25,45 @@ export function StageBulkBar({
   onClear: () => void;
   onChanged: () => Promise<void> | void;
 }) {
-  const [kind, setKind] = useState<BulkKind | null>(null);
+  // The ticked rows are remembered when a dialog opens: a change can take them out of the current view, and the result must stay readable.
+  const [dialog, setDialog] = useState<{ kind: BulkKind; selected: StageRow[] } | null>(null);
   const active = selected.filter((stage) => stage.status === 'ACTIVE');
   const archived = selected.filter((stage) => stage.status === 'ARCHIVED');
 
   return (
-    <div role="region" aria-label="Bulk actions" className="ui-bulk-bar flex flex-wrap items-center gap-3 rounded-md border bg-muted/40 px-3 py-2 text-sm" data-testid="stage-bulk-bar">
-      <span className="font-medium" data-testid="bulk-count">
-        {selected.length} selected
-      </span>
-      <PrintTrigger onPrint={onPrintSelected} label="Print selected" className="h-8" />
-      {mayManage && active.length > 0 && (
-        <Button variant="outline" size="sm" className="h-8" onClick={() => setKind('archive')} data-testid="bulk-archive">
-          Archive…
-        </Button>
+    <>
+      {selected.length > 0 && (
+        <div role="region" aria-label="Bulk actions" className="ui-bulk-bar flex flex-wrap items-center gap-3 rounded-md border bg-muted/40 px-3 py-2 text-sm" data-testid="stage-bulk-bar">
+          <span className="font-medium" data-testid="bulk-count">
+            {selected.length} selected
+          </span>
+          <PrintTrigger onPrint={onPrintSelected} label="Print selected" className="h-8" />
+          {mayManage && active.length > 0 && (
+            <Button variant="outline" size="sm" className="h-8" onClick={() => setDialog({ kind: 'archive', selected })} data-testid="bulk-archive">
+              Archive…
+            </Button>
+          )}
+          {mayManage && archived.length > 0 && (
+            <Button variant="outline" size="sm" className="h-8" onClick={() => setDialog({ kind: 'restore', selected })} data-testid="bulk-restore">
+              Restore…
+            </Button>
+          )}
+          <Button variant="ghost" size="sm" className="h-8" onClick={onClear}>
+            Clear selection
+          </Button>
+        </div>
       )}
-      {mayManage && archived.length > 0 && (
-        <Button variant="outline" size="sm" className="h-8" onClick={() => setKind('restore')} data-testid="bulk-restore">
-          Restore…
-        </Button>
+      {dialog && (
+        <StageBulkDialog
+          key={dialog.kind}
+          kind={dialog.kind}
+          selected={dialog.selected}
+          eligible={dialog.selected.filter((stage) => stage.status === (dialog.kind === 'archive' ? 'ACTIVE' : 'ARCHIVED'))}
+          onClose={() => setDialog(null)}
+          onChanged={onChanged}
+        />
       )}
-      <Button variant="ghost" size="sm" className="h-8" onClick={onClear}>
-        Clear selection
-      </Button>
-      {kind && <StageBulkDialog key={kind} kind={kind} selected={selected} eligible={kind === 'archive' ? active : archived} onClose={() => setKind(null)} onChanged={onChanged} />}
-    </div>
+    </>
   );
 }
 

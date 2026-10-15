@@ -74,6 +74,19 @@ identity lock — repointing an override is delete-and-recreate, not an update.
 `BuildPurchaseOrderLineAttributes` is the first real caller, replacing its previous direct call to
 the global service.
 
+**Pack conversion screens — coverage** (`ItemQuantityUnitResource`; routes index, store, show, update, destroy).
+
+| Backend element | Where it appears | Notes |
+|---|---|---|
+| Filter `item_id` | Item picker beside Print, as a chip with Clear all, in the URL | The endpoint has no text search, so the server-searched item picker is the primary filter |
+| Sort `created_at` | *Added* is an optional, sortable column | |
+| Resource facts | Default columns: item, pack unit, what it means ("1 drum = 200 L", from the pack unit and the item's stock unit), factor, rounding precision. Optional: added, last changed. The detail shows all of them ("Unrestricted" when there is no precision) | |
+| Create | Side panel: item, pack unit, factor, rounding precision | The (item, unit) pair is unique; the server's refusal is shown on the form |
+| Update `factor`, `quantity_precision` | Edit panel; the item and unit are shown as fixed text | Repointing is delete and re-add |
+| Delete (hard) | Row menu and panel, each with a confirmation; in bulk on the ticked rows, one request each, with the result kept on screen even when the rows leave the list | Posted lines keep the factor they snapshotted |
+| Print | List (visible columns and filter), selected rows, one conversion | Quick Print |
+| On an item | The Packaging tab keeps the item's own conversions in place, with add and edit in a dialog over the item | An item is itself a side panel, so no second panel is stacked on it |
+
 **An item-specific conversion may cross dimensions** (a roll is `COUNT`, its length is `LENGTH`;
 a sheet is `COUNT`, its area is `AREA`) — the one deliberate exception to this file's own
 same-dimension-only rule, scoped to that override table alone. This service's own refusal to

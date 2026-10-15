@@ -64,7 +64,7 @@ export function SalesStagesScreen() {
   const open = (stage: StageRow) => navigate({ pathname: `/sales-stages/${stage.id}`, search });
   const columns = useMemo<DataColumn<StageRow>[]>(
     () => [
-      { key: 'position', header: 'Order', align: 'right', value: (stage) => actions.indexOf(stage) + 1 },
+      { key: 'position', header: 'Order', value: (stage) => actions.indexOf(stage) + 1 },
       { key: 'name', header: 'Stage', value: (stage) => stage.name, cell: (stage) => <span className="ui-order-link font-medium">{stage.name}</span>, cardRole: 'title' },
       { key: 'code', header: 'Code', value: (stage) => stage.code, cardRole: 'subtitle' },
       {
@@ -74,7 +74,7 @@ export function SalesStagesScreen() {
         cell: (stage) => <StatusBadge tone={stage.status === 'ACTIVE' ? 'success' : 'draft'}>{STAGE_STATUS_LABEL[stage.status] ?? stage.status}</StatusBadge>,
         filterable: true,
       },
-      { key: 'sort', header: 'Sort value', align: 'right', value: (stage) => stage.sort_order, screenVisible: false },
+      { key: 'sort', header: 'Sort value', value: (stage) => stage.sort_order, screenVisible: false },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [stages],
@@ -170,17 +170,15 @@ export function SalesStagesScreen() {
           </div>
         )}
 
-        {selectedRows.length > 0 && (
-          <StageBulkBar
-            selected={selectedRows}
-            mayManage={mayManage}
-            onPrintSelected={() => printSelected()}
-            onClear={() => setRowSelection({})}
-            onChanged={async () => {
-              await stagesQuery.refetch();
-            }}
-          />
-        )}
+        <StageBulkBar
+          selected={selectedRows}
+          mayManage={mayManage}
+          onPrintSelected={() => printSelected()}
+          onClear={() => setRowSelection({})}
+          onChanged={async () => {
+            await stagesQuery.refetch();
+          }}
+        />
 
         <DataTable
           columns={tanStackColumns}

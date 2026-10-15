@@ -479,6 +479,25 @@ test('opening and closing a side panel leaves the list where it was; a real page
   await page.close();
 });
 
+test('a bulk change that takes the rows out of the current list still shows its result', async ({ browser }) => {
+  test.setTimeout(240_000);
+  const page = await as(browser, MANAGER);
+  const stamp = Date.now().toString(36);
+  await createDeal(page, `E2E vanish ${stamp}`);
+  // The default view lists open deals only, so closing this one removes it from view while the dialog is still open.
+  await page.goto(`/opportunities?filter.search=${stamp}`);
+  await page.getByRole('row', { name: new RegExp(`E2E vanish ${stamp}`) }).getByRole('checkbox').check();
+  await page.getByTestId('bulk-close').click();
+  const dialog = page.getByTestId('bulk-dialog');
+  await dialog.getByLabel('Why?').fill('E2E vanish clean-up');
+  await dialog.getByTestId('bulk-confirm').click();
+  await expect(dialog.getByTestId('bulk-result')).toContainText('1 changed');
+  await dialog.getByRole('button', { name: 'Done' }).click();
+  await expect(page.getByTestId('bulk-dialog')).toHaveCount(0);
+  await expect(page.getByRole('row', { name: new RegExp(`E2E vanish ${stamp}`) })).toHaveCount(0);
+  await page.close();
+});
+
 test('the pipeline filters are in a bottom sheet on a phone', async ({ browser }) => {
   const page = await as(browser, MANAGER);
   await page.setViewportSize({ width: 390, height: 800 });

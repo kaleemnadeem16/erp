@@ -21,6 +21,15 @@ const NOUN: Record<BulkKind, [string, string]> = {
   revive: ['disqualified enquiry', 'disqualified enquiries'],
 };
 
+/** The ticked enquiries an action applies to: qualify the new ones, revive the disqualified ones, and so on. */
+function eligibleOf(kind: BulkKind, selected: Row[]): Row[] {
+  if (kind === 'qualify') return selected.filter((row) => row.status === 'NEW');
+  if (kind === 'disqualify') return selected.filter((row) => row.status !== 'DISQUALIFIED');
+  if (kind === 'revive') return selected.filter((row) => row.status === 'DISQUALIFIED');
+
+  return selected;
+}
+
 /**
  * What can be done to the enquiries ticked on the current page. Each action applies only to the enquiries it makes sense for (qualify: new ones; revive: disqualified ones) and
  * the rest are counted and left out. Each needs its own duty, exactly as on a single enquiry; the server still decides every one.
@@ -42,36 +51,43 @@ export function LeadBulkBar({
   onClear: () => void;
   onChanged: () => Promise<void> | void;
 }) {
-  const [kind, setKind] = useState<BulkKind | null>(null);
+  // The ticked rows are remembered when a dialog opens: a change can take them out of the current view, and the result must stay readable.
+  const [dialog, setDialog] = useState<{ kind: BulkKind; selected: Row[] } | null>(null);
   const eligibleFor: Record<BulkKind, Row[]> = {
-    assign: selected,
-    qualify: selected.filter((row) => row.status === 'NEW'),
-    disqualify: selected.filter((row) => row.status !== 'DISQUALIFIED'),
-    revive: selected.filter((row) => row.status === 'DISQUALIFIED'),
+    assign: eligibleOf('assign', selected),
+    qualify: eligibleOf('qualify', selected),
+    disqualify: eligibleOf('disqualify', selected),
+    revive: eligibleOf('revive', selected),
   };
   const action = (target: BulkKind, text: string, allowed: boolean) =>
     allowed &&
     eligibleFor[target].length > 0 && (
-      <Button variant="outline" size="sm" className="h-8" onClick={() => setKind(target)} data-testid={`bulk-${target}`}>
+      <Button variant="outline" size="sm" className="h-8" onClick={() => setDialog({ kind: target, selected })} data-testid={`bulk-${target}`}>
         {text}
       </Button>
     );
 
   return (
-    <div role="region" aria-label="Bulk actions" className="ui-bulk-bar flex flex-wrap items-center gap-3 rounded-md border bg-muted/40 px-3 py-2 text-sm" data-testid="lead-bulk-bar">
-      <span className="font-medium" data-testid="bulk-count">
-        {selected.length} selected
-      </span>
-      <PrintTrigger onPrint={onPrintSelected} label="Print selected" className="h-8" />
-      {action('assign', 'Assign…', showOwner && mayAssign)}
-      {action('qualify', 'Qualify…', mayManage)}
-      {action('disqualify', 'Disqualify…', mayManage)}
-      {action('revive', 'Revive…', mayManage)}
-      <Button variant="ghost" size="sm" className="h-8" onClick={onClear}>
-        Clear selection
-      </Button>
-      {kind && <LeadBulkDialog key={kind} kind={kind} selected={selected} eligible={eligibleFor[kind]} onClose={() => setKind(null)} onChanged={onChanged} />}
-    </div>
+    <>
+      {selected.length > 0 && (
+        <div role="region" aria-label="Bulk actions" className="ui-bulk-bar flex flex-wrap items-center gap-3 rounded-md border bg-muted/40 px-3 py-2 text-sm" data-testid="lead-bulk-bar">
+          <span className="font-medium" data-testid="bulk-count">
+            {selected.length} selected
+          </span>
+          <PrintTrigger onPrint={onPrintSelected} label="Print selected" className="h-8" />
+          {action('assign', 'Assign…', showOwner && mayAssign)}
+          {action('qualify', 'Qualify…', mayManage)}
+          {action('disqualify', 'Disqualify…', mayManage)}
+          {action('revive', 'Revive…', mayManage)}
+          <Button variant="ghost" size="sm" className="h-8" onClick={onClear}>
+            Clear selection
+          </Button>
+        </div>
+      )}
+      {dialog && (
+        <LeadBulkDialog key={dialog.kind} kind={dialog.kind} selected={dialog.selected} eligible={eligibleOf(dialog.kind, dialog.selected)} onClose={() => setDialog(null)} onChanged={onChanged} />
+      )}
+    </>
   );
 }
 

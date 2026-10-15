@@ -36,6 +36,9 @@ export const presentation: {
   stageCreate: Presentation;
   stageDetail: Presentation;
   stageEdit: Presentation;
+  packConversionCreate: Presentation;
+  packConversionDetail: Presentation;
+  packConversionEdit: Presentation;
 } = {
   purchaseOrderCreate: "sheet",
   purchaseOrderDetail: "sheet",
@@ -66,6 +69,9 @@ export const presentation: {
   stageCreate: "sheet",
   stageDetail: "sheet",
   stageEdit: "sheet",
+  packConversionCreate: "sheet",
+  packConversionDetail: "sheet",
+  packConversionEdit: "sheet",
 };
 
 /**

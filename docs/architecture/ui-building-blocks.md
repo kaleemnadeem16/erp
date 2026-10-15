@@ -96,6 +96,7 @@ named switch; everything else is already wired.
 | Purchase order — edit | Side-sheet wizard (current; the same steps as create, with free navigation) · full page | `presentation.purchaseOrderEdit` |
 | Opportunity — create | Side sheet over the pipeline list (current) · full page | `presentation.opportunityCreate` |
 | Opportunity — edit (the same form as create; Quick update is a small dialog for the follow-up only) | Side sheet (current) · full page | `presentation.opportunityEdit` |
+| Pack conversion — create / detail / edit | Side sheet over the Pack conversions list (current) · full page. On an item the same form opens in a dialog | `presentation.packConversionCreate`, `presentation.packConversionDetail`, `presentation.packConversionEdit` |
 | Pipeline stage — create / detail / rename | Side sheet over the stages list (current) · full page | `presentation.stageCreate`, `presentation.stageDetail`, `presentation.stageEdit` |
 | Enquiry — create / detail | Side sheet over the enquiries list (current) · full page | `presentation.leadCreate`, `presentation.leadDetail` |
 | Opportunity — detail (edit, owner, close and reopen are dialogs over it) | Side sheet (current) · full page | `presentation.opportunityDetail` |

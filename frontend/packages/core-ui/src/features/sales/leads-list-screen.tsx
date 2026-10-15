@@ -294,19 +294,17 @@ export function LeadsListScreen() {
           </div>
         )}
 
-        {selectedRows.length > 0 && (
-          <LeadBulkBar
-            selected={selectedRows}
-            showOwner={usesOwners}
-            mayManage={mayCreate}
-            mayAssign={mayAssign}
-            onPrintSelected={() => printSelected()}
-            onClear={() => setRowSelection({})}
-            onChanged={async () => {
-              await list.refetch();
-            }}
-          />
-        )}
+        <LeadBulkBar
+          selected={selectedRows}
+          showOwner={usesOwners}
+          mayManage={mayCreate}
+          mayAssign={mayAssign}
+          onPrintSelected={() => printSelected()}
+          onClear={() => setRowSelection({})}
+          onChanged={async () => {
+            await list.refetch();
+          }}
+        />
 
         <DataTable
           columns={tanStackColumns}

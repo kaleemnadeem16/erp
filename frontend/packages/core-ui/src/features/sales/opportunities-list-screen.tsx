@@ -390,22 +390,20 @@ export function OpportunitiesListScreen() {
           </div>
         )}
 
-        {selectedRows.length > 0 && (
-          <OpportunityBulkBar
-            selected={selectedRows}
-            stages={activeStages}
-            showStage={usesStages}
-            showOwner={usesOwners}
-            mayManage={mayCreate}
-            mayAssign={mayAssign}
-            mayClose={mayClose}
-            onPrintSelected={() => printSelected()}
-            onClear={() => setRowSelection({})}
-            onChanged={async () => {
-              await list.refetch();
-            }}
-          />
-        )}
+        <OpportunityBulkBar
+          selected={selectedRows}
+          stages={activeStages}
+          showStage={usesStages}
+          showOwner={usesOwners}
+          mayManage={mayCreate}
+          mayAssign={mayAssign}
+          mayClose={mayClose}
+          onPrintSelected={() => printSelected()}
+          onClear={() => setRowSelection({})}
+          onChanged={async () => {
+            await list.refetch();
+          }}
+        />
 
         <DataTable
           columns={tanStackColumns}

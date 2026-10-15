@@ -1,42 +1,28 @@
-import { useMemo, useState } from 'react';
-import { ItemCombobox } from '../../components/lookups/entity-comboboxes';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Pencil, Trash2, X } from 'lucide-react';
-import type { SortingState } from '@tanstack/react-table';
-import {
-  useItemQuantityUnitsDestroy,
-  useItemQuantityUnitsIndex,
-  useItemQuantityUnitsStore,
-  useItemQuantityUnitsUpdate,
-  useUomsIndex,
-  type ItemQuantityUnitResource,
-} from '@erp/core-api';
-import { PageHeader } from '../../components/page/page-header';
-import { DataTable, toTanStackColumns } from '../../components/data-table';
-import { Button } from '../../components/ui/button';
-import { Input } from '../../components/ui/input';
-import { Tooltip, TooltipContent, TooltipTrigger } from '../../components/ui/tooltip';
-import { Combobox } from '../../components/ui/combobox';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../components/ui/form';
-import { DetailSection } from '../../components/detail/detail-page-layout';
-import { applyApiErrorsToForm, getApiErrorMessage, lookupState } from '../../lib/api-errors';
-import { apiSortToTableSorting, tableSortingToApiSort, useListQueryState } from '../../lib/list-query-state';
-import { cn } from '../../lib/utils';
-import { usePermission } from '../../hooks/use-permission';
-import { itemQuantityUnitColumns } from './item-quantity-units-columns';
+import { useEffect, useMemo, useState } from 'react';
+import { EllipsisVertical, Eye, Pencil, Plus, Trash2, X } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router';
+import type { PaginationState, RowSelectionState, SortingState } from '@tanstack/react-table';
+import { useItemQuantityUnitsIndex, useItemsShow } from '@erp/core-api';
 
-const DECIMAL = /^\d{1,10}(\.\d{1,9})?$/;
-const schema = z.object({
-  item_id: z.string().min(1, 'Item is required'),
-  uom_id: z.string().min(1, 'Pack unit is required'),
-  factor: z.string().refine((v) => DECIMAL.test(v) && Number(v) > 0, 'Enter a factor greater than 0'),
-  quantity_precision: z.string().refine((v) => !v || (DECIMAL.test(v) && Number(v) > 0), 'Enter a positive precision'),
-});
-type FormValues = z.infer<typeof schema>;
-const FORM_FIELDS = ['item_id', 'uom_id', 'factor', 'quantity_precision'] as const;
-const EMPTY_VALUES: FormValues = { item_id: '', uom_id: '', factor: '', quantity_precision: '' };
+import { DataTable, isColumnVisibleByDefault, selectionColumn, toTanStackColumns } from '../../components/data-table';
+import { ItemCombobox } from '../../components/lookups/entity-comboboxes';
+import { PageHeader } from '../../components/page/page-header';
+import { ScreenTemplate } from '../../components/page/screen-template';
+import { PrintLayout, PrintableTable, PrintTrigger, useQuickPrint } from '../../components/print';
+import { Badge } from '../../components/ui/badge';
+import { Button } from '../../components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '../../components/ui/dropdown-menu';
+import { Label } from '../../components/ui/label';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../../components/ui/tooltip';
+import { usePermission } from '../../hooks/use-permission';
+import { getApiErrorMessage } from '../../lib/api-errors';
+import { apiSortToTableSorting, tableSortingToApiSort, useListQueryState } from '../../lib/list-query-state';
+import { useColumnVisibilityPreference } from '../../lib/use-column-visibility-preference';
+import { useListViewPreference } from '../../lib/use-view-preference';
+import { itemQuantityUnitColumns } from './item-quantity-units-columns';
+import { PackConversionBulkBar } from './pack-conversion-bulk-actions';
+import { PackConversionDeleteDialog, PackConversionEditor, usePackUoms, type PackRow } from './pack-conversion-common';
 
 interface Filters {
   item_id: string;
@@ -44,18 +30,22 @@ interface Filters {
 }
 
 /**
- * ADR 0050's per-(item, UoM) pack conversion override — "1 pack unit =
- * factor × the item's own stock UoM," may cross UoM dimension. The (item,
- * UoM) pair is create-only, matching ItemSupplier's identity lock: editing
- * an existing row only ever changes factor/quantity_precision, never which
- * item or unit it's about.
+ * ADR 0050's per-(item, UoM) pack conversion override — "1 pack unit = factor × the item's own stock UoM," may cross UoM dimension. The (item, UoM) pair is create-only:
+ * editing a conversion only ever changes its factor and rounding. On the Pack conversions screen it is a list with side panels; on an item (`itemId`) the same conversions
+ * are managed in place, with the form in a dialog.
  */
 export function ItemQuantityUnitsListScreen({ itemId, stockUnit }: { itemId?: number; stockUnit?: string } = {}) {
+  return itemId ? <ItemPackConversions itemId={itemId} stockUnit={stockUnit} /> : <PackConversionsScreen />;
+}
+
+function PackConversionsScreen() {
+  const navigate = useNavigate();
+  const { search } = useLocation();
   const mayManage = usePermission('inventory.item.manage');
-  const emptyValues = { ...EMPTY_VALUES, item_id: itemId ? String(itemId) : '' };
-  const query = useListQueryState<Filters>({ defaultSort: '-created_at' });
+  const query = useListQueryState<Filters>({ defaultSort: '-created_at', defaultPerPage: 25 });
+  const { view, setView } = useListViewPreference('pack-conversions');
   const result = useItemQuantityUnitsIndex({
-    'filter[item_id]': itemId ?? (query.filters.item_id ? Number(query.filters.item_id) : undefined),
+    'filter[item_id]': query.filters.item_id ? Number(query.filters.item_id) : undefined,
     include: 'item,uom',
     sort: query.sort as 'created_at' | '-created_at' | undefined,
     per_page: query.perPage,
@@ -63,233 +53,286 @@ export function ItemQuantityUnitsListScreen({ itemId, stockUnit }: { itemId?: nu
   });
   const rows = result.data?.status === 200 ? result.data.data.data : [];
   const total = result.data?.status === 200 ? result.data.data.meta.total : 0;
-  const columns = useMemo(() => toTanStackColumns(itemQuantityUnitColumns), []);
-  const sorting: SortingState = apiSortToTableSorting(query.sort, itemQuantityUnitColumns);
+  const uoms = usePackUoms(rows);
+  const filteredItem = useItemsShow(Number(query.filters.item_id), undefined, { query: { enabled: Boolean(query.filters.item_id) } });
+  const itemName = filteredItem.data?.status === 200 ? `${filteredItem.data.data.data.code} — ${filteredItem.data.data.data.name}` : undefined;
+  const [deleting, setDeleting] = useState<PackRow | null>(null);
 
-  const uomsResult = useUomsIndex({ per_page: 100, sort: 'name' });
-  const uoms = uomsResult.data?.status === 200 ? uomsResult.data.data.data : [];
+  const columns = useMemo(() => itemQuantityUnitColumns(uoms), [uoms]);
+  const [columnVisibility, setColumnVisibility] = useColumnVisibilityPreference('pack-conversions', Object.fromEntries(columns.map((column) => [column.key, isColumnVisibleByDefault(column)])));
+  const tanStackColumns = useMemo(() => [selectionColumn<PackRow>(), ...toTanStackColumns(columns)], [columns]);
+  const printedColumns = columns.filter((column) => columnVisibility[column.key] !== false);
+  const sorting: SortingState = apiSortToTableSorting(query.sort, columns);
+  const pagination: PaginationState = { pageIndex: query.page - 1, pageSize: query.perPage };
 
-  const storeMutation = useItemQuantityUnitsStore();
-  const updateMutation = useItemQuantityUnitsUpdate();
-  const deleteMutation = useItemQuantityUnitsDestroy();
-  const [formError, setFormError] = useState<string | null>(null);
-  const [editing, setEditing] = useState<ItemQuantityUnitResource | null>(null);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const viewKey = JSON.stringify([query.filters, query.sort, query.page, query.perPage]);
+  useEffect(() => setRowSelection({}), [viewKey]);
+  const selectedRows = useMemo(() => rows.filter((row) => rowSelection[String(row.id)]), [rows, rowSelection]);
+  const { contentRef: printRef, print } = useQuickPrint({ documentTitle: 'Pack conversions' });
+  const { contentRef: selectedPrintRef, print: printSelected } = useQuickPrint({ documentTitle: 'Pack conversions (selected)' });
 
-  const form = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: emptyValues });
-
-  function startEdit(row: ItemQuantityUnitResource) {
-    setFormError(null);
-    setEditing(row);
-    form.reset({
-      item_id: String(row.item_id),
-      uom_id: String(row.uom_id),
-      factor: row.factor,
-      quantity_precision: row.quantity_precision ?? '',
-    });
-  }
-
-  function cancelEdit() {
-    setFormError(null);
-    setEditing(null);
-    form.reset(emptyValues);
-  }
-
-  function submit(values: FormValues) {
-    setFormError(null);
-    const data = {
-      factor: values.factor.trim(),
-      quantity_precision: values.quantity_precision.trim() || null,
-    };
-    if (editing) {
-      updateMutation.mutate(
-        { itemQuantityUnit: editing.id, data },
-        {
-          onSuccess: () => {
-            cancelEdit();
-            void result.refetch();
-          },
-          onError: (e) => setFormError(applyApiErrorsToForm(e, form.setError, FORM_FIELDS)),
-        }
-      );
-      return;
-    }
-    storeMutation.mutate(
-      { data: { item_id: Number(values.item_id), uom_id: Number(values.uom_id), ...data } },
-      {
-        onSuccess: () => {
-          form.reset({ ...EMPTY_VALUES, item_id: values.item_id });
-          void result.refetch();
-        },
-        onError: (e) => setFormError(applyApiErrorsToForm(e, form.setError, FORM_FIELDS)),
-      }
-    );
-  }
-
-  function renderRowActions(row: ItemQuantityUnitResource) {
-    return (
-      <>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Edit" onClick={() => startEdit(row)}>
-              <Pencil className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Edit</TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              aria-label="Delete"
-              onClick={() =>
-                deleteMutation.mutate(
-                  { itemQuantityUnit: row.id },
-                  {
-                    onSuccess: () => {
-                      if (editing?.id === row.id) cancelEdit();
-                      void result.refetch();
-                    },
-                  }
-                )
-              }
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Delete</TooltipContent>
-        </Tooltip>
-      </>
-    );
-  }
+  const open = (row: PackRow) => navigate({ pathname: `/item-quantity-units/${row.id}`, search });
+  const filterMeta = query.filters.item_id ? [{ label: 'Filter', value: `Item: ${itemName ?? `#${query.filters.item_id}`}` }] : [];
 
   return (
-    <div className={itemId ? "space-y-4" : "space-y-4 p-4 pb-24 md:p-6"}>
-      {!itemId && <PageHeader
-        title="Pack conversions"
-        description="An item's own alternate/pack unit factor (a box of eaches, a roll priced by the metre) — resolved before the global unit-of-measure conversion. Item and pack unit are fixed once created; delete and re-add to change either."
-      />}
+    <ScreenTemplate kind="list" className="erp-screen pb-24">
+      <div className="space-y-4" data-testid="pack-conversions-list">
+        <PageHeader
+          title="Pack conversions"
+          description="An item's own alternate/pack unit factor (a box of eaches, a roll priced by the metre) — resolved before the global unit-of-measure conversion. Item and pack unit are fixed once created."
+          primaryAction={mayManage ? { label: 'New pack conversion', onClick: () => navigate({ pathname: '/item-quantity-units/new', search }) } : undefined}
+        />
 
-      {!itemId && <div className="flex flex-wrap items-center gap-2">
-        <ItemCombobox label="Filter by item" placeholder="All items" allLabel="All items" className="h-9 w-64" value={query.filters.item_id ?? 'all'} onValueChange={(v) => query.setFilter('item_id', v === 'all' ? undefined : v)} />
-      </div>}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="min-w-0 flex-1 md:w-80 md:flex-none">
+            <Label htmlFor="pack-filter-item" className="sr-only">
+              Filter by item
+            </Label>
+            <ItemCombobox
+              id="pack-filter-item"
+              label="Filter by item"
+              placeholder="All items"
+              allLabel="All items"
+              className="h-10 w-full md:w-80"
+              value={query.filters.item_id ?? 'all'}
+              onValueChange={(value) => query.setFilter('item_id', value === 'all' ? undefined : value)}
+            />
+          </div>
+          <PrintTrigger onPrint={() => print()} className="hidden h-10 px-4 md:inline-flex" />
+          <PrintTrigger onPrint={() => print()} label="" aria-label="Print" className="h-10 shrink-0 md:hidden" />
+        </div>
 
-      {mayManage && <DetailSection
-        title={editing ? `Edit pack conversion — ${editing.item ? editing.item.code : editing.item_id}` : 'Add a pack conversion'}
-      >
-        {formError && (
-          <div className="sm:col-span-2 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-            {formError}
+        {query.filters.item_id && (
+          <div className="flex flex-wrap items-center gap-1.5 pt-1" data-testid="active-filters">
+            <Badge variant="secondary" className="ui-chip-active h-7 gap-1 px-2.5 text-xs font-normal">
+              Item: {itemName ?? `#${query.filters.item_id}`}
+              <button
+                type="button"
+                onClick={() => query.setFilter('item_id', undefined)}
+                className="rounded-full p-0.5 hover:bg-muted"
+                aria-label={`Remove filter: Item: ${itemName ?? query.filters.item_id}`}
+              >
+                <X className="h-3 w-3" aria-hidden="true" />
+              </button>
+            </Badge>
+            <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground hover:text-foreground" onClick={() => query.setFilter('item_id', undefined)}>
+              Clear all
+            </Button>
           </div>
         )}
-        {stockUnit && <p className="col-span-full text-sm text-muted-foreground">1 pack unit = factor × {stockUnit}. Each pack size converts directly to the stock unit.</p>}
-        <Form {...form}>
-          <form className={cn("col-span-full grid gap-3", itemId ? "sm:grid-cols-3" : "sm:grid-cols-4")} onSubmit={form.handleSubmit(submit)}>
-            {!itemId && <FormField
-              control={form.control}
-              name="item_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Item</FormLabel>
-                  <FormControl>
-                    <ItemCombobox label="Item" placeholder="Select item" disabled={!!editing} value={field.value} onValueChange={field.onChange} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />}
-            <FormField
-              control={form.control}
-              name="uom_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Pack unit</FormLabel>
-                  <FormControl>
-                    <Combobox {...lookupState(uomsResult, 'units')}
-                      ref={field.ref}
-                      disabled={!!editing}
-                      value={field.value}
-                      onValueChange={field.onChange}
-                      options={uoms.map((u) => ({ value: String(u.id), label: `${u.name} (${u.code})` }))}
-                      placeholder="Select unit"
-                      searchPlaceholder="Search units…"
-                      emptyText="No units found."
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="factor"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Factor</FormLabel>
-                  <FormControl>
-                    <Input inputMode="decimal" placeholder="e.g. 12" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="quantity_precision"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Rounding precision (optional)</FormLabel>
-                  <FormControl>
-                    <Input inputMode="decimal" placeholder="Unrestricted" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="col-span-full flex justify-end gap-2 pt-1">
-              {editing && (
-                <Button type="button" variant="outline" onClick={cancelEdit}>
-                  <X className="h-4 w-4" />
-                  Cancel
-                </Button>
-              )}
-              <Button type="submit" disabled={storeMutation.isPending || updateMutation.isPending}>
-                {editing
-                  ? updateMutation.isPending
-                    ? 'Saving…'
-                    : 'Save changes'
-                  : storeMutation.isPending
-                    ? 'Saving…'
-                    : 'Add conversion'}
-              </Button>
-            </div>
-          </form>
-        </Form>
-      </DetailSection>}
 
-      {deleteMutation.isError && <p role="alert" className="text-sm text-destructive">{getApiErrorMessage(deleteMutation.error)}</p>}
+        <PackConversionBulkBar
+          selected={selectedRows}
+          mayManage={mayManage}
+          onPrintSelected={() => printSelected()}
+          onClear={() => setRowSelection({})}
+          onChanged={async () => {
+            await result.refetch();
+          }}
+        />
+
+        <DataTable
+          columns={tanStackColumns}
+          data={rows}
+          rowCount={total}
+          pagination={pagination}
+          onPaginationChange={(updater) => {
+            const next = typeof updater === 'function' ? updater(pagination) : updater;
+            if (next.pageSize !== pagination.pageSize) query.setPerPage(next.pageSize);
+            else query.setPage(next.pageIndex + 1);
+          }}
+          sorting={sorting}
+          onSortingChange={(updater) => {
+            const next = typeof updater === 'function' ? updater(sorting) : updater;
+            query.setSort(tableSortingToApiSort(next, columns));
+          }}
+          columnVisibility={columnVisibility}
+          onColumnVisibilityChange={setColumnVisibility}
+          rowSelection={rowSelection}
+          onRowSelectionChange={setRowSelection}
+          getRowId={(row) => String(row.id)}
+          onRowClick={open}
+          isLoading={result.isLoading}
+          isError={result.isError}
+          error={result.error}
+          onRetry={() => void result.refetch()}
+          errorMessage={getApiErrorMessage(result.error) ?? "Couldn't load pack conversions."}
+          emptyMessage={query.filters.item_id ? 'No pack conversions for this item.' : 'No pack conversions yet.'}
+          view={view}
+          onViewChange={setView}
+          cardColumns={columns}
+          recordNoun="pack conversions"
+          actionsHeader="Actions"
+          numberedPagination
+          rowActions={(row: PackRow) => (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Actions for ${row.item?.code ?? row.item_id} ${row.uom?.code ?? ''}`} onClick={(event) => event.stopPropagation()}>
+                  <EllipsisVertical className="h-4 w-4" aria-hidden="true" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    open(row);
+                  }}
+                >
+                  <Eye className="mr-2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                  View details
+                </DropdownMenuItem>
+                {mayManage && (
+                  <>
+                    <DropdownMenuItem
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        navigate({ pathname: `/item-quantity-units/${row.id}/edit`, search });
+                      }}
+                    >
+                      <Pencil className="mr-2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                      Edit conversion
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setDeleting(row);
+                      }}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                      Delete conversion
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        />
+
+        <PackConversionDeleteDialog
+          row={deleting}
+          open={deleting !== null}
+          onClose={() => setDeleting(null)}
+          onDeleted={() => {
+            setDeleting(null);
+            void result.refetch();
+          }}
+        />
+
+        <div className="hidden">
+          <div ref={printRef}>
+            <PrintLayout title="PACK CONVERSIONS" printedAt={new Date()} recordCount={rows.length} meta={[...filterMeta, { label: 'Page', value: `${rows.length} of ${total} shown` }]}>
+              <PrintableTable columns={printedColumns} rows={rows} getRowKey={(row) => row.id} />
+            </PrintLayout>
+          </div>
+        </div>
+        <div className="hidden">
+          <div ref={selectedPrintRef}>
+            <PrintLayout
+              title="PACK CONVERSIONS (SELECTED)"
+              printedAt={new Date()}
+              recordCount={selectedRows.length}
+              meta={[{ label: 'Selection', value: `${selectedRows.length} selected pack conversions` }]}
+            >
+              <PrintableTable columns={printedColumns} rows={selectedRows} getRowKey={(row) => row.id} />
+            </PrintLayout>
+          </div>
+        </div>
+      </div>
+    </ScreenTemplate>
+  );
+}
+
+/** One item's own conversions, managed in place on the item (which is itself a side panel, so adding and editing happen in a dialog over it). */
+function ItemPackConversions({ itemId, stockUnit }: { itemId: number; stockUnit?: string }) {
+  const mayManage = usePermission('inventory.item.manage');
+  const result = useItemQuantityUnitsIndex({ 'filter[item_id]': itemId, include: 'item,uom', sort: '-created_at', per_page: 100 });
+  const rows = result.data?.status === 200 ? result.data.data.data : [];
+  const uoms = usePackUoms(rows);
+  const columns = useMemo(() => toTanStackColumns(itemQuantityUnitColumns(uoms).filter((column) => column.key !== 'item' && column.key !== 'created_at' && column.key !== 'updated_at')), [uoms]);
+  const [editor, setEditor] = useState<{ row: PackRow | null } | null>(null);
+  const [deleting, setDeleting] = useState<PackRow | null>(null);
+
+  return (
+    <div className="space-y-4" data-testid="item-pack-conversions">
+      {mayManage && (
+        <div className="flex justify-end">
+          <Button size="sm" onClick={() => setEditor({ row: null })} data-testid="pack-add">
+            <Plus className="mr-1 h-4 w-4" aria-hidden="true" />
+            Add pack conversion
+          </Button>
+        </div>
+      )}
+      {stockUnit && <p className="text-sm text-muted-foreground">1 pack unit = factor × {stockUnit}. Each pack size converts directly to the stock unit.</p>}
       <DataTable
         columns={columns}
         data={rows}
-        rowCount={total}
-        pagination={{ pageIndex: query.page - 1, pageSize: query.perPage }}
-        onPaginationChange={(u) => {
-          const pagination = { pageIndex: query.page - 1, pageSize: query.perPage };
-          const n = typeof u === 'function' ? u(pagination) : u;
-          n.pageSize !== pagination.pageSize ? query.setPerPage(n.pageSize) : query.setPage(n.pageIndex + 1);
-        }}
-        sorting={sorting}
-        onSortingChange={(u) =>
-          query.setSort(tableSortingToApiSort(typeof u === 'function' ? u(sorting) : u, itemQuantityUnitColumns))
+        rowCount={rows.length}
+        pagination={{ pageIndex: 0, pageSize: 100 }}
+        onPaginationChange={() => undefined}
+        sorting={[]}
+        onSortingChange={() => undefined}
+        rowActions={
+          mayManage
+            ? (row: PackRow) => (
+                <>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Edit" onClick={() => setEditor({ row })}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Edit</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Delete" onClick={() => setDeleting(row)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Delete</TooltipContent>
+                  </Tooltip>
+                </>
+              )
+            : undefined
         }
-        rowActions={mayManage ? renderRowActions : undefined}
         isLoading={result.isLoading}
         isError={result.isError}
         error={result.error}
         onRetry={() => void result.refetch()}
         errorMessage={getApiErrorMessage(result.error) ?? "Couldn't load pack conversions."}
         emptyMessage="No pack conversions yet."
+      />
+      <Dialog open={editor !== null} onOpenChange={(next) => !next && setEditor(null)}>
+        <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto" data-testid="pack-dialog">
+          <DialogHeader>
+            <DialogTitle>{editor?.row ? 'Edit pack conversion' : 'Add a pack conversion'}</DialogTitle>
+            <DialogDescription>{editor?.row ? 'Only the factor and rounding change; the pack unit is fixed.' : 'How many of this item’s stock unit one pack unit holds.'}</DialogDescription>
+          </DialogHeader>
+          {editor && (
+            <PackConversionEditor
+              key={editor.row?.id ?? 'new'}
+              itemId={itemId}
+              stockUnit={stockUnit}
+              editing={editor.row}
+              onCancel={() => setEditor(null)}
+              onSaved={() => {
+                setEditor(null);
+                void result.refetch();
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+      <PackConversionDeleteDialog
+        row={deleting}
+        open={deleting !== null}
+        onClose={() => setDeleting(null)}
+        onDeleted={() => {
+          setDeleting(null);
+          void result.refetch();
+        }}
       />
     </div>
   );
