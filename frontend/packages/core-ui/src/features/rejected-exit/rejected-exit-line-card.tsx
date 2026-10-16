@@ -4,7 +4,7 @@ import { useUomsShow } from '@erp/core-api';
 
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
-import { Input } from '../../components/ui/input';
+import { DecimalInput } from '../../components/ui/decimal-input';
 import { Label } from '../../components/ui/label';
 import { Textarea } from '../../components/ui/textarea';
 import { PackageBreakdown } from '../package-stock/package-breakdown';
@@ -14,6 +14,7 @@ import { isExactQuantity, packageLabel, toUnits, trimQty } from '../package-stoc
 import { REASON_HINTS, type DrawLine } from '../package-stock/types';
 import { useTrackingState } from '../package-stock/use-tracking-state';
 import type { Blocker, ExitConfig, PortionLine, PreviewLine } from './rejected-exit-api';
+import { isPositiveDecimal } from '../../lib/decimal';
 
 /** Wording that differs from the QA screen, where the same code is about held (not rejected) packages. */
 const EXIT_HINTS: Record<string, string> = {
@@ -79,7 +80,7 @@ export function activeBlockers(line: DraftLine, preview: PreviewLine | undefined
 
 /** Why this line cannot be saved yet, in the operator's words; null when it is ready. */
 export function lineProblem(line: DraftLine, preview: PreviewLine | undefined): string | null {
-  if (!isExactQuantity(line.quantity) || Number(line.quantity) <= 0) return 'Enter the quantity to take out.';
+  if (!isExactQuantity(line.quantity) || !isPositiveDecimal(line.quantity.trim())) return 'Enter the quantity to take out.';
   if (!preview) return null;
   if (preview.outcome_change_required && line.outcomeChangeReason.trim() === '') return REASON_HINTS.OUTCOME_CHANGE_REASON_REQUIRED ?? null;
   // Only a hand-picked list is checked here; the system's own proposal is checked by the server's preview (and may be a moment behind a changed quantity).
@@ -117,7 +118,7 @@ export function ExitLineCard({
   );
   const portion = effectivePortion(line, preview) ?? [];
   const problem = lineProblem(line, preview);
-  const quantityBad = !isExactQuantity(line.quantity) || Number(line.quantity) <= 0;
+  const quantityBad = !isExactQuantity(line.quantity) || !isPositiveDecimal(line.quantity.trim());
   const overAvailable = !!preview?.available && !quantityBad && toUnits(line.quantity) > toUnits(preview.available);
   const reasonMissing = !!preview?.outcome_change_required && line.outcomeChangeReason.trim() === '';
   // The reason field says its own problem beside the field; the list is for everything else that stops the line.
@@ -165,12 +166,12 @@ export function ExitLineCard({
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1">
           <Label htmlFor={`qty-${line.key}`}>Quantity to {config.kind === 'SCRAP' ? 'scrap' : 'return'}</Label>
-          <Input
+          <DecimalInput
             id={`qty-${line.key}`}
-            inputMode="decimal"
+            rule={{ spec: "stockLedger", sign: "positive" }}
             value={line.quantity}
             disabled={readOnly}
-            onChange={(event) => setQuantity(event.target.value)}
+            onChange={setQuantity}
             aria-invalid={showErrors && (quantityBad || overAvailable)}
           />
           {showErrors && quantityBad && <p className="text-xs text-destructive">Enter a quantity greater than zero (up to four decimals).</p>}

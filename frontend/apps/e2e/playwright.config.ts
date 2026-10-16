@@ -38,7 +38,14 @@ export default defineConfig({
       testMatch: /auth\.setup\.ts/,
     },
     {
+      // Pure-function specs (`*.unit.spec.ts`): no browser, no sign-in, no running stack. They test the shared frontend libraries directly, so the
+      // decimal foundation is verified without a unit-test framework this repository does not otherwise use.
+      name: 'unit',
+      testMatch: /.*\.unit\.spec\.ts/,
+    },
+    {
       name: 'chromium',
+      testIgnore: /.*\.unit\.spec\.ts/,
       use: { ...devices['Desktop Chrome'], storageState: '.auth/user.json' },
       dependencies: ['setup'],
     },

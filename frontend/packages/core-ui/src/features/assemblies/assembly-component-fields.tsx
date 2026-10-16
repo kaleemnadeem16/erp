@@ -9,6 +9,7 @@ import { Combobox } from '../../components/ui/combobox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../components/ui/form';
 import { lookupState } from '../../lib/api-errors';
+import { DecimalInput } from '../../components/ui/decimal-input';
 
 const NONE = 'NONE';
 
@@ -219,7 +220,7 @@ export function AssemblyComponentsFields<TFieldValues extends FieldValues & { co
                     <FormItem>
                       <FormLabel>{kind === 'MATERIAL' ? 'Quantity per work unit' : 'Hours per work unit'}</FormLabel>
                       <FormControl>
-                        <Input inputMode="decimal" {...qtyField} value={qtyField.value ?? ''} />
+                        <DecimalInput rule={{ spec: 'assemblyTechnical', sign: 'positive' }} {...qtyField} value={qtyField.value ?? ''} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

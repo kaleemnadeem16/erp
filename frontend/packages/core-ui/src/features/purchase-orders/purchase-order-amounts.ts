@@ -61,8 +61,11 @@ export function lineAmounts(line: {
   return { gross: round(exactGross), discount, tax, total: round(exactTotal) };
 }
 
-/** 2500000n -> "250.00": thousands separators, at least two decimals, more only when the value needs them. */
-export function formatScaled(value: bigint): string {
+/**
+ * 2500000n -> "250.00": thousands separators, at least the currency's minor-unit places (two when unknown), more only when the value needs them
+ * (so an estimate of 1.0050 shows as 1.005, never as a settled 1.01).
+ */
+export function formatScaled(value: bigint, minFraction = 2): string {
   const negative = value < 0n;
   const abs = negative ? -value : value;
   const whole = (abs / UNIT).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
@@ -70,6 +73,6 @@ export function formatScaled(value: bigint): string {
     .toString()
     .padStart(SCALE, "0")
     .replace(/0+$/, "");
-  if (fraction.length < 2) fraction = fraction.padEnd(2, "0");
+  if (fraction.length < minFraction) fraction = fraction.padEnd(minFraction, "0");
   return `${negative ? "-" : ""}${whole}.${fraction}`;
 }

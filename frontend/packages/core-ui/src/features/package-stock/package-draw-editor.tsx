@@ -1,5 +1,5 @@
 import { Button } from "../../components/ui/button";
-import { Input } from "../../components/ui/input";
+import { DecimalInput } from "../../components/ui/decimal-input";
 import type { DrawState } from "./draw-state";
 import { packageLabel, trimQty } from "./quantity";
 import type { SealedRow } from "./types";
@@ -78,14 +78,12 @@ export function PackageDrawEditor({
             {u} loose)
           </span>
         </label>
-        <Input
+        <DecimalInput
           id="draw-loose"
-          inputMode="decimal"
-          className="w-32 text-right"
+          rule={{ spec: "stockLedger", sign: "positive" }}
+          className="w-32"
           value={value.loose}
-          onChange={(event) =>
-            onChange({ ...value, loose: event.target.value })
-          }
+          onChange={(next) => onChange({ ...value, loose: next })}
           placeholder="0"
         />
       </div>
@@ -141,21 +139,21 @@ export function PackageDrawEditor({
                       })
                     }
                   />
-                  <Input
+                  <DecimalInput
                     aria-label={`Litres taken from opened ${packageLabel(row)}`}
-                    inputMode="decimal"
-                    className="w-24 text-right"
+                    rule={{ spec: "stockLedger", sign: "positive" }}
+                    className="w-24"
                     value={open.quantity}
                     disabled={open.count === 0}
                     placeholder="litres"
-                    onChange={(event) =>
+                    onChange={(next) =>
                       onChange({
                         ...value,
                         open: {
                           ...value.open,
                           [row.item_packaging_id]: {
                             ...open,
-                            quantity: event.target.value,
+                            quantity: next,
                           },
                         },
                       })

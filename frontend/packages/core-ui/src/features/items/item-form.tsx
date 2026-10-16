@@ -37,6 +37,8 @@ import {
 } from "../../components/ui/form";
 import { DetailSection } from "../../components/detail/detail-page-layout";
 import { lookupState } from "../../lib/api-errors";
+import { decimalField } from "../../lib/decimal";
+import { DecimalInput } from "../../components/ui/decimal-input";
 
 const ITEM_TYPE_OPTIONS = Object.values(ItemType);
 const TRACKING_OPTIONS = Object.values(ItemTracking);
@@ -51,13 +53,13 @@ const itemFormSchema = z
     name: z.string().trim().min(1, "Name is required").max(255),
     description: z.string().max(5000).optional(),
     type: z.enum(ItemType),
-    quantity_precision: z
-      .string()
-      .trim()
-      .refine(
-        (v) => !v || (/^\d{1,10}(\.\d{1,9})?$/.test(v) && Number(v) > 0),
-        "Enter a positive increment with up to 9 decimal places",
-      ),
+    // The stock increment is typed in the stock unit and must fit the four-place stock ledger (ADR 0142); a finer one is refused here as the server would.
+    quantity_precision: decimalField({
+      spec: "stockLedger",
+      sign: "positive",
+      optional: true,
+      label: "Increment",
+    }),
     stock_uom_id: z.string().min(1, "Stock unit of measure is required"),
     category_id: z.string().min(1, "Category is required"),
     is_stocked: z.boolean(),
@@ -386,16 +388,16 @@ export function ItemForm({
               <FormItem>
                 <FormLabel>Stock quantity increment (optional)</FormLabel>
                 <FormControl>
-                  <Input
-                    inputMode="decimal"
+                  <DecimalInput
+                    rule={{ spec: "stockLedger", sign: "positive" }}
                     placeholder="Unrestricted"
                     {...field}
                   />
                 </FormControl>
                 <p className="text-xs text-muted-foreground">
-                  In the stock unit: 1 for whole units, 0.5 for half units.
-                  Leave blank for unrestricted quantities. This is not a
-                  supplier order multiple.
+                  In the stock unit: 1 for whole units, 0.5 for half units, up
+                  to 4 decimal places. Leave blank for unrestricted quantities.
+                  This is not a supplier order multiple.
                 </p>
                 <FormMessage />
               </FormItem>

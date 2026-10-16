@@ -12,6 +12,7 @@ import {
 import { RecordLink } from "../../components/ui/record-link";
 import { StatusBadge } from "../../components/ui/status-badge";
 import { formatDate } from "../../lib/format-date";
+import { formatDecimal } from "../../lib/decimal";
 
 export function ItemSupplierStatusBadge({ active }: { active: boolean }) {
   return (
@@ -165,9 +166,7 @@ export function getItemSupplierColumns(
       cell: (row) =>
         row.minimum_order_qty ? (
           <span className="tabular-nums font-medium text-[var(--ui-table-row-text)]">
-            {Number(row.minimum_order_qty).toLocaleString("en-US", {
-              maximumFractionDigits: 4,
-            })}
+            {formatDecimal(row.minimum_order_qty)}
             {row.purchase_uom ? ` ${row.purchase_uom.code}` : ""}
           </span>
         ) : (

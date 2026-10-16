@@ -12,7 +12,8 @@ import {
   toPurchaseOrderPayload,
 } from "./purchase-order-form";
 import { getApiErrorMessage } from "../../lib/api-errors";
-import { Input } from "../../components/ui/input";
+import { compareDecimal, describeSubmitError, formatDecimal } from "../../lib/decimal";
+import { DecimalInput } from "../../components/ui/decimal-input";
 import { Button } from "../../components/ui/button";
 import { Boxes, Info } from "lucide-react";
 import { FieldHint } from "../../components/ui/field-hint";
@@ -178,7 +179,7 @@ export function usePurchaseLinePricing(
         .catch((e) => {
           if (current) {
             setResolved(null);
-            setError(getApiErrorMessage(e));
+            setError(describeSubmitError(e));
           }
         })
         .finally(() => {
@@ -390,11 +391,11 @@ export function PriceBasisFields({
         </FieldHint>
       </div>
       <div className="grid grid-cols-[8rem_1fr] gap-3">
-        <Input
+        <DecimalInput
           aria-label="Price per quantity"
-          inputMode="decimal"
+          rule={{ spec: "stockLedger", sign: "positive" }}
           value={line.price_quantity ?? "1"}
-          onChange={(e) => pricing.set("price_quantity", e.target.value)}
+          onChange={(value) => pricing.set("price_quantity", value)}
         />
         <select
           aria-label="Price basis"
@@ -434,8 +435,7 @@ export function LineStockNote({
       </p>
     );
   if (!resolved) return null;
-  const converts =
-    Number(resolved.ordered_stock_qty) !== Number(resolved.ordered_qty);
+  const converts = compareDecimal(resolved.ordered_stock_qty, resolved.ordered_qty) !== 0;
   if (!converts && !resolved.package_name) return null;
   return (
     <p
@@ -447,9 +447,9 @@ export function LineStockNote({
     >
       <Boxes className="size-4 shrink-0" aria-hidden="true" />
       <span>
-        = <strong className="font-medium text-foreground tabular-nums">{resolved.ordered_stock_qty}</strong> {stockUnit ?? "stock units"} in stock
+        = <strong className="font-medium text-foreground tabular-nums">{formatDecimal(resolved.ordered_stock_qty)}</strong> {stockUnit ?? "stock units"} in stock
         {resolved.package_name ? ` · ${resolved.package_name}` : ""}
-        {" "}(1 {resolved.order_unit_label} = {Number(resolved.uom_factor)} {stockUnit ?? ""})
+        {" "}(1 {resolved.order_unit_label} = {formatDecimal(resolved.uom_factor)} {stockUnit ?? ""})
       </span>
     </p>
   );

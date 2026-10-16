@@ -31,24 +31,20 @@ import {
 import { DetailSection } from "../../components/detail/detail-page-layout";
 import { formatLocationOption } from "../../lib/format-location";
 import { lookupState } from "../../lib/api-errors";
+import { decimalField } from "../../lib/decimal";
+import { DecimalInput } from "../../components/ui/decimal-input";
 import { usePurchasingCommercialCost } from "../../hooks/use-purchasing-commercial-cost";
 
-const decimal = z
-  .string()
-  .trim()
-  .regex(/^\d+(\.\d{1,9})?$/, "Enter a positive decimal value.");
-const positiveDecimal = decimal.refine(
-  (value) => !/^0+(?:\.0+)?$/.test(value),
-  "Enter a value greater than zero.",
-);
 const lineSchema = z.object({
   receipt_line_id: z.string().optional(),
   purchase_order_line_id: z.string().min(1, "Select an order line."),
   location_id: z.string().min(1, "Select a stock location."),
   item_packaging_id: z.string().optional(),
-  received_qty: positiveDecimal,
+  // What physically arrived: exact at the four-place receipt column. The server converts it to stock units exactly or refuses (ADR 0142); an Item's
+  // ordering increment does not apply to a measured delivery.
+  received_qty: decimalField({ spec: "stockLedger", sign: "positive", label: "Received quantity" }),
   received_uom_id: z.string().min(1, "Select a UoM."),
-  provisional_unit_cost: z.union([decimal, z.literal("")]),
+  provisional_unit_cost: decimalField({ spec: "money", sign: "nonNegative", optional: true, label: "Provisional unit cost" }),
   batch_no: z.string(),
   serial_no: z.string(),
 });
@@ -634,7 +630,7 @@ export function GoodsReceiptForm({
                           : "Received quantity"}
                       </FormLabel>
                       <FormControl>
-                        <Input inputMode="decimal" {...field} />
+                        <DecimalInput rule={{ spec: "stockLedger", sign: "positive" }} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -680,7 +676,7 @@ export function GoodsReceiptForm({
                       <FormItem>
                         <FormLabel>Provisional unit cost</FormLabel>
                         <FormControl>
-                          <Input inputMode="decimal" {...field} />
+                          <DecimalInput rule={{ spec: "money", sign: "nonNegative" }} {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

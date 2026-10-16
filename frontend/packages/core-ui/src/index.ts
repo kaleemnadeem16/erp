@@ -275,3 +275,8 @@ export { LeadDetailScreen } from "./features/sales/lead-detail-screen";
 export { SalesStagesScreen } from "./features/sales/sales-stages-screen";
 export { StageDetailScreen } from "./features/sales/stage-detail-screen";
 export { StageFormScreen } from "./features/sales/stage-form-screen";
+
+// Exact-decimal foundation (ADR 0141/0142): string-safe parsing, checking and display, plus the input and text components.
+export * from "./lib/decimal";
+export { DecimalInput, type DecimalInputProps } from "./components/ui/decimal-input";
+export { DecimalText, MoneyText } from "./components/ui/decimal-text";

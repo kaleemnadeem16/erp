@@ -10,6 +10,7 @@ import { Combobox } from '../../components/ui/combobox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../components/ui/form';
 import { DetailSection } from '../../components/detail/detail-page-layout';
 import { lookupState } from '../../lib/api-errors';
+import { DecimalInput } from '../../components/ui/decimal-input';
 
 const NONE = 'NONE';
 
@@ -139,7 +140,7 @@ export function ApplicationRateForm({
               <FormItem>
                 <FormLabel>Quantity consumed per work unit</FormLabel>
                 <FormControl>
-                  <Input inputMode="decimal" {...field} />
+                  <DecimalInput rule={{ spec: 'assemblyTechnical', sign: 'positive' }} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

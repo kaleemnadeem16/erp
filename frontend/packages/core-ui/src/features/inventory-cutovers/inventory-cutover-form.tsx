@@ -13,14 +13,16 @@ import { Combobox } from '../../components/ui/combobox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../components/ui/form';
 import { DetailSection } from '../../components/detail/detail-page-layout';
 import { lookupState } from '../../lib/api-errors';
+import { decimalField } from '../../lib/decimal';
+import { DecimalInput } from '../../components/ui/decimal-input';
 
 const inventoryCutoverFormSchema = z.object({
   mode: z.string().min(1, 'Mode is required'),
   cutover_at: z.string().min(1, 'Cutover date is required'),
   source_system: z.string().min(1, 'Source system is required').max(255),
-  control_quantity: z.string().min(1, 'Control quantity is required'),
-  control_value: z.string().min(1, 'Control value is required'),
-  base_control_value: z.string().min(1, 'Base control value is required'),
+  control_quantity: decimalField({ spec: 'stockLedger', sign: 'nonNegative', label: 'Control quantity' }),
+  control_value: decimalField({ spec: 'money', sign: 'nonNegative', label: 'Control value' }),
+  base_control_value: decimalField({ spec: 'money', sign: 'nonNegative', label: 'Base control value' }),
 });
 
 export type InventoryCutoverFormValues = z.infer<typeof inventoryCutoverFormSchema>;
@@ -168,7 +170,7 @@ export function InventoryCutoverForm({
               <FormItem>
                 <FormLabel>Control quantity</FormLabel>
                 <FormControl>
-                  <Input type="number" step="0.0001" {...field} />
+                  <DecimalInput rule={{ spec: 'stockLedger', sign: 'nonNegative' }} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -181,7 +183,7 @@ export function InventoryCutoverForm({
               <FormItem>
                 <FormLabel>Control value</FormLabel>
                 <FormControl>
-                  <Input type="number" step="0.0001" {...field} />
+                  <DecimalInput rule={{ spec: 'money', sign: 'nonNegative' }} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -194,7 +196,7 @@ export function InventoryCutoverForm({
               <FormItem>
                 <FormLabel>Base control value</FormLabel>
                 <FormControl>
-                  <Input type="number" step="0.0001" {...field} />
+                  <DecimalInput rule={{ spec: 'money', sign: 'nonNegative' }} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

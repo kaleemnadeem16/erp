@@ -1,5 +1,7 @@
 import type { FieldPath, FieldValues, UseFormSetError } from 'react-hook-form';
 
+import { isPrecisionReason, PRECISION_REASON_ADVICE } from './decimal/advice';
+
 export interface ApiErrorBody {
   message?: string;
   /** A stable, machine-readable cause (e.g. NEEDS_COUNT_FIRST) a screen may act on; `message` stays the human explanation. */
@@ -93,16 +95,21 @@ export function applyApiErrorsToForm<TFieldValues extends FieldValues>(
     return getApiErrorMessage(error);
   }
 
+  // A refused quantity, increment, factor or rate carries a stable reason code; add what to do next to the server's message (ADR 0142).
+  const code = error.body.reason_code;
+  const advice = isPrecisionReason(code) ? PRECISION_REASON_ADVICE[code] : null;
+  const withAdvice = (message: string | undefined): string => (advice && message ? `${message.replace(/\.?$/, '.')} ${advice}` : (message ?? ''));
+
   const unmatched: string[] = [];
   for (const [field, messages] of Object.entries(error.body.errors)) {
     const rootField = field.split('.')[0] ?? field;
     if ((knownFields as readonly string[]).includes(rootField)) {
       setError(field as FieldPath<TFieldValues>, {
         type: 'server',
-        message: messages[0]
+        message: withAdvice(messages[0])
       });
     } else {
-      unmatched.push(...messages);
+      unmatched.push(...messages.map((message) => withAdvice(message)));
     }
   }
 

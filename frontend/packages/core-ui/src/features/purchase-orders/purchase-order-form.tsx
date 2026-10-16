@@ -60,6 +60,8 @@ import { SupplierCombobox } from "../../components/lookups/entity-comboboxes";
 import { PurchaseOrderSummary } from "./purchase-order-summary";
 import { SupplierSiteDialog } from "./supplier-site-form";
 import { lookupState } from "../../lib/api-errors";
+import { decimalField } from "../../lib/decimal";
+import { DecimalInput } from "../../components/ui/decimal-input";
 
 // "CODE — City, ST" when there's an address to show; the name alone otherwise.
 const supplierSiteLabel = (site: SupplierSiteResource) => {
@@ -69,32 +71,21 @@ const supplierSiteLabel = (site: SupplierSiteResource) => {
   return `${site.party_site.name}${place ? ` — ${place}` : ""}`;
 };
 
-const decimal = (label: string, positive = false) =>
-  z
-    .string()
-    .trim()
-    .regex(
-      /^\d{1,15}(\.\d{1,4})?$/,
-      `${label} must have up to 4 decimal places`,
-    )
-    .refine(
-      (value) => !positive || Number(value) > 0,
-      `${label} must be greater than zero`,
-    );
 const lineSchema = z.object({
   item_id: z.string().min(1, "Item is required"),
   description: z.string().trim().min(1, "Description is required").max(255),
   item_packaging_id: z.string().optional(),
   supplier_offer_id: z.string().optional(),
   price_uom_id: z.string().optional(),
-  price_quantity: z.string().optional(),
+  price_quantity: decimalField({ spec: "stockLedger", sign: "positive", optional: true, label: "Price per quantity" }).optional(),
   ordering_exception_reason: z.string().optional(),
   priced_qty: z.string().optional(),
-  ordered_qty: decimal("Quantity", true),
+  // Order quantity: the four-place transaction column; the server then checks the converted stock quantity and the Item's increment (ADR 0142).
+  ordered_qty: decimalField({ spec: "stockLedger", sign: "positive", label: "Quantity" }),
   purchase_uom_id: z.string().min(1, "Purchase UoM is required"),
-  unit_price: decimal("Unit price"),
-  discount_amount: decimal("Discount"),
-  tax_amount: decimal("Tax"),
+  unit_price: decimalField({ spec: "money", sign: "nonNegative", label: "Unit price" }),
+  discount_amount: decimalField({ spec: "money", sign: "nonNegative", label: "Discount" }),
+  tax_amount: decimalField({ spec: "money", sign: "nonNegative", label: "Tax" }),
   expected_delivery_date: z.string(),
   qa_required: z.boolean(),
 });
@@ -104,11 +95,8 @@ const schema = z.object({
   replaces_purchase_order_id: z.string().optional(),
   currency_id: z.string().min(1, "Currency is required"),
   fx_policy: z.enum(["FLOATING", "FIXED"]),
-  fx_rate: z
-    .string()
-    .trim()
-    .regex(/^\d{1,10}(\.\d{1,9})?$/, "FX rate must have up to 9 decimal places")
-    .refine((value) => Number(value) > 0, "FX rate must be greater than zero"),
+  // Manual exchange rate: nine fractional and ten whole digits, strictly positive (the server and the database refuse zero).
+  fx_rate: decimalField({ spec: "fxRate", sign: "positive", label: "FX rate" }),
   fx_rate_date: z.string().min(1, "FX rate date is required"),
   fx_rate_type: z.string().trim().min(1, "FX rate type is required").max(50),
   fx_rate_source: z
@@ -618,6 +606,7 @@ export function PurchaseOrderForm({
     uomOptions,
     paymentTermsDays: chosenSupplier?.payment_terms_days,
     leadTimeDays: chosenSupplier?.lead_time_days,
+    currencyPlaces: Object.fromEntries(currencies.map((currency) => [String(currency.id), currency.decimal_places])),
   };
 
   const sections = (
@@ -880,11 +869,14 @@ export function PurchaseOrderForm({
                           onBlur={field.onBlur}
                         />
                       ) : (
-                        <Input
-                          type="text"
-                          inputMode={name === "fx_rate" ? "decimal" : undefined}
-                          {...field}
-                        />
+                        name === "fx_rate" ? (
+                          <DecimalInput
+                            rule={{ spec: "fxRate", sign: "positive" }}
+                            {...field}
+                          />
+                        ) : (
+                          <Input type="text" {...field} />
+                        )
                       )}
                     </FormControl>
                     <FormMessage />

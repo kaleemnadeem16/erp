@@ -73,6 +73,7 @@ import { AlertCircle } from "lucide-react";
 import { GoodsReceiptStatusBadge } from "./goods-receipt-columns";
 import { usePermission } from "../../hooks/use-permission";
 import { usePurchasingCommercialCost } from "../../hooks/use-purchasing-commercial-cost";
+import { formatMoney } from "../../lib/decimal";
 
 const OUTCOMES = [
   "PASS",
@@ -769,7 +770,7 @@ export function GoodsReceiptDetailScreen({
             <DetailField label="Total value">
               <span className="tabular-nums font-semibold">
                 {receipt.total_amount
-                  ? `${(receipt.currency_id && currencies.find((c) => c.id === Number(receipt.currency_id))?.code) ?? ""} ${Number(receipt.total_amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`
+                  ? `${(receipt.currency_id && currencies.find((c) => c.id === Number(receipt.currency_id))?.code) ?? ""} ${formatMoney(String(receipt.total_amount), currencies.find((c) => c.id === Number(receipt.currency_id)))}`
                   : "—"}
               </span>
             </DetailField>
@@ -886,7 +887,7 @@ export function GoodsReceiptDetailScreen({
                     <div className="tabular-nums font-medium mt-0.5">
                       {line.provisional_unit_cost !== undefined &&
                       line.provisional_unit_cost !== null
-                        ? `${Number(line.provisional_unit_cost).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 4 })} ${lineCurrency?.code ?? ""}`
+                        ? `${formatMoney(String(line.provisional_unit_cost), lineCurrency)} ${lineCurrency?.code ?? ""}`
                         : "—"}
                     </div>
                   </div>
@@ -899,7 +900,7 @@ export function GoodsReceiptDetailScreen({
                     <div className="tabular-nums font-medium mt-0.5">
                       {line.provisional_amount !== undefined &&
                       line.provisional_amount !== null
-                        ? `${Number(line.provisional_amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 4 })} ${lineCurrency?.code ?? ""}`
+                        ? `${formatMoney(String(line.provisional_amount), lineCurrency)} ${lineCurrency?.code ?? ""}`
                         : "—"}
                     </div>
                   </div>

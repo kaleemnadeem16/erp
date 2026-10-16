@@ -7,14 +7,17 @@ import { getApiErrorMessage } from "../../lib/api-errors";
 import { CountCompositionDialog } from "./count-composition-dialog";
 import { CountedComposition, type CountedRow } from "./counted-composition";
 import { useTrackingState } from "./use-tracking-state";
+import { compareDecimal, formatDecimal } from "../../lib/decimal";
 
 /** What a grouped line's count means, for someone who may see the book. Composition-only posts no stock movement; a variance posts a governed adjustment. */
-export function countVerdict(variance: number | null, counted: boolean): { kind: "none" | "composition" | "loss" | "gain"; text: string } {
+export function countVerdict(variance: string | null, counted: boolean): { kind: "none" | "composition" | "loss" | "gain"; text: string } {
   if (!counted || variance === null) return { kind: "none", text: "" };
-  if (variance === 0) return { kind: "composition", text: "Same quantity — package composition is replaced, no stock movement" };
-  if (variance < 0) return { kind: "loss", text: `${Math.abs(variance)} short — stock adjustment of −${Math.abs(variance)}` };
+  const sign = compareDecimal(variance, "0");
+  if (sign === 0) return { kind: "composition", text: "Same quantity — package composition is replaced, no stock movement" };
+  const size = formatDecimal(variance.replace(/^-/, ""), { grouping: false });
+  if (sign === -1) return { kind: "loss", text: `${size} short — stock adjustment of −${size}` };
 
-  return { kind: "gain", text: `+${variance} found — stock adjustment, needs a cost` };
+  return { kind: "gain", text: `+${size} found — stock adjustment, needs a cost` };
 }
 
 /**

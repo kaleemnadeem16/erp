@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { usePhysicalCountLinesComposition } from "@erp/core-api";
 import { Button } from "../../components/ui/button";
-import { Input } from "../../components/ui/input";
+import { DecimalInput } from "../../components/ui/decimal-input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../../components/ui/dialog";
 import { getApiErrorMessage, getApiReasonCode } from "../../lib/api-errors";
 import { Stepper } from "./package-draw-editor";
@@ -89,7 +89,7 @@ export function CountCompositionDialog({
         ))}
         <div className="space-y-1">
           <label htmlFor="count-loose-input" className="text-sm font-medium">Loose / open {unit}</label>
-          <Input id="count-loose-input" inputMode="decimal" value={loose} onChange={(event) => setLoose(event.target.value)} placeholder="0" aria-invalid={!looseValid} />
+          <DecimalInput id="count-loose-input" rule={{ spec: "stockLedger", sign: "nonNegative" }} value={loose} onChange={setLoose} placeholder="0" aria-invalid={!looseValid} />
         </div>
         <p className="text-sm font-medium tabular-nums" data-testid="count-total">
           Counted: {trimQty(fromUnits(total))} {unit}

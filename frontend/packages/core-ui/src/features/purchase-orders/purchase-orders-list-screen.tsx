@@ -214,6 +214,10 @@ export function PurchaseOrdersListScreen() {
     () => new Map(currencies.map((currency) => [currency.id, currency.code])),
     [currencies],
   );
+  const currencyPlaces = useMemo(
+    () => new Map(currencies.map((currency) => [currency.id, currency.decimal_places])),
+    [currencies],
+  );
   const ordersQuery = usePurchaseOrdersIndex({
     "filter[search]": query.filters.search || undefined,
     "filter[supplier_account_id]": selectedSupplierId,
@@ -292,8 +296,9 @@ export function PurchaseOrdersListScreen() {
         currencyLabels,
         mayViewCommercialCost,
         approvalsInUse,
+        currencyPlaces,
       ),
-    [supplierLabels, currencyLabels, mayViewCommercialCost, approvalsInUse],
+    [supplierLabels, currencyLabels, mayViewCommercialCost, approvalsInUse, currencyPlaces],
   );
   const [columnVisibility, setColumnVisibility] = useColumnVisibilityPreference(
     "purchase-orders-list",

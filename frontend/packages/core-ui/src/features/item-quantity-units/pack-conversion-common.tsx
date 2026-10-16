@@ -5,15 +5,14 @@ import { ItemCombobox } from '../../components/lookups/entity-comboboxes';
 import { Button } from '../../components/ui/button';
 import { Combobox } from '../../components/ui/combobox';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../../components/ui/dialog';
-import { Input } from '../../components/ui/input';
+import { DecimalInput } from '../../components/ui/decimal-input';
 import { Label } from '../../components/ui/label';
 import { getApiErrorMessage, lookupState } from '../../lib/api-errors';
+import { checkDecimal, describeSubmitError } from '../../lib/decimal';
 import { useUomsById } from '../../lib/use-records-by-id';
 import { trimQty } from '../package-stock/quantity';
 
 export type PackRow = ItemQuantityUnitResource;
-
-const DECIMAL = /^\d{1,10}(\.\d{1,9})?$/;
 
 /** "1 box = 12 each": what a pack conversion means in the words a buyer uses, from the pack unit and the item's own stock unit. */
 export function packMeaning(row: PackRow, uoms: UomResource[]): string | null {
@@ -63,8 +62,10 @@ export function PackConversionEditor({
   const [showErrors, setShowErrors] = useState(false);
   const pending = store.isPending || update.isPending;
 
-  const factorProblem = !DECIMAL.test(factor.trim()) || Number(factor) <= 0 ? 'Enter a factor greater than 0 (up to 9 decimal places).' : null;
-  const precisionProblem = precision.trim() !== '' && (!DECIMAL.test(precision.trim()) || Number(precision) <= 0) ? 'Enter a positive precision, or leave it empty.' : null;
+  // A factor is conversion evidence (nine places). The rounding precision is the smallest step in the *pack unit*, typed into a four-place quantity
+  // column, so it can be no finer than four places (ADR 0142); the server also checks it through the factor.
+  const factorProblem = checkDecimal(factor, { spec: 'conversionFactor', sign: 'positive', label: 'Factor' }).message ?? null;
+  const precisionProblem = precision.trim() === '' ? null : (checkDecimal(precision, { spec: 'stockLedger', sign: 'positive', label: 'Rounding precision' }).message ?? null);
   const itemMissing = item === '';
   const uomMissing = uom === '';
 
@@ -82,7 +83,7 @@ export function PackConversionEditor({
         if (created.status === 201) onSaved(created.data.data);
       }
     } catch (failure) {
-      setError(getApiErrorMessage(failure));
+      setError(describeSubmitError(failure));
     }
   }
 
@@ -125,22 +126,23 @@ export function PackConversionEditor({
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="pack-factor">Factor</Label>
-          <Input id="pack-factor" inputMode="decimal" placeholder="e.g. 12" value={factor} onChange={(event) => setFactor(event.target.value)} aria-invalid={showErrors && Boolean(factorProblem)} />
-          {showErrors && factorProblem && <p className="text-xs text-destructive">{factorProblem}</p>}
+          <DecimalInput id="pack-factor" rule={{ spec: 'conversionFactor', sign: 'positive' }} placeholder="e.g. 12" value={factor} onChange={setFactor} aria-invalid={showErrors && Boolean(factorProblem)} aria-describedby={showErrors && factorProblem ? 'pack-factor-error' : undefined} />
+          {showErrors && factorProblem && <p id="pack-factor-error" className="text-xs text-destructive">{factorProblem}</p>}
           {stockUnit && <p className="text-xs text-muted-foreground">1 pack unit = factor × {stockUnit}.</p>}
         </div>
         <div className="space-y-1.5 sm:col-span-2">
           <Label htmlFor="pack-precision">Rounding precision (optional)</Label>
-          <Input
+          <DecimalInput
             id="pack-precision"
-            inputMode="decimal"
+            rule={{ spec: 'stockLedger', sign: 'positive' }}
             placeholder="Unrestricted"
             value={precision}
-            onChange={(event) => setPrecision(event.target.value)}
+            onChange={setPrecision}
             aria-invalid={showErrors && Boolean(precisionProblem)}
+            aria-describedby="pack-precision-help"
           />
           {showErrors && precisionProblem && <p className="text-xs text-destructive">{precisionProblem}</p>}
-          <p className="text-xs text-muted-foreground">The smallest step a quantity in this pack unit can take. Empty means any fraction is allowed.</p>
+          <p id="pack-precision-help" className="text-xs text-muted-foreground">The smallest step a quantity in this pack unit can take, up to 4 decimal places. Empty means any fraction is allowed.</p>
         </div>
       </div>
       <div className="flex flex-wrap items-center justify-end gap-2">

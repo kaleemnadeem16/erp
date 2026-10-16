@@ -10,6 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { DetailSection } from '../../components/detail/detail-page-layout';
 import { formulationLineSchema, formulationLinesPayload, FormulationLinesFields } from './formulation-lines-fields';
 import { lookupState } from '../../lib/api-errors';
+import { DecimalInput } from '../../components/ui/decimal-input';
 
 const NONE = 'NONE';
 
@@ -130,7 +131,7 @@ export function FormulationForm({
               <FormItem>
                 <FormLabel>Output quantity</FormLabel>
                 <FormControl>
-                  <Input inputMode="decimal" {...field} />
+                  <DecimalInput rule={{ spec: 'assemblyTechnical', sign: 'positive' }} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

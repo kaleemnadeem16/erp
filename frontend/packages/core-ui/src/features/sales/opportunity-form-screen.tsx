@@ -21,6 +21,8 @@ import type { Presentation } from '../../lib/presentation';
 import { useAuthStore } from '../../stores/auth-store';
 import { ContactPicker, usePartyContacts } from './contact-picker';
 import { RegisterPartyDialog, SALES, useSalesStages } from './sales-common';
+import { checkDecimal, decimalForEdit } from '../../lib/decimal';
+import { DecimalInput } from '../../components/ui/decimal-input';
 
 /**
  * A direct opportunity for a trading partner — no enquiry is needed first (ADR 0098/0108). The owner defaults to you; stage, value and the rest stay out of the way until wanted.
@@ -71,7 +73,7 @@ export function OpportunityFormScreen({ presentation = 'sheet' }: { presentation
     setTitle(deal.title);
     setDescription(deal.description ?? '');
     setSource(deal.source ?? '');
-    setAmount(deal.expected_amount ?? '');
+    setAmount(decimalForEdit(deal.expected_amount));
     setCurrencyId(deal.expected_currency_id ? String(deal.expected_currency_id) : '');
     setCloseOn(deal.expected_close_on ?? '');
     setNextAction(deal.next_action ?? '');
@@ -88,8 +90,8 @@ export function OpportunityFormScreen({ presentation = 'sheet' }: { presentation
   const valueProblem =
     (amount.trim() === '') !== (currencyId === '')
       ? 'Give both the amount and its currency, or neither.'
-      : amount.trim() !== '' && !/^\d+(\.\d{1,4})?$/.test(amount.trim())
-        ? 'Enter the amount as a number.'
+      : amount.trim() !== '' && !checkDecimal(amount, { spec: 'money', sign: 'nonNegative', label: 'The amount' }).ok
+        ? (checkDecimal(amount, { spec: 'money', sign: 'nonNegative', label: 'The amount' }).message ?? 'Enter the amount as a number.')
         : null;
   const titleMissing = title.trim() === '';
   const partyMissing = !editing && partyId === '';
@@ -273,12 +275,12 @@ export function OpportunityFormScreen({ presentation = 'sheet' }: { presentation
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="opp-amount">Expected value</Label>
-              <Input
+              <DecimalInput
                 id="opp-amount"
-                inputMode="decimal"
+                rule={{ spec: 'money', sign: 'nonNegative' }}
                 placeholder="Leave empty if not known"
                 value={amount}
-                onChange={(event) => setAmount(event.target.value)}
+                onChange={setAmount}
                 aria-invalid={showErrors && !!valueProblem}
               />
             </div>

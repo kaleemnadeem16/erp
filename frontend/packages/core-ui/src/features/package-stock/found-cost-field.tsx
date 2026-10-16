@@ -1,7 +1,8 @@
 import { useStockLayersIndex } from "@erp/core-api";
 import { Button } from "../../components/ui/button";
-import { Input } from "../../components/ui/input";
+import { DecimalInput } from "../../components/ui/decimal-input";
 import { formatDate } from "../../lib/format-date";
+import { decimalForEdit, formatDecimal } from "../../lib/decimal";
 
 /**
  * The unit cost of stock found in a count. Never inferred: the most recent receipt's cost is offered with its source and date, and the reviewer
@@ -15,10 +16,10 @@ export function FoundCostField({ itemId, value, onChange, unit }: { itemId: numb
 
   return (
     <div className="flex flex-col items-end gap-1">
-      <Input type="number" step="0.0001" className="h-8 w-24 text-right" value={value} onChange={(event) => onChange(event.target.value)} aria-label="Found unit cost" data-testid="found-cost" />
+      <DecimalInput rule={{ spec: "money", sign: "nonNegative" }} className="h-8 w-24" value={value} onChange={onChange} aria-label="Found unit cost" data-testid="found-cost" />
       {suggestion !== undefined && value === "" && (
-        <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => onChange(String(Number(suggestion)))} data-testid="found-cost-suggestion">
-          Use {Number(suggestion)}{unit ? ` per ${unit}` : ""} — last receipt, {formatDate(latest?.received_at)}
+        <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => onChange(decimalForEdit(suggestion))} data-testid="found-cost-suggestion">
+          Use {formatDecimal(suggestion)}{unit ? ` per ${unit}` : ""} — last receipt, {formatDate(latest?.received_at)}
         </Button>
       )}
     </div>

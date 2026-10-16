@@ -41,6 +41,8 @@ import {
 } from "lucide-react";
 import { Badge } from "../../components/ui/badge";
 import { Link } from "react-router";
+import { decimalField, decimalForEdit } from "../../lib/decimal";
+import { DecimalInput } from "../../components/ui/decimal-input";
 
 const NONE = "NONE";
 const DRAFT_KEY = "item_supplier_new_draft";
@@ -61,12 +63,7 @@ const schema = z.object({
       (v) => !v || (/^\d+$/.test(v) && Number(v) <= 32767),
       "Lead time must be between 0 and 32767",
     ),
-  minimum_order_qty: z
-    .string()
-    .refine(
-      (v) => !v || (/^\d{1,15}(\.\d{1,4})?$/.test(v) && Number(v) > 0),
-      "Enter a positive quantity with up to 4 decimal places",
-    ),
+  minimum_order_qty: decimalField({ spec: "stockLedger", sign: "positive", optional: true, label: "Minimum order quantity" }),
   purchase_uom_id: z.string(),
   active: z.boolean(),
 });
@@ -106,7 +103,7 @@ export function readUnfinishedItemSupplier(): ItemSupplierFormValues | null {
     supplier_item_code: stored.supplier_item_code ?? "",
     priority: stored.priority ?? "",
     lead_time_days: stored.lead_time_days ?? "",
-    minimum_order_qty: stored.minimum_order_qty ?? "",
+    minimum_order_qty: decimalForEdit(stored.minimum_order_qty),
     purchase_uom_id: stored.purchase_uom_id ?? NONE,
     active: stored.active ?? true,
   };
@@ -594,8 +591,8 @@ export function ItemSupplierForm({
                   Minimum Order Quantity (MOQ)
                 </FormLabel>
                 <FormControl>
-                  <Input
-                    inputMode="decimal"
+                  <DecimalInput
+                    rule={{ spec: "stockLedger", sign: "positive" }}
                     placeholder="e.g. 100.0000"
                     className="h-10"
                     {...field}

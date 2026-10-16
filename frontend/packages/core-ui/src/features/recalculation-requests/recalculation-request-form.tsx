@@ -12,17 +12,19 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { DetailSection } from '../../components/detail/detail-page-layout';
 import { formatLocation } from '../../lib/format-location';
 import { lookupState } from '../../lib/api-errors';
+import { decimalField } from '../../lib/decimal';
+import { DecimalInput } from '../../components/ui/decimal-input';
 
 const recalculationRequestFormSchema = z.object({
   item_id: z.string().min(1, 'Item is required'),
   location_id: z.string().min(1, 'Location is required'),
   movement_kind: z.string().min(1, 'Movement kind is required'),
   destination_location_id: z.string().optional(),
-  qty: z.string().min(1, 'Quantity is required'),
-  unit_cost: z.string().optional(),
-  base_unit_cost: z.string().optional(),
+  qty: decimalField({ spec: 'stockLedger', sign: 'positive', label: 'Quantity' }),
+  unit_cost: decimalField({ spec: 'money', sign: 'nonNegative', optional: true, label: 'Unit cost' }).optional(),
+  base_unit_cost: decimalField({ spec: 'money', sign: 'nonNegative', optional: true, label: 'Base unit cost' }).optional(),
   currency_id: z.string().optional(),
-  fx_rate: z.string().optional(),
+  fx_rate: decimalField({ spec: 'fxRate', sign: 'positive', optional: true, label: 'FX rate' }).optional(),
   batch_no: z.string().optional(),
   serial_no: z.string().optional(),
   moved_at: z.string().min(1, 'The true historical date is required'),
@@ -164,7 +166,7 @@ export function RecalculationRequestForm({
               <FormItem>
                 <FormLabel>Quantity</FormLabel>
                 <FormControl>
-                  <Input type="number" step="0.0001" {...field} />
+                  <DecimalInput rule={{ spec: 'stockLedger', sign: 'positive' }} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -220,7 +222,7 @@ export function RecalculationRequestForm({
                 <FormItem>
                   <FormLabel>Unit cost</FormLabel>
                   <FormControl>
-                    <Input type="number" step="0.0001" {...field} />
+                    <DecimalInput rule={{ spec: 'money', sign: 'nonNegative' }} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -233,7 +235,7 @@ export function RecalculationRequestForm({
                 <FormItem>
                   <FormLabel>Base unit cost</FormLabel>
                   <FormControl>
-                    <Input type="number" step="0.0001" {...field} />
+                    <DecimalInput rule={{ spec: 'money', sign: 'nonNegative' }} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -259,7 +261,7 @@ export function RecalculationRequestForm({
                 <FormItem>
                   <FormLabel>FX rate</FormLabel>
                   <FormControl>
-                    <Input type="number" step="0.000000001" {...field} />
+                    <DecimalInput rule={{ spec: 'fxRate', sign: 'positive' }} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

@@ -23,6 +23,8 @@ import { PageHeader } from '../../components/page/page-header';
 import { DetailPageLayout, DetailSection } from '../../components/detail/detail-page-layout';
 import { DetailField } from '../../components/detail/detail-field';
 import { getApiErrorMessage, lookupState } from '../../lib/api-errors';
+import { compareDecimal, describeSubmitError, formatDecimal, isPositiveDecimal, subtractDecimal } from '../../lib/decimal';
+import { DecimalInput } from '../../components/ui/decimal-input';
 import { formatDateTime } from '../../lib/format-date';
 import { cn } from '../../lib/utils';
 import { useAuthStore } from '../../stores/auth-store';
@@ -38,9 +40,13 @@ const STATUS_VARIANT: Record<string, 'secondary' | 'success' | 'destructive'> = 
 };
 
 // Null without a book quantity: a counter who counts blind (ADR 0083) is never shown the variance, which would give the book figure away.
-function lineVariance(line: PhysicalCountLineResource): number | null {
-  return line.counted_qty === null || line.book_qty === undefined ? null : Number(line.counted_qty) - Number(line.book_qty);
+function lineVariance(line: PhysicalCountLineResource): string | null {
+  return line.counted_qty === null || line.book_qty === undefined ? null : subtractDecimal(String(line.counted_qty), String(line.book_qty));
 }
+
+/** Whether a variance (an exact decimal string) is above or below zero; null counts as neither. */
+const isGain = (variance: string | null) => variance !== null && compareDecimal(variance, '0') === 1;
+const isLoss = (variance: string | null) => variance !== null && compareDecimal(variance, '0') === -1;
 
 /**
  * The workspace for one count: header info plus a lines table that's the
@@ -96,7 +102,7 @@ export function PhysicalCountDetailScreen() {
   const everyLineCounted = lines.length > 0 && lines.every((line) => line.counted_qty !== null);
   const staleLines = lines.filter((line) => typeof line.stale_reason === 'string' && line.stale_reason !== '');
   const needsRecount = lines.some((line) => line.grouped) && !mayRecount;
-  const missingFoundCost = lines.some((line) => (lineVariance(line) ?? 0) > 0 && Number(foundCostDrafts[line.id] ?? line.found_unit_cost ?? 0) <= 0);
+  const missingFoundCost = lines.some((line) => isGain(lineVariance(line)) && !isPositiveDecimal(String(foundCostDrafts[line.id] ?? line.found_unit_cost ?? '0').trim()));
 
   function handleAddLine(event: FormEvent) {
     event.preventDefault();
@@ -131,14 +137,14 @@ export function PhysicalCountDetailScreen() {
     setActionError(null);
     recordLine.mutate(
       { physicalCountLine: line.id, data: { counted_qty: String(value).trim() } },
-      { onSuccess: () => countQuery.refetch(), onError: (error) => setActionError(getApiErrorMessage(error)) }
+      { onSuccess: () => countQuery.refetch(), onError: (error) => setActionError(describeSubmitError(error)) }
     );
   }
 
   function handlePost() {
     setActionError(null);
     const foundCosts = lines
-      .filter((line) => (lineVariance(line) ?? 0) > 0)
+      .filter((line) => isGain(lineVariance(line)))
       .map((line) => ({
         physical_count_line_id: line.id,
         unit_cost: String(foundCostDrafts[line.id] ?? line.found_unit_cost ?? '0').trim(),
@@ -258,7 +264,7 @@ export function PhysicalCountDetailScreen() {
                 ) : (
                   lines.map((line) => {
                     const varianceValue = lineVariance(line);
-                    const needsFoundCost = isDraft && (varianceValue ?? 0) > 0;
+                    const needsFoundCost = isDraft && isGain(varianceValue);
 
                     return (
                       <TableRow key={line.id}>
@@ -278,12 +284,11 @@ export function PhysicalCountDetailScreen() {
                             />
                           ) : isDraft && mayCount ? (
                             <div className="flex items-center justify-end gap-1">
-                              <Input
-                                type="number"
-                                step="0.0001"
-                                className="h-8 w-24 text-right"
+                              <DecimalInput
+                                rule={{ spec: 'stockLedger', sign: 'nonNegative' }}
+                                className="h-8 w-24"
                                 value={countedDrafts[line.id] ?? line.counted_qty ?? ''}
-                                onChange={(event) => setCountedDrafts((prev) => ({ ...prev, [line.id]: event.target.value }))}
+                                onChange={(next) => setCountedDrafts((prev) => ({ ...prev, [line.id]: next }))}
                               />
                               <Tooltip>
                                 <TooltipTrigger asChild>
@@ -310,11 +315,11 @@ export function PhysicalCountDetailScreen() {
                           <TableCell
                             className={cn(
                               'text-right tabular-nums',
-                              varianceValue !== null && varianceValue > 0 && 'text-status-success',
-                              varianceValue !== null && varianceValue < 0 && 'text-destructive'
+                              isGain(varianceValue) && 'text-status-success',
+                              isLoss(varianceValue) && 'text-destructive'
                             )}
                           >
-                            {varianceValue === null ? '—' : varianceValue.toFixed(4)}
+                            {varianceValue === null ? '—' : formatDecimal(varianceValue, { minFraction: 4, grouping: false })}
                             {line.grouped && (
                               <div
                                 className={cn(
@@ -336,12 +341,11 @@ export function PhysicalCountDetailScreen() {
                               onChange={(value) => setFoundCostDrafts((prev) => ({ ...prev, [line.id]: value }))}
                             />
                           ) : needsFoundCost && mayPost ? (
-                            <Input
-                              type="number"
-                              step="0.0001"
-                              className="h-8 w-24 text-right"
+                            <DecimalInput
+                              rule={{ spec: 'money', sign: 'nonNegative' }}
+                              className="h-8 w-24"
                               value={foundCostDrafts[line.id] ?? line.found_unit_cost ?? ''}
-                              onChange={(event) => setFoundCostDrafts((prev) => ({ ...prev, [line.id]: event.target.value }))}
+                              onChange={(next) => setFoundCostDrafts((prev) => ({ ...prev, [line.id]: next }))}
                             />
                           ) : (
                             <span className="tabular-nums">{line.found_unit_cost ?? '—'}</span>

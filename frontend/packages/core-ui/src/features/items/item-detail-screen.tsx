@@ -36,6 +36,7 @@ import {
   type DetailPrintSection,
 } from "../../components/print";
 import { getApiErrorMessage } from "../../lib/api-errors";
+import { formatDecimal } from "../../lib/decimal";
 import type { Presentation } from "../../lib/presentation";
 import { ItemCustomFieldDisplay } from "../custom-fields/custom-field-inputs";
 import { ItemPurchasingPanel } from "./item-purchasing-panel";
@@ -257,7 +258,7 @@ export function ItemDetailScreen({
         },
         {
           label: "Stock quantity increment",
-          value: item.quantity_precision ?? "Unrestricted",
+          value: item.quantity_precision ? formatDecimal(item.quantity_precision) : "Unrestricted",
         },
         { label: "Tracking", value: item.tracking },
         { label: "Valuation method", value: item.valuation_method },
@@ -453,7 +454,7 @@ export function ItemDetailScreen({
                   )}
                 </DetailField>
                 <DetailField label="Stock quantity increment">
-                  {item.quantity_precision ?? "Unrestricted"}
+                  {item.quantity_precision ? formatDecimal(item.quantity_precision) : "Unrestricted"}
                 </DetailField>
                 <DetailField label="Tracking">{item.tracking}</DetailField>
                 <DetailField label="Valuation method">

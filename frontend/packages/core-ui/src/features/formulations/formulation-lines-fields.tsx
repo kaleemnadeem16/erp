@@ -9,6 +9,7 @@ import { Input } from '../../components/ui/input';
 import { Combobox } from '../../components/ui/combobox';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../components/ui/form';
 import { lookupState } from '../../lib/api-errors';
+import { DecimalInput } from '../../components/ui/decimal-input';
 
 export const formulationLineSchema = z.object({
   input_item_id: z.string().min(1, 'Item is required'),
@@ -124,7 +125,7 @@ export function FormulationLinesFields<TFieldValues extends FieldValues & { line
                 <FormItem>
                   <FormLabel>Quantity</FormLabel>
                   <FormControl>
-                    <Input inputMode="decimal" {...qtyField} value={qtyField.value ?? ''} />
+                    <DecimalInput rule={{ spec: 'assemblyTechnical', sign: 'positive' }} {...qtyField} value={qtyField.value ?? ''} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

@@ -17,6 +17,7 @@ import { PageHeader } from "../../components/page/page-header";
 import { ScreenTemplate } from "../../components/page/screen-template";
 import { RecordSheet } from "../../components/page/record-sheet";
 import { applyApiErrorsToForm } from "../../lib/api-errors";
+import { decimalForEdit } from "../../lib/decimal";
 import type { Presentation } from "../../lib/presentation";
 import {
   DEFAULT_OPTION,
@@ -162,7 +163,7 @@ export function ItemEditScreen({ presentation = "page" }: ItemEditScreenProps) {
     description: item.description ?? "",
     type: item.type as ItemType,
     stock_uom_id: String(item.stock_uom_id),
-    quantity_precision: item.quantity_precision ?? "",
+    quantity_precision: decimalForEdit(item.quantity_precision),
     category_id: String(item.category_id),
     is_stocked: item.is_stocked,
     is_purchasable: item.is_purchasable,

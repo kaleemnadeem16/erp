@@ -37,6 +37,8 @@ import { trimQty } from '../package-stock/quantity';
 import { AttributionCorrectionDialog, ResponsibilityRecord } from './opportunity-attribution';
 import { contactLabel, usePartyContact } from './contact-picker';
 import { HistoryList, NotesList, OUTCOME_LABEL, OutcomeBadge, SALES, describeEvent, useSalesStages } from './sales-common';
+import { checkDecimal, decimalForEdit } from '../../lib/decimal';
+import { DecimalInput } from '../../components/ui/decimal-input';
 
 const isPast = (day: string | null | undefined) => Boolean(day) && (day as string) < new Date().toLocaleDateString('en-CA');
 const Overdue = () => <span className="ml-1 text-xs text-destructive">overdue</span>;
@@ -389,7 +391,7 @@ function ActionDialogs({
     title: opportunity.title,
     description: opportunity.description ?? '',
     source: opportunity.source ?? '',
-    amount: opportunity.expected_amount ?? '',
+    amount: decimalForEdit(opportunity.expected_amount),
     currency: opportunity.expected_currency_id ? String(opportunity.expected_currency_id) : '',
     closeOn: opportunity.expected_close_on ?? '',
     nextAction: opportunity.next_action ?? '',
@@ -408,7 +410,7 @@ function ActionDialogs({
   }
 
   const needsReason = reason.trim() === '';
-  const valueProblem = (String(edit.amount).trim() === '') !== (edit.currency === '');
+  const valueProblem = (String(edit.amount).trim() === '') !== (edit.currency === '') || (String(edit.amount).trim() !== '' && !checkDecimal(String(edit.amount), { spec: 'money', sign: 'nonNegative' }).ok);
 
   return (
     <>
@@ -531,7 +533,7 @@ function ActionDialogs({
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="edit-amount">Expected value</Label>
-              <Input id="edit-amount" inputMode="decimal" placeholder="Leave empty if not known" value={String(edit.amount)} onChange={(event) => setEdit({ ...edit, amount: event.target.value })} />
+              <DecimalInput id="edit-amount" rule={{ spec: 'money', sign: 'nonNegative' }} placeholder="Leave empty if not known" value={String(edit.amount)} onChange={(next) => setEdit({ ...edit, amount: next })} />
             </div>
             <div className="space-y-1.5">
               <Label>Currency</Label>

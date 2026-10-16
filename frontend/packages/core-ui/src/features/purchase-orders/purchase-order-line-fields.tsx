@@ -31,6 +31,8 @@ import {
   FormMessage,
 } from "../../components/ui/form";
 import { Input } from "../../components/ui/input";
+import { DecimalInput } from "../../components/ui/decimal-input";
+import { decimalForEdit, isPositiveDecimal } from "../../lib/decimal";
 import type { LookupState } from "../../lib/api-errors";
 import {
   LineStockNote,
@@ -56,7 +58,7 @@ function usedGroups(line: Line): OptionId[] {
   if (line.item_packaging_id || line.supplier_offer_id) used.push("pack");
   if (line.price_uom_id || (line.price_quantity && line.price_quantity !== "1" && line.price_quantity !== "1.0000"))
     used.push("basis");
-  if (Number(line.discount_amount) > 0 || Number(line.tax_amount) > 0) used.push("adjust");
+  if (isPositiveDecimal(line.discount_amount ?? "") || isPositiveDecimal(line.tax_amount ?? "")) used.push("adjust");
   if (line.expected_delivery_date) used.push("date");
   if (line.qa_required) used.push("qa");
   return used;
@@ -208,7 +210,7 @@ export function PurchaseOrderLineFields({
   const packageName = pricing.packageRows.find((p) => String(p.id) === line.item_packaging_id)?.name;
   const priceUnit =
     pricing.resolved?.price_unit_label ?? unitCode(line.price_uom_id) ?? packageName ?? unitCode(line.purchase_uom_id) ?? "";
-  const priceQuantity = Number(line.price_quantity) > 0 ? String(Number(line.price_quantity)) : "1";
+  const priceQuantity = isPositiveDecimal(line.price_quantity ?? "") ? decimalForEdit(line.price_quantity) : "1";
 
   const text = (name: "description" | "ordered_qty" | "unit_price", label: string, hint: string, className?: string) => (
     <FormField
@@ -218,12 +220,16 @@ export function PurchaseOrderLineFields({
         <FormItem className={className}>
           <FormLabelWithHint hint={hint}>{label}</FormLabelWithHint>
           <FormControl>
-            <Input
-              type="text"
-              inputMode={name === "description" ? undefined : "decimal"}
-              {...field}
-              value={String(field.value ?? "")}
-            />
+            {name === "description" ? (
+              <Input type="text" {...field} value={String(field.value ?? "")} />
+            ) : (
+              // The order quantity (four places) and the unit price (stored money, four places): typed as exact text, refused if finer, never reformatted.
+              <DecimalInput
+                rule={name === "ordered_qty" ? { spec: "stockLedger", sign: "positive" } : { spec: "money", sign: "nonNegative" }}
+                {...field}
+                value={String(field.value ?? "")}
+              />
+            )}
           </FormControl>
           {name === "unit_price" && priceUnit && (
             <FormDescription>
@@ -244,7 +250,7 @@ export function PurchaseOrderLineFields({
         <FormItem>
           <FormLabelWithHint>{label}</FormLabelWithHint>
           <FormControl>
-            <Input type="text" inputMode="decimal" {...field} value={String(field.value ?? "")} />
+            <DecimalInput rule={{ spec: "money", sign: "nonNegative" }} {...field} value={String(field.value ?? "")} />
           </FormControl>
           <FormDescription>{description}</FormDescription>
           <FormMessage />

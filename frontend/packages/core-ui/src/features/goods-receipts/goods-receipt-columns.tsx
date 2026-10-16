@@ -4,6 +4,7 @@ import { RecordLink } from "../../components/ui/record-link";
 import { StatusBadge, type StatusTone } from "../../components/ui/status-badge";
 import type { DataColumn } from "../../components/data-table/types";
 import { formatDateTime } from "../../lib/format-date";
+import { formatMoney } from "../../lib/decimal";
 
 export function GoodsReceiptStatusBadge({ status }: { status: string }) {
   const tone: StatusTone =
@@ -23,15 +24,11 @@ export function GoodsReceiptStatusBadge({ status }: { status: string }) {
 function formatAmount(
   amount: string | number | null | undefined,
   currencyCode: string | undefined,
+  places = 2,
 ): string {
   if (amount === null || amount === undefined) return "—";
-  const number = Number(amount);
-  const text = Number.isFinite(number)
-    ? number.toLocaleString("en-US", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 4,
-      })
-    : String(amount);
+  // Decimal-string formatting (no float), in the currency's own minor-unit places, never rounding below what is stored.
+  const text = formatMoney(String(amount), { decimal_places: places });
   return currencyCode ? `${currencyCode} ${text}` : text;
 }
 
@@ -39,6 +36,7 @@ export function goodsReceiptColumns(
   suppliers: ReadonlyMap<number, string>,
   currencies: ReadonlyMap<number, string> = new Map(),
   mayViewCommercialCost = false,
+  currencyPlaces: ReadonlyMap<number, number> = new Map(),
 ): DataColumn<GoodsReceiptResource>[] {
   return [
     {
@@ -82,6 +80,7 @@ export function goodsReceiptColumns(
                   {formatAmount(
                     receipt.total_amount,
                     currencies.get(Number(receipt.currency_id ?? 0)),
+                    currencyPlaces.get(Number(receipt.currency_id ?? 0)),
                   )}
                 </span>
               ),

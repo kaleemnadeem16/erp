@@ -13,12 +13,14 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { DetailSection } from '../../components/detail/detail-page-layout';
 import { formatLocation } from '../../lib/format-location';
 import { lookupState } from '../../lib/api-errors';
+import { decimalField } from '../../lib/decimal';
+import { DecimalInput } from '../../components/ui/decimal-input';
 
 const negativeStockOverrideFormSchema = z.object({
   item_id: z.string().min(1, 'Item is required'),
   location_id: z.string().min(1, 'Location is required'),
   movement_class: z.string().min(1, 'Movement class is required'),
-  requested_qty: z.string().min(1, 'Requested quantity is required'),
+  requested_qty: decimalField({ spec: 'stockLedger', sign: 'positive', label: 'Requested quantity' }),
   source_type: z.string().min(1, 'Source type is required').max(255),
   source_id: z.string().min(1, 'Source ID is required'),
   reason_code: z.string().min(1, 'Reason is required'),
@@ -110,7 +112,7 @@ export function NegativeStockOverrideForm({
               <FormItem>
                 <FormLabel>Requested quantity</FormLabel>
                 <FormControl>
-                  <Input type="number" step="0.0001" {...field} />
+                  <DecimalInput rule={{ spec: 'stockLedger', sign: 'positive' }} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

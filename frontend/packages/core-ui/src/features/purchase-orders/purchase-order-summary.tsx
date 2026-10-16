@@ -63,6 +63,7 @@ function AsideSummary({
   uomOptions,
   paymentTermsDays,
   leadTimeDays,
+  currencyPlaces,
 }: {
   control: Control<PurchaseOrderFormValues>;
   supplierOptions: Option[];
@@ -73,6 +74,8 @@ function AsideSummary({
   /** From the chosen supplier's record, when known. */
   paymentTermsDays?: number;
   leadTimeDays?: number | null;
+  /** Minor-unit places by currency id, so amounts show the currency's own places (0 for a yen, 3 for a dinar), not an assumed two. */
+  currencyPlaces?: Readonly<Record<string, number>>;
 }) {
   const values = useWatch({ control });
   const label = (options: Option[], value?: string) =>
@@ -87,7 +90,8 @@ function AsideSummary({
   const complete = amounts.filter((amount): amount is NonNullable<typeof amount> => amount !== null);
   const sum = (pick: (amount: (typeof complete)[number]) => bigint) =>
     complete.reduce((total, amount) => total + pick(amount), 0n);
-  const money = (value: bigint) => `${currencyCode ? `${currencyCode} ` : ""}${formatScaled(value)}`;
+  const places = (values.currency_id ? currencyPlaces?.[values.currency_id] : undefined) ?? 2;
+  const money = (value: bigint) => `${currencyCode ? `${currencyCode} ` : ""}${formatScaled(value, places)}`;
 
   return (
     <>
@@ -138,7 +142,7 @@ function AsideSummary({
                       )}
                     </span>
                     <span className="shrink-0 text-xs font-medium tabular-nums">
-                      {amount ? formatScaled(amount.total) : "—"}
+                      {amount ? formatScaled(amount.total, places) : "—"}
                     </span>
                   </div>
                   <div className="text-xs tabular-nums text-muted-foreground">
@@ -197,6 +201,7 @@ interface SummaryProps {
   uomOptions: Option[];
   paymentTermsDays?: number;
   leadTimeDays?: number | null;
+  currencyPlaces?: Readonly<Record<string, number>>;
 }
 
 /**
@@ -256,6 +261,7 @@ function ReviewSummary({
   uomOptions,
   paymentTermsDays,
   leadTimeDays,
+  currencyPlaces,
 }: SummaryProps) {
   const values = useWatch({ control });
   const { resolved, loading } = useResolvedLines(values);
@@ -269,7 +275,8 @@ function ReviewSummary({
   const complete = amounts.filter((amount): amount is NonNullable<typeof amount> => amount !== null);
   const sum = (pick: (amount: (typeof complete)[number]) => bigint) =>
     complete.reduce((total, amount) => total + pick(amount), 0n);
-  const money = (value: bigint) => `${currencyCode ? `${currencyCode} ` : ""}${formatScaled(value)}`;
+  const places = (values.currency_id ? currencyPlaces?.[values.currency_id] : undefined) ?? 2;
+  const money = (value: bigint) => `${currencyCode ? `${currencyCode} ` : ""}${formatScaled(value, places)}`;
   const uomCode = (value?: string) => label(uomOptions, value)?.split(" — ")[0];
 
   const problems: string[] = [];
@@ -350,7 +357,7 @@ function ReviewSummary({
                         <p className="text-xs text-muted-foreground">{line.description}</p>
                       )}
                     </div>
-                    <p className="shrink-0 text-right text-sm font-semibold tabular-nums">{amount ? formatScaled(amount.total) : "—"}</p>
+                    <p className="shrink-0 text-right text-sm font-semibold tabular-nums">{amount ? formatScaled(amount.total, places) : "—"}</p>
                   </div>
                   <dl className="grid grid-cols-2 gap-x-4 gap-y-2">
                     {stat("Ordered", `${line?.ordered_qty} ${row?.order_unit_label ?? uomCode(line?.purchase_uom_id) ?? ""}`)}
@@ -439,7 +446,7 @@ function ReviewSummary({
                     <td className="px-3 py-2 text-right tabular-nums">
                       {(parseFloat(line?.tax_amount ?? "0") || 0) > 0 ? line?.tax_amount : "—"}
                     </td>
-                    <td className="px-3 py-2 text-right font-medium tabular-nums">{amount ? formatScaled(amount.total) : "—"}</td>
+                    <td className="px-3 py-2 text-right font-medium tabular-nums">{amount ? formatScaled(amount.total, places) : "—"}</td>
                   </tr>
                 );
               })}

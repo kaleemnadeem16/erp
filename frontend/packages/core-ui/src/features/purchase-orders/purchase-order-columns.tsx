@@ -3,6 +3,7 @@ import type { PurchaseOrderResource } from "@erp/core-api";
 import { StatusBadge, type StatusTone } from "../../components/ui/status-badge";
 import type { DataColumn } from "../../components/data-table/types";
 import { formatDate } from "../../lib/format-date";
+import { formatMoney } from "../../lib/decimal";
 import { REQUEST_STATUS_LABELS } from "../approvals/approval-labels";
 
 // Domain states map to shared visual roles in both colour modes.
@@ -17,20 +18,16 @@ const STATUS_CLASS: Record<string, string> = {
 };
 
 /**
- * "PKR 250,000.00": thousands separators and at least two decimals, but never fewer digits than the
- * stored value needs (totals carry up to four), so a figure is grouped for reading and not rounded.
+ * "PKR 250,000.00": thousands separators and at least the currency's own minor-unit places (two when unknown, none for a yen, three for a dinar), but never
+ * fewer digits than the stored value needs (totals carry up to four), so a figure is grouped for reading and not rounded. Works on the decimal string:
+ * no float is involved.
  */
 function formatAmount(
   amount: string | number,
   currencyCode: string | undefined,
+  places = 2,
 ): string {
-  const number = Number(amount);
-  const text = Number.isFinite(number)
-    ? number.toLocaleString("en-US", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 4,
-      })
-    : String(amount);
+  const text = formatMoney(String(amount), { decimal_places: places });
   return currencyCode ? `${currencyCode} ${text}` : text;
 }
 
@@ -99,6 +96,8 @@ export function purchaseOrderColumns(
   mayViewCommercialCost: boolean,
   /** Whether the company uses approvals at all; the Approval column is left out when it does not. */
   approvalsInUse = false,
+  /** Minor-unit places by currency id, so a total reads in its own currency's places. */
+  currencyPlaces: ReadonlyMap<number, number> = new Map(),
 ): DataColumn<PurchaseOrderResource>[] {
   return [
     {
@@ -155,6 +154,7 @@ export function purchaseOrderColumns(
                   {formatAmount(
                     order.total_amount,
                     currencies.get(order.currency_id),
+                    currencyPlaces.get(order.currency_id),
                   )}
                 </span>
               ),

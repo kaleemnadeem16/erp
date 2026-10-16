@@ -24,6 +24,7 @@ import { applyApiErrorsToForm, getApiErrorMessage } from '../../lib/api-errors';
 import { formulationLineSchema, formulationLinesPayload, FormulationLinesFields } from './formulation-lines-fields';
 import { FormulationCostBreakdown } from './formulation-cost-breakdown';
 import { usePermission } from '../../hooks/use-permission';
+import { DecimalInput } from '../../components/ui/decimal-input';
 
 const headerSchema = z.object({
   code: z.string().min(1, 'Code is required').max(255),
@@ -128,7 +129,7 @@ export function FormulationEditScreen() {
                 <FormItem>
                   <FormLabel>Output quantity</FormLabel>
                   <FormControl>
-                    <Input inputMode="decimal" {...field} value={field.value ?? ''} />
+                    <DecimalInput rule={{ spec: 'assemblyTechnical', sign: 'positive' }} {...field} value={field.value ?? ''} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

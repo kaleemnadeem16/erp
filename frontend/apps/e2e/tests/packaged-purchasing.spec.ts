@@ -113,7 +113,7 @@ test("buyer selects a named package and sees the server conversion and price bas
     .selectOption({ label: "kg" });
   await sheet.getByLabel("Quantity", { exact: true }).fill("10");
   await sheet.getByLabel("Unit price", { exact: true }).fill("850");
-  await expect(sheet.getByText(/in stock/)).toContainText("20.0000");
+  await expect(sheet.getByText(/in stock/)).toContainText("20 kg");
   await expect(sheet.getByLabel("Line total", { exact: true })).toContainText("17000.0000");
   await expect(
     sheet.getByLabel("Purchase UoM", { exact: true }),

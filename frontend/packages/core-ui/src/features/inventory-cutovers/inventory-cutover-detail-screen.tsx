@@ -31,6 +31,7 @@ import { formatDateTime } from '../../lib/format-date';
 import { useAuthStore } from '../../stores/auth-store';
 import { formatLocation } from '../../lib/format-location';
 import { usePermission } from '../../hooks/use-permission';
+import { DecimalInput } from '../../components/ui/decimal-input';
 
 const STATUS_VARIANT: Record<string, 'secondary' | 'default' | 'success' | 'destructive'> = {
   DRAFT: 'secondary',
@@ -427,11 +428,10 @@ export function InventoryCutoverDetailScreen() {
               </div>
               <div className="flex flex-col gap-1">
                 <span className="text-xs font-medium text-muted-foreground">Provisional unit cost</span>
-                <Input
-                  type="number"
-                  step="0.0001"
+                <DecimalInput
+                  rule={{ spec: 'money', sign: 'nonNegative' }}
                   value={negativeOpeningDraft.provisional_unit_cost}
-                  onChange={(event) => setNegativeOpeningDraft((draft) => ({ ...draft, provisional_unit_cost: event.target.value }))}
+                  onChange={(next) => setNegativeOpeningDraft((draft) => ({ ...draft, provisional_unit_cost: next }))}
                 />
               </div>
               <div className="flex flex-col gap-1">

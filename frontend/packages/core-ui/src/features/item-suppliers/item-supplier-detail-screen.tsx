@@ -48,6 +48,7 @@ import { usePurchasingCommercialCost } from "../../hooks/use-purchasing-commerci
 import { formatDate, formatDateTime } from "../../lib/format-date";
 import type { Presentation } from "../../lib/presentation";
 import { ItemSupplierStatusBadge } from "./item-suppliers-columns";
+import { formatDecimal } from "../../lib/decimal";
 
 export interface ItemSupplierDetailScreenProps {
   presentation?: Presentation;
@@ -582,9 +583,7 @@ export function ItemSupplierDetailScreen({
           <DetailField label="Minimum order quantity (MOQ)">
             {row.minimum_order_qty ? (
               <span className="tabular-nums font-semibold">
-                {Number(row.minimum_order_qty).toLocaleString("en-US", {
-                  maximumFractionDigits: 4,
-                })}
+                {formatDecimal(row.minimum_order_qty)}
                 {row.purchase_uom
                   ? ` ${row.purchase_uom.code}`
                   : stockUom
@@ -676,10 +675,7 @@ export function ItemSupplierDetailScreen({
                       {mayViewCommercialCost && offer.unit_price != null && (
                         <span className="tabular-nums font-semibold text-sm">
                           {currencyMap.get(offer.currency_id ?? 0) ?? ""}{" "}
-                          {Number(offer.unit_price).toLocaleString("en-US", {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 4,
-                          })}
+                          {formatDecimal(String(offer.unit_price), { minFraction: 2 })}
                         </span>
                       )}
                     </div>
@@ -691,9 +687,7 @@ export function ItemSupplierDetailScreen({
                         </span>
                         <span className="tabular-nums">
                           {offer.minimum_order_qty
-                            ? Number(offer.minimum_order_qty).toLocaleString(
-                                "en-US",
-                              )
+                            ? formatDecimal(offer.minimum_order_qty)
                             : "None"}
                         </span>
                       </div>

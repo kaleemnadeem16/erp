@@ -139,6 +139,18 @@ The exchange-rate master accepts zero and negative rates (`ManageExchangeRate`, 
 
 **Hand-offs.** Sales FR1: the master now guarantees positive rates; nothing in the Sales resolver changed; seeded dev rates are listed above (base PKR). Deployment: the runbook step is documented in [deployment.md](../architecture/deployment.md#currency-reference-data-adr-0143); `deploy/deploy.sh` is operator-owned and was **not** edited — add `docker compose run --rm app php artisan erp:sync-currencies` after the migrate line if the operator wants the report printed on every release (it is read-only). Existing dev currencies keep their older names (PKR "Pakistani Rupee"); the command reports that as information.
 
+### PX4 delivery record (2026-10-16)
+
+| Piece | What was built |
+|---|---|
+| Foundation | `frontend/packages/core-ui/src/lib/decimal/*`: BigInt string arithmetic (no `Number` on authoritative values), `DECIMAL_SPECS` mirroring the backend (stock ledger 4, Assembly technical 6, conversion factor 9, money 4, FX rate 9 with its whole-digit limit), `unitPriceSpec(2..4)`, `checkDecimal` (precision, sign, increment, plain-language message), `formatDecimal`/`formatMoney` (currency minor units 0/2/3/4; stored digits beyond the minor unit stay visible unless a settled view is asked for, and a shortened view is marked and keeps the exact value), `decimalForEdit`, `decimalField` (zod), precision-refusal advice from backend reason codes |
+| Components | `DecimalInput` (raw text in and out, decimal keypad, never reformatted while typing or on blur), `DecimalText` / `MoneyText` |
+| Errors | `applyApiErrorsToForm` appends the next step for PX2/PX3 reason codes to the field or form message |
+| Integrated | Items (increment, packaging, offers, pack conversions — the nine-place increment mismatch is fixed: the form allows four), Purchase Orders (FX rate, quantity, unit price, summary by currency places), Goods Receipts, Inventory (package stock, counts and variances, cutovers, rejected exit, recalculation, negative-stock overrides, overview, item suppliers), existing Sales opportunity screens, Assembly/Formulation/Application-rate six-place inputs |
+| Tests | `decimal.unit.spec.ts` (20 specs, Playwright `unit` project — no new test dependency); `decimal-precision.spec.ts` browser journey (item increment, package definition, purchase order incl. server refusal of an inexact conversion, goods receipt and inventory) |
+
+**Known remaining.** List filters `filter[total_min/max]` still use `Number`; `package-stock/quantity.ts` truncates beyond four places for previews only; line-level server refusals arrive without a line index, so they show as a form banner; some percentage/rate inputs outside the listed screens are not yet on `DecimalInput`; a fifth place on a goods-receipt quantity is caught by the request rule (generic field error) before the quantity contract's reason code.
+
 ## Genuinely unresolved technical decisions
 1. Where the shared quantity contract lives (proposed `app/Support/Quantity`).
 2. A read-only precision catalogue endpoint versus additive scale fields on existing resources.

@@ -14,7 +14,14 @@ import { usePermission } from "../../hooks/use-permission";
 import { usePurchasingCommercialCost } from "../../hooks/use-purchasing-commercial-cost";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
+import { DecimalInput } from "../../components/ui/decimal-input";
 import { getApiErrorMessage } from "../../lib/api-errors";
+import {
+  checkDecimal,
+  describeSubmitError,
+  formatDecimal,
+  type DecimalRule,
+} from "../../lib/decimal";
 import { ItemSupplierPanel } from "./item-supplier-panel";
 
 export function ItemPurchasingPanel({
@@ -96,7 +103,56 @@ export function ItemPurchasingPanel({
   const unitRows = units.data?.status === 200 ? units.data.data.data : [];
   const currencyRows =
     currencies.data?.status === 200 ? currencies.data.data.data : [];
-  const fail = (e: unknown) => setError(getApiErrorMessage(e));
+  const fail = (e: unknown) => setError(describeSubmitError(e));
+  const [attempted, setAttempted] = useState(false);
+  // A decimal field judged by the same rule the server applies (ADR 0142): shown invalid as soon as something invalid is typed, never reformatted.
+  const decimalProblem = (
+    label: string,
+    value: string,
+    rule: Pick<DecimalRule, "spec" | "sign">,
+    optional: boolean,
+  ) =>
+    optional && value.trim() === ""
+      ? null
+      : (checkDecimal(value, { ...rule, label }).message ?? null);
+  const decField = (
+    label: string,
+    value: string,
+    change: (s: string) => void,
+    rule: Pick<DecimalRule, "spec" | "sign">,
+    optional = false,
+  ) => {
+    const problem = decimalProblem(label, value, rule, optional);
+    const shown = problem && (attempted || value.trim() !== "");
+    const id = `dec-${label.replace(/\W+/g, "-").toLowerCase()}`;
+    return (
+      <label className="space-y-1.5 text-sm font-medium text-foreground">
+        <span>{label}</span>
+        <DecimalInput
+          value={value}
+          onChange={change}
+          rule={rule}
+          aria-invalid={shown ? true : undefined}
+          aria-describedby={shown ? id : undefined}
+        />
+        {shown && (
+          <span id={id} role="alert" className="block text-xs font-normal text-destructive">
+            {problem}
+          </span>
+        )}
+      </label>
+    );
+  };
+  const packProblems = [
+    decimalProblem("Content in stock unit", p.quantity, { spec: "stockLedger", sign: "positive" }, false),
+    decimalProblem("Package increment", p.increment, { spec: "stockLedger", sign: "positive" }, true),
+  ].filter(Boolean);
+  const offerProblems = [
+    decimalProblem("Price", o.price, { spec: "money", sign: "nonNegative" }, false),
+    decimalProblem("Price per quantity", o.denominator, { spec: "stockLedger", sign: "positive" }, false),
+    decimalProblem("Minimum order", o.minimum, { spec: "stockLedger", sign: "positive" }, true),
+    decimalProblem("Order multiple", o.multiple, { spec: "stockLedger", sign: "positive" }, true),
+  ].filter(Boolean);
   const field = (label: string, value: string, change: (s: string) => void) => (
     <label className="space-y-1.5 text-sm font-medium text-foreground">
       <span>{label}</span>
@@ -154,7 +210,7 @@ export function ItemPurchasingPanel({
               className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-3"
             >
               <span>
-                {row.code} — {row.name}: {row.stock_quantity} {stockUnit} ·{" "}
+                {row.code} — {row.name}: {formatDecimal(row.stock_quantity)} {stockUnit} ·{" "}
                 {row.active ? "Active" : "Archived"}
               </span>
               {canManage && row.active && (
@@ -196,6 +252,8 @@ export function ItemPurchasingPanel({
             onSubmit={(e) => {
               e.preventDefault();
               setError(null);
+              setAttempted(true);
+              if (packProblems.length > 0) return;
               addPackage.mutate(
                 {
                   data: {
@@ -212,6 +270,7 @@ export function ItemPurchasingPanel({
                 {
                   onSuccess: () => {
                     packages.refetch();
+                    setAttempted(false);
                     setP({
                       code: "",
                       name: "",
@@ -229,13 +288,18 @@ export function ItemPurchasingPanel({
           >
             {field("Package code", p.code, (v) => setP({ ...p, code: v }))}
             {field("Package name", p.name, (v) => setP({ ...p, name: v }))}
-            {field("Content in stock unit", p.quantity, (v) =>
-              setP({ ...p, quantity: v }),
+            {decField(
+              "Content in stock unit",
+              p.quantity,
+              (v) => setP({ ...p, quantity: v }),
+              { spec: "stockLedger", sign: "positive" },
             )}
-            {field(
-              "Package increment (blank = unrestricted)",
+            {decField(
+              "Package increment",
               p.increment,
               (v) => setP({ ...p, increment: v }),
+              { spec: "stockLedger", sign: "positive" },
+              true,
             )}
             {field("Barcode", p.barcode, (v) => setP({ ...p, barcode: v }))}
             {select(
@@ -285,7 +349,8 @@ export function ItemPurchasingPanel({
                   {commercial && (
                     <span>
                       {" "}
-                      · {row.unit_price} per {row.price_quantity}{" "}
+                      · {formatDecimal(row.unit_price, { minFraction: 2 })} per{" "}
+                      {formatDecimal(row.price_quantity)}{" "}
                       {unitRows.find((u) => u.id === row.price_uom_id)?.code ??
                         "packages"}
                     </span>
@@ -314,17 +379,24 @@ export function ItemPurchasingPanel({
                           "New price for future orders",
                           row.unit_price,
                         );
-                        if (price !== null)
+                        if (price !== null) {
+                          const problem = checkDecimal(price, { spec: "money", sign: "nonNegative", label: "Price" });
+                          if (!problem.ok) {
+                            setError(problem.message ?? "Enter a valid price");
+                            return;
+                          }
+                          setError(null);
                           editOffer.mutate(
                             {
                               supplierOffer: row.id,
-                              data: { unit_price: price },
+                              data: { unit_price: problem.value ?? price },
                             },
                             {
                               onSuccess: () => offers.refetch(),
                               onError: fail,
                             },
                           );
+                        }
                       }}
                     >
                       Change price
@@ -368,6 +440,8 @@ export function ItemPurchasingPanel({
               onSubmit={(e) => {
                 e.preventDefault();
                 setError(null);
+                setAttempted(true);
+                if (offerProblems.length > 0) return;
                 addOffer.mutate(
                   {
                     data: {
@@ -421,7 +495,10 @@ export function ItemPurchasingPanel({
                   "Select unit",
                 )}
               {field("Supplier SKU", o.sku, (v) => setO({ ...o, sku: v }))}
-              {field("Price", o.price, (v) => setO({ ...o, price: v }))}
+              {decField("Price", o.price, (v) => setO({ ...o, price: v }), {
+                spec: "money",
+                sign: "nonNegative",
+              })}
               {select(
                 "Currency",
                 o.currency,
@@ -436,14 +513,25 @@ export function ItemPurchasingPanel({
                 unitRows.map((r) => ({ id: r.id, label: r.code })),
                 "Per selected package",
               )}
-              {field("Price per quantity", o.denominator, (v) =>
-                setO({ ...o, denominator: v }),
+              {decField(
+                "Price per quantity",
+                o.denominator,
+                (v) => setO({ ...o, denominator: v }),
+                { spec: "stockLedger", sign: "positive" },
               )}
-              {field("Minimum order (in order basis)", o.minimum, (v) =>
-                setO({ ...o, minimum: v }),
+              {decField(
+                "Minimum order",
+                o.minimum,
+                (v) => setO({ ...o, minimum: v }),
+                { spec: "stockLedger", sign: "positive" },
+                true,
               )}
-              {field("Order multiple", o.multiple, (v) =>
-                setO({ ...o, multiple: v }),
+              {decField(
+                "Order multiple",
+                o.multiple,
+                (v) => setO({ ...o, multiple: v }),
+                { spec: "stockLedger", sign: "positive" },
+                true,
               )}
               {field("Lead time days", o.lead, (v) => setO({ ...o, lead: v }))}
               {field("Valid from (YYYY-MM-DD)", o.from, (v) =>

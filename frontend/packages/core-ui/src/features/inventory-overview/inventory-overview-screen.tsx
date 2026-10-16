@@ -32,6 +32,7 @@ import { useListViewPreference } from '../../lib/use-view-preference';
 import { inventoryOverviewColumns } from './inventory-overview-columns';
 import { lookupState, type LookupState } from '../../lib/api-errors';
 import { usePermission } from '../../hooks/use-permission';
+import { formatDecimal } from '../../lib/decimal';
 
 interface InventoryOverviewFilters {
   category_id: string;
@@ -39,8 +40,9 @@ interface InventoryOverviewFilters {
   [key: string]: string;
 }
 
+// Stored values carry up to four places; show them, never fewer than two, instead of rounding them to two (base currency places are not known here).
 function formatMoney(value: string): string {
-  return Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return formatDecimal(value, { minFraction: 2, maxFraction: 4 });
 }
 
 /**

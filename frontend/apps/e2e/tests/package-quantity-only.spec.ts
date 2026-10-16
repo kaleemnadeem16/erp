@@ -18,7 +18,7 @@ test('a quantity-only item shows no package controls, counts by a single quantit
   await page.goto(`/physical-counts/${countId}`);
   await expect(page.getByTestId('grouped-count-cell')).toHaveCount(0);
   await expect(page.getByTestId('count-by-package')).toHaveCount(0);
-  const input = page.locator('tbody input[type="number"]').first();
+  const input = page.locator('tbody input[inputmode="decimal"]').first();
   await input.fill('19');
   await page.getByRole('button', { name: 'Save count' }).click();
   await expect.poll(async () => (await api(page, 'GET', `/physical-counts/${countId}?include=lines`)).data.lines[0].counted_qty).toBe('19.0000');

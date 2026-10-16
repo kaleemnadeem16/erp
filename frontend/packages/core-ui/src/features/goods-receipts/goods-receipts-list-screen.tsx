@@ -147,6 +147,10 @@ export function GoodsReceiptsListScreen() {
     () => new Map(currencies.map((currency) => [currency.id, currency.code])),
     [currencies],
   );
+  const currencyPlaces = useMemo(
+    () => new Map(currencies.map((currency) => [currency.id, currency.decimal_places])),
+    [currencies],
+  );
 
   const receiptsQuery = useGoodsReceiptsIndex({
     "filter[search]": query.filters.search || undefined,
@@ -203,8 +207,9 @@ export function GoodsReceiptsListScreen() {
         supplierLabels,
         currencyLabels,
         mayViewCommercialCost,
+        currencyPlaces,
       ),
-    [supplierLabels, currencyLabels, mayViewCommercialCost],
+    [supplierLabels, currencyLabels, mayViewCommercialCost, currencyPlaces],
   );
 
   const [columnVisibility, setColumnVisibility] = useColumnVisibilityPreference(

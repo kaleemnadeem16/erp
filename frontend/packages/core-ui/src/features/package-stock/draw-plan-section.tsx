@@ -1,5 +1,5 @@
 import { Button } from "../../components/ui/button";
-import { Input } from "../../components/ui/input";
+import { DecimalInput } from "../../components/ui/decimal-input";
 import { PackageBreakdown } from "./package-breakdown";
 import { PackageDrawEditor } from "./package-draw-editor";
 import { packageLabel, trimQty } from "./quantity";
@@ -40,14 +40,14 @@ export function DrawPlanSection({
         <label htmlFor={wantedId} className="text-sm font-medium">
           {wantedLabel} ({unit})
         </label>
-        <Input
+        <DecimalInput
           id={wantedId}
-          inputMode="decimal"
+          rule={{ spec: "stockLedger", sign: "positive" }}
           className="w-40"
           value={plan.wanted}
-          onChange={(event) => {
+          onChange={(next) => {
             plan.setAdjusting(false);
-            plan.setWanted(event.target.value);
+            plan.setWanted(next);
           }}
           placeholder="e.g. 12"
         />
