@@ -813,3 +813,12 @@ completion. Explicit zero assertions deferred. Advanced package/Q23/Q24 obligati
 every consumed path requires0040 integration before activation. Purchasing/external labour/equipment/
 subcontract assessment submitted for review, with alternatives and owner decisions, no new contract.
 Documentation only; no application code, grants, migrations, material integration or runtime tests.
+
+## 2026-10-16 — Refine Purchasing/external-work resolution for owner review
+
+E1–E8/Q54 proposed: shared0146 attribution, bounded no-PO evidence, Purchasing-owned service acceptance
+with Job technical evidence, reliable pre-invoice recognition, conserved partial/shared allocations,
+hire charging, subcontract remainder/dispute and later Finance source reconciliation. Verified existing
+goods-receipt/short-close/cancel boundaries by source inspection; no new capability implied. EX01–18
+specified as proposed business scenarios, not executed tests. No ADR accepted, code/grants/migrations
+changed or integration begun. Concurrent Currency/Sales/Purchasing documentation WIP preserved.

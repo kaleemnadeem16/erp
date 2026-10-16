@@ -37,7 +37,7 @@ UI remains each implementation slice's responsibility.
 |1| Lifecycle/Job receiver | ACCEPTED0145; [bounded contract](../domain/job-execution-lifecycle.md) SPECIFIED, no adapter |
 |2| Flexible labour evidence/usage/progress/recognition | ACCEPTED0146/Q51 closed; [bounded contract](../domain/job-labour-recognition.md) SPECIFIED; [coverage contract](../domain/job-cost-coverage.md) ACCEPTED0147/Q52 closed |
 |3| Materials/custody/reservations/consumption/corrections | ACCEPTED0148/Q53 closed; [bounded contract](../domain/job-material-attribution.md) specified; Q24/Q23 retained |
-|4| Purchasing/equipment/subcontract attribution | [Assessment](phase-5-purchasing-external-research.md) PROPOSED for owner review; no contract/implementation authority |
+|4| Purchasing/equipment/subcontract attribution | [Refined E1–E8](phase-5-purchasing-external-resolution.md) PROPOSED/Q54 for owner review; no new ADR/implementation authority |
 |5| Unified costing/source reconciliation | Queued; recognition/source identities,0040 correction linkage |
 |6| Detailed closeout/documents/broader execution | Queued beyond accepted lifecycle;0137 and owning impacts |
 

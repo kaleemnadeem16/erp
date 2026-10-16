@@ -6,6 +6,9 @@
 Question: how should Job-linked purchasing, external labour/equipment and subcontract work preserve
 commitments, accepted performance and one effective actual cost through partial delivery and later Finance?
 
+Owner refinement now informs [E1–E8 resolution](phase-5-purchasing-external-resolution.md).
+The questions below are the prior assessment stage; no final architecture acceptance follows.
+
 ## Business problems and examples first
 
 **Bought materials:** order 10 fittings for a Job, receive 6, consume 4. The order is a supplier
