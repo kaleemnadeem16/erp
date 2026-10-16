@@ -16,6 +16,7 @@ No Job implementation, grants, migrations, production enablement or runtime veri
 | External expenses, Purchasing service acceptance and allocations |0149/Q54 closed; [external](../domain/job-external-cost-attribution.md) | SPECIFIED, no acceptance/attribution adapter |
 | Unified costing/reporting |0150/Q55 closed; [costing](../domain/job-unified-costing.md) | SPECIFIED, physical design/adapters/projections not delivered |
 | Source closeout/historical reconciliation |0151/Q56 closed; [contract/matrix](../domain/job-closeout-reconciliation.md) | SPECIFIED, source readiness/correction adapters not delivered |
+| Job live outputs/later formal documents |0152/Q57 closed; [contract](../domain/job-operational-documents.md) | SPECIFIED, no Job view/formal adapter |
 
 Reuse accepted R7/R9 and Documents0137. Commercial allocations, baseline preservation and scope
 correction rules remain settled. Completion-only and optional direct incurred labour are initial
@@ -23,34 +24,23 @@ SIMPLE direction; no universal timesheet/name/hourly rate/HR, generic service Wo
 Jobs are not mandatory for straightforward trading/delivery. Service pilot remains a candidate,
 not permission to build before dependent handover/readiness and separate implementation authority.
 
-## Pending research and genuinely open decisions
+## Current readiness and remaining implementation planning
 
-Q55 business architecture is accepted0150; current-restated actual/commitment/exposure reporting,
-compatible spending gaps, independent completeness and deferred forecasting are specified. Candidate
-is reconciled to the current contract; physical schema, exact locks and projection remain later design.
-Closeout0151/Q56 is accepted and specified with source readiness/follow-up matrix, without lifecycle
-changes. Next [operational documents/reports/snapshots](phase-5-operational-documents-research.md)
-is PROPOSED/Q57;0137 shared infrastructure remains specified, not delivered.
+Q55 costing0150, Q56 closeout0151 and Q57 Job outputs0152 are accepted/specified. No Job feature is
+implemented/verified by those records. [Fresh-state consolidated readiness assessment](phase-5-implementation-readiness.md)
+inventories newer Phase4 kernels/AU foundations and current uncommitted quotation WIP versus missing
+R6/R7/Job/source adapters. It proposes J1 completion-only and J2 direct-cost extension, SP0–SP6 batches,
+atomic groups, verification expectations and concurrent-owner/Git coordination for review.
 
-Q23 variable-content, Q24 ownership/exceptions and Q16 source-actor question remain open for affected
-paths. They do not globally block truthful ordinary supported service/stock workflows. Unverified
-adapter readiness is a delivery gate, not another owner business choice or implicit waiver.
+1. Owner selects actual commercial source, J1/J2 pilot sign-off boundary and module/integration owners.
+2. Review SP0a physical/interface/security design; separately authorise any disabled foundation/code.
+3. Coordinate actual Phase4/R7 predecessor and Job atomic slices, preserving missing delivery proofs.
+4. Implement only authorised batches; verify source/security/rollout before exposing supported paths.
 
-## Remaining planning and research — in order
-
-1. Owner reviews Q57 document/output scope and optional first-pilot artefacts versus later delivery.
-2. After Q57 direction, specify bounded Job document adapters/source snapshots/audience contracts and
-   shared0137 delivery dependencies; no independent renderer or assumed customer-signature requirement.
-3. Reconcile accepted0151 source readiness/closeout matrix with selected pilot paths and0150 reporting;
-   preserve actual missing adapters as delivery gates, not reopened lifecycle questions.
-4. Prepare consolidated Phase5 dependency/adapter inventory and bounded service-pilot slices, acceptance
-   matrix, transaction/lock proof, real duty/holder rollout proposals and source/correction handoffs.
-   Research any uncovered source-specific semantic gap before declaring its slice ready.
-5. Owner selects a separately authorised implementation batch and owners; activate only verified paths.
-
-Potential later exceptions/reservations/forecasting research is need-driven and separate from the
-initial service pilot. Do not start all workstreams simultaneously or mark Phase5 planning complete
-merely because core ADRs exist. Stop current turn at Q57 bundle review; steps2–5 are not begun here.
+Q51–Q57 closed; Q23/Q24/Q16 remain path-specific, not universal blockers.0137/DF0–DF5 and required
+upstream source snapshots stay intact; no formal Job PDF is mandatory. No unsupported source is NONE.
+This readiness package is prepared, not proof dependencies delivered. Stop at owner review; no code,
+grants, migrations, push or final physical-schema authority follows from this assessment.
 
 ## Dependencies and possible independent foundations
 
@@ -97,14 +87,16 @@ delivery proof and applicable migration/API/security/concurrency/browser/demo ch
 
 ## Current tasks
 
-- [x] Accept/specify0145–0151; resolve Q51–Q56 and preserve research evidence.
+- [x] Accept/specify0145–0152; resolve Q51–Q57 and preserve research evidence.
 - [x] Refine Q55 resolution/candidate, inspect infrastructure and update planning overview.
 - [x] Reconcile Q55 approval, current costing contract and provisional/final valuation distinction.
 - [x] Prepare Q56 source-specific closeout/historical-evidence research for owner review.
 - [x] Record C1–C4 approval in0151 and reconcile closeout dependency matrix; Q56 closed.
 - [x] Prepare Q57 operational documents/reports/snapshots research under0137.
-- [ ] Owner review Q57, then reconcile ordered remaining planning areas.
-- [ ] Consolidate service-pilot slices/readiness evidence for separate implementation authorisation.
+- [x] Record Q57 in0152 and bounded Job output contract, preserving0137/DF sequence.
+- [x] Inspect latest checkout and prepare consolidated readiness/service-pilot assessment.
+- [ ] Owner selects source/owners/batch and reviews physical/interface/security design.
+- [x] Consolidate proposed service-pilot slices/dependencies; actual runtime/delivery evidence still missing.
 - [ ] Implement/verify only separately authorised batches; no such work begun by these documents.
 
 ## Related

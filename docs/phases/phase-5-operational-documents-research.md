@@ -6,6 +6,8 @@
 Question: which minimal outputs help service execution, and when must authoritative business evidence
 be pinned into a protected document under0137 without another renderer or universal document lifecycle?
 
+**Historical review stage:** owner-approved2026-10-16 in0152/[Job output contract](../domain/job-operational-documents.md). Q57 closed; questions/options/scenarios below preserve prior evidence. No delivery implied.
+
 ## Practical examples before contracts
 
 **Small repair business:** dispatcher opens an authorised Job work sheet showing location, contact,

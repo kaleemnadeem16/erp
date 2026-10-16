@@ -166,8 +166,9 @@ in the same commit.
 | [0149](0149-attribute-external-job-costs-through-owning-sources-and-reconciliation.md) | Attribute external Job costs through owning sources and reconciliation | accepted | 2026-10-16 |
 | [0150](0150-unify-job-cost-reporting-through-source-owned-attribution.md) | Unify Job cost reporting through source-owned attribution | accepted | 2026-10-16 |
 | [0151](0151-reconcile-source-obligations-and-govern-post-close-evidence.md) | Reconcile source obligations and govern post-close evidence | accepted | 2026-10-16 |
+| [0152](0152-own-job-document-content-and-reuse-shared-formal-output.md) | Own Job document content and reuse shared formal output | accepted | 2026-10-16 |
 
-**Next number: 0152**
+**Next number: 0153**
 
 Note: the R7 handover ADR was first drafted as a second 0130 and renumbered to 0136 on 2026-10-15; 0130 is the backup decision. Number is chosen after fetching, so drafts do not collide.
 
