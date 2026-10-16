@@ -9,6 +9,7 @@ use App\Modules\Numbering\Support\NumberingRegistry;
 use App\Modules\Parties\Support\PartyCandidateAccess;
 use App\Modules\Sales\Numbering\LeadNumbering;
 use App\Modules\Sales\Numbering\OpportunityNumbering;
+use App\Modules\Sales\Numbering\QuotationNumbering;
 use App\Modules\Sales\Support\Authority\SalesDutyManifest;
 use App\Modules\Sales\Support\PermissionVocabulary;
 use App\Modules\Sales\Support\SalesAccess;
@@ -27,6 +28,7 @@ class SalesServiceProvider extends ServiceProvider
         $this->app->afterResolving(NumberingRegistry::class, static function (NumberingRegistry $registry): void {
             $registry->register(new LeadNumbering);
             $registry->register(new OpportunityNumbering);
+            $registry->register(new QuotationNumbering);
         });
     }
 
