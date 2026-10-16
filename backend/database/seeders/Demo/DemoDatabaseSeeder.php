@@ -46,6 +46,8 @@ final class DemoDatabaseSeeder extends Seeder
                 PackageTransferDemoSeeder::class,
                 PackageActivationDemoSeeder::class,
                 StockDemoSeeder::class,
+                // After StockDemoSeeder: the rates are entered by the demo login through the guarded Currency Action, once StockDemoSeeder has granted it.
+                CurrencyRatesDemoSeeder::class,
                 // After StockDemoSeeder: the count is posted by its demo-supervisor persona (the creator may not post).
                 PackageCountDemoSeeder::class,
                 PackageReceiptReversalDemoSeeder::class,

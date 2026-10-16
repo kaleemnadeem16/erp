@@ -114,6 +114,8 @@ fact that `BuildPurchaseOrderLineAttributes` does not apply.
 
 ### Precision
 
+> **2026-10-16:** an increment governs *ordering and definitions*; it does not force physical receipts, counts or postings onto its multiples, which only need to be exactly representable in the ledger (see [purchasing.md](purchasing.md)).
+>
 > **2026-10-15:** increment validation and quantity representability are refined by [ADR 0142](../decisions/0142-represent-stock-quantities-exactly-and-supersede-0050-increment-validation.md) and described in [precision.md](precision.md). A factor stays nine places as evidence; its precision is not the destination quantity's.
 
 

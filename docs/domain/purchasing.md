@@ -186,6 +186,8 @@ for the pin); no increment means unrestricted. A purchase or receipt quantity co
 **exactly or is refused** (`QUANTITY_NOT_REPRESENTABLE`, or `QUANTITY_INCREMENT_VIOLATED` on the Item
 increment); it is never rounded to the ledger. Above-tolerance approval is deferred.
 
+**Ordering increments are not receiving rules (owner decision, 2026-10-16).** An Item increment (and an agreed package increment) governs how a quantity may be *ordered*. What physically arrives is a measured fact: an Item ordered in whole units may receive 2.5, provided the quantity is exactly representable in the stock ledger, the over-receipt ceiling and availability limits hold, and the packaging, tracking and receipt-composition rules allow it. No rule forces every receipt, count or posting onto a multiple of the Item increment, and Purchasing has no QA exception subsystem for the difference; where a delivered QA workflow supports handling a discrepancy it may be used.
+
 A future quick/direct-purchase screen may atomically create a receipt and invoice for convenience.
 It does not create a special document that lets an invoice alter stock.
 

@@ -25,7 +25,7 @@ class StoreExchangeRateRequest extends FormRequest
         return [
             'from_currency_id' => ['required', 'integer', 'exists:currencies,id', 'different:to_currency_id'],
             'to_currency_id' => ['required', 'integer', 'exists:currencies,id'],
-            'rate' => ['required', 'string', 'regex:/^(?=\d)(?:\d{1,10})(?:\.\d{1,9})?$/', 'gt:0'],
+            'rate' => ['required', 'string', 'regex:/^(?=\d)(?:\d{1,10})(?:\.\d{1,9})?$/', 'numeric', 'gt:0'],
             'rate_date' => ['required', 'date_format:Y-m-d'],
             'rate_type' => ['required', Rule::enum(RateType::class)],
         ];

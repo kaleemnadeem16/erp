@@ -112,6 +112,8 @@ actually used**, not just the value.
 
 ### Money representation
 
+> **2026-10-16:** the reference data is synchronised by `erp:sync-currencies` ([deployment runbook](../architecture/deployment.md#currency-reference-data-adr-0143)); a manual exchange rate is strictly positive, at most ten whole and nine fractional digits, enforced in `ManageExchangeRate`, the Form Requests and a database CHECK, and the Sales FR1 resolver reads the master without changing it.
+
 > **2026-10-15:** currency minor units are governed global reference data ([ADR 0143](../decisions/0143-maintain-currency-minor-units-as-governed-reference-data.md)) and the five kinds of precision are separated in [precision.md](precision.md).
 
 `decimal(19,4)` in the database, `brick/money` in PHP, **string in JSON**

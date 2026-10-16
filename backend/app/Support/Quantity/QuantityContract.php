@@ -98,7 +98,7 @@ final readonly class QuantityContract
         if ($number->abs()->isGreaterThan($this->maximum)) {
             throw QuantityRefusal::make(QuantityRefusal::QUANTITY_OVERFLOW, 'The quantity is larger than the destination can hold.', $field);
         }
-        if ($number->stripTrailingZeros()->getScale() > $this->scale) {
+        if ($number->strippedOfTrailingZeros()->getScale() > $this->scale) {
             throw QuantityRefusal::make(QuantityRefusal::QUANTITY_NOT_REPRESENTABLE,
                 "The quantity needs more than {$this->scale} decimal places and is not rounded.", $field);
         }
@@ -121,7 +121,7 @@ final readonly class QuantityContract
         if (! $value->isPositive()) {
             throw QuantityRefusal::make(QuantityRefusal::INCREMENT_INVALID, 'An increment must be greater than zero.', $field);
         }
-        if ($value->stripTrailingZeros()->getScale() > $this->scale) {
+        if ($value->strippedOfTrailingZeros()->getScale() > $this->scale) {
             throw QuantityRefusal::make(QuantityRefusal::INCREMENT_NOT_REPRESENTABLE,
                 "An increment finer than {$this->scale} decimal places can never be reached by this destination.", $field);
         }
@@ -144,7 +144,7 @@ final readonly class QuantityContract
         }
         $evidence = self::factor($factor);
         $equivalent = $own->multipliedBy($evidence);
-        if ($equivalent->stripTrailingZeros()->getScale() > $this->scale) {
+        if ($equivalent->strippedOfTrailingZeros()->getScale() > $this->scale) {
             throw QuantityRefusal::make(QuantityRefusal::INCREMENT_NOT_REPRESENTABLE,
                 "The increment is finer than {$this->scale} decimal places once converted to the destination unit.", $field);
         }
@@ -185,7 +185,7 @@ final readonly class QuantityContract
             throw QuantityRefusal::make(QuantityRefusal::FACTOR_INVALID, 'A conversion factor must be greater than zero.', $field);
         }
         $evidence = self::conversionEvidence();
-        if ($value->isGreaterThan($evidence->maximum) || $value->stripTrailingZeros()->getScale() > $evidence->scale) {
+        if ($value->isGreaterThan($evidence->maximum) || $value->strippedOfTrailingZeros()->getScale() > $evidence->scale) {
             throw QuantityRefusal::make(QuantityRefusal::FACTOR_NOT_REPRESENTABLE, 'A conversion factor holds at most nine decimal places and ten integer digits.', $field);
         }
 

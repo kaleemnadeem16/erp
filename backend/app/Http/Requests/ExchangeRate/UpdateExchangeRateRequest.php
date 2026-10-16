@@ -24,7 +24,7 @@ class UpdateExchangeRateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'rate' => ['required', 'string', 'regex:/^(?=\d)(?:\d{1,10})(?:\.\d{1,9})?$/', 'gt:0'],
+            'rate' => ['required', 'string', 'regex:/^(?=\d)(?:\d{1,10})(?:\.\d{1,9})?$/', 'numeric', 'gt:0'],
         ];
     }
 }

@@ -211,6 +211,16 @@ Deployments do not run general seeders automatically. Use these boundaries:
   or change them through the Access Administration API/UI; retain the reviewed one-off command
   path only for bootstrap or recovery when no authorised administrator can sign in.
 
+#### Currency reference data (ADR 0143)
+
+The global `currencies` table (code, name, minor unit) is reference data, kept in step with the ISO 4217 dataset in `backend/database/reference/iso-4217.json` by one command. It is **not** a seeder and is never run by `demo:seed`.
+
+- **Every release (safe, read-only):** run `docker compose run --rm app php artisan erp:sync-currencies` after `migrate`. It is a dry run: it reports what it would insert, which names differ, which currencies are unsupported or local-only, and any **conflict** (a stored minor unit that differs from the dataset). Exit code 0 means nothing needs review; **3** means a conflict needs a person; 2 is a usage error; 1 is a bad dataset. A deploy script may print the report and continue, but must not apply.
+- **First install, and when the dataset changes (an operator's act):** `docker compose run --rm app php artisan erp:sync-currencies --apply --operator="<name>" --reason="<release or ticket>"`. It inserts the missing supported currencies in one transaction and writes an audit record (operator, reason, dataset version, OS user, host, counts, conflicts) to the activity log and the application log. Repeating it changes nothing.
+- **What it never does:** change the minor unit of a currency that anything references (any row in any table with a foreign key to `currencies`, in any company), delete a currency, or invent display symbols (a new row carries its ISO code until a symbol is chosen). `--refresh-names` updates descriptive names only; `--correct-unused` corrects the minor unit of a currency nothing references and is the only way a minor unit changes — a used currency needs a separately recorded review and is outside this command.
+- **Do not assume the database is authoritative.** A hand-edited or demo database is compared against the dataset, never the other way round; a difference is reported, not copied into the dataset.
+- Company-facing currency administration does not exist; rates are maintained separately through the guarded exchange-rate API (`currency.exchange-rate.manage`).
+
 **Verified working end-to-end** (2026-09-22): the SPA origin (200, valid TLS),
 the API origin's `/api/v1/...` (401 unauthenticated as expected, not 500), and a
 full cookie-session login/CSRF round trip against the real domains, all through Traefik. (The

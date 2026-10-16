@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Database\Seeders\Demo;
 
+use App\Actions\SyncCurrencies;
 use App\Models\Company;
 use App\Models\Currency;
 use App\Models\Uom;
 use App\Models\User;
+use App\Support\Currency\IsoCurrencyDataset;
 use App\Support\UomDimension;
 use Database\Seeders\Demo\Concerns\EnsuresDemoEnvironment;
 use Illuminate\Database\Seeder;
@@ -20,21 +22,25 @@ final class FoundationDemoSeeder extends Seeder
     {
         $this->ensureDemoEnvironment();
 
-        $currencies = [
-            ['code' => 'PKR', 'name' => 'Pakistani Rupee', 'symbol' => 'Rs', 'decimal_places' => 2],
-            ['code' => 'USD', 'name' => 'US Dollar', 'symbol' => '$', 'decimal_places' => 2],
-            ['code' => 'AED', 'name' => 'UAE Dirham', 'symbol' => 'AED', 'decimal_places' => 2],
-        ];
-
-        foreach ($currencies as $currency) {
-            Currency::query()->updateOrCreate(['code' => $currency['code']], $currency);
+        // Reference currencies come from the same ISO 4217 dataset and Action that production synchronises with (ADR 0143, `erp:sync-currencies`);
+        // the demo seeder owns no currency rules. It only inserts what is missing, so a rerun changes nothing and a used minor unit is never touched.
+        $sync = app(SyncCurrencies::class);
+        $sync->apply($sync->plan(IsoCurrencyDataset::load()));
+        // ISO 4217 has no symbols, so a new row carries its code. Give the familiar demo currencies a display symbol, only where still unset.
+        foreach (['PKR' => 'Rs', 'USD' => '$', 'EUR' => '€', 'GBP' => '£', 'JPY' => '¥', 'KWD' => 'KD'] as $code => $symbol) {
+            Currency::query()->where('code', $code)->whereColumn('symbol', 'code')->update(['symbol' => $symbol]);
         }
 
         $pkr = Currency::query()->where('code', 'PKR')->firstOrFail();
-        Company::query()->findOrFail(1)->update([
-            'name' => 'X1 ERP Demo Company',
-            'base_currency_id' => $pkr->getKey(),
-        ]);
+        // Governed company settings are never overwritten: the demo name and base currency are set only while the company still has its install defaults.
+        $company = Company::query()->findOrFail(1);
+        if ($company->base_currency_id === null) {
+            $company->base_currency_id = $pkr->getKey();
+        }
+        if ($company->name === 'Default Company') {
+            $company->name = 'X1 ERP Demo Company';
+        }
+        $company->save();
 
         // The company profile and its time zone (ADR 0080): filled only where still empty, so re-seeding never overwrites what
         // someone has set on Settings → Company.

@@ -49,6 +49,8 @@ Open: the offered Assembly quotation quantity scale (not assumed to be six; reco
 - Purchasing (IMPLEMENTED, PX3): the converted stock quantity of an order or receipt line must be exact at four places; the earlier silent half-up rounding is gone. Monetary rounding is untouched.
 
 ## Currency (0143)
+**IMPLEMENTED locally (PX5, 2026-10-16):** `erp:sync-currencies` synchronises the global currencies with the ISO 4217 dataset (dry run by default; conflicts exit 3; a used minor unit is never changed; audited), and a manual exchange rate is strictly positive at the Action, the Form Requests and a database CHECK. Runbook: [deployment.md](../architecture/deployment.md#currency-reference-data-adr-0143).
+
 Minor units (0–4 places) are global ISO reference data, synchronised at deployment and never edited by a company. Currently only `FoundationDemoSeeder` creates currencies (PKR, USD, AED) and only the Sales kernel reads `decimal_places`.
 A currency in use is detected from foreign keys; its minor unit is not changed by synchronisation.
 

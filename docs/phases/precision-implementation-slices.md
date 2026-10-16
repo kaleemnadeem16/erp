@@ -123,6 +123,22 @@ The exchange-rate master accepts zero and negative rates (`ManageExchangeRate`, 
 
 **Remaining:** PX4 (frontend decimal foundation), PX5 (currency reference data, including positivity of exchange rates), PX6/PX7 as scheduled; RecordReceiptPackageEvidence/quality-disposition paths were not changed.
 
+## PX5 delivery record — Currency reference data and exchange-rate validation (2026-10-16)
+
+**IMPLEMENTED locally; see the commit report for the checks actually run.**
+
+| Area | Change |
+|---|---|
+| Dataset | `backend/database/reference/iso-4217.json`: 178 ISO 4217 codes (code, name, minor unit) from the maintenance agency's list-one.xml published 2026-09-17; 12 entries (funds, metals, test and composite codes) publish no minor unit and are *unsupported* — reported, never inserted |
+| Command | `php artisan erp:sync-currencies` — dry run by default; `--apply --operator --reason`; `--refresh-names`; `--correct-unused`; `--dataset`; `--json`. Exit 0 clean, 3 conflict, 2 usage, 1 bad dataset. Report: would insert / inserted, unchanged, name differs (information), conflict, unsupported, local only |
+| Used-currency protection | `Support/Currency/CurrencyUsage` reads the foreign keys that reference `currencies` from the database catalogue and checks every row of every company (companies' base currency, exchange rates, and every module's money tables). A used currency's minor unit is never changed under any option |
+| Audit | Each apply writes an activity-log record (`currency-reference`) and an application-log line: operator, reason, dataset version, OS user, host, environment, counts, conflicts |
+| Rate validation | `ManageExchangeRate::validRate` is the single check for create and update, for every caller: plain decimal string, ≤10 whole and ≤9 fractional digits, strictly positive (`EXCHANGE_RATE_INVALID`, `EXCHANGE_RATE_NOT_POSITIVE`). The Form Requests previously let `"0"` through (`gt:0` on a string compares length); they now add `numeric`. Migration `2026_10_16_110000_require_positive_exchange_rates` adds `CHECK (rate > 0)` and stops with a readable message, changing nothing, if a stored rate is not positive |
+| Demo | `FoundationDemoSeeder` calls the same dataset and Action (inserting what is missing), sets a display symbol only where it is still the code, and no longer overwrites the company's name or base currency (set only while at install defaults). New `CurrencyRatesDemoSeeder` (after `StockDemoSeeder`) enters 13 dated rates through `ManageExchangeRate` as the demo login: USD→PKR with a gap, EUR/AED/JPY/KWD→PKR, nine-place rates, a cross rate, AVERAGE and CLOSING types; it never overwrites an existing rate |
+| Shared | `QuantityContract` uses `strippedOfTrailingZeros()` (the deprecated name was reported by the Phase 4 owner) |
+
+**Hand-offs.** Sales FR1: the master now guarantees positive rates; nothing in the Sales resolver changed; seeded dev rates are listed above (base PKR). Deployment: the runbook step is documented in [deployment.md](../architecture/deployment.md#currency-reference-data-adr-0143); `deploy/deploy.sh` is operator-owned and was **not** edited — add `docker compose run --rm app php artisan erp:sync-currencies` after the migrate line if the operator wants the report printed on every release (it is read-only). Existing dev currencies keep their older names (PKR "Pakistani Rupee"); the command reports that as information.
+
 ## Genuinely unresolved technical decisions
 1. Where the shared quantity contract lives (proposed `app/Support/Quantity`).
 2. A read-only precision catalogue endpoint versus additive scale fields on existing resources.
