@@ -2,10 +2,10 @@
 
 # Phase 5 — Job execution
 
-- **Status:** research in progress; lifecycle architecture ACCEPTED0145 / contract SPECIFIED; no Job implementation or verification.
-- **Authority:** owner D1–D6 approval/clarifications2026-10-15; architecture documentation and labour research only.
+- **Status:** research in progress; lifecycle0145 and labour0146 ACCEPTED / bounded contracts SPECIFIED; no Job implementation or verification.
+- **Authority:** D1–D6 approval2026-10-15 and L1–L6 approval2026-10-16; architecture documentation and coverage/materials research only, no implementation.
 - **Depends on:** accepted R7/R9 and actual supported CA/HA/owning adapters for delivery; existing shared foundations.
-- **Blocked by:** proposed labour decisions Q51; materials Q24/Q23 and prerequisite reconciliation block only affected materials paths.
+- **Blocked by:** exact coverage protocol Q52; materials Q53/Q24/Q23 prerequisite/ownership choices affect their paths. Accepted labour direction is no longer blocked by Q51.
 
 ## Goal and scope
 
@@ -21,8 +21,8 @@ No implementation authorised.
 
 The revised [labour proposal](phase-5-labour-resource-research.md) investigates completion-only
 and optional direct amounts, fixed units or time; it does not require every Job to maintain
-named workers, hours or rates. Proposed first release is completion plus narrow direct incurred
-amounts; method coverage/review and later integrations await Q51 owner approval. Lifecycle0145
+named workers, hours or rates. Completion plus narrow direct incurred amounts is the accepted
+initial business direction under0146; exact [coverage protocol](phase-5-cost-coverage-review.md) awaits Q52 review. Lifecycle0145
 and its required-known-record/closeout guards are unchanged.
 
 Specialised manufacturing/fabrication, complex capacity scheduling, advanced dispatch and equipment
@@ -35,8 +35,8 @@ UI remains each implementation slice's responsibility.
 | Order | Deliverable | State / gate |
 |---|---|---|
 |1| Lifecycle/Job receiver | ACCEPTED0145; [bounded contract](../domain/job-execution-lifecycle.md) SPECIFIED, no adapter |
-|2| Flexible labour evidence/usage/progress/recognition | [Revised proposal](phase-5-labour-resource-research.md) and [evidence](phase-5-labour-evidence.md), PROPOSED/Q51 awaiting owner |
-|3| Materials/custody/reservations/consumption/corrections | Queued; Inventory, Q24/Q23, package prerequisites |
+|2| Flexible labour evidence/usage/progress/recognition | ACCEPTED0146/Q51 closed; [bounded contract](../domain/job-labour-recognition.md) SPECIFIED; [coverage protocol](phase-5-cost-coverage-review.md) PROPOSED/Q52 |
+|3| Materials/custody/reservations/consumption/corrections | [Research bundle](phase-5-material-flow-research.md) PROPOSED/Q53; existing Q24/Q23 and package prerequisite owner choices retained |
 |4| Purchasing/equipment/subcontract attribution | Queued; reuse owning systems; commitment versus actual |
 |5| Unified costing/source reconciliation | Queued; recognition/source identities,0040 correction linkage |
 |6| Detailed closeout/documents/broader execution | Queued beyond accepted lifecycle;0137 and owning impacts |
@@ -63,7 +63,8 @@ ADR0137 governs operational printed documents. None is designed or waived by the
 
 - [x] Record approved D1–D6 as0145, bounded contract and historical reconciliation.
 - [x] Prepare labour bundle for review, not approval.
-- [ ] Resolve Q51; specify supported labour semantics/scenarios.
+- [x] Resolve Q51 business direction as0146; specify bounded labour recognition/correction scenarios.
+- [ ] Owner review Q52 coverage and Q53 materials; no implementation follows from specification.
 - [ ] Research remaining streams in order, without simultaneous detailed design.
 - [ ] Obtain separate implementation authorisation, named owners and actual adapter readiness.
 - [ ] Deliver/verify one actual service workflow: tenant/scope guards, source lineage, exact retries,

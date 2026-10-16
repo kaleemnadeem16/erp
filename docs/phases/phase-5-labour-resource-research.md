@@ -2,8 +2,11 @@
 
 # Phase 5 — Flexible labour recording and recognition: revised L1–L6
 
-**2026-10-15 · PROPOSED / Q51 AWAITING_OWNER; Origin: PLANNING RESEARCH.**
-Owner approved the general research direction, not final L1–L6, a new ADR or implementation.
+**Historical research basis,2026-10-15; revised L1–L6 business direction ACCEPTED0146 on2026-10-16.**
+Origin: PLANNING RESEARCH. Q51 is closed by owner approval; body below preserves reviewed proposals,
+not current delivery status. Use the [bounded labour contract](../domain/job-labour-recognition.md).
+The exact [coverage-declaration protocol](phase-5-cost-coverage-review.md) remains PROPOSED/Q52.
+No implementation is authorised.
 ADR0145 lifecycle remains ACCEPTED; bounded lifecycle SPECIFIED; labour methods not IMPLEMENTED
 or VERIFIED. This revision replaces the earlier proposal that ordinary actuals require named
 workers/hours and that crew actuals must universally wait. Those were proposals, not authority.
@@ -235,7 +238,7 @@ invoice cannot silently add matching amount; unknown FX preserves original amoun
 mixed records cannot fake complete cost; monetary correction adds no hours; held/closed reports
 retain context; stale review/unsafe attribution correction refuses; concurrent close/recognise serialises.
 
-## Owner decisions, historical reconciliation and next step
+## Historical owner decisions — business direction resolved by0146
 
 1. Approve/revise first release: completion-only + narrow direct incurred amounts; fixed units/time next.
 2. Approve/revise conditional worker identity and explicit aggregate basis, no anonymous accountability claims.

@@ -779,3 +779,17 @@ invoice/payroll reconciliation remain proposed. Primary comparison/architecture 
 recorded separately; Q51 retains original context and owner's refinement, AWAITING_OWNER.
 ADR0145 and accepted R7/R9 unchanged; no conflict identified. No implementation/grants/migrations
 or application tests. Other agent Sales authority and rollout work preserved. Docs-only checks.
+
+## 2026-10-16 — Flexible labour accepted; coverage and material research submitted
+
+Owner's revised L1–L6 approval and completeness clarification recorded in0146/Q51 closed;
+bounded labour contract SPECIFIED with method/source evidence, independent recognition/valuation,
+category/Job coverage, authority/idempotency/transaction/correction and acceptance requirements.
+No universal worker/hour/rate/HR dependency. Exact lightweight coverage declaration protocol
+remains PROPOSED Q52; report confirmed/declared/incomplete/unassessed with explicit basis.
+M1–M6 material research PROPOSED Q53 reconciles grouped versus container prerequisites without
+silently waiving roadmap, preserves Q24/Q23/Q16 and0040 Job correction obligations, and recommends
+ordinary stock/explicit custody-use/no false reservation subject to owner review. No accepted ADR
+conflict identified;0145/R7/R9 unchanged. Current Purchasing precision and Sales authority work
+preserved. Documentation checks only; no implementation, migrations, grants, runtime verification
+or push. Job/labour contracts remain unimplemented/unverified.

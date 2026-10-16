@@ -2,7 +2,7 @@
 
 # Phase 5 labour — evidence and architectural verification
 
-**2026-10-15 · Supporting PROPOSED L1–L6/Q51; no new accepted decision.**
+**Historical comparison/inspection2026-10-15; now research basis for ACCEPTED0146/Q51 closure2026-10-16.** No implementation or runtime verification follows.
 Owner requirement: "The ERP must not force a company to fabricate worker identities, hours,
 rates or other evidence it does not maintain." General research direction only was approved.
 The revised bundle replaces worker/hour-only recommendations;0145 is unchanged.
@@ -71,8 +71,7 @@ still block appropriate operations. No recorded labour means unassessed coverage
 Known valuation obligations need actual supported follow-up/owner before incomplete-cost closure.
 If a future adapter requires named/quantity evidence, lighter entry cannot bypass it. No conflict
 with accepted ADRs found; if detailed contract later exposes one, return it through owner, never
-edit accepted ADR bodies. Retain Q51 AWAITING_OWNER; no implementation-originated question was
-forwarded, and its original context remains in OPEN-QUESTIONS.
+edit accepted ADR bodies. Q51 business direction is now accepted0146; this historical record remains its research basis. Exact coverage declaration is Q52, not accepted by historical wording. No implementation-originated question was forwarded.
 
 ## Related
 

@@ -4,7 +4,7 @@
 
 **2026-10-15 · Architecture ACCEPTED0145; bounded contract SPECIFIED. Job/receiver not
 IMPLEMENTED or VERIFIED.** No implementation, grants or enablement authorised.
-Labour identity/rates/recognition remain proposed in the next research bundle.
+Labour identity/rates/recognition are accepted0146 and [specified separately](job-labour-recognition.md); exact coverage declaration remains proposed Q52. No universal named worker or timesheet requirement.
 
 ## Where it sits
 
@@ -81,7 +81,7 @@ completion, not scope. Unsafe dependent effects refuse and surface resolution ev
   reuse and remains visible; do not discard it to preserve the cancellation label.
 - Closed historical discrepancy creates a resolution case, not ordinary restart.
 
-Detailed labour recognition and historical correction workflows remain research, not settled here.
+Bounded labour recognition/correction semantics are now [specified under0146](job-labour-recognition.md); exact coverage declaration protocol remains Q52 research.
 
 ## Baselines, remainder and closeout
 
@@ -138,7 +138,7 @@ Required local Job/activity/baseline/allocation/receipt effects share outer tran
 runtime connection; no early commit. Missing receiver is UNSUPPORTED, unknown is not NONE. Atomic
 groups roll back all required effects; independent components report individually. Queue dispatch
 is not durable target receipt. Source recognition/correction and attribution must not duplicate;
-their detailed contract awaits labour research. Stable refusal meanings include stale, held,
+their bounded labour contract is specified under0146, with actual adapters still undelivered. Stable refusal meanings include stale, held,
 terminated/closed, unsupported, missing authority/approval, unsafe disposition and unknown impact;
 final reason_code names are implementation-owned after collision checks.
 
@@ -175,6 +175,7 @@ NONE, duplicate ledger or independent renderer. Imports need truthful lineage, n
 
 ## Related
 
+- [Labour recognition0146](job-labour-recognition.md)
 - [0145](../decisions/0145-separate-job-lifecycle-execution-and-operational-closeout.md)
 - [Phase 5](../phases/phase-5-job-execution.md) · [Labour research](../phases/phase-5-labour-resource-research.md)
 - [Historical Job Costing](job-costing.md) · [R7](sales-operational-handover.md) · [R9](sales-duty-matrix.md)

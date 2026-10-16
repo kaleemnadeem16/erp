@@ -33,30 +33,35 @@ Q1, Q2 and Q3 were resolved on 2026-08-10 — see
 
 ## Non-blocking
 
-### Q51 — Phase 5 labour, resource usage and recognition
+<a id="q51--phase-5-labour-resource-usage-and-recognition"></a>
+Q51 (Origin: PLANNING RESEARCH) resolved2026-10-16 by owner's approval of revised L1–L6 and cost-completeness clarification, recorded in [0146](decisions/0146-recognise-flexible-labour-evidence-without-fabricating-usage.md).
+Original question and owner refinement are preserved in Git history and [research](phases/phase-5-labour-resource-research.md); current [bounded contract](domain/job-labour-recognition.md) is SPECIFIED, no implementation/verification. Exact declaration protocol is Q52, not a reopened Q51.
+
+### Q52 — SIMPLE labour-cost coverage declaration
 Origin: PLANNING RESEARCH
 Decision status: AWAITING_OWNER
-Delivery status: BLOCKED_AFFECTED_OPERATION; independent approved work continues
-Module/slice: Phase5 flexible labour bundle L1–L6; implementation owner not assigned
-Context: initial research inspected local f09b2a9; revised inspection9ac893d,2026-10-15. Lifecycle0145 accepted; labour remains unaccepted/unimplemented.
-Original question: employee versus generic resource identity; recorded versus approved/recognised hours;
-rates/pinned evidence; plan versus usage; progress versus fulfilment; certainty; corrections/backdating;
-permissions/approval; one contribution to unified Job costing (owner's next-workstream request).
-Owner refinement,2026-10-15: "The ERP must not force a company to fabricate worker identities, hours,
-rates or other evidence it does not maintain." Compare completion-only, direct incurred amounts,
-days/fixed units, optional named/hourly detail and external fixed-price labour. General direction
-approved only; revised L1–L6 require review. This is owner refinement, not an implementation question.
-Business example: one fixed-scope service visit planned2h, recorded3h; distinguish pending usage,
-recognised actual and unknown valuation without increasing accepted quantity.
-Authority checked:0145,0131–0132/0136,0138–0140,0110,0070,0141–0144; existing ResourceRate/resolver.
-Consequences / blocks: new authoritative labour recognition/rate adoption/correction/worker contract;
-no reopening of settled lifecycle/commercial rules or freeze of other agents' work.
-Options / trade-offs and recommendation / research: [L1–L6 bundle](phases/phase-5-labour-resource-research.md).
-Disposition needed: approve/revise initial method scope/evidence minima, conditional worker/team
-identity, record/recognise authority, class-rate/units/FX adoption, multi-method corrections and later
-Finance/source reconciliation. Revised recommendations remain PROPOSED; no new ADR or implementation.
-Follow-up: owner review, then ADR/specification for accepted choices; no code/grants authorised.
+Delivery status: BLOCKED_AFFECTED_OPERATION; accepted completion/direct-cost direction unaffected
+Module/slice: Phase5 cost coverage; implementation owner unassigned
+Context:0146 accepts three completeness axes, not exact self-declaration/confirmation mechanics.
+Original question: research lightweight SIMPLE declaration of known labour-cost coverage without mandatory timesheets/payroll/extra approval; distinguish confirmed, declared, incomplete, unassessed (owner2026-10-16).
+Business example: COSTED15000 source does not prove all labour captured or whole Job complete.
+Authority checked:0145/0146,0110, R7/R9 source/scope/evidence requirements.
+Options / consequences / recommendation: [coverage proposal](phases/phase-5-cost-coverage-review.md); optional scoped declaration versus unassessed-until-integrated, no inferred empty-list zero.
+Disposition needed: assertion/zero boundary, eligibility, invalidation and confirmation basis.
+Follow-up: owner review then exact contract; no new ADR choice/grant/implementation accepted here.
 
+### Q53 — Phase 5 material flow and package prerequisites
+Origin: PLANNING RESEARCH
+Decision status: AWAITING_OWNER
+Delivery status: BLOCKED_AFFECTED_OPERATION; unrelated accepted work continues
+Module/slice: Phase5 M1–M6; implementation owner unassigned
+Context: research b12acd8,2026-10-16; grouped v1 delivered, container/Job reservation/consumption/correction adapters undelivered. Current Purchasing/Sales WIP preserved.
+Original question: material demand, custody, reservation, actual consumption and corrections; first reconcile package prerequisites, Q24 and0040 (owner2026-10-16).
+Business example: need10, transfer12 to site, consume9, transfer3 back; these cannot all be Job cost.
+Authority checked:0052,0090–0094,0040,0145/0146, R7/R9; existing Q16/Q23/Q24 retained.
+Options / consequences / recommendation: [M1–M6](phases/phase-5-material-flow-research.md); narrow supported paths versus original full-container gate; no automatic waiver, reservation or ownership shortcut.
+Disposition needed: package sequencing, direct-use/site custody, reservation timing, Q24 exception priorities and correction delivery gate. Q24 remains owner/exception question, not duplicated/closed here.
+Follow-up: owner review before technical material contracts; no code/ADRs/grants authorised.
 
 <a id="q40--phase-4-r2-quotation-structure-and-scope"></a>
 Q40 resolved 2026-10-09 by [accepted ADR 0109](decisions/0109-shared-commercial-quotation-lines-and-optional-estimating.md).
@@ -146,6 +151,8 @@ Which exceptions must ship in the first Phase 5 slice: customer-supplied/free-is
 approved substitutes, recoverable scrap, reusable remnants and returnable containers? These must
 not be collapsed into ordinary purchased consumption because ownership, value and availability
 differ.
+
+Planning research2026-10-16: [M4 exception matrix](phases/phase-5-material-flow-research.md#m4--q24-ownership-and-exceptions) proposes ordinary company stock first, not approval to ignore known third-party custody. Q53 coordinates flow/prerequisites; original Q24 wording/decision remains unresolved.
 
 ### Q26 — Organisational and record-level access scope
 **Blocks:** Remaining record-scope slices (see below) and delegated administration; the inventory-by-warehouse slices are built
