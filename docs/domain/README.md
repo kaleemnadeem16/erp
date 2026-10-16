@@ -133,6 +133,8 @@ Unfamiliar term? → [GLOSSARY.md](../GLOSSARY.md)
 
 ## Phase 5 accepted bounded contracts
 
+- [Closeout/historical reconciliation](job-closeout-reconciliation.md) —0151/Q56; specified, not implemented.
+
 - [Unified Job costing](job-unified-costing.md) —0150/Q55; specified, not implemented.
 
 - [External Job cost and Purchasing attribution](job-external-cost-attribution.md) —0149/Q54; specified, not implemented.

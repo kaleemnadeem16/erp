@@ -15,6 +15,7 @@ No Job implementation, grants, migrations, production enablement or runtime veri
 | Bounded materials/custody/consumption |0148/Q53 closed; [materials](../domain/job-material-attribution.md) | SPECIFIED, no Job integration; grouped Inventory v1 exists separately |
 | External expenses, Purchasing service acceptance and allocations |0149/Q54 closed; [external](../domain/job-external-cost-attribution.md) | SPECIFIED, no acceptance/attribution adapter |
 | Unified costing/reporting |0150/Q55 closed; [costing](../domain/job-unified-costing.md) | SPECIFIED, physical design/adapters/projections not delivered |
+| Source closeout/historical reconciliation |0151/Q56 closed; [contract/matrix](../domain/job-closeout-reconciliation.md) | SPECIFIED, source readiness/correction adapters not delivered |
 
 Reuse accepted R7/R9 and Documents0137. Commercial allocations, baseline preservation and scope
 correction rules remain settled. Completion-only and optional direct incurred labour are initial
@@ -27,8 +28,9 @@ not permission to build before dependent handover/readiness and separate impleme
 Q55 business architecture is accepted0150; current-restated actual/commitment/exposure reporting,
 compatible spending gaps, independent completeness and deferred forecasting are specified. Candidate
 is reconciled to the current contract; physical schema, exact locks and projection remain later design.
-Next [closeout/historical-evidence bundle](phase-5-closeout-research.md) is PROPOSED/Q56, not accepted.
-It refines source-specific evidence/follow-up ownership without reopening0145 lifecycle.
+Closeout0151/Q56 is accepted and specified with source readiness/follow-up matrix, without lifecycle
+changes. Next [operational documents/reports/snapshots](phase-5-operational-documents-research.md)
+is PROPOSED/Q57;0137 shared infrastructure remains specified, not delivered.
 
 Q23 variable-content, Q24 ownership/exceptions and Q16 source-actor question remain open for affected
 paths. They do not globally block truthful ordinary supported service/stock workflows. Unverified
@@ -36,12 +38,11 @@ adapter readiness is a delivery gate, not another owner business choice or impli
 
 ## Remaining planning and research — in order
 
-1. Owner reviews Q56 closeout/historical bundle. Resolve only remaining source-specific semantics.
-2. After Q56 review, specify detailed operational closeout and historical evidence adjustments beyond0145's accepted
-   rules: known-source reconciliation, remainder disposition, correction follow-up and owning interfaces.
-   Preserve optional capture and supported incomplete-cost closeout; do not reopen settled lifecycle.
-3. Define needed operational document/report snapshots through0137 owning adapters and audience/scope
-   rules. No independent renderer or assumption that shared Documents infrastructure exists.
+1. Owner reviews Q57 document/output scope and optional first-pilot artefacts versus later delivery.
+2. After Q57 direction, specify bounded Job document adapters/source snapshots/audience contracts and
+   shared0137 delivery dependencies; no independent renderer or assumed customer-signature requirement.
+3. Reconcile accepted0151 source readiness/closeout matrix with selected pilot paths and0150 reporting;
+   preserve actual missing adapters as delivery gates, not reopened lifecycle questions.
 4. Prepare consolidated Phase5 dependency/adapter inventory and bounded service-pilot slices, acceptance
    matrix, transaction/lock proof, real duty/holder rollout proposals and source/correction handoffs.
    Research any uncovered source-specific semantic gap before declaring its slice ready.
@@ -49,7 +50,7 @@ adapter readiness is a delivery gate, not another owner business choice or impli
 
 Potential later exceptions/reservations/forecasting research is need-driven and separate from the
 initial service pilot. Do not start all workstreams simultaneously or mark Phase5 planning complete
-merely because core ADRs exist. Stop current turn at Q56 bundle review; steps2–5 are not begun here.
+merely because core ADRs exist. Stop current turn at Q57 bundle review; steps2–5 are not begun here.
 
 ## Dependencies and possible independent foundations
 
@@ -83,8 +84,8 @@ internal tests cannot establish IMPLEMENTED/VERIFIED/PUBLIC_ENABLED service work
 
 ## Next implementation-ready planning milestone
 
-A reviewed **bounded service-pilot planning package**: accepted0150 costing contract with delivery gates; closeout and
-required document boundaries reconciled; source/duty/dependency inventory; separately reviewable slices
+A reviewed **bounded service-pilot planning package**: accepted0150 costing and0151 closeout contracts with delivery gates; required document
+boundaries reconciled; source/duty/dependency inventory; separately reviewable slices
 with exact authority/transaction/correction ownership and acceptance/failure coverage. Clearly mark
 adapters available versus missing and which must ship atomically. Initial candidate: supported R7
 handover → Job/activity → assignment/start → optional direct labour → fulfilment → truthful cost view
@@ -96,11 +97,13 @@ delivery proof and applicable migration/API/security/concurrency/browser/demo ch
 
 ## Current tasks
 
-- [x] Accept/specify0145–0150; resolve Q51–Q55 and preserve research evidence.
+- [x] Accept/specify0145–0151; resolve Q51–Q56 and preserve research evidence.
 - [x] Refine Q55 resolution/candidate, inspect infrastructure and update planning overview.
 - [x] Reconcile Q55 approval, current costing contract and provisional/final valuation distinction.
 - [x] Prepare Q56 source-specific closeout/historical-evidence research for owner review.
-- [ ] Owner review Q56, then reconcile ordered remaining planning areas.
+- [x] Record C1–C4 approval in0151 and reconcile closeout dependency matrix; Q56 closed.
+- [x] Prepare Q57 operational documents/reports/snapshots research under0137.
+- [ ] Owner review Q57, then reconcile ordered remaining planning areas.
 - [ ] Consolidate service-pilot slices/readiness evidence for separate implementation authorisation.
 - [ ] Implement/verify only separately authorised batches; no such work begun by these documents.
 

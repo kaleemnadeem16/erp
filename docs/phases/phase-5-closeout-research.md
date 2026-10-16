@@ -6,6 +6,10 @@
 Question: which source-specific evidence proves known operational obligations resolved, and which
 bounded valuation follow-ups may survive closeout without hiding work or reopening execution?
 
+**Historical research/review stage:** reconciled2026-10-16 in accepted0151 and
+[current closeout contract](../domain/job-closeout-reconciliation.md). Q56 closed; prior questions/
+options/scenarios below remain evidence, not current blockers. No delivery implied.
+
 ## Practical examples
 
 **Simple visit:** supported service outcome is complete; no hours were required/captured. An evidenced

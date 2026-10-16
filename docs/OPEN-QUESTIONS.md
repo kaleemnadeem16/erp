@@ -37,15 +37,21 @@ Q1, Q2 and Q3 were resolved on 2026-08-10 — see
 Q51 (Origin: PLANNING RESEARCH) resolved2026-10-16 by owner's approval of revised L1–L6 and cost-completeness clarification, recorded in [0146](decisions/0146-recognise-flexible-labour-evidence-without-fabricating-usage.md).
 Original question and owner refinement are preserved in Git history and [research](phases/phase-5-labour-resource-research.md); current [bounded contract](domain/job-labour-recognition.md) is SPECIFIED, no implementation/verification. Exact declaration protocol is Q52, not a reopened Q51.
 
-### Q56 — Detailed closeout and historical-evidence reconciliation
+### Q57 — Operational documents, reports and snapshots
 Origin: PLANNING RESEARCH
 Decision status: AWAITING_OWNER
-Delivery status: BLOCKED_AFFECTED_OPERATION;0145 lifecycle unchanged
-Module/slice: Phase5 C1–C4; implementation owner unassigned
-[Research/decision bundle](phases/phase-5-closeout-research.md) proposes source-owned closeout outcomes,
-bounded valuation follow-up accountability, conservative dispute blocking and classified historical
-resolution. Decide supported follow-up/source-adapter boundaries without reopening lifecycle or
-financial settlement. No further architecture/code/grants accepted.
+Delivery status: BLOCKED_AFFECTED_OPERATION; ordinary source/lifecycle contracts unchanged
+Module/slice: Phase5 D1–D4; implementation owner unassigned
+[Research/options/scenarios](phases/phase-5-operational-documents-research.md) propose live-first
+service-pilot views/records, optional customer completion/cost-summary artefacts through0137, clear
+snapshot/audience/version/access and recovery gates. Decide first-pilot optional report versus later,
+profiles/timing and any genuine signature/mandatory-output requirement. No new architecture/code/grants.
+
+<a id="q56--detailed-closeout-and-historical-evidence-reconciliation"></a>
+Q56 resolved2026-10-16 by [0151](decisions/0151-reconcile-source-obligations-and-govern-post-close-evidence.md).
+[Contract/dependency matrix](domain/job-closeout-reconciliation.md) specified, not implemented.
+Original questions/research/options/scenarios preserved in [research](phases/phase-5-closeout-research.md)/Git.
+No lifecycle changes; missing mandatory adapter/unknown impact still refuses affected closeout.
 
 <a id="q55--unified-job-costing-and-estimate-versus-actual-reconciliation"></a>
 Q55 resolved2026-10-16 by [0150](decisions/0150-unify-job-cost-reporting-through-source-owned-attribution.md).
