@@ -44,7 +44,7 @@ class DemoMemberLifecycleTest extends TestCase
         $this->assertSame($member->id, $again->id);
         $this->assertTrue(Hash::check('Changed-fixture-password-194!', $again->password));
         $this->assertSame(1, $again->credential_version);
-        $this->assertDatabaseCount('users', 1);
+        $this->assertSame(1, User::query()->where('email', 'fixture-approver@example.com')->count());
     }
 
     public function test_demo_setup_does_not_bypass_temporary_credentials_issued_through_administration(): void

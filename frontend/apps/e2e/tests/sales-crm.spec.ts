@@ -464,6 +464,11 @@ test('enquiries have filters, chips, selection with bulk actions and printing li
 test('opening and closing a side panel leaves the list where it was; a real page change starts at the top', async ({ browser }) => {
   test.setTimeout(240_000);
   const page = await as(browser, MANAGER);
+  // The list must be long enough to scroll on its own — never rely on deals other tests (or other shards) happened to leave behind.
+  const stamp = Date.now().toString(36);
+  const party = await findByCode<{ id: number; code: string }>(page, '/parties', 'cus-alpha');
+  expect(party, 'the demo partner must be seeded').toBeTruthy();
+  for (let n = 1; n <= 25; n++) await api(page, 'POST', '/opportunities', { title: `E2E scroll ${stamp} ${n}`, party_id: party!.id });
   await page.setViewportSize({ width: 1360, height: 700 });
   await page.goto('/opportunities?filter.outcome=ALL&per_page=25');
   await expect(page.getByRole('row').nth(20)).toBeVisible();
