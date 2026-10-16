@@ -9,13 +9,13 @@ use App\Models\User;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Models\ItemPackaging;
 use App\Modules\Inventory\Support\ItemTracking;
+use App\Modules\Inventory\Support\StockQuantity;
 use App\Modules\Purchasing\Models\GoodsReceipt;
 use App\Modules\Purchasing\Models\GoodsReceiptLine;
 use App\Modules\Purchasing\Models\GoodsReceiptPackageObservation;
 use App\Modules\Purchasing\Support\GoodsReceiptStatus;
 use App\Support\CompanyContext;
 use Brick\Math\BigDecimal;
-use Brick\Math\Exception\MathException;
 use Illuminate\Support\Facades\DB;
 
 final class RecordReceiptComposition
@@ -81,15 +81,6 @@ final class RecordReceiptComposition
 
     private function quantity(string $input): BigDecimal
     {
-        try {
-            $qty = BigDecimal::of($input)->toScale(4);
-        } catch (MathException|\InvalidArgumentException) {
-            throw new DomainInvariantException('Observed quantity must be exact at stock precision.');
-        }
-        if ($qty->isLessThanOrEqualTo(0)) {
-            throw new DomainInvariantException('Observed quantity must be positive.');
-        }
-
-        return $qty;
+        return StockQuantity::positive($input, 'quantity');
     }
 }

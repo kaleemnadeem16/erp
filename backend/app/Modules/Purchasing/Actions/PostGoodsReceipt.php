@@ -93,8 +93,9 @@ final class PostGoodsReceipt
                     // Divisibility is always an item(-and-UoM) rounding-precision rule,
                     // never inferred from a UoM's dimension — ADR 0050. No precision
                     // set means unrestricted, same as everywhere else this applies.
-                    if ($poLine->item->quantity_precision !== null) {
-                        $precision = BigDecimal::of($poLine->item->quantity_precision);
+                    // The rule is the one pinned on the order line when it was issued (ADR 0142), not the Item's current setting.
+                    if ($poLine->stock_increment !== null) {
+                        $precision = BigDecimal::of($poLine->stock_increment);
                         $maximum = $maximum->dividedBy($precision, 0, RoundingMode::FLOOR)->multipliedBy($precision);
                     }
                 }

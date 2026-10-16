@@ -178,7 +178,7 @@ class ReceiptPackageEvidenceTest extends StockIssueTest
     {
         [$receipt, $actor] = $this->fixture();
         $this->expectException(DomainInvariantException::class);
-        $this->expectExceptionMessage('exact at stock precision');
+        $this->expectExceptionMessage('more than 4 decimal places');
         app(RecordReceiptComposition::class)($receipt->lines()->sole(), [['quantity' => '4.00001']], 'Observed', $actor);
     }
 

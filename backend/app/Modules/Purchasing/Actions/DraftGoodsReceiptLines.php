@@ -13,6 +13,8 @@ use App\Modules\Purchasing\Models\GoodsReceiptLine;
 use App\Modules\Purchasing\Models\PurchaseOrderLine;
 use App\Modules\Purchasing\Support\PurchaseOrderFxPolicy;
 use App\Modules\Purchasing\Support\PurchaseOrderStatus;
+use App\Support\Quantity\QuantityContract;
+use App\Support\Quantity\QuantitySign;
 use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
 use InvalidArgumentException;
@@ -73,11 +75,10 @@ final class DraftGoodsReceiptLines
             if ($packaged && $receivedUom->id !== $poLine->purchase_uom_id) {
                 throw new DomainInvariantException('Packaged receipt must use the issued unit reference.', 'received_uom_id');
             }
-            if ($packaged && $poLine->package_increment !== null
-                && ! BigDecimal::of((string) $input['received_qty'])->remainder($poLine->package_increment)->isZero()) {
-                throw new DomainInvariantException('Received quantity violates the agreed package increment.', 'received_qty');
-            }
-            $stockQty = BigDecimal::of((string) $input['received_qty'])->multipliedBy($factor)->toScale(4, RoundingMode::HALF_UP);
+            // A receipt is a physical fact: its quantity is exact at the receipt column and converts exactly to the stock ledger, or is refused
+            // (ADR 0142). The agreed package increment still applies; the Item's own increment is an entry rule for orders, not for what arrives.
+            $receivedQty = QuantityContract::commercialLine(4, $packaged && $poLine->package_increment !== null ? (string) $poLine->package_increment : null)->represent($input['received_qty'], QuantitySign::Positive, 'received_qty');
+            $stockQty = QuantityContract::stockLedger()->convert($receivedQty, $factor, QuantitySign::Positive, 'received_qty')->result;
             $priceFactor = BigDecimal::of($poLine->price_stock_factor ?? $poLine->uom_factor);
             $priceDenominator = BigDecimal::of($poLine->price_quantity ?? '1');
             $provisionalAmount = $hasExplicitCost

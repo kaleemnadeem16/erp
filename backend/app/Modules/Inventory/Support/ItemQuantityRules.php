@@ -63,6 +63,8 @@ final class ItemQuantityRules
         QuantityContract::factor(self::raw($unit, 'factor'), 'factor');
         $increment = self::raw($unit, 'quantity_precision');
         if ($increment !== null) {
+            // An increment in the order unit is typed into a four-place quantity column, so it cannot be finer than that either.
+            QuantityContract::commercialLine(4)->acceptIncrement($increment, 'quantity_precision');
             self::withIncrement($item)->acceptTransactionIncrement($increment, self::raw($unit, 'factor'), 'quantity_precision');
         }
     }
@@ -78,6 +80,7 @@ final class ItemQuantityRules
         $destination->represent(self::raw($package, 'stock_quantity'), QuantitySign::Positive, 'stock_quantity');
         $increment = self::raw($package, 'quantity_precision');
         if ($increment !== null) {
+            QuantityContract::commercialLine(4)->acceptIncrement($increment, 'quantity_precision');
             $destination->acceptTransactionIncrement($increment, self::raw($package, 'stock_quantity'), 'quantity_precision');
         }
     }

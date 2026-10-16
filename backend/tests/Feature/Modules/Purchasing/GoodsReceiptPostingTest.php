@@ -359,27 +359,36 @@ class GoodsReceiptPostingTest extends PurchaseOrderFoundationTest
 
     public function test_specific_receipt_with_a_fractional_uom_factor_computes_the_correct_exact_total(): void
     {
-        // SPECIFIC always posts exactly one stock unit per serialised line, so a
-        // non-divisible factor can't be amplified into a visible residual the way it
-        // can for AVCO/FIFO (the residual scales with quantity, and quantity here is
-        // pinned to 1) — but the same exact-total code path is exercised, and the
-        // result must still be mathematically correct: 3 "third" units at 10.0000
-        // each is 30.0000 total for the one stock unit they convert to.
+        // SPECIFIC always posts exactly one stock unit per serialised line. A representable fractional factor keeps the exact total:
+        // 4 "quarter" units at 10.0000 each is 40.0000 for the one stock unit they convert to (4 × 0.25 = 1 exactly).
         [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Specific, ItemTracking::Serial, '1.0000');
-        $third = Uom::create(['code' => 'third', 'name' => 'Third', 'dimension' => UomDimension::Count, 'factor_to_base' => '0.333333333']);
-        $receiptId = $this->createReceipt($order->lines()->sole()->id, $item->id, $third->id, $this->locationId(), [
-            'received_qty' => '3.0000', 'provisional_unit_cost' => '10.0000', 'serial_no' => 'SER-001',
+        $quarter = Uom::create(['code' => 'quarter', 'name' => 'Quarter', 'dimension' => UomDimension::Count, 'factor_to_base' => '0.250000000']);
+        $receiptId = $this->createReceipt($order->lines()->sole()->id, $item->id, $quarter->id, $this->locationId(), [
+            'received_qty' => '4.0000', 'provisional_unit_cost' => '10.0000', 'serial_no' => 'SER-001',
         ]);
 
         $this->postJson("/api/v1/goods-receipts/{$receiptId}/post")->assertOk();
 
         $move = StockMove::query()->with('valuationEntry')->sole();
         $this->assertSame('1.0000', $move->qty, 'SPECIFIC always posts exactly one stock unit per serial');
-        $this->assertSame('30.0000', $move->unit_cost);
-        $this->assertSame('30.0000', $move->valuationEntry->amount, 'matches 3 thirds at 10.0000 each = 30.0000 total');
+        $this->assertSame('40.0000', $move->unit_cost);
+        $this->assertSame('40.0000', $move->valuationEntry->amount, 'matches 4 quarters at 10.0000 each = 40.0000 total');
         $layer = StockLayer::query()->sole();
         $this->assertSame('SER-001', $layer->serial_no);
-        $this->assertSame('30.0000', $layer->unit_cost);
+        $this->assertSame('40.0000', $layer->unit_cost);
+    }
+
+    public function test_a_repeating_factor_is_refused_instead_of_rounding_three_thirds_to_one_unit(): void
+    {
+        // 3 × 0.333333333 = 0.999999999, which the four-place ledger cannot hold. It used to be stored silently as 1.0000 (ADR 0142).
+        [$order, $item, $uom] = $this->issuedOrder(ValuationMethod::Specific, ItemTracking::Serial, '1.0000');
+        $third = Uom::create(['code' => 'third', 'name' => 'Third', 'dimension' => UomDimension::Count, 'factor_to_base' => '0.333333333']);
+        $this->actingAs($this->purchasingActor())->postJson('/api/v1/goods-receipts', [
+            'supplier_account_id' => $order->supplier_account_id, 'physical_arrival_at' => now()->toIso8601String(), 'posting_date' => now()->format('Y-m-d'),
+            'lines' => [['purchase_order_line_id' => $order->lines()->sole()->id, 'item_id' => $item->id, 'location_id' => $this->locationId(),
+                'received_uom_id' => $third->id, 'received_qty' => '3.0000', 'provisional_unit_cost' => '10.0000', 'serial_no' => 'SER-001']],
+        ])->assertUnprocessable()->assertJsonPath('reason_code', 'QUANTITY_NOT_REPRESENTABLE')->assertJsonValidationErrors('received_qty');
+        $this->assertDatabaseCount('goods_receipts', 0);
     }
 
     public function test_post_retry_is_idempotent(): void
@@ -651,6 +660,63 @@ class GoodsReceiptPostingTest extends PurchaseOrderFoundationTest
             $order->lines()->sole()->id, $item->id, $uom->id, $locationId, ['received_qty' => '11.5000'],
         );
         $this->postJson("/api/v1/goods-receipts/{$accepted}/post")->assertOk();
+    }
+
+    public function test_the_ceiling_uses_the_increment_pinned_when_the_order_was_issued_not_the_items_current_one(): void
+    {
+        // Issued with an increment of 1: the ceiling floors 11.5 to 11. A later Item edit that removes the increment must not reinterpret the order.
+        [$order, $item, $uom] = $this->tolerantOrder('10.0000', '15.0000', '1');
+        $this->assertSame('1.000000000', $order->lines()->sole()->stock_increment);
+        $item->update(['quantity_precision' => null]);
+        $locationId = $this->locationId();
+
+        $rejected = $this->createReceipt($order->lines()->sole()->id, $item->id, $uom->id, $locationId, ['received_qty' => '11.5000']);
+        $this->postJson("/api/v1/goods-receipts/{$rejected}/post")->assertUnprocessable()->assertJsonValidationErrors('stock_qty');
+
+        $accepted = $this->createReceipt($order->lines()->sole()->id, $item->id, $uom->id, $locationId, ['received_qty' => '11.0000']);
+        $this->postJson("/api/v1/goods-receipts/{$accepted}/post")->assertOk();
+    }
+
+    public function test_an_order_issued_without_an_increment_stays_fractional_after_the_item_gains_one(): void
+    {
+        [$order, $item, $uom] = $this->tolerantOrder('10.0000', '15.0000');
+        $this->assertNull($order->lines()->sole()->stock_increment);
+        $item->update(['quantity_precision' => '1']);
+
+        $accepted = $this->createReceipt($order->lines()->sole()->id, $item->id, $uom->id, $this->locationId(), ['received_qty' => '11.5000']);
+        $this->postJson("/api/v1/goods-receipts/{$accepted}/post")->assertOk();
+    }
+
+    public function test_issuing_refuses_a_line_whose_quantity_no_longer_fits_the_items_increment(): void
+    {
+        [$order, $item, $uom] = $this->makeOrder();
+        $item->update([
+            'is_stocked' => true, 'valuation_method' => ValuationMethod::Avco, 'tracking' => ItemTracking::None,
+            'avco_pool_scope' => AvcoPoolScope::CompanyItem, 'quantity_precision' => '0.5',
+            'inventory_account_id' => $item->category->resolveInventoryAccountId() ?? ChartOfAccount::query()->firstOrFail()->id,
+        ]);
+        $order->lines()->create(array_merge($this->lineAttributes($order, $item, $uom), ['ordered_qty' => '1.5', 'ordered_stock_qty' => '1.5']));
+        $item->update(['quantity_precision' => '1']); // saved at 0.5, then the item changes before the order is issued
+
+        try {
+            app(IssuePurchaseOrder::class)($order, $this->purchasingActor());
+            $this->fail('Issuing must refuse a quantity that breaks the increment now in force.');
+        } catch (DomainInvariantException $refusal) {
+            $this->assertSame('QUANTITY_INCREMENT_VIOLATED', $refusal->reasonCode);
+        }
+        $this->assertNull($order->lines()->sole()->stock_increment);
+    }
+
+    public function test_the_baseline_for_orders_issued_before_the_pin_is_the_increment_the_item_has_now(): void
+    {
+        [$order, $item] = $this->tolerantOrder('10.0000', '15.0000', '1');
+        $item->update(['quantity_precision' => '0.5']);
+        $migration = require database_path('migrations/2026_10_16_100000_pin_stock_increment_on_purchase_order_lines.php');
+
+        $migration->down();
+        $migration->up();
+
+        $this->assertSame('0.500000000', $order->lines()->sole()->stock_increment);
     }
 
     public function test_cumulative_partial_receipts_are_measured_against_the_same_ceiling(): void

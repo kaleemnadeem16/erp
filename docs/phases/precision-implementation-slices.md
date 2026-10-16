@@ -98,6 +98,31 @@ The exchange-rate master accepts zero and negative rates (`ManageExchangeRate`, 
 
 **PX3 dependencies.** PX3 can reuse `QuantityContract::convert` for purchase-to-stock conversion and `StockQuantity` for receipt quantities. It still needs: the pinned order-line increment (its own migration), a pass over `BuildPurchaseOrderLineAttributes`, `DraftGoodsReceiptLines`, `PostGoodsReceipt` (live Item increment in the tolerance floor) and `RecordReceiptComposition`, and the Purchasing demo data.
 
+## PX3 delivery record — Purchasing (2026-10-16)
+
+**IMPLEMENTED locally; targeted tests plus a wide backend run (see the commit report).** Development-stage Purchasing is corrected directly; no grandfather or legacy-completion path was built, and the production audit does not gate it. Purchasing **monetary** arithmetic (four-place half-up, base conversions, priced quantity, line amount) is unchanged (0120).
+
+| Area | Change |
+|---|---|
+| Order line | `BuildPurchaseOrderLineAttributes`: the order quantity is validated at its own four-place column; the agreed package/unit increment is checked on the order quantity; the stock quantity is `ItemQuantityRules::withIncrement($item)->convert(qty, factor)` — exact at the ledger and on the Item increment, or refused (`QUANTITY_NOT_REPRESENTABLE` / `QUANTITY_INCREMENT_VIOLATED`, field `ordered_qty`). 7 cartons × 6.666666667 is refused instead of stored as 46.6667 |
+| Receipt draft | `DraftGoodsReceiptLines`: received quantity checked at its column and against the agreed package increment; stock quantity converted exactly (field `received_qty`). The Item increment is **not** applied to what physically arrives |
+| Receipt composition | `RecordReceiptComposition` observed quantities go through `StockQuantity::positive` (reason codes) |
+| Pinned increment | New `purchase_order_lines.stock_increment decimal(19,9) NULL`, written by `IssuePurchaseOrder` with the other issue snapshots; issuing refuses (`QUANTITY_INCREMENT_VIOLATED`) a line whose saved stock quantity no longer fits the Item increment now in force. The existing snapshot fields were not sufficient: `package_increment` is in the order unit and covers only package/unit increments, and `offer_snapshot` belongs to the supplier offer |
+| Over-receipt ceiling | `PostGoodsReceipt` floors the tolerance ceiling to the **pinned** `stock_increment`, not the Item's live setting. A later Item edit cannot reinterpret an issued order |
+| Migration | `2026_10_16_100000_pin_stock_increment_on_purchase_order_lines`: additive column; orders already issued get the Item's increment of that day as a **labelled baseline** (no earlier value exists), with the user triggers switched off for that one statement. Apply → rollback → re-apply verified on an isolated database |
+| PX2 follow-up | A unit or package increment must itself be at most four places in its own unit (`ItemQuantityRules`), because it is typed into a four-place quantity column |
+| Test that changed | `test_specific_receipt_with_a_fractional_uom_factor…` encoded the silent rounding of 3 × 0.333333333 to 1.0000; it now uses an exact factor (4 × 0.25) and a new test asserts the refusal |
+
+**Distinction recorded (no new rule introduced).** Entry increments (Item, unit, package) are enforced on order quantities and definitions; the converted stock quantity must be representable at the ledger on every path; physical postings, counts and receipts are **not** forced onto the Item increment, because a count or a delivery legitimately records what is there. The package increment agreed on a PO line still binds its receipts. No accepted contract asks for more.
+
+**Ambiguity to confirm (not decided by code).** An Item with an increment of 1 receiving 2.5 against an order is accepted at receipt (physical fact) even though it could not have been ordered. Recommendation: keep it, and treat a non-multiple receipt as a QA/operational matter, not a posting refusal.
+
+**Frontend hand-off (not done; another agent owns shared UI).** `purchase-orders/purchase-order-form.tsx` (line 93, `ordered_qty: decimal("Quantity", true)`) and `purchase-order-line-fields.tsx` / `purchase-line-package-fields.tsx`: show the server message for `ordered_qty` refusals (`QUANTITY_NOT_REPRESENTABLE`, `QUANTITY_INCREMENT_VIOLATED`, `FACTOR_*`); `goods-receipts/goods-receipt-form.tsx` and `goods-receipts-list-screen.tsx`: the same for `received_qty`. No API shape changed (the pinned increment is not exposed), so the generated client is unchanged.
+
+**Demo data.** Not changed: the Purchasing, Packaged-purchasing and Pack-conversion seeders already use exact conversions, and their seeder tests (including idempotent reruns) pass.
+
+**Remaining:** PX4 (frontend decimal foundation), PX5 (currency reference data, including positivity of exchange rates), PX6/PX7 as scheduled; RecordReceiptPackageEvidence/quality-disposition paths were not changed.
+
 ## Genuinely unresolved technical decisions
 1. Where the shared quantity contract lives (proposed `app/Support/Quantity`).
 2. A read-only precision catalogue endpoint versus additive scale fields on existing resources.

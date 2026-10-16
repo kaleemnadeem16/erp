@@ -10,8 +10,11 @@ use App\Modules\Inventory\Actions\ItemUomConversionService;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Models\ItemPackaging;
 use App\Modules\Inventory\Models\ItemQuantityUnit;
+use App\Modules\Inventory\Support\ItemQuantityRules;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Modules\Purchasing\Models\SupplierOffer;
+use App\Support\Quantity\QuantityContract;
+use App\Support\Quantity\QuantitySign;
 use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
 use InvalidArgumentException;
@@ -28,7 +31,8 @@ final class BuildPurchaseOrderLineAttributes
     {
         $item = Item::query()->findOrFail($input['item_id']);
         $purchaseUom = Uom::query()->findOrFail($input['purchase_uom_id']);
-        $qty = BigDecimal::of((string) $input['ordered_qty']);
+        // Quantities are exact or refused (ADR 0142): the order quantity at its own four-place column, never rounded.
+        $qty = QuantityContract::commercialLine(4)->represent($input['ordered_qty'], QuantitySign::Positive, 'ordered_qty');
         try {
             // Item-specific item_quantity_units resolves first (may cross UoM
             // dimension), falling back to the global, dimension-locked service —
@@ -62,14 +66,13 @@ final class BuildPurchaseOrderLineAttributes
         }
         $increment = $package->quantity_precision ?? ItemQuantityUnit::query()
             ->where('item_id', $item->id)->where('uom_id', $purchaseUom->id)->value('quantity_precision');
-        if ($increment !== null && ! $qty->remainder($increment)->isZero()) {
-            throw new DomainInvariantException('Order quantity violates the selected package/unit increment.', 'ordered_qty');
+        if ($increment !== null) {
+            // The agreed package/unit increment is in the order unit.
+            QuantityContract::commercialLine(4, $increment)->represent($qty, QuantitySign::Positive, 'ordered_qty');
         }
-        $exactStockQty = $qty->multipliedBy($factor);
-        if ($item->quantity_precision !== null && ! $exactStockQty->remainder($item->quantity_precision)->isZero()) {
-            throw new DomainInvariantException('Order quantity violates the item stock increment.', 'ordered_qty');
-        }
-        $stockQty = $exactStockQty->toScale(4, RoundingMode::HALF_UP);
+        // The stock quantity must be exactly representable at the ledger (and on the item's own increment); an inexact conversion such as
+        // 7 × 6.666666667 = 46.666666669 is refused, never stored as 46.6667.
+        $stockQty = ItemQuantityRules::withIncrement($item)->convert($qty, $factor, QuantitySign::Positive, 'ordered_qty')->result;
         $priceUomId = array_key_exists('price_uom_id', $input) ? $input['price_uom_id'] : $offer?->price_uom_id;
         $priceUom = $priceUomId ? Uom::query()->findOrFail($priceUomId) : null;
         try {

@@ -65,6 +65,7 @@ purchase_order_lines
   expected_delivery_date NULLABLE
   qa_required
   over_receipt_mode, over_receipt_tolerance_percent  -- resolved issue snapshots
+  stock_increment NULLABLE   -- the Item's stock increment pinned at issue (ADR 0142); null = unrestricted
   short_closed_stock_qty
   import_batch_row_id, source_record_id NULLABLE  -- immutable imported-line provenance
 
@@ -177,11 +178,13 @@ Original ordered quantity is immutable. A line can be explicitly short-closed; i
 quantity then becomes zero and later receipt is blocked unless a future audited reopen/revision
 action makes it receivable again. V1 over-receipt is `BLOCK` or `ALLOW_WITHIN_TOLERANCE`, resolved
 from PO-line override then company default and snapshotted on issue. It is checked cumulatively in
-pinned stock UoM; today the tolerance ceiling is floored whenever the stock UoM's *dimension* is
-`COUNT` — an ad hoc stand-in, not a real divisibility rule.
-[ADR 0050](../decisions/0050-item-specific-uom-conversion-and-divisibility.md) decided the real
-rule (an explicit, item-and-UoM rounding precision, not a dimension inference) but it is not yet
-implemented. Above-tolerance approval is deferred.
+pinned stock UoM. The tolerance ceiling is floored to the line's **pinned stock increment** — the
+Item's increment at the moment the order was issued, never its current setting
+([ADR 0050](../decisions/0050-item-specific-uom-conversion-and-divisibility.md) for the rule,
+[ADR 0142](../decisions/0142-represent-stock-quantities-exactly-and-supersede-0050-increment-validation.md)
+for the pin); no increment means unrestricted. A purchase or receipt quantity converts to stock units
+**exactly or is refused** (`QUANTITY_NOT_REPRESENTABLE`, or `QUANTITY_INCREMENT_VIOLATED` on the Item
+increment); it is never rounded to the ledger. Above-tolerance approval is deferred.
 
 A future quick/direct-purchase screen may atomically create a receipt and invoice for convenience.
 It does not create a special document that lets an invoice alter stock.

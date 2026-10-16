@@ -7,12 +7,14 @@ namespace App\Modules\Purchasing\Actions;
 use App\Exceptions\DomainInvariantException;
 use App\Models\User;
 use App\Modules\Approvals\Actions\RequireApproval;
+use App\Modules\Inventory\Support\ItemQuantityRules;
 use App\Modules\Numbering\Services\NumberingService;
 use App\Modules\Purchasing\Models\ItemSupplier;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Modules\Purchasing\Numbering\PurchaseOrderNumbering;
 use App\Modules\Purchasing\Support\PurchaseOrderApprovalSubject;
 use App\Modules\Purchasing\Support\PurchaseOrderStatus;
+use App\Support\Quantity\QuantitySign;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -50,7 +52,14 @@ final class IssuePurchaseOrder
                 }
                 $supplierItem = ItemSupplier::query()->where('item_id', $line->item_id)
                     ->where('supplier_account_id', $order->supplier_account_id)->where('active', true)->first();
+                // ADR 0142: the Item's stock increment in force when the order becomes official is pinned on the line, so a later Item edit
+                // cannot reinterpret the ordered quantity or the over-receipt ceiling. The saved stock quantity must still respect it.
+                $stockIncrement = $line->item->quantity_precision;
+                if ($stockIncrement !== null) {
+                    ItemQuantityRules::withIncrement($line->item)->represent($line->ordered_stock_qty, QuantitySign::Positive, 'lines');
+                }
                 $line->update([
+                    'stock_increment' => $stockIncrement,
                     'item_code' => $line->item->code,
                     'supplier_item_code' => $line->supplier_offer_id ? $line->supplier_item_code : $supplierItem?->supplier_item_code,
                     'over_receipt_mode' => $line->over_receipt_mode ?? $settings->over_receipt_mode,

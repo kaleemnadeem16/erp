@@ -90,7 +90,7 @@ class PurchaseOrderLine extends Model
     protected function casts(): array
     {
         return [
-            'over_receipt_mode' => OverReceiptMode::class,
+            'stock_increment' => 'decimal:9', 'over_receipt_mode' => OverReceiptMode::class,
             'qa_required' => 'bool',
             'expected_delivery_date' => 'date',
             'offer_snapshot' => 'array', 'price_quantity' => 'decimal:4', 'price_stock_factor' => 'decimal:9', 'priced_qty' => 'decimal:9', 'package_increment' => 'decimal:9', 'minimum_order_qty' => 'decimal:4', 'order_multiple' => 'decimal:4',
