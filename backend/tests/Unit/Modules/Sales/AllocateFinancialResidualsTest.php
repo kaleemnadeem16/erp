@@ -211,6 +211,20 @@ class AllocateFinancialResidualsTest extends TestCase
         $this->assertSame(['a' => '0.2000'], $this->amounts($this->allocate('0.20', [AllocationShare::eligible('a', '1', '0.20')])), 'Exactly the capacity is allowed.');
     }
 
+    public function test_reordering_components_cannot_change_a_capped_allocation_and_an_unplaceable_total_is_never_altered(): void
+    {
+        $components = [AllocationShare::eligible('a', '1', '0.10'), AllocationShare::eligible('b', '1', '0.30'), AllocationShare::eligible('c', '1'), AllocationShare::ineligible('d', 'EXEMPT')];
+
+        $forward = $this->allocate('1.01', $components);
+        $reversed = $this->allocate('1.01', array_reverse($components));
+
+        $this->assertSame($this->amounts($forward), $this->amounts($reversed));
+        $this->assertSame($forward->fingerprint(), $reversed->fingerprint());
+        $this->assertSame('1.0100', (string) $forward->sum(), 'The total is the total that was asked for.');
+        // Caps that cannot hold the total refuse with a stable code; the total is never reduced to fit.
+        $this->refused(fn () => $this->allocate('1.01', [AllocationShare::eligible('a', '1', '0.10'), AllocationShare::eligible('b', '1', '0.30')]), 'ALLOCATION_CAPACITY_EXCEEDED');
+    }
+
     public function test_invalid_and_incomplete_inputs_are_refused_with_stable_codes(): void
     {
         $ok = $this->equal(2);

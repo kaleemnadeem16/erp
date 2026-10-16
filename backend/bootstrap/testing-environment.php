@@ -19,6 +19,8 @@ $testEnvironment = [
     // Defence in depth for code that reads DB_DATABASE directly or a misconfigured fallback.
     'DB_DATABASE' => 'erp_testing',
     'DB_URL' => '',
+    // The dev .env raises the login limit for browser tests; the tests assert the real default of five attempts a minute.
+    'LOGIN_RATE_LIMIT_PER_MINUTE' => '5',
     'MAIL_MAILER' => 'array',
     'QUEUE_CONNECTION' => 'sync',
     'SANCTUM_STATEFUL_DOMAINS' => 'localhost:5176,localhost:8090,127.0.0.1:5176,127.0.0.1:8090',

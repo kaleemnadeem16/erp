@@ -8,7 +8,9 @@ use App\Modules\Sales\Support\Financial\StorageAmount;
 use Brick\Math\BigDecimal;
 
 /**
- * One component an amount may be allocated to, identified by its stable logical key (the quotation's logical line identity, not its position on screen).
+ * One component an amount may be allocated to, identified by its stable logical key. The key must be a durable business identity — the quotation's logical
+ * line or component identity — never an array index, a query row number or a display position: it breaks ties between equal remainders, so anything that
+ * can change between two runs of the same inputs would change who receives the extra quantum.
  * It is either ELIGIBLE, with a non-negative weight and an optional cap on what it may take, or INELIGIBLE with a reason (exempt, not chargeable, unknown
  * base). An ineligible component is never given money and never silently becomes eligible; a caller who does not know a component's base says so by
  * marking it ineligible with that reason, not by passing zero.
