@@ -59,7 +59,7 @@ final class StorageAmount
         if ($decimal->isNegative()) {
             throw FinancialRefusal::make(FinancialRefusal::NEGATIVE_AMOUNT, 'The amount cannot be negative.', $field);
         }
-        if ($decimal->stripTrailingZeros()->getScale() > self::SCALE) {
+        if ($decimal->strippedOfTrailingZeros()->getScale() > self::SCALE) {
             throw FinancialRefusal::make(FinancialRefusal::AMOUNT_NOT_REPRESENTABLE, 'The amount needs more than four decimal places and is not rounded silently.', $field);
         }
         $storage = $decimal->toScale(self::SCALE, RoundingMode::UNNECESSARY);

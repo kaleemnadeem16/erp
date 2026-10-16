@@ -68,7 +68,9 @@ class SalesDutyManifestTest extends TestCase
             $this->assertContains($duty->class, [DutyClass::NewOrdinary, DutyClass::Sensitive], $duty->name);
             $this->assertFalse($manifest->isActive($duty->name));
         }
-        $this->assertFalse($manifest->isActive('sales.financial.configure'), 'FR1/FR4 configuration is specified, not live: it has no consumer yet.');
+        $this->assertCount(44, $manifest->withStatus(DutyStatus::Specified));
+        $this->assertSame(['sales.financial.configure'], array_map(fn (SalesDuty $duty): string => $duty->name, $manifest->withStatus(DutyStatus::Staged)), 'The only staged duty: its Action exists, the duty is disabled.');
+        $this->assertFalse($manifest->isActive('sales.financial.configure'), 'FR1/FR4 configuration is staged, not live: no holder recipe is approved.');
         $this->assertSame(DutyClass::Sensitive, $manifest->find('sales.financial.configure')->class);
         $this->assertFalse($manifest->isActive('sales.*'));
         $this->assertFalse($manifest->isActive('sales'));
@@ -122,7 +124,7 @@ class SalesDutyManifestTest extends TestCase
     public function test_no_application_code_names_a_non_active_sales_duty(): void
     {
         $manifest = SalesDutyManifest::shipped();
-        $pending = array_map(fn (SalesDuty $duty): string => $duty->name, array_filter($manifest->all(), fn (SalesDuty $duty): bool => ! $duty->isActive()));
+        $pending = array_map(fn (SalesDuty $duty): string => $duty->name, array_filter($manifest->all(), fn (SalesDuty $duty): bool => ! $duty->isActive() && $duty->status !== DutyStatus::Staged));
         $catalogue = (new \ReflectionClass(SalesDutyCatalogue::class))->getFileName();
         $offenders = [];
 
@@ -138,7 +140,7 @@ class SalesDutyManifestTest extends TestCase
             }
         }
 
-        $this->assertSame([], $offenders, 'A specified or dormant duty must have no consumer until its slice flips it to ACTIVE in the manifest.');
+        $this->assertSame([], $offenders, 'A specified or dormant duty must have no consumer until its slice stages it; a staged one is named only by its guarded Actions.');
     }
 
     public function test_the_rollout_manifest_document_lists_every_duty_with_its_status(): void

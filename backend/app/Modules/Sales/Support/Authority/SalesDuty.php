@@ -25,8 +25,11 @@ final readonly class SalesDuty
         if ($class->isExisting() && $status !== DutyStatus::Active) {
             throw new InvalidArgumentException("Existing CRM duty [{$name}] cannot be anything but active.");
         }
-        if ($class === DutyClass::DormantSensitive && $status === DutyStatus::Active) {
-            throw new InvalidArgumentException("Dormant duty [{$name}] cannot be active.");
+        if ($class === DutyClass::DormantSensitive && $status !== DutyStatus::Dormant) {
+            throw new InvalidArgumentException("Dormant duty [{$name}] cannot be anything but dormant.");
+        }
+        if ($status === DutyStatus::Dormant && $class !== DutyClass::DormantSensitive) {
+            throw new InvalidArgumentException("Only a dormant-sensitive duty [{$name}] can be dormant.");
         }
         $this->scope = DutyScope::CompanyWide;
     }

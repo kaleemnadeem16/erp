@@ -11,7 +11,8 @@ use App\Modules\Sales\Support\PermissionVocabulary;
  * The matrix's rows owned by other modules (Documents, Tax, Company, Currency, Estimating, Inventory, Approvals, Numbering) are deliberately **not**
  * here: one permission has one owning module, and each of those is registered, or will be, by its own.
  *
- * Only the eight existing CRM duties are ACTIVE. Every other duty is a name with a specified meaning and no consumer: it is not registered, has no
+ * Only the eight existing CRM duties are ACTIVE. One duty, `sales.financial.configure`, is STAGED: its guarded Action exists but is disabled until its holder
+ * recipe is reviewed. Every other duty is a name with a specified meaning and no consumer: it is not registered, has no
  * constant, and is refused by `SalesAccess` until the slice that delivers its operation changes its status here, in the same change as its Action,
  * its guard, its projection and its owner-reviewed holder recipe.
  */
@@ -46,7 +47,7 @@ final class SalesDutyCatalogue
             new SalesDuty('sales.pricing.eligibility.manage', DutyClass::Sensitive, DutyStatus::Specified, 'Dated Party pricing memberships', 'Party eligibility', 'PR2'),
             new SalesDuty('sales.pricing.agreement.manage', DutyClass::Sensitive, DutyStatus::Specified, 'Contractual pricing versions', 'Confidential terms', 'PR2/3; cannot depart accepted terms'),
             new SalesDuty('sales.pricing.terms.view', DutyClass::Sensitive, DutyStatus::Specified, 'Read otherwise protected term choices', 'Confidential terms', 'PR2/3'),
-            new SalesDuty('sales.financial.configure', DutyClass::Sensitive, DutyStatus::Specified, 'Sales FX/rounding policy', 'Config', 'FR1/4'),
+            new SalesDuty(PermissionVocabulary::FINANCIAL_CONFIGURE, DutyClass::Sensitive, DutyStatus::Staged, 'Sales FX/rounding policy', 'Config', 'FR1/4'),
             new SalesDuty('sales.customer-decision.view', DutyClass::NewOrdinary, DutyStatus::Specified, 'Decision/case safe detail/history', 'Decision-min', 'CA1'),
             new SalesDuty('sales.customer-decision.evidence.record', DutyClass::NewOrdinary, DutyStatus::Specified, 'Shared intake/append observations', 'Evidence-write', 'CA1; file requires secure DF'),
             new SalesDuty('sales.customer-decision.accept', DutyClass::Sensitive, DutyStatus::Specified, 'Authoritative ordinary consent/claims', 'Exact consent', 'CA2/3'),

@@ -41,6 +41,12 @@ final class PermissionVocabulary
     public const OPPORTUNITY_ATTRIBUTION_CORRECT = 'sales.opportunity.attribution.correct';
 
     /**
+     * Sales financial policy: unit-price entry precision and the settlement rounding rule (ADR 0144). STAGED, not registered: its guarded Actions exist
+     * but `SalesAccess` refuses every caller until the manifest activates it. It is therefore deliberately absent from `all()`.
+     */
+    public const FINANCIAL_CONFIGURE = 'sales.financial.configure';
+
+    /**
      * The registered Sales duties: the manifest's ACTIVE ones, today exactly the eight above. Every other Sales duty in the accepted matrix is specified
      * in `Authority\SalesDutyManifest` and deliberately has no constant here until the slice that delivers it.
      *

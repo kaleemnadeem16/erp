@@ -11,16 +11,17 @@ No new permission is registered, no grant is made, no holder is assigned, no rou
 | | Count | State |
 |---|---|---|
 | Existing CRM duties | 8 | **ACTIVE**, registered exactly as before: same strings, same holders, same read and scope meaning; `sales.opportunity.attribution.correct` stays excluded from automatic grants (ADR 0114) |
-| Sales duties specified, no consumer yet | 45 | **SPECIFIED**: not registered, no constant, no permission row, refused by `SalesAccess` even if a row is made by hand |
+| Sales duties specified, no consumer yet | 44 | **SPECIFIED**: not registered, no constant, no permission row, refused by `SalesAccess` even if a row is made by hand |
+| Sales duty staged (Action delivered, disabled) | 1 | **STAGED**: `sales.financial.configure` — its guarded Action exists (FR4/PX6 policy foundation) but the duty is not registered and `SalesAccess` refuses every caller until the owner-reviewed holder recipe activates it |
 | Sales duties reserved by design | 5 | **DORMANT** (D-S): `sales.delivery.send`, `sales.delivery.reconcile`, `sales.pricing.exception.approve`, `sales.pricing.agreement.depart`, `sales.customer-decision.claim-release` — need their own approved and delivered contract before they may even become SPECIFIED |
 | Other modules' duties in the 78-row matrix | 20 | Not Sales' to register (below); 6 are not registered anywhere yet (Tax 2, Documents 4) |
 
-`sales.financial.configure` (FR1 policy, FR4/PX6 rounding and unit-price precision) is **SPECIFIED, class S**. It has no operation yet, so registering it now would create a grantable right that controls nothing and would reach any full-access mandate holder on the next sync. The foundation is proven to carry it safely (tests register it as a hypothetical ACTIVE duty), and it becomes ACTIVE in the same change that delivers its owner Action, scope guard, read projection and reviewed holder recipe.
+`sales.financial.configure` (FR1 policy, FR4/PX6 rounding and unit-price precision) is **STAGED, class S**: the FR4/PX6 policy Actions (`CreateRoundingPolicyDraft`, `ActivateRoundingPolicy`) now exist and are guarded by it, but registering it would make a grantable right that any full-access mandate holder would receive on the next sync, before a holder recipe is reviewed. So it stays unregistered and refused for everyone. The foundation is proven to carry it safely (tests register it as a hypothetical ACTIVE duty), and it becomes ACTIVE in the same change that delivers its owner Action, scope guard, read projection and reviewed holder recipe.
 
 ## How a duty becomes live (the gate every row below shares)
 
 1. Its slice delivers the owning Action (guarding duty and scope **inside the Action**, not only the Request), the minimum read projection and the independent sensitive read where the matrix names one.
-2. In the same change its status in `SalesDutyCatalogue` moves SPECIFIED → ACTIVE and it gets a constant in `PermissionVocabulary`. Nothing else enables it.
+2. In the same change its status in `SalesDutyCatalogue` moves SPECIFIED (or STAGED) → ACTIVE and it gets a constant in `PermissionVocabulary`. Nothing else enables it.
 3. From then on it is registered and **excluded from automatic grants** (all new duties, ordinary or sensitive) with the matrix class as the recorded reason.
 4. An existing full-access mandate (ADR 0114) is an approved, machine-verified attestation for *all registered capabilities*; once a duty is ACTIVE a qualifying mandate holder receives it on the next sync. That is the accepted mechanism and is unchanged, which is why step 2 needs the holder review below first.
 5. The owner reviews real holders (company, role or direct, effective scope) and approves a recipe; assignment is a separate, owner-authorised act with staging verification. No holder is inferred from a role name, a manager title, record ownership or CRM incumbency.
@@ -41,7 +42,7 @@ No new permission is registered, no grant is made, no holder is assigned, no rou
 
 Legitimate incumbents keep exactly what they hold: no migration touches a grant, a role or a scope limit. Only `SalesAccess::may` changed, and only to refuse a name the manifest does not list as ACTIVE — all eight are.
 
-## The 50 duties not yet live (45 specified, 5 dormant)
+## The 50 duties not yet live (44 specified, 1 staged, 5 dormant)
 
 All are Sales-owned, company-wide scope only, **no predecessor** (no CRM or editor continuity is inferred), **no approved holder recipe** (`NONE — owner review required`), and **excluded from automatic grants from the moment they go ACTIVE**. Until then they are neither registered nor grantable.
 
@@ -64,7 +65,7 @@ All are Sales-owned, company-wide scope only, **no predecessor** (no CRM or edit
 | `sales.pricing.eligibility.manage` | Sensitive | SPECIFIED | Dated Party pricing memberships | Party eligibility | PR2 |
 | `sales.pricing.agreement.manage` | Sensitive | SPECIFIED | Contractual pricing versions | Confidential terms | PR2/3; cannot depart accepted terms |
 | `sales.pricing.terms.view` | Sensitive | SPECIFIED | Read otherwise protected term choices | Confidential terms | PR2/3 |
-| `sales.financial.configure` | Sensitive | SPECIFIED | Sales FX/rounding policy | Config | FR1/4 |
+| `sales.financial.configure` | Sensitive | STAGED | Sales FX/rounding policy | Config | FR1/4 |
 | `sales.customer-decision.view` | New ordinary | SPECIFIED | Decision/case safe detail/history | Decision-min | CA1 |
 | `sales.customer-decision.evidence.record` | New ordinary | SPECIFIED | Shared intake/append observations | Evidence-write | CA1; file requires secure DF |
 | `sales.customer-decision.accept` | Sensitive | SPECIFIED | Authoritative ordinary consent/claims | Exact consent | CA2/3 |
