@@ -14,6 +14,7 @@ No Job implementation, grants, migrations, production enablement or runtime veri
 | Scoped cost coverage/declarations |0147/Q52 closed; [coverage](../domain/job-cost-coverage.md) | SPECIFIED, no runtime assessments |
 | Bounded materials/custody/consumption |0148/Q53 closed; [materials](../domain/job-material-attribution.md) | SPECIFIED, no Job integration; grouped Inventory v1 exists separately |
 | External expenses, Purchasing service acceptance and allocations |0149/Q54 closed; [external](../domain/job-external-cost-attribution.md) | SPECIFIED, no acceptance/attribution adapter |
+| Unified costing/reporting |0150/Q55 closed; [costing](../domain/job-unified-costing.md) | SPECIFIED, physical design/adapters/projections not delivered |
 
 Reuse accepted R7/R9 and Documents0137. Commercial allocations, baseline preservation and scope
 correction rules remain settled. Completion-only and optional direct incurred labour are initial
@@ -21,14 +22,13 @@ SIMPLE direction; no universal timesheet/name/hourly rate/HR, generic service Wo
 Jobs are not mandatory for straightforward trading/delivery. Service pilot remains a candidate,
 not permission to build before dependent handover/readiness and separate implementation authority.
 
-## Q55 and genuinely open decisions
+## Pending research and genuinely open decisions
 
-Owner supports U1–U5 business reporting principles, subject to [refined resolution](phase-5-unified-costing-resolution.md)
-and [bounded contract candidate](../domain/job-unified-costing-candidate.md) review. Q55 remains
-AWAITING_OWNER; no costing ADR accepted, physical schema fixed or application implementation authorised.
-Initial proposed scope: current-restated known actuals, original/current cost basis where available,
-corrections, separate commitments/exposure and independent completeness. No first-scope ETC/EAC.
-Existing infrastructure inspected for reuse; no shared Job projection engine claimed delivered.
+Q55 business architecture is accepted0150; current-restated actual/commitment/exposure reporting,
+compatible spending gaps, independent completeness and deferred forecasting are specified. Candidate
+is reconciled to the current contract; physical schema, exact locks and projection remain later design.
+Next [closeout/historical-evidence bundle](phase-5-closeout-research.md) is PROPOSED/Q56, not accepted.
+It refines source-specific evidence/follow-up ownership without reopening0145 lifecycle.
 
 Q23 variable-content, Q24 ownership/exceptions and Q16 source-actor question remain open for affected
 paths. They do not globally block truthful ordinary supported service/stock workflows. Unverified
@@ -36,8 +36,8 @@ adapter readiness is a delivery gate, not another owner business choice or impli
 
 ## Remaining planning and research — in order
 
-1. Owner reviews Q55 resolution/candidate. Resolve genuine new semantics before accepting ADR/physical design.
-2. Reconcile detailed operational closeout and historical evidence adjustments beyond0145's accepted
+1. Owner reviews Q56 closeout/historical bundle. Resolve only remaining source-specific semantics.
+2. After Q56 review, specify detailed operational closeout and historical evidence adjustments beyond0145's accepted
    rules: known-source reconciliation, remainder disposition, correction follow-up and owning interfaces.
    Preserve optional capture and supported incomplete-cost closeout; do not reopen settled lifecycle.
 3. Define needed operational document/report snapshots through0137 owning adapters and audience/scope
@@ -49,7 +49,7 @@ adapter readiness is a delivery gate, not another owner business choice or impli
 
 Potential later exceptions/reservations/forecasting research is need-driven and separate from the
 initial service pilot. Do not start all workstreams simultaneously or mark Phase5 planning complete
-merely because core ADRs exist. Stop current turn at Q55/overview review; steps2–5 are not begun here.
+merely because core ADRs exist. Stop current turn at Q56 bundle review; steps2–5 are not begun here.
 
 ## Dependencies and possible independent foundations
 
@@ -83,7 +83,7 @@ internal tests cannot establish IMPLEMENTED/VERIFIED/PUBLIC_ENABLED service work
 
 ## Next implementation-ready planning milestone
 
-A reviewed **bounded service-pilot planning package**: settled Q55 contract/decision; closeout and
+A reviewed **bounded service-pilot planning package**: accepted0150 costing contract with delivery gates; closeout and
 required document boundaries reconciled; source/duty/dependency inventory; separately reviewable slices
 with exact authority/transaction/correction ownership and acceptance/failure coverage. Clearly mark
 adapters available versus missing and which must ship atomically. Initial candidate: supported R7
@@ -96,9 +96,11 @@ delivery proof and applicable migration/API/security/concurrency/browser/demo ch
 
 ## Current tasks
 
-- [x] Accept/specify0145–0149; resolve Q51–Q54 and preserve research evidence.
+- [x] Accept/specify0145–0150; resolve Q51–Q55 and preserve research evidence.
 - [x] Refine Q55 resolution/candidate, inspect infrastructure and update planning overview.
-- [ ] Owner review Q55/overview, then reconcile ordered remaining planning areas.
+- [x] Reconcile Q55 approval, current costing contract and provisional/final valuation distinction.
+- [x] Prepare Q56 source-specific closeout/historical-evidence research for owner review.
+- [ ] Owner review Q56, then reconcile ordered remaining planning areas.
 - [ ] Consolidate service-pilot slices/readiness evidence for separate implementation authorisation.
 - [ ] Implement/verify only separately authorised batches; no such work begun by these documents.
 

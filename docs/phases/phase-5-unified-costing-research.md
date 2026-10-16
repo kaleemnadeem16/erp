@@ -2,6 +2,9 @@
 
 # Phase 5 — unified Job costing and estimate-versus-actual research
 
+**Historical research/review stage:** approved2026-10-16, recorded in accepted0150 and [current contract](../domain/job-unified-costing.md). Q55 is closed; questions below preserve the prior stage. No physical schema or application delivery implied.
+
+
 **2026-10-16 · PROPOSED research bundle / Q55 AWAITING_OWNER. No new costing ADR accepted.**
 Question: how can unlike owning sources produce one trustworthy cost view and comparable variance
 without duplicate contributions, fabricated completeness or a universal Finance/timesheet dependency?

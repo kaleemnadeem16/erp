@@ -164,8 +164,9 @@ in the same commit.
 | [0147](0147-bound-job-cost-coverage-to-scope-evidence-and-source-version.md) | Bound Job cost coverage to scope, evidence and source version | accepted | 2026-10-16 |
 | [0148](0148-bound-initial-job-material-paths-and-require-correction-delivery.md) | Bound initial Job material paths and require correction delivery | accepted | 2026-10-16 |
 | [0149](0149-attribute-external-job-costs-through-owning-sources-and-reconciliation.md) | Attribute external Job costs through owning sources and reconciliation | accepted | 2026-10-16 |
+| [0150](0150-unify-job-cost-reporting-through-source-owned-attribution.md) | Unify Job cost reporting through source-owned attribution | accepted | 2026-10-16 |
 
-**Next number: 0150**
+**Next number: 0151**
 
 Note: the R7 handover ADR was first drafted as a second 0130 and renumbered to 0136 on 2026-10-15; 0130 is the backup decision. Number is chosen after fetching, so drafts do not collide.
 

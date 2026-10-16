@@ -2,6 +2,9 @@
 
 # Q55 — refined unified-costing resolution for owner review
 
+**Historical research/review stage:** approved2026-10-16, recorded in accepted0150 and [current contract](../domain/job-unified-costing.md). Q55 is closed; questions below preserve the prior stage. No physical schema or application delivery implied.
+
+
 **2026-10-16 · PROPOSED final business resolution and contract candidate.** Owner supports reporting
 principles; no new ADR accepted, physical schema fixed, application code/grant/migration/push authorised.
 Reuse [existing primary comparison](phase-5-unified-costing-research.md),0145–0149/R7/R9; no repeated

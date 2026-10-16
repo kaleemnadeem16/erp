@@ -137,7 +137,7 @@ delta touching it needs a Sales/COGS correction line — see
 
 ### Phase 5 — Job execution
 
-[Research plan](phase-5-job-execution.md): lifecycle0145/labour0146/coverage0147/materials0148 accepted; bounded contracts specified, no Job implementation. Q52/Q53 closed. [External-cost contract](../domain/job-external-cost-attribution.md) accepted0149/Q54 closed, specified not implemented. [Q55 refined resolution](phase-5-unified-costing-resolution.md), [contract candidate](../domain/job-unified-costing-candidate.md) and expanded [planning overview](phase-5-job-execution.md) await review; no costing ADR, physical schema or code authority. [Resolution evidence](phase-5-coverage-material-resolution.md) and [deferred zero-assertion research](phase-5-zero-cost-assertion.md) retained.
+[Research plan](phase-5-job-execution.md): lifecycle0145/labour0146/coverage0147/materials0148 accepted; bounded contracts specified, no Job implementation. Q52/Q53 closed. [External-cost contract](../domain/job-external-cost-attribution.md) accepted0149/Q54 closed, specified not implemented. [Unified costing](../domain/job-unified-costing.md) accepted0150/Q55 closed, specified not delivered; physical schema remains later design. [Closeout/historical research](phase-5-closeout-research.md) awaits Q56 review. [Planning overview](phase-5-job-execution.md) retains service-pilot milestone; no code authority. [Resolution evidence](phase-5-coverage-material-resolution.md) and [deferred zero-assertion research](phase-5-zero-cost-assertion.md) retained.
 Jobs, work orders, material issue, timesheets, unified job cost entries, estimate-vs-actual
 variance reporting. This is where the system starts paying for itself.
 
