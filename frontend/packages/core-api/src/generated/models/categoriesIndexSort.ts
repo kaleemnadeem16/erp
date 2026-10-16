@@ -13,7 +13,11 @@ export const CategoriesIndexSort = {
   code: "code",
   name: "name",
   created_at: "created_at",
+  updated_at: "updated_at",
+  default_valuation_method: "default_valuation_method",
   "-code": "-code",
   "-name": "-name",
   "-created_at": "-created_at",
+  "-updated_at": "-updated_at",
+  "-default_valuation_method": "-default_valuation_method",
 } as const;

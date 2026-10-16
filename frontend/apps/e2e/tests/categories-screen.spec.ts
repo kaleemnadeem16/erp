@@ -106,6 +106,75 @@ test.describe('Categories Screen Standards and Behavior', () => {
     await expect(fab).toBeVisible();
   });
 
+  test('row selection checkbox displays CategoryBulkBar with bulk actions and clear', async ({ page }) => {
+    await page.goto('/categories');
+
+    // 1. Table has row selection checkboxes
+    const firstCheckbox = page.getByRole('checkbox', { name: 'Select row' }).first();
+    await expect(firstCheckbox).toBeVisible();
+    await firstCheckbox.click();
+
+    // 2. CategoryBulkBar appears with count and actions
+    const bulkBar = page.getByTestId('category-bulk-bar');
+    await expect(bulkBar).toBeVisible();
+    await expect(page.getByTestId('bulk-count')).toHaveText('1 selected');
+    await expect(bulkBar.getByRole('button', { name: 'Print selected' })).toBeVisible();
+    await expect(page.getByTestId('bulk-delete')).toBeVisible();
+
+    // 3. Clear selection button clears the bar
+    await bulkBar.getByRole('button', { name: 'Clear selection' }).click();
+    await expect(bulkBar).toHaveCount(0);
+    await expect(firstCheckbox).not.toBeChecked();
+  });
+
+  test('filters for parent, valuation, and hierarchy update URL and show chips', async ({ page }) => {
+    await page.goto('/categories');
+
+    // Valuation filter select
+    const valTrigger = page.getByRole('combobox', { name: 'Valuation method' });
+    await expect(valTrigger).toBeVisible();
+    await valTrigger.click();
+    await page.getByRole('option', { name: 'AVCO' }).click();
+
+    await expect(page).toHaveURL(/default_valuation_method=AVCO/);
+    const valChip = page.locator('.ui-chip-active').filter({ hasText: 'Valuation: AVCO' });
+    await expect(valChip).toBeVisible();
+
+    // Hierarchy filter select
+    const hierTrigger = page.getByRole('combobox', { name: 'Hierarchy level' });
+    await expect(hierTrigger).toBeVisible();
+    await hierTrigger.click();
+    await page.getByRole('option', { name: 'Leaf categories only' }).click();
+
+    await expect(page).toHaveURL(/has_children=false/);
+    const hierChip = page.locator('.ui-chip-active').filter({ hasText: 'Hierarchy: Leaf categories only' });
+    await expect(hierChip).toBeVisible();
+
+    // Clear all filters
+    await page.getByRole('button', { name: 'Clear all' }).click();
+    await expect(valChip).toHaveCount(0);
+    await expect(hierChip).toHaveCount(0);
+  });
+
+  test('detail screen displays hierarchy role, subcategories, and items in category link', async ({ page }) => {
+    await page.goto('/categories');
+
+    const firstRowLink = page.locator('.ui-order-link').first();
+    await expect(firstRowLink).toBeVisible();
+    await firstRowLink.click();
+
+    const sheet = page.getByRole('dialog');
+    await expect(sheet).toBeVisible();
+
+    // Verify enhanced detail fields
+    await expect(sheet.locator('.detail-field-label').filter({ hasText: 'Hierarchy role' })).toBeVisible();
+    await expect(sheet.locator('.detail-field-label').filter({ hasText: 'Subcategories' })).toBeVisible();
+
+    // Verify "Items in this category" section and navigation link
+    const itemsLink = sheet.getByRole('link', { name: /View items in this category/i });
+    await expect(itemsLink).toBeVisible();
+  });
+
   test('category create form validates required fields', async ({ page }) => {
     await page.goto('/categories/new');
     const sheet = page.getByRole('dialog');

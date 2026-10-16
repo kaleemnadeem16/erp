@@ -199,10 +199,18 @@ export function CategoryDetailScreen({ presentation = 'page' }: CategoryDetailSc
                 {category.parent?.name ?? `Category #${category.parent_id}`}
               </Link>
             ) : (
-              <span className="text-muted-foreground">—</span>
+              <span className="text-muted-foreground">None (Top-level category)</span>
             )}
           </DetailField>
+          <DetailField label="Hierarchy role">
+            {category.parent_id ? 'Subcategory' : 'Top-level category'}
+          </DetailField>
           <DetailField label="Default valuation">{category.default_valuation_method ?? 'Inherited'}</DetailField>
+          <DetailField label="Subcategories">
+            {category.children && category.children.length > 0
+              ? `${category.children.length} direct ${category.children.length === 1 ? 'subcategory' : 'subcategories'}`
+              : '0 (Leaf category)'}
+          </DetailField>
           <DetailField label="Created">{formatDateTime(category.created_at)}</DetailField>
           <DetailField label="Last updated">{formatDateTime(category.updated_at)}</DetailField>
         </DetailSection>
@@ -225,8 +233,8 @@ export function CategoryDetailScreen({ presentation = 'page' }: CategoryDetailSc
             </DetailField>
           </DetailSection>
         )}
-        {category.children && category.children.length > 0 && (
-          <DetailSection title="Child categories" fullWidth>
+        <DetailSection title="Child categories" fullWidth>
+          {category.children && category.children.length > 0 ? (
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
               {category.children.map((child) => (
                 <Link
@@ -239,8 +247,31 @@ export function CategoryDetailScreen({ presentation = 'page' }: CategoryDetailSc
                 </Link>
               ))}
             </div>
-          </DetailSection>
-        )}
+          ) : (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-md border border-dashed p-4 text-sm">
+              <p className="text-muted-foreground">No child categories. This is a leaf category in the item hierarchy.</p>
+              {mayManage && (
+                <Button variant="outline" size="sm" asChild>
+                  <Link to={{ pathname: '/categories/new', search }}>
+                    Add subcategory
+                  </Link>
+                </Button>
+              )}
+            </div>
+          )}
+        </DetailSection>
+        <DetailSection title="Items in this category" fullWidth>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm">
+            <p className="text-muted-foreground">
+              Items assigned to <strong>{category.name}</strong> inherit its default valuation and GL account mappings.
+            </p>
+            <Button variant="outline" size="sm" asChild>
+              <Link to={{ pathname: '/items', search: `?filter[category_id]=${category.id}` }}>
+                View items in this category →
+              </Link>
+            </Button>
+          </div>
+        </DetailSection>
       </DetailPageLayout>
 
       <Dialog open={deleting} onOpenChange={setDeleting}>

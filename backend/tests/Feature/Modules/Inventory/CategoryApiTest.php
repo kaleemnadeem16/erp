@@ -156,6 +156,33 @@ class CategoryApiTest extends TestCase
         $response->assertJsonPath('data.0.code', 'RAW');
     }
 
+    public function test_index_can_filter_by_valuation_method_and_children(): void
+    {
+        $user = User::factory()->create();
+        $parent = Category::create(['code' => 'RAW', 'name' => 'Raw materials', 'default_valuation_method' => 'AVCO']);
+        $child = Category::create(['code' => 'PIGMENTS', 'name' => 'Pigments', 'parent_id' => $parent->id, 'default_valuation_method' => null]);
+
+        $avcoResponse = $this->actingAs($user)->getJson('/api/v1/categories?filter[default_valuation_method]=AVCO');
+        $avcoResponse->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.code', 'RAW');
+
+        $inheritedResponse = $this->actingAs($user)->getJson('/api/v1/categories?filter[default_valuation_method]=INHERITED');
+        $inheritedResponse->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.code', 'PIGMENTS');
+
+        $hasChildrenResponse = $this->actingAs($user)->getJson('/api/v1/categories?filter[has_children]=true');
+        $hasChildrenResponse->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.code', 'RAW');
+
+        $leafResponse = $this->actingAs($user)->getJson('/api/v1/categories?filter[has_children]=false');
+        $leafResponse->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.code', 'PIGMENTS');
+    }
+
+    public function test_unprivileged_user_filtering_by_account_is_forbidden(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAsUnprivileged($user)
+            ->getJson('/api/v1/categories?filter[income_account_id]=1')
+            ->assertForbidden();
+    }
+
     public function test_show_can_include_children(): void
     {
         $user = User::factory()->create();

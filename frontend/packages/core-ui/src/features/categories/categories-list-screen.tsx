@@ -1,8 +1,13 @@
-import { useMemo, useState, type ReactNode } from 'react';
-import { Layers, Pencil, Search, SlidersHorizontal, X } from 'lucide-react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Layers, Pencil, Search, SlidersHorizontal, Tag, X } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router';
-import type { PaginationState, SortingState } from '@tanstack/react-table';
-import { useCategoriesIndex, type CategoriesIndexSort, type CategoryResource } from '@erp/core-api';
+import type { PaginationState, RowSelectionState, SortingState } from '@tanstack/react-table';
+import {
+  useCategoriesIndex,
+  ValuationMethod,
+  type CategoriesIndexSort,
+  type CategoryResource,
+} from '@erp/core-api';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -11,7 +16,7 @@ import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '../..
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../components/ui/tooltip';
 import { PageHeader } from '../../components/page/page-header';
 import { ScreenTemplate } from '../../components/page/screen-template';
-import { DataTable, isColumnVisibleByDefault, toTanStackColumns } from '../../components/data-table';
+import { DataTable, isColumnVisibleByDefault, selectionColumn, toTanStackColumns } from '../../components/data-table';
 import { PrintLayout, PrintableTable, PrintTrigger, useQuickPrint } from '../../components/print';
 import { cn } from '../../lib/utils';
 import {
@@ -24,10 +29,13 @@ import { useColumnVisibilityPreference } from '../../lib/use-column-visibility-p
 import { useDebouncedSearch } from '../../lib/use-debounced-search';
 import { useListViewPreference } from '../../lib/use-view-preference';
 import { categoryColumns } from './categories-columns';
+import { CategoryBulkBar } from './category-bulk-actions';
 import { usePermission } from '../../hooks/use-permission';
 
 interface Filters {
   parent_id: string;
+  default_valuation_method: string;
+  has_children: string;
   search: string;
   [key: string]: string;
 }
@@ -50,13 +58,25 @@ export function CategoriesListScreen() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const { view, setView } = useListViewPreference('categories-list');
 
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+
   const parentsQuery = useCategoriesIndex({ per_page: 100, sort: 'name' });
   const parents = parentsQuery.data?.status === 200 ? parentsQuery.data.data.data : [];
 
   const result = useCategoriesIndex({
     'filter[parent_id]': query.filters.parent_id ? Number(query.filters.parent_id) : undefined,
     'filter[search]': query.filters.search || undefined,
-    include: 'parent',
+    'filter[default_valuation_method]':
+      query.filters.default_valuation_method && query.filters.default_valuation_method !== 'all'
+        ? query.filters.default_valuation_method
+        : undefined,
+    'filter[has_children]':
+      query.filters.has_children === 'true'
+        ? true
+        : query.filters.has_children === 'false'
+        ? false
+        : undefined,
+    include: 'parent,children',
     sort: query.sort as CategoriesIndexSort | undefined,
     per_page: query.perPage,
     page: query.page,
@@ -64,12 +84,35 @@ export function CategoriesListScreen() {
 
   const rows = result.data?.status === 200 ? result.data.data.data : [];
   const total = result.data?.status === 200 ? result.data.data.meta.total : 0;
+
+  const selectedRows = useMemo(
+    () => rows.filter((cat) => rowSelection[String(cat.id)]),
+    [rows, rowSelection],
+  );
+
+  // Clear row selection when filters, page, page size, or sorting change
+  useEffect(() => {
+    setRowSelection({});
+  }, [listSearch]);
+
   const columns = useMemo(() => toTanStackColumns(categoryColumns), []);
+  const tanStackColumns = useMemo(
+    () => [selectionColumn<CategoryResource>(), ...columns],
+    [columns],
+  );
+
   const sorting: SortingState = apiSortToTableSorting(query.sort, categoryColumns);
   const pagination: PaginationState = { pageIndex: query.page - 1, pageSize: query.perPage };
   const { contentRef, print } = useQuickPrint({ documentTitle: 'Category List' });
+  const { contentRef: selectedPrintRef, print: printSelected } = useQuickPrint({
+    documentTitle: 'Category List (Selected)',
+  });
 
-  const activeFilterCount = [query.filters.parent_id].filter(Boolean).length;
+  const activeFilterCount = [
+    query.filters.parent_id && query.filters.parent_id !== 'all',
+    query.filters.default_valuation_method && query.filters.default_valuation_method !== 'all',
+    query.filters.has_children && query.filters.has_children !== 'all',
+  ].filter(Boolean).length;
 
   const activeChips = useMemo(() => {
     const chips: { id: string; icon: ReactNode; label: string; onRemove: () => void }[] = [];
@@ -81,11 +124,11 @@ export function CategoriesListScreen() {
         onRemove: () => query.setFilter('search', undefined),
       });
     }
-    if (query.filters.parent_id) {
+    if (query.filters.parent_id && query.filters.parent_id !== 'all') {
       let label = 'Parent: Top-level only';
       if (query.filters.parent_id !== '0') {
         const parent = parents.find((p) => String(p.id) === query.filters.parent_id);
-        label = `Parent: ${parent?.name ?? query.filters.parent_id}`;
+        label = `Parent: Under ${parent?.name ?? query.filters.parent_id}`;
       }
       chips.push({
         id: 'parent_id',
@@ -94,11 +137,36 @@ export function CategoriesListScreen() {
         onRemove: () => query.setFilter('parent_id', undefined),
       });
     }
+    if (query.filters.default_valuation_method && query.filters.default_valuation_method !== 'all') {
+      const valLabel =
+        query.filters.default_valuation_method === 'INHERITED'
+          ? 'Inherited'
+          : query.filters.default_valuation_method;
+      chips.push({
+        id: 'default_valuation_method',
+        icon: <Tag className="h-3.5 w-3.5" />,
+        label: `Valuation: ${valLabel}`,
+        onRemove: () => query.setFilter('default_valuation_method', undefined),
+      });
+    }
+    if (query.filters.has_children && query.filters.has_children !== 'all') {
+      chips.push({
+        id: 'has_children',
+        icon: <Layers className="h-3.5 w-3.5" />,
+        label: `Hierarchy: ${query.filters.has_children === 'true' ? 'With subcategories' : 'Leaf categories only'}`,
+        onRemove: () => query.setFilter('has_children', undefined),
+      });
+    }
     return chips;
-  }, [query.filters.search, query.filters.parent_id, parents, query]);
+  }, [query.filters, parents, query]);
 
   const clearAllFilters = () => {
-    query.setFilters({ parent_id: undefined, search: undefined });
+    query.setFilters({
+      parent_id: undefined,
+      default_valuation_method: undefined,
+      has_children: undefined,
+      search: undefined,
+    });
   };
 
   return (
@@ -116,7 +184,7 @@ export function CategoriesListScreen() {
         }
       />
       <div className="flex flex-wrap items-center gap-2">
-        <div className="relative flex-1 md:w-72 md:flex-none">
+        <div className="relative flex-1 md:w-64 md:flex-none">
           <Search
             aria-hidden="true"
             className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
@@ -183,7 +251,7 @@ export function CategoriesListScreen() {
       </Sheet>
 
       {activeChips.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 pt-1">
+        <div className="flex flex-wrap items-center gap-2 pt-1" data-testid="active-chips">
           <span className="hidden text-sm font-medium md:inline">Active filters</span>
           {activeChips.map((chip) => (
             <Badge
@@ -214,8 +282,19 @@ export function CategoriesListScreen() {
         </div>
       )}
 
+      <CategoryBulkBar
+        selected={selectedRows}
+        mayManage={mayManage}
+        onPrintSelected={() => printSelected()}
+        onClear={() => setRowSelection({})}
+        onChanged={async () => {
+          await result.refetch();
+          setRowSelection({});
+        }}
+      />
+
       <DataTable
-        columns={columns}
+        columns={tanStackColumns}
         data={rows}
         rowCount={total}
         recordNoun="categories"
@@ -230,6 +309,9 @@ export function CategoriesListScreen() {
         }
         columnVisibility={visibility}
         onColumnVisibilityChange={setVisibility}
+        rowSelection={rowSelection}
+        onRowSelectionChange={setRowSelection}
+        getRowId={(row: CategoryResource) => String(row.id)}
         onRowClick={(row: CategoryResource) => navigate({ pathname: `/categories/${row.id}`, search: listSearch })}
         rowActions={(category: CategoryResource) =>
           mayManage ? (
@@ -254,6 +336,7 @@ export function CategoriesListScreen() {
         view={view}
         onViewChange={setView}
         cardColumns={categoryColumns}
+        actionsHeader="Actions"
       />
       <div className="hidden">
         <div ref={contentRef}>
@@ -267,6 +350,18 @@ export function CategoriesListScreen() {
           </PrintLayout>
         </div>
       </div>
+      <div className="hidden">
+        <div ref={selectedPrintRef}>
+          <PrintLayout
+            title="CATEGORY LIST (SELECTED)"
+            printedAt={new Date()}
+            recordCount={selectedRows.length}
+            meta={[{ label: 'Selection', value: `${selectedRows.length} selected categories` }]}
+          >
+            <PrintableTable columns={categoryColumns} rows={selectedRows} getRowKey={(row) => row.id} />
+          </PrintLayout>
+        </div>
+      </div>
     </ScreenTemplate>
   );
 }
@@ -277,26 +372,59 @@ interface CategoryFilterControlsProps {
   full?: boolean;
 }
 
-/** Parent select — shared by the always-visible desktop row and the mobile Filters sheet. */
+/** Filter selects — shared by the always-visible desktop row and the mobile Filters sheet. */
 function CategoryFilterControls({ parents, query, full }: CategoryFilterControlsProps) {
   return (
-    <Select
-      value={query.filters.parent_id ?? 'all'}
-      onValueChange={(v) => query.setFilter('parent_id', v === 'all' ? undefined : v)}
-    >
-      <SelectTrigger className={full ? 'h-10 w-full' : 'h-10 w-48'} aria-label="Parent">
-        <SelectValue placeholder="Parent" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="all">All categories</SelectItem>
-        <SelectItem value="0">Top-level only</SelectItem>
-        {parents.map((p) => (
-          <SelectItem key={p.id} value={String(p.id)}>
-            Under {p.name}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <div className={cn('flex items-center gap-2', full && 'flex-col w-full')}>
+      <Select
+        value={query.filters.parent_id ?? 'all'}
+        onValueChange={(v) => query.setFilter('parent_id', v === 'all' ? undefined : v)}
+      >
+        <SelectTrigger className={full ? 'h-10 w-full' : 'h-10 w-44'} aria-label="Parent">
+          <SelectValue placeholder="Parent" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All categories</SelectItem>
+          <SelectItem value="0">Top-level only</SelectItem>
+          {parents.map((p) => (
+            <SelectItem key={p.id} value={String(p.id)}>
+              Under {p.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select
+        value={query.filters.default_valuation_method ?? 'all'}
+        onValueChange={(v) => query.setFilter('default_valuation_method', v === 'all' ? undefined : v)}
+      >
+        <SelectTrigger className={full ? 'h-10 w-full' : 'h-10 w-40'} aria-label="Valuation method">
+          <SelectValue placeholder="Valuation" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All valuations</SelectItem>
+          <SelectItem value="INHERITED">Inherited / None</SelectItem>
+          {Object.values(ValuationMethod).map((method) => (
+            <SelectItem key={method} value={method}>
+              {method}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select
+        value={query.filters.has_children ?? 'all'}
+        onValueChange={(v) => query.setFilter('has_children', v === 'all' ? undefined : v)}
+      >
+        <SelectTrigger className={full ? 'h-10 w-full' : 'h-10 w-44'} aria-label="Hierarchy level">
+          <SelectValue placeholder="Hierarchy" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All levels</SelectItem>
+          <SelectItem value="true">With subcategories</SelectItem>
+          <SelectItem value="false">Leaf categories only</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
   );
 }
-

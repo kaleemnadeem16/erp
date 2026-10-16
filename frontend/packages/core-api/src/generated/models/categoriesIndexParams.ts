@@ -17,6 +17,23 @@ A plain integer|min:1 filter couldn't express that, so it's its own case.
    * @maxLength 255
    */
   "filter[search]"?: string;
+  /**
+   * @maxLength 50
+   */
+  "filter[default_valuation_method]"?: string;
+  "filter[has_children]"?: boolean;
+  /**
+   * @minimum 1
+   */
+  "filter[income_account_id]"?: number;
+  /**
+   * @minimum 1
+   */
+  "filter[expense_account_id]"?: number;
+  /**
+   * @minimum 1
+   */
+  "filter[inventory_account_id]"?: number;
   sort?: CategoriesIndexSort;
   include?: string;
   /**

@@ -50,6 +50,11 @@ export type categoriesIndexResponse401 = {
   status: 401;
 };
 
+export type categoriesIndexResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
 export type categoriesIndexResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -59,7 +64,9 @@ export type categoriesIndexResponseSuccess = categoriesIndexResponse200 & {
   headers: Headers;
 };
 export type categoriesIndexResponseError = (
-  categoriesIndexResponse401 | categoriesIndexResponse422
+  | categoriesIndexResponse401
+  | categoriesIndexResponse403
+  | categoriesIndexResponse422
 ) & {
   headers: Headers;
 };
@@ -99,7 +106,10 @@ export const getCategoriesIndexQueryKey = (params?: CategoriesIndexParams) => {
 
 export const getCategoriesIndexQueryOptions = <
   TData = Awaited<ReturnType<typeof categoriesIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: CategoriesIndexParams,
   options?: {
@@ -132,11 +142,16 @@ export type CategoriesIndexQueryResult = NonNullable<
   Awaited<ReturnType<typeof categoriesIndex>>
 >;
 export type CategoriesIndexQueryError =
-  AuthenticationExceptionResponse | ValidationExceptionResponse;
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
 
 export function useCategoriesIndex<
   TData = Awaited<ReturnType<typeof categoriesIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params: undefined | CategoriesIndexParams,
   options: {
@@ -163,7 +178,10 @@ export function useCategoriesIndex<
 };
 export function useCategoriesIndex<
   TData = Awaited<ReturnType<typeof categoriesIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: CategoriesIndexParams,
   options?: {
@@ -190,7 +208,10 @@ export function useCategoriesIndex<
 };
 export function useCategoriesIndex<
   TData = Awaited<ReturnType<typeof categoriesIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: CategoriesIndexParams,
   options?: {
@@ -210,7 +231,10 @@ export function useCategoriesIndex<
 
 export function useCategoriesIndex<
   TData = Awaited<ReturnType<typeof categoriesIndex>>,
-  TError = AuthenticationExceptionResponse | ValidationExceptionResponse,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
 >(
   params?: CategoriesIndexParams,
   options?: {

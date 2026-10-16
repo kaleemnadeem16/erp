@@ -1,5 +1,6 @@
 import type { CategoryResource } from '@erp/core-api';
 import type { DataColumn } from '../../components/data-table/types';
+import { Badge } from '../../components/ui/badge';
 import { RecordLink } from '../../components/ui/record-link';
 import { formatDate } from '../../lib/format-date';
 
@@ -31,21 +32,44 @@ export const categoryColumns: DataColumn<CategoryResource>[] = [
     filterable: true,
   },
   {
+    key: 'subcategories',
+    header: 'Subcategories',
+    value: (row) => (row.children && row.children.length > 0 ? `${row.children.length} subcategories` : 'None'),
+    cell: (row) =>
+      row.children && row.children.length > 0 ? (
+        <Badge variant="secondary" className="font-normal text-xs">
+          {row.children.length} {row.children.length === 1 ? 'subcategory' : 'subcategories'}
+        </Badge>
+      ) : (
+        <span className="text-muted-foreground text-xs">—</span>
+      ),
+  },
+  {
     key: 'default_valuation_method',
     header: 'Default valuation',
-    value: (row) => row.default_valuation_method,
+    value: (row) => row.default_valuation_method ?? 'Inherited',
     cell: (row) =>
       row.default_valuation_method ? (
         <span>{row.default_valuation_method}</span>
       ) : (
         <span className="text-muted-foreground italic text-xs">Inherited</span>
       ),
+    sortable: true,
+    filterable: true,
   },
   {
     key: 'created_at',
     header: 'Created',
     value: (row) => formatDate(row.created_at),
     cell: (row) => formatDate(row.created_at) ?? <span className="text-muted-foreground">—</span>,
+    sortable: true,
+    screenVisible: false,
+  },
+  {
+    key: 'updated_at',
+    header: 'Updated',
+    value: (row) => formatDate(row.updated_at),
+    cell: (row) => formatDate(row.updated_at) ?? <span className="text-muted-foreground">—</span>,
     sortable: true,
     screenVisible: false,
   },
