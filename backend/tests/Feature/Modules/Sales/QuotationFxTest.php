@@ -218,6 +218,9 @@ class QuotationFxTest extends TestCase
     public function test_a_non_positive_latest_rate_refuses_and_does_not_fall_back_to_an_older_one(): void
     {
         $this->rate($this->usd, '280', '2026-10-10');
+        // The Currency owner's own positive-rate constraint (when present) is lifted inside this test's transaction, so the resolver's defence is what is
+        // under test: a bad rate must refuse here even if one ever reaches the master.
+        DB::statement('ALTER TABLE exchange_rates DROP CONSTRAINT IF EXISTS exchange_rates_rate_positive_check');
         $this->rate($this->usd, '0', '2026-10-14');
 
         $this->assertSame('FX_RATE_INVALID', $this->refusal(fn () => ($this->fx())($this->usd->id, $this->pkr->id, $this->on('2026-10-15'), FxPolicy::boundedPrior(1, 30))));

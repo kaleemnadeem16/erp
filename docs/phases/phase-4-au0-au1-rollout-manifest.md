@@ -99,6 +99,19 @@ All are Sales-owned, company-wide scope only, **no predecessor** (no CRM or edit
 | `sales.pricing.agreement.depart` | Dormant sensitive | DORMANT | Future accepted-contract departure | No runtime projection | Separate approved/delivered contract first |
 | `sales.customer-decision.claim-release` | Dormant sensitive | DORMANT | Future commercial exclusive-claim release | No runtime projection | Separate approved/delivered contract first |
 
+## Proposed holder recipe for `sales.financial.configure` (for owner review — not applied)
+
+This is a proposal only. No migration, seeder or command assigns it, and no real person or role is named here. The duty stays STAGED until the owner approves a recipe and the manifest is changed to ACTIVE.
+
+| Who | Should hold it? | Why |
+|---|---|---|
+| **Financial configuration administrators** — the one or two named people accountable for how the company rounds and prices (for example the finance or commercial-policy owner) | **Yes, explicitly, as a direct grant to each named person**, company-wide | Changing rounding or unit-price precision changes what every new quotation settles to. It is sensitive (class S): explicit, auditable, few holders. |
+| **Routine Sales operators** — people who prepare, price and issue quotations | **No** | They never need to *change* the policy. Their calculations read the policy in force automatically, and a read-only display of the version in force (ADR 0144 §6) needs no duty. |
+| **Managers, administrators, "admin"-named roles** | **No by name or title** | Nothing is inferred from a role name. An administrator receives it only as a named holder, or through an existing verified full-access mandate (ADR 0114) — which, once the duty is ACTIVE, would include it on the next sync; that is why activation waits for this review. |
+| **Roles** | Prefer none | A role would spread a sensitive duty to everyone later given the role. If the owner wants a role, it should be a dedicated, single-purpose one with an approved membership list. |
+
+Before activation the owner should also confirm: the holder list and their effective scope (company-wide only is supported; a "my units" limit is refused); that the activation change is staged and verified with an authorised identity and a negative control (an ordinary seller must be refused on create and activate); and the backout (flip the status back — the Actions and history remain).
+
 ## Duties the matrix lists that other modules own
 
 Not registered by Sales, not in the Sales manifest, and a test asserts the manifest contains none of them. Existing ones are reused by their exact string with their own contracts; no automatic Sales transfer.
