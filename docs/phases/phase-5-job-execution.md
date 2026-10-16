@@ -64,7 +64,7 @@ ADR0137 governs operational printed documents. None is designed or waived by the
 - [x] Record approved D1–D6 as0145, bounded contract and historical reconciliation.
 - [x] Prepare labour bundle for review, not approval.
 - [x] Resolve Q51 business direction as0146; specify bounded labour recognition/correction scenarios.
-- [ ] Owner review Q52 coverage and Q53 materials; no implementation follows from specification.
+- [ ] Final owner review of [refined Q52/M1–M6](phase-5-coverage-material-resolution.md), exact roadmap boundary and [separate zero assertion](phase-5-zero-cost-assertion.md); no new ADR or implementation authorised.
 - [ ] Research remaining streams in order, without simultaneous detailed design.
 - [ ] Obtain separate implementation authorisation, named owners and actual adapter readiness.
 - [ ] Deliver/verify one actual service workflow: tenant/scope guards, source lineage, exact retries,

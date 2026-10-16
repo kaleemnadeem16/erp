@@ -793,3 +793,14 @@ ordinary stock/explicit custody-use/no false reservation subject to owner review
 conflict identified;0145/R7/R9 unchanged. Current Purchasing precision and Sales authority work
 preserved. Documentation checks only; no implementation, migrations, grants, runtime verification
 or push. Job/labour contracts remain unimplemented/unverified.
+
+## 2026-10-16 — Q52/M1–M6 refined for final owner review
+
+Recorded owner's direction/clarifications without accepting new ADRs: optional bounded coverage
+declaration and source/coverage/Job valuation distinctions; separate zero-assertion authority/evidence
+research, no empty-list zero. Added explicit Inventory primitive versus future Job-path matrix,
+exact proposed scoped roadmap amendment, direct-use/custody examples and Q24/Q23 exclusions.
+Required0040 participant/reconciliation is a gate for every Job-consumed path, not replaced by
+merely blocking replay. Source replay limitations, scope/transaction/closeout guards and CM01–18
+business scenarios documented. Q52/Q53 remain AWAITING_OWNER; Q24/Q23/Q16 preserved. No new ADR,
+implementation, grants, migrations or application tests. Existing Purchasing precision WIP untouched.

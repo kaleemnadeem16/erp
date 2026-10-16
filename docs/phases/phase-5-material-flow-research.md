@@ -2,7 +2,10 @@
 
 # Phase 5 — Material demand, custody, reservation, consumption and corrections
 
-**2026-10-16 · Research-only / PROPOSED M1–M6; Q53 AWAITING_OWNER.**
+**2026-10-16 · Direction supported with owner clarifications; refined M1–M6 resolution PROPOSED/Q53 AWAITING_OWNER.**
+Use the [current resolution and supported-path matrix](phase-5-coverage-material-resolution.md)
+for exact first-path boundaries, Q24/Q23 disposition and required0040 activation gate.
+No new ADR accepted; original research below is retained as evidence.
 Labour0146 and lifecycle0145 are accepted; these material recommendations are not. No material
 contract/schema, Job stock adapter, grants, migrations or execution development authorised.
 Q24 ownership/exception requirements and Q23 variable content remain unresolved in their own entries.
@@ -151,9 +154,9 @@ commit together; undelivered/asynchronous owners remain explicit durable obligat
 internal success converted to a pending note. No closed-period reopen or closed-Job execution restart.
 
 Do not enable a consumed-stock path while replay can silently misclassify it as remaining Inventory.
-Either deliver its required Job correction participant/reconciliation under0040, or explicitly refuse
-affected replay until a supported route exists, with visible obligation/owner. This is not permission
-to weaken0040 or silently freeze unrelated Inventory scopes. Physical consumption errors/returns
+Deliver the required Job correction participant/reconciliation under0040 before enabling the
+consumed-stock path. Refusal/pending safeguards for unavailable effects remain mandatory but are
+not an alternative activation waiver. Do not weaken0040 or silently freeze unrelated scopes. Physical consumption errors/returns
 need owning stock correction and economic reconciliation; valuation-only adjustments move no quantity.
 
 **Trade-off/defer:** shared correction delivery is substantial but avoids false actual costs. Physical

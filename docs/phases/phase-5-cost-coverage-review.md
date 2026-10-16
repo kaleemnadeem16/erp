@@ -2,7 +2,10 @@
 
 # Job labour-cost coverage — lightweight SIMPLE declaration proposal
 
-**2026-10-16 · PROPOSED protocol / Q52 AWAITING_OWNER, Origin: PLANNING RESEARCH.**
+**2026-10-16 · Q52 direction supported with owner clarifications; refined resolution PROPOSED / AWAITING_OWNER.**
+Origin: PLANNING RESEARCH. Current [resolution](phase-5-coverage-material-resolution.md) separates
+source valuation/coverage, preserves known omissions and requires material-evidence reassessment.
+No new ADR accepted; [explicit zero assertion](phase-5-zero-cost-assertion.md) is separate research.
 0146 accepts the three completeness axes and honest reporting. The exact declaration/confirmation
 workflow below is research, not an accepted new permission, source of zero cost or implementation.
 
@@ -58,10 +61,9 @@ Do not let declaration conceal known pending entries, omitted liabilities, unpri
 If required fields/sources are outside the actor's scope, refuse a whole-Job declaration rather than
 infer completeness from a filtered list. A permitted narrower scope must be labelled narrower.
 
-An authorised user may declare no incurred labour expense only through an explicit supported no-cost
-assertion with basis/reason. Proposed result is declared zero for that scope, not a fake expense row
-and never automatic confirmed zero. Until owner approves/delivers this path, empty sources remain
-unknown/unassessed. An imported zero or unrelated free-issue stock does not establish zero labour.
+Owner explicitly separated no-cost assertions from ordinary declarations. [Zero-assertion research](phase-5-zero-cost-assertion.md)
+evaluates additional authority/evidence; this path is not approved or an initial prerequisite.
+Empty sources, imported zero, missing rate and free-issue stock cannot establish zero labour.
 
 ## Invalidation and history
 
@@ -89,11 +91,11 @@ facts; an honest incomplete/unassessed cost report can coexist with operational 
 - Rate-only correction → valuation changes, coverage is not silently promoted/demoted without cause.
 - Declaration/relevant-source race → generation checks prevent falsely current complete coverage.
 
-Owner choice: approve/revise the scoped optional self-declaration, zero-assertion boundary and
-generation-based invalidation; alternative is keep SIMPLE coverage unassessed until independent
-reconciliation. Recommend declaration with disclosed basis, no extra approval by default and no
-claim of confirmed coverage without actual adapters. Deferring this protocol does not block the
-accepted completion/direct-amount workflow; reports remain unassessed/incomplete honestly.
+Owner supports scoped optional declaration without universal review or completion prerequisite.
+Final refusal/invalidation/reporting details are in the [refined resolution](phase-5-coverage-material-resolution.md).
+Captured unpriced sources affect valuation independently from source coverage; known omissions
+cannot be declared away. Zero assertion remains a separate authority/evidence decision, not a
+reopened requirement for named usage. No new ADR or implementation is authorised.
 
 ## Related
 

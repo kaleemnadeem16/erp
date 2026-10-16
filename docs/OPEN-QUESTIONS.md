@@ -42,12 +42,13 @@ Origin: PLANNING RESEARCH
 Decision status: AWAITING_OWNER
 Delivery status: BLOCKED_AFFECTED_OPERATION; accepted completion/direct-cost direction unaffected
 Module/slice: Phase5 cost coverage; implementation owner unassigned
-Context:0146 accepts three completeness axes, not exact self-declaration/confirmation mechanics.
+Context:0146 accepts three axes; owner now supports optional declaration and bounded statuses for refinement, no new ADR. Final resolution and separate zero assertion await review.
 Original question: research lightweight SIMPLE declaration of known labour-cost coverage without mandatory timesheets/payroll/extra approval; distinguish confirmed, declared, incomplete, unassessed (owner2026-10-16).
 Business example: COSTED15000 source does not prove all labour captured or whole Job complete.
 Authority checked:0145/0146,0110, R7/R9 source/scope/evidence requirements.
 Options / consequences / recommendation: [coverage proposal](phases/phase-5-cost-coverage-review.md); optional scoped declaration versus unassessed-until-integrated, no inferred empty-list zero.
-Disposition needed: assertion/zero boundary, eligibility, invalidation and confirmation basis.
+Owner refinement2026-10-16: optional declaration retains actor/scope/date/source version; new contradictory/material evidence reassesses; known omissions cannot be overridden. Explicit zero assertion requires separate research, no universal approval/completion dependency.
+Disposition needed: [refined declaration rules](phases/phase-5-coverage-material-resolution.md), including unpriced represented sources versus omitted sources; [zero evidence/authority](phases/phase-5-zero-cost-assertion.md) separately proposed.
 Follow-up: owner review then exact contract; no new ADR choice/grant/implementation accepted here.
 
 ### Q53 — Phase 5 material flow and package prerequisites
@@ -60,7 +61,8 @@ Original question: material demand, custody, reservation, actual consumption and
 Business example: need10, transfer12 to site, consume9, transfer3 back; these cannot all be Job cost.
 Authority checked:0052,0090–0094,0040,0145/0146, R7/R9; existing Q16/Q23/Q24 retained.
 Options / consequences / recommendation: [M1–M6](phases/phase-5-material-flow-research.md); narrow supported paths versus original full-container gate; no automatic waiver, reservation or ownership shortcut.
-Disposition needed: package sequencing, direct-use/site custody, reservation timing, Q24 exception priorities and correction delivery gate. Q24 remains owner/exception question, not duplicated/closed here.
+Owner refinement2026-10-16: supports investigating bounded quantity/grouped paths, direct use and optional custody, advisory availability, ordinary company stock, mandatory0040 integration and lifecycle/transaction safeguards. No global container waiver or new ADR authorised.
+Disposition needed: [exact bounded roadmap change/supported-path matrix and scenarios](phases/phase-5-coverage-material-resolution.md). Q24/Q23 remain unresolved; zero assertions and later managed reservations are separate cases.
 Follow-up: owner review before technical material contracts; no code/ADRs/grants authorised.
 
 <a id="q40--phase-4-r2-quotation-structure-and-scope"></a>

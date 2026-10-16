@@ -137,7 +137,7 @@ delta touching it needs a Sales/COGS correction line — see
 
 ### Phase 5 — Job execution
 
-[Research plan](phase-5-job-execution.md): lifecycle0145/labour0146 accepted; [labour contract](../domain/job-labour-recognition.md) specified. [Coverage Q52](phase-5-cost-coverage-review.md) and [materials Q53](phase-5-material-flow-research.md) proposed for review. No code authority.
+[Research plan](phase-5-job-execution.md): lifecycle0145/labour0146 accepted; [labour contract](../domain/job-labour-recognition.md) specified. [Coverage Q52](phase-5-cost-coverage-review.md) and [materials Q53](phase-5-material-flow-research.md) have a [refined decision proposal](phase-5-coverage-material-resolution.md) and [separate zero-assertion research](phase-5-zero-cost-assertion.md) for review. No new ADR or code authority.
 Jobs, work orders, material issue, timesheets, unified job cost entries, estimate-vs-actual
 variance reporting. This is where the system starts paying for itself.
 
