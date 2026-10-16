@@ -6,6 +6,10 @@
 Question: how can unlike owning sources produce one trustworthy cost view and comparable variance
 without duplicate contributions, fabricated completeness or a universal Finance/timesheet dependency?
 
+Owner supports reporting principles; current [refined resolution](phase-5-unified-costing-resolution.md)
+and [candidate](../domain/job-unified-costing-candidate.md) narrow initial reporting/forecast/history scope.
+Original options below retain the earlier research stage, not new architecture authority.
+
 ## Business problems and examples first
 
 **Small service visit:** optional labour15000.0000 plus evidenced specialist8000.0000 and Inventory

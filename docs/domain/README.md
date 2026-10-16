@@ -131,6 +131,10 @@ Unfamiliar term? → [GLOSSARY.md](../GLOSSARY.md)
 
 - [Material cost resolution](material-cost-resolution.md) — Inventory-owned read-only certainty, coverage and valuation evidence
 
+## Phase 5 proposed contract candidates
+
+- [Unified Job costing candidate](job-unified-costing-candidate.md) — Q55; not accepted or implemented.
+
 ## Phase 5 accepted bounded contracts
 
 - [External Job cost and Purchasing attribution](job-external-cost-attribution.md) —0149/Q54; specified, not implemented.

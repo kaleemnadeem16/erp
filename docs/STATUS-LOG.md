@@ -833,3 +833,14 @@ Unified costing U1–U5/Q55 proposed: source-owned contributions, original/curre
 commitment/exposure/actual/correction, coverage certainty, comparable variance and bounded forecasts.
 Research-only next bundle; no costing ADR accepted. Documentation only, no application changes,
 grants, migrations, runtime tests or push. Concurrent agents' work preserved.
+
+## 2026-10-16 — Refine Q55 candidate and Phase5 planning overview
+
+Owner-supported U1–U5 principles refined as proposed resolution/domain candidate, not accepted ADR.
+Inspected CRM receipts/correction history, Inventory valuation and cost-read/scope/precision patterns;
+reuse conventions without repurposing domain storage or inventing event infrastructure. Exact measures,
+comparison eligibility, source identities, commitments/exposure, independent completeness, dated/current
+views, deferred forecasting, restricted reads and consistency/failure scenarios specified for review.
+Phase5 overview separates0145–0149/Q51–Q54, pendingQ55, ordered closeout/Documents/readiness planning,
+deferred paths and dependencies versus independent specification. Q55 remains open. Docs only; no code,
+grants, migrations, runtime tests or push. Concurrent state preserved.

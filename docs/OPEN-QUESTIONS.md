@@ -42,10 +42,11 @@ Origin: PLANNING RESEARCH
 Decision status: AWAITING_OWNER
 Delivery status: BLOCKED_AFFECTED_OPERATION; accepted source contracts unchanged
 Module/slice: Phase5 U1–U5; implementation owner unassigned
-[Research/options/scenarios](phases/phase-5-unified-costing-research.md) propose source-owned evidence
-with shared attribution, comparable original/current-plan reporting, independent completeness,
-dated/current-restated views and optional bounded ETC. Owner choices concern reporting/forecast scope,
-not reopening accepted commercial allocations or source authority. No new costing ADR/code/grants.
+Owner supports U1–U5 principles; [refined resolution](phases/phase-5-unified-costing-resolution.md) and
+[contract candidate](domain/job-unified-costing-candidate.md) await final review. Initial current-restated
+actual/commitment/exposure reporting, compatible comparisons, immutable dated evidence where supported;
+forecasting deferred. Infrastructure inspected before physical design. No new costing ADR/code/grants.
+Original [research/questions](phases/phase-5-unified-costing-research.md) retained; Q55 not closed.
 
 <a id="q54--purchasing-and-external-work-evidence-acceptance-and-attribution"></a>
 Q54 resolved2026-10-16 by [0149](decisions/0149-attribute-external-job-costs-through-owning-sources-and-reconciliation.md).

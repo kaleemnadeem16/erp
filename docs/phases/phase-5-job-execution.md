@@ -1,88 +1,109 @@
 [← Roadmap](README.md)
 
-# Phase 5 — Job execution
+# Phase 5 — Job execution planning overview
 
-- **Status:** research in progress; lifecycle0145, labour0146, coverage0147, materials0148 and external0149 ACCEPTED / bounded contracts SPECIFIED; no Job implementation or verification.
-- **Authority:** D1–D6 approval2026-10-15 and L1–L6/Q52/Q53/Q54 approval2026-10-16; architecture documentation and unified costing research only, no implementation.
-- **Depends on:** accepted R7/R9 and actual supported CA/HA/owning adapters for delivery; existing shared foundations.
-- **Blocked by:** delivery adapters and separate code authority; Q23/Q24/Q16 affect their own paths. Q51/Q52/Q53/Q54 are closed.
+**2026-10-16 · Research/design in progress. Accepted architecture is not delivered functionality.**
+No Job implementation, grants, migrations, production enablement or runtime verification authorised.
 
-## Goal and scope
+## Accepted architecture and closed questions
 
-Execute applicable accepted work and compare estimate/authorised plan with actual usage/cost,
-without duplicate commitments. Jobs are not mandatory for trading/straightforward delivery.
-SIMPLE first; managed/advanced capabilities only where justified, not speculative settings.
-
-Baseline: Jobs, appropriate work orders, material issue/consumption, timesheets/resource usage,
-unified Job cost entries and estimate-versus-actual variance. Simple planning/progress/closeout
-make these usable. Initial candidate: one labour-only fixed-scope service Job, acceptance →
-supported handover/baseline → assignment/start → labour → completion evidence → costs → closeout.
-No implementation authorised.
-
-The revised [labour proposal](phase-5-labour-resource-research.md) investigates completion-only
-and optional direct amounts, fixed units or time; it does not require every Job to maintain
-named workers, hours or rates. Completion plus narrow direct incurred amounts is the accepted
-initial business direction under0146; exact [coverage protocol](phase-5-cost-coverage-review.md) is accepted in0147, with the [coverage contract](../domain/job-cost-coverage.md) specified. Lifecycle0145
-and its required-known-record/closeout guards are unchanged.
-
-Specialised manufacturing/fabrication, complex capacity scheduling, advanced dispatch and equipment
-management are separate later workstreams. No generic service Work Order. Finance owns invoicing,
-payment/revenue/accounting settlement. Phase7 owns later mobile/integrations; operational responsive
-UI remains each implementation slice's responsibility.
-
-## Research sequence and dependencies
-
-| Order | Deliverable | State / gate |
+| Area | Governing authority / bounded specification | Delivery state |
 |---|---|---|
-|1| Lifecycle/Job receiver | ACCEPTED0145; [bounded contract](../domain/job-execution-lifecycle.md) SPECIFIED, no adapter |
-|2| Flexible labour evidence/usage/progress/recognition | ACCEPTED0146/Q51 closed; [bounded contract](../domain/job-labour-recognition.md) SPECIFIED; [coverage contract](../domain/job-cost-coverage.md) ACCEPTED0147/Q52 closed |
-|3| Materials/custody/reservations/consumption/corrections | ACCEPTED0148/Q53 closed; [bounded contract](../domain/job-material-attribution.md) specified; Q24/Q23 retained |
-|4| Purchasing/equipment/subcontract attribution | ACCEPTED0149/Q54 closed; [bounded contract](../domain/job-external-cost-attribution.md) specified, not implemented |
-|5| Unified costing/source reconciliation | [Research U1–U5](phase-5-unified-costing-research.md) PROPOSED/Q55 for owner review |
-|6| Detailed closeout/documents/broader execution | Queued beyond accepted lifecycle;0137 and owning impacts |
+| Job/activity lifecycle, R7 receiver, hold/termination/completion/closeout |0145; [lifecycle](../domain/job-execution-lifecycle.md) | SPECIFIED, no Job adapter |
+| Flexible labour/source recognition |0146/Q51 closed; [labour](../domain/job-labour-recognition.md) | SPECIFIED, no source adapter |
+| Scoped cost coverage/declarations |0147/Q52 closed; [coverage](../domain/job-cost-coverage.md) | SPECIFIED, no runtime assessments |
+| Bounded materials/custody/consumption |0148/Q53 closed; [materials](../domain/job-material-attribution.md) | SPECIFIED, no Job integration; grouped Inventory v1 exists separately |
+| External expenses, Purchasing service acceptance and allocations |0149/Q54 closed; [external](../domain/job-external-cost-attribution.md) | SPECIFIED, no acceptance/attribution adapter |
 
-Research can use accepted R7 contracts independently. Real release needs authoritative CA,
-HA0–2/service HA3b, Job Actions, configured approvals and R9 guards/scope/holders. Registrations
-or fixtures are not delivery. Missing impact is UNKNOWN, not NONE. Full Finance/production is
-not universally required; no unverified Finance waiver for cancellation/reduction follows.
+Reuse accepted R7/R9 and Documents0137. Commercial allocations, baseline preservation and scope
+correction rules remain settled. Completion-only and optional direct incurred labour are initial
+SIMPLE direction; no universal timesheet/name/hourly rate/HR, generic service Work Order or Assembly.
+Jobs are not mandatory for straightforward trading/delivery. Service pilot remains a candidate,
+not permission to build before dependent handover/readiness and separate implementation authority.
 
-## Preserved requirements
+## Q55 and genuinely open decisions
 
-Historical Job Costing is retained;0145 replaces only explicit historical assumptions. Unified
-actuals/snapshot variance remain direction; exact source costing is queued.
+Owner supports U1–U5 business reporting principles, subject to [refined resolution](phase-5-unified-costing-resolution.md)
+and [bounded contract candidate](../domain/job-unified-costing-candidate.md) review. Q55 remains
+AWAITING_OWNER; no costing ADR accepted, physical schema fixed or application implementation authorised.
+Initial proposed scope: current-restated known actuals, original/current cost basis where available,
+corrections, separate commitments/exposure and independent completeness. No first-scope ETC/EAC.
+Existing infrastructure inspected for reuse; no shared Job projection engine claimed delivered.
 
-0148 amends sequencing for the bounded ordinary company-owned, fixed-content QUANTITY_ONLY/
-PACKAGE_BALANCE compatible AVCO/FIFO paths. It retains container identity, exact remnants,
-variable-content, serial/SPECIFIC and advanced preview/variance obligations as path-specific gates.
-Grouped v1 is not container tracking, reservation or a delivered Job adapter. Q24/Q23 remain open.
-Every Job-consumed path requires0040 correction integration before activation.0137 Documents
-and R7/R9 owning adapters remain delivery dependencies, not waived by architecture approval.
+Q23 variable-content, Q24 ownership/exceptions and Q16 source-actor question remain open for affected
+paths. They do not globally block truthful ordinary supported service/stock workflows. Unverified
+adapter readiness is a delivery gate, not another owner business choice or implicit waiver.
 
-## Tasks and eventual acceptance
+## Remaining planning and research — in order
 
-- [x] Record approved D1–D6 as0145, bounded contract and historical reconciliation.
-- [x] Prepare labour bundle for review, not approval.
-- [x] Resolve Q51 business direction as0146; specify bounded labour recognition/correction scenarios.
-- [x] Resolve Q52/Q53 in0147/0148, specify bounded contracts and amend roadmap; defer zero assertions.
-- [x] Prepare [Purchasing/external-work assessment](phase-5-purchasing-external-research.md) for owner review.
-- [x] Record approved E1–E8/Q54 in0149 and bounded external/Purchasing attribution contract.
-- [x] Prepare unified costing/variance research for owner review.
-- [ ] Obtain owner direction on U1–U5/Q55 before detailed costing contracts.
-- [ ] Research remaining streams in order, without simultaneous detailed design.
-- [ ] Obtain separate implementation authorisation, named owners and actual adapter readiness.
-- [ ] Deliver/verify one actual service workflow: tenant/scope guards, source lineage, exact retries,
-      effective holds/termination, completion evidence and truthful incomplete-cost closeout.
-- [ ] Complete applicable migration/client/build/browser/rollback/concurrency/demo checks.
-- [ ] Deliver affected Inventory/correction/Documents integrations before enabling those paths.
-- [ ] Update STATUS/domain/journey/ADRs at actual implementation milestones under normal rules.
+1. Owner reviews Q55 resolution/candidate. Resolve genuine new semantics before accepting ADR/physical design.
+2. Reconcile detailed operational closeout and historical evidence adjustments beyond0145's accepted
+   rules: known-source reconciliation, remainder disposition, correction follow-up and owning interfaces.
+   Preserve optional capture and supported incomplete-cost closeout; do not reopen settled lifecycle.
+3. Define needed operational document/report snapshots through0137 owning adapters and audience/scope
+   rules. No independent renderer or assumption that shared Documents infrastructure exists.
+4. Prepare consolidated Phase5 dependency/adapter inventory and bounded service-pilot slices, acceptance
+   matrix, transaction/lock proof, real duty/holder rollout proposals and source/correction handoffs.
+   Research any uncovered source-specific semantic gap before declaring its slice ready.
+5. Owner selects a separately authorised implementation batch and owners; activate only verified paths.
 
-Question origin is PLANNING RESEARCH. No implementation-agent question was forwarded for this
-bundle. Existing implementation-owned questions/handoffs are untouched. No architecture record
-establishes IMPLEMENTED, VERIFIED or PUBLIC_ENABLED.
+Potential later exceptions/reservations/forecasting research is need-driven and separate from the
+initial service pilot. Do not start all workstreams simultaneously or mark Phase5 planning complete
+merely because core ADRs exist. Stop current turn at Q55/overview review; steps2–5 are not begun here.
+
+## Dependencies and possible independent foundations
+
+| Boundary | Required delivery proof / what may proceed independently after separate authority |
+|---|---|
+| Phase4 R6/R7 | Supported CA/HA0–2 and service HA3b, exact acceptance/allocation/baseline/readiness, cancellation/reduction impacts; no fake released Job before authoritative handover |
+| R9/security/shared approvals | Actual owning guards, RecordScope, version-bound review, real holder/configuration rollout and sensitive reads; registration/fixtures alone are not delivery |
+| Inventory | Existing ordinary/package operations retained;0040 Job correction participant/routing/reconciliation before ANY consumed path. No scalar bypass or parallel balances |
+| Purchasing | Reusable service acceptance plus affected PO cancel/short-close/portion writers and0149 overlap/correction integration; physical goods receipt is not service acceptance |
+| Documents0137 | Shared framework and actual Job/report adapters, current access/snapshot/retention/download controls before enabled artefacts |
+| Future Finance | Later invoice matching/AP/payment/tax/FX/period/GL ownership. Reconcile prior evidence before overlapping authoritative costs; full Finance is not universally needed for bounded operational recording |
+| Potential independent foundations | Evidence/identity/recognition value contracts, precision/authority reuse assessment, read-projection and receipt conventions can be specified in isolation. Coding still needs separate authority; no skeleton grants or public surfaces implied |
+| Integration-dependent slices | Actual Job release, recognised source postings, service acceptance, material consumption/correction, authoritative costing/closeout and durable reports need their owning adapters together; placeholders do not satisfy integration |
+
+No unsupported downstream effect is NONE. Transactions must share proven connection/compatible locks,
+exact retries and source generations; unknown required impacts refuse. Independent specification or
+internal tests cannot establish IMPLEMENTED/VERIFIED/PUBLIC_ENABLED service workflow.
+
+## Explicit deferrals and preserved obligations
+
+- Containers/exact remnants, variable contents, serial/SPECIFIC and unsupported stock/valuation paths;
+  advanced package previews/variance requirements stay path-specific gates under0148. Initial compatible
+  fixed-content company-owned QUANTITY_ONLY/PACKAGE_BALANCE AVCO/FIFO paths retain all Inventory controls.
+- Q24 customer/free-issue/substitution/scrap/returnable-container cases and already-consumed returns;
+  refuse affected unsupported routes, never zero-cost ownership fiction.
+- Inventory-owned managed reservations; initial availability is NOT RESERVED with live revalidation.
+- Explicit zero-cost assertions; arbitrary historical reconstruction; ETC/EAC/earned-value automation,
+  automatic accrual, unsupported foreign-cost posting and unsupported incurred overhead policy.
+- Advanced fleet/capacity/dispatch/payroll, manufacturing/subcontract hierarchies/retention certification;
+  mobile/integrations later Phase7, Finance financial settlement Phase6.
+
+## Next implementation-ready planning milestone
+
+A reviewed **bounded service-pilot planning package**: settled Q55 contract/decision; closeout and
+required document boundaries reconciled; source/duty/dependency inventory; separately reviewable slices
+with exact authority/transaction/correction ownership and acceptance/failure coverage. Clearly mark
+adapters available versus missing and which must ship atomically. Initial candidate: supported R7
+handover → Job/activity → assignment/start → optional direct labour → fulfilment → truthful cost view
+→ supported operational closeout. Unsupported material/external/report paths remain gated.
+
+This milestone makes scope reviewable for authorisation, not automatically implemented or safe to
+activate. Actual implementation readiness still requires owner selection, named owners, dependency
+delivery proof and applicable migration/API/security/concurrency/browser/demo checks at implementation.
+
+## Current tasks
+
+- [x] Accept/specify0145–0149; resolve Q51–Q54 and preserve research evidence.
+- [x] Refine Q55 resolution/candidate, inspect infrastructure and update planning overview.
+- [ ] Owner review Q55/overview, then reconcile ordered remaining planning areas.
+- [ ] Consolidate service-pilot slices/readiness evidence for separate implementation authorisation.
+- [ ] Implement/verify only separately authorised batches; no such work begun by these documents.
 
 ## Related
 
-- [Lifecycle](../domain/job-execution-lifecycle.md) · [0145](../decisions/0145-separate-job-lifecycle-execution-and-operational-closeout.md)
-- [Labour research](phase-5-labour-resource-research.md) · [Open questions](../OPEN-QUESTIONS.md)
+- [Q55 resolution](phase-5-unified-costing-resolution.md) · [Historical Job sketch](../domain/job-costing.md)
 - [R7 slices](phase-4-r7-implementation-slices.md) · [R9 handoff](phase-4-implementation-handoff.md)
-- [Historical Job Costing](../domain/job-costing.md) · [STATUS](../STATUS.md)
+- [Documents](../domain/documents.md) · [STATUS](../STATUS.md) · [Questions](../OPEN-QUESTIONS.md)
