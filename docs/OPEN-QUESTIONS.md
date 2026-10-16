@@ -37,33 +37,15 @@ Q1, Q2 and Q3 were resolved on 2026-08-10 — see
 Q51 (Origin: PLANNING RESEARCH) resolved2026-10-16 by owner's approval of revised L1–L6 and cost-completeness clarification, recorded in [0146](decisions/0146-recognise-flexible-labour-evidence-without-fabricating-usage.md).
 Original question and owner refinement are preserved in Git history and [research](phases/phase-5-labour-resource-research.md); current [bounded contract](domain/job-labour-recognition.md) is SPECIFIED, no implementation/verification. Exact declaration protocol is Q52, not a reopened Q51.
 
-### Q52 — SIMPLE labour-cost coverage declaration
-Origin: PLANNING RESEARCH
-Decision status: AWAITING_OWNER
-Delivery status: BLOCKED_AFFECTED_OPERATION; accepted completion/direct-cost direction unaffected
-Module/slice: Phase5 cost coverage; implementation owner unassigned
-Context:0146 accepts three axes; owner now supports optional declaration and bounded statuses for refinement, no new ADR. Final resolution and separate zero assertion await review.
-Original question: research lightweight SIMPLE declaration of known labour-cost coverage without mandatory timesheets/payroll/extra approval; distinguish confirmed, declared, incomplete, unassessed (owner2026-10-16).
-Business example: COSTED15000 source does not prove all labour captured or whole Job complete.
-Authority checked:0145/0146,0110, R7/R9 source/scope/evidence requirements.
-Options / consequences / recommendation: [coverage proposal](phases/phase-5-cost-coverage-review.md); optional scoped declaration versus unassessed-until-integrated, no inferred empty-list zero.
-Owner refinement2026-10-16: optional declaration retains actor/scope/date/source version; new contradictory/material evidence reassesses; known omissions cannot be overridden. Explicit zero assertion requires separate research, no universal approval/completion dependency.
-Disposition needed: [refined declaration rules](phases/phase-5-coverage-material-resolution.md), including unpriced represented sources versus omitted sources; [zero evidence/authority](phases/phase-5-zero-cost-assertion.md) separately proposed.
-Follow-up: owner review then exact contract; no new ADR choice/grant/implementation accepted here.
+<a id="q52--simple-labour-cost-coverage-declaration"></a>
+Q52 resolved 2026-10-16 by [0147](decisions/0147-bound-job-cost-coverage-to-scope-evidence-and-source-version.md).
+Optional scoped declaration/status/invalidation rules are accepted; explicit zero assertions deferred.
+[Bounded contract](domain/job-cost-coverage.md) specified, not implemented. Original research remains historical.
 
-### Q53 — Phase 5 material flow and package prerequisites
-Origin: PLANNING RESEARCH
-Decision status: AWAITING_OWNER
-Delivery status: BLOCKED_AFFECTED_OPERATION; unrelated accepted work continues
-Module/slice: Phase5 M1–M6; implementation owner unassigned
-Context: research b12acd8,2026-10-16; grouped v1 delivered, container/Job reservation/consumption/correction adapters undelivered. Current Purchasing/Sales WIP preserved.
-Original question: material demand, custody, reservation, actual consumption and corrections; first reconcile package prerequisites, Q24 and0040 (owner2026-10-16).
-Business example: need10, transfer12 to site, consume9, transfer3 back; these cannot all be Job cost.
-Authority checked:0052,0090–0094,0040,0145/0146, R7/R9; existing Q16/Q23/Q24 retained.
-Options / consequences / recommendation: [M1–M6](phases/phase-5-material-flow-research.md); narrow supported paths versus original full-container gate; no automatic waiver, reservation or ownership shortcut.
-Owner refinement2026-10-16: supports investigating bounded quantity/grouped paths, direct use and optional custody, advisory availability, ordinary company stock, mandatory0040 integration and lifecycle/transaction safeguards. No global container waiver or new ADR authorised.
-Disposition needed: [exact bounded roadmap change/supported-path matrix and scenarios](phases/phase-5-coverage-material-resolution.md). Q24/Q23 remain unresolved; zero assertions and later managed reservations are separate cases.
-Follow-up: owner review before technical material contracts; no code/ADRs/grants authorised.
+<a id="q53--phase-5-material-flow-and-package-prerequisites"></a>
+Q53 resolved 2026-10-16 by [0148](decisions/0148-bound-initial-job-material-paths-and-require-correction-delivery.md).
+Bounded roadmap amendment and M1–M6 accepted; [contract](domain/job-material-attribution.md) specified.
+No material integration enabled; Q23/Q24/Q16 and mandatory0040 delivery gates remain independent.
 
 <a id="q40--phase-4-r2-quotation-structure-and-scope"></a>
 Q40 resolved 2026-10-09 by [accepted ADR 0109](decisions/0109-shared-commercial-quotation-lines-and-optional-estimating.md).

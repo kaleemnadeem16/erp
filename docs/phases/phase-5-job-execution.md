@@ -2,10 +2,10 @@
 
 # Phase 5 — Job execution
 
-- **Status:** research in progress; lifecycle0145 and labour0146 ACCEPTED / bounded contracts SPECIFIED; no Job implementation or verification.
-- **Authority:** D1–D6 approval2026-10-15 and L1–L6 approval2026-10-16; architecture documentation and coverage/materials research only, no implementation.
+- **Status:** research in progress; lifecycle0145, labour0146, coverage0147 and materials0148 ACCEPTED / bounded contracts SPECIFIED; no Job implementation or verification.
+- **Authority:** D1–D6 approval2026-10-15 and L1–L6/Q52/Q53 approval2026-10-16; architecture documentation and Purchasing/external-work research only, no implementation.
 - **Depends on:** accepted R7/R9 and actual supported CA/HA/owning adapters for delivery; existing shared foundations.
-- **Blocked by:** exact coverage protocol Q52; materials Q53/Q24/Q23 prerequisite/ownership choices affect their paths. Accepted labour direction is no longer blocked by Q51.
+- **Blocked by:** delivery adapters and separate code authority; Q23/Q24/Q16 affect their own paths. Q51/Q52/Q53 are closed.
 
 ## Goal and scope
 
@@ -22,7 +22,7 @@ No implementation authorised.
 The revised [labour proposal](phase-5-labour-resource-research.md) investigates completion-only
 and optional direct amounts, fixed units or time; it does not require every Job to maintain
 named workers, hours or rates. Completion plus narrow direct incurred amounts is the accepted
-initial business direction under0146; exact [coverage protocol](phase-5-cost-coverage-review.md) awaits Q52 review. Lifecycle0145
+initial business direction under0146; exact [coverage protocol](phase-5-cost-coverage-review.md) is accepted in0147, with the [coverage contract](../domain/job-cost-coverage.md) specified. Lifecycle0145
 and its required-known-record/closeout guards are unchanged.
 
 Specialised manufacturing/fabrication, complex capacity scheduling, advanced dispatch and equipment
@@ -35,9 +35,9 @@ UI remains each implementation slice's responsibility.
 | Order | Deliverable | State / gate |
 |---|---|---|
 |1| Lifecycle/Job receiver | ACCEPTED0145; [bounded contract](../domain/job-execution-lifecycle.md) SPECIFIED, no adapter |
-|2| Flexible labour evidence/usage/progress/recognition | ACCEPTED0146/Q51 closed; [bounded contract](../domain/job-labour-recognition.md) SPECIFIED; [coverage protocol](phase-5-cost-coverage-review.md) PROPOSED/Q52 |
-|3| Materials/custody/reservations/consumption/corrections | [Research bundle](phase-5-material-flow-research.md) PROPOSED/Q53; existing Q24/Q23 and package prerequisite owner choices retained |
-|4| Purchasing/equipment/subcontract attribution | Queued; reuse owning systems; commitment versus actual |
+|2| Flexible labour evidence/usage/progress/recognition | ACCEPTED0146/Q51 closed; [bounded contract](../domain/job-labour-recognition.md) SPECIFIED; [coverage contract](../domain/job-cost-coverage.md) ACCEPTED0147/Q52 closed |
+|3| Materials/custody/reservations/consumption/corrections | ACCEPTED0148/Q53 closed; [bounded contract](../domain/job-material-attribution.md) specified; Q24/Q23 retained |
+|4| Purchasing/equipment/subcontract attribution | [Assessment](phase-5-purchasing-external-research.md) PROPOSED for owner review; no contract/implementation authority |
 |5| Unified costing/source reconciliation | Queued; recognition/source identities,0040 correction linkage |
 |6| Detailed closeout/documents/broader execution | Queued beyond accepted lifecycle;0137 and owning impacts |
 
@@ -51,20 +51,21 @@ not universally required; no unverified Finance waiver for cancellation/reductio
 Historical Job Costing is retained;0145 replaces only explicit historical assumptions. Unified
 actuals/snapshot variance remain direction; exact source costing is queued.
 
-The roadmap requires CONTAINER_TRACKED, package-aware preview and waste/residual bands before
-material issue design; current STATUS defers container tracking until requested. ADR0052's modes
-do not silently repeal that prerequisite. Preserve the original requirement and reconcile with
-owner before material design. Grouped PACKAGE_BALANCE v1 is not container tracking/reservation
-or a verified Job adapter. Q24 separates company stock from customer/free-issue ownership,
-substitutes, scrap/remnants/containers. ADR0040 requires consumed-Job correction attribution;
-ADR0137 governs operational printed documents. None is designed or waived by the labour pilot.
+0148 amends sequencing for the bounded ordinary company-owned, fixed-content QUANTITY_ONLY/
+PACKAGE_BALANCE compatible AVCO/FIFO paths. It retains container identity, exact remnants,
+variable-content, serial/SPECIFIC and advanced preview/variance obligations as path-specific gates.
+Grouped v1 is not container tracking, reservation or a delivered Job adapter. Q24/Q23 remain open.
+Every Job-consumed path requires0040 correction integration before activation.0137 Documents
+and R7/R9 owning adapters remain delivery dependencies, not waived by architecture approval.
 
 ## Tasks and eventual acceptance
 
 - [x] Record approved D1–D6 as0145, bounded contract and historical reconciliation.
 - [x] Prepare labour bundle for review, not approval.
 - [x] Resolve Q51 business direction as0146; specify bounded labour recognition/correction scenarios.
-- [ ] Final owner review of [refined Q52/M1–M6](phase-5-coverage-material-resolution.md), exact roadmap boundary and [separate zero assertion](phase-5-zero-cost-assertion.md); no new ADR or implementation authorised.
+- [x] Resolve Q52/Q53 in0147/0148, specify bounded contracts and amend roadmap; defer zero assertions.
+- [x] Prepare [Purchasing/external-work assessment](phase-5-purchasing-external-research.md) for owner review.
+- [ ] Obtain owner direction for Purchasing/external-work research before detailed contracts.
 - [ ] Research remaining streams in order, without simultaneous detailed design.
 - [ ] Obtain separate implementation authorisation, named owners and actual adapter readiness.
 - [ ] Deliver/verify one actual service workflow: tenant/scope guards, source lineage, exact retries,

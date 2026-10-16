@@ -4,7 +4,7 @@
 
 **2026-10-16 · Business architecture ACCEPTED0146/Q51; bounded contract SPECIFIED.**
 No labour/Job adapter IMPLEMENTED or VERIFIED; no implementation/grants authorised.
-Exact coverage-declaration protocol is [PROPOSED Q52](../phases/phase-5-cost-coverage-review.md).
+Coverage-declaration protocol is [ACCEPTED0147/Q52](job-cost-coverage.md), specified, not delivered.
 
 ## Where it sits and supported-method boundary
 
@@ -102,8 +102,8 @@ unassessed, with scope/evidence basis. All-source valuation cannot infer coverag
 A known15000 plus unpriced usage yields a known contribution, no complete total. An empty list
 is not complete zero. Known zero requires explicit supported evidence, never a missing source.
 
-The [Q52 proposal](../phases/phase-5-cost-coverage-review.md) defines recommended declaration/
-confirmation/invalidation mechanics for owner review, not accepted runtime rules. Until delivered,
+The [0147 coverage contract](job-cost-coverage.md) defines accepted declaration/
+confirmation/invalidation mechanics. Explicit zero assertions are deferred. Until delivered,
 do not pretend these assessments exist. No formula adds unlike currencies or units or leaks hidden
 source totals. Historical closeout/report snapshots remain while current completeness may change.
 
@@ -177,7 +177,7 @@ Exact reason_code vocabulary/physical schema/client/UI remain implementation-own
 | LR17 | Scope/cost denied: no leak via worker, history, receipt, aggregate or export |
 | LR18 | Recognise/close race: consistent reconciled closeout or refusal, no hidden pending entry |
 
-Coverage declaration-specific scenarios remain proposed under Q52; detailed materials under Q53/Q24.
+Coverage scenarios are accepted/specified under0147; materials under0148, with Q24 exceptions retained.
 Architecture ACCEPTED/SPECIFIED does not prove any adapter or test has run. No Inventory correction
 package, payroll/Finance posting, generic crew system or independent renderer is implemented here.
 

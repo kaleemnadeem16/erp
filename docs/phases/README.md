@@ -137,17 +137,18 @@ delta touching it needs a Sales/COGS correction line — see
 
 ### Phase 5 — Job execution
 
-[Research plan](phase-5-job-execution.md): lifecycle0145/labour0146 accepted; [labour contract](../domain/job-labour-recognition.md) specified. [Coverage Q52](phase-5-cost-coverage-review.md) and [materials Q53](phase-5-material-flow-research.md) have a [refined decision proposal](phase-5-coverage-material-resolution.md) and [separate zero-assertion research](phase-5-zero-cost-assertion.md) for review. No new ADR or code authority.
+[Research plan](phase-5-job-execution.md): lifecycle0145/labour0146/coverage0147/materials0148 accepted; bounded contracts specified, no Job implementation. Q52/Q53 closed. [Purchasing/external-work assessment](phase-5-purchasing-external-research.md) awaits owner review. [Resolution evidence](phase-5-coverage-material-resolution.md) and [deferred zero-assertion research](phase-5-zero-cost-assertion.md) retained.
 Jobs, work orders, material issue, timesheets, unified job cost entries, estimate-vs-actual
 variance reporting. This is where the system starts paying for itself.
 
 **Inventory package tracking — largely delivered ahead of this phase.** The package-tracking design the owner required (confirmed 2026-10-01) is built as the grouped
-`PACKAGE_BALANCE` mode (`item_packagings`, sealed and open/loose state, issue, transfer, count, reversal and QA; v1 complete 2026-10-08). **Still owed before material issue is
-designed:** the `CONTAINER_TRACKED` mode (individual vessels and remnants), package-aware proposals in the Material Preview, and the waste/residual variance bands that need them
+`PACKAGE_BALANCE` mode (`item_packagings`, sealed and open/loose state, issue, transfer, count, reversal and QA; v1 complete 2026-10-08). **Advanced obligations retained; sequencing amended by [0148](../decisions/0148-bound-initial-job-material-paths-and-require-correction-delivery.md):** the `CONTAINER_TRACKED` mode (individual vessels and remnants), package-aware proposals in the Material Preview, and the waste/residual variance bands that need them
 ([ADR 0052](../decisions/0052-progressive-inventory-package-tracking.md); the hand-built stock mix it must extend is
 [ADR 0072](../decisions/0072-hand-built-stock-mix-in-base-quantity.md); variable-content packages stay
 [Q23](../OPEN-QUESTIONS.md#q23--variable-content-and-catch-weight-packages), alongside
 [Q24](../OPEN-QUESTIONS.md#q24--phase-5-material-exceptions)).
+
+**Bounded first path approved 2026-10-16:** company-owned fixed-content QUANTITY_ONLY and PACKAGE_BALANCE with compatible AVCO/FIFO operations and authoritative grouped issue evidence where applicable may proceed to planning and separately authorised eventual implementation. Direct use needs no compulsory site/transfer. This does not activate Job integration: owning adapters and ADR0040 correction integration gate every consumed path. Container identity, exact remnants, variable contents, serial/SPECIFIC and unsupported operations retain advanced capability/preview/variance gates; no Inventory invariant is waived.
 
 **Owes [ADR 0040](../decisions/0040-control-backdated-stock-recalculation-and-corrections.md)'s
 multi-owner correction package**: once job-consumed stock exists, a correction delta touching it

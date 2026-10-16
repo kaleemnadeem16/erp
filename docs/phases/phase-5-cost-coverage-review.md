@@ -2,6 +2,9 @@
 
 # Job labour-cost coverage — lightweight SIMPLE declaration proposal
 
+**Historical research/proposal:** owner-approved2026-10-16 and reconciled in accepted0147/0148 and [coverage](../domain/job-cost-coverage.md)/[material](../domain/job-material-attribution.md) contracts. Review requests below record the prior stage, not current blockers. No implementation delivered.
+
+
 **2026-10-16 · Q52 direction supported with owner clarifications; refined resolution PROPOSED / AWAITING_OWNER.**
 Origin: PLANNING RESEARCH. Current [resolution](phase-5-coverage-material-resolution.md) separates
 source valuation/coverage, preserves known omissions and requires material-evidence reassessment.

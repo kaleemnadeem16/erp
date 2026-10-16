@@ -804,3 +804,12 @@ Required0040 participant/reconciliation is a gate for every Job-consumed path, n
 merely blocking replay. Source replay limitations, scope/transaction/closeout guards and CM01–18
 business scenarios documented. Q52/Q53 remain AWAITING_OWNER; Q24/Q23/Q16 preserved. No new ADR,
 implementation, grants, migrations or application tests. Existing Purchasing precision WIP untouched.
+
+## 2026-10-16 — Phase 5 Q52/Q53 accepted; next external-work assessment submitted
+
+Owner-approved coverage recorded in0147 and bounded material paths/roadmap sequencing in0148;
+domain contracts specified, Q52/Q53 resolved. Optional declarations never imply zero or gate supported
+completion. Explicit zero assertions deferred. Advanced package/Q23/Q24 obligations preserved;
+every consumed path requires0040 integration before activation. Purchasing/external labour/equipment/
+subcontract assessment submitted for review, with alternatives and owner decisions, no new contract.
+Documentation only; no application code, grants, migrations, material integration or runtime tests.

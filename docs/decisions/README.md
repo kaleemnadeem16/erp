@@ -161,8 +161,10 @@ in the same commit.
 | [0144](0144-version-sales-unit-price-precision-within-four-place-storage.md) | Version Sales unit-price precision within four-place storage | accepted | 2026-10-15 |
 | [0145](0145-separate-job-lifecycle-execution-and-operational-closeout.md) | Separate Job lifecycle, execution and operational closeout | accepted | 2026-10-15 |
 | [0146](0146-recognise-flexible-labour-evidence-without-fabricating-usage.md) | Recognise flexible labour evidence without fabricating usage | accepted | 2026-10-16 |
+| [0147](0147-bound-job-cost-coverage-to-scope-evidence-and-source-version.md) | Bound Job cost coverage to scope, evidence and source version | accepted | 2026-10-16 |
+| [0148](0148-bound-initial-job-material-paths-and-require-correction-delivery.md) | Bound initial Job material paths and require correction delivery | accepted | 2026-10-16 |
 
-**Next number: 0147**
+**Next number: 0149**
 
 Note: the R7 handover ADR was first drafted as a second 0130 and renumbered to 0136 on 2026-10-15; 0130 is the backup decision. Number is chosen after fetching, so drafts do not collide.
 

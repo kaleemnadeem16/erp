@@ -2,6 +2,9 @@
 
 # Phase 5 — Material demand, custody, reservation, consumption and corrections
 
+**Historical research/proposal:** owner-approved2026-10-16 and reconciled in accepted0147/0148 and [coverage](../domain/job-cost-coverage.md)/[material](../domain/job-material-attribution.md) contracts. Review requests below record the prior stage, not current blockers. No implementation delivered.
+
+
 **2026-10-16 · Direction supported with owner clarifications; refined M1–M6 resolution PROPOSED/Q53 AWAITING_OWNER.**
 Use the [current resolution and supported-path matrix](phase-5-coverage-material-resolution.md)
 for exact first-path boundaries, Q24/Q23 disposition and required0040 activation gate.

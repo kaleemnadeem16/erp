@@ -131,6 +131,11 @@ Unfamiliar term? → [GLOSSARY.md](../GLOSSARY.md)
 
 - [Material cost resolution](material-cost-resolution.md) — Inventory-owned read-only certainty, coverage and valuation evidence
 
+## Phase 5 accepted bounded contracts
+
+- [Job cost coverage](job-cost-coverage.md) — 0147/Q52; specified, not implemented.
+- [Job material attribution](job-material-attribution.md) — 0148/Q53; specified, not implemented.
+
 ## Related
 
 - [architecture/invariants.md](../architecture/invariants.md) — rules that govern all of this

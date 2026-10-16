@@ -75,6 +75,11 @@ Owner choice: keep explicit zero assertion out of first release until separately
 approve/revise separate operation eligibility, required reason/source checks, declared-only result and
 applicable managed review. Ordinary coverage/completion/direct-cost paths continue without it.
 
+## Owner disposition — 2026-10-16
+
+Explicit zero-cost assertions are deferred from the initial release under accepted0147. Research
+and future authority/evidence requirements above are preserved; no assertion operation is enabled.
+
 ## Related
 
 - [Refined resolution](phase-5-coverage-material-resolution.md) · [Q52](../OPEN-QUESTIONS.md#q52--simple-labour-cost-coverage-declaration)

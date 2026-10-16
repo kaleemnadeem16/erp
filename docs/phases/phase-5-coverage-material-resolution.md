@@ -2,6 +2,9 @@
 
 # Q52 and M1–M6 — refined coverage and material-path resolution proposal
 
+**Historical research/proposal:** owner-approved2026-10-16 and reconciled in accepted0147/0148 and [coverage](../domain/job-cost-coverage.md)/[material](../domain/job-material-attribution.md) contracts. Review requests below record the prior stage, not current blockers. No implementation delivered.
+
+
 **2026-10-16 · PROPOSED final resolution for owner review; no new ADR accepted.**
 Owner supports the business direction with clarifications; this authorises refinement, not
 implementation.0145/0146/R7/R9 and Inventory contracts remain governing accepted authority.
